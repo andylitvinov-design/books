@@ -24,3 +24,6 @@
 .actions a:focus-visible{outline:3px solid #88a591;outline-offset:3px}
 @media(max-width:580px){.wrap{width:min(100% - 20px,940px);margin-top:13px;margin-bottom:100px}.hero{grid-template-columns:minmax(0,1fr);padding:23px 20px;gap:11px}.portrait{grid-row:1;max-width:132px;justify-self:end}.portrait img{max-height:145px}.kicker{margin-bottom:10px}.hero h1{font-size:35px}.reference{margin-top:17px}.details{padding:20px 16px}.video{padding:17px 12px}.actions{display:grid;grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto}}
+
+.guestChatLink{display:inline-flex;align-items:center;gap:8px;min-height:46px;margin:12px 0 4px;padding:10px 16px;border-radius:12px;border:1px solid #bbd7c6;background:#e7f5eb;color:#1d6651;text-decoration:none;font:700 13px/1.35 system-ui,sans-serif}
+.guestChatLink:focus-visible{outline:3px solid #13755b;outline-offset:3px}

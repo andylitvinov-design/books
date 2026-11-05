@@ -301,3 +301,7 @@
 .bookingChat .compactChannels {margin-top:6px}
 @media(max-width:350px){.bookingPrimary,.bookingCheck{padding:9px 7px;font-size:13px}}
 @media(prefers-reduced-motion:reduce){.bookingPrimary,.bookingCheck{transition:none}}
+
+/* Only displayed after a real saved enquiry and successful HttpOnly capability. */
+.guestChatLink{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:6px 0 12px;padding:9px 14px;border-radius:11px;border:1px solid #b8d8c9;background:#e8f5ed;color:#225f4b;text-decoration:none;font:700 13px/1.35 system-ui,sans-serif}
+.guestChatLink:focus-visible{outline:3px solid #21866b;outline-offset:2px}

@@ -9,6 +9,7 @@ import MessagesContactCard from './messages-contact-card'
 import DirectMessageInbox from './direct-message-inbox'
 import PracticeRequestConversation from './practice-request-conversation'
 import PublicEnquiryReply from './public-enquiry-reply'
+import PublicEnquiryGuestChatOperator from './public-enquiry-guest-chat-operator'
 import MessagesLeadMetrics from './messages-lead-metrics'
 import styles from './messages-simple-inbox.module.css'
 import {availableInboxHeight} from '@/lib/app/mobile-inbox-height.mjs'
@@ -449,8 +450,13 @@ export default function MessagesSimpleInbox({
               locale={locale} accountId={accountId} requestId={selected.id}
               initialMessage="" createdAt={selected.item.createdAt} onSaved={onReload} onViewed={onReload}/>:
             <div>
-              {selected.item.requestKind==='public'&&<PublicEnquiryReply key={selected.id} request={selected.item} locale={locale}
-                operatorMode={crmEnabled} accountId={accountId}/>}
+              {selected.item.requestKind==='public'&&<>
+                {crmEnabled&&selected.item.guestChatAvailable===true&&
+                  <PublicEnquiryGuestChatOperator accountId={accountId}
+                    enquiryId={selected.id} locale={locale}/>}
+                <PublicEnquiryReply key={selected.id} request={selected.item} locale={locale}
+                  operatorMode={crmEnabled} accountId={accountId}/>
+              </>}
               <div className={styles.requestActions}>
                 <button type="button" onClick={()=>setShowCard(true)}>
                   {t.openCase} <ArrowRight size={16} aria-hidden="true"/></button>

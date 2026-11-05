@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { StaticPortrait } from "@/components/static-portrait";
 import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -31,6 +32,7 @@ const copy = {
     error: "We could not save your request. Try again; no message was sent.",
     handoffError: "Your contact was saved, but the messenger did not open. Use either link below.",
     saved: "Request saved — awaiting a personal reply",
+    guestChat: "Continue in secure site chat",
     next: "Keep your reference. No reply time or appointment is confirmed yet. Messengers are for scheduling only; agree a secure handoff for any personal materials.",
     reference: "Reference",
     message: "I would like to ask about this service. Please let me know the next step.",
@@ -52,6 +54,7 @@ const copy = {
     error: "Не удалось сохранить заявку. Попробуйте ещё раз; сообщение не отправлено.",
     handoffError: "Контакт сохранён, но чат не открылся. Выберите мессенджер по ссылке ниже.",
     saved: "Заявка сохранена — ожидает личного ответа",
+    guestChat: "Продолжить переписку на сайте",
     next: "Сохраните номер заявки. Срок ответа и время встречи ещё не подтверждены. В мессенджере согласуйте только организационные вопросы; для личных материалов нужна защищённая передача.",
     reference: "Номер заявки",
     message: "Хочу узнать подробнее об этой услуге. Подскажите, пожалуйста, следующий шаг.",
@@ -73,6 +76,7 @@ const copy = {
     error: "No pudimos guardar la solicitud. Inténtalo de nuevo; no se envió ningún mensaje.",
     handoffError: "Tu contacto se guardó, pero no se abrió el chat. Elige uno de los enlaces.",
     saved: "Solicitud guardada — pendiente de respuesta personal",
+    guestChat: "Continuar en el chat privado del sitio",
     next: "Conserva la referencia. Aún no se ha confirmado el plazo de respuesta ni una cita. Usa mensajería solo para coordinar; acuerda una entrega segura para materiales personales.",
     reference: "Referencia",
     message: "Me gustaría recibir información sobre este servicio y el próximo paso.",
@@ -125,6 +129,7 @@ export function CompactLeadCapture({
   const [busy, setBusy] = useState<RequestAction | null>(null);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
+  const [guestChatId,setGuestChatId] = useState("");
   const [submittedFormat, setSubmittedFormat] = useState<string | null>(null);
   const [submittedServiceTitle, setSubmittedServiceTitle] = useState<string | null>(null);
   const operationId = useRef<string | null>(null);
@@ -188,6 +193,7 @@ export function CompactLeadCapture({
         throw new Error("ENQUIRY_NOT_SAVED");
       }
       committedReference = result.referenceCode;
+      if(result.guestChatAvailable===true&&/^[0-9a-f-]{36}$/i.test(result.id||""))setGuestChatId(result.id);
       setSubmittedFormat(selectedFormat);
       setSubmittedServiceTitle(serviceTitle);
       setReference(committedReference);
@@ -244,6 +250,7 @@ export function CompactLeadCapture({
               <strong>{t.saved}</strong>
               <p>{t.next}</p>
               <small>{t.reference}: {reference}</small>
+              {guestChatId&&<Link href={"/"+locale+"/enquiry/"+guestChatId+"/chat"}>{t.guestChat}</Link>}
             </div>
           </div>
           <div className={styles.channels} role="group" aria-label={t.channelsTitle}>

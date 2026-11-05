@@ -3,6 +3,8 @@ import { getAppConfig, requestOrigin, requireSameOrigin } from '@/lib/app/config
 import { consumeRate } from '@/lib/app/database'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { createPublicServiceEnquiry } from '@/lib/practitioners/public-service-enquiry'
+import {issueGuestEnquiryCapability,guestChatCookieName} from '@/lib/practitioners/public-enquiry-chat-capability.mjs'
+import {publicEnquiryGuestChatReady} from '@/lib/practitioners/public-enquiry-chat-policy.mjs'
 import { dispatchPublicServiceEnquiryTelegram } from '@/lib/app/public-enquiry-telegram'
 import { readPublicEnquiryAttribution } from '@/lib/analytics/enquiry-attribution.mjs'
 import { SESSION_BOOKING_COOKIE, SESSION_BOOKING_TTL, isAlchemyBooking, signSessionBooking } from '@/lib/practitioners/public-session-booking.mjs'
@@ -35,7 +37,22 @@ export async function POST(request) {
         }
       })
     }
-    const response = NextResponse.json(result, { status: 201, headers: PRIVATE_HEADERS })
+    // Confirm capability before advertising a working site chat. The case ID
+    // alone never authenticates anyone; the bearer stays in an HttpOnly cookie.
+    let guestChatCapability=null
+    if(publicEnquiryGuestChatReady()&&result.saved===true&&payload.contact&&payload.contactConsent===true){
+      try{
+        guestChatCapability=issueGuestEnquiryCapability({
+          enquiryId:result.id,operationId:payload.operationId,createdAt:result.createdAt,
+        },config)
+      }catch{console.error('HH_PUBLIC_GUEST_CHAT_CAPABILITY_UNAVAILABLE')}
+    }
+    const response = NextResponse.json({...result,guestChatAvailable:!!guestChatCapability},
+      {status:201,headers:PRIVATE_HEADERS})
+    if(guestChatCapability)response.cookies.set(guestChatCookieName(result.id),guestChatCapability.token,{
+      httpOnly:true,secure:!config.test,sameSite:'strict',
+      path:'/api/public-enquiry-chat',maxAge:guestChatCapability.maxAge,
+    })
     // A committed, consented Alchemy request gets an HttpOnly status proof.
     // This is not payment, a guest login, or a claim to someone else's records.
     if (result.saved === true && isAlchemyBooking(payload)) {

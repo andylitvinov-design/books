@@ -18,6 +18,7 @@ const copy = {
     title: "Thank you for reaching out!",
     subtitle: "Your request has been saved. I'll be happy to explore the next step with you.",
     reference: "Your reference",
+    guestChat: "Open your private website conversation",
     nextTitle: "What happens next?",
     next: "Andrey will review your enquiry and contact you personally using the details you provided. The date, availability and payment are confirmed separately.",
     noBooking: "Submitting a request does not reserve a session or charge your card.",
@@ -35,6 +36,7 @@ const copy = {
     title: "Спасибо за вашу заявку!",
     subtitle: "Ваш запрос сохранён. Буду рад помочь вам определить следующий шаг.",
     reference: "Номер обращения",
+    guestChat: "Открыть личную переписку по заявке",
     nextTitle: "Что будет дальше?",
     next: "Андрей ознакомится с заявкой и свяжется с вами лично по оставленному контакту. Время, наличие мест и оплата подтверждаются отдельно.",
     noBooking: "Отправка заявки не означает, что встреча забронирована или деньги списаны.",
@@ -52,6 +54,7 @@ const copy = {
     title: "¡Gracias por tu solicitud!",
     subtitle: "Hemos guardado tu consulta. Será un placer acompañarte en el próximo paso.",
     reference: "Número de solicitud",
+    guestChat: "Abrir conversación privada en el sitio",
     nextTitle: "¿Qué sigue?",
     next: "Andrey revisará tu solicitud y se pondrá en contacto contigo utilizando los datos que facilitaste. La fecha, las plazas y el pago se confirman por separado.",
     noBooking: "Enviar una solicitud no reserva una sesión ni realiza un cobro.",
@@ -73,11 +76,13 @@ export function ServiceEnquiryThankYou({
 }: { locale: PublicLocale; video: PublishedSiteVideo | null }) {
   const c = copy[locale];
   const [receipt, setReceipt] = useState<ReceiptState>("checking");
+  const [guestChatId,setGuestChatId] = useState("");
 
   useEffect(() => {
     try {
       const value = parseEnquiryReceipt(window.sessionStorage.getItem(RECEIPT_SESSION_KEY));
       setReceipt(value?.referenceCode ?? "missing");
+      setGuestChatId(value?.guestChatId ?? "");
     } catch {
       setReceipt("missing");
     }
@@ -99,6 +104,8 @@ export function ServiceEnquiryThankYou({
                   <span>{c.reference}</span>
                   <strong>{receipt}</strong>
                 </div>
+                {guestChatId&&<Link href={"/"+locale+"/enquiry/"+guestChatId+"/chat"}
+                  className={styles.guestChatLink}>{c.guestChat}<ArrowRight size={17}/></Link>}
               </>
             ) : (
               <>

@@ -5,6 +5,8 @@ import { AppError } from '@/lib/assessments/contracts'
 import { PRIVATE_HEADERS, readBody, safeError } from '@/lib/app/http'
 import { buildCoachingDiagnosticEnquiry } from '@/lib/coaching/diagnostic-enquiry.mjs'
 import { createPublicServiceEnquiry } from '@/lib/practitioners/public-service-enquiry'
+import {issueGuestEnquiryCapability,guestChatCookieName} from '@/lib/practitioners/public-enquiry-chat-capability.mjs'
+import {publicEnquiryGuestChatReady} from '@/lib/practitioners/public-enquiry-chat-policy.mjs'
 import { dispatchPublicServiceEnquiryTelegram } from '@/lib/app/public-enquiry-telegram'
 import { readPublicEnquiryAttribution } from '@/lib/analytics/enquiry-attribution.mjs'
 
@@ -38,7 +40,21 @@ export async function POST(request) {
         }
       })
     }
-    return NextResponse.json(result, { status: 201, headers: PRIVATE_HEADERS })
+    let guestChatCapability=null
+    if(publicEnquiryGuestChatReady()&&result.saved===true&&input.contact){
+      try{
+        guestChatCapability=issueGuestEnquiryCapability({
+          enquiryId:result.id,operationId:input.operationId,createdAt:result.createdAt,
+        },config)
+      }catch{console.error('HH_COACHING_GUEST_CHAT_CAPABILITY_UNAVAILABLE')}
+    }
+    const response=NextResponse.json({...result,guestChatAvailable:!!guestChatCapability},
+      {status:201,headers:PRIVATE_HEADERS})
+    if(guestChatCapability)response.cookies.set(guestChatCookieName(result.id),guestChatCapability.token,{
+      httpOnly:true,secure:!config.test,sameSite:'strict',
+      path:'/api/public-enquiry-chat',maxAge:guestChatCapability.maxAge,
+    })
+    return response
   } catch (error) {
     const safe = safeError(error)
     return NextResponse.json({ error: safe.code }, { status: safe.status, headers: PRIVATE_HEADERS })

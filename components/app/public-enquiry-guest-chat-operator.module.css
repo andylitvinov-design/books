@@ -1,0 +1,13 @@
+.root{margin:12px 0;border:1px solid #d5e3d8;border-radius:13px;background:#fafdf9;color:#254a3e}
+.open{display:inline-flex;align-items:center;min-height:44px;padding:9px 13px;border:0;background:transparent;color:#216b55;font:700 13px system-ui,sans-serif;cursor:pointer}
+.panel{display:flex;flex-direction:column;gap:8px;padding:10px 13px 13px}
+.panel>strong{font:700 13px system-ui,sans-serif}.panel>p{font-size:12px;margin:0;color:#637a6e}
+.messages{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow:auto;padding:8px;background:#fff;border:1px solid #e0e8df;border-radius:9px}
+.messages p{margin:0;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
+.messages p[data-author="operator"]{align-self:flex-end;background:#def0e6;border-radius:10px;padding:8px}
+.messages p[data-author="guest"]{align-self:flex-start;background:#f5f2ed;border-radius:10px;padding:8px}
+.panel label{font-size:12px;font-weight:700;color:#365c4e}
+.panel textarea{width:100%;min-height:72px;box-sizing:border-box;border:1px solid #bccfc3;border-radius:9px;padding:10px;font:16px system-ui,sans-serif;resize:vertical}
+.panel button{align-self:flex-start;min-height:44px;border:1px solid #c8e1ce;border-radius:10px;padding:9px 12px;background:#eaf5ee;color:#245d48;font:700 12px system-ui,sans-serif;cursor:pointer}
+.panel button:disabled{opacity:.6}
+.root :focus-visible{outline:3px solid #207a62;outline-offset:2px}

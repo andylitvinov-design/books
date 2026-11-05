@@ -18,7 +18,7 @@ import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import styles from "./contact-channel-chooser.module.css";
 
 type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
-type SavedEnquiry = { referenceCode: string; saved: true };
+type SavedEnquiry = { referenceCode: string; saved: true; guestChatId?: string };
 
 const copy = {
   en: {
@@ -37,6 +37,7 @@ const copy = {
     consent: "I agree to be contacted personally about this enquiry only. No marketing subscription.",
     submit: "Register my request",
     sending: "Saving request…",
+    guestChat: "Continue in private site chat",
     saved: "Thank you — your request was received",
     next: "Andrey can contact you using the details provided. A date or place is confirmed separately. WhatsApp or Telegram is optional.",
     messengers: "Continue in your preferred messenger",
@@ -74,6 +75,7 @@ const copy = {
     consent: "Согласен(на) на личный ответ по этой заявке. На рекламную рассылку не подписываюсь.",
     submit: "Оставить заявку",
     sending: "Сохраняем заявку…",
+    guestChat: "Продолжить переписку на сайте",
     saved: "Спасибо! Ваша заявка получена",
     next: "Андрей сможет связаться с вами по указанным контактам. Место и время подтверждаются отдельно. WhatsApp и Telegram — по желанию.",
     messengers: "Продолжить в удобном мессенджере",
@@ -111,6 +113,7 @@ const copy = {
     consent: "Acepto que me contacten solamente sobre esta solicitud. No me suscribo a publicidad.",
     submit: "Registrar mi solicitud",
     sending: "Guardando solicitud…",
+    guestChat: "Continuar en el chat privado",
     saved: "¡Gracias! Hemos recibido tu solicitud",
     next: "Andrey puede responder usando tus datos. Fecha y plaza se confirman por separado. WhatsApp y Telegram son opcionales.",
     messengers: "Continuar por mensajería",
@@ -457,7 +460,9 @@ export function ContactChannelChooser({
         if (response.status === 409) operationId.current = null;
         throw new Error(data.error || "NOT_SAVED");
       }
-      setSaved({ saved: true, referenceCode: data.referenceCode });
+      const guestChatId = data.guestChatAvailable===true&&/^[0-9a-f-]{36}$/i.test(data.id||"") ? data.id : "";
+      setSaved({ saved: true, referenceCode: data.referenceCode,
+        ...(guestChatId ? { guestChatId } : {}) });
       onSaved?.(data.referenceCode);
       if (bookingSku) { setBookingConfirmed(false); setBookingStartsAt(null); }
       // Only a confirmed server/CRM write creates a receipt. No personal data
@@ -465,6 +470,7 @@ export function ContactChannelChooser({
       try {
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY, JSON.stringify({
           referenceCode: data.referenceCode, createdAt: Date.now(),
+          ...(guestChatId ? { guestChatId } : {}),
         }));
         if (!stayAfterSave) router.push("/" + locale + "/thank-you");
       } catch {
@@ -582,6 +588,8 @@ export function ContactChannelChooser({
           ) : (
             <section className={styles.compactReceipt} data-booking-step={paidReady ? "confirmed" : "pending"}>
               <p className={styles.saved} role="status">{c.saved} · {saved.referenceCode}</p>
+              {saved.guestChatId&&<Link className={styles.guestChatLink}
+                href={"/"+locale+"/enquiry/"+saved.guestChatId+"/chat"}>{c.guestChat}</Link>}
               <p className={styles.bookingProduct}>{sessionText}</p>
               {paidReady ? (
                 <p className={styles.bookingSuccess}>
@@ -711,6 +719,8 @@ export function ContactChannelChooser({
         ) : (
           <div className={styles.compactReceipt}>
             <p className={styles.saved} role="status">{c.saved} · {saved.referenceCode}</p>
+              {saved.guestChatId&&<Link className={styles.guestChatLink}
+                href={"/"+locale+"/enquiry/"+saved.guestChatId+"/chat"}>{c.guestChat}</Link>}
             <p className={styles.next}>{c.compactSaved}</p>
             <div className={styles.compactChannels} role="group" aria-label={c.messengers}>
               <AcquisitionEventLink prefetch={false} className={styles.whatsapp}
@@ -842,6 +852,8 @@ export function ContactChannelChooser({
         ) : (
           <>
             <p className={styles.saved} role="status">{c.saved} · {saved.referenceCode}</p>
+              {saved.guestChatId&&<Link className={styles.guestChatLink}
+                href={"/"+locale+"/enquiry/"+saved.guestChatId+"/chat"}>{c.guestChat}</Link>}
             <p className={styles.next}>{c.next}</p>
             <div className={styles.choices} role="group" aria-label={c.messengers}>
               <AcquisitionEventLink prefetch={false} className={styles.whatsapp}
