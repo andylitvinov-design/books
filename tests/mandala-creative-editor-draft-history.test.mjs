@@ -1,5 +1,6 @@
 import test from "node:test";
 import "./mandala-smart-captions.test.mjs"; // Reuse the existing Mandala specialist job; no new CI runner.
+import "./mandala-music-bed.test.mjs"; // Reuse existing focused Mandala tests.
 import "./mandala-source-slip-speed.test.mjs"; // Same licensed-media CI; no extra runner.
 import "./mandala-creative-editor-keyframes.test.mjs"; // Same video CI and already-approved test runner.
 
