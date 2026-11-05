@@ -251,3 +251,23 @@ test("Shorts / Study are exclusive and do not invent lengths for unverified vide
  assert.equal(matchesMyTubeDuration(null,"study"),false);
 });
 
+
+test('IA v2 checks both the shared and editorial seven-destination mobile docks',()=>{
+ const source=read('scripts/verify-ia-v2.mjs');
+ const shared=read('components/unified-mobile-dock.tsx');
+ const legacy=read('components/mobile-bottom-navigation.tsx');
+ for(const proof of ['UNIFIED_DOCK_IDS','unifiedMobileDockHref','isUnifiedMobileDockPath(bottomPath)',
+   'assertUnifiedBottomNavigation(page,bottom','data-hh-unified-dock','data-unified-dock-item',
+   'exact shared seven bottom destinations','toHaveAccessibleName(expected[i].ariaLabel)',
+   'assertPublicBottomNavigation(bottom,{locale,surface,label})',
+   "await inViewport(link, label + '/bottom-'",
+   "await link.press('Tab')",
+   'site-main-menu-grid [data-nav-item="alchemy"]',
+   "await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0)"]){
+   assert.ok(source.includes(proof),'Missing real mobile navigation acceptance: '+proof);
+ }
+ assert.ok(shared.includes('data-hh-unified-dock'));
+ assert.ok(shared.includes('data-unified-dock-item={id}'));
+ assert.ok(legacy.includes('if (hidden) return null;'));
+ assert.ok(!source.includes("const alchemy = page.locator('.mobile-bottom-navigation [data-nav-item=\"alchemy\"]')"));
+});

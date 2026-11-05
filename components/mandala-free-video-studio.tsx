@@ -2481,9 +2481,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
     return () => { window.cancelAnimationFrame(firstFrame); window.cancelAnimationFrame(nextFrame); };
   }, [result]);
+  // Auto-music must be ATTACHED before the Montage Generate tap. The earlier
+  // suggestion-only effect changed music without attachedAudio, so the real
+  // recorder's rights guard redirected Generate into the large Audio gallery.
+  // Keep manual silence, uploaded tracks and narration fully authoritative.
   useEffect(() => {
-    if (audioAuto && !uploadedAudio) setMusic(recommendedAudioId||"none");
-  },[audioAuto,uploadedAudio,recommendedAudioId]);
+    if(!audioAuto||uploadedAudio||attachedAudio?.kind==="file"||
+       attachedAudio?.kind==="presets")return;
+    const recommended=recommendedAudioId||"none";
+    setMusic(current=>current===recommended?current:recommended);
+    if(activeWorkspace!=="editor")return;
+    setAttachedAudio(current=>{
+      if(current?.kind==="file"||current?.kind==="presets")return current;
+      if(recommended==="none")return null;
+      return current?.kind==="preset"&&current.id===recommended?
+        current:{kind:"preset",id:recommended};
+    });
+  },[audioAuto,uploadedAudio,recommendedAudioId,activeWorkspace,attachedAudio?.kind]);
   // A paused film, hidden tab or unmount must not leave a soundtrack playing.
   useEffect(()=>{if(!previewPlaying)stopMovieSound();},[previewPlaying,stopMovieSound]);
   useEffect(()=>()=>stopMovieSound(),[stopMovieSound]);
@@ -4077,6 +4091,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(prefs.caption)setCustomCaption(captionFromWish(draft.wish));
     setPreviewPlaying(false);setSuggestion("");
   };
+  // Ideas is a selection step. Its main CTA advances to Montage, never starts an export.
+  const goToMontageFromIdeas = () => {
+    quickNavTokenRef.current++;
+    setActiveWorkspace("editor");
+    setMontagePanel("settings");
+    setStudioMode("pump");
+    setIntroPlaying(false);
+    setTherapyJumpRequested(false);
+    setNotice("");
+    // The Ideas page may be scrolled to its bottom CTA; show the third tab and player.
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+      document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"});
+    }));
+  };
+
   const createQuickVideo = () => {
     if(photoPending){
       setNotice(locale==="ru"?"Подготовка фото ещё не завершена.":locale==="es"?"La foto aún se está preparando.":"Photo preparation is still in progress.");
@@ -5257,10 +5286,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.phraseEditorLead} data-video-phrase-editor-first>
           <MandalaVideoIdeas locale={locale} theme={theme}
             active={activeWorkspace==="phrases"} disabled={recording||preparing}
-            settings={affirmations} canGenerate={canGenerate&&freeVideoSelected&&!phrasePending}
+            settings={affirmations}
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
-            onCreate={createQuickVideo}/>
+            onCreate={goToMontageFromIdeas}/>
           {activeWorkspace!=="phrases" ? <div data-video-legacy-phrase-editor hidden aria-hidden="true">
             {deepHypnoPane}
           </div> : null}
@@ -5326,7 +5355,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}/>
         </div> : null}
       </section>
-      <section className={videoStyles.quickMusicSection} data-workspace-section="video" data-video-quick-audio-choices aria-labelledby="quick-music-heading">
+      {activeWorkspace==="video" ? <section className={videoStyles.quickMusicSection} data-workspace-section="video" data-video-quick-audio-choices aria-labelledby="quick-music-heading">
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-music-heading"><Music2 size={18} aria-hidden="true"/>
             {locale==="ru"?"Музыка и голос":locale==="es"?"Música y voz":"Music & voice"}</h3>
@@ -5379,7 +5408,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <summary>{locale==="ru"?"Все мелодии и голос":locale==="es"?"Todos los sonidos y voz":"All soundtracks and voice"}</summary>
           {activeWorkspace==="video" ? deepAudioPane : null}
         </details>
-      </section>
+      </section> : null}
         <MandalaAutoVideoDirector
           locale={locale} goal={wish} theme={theme} aspect={aspect} presets={aspectFilmPresets}
           scenes={FREE_FILM_CATALOG}
@@ -6025,9 +6054,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 </select>
               </label>
             </div>
-            <p className={videoStyles.montagePreferencesNote}>
-              <Sparkles size={17} aria-hidden="true"/>
-              {locale==="ru"?"Выберите параметры и нажмите «Сгенерировать видео». Переходы применяются к многосценным роликам.":locale==="es"?"Elige las opciones y pulsa «Generar vídeo». Las transiciones se aplican a los vídeos con varias escenas.":"Choose settings, then Generate video. Transitions apply to multi-scene films."}
+            <p className={videoStyles.montagePreferencesNote} data-video-montage-auto-sound aria-live="polite">
+              <Music2 size={17} aria-hidden="true"/>
+              <span>{attachedAudio?.kind==="preset"&&audioAuto
+                ?(locale==="ru"?"Музыка подобрана автоматически: ":locale==="es"?"Música seleccionada automáticamente: ":"Music matched automatically: ")+appliedAudioName
+                :attachedAudio
+                  ?(locale==="ru"?"Звук: ":locale==="es"?"Audio: ":"Audio: ")+appliedAudioName
+                  :locale==="ru"?"Без музыки":locale==="es"?"Sin música":"No music"}</span>
             </p>
           </div> : null}
           {montagePanel==="text" ? <div className={videoStyles.montagePane} data-video-montage-text>
