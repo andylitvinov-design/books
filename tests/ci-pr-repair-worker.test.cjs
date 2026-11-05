@@ -556,7 +556,8 @@ test('missing owner token and interrupted claim may not unlock a source reservat
 test('existing Repair Worker workflow carries reservation identity without source tokens',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.ok(wf.includes('reservation_run_id:'));
- assert.ok(wf.includes('ref: codex/bootstrap-books'));
+ assert.equal((wf.match(/ref: \$\{\{ github\.sha \}\}/g)||[]).length,6);
+ assert.ok(!wf.includes('ref: codex/bootstrap-books'));
  const dispatcher=require('node:fs').readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
  assert.ok(dispatcher.includes("reservation_run_id:String(context.runId||'')"));
 });
@@ -925,4 +926,38 @@ test('failed legacy cloud preflight stays FAILED and never publishes an unverifi
  assert.equal(r.reason_code,'LEGACY_PREFLIGHT_INCOMPLETE');
  assert.equal(r.source_published,false);
  assert.equal(r.new_sha,null);
+});
+
+test('Repair Worker stops an ownership claim when PR HEAD changes before receipt',async()=>{
+ const f=fixture(),initial=pr();
+ const moved=pr({head:{...initial.head,sha:newSha}});
+ let reads=0;
+ f.github.rest.pulls.get=async()=>({data:++reads===1?initial:moved});
+ const result=await claim({github:f.github,core,context,hasToken:true,number:11});
+ assert.equal(result.status,'skipped');
+ assert.equal(f.log.comments,0);
+ assert.equal(reads,2,'the current HEAD must be checked again before claiming');
+});
+test('Repair Worker refuses a newly active foreign lease after verified reservation',async()=>{
+ const now=Date.parse('2026-11-05T04:00:00Z');
+ const task=taskFor(pr(),{tier:'P1'});
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const source={...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+
+  ' -->\nFailed jobs: core-lint-types-build.\n'};
+ const reserved={...bot,body:commentBody(reservation(task,now,777))};
+ const foreign={user:{login:'another-owner'},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
+  JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',owner:'concurrent-writer',
+   lease_id:'new',head_sha:sha,state:'active'})};
+ const f=fixture();
+ let reads=0;
+ f.github.rest.issues.listComments=async()=>({data:++reads===1?
+  [source,reserved]:[source,reserved,foreign]});
+ const result=await claim({github:f.github,core,
+  context:{...context,eventName:'workflow_dispatch'},
+  number:11,expectedSha:sha,taskKey:task.task_key,
+  reservationRunId:'777',hasToken:true,now});
+ assert.equal(result.status,'skipped');
+ assert.equal(f.log.comments,0);
+ assert.equal(reads,2,'signed reservation and owner lease need last read before claim');
 });
