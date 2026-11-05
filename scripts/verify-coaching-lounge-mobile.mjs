@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { runMobileBrowserCases } from "./ci-mobile-browser-batch.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -18,12 +19,12 @@ const touchTargets = [
   ["business", "action", "self"],
   ["growth", "clarity", "all"],
 ];
-async function verify(browserType, locale, width) {
-  const browser = await browserType.launch();
-  const page = await browser.newPage({
+async function verify(browserType, browser, locale, width) {
+  const context = await browser.newContext({
     viewport: { width, height: 844 }, deviceScaleFactor: 1,
     hasTouch: true, isMobile: true, reducedMotion: "reduce",
   });
+  const page = await context.newPage();
   const label = [browserType.name(), locale, width].join(":");
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -173,12 +174,12 @@ async function verify(browserType, locale, width) {
       catalogPresent: initialCatalogCount > 0, activatedFreeRunner: availableCards > 0 });
     console.log("OK " + label + " catalog=" + initialCatalogCount);
   } finally {
-    await page.close();
-    await browser.close();
+    await context.close();
   }
 }
-for (const locale of ["en", "ru", "es"])
-  for (const width of [320, 390, 430]) await verify(webkit, locale, width);
-for (const locale of ["en", "ru", "es"]) await verify(chromium, locale, 390);
+await runMobileBrowserCases([
+  { browserType: webkit, cases: ["en", "ru", "es"].flatMap(locale => [320, 390, 430].map(width => [locale, width])) },
+  { browserType: chromium, cases: ["en", "ru", "es"].map(locale => [locale, 390]) },
+], verify);
 await writeFile(output + "/acceptance.json", JSON.stringify(evidence, null, 2));
 console.log("Coaching mobile browser acceptance passed: " + evidence.length + " combinations");

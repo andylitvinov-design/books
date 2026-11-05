@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inspectIntelligenceRisk } from '../lib/holistic-support/intelligence-risk.mjs';
+import { inspectIntelligenceRisk } from '../lib/holistic-support/client-reasoning-risk.mjs';
 
 test('existing crisis signals interrupt recommendations in all supported languages', () => {
   for (const [language, goalText] of [

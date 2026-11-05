@@ -43,3 +43,17 @@ test('session dismissals are bounded identifiers, not private history records', 
   for (const session of [{ accountId: 'other' }, { dismissedIds: ['bad/id'] }, { dismissedIds: Array(81).fill('x') }])
     assert.throws(() => validateIntelligenceRequest({ ...valid(), session }), /INVALID_INTELLIGENCE_REQUEST/);
 });
+
+test('accepts only voluntary client actions; never accepts client-asserted publication or private authority', () => {
+  const base = valid();
+  for (const clientAction of ['request_suggestion', 'change_goal', 'decline', 'continue']) {
+    const request = { ...base, clientAction };
+    assert.equal(validateIntelligenceRequest(request), request);
+  }
+  for (const clientAction of ['publish', 'approve', 'unlock_private', 'bypass_safety', '', null, 1, {}]) {
+    assert.throws(() => validateIntelligenceRequest({ ...base, clientAction }), /INVALID_INTELLIGENCE_REQUEST/);
+  }
+  for (const privileged of ['accountId', 'trustedOwner', 'authorized', 'consentGranted', 'publicProfile']) {
+    assert.throws(() => validateIntelligenceRequest({ ...base, [privileged]: true }), /INVALID_INTELLIGENCE_REQUEST/);
+  }
+});

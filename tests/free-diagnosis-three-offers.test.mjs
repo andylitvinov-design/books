@@ -40,13 +40,15 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   const enquiry = source("components/personal-express-enquiry.tsx");
   const enquiryCss = source("components/personal-express-enquiry.module.css");
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
-  assert.match(enquiry, /data-express-reveal aria-expanded=\{expanded\}/);
+  assert.match(enquiry, /data-express-reveal[^\n>]*aria-expanded=\{expanded\}/);
   assert.match(enquiry, /aria-controls="express-request-form"/);
   assert.match(enquiry, /data-express-inline-disclosure hidden=\{!expanded\}/);
   assert.match(enquiry, /role="region" aria-label=\{t\.title\}/);
   assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
   assert.match(enquiry, /document\.addEventListener\("click", openFromAnchor\)/);
-  assert.match(enquiry, /onClick=\{\(\) => setExpanded\(open => !open\)\}/);
+  assert.match(enquiry, /if \(expanded\) closeDisclosure\(\); else setExpanded\(true\)/);
+  assert.match(enquiry, /window\.history\.replaceState\(window\.history\.state/);
+  assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
   assert.match(enquiry, /useEffect\(\(\) => \{/);
   assert.match(enquiry, /setExpanded\(false\)/);
   assert.match(enquiry, /revealRef\.current\?\.focus\(\)/);

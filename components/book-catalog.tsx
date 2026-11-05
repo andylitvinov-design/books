@@ -206,7 +206,7 @@ export function BookCatalog({ books, locale, video }: BookCatalogProps) {
                     height={600}
                     priority={!showFeatured && index === 0}
                     src={bookCoverArtworkUrl(book.id, "/media/" + book.mediaSeries + "/" + book.cover)}
-                    unoptimized={hasBookCoverArtwork(book.id)}
+                    unoptimized={hasBookCoverArtwork(book.id) || book.cover.endsWith('.svg')}
                     width={800}
                   />
                 </figure>

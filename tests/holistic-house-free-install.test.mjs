@@ -123,7 +123,7 @@ test('owner iPhone install page offers genuine visible Safari instructions witho
   assert.ok(page.indexOf('data-hh-pwa-alternative')<page.indexOf('data-hh-native-downloads'))
   assert.match(page,/data-hh-install-ready/)
   assert.match(page,/Можно установить сейчас/)
-  assert.match(page,/Нативные версии App Store и APK пока не выпущены/)
+  assert.match(page,/Подписанный Android APK для прямого скачивания/)
   assert.match(page,/data-hh-ios-quicksteps/)
   assert.match(page,/значок компаса/)
   assert.match(page,/«Поделиться»/)

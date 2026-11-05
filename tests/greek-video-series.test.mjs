@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import ts from "typescript";
 import vm from "node:vm";
+import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
 
 const read = name => readFileSync(new URL("../" + name, import.meta.url), "utf8");
 const manifest = JSON.parse(read("data/academy/psimaster-media.generated.json"));
@@ -30,14 +31,14 @@ test("execute the original source-page-to-PsiMaster-media join without empty Rus
     fileName: "greek-video-series.ts",
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
-  const module = { exports: {} };
+  const sandboxModule = { exports: {} };
   vm.runInNewContext(compiled, {
-    module, exports: module.exports, require: specifier => {
+    module: sandboxModule, exports: sandboxModule.exports, require: specifier => {
       assert.equal(specifier, "@/data/academy/catalog");
       return catalog;
     },
   }, { timeout: 2000 });
-  const ru = JSON.parse(JSON.stringify(module.exports.greekVideoSeries("ru")));
+  const ru = JSON.parse(JSON.stringify(sandboxModule.exports.greekVideoSeries("ru")));
   assert.deepEqual(ru.map(series => [series.id, series.lessons.length]), [
     ["greek-dionysus", 7], ["greek-demeter", 5],
   ]);
@@ -46,8 +47,8 @@ test("execute the original source-page-to-PsiMaster-media join without empty Rus
     assert.deepEqual(series.lessons.map(video => video.order),
       Array.from({ length: series.lessons.length }, (_, index) => index + 1));
   }
-  assert.deepEqual(JSON.parse(JSON.stringify(module.exports.greekVideoSeries("en"))), []);
-  assert.deepEqual(JSON.parse(JSON.stringify(module.exports.greekVideoSeries("es"))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(sandboxModule.exports.greekVideoSeries("en"))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(sandboxModule.exports.greekVideoSeries("es"))), []);
 });
 
 test("Dionysus and Demeter retain their own original, complete numbered episode sequences", () => {
@@ -87,7 +88,8 @@ test("mobile Courses selects one Greek channel, not the combined 12-video Greece
   assert.match(supportPage, /seriesHref: entry\.id\.startsWith\("greek-"\)/);
   assert.match(support, /"greek-dionysus": "Канал Диониса"/);
   assert.match(support, /"greek-demeter": "Канал Деметры"/);
-  assert.match(support, /choice === "pump" && program !== "all"\) return eligible/);
+  assert.match(support, /const relevantVideos = choice === "pump" && program !== "all"/);
+  assert.match(support, /catalogVideos\.slice\(0, 4\)/, "regular meditation retains exactly four featured posters");
   assert.match(support, /data-source-order=\{video\.lessonOrder\}/);
   assert.match(support, /data-support-lesson-navigation/);
   assert.match(support, /relevantVideos\[selectedLessonIndex \+ 1\]\.id/);
@@ -100,7 +102,9 @@ test("Video Blogs have two standalone, filterable original channels, episodes be
   assert.match(library, /greekVideoSeries\(locale\)/);
   assert.match(library, /seriesId: series\.id/);
   assert.match(library, /seriesOrder: lesson\.order/);
-  assert.match(library, /const seriesVideoIds = new Set/);
+  assert.match(library, /buildPublishedVideoIndex\(/);
+  assert.match(read("lib/video-discovery/catalog.mjs"), /map\.set\(id/);
+  assert.match(read("components/video-discovery.tsx"), /<LibraryFeed locale=\{locale\} items=\{ordered\} videosOnly preserveOrder/);
   assert.match(feed, /data-library-series-filter=\{series\.id\}/);
   assert.match(feed, /data-library-video-series=\{item\.seriesId\}/);
   assert.match(feed, /a\.seriesOrder \?\? Number\.MAX_SAFE_INTEGER/);
@@ -130,4 +134,14 @@ test("new and changed TSX/TS source parse without diagnostics", () => {
     assert.deepEqual((result.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error)
       .map(d => ts.flattenDiagnosticMessageText(d.messageText, " ")), [], path);
   }
+});
+
+test("new discovery keeps the two Greek original series ahead of duplicates in Series mode",()=>{
+  const input=[
+    {id:"greek-dionysus-1",kind:"video",youtubeId:"qipPFBpRNF8",title:"Dionysus lesson 1",audioLanguage:"ru",topicTags:["relationships"]},
+    {id:"greek-dionysus-2",kind:"video",youtubeId:"_9y1lR0lpPA",title:"Dionysus lesson 7",audioLanguage:"ru",topicTags:["relationships"]},
+    {id:"duplicate",kind:"video",youtubeId:"qipPFBpRNF8",title:"Duplicate",audioLanguage:"ru",topicTags:["relationships"]},
+  ];
+  const ranked=rankDiscoveryVideos(input,{sort:"series",language:"ru",goal:"relationships"});
+  assert.deepEqual(ranked.map(item=>item.youtubeId),["qipPFBpRNF8","_9y1lR0lpPA"]);
 });

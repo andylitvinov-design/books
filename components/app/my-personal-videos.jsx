@@ -2,6 +2,8 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
+import PersonalVideoMessengerPanel from './personal-video-messenger-panel'
+import SupportPhotoCabinet from '@/components/app/support-photo-cabinet'
 
 const COPY={
   en:{title:'My Videos',subtitle:'Your private saved videos, separate from the public video editor.',new:'Create free video',
@@ -11,7 +13,7 @@ const COPY={
     refresh:'Refresh',error:'Video action was not completed. Please try again.',completed:'Video confirmed in your private cabinet.',
     size:'Each file ≤12 MB · Up to 3 videos · Finished MP4 only.',music:'This page stores finished videos, not your original photos.',
     states:{ready:'Ready',pending:'Upload pending',failed:'Upload failed',deleting:'Delete pending'},
-    themes:{money:'Money',relationships:'Relationships',energy:'Energy',goals:'Goals'}},
+    themes:{money:'Money',relationships:'Relationships',energy:'Energy',goals:'Goals',health:'Health',life:'Personal growth'}},
   ru:{title:'Мои видео',subtitle:'Приватная библиотека готовых роликов в вашем кабинете.',new:'Создать бесплатное видео',
     empty:'Пока нет сохранённых видео.',disabled:'Облачное сохранение пока выключено. Бесплатное скачивание на устройство работает.',
     file:'Выберите готовый MP4 (до 12 МБ)',theme:'Тема',aspect:'Формат',consent:'Разрешаю сохранить только готовое видео в моём приватном кабинете Holistic House. Исходное фото и пожелание не отправляются.',
@@ -19,7 +21,15 @@ const COPY={
     refresh:'Обновить',error:'Действие не завершено. Попробуйте снова.',completed:'Видео подтверждено в личном кабинете.',
     size:'Каждый файл ≤12 МБ · Не более 3 видео · Только готовый MP4.',music:'Исходные фотографии и пожелания здесь не хранятся.',
     states:{ready:'Готово',pending:'Загрузка не завершена',failed:'Ошибка загрузки',deleting:'Удаление не завершено'},
-    themes:{money:'Деньги',relationships:'Отношения',energy:'Энергия',goals:'Цели'}}
+    themes:{money:'Деньги',relationships:'Отношения',energy:'Энергия',goals:'Цели',health:'Здоровье',life:'Развитие'}},
+  es:{title:'Mis vídeos',subtitle:'Biblioteca privada de vídeos terminados en tu cuenta.',new:'Crear vídeo gratuito',
+    empty:'Todavía no hay vídeos guardados.',disabled:'El almacenamiento privado no está activado. La descarga local sigue disponible.',
+    file:'Selecciona un MP4 terminado (máximo 12 MB)',theme:'Tema',aspect:'Formato',consent:'Autorizo guardar únicamente el vídeo final en mi cuenta privada de Holistic House. No se envían la foto original ni mi petición.',
+    upload:'Guardar en Mi Casa',busy:'Subiendo con seguridad…',download:'Descarga privada',play:'Ver',delete:'Eliminar vídeo',confirm:'¿Eliminar este vídeo de tu biblioteca privada?',
+    refresh:'Actualizar',error:'No se pudo completar la acción. Inténtalo de nuevo.',completed:'Vídeo guardado en tu biblioteca privada.',
+    size:'Cada archivo ≤12 MB · Máximo 3 vídeos · Solo MP4 terminados.',music:'Las fotos originales y los deseos no se guardan aquí.',
+    states:{ready:'Listo',pending:'Carga pendiente',failed:'Error de carga',deleting:'Eliminación pendiente'},
+    themes:{money:'Dinero',relationships:'Relaciones',energy:'Energía',goals:'Objetivos',health:'Salud',life:'Crecimiento personal'}}
 }
 const formats={portrait:'9:16',square:'1:1',landscape:'16:9'}
 const limit=12_000_000
@@ -37,13 +47,13 @@ async function verifyMp4(file){
       video.onerror=()=>{clearTimeout(timer);reject(new Error('INVALID_VIDEO'))}
       video.src=url
     })
-    const matched=[10,20,30,60].find(x=>Math.abs(x-duration)<=1.25)
+    const matched=[10,15,20,30,60].find(x=>Math.abs(x-duration)<=1.25)
     if(!matched)throw new Error('INVALID_DURATION')
     return matched
   } finally {URL.revokeObjectURL(url)}
 }
 export default function MyPersonalVideos({accountId,locale='en'}){
-  const t=COPY[locale==='ru'?'ru':'en']
+  const t=COPY[locale==='ru'?'ru':locale==='es'?'es':'en']
   const [list,setList]=useState([])
   const [status,setStatus]=useState('loading')
   const [notice,setNotice]=useState('')
@@ -120,9 +130,11 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       <div><h1>{t.title}</h1><p>{t.subtitle}</p></div>
       <Link href={'/'+locale+'/holistic-support/mandala'} prefetch={false}>{t.new}</Link>
     </div>
+    <SupportPhotoCabinet locale={locale} />
     {status==='disabled'&&<p role="status">{t.disabled}</p>}
     {status==='error'&&<p role="alert">{t.error}</p>}
     {status==='ready'&&<>
+      <PersonalVideoMessengerPanel key={accountId} accountId={accountId} locale={locale} videos={list}/>
       <section style={{padding:'14px',margin:'16px 0',border:'1px solid #cbded0',borderRadius:14}}>
         <h2>{t.upload}</h2><p>{t.size}</p>
         <label>{t.file}<input type="file" accept="video/mp4,.mp4" onChange={e=>{setFile(e.target.files?.[0]||null);setConsent(false)}} disabled={busy}/></label>
@@ -145,7 +157,7 @@ export default function MyPersonalVideos({accountId,locale='en'}){
       {!list.length&&<p>{t.empty}</p>}
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:12,marginTop:14}}>
         {list.map(video=><article key={video.id} style={{padding:12,border:'1px solid #d1dfd6',borderRadius:14,background:'#faf8f2'}}>
-          <strong>{t.themes[video.theme]}</strong>
+          <strong>{t.themes[video.theme]||video.theme}</strong>
           <p>{formats[video.aspect]} · {video.duration} s · {Math.round(video.bytes/1024)} KB · {t.states[video.status]||video.status}</p>
           <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
             <button type="button" disabled={busy||video.status!=='ready'} onClick={()=>void view(video.id)}>{t.play}</button>

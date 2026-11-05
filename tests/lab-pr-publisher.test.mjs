@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {validatePublish} from '../scripts/lab-pr-publisher.mjs';
+const a='a'.repeat(40),b='b'.repeat(40);
+const packet={id:'LAB-101',owner:'developer',status:'RELEASE_CANDIDATE',targetBranch:'codex/public-book-library',headSha:b,baseSha:a,qaPassed:true,testEvidence:true,changedFiles:['app/page.tsx'],acceptance:{accepted:true,headSha:b,baseSha:a,reviewEvidenceId:'review-123',reviewerId:'reviewer',evidenceUrl:'https://github.com/andylitvinov-design/books/actions/runs/123'}};
+const facts={head:b,base:a,prs:[]};
+test('ready candidate passes structural checks',()=>assert.equal(validatePublish(packet,facts),null));
+test('stale base blocked',()=>assert.equal(validatePublish(packet,{...facts,base:b}),'stale-sha'));
+test('duplicate blocked',()=>assert.equal(validatePublish(packet,{...facts,prs:[{headRefOid:b}]}),'existing-pr'));
+test('missing inventory blocked',()=>assert.equal(validatePublish(packet,{...facts,prs:undefined}),'missing-pr-inventory'));
+test('separate review evidence is not a prerequisite',()=>assert.equal(validatePublish({...packet,acceptance:null},facts),null));
+test('missing QA blocks publication',()=>assert.equal(validatePublish({...packet,qaPassed:false},facts),'missing-qa'));
+test('missing test evidence blocks publication',()=>assert.equal(validatePublish({...packet,testEvidence:false},facts),'missing-qa'));
+test('stale candidate head blocks publication',()=>assert.equal(validatePublish({...packet,headSha:a},facts),'stale-sha'));
+test('Lab metadata cannot be published',()=>assert.equal(validatePublish({...packet,changedFiles:['.hh-lab-task.json']},facts),'invalid-diff'));

@@ -2,7 +2,7 @@ import { verifyHistoryProvenance } from './csp-history-provenance-probe.mjs';
 import { catalogStatsDiagnosticSource, attachCatalogStatsResponseDiagnostic } from './catalog-stats-request-diagnostics.mjs';
 import { decodeReadyPoster } from './public-poster-readiness.mjs';
 import { cspFetchTelemetrySource, attachCspRequestTelemetry } from './csp-request-telemetry.mjs';
-import { openContactChannelChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { assertSyntheticLoopback } from './helpers/contact-channel-verifier.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, expect } from '@playwright/test';
@@ -44,10 +44,10 @@ async function assertAnonymousPrivateNavigation(page) {
   assert.equal(response.status(), 200);
   await expect(page).toHaveURL(origin + '/en/app/portrait');
   await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private');
-  await expect(page.locator('.hh-app .hh-entry')).toBeVisible();
+  await expect(page.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
   await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
-  await expect(page.locator('.hh-app .hh-entry a.hh-text-link')).toHaveAttribute('href', '/en/client');
+  await expect(page.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview] a[href="/en/client"]')).toHaveAttribute('href', '/en/client');
 }
 
 async function verifyCspBfcache() {
@@ -151,7 +151,11 @@ async function verifyCspBfcache() {
 
 async function exercise(engine, browserType, width) {
   const browser = await browserType.launch();
-  const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
+  const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+  // The page-level synthetic enquiry mock takes precedence. Any other API
+  // mutation is blocked before reaching either a local or deployed server.
+  await context.route('**/api/**', route =>
+    ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
   const publicDiagnostics = { pageErrors: [], requests: [], responses: [], failedRequests: [], checkpoints: [], lifecycle: [], statsResponses: [], statsFetch: [] };
   let publicPhase = 'initial';
   await context.addInitScript({ content: catalogStatsDiagnosticSource() });
@@ -356,47 +360,78 @@ async function exercise(engine, browserType, width) {
         await capture.locator('[role="group"] button').nth(0).click();
         await expect(action).toHaveAttribute('data-consultation-action', 'personal');
         assert.equal(assertFreeUrl(await action.getAttribute('href')).href, originalUrl.href, 'Resetting topic must restore the original destination');
-        assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 1);
+        assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 0);
         return { messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true, freeAssessmentInternal: true };
       });
       await check('paid-imagery-consultation-safe-handoff', { engine, width, locale }, async () => {
-        // Alchemy now has a dedicated form covered by verify-app-r1; retain the
-        // complete generic paid-selector contract on the actual imagery service.
-        await page.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
-        const capture = page.locator('[data-consultation-capture="service"]');
-        await expect(capture).toHaveCount(1);
-        await expect(capture.locator('[role="group"] button')).toHaveCount(3);
-        assert.equal(await capture.locator('form, input, textarea').count(), 0, 'No private intake fields in the enquiry selector');
-        let chooser = await openContactChannelChooser(capture, expect);
-        const assertPaidUrl = async (choice, minutes, price) => {
-          const { whatsapp, telegram, whatsappUrl: target } = await assertPreparedContactChannels(chooser, expect);
-          await expect(chooser.locator('[data-consultation-action]')).toHaveCount(2);
-          for (const action of [whatsapp, telegram]) await expect(action).toHaveAttribute('data-consultation-action', choice);
-          const message = target.searchParams.get('text');
-          assert.ok(message.includes(minutes) && message.includes(price), 'Prepared message must include the selected duration and price');
-          assert.ok(message.includes(await capture.locator('[aria-pressed="true"]').innerText()), 'Prepared message must mention the selected offer');
-          return target;
-        };
-        const originalUrl = await assertPaidUrl('session', '60', '€100');
-        await capture.locator('[role="group"] button').nth(1).click();
-        chooser = await openContactChannelChooser(capture, expect);
-        const changedUrl = await assertPaidUrl('questions', '30', '€50');
-        assert.notEqual(changedUrl.searchParams.get('text'), originalUrl.searchParams.get('text'));
-        await capture.locator('[role="group"] button').nth(2).click();
-        await expect(capture.locator('[data-contact-channel-chooser]')).toHaveCount(0);
-        const action = capture.locator('[data-consultation-action]');
-        await expect(action).toHaveCount(1);
-        await expect(action).toBeVisible();
-        await expect(action).toHaveAttribute('data-consultation-action', 'free');
-        assert.equal(await action.getAttribute('data-contact-channel'), null);
-        assert.equal(await action.getAttribute('target'), null);
-        const freeUrl = new URL(await action.getAttribute('href'), origin);
-        assert.equal(freeUrl.href, origin + `/${locale}/services/free-situation-review`);
-        await capture.locator('[role="group"] button').nth(0).click();
-        chooser = await openContactChannelChooser(capture, expect);
-        assert.equal((await assertPaidUrl('session', '60', '€100')).href, originalUrl.href, 'Reset must restore the exact paid request');
-        await expect(capture.locator('[data-contact-channel="telegram"]:not([data-consultation-action])')).toHaveCount(1);
-        return { messageSent: false, privateFieldsAbsent: true, paidPricesVerified: true, bothChannelsVerified: true, freeAssessmentInternal: true, resetVerified: true };
+        const local = ['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname);
+        const paidPage = await context.newPage();
+        try {
+          await paidPage.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
+          const capture = paidPage.locator('[data-service-visual-screen="final-capture"]');
+          await expect(capture).toHaveCount(1);
+          const form = capture.locator('form[data-compact-lead-form]');
+          await expect(form).toHaveAttribute('data-compact-hydrated', 'true');
+          const formats = capture.locator('select');
+          await expect(formats).toHaveCount(1);
+          await expect(formats.locator('option[value="30-min"]')).toContainText('€50');
+          await expect(formats.locator('option[value="60-min"]')).toContainText('€100');
+          await formats.selectOption('60-min');
+          await expect(formats).toHaveValue('60-min');
+          await formats.selectOption('30-min');
+          await expect(formats).toHaveValue('30-min');
+          await expect(capture.locator('a[data-compact-channel]')).toHaveCount(0);
+          const free = capture.locator(`a[href="/${locale}/services/free-situation-review"]`);
+          await expect(free).toHaveCount(1);
+          const replyConsent = form.locator('input[type="checkbox"][required]');
+          const attribution = form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+          await expect(replyConsent).toHaveCount(1);
+          await expect(replyConsent).not.toBeChecked();
+          await expect(attribution).toHaveCount(1);
+          await expect(attribution).not.toBeChecked();
+          if (!local) return {messageSent:false, liveConsentSubmitted:false, paidPricesVerified:true, freeAssessmentInternal:true};
+          assertSyntheticLoopback(paidPage.url());
+          let submissions = 0, submitted = null;
+          await paidPage.route('**/api/service-enquiries', async route => {
+            if (route.request().method() !== 'POST') return route.continue();
+            submissions++; submitted = route.request().postDataJSON();
+            await route.fulfill({status:201, contentType:'application/json', body:JSON.stringify({saved:true, referenceCode:'HH-ABCD1234EF56'})});
+          });
+          await paidPage.evaluate(() => {
+            window.__testNoExternalHandoff = [];
+            window.open = () => ({opener:null, closed:false, location:{replace:url => window.__testNoExternalHandoff.push(String(url))}, close:()=>{}});
+          });
+          await form.locator('input[name="contact"]').fill('enquiry-qa@example.test');
+          const submit = form.locator('button[data-compact-channel="whatsapp"]');
+          await submit.click();
+          await expect(form.locator('[role="alert"]')).toBeVisible();
+          assert.equal(submissions, 0, 'No enquiry without explicit reply consent');
+          await replyConsent.check();
+          await submit.click();
+          await expect(capture.locator('[data-lead-saved]')).toBeVisible();
+          assert.equal(submissions, 1);
+          assert.equal(submitted.contactConsent, true);
+          assert.equal(submitted.contact.email, 'enquiry-qa@example.test');
+          assert.equal(submitted.sourcePath, `/${locale}/services/imagery-therapy`);
+          assert.ok(submitted.description.includes('30-min'));
+          for (const channel of ['whatsapp','telegram']) {
+            const link = capture.locator(`a[data-compact-channel="${channel}"]`);
+            await expect(link).toHaveAttribute('target', '_blank');
+            await expect(link).toHaveAttribute('rel', /noopener/);
+            await expect(link).toHaveAttribute('rel', /noreferrer/);
+            const draft = new URL(await link.getAttribute('href'));
+            assert.equal(draft.origin, channel === 'whatsapp' ? 'https://wa.me' : 'https://t.me');
+            assert.equal(draft.pathname, channel === 'whatsapp' ? '/14376066502' : '/AndyTherapist');
+            assert.deepEqual([...draft.searchParams.keys()], ['text']);
+            assert.ok(draft.searchParams.get('text')?.includes('HH-ABCD1234EF56'));
+            assert.ok(draft.searchParams.get('text')?.includes('30-min'));
+            assert.ok(!draft.href.includes('enquiry-qa%40example.test'));
+          }
+          const handoffs = await paidPage.evaluate(() => window.__testNoExternalHandoff);
+          assert.equal(handoffs.length, 1);
+          assert.equal(new URL(handoffs[0]).origin, 'https://wa.me');
+          return {messageSent:false, syntheticConsent:true, paidPricesVerified:true, bothChannelsVerified:true, freeAssessmentInternal:true};
+        } finally { await paidPage.close(); }
       });
     }
     if (width === 390) {
@@ -511,11 +546,16 @@ async function exercise(engine, browserType, width) {
           await cspPage.locator('#psychic-alchemy-video button').click();
           await expect(cspPage.frameLocator('#psychic-alchemy-video iframe').locator('[data-csp-probe]')).toBeVisible();
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'same-public-document'; });
-          await cspPage.locator('.mobile-bottom-navigation a[href="/en/services"]').click();
+          await cspPage.locator('.site-main-menu-trigger').click();
+          await cspPage.locator('.site-main-menu-more [data-nav-item="services"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
-          await cspPage.locator('.mobile-bottom-navigation a[href="/en/client/tests"]').click();
+          await cspPage.locator('.mobile-bottom-navigation [data-nav-item="profile"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/personality-profiles');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Public profile discovery must retain same-policy soft navigation');
+          await cspPage.locator('[data-profile-direct-tests]').click();
           await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
@@ -534,13 +574,15 @@ async function exercise(engine, browserType, width) {
           const discoveryBottom = cspPage.locator('.mobile-bottom-navigation');
           await expect(discoveryBottom).toBeVisible();
           await expect(discoveryBottom.locator('[aria-current="page"]')).toHaveCount(1);
-          await expect(discoveryBottom.locator('[data-nav-item="tests"]')).toHaveAttribute('aria-current', 'page');
-          await expect(discoveryBottom.locator('[data-nav-item="house"]')).toHaveAttribute('href', '/en/app');
-          const privatePage = await cspContext.newPage();
+          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('aria-current', 'page');
+          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/en/personality-profiles');
+          const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
+          await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
+          const privatePage = await privateContext.newPage();
           privatePage.on('pageerror', error => cspErrors.push({ phase: 'anonymous-private-account', time: Date.now(), message: error.message, stack: error.stack }));
           try {
             await assertAnonymousPrivateNavigation(privatePage);
-          } finally { await privatePage.close(); }
+          } finally { await privateContext.close(); }
           // Leave discovery through its visible header wordmark, then use the
           // public About content link to preserve the cross-policy history test.
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-before-home'; });
@@ -589,7 +631,7 @@ async function exercise(engine, browserType, width) {
           await waitForDocument();
           await expect(cspPage.locator('.mobile-bottom-navigation')).toBeVisible();
           await expect(cspPage.locator('.mobile-bottom-navigation [aria-current="page"]')).toHaveCount(1);
-          await expect(cspPage.locator('.mobile-bottom-navigation [data-nav-item="tests"]')).toHaveAttribute('aria-current', 'page');
+          await expect(cspPage.locator('.mobile-bottom-navigation [data-nav-item="profile"]')).toHaveAttribute('aria-current', 'page');
           historyPhase = 'forward-to-public-home';
           await cspPage.goForward({ waitUntil: 'domcontentloaded' });
           await assertCspPublicHome(cspPage);
@@ -618,8 +660,9 @@ async function exercise(engine, browserType, width) {
           });
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]'));
           assert.deepEqual(lifecycleTrace.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught browser errors during CSP navigation');
+          const evidenceFetches = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspRequestTelemetry') || '[]'));
           const unexpectedErrors = cspErrors.filter(error => {
-            const attribution = classifyCspNavigationCancellation(error, { engine, readiness, origin, lifecycle: lifecycleTrace });
+            const attribution = classifyCspNavigationCancellation(error, { engine, readiness, origin, lifecycle: lifecycleTrace, fetchTelemetry: evidenceFetches });
             if (attribution) navigationCancellations.push(attribution);
             return !attribution;
           });

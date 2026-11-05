@@ -26,6 +26,14 @@ const roleByBookId: Record<string, MaterialRole> = {
   "maya-calendar": "reference",
   "maya-exorcism": "practice",
   "maya-mysteries": "theory",
+  "egypt-osiris-temple-magic": "foundation",
+  "egypt-maat-isis-attunements": "practice",
+  "greek-temple-attunements": "practice",
+  "greek-metaphysics-planning": "theory",
+  "greek-dionysus-asclepius-course": "practice",
+  "roman-imperial-temples": "reference",
+  "zoroastrian-tradition-notes": "theory",
+  "mithra-mysteries": "theory",
 };
 
 const relatedByBookId: Record<string, string[]> = {
@@ -51,6 +59,14 @@ const relatedByBookId: Record<string, string[]> = {
   "maya-calendar": ["maya-egregor-gods", "maya-mysteries"],
   "maya-exorcism": ["maya-egregor-gods", "maya-mysteries"],
   "maya-mysteries": ["maya-egregor-gods", "maya-calendar", "maya-exorcism"],
+  "egypt-osiris-temple-magic": ["egypt-maat-isis-attunements"],
+  "egypt-maat-isis-attunements": ["egypt-osiris-temple-magic"],
+  "greek-temple-attunements": ["greek-metaphysics-planning","greek-dionysus-asclepius-course"],
+  "greek-metaphysics-planning": ["greek-temple-attunements","greek-dionysus-asclepius-course"],
+  "greek-dionysus-asclepius-course": ["greek-temple-attunements","greek-metaphysics-planning"],
+  "roman-imperial-temples": ["greek-temple-attunements"],
+  "zoroastrian-tradition-notes": ["mithra-mysteries"],
+  "mithra-mysteries": ["zoroastrian-tradition-notes"],
 };
 
 export const recommendedReadingPath = [

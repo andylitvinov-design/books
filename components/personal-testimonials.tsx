@@ -20,6 +20,12 @@ export const locallyArchivedVideoPosterIds = new Set([
   "VABgpmn4ZYA", "muOnIHllI7E",
 ]);
 
+/** The exact-ID local video still, or YouTube's own fallback if none is approved. */
+export const archivedTestimonialPosterFor = (id: string): string | undefined =>
+  locallyArchivedVideoPosterIds.has(id)
+    ? `/images/holistic-house/testimonial-posters/${id}.webp`
+    : undefined;
+
 export const testimonialVideos = {
   ru: [
     { id: "m9RfDgK76PU", title: "Антон Корчинский — отзыв о работе", language: "ru" },

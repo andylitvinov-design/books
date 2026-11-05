@@ -186,3 +186,8 @@
 .result { min-width:0; }
 @media (max-width:340px) { .resultTop { align-items:flex-start; } .formatTag { font-size:10px; } }
 @media (prefers-reduced-motion:reduce) { .result,.context { animation:none; } }
+
+/* Language Agent 2.1: small opt-in conversational view in existing guide. */
+.modeToggle{flex:none;min-height:40px;max-width:40%;padding:6px 9px;font-size:12px;font-weight:750;line-height:1.15;color:#14604d;background:#e5f7eb;border:1px solid #afdcca;border-radius:10px;cursor:pointer}
+.modeToggle[aria-pressed="true"]{color:#fff;background:#0b7761}
+@media(max-width:390px){.modeToggle{max-width:45%;font-size:11px;padding:6px}}
