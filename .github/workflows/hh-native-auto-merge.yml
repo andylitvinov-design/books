@@ -21,6 +21,7 @@ permissions:
   contents: write
   pull-requests: write
   actions: read
+  checks: read
 jobs:
   enable:
     name: event-driven exact-head auto-merge reevaluation
