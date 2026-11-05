@@ -16,7 +16,7 @@ export interface CategoryStoryboardStage {
  readonly stage:number;
  readonly name:string;
  readonly purpose:string;
- readonly requiredTags:readonly string[];
+ readonly requiredTags:string[];
  readonly styleId:string|null;
 }
 export interface CategoryStoryboardShot {
