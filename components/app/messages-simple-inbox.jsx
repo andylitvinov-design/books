@@ -381,7 +381,7 @@ export default function MessagesSimpleInbox({
             onClick={()=>setUnreadOnly(value=>!value)}><SlidersHorizontal size={20} aria-hidden="true"/></button>}
         </div>
         {crmEnabled&&(embedded||tab==='requests')&&
-          <MessagesLeadMetrics locale={locale} requests={requests}
+          <MessagesLeadMetrics locale={locale} accountId={accountId} requests={requests}
             businessEnquiries={businessEnquiries}/>}
         <div className={styles.peopleScroll}>
           {tabLoading?<p className={styles.info} role="status">{t.loading}</p>:null}
@@ -449,8 +449,13 @@ export default function MessagesSimpleInbox({
               locale={locale} accountId={accountId} requestId={selected.id}
               initialMessage="" createdAt={selected.item.createdAt} onSaved={onReload} onViewed={onReload}/>:
             <div>
-              {selected.item.requestKind==='public'&&<PublicEnquiryReply key={selected.id} request={selected.item} locale={locale}
-                operatorMode={crmEnabled} accountId={accountId}/>}
+              {selected.item.requestKind==='public'&&(crmEnabled&&validId(selected.item.telegramThreadId)
+                ?<CrmMessengerPanel key={accountId+':linked:'+selected.item.telegramThreadId}
+                  accountId={accountId} locale={locale} conversationOnly
+                  onThreadsLoaded={onCrmThreads} onPortraitFound={onPortraitFound}
+                  initialThreadId={selected.item.telegramThreadId}/>
+                :<PublicEnquiryReply key={selected.id} request={selected.item} locale={locale}
+                  operatorMode={crmEnabled} accountId={accountId}/>)}
               <div className={styles.requestActions}>
                 <button type="button" onClick={()=>setShowCard(true)}>
                   {t.openCase} <ArrowRight size={16} aria-hidden="true"/></button>

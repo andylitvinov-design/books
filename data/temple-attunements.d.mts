@@ -12,7 +12,7 @@ export type TempleAttunement = {
   id: string; traditionId: string; channelId: string; title: TempleText;
   format: "verse" | "practice" | "meditation" | "ritual";
   language: "ru"; textRu: string; place: TemplePlace; photos: TemplePhoto[];
-  source: { id: string; title: string; type: "author-archive" };
+  source: { id: string; title: string; type: "author-archive" | "telegram-export" };
   sortOrder: number; visibility: "public" | "draft"; photoContext: string;
 };
 export declare const templeTraditions: readonly TempleTradition[];

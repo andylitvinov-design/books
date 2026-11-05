@@ -86,3 +86,17 @@
   .submit { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .submit { transition: none; } }
+
+.morePhotos { margin-top: 10px; padding: 12px 0 0; border-top: 1px solid #e9dfd1; }
+.morePhotos summary { color: #067a67; min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 14px; font-weight: 750; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 10px; }
+.gallery img { width: 100%; height: auto; border-radius: 12px; object-fit: cover; }
+.pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; }
+.pagination a,.pagination > span { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; min-width: 80px; color: #146153; padding: 9px 13px; text-decoration: none; font-size: 15px; font-weight: 700; }
+.pagination a { border: 1px solid #bbd2c4; border-radius: 14px; background: #fffcf7; }
+.pagination a:focus-visible,.morePhotos summary:focus-visible { outline: 3px solid #176e6e; outline-offset: 3px; }
+
+/* Permanent, independently searchable card URLs (one card per query). */
+.cardPermalink { display: inline-block; align-self: start; margin: 0.35rem 0 0.55rem; color: #274f69; font-size: 0.86rem; text-decoration: underline; text-underline-offset: 3px; }
+.cardPermalink:hover { color: #172f45; }
+.cardPermalink:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 2px; }

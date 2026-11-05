@@ -1,4 +1,4 @@
-# Temple channel attunements — source-backed card library (v1)
+# Temple channel attunements — integrated source-backed card library (v2)
 
 ## Canonical model
 **Temple tradition → deity/channel → any number of individual attunement cards**.
@@ -37,3 +37,29 @@ Images extracted from the original DOCX's embedded `word/media/` files; each sel
 - No automated public import from third-party magic manuals, random AI-generated photos, personal Google Drive links or invented dates.
 - Add a focused Node test for any newly introduced channel, duplicate ID or source/media class.
 - Site-visible completion requires protected PR merge plus actual Vercel production SHA and page smoke; PR creation alone is not LIVE. No new payment or scheduler.
+
+## V2 · 5 November 2026 — further source recovery
+Canonical public page `/{locale}/temple-channels` now combines three independently preserved sources; never imply the first source was the entire author archive:
+
+| Source | Verified cards | Existing provenance |
+|---|---:|---|
+| Original manuscript «Античность-Модуль 1–2» + 2 excerpts from «3. Античность» | 15 | Original full Russian text + 10 matched DOCX JPEGs |
+| Further 39 excerpts from «3. Античность» | 39 | Original Russian text + author-described city/temple or explicitly unknown; no unverified image |
+| Existing AATA Telegram archive already published in Academy | 16 | Existing original message IDs, publication dates, photographs; reused as source, **not copied or paraphrased** |
+
+**Totals:** 70 distinct texts after exact normalization (54 from manuals + 16 Telegram), 7 tradition roots, at least 40 named channels. The 39 additional manuscript entries include the Greek Zeus (Nessebar), Athena (5), Artemis (3), Aphrodite (4), Apollo (11), Hermes (2), Pan (2), Heracles (2), Leto, Ares, plus Egyptian Serapis (2), Roman Fortuna and Roman Emperor/Hadrian (4). Category names and disputed site descriptions follow the original archive, and are not asserted as externally verified historical facts. Original translated ancient hymns are excluded.
+
+The one public search unifies manual and AATA source results without duplicating Telegram images or verse storage. There is a capped 12-card server-rendered page for mobile loading, stable `page` GET pagination preserving the selected tradition, channel and query, and optional original gallery photos. No paid APIs, new crons, external asset generation, or sensitive browser data.
+
+**Pending editorial work:** map and review embedded JPEGs for the 39 newly extracted cards. The documents contain images but their attachment provenance/rights and individual placement should be checked before export. Photo-less cards remain valid; do not substitute other temples. Extracted transliterations in EN/ES are *titles only*; original verse is RU. Variant manuscripts must be cross-referenced before they can count as additional independent material.
+
+**Acceptance:** exact-head Core/Guard/Specialist and targeted Node tests, protected merge, Vercel READY with descendant ancestry, and real URL checks (EN/RU/ES filters, Zeus, Athena, pagination, original image gallery). Passing checks != proven mobile screenshot fidelity.
+
+## V3 · Original source photo review (25 photos)
+The original `3_Античность (1).docx` has 257 image objects; photographs/images were associated with 25 newly added attunements by paragraph proximity plus a contact-sheet visual review. These are **illustrations embedded beside the source text**, not independently authenticated archaeological site photographs or proof of the stated temple history. Text-only cards remain text-only where images could not be safely matched.
+
+- New public assets: `public/library/temple-channels/expanded/archive-*.jpg` (24) and `archive-fortuna-perge.png` (1).
+- All image bytes came from the original author's connected manuscript (no stock, generation or unrelated gallery). Each was checked for valid JPEG/PNG signature and absence of embedded EXIF/GPS metadata; images are not presumed separately rights-cleared beyond the owner's instruction to reproduce his archive photography.
+- The matching text, city, and author-described temple name are not altered; captions explicitly say "source manuscript illustration" rather than certifying a photographed location.
+- 25 cards display one source image, while the remaining 14 document-only expansion cards retain the quiet neutral fallback. Existing 10 source DOCX photos and 16 original Telegram photo sets remain untouched and their public archive references are reused.
+- Responsive lazy media layout, ordinary original-photo alt text, 12 cards per server response and no automatic popup.

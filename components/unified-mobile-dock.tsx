@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BriefcaseBusiness, Clapperboard, Film, Leaf, MessageCircle, UserRound } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
-import { UNIFIED_DOCK_IDS, isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from "@/lib/unified-mobile-dock.mjs";
+import { UNIFIED_DOCK_IDS, isUnifiedMobileDockHomePath, isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from "@/lib/unified-mobile-dock.mjs";
 import styles from "./unified-mobile-dock.module.css";
 import { visualKeyboardOpen } from "@/lib/mobile-visual-bottom.mjs";
 
@@ -23,9 +23,11 @@ const labels = {
  * Every destination is a REAL existing public/protected workflow. */
 export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: PublicLocale }) {
   const pathname = usePathname() || "";
+  const router = useRouter();
   const localeMatch = pathname.match(/^\/(ru|en|es)(?:\/|$)/);
   const locale = (localeMatch?.[1] || initialLocale) as PublicLocale;
   const visible = isUnifiedMobileDockPath(pathname);
+  const homeRoute = isUnifiedMobileDockHomePath(pathname);
   const navRef = useRef<HTMLElement>(null);
   const [hash, setHash] = useState("");
   const [keyboardOpen, setKeyboardOpen] = useState(false);
@@ -128,7 +130,8 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
 
   if (!visible) return null;
   const active = unifiedMobileDockActive(pathname, hash);
-  return <nav ref={navRef} data-hh-unified-dock data-keyboard-open={keyboardOpen || undefined}
+  return <nav ref={navRef} data-hh-unified-dock data-hh-home-route={homeRoute || undefined}
+    data-keyboard-open={keyboardOpen || undefined}
     className={styles.dock} aria-label={
       locale === "ru" ? "Нижнее меню Holistic House" :
       locale === "es" ? "Menú inferior Holistic House" : "Holistic House bottom menu"}>
@@ -140,7 +143,19 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
       return <Link href={href} key={id} prefetch={false}
         className={styles.item} data-unified-dock-item={id}
         aria-label={label} aria-current={active === id ? "page" : undefined}
-        onClick={id === "video" ? () => setHash("") : undefined}>
+        onClick={event => {
+          if (id === "video") setHash("");
+          // Keep public tabs in an installed iPhone app's current document.
+          // AI and Profile retain their separate private CSP reload.
+          if (!["mytube", "video", "practice", "master"].includes(id) ||
+              event.defaultPrevented || event.button !== 0 || event.metaKey ||
+              event.ctrlKey || event.shiftKey || event.altKey) return;
+          const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches ||
+            (window.navigator as Navigator & {standalone?: boolean}).standalone === true;
+          if (!standalone) return;
+          event.preventDefault();
+          router.push(href);
+        }}>
         <Icon size={24} strokeWidth={2} aria-hidden="true" /><span>{label}</span>
       </Link>;
     })}

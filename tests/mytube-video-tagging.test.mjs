@@ -5,18 +5,18 @@ import stock from "../data/video-catalog/free-stock-scenes.json" with {type:"jso
 import {rankApprovedMyTubeScene,rankAllApprovedMyTubeScenes,
   rankPublicMyTubeVideo,auditMyTubeSceneTagging,recommendMyTubeTopicStoryClips,exactOriginalMotionTopicHint} from "../lib/mandala/mytube-video-tagging.mjs";
 
-test("all 44 unique approved first-party movie scenes receive ranked primary and alternatives",()=>{
+test("all 48 approved movie scenes, including 4 source-backed portrait films, receive ranked topics",()=>{
   const summary=auditMyTubeSceneTagging(master.scenes);
-  assert.equal(summary.approvedUnique,44);
-  assert.equal(summary.ranked,44);
+  assert.equal(summary.approvedUnique,48);
+  assert.equal(summary.ranked,48);
   assert.deepEqual(summary.missing,[]);
-  assert.equal(summary.topicPlacements,132);
-  assert.equal(summary.scenarioVisualMatches,528);
+  assert.equal(summary.topicPlacements,144);
+  assert.equal(summary.scenarioVisualMatches,576);
   assert.deepEqual(summary.primaryCategoryCounts,{
-    "goals-money":22,"love-relationships":1,"energy-confidence":17,"stress-anxiety":4,
+    "goals-money":23,"love-relationships":1,"energy-confidence":20,"stress-anxiety":4,
   });
   const ranked=rankAllApprovedMyTubeScenes(master.scenes);
-  assert.equal(new Set(ranked.map(x=>x.sceneId)).size,44);
+  assert.equal(new Set(ranked.map(x=>x.sceneId)).size,48);
   for(const scene of ranked){
     assert.equal(scene.humanReviewed,false);
     assert.equal(scene.sourcePublishStatus,"unchanged");
@@ -32,12 +32,35 @@ test("all 44 unique approved first-party movie scenes receive ranked primary and
   }
 });
 
-test("the separately recorded 12 composites are duplicates, not twelve more videos",()=>{
+test("12 existing composites are not new sources; the four newly licensed masters are distinct",()=>{
   const ids=new Set(master.scenes.map(scene=>scene.id));
-  assert.equal(stock.length,12);
-  assert.equal(stock.filter(scene=>ids.has(scene.id)).length,12);
+  assert.equal(stock.length,16);
+  assert.equal(stock.filter(s=>s.sourceKind==="licensed_two_shot_composite").length,12);
+  assert.equal(stock.filter(s=>s.sourceKind==="licensed_single_shot_edit").length,4);
+  assert.equal(stock.filter(scene=>ids.has(scene.id)).length,16);
   const repeated=master.scenes.concat(master.scenes[0]);
-  assert.equal(rankAllApprovedMyTubeScenes(repeated).length,44);
+  assert.equal(rankAllApprovedMyTubeScenes(repeated).length,48);
+});
+
+
+test("four HD films have individually curated visual-topic rankings, but no fabricated plot certification",()=>{
+  const cases=[
+    ["sun-trees-forest","recovery-after-load"],
+    ["snow-forest-winter","recovery-after-load"],
+    ["fall-foliage-forest","life-transitions"],
+    ["warm-clouds-sunset","evening-fatigue"],
+  ];
+  for(const [sceneId,topicId] of cases){
+    const scene=master.scenes.find(row=>row.id===sceneId);
+    assert.ok(scene&&scene.allowedAspects?.includes("portrait"),sceneId);
+    assert.deepEqual(scene.allowedAspects,["portrait"]);
+    const row=rankApprovedMyTubeScene(sceneId);
+    assert.equal(row.primary.topicId,topicId);
+    assert.equal(row.humanReviewed,false);
+    assert.equal(row.sourcePublishStatus,"unchanged");
+    assert.equal(row.matches.length,3);
+    assert.ok(row.matches.every(item=>item.scenarios.length===4));
+  }
 });
 
 test("stock tagging never promotes unknown or unapproved material",()=>{
@@ -175,4 +198,23 @@ test("future project-original motion clips use exact canonical topic IDs only, n
   assert.equal(exactOriginalMotionTopicHint(v10,"goal-setting")?.topicId,"goal-setting");
   assert.equal(exactOriginalMotionTopicHint({...v10,id:"motion-goals-money-goal-setting-v11",video:"/videos/holistic-house/original-motion-v1/motion-goals-money-goal-setting-v11.mp4"},"goal-setting"),null);
 
+});
+
+test("MyTube source ranking refuses portrait-only masters for landscape and square",()=>{
+  const portraitIds=new Set(["sun-trees-forest","snow-forest-winter",
+    "fall-foliage-forest","warm-clouds-sunset"]);
+  const input={topicId:"recovery-after-load",scenarioId:"recovery-after-load-s2",scenes:master.scenes};
+  const vertical=recommendMyTubeTopicStoryClips({...input,targetAspect:"portrait"});
+  const landscape=recommendMyTubeTopicStoryClips({...input,targetAspect:"landscape"});
+  const square=recommendMyTubeTopicStoryClips({...input,targetAspect:"square"});
+  assert.ok(vertical.candidates.some(x=>x.sceneId==="sun-trees-forest"));
+  assert.ok(vertical.candidates.some(x=>x.sceneId==="snow-forest-winter"));
+  assert.ok(vertical.candidateCount>landscape.candidateCount);
+  for(const x of [landscape,square]){
+    assert.ok(x.candidates.every(row=>!portraitIds.has(row.sceneId)));
+    assert.ok(x.clipIds.every(id=>!portraitIds.has(id)));
+  }
+  const invalid=recommendMyTubeTopicStoryClips({...input,targetAspect:"ultrawide"});
+  assert.equal(invalid.status,"invalid_aspect");
+  assert.deepEqual(invalid.clipIds,[]);
 });

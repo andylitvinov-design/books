@@ -246,7 +246,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
         const header = page.locator('header.house-header--services')
         await expect(header).toBeVisible()
         const expected = getSiteNavigation(locale)
-        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...expected.filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about']
+        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...expected.filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/holistic-support/mobile', '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const cabinetEntry = header.locator('.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
@@ -511,7 +511,11 @@ try {
           assert.deepEqual(await nav.locator('[data-nav-item]').evaluateAll(elements => elements.map(el => ({ id: el.getAttribute('data-nav-item'), href: el.getAttribute('href') }))), expectedItems.map(x => ({ id: x.id, href: x.href })))
           await expect(nav.locator('[data-nav-item]')).toHaveCount(7)
           await expect(nav.locator('[aria-current="page"]')).toHaveCount(0)
-          await expect(nav.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/' + locale + '/personality-profiles')
+          // Both the old seven-item footer and the new app dock now open the
+          // same protected profile hub; the public profile builder stays in
+          // its Create sub-tab. Spanish private accounts use the EN fallback.
+          await expect(nav.locator('[data-nav-item="profile"]')).toHaveAttribute(
+            'href', '/' + (locale === 'es' ? 'en' : locale) + '/app/portrait')
         }
       }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `Overflow: ${locale}/${width}`)

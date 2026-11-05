@@ -80,19 +80,19 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
     en: {
       title: "All books & guides",
       subtitle: "Browse by collection",
-      description: "Choose Alchemy of the Soul, Daoist or Maya books first, then open the titles you need. Search is available across the catalog.",
+      description: "Choose a tradition — Alchemy, Dao, Maya, Egypt, Greece, Rome, or Zoroastrian studies — or search the catalog.",
       action: "Open book catalog",
     },
     ru: {
       title: "Все книги и методички",
       subtitle: "Книги по категориям",
-      description: "Выберите Алхимию души, Даосскую традицию или Майя и откройте книги по теме. Поиск доступен по всему каталогу.",
+      description: "Выберите направление: Алхимия души, Дао, Майя, Египет, Греция, Рим или Зороастризм. Поиск работает по всему каталогу.",
       action: "Открыть каталог книг",
     },
     es: {
       title: "Todos los libros y guías",
       subtitle: "Libros por categoría",
-      description: "Elige Alquimia del Alma, la tradición taoísta o maya y encuentra los libros de esa colección.",
+      description: "Elige Alquimia, Tao, Maya, Egipto, Grecia, Roma o Zoroastrismo, o busca en todo el catálogo.",
       action: "Abrir catálogo",
     },
   } as const;
@@ -126,6 +126,19 @@ function bookItems(locale: PublicLocale): CatalogShowcaseItem[] {
       href: `/${locale}/books`,
       actionLabel: allBooks[locale].action,
       image: "/images/holistic-house/books-library.webp",
+    },
+    {
+      id: "library-temple-attunements",
+      title: locale === "ru" ? "Настройки древних традиций" : locale === "es" ? "Sintonizaciones de tradiciones antiguas" : "Ancient tradition attunements",
+      subtitle: locale === "ru" ? "Отдельная картотека · божества и места силы" : locale === "es" ? "Fichas por tradición y deidad" : "Separate card index · deities and places",
+      description: locale === "ru"
+        ? "Майя, Греция, Египет и другие традиции: фильтр по культуре, каналу или божеству; отдельные оригинальные стихи, контекст и подтверждённые иллюстрации."
+        : locale === "es"
+          ? "Busca por tradición, deidad, canal y lugar. Versos originales con fuentes e imágenes comprobadas cuando están disponibles."
+          : "Browse Maya, Greek, Egyptian and other traditions by deity, channel and place. Original author-written verses, sources and verified images.",
+      href: `/${locale}/temple-channels`,
+      actionLabel: text.open,
+      image: "/images/holistic-house/hero-olive-incense.webp",
     },
     {
       id: "library-dao-hexagrams",

@@ -102,3 +102,25 @@ test('video-only permission remains independent from general Telegram alerts',()
  const ui=source('components/mandala-video-delivery.tsx');
  assert.match(ui,/!state.telegram.sendingAvailable&&!state.telegram.automatic/);
 });
+
+
+test('private library has owner-controlled Telegram consent, revocation and saved video send',()=>{
+ const archive=source('components/app/my-personal-videos.jsx')
+ const panel=source('components/app/personal-video-messenger-panel.jsx')
+ const backend=source('lib/app/personal-video-messenger.js')
+ const route=source('app/api/app/personal-videos/delivery/route.js')
+ assert.match(archive,/PersonalVideoMessengerPanel/)
+ assert.match(archive,/locale==='es'/)
+ assert.match(panel,/data-personal-video-messenger-panel/)
+ assert.match(panel,/data-video-archive-telegram-send/)
+ assert.match(panel,/action:'connect',locale:language,consent:true/)
+ assert.match(panel,/action:'automatic',enabled,consent:enabled/)
+ assert.match(panel,/automatic:false,consent:true,locale:language/)
+ assert.match(panel,/checked=\{optedIn\}/)
+ assert.match(backend,/consentSaved:pref\?\.automatic===true/)
+ assert.match(backend,/\(enabled&&consent!==true\)/)
+ assert.match(backend,/const stillAllowed=await transaction/)
+ assert.match(backend,/if\(!stillAllowed\)/)
+ assert.match(route,/\(!body.enabled\|\|body.consent===true\)/)
+ assert.doesNotMatch(panel,/HH_CRM_MSG_WHATSAPP/)
+});

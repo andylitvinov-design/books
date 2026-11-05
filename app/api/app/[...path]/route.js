@@ -325,7 +325,7 @@ async function handle(request, { params }) {
               : continueTo === 'coaching'
                 ? `${origin}/${locale}/app/coaching${coachingMode ? '/'+coachingMode : ''}${coachingLang==='es'?'?lang=es':''}`
               : continueTo === 'coaching-intake'
-                ? `${origin}/${locale}/coaching/intake`
+                ? `${origin}/${locale}/coaching/intake?private=1`
               : continueTo === 'practice-preview'
                 // Return to the identical canonical Practice dashboard for
                 // guest and signed-in users. Older action-code continuations

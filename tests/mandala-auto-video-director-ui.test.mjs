@@ -75,9 +75,11 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(director,/data-auto-video-topic-panel/);
  assert.match(director,/taxonomySubcategories\.map\(item=>/);
  assert.match(director,/taxonomyTopics\.map\(item=>/);
- assert.match(director,/taxonomyScenarios\.length>=4/);
- assert.match(director,/const STSE_ENABLED=process\.env\.NEXT_PUBLIC_HH_STSE_ENABLED==="true"/);
- assert.match(director,/STSE_ENABLED\?\s*listStateTransitionScenarios\(selectedTopicId,locale\):listMyTubeScenarios\(selectedTopicId,locale\)/);
+ assert.match(director,/taxonomyScenarios\.length===4/);
+ assert.match(director,/const STSE_ENABLED=process\.env\.NEXT_PUBLIC_HH_STSE_ENABLED!=="false"/);
+ assert.match(director,/const STSE_DRAFTS_ENABLED=STSE_ENABLED&&process\.env\.NEXT_PUBLIC_HH_STSE_CONTENT_EXPANSION_ENABLED==="true"/);
+ assert.match(director,/allowEditorialDrafts=\{false\}/);
+ assert.match(director,/listMyTubeMotifScenarios\(selectedTopicId,selectedMeaningAxisId,selectedMotifId,locale\)/);
  assert.match(director,/data-stse-media-unbound/);
  assert.match(director,/data-mytube-scenario=\{scenario.id\}/);
 
@@ -119,7 +121,7 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(autoCss,/\.storyChoices\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(autoCss,/\.shots\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  const approved=taxonomy.scenes.filter(scene=>scene.status==="approved");
- assert.equal(approved.length,44);
+ assert.equal(approved.length,48);
  assert.ok(approved.every(scene=>scene.poster?.startsWith("/videos/holistic-house/")&&
    scene.poster.endsWith(".jpg") && scene.video.endsWith(".mp4")));
 });
@@ -408,11 +410,13 @@ test("approved first screen keeps six tabs above a real 16:9 Canvas and one righ
  assert.match(mobile,/aspect-ratio:16\/9!important/);
 });
 
-test("single prompt input precedes goal filters, topic chooser and four story candidates",()=>{
+test("goal, topic and one free-text prompt precede the four scenario choices",()=>{
  const prompt=studio.indexOf("data-video-request-prompt");
  const goal=studio.indexOf("data-video-director-goal-controls");
  const topic=studio.indexOf("data-video-director-topic-controls");
- assert.ok(prompt>=0&&prompt<goal&&goal<topic);
+ assert.ok(goal>=0&&goal<topic&&topic<prompt,"the owner-approved goal and topic precede the single text request");
+ assert.match(studio,/data-video-continue-scenarios/);
+ assert.match(studio,/setVideoScenarioOpen\(true\)/);
  assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
  assert.match(director,/createPortal\(requestInput,requestTarget\)/);
  assert.match(director,/createPortal\(goalPanel,goalTarget\)/);
@@ -435,7 +439,7 @@ test("brief and detailed questionnaires choose from existing licensed clips with
 
 
 test("new prompt and profile choice invalidate every prior MyTube plot selection",()=>{
- for(const [start,end] of [["const requestInput=","const profilePanel="],["const applyProfile=","const requestInput="]]){
+ for(const [start,end] of [["const requestField=","const requestInput="],["const applyProfile=","const requestInput="]]){
   const handler=director.slice(director.indexOf(start),director.indexOf(end));
   assert.ok(handler.length>0,start+" exists");
   for(const setter of ["setSelectedSubcategoryId", "setSelectedTopicId", "setSelectedScenarioId", "setSelectedPlotId", "setSymbolicPlotFallback", "setTimelineEdits", "setConfirmedTimelineKey"])

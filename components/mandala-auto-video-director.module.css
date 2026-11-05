@@ -763,3 +763,26 @@
   .confirm {min-height:54px;padding:9px 12px;border-radius:14px;
     font-size:clamp(14px,3.6vw,16px)}
 }
+
+
+/* First-screen brief → canonical taxonomy → existing video storyboard. */
+.requestComposer{display:grid;gap:8px;min-width:0;width:100%}
+.designRequest{display:flex;align-items:center;justify-content:center;gap:9px;
+ width:100%;min-height:46px;border:0;border-radius:13px;padding:10px 12px;
+ background:#087b62;color:#fff;font:750 14px/1.2 system-ui,-apple-system,sans-serif;
+ cursor:pointer;box-shadow:0 2px 7px rgba(0,90,65,.12)}
+.designRequest:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}
+.designRequest:focus-visible,.requestJump:focus-visible{outline:3px solid #d9a853;outline-offset:2px}
+.designRequest span{flex:1;text-align:center}
+.requestAnalysis{display:grid;gap:3px;min-width:0;padding:9px 11px;
+ border:1px solid #c5decf;border-radius:12px;background:#f1faf4;
+ color:#245442;font:500 12px/1.4 system-ui,-apple-system,sans-serif}
+.requestAnalysis[data-confidence="low"],.requestAnalysis[data-confidence="unresolved"]{
+ background:#fffaf0;border-color:#e6d4af}
+.requestAnalysis strong{font-size:12px}
+.requestAnalysis span{overflow-wrap:anywhere}
+.requestAnalysis p{margin:0}
+.requestJump{display:inline-flex;align-items:center;gap:5px;justify-self:start;
+ padding:3px 0;border:0;background:transparent;color:#087b62;
+ font:750 12px/1.4 system-ui,-apple-system,sans-serif;text-decoration:underline;cursor:pointer}
+@media(max-width:430px){.designRequest{min-height:44px;font-size:13px}.requestAnalysis{padding:8px 9px}}

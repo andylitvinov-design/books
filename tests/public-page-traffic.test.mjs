@@ -137,6 +137,11 @@ test('P0 nonessential popup policy: approved global shell only, no automatic req
   // Approved shared six-tab dock is a persistent navigation surface, not an auto-open popup.
   'UnifiedMobileDock'
  ],'Unexpected global widget: review for nonessential auto-open prompts before changing this guard')
+ const dock=readFileSync(new URL('../components/unified-mobile-dock.tsx',import.meta.url),'utf8')
+ assert.match(dock,/if \(!visible\) return null;/,'Global MyTube nav stays route-scoped')
+ assert.match(dock,/<nav ref=\{navRef\} data-hh-unified-dock/,'Only the approved navigation region is mounted')
+ assert.match(dock,/UNIFIED_DOCK_IDS\.map\(id =>/,'Only the six approved destinations are used')
+ assert.doesNotMatch(dock,/<(?:dialog|AlertDialog|Modal|Toast|BottomSheet)\b/,'Navigation must not introduce a popup')
  assert.equal(existsSync(new URL('../components/first-party-stats-notice.tsx',import.meta.url)),false,
    'Delete obsolete notice rather than remounting or renaming its popup')
  assert.doesNotMatch(layout,/FirstPartyStatsNotice|[<]dialog\b|[<](?:AlertDialog|Modal|Toast|BottomSheet)\b/,

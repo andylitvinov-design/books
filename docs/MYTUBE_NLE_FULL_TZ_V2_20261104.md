@@ -114,3 +114,52 @@ Only existing Next.js/Vercel, GitHub Actions, browser WebAudio/Canvas/WebCodecs,
 ## 12. Known limitations and Definition of Done
 
 This document is **complete as an engineering backlog**; product completion occurs only when every row in sections 3–8 has a code change, appropriate compatibility/security proof, reviewed PR, correct production deployment, and device-level acceptance. The current implementation is deliberately narrower. Do not claim "all CapCut functions available" or "100% LIVE" until each required milestone is verified. Product billing must remain zero additional spend unless separately authorized.
+
+
+## 13. P0-B implementation boundary — 2026-11-05
+
+A fresh **VideoProjectV3** contract and deterministic frame/audio time
+resolvers are added without replacing the working VideoProjectV2, the
+released four-shot Auto Director or its Canvas encoder. An exact production
+SHA must be verified before marking this capability LIVE.
+
+Implemented in P0-B:
+- Immutable schemaVersion=3 with <=32 metadata-only assets, <=8 video layers,
+  <=24 authorized video clips, <=4 audio lanes, <=100 authorized captions,
+  <=60 seconds and <=2 simultaneously active full-frame decoders.
+- Exact-key validation: no URLs, media bytes, provider tokens, unapproved
+  assets or fake READY export in portable project metadata. A separate
+  trusted runtime registry supplies rights proof and catalogue source path.
+- Millisecond start/in/out, 0.5..2x video source speeds, transform, opacity,
+  mask descriptors, true two-source crossfade *frame instructions*, layered
+  PIP positioning, independent audio gain/fade/loop *clock instructions*.
+- Explicit V2 to V3 migrator preserving authorized four-shot order,
+  approved phrases and selected approved music. Missing rights fail closed.
+- Deterministic compiled fingerprint, revision-checking, frozen project
+  actions and focused tests for security, time, overlap, audio and migration.
+
+**Not activated:** CompiledVideoPlanV3.runnable is false and its engine
+is pending_advanced_compositor. This is deliberate: a frame resolver is
+not proof that an MP4 includes PIP, masks, or real source crossfade.
+The actual bounded multi-decoder browser compositor, advanced multi-clip
+UI, final exported MP4/AAC and real iPhone QA are the remaining P0-C/P0-D
+milestones. Existing browser-local video editing is unchanged.
+
+No paid provider, automatic GPU rendering, extra periodic CI or cloud
+media upload is enabled by this technical foundation.
+
+
+## 14. P0-D real on-device audio waveform (2026-11-05 release candidate)
+
+Replace decorative audio glyphs on the native montage timeline with
+48 normalized PCM RMS waveform peaks from the explicitly attached
+user-owned audio file. OfflineAudioContext decoding uses no
+playback permission, backend requests, speech recognition or paid service.
+An 8 MiB file guard and 180-second decode cap avoid unbounded
+phone memory usage. Silence renders no bars; unsupported media renders
+no fabricated waveform. Changing or revoking a file clears old peaks.
+The original music bed remains named without a fake waveform, because
+its PCM has not been explicitly decoded.
+This is display-only: it does not modify the existing two-track MP4 audio mix.
+Release requires exact-head Core/Specialist/WebKit CI, protected merge and
+matching Vercel READY SHA. Physical iPhone audio QA is separate.

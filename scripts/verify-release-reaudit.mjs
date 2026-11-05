@@ -231,6 +231,7 @@ async function exercise(engine, browserType, width) {
     for (const [path, locale] of routes) {
       const routePassed = await check('public-page', { engine, width, path }, async () => {
         publicPhase = path;
+        console.info('[release-reaudit] public route ' + engine + '/' + width + ': ' + path);
         publicDiagnostics.checkpoints.push({ type: 'goto', path, from: page.url(), time: Date.now() });
         errors.length = 0;
         const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
@@ -660,8 +661,9 @@ async function exercise(engine, browserType, width) {
           });
           lifecycleTrace = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspLifecycleTrace') || '[]'));
           assert.deepEqual(lifecycleTrace.filter(event => ['window-error', 'unhandled-rejection'].includes(event.type)), [], 'No uncaught browser errors during CSP navigation');
+          const evidenceFetches = await cspPage.evaluate(() => JSON.parse(sessionStorage.getItem('__cspRequestTelemetry') || '[]'));
           const unexpectedErrors = cspErrors.filter(error => {
-            const attribution = classifyCspNavigationCancellation(error, { engine, readiness, origin, lifecycle: lifecycleTrace });
+            const attribution = classifyCspNavigationCancellation(error, { engine, readiness, origin, lifecycle: lifecycleTrace, fetchTelemetry: evidenceFetches });
             if (attribution) navigationCancellations.push(attribution);
             return !attribution;
           });
@@ -769,7 +771,22 @@ if (label === 'local' && ['127.0.0.1', 'localhost'].includes(url.hostname)) {
     await check('about-player-hydration', { engine: browserType.name(), providerStubbed: true }, () => verifyAboutPlayerHydration(browserType, { origin, evidence, label }));
   }
 }
-await Promise.all([exercise('chromium', chromium, 390), exercise('chromium', chromium, 1365), exercise('webkit', webkit, 390), exercise('webkit', webkit, 1365)]);
+// The existing 35-minute shared job repeatedly cancelled only the WebKit 390
+// lane after the other three lanes completed and wrote browser evidence.
+// Keep all four full browser passes on the same runner but avoid running
+// four competing browsers against the same Next server simultaneously.
+// Do not alter any assertions, CI gates or private/public test fixtures.
+const browserLanes = [
+  ['webkit', webkit, 390],
+  ['webkit', webkit, 1365],
+  ['chromium', chromium, 390],
+  ['chromium', chromium, 1365],
+];
+for (const [engine, browserType, width] of browserLanes) {
+  console.info("[release-reaudit] starting " + engine + "/" + width);
+  await exercise(engine, browserType, width);
+  console.info("[release-reaudit] finished " + engine + "/" + width);
+}
 const browser = await chromium.launch();
 const context = await browser.newContext();
 try {

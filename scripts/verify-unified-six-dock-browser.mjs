@@ -244,6 +244,36 @@ async function inspect(browserType,locale,width){
       results.push({id:marker,pinned:true,route:path,authenticated:false});
     }
   }
+  if(browserType===webkit && locale==="ru" && width===390){
+    // Simulates navigator.standalone, not Safari View Controller on a phone.
+    await page.addInitScript(()=>Object.defineProperty(navigator,"standalone",{
+      configurable:true,value:true,
+    }));
+    await page.goto(origin+"/ru/holistic-support/mobile",{waitUntil:"domcontentloaded",timeout:75000});
+    await page.locator("[data-hh-unified-dock]").waitFor({state:"visible"});
+    // The root dock is server-rendered; wait until React owns the click
+    // before testing same-document navigation (no pre-hydration hard link).
+    await page.waitForFunction(()=>{
+      const link=document.querySelector('[data-unified-dock-item="video"]');
+      return link && Object.keys(link).some(key=>key.startsWith("__reactProps$"));
+    },null,{timeout:15000});
+    const initialDocument=await page.evaluate(()=>performance.timeOrigin);
+    let popups=0;
+    page.on("popup",()=>{popups++});
+    for(const [tab,path] of [
+      ["video","/ru/holistic-support/mandala"],
+      ["mytube","/ru/mytube"],
+      ["master","/ru/practice"],
+      ["practice","/ru/holistic-support/mobile"],
+    ]){
+      await page.locator('[data-unified-dock-item="'+tab+'"]').click();
+      await page.waitForURL(url=>url.pathname===path||url.pathname===path+"/",{timeout:45000});
+      assert.equal(await page.evaluate(()=>performance.timeOrigin),initialDocument,
+        tab+" standalone public navigation must stay in the same document");
+    }
+    assert.equal(popups,0,"standalone public tabs must not open another page");
+    results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → Master → Practice",sameDocument:true});
+  }
  }finally{await context.close();await browser.close();}
 }
 for(const locale of ["ru","en","es"]){
@@ -261,7 +291,14 @@ try{
  await page.locator("[data-hh-unified-dock]").waitFor({state:"visible"});
  const videoHeader=page.locator("[data-video-hypno-scroll-start]");
  await videoHeader.waitFor({state:"visible",timeout:45000});
- assert.equal((await videoHeader.innerText()).trim(),"Видео-мандала","Video has a single short mobile title");
+ // The approved compact video-first header deliberately hides its older
+ // standalone title and shows the branded studio identity instead. Assert
+ // the ACTUAL visible mobile design, not a retired screenshot-era label.
+ const studioIdentity=videoHeader.locator('[class*="quickBrandIdentity"]');
+ assert.equal((await studioIdentity.innerText()).trim(),"Holistic House\nВидеостудия · Создание видео",
+   "Video has the approved compact Holistic House studio identity");
+ assert.equal(await videoHeader.locator('[class*="quickBrandMobileTitle"]').isVisible(),false,
+   "the retired alternate mobile title stays hidden to avoid double heading");
  assert.equal(await page.locator("[data-mandala-legacy-header]:visible").count(),0,
    "no duplicate end-of-page header");
  assert.equal(await page.locator("[data-mandala-support-bottom-nav]:visible").count(),0,
@@ -299,6 +336,45 @@ try{
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
  results.push({journey:"MyTube → Video → Messenger AI rail → private Orders/Clients → Practice",passed:true});
+ // The regular marketing homepage keeps seven visitor links in browsers,
+ // while the existing hamburger supplies a direct Practice bridge.
+ await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
+ const editorial=page.locator(".mobile-bottom-navigation");
+ await editorial.waitFor({state:"visible",timeout:30000});
+ assert.equal(await editorial.locator("[data-nav-item]").count(),7,
+   "ordinary browser homepage retains seven editorial destinations");
+ assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),0,
+   "browser homepage does not display an extra six-item app dock");
+ await page.locator(".site-main-menu-trigger").click();
+ const practiceLink=page.locator('.site-main-menu-more a[data-nav-item="practice"]');
+ await practiceLink.waitFor({state:"visible",timeout:15000});
+ assert.equal(await practiceLink.getAttribute("href"),"/ru/holistic-support/mobile");
+ await practiceLink.click();
+ await page.waitForURL(new RegExp("/ru/holistic-support/mobile/?$"),{timeout:45000});
+ await page.locator("[data-hh-unified-dock]").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
+ assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0,
+   "the Practice route switches to the single six-item app dock");
+ results.push({journey:"Public homepage seven links → explicit Practice → single six-tab dock",passed:true});
+
+ // Profile unification: the seven-item legacy entry and the six-item dock
+ // lead to the SAME hub; create reuses the real free public builder.
+ await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
+ const editorialProfile=page.locator('.mobile-bottom-navigation [data-nav-item="profile"]');
+ await editorialProfile.waitFor({state:"visible",timeout:30000});
+ assert.equal(await editorialProfile.getAttribute("href"),"/ru/app/portrait");
+ await editorialProfile.click();
+ await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
+ await page.locator('[data-profile-hub-tabs]').waitFor({state:"visible",timeout:45000});
+ assert.equal(await page.locator('[data-profile-tab="view"][aria-current="page"]').count(),1);
+ await page.locator('[data-profile-tab="create"]').click();
+ await page.waitForURL(/\/ru\/personality-profiles\/?$/,{timeout:45000});
+ await page.locator('[data-profile-hub-tabs][data-profile-active="create"]').waitFor({state:"visible",timeout:45000});
+ assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
+ assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
+ assert.equal(await page.locator('[data-profile-tab]').count(),4);
+ results.push({journey:"Public Profile → private guest hub → existing four-area creator with one six-tab dock",passed:true});
+
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));
 console.log("Unified six-dock browser acceptance passed",results.length);

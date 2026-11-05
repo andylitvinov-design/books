@@ -28,3 +28,9 @@ Production branch: `codex/public-book-library`. Existing Video Studio exports an
 
 ## Scoped live-activation correction
 The new `telegramPersonalVideoSendReady` gate requires the existing verified client bot, `HH_VIDEO_TELEGRAM_DELIVERY_ENABLED=true`, and `HH_PERSONAL_VIDEO_CLOUD_SAVE_ENABLED=true`. The separate `HH_CLIENT_TG_SEND_APPROVED` stays untouched/OFF. Already-opted-in customers can disable their automatic video preference even when the video provider is paused. New subscriptions require explicit consent. No real provider delivery is claimed without an actual opted-in chat and media receipt.
+
+
+## Private Cabinet follow-up (5 Nov 2026)
+The private My Videos library provides its own Telegram pairing and status panel, explicit automatic-video opt-in and opt-out, and a one-click consented send for each previously saved ready MP4. The owner may revoke delivery even when the video sender is disabled, or the bot is unlinked. A re-linked chat must be authorized again. The provider claim is single-shot per MP4 and consent/link is checked again after private download, before the Bot API send.
+
+Cabinet labels now include Spanish as well as English and Russian. WhatsApp is limited to user-initiated device sharing; live Meta Business credentials and recipient verification are not configured, and no paid sending has been enabled. Storage remains at 12 MB/file and 3 videos/account; no videos are erased without the owner choosing to do so. Manually imported cabinet videos require one-click Telegram delivery and are not silently auto-sent. Delivery is not proven until an opted-in user verifies a real MP4 in their own chat.

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import "./public-voice-sample-cache.test.mjs";
 import test from "node:test";
 import {readFileSync} from "node:fs";
 import {affirmationNarrationText} from "../lib/mandala/affirmation-voice.mjs";
