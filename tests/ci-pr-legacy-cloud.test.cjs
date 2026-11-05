@@ -53,7 +53,11 @@ test('stable old candidate survives arbitrary delayed cron ticks and rotates hou
  const cap=computeCapacity([],[],[]);
  assert.equal(admission('legacy',cap),'ADMIT');
  cap.activeWorker[WORKFLOWS.legacy]=1;
- assert.equal(admission('legacy',cap),'WORKER_BUSY');
+ assert.equal(admission('legacy',cap),'ADMIT',
+  'one ordinary Repair Worker cannot block the existing second free slot');
+ cap.activeWorker[WORKFLOWS.legacy]=2;
+ assert.equal(admission('legacy',cap),'WORKER_BUSY',
+  'the existing two-worker hard cap remains unchanged');
 });
 test('no manual source retry without real bot history, clean HEAD and non-sensitive paths',()=>{
  const dirty=pr(204,{labels:[{name:'hh:repair-manual'},{name:'hh:repair-needed'}]});

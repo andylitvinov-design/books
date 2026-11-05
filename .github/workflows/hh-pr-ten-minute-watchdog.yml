@@ -38,6 +38,7 @@ on:
       - 'tests/ci-pr-priority.test.cjs'
       - 'tests/ci-pr-ten-minute-watchdog.test.cjs'
       - 'scripts/ci-pr-queue-dispatcher.cjs'
+      - 'scripts/ci-pr-capacity.cjs'
       - 'scripts/ci-pr-monitor-feed.cjs'
       - 'tests/ci-pr-monitor-feed.test.cjs'
       - 'scripts/ci-pr-ci-wake-reconcile.cjs'
