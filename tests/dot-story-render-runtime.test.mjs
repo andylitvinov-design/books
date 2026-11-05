@@ -64,15 +64,15 @@ test('verified local MP4s and timing are admissible to final FFmpeg compiler',as
   assert.equal(verified.scenes.length,4);
   assert.equal(verified.scenes[0].sha256,digest);
   assert.equal(verified.verifiedFiles[scenes[0].id].durationMs,5000);
-  const plan={ok:true,version:'hh-dot-story-cut-plan-v1',audioDurationMs:48000,
+  const plan={ok:true,version:'hh-dot-story-cut-plan-v1',audioDurationMs:20000,
    shots:verified.scenes.map((s,i)=>({
     index:i,stage:i,sceneId:s.id,sourcePath:s.video,
-    startMs:i*12000,durationMs:12000,sourceDurationMs:5000,
+    startMs:i*5000,durationMs:5000,sourceDurationMs:5000,
    }))};
   const args=compileDotStoryFfmpegArgs({plan,scenes:verified.scenes,
    verifiedFiles:verified.verifiedFiles,audioFile:join(dir,'soundtrack.m4a'),
    outputFile:join(dir,'result.mp4')});
-  assert.equal(args.filter(a=>a==='-stream_loop').length,4);
+  assert.equal(args.filter(a=>a==='-stream_loop').length,0);
   assert.ok(args.join(' ').includes('concat=n=4:v=1:a=0[v]'));
  }finally{await rm(dir,{recursive:true,force:true});}
 });

@@ -44,9 +44,13 @@ test('unverified MP4 paths never become FFmpeg arguments',()=>{
    rightsReference:{kind:'dareful_cc_by_4_0'},sha256:'a'.repeat(64)};
  const verified={approved:true,path:scene.video,sha256:scene.sha256,
    durationMs:5000,absolutePath:'/tmp/hh-dot-story-proof12/scene-scene-0.mp4'};
- const out='/tmp/hh-dot-story-proof12/tile-scene-0-144.mp4';
- const args=compileCompactTileArgs({scene,verified,frames:144,outputFile:out});
- assert.ok(args.includes('-stream_loop')&&args.includes('-frames:v'));
+ const out='/tmp/hh-dot-story-proof12/tile-scene-0-60.mp4';
+ const args=compileCompactTileArgs({scene,verified,frames:60,outputFile:out});
+ assert.ok(!args.includes('-stream_loop')&&args.includes('-frames:v'));
+ assert.throws(()=>compileCompactTileArgs({
+   scene,verified,frames:61,
+   outputFile:'/tmp/hh-dot-story-proof12/tile-scene-0-61.mp4',
+ }),/COMPACT_SOURCE_UNVERIFIED/);
  assert.throws(()=>compileCompactTileArgs({scene,verified:{
    ...verified,absolutePath:'/etc/passwd'},frames:144,outputFile:out}),/UNSAFE_PATH/);
  assert.throws(()=>compileCompactTileArgs({scene,verified:{
@@ -59,7 +63,8 @@ const run=(args,ms=90000)=>{
  assert.equal(p.status,0,String(p.error?.message||p.stderr||'').slice(-1000));
  return p;
 };
-test('real 30-minute H.264 AAC MP4 is complete and fits private 50 MB budget',
+// This is a synthetic mux/codec stress test, NOT an approved one-master-once storyboard.
+test('synthetic 30-minute H.264 AAC mux fits private 50 MB budget',
  {timeout:130000},async()=>{
  assert.ok(ffmpeg);
  const dir=await mkdtemp(join(tmpdir(),'hh-dot-story-'));
@@ -68,8 +73,8 @@ test('real 30-minute H.264 AAC MP4 is complete and fits private 50 MB budget',
   for(let i=0;i<4;i++){
    const id='scene-'+i,path=join(dir,'scene-'+id+'.mp4');
    run(['-v','error','-y','-f','lavfi','-i',
-     'color=c='+['red','green','blue','yellow'][i]+':s=480x270:r=12:d=2',
-     '-frames:v','24','-c:v','libx264','-preset','ultrafast',
+     'color=c='+['red','green','blue','yellow'][i]+':s=480x270:r=12:d=12',
+     '-frames:v','144','-c:v','libx264','-preset','ultrafast',
      '-pix_fmt','yuv420p',path]);
    const sha256=createHash('sha256').update(await readFile(path)).digest('hex');
    const scene={id,theme:'life',collection:'film-collection-v3',
@@ -77,7 +82,7 @@ test('real 30-minute H.264 AAC MP4 is complete and fits private 50 MB budget',
      status:'approved',media:'licensed_mp4',
      rightsReference:{kind:'dareful_cc_by_4_0'},tags:['nature'],motifs:['nature'],sha256};
    source.set(id,{scene,verified:{approved:true,path:scene.video,sha256,
-     durationMs:2000,absolutePath:path}});
+     durationMs:12000,absolutePath:path}});
   }
   for(const t of p.templates){
    const v=source.get(t.sceneId),out=join(dir,t.file);
