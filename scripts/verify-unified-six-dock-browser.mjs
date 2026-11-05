@@ -244,6 +244,30 @@ async function inspect(browserType,locale,width){
       results.push({id:marker,pinned:true,route:path,authenticated:false});
     }
   }
+  if(browserType===webkit && locale==="ru" && width===390){
+    // Simulates navigator.standalone, not Safari View Controller on a phone.
+    await page.addInitScript(()=>Object.defineProperty(navigator,"standalone",{
+      configurable:true,value:true,
+    }));
+    await page.goto(origin+"/ru/holistic-support/mobile",{waitUntil:"domcontentloaded",timeout:75000});
+    await page.locator("[data-hh-unified-dock]").waitFor({state:"visible"});
+    const initialDocument=await page.evaluate(()=>performance.timeOrigin);
+    let popups=0;
+    page.on("popup",()=>{popups++});
+    for(const [tab,path] of [
+      ["video","/ru/holistic-support/mandala"],
+      ["mytube","/ru/mytube"],
+      ["master","/ru/practice"],
+      ["practice","/ru/holistic-support/mobile"],
+    ]){
+      await page.locator('[data-unified-dock-item="'+tab+'"]').click();
+      await page.waitForURL(url=>url.pathname===path||url.pathname===path+"/",{timeout:45000});
+      assert.equal(await page.evaluate(()=>performance.timeOrigin),initialDocument,
+        tab+" standalone public navigation must stay in the same document");
+    }
+    assert.equal(popups,0,"standalone public tabs must not open another page");
+    results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → Master → Practice",sameDocument:true});
+  }
  }finally{await context.close();await browser.close();}
 }
 for(const locale of ["ru","en","es"]){

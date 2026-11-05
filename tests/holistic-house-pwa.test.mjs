@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
+import {UNIFIED_DOCK_IDS,unifiedMobileDockHref} from '../lib/unified-mobile-dock.mjs'
 test('private Cabinet advertises a dedicated installable Holistic House PWA',()=>{
  const manifest=JSON.parse(readFileSync('public/holistic-house-app.webmanifest','utf8'))
  const layout=readFileSync('app/[locale]/app/layout.jsx','utf8')
@@ -30,9 +31,9 @@ test('one unified Holistic House installation, not an accidental OPORA-only laun
         icon.sizes===size+'x'+size&&icon.src==='/holistic-house-icon/'+size))
     assert.ok(manifest.shortcuts.some(s=>s.url.endsWith('/app/messages')))
   }
-  assert.equal(en.start_url,'/en/app/messages')
-  assert.equal(ru.start_url,'/ru/app/messages')
-  assert.equal(es.start_url,'/es/app/messages')
+  assert.equal(en.start_url,'/en')
+  assert.equal(ru.start_url,'/ru')
+  assert.equal(es.start_url,'/es')
   assert.match(page,/query.program === 'stress'/)
   assert.match(page,/holistic-house-app-ru\.webmanifest/)
   assert.match(page,/holistic-house-app\.webmanifest/)
@@ -40,6 +41,24 @@ test('one unified Holistic House installation, not an accidental OPORA-only laun
   assert.match(page,/oporaInstall \?/)
   assert.doesNotMatch(page,/manifest: path\[0\] === 'course'/)
 })
+
+test('installed canonical root scope covers all six tab routes',()=>{
+ const origin='https://holistichouse.vercel.app';
+ for(const locale of ['en','ru','es']){
+  const name='public/holistic-house-app'+(locale==='en'?'':'-'+locale)+'.webmanifest';
+  const m=JSON.parse(readFileSync(name,'utf8'));
+  const scope=new URL(m.scope,origin);
+  const start=new URL(m.start_url,origin);
+  assert.equal(start.origin,scope.origin);
+  assert.ok(start.pathname.startsWith(scope.pathname));
+  for(const id of UNIFIED_DOCK_IDS){
+   const url=new URL(unifiedMobileDockHref(locale,id),origin);
+   assert.equal(url.origin,scope.origin,id);
+   assert.ok(url.pathname.startsWith(scope.pathname),id);
+  }
+ }
+ assert.notEqual(new URL('https://codex-public-book-library.vercel.app/ru/holistic-support/mobile').origin,origin);
+});
 
 test('install landing is public, bilingual and links to real protected messaging settings',()=>{
   const guide=readFileSync('app/[locale]/install/page.jsx','utf8')
