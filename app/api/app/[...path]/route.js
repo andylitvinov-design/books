@@ -233,7 +233,7 @@ async function handle(request, { params }) {
       const { data, error } = await auth.client.auth.signInWithOAuth({
         provider: selectedProvider.provider,
         options: {
-          scopes: selectedProvider.scopes,
+          ...(authChoice === 'google' ? { scopes: 'openid email profile' } : { scopes: selectedProvider.scopes }),
           redirectTo: `${origin}/api/app/auth/callback?locale=${locale}${native ? '&native=1' : ''}${intentId ? `&intent=${encodeURIComponent(intentId)}` : ''}${serviceId ? `&service=${encodeURIComponent(serviceId)}` : ''}${continueTo ? `&continue=${encodeURIComponent(continueTo)}` : ''}${program ? `&program=${encodeURIComponent(program)}` : ''}${requestId ? `&request=${encodeURIComponent(requestId)}` : ''}${returnPath ? `&returnPath=${encodeURIComponent(returnPath)}` : ''}${profi ? `&profi=${encodeURIComponent(profi)}` : ''}${coachingMode ? `&coachingMode=${encodeURIComponent(coachingMode)}` : ''}${coachingLang ? `&coachingLang=${encodeURIComponent(coachingLang)}` : ''}${recipientSlug ? `&recipientSlug=${encodeURIComponent(recipientSlug)}` : ''}`,
           skipBrowserRedirect: true,
         },
@@ -361,11 +361,13 @@ async function handle(request, { params }) {
                         : `${origin}/${locale}/app`
       // Failed Google login returns to the guest-visible approved design,
       // not a private editor that can only show an old sign-in shell.
-      const failedPracticeDestination = linkedAccount ? `${origin}/${locale}/app/settings` : continueTo === 'practice-preview'
+      const failedPracticeDestination = continueTo === 'practice-preview'
         ? `${origin}/${locale}/practice` : destination
+      const failedIdentityDestination = linkedAccount
+        ? `${origin}/${locale}/app/settings` : failedPracticeDestination
       if (url.searchParams.has('error') || !code || code.length > 4096)
         return finishAuth(
-          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); url.searchParams.set('auth', value); return url.href; })('cancelled'), {
+          NextResponse.redirect((value => { const url = new URL(failedIdentityDestination); url.searchParams.set('auth', value); return url.href; })('cancelled'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
@@ -377,7 +379,7 @@ async function handle(request, { params }) {
       )
       if (error)
         return finishAuth(
-          NextResponse.redirect((value => { const url = new URL(failedPracticeDestination); url.searchParams.set('auth', value); return url.href; })('failed'), {
+          NextResponse.redirect((value => { const url = new URL(failedIdentityDestination); url.searchParams.set('auth', value); return url.href; })('failed'), {
             status: 303,
             headers: PRIVATE_HEADERS,
           }),
