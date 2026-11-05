@@ -3,10 +3,14 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import {listStates} from "@/lib/mandala/state-transition/state-catalog.mjs";
 import {listMeaningAxes,listEmotionalVectors} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
+import {listCurrentEmotionClusters,listDesiredEmotionClusters,
+ getEmotionalClusterForState,getEmotionalVectorByStates,calculateEmotionalRelief}
+ from "@/lib/mandala/meaning-emotion/emotional-vector-matrix.mjs";
 import css from "./mandala-meaning-idea-selector.module.css";
 
 type Locale="ru"|"en"|"es";
 type StateOption={id:string;label:string};
+type ClusterOption={id:string;label:string;representativeStateId:string;stateIds:string[]};
 type MeaningAxisOption={id:string;label:string;description:string};
 type VectorOption={id:string;currentStateId:string;desiredStateId:string;label:string};
 type Idea={ideaId:string;ideaText:string;axisId:string;premiseType:string;
@@ -29,7 +33,11 @@ type Props={locale:Locale;topicId:string;disabled:boolean;selectedScenarioId:str
  onChooseScenario:(scenarioId:string)=>void};
 const wording={
  ru:{title:"Тема и идея вашего фильма",lead:"Сначала выберите «Сейчас → Хочу», затем смысл истории. Это творческий выбор, не диагноз.",
- current:"Сейчас",desired:"Хочу",empty:"Выберите состояние",vectors:"Примеры переходов",
+ current:"Сейчас",desired:"Хочу",empty:"Выберите кластер",vectors:"Примеры переходов",
+ refine:"Уточнить конкретную эмоцию",precise:"Уточнение",valence:"Ощущение: −3 неприятно … +3 приятно",
+ charge:"Эмоциональный заряд",resourceScore:"Ресурсный ориентир",suggestion:"Валентность предложена каталогом — её можно изменить",
+ partialCoverage:"Часть уточнённых сочетаний имеет подготовленные идеи",missingCoverage:"Для этого направления смысловые идеи ещё не подготовлены",
+ uncurated:"Для этой точной пары нет редакционных идей. Можно выбрать другое сочетание или нейтральное видео.",
  intensity:"Сила переживания (0–10, необязательно)",energy:"Энергия сейчас (0–10, необязательно)",
  optional:"Дополнительные настройки",unknown:"Не указано",axis:"Что для вас сейчас важнее?",
  axisAuto:"Предложите варианты",discover:"Показать смысловые идеи",
@@ -52,7 +60,11 @@ const wording={
  tryAnother:"Выберите другую ось или другой эмоциональный переход.",
  },
  en:{title:"Your film's theme and idea",lead:"Choose Now → Want, then the story's meaning. A creative choice, not a diagnosis.",
- current:"Now",desired:"Want",empty:"Choose a state",vectors:"Suggested transitions",
+ current:"Now",desired:"Want",empty:"Choose a cluster",vectors:"Suggested transitions",
+ refine:"Refine the exact feeling",precise:"Specific feeling",valence:"Feeling: −3 unpleasant … +3 pleasant",
+ charge:"Emotional charge",resourceScore:"Resource orientation",suggestion:"Valence suggested by catalog — you may change it",
+ partialCoverage:"Some refined pairs have curated ideas",missingCoverage:"No curated meaning ideas for this direction yet",
+ uncurated:"No curated ideas for this exact pair. Choose another or a neutral video.",
  intensity:"Intensity (0–10, optional)",energy:"Energy now (0–10, optional)",
  optional:"Optional settings",unknown:"Not specified",axis:"What matters most to you?",
  axisAuto:"Suggest directions",discover:"Explore meaning ideas",
@@ -74,7 +86,11 @@ const wording={
  consent:"You decide whether to apply the idea to the film.",
  tryAnother:"Choose another axis or emotional transition."},
  es:{title:"El sentido y la idea de tu película",lead:"Elige Ahora → Quiero y luego el sentido de la historia. Es una elección creativa, no un diagnóstico.",
- current:"Ahora",desired:"Quiero",empty:"Elige un estado",vectors:"Transiciones sugeridas",
+ current:"Ahora",desired:"Quiero",empty:"Elige un grupo",vectors:"Transiciones sugeridas",
+ refine:"Precisar la emoción",precise:"Emoción concreta",valence:"Sensación: −3 desagradable … +3 agradable",
+ charge:"Carga emocional",resourceScore:"Recurso orientativo",suggestion:"Valencia sugerida por catálogo — puedes cambiarla",
+ partialCoverage:"Algunos pares precisos tienen ideas revisadas",missingCoverage:"Aún no hay ideas editoriales para esta dirección",
+ uncurated:"No hay ideas revisadas para este par exacto. Elige otro o un vídeo neutro.",
  intensity:"Intensidad (0–10, opcional)",energy:"Energía actual (0–10, opcional)",
  optional:"Ajustes opcionales",unknown:"No indicado",axis:"¿Qué es más importante para ti?",
  axisAuto:"Sugerir direcciones",discover:"Explorar ideas",
@@ -144,12 +160,15 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
  const t=wording[locale];
  const states=useMemo<StateOption[]>(()=>listStates(locale).map(x=>({id:String(x.id),label:String(x.label)})),[locale]);
  const axes=useMemo<MeaningAxisOption[]>(()=>listMeaningAxes(locale),[locale]);
+ const nowClusters=useMemo<ClusterOption[]>(()=>listCurrentEmotionClusters(locale),[locale]);
+ const wantClusters=useMemo<ClusterOption[]>(()=>listDesiredEmotionClusters(locale),[locale]);
  const vectors=useMemo<VectorOption[]>(()=>listEmotionalVectors(locale),[locale]);
  const validIds=useMemo(()=>new Set(states.map(x=>x.id)),[states]);
  const [current,setCurrent]=useState("");
  const [desired,setDesired]=useState("");
  const [intensity,setIntensity]=useState("");
  const [energy,setEnergy]=useState("");
+ const [valence,setValence]=useState("");
  const [axis,setAxis]=useState(initialAxisId);
  const [response,setResponse]=useState<Response|null>(null);
  const [selectedId,setSelectedId]=useState("");
@@ -163,16 +182,17 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
  const onConfirmRef=useRef(onConfirmHandoff);
  useEffect(()=>{onConfirmRef.current=onConfirmHandoff},[onConfirmHandoff]);
  const makeRequest=(from:string=current,to:string=desired,which:string=axis,
-   force:number|null=digitOrNull(intensity),resource:number|null=digitOrNull(energy))=>({
+   force:number|null=digitOrNull(intensity),resource:number|null=digitOrNull(energy),
+ feltValence:number|null=digitOrNull(valence))=>({
     schemaVersion:"meaning-idea-request-v1",topicId,locale,
-    current:{stateId:from,intensity:force},desired:{stateId:to},
+    current:{stateId:from,intensity:force,valence:feltValence},desired:{stateId:to},
     energy:resource,meaningAxisId:which||null,consentScope:"this_video_only",
     preferences:{pace:null},
   });
  useEffect(()=>{
    let active=true;
    requestSerial.current++;
-   setCurrent("");setDesired("");setAxis(initialAxisId);setIntensity("");setEnergy("");
+   setCurrent("");setDesired("");setAxis(initialAxisId);setIntensity("");setEnergy("");setValence("");
    setResponse(null);setSelectedId("");setCustomText("");setEditing(false);setError("");
    setHandoff(null);setBusy(false);
    try{
@@ -184,7 +204,9 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
          String(saved.intensity):"";
        const fuel=Number.isInteger(saved.energy)&&saved.energy>=0&&saved.energy<=10?
          String(saved.energy):"";
-       setIntensity(strong);setEnergy(fuel);
+       const feeling=Number.isInteger(saved.valence)&&saved.valence>=-3&&saved.valence<=3?
+         String(saved.valence):"";
+       setIntensity(strong);setEnergy(fuel);setValence(feeling);
        if(saved.ideaId||saved.neutral===true){
          void Promise.all([
            import("@/lib/mandala/meaning-emotion/idea-engine.mjs"),
@@ -192,7 +214,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
          ]).then(([engine,bridge])=>{
            if(!active)return;
            const req=makeRequest(saved.current,saved.desired,initialAxisId||saved.axis,
-             digitOrNull(strong),digitOrNull(fuel));
+             digitOrNull(strong),digitOrNull(fuel),digitOrNull(feeling));
            const suggestion=engine.recommendMeaningIdeas(req);
            const idea=engine.confirmMeaningIdea(req,saved.neutral===true?
              {neutral:true}:{ideaId:saved.ideaId,
@@ -219,7 +241,9 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
    onConfirmRef.current(null,false);
    try{window.sessionStorage.removeItem(storageKey(topicId))}catch{/* optional */}
  };
- const chooseStates=(from:string,to:string)=>{invalidate();setCurrent(from);setDesired(to)};
+ const chooseStates=(from:string,to:string)=>{
+   invalidate();if(from!==current)setValence("");setCurrent(from);setDesired(to)
+ };
  const selected=response?.ideas.find(x=>x.ideaId===selectedId)||null;
  const suggest=async()=>{
    if(disabled||busy||!validIds.has(current)||!validIds.has(desired))return;
@@ -233,7 +257,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
      setResponse(r);
      if(r.status==="ok")setSelectedId(r.ideas[0]?.ideaId||"");
      else if(r.status==="safety_support"||r.status==="no_safe_idea"||r.status==="clarify")
-       setError(r.clarification||t.error);
+       setError(r.status==="no_safe_idea"?t.uncurated:r.clarification||t.error);
    }catch{if(serial===requestSerial.current)setError(t.error)}
    finally{if(serial===requestSerial.current)setBusy(false)}
  };
@@ -258,6 +282,7 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
      try{
        window.sessionStorage.setItem(storageKey(topicId),JSON.stringify({
          locale,current,desired,axis,intensity:digitOrNull(intensity),energy:digitOrNull(energy),
+         valence:digitOrNull(valence),
          ideaId:neutral?null:selectedId,neutral,customText:!neutral&&editing?custom:null,
          includeCaption:includeCaption&&!neutral,
        }));
@@ -266,25 +291,51 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
    finally{if(serial===requestSerial.current)setBusy(false)}
  };
  const currentOption=selected?.ideaText||"";
+ const nowGroup=getEmotionalClusterForState(current,"current");
+ const wantGroup=getEmotionalClusterForState(desired,"desired");
+ const vectorCell=getEmotionalVectorByStates(current,desired);
+ const relief=calculateEmotionalRelief({currentStateId:current,
+   valence:digitOrNull(valence),intensity:digitOrNull(intensity),energy:digitOrNull(energy)});
  return <section className={css.panel} data-meaning-idea-selector data-topic-id={topicId}
    aria-label={t.title}>
    <h4 className={css.title}>{t.title}</h4><p className={css.hint}>{t.lead}</p>
    <div className={css.fields}>
      <label className={css.field}>{t.current}
-       <select data-meaning-current value={current} disabled={disabled||busy}
-         onChange={e=>chooseStates(e.currentTarget.value,desired)}>
+       <select data-meaning-current-cluster value={nowGroup?.id||""} disabled={disabled||busy}
+         onChange={e=>chooseStates(nowClusters.find(x=>x.id===e.currentTarget.value)?.representativeStateId||"",desired)}>
          <option value="">{t.empty}</option>
-         {states.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}
+         {nowClusters.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}
        </select>
      </label>
      <label className={css.field}>{t.desired}
-       <select data-meaning-desired value={desired} disabled={disabled||busy}
-         onChange={e=>chooseStates(current,e.currentTarget.value)}>
+       <select data-meaning-desired-cluster value={wantGroup?.id||""} disabled={disabled||busy}
+         onChange={e=>chooseStates(current,wantClusters.find(x=>x.id===e.currentTarget.value)?.representativeStateId||"")}>
          <option value="">{t.empty}</option>
-         {states.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}
+         {wantClusters.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}
        </select>
      </label>
    </div>
+   <details className={css.compact}>
+     <summary>{t.refine}</summary>
+     <div className={css.fields}>
+       <label className={css.field}>{t.current} — {t.precise}
+         <select data-meaning-current value={current} disabled={disabled||busy}
+           onChange={e=>chooseStates(e.currentTarget.value,desired)}>
+           <option value="">{t.empty}</option>
+           {states.filter(x=>getEmotionalClusterForState(x.id,"current"))
+             .map(x=><option key={x.id} value={x.id}>{x.label}</option>)}
+         </select>
+       </label>
+       <label className={css.field}>{t.desired} — {t.precise}
+         <select data-meaning-desired value={desired} disabled={disabled||busy}
+           onChange={e=>chooseStates(current,e.currentTarget.value)}>
+           <option value="">{t.empty}</option>
+           {states.filter(x=>getEmotionalClusterForState(x.id,"desired"))
+             .map(x=><option key={x.id} value={x.id}>{x.label}</option>)}
+         </select>
+       </label>
+     </div>
+   </details>
    <details className={css.compact}>
      <summary>{t.vectors}</summary>
      <div className={css.presetRow} role="group" aria-label={t.vectors}>
@@ -323,8 +374,25 @@ export function MandalaMeaningIdeaSelector({locale,topicId,disabled,selectedScen
            {Array.from({length:11},(_,n)=><option key={n} value={n}>{n}</option>)}
          </select>
        </label>
+       <label className={css.field}>{t.valence}
+         <select value={valence} data-meaning-valence disabled={disabled||busy}
+           onChange={e=>{invalidate();setValence(e.currentTarget.value)}}>
+           <option value="">{t.unknown}</option>
+           {[-3,-2,-1,0,1,2,3].map(n=><option key={n} value={n}>
+             {n>0?"+"+n:n}</option>)}
+         </select>
+       </label>
      </div>
    </details>
+   {vectorCell?<p className={css.notice} data-meaning-vector-cell={vectorCell.id}>
+     {nowClusters.find(x=>x.id===nowGroup?.id)?.label} → {wantClusters.find(x=>x.id===wantGroup?.id)?.label}.
+     {" "}{vectorCell.reviewStatus==="partially_curated"?t.partialCoverage:t.missingCoverage}.
+   </p>:null}
+   {relief.status==="calculated"?<p className={css.notice} data-meaning-relief>
+     {t.charge}: <b>{relief.emotionalCharge!>0?"+":""}{relief.emotionalCharge}</b> (−30…+30).
+     {" "}{t.resourceScore}: <b>{relief.resourceIndex}/100</b>.
+     {relief.valenceSource==="editorial_suggestion"?" "+t.suggestion:""}
+   </p>:null}
    <button type="button" className={css.primary} data-meaning-suggest
      disabled={disabled||busy||!current||!desired} onClick={suggest}>
      {t.discover}
