@@ -87,14 +87,15 @@ test("macOS WebKit exercises explicit accessible adult consent and revocation",(
  assert.ok(ui.includes('if(!approved||busy||pending.current'));
  assert.ok(!ui.includes('type="checkbox"'));
  assert.ok(css.includes('.check[aria-checked="true"] .checkIcon'));
- for(const step of ['await consentBox.click();',
+ for(const step of ['await consentBox.tap();',
+  'VOICE_GUEST_TOUCH_CONSENT_DIAG',
   'await expect(consentBox).toHaveAttribute("aria-checked","true",{timeout:10000});',
   'await expect(consentBox).toHaveAttribute("aria-checked","false");',
   'await expect(start).toBeDisabled();',
   'await expect(start).toBeEnabled();',
   'assert.deepEqual(providerPosts,[]'])
    assert.ok(source.includes(step),step);
- assert.equal(source.split('await consentBox.click();').length-1,3);
+ assert.equal(source.split('await consentBox.tap();').length-1,3);
  assert.ok(!source.includes("await consentLabel.click()"));
  const firstClick=source.indexOf("await consentBox.click();");
  const recipientOpen=source.indexOf("const recipient=await context.newPage();");

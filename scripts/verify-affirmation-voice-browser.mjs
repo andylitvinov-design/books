@@ -106,13 +106,33 @@ async function verifyGuestVoiceConsent(browser,locale){
     const consentBox=page.locator("[data-guest-message-consent]");
     await expect(consentBox).toHaveAttribute("role","checkbox");
     await expect(consentBox).toHaveAttribute("aria-checked","false");
-    await consentBox.click();
-    await expect(consentBox).toHaveAttribute("aria-checked","true",{timeout:10000});
+    // Mac WebKit is running as an emulated touch iPhone. Use an actual tap,
+    // not desktop mouse click on a touch target. Capture events only for
+    // non-sensitive CI diagnosis if the React toggle still does not update.
+    await page.evaluate(()=>{
+      const button=document.querySelector("[data-guest-message-consent]");
+      const probe={clicks:0,touches:0};
+      window.__guestConsentTapProbe=probe;
+      button?.addEventListener("click",()=>{probe.clicks+=1;});
+      button?.addEventListener("touchend",()=>{probe.touches+=1;});
+    });
+    await consentBox.tap();
+    try{await expect(consentBox).toHaveAttribute("aria-checked","true",{timeout:10000});}
+    catch(error){
+      const observed=await page.evaluate(()=>({
+        clicks:window.__guestConsentTapProbe?.clicks??null,
+        touches:window.__guestConsentTapProbe?.touches??null,
+        focused:document.hasFocus(),visible:document.visibilityState,
+        value:document.querySelector("[data-guest-message-consent]")?.getAttribute("aria-checked")
+      }));
+      console.error("VOICE_GUEST_TOUCH_CONSENT_DIAG "+JSON.stringify(observed));
+      throw error;
+    }
     await expect(start).toBeEnabled();
-    await consentBox.click();
+    await consentBox.tap();
     await expect(consentBox).toHaveAttribute("aria-checked","false");
     await expect(start).toBeDisabled();
-    await consentBox.click();
+    await consentBox.tap();
     await expect(consentBox).toHaveAttribute("aria-checked","true");
     await expect(start).toBeEnabled();
     await expect(page.locator("[data-guest-message-play]")).toHaveCount(0);
