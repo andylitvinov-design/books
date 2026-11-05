@@ -325,7 +325,9 @@ export function RemoteEnergySupportBooking({
   const [error, setError] = useState("");
   const [contactDraft, setContactDraft] = useState<ReturnType<typeof readRemoteSupportPublicDraft>>(null);
   const [talismanRequested, setTalismanRequested] = useState(false);
-  useEffect(() => { setTalismanRequested(false); setContactDraft(null); }, [goal, catalogId, selectedServiceId, requestKind]);
+  // Programmatically restoring the Google draft also updates goal; never erase
+  // the recovered consent form in a broad effect. User changes reset it.
+  useEffect(() => { setTalismanRequested(false); }, [goal, catalogId, selectedServiceId, requestKind]);
 
   const selected = useMemo(
     () => masters.find((master) => master.serviceId === selectedServiceId) || null,
@@ -487,6 +489,7 @@ export function RemoteEnergySupportBooking({
           <button key={kind} type="button" aria-pressed={requestKind === kind}
             onClick={() => {
               setRequestKind(kind);
+              setContactDraft(null);
               setSelectedServiceId("");
               setError("");
               onKindChange?.(kind);
@@ -507,7 +510,7 @@ export function RemoteEnergySupportBooking({
           {FOCUSES.map((focus) => (
             <button key={focus.id} type="button" data-remote-focus-chip aria-pressed={goal === focus.id}
               className={goal === focus.id ? styles.focusActive : ""}
-              onClick={() => { setGoal(goal === focus.id ? "" : focus.id); setCatalogId(""); setError(""); }}>
+              onClick={() => { setGoal(goal === focus.id ? "" : focus.id); setCatalogId(""); setContactDraft(null); setError(""); }}>
               {focus[locale]}
             </button>
           ))}

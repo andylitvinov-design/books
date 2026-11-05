@@ -104,7 +104,9 @@ test("the in-modal request CTA changes to consented CRM contact instead of navig
   assert.match(jsx, /try \{ window\.sessionStorage\.setItem\(REMOTE_SUPPORT_PUBLIC_DRAFT_KEY/);
   assert.match(jsx, /catch \{ \/\* Contact\/consent works even if private browsing denies storage\. \*\/ \}/);
   assert.match(jsx, /"Выберите и дату, и время или оставьте оба поля пустыми."/);
-  assert.match(jsx, /pending\?\.service !== remoteSupportPublicServiceTitle\(draft\)/);
+  assert.match(jsx, /pending\?\.service === remoteSupportPublicServiceTitle\(draft\)/);
+  assert.match(jsx, /if \(!markerValid && !resumePublicEnquiry\) return/);
+  assert.match(jsx, /draft\.practitioner !== selected\.name/);
   assert.match(jsx, /remoteSupportPublicRequestSummary\(contactDraft, locale\)/);
   assert.match(mobile, /window\.location\.search\.includes\("hh_enquiry=google"\)/);
   assert.doesNotMatch(mobile, /localStorage|sessionStorage|navigator\.sendBeacon/);
@@ -138,7 +140,12 @@ test("Google return restores a vetted public Reiki draft without skipping consen
   const booking = read("components/remote-energy-support-booking.tsx");
   const browser = read("scripts/verify-reiki-mobile-order-browser.mjs");
   assert.match(page, /query\.hh_enquiry === "google"/);
-  assert.match(page, /resumePublicEnquiry \? "healing"/);
+  assert.doesNotMatch(page, /resumePublicEnquiry \? "healing"/);
+  assert.match(page, /const initialChoice = availableViews\.find/);
+  assert.match(mobile, /pendingBrowserTalismanGoogleReturn\(\) \? "talisman" : "healing"/);
+  assert.doesNotMatch(booking, /useEffect\(\(\) => \{ setTalismanRequested\(false\); setContactDraft\(null\)/);
+  assert.match(booking, /setGoal\(draft\.goal\)/);
+  assert.match(booking, /setCatalogId\(""\); setContactDraft\(null\)/);
   assert.match(page, /resumePublicEnquiry=\{resumePublicEnquiry\}/);
   assert.match(mobile, /resumePublicEnquiry=\{resumePublicEnquiry && choice === "healing"\}/);
   assert.match(gallery, /readRemoteSupportPublicDraft\(window\.sessionStorage, item\.serviceId\)/);

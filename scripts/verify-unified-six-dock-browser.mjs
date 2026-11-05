@@ -261,7 +261,12 @@ try{
  await page.locator("[data-hh-unified-dock]").waitFor({state:"visible"});
  const videoHeader=page.locator("[data-video-hypno-scroll-start]");
  await videoHeader.waitFor({state:"visible",timeout:45000});
- assert.equal((await videoHeader.innerText()).trim(),"Видео-мандала","Video has a single short mobile title");
+ const videoTitle = (await videoHeader.innerText()).trim();
+ // The new branded Studio title replaces the old Mandala-only label.
+ assert.match(videoTitle, /Видеостудия · Создание видео$/,
+   "Video enters the current branded Studio from the unified dock");
+ assert.ok(videoTitle.split("\n").length <= 2,
+   "mobile Studio title remains within two compact lines");
  assert.equal(await page.locator("[data-mandala-legacy-header]:visible").count(),0,
    "no duplicate end-of-page header");
  assert.equal(await page.locator("[data-mandala-support-bottom-nav]:visible").count(),0,

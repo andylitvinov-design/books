@@ -115,8 +115,9 @@ export default async function HolisticSupportMobilePage({ params, searchParams }
   // contact details are delivered through the URL. Talisman selection may
   // switch after the existing client-side validated cart marker is checked.
   const resumePublicEnquiry = query.hh_enquiry === "google";
-  const initialChoice = resumePublicEnquiry ? "healing"
-    : availableViews.find(view => view === requestedView) ?? "meditation";
+  // A Talisman OAuth return must not prefetch the unrelated Reiki directory.
+  // The existing client-side one-use marker selects Talisman or Healing.
+  const initialChoice = availableViews.find(view => view === requestedView) ?? "meditation";
 
   const originalMysteryCourses: SupportMobileCourse[] = [];
 
