@@ -2,11 +2,11 @@
   --ink: #24362e;
   --deep: #073f37;
   --green: #078960;
-  --cream: #faf7ef;
+  --cream: var(--hh-light-canvas);
   min-height: 100svh;
   overflow-x: clip;
   color: var(--ink);
-  background: radial-gradient(ellipse at 50% 0%, #d9e9dd 0%, transparent 31%), linear-gradient(180deg, #f1f5ee, #fffbf3 54%, #f8f2e8);
+  background: radial-gradient(ellipse at 50% 0%, #fff1da 0%, transparent 31%), linear-gradient(180deg, var(--hh-light-canvas), var(--hh-light-surface) 54%, #f8eddd);
   font-family: Arial, Helvetica, sans-serif;
 }
 .page *, .page *::before, .page *::after { box-sizing: border-box; }
@@ -43,7 +43,7 @@
 .photoPlaceholder strong { max-width: 120px; font-size: 14px; line-height: 1.1; }
 .camera { position: absolute; right: 9px; bottom: 12px; display: grid; place-items: center; width: 39px; height: 39px; border: 2px solid white; border-radius: 50%; background: #264a41; color: white; box-shadow: 0 3px 10px #0003; transition: transform .15s; }
 .photo:hover .camera, .photo:focus-within .camera { transform: scale(1.12); }
-.fileInput { position: absolute; width: 1px; height: 1px; opacity: 0; bottom: 24px; right: 24px; }
+.fileInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .photo:focus-within { outline: 3px solid #dc9c37; outline-offset: 6px; }
 .photoError { margin: 0; color: #a12d32; font-size: 13px; }
 .focusSelector { display: grid; gap: 3px; width: 100%; max-width: 252px; padding: 10px 14px; border: 1px solid #e6e3d7; border-radius: 19px; background: #fffdf8; text-align: left; box-shadow: 0 3px 12px #15261b0d; }
@@ -61,7 +61,7 @@
 .detailedAnalysisLink { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px; margin-top: 11px; padding: 9px 11px; border: 1px solid #b4d4c0; border-radius: 13px; background: #eff7ef; color: #116549; font-size: 15px; font-weight: 800; line-height: 1.2; text-decoration: none; }
 .detailedAnalysisLink svg:last-child { margin-left: auto; flex: none; }
 .detailedAnalysisLink:hover { background: #e1f0e3; }
-.recommendationPanel { display: grid; gap: 11px; margin-bottom: 13px; padding: 17px 20px; border: 1px solid #cddfca; border-radius: 20px; background: #f8fbf4; box-shadow: 0 6px 18px #1c54251a; }
+.recommendationPanel { display: grid; gap: 11px; margin-bottom: 13px; padding: 17px 20px; border: 1px solid var(--hh-light-border); border-radius: 20px; background: var(--hh-light-surface-soft); box-shadow: var(--hh-light-shadow); }
 .recommendationLead h2 { display: flex; align-items: center; gap: 8px; margin: 0; color: #164c37; font-size: clamp(19px, 2.4vw, 24px); line-height: 1.25; }
 .recommendationLead p { margin: 6px 0 0; color: #496353; font-size: 15px; line-height: 1.45; }
 .recommendationGrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 11px; }
@@ -124,6 +124,12 @@
 .videoTitle { position: relative; z-index: 1; font-size: 16px; font-weight: 850; line-height: 1.27; overflow-wrap: anywhere; }
 .videoCard[aria-pressed="true"] { border-color: #9de4bc; box-shadow: 0 0 0 2px #0ba476, 0 8px 20px #0d8b5355; }
 .videoHint { margin: 13px 2px 4px; color: #6a6e64; font-size: 13px; line-height: 1.45; }
+.lessonNavigation { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 13px 0 5px; }
+.lessonNavigation button { flex: 1 1 110px; min-height: 44px; padding: 7px 10px; border: 1px solid #c8ded2; border-radius: 11px; background: #eaf5ed; color: #135d47; font-size: 12px; font-weight: 800; cursor: pointer; }
+.lessonNavigation button:disabled { opacity: .5; cursor: not-allowed; }
+.lessonNavigation button:focus-visible { outline: 3px solid #167f5e; outline-offset: 2px; }
+.lessonNavigation span { flex: 0 0 auto; color: #405c4e; font-size: 12px; font-weight: 800; white-space: nowrap; }
+
 .emptyMessage { margin: 0; padding: 14px; border-radius: 11px; background: #f5eee3; color: #4e5049; font-size: 16px; }
 .youtubeLink { display: inline-flex; align-items: center; gap: 7px; min-height: 45px; margin-top: 4px; color: #126f53; font-size: 15px; font-weight: 750; text-decoration: underline; }
 .supportEnquiry { display: grid; gap: 9px; padding: 13px 22px 22px; border-top: 1px solid #ebdfcf; }
@@ -241,7 +247,7 @@
   .recommendButton { font-size: 14px; }
 }
 @media (max-width: 640px) {
-  .page { background: linear-gradient(165deg,#e5f0e7,#f9f7ee 55%,#f8f1e4); }
+  .page { background: linear-gradient(165deg,#fff2e0,var(--hh-light-canvas) 55%,#f8eddd); }
   .container { width: calc(100% - 12px); padding: 5px 0 calc(75px + env(safe-area-inset-bottom)); }
   .compactAppHeader { display: none; }
   .topGrid { display: grid; grid-template-areas: "assessment profile tools";
@@ -289,8 +295,8 @@
     box-shadow: 0 0 0 2px #91cbd2,0 0 0 5px #fffcf9,0 7px 22px #206b5b29; }
   .photoReference { inset: 0; border-radius: 50%; width: 100%; height: 100%; object-fit: cover; }
   .photoPlaceholder { position: absolute; inset: 0; display: grid; place-items: center; gap: 0; padding: 0; }
-  .photoPlaceholder strong { display: none; }
-  .photo:has(.photoReference) .camera { display: none; }
+  .photoPlaceholder strong { display: block; padding: 4px 2px 3px; bottom: 3px; font-size: clamp(9px,2.2vw,11px); line-height: 1.05; }
+  .photo:has(.photoReference) .camera { display: grid; }
   .photo:has(.photoPreview) .camera { display: grid; }
   .camera { width: 29px; height: 29px; right: 0; bottom: 0; border-width: 1px; }
   .camera svg { width: 15px; height: 15px; }
@@ -601,7 +607,7 @@
 .mysteryPickerHeading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 3px 9px; margin-bottom: 10px; }
 .mysteryPickerHeading strong { color: #254b3c; font-size: 16px; font-weight: 850; }
 .mysteryPickerHeading span { color: #685c4a; font-size: 12px; }
-.mysteryPickerGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.mysteryPickerGrid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
 .mysteryPickerCard { position: relative; display: flex; flex-direction: column; justify-content: flex-end; isolation: isolate; overflow: hidden; min-width: 0; min-height: 111px; padding: 10px; cursor: pointer; text-align: left; border-radius: 14px; border: 2px solid #e6eadf; color: #fff; background: #183c32; transition: border-color .16s ease, box-shadow .16s ease; }
 .mysteryPickerCard > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
 .mysteryPickerCard::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg,rgba(6,31,29,.94) 0%,rgba(13,45,38,.35) 72%,rgba(13,45,38,.18)); }
@@ -618,7 +624,7 @@
   .mysteryPickerHeading { margin-bottom: 7px; }
   .mysteryPickerHeading strong { font-size: 14px; }
   .mysteryPickerHeading span { font-size: 10px; }
-  .mysteryPickerGrid { gap: 6px; }
+  .mysteryPickerGrid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
   .mysteryPickerCard { min-height: 88px; padding: 8px 6px; border-radius: 12px; }
   .mysteryPickerCard strong { font-size: 14px; }
   .mysteryPickerCard small { font-size: 10px; }
@@ -715,18 +721,11 @@
   .page .container { padding-bottom: calc(125px + env(safe-area-inset-bottom)); }
 }
 
-/* Focused mobile Reiki filter: do not float global navigation over the report and
-   certificate controls. After closing the filter, normal docked nav resumes. */
+/* Reiki filter and report actions stay above the same fixed dock as every
+   other Practice state. Never turn bottom navigation into document flow. */
 @media (max-width: 640px) {
   .page:has([data-support-reiki-central][data-active-tab="filter"]) .container {
-    padding-bottom: 10px;
-  }
-  .page:has([data-support-reiki-central][data-active-tab="filter"]) .bottomNav {
-    position: static;
-    inset: auto;
-    z-index: auto;
-    border-radius: 18px 18px 0 0;
-    box-shadow: none;
+    padding-bottom: calc(125px + env(safe-area-inset-bottom));
   }
 }
 
@@ -856,3 +855,382 @@
 }
 
 .mandalaAppHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:53px;padding:6px 13px;background:#fffdf8;border-bottom:1px solid #e5e6db;color:#184739;font:800 17px/1.2 Arial,Helvetica,sans-serif}.mandalaAppHeader a,.mandalaAppHeader button{display:grid;place-items:center;flex:none;width:42px;height:42px;border:1px solid #d9e6db;border-radius:50%;background:#f6faf3;color:#175d48;text-decoration:none}
+
+
+/* Five-step recommendation guide: one compact card, not a second homepage. */
+.goalResults { background: linear-gradient(145deg, #f5faf2, #fffcf5); }
+.journeyHeading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-width: 0; }
+.journeyHeading .goalResultsHeading { min-width: 0; }
+.journeyHeading .goalResultsHeading p { max-width: 68ch; }
+.journeyAdjust { display: inline-flex; align-items: center; justify-content: center; flex: none; gap: 5px;
+  min-height: 38px; padding: 6px 10px; border: 1px solid #b7d6c6; border-radius: 12px;
+  color: #12694e; background: #fffdfa; font-size: 12px; font-weight: 800; }
+.journeyAdjust:hover { background: #e4f3e7; }
+.journeyFocus { display: inline-flex; align-items: center; flex-wrap: wrap; justify-self: start; gap: 5px;
+  min-height: 28px; padding: 4px 10px; border-radius: 999px;
+  background: #e8f5eb; color: #27644f; font-size: 12px; line-height: 1.2; }
+.journeyFocus svg { color: #078d68; }
+.journeyFocus strong { font-weight: 850; }
+.journeyFocus span { padding-left: 7px; border-left: 1px solid #bed9c9; font-variant-numeric: tabular-nums; }
+.journeyRows { display: grid; gap: 7px; min-width: 0; }
+.journeyRow { display: grid; grid-template-columns: minmax(144px, 27%) minmax(0, 1fr);
+  align-items: stretch; gap: 9px; min-width: 0; }
+.journeyStep { display: grid; grid-template-columns: 30px 22px minmax(0,1fr); align-content: center;
+  align-items: center; gap: 8px; min-width: 0; color: #154e42; }
+.journeyStep > svg { color: #117858; }
+.journeyStep strong { font-size: 13px; line-height: 1.22; overflow-wrap: anywhere; }
+.journeyNumber { display: grid; place-items: center; width: 29px; height: 29px;
+  border-radius: 50%; background: #e0efe5; color: #185b44; font-size: 15px; font-weight: 900;
+  box-shadow: inset 0 0 0 1px #c3dfcd; font-variant-numeric: tabular-nums; }
+.journeyRow:first-child .journeyNumber { background: #008d68; color: #fff; box-shadow: 0 2px 10px #087c5a22; }
+.journeyTarget { display: grid; grid-template-columns: 64px minmax(0,1fr) 18px; align-items: center;
+  gap: 10px; min-width: 0; min-height: 77px; padding: 7px 11px 7px 7px;
+  border: 1px solid #deeadf; border-radius: 13px; background: #fffefa;
+  box-shadow: 0 2px 9px #27563b0a; color: #173f35; text-align: left; text-decoration: none; cursor: pointer; }
+.journeyTarget:hover { border-color: #7fbda1; background: #f1faf3; }
+.journeyTarget > svg:last-child { flex: none; color: #52776a; }
+.journeyThumb { display: grid; place-items: center; overflow: hidden; width: 64px; height: 61px;
+  border-radius: 10px; background: linear-gradient(135deg,#d9eee3,#faf0d9);
+  color: #078d68; }
+.journeyRow:nth-child(2) .journeyThumb { background: linear-gradient(145deg,#e5f3dd,#e5effa); }
+.journeyRow:nth-child(4) .journeyThumb { background: linear-gradient(145deg,#e1f5ea,#f6eddc); }
+.journeyRow:nth-child(5) .journeyThumb { background: linear-gradient(145deg,#e5f3ea,#f9f5e3); }
+.journeyThumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.journeyContent { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.journeyContent strong { font-size: 14px; font-weight: 820; line-height: 1.22; overflow-wrap: anywhere; }
+.journeyContent small { color: #65786e; font-size: 12px; line-height: 1.22; overflow-wrap: anywhere; }
+.journeyContent em { display: inline-flex; align-items: center; gap: 4px; width: fit-content;
+  margin-top: 2px; color: #078d68; font-size: 12px; font-style: normal; font-weight: 800; }
+.journeyStart { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  min-height: 46px; padding: 10px 12px; border: 0; border-radius: 12px;
+  background: linear-gradient(110deg,#008362,#10a879); color: white; font-weight: 850; font-size: 14px; }
+.journeyStart:hover { background: #007052; }
+.journeyStart svg:last-child { margin-left: 3px; }
+.journeyMore { border: 1px solid #dce8dd; border-radius: 12px; background: #fbfef9; }
+.journeyMore summary { display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  min-height: 40px; padding: 8px 12px; color: #155e47; cursor: pointer; font-size: 12px; font-weight: 800; list-style: none; }
+.journeyMore summary::-webkit-details-marker { display: none; }
+.journeyMore[open] summary svg { transform: rotate(180deg); }
+.journeyMore .goalResultGrid { padding: 0 9px 9px; }
+.journeyMore .goalEmptyNotice { padding: 0 11px 10px; }
+@media (max-width: 640px) {
+  .goalResults { padding: 10px; gap: 7px; }
+  .journeyHeading { gap: 6px; }
+  .journeyHeading .goalResultsHeading h2 { font-size: clamp(15px, 4vw, 18px); }
+  .journeyHeading .goalResultsHeading p { font-size: 11px; line-height: 1.3; }
+  .journeyAdjust { padding: 5px 7px; min-height: 34px; font-size: 11px; }
+  .journeyAdjust svg { width: 14px; height: 14px; }
+  .journeyFocus { font-size: 11px; padding: 3px 8px; min-height: 25px; }
+  .journeyRows { gap: 6px; }
+  .journeyRow { grid-template-columns: minmax(85px, 31%) minmax(0,1fr); gap: 6px; }
+  .journeyStep { grid-template-columns: 24px minmax(0,1fr); gap: 5px; }
+  .journeyStep > svg { display: none; }
+  .journeyStep strong { font-size: clamp(11px, 2.8vw, 12px); line-height: 1.19; }
+  .journeyNumber { width: 24px; height: 24px; font-size: 12px; }
+  .journeyTarget { grid-template-columns: 42px minmax(0,1fr) 12px; gap: 6px;
+    min-height: 70px; padding: 6px; border-radius: 11px; }
+  .journeyTarget > svg:last-child { width: 12px; height: 12px; }
+  .journeyThumb { width: 42px; height: 50px; border-radius: 8px; }
+  .journeyThumb svg { width: 21px; height: 21px; }
+  .journeyContent { gap: 2px; }
+  .journeyContent strong { font-size: clamp(11.5px, 3.2vw, 13px); line-height: 1.16; }
+  .journeyContent small { font-size: 10px; line-height: 1.15; }
+  .journeyContent em { margin-top: 1px; font-size: 10px; }
+  .journeyContent em svg { width: 11px; height: 11px; }
+  .journeyStart { min-height: 42px; padding: 9px 10px; font-size: 13px; }
+  .journeyMore .goalResultGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 350px) {
+  .journeyRow { grid-template-columns: 79px minmax(0,1fr); gap: 4px; }
+  .journeyTarget { grid-template-columns: 36px minmax(0,1fr); gap: 5px; padding: 5px; }
+  .journeyTarget > svg:last-child { display: none; }
+  .journeyThumb { width: 36px; height: 44px; }
+  .journeyStep strong { font-size: 10.5px; }
+  .journeyContent small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .journeyHeading .goalResultsHeading h2 { font-size: 14px; }
+}
+
+
+/* Meaning is the fourth assessment; it includes purpose and goals.
+   There is no fifth Goals slider or duplicate score. */
+.scaleIcon[data-tone="meaning"] { color: #7654b6; background: #e9e2f5; }
+.scaleValue[data-tone="meaning"] { background: #e9e2f5; }
+.scaleRow[data-support-scale="meaning"] input { accent-color: #8059bf; }
+@media (max-width: 640px) {
+  .page .assessment .scaleList { gap: 2px; margin-top: 0; }
+  .page .assessment .scaleRow {
+    grid-template-rows: 13px 18px; min-height: 31px;
+  }
+  .page .assessment .scaleLabel { font-size: clamp(10px,2.95vw,12px); }
+  .page .assessment .scaleRow input { height: 18px; }
+  .page .assessment .scaleValue { height: 19px; font-size: 12px; }
+}
+@media (max-width: 350px) {
+  .page .assessment .scaleRow { grid-template-rows: 13px 17px; min-height: 30px; }
+  .page .assessment .scaleLabel { font-size: 10.3px; }
+  .page .assessment .scaleRow input { height: 17px; }
+}
+
+/* Restore the original broad, short iPhone dashboard proportions with
+   four synchronized assessments: Energy, Money, Relationships, Meaning. */
+@media (min-width: 351px) and (max-width: 640px) {
+  .page .topGrid {
+    grid-template-columns: minmax(0,1.19fr) minmax(0,.83fr) minmax(0,1.20fr);
+  }
+}
+@media (max-width: 640px) {
+  .page .assessment { padding-top: 7px; padding-bottom: 6px; }
+  .page .assessment .scaleList { gap: 2px; margin-top: 0; }
+  .page .assessment .scaleRow {
+    grid-template-rows: 14px 18px; min-height: 33px;
+  }
+  .page .assessment .scaleLabel { font-size: clamp(10.6px, 2.95vw, 12.5px); }
+  .page .assessment .scaleIcon { width: 19px; height: 19px; }
+  .page .assessment .scaleIcon svg { width: 15px; height: 15px; }
+  .page .assessment .scaleRow input { height: 18px; }
+  .page .assessment .scaleValue { height: 20px; font-size: 12px; }
+  .page .assessment > .goalFilterTrigger { min-height: 40px; margin-top: 4px; }
+}
+@media (max-width: 350px) {
+  .page .topGrid {
+    grid-template-columns: minmax(0,1.20fr) minmax(0,.82fr) minmax(0,1.12fr);
+  }
+  .page .assessment .scaleRow {
+    grid-template-rows: 12px 17px; min-height: 30px;
+  }
+  .page .assessment .scaleIcon { height: 17px; }
+  .page .assessment .scaleRow input { height: 17px; }
+  .page .assessment > .goalFilterTrigger { min-height: 39px; }
+}
+
+
+/* The real iPhone three-column row must not stretch the check-in card.
+   At 390px the original 77px action tiles made the entire header 291px tall
+   although the check-in CTA finished by 255px. Keep the same four action tiles,
+   all labels and the bottom Video Mandala shortcut; just recover 18px. */
+@media (min-width: 351px) and (max-width: 640px) {
+  .page .tools .toolGrid { grid-template-rows: repeat(2, minmax(0, 68px)); }
+  .page .tools .toolButton,
+  .page .tools .toolButton:last-child {
+    min-height: 68px;
+    padding-block: 3px;
+    gap: 3px;
+  }
+}
+
+/* Verified Reiki previews: €0 is online learning, not personal initiation. */
+.reikiPills,.videoMetaPills { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.reikiPills { margin-top:9px; }
+.reikiPricePill,.reikiAudioPill,.videoMetaPills>small {
+ display:inline-flex; align-items:center; width:fit-content; padding:5px 9px;
+ border-radius:999px; font-size:12px; font-weight:850; line-height:1.2;
+}
+.reikiPricePill,.videoPricePill { background:#def5cd; color:#194e32; }
+.reikiAudioPill,.videoAudioPill { background:#fff7ee; color:#244c40; }
+.reikiHeroActions { display:grid; justify-items:start; width:min(460px,100%); gap:9px; }
+.reikiStartCourse,.reikiAfterVideo a {
+ display:inline-flex; align-items:center; justify-content:center; gap:9px; width:100%;
+ min-height:60px; padding:11px 14px; border:2px solid #fcf4d0; border-radius:15px;
+ background:linear-gradient(105deg,#fbe5ac,#f4c674); color:#3b2a18; text-align:center;
+ font-size:clamp(17px,2.6vw,22px); font-weight:900; text-decoration:none; box-shadow:0 6px 18px #071d193d;
+}
+.reikiStartCourse:hover,.reikiAfterVideo a:hover { background:#ffe8b1; }
+.reikiStartCourse:focus-visible,.reikiAfterVideo a:focus-visible { outline:3px solid #fff; outline-offset:3px; }
+.reikiHeroActions .reikiPreviewButton { min-height:44px; width:auto; padding:9px 15px; border-radius:12px; box-shadow:none; font-size:15px; }
+.reikiAfterVideo { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:12px; background:#173f35; }
+.reikiAfterVideo a { width:auto; flex:1 1 210px; min-height:48px; font-size:16px; }
+.videoCaption { position:relative; z-index:2; display:grid; gap:5px; width:100%; min-width:0; }
+.videoMetaPills { gap:3px; }
+.videoMetaPills>small { padding:3px 6px; font-size:10px; }
+@media (max-width:640px) {
+ .hero:has(.reikiStartCourse) .heroBody { max-width:min(88%,330px); padding-top:13px; }
+ .hero:has(.reikiStartCourse) .heroBody h2 { font-size:clamp(25px,7vw,35px); }
+ .hero:has(.reikiStartCourse) .heroDescription { max-width:310px; font-size:clamp(12px,3.3vw,15px); }
+ .reikiPills { margin-top:5px; gap:4px; }
+ .reikiPricePill,.reikiAudioPill { padding:4px 7px; font-size:10px; }
+ .reikiStartCourse { min-height:49px; padding:8px; font-size:clamp(14px,4vw,18px); }
+ .reikiHeroActions { gap:5px; }
+ .reikiHeroActions .reikiPreviewButton { min-height:41px; padding:6px 9px; font-size:12px; }
+ .videoMetaPills>small { padding:2px 4px; font-size:9px; }
+ .reikiAfterVideo { padding:7px; }
+ .reikiAfterVideo a { min-height:44px; font-size:13px; }
+}
+@media (max-width:350px) {
+ .hero:has(.reikiStartCourse) .heroBody { max-width:94%; }
+ .hero:has(.reikiStartCourse) .heroBody h2 { font-size:24px; }
+ .hero:has(.reikiStartCourse) .heroDescription { font-size:12px; }
+ .videoMetaPills>small { font-size:8.5px; }
+}
+
+/* In Courses display the real video source thumbnails, not the four scenic
+   meditation mock posters (which otherwise hide the original on iPhone). */
+@media (max-width:640px) {
+  .videoSection[data-support-video-mode="pump"] .videoCard::after { display:none; }
+}
+
+/* Approved public meditation categories and source-backed vertical catalogue. */
+.meditationCategorySection { min-width: 0; padding: 12px 16px 5px; background: #fffaf1; }
+.meditationCategoryHeader { display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 9px; }
+.meditationCategoryHeader > div { display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: 10px; min-width: 0; }
+.meditationCategoryHeader h2 { margin: 0; color: #203a2f; font-size: clamp(20px,2.5vw,25px);
+  font-weight: 850; letter-spacing: -.035em; }
+.meditationCategoryHeader p { margin: 0; color: #76786d; font-size: 13px; line-height: 1.2; }
+.meditationCategoryHeader > button { display: inline-flex; justify-content: flex-end; align-items: center;
+  gap: 5px; flex: none; min-height: 44px; padding: 4px 0; border: 0; background: transparent;
+  color: #087e5b; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.meditationCategoryHeader > button svg { flex: none; transition: transform .15s ease; }
+.meditationCategoryHeader > button[aria-expanded="true"] svg { transform: rotate(90deg); }
+.meditationCategoryFrame { position: relative; min-width: 0; }
+.meditationCategoryRail { display: flex; align-items: stretch; gap: 7px; max-width: 100%;
+  overflow-x: auto; padding: 2px 43px 7px 2px; scroll-snap-type: x mandatory;
+  scroll-padding-inline: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.meditationCategoryRail::-webkit-scrollbar { display: none; }
+.meditationCategorySection .meditationCategoryCard { display: flex; flex: 0 0 clamp(82px,22%,125px);
+  flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  min-width: 0; min-height: 94px; padding: 8px 5px;
+  border: 1px solid #d8e5d9; border-radius: 15px; background: #f4f9f3;
+  color: #16765a; text-align: center; line-height: 1.18; font-size: clamp(11px,1.4vw,13px);
+  font-weight: 800; scroll-snap-align: start; }
+.meditationCategoryCard svg { flex: none; }
+.meditationCategoryCard > span { display: block; max-width: 100%; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis; letter-spacing: -.012em; }
+.meditationCategoryCard:hover { filter: brightness(.97); }
+.meditationCategoryCard[data-category="energy-confidence"] { background: #faf5ff; color: #6c38b3; border-color: #e1c6f4; }
+.meditationCategoryCard[data-category="goals-money"] { background: #fff9eb; color: #8c6000; border-color: #f0d99e; }
+.meditationCategoryCard[data-category="love-relationships"] { background: #fff3f5; color: #b12e57; border-color: #f3c0cc; }
+.meditationCategoryCard[data-category="stress-anxiety"] { background: #f1faf3; color: #0f6a51; border-color: #cfe6d4; }
+.meditationCategoryCard[data-category="all"] { background: #eff8fa; color: #28677b; border-color: #cde2e7; }
+.meditationCategoryCard[aria-pressed="true"] { border: 2px solid #8950d1;
+  box-shadow: 0 0 0 2px #dac7f3, 0 4px 12px #6c42b22c; }
+.meditationCategoryNext { position: absolute; z-index: 5; top: 50%; right: -4px;
+  display: grid; place-items: center; width: 44px; height: 44px;
+  transform: translateY(-50%); border: 0; background: transparent; color: #1b5042; }
+.meditationCategoryNext::before { content: ""; position: absolute; z-index: -1; inset: 5px;
+  border: 1px solid #e5e8df; border-radius: 50%; background: #fffdfa;
+  box-shadow: 0 3px 10px #152c2338; }
+.meditationCategoryNext:hover::before { background: #e2f3e8; }
+.meditationCategoryFrame[data-expanded="true"] .meditationCategoryRail { display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr)); padding-right: 2px;
+  overflow: visible; scroll-snap-type: none; }
+.meditationCategoryFrame[data-expanded="true"] .meditationCategoryCard { min-height: 88px; width: 100%; }
+.meditationCategoryFrame[data-expanded="true"] .meditationCategoryNext { display: none; }
+@media(max-width:640px) {
+  .meditationCategorySection { padding: 9px 9px 3px; }
+  .meditationCategoryHeader { gap: 7px; margin-bottom: 6px; }
+  .meditationCategoryHeader > div { gap: 3px 7px; align-items: baseline; }
+  .meditationCategoryHeader h2 { font-size: clamp(19px,5.35vw,23px); }
+  .meditationCategoryHeader p { font-size: clamp(9px,2.5vw,11px); }
+  .meditationCategoryHeader > button { min-height: 44px; gap: 3px; font-size: clamp(10px,2.7vw,12px); }
+  .meditationCategoryFrame:not([data-expanded="true"]) .meditationCategoryRail {
+    height: 84px; min-height: 0; align-items: center; gap: 6px;
+    padding: 1px 48px 5px 1px; overflow-y: hidden; }
+  /* Higher specificity than .page button { font: inherit }, avoiding tiny labels on iPhone. */
+  .meditationCategorySection .meditationCategoryCard { flex-basis: calc((100% - 18px) / 4);
+    box-sizing: border-box; min-height: 76px; padding: 6px 2px; gap: 5px;
+    border-radius: 13px; font-size: clamp(11px,2.85vw,13px); font-weight: 800; }
+  .meditationCategoryFrame:not([data-expanded="true"]) .meditationCategoryCard {
+    height: 76px; min-height: 0; max-height: 76px; overflow: hidden; }
+  .meditationCategoryCard svg { width: 22px; height: 22px; }
+  .meditationCategoryFrame[data-expanded="true"] .meditationCategoryCard { min-height: 76px; }
+}
+@media(max-width:350px) {
+  .meditationCategoryHeader p { font-size: 9px; }
+  .meditationCategorySection .meditationCategoryCard { font-size: 11px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .meditationCategoryCard,.meditationCategoryHeader > button svg { transition: none; }
+}
+
+
+/* YouTube-like vertical catalogue below the four featured recordings.
+   Same filtered, verified video IDs; cards select the hero without autoplay. */
+.videoFeed { min-width: 0; margin-top: 17px; padding-top: 15px; border-top: 1px solid #e7e2d5; }
+.videoFeedHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.videoFeedHeading h3 { margin: 0; color: #223c30; font-size: clamp(19px, 2.3vw, 24px);
+  line-height: 1.2; font-weight: 850; }
+.videoFeedHeading > span { flex: none; color: #487d61; font-size: 12px; font-weight: 800; }
+.videoFeedHint { margin: 6px 0 12px; color: #627368; font-size: 13px; line-height: 1.4; }
+.videoFeedList { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.videoFeedList li { min-width: 0; }
+.videoFeedItem { display: grid; grid-template-columns: clamp(106px, 32%, 200px) minmax(0, 1fr);
+  align-items: center; gap: 12px; width: 100%; min-width: 0; min-height: 112px;
+  padding: 9px; border: 1px solid #e0dfd3; border-radius: 15px;
+  background: #fffefa; color: #253b31; text-align: left; box-shadow: 0 3px 12px #24372b0a; }
+.videoFeedItem:hover { border-color: #7ebd9b; background: #f4faf4; }
+.videoFeedItem[aria-pressed="true"] { border-color: #078e69; background: #f2faf3;
+  box-shadow: inset 3px 0 #078e69, 0 4px 13px #0b826021; }
+.videoFeedPoster { position: relative; display: block; width: 100%; aspect-ratio: 16/9;
+  overflow: hidden; border-radius: 10px; background: #284e41; }
+.videoFeedPoster img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.videoFeedPlay { position: absolute; inset: 0; display: grid; place-items: center;
+  color: #fff; background: linear-gradient(90deg, #081b1659, #082e1e0a); }
+.videoFeedPlay svg { display: block; box-sizing: content-box; padding: 9px;
+  border: 1px solid #ffffffc4; border-radius: 50%; background: #143c31bf; }
+.videoFeedCopy { display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  min-width: 0; overflow-wrap: anywhere; }
+.videoFeedCopy > strong { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; color: #22392e; font-size: clamp(14px, 2vw, 17px);
+  font-weight: 850; line-height: 1.19; }
+.videoFeedDescription { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3; color: #53675b; font-size: 13px; line-height: 1.3; }
+.videoFeedFooter { display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 5px 9px; }
+.videoFeedFooter > small { font-size: 11px; color: #667d70; line-height: 1.25; }
+.videoFeedChoose { display: inline-flex; align-items: center; gap: 3px; color: #087b59;
+  font-size: 12px; font-weight: 850; white-space: nowrap; }
+@media (max-width: 640px) {
+  .videoFeed { margin-top: 12px; padding-top: 11px; }
+  .videoFeedHeading h3 { font-size: clamp(18px, 4.9vw, 22px); }
+  .videoFeedHint { margin: 4px 0 10px; font-size: 12px; }
+  .videoFeedList { gap: 8px; }
+  .videoFeedItem { gap: 9px; padding: 7px; min-height: 106px; border-radius: 12px; }
+  .videoFeedCopy { gap: 4px; }
+  .videoFeedCopy > strong { font-size: clamp(13px, 3.75vw, 16px); }
+  .videoFeedDescription { font-size: clamp(12px, 3.25vw, 13px); }
+}
+@media (max-width: 350px) {
+  .videoFeedItem { grid-template-columns: 100px minmax(0, 1fr); gap: 7px; padding: 6px; }
+  .videoFeedFooter > small { font-size: 10px; }
+  .videoFeedChoose { font-size: 11px; }
+}
+
+/* A native mobile touch must land on the actual source-backed thumbnail, not
+   on its overlaid image/caption or the fixed app dock during auto-scrolling. */
+@media(max-width:640px){
+  .videoSection .videoCard{
+    scroll-margin-block-start:65px;
+    scroll-margin-block-end:calc(125px + env(safe-area-inset-bottom));
+    touch-action:manipulation;
+  }
+  .videoSection .videoCard > :is(img,span){pointer-events:none}
+}
+
+/* Private photo Save stays secondary to the recommendation CTA. */
+.photoSave { max-width: 180px; min-height: 37px; padding: 5px 9px; border: 1px solid #1a916f; border-radius: 12px; background: #078764; color: #fff; font-size: 13px; font-weight: 800; line-height: 1.18; overflow-wrap: anywhere; }
+.photoSave:disabled { opacity: .66; cursor: progress; }
+.photoSaved { max-width: 180px; color: #11664f; font-size: 12px; font-weight: 750; line-height: 1.25; overflow-wrap: anywhere; }
+@media (max-width:640px) {
+  .profile > .photoSave { min-width: 0; width: 100%; min-height: 33px; padding: 4px 2px; border-radius: 9px; font-size: clamp(9px,2.45vw,11px); }
+  .profile > .photoSaved { font-size: 10px; line-height: 1.15; }
+}
+
+
+/* Practice replaces duplicate category menus with one real three-way entry.
+   Content selection keeps the existing practices / service pages and data. */
+.practiceTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 13px;min-width:0}
+.practiceTabs> :is(button,a){display:flex;align-items:center;justify-content:center;min-height:48px;min-width:0;padding:9px 7px;
+ border:1px solid #d9e8dc;border-radius:12px;background:#fffdf9;color:#315a47;font:760 13px/1.2 system-ui,sans-serif;text-decoration:none;cursor:pointer}
+.practiceTabs>button[aria-pressed="true"]{background:#e4f5ea;color:#087b5b;border-color:#9acbb2}
+.practiceTabs> :is(button,a):focus-visible{outline:3px solid #168a65;outline-offset:2px}
+@media(max-width:350px){.practiceTabs{gap:5px}.practiceTabs> :is(button,a){min-height:44px;font-size:12px;padding-inline:3px}}
+
+/* Source-backed three-direction catalogue is the first Courses action.
+   Optional goal-profile journeys stay collapsed until explicit activation. */
+.learningCatalogBlock{display:grid;gap:10px;min-width:0;margin:8px 0 13px;scroll-margin-top:80px}
+.learningGoalPicker{min-width:0;border:1px solid #d8e6d6;border-radius:15px;background:#fffdf8}
+.learningGoalPicker>summary{min-height:46px;display:flex;align-items:center;padding:11px 13px;cursor:pointer;color:#216348;font:750 13px/1.3 system-ui,sans-serif}
+.learningGoalPicker[open]>summary{border-bottom:1px solid #d8e6d6}
+.learningGoalPicker> :not(summary){min-width:0}
+@media(max-width:350px){.learningCatalogBlock{margin:6px 0 10px}.learningGoalPicker>summary{min-height:44px;font-size:12px}}

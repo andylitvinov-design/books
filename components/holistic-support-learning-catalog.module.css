@@ -32,3 +32,12 @@
 @media(max-width:640px){.root{gap:10px;padding:10px;border-radius:16px}.direction{min-height:100px;font-size:12px}.directions{gap:6px}.heading h2{font-size:21px}.search input{font-size:12px}.filterToggle{min-width:85px;padding:7px 5px;font-size:11px}.cardImage,.cardImagePlaceholder{width:92px;min-height:100px}.cardMain{gap:8px}.cardBody h4{font-size:13px}.meta{font-size:10px}.meta strong{font-size:10px}.actions button,.actions a{padding:5px 7px;font-size:11px}.extraFilters{grid-template-columns:repeat(2,minmax(0,1fr))}.clear{font-size:10px}}
 @media(max-width:350px){.root{padding:8px}.direction{min-height:92px;font-size:11px}.searchRow{gap:5px}.filterToggle{min-width:77px}.cardImage,.cardImagePlaceholder{width:75px;min-height:93px}.cardBody h4{font-size:12px}.subline{font-size:10px}.actions{gap:4px}.actions button,.actions a{min-height:29px;padding:4px 6px;font-size:10px}.resultsHeading h3{font-size:15px}}
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto}}
+
+/* Accessibility guard: all active catalogue controls keep a 44px tap area
+   even on a narrow 320px iPhone. No nested vertical frame scrolling. */
+.root .topic,.root .costRow button,.root .actions button,.root .actions a,
+.root .more,.root .empty button,.root .extraFilters select,
+.root .reset,.root .filterToggle{min-height:44px}
+.root .search input{min-height:44px}
+@media(max-width:350px){.root .topic,.root .costRow button,.root .actions button,
+.root .actions a,.root .more,.root .empty button{min-height:44px}}

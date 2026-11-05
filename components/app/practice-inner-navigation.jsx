@@ -1,12 +1,13 @@
 'use client'
 import Link from 'next/link'
 import {Bell,BookOpen,ChevronLeft,ClipboardList,Home,Leaf,UserRound} from 'lucide-react'
+import showcaseStyles from '../practice-showcase.module.css'
 
 // One visual navigation shared by the EXISTING protected practice panels.
 // All actions reuse the current handlers; this creates no separate client/CRM store.
 const WORDS={
  en:{
-  home:'Home',practice:'Practice',requests:'Requests',materials:'Materials',profile:'Profile',
+  home:'Home',practice:'Practice',practiceHome:'Practitioner workspace',requests:'Requests',materials:'Materials',profile:'Profile',
   clientsTitle:'Client records',clientsIntro:'Private requests, history and next actions',
   requestsTitle:'Requests',requestsIntro:'Enquiries and follow-ups in one place',
   materialsTitle:'My materials',materialsIntro:'Lessons, recordings and files for your clients',
@@ -17,7 +18,7 @@ const WORDS={
   back:'Back to practice',alerts:'Open requests',
  },
  ru:{
-  home:'Главная',practice:'Практика',requests:'Заявки',materials:'Материалы',profile:'Профиль',
+  home:'Главная',practice:'Практика',practiceHome:'Кабинет практика',requests:'Заявки',materials:'Материалы',profile:'Профиль',
   clientsTitle:'Карточки клиентов',clientsIntro:'История, обращения и следующие шаги',
   requestsTitle:'Заявки',requestsIntro:'Обращения, заказы и ответы в одном месте',
   materialsTitle:'Мои материалы',materialsIntro:'Уроки, записи и файлы для ваших клиентов',
@@ -28,7 +29,7 @@ const WORDS={
   back:'К практике',alerts:'Открыть заявки',
  },
  es:{
-  home:'Inicio',practice:'Práctica',requests:'Solicitudes',materials:'Materiales',profile:'Perfil',
+  home:'Inicio',practice:'Práctica',practiceHome:'Espacio profesional',requests:'Solicitudes',materials:'Materiales',profile:'Perfil',
   clientsTitle:'Fichas de clientes',clientsIntro:'Solicitudes privadas, historial y siguientes pasos',
   requestsTitle:'Solicitudes',requestsIntro:'Solicitudes, pedidos y respuestas en un solo lugar',
   materialsTitle:'Mis materiales',materialsIntro:'Lecciones, grabaciones y archivos para tus clientes',
@@ -58,7 +59,15 @@ export function PracticeInnerHeader({locale='en',panel,requests=[],onBack,onNavi
   <button type="button" className="hh-practice-inner-back" onClick={onBack} aria-label={t.back}>
    <ChevronLeft size={22} aria-hidden="true"/>
   </button>
-  <div className="hh-practice-inner-heading"><h2>{titles[panel]}</h2><p>{intros[panel]}</p></div>
+  <div className="hh-practice-inner-heading">
+    <div className={showcaseStyles.eyebrow} data-practice-original-home-link>
+     <Link href={'/'+locale+'/practice'} prefetch={false}
+       style={{display:'inline-flex',alignItems:'center',gap:5,color:'inherit',textDecoration:'none'}}>
+       <Leaf size={15} aria-hidden="true"/>{t.practiceHome}
+     </Link>
+    </div>
+    <h2>{titles[panel]}</h2><p>{intros[panel]}</p>
+   </div>
   <button type="button" className="hh-practice-inner-alert" onClick={()=>onNavigate('requests')} aria-label={t.alerts}>
    <Bell size={20} aria-hidden="true"/>
    {count>0&&<span className="hh-practice-inner-unread" aria-hidden="true"/>}

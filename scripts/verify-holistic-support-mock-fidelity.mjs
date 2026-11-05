@@ -13,11 +13,14 @@ const output = "artifacts/holistic-support-mock-fidelity";
 await mkdir(output, { recursive: true });
 const evidence = [];
 const photo = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL2WQAAAABJRU5ErkJggg==", "base64");
+// Bound browser load to two fully isolated pages: all 18 EN/RU/ES cases still run.
+const supportCases = ["ru", "en", "es"].flatMap(locale =>
+  [320, 390, 430].map(width => ({ locale, width })));
 for (const browserType of [chromium, webkit]) {
   const browser = await browserType.launch({ headless: true });
   try {
-    for (const locale of ["ru", "en", "es"]) {
-      for (const width of [320, 390, 430]) {
+    for (let from = 0; from < supportCases.length; from += 2) {
+      const results = await Promise.allSettled(supportCases.slice(from, from + 2).map(async ({ locale, width }) => {
         const label = browserType.name() + "/" + locale + "/" + width;
         const page = await browser.newPage({ viewport: {width, height: 844}, deviceScaleFactor: 1,
           hasTouch: true, isMobile: true, reducedMotion: "reduce", serviceWorkers: "block" });
@@ -49,7 +52,21 @@ for (const browserType of [chromium, webkit]) {
             return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
           }, null, {timeout:30000});
 
-          assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4, label + " ratings");
+          assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(), 4,
+            label + " four top check-ins; Goals is part of Meaning");
+          assert.equal(await root.locator('[data-support-scale="goals"]').count(),0,
+            label+" no duplicate Goals scale");
+          const newCategoryCopy = {
+            en: { energy: "Body & energy", confidence: "Confidence", category: "Confidence & harmony" },
+            ru: { energy: "Тело и энергия", confidence: "Уверенность", category: "Уверенность и гармония" },
+            es: { energy: "Cuerpo y energía", confidence: "Confianza", category: "Confianza y armonía" },
+          }[locale];
+          assert.equal((await root.locator('[data-support-scale="energy"] [class*="scaleLabel"]').innerText()).trim(),
+            newCategoryCopy.energy, label + " Body & energy shared check-in");
+          assert.equal((await root.locator('[data-support-scale="meaning"] [class*="scaleLabel"]').innerText()).trim(),
+            newCategoryCopy.confidence, label + " Confidence is the fourth check-in");
+          assert.ok((await root.locator('[data-support-active-focus]').innerText()).includes(newCategoryCopy.energy),
+            label + " profile focus uses same Body & energy label");
           assert.equal(await root.locator('[data-support-tool]').count(), 7, label + " four modes plus Courses/Masters/Tests");
           const testsAction=root.locator('[data-support-photo]').locator('..').locator('[data-support-tool="tests"]');
           assert.equal(await testsAction.count(),1,label+" Tests shortcut is directly under the portrait");
@@ -107,6 +124,7 @@ for (const browserType of [chromium, webkit]) {
                 return { name: txt?.textContent, fits: Boolean(txt && tr &&
                   txt.scrollWidth <= txt.clientWidth+2 && tr.left>=lr.left-2 && tr.right<=lr.right+2) };
               }),
+              guide:measure('[data-support-goal-results]'),
               gallery:measure('[data-support-meditation-gallery]'),
               hero:measure('[data-support-player]'),
               tabs:measure('[data-support-mode], [data-support-filter]'),
@@ -123,8 +141,10 @@ for (const browserType of [chromium, webkit]) {
               Math.round(geometry.a[0].height)+"px, tools "+Math.round(geometry.toolsSection[0].height)+"px");
             await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-320.png",fullPage:true});
           }
-          assert.ok(geometry.toolsSection[0].bottom-geometry.a[0].y<285,
-            label+" compact three-zone dashboard fits within 285px before the optional mystery-course shelf");
+          assert.equal(geometry.guide.length,0,
+            label+" personalized dialogue must not appear before the visitor starts it");
+          assert.ok(geometry.hero[0].y>=geometry.a[0].bottom-2,
+            label+" unchanged four-score dashboard precedes the scenic player");
           assert.ok(geometry.gallery.length===1 && geometry.hero[0].bottom<=geometry.gallery[0].y+2,
             label+" other meditations appear BELOW the scenic player");
           assert.ok(geometry.readableTools.every(t =>
@@ -160,15 +180,15 @@ for (const browserType of [chromium, webkit]) {
             null,{timeout:8000});
 
           await root.locator('[data-support-recommendations]').click();
-          const basis=root.locator('[data-support-meditation-gallery] [data-support-meditation-basis]');
-          await basis.waitFor({state:"visible",timeout:8000});
-          const statusText=await basis.innerText();
-          assert.ok(statusText.includes("2/10"),label+" minimum score reflected in meditation rail");
+          const initialGuide=root.locator('[data-support-inline-guide]');
+          await initialGuide.waitFor({state:"visible",timeout:8000});
+          const statusText=await initialGuide.locator('[data-support-guide-message="guide"]').nth(1).innerText();
+          assert.ok(statusText.includes("2/10"),label+" only changed check-in reflected in first reply");
           assert.ok(statusText.includes(locale==="ru"?"Отношения":locale==="es"?"Relaciones":"Relationships"),
-            label+" theme chosen by minimum, not a Focus selector");
+            label+" focus comes from the user's edited rating");
           assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),
             4,label+" all source-backed thumbnail cards are retained");
-          // The scenic workspace itself expands into a five-sector goal editor.
+          // The workspace expands into four sectors, including merged Meaning and Goals.
           await root.locator('[data-support-goal-filter-trigger]').click();
           const filter=root.locator('[data-support-goal-filter]');
           await filter.waitFor({state:"visible",timeout:8000});
@@ -178,7 +198,63 @@ for (const browserType of [chromium, webkit]) {
             const title=document.getElementById("support-goal-filter-title");
             return !!title && title.getBoundingClientRect().top >= 59;
           }, null, {timeout:4000});
-          assert.equal(await filter.locator('[data-goal-sector]').count(),5,label+" five goal sectors");
+          assert.equal(await filter.locator('[data-goal-sector]').count(),4,label+" four merged goal sectors");
+          assert.equal(await filter.locator('[data-goal-sector="goals"]').count(),0,
+            label+" no standalone Goals category");
+          assert.ok((await filter.locator('[data-goal-sector="meaning"]').innerText()).includes(newCategoryCopy.category),
+            label + " detailed fourth category uses Confidence & harmony");
+          assert.ok((await filter.locator('[data-goal-sector="energy"]').innerText()).includes(newCategoryCopy.energy),
+            label + " filter Body & energy matches top scale");
+          // Live two-way sync between upper-left check-ins and the new compact
+          // first slider in the filter, without dragging the separate axes.
+          const checkinPairs = [
+            ["energy","energy"], ["money","money"],
+            ["love","relationships"], ["meaning","meaning"],
+          ];
+          for (const [sector, key] of checkinPairs) {
+            await filter.locator('[data-goal-sector="'+sector+'"]').click();
+            const inside=filter.locator('[data-support-goal-checkin-input]');
+            const top=root.locator('[data-support-scale="'+key+'"] input[type="range"]');
+            assert.equal(await inside.inputValue(),await top.inputValue(),
+              label+" "+sector+" inherits the exact top-left score");
+            assert.equal(await filter.locator('[data-support-goal-checkin="'+sector+'"]').count(),1,
+              label+" one shared slider ahead of concerns for "+sector);
+            const placement=await filter.locator('[data-support-goal-details]').evaluate(el=>{
+              const a=el.querySelector('[data-support-goal-checkin]')?.getBoundingClientRect();
+              const b=el.querySelector('#goal-problems')?.getBoundingClientRect();
+              return {firstBottom:a?.bottom,problemsTop:b?.top,visible:a?.width>0};
+            });
+            assert.ok(placement.visible && placement.firstBottom<=placement.problemsTop+2,
+              label+" shared score comes before category questions: "+JSON.stringify(placement));
+            if(width===390 || sector==="meaning" || sector==="love") {
+              await inside.focus(); await inside.press("End");
+              assert.equal(await top.inputValue(),"10",
+                label+" dragging goal-filter "+sector+" immediately updates top card");
+              await top.focus(); await top.press("Home"); await top.press("ArrowRight");
+              assert.equal(await inside.inputValue(),"2",
+                label+" editing top-left "+key+" immediately updates filter");
+            }
+          }
+          // One Meaning score and category includes ALL former Goals choices.
+          const meaningTop=root.locator('[data-support-scale="meaning"] input[type="range"]');
+          await filter.locator('[data-goal-sector="meaning"]').click();
+          await meaningTop.focus(); await meaningTop.press("End");
+          assert.equal(await filter.locator('[data-support-goal-checkin-input]').inputValue(),"10",
+            label+" Meaning rating is synchronized");
+          for (const id of ["unclearGoals","stuck","lostPurpose","valueConflict"]) {
+            assert.equal(await filter.locator('[data-goal-concern="'+id+'"]').count(),1,
+              label+" merged Meaning concern "+id);
+          }
+          for (const id of ["direction","nextStep","habits","motivation","values","purpose"]) {
+            assert.equal(await filter.locator('[data-goal-task="'+id+'"]').count(),1,
+              label+" merged Meaning action "+id);
+          }
+          for (const id of ["goalClarity","actions","progress","meaningAxis","selfContact","inspirationAxis"]) {
+            assert.equal(await filter.locator('[data-goal-axis="'+id+'"]').count(),1,
+              label+" retained Meaning/Goals measured axis "+id);
+          }
+          assert.equal(await filter.locator('[data-goal-axis]').count(),6,
+            label+" merged Meaning has six independent editable indicators");
           await filter.locator('[data-goal-sector="money"]').click();
           for (const concern of ["income","moneyStress","workStuck","decisions"]) {
             await filter.locator('[data-goal-concern="'+concern+'"] input').check();
@@ -206,6 +282,10 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-metric="reserveMonths"][data-metric-field="desired"]').fill("6");
           // Next must auto-accept unsaved money edits. No separate Save click.
           await filter.locator('[data-support-goal-next]').click();
+          // WebKit can resolve a click before React commits accepted/next state.
+          // Wait for actual acceptance and navigation; never bypass either gate.
+          await filter.locator('[data-goal-accepted="money"]').waitFor({state:"attached",timeout:6000});
+          await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').waitFor({state:"attached",timeout:6000});
           assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
             label+" Next automatically Saves and marks Money Accepted");
           assert.equal(await filter.locator('[data-goal-sector="love"][aria-pressed="true"]').count(),1,
@@ -216,6 +296,10 @@ for (const browserType of [chromium, webkit]) {
           await filter.locator('[data-goal-task="closeness"] input').check();
           // The explicit Save button remains independently useful.
           await filter.locator('[data-support-goal-save]').click();
+          // React may flush the Accepted badges after the click resolves in WebKit.
+          // Wait for the actual saved state; do not treat a paint race as lost data.
+          await page.waitForFunction(() => document.querySelectorAll('[data-goal-accepted]').length === 2,
+            null, { timeout: 6000 });
           assert.equal(await filter.locator('[data-goal-accepted]').count(),2,
             label+" independent Save and auto-Next keep separate Accepted marks");
           await filter.locator('[data-goal-sector="money"]').click();
@@ -223,6 +307,17 @@ for (const browserType of [chromium, webkit]) {
             label+" return restores Money selections");
           assert.equal(await filter.locator('[data-goal-task] input:checked').count(),4,
             label+" return restores Money tasks");
+          // A later edit to the global check-in makes a previously accepted
+          // sector stale until it is explicitly saved again.
+          const topMoney=root.locator('[data-support-scale="money"] input[type="range"]');
+          await topMoney.focus(); await topMoney.press("End");
+          assert.equal(await filter.locator('[data-support-goal-checkin-input]').inputValue(),"10",
+            label+" check-in changes in upper-left remain live during accepted review");
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),0,
+            label+" accepted badge disappears when global score changes");
+          await filter.locator('[data-support-goal-save]').click();
+          assert.equal(await filter.locator('[data-goal-accepted="money"]').count(),1,
+            label+" saving again accepts updated top rating");
           assert.equal(await filter.locator('[data-goal-metric="monthlyIncome"][data-metric-field="current"]').inputValue(),"2000",
             label+" accepted Money amount remains when switching categories");
           const formats=filter.locator('[data-support-goal-format]');
@@ -283,44 +378,108 @@ for (const browserType of [chromium, webkit]) {
           assert.ok(!layout.applyClipped && !layout.resetClipped && !layout.saveClipped &&
               !layout.nextClipped,
             label+" full action labels must remain visible: "+JSON.stringify(layout));
+          const readability=await filter.evaluate(el=>{
+            const rail=el.querySelector('[data-support-goal-sectors]');
+            const details=el.querySelector('[data-support-goal-details]');
+            const heading=details.querySelector('#goal-problems');
+            const option=details.querySelector('[data-goal-concern]');
+            const optionInput=option.querySelector('input');
+            const sector=rail.querySelector('[data-goal-sector]');
+            const right=details.getBoundingClientRect(),left=rail.getBoundingClientRect();
+            const optionBoxes=[...details.querySelectorAll('[data-goal-concern],[data-goal-task]')];
+            return {
+              leftWidth:left.width,rightWidth:right.width,
+              headingFont:parseFloat(getComputedStyle(heading).fontSize),
+              optionFont:parseFloat(getComputedStyle(option).fontSize),
+              sectorFont:parseFloat(getComputedStyle(sector).fontSize),
+              checkboxWidth:optionInput.getBoundingClientRect().width,
+              contentOverflow:optionBoxes.some(item=>{
+                const rect=item.getBoundingClientRect();
+                return rect.left<right.left-2||rect.right>right.right+2;
+              }),
+            };
+          });
+          assert.ok(readability.rightWidth>=readability.leftWidth*1.85,
+            label+" narrower left rail must give more room to questions: "+JSON.stringify(readability));
+          assert.ok(readability.headingFont>=14.4 && readability.optionFont>=12 &&
+            readability.sectorFont>=11.4 && readability.checkboxWidth>=17,
+            label+" readable iPhone goal labels and tap targets: "+JSON.stringify(readability));
+          assert.equal(readability.contentOverflow,false,
+            label+" large option labels must wrap within right column");
           if (width===390) await page.screenshot({path:output+"/"+browserType.name()+"-"+locale+"-goal-filter-390.png",fullPage:true});
           const filterOverflow=await page.evaluate(() =>
             document.documentElement.scrollWidth - document.documentElement.clientWidth);
           assert.ok(filterOverflow<=3,label+" goal filter must not overflow horizontally: "+filterOverflow);
           await filter.locator('[data-support-goal-apply]').click();
           await root.locator('[data-support-applied-goal]').waitFor({state:"visible",timeout:8000});
-          const results=root.locator('[data-support-goal-results]');
+          const results=root.locator('[data-support-inline-guide]');
           await results.waitFor({state:"visible",timeout:8000});
-          assert.equal(await results.locator('[data-support-goal-action]').count(),7,
-            label+" only seven opted-in recommendation categories remain");
-          assert.equal(await results.locator('[data-support-goal-action="consultation"]').count(),0,
-            label+" opt-out suppresses consultation results");
-          assert.equal(await results.locator('[data-support-goal-action="initiations"]').count(),0,
-            label+" opt-out suppresses initiation results");
-          assert.equal(await results.locator('[data-support-goal-action="healing"]').count(),1,
-            label+" energy support remains selectable");
-          assert.match(await results.locator('[data-support-goal-action="mandala"]').getAttribute("href")??"",
-            /\/holistic-support\/mandala$/,label+" existing mandala route");
-          assert.equal(await results.locator('[data-support-goal-action="tests"]').getAttribute("aria-pressed"),"false",
-            label+" the Tests recommendation switches the same-page Tests tab");
-          assert.match(await results.locator('[data-support-goal-action="courses"]').getAttribute("href")??"",/\/explore\/business$/,
-            label+" real business learning route");
-          assert.equal(await root.locator('[data-support-meditation-gallery] [data-support-video]').count(),4,
-            label+" only source-backed recordings");
-          assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" goals never autoplay");
-          await root.locator('[data-support-goal-action="tests"]').click();
+          const filterSummary=await results.locator('[data-support-guide-message="guide"]').nth(1).innerText();
+          assert.ok(filterSummary.includes(locale==="ru"?"Деньги":locale==="es"?"Dinero":"Money"),
+            label+" accepted goal filter overrides earlier relationship check-in");
+          assert.equal(await results.locator('[data-support-guide-phase="review"]').count(),1,
+            label+" invite visitor to confirm the suggestion");
+          await results.locator('[data-support-guide-phase="review"] button').first().click();
+          assert.equal(await results.locator('[data-support-guide-phase="test-invite"]').count(),1,
+            label+" user can choose test or go straight to practice");
+          assert.equal(await results.locator('[data-support-guide-recommendation]').count(),0,
+            label+" no early recommendation");
+          await results.locator('[data-guide-skip-test]').click();
+          assert.equal(await results.locator('[data-support-guide-phase="practice-invite"]').count(),1,
+            label+" practice is optional and independent of tests");
+          await results.locator('[data-guide-short-practice]').click();
+          await results.locator('[data-support-guide-phase="exercise"] button').first().click();
+          await results.locator('[data-support-guide-phase="feedback"] button').first().click();
+          assert.equal(await results.locator('[data-support-guide-recommendation]').count(),0,
+            label+" recommendation still hidden before My Path action");
+          await results.locator('[data-support-guide-show-recommendations]').click();
+          assert.equal(await results.locator('[data-support-guide-recommendation]').count(),1,
+            label+" user confirms personal path after conversation");
+          assert.equal(await results.locator('[data-support-guide-program]').count(),1,
+            label+" optional path proposed only after consent");
+          assert.equal(await results.locator('[data-support-guide-alternative="consultation"]').count(),0,
+            label+" opted-out consultation excluded from final alternatives");
+          assert.equal(await results.locator('[data-support-guide-alternative]').count()<=2,true,
+            label+" no more than two alternative formats");
+          const featuredNow=await root.locator('[data-support-meditation-gallery] [data-support-video]').count();
+          assert.ok(featuredNow>=1 && featuredNow<=4,
+            label+" only available published videos appear in the filtered featured shelf");
+          assert.equal(await root.locator('[data-support-player] iframe').count(),0,label+" no autoplay");
+          await root.locator('[data-support-tool="tests"]').click();
           const testsFromGoals=root.locator('[data-support-tests-panel]');
           await testsFromGoals.waitFor({state:"visible",timeout:8000});
-          assert.equal(await results.locator('[data-support-goal-action="tests"]').getAttribute("aria-pressed"),"true",
-            label+" Goals→Tests stays on this page");
           assert.equal(await testsFromGoals.locator('[data-support-open-tests]').getAttribute('href'),
-            '/'+locale+'/client/tests',label+" existing free Test Explorer");
+            '/'+locale+'/client/tests',label+" free Test Explorer");
           assert.equal(await testsFromGoals.locator('[data-support-tests-personality]').getAttribute('href'),
-            '/'+locale+'/personality-profiles',label+" existing Profile Builder");
+            '/'+locale+'/personality-profiles',label+" existing profile builder");
           assert.equal(await testsFromGoals.locator('[data-support-tests-guide]').getAttribute('href'),
-            '/'+locale+'/tests',label+" real free-tests explanation");
+            '/'+locale+'/tests',label+" test privacy explanation");
           await root.locator('[data-support-tool="meditation"]').click();
-          await root.locator('[data-support-goal-action="talismans"]').click();
+          const meditationCategories=root.locator('[data-support-meditation-category-switcher]');
+          await meditationCategories.waitFor({state:"visible",timeout:8000});
+          const categoryIds = await meditationCategories.locator('[data-support-meditation-category]')
+            .evaluateAll(nodes => nodes.map(node => node.getAttribute('data-support-meditation-category')));
+          assert.deepEqual(categoryIds, ['goals-money','love-relationships','energy-confidence','stress-anxiety','all'],
+            label+" canonical four directions plus all recordings, without retired duplicates");
+          const featuredIds=await root.locator('[data-support-meditation-gallery] [data-support-video]')
+            .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-support-video')));
+          const catalogIds=await root.locator('[data-support-meditation-feed-item]')
+            .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-support-meditation-feed-item')));
+          assert.ok(featuredIds.length>0&&catalogIds.length>=featuredIds.length,
+            label+" full catalog includes the featured licensed recordings");
+          assert.deepEqual(featuredIds,catalogIds.slice(0,featuredIds.length),
+            label+" featured posters share the complete filtered manifest");
+          const fullscreenHref=await root.locator('[data-support-fullscreen-selected]').getAttribute('href');
+          const selectedVideoId=await root.locator('[data-support-player]').getAttribute('data-selected-video');
+          assert.equal(fullscreenHref,"/"+locale+"/meditations?video="+encodeURIComponent(selectedVideoId),
+            label+" full-screen player receives the selected published source ID");
+          await meditationCategories.locator('[data-support-meditation-category="goals-money"]').click();
+          assert.equal(await meditationCategories.locator('[data-support-meditation-category="goals-money"]').getAttribute("aria-pressed"),"true",
+            label+" money topic responds to the original user action");
+          await meditationCategories.locator('[data-support-meditation-category="all"]').click();
+          assert.equal(await root.locator('[data-support-player] iframe').count(),0,
+            label+" selection does not autoplay external media");
+          await root.locator('[data-support-tool="talisman"]').click();
           const talisman=root.locator('[data-support-talisman-viewer]');
           await talisman.waitFor({state:"visible",timeout:8000});
           // Owner-approved shopping mock: verify actual category navigation,
@@ -424,8 +583,21 @@ for (const browserType of [chromium, webkit]) {
             label+" reserve months remain unaffected by currency");
           if(width===390) {
             // Empty selection must NOT silently show an unrequested meditation.
-            while (await filter.locator('[data-support-goal-format] input:checked').count()) {
-              await filter.locator('[data-support-goal-format] input:checked').first().uncheck();
+            // Use the visible, accessible label as the real touch target.
+            // A moving/re-rendered checkbox can cause Playwright.uncheck()
+            // to click a stale input while the user-facing choice stays checked.
+            // Verify the actual controlled React state after EACH user click;
+            // never infer opt-out merely from dispatching an event.
+            const checkedFormats=filter.locator('[data-support-goal-format] input:checked');
+            for(let remaining=await checkedFormats.count();remaining>0;remaining--){
+              const choice=filter.locator('[data-support-goal-format]:has(input:checked)').first();
+              await choice.scrollIntoViewIfNeeded();
+              await choice.click();
+              await page.waitForFunction(expected=>
+                document.querySelectorAll('[data-support-goal-filter] [data-support-goal-format] input:checked').length===expected,
+                remaining-1,{timeout:10000});
+              assert.equal(await checkedFormats.count(),remaining-1,
+                label+' opt-out must change the actual selected formats, not just dispatch click');
             }
             await filter.locator('[data-support-goal-apply]').click();
             await root.locator('[data-support-goal-empty]').waitFor({state:"visible",timeout:8000});
@@ -446,7 +618,8 @@ for (const browserType of [chromium, webkit]) {
             label+" Reset clears all previously accepted sector badges");
           await root.locator('[data-support-goal-filter] button[aria-label]').first().click();
           assert.equal(await root.locator('[data-support-applied-goal]').count(),0,label+" reset clears goal");
-          assert.equal(await root.locator('[data-support-goal-results]').count(),0,label+" reset clears recommendations");
+          assert.equal(await root.locator('[data-support-inline-guide]').count(),0,
+            label+" after resetting the filter the default dashboard remains without invented advice");
           if(width===390) {
             await root.locator('[data-support-photo] input[type="file"]')
               .setInputFiles({name:"synthetic.png",mimeType:"image/png",buffer:photo});
@@ -479,37 +652,45 @@ for (const browserType of [chromium, webkit]) {
             label+" Fu thumbnail shelf must follow the selected talisman");
           await root.locator('[data-support-tool="meditation"]').click();
           await root.locator('[data-support-tool="pump"]').click();
-          const learning=root.locator('[data-support-learning-catalog]');
-          await learning.waitFor({state:"visible",timeout:8000});
-          assert.equal(await learning.locator('[data-learning-direction]').count(),3,
-            label+" exactly three real learning directions");
-          await learning.locator('[data-learning-cost="paid"]').click();
-          assert.ok(await learning.locator('[data-learning-item]').count()>=2,
-            label+" paid Reiki options use confirmed personal initiation prices");
-          assert.ok(await learning.locator('[data-learning-price="priced"]').count()>=2,
-            label+" never show unknown-price programs as paid");
-          await learning.locator('[data-learning-cost="free"]').click();
-          assert.ok(await learning.locator('[data-learning-price="free"]').count()>=1,
-            label+" free training options are source-backed");
-          await learning.locator('[data-learning-direction="temple"]').click();
-          assert.ok(await learning.locator('[data-learning-item]').count()>=1,
-            label+" temple filter stays in-place");
-          await learning.locator('[data-learning-direction="magic"]').click();
-          assert.ok(await learning.locator('[data-learning-item]').count()>=1,
-            label+" magic and Tarot preserve source-backed records");
-          await learning.locator('[data-learning-topic="runes"]').click();
-          assert.ok(await learning.locator('[data-learning-item]').count()>=1,
-            label+" rune topic filters in-place");
-          await learning.locator('[data-learning-filters-toggle]').click();
-          assert.equal(await learning.locator('[data-learning-filters-toggle]').getAttribute('aria-expanded'),
-            "true",label+" additional filters expand");
-          const learningOverflow=await page.evaluate(()=>
-            document.documentElement.scrollWidth-document.documentElement.clientWidth);
-          assert.ok(learningOverflow<=3,label+" learning filters fit the mobile viewport");
-          if(width===390) await learning.screenshot({
-            path:output+"/"+browserType.name()+"-"+locale+"-learning-390.png"});
-          assert.equal(await root.locator('[data-support-courses-panel] nav a').count(),2,
-            label+" Academy course routes still work");
+          await root.locator('[data-support-player]').waitFor({state:"visible",timeout:8000});
+          assert.equal(await root.locator('[data-support-profile-hero]').count(),0,
+            label+" Courses must not show diagnostic profiles");
+          assert.ok(await root.locator('[data-support-video]').count()>0,
+            label+" original video lessons are reachable");
+          if(locale==="ru") {
+            const mysteryPicker=root.locator('[data-support-mystery-courses]');
+            assert.equal(await mysteryPicker.locator('[data-support-mystery-course]').count(),4,
+              label+" four Russian original Maya/Egypt/Dionysus/Demeter series restored");
+            await mysteryPicker.locator('[data-support-mystery-course="egypt"]').click();
+            assert.equal(await mysteryPicker.locator('[data-support-mystery-course="egypt"]').getAttribute('aria-pressed'),"true",
+              label+" Egypt programme selection works");
+            assert.match(await root.locator('[data-support-active-course-link]').getAttribute('href')??"",
+              /^\/ru\/academy\//,label+" source Academy programme link");
+            for (const [channel,total] of [["greek-dionysus",7],["greek-demeter",5]]) {
+              await mysteryPicker.locator('[data-support-mystery-course="'+channel+'"]').click();
+              const episodes=root.locator('[data-support-meditation-gallery] [data-support-video]');
+              assert.equal(await episodes.count(),total,label+" "+channel+" retains complete sequence");
+              assert.deepEqual(await episodes.evaluateAll(nodes=>nodes.map(el=>Number(el.getAttribute("data-source-order")))),
+                Array.from({length:total},(_,i)=>i+1),label+" "+channel+" numbered episodes 1–"+total);
+              assert.equal(await root.locator('[data-support-lesson-navigation]').count(),1,
+                label+" "+channel+" previous/next episode navigation exists");
+              assert.match(await root.locator('[data-support-active-course-link]').getAttribute("href")??"",
+                new RegExp("^/ru/academy/videos/greek-mysteries-"+(channel==="greek-dionysus"?"dionysus":"demeter")+"$"),
+                label+" canonical original channel course link");
+              assert.equal(await root.locator('[data-support-player] iframe').count(),0,
+                label+" changing original channel never auto-plays");
+            }
+          }
+          const academyHrefs=await root.locator('[data-support-courses-panel] a')
+            .evaluateAll(links => links.map(a => a.getAttribute("href")));
+          // Academy's two canonical links remain, while optional published
+          // Maya/Egyptian/Greek course links may increase the total.
+          assert.ok(academyHrefs.includes("/"+locale+"/academy") &&
+            academyHrefs.includes("/"+locale+"/academy/reiki/tantra-reiki/discover"),
+            label+" existing Academy and free Reiki paths remain available");
+          assert.ok(academyHrefs.length>=2 && academyHrefs.every(href =>
+            typeof href === "string" && href.startsWith("/"+locale+"/academy")),
+            label+" additional published course links stay in localized Academy: "+JSON.stringify(academyHrefs));
           assert.equal(await root.locator('[data-support-player] iframe').count(),0,
             label+" changing category never autoplays");
           await root.locator('[data-support-tool="healing"]').click();
@@ -530,6 +711,15 @@ for (const browserType of [chromium, webkit]) {
           });
           const reikiTabs=healing.locator('[data-support-reiki-filters] [data-support-reiki-focus]');
           assert.equal(await reikiTabs.count(),4,label+" four Reiki intentions above the hero");
+          const intentionLabels = {
+            ru: ["Поддержка энергии","Поддержка любви","Поддержка цели","Поддержка сознания"],
+            en: ["Energy support","Love support","Goal support","Consciousness support"],
+            es: ["Apoyo a la energía","Apoyo al amor","Apoyo a las metas","Apoyo a la conciencia"],
+          };
+          assert.deepEqual((await reikiTabs.allInnerTexts()).map(text=>text.trim()),intentionLabels[locale],
+            label+" session tiles show just four intentions, no Reiki system captions");
+          assert.equal(await reikiTabs.locator("small").count(),0,
+            label+" session goals must not expose methodology captions");
           assert.equal(await healing.locator('[data-support-reiki-focus="love"]').getAttribute('aria-pressed'),
             "true",label+" only published Tantra Reiki selected initially");
           const marketplace=healing.locator('[data-support-reiki-marketplace]');
@@ -547,6 +737,30 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await tab("filter").count(),1,label+" central Filter tab");
           assert.equal(await tab("description").count(),1,label+" central Description tab");
           assert.equal(await tab("media").count(),1,label+" central Video/audio tab");
+          const mainTabPosition = await heroMaster.evaluate(element=>{
+            const tabs=element.querySelector('[role="tablist"]')?.getBoundingClientRect();
+            const content=element.querySelector('[data-support-reiki-panel="main"]')?.getBoundingClientRect();
+            return {tabsBottom:tabs?.bottom,contentTop:content?.top};
+          });
+          assert.ok(Number.isFinite(mainTabPosition.tabsBottom) &&
+            Number.isFinite(mainTabPosition.contentTop) &&
+            mainTabPosition.tabsBottom <= mainTabPosition.contentTop+2,
+            label+" Main / Filter / Description / Video tabs must sit ABOVE the scenic hero content: "+
+              JSON.stringify(mainTabPosition));
+          const topFilterPosition = await healing.locator('[data-support-reiki-hero-filter]')
+            .evaluate(element => {
+              const box=element.getBoundingClientRect();
+              const stage=element.closest('[data-support-reiki-central]').getBoundingClientRect();
+              return {top:box.top,bottom:box.bottom,stageTop:stage.top,stageHeight:stage.height};
+            });
+          assert.ok(topFilterPosition.top >= mainTabPosition.tabsBottom-1 &&
+            topFilterPosition.top - mainTabPosition.tabsBottom <= 25 &&
+            topFilterPosition.bottom <= topFilterPosition.stageTop+topFilterPosition.stageHeight/2,
+            label+" large Filter CTA must be at the top of the photo, not beside the lower hero copy: "+
+              JSON.stringify(topFilterPosition));
+          assert.ok(topFilterPosition.bottom <= mainTabPosition.contentTop+1,
+            label+" floating top Filter cannot collide with the published provider text panel: "+
+              JSON.stringify({topFilterPosition,mainTabPosition}));
           // Screenshot regression: shared .page button {font:inherit} used to inflate
           // every Reiki tab into a huge two-line block on real iPhone Safari.
           const tabSizes=await healing.locator('[data-support-reiki-tab]').evaluateAll(elements =>
@@ -570,8 +784,22 @@ for (const browserType of [chromium, webkit]) {
           await reikiFilter.waitFor({state:"visible"});
           const navPosition=await root.locator('[data-support-mobile-bottom-nav]')
             .evaluate(element => getComputedStyle(element).position);
-          assert.equal(navPosition, "static",
-            label+" the bottom nav must not obscure an expanded Reiki filter");
+          assert.equal(navPosition, "fixed",
+            label+" the mobile bottom dock stays anchored to the viewport");
+          // Scroll the real final Reiki action as a visitor would. Prove that
+          // the fixed dock does not obscure the action; never make the dock
+          // artificially static just to satisfy an obsolete geometry oracle.
+          const finalReikiAction=reikiFilter.locator('[data-support-reiki-apply]');
+          await finalReikiAction.scrollIntoViewIfNeeded();
+          const clearance=await page.evaluate(() => {
+            const button=document.querySelector('[data-support-reiki-filter] [data-support-reiki-apply]');
+            const dock=document.querySelector('[data-support-mobile-bottom-nav]');
+            const action=button?.getBoundingClientRect(),nav=dock?.getBoundingClientRect();
+            return { actionBottom:action?.bottom, dockTop:nav?.top,
+              actionWidth:action?.width, viewportHeight:innerHeight };
+          });
+          assert.ok(clearance.actionWidth > 40 && clearance.actionBottom <= clearance.dockTop - 2,
+            label+" last Reiki action must remain reachable ABOVE fixed dock: "+JSON.stringify(clearance));
           if (width === 390) await page.screenshot({
             path: output+"/"+browserType.name()+"-"+locale+"-reiki-filter-390.png", fullPage: true,
           });
@@ -634,6 +862,26 @@ for (const browserType of [chromium, webkit]) {
           await reikiFilter.locator('[data-support-reiki-certificate] input').uncheck();
           assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),3,
             label+" three real linked initiation pathways appear on selection");
+          const initiationPicker=marketplace.locator('[data-support-reiki-initiation-types]');
+          assert.equal(await initiationPicker.count(),1,
+            label+" initiation brings its own lower Reiki type menu");
+          assert.equal(await initiationPicker.locator('[data-support-reiki-initiation-id]').count(),4,
+            label+" All + exactly the three approved Academy initiation types");
+          for(const id of ["tantra-initiation","kundalini-initiation","yggdrasil-initiation"]) {
+            assert.equal(await initiationPicker.locator('[data-support-reiki-initiation-id="'+id+'"]').count(),1,
+              label+" source-backed initiation "+id);
+          }
+          await initiationPicker.locator('[data-support-reiki-initiation-id="yggdrasil-initiation"]').click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),1,
+            label+" Yggdrasil selector hides unrelated initiations");
+          assert.equal(await healing.locator('[data-reiki-academy-offer="yggdrasil-initiation"]').count(),1,
+            label+" retains the original Yggdrasil path");
+          await initiationPicker.locator('[data-support-reiki-initiation-id="kundalini-initiation"]').click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer="kundalini-initiation"]').count(),1,
+            label+" Kundalini selector opens the original Academy entry");
+          await initiationPicker.locator('[data-support-reiki-initiation-id="all"]').click();
+          assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),3,
+            label+" All restores exactly the three original initiations");
           await reikiFilter.locator('[data-support-reiki-price] button').nth(2).click();
           assert.equal(await healing.locator('[data-reiki-academy-offer]').count(),1,
             label+" 21–50 EUR selects only published-price Tantra initiation");
@@ -707,6 +955,18 @@ for (const browserType of [chromium, webkit]) {
           await root.locator('[data-support-tool="tests"]').click();
           const testsPanel=root.locator('[data-support-tests-panel]');
           await testsPanel.waitFor({state:"visible",timeout:8000});
+          assert.equal(await testsPanel.locator('[data-support-profile]').count(),4,
+            label+" four self-assessment profiles shown in Tests");
+          assert.equal(await root.locator('[data-support-player]').count(),0,
+            label+" course player not shown in Tests");
+          const moneyProfile=testsPanel.locator('[data-support-profile="money"]');
+          await moneyProfile.click();
+          assert.equal(await moneyProfile.getAttribute('aria-pressed'),"true",
+            label+" Tests money profile changes active state");
+          assert.equal(await testsPanel.locator('[data-support-profile-hero]').getAttribute('data-sector'),"money",
+            label+" Tests hero reflects selected profile");
+          assert.equal(await testsPanel.locator('[data-support-profile-test]').count(),1,
+            label+" tests hero has a real CTA");
           assert.equal(await root.locator('[data-support-master-viewer]').count(),0,
             label+" Tests do not mix with a consultation/CRM booking");
           assert.equal(await testsPanel.locator('[data-support-open-tests]').getAttribute('href'),
@@ -720,9 +980,14 @@ for (const browserType of [chromium, webkit]) {
           evidence.push({label,geometry:{client:geometry.client,scroll:geometry.scroll,heroHeight:geometry.hero[0].height},
             fourVideos:true,threeZones:width>350,photo:width===390,noAutoplay:true});
         } finally { await page.close(); }
-      }
+      }));
+      // Finish both in-flight pages before closing the browser; never mask failure.
+      const rejected = results.find(result => result.status === "rejected");
+      if (rejected) throw rejected.reason;
     }
   } finally { await browser.close(); }
 }
+assert.equal(evidence.length, 18, "all 18 localized mobile browser cases must pass");
+evidence.sort((a,b) => a.label.localeCompare(b.label));
 await writeFile(output+"/results.json",JSON.stringify({checks:evidence},null,2));
 console.log("Support mock fidelity browser cases: "+evidence.length+" passed.");

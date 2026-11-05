@@ -213,8 +213,13 @@ test("all home cards use the approved compact Tests photo-card visual on EN/RU/E
   assert.match(secondary, /background: transparent;/);
   assert.match(secondary, /text-decoration: underline;/);
   assert.doesNotMatch(secondary, /border: 1px/);
-  assert.match(primary, /background: linear-gradient\(108deg, #07899c 0%, #305a93 100%\)/);
-  assert.match(primary, /border: 1px solid #187c9f/);
+  // Color schemes change with the live design; preserve an actual filled,
+  // high-contrast primary action instead of the retired teal gradient.
+  assert.match(primary, /background: #[0-9a-fA-F]{6}; color: #fff;/);
+  assert.match(primary, /border: 1px solid #[0-9a-fA-F]{6}/);
+  // Current approved primary action uses the dark burgundy palette, not the retired turquoise gradient.
+  assert.match(primary, /background: #742c42/);
+  assert.match(primary, /border: 1px solid #742c42/);
   assert.match(css, /\.offer\[data-expanded="true"\] \{ grid-template-areas: "photo content" "more more"/);
   assert.match(css, /@media \(max-width: 640px\)/);
   assert.match(css, /@media \(max-width: 350px\)/);

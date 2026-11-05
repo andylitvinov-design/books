@@ -1,0 +1,3262 @@
+{
+  "schemaVersion": "meaning-emotion-catalog-v1",
+  "version": "meaning-emotion-v1",
+  "axes": [
+    {
+      "id": "anchor",
+      "labels": {
+        "ru": "Опора",
+        "en": "Support",
+        "es": "Apoyo"
+      },
+      "shortDescription": {
+        "ru": "Замечать доступную устойчивость, не отрицая реальности.",
+        "en": "Find available steadiness without denying reality.",
+        "es": "Encontrar estabilidad posible sin negar la realidad."
+      },
+      "facets": [
+        {
+          "id": "steadiness",
+          "labels": {
+            "ru": "Устойчивость",
+            "en": "Steadiness",
+            "es": "Estabilidad"
+          }
+        }
+      ],
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "connection",
+      "labels": {
+        "ru": "Связь",
+        "en": "Connection",
+        "es": "Vínculo"
+      },
+      "shortDescription": {
+        "ru": "Контакт при уважении границ и свободы другого.",
+        "en": "Connection with respect for boundaries and choice.",
+        "es": "Vínculo respetando los límites y la elección."
+      },
+      "facets": [
+        {
+          "id": "belonging",
+          "labels": {
+            "ru": "Принадлежность",
+            "en": "Belonging",
+            "es": "Pertenencia"
+          }
+        }
+      ],
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "freedom",
+      "labels": {
+        "ru": "Свобода",
+        "en": "Freedom",
+        "es": "Libertad"
+      },
+      "shortDescription": {
+        "ru": "Право выбирать направление и темп.",
+        "en": "The right to choose direction and pace.",
+        "es": "El derecho a elegir rumbo y ritmo."
+      },
+      "facets": [
+        {
+          "id": "autonomy",
+          "labels": {
+            "ru": "Автономия",
+            "en": "Autonomy",
+            "es": "Autonomía"
+          }
+        }
+      ],
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "agency",
+      "labels": {
+        "ru": "Сила",
+        "en": "Agency",
+        "es": "Capacidad de actuar"
+      },
+      "shortDescription": {
+        "ru": "Посильное действие без требования победы.",
+        "en": "Possible action without demanding victory.",
+        "es": "Acción posible sin exigir una victoria."
+      },
+      "facets": [
+        {
+          "id": "agency",
+          "labels": {
+            "ru": "Авторство",
+            "en": "Agency",
+            "es": "Autoría"
+          }
+        }
+      ],
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "dignity",
+      "labels": {
+        "ru": "Достоинство",
+        "en": "Dignity",
+        "es": "Dignidad"
+      },
+      "shortDescription": {
+        "ru": "Ценность человека не определяется результатом или эмоцией.",
+        "en": "Worth is not defined by results or feelings.",
+        "es": "El valor personal no lo define el resultado ni la emoción."
+      },
+      "facets": [
+        {
+          "id": "self_worth",
+          "labels": {
+            "ru": "Самоценность",
+            "en": "Self-worth",
+            "es": "Valor propio"
+          }
+        },
+        {
+          "id": "self_acceptance",
+          "labels": {
+            "ru": "Самопринятие",
+            "en": "Self-acceptance",
+            "es": "Autoaceptación"
+          }
+        }
+      ],
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "wholeness",
+      "labels": {
+        "ru": "Целостность",
+        "en": "Wholeness",
+        "es": "Integridad"
+      },
+      "shortDescription": {
+        "ru": "Разные части опыта могут сосуществовать.",
+        "en": "Different parts of experience may coexist.",
+        "es": "Distintas partes de la experiencia pueden coexistir."
+      },
+      "facets": [
+        {
+          "id": "integration",
+          "labels": {
+            "ru": "Интеграция",
+            "en": "Integration",
+            "es": "Integración"
+          }
+        }
+      ],
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "meaning",
+      "labels": {
+        "ru": "Смысл",
+        "en": "Meaning",
+        "es": "Sentido"
+      },
+      "shortDescription": {
+        "ru": "Осмысленное направление без навязанного ответа.",
+        "en": "Meaningful direction without a prescribed answer.",
+        "es": "Rumbo significativo sin imponer respuestas."
+      },
+      "facets": [
+        {
+          "id": "coherence",
+          "labels": {
+            "ru": "Понимание",
+            "en": "Understanding",
+            "es": "Comprensión"
+          }
+        },
+        {
+          "id": "purpose",
+          "labels": {
+            "ru": "Направление",
+            "en": "Purpose",
+            "es": "Propósito"
+          }
+        },
+        {
+          "id": "significance",
+          "labels": {
+            "ru": "Значимость",
+            "en": "Significance",
+            "es": "Importancia"
+          }
+        }
+      ],
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "growth",
+      "labels": {
+        "ru": "Развитие",
+        "en": "Growth",
+        "es": "Desarrollo"
+      },
+      "shortDescription": {
+        "ru": "Изменение в темпе, подходящем самому человеку.",
+        "en": "Change at the person's own pace.",
+        "es": "Cambio al ritmo que elige cada persona."
+      },
+      "facets": [
+        {
+          "id": "renewal",
+          "labels": {
+            "ru": "Обновление",
+            "en": "Renewal",
+            "es": "Renovación"
+          }
+        }
+      ],
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    }
+  ],
+  "vectors": [
+    {
+      "id": "anxiety_confidence",
+      "currentStateId": "anxiety",
+      "desiredStateId": "confidence",
+      "labels": {
+        "ru": "Тревога → уверенность",
+        "en": "Anxiety → confidence",
+        "es": "Ansiedad → confianza"
+      },
+      "trajectoryId": "grounding",
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "anxiety_calm",
+      "currentStateId": "anxiety",
+      "desiredStateId": "calm",
+      "labels": {
+        "ru": "Тревога → спокойствие",
+        "en": "Anxiety → calm",
+        "es": "Ansiedad → calma"
+      },
+      "trajectoryId": "grounding",
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "shame_acceptance",
+      "currentStateId": "shame",
+      "desiredStateId": "self_acceptance",
+      "labels": {
+        "ru": "Стыд → самопринятие",
+        "en": "Shame → self-acceptance",
+        "es": "Vergüenza → autoaceptación"
+      },
+      "trajectoryId": "acceptance",
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "anger_boundaries",
+      "currentStateId": "anger",
+      "desiredStateId": "boundaries",
+      "labels": {
+        "ru": "Злость → границы",
+        "en": "Anger → boundaries",
+        "es": "Enojo → límites"
+      },
+      "trajectoryId": "boundary",
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "fatigue_vitality",
+      "currentStateId": "fatigue",
+      "desiredStateId": "vitality",
+      "labels": {
+        "ru": "Усталость → жизненность",
+        "en": "Fatigue → vitality",
+        "es": "Cansancio → vitalidad"
+      },
+      "trajectoryId": "restoration",
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "loneliness_connection",
+      "currentStateId": "loneliness",
+      "desiredStateId": "connection",
+      "labels": {
+        "ru": "Одиночество → связь",
+        "en": "Loneliness → connection",
+        "es": "Soledad → vínculo"
+      },
+      "trajectoryId": "connection",
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "confusion_clarity",
+      "currentStateId": "confusion",
+      "desiredStateId": "clarity",
+      "labels": {
+        "ru": "Растерянность → ясность",
+        "en": "Confusion → clarity",
+        "es": "Confusión → claridad"
+      },
+      "trajectoryId": "clarification",
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    },
+    {
+      "id": "selfcrit_compassion",
+      "currentStateId": "self_criticism",
+      "desiredStateId": "compassion",
+      "labels": {
+        "ru": "Самокритика → доброта к себе",
+        "en": "Self-criticism → self-kindness",
+        "es": "Autocrítica → amabilidad propia"
+      },
+      "trajectoryId": "acceptance",
+      "version": "meaning-emotion-v1",
+      "editorialStatus": "source_curated"
+    }
+  ],
+  "incompatibleFrames": [
+    {
+      "vectorId": "anger_boundaries",
+      "axisId": "connection",
+      "frame": "forced_reconciliation",
+      "reason": "A boundary cannot require closeness or instant forgiveness."
+    },
+    {
+      "vectorId": "loneliness_connection",
+      "axisId": "connection",
+      "frame": "forced_intimacy",
+      "reason": "Connection cannot override another person's consent."
+    },
+    {
+      "vectorId": "fatigue_vitality",
+      "axisId": "agency",
+      "frame": "forced_activation_when_depleted",
+      "reason": "High intensity and low energy require a gentle/rest-first path."
+    },
+    {
+      "vectorId": "fatigue_vitality",
+      "axisId": "growth",
+      "frame": "productivity_as_worth",
+      "reason": "Growth cannot be equated to pushing through exhaustion."
+    },
+    {
+      "vectorId": "shame_acceptance",
+      "axisId": "dignity",
+      "frame": "self_blame_as_growth",
+      "reason": "Self-punishment cannot be a requirement of self-acceptance."
+    },
+    {
+      "vectorId": "anxiety_confidence",
+      "axisId": "agency",
+      "frame": "deny_real_danger",
+      "reason": "Confidence cannot mean ignoring actual danger."
+    },
+    {
+      "vectorId": "selfcrit_compassion",
+      "axisId": "agency",
+      "frame": "perfectionism",
+      "reason": "An approved idea cannot require perfection."
+    }
+  ],
+  "ideas": [
+    {
+      "id": "mi-anxiety_confidence-anchor-1",
+      "axisId": "anchor",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Устойчивость может начинаться с одного знакомого ориентира, даже когда тревога ещё рядом.",
+        "en": "Steadiness can start with one familiar reference point even while anxiety remains.",
+        "es": "La estabilidad puede comenzar con un punto de referencia conocido aunque siga la ansiedad."
+      },
+      "distinctnessTag": "anchor:anxiety_confidence:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-anchor-2",
+      "axisId": "anchor",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу проверять, что действительно безопасно сейчас, вместо попытки предугадать всё.",
+        "en": "I can check what is actually safe now rather than trying to predict everything.",
+        "es": "Puedo comprobar qué es seguro ahora, en vez de intentar preverlo todo."
+      },
+      "distinctnessTag": "anchor:anxiety_confidence:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-anchor-3",
+      "axisId": "anchor",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Уверенности иногда достаточно опереться на проверенный опыт, не требуя полной определённости.",
+        "en": "Confidence can draw on what I already know without requiring complete certainty.",
+        "es": "La confianza puede apoyarse en lo que ya conozco sin exigir certeza total."
+      },
+      "distinctnessTag": "anchor:anxiety_confidence:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-connection-1",
+      "axisId": "connection",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Тревогу не обязательно скрывать, чтобы оставаться достойным бережного контакта.",
+        "en": "Anxiety need not be hidden to deserve considerate connection.",
+        "es": "No necesito ocultar la ansiedad para merecer un contacto respetuoso."
+      },
+      "distinctnessTag": "connection:anxiety_confidence:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-connection-2",
+      "axisId": "connection",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я вправе попросить о присутствии, не превращая другого человека в ответственного за мой страх.",
+        "en": "I may ask for company without making another person responsible for my fear.",
+        "es": "Puedo pedir compañía sin hacer a otra persona responsable de mi miedo."
+      },
+      "distinctnessTag": "connection:anxiety_confidence:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-connection-3",
+      "axisId": "connection",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Уверенность в отношениях может расти из ясной просьбы и права услышать отказ.",
+        "en": "Relational confidence can grow from a clear request and room for the other person's no.",
+        "es": "La confianza en los vínculos puede crecer de una petición clara y del derecho ajeno a decir no."
+      },
+      "distinctnessTag": "connection:anxiety_confidence:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-freedom-1",
+      "axisId": "freedom",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Мой страх может быть замечен, но не обязан выбирать направление вместо меня.",
+        "en": "My fear can be acknowledged without choosing my direction for me.",
+        "es": "Puedo reconocer mi miedo sin dejar que elija el rumbo por mí."
+      },
+      "distinctnessTag": "freedom:anxiety_confidence:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-freedom-2",
+      "axisId": "freedom",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу определить размер следующего шага сам, даже если пока не могу управлять всей ситуацией.",
+        "en": "I can choose the size of my next step even when I cannot control the whole situation.",
+        "es": "Puedo decidir el tamaño del siguiente paso aunque no controle toda la situación."
+      },
+      "distinctnessTag": "freedom:anxiety_confidence:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-freedom-3",
+      "axisId": "freedom",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Право остановиться тоже часть свободы, а не доказательство слабости.",
+        "en": "The freedom to pause is part of choice, not proof of weakness.",
+        "es": "La libertad de hacer una pausa también es una elección, no una prueba de debilidad."
+      },
+      "distinctnessTag": "freedom:anxiety_confidence:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-agency-1",
+      "axisId": "agency",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Даже при тревоге у меня может оставаться одна посильная область действия.",
+        "en": "Even with anxiety, one manageable area of action may remain open to me.",
+        "es": "Incluso con ansiedad puedo conservar un ámbito de acción manejable."
+      },
+      "distinctnessTag": "agency:anxiety_confidence:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-agency-2",
+      "axisId": "agency",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Уверенность можно проверять маленьким действием, не обещая себе немедленного успеха.",
+        "en": "I can test confidence through a small action without promising immediate success.",
+        "es": "Puedo explorar la confianza con una acción pequeña sin prometerme éxito inmediato."
+      },
+      "distinctnessTag": "agency:anxiety_confidence:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-agency-3",
+      "axisId": "agency",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Подготовка и просьба о помощи могут быть формами силы не меньше, чем самостоятельный шаг.",
+        "en": "Preparing and asking for help can be forms of agency alongside acting alone.",
+        "es": "Prepararme y pedir ayuda pueden expresar capacidad de actuar tanto como hacerlo a solas."
+      },
+      "distinctnessTag": "agency:anxiety_confidence:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-dignity-1",
+      "axisId": "dignity",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "То, что мне тревожно, ничего не говорит о моей человеческой ценности.",
+        "en": "Feeling anxious says nothing about my human worth.",
+        "es": "Sentir ansiedad no determina mi valor como persona."
+      },
+      "distinctnessTag": "dignity:anxiety_confidence:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-dignity-2",
+      "axisId": "dignity",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне не нужно демонстрировать бесстрашие, чтобы заслуживать уважение.",
+        "en": "I do not have to display fearlessness to deserve respect.",
+        "es": "No tengo que mostrar ausencia de miedo para merecer respeto."
+      },
+      "distinctnessTag": "dignity:anxiety_confidence:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-dignity-3",
+      "axisId": "dignity",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу обращаться к себе с достоинством и тогда, когда уверенность пока не пришла.",
+        "en": "I can treat myself with dignity before confidence arrives.",
+        "es": "Puedo tratarme con dignidad incluso antes de sentir confianza."
+      },
+      "distinctnessTag": "dignity:anxiety_confidence:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-wholeness-1",
+      "axisId": "wholeness",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Тревожная и решительная стороны моего опыта могут быть услышаны одновременно.",
+        "en": "The anxious and decisive parts of my experience can both be heard.",
+        "es": "La parte ansiosa y la decidida de mi experiencia pueden escucharse a la vez."
+      },
+      "distinctnessTag": "wholeness:anxiety_confidence:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-wholeness-2",
+      "axisId": "wholeness",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне не нужно стирать осторожность, чтобы попробовать стать увереннее.",
+        "en": "I need not erase caution to explore greater confidence.",
+        "es": "No necesito borrar la cautela para explorar más confianza."
+      },
+      "distinctnessTag": "wholeness:anxiety_confidence:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-wholeness-3",
+      "axisId": "wholeness",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Можно одновременно признавать уязвимость и сохранять способность выбирать.",
+        "en": "Vulnerability and the ability to choose can be present together.",
+        "es": "La vulnerabilidad y la capacidad de elegir pueden estar presentes juntas."
+      },
+      "distinctnessTag": "wholeness:anxiety_confidence:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-meaning-1",
+      "axisId": "meaning",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Когда многое неопределённо, я могу ориентироваться на то, что лично мне важно.",
+        "en": "When much is uncertain, what matters to me can still offer direction.",
+        "es": "Cuando hay incertidumbre, lo que me importa puede seguir orientándome."
+      },
+      "distinctnessTag": "meaning:anxiety_confidence:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-meaning-2",
+      "axisId": "meaning",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Уверенность не обязательно означает знать весь путь: иногда достаточно понимать зачем идти.",
+        "en": "Confidence need not mean knowing the whole path; sometimes knowing why I move matters more.",
+        "es": "Confiar no exige conocer todo el camino; a veces basta con saber por qué avanzo."
+      },
+      "distinctnessTag": "meaning:anxiety_confidence:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-meaning-3",
+      "axisId": "meaning",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу пересмотреть цель, если она требует от меня постоянно подавлять страх.",
+        "en": "I may reconsider a goal if pursuing it requires me to suppress fear constantly.",
+        "es": "Puedo revisar una meta si exige que reprima el miedo todo el tiempo."
+      },
+      "distinctnessTag": "meaning:anxiety_confidence:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-growth-1",
+      "axisId": "growth",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Навык встречаться с неопределённостью может развиваться в безопасных малых пробах.",
+        "en": "Meeting uncertainty is a skill I can develop through small, safe experiments.",
+        "es": "Puedo aprender a convivir con la incertidumbre mediante ensayos pequeños y seguros."
+      },
+      "distinctnessTag": "growth:anxiety_confidence:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-growth-2",
+      "axisId": "growth",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне можно двигаться поэтапно, не превращая каждую тревогу в испытание на смелость.",
+        "en": "I can progress in stages without turning every anxious moment into a courage test.",
+        "es": "Puedo avanzar por etapas sin convertir cada momento de ansiedad en una prueba de valentía."
+      },
+      "distinctnessTag": "growth:anxiety_confidence:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_confidence-growth-3",
+      "axisId": "growth",
+      "vectorId": "anxiety_confidence",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Рост уверенности может включать и новые действия, и возвращение к тому, что уже помогает.",
+        "en": "Building confidence can include new actions and returning to what already helps.",
+        "es": "Desarrollar confianza puede incluir acciones nuevas y volver a lo que ya me ayuda."
+      },
+      "distinctnessTag": "growth:anxiety_confidence:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-anchor-1",
+      "axisId": "anchor",
+      "vectorId": "anxiety_calm",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Момент покоя может начаться с того, что я замечаю поверхность под ногами.",
+        "en": "A moment of calm may begin by noticing the ground beneath my feet.",
+        "es": "Un momento de calma puede empezar al notar el suelo bajo mis pies."
+      },
+      "distinctnessTag": "anchor:anxiety_calm:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-anchor-2",
+      "axisId": "anchor",
+      "vectorId": "anxiety_calm",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне доступна передышка без обязательства немедленно решить всю проблему.",
+        "en": "Rest may be available without an obligation to solve the whole problem at once.",
+        "es": "Puedo descansar un momento sin tener que resolver todo el problema de inmediato."
+      },
+      "distinctnessTag": "anchor:anxiety_calm:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-anchor-3",
+      "axisId": "anchor",
+      "vectorId": "anxiety_calm",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу различать действительную угрозу и тревожное ожидание, не игнорируя ни то ни другое.",
+        "en": "I can distinguish an actual danger from an anxious expectation without dismissing either.",
+        "es": "Puedo distinguir un peligro real de una expectativa ansiosa sin ignorar ninguno."
+      },
+      "distinctnessTag": "anchor:anxiety_calm:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-connection-1",
+      "axisId": "connection",
+      "vectorId": "anxiety_calm",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Спокойный контакт иногда начинается с простого присутствия, а не с разговора о проблеме.",
+        "en": "Calm connection sometimes starts with simple presence rather than a discussion of the problem.",
+        "es": "Un vínculo sereno a veces comienza con la presencia, no con hablar del problema."
+      },
+      "distinctnessTag": "connection:anxiety_calm:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-connection-2",
+      "axisId": "connection",
+      "vectorId": "anxiety_calm",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу сказать близкому, какой вид поддержки сейчас полезен, не ожидая чтения мыслей.",
+        "en": "I can tell someone what kind of support helps rather than expecting mind reading.",
+        "es": "Puedo decir qué apoyo me ayuda ahora sin esperar que adivinen lo que pienso."
+      },
+      "distinctnessTag": "connection:anxiety_calm:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-connection-3",
+      "axisId": "connection",
+      "vectorId": "anxiety_calm",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Уединение по выбору и близость по согласию могут одинаково поддерживать покой.",
+        "en": "Chosen solitude and consensual closeness can both support calm.",
+        "es": "La soledad elegida y la cercanía consentida pueden apoyar la calma por igual."
+      },
+      "distinctnessTag": "connection:anxiety_calm:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-freedom-1",
+      "axisId": "freedom",
+      "vectorId": "anxiety_calm",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Я вправе выбрать паузу, даже если окружающий ритм требует спешки.",
+        "en": "I may choose a pause even when the surrounding pace urges me to rush.",
+        "es": "Tengo derecho a detenerme aunque el ritmo de los demás me apure."
+      },
+      "distinctnessTag": "freedom:anxiety_calm:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-freedom-2",
+      "axisId": "freedom",
+      "vectorId": "anxiety_calm",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне не обязательно отвечать на каждую тревожную мысль немедленным действием.",
+        "en": "I do not have to respond to every anxious thought with immediate action.",
+        "es": "No tengo que responder a cada pensamiento ansioso con una acción inmediata."
+      },
+      "distinctnessTag": "freedom:anxiety_calm:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-freedom-3",
+      "axisId": "freedom",
+      "vectorId": "anxiety_calm",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Спокойствие может появляться, когда я отделяю свои решения от чужих ожиданий.",
+        "en": "Calm may become possible when I separate my choices from others' expectations.",
+        "es": "La calma puede llegar cuando distingo mis decisiones de las expectativas ajenas."
+      },
+      "distinctnessTag": "freedom:anxiety_calm:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-agency-1",
+      "axisId": "agency",
+      "vectorId": "anxiety_calm",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Я могу уменьшить нагрузку на один ближайший час, не пытаясь переделать всю жизнь.",
+        "en": "I can reduce the demands of the next hour without trying to remake my whole life.",
+        "es": "Puedo reducir las exigencias de la próxima hora sin rehacer toda mi vida."
+      },
+      "distinctnessTag": "agency:anxiety_calm:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-agency-2",
+      "axisId": "agency",
+      "vectorId": "anxiety_calm",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Проверка одного факта может вернуть ясность там, где тревога подставляет догадки.",
+        "en": "Checking one fact can restore clarity where anxiety offers guesses.",
+        "es": "Comprobar un hecho puede devolver claridad donde la ansiedad propone suposiciones."
+      },
+      "distinctnessTag": "agency:anxiety_calm:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-agency-3",
+      "axisId": "agency",
+      "vectorId": "anxiety_calm",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Выбор простого ритуала завершения дня — действие, а не обязанность всегда быть продуктивным.",
+        "en": "Choosing a simple end-of-day ritual is an action, not a duty to stay productive.",
+        "es": "Elegir un sencillo cierre del día es una acción, no una obligación de producir siempre."
+      },
+      "distinctnessTag": "agency:anxiety_calm:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-dignity-1",
+      "axisId": "dignity",
+      "vectorId": "anxiety_calm",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Мне не нужно стыдиться тревоги, чтобы заслужить отдых.",
+        "en": "I need not be ashamed of anxiety to be worthy of rest.",
+        "es": "No necesito avergonzarme de la ansiedad para merecer descanso."
+      },
+      "distinctnessTag": "dignity:anxiety_calm:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-dignity-2",
+      "axisId": "dignity",
+      "vectorId": "anxiety_calm",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Даже в напряжённый день мои потребности не становятся менее законными.",
+        "en": "My needs remain legitimate even on a tense day.",
+        "es": "Mis necesidades siguen siendo legítimas incluso en un día tenso."
+      },
+      "distinctnessTag": "dignity:anxiety_calm:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-dignity-3",
+      "axisId": "dignity",
+      "vectorId": "anxiety_calm",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Отдых можно выбирать из уважения к себе, а не только после доказанной усталости.",
+        "en": "Rest can be chosen out of self-respect, not only after exhaustion has been proven.",
+        "es": "Puedo descansar por respeto a mí mismo, no solo tras demostrar agotamiento."
+      },
+      "distinctnessTag": "dignity:anxiety_calm:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-wholeness-1",
+      "axisId": "wholeness",
+      "vectorId": "anxiety_calm",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Стремление к покою может сосуществовать с частью меня, которая остаётся настороже.",
+        "en": "My wish for calm can coexist with the part of me that remains alert.",
+        "es": "Mi deseo de calma puede coexistir con una parte que sigue alerta."
+      },
+      "distinctnessTag": "wholeness:anxiety_calm:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-wholeness-2",
+      "axisId": "wholeness",
+      "vectorId": "anxiety_calm",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне не обязательно бороться с каждым ощущением напряжения, чтобы стать мягче к себе.",
+        "en": "I need not fight every tense sensation to respond more gently to myself.",
+        "es": "No necesito luchar contra cada sensación de tensión para tratarme con más suavidad."
+      },
+      "distinctnessTag": "wholeness:anxiety_calm:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-wholeness-3",
+      "axisId": "wholeness",
+      "vectorId": "anxiety_calm",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Покой не требует сделать вид, будто сложных чувств сегодня не было.",
+        "en": "Calm does not require pretending difficult feelings were absent today.",
+        "es": "La calma no exige fingir que hoy no hubo emociones difíciles."
+      },
+      "distinctnessTag": "wholeness:anxiety_calm:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-meaning-1",
+      "axisId": "meaning",
+      "vectorId": "anxiety_calm",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Я могу отдавать внимание тому, что действительно важно сегодня, вместо бесконечного списка угроз.",
+        "en": "I can give attention to what matters today instead of an endless list of threats.",
+        "es": "Puedo prestar atención a lo importante hoy en vez de a una lista infinita de amenazas."
+      },
+      "distinctnessTag": "meaning:anxiety_calm:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-meaning-2",
+      "axisId": "meaning",
+      "vectorId": "anxiety_calm",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Покой может стать условием для осмысленного решения, а не наградой за решение.",
+        "en": "Calm may be a condition for a meaningful decision rather than its reward.",
+        "es": "La calma puede ser la condición de una decisión con sentido y no su premio."
+      },
+      "distinctnessTag": "meaning:anxiety_calm:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-meaning-3",
+      "axisId": "meaning",
+      "vectorId": "anxiety_calm",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я вправе отложить поиск окончательного ответа и остаться с одним понятным вопросом.",
+        "en": "I may postpone a final answer and stay with one clear question.",
+        "es": "Puedo posponer la respuesta definitiva y quedarme con una pregunta clara."
+      },
+      "distinctnessTag": "meaning:anxiety_calm:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-growth-1",
+      "axisId": "growth",
+      "vectorId": "anxiety_calm",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Постепенное освоение отдыха тоже может быть изменением, даже без видимого рывка.",
+        "en": "Learning to rest gradually can be growth without a visible breakthrough.",
+        "es": "Aprender a descansar poco a poco también puede ser crecer sin un gran salto."
+      },
+      "distinctnessTag": "growth:anxiety_calm:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-growth-2",
+      "axisId": "growth",
+      "vectorId": "anxiety_calm",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу замечать, что помогает успокаиваться, не превращая это в строгий план самоконтроля.",
+        "en": "I can notice what helps me settle without turning it into a rigid control plan.",
+        "es": "Puedo observar qué me calma sin convertirlo en un plan rígido de control."
+      },
+      "distinctnessTag": "growth:anxiety_calm:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anxiety_calm-growth-3",
+      "axisId": "growth",
+      "vectorId": "anxiety_calm",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Новая привычка может быть небольшой и обратимой, если тревога делает перемены слишком резкими.",
+        "en": "A new habit can be small and reversible when anxiety makes change feel abrupt.",
+        "es": "Un hábito nuevo puede ser pequeño y reversible cuando la ansiedad vuelve brusco el cambio."
+      },
+      "distinctnessTag": "growth:anxiety_calm:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-anchor-1",
+      "axisId": "anchor",
+      "vectorId": "shame_acceptance",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "При стыде я могу искать безопасную опору прежде, чем решать, с кем говорить.",
+        "en": "When shame arises, I can find safe ground before deciding whom to tell.",
+        "es": "Cuando aparece vergüenza puedo buscar apoyo seguro antes de decidir con quién hablar."
+      },
+      "distinctnessTag": "anchor:shame_acceptance:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-anchor-2",
+      "axisId": "anchor",
+      "vectorId": "shame_acceptance",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне можно сделать паузу после ошибки, не вынося приговор всей своей личности.",
+        "en": "I may pause after a mistake without passing judgment on my whole identity.",
+        "es": "Puedo hacer una pausa tras un error sin juzgar toda mi identidad."
+      },
+      "distinctnessTag": "anchor:shame_acceptance:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-anchor-3",
+      "axisId": "anchor",
+      "vectorId": "shame_acceptance",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Чувство защищённости может опираться на конкретные границы, а не на отсутствие недостатков.",
+        "en": "A sense of safety can rest on clear boundaries rather than being without flaws.",
+        "es": "Sentirme seguro puede apoyarse en límites claros, no en carecer de defectos."
+      },
+      "distinctnessTag": "anchor:shame_acceptance:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-connection-1",
+      "axisId": "connection",
+      "vectorId": "shame_acceptance",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "О близости можно договариваться постепенно, не раскрывая больше, чем я готов.",
+        "en": "Closeness can be negotiated gradually without sharing more than I choose.",
+        "es": "La cercanía puede construirse poco a poco sin contar más de lo que elijo."
+      },
+      "distinctnessTag": "connection:shame_acceptance:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-connection-2",
+      "axisId": "connection",
+      "vectorId": "shame_acceptance",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Одна ошибка не обязывает меня изолироваться от тех, кто относится ко мне уважительно.",
+        "en": "One mistake does not oblige me to withdraw from people who treat me respectfully.",
+        "es": "Un error no me obliga a aislarme de quienes me tratan con respeto."
+      },
+      "distinctnessTag": "connection:shame_acceptance:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-connection-3",
+      "axisId": "connection",
+      "vectorId": "shame_acceptance",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Принятие в отношениях включает право быть несовершенным и право другого на собственные чувства.",
+        "en": "Acceptance in relationships includes my right to be imperfect and another's right to their feelings.",
+        "es": "La aceptación en un vínculo incluye mi derecho a ser imperfecto y el ajeno a sentir libremente."
+      },
+      "distinctnessTag": "connection:shame_acceptance:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-freedom-1",
+      "axisId": "freedom",
+      "vectorId": "shame_acceptance",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Стыд не обязан принимать за меня решение, показываться ли людям.",
+        "en": "Shame need not decide for me whether I appear before others.",
+        "es": "La vergüenza no tiene que decidir si me muestro ante los demás."
+      },
+      "distinctnessTag": "freedom:shame_acceptance:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-freedom-2",
+      "axisId": "freedom",
+      "vectorId": "shame_acceptance",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу менять мнение о себе без необходимости получить одобрение от каждого.",
+        "en": "I can reconsider how I see myself without seeking everyone's approval.",
+        "es": "Puedo reconsiderar cómo me veo sin buscar la aprobación de todos."
+      },
+      "distinctnessTag": "freedom:shame_acceptance:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-freedom-3",
+      "axisId": "freedom",
+      "vectorId": "shame_acceptance",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Мне разрешено выбрать дистанцию от унижающей ситуации вместо попытки понравиться.",
+        "en": "I may choose distance from a demeaning situation instead of trying to be liked.",
+        "es": "Puedo alejarme de una situación humillante en vez de intentar agradar."
+      },
+      "distinctnessTag": "freedom:shame_acceptance:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-agency-1",
+      "axisId": "agency",
+      "vectorId": "shame_acceptance",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Исправить конкретную ошибку возможно без наказания себя как человека.",
+        "en": "I can repair a specific mistake without punishing myself as a person.",
+        "es": "Puedo reparar un error concreto sin castigarme como persona."
+      },
+      "distinctnessTag": "agency:shame_acceptance:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-agency-2",
+      "axisId": "agency",
+      "vectorId": "shame_acceptance",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу попросить объяснить ожидания, вместо того чтобы угадывать повод для стыда.",
+        "en": "I can ask for expectations to be made clear rather than guessing what to feel ashamed of.",
+        "es": "Puedo pedir que aclaren las expectativas en lugar de adivinar por qué avergonzarme."
+      },
+      "distinctnessTag": "agency:shame_acceptance:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-agency-3",
+      "axisId": "agency",
+      "vectorId": "shame_acceptance",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Небольшое действие по своим ценностям доступно даже тогда, когда одобрение не гарантировано.",
+        "en": "A small action aligned with my values remains possible without guaranteed approval.",
+        "es": "Una pequeña acción acorde con mis valores sigue siendo posible sin aprobación garantizada."
+      },
+      "distinctnessTag": "agency:shame_acceptance:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-dignity-1",
+      "axisId": "dignity",
+      "vectorId": "shame_acceptance",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Моя человеческая ценность не складывается из списка удач и ошибок.",
+        "en": "My worth as a person is not a ledger of successes and mistakes.",
+        "es": "Mi valor como persona no es un balance de aciertos y errores."
+      },
+      "distinctnessTag": "dignity:shame_acceptance:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-dignity-2",
+      "axisId": "dignity",
+      "vectorId": "shame_acceptance",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу признавать последствия поступка, не соглашаясь на унижение.",
+        "en": "I can acknowledge the consequences of an action without accepting humiliation.",
+        "es": "Puedo reconocer las consecuencias de mis actos sin aceptar humillación."
+      },
+      "distinctnessTag": "dignity:shame_acceptance:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-dignity-3",
+      "axisId": "dignity",
+      "vectorId": "shame_acceptance",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Самопринятие не запрещает изменяться: оно отменяет необходимость ненавидеть себя ради перемен.",
+        "en": "Self-acceptance does not prevent change; it removes the need for self-hatred as its price.",
+        "es": "Aceptarme no impide cambiar; elimina la necesidad de odiarme para hacerlo."
+      },
+      "distinctnessTag": "dignity:shame_acceptance:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-wholeness-1",
+      "axisId": "wholeness",
+      "vectorId": "shame_acceptance",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Стыд может быть одним переживанием, но не описанием всей моей истории.",
+        "en": "Shame can be one experience without defining my whole story.",
+        "es": "La vergüenza puede ser una experiencia sin definir toda mi historia."
+      },
+      "distinctnessTag": "wholeness:shame_acceptance:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-wholeness-2",
+      "axisId": "wholeness",
+      "vectorId": "shame_acceptance",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне можно видеть и свои ограничения, и свои добрые намерения без оправданий.",
+        "en": "I can see both my limits and my good intentions without making excuses.",
+        "es": "Puedo reconocer mis límites y mis buenas intenciones sin buscar excusas."
+      },
+      "distinctnessTag": "wholeness:shame_acceptance:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-wholeness-3",
+      "axisId": "wholeness",
+      "vectorId": "shame_acceptance",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Часть меня, которая боится оценки, заслуживает внимания рядом с частью, которая хочет жить свободнее.",
+        "en": "The part afraid of judgment deserves attention alongside the part longing for more freedom.",
+        "es": "La parte que teme el juicio merece atención junto a la que desea mayor libertad."
+      },
+      "distinctnessTag": "wholeness:shame_acceptance:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-meaning-1",
+      "axisId": "meaning",
+      "vectorId": "shame_acceptance",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Даже неприятный опыт может подсказать, какие ценности я хочу защищать дальше.",
+        "en": "An unpleasant experience may clarify which values I want to protect next.",
+        "es": "Una experiencia desagradable puede aclarar qué valores quiero cuidar después."
+      },
+      "distinctnessTag": "meaning:shame_acceptance:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-meaning-2",
+      "axisId": "meaning",
+      "vectorId": "shame_acceptance",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу искать смысл в своём ответе на ошибку, а не в наказании за неё.",
+        "en": "I can find direction in how I respond to a mistake rather than in punishing myself.",
+        "es": "Puedo encontrar sentido en mi respuesta a un error, no en castigarme por él."
+      },
+      "distinctnessTag": "meaning:shame_acceptance:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-meaning-3",
+      "axisId": "meaning",
+      "vectorId": "shame_acceptance",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "То, что важное для меня пока не получилось, не делает важное бессмысленным.",
+        "en": "A setback in something I value does not make that value meaningless.",
+        "es": "Que algo importante aún no haya salido bien no le quita su sentido."
+      },
+      "distinctnessTag": "meaning:shame_acceptance:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-growth-1",
+      "axisId": "growth",
+      "vectorId": "shame_acceptance",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Осваивать самопринятие можно по шагам, без нового стандарта идеальности.",
+        "en": "Learning self-acceptance can happen in steps without another standard of perfection.",
+        "es": "Puedo aprender a aceptarme paso a paso sin crear otro ideal imposible."
+      },
+      "distinctnessTag": "growth:shame_acceptance:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-growth-2",
+      "axisId": "growth",
+      "vectorId": "shame_acceptance",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу изменять поведение, сохраняя уважение к той версии себя, которая ошибалась.",
+        "en": "I can change a behavior while respecting the earlier self who made a mistake.",
+        "es": "Puedo cambiar mi conducta respetando a la versión de mí que se equivocó."
+      },
+      "distinctnessTag": "growth:shame_acceptance:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-shame_acceptance-growth-3",
+      "axisId": "growth",
+      "vectorId": "shame_acceptance",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Рост может состоять в том, чтобы просить обратную связь без самоунижения.",
+        "en": "Growth may mean learning to request feedback without belittling myself.",
+        "es": "Crecer puede significar pedir opiniones sin menospreciarme."
+      },
+      "distinctnessTag": "growth:shame_acceptance:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-anchor-1",
+      "axisId": "anchor",
+      "vectorId": "anger_boundaries",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Прежде чем отвечать на злость, я могу убедиться, что вокруг достаточно безопасно.",
+        "en": "Before responding to anger, I can check whether my surroundings are safe enough.",
+        "es": "Antes de responder al enojo puedo comprobar que el entorno sea suficientemente seguro."
+      },
+      "distinctnessTag": "anchor:anger_boundaries:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-anchor-2",
+      "axisId": "anchor",
+      "vectorId": "anger_boundaries",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Устойчивая граница может звучать спокойно и не нуждаться в угрозе.",
+        "en": "A steady boundary can be spoken calmly without a threat.",
+        "es": "Un límite firme puede expresarse con calma y sin amenazas."
+      },
+      "distinctnessTag": "anchor:anger_boundaries:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-anchor-3",
+      "axisId": "anchor",
+      "vectorId": "anger_boundaries",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Мне можно выйти из напряжённого разговора и вернуться к нему при лучших условиях.",
+        "en": "I may step out of a heated conversation and return under safer conditions.",
+        "es": "Puedo salir de una conversación tensa y retomarla en mejores condiciones."
+      },
+      "distinctnessTag": "anchor:anger_boundaries:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-connection-1",
+      "axisId": "connection",
+      "vectorId": "anger_boundaries",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Злость может указать на нарушение договорённости, не делая другого врагом автоматически.",
+        "en": "Anger may signal a broken agreement without making the other person an enemy.",
+        "es": "El enojo puede señalar un acuerdo roto sin convertir al otro en enemigo."
+      },
+      "distinctnessTag": "connection:anger_boundaries:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-connection-2",
+      "axisId": "connection",
+      "vectorId": "anger_boundaries",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу говорить о последствиях для себя, не требуя, чтобы другой чувствовал то же самое.",
+        "en": "I can speak about my experience without demanding identical feelings from someone else.",
+        "es": "Puedo hablar de lo que vivo sin exigir que el otro sienta lo mismo."
+      },
+      "distinctnessTag": "connection:anger_boundaries:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-connection-3",
+      "axisId": "connection",
+      "vectorId": "anger_boundaries",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Граница может сохранять возможность контакта, если обе стороны свободны согласиться или отказаться.",
+        "en": "A boundary can leave room for contact when both people are free to agree or decline.",
+        "es": "Un límite puede dejar espacio al vínculo si ambas personas pueden aceptar o rechazar."
+      },
+      "distinctnessTag": "connection:anger_boundaries:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-freedom-1",
+      "axisId": "freedom",
+      "vectorId": "anger_boundaries",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Я вправе сказать «нет», не превращая отказ в наказание другого.",
+        "en": "I may say no without turning the refusal into punishment.",
+        "es": "Puedo decir no sin convertir el rechazo en un castigo."
+      },
+      "distinctnessTag": "freedom:anger_boundaries:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-freedom-2",
+      "axisId": "freedom",
+      "vectorId": "anger_boundaries",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу выбирать, сколько внимания отдавать конфликту, вместо автоматического вовлечения.",
+        "en": "I can choose how much attention a conflict receives instead of being pulled in automatically.",
+        "es": "Puedo elegir cuánta atención doy al conflicto en vez de entrar automáticamente."
+      },
+      "distinctnessTag": "freedom:anger_boundaries:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-freedom-3",
+      "axisId": "freedom",
+      "vectorId": "anger_boundaries",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Свобода не требует получить власть над другим человеком: она включает мой собственный выбор.",
+        "en": "Freedom does not require control over another person; it includes my own choices.",
+        "es": "La libertad no exige dominar a otra persona; incluye mis propias decisiones."
+      },
+      "distinctnessTag": "freedom:anger_boundaries:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-agency-1",
+      "axisId": "agency",
+      "vectorId": "anger_boundaries",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Злость может подсказать, что пора назвать конкретную просьбу или ограничение.",
+        "en": "Anger may signal that a specific request or limit needs to be named.",
+        "es": "El enojo puede señalar que conviene expresar una petición o un límite concreto."
+      },
+      "distinctnessTag": "agency:anger_boundaries:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-agency-2",
+      "axisId": "agency",
+      "vectorId": "anger_boundaries",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу подготовить одну ясную фразу, вместо того чтобы победить в споре.",
+        "en": "I can prepare one clear sentence instead of needing to win an argument.",
+        "es": "Puedo preparar una frase clara sin tener que ganar una discusión."
+      },
+      "distinctnessTag": "agency:anger_boundaries:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-agency-3",
+      "axisId": "agency",
+      "vectorId": "anger_boundaries",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Действие после конфликта может быть проверкой договорённости, а не ответной атакой.",
+        "en": "Action after conflict may mean checking an agreement rather than attacking back.",
+        "es": "Actuar tras un conflicto puede significar revisar un acuerdo y no contraatacar."
+      },
+      "distinctnessTag": "agency:anger_boundaries:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-dignity-1",
+      "axisId": "dignity",
+      "vectorId": "anger_boundaries",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Моя злость не отменяет моего достоинства, но и не оправдывает унижение других.",
+        "en": "My anger does not erase my dignity or excuse degrading others.",
+        "es": "Mi enojo no elimina mi dignidad ni justifica humillar a otros."
+      },
+      "distinctnessTag": "dignity:anger_boundaries:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-dignity-2",
+      "axisId": "dignity",
+      "vectorId": "anger_boundaries",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне не нужно терпеть унижение, чтобы считаться добрым человеком.",
+        "en": "I need not tolerate humiliation to count as a kind person.",
+        "es": "No tengo que tolerar humillación para ser una persona amable."
+      },
+      "distinctnessTag": "dignity:anger_boundaries:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-dignity-3",
+      "axisId": "dignity",
+      "vectorId": "anger_boundaries",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу защищать себя без доказательства, что другой человек плохой целиком.",
+        "en": "I can protect myself without proving that the other person is wholly bad.",
+        "es": "Puedo protegerme sin demostrar que la otra persona es mala en su totalidad."
+      },
+      "distinctnessTag": "dignity:anger_boundaries:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-wholeness-1",
+      "axisId": "wholeness",
+      "vectorId": "anger_boundaries",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Во мне могут одновременно жить злость и желание сохранить уважение.",
+        "en": "Anger and the wish to remain respectful can coexist in me.",
+        "es": "En mí pueden coexistir el enojo y el deseo de mantener el respeto."
+      },
+      "distinctnessTag": "wholeness:anger_boundaries:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-wholeness-2",
+      "axisId": "wholeness",
+      "vectorId": "anger_boundaries",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу признать обиду, не заставляя себя ни мстить, ни мгновенно прощать.",
+        "en": "I can acknowledge hurt without forcing revenge or instant forgiveness.",
+        "es": "Puedo reconocer el dolor sin obligarme a vengarme ni a perdonar enseguida."
+      },
+      "distinctnessTag": "wholeness:anger_boundaries:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-wholeness-3",
+      "axisId": "wholeness",
+      "vectorId": "anger_boundaries",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Часть меня хочет дистанции, а другая — разговора; мне можно услышать обе прежде выбора.",
+        "en": "One part wants distance and another dialogue; I can hear both before choosing.",
+        "es": "Una parte desea distancia y otra diálogo; puedo escuchar a ambas antes de elegir."
+      },
+      "distinctnessTag": "wholeness:anger_boundaries:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-meaning-1",
+      "axisId": "meaning",
+      "vectorId": "anger_boundaries",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Спор может прояснить для меня важный принцип, даже если согласия пока нет.",
+        "en": "A disagreement may clarify an important principle without producing immediate agreement.",
+        "es": "Un desacuerdo puede aclarar un principio importante aunque aún no haya acuerdo."
+      },
+      "distinctnessTag": "meaning:anger_boundaries:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-meaning-2",
+      "axisId": "meaning",
+      "vectorId": "anger_boundaries",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу решать, стоит ли этот конфликт энергии, исходя из своих ценностей.",
+        "en": "I can decide whether a conflict deserves my energy by considering my values.",
+        "es": "Puedo decidir si un conflicto merece mi energía según mis valores."
+      },
+      "distinctnessTag": "meaning:anger_boundaries:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-meaning-3",
+      "axisId": "meaning",
+      "vectorId": "anger_boundaries",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Смысл границы — беречь условия жизни, а не доказать свою правоту любой ценой.",
+        "en": "The point of a boundary is to protect livable conditions, not to prove I am right at all costs.",
+        "es": "El sentido de un límite es cuidar condiciones de vida, no demostrar que tengo razón a cualquier precio."
+      },
+      "distinctnessTag": "meaning:anger_boundaries:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-growth-1",
+      "axisId": "growth",
+      "vectorId": "anger_boundaries",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Учиться обозначать границы можно в простых ситуациях, а не только в больших конфликтах.",
+        "en": "I can practice naming boundaries in simple situations rather than only major conflicts.",
+        "es": "Puedo practicar límites en situaciones sencillas, no solo en grandes conflictos."
+      },
+      "distinctnessTag": "growth:anger_boundaries:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-growth-2",
+      "axisId": "growth",
+      "vectorId": "anger_boundaries",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "После ошибки в разговоре я могу попробовать новую формулировку без самонаказания.",
+        "en": "After a mistake in conversation, I can try a different wording without self-punishment.",
+        "es": "Tras equivocarme al conversar puedo probar otras palabras sin castigarme."
+      },
+      "distinctnessTag": "growth:anger_boundaries:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-anger_boundaries-growth-3",
+      "axisId": "growth",
+      "vectorId": "anger_boundaries",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Прогресс иногда выглядит как вовремя замеченное раздражение и выбранная пауза.",
+        "en": "Progress sometimes looks like noticing irritation early and choosing a pause.",
+        "es": "A veces progresar consiste en notar pronto la irritación y elegir una pausa."
+      },
+      "distinctnessTag": "growth:anger_boundaries:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-anchor-1",
+      "axisId": "anchor",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Восстановление может начаться с уменьшения требований, а не с попытки добыть силы волей.",
+        "en": "Recovery may begin by reducing demands rather than forcing energy through willpower.",
+        "es": "La recuperación puede empezar reduciendo exigencias en vez de forzar energía con voluntad."
+      },
+      "distinctnessTag": "anchor:fatigue_vitality:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-anchor-2",
+      "axisId": "anchor",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне можно проверить базовые потребности прежде, чем искать новую мотивацию.",
+        "en": "I may check basic needs before searching for new motivation.",
+        "es": "Puedo atender mis necesidades básicas antes de buscar nueva motivación."
+      },
+      "distinctnessTag": "anchor:fatigue_vitality:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-anchor-3",
+      "axisId": "anchor",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Опора для усталого человека иногда означает возможность ничего не доказывать.",
+        "en": "Support for a tired person can mean not having to prove anything.",
+        "es": "El apoyo para alguien cansado a veces consiste en no tener que demostrar nada."
+      },
+      "distinctnessTag": "anchor:fatigue_vitality:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-connection-1",
+      "axisId": "connection",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Я могу сообщить о нехватке сил, не обещая быть доступным всем постоянно.",
+        "en": "I can tell others I have little energy without promising constant availability.",
+        "es": "Puedo comunicar que tengo poca energía sin prometer estar siempre disponible."
+      },
+      "distinctnessTag": "connection:fatigue_vitality:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-connection-2",
+      "axisId": "connection",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Небольшой контакт без требований может питать больше, чем обязательная встреча.",
+        "en": "A brief, low-demand connection may nourish more than an obligatory gathering.",
+        "es": "Un vínculo breve y sin exigencias puede nutrir más que una reunión obligatoria."
+      },
+      "distinctnessTag": "connection:fatigue_vitality:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-connection-3",
+      "axisId": "connection",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я вправе принимать помощь в быту без необходимости немедленно отплатить.",
+        "en": "I may accept practical help without needing to repay it immediately.",
+        "es": "Puedo aceptar ayuda práctica sin tener que devolverla de inmediato."
+      },
+      "distinctnessTag": "connection:fatigue_vitality:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-freedom-1",
+      "axisId": "freedom",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Я могу перестроить расписание, чтобы оставить место на восстановление, а не только на задачи.",
+        "en": "I can make room for recovery in my schedule, not only for tasks.",
+        "es": "Puedo reservar espacio en mi agenda para recuperarme, no solo para tareas."
+      },
+      "distinctnessTag": "freedom:fatigue_vitality:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-freedom-2",
+      "axisId": "freedom",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Жизненность не обязана возвращаться по чужому графику.",
+        "en": "Vitality does not have to return on someone else's timetable.",
+        "es": "La vitalidad no tiene que volver según el calendario de otra persona."
+      },
+      "distinctnessTag": "freedom:fatigue_vitality:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-freedom-3",
+      "axisId": "freedom",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Отказ от лишней нагрузки может быть проявлением свободы, а не отказом от жизни.",
+        "en": "Declining extra demands can express freedom rather than giving up on life.",
+        "es": "Rechazar cargas adicionales puede expresar libertad, no renuncia a vivir."
+      },
+      "distinctnessTag": "freedom:fatigue_vitality:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-agency-1",
+      "axisId": "agency",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Маленькое выполнимое действие после отдыха может быть достаточно значимым.",
+        "en": "One manageable action after rest may be significant enough.",
+        "es": "Una acción pequeña y posible después de descansar puede ser suficiente."
+      },
+      "distinctnessTag": "agency:fatigue_vitality:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-agency-2",
+      "axisId": "agency",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне не нужно превращать усталость в очередной проект самоусовершенствования.",
+        "en": "I need not turn my fatigue into another self-improvement project.",
+        "es": "No necesito convertir mi cansancio en otro proyecto de autosuperación."
+      },
+      "distinctnessTag": "agency:fatigue_vitality:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-agency-3",
+      "axisId": "agency",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу выбрать, какую одну задачу сегодня облегчить, вместо попытки успеть всё.",
+        "en": "I can choose one task to make easier today instead of trying to do everything.",
+        "es": "Puedo elegir una tarea para hacerla más fácil hoy en vez de intentar hacerlo todo."
+      },
+      "distinctnessTag": "agency:fatigue_vitality:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-dignity-1",
+      "axisId": "dignity",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Усталость не делает меня менее достойным уважения или заботы.",
+        "en": "Fatigue does not make me less worthy of respect or care.",
+        "es": "El cansancio no me hace menos digno de respeto ni de cuidado."
+      },
+      "distinctnessTag": "dignity:fatigue_vitality:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-dignity-2",
+      "axisId": "dignity",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне не требуется продуктивность, чтобы оправдать право на восстановление.",
+        "en": "I need not be productive to justify my right to recover.",
+        "es": "No necesito ser productivo para justificar mi derecho a recuperarme."
+      },
+      "distinctnessTag": "dignity:fatigue_vitality:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-dignity-3",
+      "axisId": "dignity",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу относиться к ограниченным ресурсам как к реальности, а не личному провалу.",
+        "en": "I can treat limited energy as a reality rather than a personal failure.",
+        "es": "Puedo tratar la energía limitada como una realidad y no como un fracaso personal."
+      },
+      "distinctnessTag": "dignity:fatigue_vitality:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-wholeness-1",
+      "axisId": "wholeness",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Моя уставшая часть заслуживает места рядом с частью, которая хочет двигаться.",
+        "en": "My tired part deserves space alongside the part that wants to move.",
+        "es": "Mi parte cansada merece espacio junto a la que desea moverse."
+      },
+      "distinctnessTag": "wholeness:fatigue_vitality:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-wholeness-2",
+      "axisId": "wholeness",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Отдых и интерес к жизни могут чередоваться, не исключая друг друга.",
+        "en": "Rest and curiosity about life can alternate without canceling each other.",
+        "es": "El descanso y la curiosidad por la vida pueden alternarse sin excluirse."
+      },
+      "distinctnessTag": "wholeness:fatigue_vitality:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-wholeness-3",
+      "axisId": "wholeness",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу одновременно уважать пределы тела и сохранять надежду на восстановление.",
+        "en": "I can respect my body's limits while keeping hope for recovery.",
+        "es": "Puedo respetar los límites del cuerpo sin perder la esperanza de recuperarme."
+      },
+      "distinctnessTag": "wholeness:fatigue_vitality:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-meaning-1",
+      "axisId": "meaning",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Когда энергии мало, важно выбрать то, что действительно заслуживает моих сил.",
+        "en": "When energy is scarce, it matters what I choose to spend it on.",
+        "es": "Cuando tengo poca energía importa elegir aquello que merece mis fuerzas."
+      },
+      "distinctnessTag": "meaning:fatigue_vitality:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-meaning-2",
+      "axisId": "meaning",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Смысл дня может сохраниться и без длинного списка выполненных дел.",
+        "en": "A day can hold meaning without a long list of completed tasks.",
+        "es": "Un día puede tener sentido sin una larga lista de tareas cumplidas."
+      },
+      "distinctnessTag": "meaning:fatigue_vitality:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-meaning-3",
+      "axisId": "meaning",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Мне можно пересмотреть цель, если её цена постоянно лишает меня восстановления.",
+        "en": "I can revisit a goal if its cost continually deprives me of recovery.",
+        "es": "Puedo revisar una meta si su coste me impide recuperarme una y otra vez."
+      },
+      "distinctnessTag": "meaning:fatigue_vitality:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-growth-1",
+      "axisId": "growth",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Восстанавливаться тоже навык, который можно осваивать без соревнования.",
+        "en": "Recovery can be a skill to learn without turning it into a competition.",
+        "es": "Recuperarse también puede aprenderse sin convertirlo en competencia."
+      },
+      "distinctnessTag": "growth:fatigue_vitality:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-growth-2",
+      "axisId": "growth",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Новое начало иногда состоит в более устойчивом ритме, а не большей скорости.",
+        "en": "A fresh start can mean a more sustainable rhythm instead of greater speed.",
+        "es": "Un nuevo comienzo puede ser un ritmo más sostenible, no mayor velocidad."
+      },
+      "distinctnessTag": "growth:fatigue_vitality:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-fatigue_vitality-growth-3",
+      "axisId": "growth",
+      "vectorId": "fatigue_vitality",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Малые изменения привычек имеют смысл, только если оставляют пространство для отдыха.",
+        "en": "Small habit changes matter only when they leave room for rest.",
+        "es": "Los cambios pequeños de hábitos valen si dejan espacio para descansar."
+      },
+      "distinctnessTag": "growth:fatigue_vitality:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-anchor-1",
+      "axisId": "anchor",
+      "vectorId": "loneliness_connection",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Прежде чем искать близость, я могу заметить, где мне уже достаточно спокойно быть собой.",
+        "en": "Before seeking closeness, I can notice where I already feel safe being myself.",
+        "es": "Antes de buscar cercanía puedo notar dónde ya me siento seguro siendo yo."
+      },
+      "distinctnessTag": "anchor:loneliness_connection:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-anchor-2",
+      "axisId": "anchor",
+      "vectorId": "loneliness_connection",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Один устойчивый контакт может значить больше, чем множество случайных встреч.",
+        "en": "One steady connection may matter more than many passing encounters.",
+        "es": "Un vínculo estable puede importar más que muchos encuentros pasajeros."
+      },
+      "distinctnessTag": "anchor:loneliness_connection:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-anchor-3",
+      "axisId": "anchor",
+      "vectorId": "loneliness_connection",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Мне можно сохранять своё пространство даже рядом с человеком, которому доверяю.",
+        "en": "I may keep my personal space even beside someone I trust.",
+        "es": "Puedo conservar mi espacio incluso junto a alguien de confianza."
+      },
+      "distinctnessTag": "anchor:loneliness_connection:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-connection-1",
+      "axisId": "connection",
+      "vectorId": "loneliness_connection",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Близость начинается не с обязательного раскрытия всего, а с добровольного обмена.",
+        "en": "Closeness need not begin with revealing everything; it can start with a voluntary exchange.",
+        "es": "La cercanía no exige contarlo todo; puede empezar con un intercambio voluntario."
+      },
+      "distinctnessTag": "connection:loneliness_connection:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-connection-2",
+      "axisId": "connection",
+      "vectorId": "loneliness_connection",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу сделать приглашение к общению, оставляя другому свободу отказаться.",
+        "en": "I can invite someone to connect while leaving them free to decline.",
+        "es": "Puedo invitar a conectar dejando a la otra persona libertad para rechazarlo."
+      },
+      "distinctnessTag": "connection:loneliness_connection:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-connection-3",
+      "axisId": "connection",
+      "vectorId": "loneliness_connection",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Принадлежность не требует быть похожим на всех: иногда она рождается из уважения различий.",
+        "en": "Belonging need not require sameness; it can grow from respect for differences.",
+        "es": "Pertenecer no exige ser igual a todos; puede nacer del respeto a las diferencias."
+      },
+      "distinctnessTag": "connection:loneliness_connection:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-freedom-1",
+      "axisId": "freedom",
+      "vectorId": "loneliness_connection",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Я могу выбирать общение, в котором остаётся место моим желаниям и границам.",
+        "en": "I can choose connections that leave room for my wishes and boundaries.",
+        "es": "Puedo elegir vínculos que dejen espacio a mis deseos y límites."
+      },
+      "distinctnessTag": "freedom:loneliness_connection:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-freedom-2",
+      "axisId": "freedom",
+      "vectorId": "loneliness_connection",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Одиночество не обязывает соглашаться на отношения, где мне небезопасно.",
+        "en": "Loneliness does not obligate me to accept an unsafe relationship.",
+        "es": "La soledad no me obliga a aceptar una relación insegura."
+      },
+      "distinctnessTag": "freedom:loneliness_connection:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-freedom-3",
+      "axisId": "freedom",
+      "vectorId": "loneliness_connection",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Мне доступен свой ритм сближения, даже если другие торопят.",
+        "en": "I can keep my own pace of getting closer even when others rush.",
+        "es": "Puedo mantener mi ritmo de acercamiento aunque otros tengan prisa."
+      },
+      "distinctnessTag": "freedom:loneliness_connection:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-agency-1",
+      "axisId": "agency",
+      "vectorId": "loneliness_connection",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Один простой знак внимания может открыть возможность разговора без гарантии результата.",
+        "en": "One small gesture of interest can open conversation without guaranteeing an outcome.",
+        "es": "Un pequeño gesto de interés puede abrir una conversación sin asegurar el resultado."
+      },
+      "distinctnessTag": "agency:loneliness_connection:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-agency-2",
+      "axisId": "agency",
+      "vectorId": "loneliness_connection",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу искать места общих интересов, не требуя от себя мгновенной близости.",
+        "en": "I can seek shared-interest spaces without demanding instant closeness.",
+        "es": "Puedo buscar espacios de intereses comunes sin exigirme cercanía inmediata."
+      },
+      "distinctnessTag": "agency:loneliness_connection:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-agency-3",
+      "axisId": "agency",
+      "vectorId": "loneliness_connection",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Если контакт не сложился, это информация о встрече, а не оценка всей моей личности.",
+        "en": "If a connection does not form, it tells me about that encounter, not my whole worth.",
+        "es": "Si un vínculo no surge, eso habla del encuentro y no de todo mi valor."
+      },
+      "distinctnessTag": "agency:loneliness_connection:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-dignity-1",
+      "axisId": "dignity",
+      "vectorId": "loneliness_connection",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Моя ценность не измеряется количеством людей, которые сейчас рядом.",
+        "en": "My worth is not measured by how many people are around me today.",
+        "es": "Mi valor no se mide por cuántas personas tengo cerca hoy."
+      },
+      "distinctnessTag": "dignity:loneliness_connection:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-dignity-2",
+      "axisId": "dignity",
+      "vectorId": "loneliness_connection",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я достоин уважения даже тогда, когда чувствую себя оставленным.",
+        "en": "I deserve respect even when I feel left out.",
+        "es": "Merezco respeto incluso cuando me siento excluido."
+      },
+      "distinctnessTag": "dignity:loneliness_connection:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-dignity-3",
+      "axisId": "dignity",
+      "vectorId": "loneliness_connection",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу просить близости без необходимости соглашаться на пренебрежение.",
+        "en": "I can ask for closeness without agreeing to be disregarded.",
+        "es": "Puedo pedir cercanía sin aceptar que me traten con indiferencia."
+      },
+      "distinctnessTag": "dignity:loneliness_connection:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-wholeness-1",
+      "axisId": "wholeness",
+      "vectorId": "loneliness_connection",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Во мне может одновременно быть потребность в людях и желание побыть одному.",
+        "en": "I can need people and still want time alone.",
+        "es": "Puedo necesitar compañía y al mismo tiempo querer estar a solas."
+      },
+      "distinctnessTag": "wholeness:loneliness_connection:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-wholeness-2",
+      "axisId": "wholeness",
+      "vectorId": "loneliness_connection",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу признавать грусть об отсутствии связи, не считать её своим недостатком.",
+        "en": "I can acknowledge sadness about missing connection without treating it as a flaw.",
+        "es": "Puedo reconocer la tristeza por falta de vínculo sin verla como un defecto."
+      },
+      "distinctnessTag": "wholeness:loneliness_connection:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-wholeness-3",
+      "axisId": "wholeness",
+      "vectorId": "loneliness_connection",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Моё стремление к принадлежности может сосуществовать с индивидуальностью.",
+        "en": "My wish to belong can coexist with my individuality.",
+        "es": "Mi deseo de pertenecer puede coexistir con mi individualidad."
+      },
+      "distinctnessTag": "wholeness:loneliness_connection:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-meaning-1",
+      "axisId": "meaning",
+      "vectorId": "loneliness_connection",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Связь бывает значимой не из-за частоты встреч, а благодаря тому, что мы разделяем.",
+        "en": "A bond can be meaningful because of what we share, not how often we meet.",
+        "es": "Un vínculo puede ser significativo por lo que compartimos, no por vernos a menudo."
+      },
+      "distinctnessTag": "meaning:loneliness_connection:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-meaning-2",
+      "axisId": "meaning",
+      "vectorId": "loneliness_connection",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу искать сообщество вокруг ценностей, которые не приходится скрывать.",
+        "en": "I can look for community around values I do not have to hide.",
+        "es": "Puedo buscar comunidad en torno a valores que no tengo que ocultar."
+      },
+      "distinctnessTag": "meaning:loneliness_connection:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-meaning-3",
+      "axisId": "meaning",
+      "vectorId": "loneliness_connection",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Даже в период одиночества мои заботы и интересы продолжают иметь значение.",
+        "en": "My concerns and interests still matter through a period of loneliness.",
+        "es": "Mis inquietudes e intereses siguen importando en un periodo de soledad."
+      },
+      "distinctnessTag": "meaning:loneliness_connection:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-growth-1",
+      "axisId": "growth",
+      "vectorId": "loneliness_connection",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Умение строить связь можно развивать медленно, начиная с безопасных разговоров.",
+        "en": "I can practice connection gradually, starting with safe conversations.",
+        "es": "Puedo aprender a relacionarme poco a poco, empezando por conversaciones seguras."
+      },
+      "distinctnessTag": "growth:loneliness_connection:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-growth-2",
+      "axisId": "growth",
+      "vectorId": "loneliness_connection",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Новый круг общения не требует отказаться от прежнего себя.",
+        "en": "A new circle of people need not require giving up who I am.",
+        "es": "Un círculo nuevo no exige renunciar a quien soy."
+      },
+      "distinctnessTag": "growth:loneliness_connection:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-loneliness_connection-growth-3",
+      "axisId": "growth",
+      "vectorId": "loneliness_connection",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Иногда первым изменением становится способность замечать взаимность, а не только отказ.",
+        "en": "Sometimes the first change is noticing reciprocity, not only rejection.",
+        "es": "A veces el primer cambio es reconocer la reciprocidad, no solo el rechazo."
+      },
+      "distinctnessTag": "growth:loneliness_connection:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-anchor-1",
+      "axisId": "anchor",
+      "vectorId": "confusion_clarity",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Когда всё кажется запутанным, я могу начать с одного факта, который уже проверен.",
+        "en": "When everything seems tangled, I can begin with one verified fact.",
+        "es": "Cuando todo parece confuso puedo empezar con un hecho comprobado."
+      },
+      "distinctnessTag": "anchor:confusion_clarity:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-anchor-2",
+      "axisId": "anchor",
+      "vectorId": "confusion_clarity",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Надёжная опора для решения иногда состоит в праве не решать сегодня.",
+        "en": "A reliable foundation for a decision may include permission not to decide today.",
+        "es": "Un apoyo fiable para decidir puede ser permitirme no hacerlo hoy."
+      },
+      "distinctnessTag": "anchor:confusion_clarity:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-anchor-3",
+      "axisId": "anchor",
+      "vectorId": "confusion_clarity",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу отделить срочное от важного прежде, чем искать полный ответ.",
+        "en": "I can separate what is urgent from what matters before seeking a complete answer.",
+        "es": "Puedo separar lo urgente de lo importante antes de buscar la respuesta completa."
+      },
+      "distinctnessTag": "anchor:confusion_clarity:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-connection-1",
+      "axisId": "connection",
+      "vectorId": "confusion_clarity",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Я могу попросить другого объяснить его точку зрения, не передавая ему право решать за меня.",
+        "en": "I can ask for another perspective without handing over my choice.",
+        "es": "Puedo pedir otra perspectiva sin ceder mi derecho a decidir."
+      },
+      "distinctnessTag": "connection:confusion_clarity:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-connection-2",
+      "axisId": "connection",
+      "vectorId": "confusion_clarity",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Разговор помогает ясности, когда в нём есть место и моим сомнениям.",
+        "en": "Conversation helps clarity when my doubts have room to exist.",
+        "es": "Una conversación da claridad cuando también hay lugar para mis dudas."
+      },
+      "distinctnessTag": "connection:confusion_clarity:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-connection-3",
+      "axisId": "connection",
+      "vectorId": "confusion_clarity",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Мне можно сверить понимание друг с другом, не ожидая полного совпадения.",
+        "en": "We can check our understanding without expecting perfect agreement.",
+        "es": "Podemos contrastar lo comprendido sin esperar acuerdo total."
+      },
+      "distinctnessTag": "connection:confusion_clarity:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-freedom-1",
+      "axisId": "freedom",
+      "vectorId": "confusion_clarity",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Неясность не отменяет моего права отложить решение или выбрать пробный шаг.",
+        "en": "Uncertainty does not remove my right to postpone a choice or try a provisional step.",
+        "es": "La incertidumbre no elimina mi derecho a aplazar o probar un paso provisional."
+      },
+      "distinctnessTag": "freedom:confusion_clarity:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-freedom-2",
+      "axisId": "freedom",
+      "vectorId": "confusion_clarity",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне не нужно выбирать из вариантов, предложенных другими, если я вижу третий.",
+        "en": "I need not choose only from options offered by others if I see a third.",
+        "es": "No tengo que elegir solo entre opciones ajenas si veo una tercera."
+      },
+      "distinctnessTag": "freedom:confusion_clarity:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-freedom-3",
+      "axisId": "freedom",
+      "vectorId": "confusion_clarity",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу пересмотреть решение, когда появится новая информация.",
+        "en": "I may revise a decision when new information becomes available.",
+        "es": "Puedo revisar una decisión cuando aparezca nueva información."
+      },
+      "distinctnessTag": "freedom:confusion_clarity:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-agency-1",
+      "axisId": "agency",
+      "vectorId": "confusion_clarity",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Один уточняющий вопрос может быть полезнее, чем поспешное большое действие.",
+        "en": "One clarifying question may be more useful than a rushed major action.",
+        "es": "Una pregunta aclaratoria puede servir más que una gran acción precipitada."
+      },
+      "distinctnessTag": "agency:confusion_clarity:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-agency-2",
+      "axisId": "agency",
+      "vectorId": "confusion_clarity",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу составить короткий список доступных вариантов, не оценивая себя за сомнения.",
+        "en": "I can list a few real options without judging myself for hesitation.",
+        "es": "Puedo enumerar opciones reales sin juzgarme por dudar."
+      },
+      "distinctnessTag": "agency:confusion_clarity:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-agency-3",
+      "axisId": "agency",
+      "vectorId": "confusion_clarity",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Пробное действие может дать сведения, которых нет в бесконечных размышлениях.",
+        "en": "A reversible trial can offer information that endless thinking cannot.",
+        "es": "Un ensayo reversible puede aportar información que no dan las vueltas mentales."
+      },
+      "distinctnessTag": "agency:confusion_clarity:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-dignity-1",
+      "axisId": "dignity",
+      "vectorId": "confusion_clarity",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Растерянность не означает, что со мной что-то не так.",
+        "en": "Confusion does not mean something is wrong with who I am.",
+        "es": "Sentirme confundido no significa que haya algo malo en mí."
+      },
+      "distinctnessTag": "dignity:confusion_clarity:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-dignity-2",
+      "axisId": "dignity",
+      "vectorId": "confusion_clarity",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу сказать «я пока не знаю» и всё равно заслуживать доверия.",
+        "en": "I can say I do not know yet and still deserve respect.",
+        "es": "Puedo decir que aún no lo sé y seguir mereciendo respeto."
+      },
+      "distinctnessTag": "dignity:confusion_clarity:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-dignity-3",
+      "axisId": "dignity",
+      "vectorId": "confusion_clarity",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Уточнять вопрос — не слабость, а уважение к сложности обстоятельств.",
+        "en": "Asking for clarity is not weakness; it respects complexity.",
+        "es": "Pedir aclaraciones no es debilidad, sino respeto por la complejidad."
+      },
+      "distinctnessTag": "dignity:confusion_clarity:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-wholeness-1",
+      "axisId": "wholeness",
+      "vectorId": "confusion_clarity",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Во мне могут соседствовать несколько правд, пока я ищу целостную картину.",
+        "en": "Several truths may coexist in me while I seek a fuller picture.",
+        "es": "Varias verdades pueden coexistir en mí mientras busco una visión más completa."
+      },
+      "distinctnessTag": "wholeness:confusion_clarity:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-wholeness-2",
+      "axisId": "wholeness",
+      "vectorId": "confusion_clarity",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мне не обязательно подавлять противоречивые чувства, чтобы понять их причины.",
+        "en": "I need not suppress conflicting feelings to begin understanding them.",
+        "es": "No necesito reprimir sentimientos contradictorios para empezar a entenderlos."
+      },
+      "distinctnessTag": "wholeness:confusion_clarity:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-wholeness-3",
+      "axisId": "wholeness",
+      "vectorId": "confusion_clarity",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу признавать и своё знание, и свои пробелы без спора с собой.",
+        "en": "I can acknowledge what I know and what I do not without fighting myself.",
+        "es": "Puedo reconocer lo que sé y lo que no sé sin pelear conmigo."
+      },
+      "distinctnessTag": "wholeness:confusion_clarity:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-meaning-1",
+      "axisId": "meaning",
+      "vectorId": "confusion_clarity",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Когда решений много, мои ценности могут помочь отличить важное от привлекательного.",
+        "en": "When choices multiply, my values can help distinguish what matters from what merely appeals.",
+        "es": "Cuando abundan opciones mis valores pueden distinguir lo importante de lo atractivo."
+      },
+      "distinctnessTag": "meaning:confusion_clarity:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-meaning-2",
+      "axisId": "meaning",
+      "vectorId": "confusion_clarity",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Ясность иногда состоит не в точном плане, а в понимании своего следующего вопроса.",
+        "en": "Clarity sometimes means knowing the next question rather than the whole plan.",
+        "es": "A veces la claridad es conocer la siguiente pregunta, no todo el plan."
+      },
+      "distinctnessTag": "meaning:confusion_clarity:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-meaning-3",
+      "axisId": "meaning",
+      "vectorId": "confusion_clarity",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу признать, что прежняя цель больше не отражает то, что для меня значимо.",
+        "en": "I may recognize that an old goal no longer reflects what matters to me.",
+        "es": "Puedo reconocer que una meta antigua ya no refleja lo que me importa."
+      },
+      "distinctnessTag": "meaning:confusion_clarity:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-growth-1",
+      "axisId": "growth",
+      "vectorId": "confusion_clarity",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Неопределённость может быть частью обучения, если я двигаюсь небольшими проверяемыми шагами.",
+        "en": "Uncertainty can be part of learning when I move through small testable steps.",
+        "es": "La incertidumbre puede formar parte del aprendizaje con pasos pequeños y comprobables."
+      },
+      "distinctnessTag": "growth:confusion_clarity:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-growth-2",
+      "axisId": "growth",
+      "vectorId": "confusion_clarity",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу отложить окончательный вывод и дать себе время собрать опыт.",
+        "en": "I can delay a final conclusion and make room to gather experience.",
+        "es": "Puedo aplazar una conclusión definitiva y darme tiempo para reunir experiencia."
+      },
+      "distinctnessTag": "growth:confusion_clarity:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-confusion_clarity-growth-3",
+      "axisId": "growth",
+      "vectorId": "confusion_clarity",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Моё понимание может меняться без необходимости объявлять прошлый выбор ошибкой.",
+        "en": "My understanding may evolve without declaring my past choice a failure.",
+        "es": "Mi comprensión puede cambiar sin declarar fracasada la elección anterior."
+      },
+      "distinctnessTag": "growth:confusion_clarity:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-anchor-1",
+      "axisId": "anchor",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Когда внутренний критик звучит громко, я могу вернуться к одному простому факту о происходящем.",
+        "en": "When my inner critic grows loud, I can return to one simple fact about what happened.",
+        "es": "Cuando mi crítica interior grita puedo volver a un hecho sencillo de lo sucedido."
+      },
+      "distinctnessTag": "anchor:selfcrit_compassion:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-anchor-2",
+      "axisId": "anchor",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу искать поддержку не после идеального результата, а уже в трудный момент.",
+        "en": "I can seek support during a hard moment, not only after perfect performance.",
+        "es": "Puedo buscar apoyo durante un momento difícil, no solo tras hacerlo perfecto."
+      },
+      "distinctnessTag": "anchor:selfcrit_compassion:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-anchor-3",
+      "axisId": "anchor",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Бережный распорядок может удерживать меня, когда оценки себя становятся жёсткими.",
+        "en": "A gentle routine can steady me when my self-judgments become harsh.",
+        "es": "Una rutina amable puede sostenerme cuando me juzgo con dureza."
+      },
+      "distinctnessTag": "anchor:selfcrit_compassion:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-connection-1",
+      "axisId": "connection",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Мне можно показывать близким не только успехи, но и сомнения в пределах моего согласия.",
+        "en": "I may share doubts as well as achievements with trusted people on my own terms.",
+        "es": "Puedo compartir dudas y logros con personas de confianza cuando yo lo elija."
+      },
+      "distinctnessTag": "connection:selfcrit_compassion:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-connection-2",
+      "axisId": "connection",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Поддержка не обязана становиться спором о том, кто прав в моей самооценке.",
+        "en": "Support need not turn into an argument over whether my self-judgment is correct.",
+        "es": "El apoyo no tiene que convertirse en una disputa sobre mi autoevaluación."
+      },
+      "distinctnessTag": "connection:selfcrit_compassion:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-connection-3",
+      "axisId": "connection",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я могу просить о конкретной обратной связи, не приглашая к унижению.",
+        "en": "I can request specific feedback without inviting humiliation.",
+        "es": "Puedo pedir comentarios concretos sin dar lugar a humillaciones."
+      },
+      "distinctnessTag": "connection:selfcrit_compassion:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-freedom-1",
+      "axisId": "freedom",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Я могу отказаться от привычки оценивать каждый свой шаг как экзамен.",
+        "en": "I may step away from treating every action as an exam.",
+        "es": "Puedo dejar de tratar cada paso como un examen."
+      },
+      "distinctnessTag": "freedom:selfcrit_compassion:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-freedom-2",
+      "axisId": "freedom",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Мой внутренний голос не обязан быть единственным судьёй моих решений.",
+        "en": "My inner voice does not have to be the sole judge of my decisions.",
+        "es": "Mi voz interior no tiene que ser la única jueza de mis decisiones."
+      },
+      "distinctnessTag": "freedom:selfcrit_compassion:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-freedom-3",
+      "axisId": "freedom",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Я вправе выбирать критерии достаточности вместо бесконечного улучшения.",
+        "en": "I can choose what is good enough instead of pursuing endless improvement.",
+        "es": "Puedo elegir qué es suficiente en vez de mejorar sin fin."
+      },
+      "distinctnessTag": "freedom:selfcrit_compassion:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-agency-1",
+      "axisId": "agency",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Ошибку можно разобрать на конкретные действия, не объявляя себя неудачником.",
+        "en": "I can examine a mistake as a set of actions without calling myself a failure.",
+        "es": "Puedo analizar un error en acciones concretas sin llamarme fracasado."
+      },
+      "distinctnessTag": "agency:selfcrit_compassion:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-agency-2",
+      "axisId": "agency",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу выбрать полезное исправление, а самонаказание оставить в стороне.",
+        "en": "I can make a useful correction without adding self-punishment.",
+        "es": "Puedo hacer una corrección útil sin añadir castigo personal."
+      },
+      "distinctnessTag": "agency:selfcrit_compassion:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-agency-3",
+      "axisId": "agency",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Доброта к себе может высвободить внимание для следующего реального шага.",
+        "en": "Self-kindness may free attention for the next practical step.",
+        "es": "La amabilidad conmigo puede liberar atención para el siguiente paso real."
+      },
+      "distinctnessTag": "agency:selfcrit_compassion:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-dignity-1",
+      "axisId": "dignity",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Даже строгая оценка моего поступка не является оценкой моей человеческой ценности.",
+        "en": "Even a strict appraisal of my action is not an appraisal of my worth.",
+        "es": "Incluso una valoración dura de mis actos no valora mi dignidad personal."
+      },
+      "distinctnessTag": "dignity:selfcrit_compassion:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-dignity-2",
+      "axisId": "dignity",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу признавать ответственность, не говорить с собой языком презрения.",
+        "en": "I can accept responsibility without speaking to myself with contempt.",
+        "es": "Puedo asumir responsabilidad sin hablarme con desprecio."
+      },
+      "distinctnessTag": "dignity:selfcrit_compassion:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-dignity-3",
+      "axisId": "dignity",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Самоуважение не нужно заслуживать безупречным поведением.",
+        "en": "Self-respect does not have to be earned through flawless behavior.",
+        "es": "El respeto propio no se gana con una conducta impecable."
+      },
+      "distinctnessTag": "dignity:selfcrit_compassion:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-wholeness-1",
+      "axisId": "wholeness",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Моя требовательная часть пытается что-то защитить, но не должна управлять всей моей жизнью.",
+        "en": "My demanding side may be trying to protect something, but it need not run my whole life.",
+        "es": "Mi parte exigente quizá intente proteger algo, pero no tiene que dirigir toda mi vida."
+      },
+      "distinctnessTag": "wholeness:selfcrit_compassion:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-wholeness-2",
+      "axisId": "wholeness",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу слушать критику как сигнал, не превращая её в описание себя.",
+        "en": "I can listen to criticism as information without turning it into my identity.",
+        "es": "Puedo escuchar la crítica como información sin convertirla en identidad."
+      },
+      "distinctnessTag": "wholeness:selfcrit_compassion:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-wholeness-3",
+      "axisId": "wholeness",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Сочувствие к себе и желание делать лучше могут существовать одновременно.",
+        "en": "Compassion for myself and the wish to improve can coexist.",
+        "es": "La compasión por mí y el deseo de mejorar pueden coexistir."
+      },
+      "distinctnessTag": "wholeness:selfcrit_compassion:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-meaning-1",
+      "axisId": "meaning",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Я могу спрашивать, ради чего стараюсь, а не только достаточно ли хорошо получилось.",
+        "en": "I can ask why I am making an effort, not only whether it was good enough.",
+        "es": "Puedo preguntarme por qué me esfuerzo, no solo si salió suficientemente bien."
+      },
+      "distinctnessTag": "meaning:selfcrit_compassion:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-meaning-2",
+      "axisId": "meaning",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Ценности могут направлять мои усилия без постоянного внутреннего наказания.",
+        "en": "My values can guide effort without constant internal punishment.",
+        "es": "Mis valores pueden orientar mi esfuerzo sin castigo interior constante."
+      },
+      "distinctnessTag": "meaning:selfcrit_compassion:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-meaning-3",
+      "axisId": "meaning",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Если цель требует презирать себя, я вправе пересмотреть способ к ней идти.",
+        "en": "If a goal requires self-contempt, I may reconsider how I pursue it.",
+        "es": "Si una meta exige despreciarme, puedo reconsiderar cómo alcanzarla."
+      },
+      "distinctnessTag": "meaning:selfcrit_compassion:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-growth-1",
+      "axisId": "growth",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "recognition",
+      "semanticPremise": {
+        "ru": "Учиться легче, когда ошибка остаётся обратной связью, а не приговором.",
+        "en": "Learning becomes easier when mistakes remain feedback rather than verdicts.",
+        "es": "Aprender resulta más fácil cuando los errores son información y no sentencias."
+      },
+      "distinctnessTag": "growth:selfcrit_compassion:1",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-growth-2",
+      "axisId": "growth",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "possibility",
+      "semanticPremise": {
+        "ru": "Я могу выбирать одну область улучшения, оставляя другие в покое.",
+        "en": "I can choose one area to improve while leaving others alone for now.",
+        "es": "Puedo elegir un área de mejora y dejar las demás tranquilas por ahora."
+      },
+      "distinctnessTag": "growth:selfcrit_compassion:2",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    },
+    {
+      "id": "mi-selfcrit_compassion-growth-3",
+      "axisId": "growth",
+      "vectorId": "selfcrit_compassion",
+      "premiseType": "reframe",
+      "semanticPremise": {
+        "ru": "Более добрый способ разговора с собой тоже может быть новой привычкой.",
+        "en": "A kinder way of speaking to myself can itself become a new habit.",
+        "es": "Hablarme con más amabilidad también puede convertirse en un hábito nuevo."
+      },
+      "distinctnessTag": "growth:selfcrit_compassion:3",
+      "reviewStatus": "source_curated",
+      "version": "meaning-emotion-v1",
+      "approvedByOwner": false
+    }
+  ]
+}

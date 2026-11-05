@@ -6,6 +6,7 @@ import {readFileSync} from 'node:fs'
 import {
   parseDiagnosticStart,telegramPublicStartRequested,telegramDiagnosticReady,telegramDiagnosticPublicUrl,
   transitionTelegramDiagnosticLegacy as transitionTelegramDiagnostic,TELEGRAM_DIAGNOSTIC_PHOTO_LIMIT,
+  telegramReplyConsentTimestamp,
 } from '../lib/crm/telegram-diagnostic.mjs'
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -198,7 +199,9 @@ test('diagnostic webhook forwards committed reply as Bot API text, not a missing
   const provider=source('lib/crm/messenger-provider.js')
   assert.match(route,/sendTelegramDiagnosticPrompt\(\{to:intake\.to,text:intake\.reply,keyboard:intake\.keyboard,/)
   assert.match(route,/approvedPilotGuest:intake\.approvedPilotGuest===true/)
-  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false,locale='en'\}/)
+  assert.match(provider,/sendTelegramDiagnosticPrompt\(\{to,text,keyboard=\[\],approvedPilotGuest=false,locale='en',webAppUrl=null\}/)
+  assert.match(provider,/INVALID_WEBAPP_LINK/)
+  assert.match(route,/webAppUrl:intake\.webAppUrl\|\|null/)
   assert.doesNotMatch(route,/sendTelegramDiagnosticPrompt\(intake\)/)
 })
 
@@ -267,4 +270,13 @@ test('owner Telegram proxy blocks inflated, malformed, unsafe-path and invalid c
     await assert.rejects(retrievePrivateTelegramPhoto(photoId,env),{code:'PHOTO_UNAVAILABLE',status:404})
     assert.deepEqual(calls,['metadata','download'])
   })
+})
+
+test('reply-only consent survives a Telegram questionnaire restart, but not STOP',()=>{
+  const prior={consent_at:'2026-10-26T15:00:00Z'},now='2026-11-04T13:42:42Z'
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'consent'},now),prior.consent_at)
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'drawing'},now),prior.consent_at)
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'focus',consent:true},now),now)
+  assert.equal(telegramReplyConsentTimestamp(prior,{stage:'stopped',stop:true},now),null)
+  assert.equal(telegramReplyConsentTimestamp(null,{stage:'consent'},now),null)
 })

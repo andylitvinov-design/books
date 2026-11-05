@@ -11,7 +11,6 @@ import type { GoalSector, GoalSectorSnapshot } from "@/components/holistic-suppo
 import type { PublicLocale } from "@/lib/public-locales";
 import type { SupportMobileCourse } from "@/components/holistic-support-mobile";
 import styles from "./holistic-support-course-profiles.module.css";
-import { HolisticSupportLearningCatalog, type LearningCatalogItem } from "@/components/holistic-support-learning-catalog";
 
 export type CourseProfileSector = Extract<GoalSector, "energy" | "money" | "love" | "meaning">;
 
@@ -24,7 +23,7 @@ const profiles = [
 
 const content = {
   ru: {
-    heading: "Выбери свой профиль", goalPicker: "Дополнительно: подобрать обучение по целям",
+    heading: "Выбери свой профиль",
     profile: {
       energy: { label: "Профиль здоровья", short: "Здоровье", hint: "Энергия и самочувствие",
         title: "Здоровье и жизненная энергия", description: "Оцени своё состояние, сон и внутренние ресурсы. Выбери, с чего начать." },
@@ -32,8 +31,8 @@ const content = {
         title: "Деньги и возможности", description: "Исследуй своё отношение к деньгам, финансовую устойчивость и желаемые изменения." },
       love: { label: "Профиль отношений", short: "Отношения", hint: "Близость и поддержка",
         title: "Отношения и близость", description: "Исследуй качество контакта, доверие и то, какой поддержки тебе сейчас не хватает." },
-      meaning: { label: "Профиль смыслов", short: "Смыслы", hint: "Ценности и направление",
-        title: "Смыслы и направление жизни", description: "Проясни свои ценности, внутреннюю опору и то, куда хочется двигаться." },
+      meaning: { label: "Профиль уверенности", short: "Уверенность", hint: "Стресс, опора и цели",
+        title: "Уверенность и гармония", description: "Исследуй стресс, уверенность, внутреннюю устойчивость, смыслы, цели и самореализацию." },
     },
     takeTest: "Пройти тест", fill: "Заполнить профиль", recommend: "Получить рекомендации",
     saved: "Принято", local: "Профиль на этом экране сохраняется только до закрытия страницы.",
@@ -42,7 +41,7 @@ const content = {
     others: "Другие обучающие программы", open: "Открыть курс", videos: "видео",
   },
   en: {
-    heading: "Choose your profile", goalPicker: "Optional: find learning by your goals",
+    heading: "Choose your profile",
     profile: {
       energy: { label: "Health profile", short: "Health", hint: "Energy and wellbeing",
         title: "Health and vital energy", description: "Reflect on how you feel, your sleep and personal resources. Choose where to begin." },
@@ -50,8 +49,8 @@ const content = {
         title: "Money and opportunities", description: "Explore your relationship with money, financial stability and changes you hope to make." },
       love: { label: "Relationships profile", short: "Relationships", hint: "Connection and support",
         title: "Relationships and connection", description: "Reflect on trust, communication and the kind of support you need." },
-      meaning: { label: "Meaning profile", short: "Meaning", hint: "Values and direction",
-        title: "Meaning and life direction", description: "Explore your values, inner support and the direction you want to take." },
+      meaning: { label: "Confidence profile", short: "Confidence", hint: "Stress, stability and goals",
+        title: "Confidence & harmony", description: "Explore calm, self-confidence, inner stability, purpose, goals and self-realization." },
     },
     takeTest: "Take a test", fill: "Fill in profile", recommend: "Get recommendations",
     saved: "Accepted", local: "This page keeps profile answers only until you leave.",
@@ -60,7 +59,7 @@ const content = {
     others: "Other learning programmes", open: "Open course", videos: "videos",
   },
   es: {
-    heading: "Elige tu perfil", goalPicker: "Opcional: buscar formación según tus objetivos",
+    heading: "Elige tu perfil",
     profile: {
       energy: { label: "Perfil de salud", short: "Salud", hint: "Energía y bienestar",
         title: "Salud y energía vital", description: "Explora cómo te sientes, tu descanso y tus recursos personales." },
@@ -68,8 +67,8 @@ const content = {
         title: "Dinero y oportunidades", description: "Reflexiona sobre tus finanzas, tu estabilidad y los cambios que deseas." },
       love: { label: "Perfil de relaciones", short: "Relaciones", hint: "Conexión y apoyo",
         title: "Relaciones y conexión", description: "Explora la confianza, la comunicación y el apoyo que necesitas." },
-      meaning: { label: "Perfil de sentido", short: "Sentido", hint: "Valores y dirección",
-        title: "Sentido y dirección de vida", description: "Aclara tus valores y el rumbo que quieres seguir." },
+      meaning: { label: "Perfil de confianza", short: "Confianza", hint: "Estrés, estabilidad y metas",
+        title: "Confianza y armonía", description: "Explora la calma, la seguridad interior, el sentido, las metas y la autorrealización." },
     },
     takeTest: "Hacer un test", fill: "Completar perfil", recommend: "Ver recomendaciones",
     saved: "Aceptado", local: "Las respuestas de esta pantalla duran solo hasta salir de la página.",
@@ -80,11 +79,10 @@ const content = {
 } as const;
 
 export function HolisticSupportCourseProfiles({
-  locale, courses, learningItems, savedSectors, active, onSelect, onTests, onFillProfile, onRecommendations,
+  locale, courses, savedSectors, active, onSelect, onTests, onFillProfile, onRecommendations,
 }: {
   locale: PublicLocale;
   courses: SupportMobileCourse[];
-  learningItems: LearningCatalogItem[];
   savedSectors: Partial<Record<GoalSector, GoalSectorSnapshot>>;
   active: CourseProfileSector;
   onSelect: (sector: CourseProfileSector) => void;
@@ -95,10 +93,7 @@ export function HolisticSupportCourseProfiles({
   const t = content[locale];
   const current = t.profile[active];
 
-  return <section className={styles.root} data-support-course-profiles aria-label={t.academy}>
-    <HolisticSupportLearningCatalog locale={locale} items={learningItems} />
-    <details className={styles.profileDisclosure} data-learning-goal-picker>
-      <summary>{t.goalPicker}</summary>
+  return <section className={styles.root} data-support-course-profiles aria-labelledby="support-course-profiles-title">
     <h2 className={styles.visuallyHidden} id="support-course-profiles-title">{t.heading}</h2>
     <div className={styles.profiles} role="group" aria-label={t.heading}>
       {profiles.map(({ id, Icon }) => <button type="button" key={id} className={styles.profile}
@@ -141,7 +136,7 @@ export function HolisticSupportCourseProfiles({
       {courses.length ? <details className={styles.moreCourses} data-support-mystery-courses>
         <summary>{t.others}<span>{courses.length}</span></summary>
         <div className={styles.originals}>
-          {courses.map(course => <Link href={course.href} prefetch={false} key={course.id}>
+          {courses.map(course => <Link href={course.seriesHref ?? course.href} prefetch={false} key={course.id}>
             <Image src={course.poster} alt="" width={110} height={68} unoptimized loading="lazy" />
             <span><strong>{course.shortTitle}</strong><small>{course.videoCount} {t.videos}</small></span>
             <ArrowRight size={18} aria-hidden="true" />
@@ -149,6 +144,5 @@ export function HolisticSupportCourseProfiles({
         </div>
       </details> : null}
     </div>
-    </details>
   </section>;
 }

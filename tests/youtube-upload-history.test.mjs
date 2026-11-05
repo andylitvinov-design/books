@@ -134,6 +134,12 @@ test('isolated phone UI browser QA never bypasses production admin access',()=>{
  assert.equal(phoneYoutubeQaAllowed({...env,CI:'false'},'127.0.0.1:3157'),false)
  assert.equal(phoneYoutubeQaAllowed({...env,HH_APP_TEST_RUNTIME:'production'},'127.0.0.1:3157'),false)
  assert.equal(phoneYoutubeQaAllowed(env,'holistichouse.vercel.app'),false)
- assert.equal(phoneYoutubeQaAllowed(env,'localhost:3157'),false)
+ // Both exact loopback names are CI-only and never grant owner privileges.
+ assert.equal(phoneYoutubeQaAllowed(env,'localhost:3157'),true)
+ assert.equal(phoneYoutubeQaAllowed({...env,VERCEL:'1'},'localhost:3157'),false)
+ assert.equal(phoneYoutubeQaAllowed({...env,CI:'false'},'localhost:3157'),false)
+ assert.equal(phoneYoutubeQaAllowed({...env,HH_APP_TEST_RUNTIME:'production'},'localhost:3157'),false)
+ assert.equal(phoneYoutubeQaAllowed(env,'localhost:3158'),false)
+ assert.equal(phoneYoutubeQaAllowed(env,'evil.localhost:3157'),false)
  assert.equal(phoneYoutubeQaAllowed({},'127.0.0.1:3157'),false)
 })

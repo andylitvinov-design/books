@@ -11,34 +11,34 @@ const service=read('components/app/my-services-dashboard.jsx')
 const serviceCss=read('components/app/my-services-dashboard.module.css')
 const practice=read('components/app/practice-workspace.jsx')
 const account=read('components/app/app-workspace.jsx')
+const innerNav=read('components/app/practice-inner-navigation.jsx')
 
-test('Google login returns to the very same practitioner dashboard and identical five-tab menu',()=>{
+test('Google login keeps the same Practice dashboard without an extra Continue panel',()=>{
  assert.match(callback,/continueTo === 'practice-preview'/)
- assert.match(callback,/\$\{origin\}\/\$\{locale\}\/practice\$\{profi && Object\.hasOwn/)
- assert.match(callback,/'\?ready='\+encodeURIComponent\(profi\)/)
- assert.doesNotMatch(callback,/\$\{origin\}\/\$\{locale==='es'\?'en':locale\}\$\{PRACTICE_PREVIEW_ACTIONS\[profi\]\}/)
+ assert.match(callback,/The user explicitly chooses a protected editor after login/)
+ assert.doesNotMatch(callback,/'\?ready='\+encodeURIComponent\(profi\)/)
  assert.match(front,/data-practice-showcase/)
  assert.match(front,/data-practice-after-google/)
- assert.match(front,/setNextAction\(ready\)/)
- assert.match(front,/RESUMABLE_ACTIONS\.has\(ready\)/)
- assert.match(front,/onClick=\{continueAction\}/)
- assert.match(front,/onClick=\{dismissContinue\}/)
+ assert.match(front,/if \(params\.has\('ready'\)\)/)
+ assert.match(front,/cleanUrl\.searchParams\.delete\('ready'\)/)
+ assert.doesNotMatch(front,/setNextAction\(ready\)/)
  assert.match(front,/return <div className=\{styles\.screen\} data-practice-showcase/)
  assert.match(front,/TABS\.map\(/)
+ assert.match(front,/profilePhoto/)
  assert.doesNotMatch(front,/router\.replace\(destination\(locale, start\)\)/)
  assert.match(frontCss,/\.resumePanel\{/)
- assert.match(frontCss,/@media\(max-width:430px\)/)
 })
 
-test('Pro action is remembered without automatic navigation; same design remains after sign-in',()=>{
+test('Pro explicit start remains available, while Google sign-in never forwards the selected editor',()=>{
  assert.match(front,/if \(!signedIn\) return/)
  assert.match(front,/setNextAction\(start\)/)
  assert.match(front,/PRO_STARTS\.has\(start\)/)
  assert.match(front,/setPendingAction\(''\)/)
  assert.match(front,/async function confirmSignIn\(\)/)
- assert.match(front,/appFetch\('auth\/start', \{ locale, continueTo:'practice-preview', profi:key \}\)/)
+ assert.match(front,/appFetch\('auth\/start', \{ locale, continueTo:'practice-preview' \}\)/)
+ assert.doesNotMatch(front,/appFetch\('auth\/start', \{ locale, continueTo:'practice-preview', profi:key \}\)/)
  assert.match(front,/setSession\('signed'\)/)
- assert.match(front,/setNextAction\(key\)/)
+ assert.match(front,/router\.push\(destination\(locale, key\)\)/)
  assert.doesNotMatch(front,/localStorage|sessionStorage|fakePracticeAccount|mockServiceCount/)
  assert.match(front,/signedIn && practice \? String\(active\) : t\.countUnknown/)
 })
@@ -70,6 +70,43 @@ test('service list uses one inner header, real totals, functional filters, exist
  assert.doesNotMatch(service,/fakePayment|new SupabaseClient|createServiceForGuest/)
 })
 
+test('legacy web Google sign-in returns to clean original Practice with no layout-shifting Continue banner',()=>{
+ assert.match(account,/const proPanel = page === 'practice' \? searchParams\.get\('panel'\)/)
+ assert.match(account,/native\s*\?\s*\{ continueTo: 'my-practice'/)
+ assert.match(account, /:\s*\{ continueTo: 'practice-preview' \}/)
+ assert.doesNotMatch(account,/publicPracticeAction/)
+ assert.doesNotMatch(account,/page === 'practice'[\s\S]{0,240}\{ continueTo: 'practice-preview', \.\.\./)
+ assert.match(callback,/continueTo === 'practice-preview'/)
+ assert.match(callback,/const failedPracticeDestination = continueTo === 'practice-preview'/)
+ // Every practice-preview callback resolves to /ru/practice, even when an
+ // older browser still sends a valid profi=service continuation.
+ assert.doesNotMatch(callback,/\?ready='\+encodeURIComponent\(profi\)/)
+ assert.match(front,/cleanUrl\.searchParams\.delete\('ready'\)/)
+ assert.match(front,/data-practice-showcase/)
+ assert.match(front,/data-practice-after-google/)
+ assert.match(front,/onClick=\{continueAction\}/)
+ assert.match(front,/onClick=\{dismissContinue\}/)
+ assert.doesNotMatch(front,/router\.replace\(destination\(locale, ready\)\)/)
+ for(const kind of ['intro','workshop']){
+   assert.match(front,new RegExp(kind+":root \\+ '\\?panel=services&create=1&starter="+kind+"'"))
+   assert.ok(callback.includes(kind+":'/app/practice?panel=services&create=1&starter="+kind+"'"))
+ }
+})
+
+test('viewing an empty My Services does not open the wizard without an explicit create request',()=>{
+ assert.match(service,/const \[creating,setCreating\]=useState\(false\)/)
+ assert.doesNotMatch(service,/useState\(items\.length===0&&canAdd\)/)
+ assert.match(service,/if\(createRequest>0&&canAdd\)setCreating\(true\)/)
+ assert.match(service,/onClick=\{toggleComposer\}/)
+ assert.match(service,/items\.length===0&&!creating&&canAdd/)
+ assert.match(service,/renderEditor\(null,setCreateDirty,setMediaBusy\)/)
+ assert.match(innerNav,/data-practice-original-home-link/)
+ assert.match(innerNav,/showcaseStyles\.eyebrow/)
+ assert.match(innerNav,/href=\{'\/'\+locale\+'\/practice'\}/)
+ for(const label of ['Кабинет практика','Practitioner workspace','Espacio profesional'])
+   assert.ok(innerNav.includes(label),label)
+})
+
 test('strict OAuth whitelist remains server-side and preserves cancel-to-guest behavior',()=>{
  assert.match(callback,/validPracticeContinuation\(continueTo,profi\)/)
  assert.match(callback,/Object\.hasOwn\(PRACTICE_PREVIEW_ACTIONS,profi\)/)
@@ -86,6 +123,7 @@ test('strict OAuth whitelist remains server-side and preserves cancel-to-guest b
 test('JSX, TypeScript and callback syntax parse at the actual release gate',()=>{
  for(const path of ['components/practice-showcase.jsx',
    'components/app/my-services-dashboard.jsx','components/app/practice-workspace.jsx',
+   'components/app/app-workspace.jsx','components/app/practice-inner-navigation.jsx',
    'app/api/app/[...path]/route.js']){
   const result=ts.transpileModule(read(path),{fileName:path,reportDiagnostics:true,
     compilerOptions:{jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}})

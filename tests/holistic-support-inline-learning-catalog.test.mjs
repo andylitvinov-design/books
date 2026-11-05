@@ -10,6 +10,7 @@ const model = read("lib/holistic-support/learning-catalog.ts");
 const page = read("app/[locale]/holistic-support/mobile/page.tsx");
 const shell = read("components/holistic-support-mobile.tsx");
 const profiles = read("components/holistic-support-course-profiles.tsx");
+const supportCss = read("components/holistic-support-mobile.module.css");
 
 test("one same-page catalog shows three directions and their conditional topics in EN, RU and ES", () => {
   assert.match(catalog, /directionOrder: LearningDirection\[\] = \["reiki", "temple", "magic"\]/);
@@ -52,11 +53,19 @@ test("courses reuse source-backed Academy and published-only approved practition
   assert.match(page, /createPractitionerCourseRepository\(getAppConfig\(\)\)\.catalog\(\)/);
   assert.match(page, /catch \{\s*publishedCourses = \[\];/);
   assert.match(page, /buildSupportLearningCatalog\(locale, originalMysteryCourses, publishedCourses\)/);
-  assert.match(shell, /learningItems=\{learningItems\}/);
-  assert.match(profiles, /<HolisticSupportLearningCatalog locale=\{locale\} items=\{learningItems\}/);
-  assert.match(profiles, /data-learning-goal-picker/);
+  assert.match(page, /learningItems=\{learningItems\}/);
+  assert.match(shell, /choice === "pump" \? <section className=\{styles\.learningCatalogBlock\}/);
+  assert.match(shell, /<HolisticSupportLearningCatalog locale=\{locale\} items=\{learningItems\}/);
+  assert.match(shell, /data-learning-goal-picker/);
+  assert.match(shell, /<HolisticSupportCourseProfiles locale=\{locale\} courses=\{courses\}/);
+  assert.match(shell, /data-support-tests-panel/);
+  assert.match(profiles, /data-support-profile-hero/);
+  assert.match(supportCss, /\.learningGoalPicker\{/);
   assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:350px\)/);
+  assert.match(css, /\.root \.topic,\.root \.costRow button/);
+  assert.match(shell, /data-support-learning-catalog/);
+  assert.doesNotMatch(shell, /window\.location\.assign\([^\n]*learning/);
 });
 
 test("new TSX and view model parse without syntax errors", () => {

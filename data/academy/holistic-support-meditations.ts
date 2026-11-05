@@ -10,6 +10,7 @@ export type MeditationTopic = "business" | "love" | "energy" | "health";
 export type MeditationVideo = {
   id: string;
   title: string;
+  description?: string;
   order: number;
   topics: MeditationTopic[];
 };
@@ -35,6 +36,16 @@ const selection = [
   ["videos/energy-pump-ups", 1],
   ["videos/energy-pump-ups", 2],
 ] as const;
+// Editorial summaries describe the source titles/series, not promised outcomes.
+const originalRuDescriptions = [
+  "Первая запись серии «Солнце»: медитация с образом Солнца для самостоятельного знакомства с практикой.",
+  "Вторая медитация серии «Солнце» — продолжение авторского цикла.",
+  "Третья запись серии «Солнце» для дальнейшего знакомства с этой практикой.",
+  "Авторская медитация на тему жизненной силы и внимания к внутреннему состоянию.",
+  "Медитативная практика с символическим образом круга огня.",
+  "Архивная запись об онлайн-марафонах энергетических практик.",
+  "Архивная практика, посвящённая работе с чакрой Аджна.",
+] as const;
 const validYoutubeId = /^[A-Za-z0-9_-]{11}$/;
 
 export function freeMeditationVideos(locale: PublicLocale): MeditationVideo[] {
@@ -47,6 +58,7 @@ export function freeMeditationVideos(locale: PublicLocale): MeditationVideo[] {
     return englishSun?.youtubeId ? [{
       id: englishSun.youtubeId,
       title: englishSun.title + (locale === "es" ? " · audio original en inglés" : " · original English audio"),
+      description: englishSun.description,
       order: 1,
       topics: [...allThemes],
     }] : [];
@@ -64,6 +76,7 @@ export function freeMeditationVideos(locale: PublicLocale): MeditationVideo[] {
     return [{
       id: recording.videoId,
       title: recording.lessonTitle,
+      description: originalRuDescriptions[index],
       // An archived source position, not the position of this curated playlist.
       order: recording.order,
       topics: [...originalRuThemes[index]],

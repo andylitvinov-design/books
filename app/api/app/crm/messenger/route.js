@@ -84,19 +84,25 @@ async function handle(request){
           // after the reservation transaction but BEFORE the provider request.
           const dispatch=await repo.withOwner(actor,store=>store.checkMessengerReplyReady(reservation.id))
           if(!dispatch.allowed){
-            data=await repo.withOwner(actor,store=>
-              store.finalizeMessengerReply(reservation.id,reservation.channel,'blocked'))
+            const blocked=await repo.withOwner(actor,store=>
+              store.finalizeMessengerReply(reservation.id,reservation.channel,'blocked',null,
+                {code:dispatch.reason,stage:'eligibility'}))
+            data={...blocked,reason:dispatch.reason}
           }else{
-            let status='unknown',providerId=null
+            let status='unknown',providerId=null,failure=null
             try{
               const accepted=await sendOneMessengerMessage({channel:reservation.channel,to:reservation.to,text:reservation.text,
                 approvedPilotGuest:dispatch.approvedPilotGuest===true,
                 approvedPublicDiagnostic:dispatch.approvedPublicDiagnostic===true})
               status=accepted.status
               providerId=accepted.providerId
-            }catch(e){if(e?.code==='PROVIDER_REJECTED')status='failed'}
+            }catch(e){
+              if(e?.code==='PROVIDER_REJECTED')status='failed'
+              // Preserve only allowlisted machine codes; never expose provider bodies.
+              failure={code:e?.code,stage:'provider'}
+            }
             try{data=await repo.withOwner(actor,store=>
-              store.finalizeMessengerReply(reservation.id,reservation.channel,status,providerId))}
+              store.finalizeMessengerReply(reservation.id,reservation.channel,status,providerId,failure))}
             catch{data={id:reservation.id,status:'unknown'}}
           }
           data={...data,duplicate:false}
