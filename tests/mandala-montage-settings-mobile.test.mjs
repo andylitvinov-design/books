@@ -36,3 +36,29 @@ test("The editable timeline, script, audio and draft tools are preserved, but no
   assert.match(css,/\.montagePreferencesGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css,/\.studio\[data-active-workspace="editor"\] \.previewStage \.heroRail\{display:none!important\}/);
 });
+
+test("Montage auto recommendation is attached before the direct renderer and never forces Audio",()=>{
+  const selector=studio.slice(studio.indexOf("// Auto-music must be ATTACHED"),
+    studio.indexOf("// A paused film",studio.indexOf("// Auto-music must be ATTACHED")));
+  assert.match(selector,/activeWorkspace!=="editor"/);
+  assert.match(selector,/recommendedAudioId\|\|"none"/);
+  assert.match(selector,/setAttachedAudio\(current=>/);
+  assert.match(selector,/current\?\.kind==="file"/);
+  assert.match(selector,/current\?\.kind==="presets"/);
+  assert.match(studio,/data-video-montage-auto-sound/);
+  const handler=studio.slice(studio.indexOf("const createQuickVideo ="),
+    studio.indexOf("const openVideoScenarioStep ="));
+  assert.match(handler,/return startFromHero\(\)/);
+  assert.match(studio,/onClick=\{createQuickVideo\}/);
+});
+
+test("Montage iPhone retains the compact header, real six selectors and on-screen CTA",()=>{
+  assert.doesNotMatch(css,/quickBuilder>\.quickBrandBar\{display:none!important\}/);
+  assert.match(css,/\.studio\[data-active-workspace\] \.quickBuilder>\.quickBrandBar\s*\{/);
+  assert.match(css,/\.studio\[data-active-workspace\] \.quickBrandMobileTitle\{display:none!important\}/);
+  assert.match(css,/05 Nov Montage follow-up: viewport-first/);
+  assert.match(css,/\.previewStage>\.heroWithRail\{\s*display:block!important/);
+  assert.match(css,/max-width:278px!important/);
+  assert.match(css,/\[data-video-order-bar\] \.quickGenerate\{\s*min-height:50px!important/);
+  assert.match(studio,/data-video-montage-auto-sound/);
+});

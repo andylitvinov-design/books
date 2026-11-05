@@ -106,6 +106,10 @@ async function verifyGuestVoiceConsent(browser,locale){
       await expect(recipient.locator("[data-guest-message-consent]")).toHaveAttribute("aria-checked","false");
       await expect(recipient.locator("[data-guest-message-start]")).toBeDisabled();
     }finally{await recipient.close();}
+    // In headed macOS WebKit, opening/closing the invitee tab can leave the
+    // original guest page in the background; restore foreground for a real tap.
+    // Do not force consent state or bypass a user gesture.
+    await page.bringToFront();
     await page.locator("[data-guest-message-phrase]").fill("https://invalid.example");
     await expect(page.locator("[data-guest-message-copy]")).toBeDisabled();
     await page.locator("[data-guest-message-phrase]").fill(phrase);

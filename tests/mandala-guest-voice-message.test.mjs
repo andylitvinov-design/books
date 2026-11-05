@@ -96,4 +96,6 @@ test("macOS WebKit exercises explicit accessible adult consent and revocation",(
    assert.ok(source.includes(step),step);
  assert.equal(source.split('await consentBox.click();').length-1,3);
  assert.ok(!source.includes("await consentLabel.click()"));
+ assert.match(source,/\}finally\{await recipient\.close\(\);\}[\s\S]{0,260}?await page\.bringToFront\(\);/,
+  "headed Safari must restore original tab focus before a real consent tap");
 });
