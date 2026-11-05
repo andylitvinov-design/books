@@ -7,10 +7,12 @@ import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnos
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
 import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback } from '@/lib/crm/messenger-provider'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
+import {receiveTelegramAiUpdate} from '@/lib/app/telegram-ai-queue'
+import {runTelegramAiQueues} from '@/lib/app/telegram-ai-worker'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const revalidate=0
-export const maxDuration=120
+export const maxDuration=300
 const rejected=()=>new NextResponse('Unauthorized',{status:401,headers:PRIVATE_HEADERS})
 export async function GET(request,{params}){
   const {provider}=await params
@@ -60,6 +62,18 @@ export async function POST(request,{params}){
             callbackId:event.callbackId,to:event.userId,
             messageId:event.callbackMessageId})}catch{}
           continue
+        }
+        // Opt-in assistant owns its own queue, never the six-step diagnostic.
+        // The signed webhook already verified the sender before this point.
+        if(event.type==='incoming'){
+          const ai=await receiveTelegramAiUpdate(config,event)
+          if(ai.handled){
+            if(ai.queued||ai.consented||ai.consentRequired)after(async()=>{
+              try{await runTelegramAiQueues(config,{messages:2,videos:1,deliveries:3})}
+              catch{console.error('HH_AI_QUEUE_AFTER_FAILED')}
+            })
+            continue
+          }
         }
         const intake=await processTelegramDiagnostic(event,config)
         if(intake.handled){

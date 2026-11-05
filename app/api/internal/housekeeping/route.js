@@ -53,6 +53,18 @@ export async function GET(request) {
               await reconcileOwnerYoutubePublications(config)
             }catch{console.error('HH_OWNER_PUBLICATIONS_RECONCILE_FAILED')}
           }
+          // Existing authorized daily housekeeping also recovers queued text /
+          // delivery when an after() execution ended unexpectedly. No new cron.
+          if(process.env.HH_AI_TELEGRAM_QUEUE_ENABLED==='true'){
+            try{
+              const {pruneAiQueue}=await import('@/lib/app/telegram-ai-queue')
+              const {runTelegramAiQueues,pruneTelegramAiTemporaryVideos}=
+                await import('@/lib/app/telegram-ai-worker')
+              await runTelegramAiQueues(config,{messages:2,videos:0,deliveries:2})
+              await pruneAiQueue(config)
+              await pruneTelegramAiTemporaryVideos(config)
+            }catch{console.error('HH_AI_QUEUE_HOUSEKEEPING_FAILED')}
+          }
           return result
         } catch (error) {
           await recordAppHousekeepingFailure(config).catch(() => {})
