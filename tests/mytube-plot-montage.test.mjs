@@ -126,3 +126,48 @@ test("mobile director forwards aspect and invalidates a confirmed cut on format 
   assert.match(source,/targetAspect:aspect/);
   assert.match(source,/stageCaptions,selectedMeaningAxisId,selectedMotifId,selectedStyleId,aspect,/);
 });
+
+test('ranked landscape alternatives are unique and exclude portrait-only footage',async()=>{
+  const [plot]=await listMyTubePlots('money-mindset-s1','ru');
+  const choice=recommendMyTubePlotMontage({
+    plot,scenes:stock.scenes,targetAspect:'landscape',
+  });
+  // The existing 48 physical masters are all portrait; default 16:9
+  // must not use letterboxed or falsely tagged portrait inputs.
+  assert.equal(choice.hasFourApprovedSources,false);
+  assert.ok(Array.isArray(choice.additionalClipIds));
+  assert.ok(choice.additionalClipIds.length<=12);
+  const ids=[...choice.clipIds,...choice.additionalClipIds];
+  assert.equal(new Set(ids).size,ids.length);
+  assert.ok(choice.additionalClipIds.every(id=>stock.scenes.some(s=>
+    s.id===id&&(!s.allowedAspects||s.allowedAspects.includes('landscape')))));
+});
+test('real owner Telegram path uses ranked alternatives and 16:9 by default',()=>{
+  const code=readFileSync(new URL('../lib/practitioners/owner-telegram-story-render.mjs',import.meta.url),'utf8');
+  assert.match(code,/targetAspect:'landscape'/);
+  assert.match(code,/montage\.additionalClipIds/);
+  assert.match(code,/matched\.length>=8/);
+  assert.match(code,/approvedSourceBytes\+source\.expectedBytes>48_000_000/);
+  assert.match(code,/const sceneIds=matched\.map\(scene=>scene\.id\)/);
+  assert.match(code,/sceneIds,tempDir:dir,executable,fetcher/);
+});
+
+test('edits of one original do not count as four independent films',async()=>{
+ const [plot]=await listMyTubePlots('money-mindset-s1','ru');
+ const same=stock.scenes.map(scene=>({...scene,originMasterKeys:['one-original']}));
+ const output=recommendMyTubePlotMontage({plot,scenes:same});
+ assert.equal(output.hasFourApprovedSources,false);
+ assert.deepEqual(output.clipIds,[]);
+ assert.deepEqual(output.additionalClipIds,[]);
+});
+
+test('all 48 published legacy master geometries are explicit and 16:9 fails closed',()=>{
+  assert.equal(stock.scenes.length,48);
+  assert.ok(stock.scenes.every(s=>s.width<s.height&&
+    s.allowedAspects.length===1&&s.allowedAspects[0]==='portrait'));
+  assert.ok(stock.scenes.every(s=>s.originMasterKeys.length>0));
+  const deep=stock.scenes.find(s=>s.id==='river-grounding');
+  const other=stock.scenes.find(s=>s.id==='forest-renewal');
+  assert.ok(deep&&other);
+  assert.ok(deep.originMasterKeys.some(k=>other.originMasterKeys.includes(k)));
+});

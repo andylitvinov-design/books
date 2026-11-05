@@ -109,13 +109,19 @@ async function verifyGuestVoiceConsent(browser,locale){
     await page.locator("[data-guest-message-phrase]").fill("https://invalid.example");
     await expect(page.locator("[data-guest-message-copy]")).toBeDisabled();
     await page.locator("[data-guest-message-phrase]").fill(phrase);
-    // A real user click must persist through React controlled-input scheduling.
-    // Playwright .check() requires a synchronous DOM toggle and can report a
-    // false negative before WebKit flushes the onChange state update.
+    // Full native-label tap in iPhone WebKit: consent, revocation, re-consent.
+    // The recorder still uses React onChange state; no synthetic checkbox force.
     const consentBox=page.locator("[data-guest-message-consent]");
+    const consentLabel=page.locator("[data-guest-message-consent-label]");
     await expect(consentBox).not.toBeChecked();
-    await consentBox.click();
+    await consentLabel.click();
     await expect(consentBox).toBeChecked({timeout:10000});
+    await expect(start).toBeEnabled();
+    await consentLabel.click();
+    await expect(consentBox).not.toBeChecked();
+    await expect(start).toBeDisabled();
+    await consentLabel.click();
+    await expect(consentBox).toBeChecked();
     await expect(start).toBeEnabled();
     await expect(page.locator("[data-guest-message-play]")).toHaveCount(0);
     await expect(page.locator("[data-guest-message-save]")).toHaveCount(0);

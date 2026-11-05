@@ -76,13 +76,18 @@ test("macOS WebKit hydration follows the actual compact video scenario entry",()
  assert.ok(!browser.includes("allStories.click({force:true})"),"hidden scenario controls cannot be clicked forcefully");
 });
 
-test("real macOS WebKit waits for true React-controlled consent after a native click",()=>{
+test("macOS WebKit checks adult native consent and revocation without a provider call",()=>{
  const source=read("scripts/verify-affirmation-voice-browser.mjs");
  const ui=read("components/mandala-guest-voice-message.tsx");
- assert.ok(source.includes('await consentBox.click();'));
- assert.ok(source.includes('await expect(consentBox).toBeChecked({timeout:10000});'));
- assert.ok(source.includes("await expect(start).toBeEnabled();"));
- assert.ok(!source.includes('page.locator("[data-guest-message-consent]").check()'));
+ assert.ok(ui.includes('data-guest-message-consent-label'));
+ assert.ok(ui.includes('type="checkbox" defaultChecked={false}'));
+ assert.ok(!ui.includes('checked={approved}'));
  assert.ok(ui.includes('onChange={e=>setApproved(e.currentTarget.checked)}'));
- assert.ok(source.includes('assert.deepEqual(providerPosts,[]'));
+ assert.ok(ui.includes('if(!approved||busy||pending.current'));
+ for(const step of ['await consentLabel.click();','await expect(consentBox).toBeChecked({timeout:10000});',
+  'await expect(consentBox).not.toBeChecked();','await expect(start).toBeDisabled();',
+  'await expect(start).toBeEnabled();','assert.deepEqual(providerPosts,[]'])
+  assert.ok(source.includes(step),step);
+ assert.equal(source.split('await consentLabel.click();').length-1,3);
+ assert.ok(!source.includes('page.locator("[data-guest-message-consent]").check()'));
 });
