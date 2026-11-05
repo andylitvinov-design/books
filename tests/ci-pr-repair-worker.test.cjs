@@ -944,9 +944,9 @@ test('Repair Worker refuses a newly active foreign lease after verified reservat
  const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
   performed_via_github_app:{id:15368,slug:'github-actions'}};
  const source={...bot,body:'<!-- HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha+
-  ' -->\\nFailed jobs: core-lint-types-build.\\n'};
+  ' -->\nFailed jobs: core-lint-types-build.\n'};
  const reserved={...bot,body:commentBody(reservation(task,now,777))};
- const foreign={user:{login:'another-owner'},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\\n'+
+ const foreign={user:{login:'another-owner'},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+
   JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',owner:'concurrent-writer',
    lease_id:'new',head_sha:sha,state:'active'})};
  const f=fixture();
