@@ -568,7 +568,7 @@ const moneyTemplates = [
 /** 24 CURATED EDITS of 32 existing licensed first-party MP4 masters:
  * no remote stock API and no fictional claims of new source footage. */
 const FREE_FILM_PLAN_VERSION = "hh-local-stock-compilation-v1";
-type FreeFilmPreset = {id:string;theme:VideoTheme;label:Record<VideoLocale,string>;clips:readonly string[]};
+type FreeFilmPreset = {id:string;theme:VideoTheme;label:Record<VideoLocale,string>;clips:readonly string[];portraitClips?:readonly string[]};
 const FREE_FILM_PRESETS:readonly FreeFilmPreset[] = [
   {
     "id": "warm-prosperity",
@@ -952,8 +952,8 @@ function compileFreeFilmPreset(
 ):CinematicStoryboard {
   // All four shots must pass the live source-rights whitelist, even after replacement.
   // Explicit avoid-water/forest/night exclusions survive montage editing.
-  const clipIds=edit?.clipIds??preset.clips;
-  if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,[...(edit?.excludedMotifs??[])]))
+  const clipIds=edit?.clipIds??(aspect==="portrait"&&preset.portraitClips?preset.portraitClips:preset.clips);
+  if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,[...(edit?.excludedMotifs??[])],aspect))
     throw Error("invalid_free_film_replacement");
   if(edit && (!Array.isArray(edit.captionTexts)||edit.captionTexts.length!==4||
     edit.captionTexts.some(value=>typeof value!=="string")))
@@ -2006,8 +2006,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     ? originalFallbackCandidate : null;
   const freeFilmPoster=usingFreeFilmCompilation&&freeFilmShots[0]
     ? firstPartyFilmFor(freeFilmShots[0].theme,freeFilmShots[0].sceneId)?.poster:null;
-  const freeFilmOptions=showAllFreeFilms?FREE_FILM_PRESETS:
-    FREE_FILM_PRESETS.filter(preset=>preset.theme===theme);
+  const aspectFilmPresets:readonly FreeFilmPreset[]=FREE_FILM_PRESETS.map(preset=>aspect==="portrait"&&preset.portraitClips
+    ?{...preset,clips:preset.portraitClips}:preset);
+  const freeFilmOptions=showAllFreeFilms?aspectFilmPresets:
+    aspectFilmPresets.filter(preset=>preset.theme===theme);
   const effectiveAudioStartSeconds=clampTrackSecond(audioStartSeconds,Math.max(0,duration-.1));
   const timelineCaptions:TimelineTextClip[]=timelineTextClips??(
     usingFreeFilmCompilation&&cinematicPlan
@@ -4816,7 +4818,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             Visual styling reuses the approved Messenger pattern without importing CRM data. */}
         <MandalaVideoDirectorChat
           locale={locale} goal={wish} theme={theme}
-          presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}
+          presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}
           renderOptions={{quality,brightness,volumePercent:soundVolume}}
           disabled={recording||preparing} canCreate={canGenerate}
           rendering={recording||preparing} renderProgress={progress}
@@ -5311,7 +5313,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </details>
       </section>
         <MandalaAutoVideoDirector
-          locale={locale} goal={wish} theme={theme} aspect={aspect} presets={FREE_FILM_PRESETS}
+          locale={locale} goal={wish} theme={theme} aspect={aspect} presets={aspectFilmPresets}
           scenes={FREE_FILM_CATALOG}
           disabled={!studioHydrated||recording||preparing}
           activePresetId={usingFreeFilmCompilation?activeFreeFilmPreset:null}
@@ -5403,7 +5405,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
       ):null}
       {professionalMode ? <MandalaProfessionalPromo
-        locale={locale} presets={FREE_FILM_PRESETS} scenes={FREE_FILM_CATALOG}
+        locale={locale} presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}
         publicOffer={professionalSource?.publicOffer ?? null}
         publicPractitioner={professionalSource?.publicPractitioner ?? null}
         disabled={recording||preparing}
@@ -5738,6 +5740,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                :locale==="es"
                ?`${freeSceneTaxonomy.scenes.length} vídeos con licencia y ${ORIGINAL_MOTION_SCENES.length} animaciones MP4 originales. Cuatro escenas diferentes por montaje.`
                :`${freeSceneTaxonomy.scenes.length} licensed clips plus ${ORIGINAL_MOTION_SCENES.length} original abstract animation MP4s. Four distinct clips per montage; animation is not filmed footage.`}</p>
+            <p><a href="/videos/holistic-house/film-collection-v3/hd-credits-20261105.html" target="_blank" rel="noopener noreferrer">{locale==="ru"?"Лицензии новых видеосцен":locale==="es"?"Créditos de los vídeos HD":"HD footage credits"}</a></p>
           </div>
           <button type="button" data-free-film-more disabled={recording||preparing}
             aria-expanded={showAllFreeFilms} onClick={()=>setShowAllFreeFilms(value=>!value)}>
