@@ -22,6 +22,19 @@ test("owner-approved exact six dock destinations, no seventh or displaced center
  assert.equal(unifiedMobileDockHref("ru","unknown"),null);
  assert.equal(unifiedMobileDockHref("../../admin","profile"),null);
 });
+test("standalone public tabs bypass native link handoff but not private CSP",()=>{
+ const dock=read("components/unified-mobile-dock.tsx");
+ assert.ok(dock.includes('["mytube", "video", "practice", "master"].includes(id)'));
+ assert.ok(dock.includes('window.matchMedia?.("(display-mode: standalone)")'));
+ assert.ok(dock.includes('(window.navigator as Navigator & {standalone?: boolean}).standalone'));
+ assert.ok(dock.includes("event.preventDefault();"));
+ assert.ok(dock.includes("router.push(href);"));
+ assert.ok(!dock.includes('"ai", "profile"].includes(id)'));
+ assert.ok(!dock.includes("window.open("));
+ const csp=read("components/csp-navigation-boundary.tsx");
+ assert.ok(csp.includes("window.location.assign(url.href)"));
+});
+
 test("installed Home uses the six-tab Practice dock but browser keeps seven journeys",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  const shell=read("app/unified-mobile-dock.css");

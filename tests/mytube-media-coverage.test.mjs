@@ -30,7 +30,7 @@ test("audits 256 stories / 1,280 motifs with honest source-tag evidence only",()
   assert.ok(audit.sourcingQueue.every(row=>!row.assetId&&!row.cloudObjectKey&&!row.providerUrl));
 });
 
-test("portrait-specific HD sources never inflate landscape or square inventories",()=>{
+test("approved portrait footage never masquerades as native landscape or square sources",()=>{
   const portrait=auditMyTubeMediaCoverage({scenes:catalog.scenes,aspect:"portrait"});
   const landscape=auditMyTubeMediaCoverage({scenes:catalog.scenes,aspect:"landscape"});
   const square=auditMyTubeMediaCoverage({scenes:catalog.scenes,aspect:"square"});
@@ -40,6 +40,8 @@ test("portrait-specific HD sources never inflate landscape or square inventories
   assert.ok(portrait.motifs.find(row=>row.motifId==="clouds").catalogTaggedClipCount>0);
   assert.equal(landscape.motifs.find(row=>row.motifId==="clouds").catalogTaggedClipCount,0);
   assert.ok(portrait.scenarioMotifs.some(x=>x.motifTaggedCount>0));
+  assert.ok(landscape.scenarioMotifs.every(x=>x.motifTaggedCount===0));
+  assert.ok(square.scenarioMotifs.every(x=>x.motifTaggedCount===0));
 });
 
 test("unapproved, duplicated and procedural scene rows cannot create fake coverage",()=>{
