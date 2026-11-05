@@ -9,7 +9,7 @@ const gate = "if: ${{ github.event_name != 'pull_request' || github.event.pull_r
 test('Core owns production PR type/build and specialists retain independent nonproduction checks',()=>{
   assert.match(core,/name: Exact proposed release production build and TypeScript check/);
   assert.match(core,/run: npm run build/);
-  assert.match(core,/^  release-ready:/m);
+  assert.match(core,/^  hh-merge-check:/m);
   for(const name of ['hh-growth-journey.yml','hh-course-presets.yml']){
     const s=read(name);
     assert.ok(s.includes("      - 'tests/ci-growth-course-core-reuse.test.mjs'"),name+' policy test path missing');
@@ -35,6 +35,6 @@ test('Course presets retain private saves, concurrency and curricula',()=>{
     'tests/course-concurrency-ui.test.mjs','tests/course-free-slot-restart.test.mjs',
     'tests/energywork-ai-course-private-save.test.mjs']) assert.ok(s.includes(path),'Course evidence lost '+path);
   assert.ok(s.includes("--test-skip-pattern='one private six-milestone route reuses tests, insights and keeps mobile bottom navigation'"), 'Only one obsolete six-tab layout oracle may be skipped; original course suite remains');
-  assert.ok(s.includes("group: hh-course-presets-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
-  assert.ok(s.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}"));
+  assert.ok(s.includes("group: hh-course-presets-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
+  assert.ok(s.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
 });

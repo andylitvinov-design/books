@@ -33,13 +33,10 @@ export async function setup(){const db=await adminClient();try{
  await db.query(await readFile(new URL('../../supabase/migrations/20261019172000_hh_practitioner_article_folders.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017122000_hh_practitioner_service_funnel_daily.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017170000_hh_service_reviews.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261017182500_hh_service_offerings_public_photos.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261017183000_hh_test_catalog_social_proof.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261028143352_hh_catalog_star_ratings_20261028.sql',import.meta.url),'utf8'))
- // Isolated-fixture parity with the existing production schema observed 2026-10-17 17:13 UTC.
- // No corresponding photos migration exists in the repository at source 2a059799.
- // This stays inside setup()'s loopback/isolated/empty-database guard, never production DDL.
- await db.query(`alter table app.service_offerings add column photos jsonb not null default '[]'::jsonb
-   constraint service_offerings_photos_check check (jsonb_typeof(photos)='array' and jsonb_array_length(photos)<=5)`)
+ // Apply the versioned additive migration once; do not duplicate the photos column.
 
  // Include the existing encrypted-goals schema in this isolated fixture so export is complete.
  await db.query(await readFile(new URL('../../supabase/migrations/20261017165000_hh_reports_development_goals.sql',import.meta.url),'utf8'))
@@ -56,6 +53,12 @@ export async function setup(){const db=await adminClient();try{
  await db.query(await readFile(new URL('../../supabase/migrations/20261025173000_hh_practitioner_express_reports.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261026133321_hh_free_express_guest_continuation_rls_20261025.sql',import.meta.url),'utf8'))
  await db.query(await readFile(new URL('../../supabase/migrations/20261026164817_hh_free_express_owner_account_reply_20261026.sql',import.meta.url),'utf8'))
+
+ // Apply actual released private Materials table and public Library feed SQL
+ // in the empty loopback CI fixture. Preserve backend-only grants and RLS;
+ // never construct a mock table or modify production schema.
+ await db.query(await readFile(new URL('../../sql/practitioner-material-library-20261015.sql',import.meta.url),'utf8'))
+ await db.query(await readFile(new URL('../../supabase/migrations/20261018014000_hh_public_materials_library_feed.sql',import.meta.url),'utf8'))
 
  await db.query("create role hh_app_ci_login login noinherit nosuperuser nobypassrls password 'synthetic-ci-only';grant hh_app_backend,hh_app_inbox to hh_app_ci_login;grant usage on schema auth to hh_app_backend,hh_app_inbox;grant execute on function auth.uid(),auth.jwt() to hh_app_backend,hh_app_inbox;")
  for(const[id,session,email]of[[A,SA,'a@example.invalid'],[B,SB,'b@example.invalid']]){await db.query('insert into auth.users(id,email) values($1,$2)',[id,email]);await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[session,id])}

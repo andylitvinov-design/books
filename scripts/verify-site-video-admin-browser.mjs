@@ -210,6 +210,12 @@ try{
     async function fill(title, target = editor) {
       await target.locator('input[name="youtubeUrl"]').fill('https://youtu.be/OkLEN8Zb-sY?si=test-tracker')
       await target.locator('input[name="title"]').fill(title)
+      // Every new slot starts with independent author approval. A verified
+      // synthetic master is seeded in this isolated Postgres fixture; select
+      // that actual owner instead of bypassing the required author gate.
+      const author = target.locator('select[name="practitionerSlug"]')
+      await expect(author.locator('option[value="andy-litvinov"]')).toHaveCount(1)
+      await author.selectOption('andy-litvinov')
     }
     async function save(intent, target = editor) {
       if (intent === 'publish') {

@@ -1,0 +1,47 @@
+name: HH Public Services Playwright base-branch cache
+# Prewarm Chromium/WebKit binaries once from a trusted production push.
+# The initial merge that adds this workflow triggers the seed. Future PRs use
+# read-only restores from their base branch; no cross-PR cache writes.
+on:
+  push:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-public-playwright-cache.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hh-public-playwright-production-cache
+  cancel-in-progress: false
+jobs:
+  seed:
+    if: github.ref == 'refs/heads/codex/public-book-library'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Restore production browser binary cache
+        id: cached
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: hh-public-browser-blobs-${{ runner.os }}-${{ runner.arch }}-pw1.63.0-v1
+      - name: Download pinned Chromium and WebKit binaries
+        if: steps.cached.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/hh-public-browser-seed
+          npm install --prefix /tmp/hh-public-browser-seed --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          /tmp/hh-public-browser-seed/node_modules/.bin/playwright install chromium webkit
+          test -d "$HOME/.cache/ms-playwright"
+          find "$HOME/.cache/ms-playwright" -maxdepth 1 -mindepth 1 -type d -print
+      - name: Save production browser binary cache
+        if: steps.cached.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.cached.outputs.cache-primary-key }}
+      - name: Describe cache limits
+        run: |
+          echo 'Only production can populate this binary cache.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'PR jobs restore it read-only, then still run real browser launch and acceptance. Cache misses reinstall binaries.' >> "$GITHUB_STEP_SUMMARY"

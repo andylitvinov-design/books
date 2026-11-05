@@ -31,11 +31,11 @@ test("Each teacher recording has its own slide BEFORE the original guided medita
   assert.deepEqual(mapping, teacherVideos);
   assert.ok(mapping.every(([, , id]) => /^[\w-]{11}$/.test(id)));
   const sequence = energyworkSequence();
-  assert.equal(sequence.length, 64);
+  assert.equal(sequence.length, 68);
   assert.equal(sequence[0], "welcome-01", "The title page opens the course");
   assert.equal(sequence[1], "welcome-02", "The experience question follows the title page");
   assert.equal(sequence[2], "welcome-video", "Andrey speaks after the introductory question");
-  assert.deepEqual(energyworkLessonRanges().map(r => r.count), [7,15,17,15,7]);
+  assert.deepEqual(energyworkLessonRanges().map(r => r.count), [8,16,18,16,7]);
 
   const meditations = ["flight-02", "tan-02", "kun-02", "ygg-02"];
   for (const [index, [slideId, lesson]] of mapping.entries()) {
@@ -54,7 +54,13 @@ test("Each teacher recording has its own slide BEFORE the original guided medita
     ["tan-intro-video", "tan-02"],
     ["kun-intro-video", "kun-02"],
     ["ygg-intro-video", "ygg-02"],
-  ]) assert.equal(sequence.indexOf(meditation), sequence.indexOf(intro) + 1);
+  ]) {
+    const audioId=meditation.replace(/-02$/, "-audio");
+    assert.equal(sequence.indexOf(audioId),sequence.indexOf(intro)+1,
+      "optional audio welcome follows the existing teacher introduction");
+    assert.equal(sequence.indexOf(meditation),sequence.indexOf(audioId)+1,
+      "original guided meditation immediately follows the audio welcome");
+  }
 });
 
 test("All four original EN guided meditations are visible on their established, stable IDs", () => {

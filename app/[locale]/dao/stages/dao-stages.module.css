@@ -1,0 +1,25 @@
+.page{min-height:100vh;background:linear-gradient(165deg,#fffaf4 0%,#f4ebdf 65%,#fff9f1);color:#382b24}
+.shell{max-width:1120px;margin:0 auto;padding:clamp(20px,4vw,46px) clamp(15px,4vw,34px) 80px}
+.back{display:inline-flex;align-items:center;gap:7px;margin-bottom:24px;padding:10px 0;color:#745038;font:650 14px/1.4 Arial,Helvetica,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.hero{max-width:790px;margin-bottom:36px}
+.eyebrow{color:#855d3c;font:750 12px/1.5 Arial,Helvetica,sans-serif;letter-spacing:.12em}
+.hero h1{font:400 clamp(36px,6vw,66px)/1.08 Georgia,"Times New Roman",serif;letter-spacing:-.035em;margin:11px 0 17px;text-wrap:balance}
+.hero>p:last-child{font:16px/1.7 Arial,Helvetica,sans-serif;color:#665548}
+.phase{margin:34px 0 42px}
+.phaseHeading{margin:0 0 17px}
+.phaseHeading h2{font:400 clamp(26px,3.5vw,36px)/1.2 Georgia,"Times New Roman",serif;margin:0 0 7px}
+.phaseHeading p{margin:0;color:#775f4b;font:14px/1.55 Arial,Helvetica,sans-serif}
+.stageGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:13px}
+.stage{scroll-margin-top:90px;padding:22px 19px 23px;border:1px solid #dcc6b2;background:#fffdf9;border-radius:18px;box-shadow:0 4px 19px #6e49300a}
+.stage:target{outline:3px solid #956a42;outline-offset:3px}
+.stageNumber{display:inline-block;padding:6px 10px;border-radius:30px;background:#f1e5d7;color:#65432f;font:700 12px/1.3 Arial,Helvetica,sans-serif}
+.stage h3{margin:14px 0 19px;font:400 clamp(22px,2.5vw,27px)/1.2 Georgia,"Times New Roman",serif;color:#3c2b21}
+.stageLabel{font-weight:750!important;color:#805d43!important;margin:0 0 4px!important}
+.stage p{margin:0;color:#665548;font:14px/1.55 Arial,Helvetica,sans-serif}
+.diagnostic{margin:40px 0 15px;padding:clamp(23px,4vw,40px);border-radius:23px;background:#604330;color:#fff7e9}
+.diagnostic h2{margin:0 0 9px;font:400 clamp(27px,3.3vw,36px)/1.18 Georgia,"Times New Roman",serif}
+.diagnostic p{margin:0 0 22px;max-width:800px;color:#f3e3d4;font:15px/1.6 Arial,Helvetica,sans-serif}
+.diagnosticLink{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 18px;border-radius:12px;background:#fff8ed;color:#523620;text-align:center;font:750 14px/1.4 Arial,Helvetica,sans-serif;text-decoration:none}
+.disclaimer{font:12px/1.6 Arial,Helvetica,sans-serif;color:#817060}
+.back:focus-visible,.diagnosticLink:focus-visible{outline:3px solid #b88b55;outline-offset:4px}
+@media(max-width:480px){.shell{padding:22px 14px 65px}.stageGrid{grid-template-columns:1fr}.stage{padding:19px 17px}.hero{margin-bottom:28px}.phase{margin:26px 0 35px}.diagnosticLink{display:flex;width:100%}}

@@ -1,7 +1,7 @@
 // WebKit reports refused teardown fetches as JavaScript-source console errors,
 // which Playwright promotes to pageerror. Do not apply a broad message ignore.
 // https://github.com/microsoft/playwright/issues/42823
-export function classifyCspNavigationCancellation(error, { engine, readiness, origin, lifecycle }) {
+export function classifyCspNavigationCancellation(error, { engine, readiness, origin, lifecycle, fetchTelemetry = [] }) {
   if (engine !== 'webkit' || readiness !== 'rapid-history' || !Number.isFinite(error.time)) return null;
   if (lifecycle.some(event => ['window-error', 'unhandled-rejection'].includes(event.type))) return null;
   const match = error.stack?.split('\n')[0].match(/^Fetch API cannot load (https?:\/\/[^\s]+) due to access control checks\.$/);
@@ -31,6 +31,16 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
         && event.time <= navigation.time && event.sameDocument === true && event.navigationType === 'traverse'
         && event.url === source.url && event.documentClass === 'tantra-media'
         && event.destination === navigation.destination);
+    // An interrupted WebKit rapid history Forward may abort the old About
+    // document's RSC home prefetch without emitting pagehide. Classify only
+    // with old-document fetch provenance and verified new Tantra document.
+    const aboutForward = prefetch && url.pathname === '/' && error.phase === 'forward-to-tantra'
+      && source.url === new URL('/en/about', origin).href
+      && navigation.documentClass === 'public-video' && navigation.navigationType === 'replace'
+      && navigation.destination === new URL('/en/academy/reiki/tantra-reiki', origin).href
+      && lifecycle.some(event => event.type === 'navigate' && event.documentProbe === navigation.documentProbe
+        && event.time <= navigation.time && event.sameDocument === true && event.navigationType === 'traverse'
+        && event.url === new URL('/en/about', origin).href && event.destination === navigation.destination);
     if (tantraPrefetch && !prefetch && !clientPrefetch && !tantraBack) continue;
     // The same shared-header home prefetch was observed during private Back/
     // Forward teardown. Accept only that traced client -> About traversal.
@@ -62,7 +72,23 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
     // attributable to the old document, even when the wording is identical.
     if (!nextDocument || error.time >= Math.floor(nextDocument.time) || nextDocument.url !== navigation.destination) continue;
     const pageHide = lifecycle.find(event => event.type === 'pagehide' && event.documentProbe === navigation.documentProbe && event.time >= navigation.time && event.time < nextDocument.time);
-    if (!pageHide || error.time > Math.floor(pageHide.time)) continue;
+    if (!pageHide || error.time > Math.floor(pageHide.time)) {
+      // No broad console-error ignore: prove the request, exact timeline,
+      // required cross-policy document and lack of real CSP violations.
+      if (!aboutForward || pageHide || error.time - Math.floor(navigation.time) > 1500
+        || Math.floor(nextDocument.time) - error.time > 1500) continue;
+      const oldRequest = fetchTelemetry.find(item => item.type === 'fetch-start'
+        && item.path === '/' && item.rsc === true && item.documentProbe === source.documentProbe
+        && item.time >= navigation.time && item.time <= error.time);
+      if (!oldRequest || !lifecycle.some(event => event.documentProbe === nextDocument.documentProbe
+        && event.documentClass === 'tantra-media' && event.type === 'domcontentloaded')) continue;
+      if (lifecycle.some(event => event.type === 'policy-violation' && event.documentProbe === source.documentProbe
+        && event.time >= navigation.time && event.time <= nextDocument.time)) continue;
+      return { kind: 'webkit-traced-forward-rsc-teardown', requestUrl: url.href,
+        sourceDocument: source.documentProbe, destinationDocument: nextDocument.documentProbe,
+        fetchStartTime: oldRequest.time, navigationTime: navigation.time, errorTime: error.time,
+        nextDocumentTime: nextDocument.time };
+    }
     return { kind: 'webkit-hard-navigation-fetch-cancellation', requestUrl: url.href, sourceDocument: source.documentProbe, destinationDocument: nextDocument.documentProbe, navigationTime: navigation.time, errorTime: error.time, pageHideTime: pageHide.time, nextDocumentTime: nextDocument.time };
   }
   return null;

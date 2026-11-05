@@ -47,9 +47,10 @@ export function changedFilesBetween(previous, current, git = execFileSync) {
  * GitHub returns file names without downloading hundreds of megabytes of blobs.
  * Any API error or truncated/ambiguous diff causes a normal build.
  */
-export async function changedFilesViaGithub(previous, current, fetcher = fetch) {
-  if (!/^[a-f0-9]{40}$/i.test(previous ?? "") || !/^[a-f0-9]{40}$/i.test(current ?? "")) return null;
-  const uri = `https://api.github.com/repos/andylitvinov-design/books/compare/${previous}...${current}`;
+export async function inspectGithubCompare(previous, current, fetcher = fetch) {
+  if (!/^[a-f0-9]{40}$/i.test(previous ?? "") || !/^[a-f0-9]{40}$/i.test(current ?? ""))
+    return { paths: null, reason: "invalid-sha" };
+  const uri = `https://api.github.com/repos/andylitvinov-design/books/compare/${previous}...${current}?per_page=100`;
   try {
     const response = await fetcher(uri, {
       headers: {
@@ -58,19 +59,33 @@ export async function changedFilesViaGithub(previous, current, fetcher = fetch) 
       },
       signal: AbortSignal.timeout(7000),
     });
-    if (!response.ok) return null;
+    if (!response.ok) return { paths: null, reason: "github-http-" + (Number(response.status) || "unknown") };
     const data = await response.json();
-    if (data.base_commit?.sha !== previous || data.head_commit?.sha !== current
-      || data.status !== "ahead" || !Array.isArray(data.files)
-      || data.ahead_by > 200 || data.files.length >= 300 || data.files.length === 0) return null;
+    // GitHub's compare REST response has no head_commit. The final entry in
+    // the complete paginated commits array is the tested target commit.
+    if (data.base_commit?.sha !== previous || data.status !== "ahead" || data.behind_by !== 0)
+      return { paths: null, reason: "github-not-verified-ahead" };
+    if (!Array.isArray(data.commits) || !Number.isInteger(data.ahead_by)
+      || data.ahead_by < 1 || data.ahead_by > 100
+      || data.total_commits !== data.ahead_by || data.commits.length !== data.ahead_by
+      || data.commits.at(-1)?.sha !== current)
+      return { paths: null, reason: "github-commit-history-incomplete" };
+    if (!Array.isArray(data.files) || data.files.length >= 300 || data.files.length === 0)
+      return { paths: null, reason: "github-unbounded-files-or-commits" };
     // Renames are ambiguous because the old path may be runtime code. Build.
     if (data.files.some(file => file.status === "renamed"
       || !["added", "modified", "removed", "changed"].includes(file.status)
-      || typeof file.filename !== "string")) return null;
-    return data.files.map(file => file.filename);
+      || typeof file.filename !== "string"))
+      return { paths: null, reason: "github-ambiguous-paths" };
+    return { paths: data.files.map(file => file.filename), reason: "github-verified" };
   } catch {
-    return null;
+    return { paths: null, reason: "github-request-failed" };
   }
+}
+
+// Backwards-compatible API for existing callers.
+export async function changedFilesViaGithub(previous, current, fetcher = fetch) {
+  return (await inspectGithubCompare(previous, current, fetcher)).paths;
 }
 
 // Pro credit guard: GitHub Actions verifies PRs, and only the production
@@ -91,9 +106,21 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
   const previous = process.env.VERCEL_GIT_PREVIOUS_SHA;
   const current = process.env.VERCEL_GIT_COMMIT_SHA;
+  // Never print env values or a GitHub response body: only presence, source and reason.
+  const validSha = sha => /^[a-f0-9]{40}$/i.test(sha ?? "");
+  console.log("Vercel build guard input: env=" + (process.env.VERCEL_ENV || "unset")
+    + "; previous=" + (validSha(previous) ? "valid" : "missing-or-invalid")
+    + "; current=" + (validSha(current) ? "valid" : "missing-or-invalid"));
   const local = changedFilesBetween(previous, current);
-  const changed = local ?? await changedFilesViaGithub(previous, current);
-  if (maySkipBuild(changed)) {
+  const result = local === null
+    ? await inspectGithubCompare(previous, current)
+    : { paths: local, reason: "local-git-diff" };
+  const changed = result.paths;
+  const safe = maySkipBuild(changed);
+  console.log("Vercel build guard decision: source=" + result.reason
+    + "; fileCount=" + (Array.isArray(changed) ? changed.length : "unknown")
+    + "; runtimeChange=" + (Array.isArray(changed) && !safe ? "yes" : "unknown-or-none"));
+  if (safe) {
     console.log("Skip Vercel build: only verified non-runtime documentation or dedicated GitHub CI files changed.");
     process.exit(0);
   }

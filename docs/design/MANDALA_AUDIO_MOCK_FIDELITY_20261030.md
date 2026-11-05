@@ -41,3 +41,19 @@
 - Open PR #2550 already proposes a larger 34-loop library with one-tap playback; its older branch overlaps this file. Rebase/port the new library *after* this compact UI without overwriting its single picker/one-player contract. Do not release competing copies.
 - PR #2694 also touches the broader mobile editor design; reconcile owner approval and shared files before merge.
 - Voice Studio, cloud-generated speech, paid renders, medical data, private client delivery and billing are unchanged.
+
+## 1 Nov follow-up · real Audio deep-link navigation
+
+**Confirmed source-level regression:** In the six-workspace mobile Video Studio, visiting `/{ru,en,es}/holistic-support/mandala#video-audio` directly did not set `activeWorkspace="audio"`; the canonical `#video-audio` element existed only within collapsed advanced controls on initial page entry, despite the Audio tab itself working.
+
+**Targeted fix:** An on-mount and `hashchange` listener opens only the existing Audio workspace and scrolls to its one canonical audio picker. It does not automatically play any media, request microphone access, attach a track, or change URL/consent. Same first-party components, no new recorder/renderer/API. Browser regression checks a fresh RU 390px deep link under both Chromium/WebKit, with a single microphone, readable layout and synthetic screenshots; unit test checks the one-instance contract.
+
+**Release gate:** exact PR HEAD targeted unit/lint/typecheck/build and real browser test; protected merge into current production `codex/public-book-library`; Vercel READY exact new SHA/alias and RU/EN/ES live URL. Separate physical iPhone speaker/microphone/Files QA and independent owner-reference pixel overlay must remain unclaimed until actually performed.
+
+## 1 Nov visual checkpoint — photo and Play must be separate
+
+The real prior #2696 Playwright synthetic screenshot artifact `mandala-audio-mobile-48fa560f...` (Chromium and WebKit RU 320/390/430) was inspected against the owner's **first** approved mock, not the second and third older implementation screenshots. At RU390, the round Play overlay covered most of the small photographic sound cover. The reference has a clearly visible square photo followed by an independent pastel Play circle.
+
+Refinement: add a reserved 44px Play slot **after** the photographic cover in the existing Select row, keep the Play button a separate sibling with independent native WAV playback, and allow the entire rest of the row to select the sound. On 320–375px hide the redundant inline "Select" word (the row remains accessible, labelled and highlighted); retain a 44px favourite. Browser assertion checks the Play rectangle sits **to the right** of, rather than on top of, the photo in 390px Chromium/WebKit. No stock media or invented photography, only existing first-party covers.
+
+This checkpoint reviews the **older** actual screenshot artifact. It does not prove the latest candidate pixel overlay or physical iPhone Safari; those remain separate release/owner QA.

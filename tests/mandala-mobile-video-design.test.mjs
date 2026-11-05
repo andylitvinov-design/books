@@ -193,10 +193,14 @@ test("client photo consent and privacy are enforced without payment or server ph
   assert.match(studio,/disabled=\{!canGenerate\}/);
   assert.match(studio,/const source = backgroundOnly \? BACKGROUND_CLIP : photoUrl \|\| frameUrl \|\| BACKGROUND_CLIP/);
   assert.match(studio,/URL\.revokeObjectURL\(result\.url\)/);
-  // Permit one safe same-origin static WAV GET, never arbitrary networking or uploads.
+  // Only these two bounded same-origin GETs are permitted: the original
+  // soundtrack and the explicitly selected approved music bed.
   const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
+  const approvedMusicBed=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
   assert.equal((audio.match(firstPartyWav)||[]).length,1,"one verified site-owned WAV GET");
-  assert.doesNotMatch((studio+audio).replace(firstPartyWav,""),/\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon|higgsfield|kling\.ai|heygen|supabase/i);
+  assert.equal((audio.match(approvedMusicBed)||[]).length,1,"one explicit first-party music-bed GET");
+  assert.doesNotMatch((studio+audio).replace(firstPartyWav,"").replace(approvedMusicBed,""),
+    /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|navigator\.sendBeacon|higgsfield|kling\.ai|heygen|supabase/i);
   assert.match(audio,/Royalty-free ambient sound generated locally/);
 });
 
@@ -253,8 +257,8 @@ test("preview-first mobile flow preserves local rendering and the user's photo p
   assert.match(studio,/studioMode==="therapy"/);
   // A selected four-shot cinematic timeline must display its actual first frame,
   // never the single-shot promotional poster above the shared preview.
-  assert.match(studio,/data-hero-promo=\{!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/);
-  assert.match(studio,/const activeFilm = cinematicPlan \? null : activeMoneyFilm \|\| activeThemedFilm/);
+  assert.match(studio,/data-hero-promo=\{creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/);
+  assert.match(studio,/const activeFilm = creationMode==="generated" \|\| cinematicPlan \? null : activeMoneyFilm \|\| activeThemedFilm/);
   assert.match(css,/\.hero\[data-hero-promo="true"\] \.heroCanvas\{opacity:0\}/);
   assert.match(css,/\.heroPromo::after/);
   assert.match(browser,/data-video-therapy-toggle/);
@@ -314,11 +318,11 @@ test("one contextual therapy action keeps the single secure renderer and a visib
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const top=[
-    "data-video-quick-builder",'data-video-quick-section="1"',
-    "data-video-live-stage",'id="video-hero"',"data-video-quick-controls",
+    "data-video-quick-builder","data-video-quick-controls",
+    'data-video-quick-section="1"',"data-video-live-stage",'id="video-hero"',
     "data-video-therapy-banner",'<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
-    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"psychocorrection\" data-video-quick-phrases",
-    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"audio\" data-video-quick-audio-choices",
+    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"phrases\" data-video-quick-phrases",
+    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"video\" data-video-quick-audio-choices",
     'id="guided-video-series"',"data-video-scene-library",'id="video-templates"',
     "data-video-quick-tier","data-video-quick-personal","data-video-quick-legacy"
   ].map(marker=>studio.indexOf(marker));
@@ -335,8 +339,10 @@ test("one contextual therapy action keeps the single secure renderer and a visib
     "single original audio editor mounted in either workspace");
   assert.equal((studio.match(/data-video-hypnosis-section/g)||[]).length,1,
     "single original Hypno editor mounted in either workspace");
-  assert.match(studio,/activeWorkspace==="audio" \? deepAudioPane/);
-  assert.match(studio,/activeWorkspace==="psychocorrection" \? deepHypnoPane/);
+  assert.match(studio,/activeWorkspace==="video" \? deepAudioPane/);
+  assert.match(studio,/activeWorkspace==="phrases" \? deepAudioPane/);
+  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
+    "the sole phrase editor remains mounted to preserve its project state");
   for(const title of ["Видео-терапия","Своё фото / цель",
     "Гипноаффирмации","Video therapy","Videoterapia","Picks of the Day"]){
     assert.ok(studio.includes(title),title);
@@ -358,9 +364,12 @@ test("affirmation preview CTA starts the existing hero and local jump links reac
     assert.ok(studio.includes('id="'+id+'"'),id+" must exist");
   }
   const compact=read("components/mandala-hypno-compact.tsx");
-  assert.match(compact,/data-video-affirmation-preview disabled=\{disabled\}/);
+  assert.match(compact,/data-video-affirmation-preview disabled=\{disabled\|\|hasPendingEdits\}/);
   assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
-  const previewHandler=studio.slice(studio.indexOf("const openAffirmationPreview ="),studio.indexOf("return (\n    <section className={videoStyles.studio}",studio.indexOf("const openAffirmationPreview =")));
+  // Restrict preview safety assertions to the real preview handler, not
+  // subsequent independent source-loading and recording operations.
+  const previewHandler=studio.match(/const openAffirmationPreview = \(\) => \{[\s\S]*?\n  \};/)?.[0] || "";
+  assert.ok(previewHandler,"one real local preview handler remains");
   assert.match(previewHandler,/setPreviewPlaying\(true\)/);
   assert.match(previewHandler,/document\.getElementById\("video-hero"\)\?\.scrollIntoView/);
   assert.doesNotMatch(previewHandler,/createVideo\(|setResult\(|navigator\.share/);
@@ -432,7 +441,10 @@ test("LIVE regression: canonical video editor has one Support dock, not duplicat
   const studio=read("components/mandala-free-video-studio.tsx");
   const dock=read("components/holistic-support-mandala-dock.tsx");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(route, /<HolisticSupportMandalaDock locale=\{locale\} \/>/);
+  assert.match(route, /<HolisticSupportMandalaDock locale=\{locale\} photoMode=\{photoMode\} \/>/);
+  assert.equal((route.match(/<HolisticSupportMandalaDock\b/g) ?? []).length, 1,
+    "The photo/video mode switch must not duplicate the support bottom dock");
+  assert.match(route, /const photoMode = query\?\.mode === "photo";/);
   assert.match(route, /<MandalaMeditationClient locale=\{locale\}/);
   assert.match(studio, /data-video-mandala-hero/);
   assert.match(studio, /data-video-support-layout/);
@@ -444,14 +456,14 @@ test("LIVE regression: canonical video editor has one Support dock, not duplicat
   assert.match(browser, /exactly one Support dock/);
 });
 
-test("iPhone release layout has slim diagnostic bar, Picks, visible Support header and active-only green therapy", () => {
+test("iPhone release layout has no unsolicited diagnostic banner, with Picks and active-only green therapy", () => {
   const route=read("app/[locale]/holistic-support/mandala/page.tsx");
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const pageCss=read("components/mandala-meditation.module.css");
   const browser=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(route,/data-video-diagnostic-banner/);
-  assert.match(pageCss,/\.slimDiagnostic\{[^}]*min-height:48px/);
+  assert.doesNotMatch(route,/data-video-diagnostic-banner/);
+  assert.doesNotMatch(pageCss,/\.slimDiagnostic\{/);
   assert.match(studio,/data-video-daily-picks/);
   for (const destination of ["/client/tests?focus=","/holistic-support/mobile?view=meditation",
     "/services/free-situation-review","/courses"]) assert.ok(studio.includes(destination),destination);
@@ -479,7 +491,9 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   const orderEnd=studio.indexOf(";",orderStart);
   assert.deepEqual([...studio.slice(orderStart,orderEnd).matchAll(/"(energy|health|relationships|money|goals|life)"/g)]
     .map(match=>match[1]),topics,"approved topic order");
-  assert.match(studio,/Выберите тему для видеотерапии/);
+  assert.match(studio,/1\. Опишите запрос или выберите цель/);
+  assert.ok(studio.indexOf("data-video-request-prompt") < studio.indexOf("data-video-director-goal-controls"), "the request precedes goal filters");
+  assert.match(studio,/data-video-director-topic-controls/);
   assert.match(studio,/Сформировать индивидуальную программу видеотерапии бесплатно/);
   assert.match(studio,/data-video-quick-generate/);
   assert.equal((studio.match(/id="video-hero"/g)||[]).length,1);
@@ -487,23 +501,29 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.equal((studio.match(/data-video-therapy-banner/g)||[]).length,1);
   const workspaceNav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),
     studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
-  for(const id of ["video","audio","characters","hypnotherapy","psychocorrection","courses"])
+  for(const id of ["video","phrases","effects","practices","pro","editor"])
     assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
   assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
-  assert.match(studio,/data-video-quick-affirmation=\{index\}/);
-  assert.match(studio,/custom:phrase,visibility:\["large"\]/);
+  assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
+  assert.match(studio,/\{deepHypnoPane\}/);
+  assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
+  assert.match(studio,/onPhraseChoose=\{phrase=>\{[\s\S]{0,240}setCatalogPhraseDraft\(phrase\)/,
+    "a catalog phrase is staged in the existing editor before affecting the film");
+  assert.match(studio,/externalPhraseDraft=\{catalogPhraseDraft\}/);
+  assert.match(studio,/onExternalPhraseClear=\{\(\)=>setCatalogPhraseDraft\(null\)\}/);
+  assert.match(studio,/data-hypno-voice[\s\S]*data-hypno-music/);
   assert.match(studio,/function toggleQuickMusic\(choice:PresetId\)/);
   assert.match(studio,/setAttachedAudio\(attached\)/);
   assert.match(studio,/data-video-quick-audio-track=\{id\}/);
   assert.match(studio,/data-video-quick-music-check=\{id\}/);
   assert.match(studio,/data-video-quick-music-play=\{id\}/);
-  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume\)/);
+  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
   assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
   assert.match(css,/\.quickVideoNav\{display:grid/);
-  assert.match(css,/\.quickPhraseRail,/);
+  assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
   assert.match(css,/\.quickMusicRail\{/);
   assert.match(css,/\.studio \.previewMiniSource\{position:absolute/);
 });
@@ -515,6 +535,22 @@ test("video therapy exit does not unmount the clicked button during pointerup", 
   const opening=studio.slice(studio.lastIndexOf("<button",marker),studio.indexOf("</button>",marker));
   assert.match(opening,/disabled=\{recording\|\|preparing\}/,"retain active render lock");
   assert.doesNotMatch(opening,/onPointer(?:Down|Up)=/,"a pointer handler must not unmount the button before its native click");
-  assert.match(opening,/onClick=\{\(\)=>\{setStudioMode\("pump"\);setCinematicPlan\(null\);/,"one click dismisses therapy and invalidates stale storyboard");
+  assert.match(opening,/onClick=\{\(\)=>\{setStudioMode\("pump"\);setActiveWorkspace\("video"\);/,"one click exits practices without discarding a confirmed video");
   assert.match(opening,/setTherapyJumpRequested\(false\);setNotice\(""\);/,"exit clears pending scroll and notice");
+});
+
+test("studio workspace buttons remain disabled until their real handlers hydrate",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const nav=studio.slice(studio.indexOf('<nav className={videoStyles.quickVideoNav}'),
+    studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.quickVideoNav}')));
+  assert.match(nav,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
+  assert.match(nav,/onClick=\{\(\)=>\{/);
+});
+
+test("director controls and All stories stay disabled until the studio hydrates",()=>{
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const director=read("components/mandala-auto-video-director.tsx");
+  const mount=studio.slice(studio.indexOf("<MandalaAutoVideoDirector"),studio.indexOf("<MandalaAutoVideoDirector")+900);
+  assert.match(mount,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
+  assert.match(director,/data-auto-video-all-scenes disabled=\{disabled\} onClick=\{onShowAll\}/);
 });

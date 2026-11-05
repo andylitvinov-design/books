@@ -18,22 +18,18 @@ on:
       - 'tests/business-consultation-finder.test.mjs'
       - 'tests/business-service-browser.test.mjs'
       - 'tests/topic-journey-account-scope.test.mjs'
-      - 'components/library-hub.tsx'
       - 'components/app/portrait-recommendations.jsx'
       - 'components/app/portrait-recommendations.module.css'
       - 'components/app/development-program.jsx'
       - 'app/[locale]/explore/[theme]/page.tsx'
-      - 'app/sitemap.ts'
       - 'tests/growth-journey-public.test.mjs'
       - 'tests/ci-growth-course-core-reuse.test.mjs'
-      - '.github/workflows/hh-growth-journey.yml'
-
 permissions:
   contents: read
 
 concurrency:
-  group: hh-growth-journeys-${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.event.before != github.event.after }}
+  group: hh-growth-journeys-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   growth-content-and-build:

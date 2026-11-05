@@ -14,14 +14,14 @@ test("the existing public editor retains one real video renderer and the new com
   assert.equal((source.match(/ref=\{premiumVideoRef\}/g)||[]).length,1,
     "one original H264 film master feeds preview and recording");
   assert.match(page, /<MandalaMeditationClient/,"canonical Mandala route must mount this editor");
-  const order=["data-video-quick-builder","data-video-quick-section=\"1\"",
-    "data-video-live-stage","data-video-mandala-hero","data-video-quick-controls",
+  const order=["data-video-quick-builder","data-video-quick-controls",
+    "data-video-quick-section=\"1\"","data-video-live-stage","data-video-mandala-hero",
     "data-video-mini-source","data-video-quick-live-preview",
     "data-video-therapy-banner",
     '<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
     "data-video-quick-scene={quickStyleSceneIds[theme][index]}",
-    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"psychocorrection\" data-video-quick-phrases",
-    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"audio\" data-video-quick-audio-choices",
+    "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"phrases\" data-video-quick-phrases",
+    "<section className={videoStyles.quickMusicSection} data-workspace-section=\"video\" data-video-quick-audio-choices",
     "data-video-scene-library",'id="video-templates"',"data-free-film-compilation-catalog",
     "data-video-quick-tier","data-video-practice-accordion",
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
@@ -33,7 +33,10 @@ test("the existing public editor retains one real video renderer and the new com
       "video studio hierarchy changed at "+order[i]);
   }
   assert.match(source,/className=\{videoStyles.previewCoverOptions\} data-video-cover-options/);
-  assert.match(source,/\{activeWorkspace==="characters" \? deepCharacterPhotoPane : null\}/);
+  assert.match(source,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/);
+  assert.match(source,/\{activeWorkspace==="video" \? deepCharacterPhotoPane : null\}/);
+  assert.equal((source.match(/<details className=\{videoStyles\.previewCoverOptions\} data-video-cover-options/g)||[]).length,1,
+    "the same original photo/consent widget is reused in basic settings");
   assert.match(source,/data-video-quick-section="7"/);
   assert.match(css,/\.quickOrderBar\{position:sticky/);
   assert.match(css,/bottom:calc\(76px \+ env\(safe-area-inset-bottom\)\)/);
@@ -76,8 +79,10 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
-  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmReady\)\}/,
-    "free video is gated until all four genuine stock clips are ready");
+  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending\}/,
+    "Create requires the licensed source URLs AND approved phrases; decoding occurs on tap");
+  assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
+    "Four local MP4s must prime on the trusted Create click");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
   assert.match(css,/\.quickFormatDetails\[hidden\]\{display:none\}/);
   assert.match(css,/\.quickFormatCard\[data-selected="true"\]\{[\s\S]*?box-shadow:/);
@@ -95,20 +100,26 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
 test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   const s=read("components/mandala-free-video-studio.tsx");
   const script=read("scripts/verify-holistic-mandala-browser.mjs");
-  assert.match(s,/data-video-goal-summary/);
+  assert.match(s,/data-video-basic-editor/);
+  const fifth=s.slice(s.indexOf('data-video-basic-editor'),s.indexOf('data-video-quick-personal'));
+  assert.doesNotMatch(fifth,/data-video-goal-summary/,
+    "goal was already supplied earlier; Montage must not ask it twice");
   const auto=read("components/mandala-auto-video-director.tsx");
   assert.match(s,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/,
     "approved goal comes from the single local wish state");
   assert.match(auto,/data-auto-video-input value=\{goal\}[\s\S]*?maxLength=\{160\}/,
     "the same personal goal retains its strict 160-character browser limit");
-  assert.match(auto,/onGoalChange\(event\.currentTarget\.value\)/,
-    "typing updates the same local state without remote upload");
-  assert.match(s,/data-video-personal-affirmations/);
-  assert.match(s,/enabled:!current\.enabled/);
+  assert.match(auto,/const value=event\.currentTarget\.value;[\s\S]*?onGoalChange\(value\)/,
+    "typing updates the same local state and real source-backed proposal without remote upload");
+  assert.match(s,/data-video-basic-tab=\{item.id\}/);
+  assert.match(s,/sourceText=\{currentAffirmationSpeech\}/,
+    "phrases supply the existing shared narration source");
+  assert.match(s,/setAffirmations\(/,
+    "existing phrase controls remain functional outside the new basic settings");
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
-  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*\/\/ Audio controls[\s\S]*?openQuickDetailed\("video-audio"\)/,
-    "selected sound must reveal real attachment controls after mobile collapse");
+  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\)/,
+    "missing audio opens the original fifth-tab attachment and consent controls");
   assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}\s*else openAffirmationPreview\(\)/,
     "Canvas-only topics must play the visible main screen without expanding the editor");
   assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,
@@ -183,9 +194,9 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.equal(original.length,24);
   assert.equal(additions.presets.length,24);
   assert.equal(catalogue.length,48);
-  assert.equal(taxonomy.scenes.length,44);
+  assert.equal(taxonomy.scenes.length,48);
   const physical=new Set(taxonomy.scenes.filter(item=>item.status==="approved").map(item=>item.id));
-  assert.equal(physical.size,44);
+  assert.equal(physical.size,48);
   const groups=new Map(),ids=new Set(),originalClips=new Set();
   for(const film of catalogue){
     assert.ok(!ids.has(film.id),"every free montage has a distinct id");
@@ -205,6 +216,10 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   for(const category of ["money","energy","life","health","relationships","goals"])
     assert.equal(groups.get(category),8,category);
   assert.equal(originalClips.size,44,"all 44 licensed source clips appear in ready-to-edit movies");
+  const portraitSources=new Set([...originalClips,...additions.presets.flatMap(p=>p.portraitClips||[])]);
+  assert.equal(portraitSources.size,48,"all four additional real footage sources are available in portrait film edits");
+  assert.ok([...portraitSources].every(id=>physical.has(id)));
+  assert.equal(additions.presets.filter(p=>p.portraitClips).length,4);
   assert.match(src,/free-film-presets-v2\.json/);
   assert.match(src,/scene-taxonomy\.json/);
   assert.match(src,/data-free-film-compilation-catalog/);
@@ -212,9 +227,16 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.match(src,/data-free-film-source=\{shot\.sceneId\}/);
   assert.match(src,/storyboard\.version===FREE_FILM_PLAN_VERSION\?stockShotVideo:null/);
   assert.match(src,/shot\.theme,shot\.sceneId as LocalSceneId,speed,brightness/);
-  assert.match(src,/const canGenerate =[\s\S]*freeFilmReady/);
-  assert.match(src,/allocateFreeFilmTimeline\(durationSeconds,preset\.clips\)/,
-    "all supported lengths use the verified four-shot timeline allocator");
+  assert.match(src,/const canGenerate =[\s\S]*freeFilmSourcesListed/);
+  assert.match(src,/if\(!\(await filmPreparation\)\)/,
+    "a failed decoded-source check must never output a partial four-scene movie");
+  assert.match(src,/allocateAdaptiveFilmTimeline\(/,
+    "Auto Director uses the verified adaptive four-stage timeline");
+  assert.match(src,/edit\?\.durationSecondsByStage\?\?null/,
+    "explicit stage edits must be passed through to the same timing engine");
+  assert.match(read("lib/mandala/free-film-timeline.mjs"),
+    /export function allocateFreeFilmTimeline\(/,
+    "the legacy equal-time allocator remains intact for other consumers");
   assert.match(src,/startSeconds:timing\.startSeconds,durationSeconds:timing\.durationSeconds/,
     "exported scene timing comes from the same timeline, not stale 10-second padding");
   assert.match(src,/providerPrompt:""/);
@@ -243,8 +265,12 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
   assert.match(css,/@media\(max-width:759px\)\{[\s\S]*?\.quickOrderBar\{position:static;/);
   assert.match(css,/@media\(max-width:379px\)\{[\s\S]*?\.quickFormatGrid\{grid-template-columns:minmax\(0,1fr\)\}/);
   assert.match(css,/\.quickBuilder \.quickThemeRail button\{min-height:112px/);
-  assert.match(css,/:global\(\[data-mandala-meditation-page\]\):has\(\.studio\) :global\(\[data-video-diagnostic-banner\]\)\{display:none\}/);
-  assert.doesNotMatch(pageCss,/@media\(max-width:640px\)\{\.slimDiagnostic\{display:none\}\}/);
+  const route=read("app/[locale]/holistic-support/mandala/page.tsx");
+  assert.doesNotMatch(route,/data-video-diagnostic-banner|slimDiagnostic/,
+    "the video workspace must not mount the unsolicited diagnostic promotion");
+  assert.doesNotMatch(pageCss,/\.slimDiagnostic\{/,
+    "removed promotion must not retain unused mobile rules");
+  assert.match(css,/04 Nov owner visual recovery:[^\n]*ONE stable header/);
   const heroSegment=source.slice(source.indexOf("data-video-quick-hero-play"),
     source.indexOf('data-video-quick-section="1"'));
   assert.ok(heroSegment.length>0);

@@ -70,7 +70,16 @@ test("scenic player keeps four visible filters and source-backed recordings", ()
   assert.match(client, /youtube-nocookie\.com\/embed/);
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /prefers-reduced-motion/);
-  assert.doesNotMatch(client, /localStorage|sessionStorage|fetch\(/);
+  // The scenic player remains a source-backed viewer with no persistence or
+  // network calls. Photo-to-Cabinet is a separate, explicit private action.
+  assert.doesNotMatch(client, /localStorage|sessionStorage/);
+  const playerStart = client.indexOf('data-support-player');
+  const galleryStart = client.indexOf('id="support-meditation-gallery"', playerStart);
+  assert.ok(playerStart >= 0 && galleryStart > playerStart, "scenic player boundary is present");
+  assert.doesNotMatch(client.slice(playerStart, galleryStart), /fetch\s*\(/,
+    "playing a meditation must not upload or persist anything");
+  assert.match(client, /fetch\("\/api\/app\/support-photo"/,
+    "only the separate user-invoked Cabinet photo save may call the private API");
 });
 
 test("progress is derived from opens and four self-ratings, never fake streaks", () => {

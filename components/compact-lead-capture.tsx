@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { StaticPortrait } from "@/components/static-portrait";
+import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import type { PublicLocale } from "@/lib/public-locales";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./compact-lead-capture.module.css";
 
 type Channel = "whatsapp" | "telegram";
+type RequestAction = Channel | "request";
 
 const copy = {
   en: {
@@ -19,13 +21,14 @@ const copy = {
     phoneLabel: "Your phone number", phoneInvalid: "Enter a phone number with country code, e.g. +1 416 555 0123.",
     placeholder: "Email or +1…",
     consent: "I agree to save my contact for one personal reply about this request. No marketing.",
-    channelsTitle: "Continue with Andrey",
-    channelsHint: "Choose a messenger. Your contact is saved first.",
+    submit: "Send request without a messenger",
+    channelsTitle: "Or continue in a messenger",
+    channelsHint: "Optional — your email or phone is enough to register the request.",
     saving: "Saving…",
     notice: "Free to enquire · No confirmed booking or payment · Please don't enter health details.",
     invalid: "Enter a valid email or an international phone number starting with +.",
     consentRequired: "Please agree to a personal reply before continuing.",
-    error: "We couldn't save your contact, so the messenger wasn't opened. Please try again.",
+    error: "We could not save your request. Try again; no message was sent.",
     handoffError: "Your contact was saved, but the messenger did not open. Use either link below.",
     saved: "Request saved — awaiting a personal reply",
     next: "Keep your reference. No reply time or appointment is confirmed yet. Messengers are for scheduling only; agree a secure handoff for any personal materials.",
@@ -39,13 +42,14 @@ const copy = {
     phoneLabel: "Номер телефона", phoneInvalid: "Укажите телефон с кодом страны, например +1 416 555 0123.",
     placeholder: "Email или +1…",
     consent: "Согласен(-на) сохранить контакт для личного ответа по этой заявке. Без рассылок.",
-    channelsTitle: "Напишите Андрею",
-    channelsHint: "Выберите мессенджер. Сначала контакт сохранится в CRM.",
+    submit: "Отправить заявку без мессенджера",
+    channelsTitle: "Или продолжить в мессенджере",
+    channelsHint: "Необязательно — для заявки достаточно email или телефона.",
     saving: "Сохраняем…",
     notice: "Запрос бесплатный · Без подтверждённой записи и оплаты · Не пишите данные о здоровье.",
     invalid: "Укажите email или номер телефона с международным кодом +.",
     consentRequired: "Подтвердите согласие на личный ответ по заявке.",
-    error: "Контакт не сохранился, поэтому чат не открыт. Попробуйте ещё раз.",
+    error: "Не удалось сохранить заявку. Попробуйте ещё раз; сообщение не отправлено.",
     handoffError: "Контакт сохранён, но чат не открылся. Выберите мессенджер по ссылке ниже.",
     saved: "Заявка сохранена — ожидает личного ответа",
     next: "Сохраните номер заявки. Срок ответа и время встречи ещё не подтверждены. В мессенджере согласуйте только организационные вопросы; для личных материалов нужна защищённая передача.",
@@ -59,13 +63,14 @@ const copy = {
     phoneLabel: "Número de teléfono", phoneInvalid: "Introduce un número con prefijo de país, p. ej. +1 416 555 0123.",
     placeholder: "Correo o +1…",
     consent: "Acepto guardar mi contacto para una respuesta personal sobre esta solicitud. Sin publicidad.",
-    channelsTitle: "Escribe a Andrey",
-    channelsHint: "Elige un mensajero. Primero guardamos tu contacto.",
+    submit: "Enviar solicitud sin mensajería",
+    channelsTitle: "O continuar por mensajería",
+    channelsHint: "Opcional — basta con correo o teléfono para registrar la solicitud.",
     saving: "Guardando…",
     notice: "Consulta gratuita · Sin reserva ni pago confirmado · No incluyas datos de salud.",
     invalid: "Introduce un correo válido o un teléfono internacional que empiece por +.",
     consentRequired: "Confirma que aceptas recibir una respuesta personal.",
-    error: "No pudimos guardar tu contacto; no se abrió el mensajero. Inténtalo de nuevo.",
+    error: "No pudimos guardar la solicitud. Inténtalo de nuevo; no se envió ningún mensaje.",
     handoffError: "Tu contacto se guardó, pero no se abrió el chat. Elige uno de los enlaces.",
     saved: "Solicitud guardada — pendiente de respuesta personal",
     next: "Conserva la referencia. Aún no se ha confirmado el plazo de respuesta ni una cita. Usa mensajería solo para coordinar; acuerda una entrega segura para materiales personales.",
@@ -117,7 +122,7 @@ export function CompactLeadCapture({
   const [internalFormat, setInternalFormat] = useState(formatOptions?.[0]?.value || "");
   const selectedFormat = selectedFormatValue ?? internalFormat;
   const [consent, setConsent] = useState(false);
-  const [busy, setBusy] = useState<Channel | null>(null);
+  const [busy, setBusy] = useState<RequestAction | null>(null);
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
   const [submittedFormat, setSubmittedFormat] = useState<string | null>(null);
@@ -139,7 +144,7 @@ export function CompactLeadCapture({
     return channel === "whatsapp" ? whatsapp : telegramEnquiryUrlFromWhatsApp(whatsapp);
   }
 
-  async function chooseChannel(channel: Channel) {
+  async function chooseChannel(channel?: Channel) {
     if (busy || reference) return;
     const contact = parseContact(address);
     if (!contact || (phoneOnly && !contact.phone)) { setError(phoneOnly ? t.phoneInvalid : t.invalid); return; }
@@ -147,11 +152,14 @@ export function CompactLeadCapture({
 
     // Reserve the new tab within the user's tap: asynchronous window.open is
     // frequently blocked by mobile Safari after the CRM network request.
-    const handoffWindow = window.open("about:blank", "_blank");
-    if (handoffWindow) handoffWindow.opener = null;
+    let handoffWindow: Window | null = null;
+    if (channel) {
+      handoffWindow = window.open("about:blank", "_blank");
+      if (handoffWindow) handoffWindow.opener = null;
+    }
     const requestId = operationId.current || window.crypto.randomUUID();
     operationId.current = requestId;
-    setBusy(channel);
+    setBusy(channel || "request");
     setError("");
     let committedReference = "";
 
@@ -164,7 +172,7 @@ export function CompactLeadCapture({
         body: JSON.stringify({
           operationId: requestId,
           serviceTitle,
-          description: "Preferred reply channel: " + (channel === "whatsapp" ? "WhatsApp" : "Telegram") +
+          description: "Preferred reply channel: " + (channel ? (channel === "whatsapp" ? "WhatsApp" : "Telegram") : (contact.email ? "Email" : "Phone (manual)")) +
             (formatOptions?.length && selectedFormat ? "; Preferred session format: " + selectedFormat : ""),
           sourcePath: sourcePath || pathname || "/" + locale + "/services",
           locale,
@@ -194,6 +202,9 @@ export function CompactLeadCapture({
     } finally {
       setBusy(null);
     }
+
+    // The independent CRM request is already saved; messenger handoff is optional.
+    if (!channel) return;
 
     // A browser handoff can fail after the DB commit. Keep both fallback links
     // visible under the saved reference; never resubmit or claim the CRM save failed.
@@ -247,7 +258,7 @@ export function CompactLeadCapture({
           </div>
         </div>
       ) : (
-        <form className={styles.form} data-compact-lead-form ref={formRef} onSubmit={event => event.preventDefault()}>
+        <form className={styles.form} data-compact-lead-form ref={formRef} onSubmit={event => { event.preventDefault(); void chooseChannel(); }}>
           {variant !== "diagnosis" && formatOptions?.length ? (
             <label className={styles.field}>
               <span>{formatLabel || t.preference}</span>
@@ -269,6 +280,11 @@ export function CompactLeadCapture({
               onChange={event => { setConsent(event.target.checked); operationId.current = null; setError(""); }} />
             <span>{t.consent}</span>
           </label>
+          <EnquiryAttributionChoice locale={locale} disabled={busy !== null} />
+          <button type="submit" className={styles.requestSubmit} data-compact-request-only
+            disabled={busy !== null || !consent || !address.trim()}>
+            <Send size={18} aria-hidden="true" />{busy === "request" ? t.saving : t.submit}
+          </button>
           <div className={styles.channelHeading}>
             <strong>{t.channelsTitle}</strong>
             <span>{t.channelsHint}</span>

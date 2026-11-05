@@ -71,10 +71,13 @@ test("writer stays at end of existing video studio and receives explicit course 
   const parent=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const course=readFileSync(new URL("../components/mandala-guided-course.tsx",import.meta.url),"utf8");
   assert.ok(parent.indexOf("data-video-result")<parent.lastIndexOf("<MandalaPersonalMeditation"));
-  assert.ok(parent.includes('studioMode==="therapy" && activeWorkspace!=="courses" ? <MandalaPersonalMeditation'),
+  assert.ok(parent.includes('studioMode==="therapy" && activeWorkspace!=="practices" ? <MandalaPersonalMeditation'),
     "one shared meditation composer is shown in therapy mode only when the inline course is closed");
   assert.ok(parent.includes("onContextChange={updateMeditationFocus}"));
-  assert.ok(course.includes("details:detailGoals.flatMap"));
+  assert.ok(course.includes("const detailLabels=useMemo(()=>detailGoals.flatMap"),
+    "memoized details are derived only from the visitor's explicit choices");
+  assert.ok(course.includes("goals:actualGoals,details:detailLabels"),
+    "the same approved focus is forwarded to the existing personal meditation composer");
   assert.ok(!course.includes("onContextChange?.({portrait"));
   const css=readFileSync(new URL("../components/mandala-personal-meditation.module.css",import.meta.url),"utf8");
   assert.ok(css.includes("@media(max-width:355px)"));

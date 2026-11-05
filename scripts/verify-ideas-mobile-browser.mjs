@@ -229,8 +229,18 @@ async function verify(browserType, browser, locale, width) {
     assert.equal(await templePath.getAttribute("aria-expanded"), "true",
       label + ": Temple Insights in-place panel remains open");
     // Free Taoist guidance still produces a fresh symbolic response to the typed question.
+    // Require a hydrated React form and a committed, controlled question.
+    // Focus changes during an iPhone touch can otherwise retarget the same tap.
+    await page.waitForFunction(() => {
+      const form = document.getElementById("ideas-question-form");
+      const key = Object.keys(form || {}).find(name => name.startsWith("__reactProps$"));
+      return Boolean(key && typeof form[key]?.onSubmit === "function");
+    }, null, {timeout:30000});
     await textarea.fill(phrases[locale]);
-    await hub.locator('[data-ideas-tao]').tap();
+    await textarea.blur();
+    const daoSubmit = hub.locator('[data-ideas-tao]');
+    await daoSubmit.scrollIntoViewIfNeeded();
+    await daoSubmit.tap();
     const daoResult = hub.locator('[data-ideas-result="dao"]');
     await daoResult.waitFor({ state: "visible" });
     assert.equal(await daoResult.locator('[data-ideas-dao-summary]').count(), 1,
@@ -261,7 +271,14 @@ async function verify(browserType, browser, locale, width) {
     await readingOrder.tap();
     assert.equal(await readingOrder.getAttribute("aria-expanded"), "true", label + ": order opens inline");
     assert.equal(await daoResult.locator('[data-inline-offer-form]:visible').count(), 1, label + ": one inline request directly below chosen card");
-    assert.equal(await daoResult.locator('[data-inline-offer-form]:visible input[type="checkbox"]').count(), 1, label + ": reply consent");
+    // Reply consent and optional source-analytics consent serve distinct purposes.
+    // Reject a missing, duplicate or silently prechecked optional consent.
+    const inlineForm = daoResult.locator('[data-inline-offer-form]:visible');
+    const optionalAttribution = inlineForm.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
+    assert.equal(await optionalAttribution.count(), 1, label + ": exactly one optional source attribution consent");
+    assert.equal(await optionalAttribution.isChecked(), false, label + ": analytics stays off by default");
+    assert.equal(await inlineForm.locator('input[type="checkbox"]').count(), 2,
+      label + ": one reply consent plus one separately optional attribution consent");
     await giftOrder.tap();
     assert.equal(await readingOrder.getAttribute("aria-expanded"), "false", label + ": choosing other card closes the first");
     assert.equal(await giftOrder.getAttribute("aria-expanded"), "true", label + ": gift opens without navigation");

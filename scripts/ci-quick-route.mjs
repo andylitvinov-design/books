@@ -13,6 +13,9 @@ const PROTECTED_ROOT = /^(?:app\/\[locale\]\/(?:app|client|admin|services|bookin
 const SENSITIVE = /(?:^|[\/_.-])(?:auth|oauth|login|logout|security|privacy|private|payment|payments|billing|checkout|rls|secret|token|consent|admin|migration|crm|messenger|message|messages|messaging|conversation|client|contact|email|phone|order|booking|consultation|coaching|patient|medical|health|user|account|subscription|supabase|database|api|webhook|middleware|wallet|storage|provider|practitioner|assessment|credential|receipt|refund|permission|role|salesbot|notification|inbox|profile)(?:[\/_.-]|$)/i;
 const ALLOWED_STATUS = new Set(['A','M']);
 const MAX_BYTES = 25 * 1024 * 1024, MAX_PIXELS = 90_000_000;
+// Large, legitimate media PRs require FULL Core instead of a parser failure.
+// Still bound input length and validate every NUL-delimited changed path.
+const MAX_PARSED_DIFF_ROWS = 2048, MAX_FAST_DIFF_ROWS = 512;
 
 function git(args, options = {}) {
   return execFileSync('git', args, { encoding: options.binary ? 'buffer' : 'utf8',
@@ -26,7 +29,7 @@ export function parseChangedRows(raw) {
   if (typeof raw !== 'string') throw Error('INVALID_DIFF');
   const parts = raw.split('\0');
   if (parts.at(-1) === '') parts.pop();
-  if (!parts.length || parts.length % 2 || parts.length > 1000) throw Error('INVALID_DIFF_ROWS');
+  if (!parts.length || parts.length % 2 || parts.length > MAX_PARSED_DIFF_ROWS * 2) throw Error('INVALID_DIFF_ROWS');
   const rows = [];
   for (let i=0; i<parts.length; i+=2) {
     const status=parts[i], filename=parts[i+1];
@@ -41,9 +44,24 @@ export function parseChangedRows(raw) {
 export function decideRoute(rows, classifier, sources) {
   if (!Array.isArray(rows) || !rows.length ||
       rows.some(r=>!r || typeof r.filename!=='string' || typeof r.status!=='string')) return 'FULL';
+  // More than 512 changed entries are never a fast/no-build lane: the
+  // complete mandatory checks must run even if all paths look like images.
+  if (rows.length > MAX_FAST_DIFF_ROWS) return 'FULL';
   const filenames = rows.map(r=>r.filename);
+  // Four exact Mobile Dock production files have trusted geometry/keyboard
+  // tests, full TypeScript source preflight and changed-file ESLint. The tests
+  // themselves are intentionally excluded from the diff allowlist.
+  const mobileDock = new Map([
+    ['app/[locale]/app/[[...path]]/workspace.css','M'],
+    ['app/[locale]/app/messages/messages-page.css','M'],
+    ['components/app/messages-bottom-navigation.jsx','M'],
+    ['lib/mobile-visual-bottom.mjs','M'],
+  ]);
   // Deletions/type-changes can alter release protection and never use the advisory lane.
   if (rows.some(r=>!ALLOWED_STATUS.has(r.status))) return 'FULL';
+  if (rows.length===mobileDock.size &&
+      rows.every(r=>r.status==='M' && mobileDock.get(r.filename)==='M') &&
+      [...mobileDock.keys()].every(path=>rows.some(r=>r.filename===path))) return 'DOCK';
   if (filenames.some(f=>!ORDINARY.test(f) || PROTECTED_ROOT.test(f) || SENSITIVE.test(f) || /^\.github\/|^supabase\/|^scripts\/ci-|^lib\/ci\/|^tests\/ci-/.test(f) ||
       /(?:^|\/)(?:package(?:-lock)?\.json|next\.config\.\w+|middleware\.\w+|AGENTS\.md|CI_RELEASE_POLICY\.md)$/.test(f))) return 'FULL';
   if (rows.every(r=>ALLOWED_STATUS.has(r.status) && IMAGE.test(r.filename)) &&
