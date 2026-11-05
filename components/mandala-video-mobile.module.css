@@ -4189,3 +4189,115 @@
   .studio[data-active-workspace="editor"] .montagePreferencesNote{display:none}
   .studio[data-active-workspace="editor"] .montagePreferences{gap:7px}
 }
+
+/* 05 Nov Montage follow-up: viewport-first without shrinking text or
+   fixed-height clipping; the original header, controls and CTA remain in flow.
+   320px/short phones may scroll; the 390/430 iPhone layout uses one viewport. */
+@media(max-width:759px){
+  .studio[data-active-workspace="editor"] .quickBuilder{
+    gap:5px!important;padding:0 2px 7px!important
+  }
+  .studio[data-active-workspace="editor"] .quickBrandMobileTitle{display:none!important}
+  .studio[data-active-workspace="editor"] .quickBrandIdentity{display:grid!important;gap:0}
+  .studio[data-active-workspace="editor"] .quickBrandIdentity strong{
+    font-size:clamp(15px,4.2vw,18px)!important
+  }
+  .studio[data-active-workspace="editor"] .quickBrandIdentity small{
+    font-size:10px!important;line-height:1.1!important
+  }
+  .studio[data-active-workspace="editor"] .quickBrandBack,
+  .studio[data-active-workspace="editor"] .quickBrandPhoto,
+  .studio[data-active-workspace="editor"] .quickBrandProfile{
+    min-height:35px!important;height:35px!important
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>.quickVideoNav{
+    order:1!important;gap:3px!important;margin:0!important
+  }
+  .studio[data-active-workspace="editor"] .quickVideoNav button{
+    min-height:44px!important;max-height:46px!important;gap:1px!important;
+    padding:3px 1px!important;border-radius:10px!important;
+    font-size:clamp(9px,2.5vw,11px)!important
+  }
+  .studio[data-active-workspace="editor"] .quickVideoNav button svg{
+    width:16px!important;height:16px!important
+  }
+  .studio[data-active-workspace="editor"] .quickBuilder>.previewStage{
+    order:2!important;margin:0!important;padding:0!important;
+    border:0!important;background:transparent!important;box-shadow:none!important
+  }
+  .studio[data-active-workspace="editor"] .previewStage>.heroWithRail{
+    display:block!important;width:min(100%,clamp(210px,31dvh,278px))!important;
+    max-width:278px!important;margin:0 auto!important
+  }
+  .studio[data-active-workspace="editor"] .previewStage>.heroWithRail>.hero{
+    width:100%!important;min-height:0!important;max-height:none!important;
+    aspect-ratio:16/9!important;border-radius:14px!important
+  }
+  .studio[data-active-workspace="editor"] .montageQuickTools{gap:5px!important}
+  .studio[data-active-workspace="editor"] .montageQuickTools button{
+    min-height:44px!important;padding:5px 2px!important;gap:2px!important;
+    border-radius:12px!important;font-size:clamp(12px,3.25vw,14px)!important
+  }
+  .studio[data-active-workspace="editor"] .montageQuickTools button svg{
+    width:17px;height:17px
+  }
+  .studio[data-active-workspace="editor"] .montagePreferences{
+    padding:9px!important;gap:6px!important;border-radius:15px!important
+  }
+  .studio[data-active-workspace="editor"] .montagePreferencesHeader{gap:6px}
+  .studio[data-active-workspace="editor"] .montagePreferencesHeader>svg{
+    width:20px;height:20px
+  }
+  .studio[data-active-workspace="editor"] .montagePreferencesHeader h3{
+    font-size:17px!important
+  }
+  .studio[data-active-workspace="editor"] .montagePreferencesHeader p{
+    display:none!important
+  }
+  .studio[data-active-workspace="editor"] .montagePreferencesGrid{gap:5px!important}
+  .studio[data-active-workspace="editor"] .montagePreferenceItem{
+    padding:5px!important;gap:3px!important;
+    font-size:clamp(12.5px,3.5vw,14px)!important
+  }
+  .studio[data-active-workspace="editor"] .montagePreferenceItem>span svg{
+    width:15px;height:15px
+  }
+  .studio[data-active-workspace="editor"] .montagePreferenceItem select{
+    height:40px!important;min-height:40px!important;
+    padding:5px 23px 5px 6px!important;
+    font-size:clamp(13px,3.7vw,15px)!important
+  }
+  .studio[data-active-workspace="editor"] .montagePreferencesNote{
+    align-items:center;padding:4px 6px!important;
+    font-size:12px!important;line-height:1.2!important
+  }
+  .studio[data-active-workspace="editor"] .montagePreferencesNote svg{
+    flex:none;width:15px;height:15px
+  }
+  .studio[data-active-workspace="editor"] .montagePreferencesNote span{
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  }
+  .studio[data-active-workspace="editor"] [data-video-order-bar]{
+    gap:4px!important
+  }
+  .studio[data-active-workspace="editor"] [data-video-order-bar] .quickOrderSummary{
+    flex-wrap:nowrap!important;gap:6px!important;min-height:18px!important
+  }
+  .studio[data-active-workspace="editor"] [data-video-order-bar] .quickOrderSummary small:first-child{
+    display:none!important
+  }
+  .studio[data-active-workspace="editor"] [data-video-order-bar] .quickOrderSummary small:last-child{
+    min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  }
+  .studio[data-active-workspace="editor"] [data-video-order-bar] .quickGenerate{
+    min-height:50px!important;padding:8px 12px!important;border-radius:14px!important
+  }
+}
+@media(max-width:759px) and (max-height:760px){
+  .studio[data-active-workspace="editor"] .previewStage>.heroWithRail{
+    width:min(100%,clamp(195px,27dvh,238px))!important
+  }
+  .studio[data-active-workspace="editor"] .montagePreferencesNote{
+    display:none!important
+  }
+}
