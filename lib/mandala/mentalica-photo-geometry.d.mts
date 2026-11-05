@@ -8,7 +8,10 @@ export type MentalicaPhotoProject = {
   title: string;
   geometry: MentalicaGeometry;
   style: MentalicaStyle;
-  fieldLayout: "square" | "vertical" | "horizontal";
+  constructorType: "client" | "altar" | "business" | "zodiac" | "star" | "chess" | "dao" | "dao-layout";
+  variant: string;
+  tone: "mentalica" | "gold" | "forest" | "night" | "fire" | "water";
+  fieldLayout: "square" | "vertical" | "horizontal" | "rectangle";
   centerShape: "circle" | "square";
   fieldScale: number;
   centerFrameScale: number;
@@ -25,3 +28,9 @@ export function mentalicaPhotoSlots(geometry?: number, style?: string): { id: st
 export function clampMentalicaNumber(value: unknown, min: number, max: number, fallback: number): number;
 export function defaultMentalicaPhotoProject(): MentalicaPhotoProject;
 export function sanitizeMentalicaPhotoProject(input: unknown): MentalicaPhotoProject;
+
+export const MENTALICA_CONSTRUCTOR_TYPES: readonly MentalicaPhotoProject["constructorType"][];
+export const MENTALICA_BACKGROUND_TONES: readonly MentalicaPhotoProject["tone"][];
+export const MENTALICA_LAYOUT_VARIANTS: Readonly<Record<MentalicaPhotoProject["constructorType"], readonly string[]>>;
+export type MentalicaPhotoLayoutSlot = {id:string;label:string;x:number;y:number;diameter:number;shape:string};
+export function mentalicaPhotoLayout(project?: Partial<MentalicaPhotoProject>): {type:MentalicaPhotoProject["constructorType"];variant:string;slots:MentalicaPhotoLayoutSlot[];guides:number[][][];fieldShape:string;hasRings:boolean;center:{x:number;y:number;diameter:number}};
