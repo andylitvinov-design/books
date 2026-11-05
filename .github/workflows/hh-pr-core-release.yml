@@ -233,6 +233,9 @@ jobs:
       # For strictly CI-only PRs we run policy/test contracts, not the product
       # encoder or Next build. Keep reproducible npm lockfile install without
       # optional lifecycle downloads on that route ONLY.
+      - name: Load pinned FFmpeg only for real runtime Core
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') && steps.diff.outputs.ci_only != 'true' }}
       - name: Install dependencies for verified Core route
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         shell: bash

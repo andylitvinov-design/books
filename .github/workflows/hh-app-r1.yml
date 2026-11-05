@@ -113,6 +113,9 @@ jobs:
       - uses: actions/setup-node@v4
         if: needs.impact.outputs.profile == 'true'
         with: {node-version: 22, cache: npm}
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.profile == 'true'
       - run: npm ci --no-audit --no-fund
         if: needs.impact.outputs.profile == 'true'
       - name: Check-in evidence, scoring and report-priority regressions
@@ -183,6 +186,9 @@ jobs:
       - uses: actions/setup-node@v4
         if: needs.impact.outputs.banner == 'true'
         with: {node-version: 22, cache: npm}
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.banner == 'true'
       - run: npm ci --no-audit --no-fund
         if: needs.impact.outputs.banner == 'true'
       - name: Install isolated exact-version Playwright test tools (without browser downloads)
@@ -259,6 +265,9 @@ jobs:
       - uses: actions/setup-node@v4
         if: needs.impact.outputs.database == 'true'
         with: {node-version: 22, cache: npm}
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: needs.impact.outputs.database == 'true'
       - run: npm ci --no-audit --no-fund
         if: needs.impact.outputs.database == 'true'
       - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests

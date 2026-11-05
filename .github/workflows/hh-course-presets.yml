@@ -69,6 +69,8 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
       - name: Install locked dependencies
         run: npm ci
       - name: Verify Core reuse and domain scope

@@ -179,6 +179,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
       - name: Route exact tested-merge Site Video risk
         id: impact
@@ -317,6 +319,8 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
       - name: Route exact tested-merge Site Video risk
         id: impact

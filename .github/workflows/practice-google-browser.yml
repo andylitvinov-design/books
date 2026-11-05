@@ -44,6 +44,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
       - name: Install locked application dependencies
         run: npm ci --no-audit --no-fund
       - name: Focused auth, layout and regression source tests

@@ -282,6 +282,9 @@ jobs:
         run: node --test tests/ci-public-release-evidence.test.mjs
       # NODE_ENV=production is needed for the browser build, but our
       # source-level render tests need devDependency 'typescript'.
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' }}
       - run: npm ci --include=dev --no-audit --no-fund
         if: ${{ github.event_name != 'pull_request' || steps.scope.outputs.reason != 'INDEPENDENT_OWNER_OR_CORE' }}
 
