@@ -5,7 +5,7 @@ body:has([data-hh-unified-dock]) [data-mandala-support-bottom-nav],
 body:has([data-hh-unified-dock]) .hh-mobile-app-nav,
 body:has([data-hh-unified-dock]) .hh-practice-inner-dock,
 body:has([data-hh-unified-dock]) [data-legacy-practice-bottom-nav],
-body:has([data-hh-unified-dock]:not([data-hh-home-route])) .mobile-bottom-navigation{display:none!important}
+body:has([data-hh-unified-dock]) .mobile-bottom-navigation{display:none!important}
 body:has([data-hh-unified-dock]) [data-mytube-page],
 body:has([data-hh-unified-dock]) [data-mandala-meditation-page],
 body:has([data-hh-unified-dock]) [data-holistic-mobile-alternative],
@@ -50,13 +50,19 @@ body:has([data-mytube-page]) [data-unified-dock-item]:focus-visible{
    Explicitly hide the inactive panel even under legacy CSS overrides. */
 .hh-app.hh-messages-page [data-hh-messenger-ai][hidden]{display:none!important}
 
-/* Marketing site retains its seven discovery links in the browser. Installed
-   standalone Holistic House uses the SAME six-item dock as Practice, Studio,
-   Messenger, Master and Profile — including at /, /en, /ru and /es. */
-@media (display-mode: standalone){
- body:has([data-hh-unified-dock][data-hh-home-route]) .mobile-bottom-navigation{display:none!important}
- body:has([data-hh-unified-dock][data-hh-home-route]){padding-bottom:calc(var(--hh-unified-nav-height,77px) + 18px)}
+/* One seven-destination app bar on the mobile homepage in ALL browser and
+   installed-PWA modes. Keep the complete editorial catalog in the header menu.
+   The existing free express review form remains the original public page. */
+@media(max-width:759px){
+ body:has([data-hh-unified-dock][data-hh-home-route]){
+  padding-bottom:calc(var(--hh-unified-nav-height,77px) + 18px)
+ }
+ body:has([data-hh-unified-dock]) [data-free-entry-landing="situation"]{
+  padding-bottom:calc(var(--hh-unified-nav-height,77px) + 18px)!important
+ }
 }
-@media not (display-mode: standalone){
+/* Marketing pages keep their existing desktop header navigation. */
+@media(min-width:760px){
  [data-hh-unified-dock][data-hh-home-route]{display:none!important}
+ body:has([data-free-entry-landing="situation"]) [data-hh-unified-dock]{display:none!important}
 }

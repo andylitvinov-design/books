@@ -169,7 +169,7 @@ export function buildSupportLearningCatalog(locale: PublicLocale,
   }
   for (const course of mysteries) items.push({
     id: "mystery-" + course.id, direction: "temple",
-    topic: course.id === "greek" ? "greece" : course.id,
+    topic: course.id.startsWith("greek-") ? "greece" : course.id,
     title: course.title, description: t.mystery, href: course.href,
     image: course.poster, language: "ru", kind: "video", cost: "archive",
     lessons: course.videoCount,

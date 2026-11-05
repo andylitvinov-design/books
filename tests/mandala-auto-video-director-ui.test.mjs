@@ -1,5 +1,6 @@
 import test from "node:test";
 import "./free-film-source-loader.test.mjs";
+import "./mandala-video-ideas-eight-axes.test.mjs";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {validateMontageClips} from "../lib/mandala/video-montage-sources.mjs";
@@ -128,9 +129,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
 
 test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
  const labels={
-  ru:["Стиль видео","Фразы и гипнокоррекция","Гипноэффект","Курс практик","Монтаж","PRO"],
-  en:["Video style","Phrases & hypnocorrection","Hypno effect","Practice course","Montage","PRO"],
-  es:["Estilo vídeo","Frases e hipnocorrección","Efecto hipno","Curso práctico","Montaje","PRO"],
+  ru:["Цель","Идеи","Гипноэффект","Курс практик","Монтаж","PRO"],
+  en:["Goal","Ideas","Hypno effect","Practice course","Montage","PRO"],
+  es:["Objetivo","Ideas","Efecto hipno","Curso práctico","Montaje","PRO"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){
@@ -281,9 +282,9 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
 });
 
 
-test("owner-approved second Montage and sixth PRO reuse one operational video/audio pipeline",()=>{
+test("owner-approved third Montage and sixth PRO reuse one operational video/audio pipeline",()=>{
  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
- assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
+ assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
  assert.match(studio,/\{id:"practices",Icon:Leaf\},\{id:"pro",Icon:Zap\}/);
  assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
@@ -439,10 +440,24 @@ test("brief and detailed questionnaires choose from existing licensed clips with
 
 
 test("new prompt and profile choice invalidate every prior MyTube plot selection",()=>{
- for(const [start,end] of [["const requestField=","const requestInput="],["const applyProfile=","const requestInput="]]){
-  const handler=director.slice(director.indexOf(start),director.indexOf(end));
-  assert.ok(handler.length>0,start+" exists");
+ // Request JSX now renders requestField; the real input onChange and explicit
+ // Design button sit outside requestInput after category-intake consolidation.
+ // Check EVERY actual handler instead of relying on an obsolete JSX boundary.
+ for(const [start,end] of [
+  ["const applyProfile=","const designFromRequest="],
+  ["const designFromRequest=","const analyzedPath="],
+  ["const requestField=","const requestInput="],
+ ]){
+  const from=director.indexOf(start),to=director.indexOf(end,from+start.length);
+  assert.ok(from>=0&&to>from,start+" handler exists");
+  const handler=director.slice(from,to);
   for(const setter of ["setSelectedSubcategoryId", "setSelectedTopicId", "setSelectedScenarioId", "setSelectedPlotId", "setSymbolicPlotFallback", "setTimelineEdits", "setConfirmedTimelineKey"])
    assert.ok(handler.includes(setter+"("),start+" invalidates "+setter);
  }
+ const request=director.slice(director.indexOf("const requestInput="),director.indexOf("const profilePanel="));
+ const field=director.slice(director.indexOf("const requestField="),director.indexOf("const requestInput="));
+ assert.match(request,/\{requestField\}/,"visible request composer must use the resettable field");
+ assert.match(request,/onClick=\{designFromRequest\}/,"Design action must invoke checked handler");
+ assert.match(field,/onChange=\{event=>/,"typing must trigger the reset handler");
+ assert.match(field,/onGoalChange\(value\)/,"typing must update the active request");
 });

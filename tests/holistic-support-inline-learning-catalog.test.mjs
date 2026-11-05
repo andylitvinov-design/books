@@ -74,3 +74,8 @@ test("new TSX and view model parse without syntax errors", () => {
     assert.deepEqual(tree.parseDiagnostics.map(d => ts.flattenDiagnosticMessageText(d.messageText, "\n")), [], name);
   }
 });
+
+test("Greek historical course IDs group under Greece without hiding Egyptian or Maya", () => {
+  assert.match(model, /topic: course\.id\.startsWith\("greek-"\) \? "greece" : course\.id,/);
+  assert.doesNotMatch(model, /course\.id === "greek"/);
+});

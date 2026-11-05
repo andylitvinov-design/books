@@ -15,13 +15,13 @@ function run(args,limit=45000){
    'Synthetic FFmpeg job failed: '+String(out.error?.message||out.stderr||'').slice(-1600));
  return out.stderr||'';
 }
-test('actual encoded MP4 retains full 16-second soundtrack across eight cuts and repeated sources',
+test('actual encoded MP4 retains full 16-second soundtrack across eight distinct filmed masters',
  {timeout:120000},async()=>{
  assert.ok(ffmpeg,'The existing ffmpeg-static binary is required');
  const dir=await mkdtemp(join(tmpdir(),'hh-dot-story-integration-'));
  try{
   const scenes=[],verifiedFiles={};
-  for(const [i,color] of ['red','green','blue','yellow'].entries()){
+  for(const [i,color] of ['red','green','blue','yellow','magenta','cyan','white','black'].entries()){
    const id='scene-'+i,path=join(dir,'scene-'+id+'.mp4'),
     video='/videos/holistic-house/film-collection-v3/'+id+'.mp4';
    run(['-hide_banner','-loglevel','error','-nostdin','-y',
@@ -38,7 +38,7 @@ test('actual encoded MP4 retains full 16-second soundtrack across eight cuts and
     '-f','lavfi','-i','sine=frequency=440:duration=16',
     '-c:a','aac','-b:a','96k',soundtrack]);
   const shots=Array.from({length:8},(_,index)=>{
-   const source=scenes[index%4];
+   const source=scenes[index];
    return {index,stage:Math.floor(index/2),sceneId:source.id,
     sourcePath:source.video,startMs:index*2000,
     durationMs:2000,sourceDurationMs:2000};
@@ -47,7 +47,9 @@ test('actual encoded MP4 retains full 16-second soundtrack across eight cuts and
    plan:{ok:true,version:'hh-dot-story-cut-plan-v1',audioDurationMs:16000,shots},
    scenes,verifiedFiles,audioFile:soundtrack,outputFile,
   });
-  assert.equal(args.filter(x=>x==='-i').length,5);
+  assert.equal(args.filter(x=>x==='-i').length,9);
+  assert.equal(args.filter(x=>x==='-stream_loop').length,0);
+  assert.equal(new Set(shots.map(shot=>shot.sceneId)).size,8);
   run(args,90000);
   const bytes=await readFile(outputFile);
   assert.equal(bytes.toString('ascii',4,8),'ftyp');
