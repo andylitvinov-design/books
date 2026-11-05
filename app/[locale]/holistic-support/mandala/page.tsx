@@ -75,7 +75,8 @@ export default async function MandalaMeditationPage({ params, searchParams }: Pr
   const professionalMode = query?.pro === "1" || Boolean(professionalSource);
   const photoMode = query?.mode === "photo";
   return (
-    <main className={styles.page} lang={locale} data-mandala-meditation-page>
+    <main className={styles.page} lang={locale} data-mandala-meditation-page
+      data-mandala-mode={photoMode ? "photo" : "video"}>
       <div className={styles.siteHeaderWrap}><PublicSiteHeader locale={locale} /></div>
 
       <nav className={photoStyles.modeNav} aria-label={locale === "ru" ? "Режим мандалы" : locale === "es" ? "Modo mandala" : "Mandala mode"} data-mentalica-studio-mode>

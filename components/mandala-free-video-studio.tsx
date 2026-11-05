@@ -4726,6 +4726,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               locale==="es"?"Estudio de vídeo · Crear":
               "Video Studio · Create video"}</small>
           </span>
+          <Link href={"/"+locale+"/holistic-support/mandala?mode=photo"} prefetch={false}
+            className={videoStyles.quickBrandPhoto} data-video-open-photo-mandala
+            aria-label={locale==="ru"?"Фотомандалы":locale==="es"?"Fotomandalas":"Photo mandalas"}>
+            <Camera size={17} aria-hidden="true"/>
+            <span>{locale==="ru"?"Фото":locale==="es"?"Foto":"Photo"}</span>
+          </Link>
           <Link href={(locale==="es"?"/en":"/"+locale)+"/app/portrait"} prefetch={false} className={videoStyles.quickBrandProfile}
             aria-label={locale==="ru"?"Мой кабинет":locale==="es"?"Mi espacio (English)":"My House"}>
             <UserRound size={20} aria-hidden="true"/>
