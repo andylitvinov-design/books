@@ -223,6 +223,15 @@ jobs:
               report.base_compare=check.status===0?'GIT_TREE_MERGES_WITHOUT_CONFLICT':
                 check.status===1?'GIT_TREE_CONFLICT':'MERGE_TREE_NOT_VERIFIED';
             }else report.base_compare='SHALLOW_ANCESTRY_UNAVAILABLE';
+            if(report.base_compare==='SHALLOW_ANCESTRY_UNAVAILABLE'){
+              // Shallow checkouts cannot prove ancestry. Compare bounded Git
+              // tree/blob OIDs instead, without source reads or authorization.
+              const {compareLegacySnapshot}=require(
+                './.hh-trusted/scripts/ci-pr-legacy-snapshot.cjs');
+              report.source_snapshot=compareLegacySnapshot({files,
+                read:(ref,path,timeout)=>run('git',
+                  ['ls-tree','-z',ref,'--',':(literal)'+path],timeout)});
+            }
           }else report.base_compare='PRODUCTION_FETCH_UNAVAILABLE';
           // Run only the already trusted bounded test selector and never
           // send source or any credential to an external model.
