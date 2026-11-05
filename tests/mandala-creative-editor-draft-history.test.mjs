@@ -1,4 +1,5 @@
 import test from "node:test";
+import "./video-project-v3.test.mjs"; // Existing Mandala CI gate; V3 stays contract-only.
 import "./mandala-smart-captions.test.mjs"; // Reuse the existing Mandala specialist job; no new CI runner.
 import "./mandala-music-bed.test.mjs"; // Reuse existing focused Mandala tests.
 import "./mandala-source-slip-speed.test.mjs"; // Same licensed-media CI; no extra runner.
