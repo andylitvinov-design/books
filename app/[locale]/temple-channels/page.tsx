@@ -4,20 +4,21 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BookOpenText, MapPin, Search, Sparkles } from "lucide-react";
 import { PublicSiteHeader } from "@/components/public-site-header";
+import telegramArchive from "@/data/academy/temple-channel-attunements.json";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { findTempleAttunements, getTempleChannel, normalizeTempleSearch, templeTraditions } from "@/data/temple-attunements.mjs";
 import { metadataBaseFor } from "@/data/site-metadata";
-import type { TempleLocale, TempleTradition } from "@/data/temple-attunements.mjs";
+import type { TempleAttunement, TempleLocale, TempleTradition } from "@/data/temple-attunements.mjs";
 import styles from "./temple-channels.module.css";
 
 type Params = { locale: string };
-type Filters = { tradition?: string | string[]; channel?: string | string[]; q?: string | string[] };
+type Filters = { tradition?: string | string[]; channel?: string | string[]; q?: string | string[]; page?: string | string[] };
 type Props = { params: Promise<Params>; searchParams: Promise<Filters> };
 const copy = {
   ru: {
     eyebrow: "HOLISTIC HOUSE · АРХИВ ХРАМОВЫХ ТРАДИЦИЙ",
     title: "Храмовые настройки и каналы богов",
-    lead: "Выберите традицию, затем божество или канал. Каждая авторская настройка хранится отдельной карточкой — со стихом, фотографией из источника и местом записи.",
+    lead: "Выберите традицию, затем божество или канал. У каждой настройки — оригинальный текст и место по авторской записи. Фотографии показываются там, где они подтверждены в источнике.",
     allTraditions: "Все традиции", allChannels: "Все каналы", tradition: "Традиция",
     channel: "Канал / божество", query: "Поиск по названию, стиху или месту",
     placeholder: "Например: Асклепия, Дионис, Приена, Зевса",
@@ -30,11 +31,12 @@ const copy = {
     source: "Исходная методичка", archive: "К программе Temple Studies",
     note: "Это авторские символические и поэтические практики, а не исторические античные гимны, медицинская рекомендация или гарантия результата. Стихи оставлены на языке оригинала.",
     photo: "Снимок из исходной методички", index: "Изучить каналы",
+    morePhotos: "Другие фотографии из оригинала", previous: "Назад", next: "Далее", page: "Страница",
   },
   en: {
     eyebrow: "HOLISTIC HOUSE · TEMPLE TRADITIONS ARCHIVE",
     title: "Temple attunements & deity channels",
-    lead: "Choose a tradition, then a deity or channel. Each recovered author-written attunement has its own card with the original verse, source photograph and recorded place.",
+    lead: "Choose a tradition, then a deity or channel. Each recovered author-written attunement has its own card with the original verse, recorded place and a source photograph where verified.",
     allTraditions: "All traditions", allChannels: "All channels", tradition: "Tradition",
     channel: "Channel / deity", query: "Search names, verses and places",
     placeholder: "Try: Asclepius, Dionysus, Priene, Zeus",
@@ -47,11 +49,12 @@ const copy = {
     source: "Source manual", archive: "Return to Temple Studies",
     note: "These are contemporary author-written symbolic and poetic practices, not ancient hymns, medical advice or guaranteed effects. Texts remain in the original Russian.",
     photo: "Photograph from the source manual", index: "Explore channels",
+    morePhotos: "More original photographs", previous: "Previous", next: "Next", page: "Page",
   },
   es: {
     eyebrow: "HOLISTIC HOUSE · ARCHIVO DE TRADICIONES",
     title: "Sintonizaciones del templo y canales de deidades",
-    lead: "Elige la tradición y luego una deidad o canal. Cada sintonización recuperada tiene una ficha con su poema original, fotografía y lugar descrito por el autor.",
+    lead: "Elige la tradición y luego una deidad o canal. Cada sintonización tiene una ficha con su texto original, lugar documentado y fotografía cuando está verificada.",
     allTraditions: "Todas las tradiciones", allChannels: "Todos los canales", tradition: "Tradición",
     channel: "Canal / deidad", query: "Buscar nombres, versos y lugares",
     placeholder: "Ej.: Asclepio, Dioniso, Priene, Zeus",
@@ -64,6 +67,7 @@ const copy = {
     source: "Manual de origen", archive: "Volver a Temple Studies",
     note: "Son prácticas simbólicas y poéticas contemporáneas, no himnos históricos, consejos médicos ni garantías de resultados. Los textos se conservan en ruso.",
     photo: "Fotografía del manual original", index: "Explorar canales",
+    morePhotos: "Más fotografías originales", previous: "Anterior", next: "Siguiente", page: "Página",
   },
 } as const;
 
@@ -75,6 +79,64 @@ function validTradition(id: string) {
 }
 function channelChoice(tradition: TempleTradition, channelId: string) {
   return tradition.channels.some((channel) => channel.id === channelId);
+}
+
+const PAGE_SIZE = 12;
+type TelegramRecord = (typeof telegramArchive.attunements)[number];
+
+function asTelegramCard(record: TelegramRecord): TempleAttunement {
+  const emptySite = { ru: "", en: "", es: "" };
+  return {
+    id: record.id, traditionId: record.tradition, channelId: record.channel,
+    title: record.title, format: "verse", language: "ru", textRu: record.text,
+    place: {
+      city: record.place.city,
+      site: record.place.site ?? emptySite,
+      country: record.place.country,
+      note: record.editorialNote ?? null,
+      verification: "author-described",
+    },
+    photos: record.photos.map((photo) => ({
+      src: photo.src,
+      alt: {
+        ru: "Оригинальное архивное фото к настройке " + record.title.ru,
+        en: "Original archive photo for " + record.title.en,
+        es: "Foto original del archivo: " + record.title.es,
+      },
+    })),
+    source: {
+      id: "aata-telegram-" + record.source.messageId,
+      title: "AATA · Telegram #" + record.source.messageId,
+      type: "telegram-export",
+    },
+    sortOrder: 5000, visibility: "public",
+    photoContext: "Verified original Telegram export image, not a stock substitute.",
+  };
+}
+
+function matchTelegram(record: TelegramRecord, traditionId: string, channelId: string, query: string) {
+  if (traditionId && record.tradition !== traditionId) return false;
+  if (channelId && record.channel !== channelId) return false;
+  const normalized = normalizeTempleSearch(query).replace(/^канал\s+/, "");
+  if (!normalized) return true;
+  const tradition = validTradition(record.tradition);
+  const channel = getTempleChannel(record.tradition, record.channel);
+  return normalizeTempleSearch([
+    record.id, record.text, ...Object.values(record.title),
+    ...Object.values(record.place.city), ...Object.values(record.place.country),
+    ...Object.values(record.place.site ?? {}),
+    ...Object.values(tradition?.name ?? {}),
+    ...Object.values(channel?.name ?? {}), ...(channel?.aliases ?? []),
+  ].join(" ")).includes(normalized);
+}
+
+function archivePageHref(locale: TempleLocale, traditionId: string, channelId: string, query: string, page: number) {
+  const params = new URLSearchParams();
+  if (traditionId) params.set("tradition", traditionId);
+  if (channelId) params.set("channel", traditionId + ":" + channelId);
+  if (query) params.set("q", query);
+  params.set("page", String(page));
+  return "/" + locale + "/temple-channels?" + params.toString();
 }
 export function generateStaticParams() {
   return [{ locale: "ru" }, { locale: "en" }, { locale: "es" }];
@@ -109,7 +171,14 @@ export default async function TempleChannelsPage({ params, searchParams }: Props
   const traditionId = selectedTradition?.id ?? (validChannel ? channelTradition?.id ?? "" : "");
   const channelId = validChannel ? selectedChannel[1] : "";
   const query = single(input.q).trim();
-  const matching = findTempleAttunements({ traditionId, channelId, query });
+  const legacy = telegramArchive.attunements
+    .filter((record) => matchTelegram(record, traditionId, channelId, query))
+    .map(asTelegramCard);
+  const matching = [...findTempleAttunements({ traditionId, channelId, query }), ...legacy];
+  const totalPages = Math.max(1, Math.ceil(matching.length / PAGE_SIZE));
+  const requestedPage = Number.parseInt(single(input.page), 10);
+  const page = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
+  const shown = matching.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const activeChannel = channelId ? getTempleChannel(traditionId, channelId) : null;
   const normalizedQuery = normalizeTempleSearch(query).replace(/^канал\s+/, "");
   const matchesNamedChannel = query && !matching.length ? templeTraditions.flatMap((tradition) =>
@@ -169,11 +238,11 @@ export default async function TempleChannelsPage({ params, searchParams }: Props
           </div>
           {matching.length ? (
             <div className={styles.grid}>
-              {matching.map((entry) => (
+              {shown.map((entry) => (
                 <article className={styles.card} key={entry.id} id={entry.id}>
                   {entry.photos.length > 0 ? (
                     <figure className={styles.photo}>
-                      <Image src={entry.photos[0].src} alt={entry.photos[0].alt[language]} fill sizes="(max-width: 700px) 100vw, (max-width: 1120px) 50vw, 340px" />
+                      <Image src={entry.photos[0].src} alt={entry.photos[0].alt[language]} fill unoptimized sizes="(max-width: 700px) 100vw, (max-width: 1120px) 50vw, 340px" />
                       <figcaption>{t.photo}</figcaption>
                     </figure>
                   ) : <div className={styles.noPhoto} aria-hidden="true"><BookOpenText size={48} strokeWidth={1.2} /></div>}
@@ -190,6 +259,16 @@ export default async function TempleChannelsPage({ params, searchParams }: Props
                         <p className={styles.original}>{t.original}</p>
                         <blockquote lang="ru">{entry.textRu}</blockquote>
                         <p className={styles.source}>{t.source}: {entry.source.title} · {t.provenance}</p>
+                        {entry.photos.length > 1 ? (
+                          <details className={styles.morePhotos}>
+                            <summary>{t.morePhotos} ({entry.photos.length - 1})</summary>
+                            <div className={styles.gallery}>
+                              {entry.photos.slice(1).map((photo) => (
+                                <Image key={photo.src} src={photo.src} width={450} height={300} unoptimized alt={photo.alt[language]} />
+                              ))}
+                            </div>
+                          </details>
+                        ) : null}
                       </div>
                     </details>
                   </div>
@@ -212,6 +291,13 @@ export default async function TempleChannelsPage({ params, searchParams }: Props
               ) : null}
             </div>
           )}
+          {matching.length > PAGE_SIZE ? (
+            <nav className={styles.pagination} aria-label={t.page}>
+              {page > 1 ? <Link href={archivePageHref(language, traditionId, channelId, query, page - 1)} prefetch={false}>{t.previous}</Link> : <span />}
+              <span aria-current="page">{t.page} {page} / {totalPages}</span>
+              {page < totalPages ? <Link href={archivePageHref(language, traditionId, channelId, query, page + 1)} prefetch={false}>{t.next}</Link> : <span />}
+            </nav>
+          ) : null}
         </section>
         <footer className={styles.footer}><p>{t.uncertain}</p><p>{t.note}</p></footer>
       </div>
