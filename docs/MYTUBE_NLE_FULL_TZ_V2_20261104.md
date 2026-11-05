@@ -147,3 +147,19 @@ milestones. Existing browser-local video editing is unchanged.
 
 No paid provider, automatic GPU rendering, extra periodic CI or cloud
 media upload is enabled by this technical foundation.
+
+
+## 14. P0-D real on-device audio waveform (2026-11-05 release candidate)
+
+Replace decorative audio glyphs on the native montage timeline with
+48 normalized PCM RMS waveform peaks from the explicitly attached
+user-owned audio file. OfflineAudioContext decoding uses no
+playback permission, backend requests, speech recognition or paid service.
+An 8 MiB file guard and 180-second decode cap avoid unbounded
+phone memory usage. Silence renders no bars; unsupported media renders
+no fabricated waveform. Changing or revoking a file clears old peaks.
+The original music bed remains named without a fake waveform, because
+its PCM has not been explicitly decoded.
+This is display-only: it does not modify the existing two-track MP4 audio mix.
+Release requires exact-head Core/Specialist/WebKit CI, protected merge and
+matching Vercel READY SHA. Physical iPhone audio QA is separate.
