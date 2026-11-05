@@ -165,6 +165,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // The audio panel is conditionally mounted; test the REAL tab click.
+      const audioPanel=page.locator('[data-video-montage-tab="audio"]');
+      await expect(audioPanel).toBeVisible({timeout:15000});
+      await expect(audioPanel).toBeEnabled();
+      await audioPanel.click();
+      await expect(audioPanel).toHaveAttribute("aria-pressed","true");
       const montageSettings=page.locator('[data-video-montage-settings]');
       await montageSettings.waitFor({state:"visible",timeout:25000});
       if(await montageSettings.getAttribute("open")===null)
