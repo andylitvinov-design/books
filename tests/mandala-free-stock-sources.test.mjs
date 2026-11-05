@@ -6,7 +6,9 @@ import {STOCK_POLICIES,assessStockClip,validateFreeSceneBrief} from "../lib/mand
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 const now=new Date("2026-10-30T12:00:00Z");
 const clip=(i,p="mixkit")=>({provider:p,file:"video-"+i+".mp4",author:"Owner "+i,
- clipTitle:"Landscape "+i,sourcePage:"https://"+STOCK_POLICIES[p].host+"/nature/"+i,
+ clipTitle:"Landscape "+i,sourcePage:STOCK_POLICIES[p].sourcePath
+   ?STOCK_POLICIES[p].license
+   :"https://"+STOCK_POLICIES[p].host+"/nature/"+i,
  licenseId:STOCK_POLICIES[p].id,licenseUrl:STOCK_POLICIES[p].license,checkedOn:"2026-10-29",
  licenseEvidence:"Verified on individual stock asset page",
  exactClipLicenseConfirmed:true,commercialUseApproved:true,editingApproved:true,identifiableSubjectsCleared:true,
@@ -17,6 +19,9 @@ const example=()=>({id:"quiet-meadow-01",theme:"health",symbol:"≋",tags:["calm
 test("licence is checked for each stock video, not provider globally",()=>{
  assert.equal(validateFreeSceneBrief(example(),now),true);
  for(const p of Object.keys(STOCK_POLICIES))assert.equal(assessStockClip(clip(1,p),now),null);
+ const badNps=clip(1,"nps_grca");
+ badNps.sourcePage="https://www.nps.gov/grca/learn/photosmultimedia/unlicensed-video.htm";
+ assert.equal(assessStockClip(badNps,now),"untrusted_source_page");
  const restricted=clip(1);restricted.licenseId="mixkit_video_restricted";
  assert.equal(assessStockClip(restricted,now),"unverified_license");
  const unsafe=clip(1);unsafe.sourcePage="https://mixkit.co.evil.example/watch";

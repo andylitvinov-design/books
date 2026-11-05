@@ -1746,6 +1746,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const selectedDraftPrice=draftFormatPrices[practiceType][practiceLevels[practiceType]];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
+  // First screen shows the goal and request; film scenarios are the next mobile step.
+  const [videoScenarioOpen,setVideoScenarioOpen] = useState(false);
   const [firstVideoAdvancedActivated,setFirstVideoAdvancedActivated] = useState(false);
   const [voiceStudioActivated,setVoiceStudioActivated] = useState(false);
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
@@ -4122,6 +4124,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return startFromHero();
   };
 
+  const openVideoScenarioStep = () => {
+    setVideoScenarioOpen(true);
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      document.querySelector("[data-auto-video-director]")?.scrollIntoView({
+        behavior:"smooth",block:"start",
+      })));
+  };
   const deepAudioPane = (
       <section className={videoStyles.audioSection} id="video-audio" data-video-audio-section aria-labelledby="video-audio-heading">
         <div className={videoStyles.blockHeading}>
@@ -4716,6 +4725,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
       data-mandala-free-video data-video-studio-mode={studioMode}
       data-video-advanced-open={showAdvancedVideo?"true":"false"}
+      data-video-scenario-open={videoScenarioOpen?"true":"false"}
       data-video-studio-hydrated={studioHydrated?"true":"false"}
       lang={locale} aria-label={ui.title}>
 
@@ -4734,6 +4744,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               locale==="es"?"Estudio de vídeo · Crear":
               "Video Studio · Create video"}</small>
           </span>
+          <Link href={"/"+locale+"/holistic-support/mandala?mode=photo"} prefetch={false}
+            className={videoStyles.quickBrandPhoto} data-video-open-photo-mandala
+            aria-label={locale==="ru"?"Фотомандалы":locale==="es"?"Fotomandalas":"Photo mandalas"}>
+            <Camera size={17} aria-hidden="true"/>
+            <span>{locale==="ru"?"Фото":locale==="es"?"Foto":"Photo"}</span>
+          </Link>
           <Link href={(locale==="es"?"/en":"/"+locale)+"/app/portrait"} prefetch={false} className={videoStyles.quickBrandProfile}
             aria-label={locale==="ru"?"Мой кабинет":locale==="es"?"Mi espacio (English)":"My House"}>
             <UserRound size={20} aria-hidden="true"/>
@@ -4803,14 +4819,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <section className={videoStyles.quickSection} data-video-quick-section="1"
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
-            <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{activeWorkspace==="effects"?(locale==="ru"?"1. Цель и состояние":locale==="es"?"1. Objetivo y estado":"1. Goal and state"):(locale==="ru"?"1. Опишите запрос или выберите цель":locale==="es"?"1. Describe tu petición o elige un objetivo":"1. Describe your request or choose a goal")}</h3>
+            <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{activeWorkspace==="effects"?(locale==="ru"?"1. Цель и состояние":locale==="es"?"1. Objetivo y estado":"1. Goal and state"):(locale==="ru"?"1. Выберите цель видео":locale==="es"?"1. Elige el objetivo del vídeo":"1. Choose your video goal")}</h3>
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
           </div>
           <p className={videoStyles.quickStepHint}>{locale==="ru"
             ?"Напишите своими словами или подберите сценарий кнопками ниже."
             :locale==="es"?"Escribe tu idea o selecciona los filtros de abajo."
             :"Write your idea or choose the filters below."}</p>
-          <div className={videoStyles.quickRequestHost} data-video-request-prompt/>
           <div className={videoStyles.quickProfileHost} data-video-profile-picker/>
           <h4 className={videoStyles.quickGoalLabel}>{locale==="ru"?"Выберите цель видео":
             locale==="es"?"Elige el objetivo":"Choose your video goal"}</h4>
@@ -4845,6 +4860,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-workspace-section="video" aria-label={
             locale==="ru"?"2. Выберите тему":locale==="es"?"2. Elige el tema":"2. Choose your topic"}>
           <div data-video-director-topic-controls className={videoStyles.quickTopicHost}/>
+          <div className={videoStyles.quickPromptStep} data-video-request-after-topic>
+            <h4 className={videoStyles.quickPromptTitle}>{locale==="ru"?"3. Опишите ваш запрос":
+              locale==="es"?"3. Describe tu idea":"3. Describe your request"}</h4>
+            <div className={videoStyles.quickRequestHost} data-video-request-prompt/>
+            <button type="button" className={videoStyles.quickPromptContinue}
+              data-video-continue-scenarios
+              disabled={!studioHydrated||recording||preparing}
+              onClick={openVideoScenarioStep}>
+              <Film size={18} aria-hidden="true"/>
+              <span>{locale==="ru"?"Продолжить к созданию видео":
+                locale==="es"?"Continuar para crear el vídeo":"Continue to video creation"}</span>
+              <ArrowRight size={19} aria-hidden="true"/>
+            </button>
+          </div>
         </section>
         {/* Original verified AI Director from #2913: open only from the free-help
             chip, keep the default iPhone design and a single MediaRecorder. */}
@@ -4989,7 +5018,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
         <button type="button" data-video-open-scenarios
           aria-label={locale==="ru"?"Посмотреть четыре сценария":locale==="es"?"Ver cuatro historias":"See four stories"}
-          onClick={()=>document.querySelector("[data-auto-video-story-options]")?.scrollIntoView({behavior:"smooth",block:"center"})}>
+          onClick={openVideoScenarioStep}>
           <ListVideo size={20} aria-hidden="true"/>
         </button>
         <button type="button" data-video-another-sample disabled={recording||preparing}

@@ -8,6 +8,10 @@ import { pathToFileURL } from "node:url";
 const NON_RUNTIME = [
   /^docs\/myspace\/[\w./-]+\.(?:md|mdx|txt)$/i,
   /^\.github\/workflows\/[\w.-]+\.ya?ml$/,
+  // Exact, reviewed browser-only verifier. PR #3555 changed only this test
+  // yet triggered an unnecessary production build. Keep all other verifier
+  // and runtime scripts fail-closed unless individually verified.
+  /^scripts\/verify-unified-six-dock-browser\.mjs$/,
   /^docs\/operations\/CI_RELEASE_POLICY\.md$/,
   /^scripts\/ci-[\w.-]+\.mjs$/,
   /^lib\/ci\/[\w./-]+\.mjs$/,

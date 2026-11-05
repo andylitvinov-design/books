@@ -410,11 +410,13 @@ test("approved first screen keeps six tabs above a real 16:9 Canvas and one righ
  assert.match(mobile,/aspect-ratio:16\/9!important/);
 });
 
-test("single prompt input precedes goal filters, topic chooser and four story candidates",()=>{
+test("goal, topic and one free-text prompt precede the four scenario choices",()=>{
  const prompt=studio.indexOf("data-video-request-prompt");
  const goal=studio.indexOf("data-video-director-goal-controls");
  const topic=studio.indexOf("data-video-director-topic-controls");
- assert.ok(prompt>=0&&prompt<goal&&goal<topic);
+ assert.ok(goal>=0&&goal<topic&&topic<prompt,"the owner-approved goal and topic precede the single text request");
+ assert.match(studio,/data-video-continue-scenarios/);
+ assert.match(studio,/setVideoScenarioOpen\(true\)/);
  assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
  assert.match(director,/createPortal\(requestInput,requestTarget\)/);
  assert.match(director,/createPortal\(goalPanel,goalTarget\)/);
@@ -437,10 +439,24 @@ test("brief and detailed questionnaires choose from existing licensed clips with
 
 
 test("new prompt and profile choice invalidate every prior MyTube plot selection",()=>{
- for(const [start,end] of [["const requestInput=","const profilePanel="],["const applyProfile=","const requestInput="]]){
-  const handler=director.slice(director.indexOf(start),director.indexOf(end));
-  assert.ok(handler.length>0,start+" exists");
+ // Request JSX now renders requestField; the real input onChange and explicit
+ // Design button sit outside requestInput after category-intake consolidation.
+ // Check EVERY actual handler instead of relying on an obsolete JSX boundary.
+ for(const [start,end] of [
+  ["const applyProfile=","const designFromRequest="],
+  ["const designFromRequest=","const analyzedPath="],
+  ["const requestField=","const requestInput="],
+ ]){
+  const from=director.indexOf(start),to=director.indexOf(end,from+start.length);
+  assert.ok(from>=0&&to>from,start+" handler exists");
+  const handler=director.slice(from,to);
   for(const setter of ["setSelectedSubcategoryId", "setSelectedTopicId", "setSelectedScenarioId", "setSelectedPlotId", "setSymbolicPlotFallback", "setTimelineEdits", "setConfirmedTimelineKey"])
    assert.ok(handler.includes(setter+"("),start+" invalidates "+setter);
  }
+ const request=director.slice(director.indexOf("const requestInput="),director.indexOf("const profilePanel="));
+ const field=director.slice(director.indexOf("const requestField="),director.indexOf("const requestInput="));
+ assert.match(request,/\{requestField\}/,"visible request composer must use the resettable field");
+ assert.match(request,/onClick=\{designFromRequest\}/,"Design action must invoke checked handler");
+ assert.match(field,/onChange=\{event=>/,"typing must trigger the reset handler");
+ assert.match(field,/onGoalChange\(value\)/,"typing must update the active request");
 });
