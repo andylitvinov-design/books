@@ -19,6 +19,7 @@ import { resolveConversationFocus } from "@/lib/holistic-support/conversation-co
 import { buildHolisticGuidedTurn } from "@/lib/holistic-support/holistic-guide-adapter.mjs";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import { generateOwnedOllama, validatedOllamaConfig } from "@/lib/holistic-support/owned-ollama.mjs";
+import { verifiedClientMemoryReply } from "@/lib/app/client-memory-dialogue-bridge.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -125,6 +126,13 @@ export async function POST(request) {
     const fastRule=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe
       ? ruleConversationReply({message:body.message,locale:body.locale,history:body.history})
       : null;
+    // Verified owner, explicit opt-in, no external provider or automatic save.
+    const memoryReply=body.mode==="rules" && body.usePrivateProfile===true &&
+      safety.status==="clear" && !recentUnsafe &&
+      process.env.HH_CLIENT_MEMORY_ENABLED==="true"
+      ? await verifiedClientMemoryReply(config,actor,{message:body.message,locale:body.locale})
+      : null;
+    if(memoryReply)return auth.apply(NextResponse.json(memoryReply,{headers:PRIVATE_HEADERS}));
     if(fastRule&&FAST_RULE_IDS.has(fastRule.id)){
       return auth.apply(NextResponse.json({
         status:"clarify",reply:fastRule.reply,modelUsed:false,
