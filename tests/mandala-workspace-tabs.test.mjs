@@ -213,7 +213,12 @@ test("compact Ideas uses existing renderer while hiding old phrase editor",()=>{
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
  assert.match(section,/<MandalaVideoIdeas/);
- assert.match(section,/data-video-legacy-phrase-editor hidden aria-hidden="true"/);
+ assert.match(section,/data-video-phrase-advanced/,
+   "original phrase settings remain accessible via a disclosure");
+ assert.match(section,/hidden=\{activeWorkspace!=="phrases"\}/,
+   "optional phrase tools do not occupy other workspaces");
+ assert.match(section,/<summary>[\s\S]*?<\/summary>/,
+   "the disclosure remains a user-accessible summary");
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);

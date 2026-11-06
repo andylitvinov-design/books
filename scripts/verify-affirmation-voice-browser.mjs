@@ -461,9 +461,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await voiceOptions.locator(":scope > summary").click();
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible();
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
-      await page.locator("[data-video-affirmation-voice-consent]").check();
-      await page.locator("[data-video-generate-affirmation-audio]").click();
+      const consentCheck=page.locator("[data-video-affirmation-voice-consent]");
+      await consentCheck.check();
+      await expect(consentCheck).toBeChecked();
+      const generateVoice=page.locator("[data-video-generate-affirmation-audio]");
+      // In macOS WebKit a tap immediately after a long disclosure auto-scroll
+      // can be consumed by that scroll. Stabilize the real visible control
+      // before ONE ordinary unforced click; do not fake an API call or retry.
+      await generateVoice.evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
+      await expect(generateVoice).toBeInViewport({ratio:.8});
+      await expect(generateVoice).toBeEnabled();
+      const affirmationsBefore=payloads.filter(item=>item.mode==="affirmations").length;
+      await generateVoice.click();
       try {
+        await expect.poll(()=>payloads.filter(item=>item.mode==="affirmations").length,
+          {timeout:8000,message:"first actual generate tap must submit one approved phrase to local mock"}).toBe(affirmationsBefore+1);
         await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
         phase(engine,"voice-wav-ready");
       }catch(error){

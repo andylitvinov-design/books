@@ -59,7 +59,7 @@ test("approved phrases retain reusable audio but Apply transitions to Montage wi
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(phrases,/children\?:ReactNode/);
   assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
-  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}[\s\S]*?onApply=\{\(\)=>\{[\s\S]*?activeWorkspace==="phrases" \? hypnoVoiceEditor : null[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
+  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}[\s\S]*?onApply=\{\(\)=>\{[\s\S]*?\{hypnoVoiceEditor\}[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
   assert.match(phrases,/onClick=\{onApply\?\?onCreate\}/);
   assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseMusicSection/);
   assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseAudioSettings/);
