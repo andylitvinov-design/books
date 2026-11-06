@@ -330,3 +330,156 @@
   outline:3px solid #00afb1;outline-offset:3px
 }
 .voiceSettingsPanel .voiceSample:disabled{opacity:.55;cursor:wait}
+
+/* Egyptian/Greek: the original artwork and complete authored context are
+   retained, but the question card uses a thumbnail and an accessible dialog. */
+.courseSession[data-coaching-one-viewport] .courseScroll{overflow:hidden!important;scrollbar-gutter:auto;
+  overscroll-behavior:none}
+.courseSession[data-coaching-one-viewport] .courseScroll .compactStageCard{
+  flex:none;display:grid;grid-template-columns:60px minmax(0,1fr);
+  min-width:0;min-height:62px;margin:1px 0 2px;padding:5px;gap:8px;
+  border-radius:12px;box-shadow:none
+}
+.compactStageCard .stagePhoto,.compactStageCard .stagePhoto img{
+  min-height:52px;height:52px;max-height:52px
+}
+.compactStageCard .stageCopy{min-width:0;justify-content:center;gap:1px}
+.compactStageCard .stageCopy strong{font-size:14px;line-height:1.12}
+.compactStageCard .stageCopy p{
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;
+  overflow:hidden;font-size:11px!important;line-height:1.2!important
+}
+.stageInfo{align-self:flex-start;min-height:26px;padding:2px 0;
+  border:0;background:transparent;color:#326e70;font:inherit;
+  font-size:11px;font-weight:800;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.stageInfo:focus-visible,.stageDialog button:focus-visible,.stageDialog a:focus-visible{
+  outline:3px solid #00afb1;outline-offset:2px}
+.stageDialog{position:fixed;inset:0;max-width:min(93vw,480px);width:100%;
+  max-height:76dvh;overflow-y:auto;padding:21px;border:1px solid #c8b18c;
+  border-radius:17px;background:#fffaf0;color:#473b2c;
+  box-shadow:0 18px 65px #2b231c65}
+.stageDialog::backdrop{background:#172f2d9c}
+.stageDialog strong{display:block;font:700 23px/1.2 Georgia,serif}
+.stageDialog p{margin:12px 0;font-size:15px;line-height:1.46}
+.stageDialog a{display:block;margin:12px 0;color:#5a644e;font-size:12px;overflow-wrap:anywhere}
+.stageDialog button{display:inline-flex;justify-content:center;align-items:center;
+  min-height:44px;padding:9px 18px;border:0;border-radius:11px;
+  background:#355e59;color:#fff;font:inherit;font-weight:750;cursor:pointer}
+.courseSession[data-coaching-one-viewport] .courseScroll .questionHeader h1{
+  font-size:clamp(17px,4.6vw,22px)!important;line-height:1.19!important;
+  margin:3px 0!important
+}
+.courseSession[data-coaching-one-viewport] .courseScroll .hint{
+  flex:none;align-self:stretch;margin:0;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;
+  overflow:hidden;text-align:left;line-height:1.2;font-size:10px
+}
+.courseSession[data-coaching-one-viewport] .courseScroll .choices{
+  flex:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px;align-self:stretch;width:100%;max-width:none;margin:2px 0 0
+}
+.courseSession[data-coaching-one-viewport] .courseScroll .choice,
+.courseSession[data-coaching-one-viewport] .courseScroll .chosen{
+  width:100%;min-width:0;min-height:44px;max-width:none;
+  justify-content:flex-start;text-align:left;padding:5px 8px;
+  font-size:11.5px;line-height:1.19;border-radius:11px;overflow-wrap:anywhere
+}
+.courseSession[data-coaching-one-viewport] .courseScroll .choiceDot{
+  width:13px;height:13px
+}
+.courseSession[data-coaching-one-viewport] .courseScroll [data-author-coaching-audio]{
+  flex:none;display:flex;align-items:center;gap:6px;
+  margin:1px 0;padding:4px 6px;border-radius:9px
+}
+.courseSession[data-coaching-one-viewport] .courseScroll [data-author-coaching-audio] strong{
+  flex:none;max-width:85px;font-size:10px;line-height:1.14
+}
+.courseSession[data-coaching-one-viewport] .courseScroll [data-author-coaching-audio] audio{
+  flex:1;min-width:0;min-height:34px;width:100%;height:34px
+}
+.courseSession[data-coaching-one-viewport] .courseScroll [data-author-coaching-audio] button{
+  min-height:35px;font-size:11px
+}
+.courseSession[data-coaching-one-viewport] .courseScroll [data-author-coaching-audio] span{
+  font-size:10px
+}
+/* Audio / voice / pace remain reachable from a single compact footer row.
+   Opening preferences floats above the keyboard instead of shifting the CTA. */
+.voiceCompact{position:relative;flex-direction:row;align-items:center;gap:4px;margin:0}
+.voiceCompact .voiceActions{display:flex;flex-wrap:nowrap;align-items:center;gap:4px}
+.voiceCompact .voiceActions button,.voiceCompact .voiceSettingsToggle{
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:none;min-width:41px;width:41px;height:42px;min-height:42px;
+  margin:0;padding:0;border:1px solid #c6ded4;border-radius:11px;
+  background:#eaf4ee;color:#2e6660;font-size:0;text-decoration:none
+}
+.voiceCompact .voiceSettingsToggle svg{width:19px;height:19px}
+.voiceCompact .voiceSettingsPanel{
+  position:absolute;z-index:10;bottom:calc(100% + 7px);left:0;
+  width:min(310px,calc(100vw - 24px));max-width:none;
+  max-height:min(49dvh,370px);overflow-y:auto;padding:10px;
+  background:#f8fcf9;box-shadow:0 12px 32px #1c3a3466
+}
+.voiceCompact .voiceSettingsPanel label{font-size:12px}
+@media(max-width:600px){
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapList{
+    flex:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    width:100%;max-height:none;overflow:visible;gap:5px;padding:0
+  }
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard{
+    grid-template-columns:37px minmax(0,1fr);gap:5px;
+    min-width:0;min-height:58px;margin:0;padding:4px
+  }
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard .stagePhoto,
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard .stagePhoto img{
+    min-height:42px;height:42px;max-height:42px
+  }
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard .stageGlyph{
+    font-size:11px;padding:1px 3px
+  }
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard .stageCopy strong{
+    font-size:11px;line-height:1.12
+  }
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard .stageCopy p,
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard .stageCopy small{
+    display:none
+  }
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard .stageInfo{
+    min-height:26px;font-size:10px
+  }
+}
+@media(max-width:350px){
+  .courseSession[data-coaching-one-viewport] .courseScroll .compactStageCard{
+    grid-template-columns:49px minmax(0,1fr);min-height:55px;gap:6px;padding:4px
+  }
+  .compactStageCard .stagePhoto,.compactStageCard .stagePhoto img{
+    min-height:47px;height:47px;max-height:47px
+  }
+  .compactStageCard .stageCopy strong{font-size:12px}
+  .courseSession[data-coaching-one-viewport] .courseScroll .choice,
+  .courseSession[data-coaching-one-viewport] .courseScroll .chosen{
+    font-size:10.5px;padding:4px 6px
+  }
+}
+@media(max-height:650px){
+  .courseSession[data-coaching-one-viewport] .courseScroll .compactStageCard{
+    min-height:49px;grid-template-columns:45px minmax(0,1fr);padding:3px;gap:6px
+  }
+  .compactStageCard .stagePhoto,.compactStageCard .stagePhoto img{
+    min-height:43px;height:43px;max-height:43px
+  }
+  .compactStageCard .stageCopy p{display:none}
+  .compactStageCard .stageInfo{min-height:24px;font-size:10px}
+  .courseSession[data-coaching-one-viewport] .courseScroll .hint{display:none}
+  .courseSession[data-coaching-one-viewport] .courseScroll .choices{gap:4px}
+}
+@media(max-height:520px){
+  .courseSession[data-coaching-one-viewport]:has(textarea:focus) .compactStageCard{
+    display:none
+  }
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard .stagePhoto,
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard .stagePhoto img{
+    min-height:32px;height:32px;max-height:32px
+  }
+  .courseIntro[data-tradition-coaching-onboarding] .roadmapCard{min-height:45px}
+}
