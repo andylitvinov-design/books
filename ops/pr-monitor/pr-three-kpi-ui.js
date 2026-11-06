@@ -15,7 +15,7 @@
   /^https:\/\/github\.com\/andylitvinov-design\/books\/(?:actions\/runs\/\d+(?:\/job\/\d+)?|pull\/\d+|issues\/\d+)$/.test(u)?u:null;
  function el(tag,cls,text){const x=document.createElement(tag);if(cls)x.className=cls;
   if(text!==undefined)x.textContent=String(text);return x;}
- let box,body,meta,reload,deepButton,report=null,busy=false,initialized=false,observer;
+ let box,body,meta,reload,deepButton,wavePanel,report=null,busy=false,initialized=false,observer;
  const rows=[
   {key:'error_to_repair',title:'Error → Repair',
     what:'От завершения первого подтверждённого failed CI job до доказанного начала фактического Repair'},
@@ -43,6 +43,9 @@
   reload=el('button','','Обновить');reload.type='button';
   reload.addEventListener('click',()=>void load(false,true));head.append(t,reload);
   box.append(head);
+  wavePanel=el('section','hh-kpi-wave');
+  wavePanel.setAttribute('aria-label','Эффективность PR: первые CI-волны, повторы и скорость слияния');
+  box.append(wavePanel);
   const table=el('div','hh-kpi-table');
   const labels=el('div','hh-kpi-columns');
   labels.append(el('strong','','Показатель'),el('strong','','24 часа'),
@@ -80,8 +83,84 @@
   if(key==='ci_first_pass')return entry.examples||[];
   return entry.rows||[];
  }
+function renderWaves(){
+  if(!wavePanel)return;
+  wavePanel.replaceChildren();
+  const h=el('div','hh-kpi-wave-head');
+  h.append(el('h3','','Эффективность CI · 24–48 ч'),
+    el('small','','Сравнение двух соседних 24-часовых когорт PR по дате создания'));
+  wavePanel.append(h);
+  const data=report?.release_efficiency;
+  if(data?.schema!=='HH_PR_WAVE_EFFECTIVENESS_V1'){
+    const reason=report?.efficiency_lookup?.reason;
+    wavePanel.append(el('p','hh-kpi-wave-note',
+      'Статистика CI-волн временно недоступна'+(reason?' ('+reason+')':'')+
+      '. Отсутствующие данные не равны нулю. Остальные KPI продолжают работать.'));
+    return;
+  }
+  const now=data.periods?.last_24h,prev=data.periods?.previous_24h;
+  if(!now||!prev)return;
+  const grid=el('div','hh-kpi-wave-grid');
+  function card(title,value,sub,previous){
+    const c=el('article','hh-kpi-wave-card');
+    c.append(el('span','hh-kpi-wave-label',title),el('strong','hh-kpi-wave-value',value),
+      el('small','hh-kpi-wave-sub',sub),
+      el('small','hh-kpi-wave-prev','Пред. 24 ч: '+previous));
+    grid.append(c);
+  }
+  const ratio=p=>p.ci_archived_prs?
+    String(p.one_observed_wave_prs)+'/'+String(p.ci_archived_prs):'—';
+  card('1 CI-волна / PR · цель',ratio(now),
+    'Первых сохранённых: '+now.ci_archived_prs+'/'+now.created_prs+
+      ' PR · ≈'+(now.observed_one_wave_percent??'—')+'%*',
+    ratio(prev)+' из '+prev.ci_archived_prs+' с CI');
+  card('Лишние CI-волны · ↓',
+    now.ci_archived_prs?'≥'+now.extra_observed_waves:'—',
+    'Новый HEAD: '+now.new_head_extra_waves+' · тот же SHA: '+
+      now.same_head_extra_waves+' · rerun: '+now.retry_attempts_observed,
+    prev.ci_archived_prs?'≥'+prev.extra_observed_waves:'—');
+  card('PR → Merge · P50 / P90 · ↓',
+    now.merge_latency.n?min(now.merge_latency.median_min):'—',
+    'P90: '+min(now.merge_latency.p90_min)+' · n='+
+      now.merge_latency.n+'/'+now.created_prs+' созданных',
+    prev.merge_latency.n?'P50 '+min(prev.merge_latency.median_min)+
+      ' · P90 '+min(prev.merge_latency.p90_min)+
+      ' · n='+prev.merge_latency.n:'—');
+  wavePanel.append(grid);
+  const completeness=data.coverage?.cohort_complete?'полная выборка PR за 48 ч':
+    'список PR частичный';
+  const note=el('p','hh-kpi-wave-note',
+    '* Количество «1 волна» относится только к PR с хотя бы одним сохранённым Core CI. '+
+    'Это не доказанный первый запуск за всю историю. '+completeness+
+    '; Core-архив исторически неполный. '+
+    'Слияния оцениваются только для уже merged PR; остальные '+now.unmerged_prs+
+    ' из '+now.created_prs+' остаются незавершёнными. '+
+    'Уменьшение числа волн само по себе не доказывает экономию времени.');
+  wavePanel.append(note);
+  if(now.examples?.length){
+    const samples=el('details','hh-kpi-wave-examples');
+    samples.append(el('summary','','Повторные CI и изменения HEAD · примеры'));
+    const list=el('div','hh-kpi-wave-list');
+    for(const p of now.examples.slice(0,5)){
+      const line=el('div','hh-kpi-wave-example');
+      const a=el('a','','PR #'+p.pr);
+      a.href='https://github.com/andylitvinov-design/books/pull/'+p.pr;
+      a.target='_blank';a.rel='noopener noreferrer';
+      line.append(a,el('span','',p.waves_observed+
+        ' сохранённых волн · новый HEAD '+p.new_head+
+        ' · тот же SHA '+p.same_head+' · rerun '+p.retry_attempts));
+      const proof=safeLink(p.run_url);
+      if(proof){const link=el('a','','CI');link.href=proof;link.target='_blank';
+        link.rel='noopener noreferrer';line.append(link);}
+      list.append(line);
+    }
+    samples.append(list);wavePanel.append(samples);
+  }
+ }
+ 
  function render(){
   if(!report||!body)return;
+  renderWaves();
   body.replaceChildren();
   const today=report.windows?.last_24h,history=report.windows?.two_weeks_ago;
   for(const conf of rows) {
@@ -145,7 +224,7 @@
   meta.textContent=repair?'Проверяю подтверждённые ошибки и начало Repair (ограниченная выборка PR)…':
     'Читаю сохранённый архив KPI…';
   try{
-   const response=await fetch(ENDPOINT+(repair?'?repair=1':''),{
+   const response=await fetch(ENDPOINT+(repair?'?repair=1&efficiency=1':'?efficiency=1'),{
     headers:{Accept:'application/json'},cache:force?'no-store':'default'});
    const data=await response.json();
    if(!response.ok||data.schema!=='HH_PR_THREE_KPI_V1'||!data.windows)
