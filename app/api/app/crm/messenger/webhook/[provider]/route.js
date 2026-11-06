@@ -83,10 +83,11 @@ export async function POST(request,{params}){
           }
           continue
         }
-        const diagnosticEvent=companion.reviewRequested
-          ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
-          :event
-        const intake=await processTelegramDiagnostic(diagnosticEvent,config)
+        const intake=companion.reviewRequested
+          ?await processTelegramDiagnostic({
+            ...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null
+          },config)
+          :await processTelegramDiagnostic(event,config)
         if(intake.handled){
           if(event.callbackId){
             // Acknowledge only after the encrypted stage transition commits.
