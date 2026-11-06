@@ -160,3 +160,10 @@ test("explicit Safari WebM retry uses a different recorder, preserves sound",asy
   assert.ok(studio.includes('if(!isMp4&&!isWebm){'));
   assert.ok(studio.includes('playbackStatus==="ready"&&result.mode!=="catalog"'));
 });
+
+test("native MP4 retry does not silently rerun Safari WebCodecs after failed WebM",()=>{
+  assert.match(studio,/const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording\(\{/);
+  assert.match(studio,/result\.extension==="webm"[\s\S]*?createVideo\(false,true\)/);
+  assert.match(studio,/recordingMimes\(Boolean\(musicSession\), preferWebm, forceMp4ForRetry\)/);
+  assert.match(studio,/const mimeTypes = preferWebm[\s\S]*?recordingMimes\(Boolean\(musicSession\),true\)\.filter/);
+});

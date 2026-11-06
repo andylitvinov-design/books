@@ -48,3 +48,27 @@ test("Three short prompts are labeled in EN/RU/ES",()=>{
  assert.equal((studio.match(/<MandalaAutoVideoDirector/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
+
+test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the real visible route",()=>{
+  assert.match(studio,/const continueToIdeas = \(\) => \{[\s\S]*?setActiveWorkspace\("phrases"\)/);
+  assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{continueToIdeas\}/);
+  for(const text of ["Далее к идеям","Continuar a ideas","Continue to ideas"])
+    assert.ok(studio.includes(text),text);
+  assert.match(studio,/const openVideoScenarioStep = \(\) => \{[\s\S]*?setVideoScenarioOpen\(true\);[\s\S]*?setShowAdvancedVideo\(true\);[\s\S]*?setActiveWorkspace\("video"\)/);
+  assert.match(studio,/onAddVideo=\{\(\)=>\{[\s\S]*?openVideoScenarioStep\(\);/);
+  assert.match(studio,/"video-director-chat":"video"/);
+  assert.match(studio,/hash==="video-director-chat"[\s\S]*?setDirectorChatOpen\(true\)/);
+  const voice=read("scripts/verify-affirmation-voice-browser.mjs");
+  const live=read("scripts/benchmarking/first-video-live-export.mjs");
+  const motion=read("scripts/benchmarking/verify-original-motion-export.mjs");
+  for(const file of [voice,live,motion])
+    assert.match(file,/data-video-continue-scenarios/);
+  for(const file of [live,motion]){
+    assert.match(file,/data-video-montage-tab="text"/);
+    assert.match(file,/data-video-timeline-add-video/);
+    assert.doesNotMatch(file,/await (?:allStories|page\.locator\('\[data-auto-video-all-scenes\]'\))\.click\(\)/);
+  }
+  assert.match(live,/ENCODED_VIDEO_STREAM_MISSING/);
+  assert.match(live,/SELECTED_SOUNDTRACK_MISSING_FROM_EXPORT/);
+  assert.match(motion,/ffprobe/);
+});

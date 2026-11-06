@@ -38,6 +38,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","false",{timeout:60000});
     await expect(tabs).toHaveCount(6);
     for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
+    await expect(page.locator('[data-video-continue-scenarios]')).toBeDisabled();
     // Goals deliberately hides legacy story/advanced controls. Hydration must
     // not make them tappable on the three-question first screen.
     const allStories=page.locator('[data-auto-video-all-scenes]');
@@ -49,12 +50,14 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(allStories).toBeEnabled();
     await expect(allStories).toBeHidden();
 
-    // The first actionable hydration check is now the visible Ideas tab,
-    // followed by its actual meaning/story disclosure (not a hidden legacy CTA).
+    // Verify the REAL sole Goals CTA moves to Ideas after React hydration.
+    // A hidden legacy "All Stories" DOM node must never substitute this tap.
+    const continueToIdeas=page.locator('[data-video-continue-scenarios]');
     const ideas=page.locator('[data-video-quick-control="phrases"]');
-    await expect(ideas).toBeEnabled();
-    await ideas.click();
+    await expect(continueToIdeas).toBeEnabled();
+    await continueToIdeas.click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
     const refinement=page.locator('[data-video-ideas-refinement]');
     await expect(refinement.locator("summary")).toBeVisible();

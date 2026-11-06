@@ -2949,7 +2949,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // recording is absent. iPhone Safari retains its WebCodecs MP4 path.
     const proceduralRoute=proceduralMp4Route({nativeAvc,webCodecs:hasWebCodecs,nativeWebm,preferNativeWebm:!safariWebKit});
     // The alternate WebM retry must not rerun Safari's default MP4 encoder.
-    const useWebCodecsMp4=selectWebCodecsForRecording({
+    // A visitor selecting native MP4 after a failed WebM must not re-run the
+    // original Safari WebCodecs MP4 path. Preserve actual AAC/soundtrack checks.
+    const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording({
       hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm
     });
     if(procedural&&!safariWebKit&&proceduralRoute==="unsupported"){
@@ -4238,9 +4240,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         "video-hypnosis":"phrases","video-hypnocorrection-mobile":"effects",
         "guided-video-series":"practices","personal-meditation":"practices",
         "cinematic-director":"pro","video-settings":"editor",
+        "video-director-chat":"video",
       };
       const tab=destination[hash];if(!tab)return;
       setActiveWorkspace(tab);
+      if(hash==="video-director-chat"){
+        // Messenger already validated its one-shot handoff. Reveal only that
+        // requested review on arrival; regular Goals stays compact and guest.
+        setVideoScenarioOpen(true);
+        setDirectorChatOpen(true);
+      }
       if(hash==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");}
       if(hash==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
       if(hash==="voice-studio"){setMontagePanel("audio");setBasicPanelTab("voice");setVoiceStudioActivated(true);}
@@ -4380,10 +4389,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return startFromHero();
   };
 
+  // First mobile step is only the short goal, category and optional request.
+  // The user then moves to Ideas; the actual scene catalogue is an optional
+  // visible action from Montage, never a hidden first-screen dialog.
+  const continueToIdeas = () => {
+    setVideoScenarioOpen(false);
+    setActiveWorkspace("phrases");
+    setStudioMode("pump");
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      document.querySelector("[data-video-quick-phrases]")?.scrollIntoView({
+        behavior:"smooth",block:"start",
+      })));
+  };
   const openVideoScenarioStep = () => {
     setVideoScenarioOpen(true);
+    setShowAdvancedVideo(true);
+    setFirstVideoAdvancedActivated(true);
+    setActiveWorkspace("video");
     window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-      document.querySelector("[data-auto-video-director]")?.scrollIntoView({
+      document.querySelector("[data-free-film-compilation-catalog]")?.scrollIntoView({
         behavior:"smooth",block:"start",
       })));
   };
@@ -5138,10 +5162,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <button type="button" className={videoStyles.quickPromptContinue}
               data-video-continue-scenarios
               disabled={!studioHydrated||recording||preparing}
-              onClick={openVideoScenarioStep}>
-              <Film size={18} aria-hidden="true"/>
-              <span>{locale==="ru"?"Продолжить к созданию видео":
-                locale==="es"?"Continuar para crear el vídeo":"Continue to video creation"}</span>
+              onClick={continueToIdeas}>
+              <Heart size={18} aria-hidden="true"/>
+              <span>{locale==="ru"?"Далее к идеям":
+                locale==="es"?"Continuar a ideas":"Continue to ideas"}</span>
               <ArrowRight size={19} aria-hidden="true"/>
             </button>
           </div>
@@ -6436,9 +6460,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }
             }}
             onAddVideo={()=>{
-              setActiveWorkspace("video");setStudioMode("pump");
-              window.requestAnimationFrame(()=>document.querySelector("[data-free-film-compilation-catalog]")
-                ?.scrollIntoView({behavior:"smooth",block:"start"}));
+              // The visible Montage Text "Add video" opens the SAME licensed
+              // four-scene catalogue, not a hidden Goals-stage panel.
+              setStudioMode("pump");
+              openVideoScenarioStep();
             }}
             onMoveShot={moveTimelineShot}
             onResizeShot={shiftFilmCut}

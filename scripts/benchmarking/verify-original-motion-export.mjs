@@ -29,7 +29,15 @@ page.on('console', message => {
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
-  await page.locator('[data-auto-video-all-scenes]').click();
+  // Select real source footage through the visitor-visible three-stage route.
+  await page.locator('[data-video-continue-scenarios]').click();
+  assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
+    'true','GOALS_MUST_OPEN_IDEAS');
+  await page.locator('[data-video-quick-control="editor"]').click();
+  await page.locator('[data-video-montage-tab="text"]').click();
+  const addVideo=page.locator('[data-video-timeline-add-video]');
+  await addVideo.waitFor({state:'visible',timeout:20000});
+  await addVideo.click();
   await page.locator('[data-free-film-compilation-catalog]').waitFor({ state: 'visible' });
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
   const more = page.locator('[data-free-film-more]');
