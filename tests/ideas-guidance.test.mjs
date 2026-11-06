@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { getHexagram } from "../data/dao-hexagrams.mjs";
 import { drawRandomHexagram } from "../lib/dao-divination.mjs";
-import { getIdeasAphorisms, getIdeasFreeRecommendations, ideaTopics, matchIdeasTopic } from "../lib/ideas-guidance.mjs";
+import { getIdeasAphorisms, getIdeasFreeRecommendations, getIdeasTestSuggestions, ideaTopics, matchIdeasTopic } from "../lib/ideas-guidance.mjs";
 import { getCompactNavigation, getSiteNavigation, navigationCopy } from "../lib/site-navigation-model.js";
 
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
@@ -51,7 +51,7 @@ test("Ideas UI reuses official cryptographic hexagram draw and existing free ser
   const component = read("components/ideas-discovery.tsx");
   assert.match(component, /drawRandomHexagram\(\)/);
   assert.match(component, /getHexagram\(result\.hexagram\)/);
-  assert.match(component, /\/dao\/hexagrams\//);
+  assert.doesNotMatch(component, /answerCopy\.(?:card|again)|styles\.hexagramActions/);
   assert.match(component, /\/services\/free-situation-review#request-free-review/);
   assert.match(component, /\/services\/dao-health-profile#request-free-wu-xing/);
   assert.match(component, /\/client\/tests/);
@@ -75,9 +75,8 @@ test("EN/RU/ES books now start with Ideas while retaining book catalogs and cano
   assert.match(spanish, /<SpanishBookShowcase books=\{books\}/);
   assert.match(localized, /canonical: "\/" \+ locale \+ "\/books"/);
   for (const locale of ["en", "ru", "es"]) {
-    const books = getCompactNavigation(locale).find(item => item.id === "books");
-    assert.equal(books.href, "/" + locale + "/books");
-    assert.equal(navigationCopy[locale].books, locale === "ru" ? "Идеи" : "Ideas");
+    assert.ok(!getCompactNavigation(locale).some(item => item.id === "books"), "Books is available in the expanded menu, not fixed bottom");
+    assert.equal(navigationCopy[locale].books, { en: "Tests & Coaching", ru: "Тесты и коучинг", es: "Tests y coaching" }[locale]);
     assert.equal(getSiteNavigation(locale).find(item => item.id === "library").href, "/" + locale + "/library");
   }
 });
@@ -94,10 +93,46 @@ test("Personal guidance is one accessible editorial list, not three giant cards 
   assert.match(css, /\.guidanceList li \{/);
   assert.match(css, /\.guidanceLink:focus-visible/);
   assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(css, /\.actions \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\); gap: 6px; \}/);
+  assert.match(css, /\.exploreLinks\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /@media \(max-width: 360px\)/);
   assert.match(css, /prefers-reduced-motion: reduce/);
   for (const localized of ["guidanceIntro", "guidanceMatch", "guidanceOther"]) {
     assert.equal(component.split(localized + ":").length - 1, 3, localized + " must be present in RU/EN/ES");
+  }
+});
+
+test("Ideas topic suggestions stay local and use only guest-startable public tests", () => {
+  const examples = [
+    ["Мне страшно, постоянно тревога", "stress", "gad-7"],
+    ["I'm anxious about my future", "stress", "gad-7"],
+    ["Tengo miedo y mucha ansiedad", "stress", "gad-7"],
+    ["Problemas con mi pareja", "relationships", "hh-monthly-profile"],
+    ["My business and income", "work", "hh-monthly-profile"],
+    ["I'm tired with little energy", "resources", "hh-resource-pulse"],
+    ["I seek purpose in life", "direction", "hh-resource-pulse"],
+  ];
+  for (const [text, expectedTopic, first] of examples) {
+    const result = getIdeasTestSuggestions(text);
+    assert.equal(result.topic, expectedTopic);
+    assert.equal(result.matched, true);
+    assert.equal(result.keys.length, 3);
+    assert.equal(result.keys[0], first);
+    assert.equal(new Set(result.keys).size, 3);
+    assert.ok(result.focus.every(key => /^[a-z]+$/.test(key)));
+    assert.ok(!JSON.stringify(result).includes(text), "no private text in suggestions");
+  }
+  const generic = getIdeasTestSuggestions("unrecognized text");
+  assert.equal(generic.matched, false);
+  assert.deepEqual(generic.keys, ["hh-current-state", "hh-resource-pulse", "hh-weekly-pulse"]);
+  assert.equal(getIdeasTestSuggestions("").matched, false);
+  const catalog = read("data/assessments/catalog.js");
+  const allKeys = new Set([...examples.flatMap(([text]) => getIdeasTestSuggestions(text).keys), ...generic.keys]);
+  for (const key of allKeys) {
+    const offset = catalog.indexOf("key: '" + key + "'");
+    assert.ok(offset > 0, "public catalog key exists: " + key);
+    const record = catalog.slice(offset, offset + 1100);
+    assert.match(record, /startable: true/);
+    assert.match(record, /rightsStatus: 'cleared'/);
+    assert.match(record, /guestEligible: true/);
   }
 });

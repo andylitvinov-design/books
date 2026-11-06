@@ -1,0 +1,86 @@
+name: Pinned free FFmpeg 6.1.1 (CI only)
+description: Fetch exact official ffmpeg-static b6.1.1 via the GitHub release assets API and verify two official SHA-256 digests before npm ci
+inputs:
+  stage:
+    description: Before npm ci use prepare; after npm ci use materialize
+    required: false
+    default: prepare
+runs:
+  using: composite
+  steps:
+    - name: Bootstrap and authenticate original upstream FFmpeg
+      if: ${{ inputs.stage == 'prepare' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Same binary as npm-locked ffmpeg-static@5.3.0, no substitution.
+        # Official GitHub b6.1.1 release asset 316528626 (Linux x64 gz).
+        [[ "${RUNNER_OS:-}" == Linux && "$(uname -m)" == x86_64 ]] || {
+          echo 'Unsupported runner: this CI bootstrap only permits Linux x64' >&2
+          exit 1
+        }
+        [[ -n "${RUNNER_TEMP:-}" && -n "${GITHUB_ENV:-}" ]] || {
+          echo 'Missing GitHub runner environment' >&2
+          exit 1
+        }
+        archive="$(mktemp "${RUNNER_TEMP}/hh-ffmpeg-6.1.1-XXXXXXXX.gz")"
+        binary="$(mktemp "${RUNNER_TEMP}/hh-ffmpeg-6.1.1-XXXXXXXX")"
+        trap 'rm -f "$archive" "$binary.tmp"' EXIT
+        # Two official GitHub paths only; both must match the same two pinned digests.
+        if ! curl --fail --show-error --silent --location \
+          --connect-timeout 10 --max-time 100 --retry 1 --retry-delay 1 \
+          --header 'Accept: application/octet-stream' \
+          --header 'X-GitHub-Api-Version: 2022-11-28' \
+          --header 'User-Agent: HolisticHouse-IntegrityCI' \
+          'https://api.github.com/repos/eugeneware/ffmpeg-static/releases/assets/316528626' \
+          --output "$archive"; then
+          echo 'Official release API refused this runner; trying the same pinned GitHub browser download URL' >&2
+          rm -f "$archive"
+          curl --fail --show-error --silent --location \
+            --connect-timeout 10 --max-time 100 --retry 1 --retry-delay 1 \
+            'https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-linux-x64.gz' \
+            --output "$archive" || {
+            echo 'Both official FFmpeg sources unavailable; refusing to bypass SHA-256 verification' >&2
+            exit 1
+          }
+        fi
+        printf '%s  %s\n' \
+          'bfe8a8fc511530457b528c48d77b5737527b504a3797a9bc4866aeca69c2dffa' "$archive" \
+          | sha256sum --check --status || {
+          echo 'Pinned upstream compressed FFmpeg SHA-256 mismatch' >&2
+          exit 1
+        }
+        gzip -dc "$archive" > "$binary.tmp"
+        printf '%s  %s\n' \
+          'e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99' "$binary.tmp" \
+          | sha256sum --check --status || {
+          echo 'Pinned upstream FFmpeg executable SHA-256 mismatch' >&2
+          exit 1
+        }
+        chmod 755 "$binary.tmp"
+        mv "$binary.tmp" "$binary"
+        "$binary" -hide_banner -version | head -n 1
+        printf 'FFMPEG_BIN=%s\n' "$binary" >> "$GITHUB_ENV"
+        echo 'Pinned official FFmpeg binary verified. No billable API, credentials, or test bypass.' >> "$GITHUB_STEP_SUMMARY"
+    - name: Materialize verified package-local FFmpeg for production Next tracing
+      if: ${{ inputs.stage == 'materialize' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        [[ -n "${FFMPEG_BIN:-}" && -f "$FFMPEG_BIN" ]] || { echo 'Verified FFmpeg not staged' >&2; exit 1; }
+        [[ -f node_modules/ffmpeg-static/package.json ]] || { echo 'Locked ffmpeg-static package missing' >&2; exit 1; }
+        [[ "$(node -p "require('./node_modules/ffmpeg-static/package.json').version")" == '5.3.0' ]] || {
+          echo 'Unexpected ffmpeg-static version' >&2; exit 1;
+        }
+        echo 'e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99  '"$FFMPEG_BIN" | sha256sum --check --status || {
+          echo 'Staged upstream FFmpeg changed after npm ci' >&2; exit 1;
+        }
+        install -m 755 "$FFMPEG_BIN" node_modules/ffmpeg-static/ffmpeg
+        echo 'e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99  node_modules/ffmpeg-static/ffmpeg' | sha256sum --check --status || {
+          echo 'Package-local FFmpeg integrity failure' >&2; exit 1;
+        }
+        # The runtime/Next trace must resolve package-local FFmpeg, not a runner temp path.
+        echo 'FFMPEG_BIN=' >> "$GITHUB_ENV"
+        FFMPEG_BIN= node -e "const p=require('node:path'); const actual=require('ffmpeg-static'); const expected=p.resolve('node_modules/ffmpeg-static/ffmpeg'); if(actual!==expected)process.exit(1)"
+        node_modules/ffmpeg-static/ffmpeg -hide_banner -version | head -n 1
+        echo 'FFmpeg packaging and Next trace source verified without bypassing npm scripts.' >> "$GITHUB_STEP_SUMMARY"

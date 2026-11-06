@@ -14,14 +14,14 @@ test("Tantra Reiki landing leads with the first initiation in all locales", asyn
     "Tantra Reiki Level 1: Spring of Life",
     "Tantra Reiki Nivel 1: Manantial de vida",
   ]) assert.ok(page.includes(phrase), phrase);
-  assert.match(page, /href="#tantra-level-1"/);
-  assert.match(page, /href="#tantra-next-levels"/);
-  assert.match(page, /\/academy\/reiki\/tantra-reiki\/free-initiation/);
+  assert.match(page, /href="#tantra-master-course"/);
+  assert.doesNotMatch(page, /Programme & extra resources|tantra-course-hero__more/);
+  assert.match(page, /className="tantra-course-hero__cta" href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/);
   for (const phrase of ["Тантра Рейки — 1-я ступень", "Tantra Reiki Level 1 — Spring of Life", "Tantra Reiki Nivel 1 — Manantial de vida"]) {
     assert.ok(metadata.includes(phrase), "SEO " + phrase);
   }
   const firstLesson = page.indexOf('<TantraReikiJourney locale={locale} />');
-  const guide = page.indexOf('className="tantra-mobile-guide tantra-mobile-guide--combined"');
+  const guide = page.indexOf('className="tantra-mobile-guide tantra-mobile-guide--combined');
   const festival = page.indexOf('<TantraReikiFestivalMoments locale={locale} />');
   const reviews = page.indexOf('<TantraReikiTestimonials locale={locale} />');
   assert.ok(firstLesson > 0 && firstLesson < guide && guide < festival && festival < reviews);
@@ -44,7 +44,7 @@ test("all nine author chapters remain, with first level visible and optional att
   assert.match(journey, /originalProgrammeStudyStep\(locale, i\)/);
   assert.match(journey, /levelPhotos\[i\]/);
   assert.match(journey, /focus.request/);
-  assert.match(journey, /free-initiation/);
+  assert.match(journey, /href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/);
   assert.match(journey, /id="tantra-next-levels"/);
   assert.match(css, /\.academy-reading-shell--tantra \.tantra-journey__collapsed-summary:focus-visible/);
   assert.match(css, /@media \(max-width: 620px\)/);

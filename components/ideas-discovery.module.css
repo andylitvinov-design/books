@@ -42,7 +42,7 @@
   font-weight: 800;
 }
 .eyebrow svg { flex-shrink: 0; color: var(--ideas-accent); }
-.heading h1 {
+.heading :is(h1,h2) {
   margin: 8px 0 0;
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(43px, 5vw, 68px);
@@ -121,32 +121,6 @@
 .privacyDisclosure summary { width: fit-content; cursor: pointer; }
 .privacyDisclosure summary:focus-visible { outline: 3px solid #178289; outline-offset: 3px; }
 .privacyDisclosure .privacy { margin-top: 6px; }
-.actionLabel { margin: 15px 0 9px; color: #695d51; font-size: 12px; font-weight: 750; }
-.actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-width: 0;
-  min-height: 66px;
-  padding: 12px 13px;
-  border: 1px solid #dbcbb9;
-  border-radius: 16px;
-  background: #fffdfa;
-  color: #493f36;
-  cursor: pointer;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 750;
-  line-height: 1.28;
-  transition: background .16s, border-color .16s, transform .16s;
-}
-.action span { min-width: 0; overflow-wrap: break-word; }
-.action svg { flex: 0 0 auto; }
-.action svg:last-child { margin-left: auto; }
-.action:hover { transform: translateY(-1px); border-color: #8bbbbb; }
-.action[aria-pressed="true"] { border-color: #6ab5b1; background: #e2f1ed; color: #0d494b; box-shadow: inset 0 0 0 1px #d1e9e2; }
 .root :is(button, a, textarea):focus-visible { outline: 3px solid #178289; outline-offset: 3px; }
 .results {
   position: relative;
@@ -239,8 +213,7 @@
 .hexagramText { min-width: 0; }
 .hexagramText h3 { margin: 5px 0; font: 400 clamp(21px, 2.3vw, 27px)/1.2 Georgia, "Times New Roman", serif; }
 .hexagramText > p:not(.tag) { margin: 6px 0 0; color: #625a52; font-size: 14px; line-height: 1.52; }
-.hexagramActions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
-.hexagramActions a, .hexagramActions button, .offer a {
+.offer a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -253,8 +226,7 @@
   font-weight: 750;
   text-decoration: none;
 }
-.hexagramActions a, .offer a { color: #fffefa; background: #14575b; border: 1px solid #14575b; }
-.hexagramActions button { color: #14575b; background: #fffefd; border: 1px solid #a7c8c7; }
+.offer a { color: #fffefa; background: #14575b; border: 1px solid #14575b; }
 .preview .hexagramCard { margin-top: 11px; }
 .preview .hexagramMark { min-height: 98px; }
 .preview .hexagramText p { margin: 6px 0 0; color: #645d56; font-size: 14px; line-height: 1.48; }
@@ -340,7 +312,7 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .heading { min-height: 130px; padding: 15px; border-radius: 16px; background-position: center, 59% center; }
   .eyebrow { gap: 6px; font-size: 10px; letter-spacing: .11em; }
   .eyebrow svg { width: 14px; height: 14px; }
-  .heading h1 { margin-top: 5px; font-size: clamp(40px, 11.4vw, 50px); }
+  .heading :is(h1,h2) { margin-top: 5px; font-size: clamp(40px, 11.4vw, 50px); }
   .lead { max-width: 79%; margin-top: 6px; font-size: 14px; line-height: 1.37; }
   .question { margin-top: 8px; padding: 8px; border-radius: 15px; }
   .questionFields { flex-direction: column; gap: 7px; }
@@ -348,13 +320,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .submit { width: 100%; min-height: 46px; padding: 10px; border-radius: 11px; font-size: 14px; }
   .privacyDisclosure { margin-top: 6px; font-size: 11.5px; }
   .privacy { margin-top: 6px; font-size: 11.5px; line-height: 1.36; }
-  .actionLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .actions { margin-top: 9px; }
-  .action { flex-direction: column; justify-content: center; gap: 4px; min-height: 72px; padding: 8px 3px; border-radius: 13px; font-size: 12.5px; }
-  .action svg:first-child { width: 21px; height: 21px; }
-  .action svg:last-child { display: none; }
-  .action span { text-wrap: balance; }
   .results { margin-top: 9px; padding: 13px 12px; border-radius: 16px; }
   .daoSummary { font-size: 16px; line-height: 1.5; }
   .expandDao { width: 100%; min-height: 44px; font-size: 13px; }
@@ -374,8 +339,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .hexagramMark { min-height: 109px; border-radius: 12px; }
   .hexagramText h3 { font-size: 21px; }
   .hexagramText > p:not(.tag), .preview .hexagramText p { font-size: 14px; line-height: 1.45; }
-  .hexagramActions { grid-column: 1 / -1; margin-top: 8px; gap: 7px; }
-  .hexagramActions a, .hexagramActions button { min-height: 44px; font-size: 12px; padding: 9px 12px; }
   .preview .hexagramCard { margin-top: 8px; }
   .preview .hexagramMark { min-height: 95px; }
   .preview .note { margin-top: 9px; }
@@ -399,9 +362,8 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 @media (max-width: 360px) {
   .root { padding: 7px; }
   .heading { min-height: 123px; padding: 13px; }
-  .heading h1 { font-size: 40px; }
+  .heading :is(h1,h2) { font-size: 40px; }
   .lead { font-size: 13.5px; max-width: 84%; }
-  .action { min-height: 77px; font-size: 12px; padding: 7px 2px; }
   .hexagramCard { grid-template-columns: 80px minmax(0, 1fr); gap: 9px; }
   .hexagramMark { min-height: 96px; }
   .hexagramText h3 { font-size: 19px; }
@@ -415,7 +377,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 @media (prefers-reduced-motion: reduce) {
   .expandDao svg { transition: none; }
   .action, .question textarea { transition: none; }
-  .action:hover { transform: none; }
 }
 
 /* Reference fidelity v3: the artwork is a small first-party crop of the
@@ -431,26 +392,60 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   border-radius: 24px;
   background: linear-gradient(158deg, #fffaf3 1%, #faf1e6 61%, #fffaf4 100%);
 }
-.heading {
-  min-height: clamp(190px, 24vw, 260px);
-  border: 0;
-  border-radius: 19px;
-  padding: clamp(19px, 3.5vw, 38px);
-  background-color: #fff9f1;
-  background-image: linear-gradient(90deg,#fffaf4 0%,rgba(255,250,244,.96) 30%,rgba(255,250,244,.45) 65%,rgba(255,250,244,0) 100%),url("/images/holistic-house/ideas-pine-reference.webp");
-  background-size: cover, auto 100%;
-  background-position: center, right center;
-  background-repeat: no-repeat;
+/* One complete scenic surface: heading, prompt and both CTAs live on the image. */
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: clamp(20px, 3vw, 32px);
+  min-height: clamp(460px, 37vw, 540px);
+  padding: clamp(18px, 3.2vw, 35px);
+  border: 1px solid #e4d4c1;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #f8f0e4;
 }
-.heading h1 { font-size: clamp(44px, 6.1vw, 76px); letter-spacing: -.05em; }
+/* The artwork stays vivid; separate soft overlays protect readable text.
+   All interactive elements are real HTML, not pixels from a mock-up. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url("/images/holistic-house/ideas-pine-sharp.avif") right center / cover no-repeat;
+  filter: saturate(1.08) contrast(1.035);
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(0deg, rgba(255, 250, 242, .86), rgba(255, 250, 242, .04) 62%),
+    linear-gradient(90deg, rgba(255, 250, 242, .94) 0%, rgba(255, 250, 242, .72) 32%, rgba(255, 250, 242, .10) 78%, rgba(255, 250, 242, .02) 100%);
+}
+.heading {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+.heading :is(h1,h2) { font-size: clamp(44px, 6.1vw, 76px); letter-spacing: -.05em; }
 .heading .lead { max-width: 420px; color: #594d42; text-wrap: balance; }
 .question {
-  margin-top: 10px;
-  padding: 10px;
-  border: 1px solid #e7d7c7;
-  border-radius: 19px;
-  background: rgba(255,253,249,.97);
-  box-shadow: 0 8px 23px rgba(91,62,35,.05);
+  width: min(100%, 700px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .questionFields { position: relative; display: block; }
 .question textarea {
@@ -460,7 +455,8 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   padding: 15px 47px 14px 46px;
   border-color: #d7c5b5;
   border-radius: 16px;
-  background: #fffefc;
+  background: rgba(255,254,251,.94);
+  box-shadow: 0 3px 16px rgba(79, 54, 36, .08);
   line-height: 1.35;
   resize: vertical;
 }
@@ -483,39 +479,93 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   cursor:pointer;
 }
 .attach:hover { background:#f5ebe1; }
-.submit {
-  width: 100%;
-  min-height: 50px;
-  margin-top: 8px;
-  border-radius: 15px;
-  background: linear-gradient(116deg,#af805d 0%,#82583e 97%);
-  font-size: 15px;
-  box-shadow: 0 7px 14px rgba(95,62,43,.12);
+.heroActions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+  margin-top: 9px;
 }
-.submit:hover { background:linear-gradient(116deg,#9b6b4b,#6d4933); }
-.privacyDisclosure { color: #71655a; font-size: 12px; }
-.actions { gap: 8px; margin-top: 10px; }
-.action {
-  flex-direction: column;
-  justify-content:center;
+.submit, .testButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 7px;
-  min-height: 82px;
-  padding: 11px 7px;
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.24;
+  text-wrap: balance;
+  text-decoration: none;
+}
+.submit {
+  border: 0;
+  background: linear-gradient(116deg,#936341 0%,#765038 97%);
+  box-shadow: 0 7px 14px rgba(95,62,43,.13);
+}
+.submit:hover { background:linear-gradient(116deg,#815438,#65422f); }
+.testButton {
+  min-height: 58px;
+  border: 1.5px solid #996e51;
+  background: rgba(255,251,244,.92);
+  color: #64422e;
+  font-weight: 800;
+  box-shadow: 0 3px 12px rgba(87,62,44,.08);
+  cursor: pointer;
+}
+.testButton svg { flex: 0 0 auto; }
+.testButton svg:last-child { margin-left: auto; }
+.testButton svg:first-child { margin-right: auto; }
+.testButtonText { display:flex; flex-direction:column; gap:2px; flex:1; }
+.testButtonKicker { font-size:12px; font-weight:550; line-height:1.2; }
+.testButtonText strong { font-size:clamp(13px, 3.5vw, 16px); line-height:1.25; overflow-wrap:break-word; }
+.testButton:hover { background: #fffdf9; border-color: #98755b; }
+.freeTestLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 3px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 252, 247, .68);
+  color: #634c3b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.freeTestLink:hover { background: rgba(255, 252, 247, .92); }
+.testPicker {
+  width: min(100%, 700px);
+  padding: 13px;
+  border: 1px solid #cdb49c;
   border-radius: 17px;
-  border-color:#e3cbb3;
-  background:linear-gradient(143deg,#fffdf9,#fff4e7);
-  font-size: 14px;
-  color: #3a302a;
+  background: rgba(255, 252, 247, .97);
+  box-shadow: 0 10px 25px rgba(57, 41, 25, .11);
 }
-.action span:not(.modeYin) { flex:0 1 auto; }
-.action svg:last-child { margin:0; }
+.testPicker[hidden] { display: none; }
+.testPickerHeading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.testPickerHeading > div { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.testPickerHeading strong { font-size:14px; }
+.testPickerHeading span { font-size:12px; color:#6f5a47; }
+.testPickerClose { width:44px; height:44px; flex:0 0 44px; border:0; border-radius:50%; background:#f5ece2; color:#654a37; cursor:pointer; }
+.testPickerList { list-style:none; padding:0; margin:9px 0 5px; display:grid; gap:5px; }
+.testPickerItem { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:44px; padding:10px 12px; border:1px solid #dfcbb6; border-radius:11px; background:#fffefa; color:#543b2c; text-decoration:none; font-size:13px; font-weight:700; }
+.testPickerItem:hover { background:#f3f8f4; border-color:#91b8ad; }
+.testPickerItem svg { flex-shrink:0; }
+.allMatchingTests { display:inline-flex; align-items:center; gap:6px; min-height:44px; color:#0c6062; font-size:13px; font-weight:750; text-decoration:underline; text-underline-offset:3px; }
+.testPickerNote { margin:4px 0 0; color:#695f56; font-size:11px; line-height:1.45; }
+.privacyDisclosure { color: #5c5148; font-size: 12px; text-shadow: 0 1px rgba(255,253,248,.8); }
 .modeYin { color:#0d5b5c; font: 30px/1 Georgia,"Times New Roman",serif; }
-.action[aria-pressed="true"] {
-  background:linear-gradient(145deg,#dcf1ed,#dcebe6);
-  border-color:#55aba7;
-  color:#074e50;
-  box-shadow:inset 0 0 0 1px rgba(34,129,132,.12);
-}
 .results {
   margin-top: 11px;
   padding: clamp(11px,2vw,18px);
@@ -598,9 +648,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 .daoPoint svg { width:24px; height:24px; margin-top:2px; }
 .daoPoint strong { color:#5d422c; font-size:13px; line-height:1.3; }
 .daoPoint p { margin:4px 0 0; color:#66594f; font-size:13px; line-height:1.4; }
-.hexagramActions { margin:10px 1px 0; }
-.hexagramActions a { background:#0e5c5d; border-color:#0e5c5d; }
-.hexagramActions button { background:#fffaf4; }
 .relatedAphorisms {
   min-width:0;
   margin-top:12px;
@@ -637,22 +684,27 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 .root :is(button,a,textarea,summary):focus-visible { outline:3px solid #15878b; outline-offset:3px; }
 @media (max-width:760px) {
   .root { padding:7px; border-radius:20px; }
-  .heading { min-height:155px; padding:12px 13px; border-radius:14px; background-position:center,right center; }
+  .hero { min-height: 430px; padding: clamp(13px, 4vw, 19px); gap: 20px; border-radius: 16px; }
+  .hero::before { background-position: 67% center; }
+  .hero::after {
+    background:
+      linear-gradient(0deg, rgba(255,250,241,.90) 0%, rgba(255,250,241,.10) 53%, rgba(255,250,241,0) 80%),
+      linear-gradient(90deg, rgba(255,250,241,.91) 0%, rgba(255,250,241,.49) 46%, rgba(255,250,241,.04) 83%);
+  }
+  .heading { min-height:0; padding:0; border-radius:0; background:none; }
   .eyebrow { font-size:10px; }
-  .heading h1 { font-size:clamp(39px,10.6vw,48px); margin-top:5px; }
+  .heading :is(h1,h2) { font-size:clamp(39px,10.6vw,48px); margin-top:5px; }
   .heading .lead { margin-top:7px; max-width:81%; color:#5b5147; font-size:13.5px; line-height:1.36; }
-  .question { margin-top:6px; padding:7px; }
+  .question { width:100%; margin:0; padding:0; border:0; background:transparent; }
   .questionFields { display:block; }
   .question textarea { min-height:51px; max-height:130px; padding:13px 45px 12px 42px; font-size:16px; }
   .inputSparkle { top:14px; left:13px; width:19px; }
   .attach { top:4px; right:4px; }
-  .submit { width:100%; min-height:46px; padding:10px; margin-top:7px; }
-  .privacyDisclosure { font-size:11.5px; margin-top:6px; }
-  .actions { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-top:8px; }
-  .action { min-height:74px; padding:9px 3px; border-radius:13px; font-size:clamp(12px,3.15vw,14px); line-height:1.19; }
-  .action svg:first-child { width:23px; height:23px; }
-  .action span:not(.modeYin) { min-width:0; overflow-wrap:normal; text-wrap:balance; }
-  .action .modeYin { font-size:26px; }
+  .heroActions { gap:7px; margin-top:7px; }
+  .submit { width:100%; min-height:48px; padding:9px 6px; margin:0; font-size:13px; }
+  .testButton { min-height:48px; padding:9px 6px; font-size:13px; }
+  .heroActions svg { width:16px; height:16px; }
+  .privacyDisclosure { font-size:11.5px; margin-top:7px; }
   .results { margin-top:9px; padding:7px; border-radius:17px; }
   .daoInsight { padding:11px; border-radius:15px; }
   .daoLandscape { height:115px; width:58%; opacity:.36; }
@@ -677,14 +729,11 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .aphorismBody::before { font-size:22px; margin-right:10px; }
   .aphorisms p { margin:0 0 6px; font-size:15px; line-height:1.42; }
   .aphorismSource { font-size:11px; line-height:1.34; }
-  .hexagramActions { gap:5px; margin-top:7px; }
-  .hexagramActions a,.hexagramActions button { min-height:44px; padding:8px 10px; font-size:11px; }
 }
 @media (max-width:360px) {
   .root { padding:5px; }
   .heading { padding:11px; min-height:145px; }
   .heading .lead { max-width:83%; font-size:12.8px; }
-  .action { min-height:73px; font-size:12px; }
   .daoInsight { padding:9px; }
   .daoInterpretation { grid-template-columns:90px minmax(0,1fr); gap:7px; }
   .daoPoint { grid-template-columns:19px minmax(0,1fr); gap:4px; }
@@ -737,31 +786,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
    Use existing optimized first-party photographs: real master portrait and
    atmospheric still life. The image treatment is decorative; CTA text,
    destinations, keyboard navigation, and EN/RU/ES copy remain real HTML. */
-.daoQuick .hexagramActions {
-  gap: 10px;
-  margin-top: 13px;
-}
-.daoQuick .hexagramActions a {
-  min-height: 48px;
-  padding: 11px 19px;
-  border-radius: 999px;
-  border-color: #085458;
-  background: linear-gradient(115deg, #075559, #11676a);
-  color: #fffdf8;
-  font-size: 13px;
-  box-shadow: 0 5px 14px rgba(11, 79, 79, .12);
-}
-.daoQuick .hexagramActions button {
-  min-height: 48px;
-  padding: 11px 18px;
-  border-radius: 999px;
-  border: 1px solid #a2bfbb;
-  background: rgba(255, 252, 247, .94);
-  color: #0f5a5b;
-  font-size: 13px;
-}
-.daoQuick .hexagramActions a:hover { background: #074548; }
-.daoQuick .hexagramActions button:hover { background: #ebf4ef; }
 .daoQuick .note { margin-top: 12px; color: #706761; line-height: 1.46; }
 .results .daoPromos {
   gap: clamp(11px, 1.7vw, 17px);
@@ -915,8 +939,6 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
   .daoPromos .daoPromoDescription { font-size: 12.5px; line-height: 1.45; }
   .daoPromos .daoPromoAction { min-height: 49px; padding: 12px 14px; margin-top: 5px; font-size: 14px; }
   .daoPromos .daoPromoEyebrow { font-size: 10px; letter-spacing: .08em; }
-  .daoQuick .hexagramActions a,
-  .daoQuick .hexagramActions button { min-height: 46px; padding: 9px 15px; font-size: 12px; }
 }
 @media (max-width: 360px) {
   .daoPromos .daoPromo {
@@ -948,3 +970,939 @@ a.aphorismSource:hover { color: #14575b; text-decoration-color: currentColor; }
 }
 .daoPromoMore:hover { color:#17484b; }
 .daoPromos :is(button,a):focus-visible { outline:3px solid #138387; outline-offset:3px; }
+
+/* Safe iPhone 320px compact layout without cutting CTA text or scenic content. */
+@media (max-width: 360px) {
+  .hero { min-height: 410px; padding: 12px; }
+  .heading :is(h1,h2) { font-size: 39px; }
+  .heading .lead { max-width: 88%; font-size: 12.5px; }
+  .heroActions { gap: 6px; }
+  .submit, .testButton { padding: 8px 4px; min-height: 50px; font-size: 12px; }
+  .heroActions svg { width: 15px; height: 15px; }
+}
+
+/* Two stacked CTAs + the in-place existing-test handoff at small widths. */
+@media (max-width: 760px) {
+  .heroActions { grid-template-columns: minmax(0,1fr); gap:8px; }
+  .submit { min-height:48px; font-size:14px; }
+  .testButton { min-height:56px; padding:8px 13px; font-size:14px; }
+  .testButtonText strong { font-size:clamp(13px, 3.4vw, 15px); }
+  .testPicker { padding:11px; }
+  .testPickerItem { min-height:46px; }
+}
+@media (max-width: 360px) {
+  .hero { min-height:410px; }
+  .submit, .testButton { font-size:13px; }
+}
+
+
+/* Ideas & Coaching · approved 2026-10-24 compact-first revision.
+   The scenic banner now ends at the question; the two real choices sit immediately below. */
+.hero{
+  min-height:clamp(260px,30vw,345px);
+  gap:18px;
+  padding:clamp(18px,2.7vw,29px);
+  border-radius:18px;
+}
+.hero::before{background-position:70% 45%;filter:saturate(1.05) contrast(1.02)}
+.hero::after{
+  background:linear-gradient(0deg,rgba(250,246,238,.93) 0%,rgba(250,246,238,.04) 46%),
+    linear-gradient(90deg,rgba(253,250,243,.97) 0%,rgba(253,250,243,.85) 32%,rgba(253,250,243,.06) 89%);
+}
+.heading :is(h1,h2){font-size:clamp(36px,4.9vw,64px);line-height:1.03;letter-spacing:-.047em}
+.heading .lead{max-width:450px;font-size:clamp(14px,1.6vw,17px);line-height:1.35}
+.question textarea{background:rgba(255,254,251,.97);box-shadow:0 6px 19px rgba(75,55,42,.08)}
+.heroActions{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;position:relative;margin:10px 1px 0;
+}
+.heroActions .submit,.heroActions .testButton{
+  display:flex;align-items:center;justify-content:center;
+  min-width:0;min-height:68px;gap:10px;padding:11px 15px;
+  border-radius:14px;text-decoration:none;text-align:left;line-height:1.3;
+  box-shadow:0 4px 15px rgba(74,53,38,.065);
+}
+.heroActions .submit{
+  background:linear-gradient(108deg,#8e6246,#714933);
+  color:#fffdf8;border:1px solid #795039;
+}
+.heroActions .submit:hover{background:linear-gradient(108deg,#81573f,#613b2a);color:white}
+.heroActions .submit .testButtonText{flex:1;text-align:left}
+.heroActions .submit .testButtonKicker{font-size:11px;font-weight:750;color:#f5ddc8}
+.heroActions .submit .testButtonText strong{font-size:clamp(13px,1.3vw,16px);line-height:1.25;color:#fffdf8}
+.heroActions .submit svg:first-child,.heroActions .submit svg:last-child{display:block;flex:none;margin:0;color:inherit}
+.heroActions .testButton{
+  color:#356361;border:1px solid #a7c1b6;background:#f1f7f2;cursor:pointer;
+  text-align:center;font-size:clamp(13px,1.4vw,16px);font-weight:850;
+}
+.heroActions .testButton:hover{background:#e7f1e9;border-color:#6a9b88;color:#1e5555}
+.heroActions .testButton .modeYin{font-size:27px;line-height:1;color:#2c7670}
+.heroUtility{max-width:100%;margin-top:2px}
+.utilityLinks{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.heroUtility .privacyDisclosure{flex:1 1 auto;min-width:0;margin:0;font-size:12px;color:#615b53}
+.heroUtility .privacyDisclosure summary{display:inline-flex;align-items:center;min-height:44px;cursor:pointer}
+.heroUtility .freeTestLink{
+  width:auto;min-height:44px;margin:0;padding:7px 10px;border-radius:8px;
+  background:transparent;font-size:12px;font-weight:750;
+}
+.heroUtility .freeTestLink:hover{background:#f4eee6}
+.heroUtility .error{margin:2px 0 6px}
+.testPicker{max-width:700px;margin-top:5px}
+@media(max-width:760px){
+  .hero{min-height:246px;gap:14px;padding:15px;border-radius:16px}
+  .hero::before{background-position:69% 46%}
+  .hero::after{
+    background:linear-gradient(0deg,rgba(251,248,241,.93),rgba(251,248,241,0) 60%),
+      linear-gradient(90deg,rgba(253,250,244,.96) 0%,rgba(253,250,244,.68) 50%,rgba(253,250,244,.04) 89%);
+  }
+  .heading{min-height:0;padding:0}
+  .heading :is(h1,h2){font-size:clamp(33px,8.5vw,42px);line-height:1.03;margin:5px 0 0}
+  .heading .lead{max-width:92%;font-size:13px;line-height:1.33;margin:6px 0 0}
+  .question{margin:0}
+  .question textarea{min-height:52px;font-size:16px;border-radius:13px}
+  .heroActions{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0 0}
+  .heroActions .submit,.heroActions .testButton{
+    min-height:74px;padding:9px 7px;gap:5px;border-radius:12px;
+  }
+  .heroActions .submit{flex-direction:column;text-align:center}
+  .heroActions .submit .testButtonText{flex:0 1 auto;text-align:center}
+  .heroActions .submit .testButtonKicker{font-size:10px}
+  .heroActions .submit .testButtonText strong{font-size:12.5px;line-height:1.2}
+  .heroActions .submit svg:first-child{width:19px;height:19px}
+  .heroActions .submit svg:last-child{display:none}
+  .heroActions .testButton{flex-direction:column;font-size:12.5px;text-align:center}
+  .heroActions .testButton .modeYin{font-size:21px}
+  .utilityLinks{gap:4px}
+  .heroUtility .privacyDisclosure{font-size:11px}
+  .heroUtility .freeTestLink{font-size:11px;padding:6px 5px}
+  .testPicker{padding:11px}
+}
+@media(max-width:360px){
+  .hero{min-height:256px;padding:13px;gap:12px}
+  .heading :is(h1,h2){font-size:32px}
+  .heading .lead{font-size:12px;max-width:100%}
+  .heroActions{gap:6px}
+  .heroActions .submit,.heroActions .testButton{min-height:82px;padding:7px 5px}
+  .heroActions .submit .testButtonText strong,.heroActions .testButton{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .heroActions .submit,.heroActions .testButton{transition:none}
+}
+
+/* Ideas & Coaching · quiet editorial navigation instead of three competing modes. */
+.exploreLinks{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;margin:10px 1px 0;
+}
+.exploreLink{
+  display:grid;grid-template-columns:32px minmax(0,1fr) 18px;
+  align-items:center;column-gap:10px;min-width:0;
+  min-height:76px;padding:12px 13px;
+  border:1px solid #dfcbb7;border-radius:15px;
+  background:linear-gradient(125deg,#fffdf9,#f6ece0);
+  color:#65432e;text-decoration:none;
+  box-shadow:0 3px 12px rgba(79,56,36,.035),inset 0 1px rgba(255,255,255,.85);
+  transition:background .16s,border-color .16s,box-shadow .16s;
+}
+.exploreLink:hover{
+  background:linear-gradient(125deg,#fffdfa,#f1e0cc);
+  border-color:#bb9875;box-shadow:0 5px 16px rgba(79,56,36,.075);
+}
+.exploreLink:focus-visible{outline:3px solid #187b78;outline-offset:2px}
+.exploreIcon{
+  display:grid;place-items:center;width:32px;height:32px;
+  border:1px solid #e8d5c0;border-radius:11px;background:#f5e7d7;color:#825b3b;
+}
+.exploreCopy{display:block;min-width:0;line-height:1.3}
+.exploreCopy strong{
+  display:block;overflow-wrap:break-word;text-wrap:balance;
+  font:800 13px/1.28 Arial,Helvetica,sans-serif;
+}
+.exploreCopy small{
+  display:block;margin-top:5px;color:#705e4c;
+  font:500 11px/1.32 Arial,Helvetica,sans-serif;
+}
+.exploreArrow{color:#94765a;justify-self:end;flex-shrink:0}
+.exploreTemple{
+  background:linear-gradient(125deg,#f4f9f5,#eaf2ed);
+  border-color:#bdd0c5;color:#265e5b;
+}
+.exploreTemple:hover{background:linear-gradient(125deg,#f1f8f4,#deebe4);border-color:#84aca0}
+.exploreTemple .exploreIcon{background:#e2eee9;border-color:#c9e0d7;color:#2a7770}
+.exploreTemple .exploreCopy small{color:#446760}
+.exploreTemple .exploreArrow{color:#52837a}
+.templeHeading{
+  display:flex;align-items:center;gap:8px;
+  margin:16px 1px 6px;scroll-margin-top:95px;
+  color:#755b45;text-transform:uppercase;letter-spacing:.1em;
+  font:800 11px/1.45 Arial,Helvetica,sans-serif;
+}
+.templeHeading svg{color:#2e7e78;flex-shrink:0}
+.templeHeading::after{
+  content:"";height:1px;flex:1;min-width:12px;margin-left:5px;
+  background:linear-gradient(90deg,#dfcdb9,transparent);
+}
+.heroActions .testButton .testButtonText{
+  display:flex;flex-direction:column;gap:3px;min-width:0;
+  text-align:left;
+}
+.heroActions .testButton .testButtonKicker{
+  color:#316963;font-size:11px;font-weight:750;line-height:1.2;
+}
+.heroActions .testButton .testButtonText strong{
+  color:#285d58;font-size:clamp(13px,1.3vw,16px);line-height:1.25;
+}
+.heroActions .testButton .modeYin{
+  display:block;color:#33766e;font-family:Georgia,"Times New Roman",serif;font-weight:400;
+  font-variant-emoji:text;line-height:1;
+}
+.heroUtility{margin-top:4px}
+.utilityLinks{gap:4px 10px}
+@media(max-width:760px){
+  .root{margin-top:4px;margin-bottom:18px;max-width:100%}
+  .hero{min-height:238px;gap:12px}
+  .heading :is(h1,h2){font-size:clamp(32px,8.7vw,42px)}
+  .heroActions .submit,.heroActions .testButton{
+    min-height:78px;padding:9px 8px;gap:5px;border-radius:13px;
+  }
+  .heroActions .testButton .testButtonText{text-align:center;gap:3px}
+  .heroActions .testButton .testButtonKicker{font-size:9.5px;line-height:1.2}
+  .heroActions .testButton .testButtonText strong{font-size:12.5px;line-height:1.2}
+  .heroActions .testButton .modeYin{font-size:23px}
+  .exploreLinks{gap:7px;margin:9px 0 0}
+  .exploreLink{
+    grid-template-columns:minmax(0,1fr) 17px;grid-template-rows:26px auto;
+    align-content:start;row-gap:6px;column-gap:4px;
+    min-height:80px;padding:10px 11px;border-radius:13px;
+  }
+  .exploreIcon{grid-column:1;grid-row:1;width:27px;height:27px;border-radius:9px}
+  .exploreIcon svg{width:16px;height:16px}
+  .exploreCopy{grid-column:1/-1;grid-row:2}
+  .exploreCopy strong{font-size:clamp(11.8px,3.3vw,13px);line-height:1.24}
+  .exploreCopy small{display:none}
+  .exploreArrow{grid-column:2;grid-row:1;align-self:center;width:16px;height:16px}
+  .heroUtility{margin-top:4px}
+  .templeHeading{margin:14px 1px 5px;font-size:10.5px}
+}
+@media(max-width:360px){
+  .hero{min-height:242px}
+  .heading :is(h1,h2){font-size:32px}
+  .heroActions .submit,.heroActions .testButton{min-height:82px;padding:8px 5px}
+  .heroActions .testButton .testButtonKicker{font-size:9px}
+  .heroActions .testButton .testButtonText strong{font-size:12px}
+  .exploreLink{padding:9px;min-height:78px}
+  .exploreCopy strong{font-size:11.6px}
+}
+@media(prefers-reduced-motion:reduce){.exploreLink{transition:none}}
+
+
+/* Four-path hub is now the first screen. Legacy Dao author readings, offers,
+   verified aphorisms and question privacy mount only after Temple is chosen. */
+.root .hero {
+  display:block; min-height:0; margin-top:10px; padding:0;
+  border:0; border-radius:0; background:none; box-shadow:none; overflow:visible;
+}
+.root .hero::before,.root .hero::after { display:none; }
+.root .hero .heading { display:none; }
+.root .hero .question {
+  display:block; margin:0 0 9px; padding:8px;
+  border:1px solid #d9cabe; background:#fffdfa; border-radius:14px;
+}
+.root .heroActions { display:block; margin:0 0 8px; }
+.root .heroActions .submit { display:none; }
+.root .heroActions .testButton {
+  display:flex; flex-direction:row; align-items:center; justify-content:center;
+  gap:12px; width:100%; min-height:48px; padding:10px 14px; text-align:left;
+}
+.root .heroActions .testButton .testButtonText { text-align:left; }
+.root .exploreLinks { display:none; }
+.root .heroUtility { margin:4px 0; }
+.root .templeHeading { margin-top:16px; }
+@media (max-width:760px) {
+  .root .hero { margin-top:9px; padding:0; min-height:0; }
+  .root .heroActions .testButton { min-height:48px; padding:9px; }
+}
+
+/* Embedded Temple & Psychic Insights: keep question and both actions together.
+   The legacy 350px min-height forced hundreds of empty pixels on iPhone. */
+.root[data-temple-mode="true"] {
+  margin: 0 0 12px;
+  padding: clamp(7px,1.3vw,13px);
+  background: #fffaf4;
+}
+.root[data-temple-mode="true"] .hero {
+  display: block;
+  min-height: 0;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.root[data-temple-mode="true"] .hero .question {
+  width: 100%;
+  margin: 0;
+  padding: 7px;
+  border-radius: 14px;
+}
+.root[data-temple-mode="true"] .heroActions {
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  gap: 8px;
+  width: 100%;
+  margin: 9px 0 0;
+}
+.root[data-temple-mode="true"] .heroActions .testButton {
+  min-height: 52px;
+  width: 100%;
+  margin: 0;
+  padding: 10px 13px;
+  border-radius: 12px;
+}
+.root[data-temple-mode="true"] .heroActions .diagnosticAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+  min-height: 52px;
+  padding: 11px 13px;
+  border: 1px solid #bd9f8a;
+  border-radius: 12px;
+  background: #fffaf5;
+  color: #795139;
+  font: 750 clamp(12px,1.25vw,15px)/1.3 Arial,Helvetica,sans-serif;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.root[data-temple-mode="true"] .diagnosticAction svg { flex: 0 0 auto; width: 18px; height: 18px; }
+.root[data-temple-mode="true"] .diagnosticAction span { flex: 1; min-width: 0; }
+.root[data-temple-mode="true"] .diagnosticAction:hover {
+  border-color: #936a53;
+  background: #f4e9df;
+}
+.root[data-temple-mode="true"] .heroUtility { margin: 7px 0 0; }
+.root[data-temple-mode="true"] .templeHeading { margin-top: 13px; }
+@media (max-width: 600px) {
+  .root[data-temple-mode="true"] .hero { min-height: 0; height: auto; }
+  .root[data-temple-mode="true"] .heroActions { gap: 7px; }
+  .root[data-temple-mode="true"] .heroActions .testButton,
+  .root[data-temple-mode="true"] .heroActions .diagnosticAction {
+    min-height: 48px;
+    padding: 9px 10px;
+  }
+  .root[data-temple-mode="true"] .heroActions .diagnosticAction {
+    font-size: clamp(12px,3.4vw,14px);
+  }
+}
+@media (max-width: 360px) {
+  .root[data-temple-mode="true"] .hero { min-height: 0; }
+  .root[data-temple-mode="true"] .heroActions .diagnosticAction { font-size: 12px; }
+}
+
+/* WebKit 320px: don't place the test-chooser tap target next to an overflowing
+   privacy summary while the textarea has focus. Leave room for fixed mobile nav. */
+@media(max-width:360px){
+  .root .heroUtility .utilityLinks{display:grid;grid-template-columns:minmax(0,1fr);gap:3px}
+  .root .heroUtility .privacyDisclosure{width:100%}
+  .root .heroUtility .freeTestLink{
+    width:100%;min-height:48px;justify-content:space-between;
+    margin:0;padding:10px 12px;background:#eef5ed;border:1px solid #c2d6cb;
+    border-radius:10px;touch-action:manipulation;
+    scroll-margin-block-end:calc(116px + env(safe-area-inset-bottom,0px));
+  }
+}
+
+/* 320px EN/RU/ES: flatten nested Temple/preview card padding rather than
+   squeezing the three full-width aphorism rows into narrow text columns. */
+@media(max-width:360px){
+  .root .results{padding:2px;border-radius:12px}
+  .root .relatedAphorisms{padding:4px;border-radius:12px}
+  .root .aphorisms{min-width:0;width:100%}
+  .root .aphorisms li{width:100%;padding:10px 9px}
+}
+
+
+/* Temple Insights · restore the Co-Ideae scenic composition (25 Oct 2026).
+   All controls are real HTML and use the existing private in-browser engine.
+   Keep this scoped: Ideas/Coaching presentation must not change. */
+.heroLayout { display: contents; }
+.root[data-temple-mode="true"] {
+  margin: 0 0 13px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.templeScenic {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  min-height: 475px;
+  padding: clamp(19px, 3vw, 31px);
+  border: 1px solid #decfbd;
+  border-radius: 19px;
+  overflow: hidden;
+  background: #f4eee2;
+  color: #3f352b;
+}
+.templeScenic::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url("/images/holistic-house/ideas-pine-sharp.avif") 70% 45% / cover no-repeat;
+}
+.templeScenic::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(0deg, rgba(255,250,242,.82), rgba(255,250,242,0) 71%),
+    linear-gradient(90deg, rgba(255,250,242,.95), rgba(255,250,242,.76) 36%, rgba(255,250,242,.13) 83%);
+}
+/* Previous global .root .hero rules hide the heading and the artwork.
+   Restore both for Temple only; the scenic wrapper owns the photograph. */
+.root[data-temple-mode="true"] .hero {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 23px;
+  min-height: 226px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+  box-shadow: none;
+}
+.root[data-temple-mode="true"] .hero .heading {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+}
+.root[data-temple-mode="true"] .hero .heading :is(h1,h2) {
+  margin: 8px 0 0;
+  font-size: clamp(40px, 5.6vw, 67px);
+  line-height: 1.03;
+  letter-spacing: -.045em;
+  color: #30251e;
+}
+.root[data-temple-mode="true"] .hero .heading .lead {
+  max-width: 390px;
+  margin-top: 9px;
+  color: #564a40;
+  font-size: 15px;
+  line-height: 1.43;
+}
+.root[data-temple-mode="true"] .hero .question {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.root[data-temple-mode="true"] .hero .question textarea {
+  min-height: 54px;
+  max-height: 146px;
+  padding-top: 14px;
+  padding-bottom: 13px;
+  border: 1px solid #cbb9a8;
+  border-radius: 15px;
+  background: rgba(255,254,251,.94);
+  box-shadow: 0 4px 14px rgba(77,49,32,.09);
+}
+.root[data-temple-mode="true"] .heroActions {
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+}
+.root[data-temple-mode="true"] .heroActions .testButton,
+.root[data-temple-mode="true"] .heroActions .diagnosticAction {
+  display: flex;
+  min-height: 54px;
+  width: 100%;
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 13px;
+}
+.root[data-temple-mode="true"] .heroActions .testButton {
+  gap: 10px;
+  background: linear-gradient(107deg, #987052, #785039);
+  border: 1px solid #79533c;
+  color: #fffdf7;
+  box-shadow: 0 5px 13px rgba(88,55,30,.12);
+}
+.root[data-temple-mode="true"] .heroActions .testButton:hover {
+  background: linear-gradient(107deg, #845d42, #603d2d);
+}
+.root[data-temple-mode="true"] .heroActions .testButton .modeYin,
+.root[data-temple-mode="true"] .heroActions .testButton .testButtonKicker,
+.root[data-temple-mode="true"] .heroActions .testButton .testButtonText strong {
+  color: #fffdf7;
+}
+.root[data-temple-mode="true"] .heroActions .testButton .testButtonText {
+  text-align: center;
+}
+.root[data-temple-mode="true"] .heroActions .diagnosticAction {
+  background: rgba(255,254,251,.94);
+  border: 2px solid #9a7459;
+  color: #6a4734;
+  font-size: 14px;
+  box-shadow: 0 4px 13px rgba(88,55,30,.07);
+}
+.root[data-temple-mode="true"] .heroActions .diagnosticAction:hover {
+  background: #fffaf4;
+  border-color: #694830;
+}
+.root[data-temple-mode="true"] .heroUtility { margin: 0; }
+.root[data-temple-mode="true"] .utilityLinks {
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  gap: 4px;
+}
+.root[data-temple-mode="true"] .heroUtility .privacyDisclosure {
+  margin: 0;
+  color: #514c46;
+}
+.root[data-temple-mode="true"] .heroUtility .privacyDisclosure summary { min-height: 36px; }
+.root[data-temple-mode="true"] .heroUtility .freeTestLink {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 9px 13px;
+  border: 1px solid rgba(228,211,191,.64);
+  border-radius: 12px;
+  background: rgba(255,253,249,.86);
+  color: #76543e;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 13px;
+}
+.root[data-temple-mode="true"] .heroUtility .freeTestLink:hover {
+  background: #fffcf8;
+}
+@media (max-width: 600px) {
+  .templeScenic {
+    min-height: 480px;
+    padding: 17px 15px 14px;
+    gap: 7px;
+    border-radius: 17px;
+  }
+  .templeScenic::before { background-position: 69% 45%; }
+  .templeScenic::after {
+    background:
+      linear-gradient(0deg, rgba(255,250,242,.76), rgba(255,250,242,0) 71%),
+      linear-gradient(90deg, rgba(255,250,242,.94) 0%, rgba(255,250,242,.70) 42%, rgba(255,250,242,.10) 90%);
+  }
+  .root[data-temple-mode="true"] .hero { min-height: 231px; gap: 18px; }
+  .root[data-temple-mode="true"] .hero .heading :is(h1,h2) {
+    font-size: clamp(35px, 9.2vw, 44px);
+  }
+  .root[data-temple-mode="true"] .hero .heading .lead {
+    max-width: 84%;
+    margin-top: 7px;
+    font-size: 13.5px;
+    line-height: 1.37;
+  }
+  .root[data-temple-mode="true"] .heroActions .testButton,
+  .root[data-temple-mode="true"] .heroActions .diagnosticAction {
+    min-height: 54px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .root[data-temple-mode="true"] .heroActions .testButton .testButtonText { text-align: center; }
+  .root[data-temple-mode="true"] .heroActions .testButton .testButtonText strong { font-size: 14px; }
+  .root[data-temple-mode="true"] .heroUtility .freeTestLink { min-height: 46px; }
+}
+@media (max-width: 360px) {
+  .templeScenic { min-height: 475px; padding: 13px 11px 12px; }
+  .root[data-temple-mode="true"] .hero { min-height: 226px; }
+  .root[data-temple-mode="true"] .hero .heading :is(h1,h2) { font-size: 34px; }
+  .root[data-temple-mode="true"] .hero .heading .lead { max-width: 92%; font-size: 12.5px; }
+  .root[data-temple-mode="true"] .heroActions .diagnosticAction { font-size: 12.2px; }
+  .root[data-temple-mode="true"] .heroUtility .freeTestLink { font-size: 12px; }
+}
+
+/* Holistic Support: compact second row for meditation and personal talismans. */
+[data-holistic-entry="true"] .holisticQuickLink{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;min-height:44px;border:1px solid #dcc9b6;border-radius:12px;padding:8px 10px;background:#faf1e5;color:#72513b;text-align:center;text-decoration:none;font-size:12px;font-weight:700;line-height:1.25}
+[data-holistic-entry="true"] .holisticQuickLink:hover,[data-holistic-entry="true"] .holisticQuickLink:focus-visible{border-color:#926a4e;background:#f2e5d4}
+[data-holistic-entry="true"] .holisticQuickLink span:first-child{font-size:20px;line-height:1}
+@media(max-width:350px){[data-holistic-entry="true"] .holisticQuickLink{padding:7px 5px;font-size:10.5px;gap:4px}}
+
+
+/* Holistic Support · image-led first-screen polish (25 Oct 2026).
+   Scope strictly to the Holistic variant: Temple Insights and Coaching keep
+   their existing layout and their independent browser-only insight engines. */
+.root[data-holistic-entry="true"]{
+  margin:0 0 18px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.root[data-holistic-entry="true"] .templeScenic{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  gap:clamp(11px,1.7vw,19px);
+  padding:clamp(18px,2.8vw,33px);
+  border:1px solid #dfcbb8;
+  border-radius:23px;
+  background:#f7eee2;
+  color:#352920;
+  box-shadow:0 10px 30px rgba(94,69,47,.09);
+}
+.root[data-holistic-entry="true"] .templeScenic::before{
+  background-image:url("/images/holistic-house/ideas-pine-sharp.avif");
+  background-position:73% 46%;
+  background-size:cover;
+  filter:saturate(.88);
+}
+.root[data-holistic-entry="true"] .templeScenic::after{
+  background:
+    linear-gradient(0deg,rgba(250,242,231,.9) 0%,rgba(250,242,231,.12) 55%,rgba(250,242,231,.08) 100%),
+    linear-gradient(90deg,rgba(255,251,244,.96) 0%,rgba(255,251,244,.87) 38%,rgba(255,250,241,.36) 74%,rgba(255,250,241,.08) 100%);
+}
+.root[data-holistic-entry="true"] .hero{
+  flex:1 1 auto;
+  justify-content:space-between;
+  gap:22px;
+  min-height:clamp(280px,29vw,385px);
+  margin:0;
+  padding:0;
+}
+.root[data-holistic-entry="true"] .hero .heading :is(h1,h2){
+  max-width:490px;
+  margin:12px 0 0;
+  color:#2e221d;
+  font-size:clamp(44px,5.3vw,74px);
+  line-height:1.02;
+  letter-spacing:-.05em;
+  text-wrap:balance;
+}
+.root[data-holistic-entry="true"] .hero .heading .eyebrow{
+  color:#8b6347;
+  font-size:11px;
+  letter-spacing:.12em;
+}
+.root[data-holistic-entry="true"] .hero .heading .lead{
+  max-width:410px;
+  margin-top:15px;
+  color:#584a3e;
+  font-size:clamp(15px,1.45vw,18px);
+  line-height:1.48;
+  text-wrap:pretty;
+}
+.root[data-holistic-entry="true"] .hero .question{
+  width:100%;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+}
+.root[data-holistic-entry="true"] .hero .question textarea{
+  min-height:62px;
+  max-height:150px;
+  padding-block:18px;
+  border:1px solid #cbb9a7;
+  border-radius:17px;
+  background:rgba(255,254,252,.96);
+  color:#382b23;
+  box-shadow:0 7px 20px rgba(80,57,38,.11);
+}
+.root[data-holistic-entry="true"] .hero .question textarea:focus-visible{
+  border-color:#8c6346;
+  box-shadow:0 0 0 3px rgba(147,109,74,.18);
+}
+.root[data-holistic-entry="true"] .heroActions{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:10px;
+  width:100%;
+  margin:0;
+}
+.root[data-holistic-entry="true"] .heroActions .testButton{
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr) 20px;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  min-height:67px;
+  padding:12px clamp(14px,2vw,24px);
+  border:1px solid #875d42;
+  border-radius:16px;
+  background:linear-gradient(110deg,#987052,#795039);
+  color:#fffaf4;
+  box-shadow:0 7px 19px rgba(92,55,30,.14);
+}
+.root[data-holistic-entry="true"] .heroActions .testButton .testButtonText{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  min-width:0;
+  text-align:center;
+}
+.root[data-holistic-entry="true"] .heroActions .testButton .testButtonKicker{
+  color:#fff4e9;
+  font-size:11px;
+}
+.root[data-holistic-entry="true"] .heroActions .testButton .testButtonText strong{
+  color:#fffdf9;
+  font-size:clamp(14px,1.5vw,18px);
+  line-height:1.25;
+}
+.root[data-holistic-entry="true"] .heroActions .testButton .modeYin{color:#fffaf4;font-size:29px}
+.root[data-holistic-entry="true"] .heroActions .testButton>svg{width:19px;height:19px;color:#fffaf4}
+.root[data-holistic-entry="true"] .heroActions .diagnosticAction{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  width:100%;
+  min-height:57px;
+  padding:12px clamp(14px,2vw,23px);
+  border:1.5px solid #79533c;
+  border-radius:16px;
+  background:rgba(255,252,247,.95);
+  color:#674532;
+  font-size:clamp(13px,1.35vw,17px);
+  box-shadow:0 5px 13px rgba(94,61,40,.06);
+}
+.root[data-holistic-entry="true"] .heroActions .diagnosticAction span{flex:1;text-align:center}
+.root[data-holistic-entry="true"] .heroActions .diagnosticAction:hover{background:#fffdf9;border-color:#603c28}
+
+/* Two photographic navigation cards — never additional forms or duplicate flows. */
+.holisticQuickCards{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  min-width:0;
+  margin:14px 0 0;
+}
+.root[data-holistic-entry="true"] .holisticQuickLink{
+  position:relative;
+  isolation:isolate;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:7px;
+  min-width:0;
+  min-height:182px;
+  padding:clamp(16px,1.9vw,23px);
+  overflow:hidden;
+  border:1px solid #e2d0be;
+  border-radius:21px;
+  background:#f9f0e4;
+  color:#493126;
+  text-align:left;
+  text-decoration:none;
+  box-shadow:0 5px 16px rgba(84,57,37,.045);
+  transition:border-color .18s,transform .18s,box-shadow .18s;
+}
+.root[data-holistic-entry="true"] .holisticQuickLink::before,
+.root[data-holistic-entry="true"] .holisticQuickLink::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  pointer-events:none;
+}
+.root[data-holistic-entry="true"] .holisticQuickLink::before{
+  background:url("/images/holistic-house/reiki-practitioner-sunrise.webp") center / cover no-repeat;
+  opacity:.78;
+}
+.root[data-holistic-entry="true"] .holisticQuickLink:nth-child(2)::before{
+  background-image:url("/academy/reiki-yggdrasil/source/advanced-runes.png");
+  background-position:70% center;
+  opacity:.55;
+}
+.root[data-holistic-entry="true"] .holisticQuickLink::after{
+  z-index:-1;
+  background:linear-gradient(90deg,rgba(255,250,240,.97) 0%,rgba(255,249,237,.83) 50%,rgba(255,249,237,.14) 100%);
+}
+.root[data-holistic-entry="true"] .holisticQuickLink:hover{
+  transform:translateY(-2px);
+  border-color:#b9906e;
+  box-shadow:0 9px 20px rgba(84,57,37,.10);
+}
+.holisticCardIcon{display:inline-flex;align-items:center;justify-content:center;min-height:28px;color:#a96d37;font-size:30px;line-height:1}
+.root[data-holistic-entry="true"] .holisticQuickLink:nth-child(2) .holisticCardIcon{color:#835a45}
+.root[data-holistic-entry="true"] .holisticQuickLink strong{
+  max-width:75%;
+  color:#493126;
+  font:400 clamp(19px,2.3vw,27px)/1.14 Georgia,"Times New Roman",serif;
+  letter-spacing:-.02em;
+  text-wrap:balance;
+  overflow-wrap:anywhere;
+}
+.holisticCardDescription{
+  display:block;
+  max-width:74%;
+  color:#685b51;
+  font:12.5px/1.42 Arial,Helvetica,sans-serif;
+  text-wrap:pretty;
+}
+.holisticCardArrow{
+  position:absolute;
+  right:13px;
+  bottom:12px;
+  display:grid;
+  place-items:center;
+  width:36px;
+  height:36px;
+  border:1px solid #e9d8c6;
+  border-radius:50%;
+  background:rgba(255,251,244,.94);
+  color:#6b4934;
+}
+/* Privacy and the free-test action have their own calm strip under both cards. */
+.root[data-holistic-entry="true"] .heroUtility{max-width:none;margin:12px 0 0}
+.root[data-holistic-entry="true"] .utilityLinks{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px;
+}
+.root[data-holistic-entry="true"] .heroUtility .privacyDisclosure{
+  flex:none;
+  width:100%;
+  margin:0;
+  color:#685c52;
+  font-size:12px;
+  text-align:center;
+}
+.root[data-holistic-entry="true"] .heroUtility .privacyDisclosure summary{
+  display:inline-flex;
+  justify-content:center;
+  min-height:36px;
+  margin:0 auto;
+  color:#65584e;
+}
+.root[data-holistic-entry="true"] .heroUtility .freeTestLink{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  width:100%;
+  min-height:53px;
+  margin:0;
+  padding:12px 17px;
+  border:1px solid #dcc7b0;
+  border-radius:16px;
+  background:#fffaf3;
+  color:#765038;
+  font-size:14px;
+  font-weight:750;
+  text-decoration:none;
+  box-shadow:0 4px 13px rgba(99,72,44,.04);
+}
+.root[data-holistic-entry="true"] .heroUtility .freeTestLink:hover{background:#f7ede0}
+
+@media(max-width:600px){
+  .root[data-holistic-entry="true"] .templeScenic{
+    min-height:0;
+    gap:10px;
+    padding:16px 14px 15px;
+    border-radius:20px;
+  }
+  .root[data-holistic-entry="true"] .templeScenic::before{background-position:73% 46%}
+  .root[data-holistic-entry="true"] .templeScenic::after{
+    background:
+      linear-gradient(0deg,rgba(251,244,234,.94),rgba(251,244,234,.07) 70%),
+      linear-gradient(90deg,rgba(255,251,244,.97) 0%,rgba(255,251,244,.80) 48%,rgba(255,251,244,.16) 100%);
+  }
+  .root[data-holistic-entry="true"] .hero{
+    min-height:clamp(282px,78vw,352px);
+    gap:18px;
+  }
+  .root[data-holistic-entry="true"] .hero .heading :is(h1,h2){
+    max-width:88%;
+    margin-top:9px;
+    font-size:clamp(35px,8.9vw,48px);
+    line-height:1.03;
+  }
+  .root[data-holistic-entry="true"] .hero .heading .eyebrow{
+    font-size:9.5px;
+    letter-spacing:.09em;
+  }
+  .root[data-holistic-entry="true"] .hero .heading .lead{
+    max-width:85%;
+    margin-top:9px;
+    font-size:clamp(12.5px,3.4vw,14px);
+    line-height:1.43;
+  }
+  .root[data-holistic-entry="true"] .hero .question textarea{
+    min-height:56px;
+    max-height:120px;
+    padding-block:15px;
+    border-radius:15px;
+  }
+  .root[data-holistic-entry="true"] .heroActions{gap:8px}
+  .root[data-holistic-entry="true"] .heroActions .testButton{
+    min-height:62px;
+    padding:9px 13px;
+    gap:8px;
+    border-radius:14px;
+  }
+  .root[data-holistic-entry="true"] .heroActions .testButton .testButtonKicker{font-size:10px}
+  .root[data-holistic-entry="true"] .heroActions .testButton .testButtonText strong{font-size:14px}
+  .root[data-holistic-entry="true"] .heroActions .diagnosticAction{
+    min-height:52px;
+    padding:10px 13px;
+    border-radius:14px;
+    font-size:13px;
+  }
+  .holisticQuickCards{gap:8px;margin-top:10px}
+  .root[data-holistic-entry="true"] .holisticQuickLink{
+    min-height:166px;
+    gap:5px;
+    padding:13px 12px 43px;
+    border-radius:16px;
+  }
+  .root[data-holistic-entry="true"] .holisticQuickLink strong{
+    max-width:100%;
+    font-size:clamp(17px,4.5vw,22px);
+  }
+  .holisticCardDescription{max-width:100%;font-size:11.3px;line-height:1.35}
+  .holisticCardArrow{right:9px;bottom:8px;width:31px;height:31px}
+  .root[data-holistic-entry="true"] .heroUtility{margin-top:8px}
+  .root[data-holistic-entry="true"] .heroUtility .freeTestLink{min-height:49px;font-size:12.5px}
+}
+@media(max-width:350px){
+  .root[data-holistic-entry="true"] .templeScenic{padding:13px 11px 12px}
+  .root[data-holistic-entry="true"] .hero{min-height:297px;gap:15px}
+  .root[data-holistic-entry="true"] .hero .heading :is(h1,h2){max-width:100%;font-size:34px}
+  .root[data-holistic-entry="true"] .hero .heading .lead{max-width:91%;font-size:12.3px}
+  .root[data-holistic-entry="true"] .heroActions .testButton{grid-template-columns:23px minmax(0,1fr) 17px;padding:9px}
+  .root[data-holistic-entry="true"] .heroActions .testButton .testButtonText strong{font-size:12.7px}
+  .root[data-holistic-entry="true"] .heroActions .diagnosticAction{gap:7px;padding:9px;font-size:12px}
+  .root[data-holistic-entry="true"] .holisticQuickLink{padding:11px 9px 40px;min-height:162px}
+  .root[data-holistic-entry="true"] .holisticQuickLink strong{font-size:16.5px}
+  .holisticCardDescription{font-size:10.7px}
+}
+@media(prefers-reduced-motion:reduce){
+  .root[data-holistic-entry="true"] .holisticQuickLink{transition:none}
+  .root[data-holistic-entry="true"] .holisticQuickLink:hover{transform:none}
+}

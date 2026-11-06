@@ -115,3 +115,26 @@
   text-decoration:underline; text-underline-offset:3px; }
 .savedReviewLink:hover, .savedReviewLink:focus-visible { color:#fff; }
 .savedReviewLink svg { flex:none; }
+
+/* Owner-only Reiki enrollment removal: visible at any progress status, with an explicit confirmation. */
+.savedCardHeader{display:flex;align-items:flex-start;justify-content:space-between;align-self:stretch;gap:7px;min-width:0}
+.savedCardHeader .savedEyebrow{padding-top:7px;min-width:0;overflow-wrap:anywhere}
+.savedRemoveButton{display:grid;place-items:center;flex:none;width:44px;height:44px;min-width:44px;min-height:44px;
+  padding:0;border:1px solid #b6dce180;border-radius:12px;background:#ffffff16;color:#fff;cursor:pointer}
+.savedRemoveButton:hover{background:#ffffff32;border-color:#b6dce1}
+.savedRemoveButton:focus-visible{outline:3px solid #87eef1;outline-offset:2px}
+.savedRemoveButton:disabled{opacity:.55;cursor:wait}
+.removeDialog{width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:0;overflow:auto;
+  border:1px solid #b6dce1;border-radius:18px;background:#fffefa;color:#233e50;box-shadow:0 24px 72px #0c2d4e40}
+.removeDialog::backdrop{background:#0d293bbb}
+.removeDialogContent{display:grid;gap:13px;padding:23px}
+.removeDialogContent h3{font:700 22px/1.2 system-ui,sans-serif;margin:0;color:#163b50}
+.removeDialogContent p{font-size:13px;line-height:1.5;margin:0;color:#4b6370}
+.removeDialogContent .removeError{padding:9px 11px;background:#fff0ea;color:#9c352e;border-radius:10px}
+.removeActions{display:flex;flex-wrap:wrap;gap:9px}
+.removeActions button{min-height:44px;padding:10px 14px;border-radius:10px;cursor:pointer;font:750 13px system-ui,sans-serif}
+.removeConfirm{border:1px solid #9f3940;background:#9f3940;color:#fff}
+.removeCancel{border:1px solid #d2e2e6;background:#fff;color:#23546b}
+.removeActions button:focus-visible{outline:3px solid #078aa0;outline-offset:2px}
+.removeActions button:disabled{opacity:.6;cursor:wait}
+@media(max-width:340px){.savedRemoveButton{border-radius:10px}.removeDialogContent{padding:17px}}

@@ -6,7 +6,18 @@ import { unstable_cache, unstable_noStore as noStore } from 'next/cache';
 import { toPublishedSiteVideo } from './model.js';
 import { builtInSiteVideoRecords } from './defaults.js';
 import type { PublishedSiteVideo, SiteVideoStore } from './model.js';
-import { getSiteVideoStore } from './store.js';
+import { getPublicSiteVideoStore } from './store.js';
+const diagnosticCategories = new Set([
+  'provider-limit', 'provider-auth', 'provider-endpoint', 'provider-5xx',
+  'provider-http', 'provider-command', 'provider-protocol', 'timeout', 'transport',
+]);
+function safeStorageDiagnostic(error: unknown): string {
+  const category = error && typeof error === 'object' && 'diagnosticCode' in error
+    ? error.diagnosticCode : undefined;
+  return typeof category === 'string' && diagnosticCategories.has(category)
+    ? category : 'unknown';
+}
+
 
 function approvedBuiltInVideos(): Record<string, PublishedSiteVideo> {
   // Storage-off mode is cheap and deterministic. Never share its cache key
@@ -21,7 +32,7 @@ function approvedBuiltInVideos(): Record<string, PublishedSiteVideo> {
 // No draft fields, session data, cookies or per-request CSP nonce are cached.
 const readStoredPublishedVideos = unstable_cache(
   async (): Promise<Record<string, PublishedSiteVideo>> => {
-    const store = getSiteVideoStore() as SiteVideoStore | undefined;
+    const store = getPublicSiteVideoStore() as Pick<SiteVideoStore, 'get' | 'list'> | undefined;
     // Cached snapshots can still revalidate after a deployment switched to
     // the supported storage-off mode. Return an empty stored snapshot rather
     // than throwing (and retrying) during background revalidation. The actual
@@ -36,16 +47,14 @@ const readStoredPublishedVideos = unstable_cache(
         if (video) videos[record.key] = video;
       }
       return videos;
-    } catch {
-      // Fail closed: never show a draft, hidden override, or unverified builtin.
-      // Cache this *empty* public result for 60 seconds rather than throwing on
-      // every stale revalidation and re-hitting an unavailable external store.
-      // A successful owner publication invalidates the tag immediately.
-      console.warn('[site-videos] Public video storage unavailable; serving an empty 60s snapshot.');
+    } catch (error) {
+      // Cached published-only snapshot stays empty rather than restoring an
+      // unseen/hidden editorial override. No provider data enters this log.
+      console.warn('[site-videos] Public video storage unavailable; category=' + safeStorageDiagnostic(error) + '; serving an empty 60s snapshot.');
       return {};
     }
   },
-  ['holistic-house:published-videos:stored:v2'],
+  ['holistic-house:published-videos:stored:v3'],
   { revalidate: 60, tags: ['holistic-house-published-site-videos'] },
 );
 
@@ -57,18 +66,23 @@ const readStoredPublishedVideos = unstable_cache(
  */
 const readStoredPublishedSiteVideo = unstable_cache(
   async (key: string): Promise<PublishedSiteVideo | undefined> => {
-    const store = getSiteVideoStore() as SiteVideoStore | undefined;
+    const store = getPublicSiteVideoStore() as Pick<SiteVideoStore, 'get' | 'list'> | undefined;
     if (!store) return undefined;
     try {
       // This is a streamed or below-fold media section. A bounded HGET is
       // cheaper than HGETALL and cannot block the primary hero render.
+      // The existing Redis integration still times out after 3 seconds on
+      // exact production SHA. Keep the original low-latency public ceiling
+      // while an authorized provider repair is pending.
       return toPublishedSiteVideo(await store.get(key, { timeoutMs: 1800 }));
-    } catch {
-      console.warn('[site-videos] Public single-video read unavailable; keeping placement hidden for 60s.');
+    } catch (error) {
+      // This fixed diagnostic enum reveals neither request parameters nor
+      // credentials. Keep the publication gate fail-closed during an outage.
+      console.warn('[site-videos] Public single-video read unavailable; category=' + safeStorageDiagnostic(error) + '; keeping placement hidden for 60s.');
       return undefined;
     }
   },
-  ['holistic-house:published-video:single-key:v1'],
+  ['holistic-house:published-video:single-key:v2'],
   { revalidate: 60, tags: ['holistic-house-published-site-videos'] },
 );
 
@@ -76,7 +90,7 @@ export const getPublishedSiteVideo = cache(async (key: string): Promise<Publishe
   // Preserve the per-response CSP nonce and URL-derived locale; only the
   // explicitly approved public record is shared by the data cache.
   noStore();
-  if (!getSiteVideoStore()) {
+  if (!getPublicSiteVideoStore()) {
     const record = builtInSiteVideoRecords().find(item => item.key === key);
     return record ? toPublishedSiteVideo(record) : undefined;
   }
@@ -92,7 +106,7 @@ export const getPublishedSiteVideo = cache(async (key: string): Promise<Publishe
 export const getPublishedSiteVideos = cache(async (): Promise<Record<string, PublishedSiteVideo>> => {
   // The document's CSP nonce and locale can change on every request.
   noStore();
-  if (!getSiteVideoStore()) {
+  if (!getPublicSiteVideoStore()) {
     return approvedBuiltInVideos();
   }
   try {

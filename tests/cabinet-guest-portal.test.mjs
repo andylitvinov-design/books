@@ -5,17 +5,24 @@ import { getCompactNavigation, navigationCopy } from '../lib/site-navigation-mod
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('bottom-right compact navigation is Cabinet while retaining the existing account routes', () => {
-  const labels = { en: 'Cabinet', ru: 'Кабинет', es: 'Gabinete' }
+test('My Space replaces Cabinet across the public header, without changing six bottom-bar routes', () => {
+  const labels = { en: 'My Space', ru: 'Моё пространство', es: 'Mi espacio' }
   for (const locale of ['en', 'ru', 'es']) {
-    const item = getCompactNavigation(locale).at(-1)
-    assert.equal(item.id, 'house')
-    assert.equal(item.label, labels[locale])
-    assert.equal(item.ariaLabel, labels[locale])
-    assert.equal(item.href, '/' + (locale === 'es' ? 'en' : locale) + '/app')
+    const last = getCompactNavigation(locale).at(-1)
+    assert.equal(last.id, 'books')
+    assert.equal(last.href, '/' + locale + '/books')
     assert.equal(navigationCopy[locale].house, labels[locale])
+    assert.equal(navigationCopy[locale].cabinet, labels[locale])
   }
-  assert.match(read('components/mobile-bottom-navigation.tsx'), /house: LayoutDashboard/)
+  const nav = read('components/site-navigation.tsx')
+  const space = read('components/home-personal-space.tsx')
+  const layout = read('app/layout.tsx')
+  assert.match(nav, /<HomePersonalSpaceNavEntry locale=\{activeLocale\}/)
+  assert.doesNotMatch(nav, /cabinetEntryCopy|LayoutDashboard/)
+  assert.match(space, /aria-haspopup="dialog"/)
+  assert.match(space, /aria-expanded=\{space.open\}/)
+  assert.match(space, /site-cabinet-entry__full/)
+  assert.match(layout, /<HomePersonalSpaceProvider locale=\{lang\}>/)
 })
 
 test('portrait-only guest welcome explains growth tools and practitioner publishing', () => {

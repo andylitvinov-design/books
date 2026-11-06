@@ -1,0 +1,26 @@
+.page{background:#f9f8f3;min-height:100vh;color:#3e3a32;font-family:Arial,Helvetica,sans-serif;padding:24px 0 90px}
+.shell{width:min(950px,calc(100% - 24px));margin:auto}
+.page h1{font:400 clamp(28px,4vw,42px)/1.2 Georgia,serif;margin:12px 0}
+.page h2{font:400 29px/1.25 Georgia,serif;margin:0 0 16px}
+.page h3{font:700 16px/1.35 Arial,Helvetica,sans-serif}
+.page p{font-size:13px;line-height:1.5}
+.back{display:inline-flex;align-items:center;min-height:44px;color:#386e68;font-weight:750}
+.warning,.error{padding:12px;border:1px solid #d3bc9b;border-radius:12px;background:#fff4e3}
+.error{border-color:#c97a73;background:#fff0ef;color:#8d292b}
+.success{border-radius:12px;padding:12px;background:#eaf5eb;color:#326640}
+.formCard,.programmes{margin:22px 0;border:1px solid #e5d8c6;border-radius:18px;background:#fff;padding:24px}
+.formCard{display:grid;gap:12px}
+.formCard>label,.slot label{display:grid;gap:7px;font-size:12px;font-weight:800}
+.formCard input:not([type=checkbox]),.formCard select,.slot input{width:100%;min-height:44px;padding:9px 11px;border:1px solid #bcb3a5;border-radius:10px;background:white;font-size:15px;color:#3e3a32}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.twocol label{display:grid;gap:7px;font-size:12px;font-weight:800}
+.formCard .check{display:flex;align-items:flex-start;gap:8px;line-height:1.45;font-weight:500}
+.check input{flex:none;width:19px;height:19px}
+.page button{min-height:44px;border:0;border-radius:10px;background:#80533c;color:white;padding:10px 14px;cursor:pointer;font-weight:800}
+.page button:disabled{opacity:.5;cursor:not-allowed}
+.programCard{padding:15px;border:1px solid #dbcbbb;border-radius:13px;background:#fdf9f2;margin:12px 0}
+.programCard small{display:block;color:#73665b;overflow-wrap:anywhere}
+.slot{display:grid;gap:9px;margin:11px 0;padding:12px;border:1px solid #ddd4c6;border-radius:11px;background:white}
+.slot button{justify-self:start}
+.page :is(button,input,select,a):focus-visible{outline:3px solid #b68957;outline-offset:3px}
+@media(max-width:650px){.formCard,.programmes{padding:15px}.twocol{grid-template-columns:1fr}.slot button{width:100%}}

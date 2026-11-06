@@ -87,7 +87,12 @@ function CourseTile({course,locale,t,hero=false,onOpen,onClose,onMakePrimary,bus
           <small>{course.stage<4?(locale==='ru'?'Настройка курса':'Course setup'):t.day+' '+day+' '+t.of+' '+duration}
             {paused?' · '+t.paused:''}</small>
         </div>
-        {course.isPrimary&&<Star size={16} fill="currentColor" className={styles.favorite} aria-label={t.primary}/>}
+        <div className={styles.cardControls}>
+          {course.isPrimary&&<Star size={16} fill="currentColor" className={styles.favorite} aria-label={t.primary}/>}
+          {!finished&&<button type="button" className={styles.tileRemoveButton} data-course-close-cross
+            aria-label={t.close + ': ' + title} title={t.close} disabled={busy||!canManageCourses}
+            onClick={()=>onClose(course)}><X size={19} aria-hidden="true"/></button>}
+        </div>
       </div>
       {hero&&axes(course,locale).length>0&&<div className={styles.axes} aria-label={t.axes}>
         {axes(course,locale).slice(0,3).map(axis=><span key={axis}><Check size={13} aria-hidden="true"/>{axis}</span>)}
@@ -102,14 +107,12 @@ function CourseTile({course,locale,t,hero=false,onOpen,onClose,onMakePrimary,bus
         </button>
         {!hero&&!course.isPrimary&&!finished&&<button type="button" className={styles.linkButton}
           disabled={busy||!canManageCourses} onClick={()=>onMakePrimary(course)}>{t.primaryAction}</button>}
-        {!finished&&<button type="button" className={styles.linkButton} disabled={busy||!canManageCourses}
-          onClick={()=>onClose(course)}>{t.close}</button>}
       </div>
     </div>
   </article>
 }
 export default function MyCoursesDashboard({
-  courses=[],membership={},locale='en',busy=false,canAddCourse=false,canManageCourses=false,multiCourseEnabled=true,overLimit=false,onOpen,onNew,onClose,onPrimary,
+  courses=[],membership={},accountId,locale='en',busy=false,canAddCourse=false,canManageCourses=false,multiCourseEnabled=true,overLimit=false,onOpen,onNew,onClose,onPrimary,
 }){
   const t=copy[locale]||copy.en
   const {status,phase,busy:billingBusy,error:billingError,startCheckout}=useSubscription()
@@ -142,20 +145,20 @@ export default function MyCoursesDashboard({
       <div><span className={styles.micro}>{t.eyebrow} · HOLISTIC HOUSE</span><h2>{t.heading}</h2><p>{t.more}</p></div>
       <span className={styles.cap}><Sparkles size={15}/>{occupied} / {limit}</span>
     </header>
-    <Link href={'/' + (locale==='ru'?'ru':'en') + '/app/business'} prefetch={false}
-      className={styles.businessTrack} data-business-coaching-course-link>
+    <Link href={'/' + (locale==='ru'?'ru':'en') + '/coaching'} prefetch={false}
+      className={styles.businessTrack} data-personal-coaching-course-link>
       <span className={styles.businessTrackPhoto} aria-hidden="true">
-        <img src="/images/holistic-house/books-library.webp" alt=""
+        <img src="/images/holistic-house/report-lighthouse-coast.avif" alt=""
           width={240} height={220} loading="lazy" decoding="async" />
       </span>
       <span className={styles.businessTrackBody}>
         <span className={styles.businessTrackEyebrow}>{locale==='ru'?'БЕСПЛАТНЫЙ КУРС':'FREE PERSONAL COURSE'}</span>
-        <strong className={styles.businessTrackTitle}>{locale==='ru'?'Бизнес и карьера · 90 дней':'Business & Career · 90 Days'}</strong>
+        <strong className={styles.businessTrackTitle}>{locale==='ru'?'Личная коуч-сессия':'Personal Coaching Session'}</strong>
         <span className={styles.businessTrackDescription}>
-          {locale==='ru'?'Личный план под ваши цели, рефлексию и реальные результаты':'A personal plan for your goals, reflection and real-world outcomes'}
+          {locale==='ru'?'Опишите свой вопрос, выберите одну из трёх моделей и пройдите короткую личную сессию.':'Enter your question, choose from three suggested models and complete a short private session.'}
         </span>
         <span className={styles.businessTrackAction}>
-          {locale==='ru'?'Создать бесплатный план':'Start free plan'}<ArrowRight size={16} aria-hidden="true"/>
+          {locale==='ru'?'Начать сессию':'Start my session'}<ArrowRight size={16} aria-hidden="true"/>
         </span>
       </span>
     </Link>

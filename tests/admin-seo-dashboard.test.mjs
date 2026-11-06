@@ -18,13 +18,27 @@ test("SEO access is gated by same signed admin session as the existing cabinet",
   assert.match(exportRoute, /noindex, nofollow/);
 });
 
-test("SEO admin is discoverable in cabinet and top navigation, not public navigation", () => {
-  const home = read("components/practitioner-cabinet.jsx");
-  const nav = read("components/prescription-admin-header.jsx");
-  assert.match(home, /href:'\/admin\/seo'/);
-  assert.match(nav, /href="\/admin\/seo"/);
-  assert.match(home, /SEO-аналитика/);
-  assert.match(home, /SEO Analytics/);
+test("SEO admin is reachable through owner-only My Practice marketing and the signed admin header", () => {
+  const legacy = read("components/practitioner-cabinet.jsx");
+  const practice = read("components/app/practice-workspace.jsx");
+  const destinations = read("lib/app/practitioner-access.js");
+  const handoff = read("app/api/app/[...path]/route.js");
+  const adminNav = read("components/prescription-admin-header.jsx");
+
+  // The old Tools menu is not the canonical entry; never restore a public SEO shortcut.
+  assert.match(legacy, /app\/practice\?panel=marketing/);
+  assert.match(practice, /destination:'seo'/);
+  assert.match(practice, /activePanel==='marketing'&&isOwner/);
+  assert.match(practice, /onClick=\{\(\)=>openOwner\(destination\)\}/);
+
+  // Both the My Practice bridge and the admin page must enforce server-side ownership.
+  assert.match(destinations, /seo:\s*'\/admin\/seo'/);
+  assert.match(handoff, /if \(!practitionerEmailAllowed\(actor\) \|\| !await repo\.isPractitioner\(actor\)\)/);
+  assert.match(handoff, /practitionerDestination\[body\.destination\]/);
+  assert.match(handoff, /issueTrustedAdminSession\(response/);
+  assert.match(adminNav, /href="\/admin\/seo"/);
+  assert.match(legacy, /SEO-аналитика/);
+  assert.match(legacy, /SEO Analytics/);
 });
 
 test("SEO metrics are sourced, with accurate distinctions between two indexing reports", () => {

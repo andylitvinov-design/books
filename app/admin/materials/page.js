@@ -7,6 +7,7 @@ import folders from '@/components/materials-audio-folders.module.css'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {PractitionerMaterialsCabinet} from '@/components/practitioner-materials-cabinet'
+import AdminTelegramVideos from '@/components/admin-telegram-videos'
 export const dynamic='force-dynamic'
 export const metadata={title:'Materials · Holistic House',robots:{index:false,follow:false}}
 export default async function MaterialsPage(){
@@ -23,19 +24,39 @@ export default async function MaterialsPage(){
       <Link href={workspace+'services'}><Leaf aria-hidden="true"/>{ru?'Услуги':'Services'}</Link>
       <Link href="/admin/materials/courses"><BookOpen aria-hidden="true"/>{ru?'Курсы':'Courses'}</Link>
       <Link href="/admin/materials/courses/reiki-practitioner"><Headphones aria-hidden="true"/>{ru?'Аудио':'Audio'}</Link>
+      <Link href="/admin/materials/telegram"><Headphones aria-hidden="true"/>{ru?'Из Telegram':'From Telegram'}</Link>
+      <Link href="/admin/materials/coaching"><FolderOpen aria-hidden="true"/>{ru?'Коучинг':'Coaching'}</Link>
       <Link href={workspace+'videos'}><Film aria-hidden="true"/>{ru?'Видео':'Video'}</Link>
+      <Link href="/admin/youtube-upload?import=telegramCut"><Film aria-hidden="true"/>{ru?'В YouTube':'To YouTube'}</Link>
     </nav>
+    <AdminTelegramVideos locale={ru?'ru':'en'}/>
     <section className={folders.collection} aria-labelledby="materials-course-folders" data-materials-course-folder>
       <h2 className={folders.sectionTitle} id="materials-course-folders">
         <FolderOpen aria-hidden="true" />{ru?'Курсы':'Courses'}
       </h2>
       <p className={folders.description}>{ru?'Выберите курс мастера. Записи хранятся по урокам и языкам.':'Choose a course. Audio recordings are organized by lesson and language.'}</p>
       <div className={folders.folderGrid}>
+        <Link href="/admin/materials/telegram" className={folders.folderLink} data-owner-telegram-audio-folder-link>
+          <span className={folders.folderIcon}><Headphones aria-hidden="true"/></span>
+          <span className={folders.folderName}>
+            <strong>{ru?'Входящие аудио из Telegram':'Telegram audio inbox'}</strong>
+            <small>{ru?'Перешлите голосовое сообщение @Andydotbot · выберите папку позже':'Forward to @Andydotbot · organize into folders later'}</small>
+          </span>
+          <ChevronRight className={folders.arrow} aria-hidden="true"/>
+        </Link>
         <Link href="/admin/materials/courses" className={folders.folderLink} data-master-audio-folder-link>
           <span className={folders.folderIcon}><FolderOpen aria-hidden="true"/></span>
           <span className={folders.folderName}>
             <strong>{ru?'Курсы мастера':'Master courses'}</strong>
             <small>{ru?'Reiki Practitioner · 5 уроков · записи RU / EN':'Reiki Practitioner · 5 lessons · RU / EN recordings'}</small>
+          </span>
+          <ChevronRight className={folders.arrow} aria-hidden="true"/>
+        </Link>
+        <Link href="/admin/materials/coaching" className={folders.folderLink} data-owner-coaching-folder-link>
+          <span className={folders.folderIcon}><Headphones aria-hidden="true"/></span>
+          <span className={folders.folderName}>
+            <strong>{ru?'Коучинг':'Coaching'}</strong>
+            <small>{ru?'Египетский · Греческий · запись голоса с телефона':'Egyptian · Greek · record your own narration on your phone'}</small>
           </span>
           <ChevronRight className={folders.arrow} aria-hidden="true"/>
         </Link>

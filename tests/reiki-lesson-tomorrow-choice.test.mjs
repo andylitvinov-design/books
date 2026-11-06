@@ -6,49 +6,42 @@ import { reikiTomorrowCalendar, REIKI_LESSON_REMINDER_DEFAULT } from "../lib/aca
 const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const learner = read("components/energywork-ai-learner.tsx");
 const css = read("components/energywork-ai-learner.module.css");
+const schema = read("data/academy/energywork-ai-schema.js");
 
-test("milestone keeps finish-today on slide and restores save-and-continue beside Back", () => {
+test("Lesson 1 has one celebration and separate finish today / continue buttons", () => {
   const inline = learner.split("data-reiki-milestone-choices>")[1].split("</div>")[0];
   const footer = learner.split("<footer className={styles.footer}>")[1];
-  assert.ok(inline && footer, "checkpoint and bottom navigation exist");
+  assert.ok(inline && footer);
   assert.match(inline, /data-reiki-tomorrow-choice/);
-  assert.match(inline, /onClick=\{finishForToday\}/);
-  assert.doesNotMatch(inline, /data-energywork-next|milestoneContinueChoice/, "no duplicate Continue in card");
-  assert.match(footer, /slide\.kind === "milestone" && slide\.id !== "flight-save"/);
-  assert.match(footer, /onClick=\{next\}[\s\S]*?data-energywork-next/);
-  assert.match(footer, /slide\.kind === "milestone" \? t\.saveAndContinue/);
-  assert.match(learner, /saveAndContinue: "Save my lesson and continue"/);
-  assert.match(learner, /saveAndContinue: "Сохранить урок и продолжить"/);
-  assert.match(learner, /tomorrowChoice: "Save my lesson"/);
-  assert.match(learner, /tomorrowChoice: "Сохранить урок"/);
-  assert.match(learner, /slide\.kind !== "milestone" && !completed/);
-  assert.doesNotMatch(learner, /data-reiki-reminder-setup|reminderSetupOpen|downloadTomorrowReminder/);
-  assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe/);
+  assert.match(inline, /onClick={finishForToday}/);
+  assert.doesNotMatch(inline, /data-energywork-next|milestoneContinueChoice/);
+  assert.match(footer, /onClick={next}[\s\S]*?data-energywork-next/);
+  assert.match(footer, /data-reiki-first-lesson-google-save=/);
+  assert.match(learner, /saveLessonOneToCabinet\("continue"\)/);
+  assert.match(learner, /saveLessonOneToCabinet\("courses"\)/);
+  const sequence = schema.slice(schema.indexOf("export function energyworkSequence"), schema.indexOf("export function energyworkAdvanceAlreadyStored"));
+  assert.doesNotMatch(sequence, /'flight-save'/);
+  assert.match(schema, /'flight-save': 'tan-01'/);
   assert.match(css, /\.milestoneInlineChoices/);
-  assert.match(css, /grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(css, /\.milestoneActions \{ justify-content: space-between; \}/);
-  assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(css, /min-height: 64px/);
+  assert.match(css, /\.milestoneActions/);
 });
 
-test("guest must consent and authenticate before server save and post-save install", () => {
-  assert.match(learner, /if \(sync === "guest" \|\| sync === "consent"\)/);
-  assert.match(learner, /setIndex\(slides\.findIndex\(item => item\.id === "flight-save"\)\)/);
+test("inline consent gates guest Google authentication and existing-account private save", () => {
+  assert.match(learner, /slide.id === "flight-done" && \["guest", "consent"\]\.includes\(sync\)/);
+  assert.match(learner, /data-reiki-first-lesson-save/);
   assert.match(learner, /data-reiki-first-lesson-consent/);
   assert.match(learner, /data-reiki-first-lesson-google-save/);
+  assert.match(learner, /slide.id === "flight-done" && sync !== "ready" && !firstLessonConsent/);
   assert.match(learner, /window\.sessionStorage\.setItem\(ENERGYWORK_FIRST_LESSON_STORAGE_KEY, value\)/);
   assert.match(learner, /if \(sync === "guest"\) await signIn\(\)/);
-  assert.match(learner, /hydrate\(value\); \/\/ Private server persistence is confirmed before the app offer\./);
-  assert.match(learner, /await store\(nextId\);[\s\S]*?window\.location\.assign\("\/" \+ locale \+ "\/app\/course\?view=courses"\)/);
-  assert.match(learner, /if \(showInstallOffer && sync === "ready"\)/);
-  assert.match(learner, /data-reiki-install-offer/);
-  assert.match(learner, /href=\{"\/" \+ locale \+ "\/install"\}/);
-  assert.match(learner, /href=\{"\/" \+ locale \+ "\/app\/course\?view=courses"\}/);
-  assert.match(learner, /installPageNote: "Установка приложения не включает напоминания/);
-  assert.match(css, /\.installOfferPage/);
-  assert.match(css, /position: fixed; inset: 0/);
+  assert.match(learner, /firstLesson: \{ answers: handoff\.answers \}/);
+  assert.match(learner, /hydrate\(value\); \/\/ Private server persistence is confirmed/);
+  assert.match(learner, /if \(handoff\.afterSave === "courses"\) window\.location\.assign/);
+  assert.doesNotMatch(learner, /showInstallOffer|data-reiki-save-dock|installOfferPage/);
+  assert.doesNotMatch(learner, /Notification\.requestPermission|pushManager\.subscribe/);
 });
-test("optional calendar utility remains neutral but is not part of the save path", () => {
+
+test("optional calendar utility is neutral but not connected to this save path", () => {
   assert.equal(REIKI_LESSON_REMINDER_DEFAULT, "19:00");
   const at = new Date(2026, 9, 21, 23, 52, 0);
   const event = reikiTomorrowCalendar("ru", "19:30", at);
@@ -56,39 +49,18 @@ test("optional calendar utility remains neutral but is not part of the save path
   assert.match(event, /DTSTART:20261022T193000\r\n/);
   assert.match(event, /BEGIN:VALARM\r\nACTION:DISPLAY\r\n/);
   assert.doesNotMatch(event, /patient|health|remedy|diagnos|assessment|token|\?slide=/i);
-  assert.doesNotMatch(learner, /onClick=\{downloadTomorrowReminder\}/);
+  assert.doesNotMatch(learner, /onClick={downloadTomorrowReminder}/);
 });
 
-test("first lesson save is docked inside its slide, above progress and navigation", () => {
-  const slide = learner.slice(learner.indexOf('data-energywork-slide-id={slide.id}'));
-  const saveCardStart = slide.indexOf('data-reiki-first-lesson-save');
-  const saveCardEnd = slide.indexOf('</aside>', saveCardStart);
-  const dockStart = slide.indexOf('data-reiki-save-dock', saveCardEnd);
-  const dockEnd = slide.indexOf('</div>', dockStart);
-  const progressStart = slide.indexOf('<div className={styles.progressFooter}>');
-  assert.ok(saveCardStart > 0 && saveCardEnd > saveCardStart, "consent remains in save slide");
-  assert.ok(dockStart > saveCardEnd && dockEnd > dockStart && progressStart > dockEnd,
-    "save action is a separate in-slide row before course progress");
-  assert.doesNotMatch(slide.slice(saveCardStart, saveCardEnd), /data-reiki-first-lesson-google-save/);
-  assert.match(slide.slice(dockStart, dockEnd), /data-reiki-first-lesson-google-save/);
-  assert.equal((learner.match(/data-reiki-first-lesson-google-save/g) || []).length, 1,
-    "one save action, not a duplicate button");
-  assert.match(slide.slice(dockStart, dockEnd), /onClick=\{sync === "ready" \? next : saveLessonOneToCabinet\}/);
-  assert.match(slide.slice(dockStart, dockEnd), /!firstLessonConsent/,
-    "guest cannot save until opting into private storage");
-});
-
-test("small iPhones reserve an always-visible, tap-safe in-slide save row", () => {
-  const dockRules = css.slice(css.indexOf("/* Keep the first lesson's save button"));
-  assert.ok(dockRules.startsWith("/* Keep the first lesson's save button"));
-  const localRules = dockRules.split("/* App install is a separate optional page")[0];
-  assert.match(localRules, /grid-template-rows: minmax\(0, 1fr\) auto/);
-  assert.match(localRules, /\.firstLessonSaveDock\s*\{[\s\S]*?padding:/);
-  assert.match(localRules, /@media \(max-width: 760px\)[\s\S]*?display: flex;\s*flex-direction: column/);
-  assert.match(localRules, /\.slideMain\s*\{\s*flex: 1 1 auto;\s*min-height: 0;\s*height: auto/);
-  assert.match(localRules, /@media \(max-width: 380px\) and \(max-height: 700px\)/);
-  assert.match(localRules, /min-height: 44px/);
-  assert.doesNotMatch(localRules, /position:\s*(?:fixed|absolute)/,
-    "anchored button remains in normal layout, not overlapping content");
-  assert.match(css, /\.page\[data-course-one-screen\] \.slideMain\{[\s\S]*?overflow-y:auto/);
+test("one-screen phone layout retains an accessible CTA and one consent box", () => {
+  assert.equal((learner.match(/data-reiki-first-lesson-google-save/g) || []).length, 1);
+  assert.equal((learner.match(/data-reiki-first-lesson-consent/g) || []).length, 1);
+  assert.match(learner, /data-reiki-first-lesson-gate=/);
+  assert.match(learner, /<footer className={styles.footer}>/);
+  assert.match(css, /data-reiki-first-lesson-gate="true"/);
+  assert.match(css, /\[data-energywork-slide-id="flight-done"\] \.slideMain/);
+  assert.match(css, /max-height: min\(16dvh, 110px\)/);
+  assert.match(css, /min-height: 48px/);
+  assert.match(css, /overflow-y: auto/);
+  assert.doesNotMatch(css, /\.firstLessonSaveDock|\.installOfferPage/);
 });

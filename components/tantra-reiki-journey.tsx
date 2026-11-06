@@ -1,3 +1,4 @@
+import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import Link from "next/link";
 import { Fragment } from "react";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -520,7 +521,7 @@ export function TantraReikiOverviewLinks({locale}:{locale:PublicLocale}) {
 }
 const levelOneFocus: Record<PublicLocale, {
   eyebrow: string; title: string; description: string; request: string; tests: string; note: string;
-  furtherEyebrow: string; furtherTitle: string; furtherDescription: string; expand: string; exploreNext: string;
+  furtherEyebrow: string; furtherTitle: string; furtherDescription: string; expand: string; collapse: string; exploreNext: string;
 }> = {
   en: {
     eyebrow: "BEGIN HERE · LEVEL 1",
@@ -533,6 +534,7 @@ const levelOneFocus: Record<PublicLocale, {
     furtherTitle: "Curious about Levels 2–9?",
     furtherDescription: "Choose a level to explore its original lesson and traditional practices.",
     expand: "Open details",
+    collapse: "Close details",
     exploreNext: "Explore later levels",
   },
   ru: {
@@ -546,6 +548,7 @@ const levelOneFocus: Record<PublicLocale, {
     furtherTitle: "Хотите узнать о ступенях 2–9?",
     furtherDescription: "Выберите ступень, чтобы изучить авторские материалы и практики.",
     expand: "Раскрыть описание",
+    collapse: "Свернуть",
     exploreNext: "Посмотреть следующие ступени",
   },
   es: {
@@ -559,6 +562,7 @@ const levelOneFocus: Record<PublicLocale, {
     furtherTitle: "¿Quieres explorar los niveles 2–9?",
     furtherDescription: "Elige una etapa para conocer sus materiales y prácticas originales.",
     expand: "Ver detalles",
+    collapse: "Cerrar detalles",
     exploreNext: "Ver niveles posteriores",
   },
 };
@@ -579,10 +583,12 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
         id={n === 1 ? "tantra-level-1" : undefined}
         aria-labelledby={"tantra-heading-" + n}
       >
-        <figure className="tantra-journey__photo">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={reikiPhotoUrl(photo.src, 1200)} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
-        </figure>
+        {n === 1 ? (
+          <figure className="tantra-journey__photo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={reikiPhotoUrl(photo.src, 1200)} alt={photo.description} style={{ objectPosition: photo.position }} loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+          </figure>
+        ) : null}
         <div className="tantra-journey__level-heading">
           <div className="tantra-journey__chapter">
             <strong className="tantra-journey__level-number">{n === 1 ? focus.eyebrow : c.level + " " + String(n).padStart(2, "0")}{n === 1 ? null : <small> / 09</small>}</strong>
@@ -593,6 +599,14 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
         </div>
         <div className="tantra-journey__details">
           <p className="tantra-journey__first-description">{n === 1 ? focus.description : copy.intro}</p>
+          {n > 1 ? (
+            <div className="tantra-journey__collapsed-learning">
+              <strong>{c.application}</strong>
+              <p>{levelApplications[locale][i]}</p>
+              <strong>{c.practice}</strong>
+              <p>{copy.practice}</p>
+            </div>
+          ) : null}
           <details className="tantra-journey__source">
             <summary>
               <span>{locale === "ru" ? "Полное описание и упражнения" : locale === "es" ? "Descripción y ejercicios completos" : "Full lesson & exercises"}</span>
@@ -623,7 +637,7 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
           </details>
           {n === 1 ? (
             <div className="tantra-journey__first-cta">
-              <Link href={"/" + locale + "/academy/reiki/tantra-reiki/free-initiation"}>{focus.request} <span aria-hidden="true">↗</span></Link>
+              <Link href={REIKI_FREE_COURSE_PATH} data-reiki-course-cta>{focus.request} <span aria-hidden="true">↗</span></Link>
               <Link className="tantra-journey__tests-cta" href={"/" + locale + "/client/tests?focus=tantra"}>{focus.tests} <span aria-hidden="true">↗</span></Link>
               <p>{focus.note}</p>
             </div>
@@ -639,9 +653,17 @@ export function TantraReikiJourney({locale}:{locale:PublicLocale}) {
     return (
       <details className="tantra-journey__collapsed" id={"tantra-level-"+n} key={n}>
         <summary className="tantra-journey__collapsed-summary">
-          <span className="tantra-journey__collapsed-number">{String(n).padStart(2, "0")}</span>
+          <span className="tantra-journey__collapsed-photo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={reikiPhotoUrl(photo.src, 640)} alt="" style={{ objectPosition: photo.position }} loading="lazy" decoding="async" />
+            <span className="tantra-journey__collapsed-number">{String(n).padStart(2, "0")}</span>
+          </span>
           <span className="tantra-journey__collapsed-title"><strong>{copy.title}</strong><small>{copy.subtitle}</small></span>
-          <span className="tantra-journey__collapsed-action">{focus.expand}<span className="tantra-journey__collapsed-chevron" aria-hidden="true">⌄</span></span>
+          <span className="tantra-journey__collapsed-action">
+            <span className="tantra-journey__collapsed-open-label">{focus.expand}</span>
+            <span className="tantra-journey__collapsed-close-label">{focus.collapse}</span>
+            <span className="tantra-journey__collapsed-chevron" aria-hidden="true">⌄</span>
+          </span>
         </summary>
         {article}
       </details>

@@ -64,7 +64,7 @@ test("canonical free-course entry starts at the beginning and saved learners can
   const course = read("components/energywork-ai-learner.tsx");
   assert.match(routes, /startAtExperience=\{query\.start === "1"\}/);
   assert.match(course, /startAtExperience\?: boolean/);
-  assert.match(course, /useState\(startAtExperience \? 1 : 0\)/);
+  assert.match(course, /useState\(startAtExperience \? energyworkSlides\(\)\.findIndex\(\(item\) => item\.id === "welcome-02"\) : 0\)/);
   assert.match(course, /const savedIndex = Math\.max\(0, restored\.findIndex\(\(item\) => item\.id === value\.slideId\)\)/);
   assert.match(course, /setIndex\(requestedIndex >= 0 && requestedIndex <= savedIndex \? requestedIndex : savedIndex\)/);
   assert.match(course, /startAtExperience = false/);
@@ -77,8 +77,9 @@ test("short referral flow is discoverable from both legacy Tantra pages without 
   const program = read("components/academy-record-page.tsx");
   assert.match(tantra, /className=\{styles\.freeCourseBridge\}/);
   assert.match(tantra, /freeCourseBridge\} href=\{REIKI_FREE_COURSE_PATH\}/);
-  assert.match(program, /Start the 5 free lessons/);
-  assert.match(program, /academy\/reiki\/tantra-reiki\/free-initiation/);
+  assert.match(program, /Start FREE Online Program Tantra Reiki Practitioner/);
+  assert.match(program, /className="tantra-course-hero__cta" href=\{REIKI_FREE_COURSE_PATH\} data-reiki-course-cta/);
+  assert.match(routes, /if \(key === "reiki\/tantra-reiki\/free-initiation"\) return <TantraFreeInitiation/);
   assert.match(routes, /reiki-approved-sunrise-v3\.webp/);
   assert.match(routes, /Free Reiki course and introductory initiation — Holistic House/);
 });

@@ -12,7 +12,7 @@ function exact(s,a,b,n=1){
 function check(){
   const c=JSON.parse(read('capacitor.config.json'))
   if(c.appId!==id||c.appName!=='Holistic House'||
-      c.server?.url!=='https://'+host+'/en/app/portrait'||
+      c.server?.url!=='https://'+host+'/en/app/messages'||
       c.server?.cleartext!==false||
       JSON.stringify(c.server?.allowNavigation)!==JSON.stringify([host]))
     fail('Native identity/origin must match reviewed config')
@@ -44,7 +44,7 @@ function synced(platform){
   const file=platform==='android'?'android/app/src/main/assets/capacitor.config.json':'ios/App/App/capacitor.config.json'
   if(!existsSync(file))fail('Missing bundled config: '+file)
   const c=JSON.parse(read(file))
-  if(c.appId!==id||c.server?.url!=='https://'+host+'/en/app/portrait')fail('Wrong bundled app origin')
+  if(c.appId!==id||c.server?.url!=='https://'+host+'/en/app/messages')fail('Wrong bundled app origin')
 }
 export function afterAndroid(){
   synced('android')
