@@ -36,7 +36,7 @@ test('invalid shared inventory fails closed before any GitHub PR list',async()=>
 });
 test('shared inventory cannot be supplied by untrusted PR source events',async()=>{
  const injected={...context,eventName:'pull_request_target',
-  ref:'refs/heads/codex/public-book-library',
+  ref:'refs/heads/codex/bootstrap-books',
   payload:{action:'opened',pull_request:{...pr(),
     number:3405,base:{ref:'codex/public-book-library'}}}};
  const r=await run({github:{rest:{}},core:core(),context:injected,

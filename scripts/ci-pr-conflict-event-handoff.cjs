@@ -15,7 +15,7 @@ function trustedConflictEvent(context){
  const pr=context?.payload?.pull_request;
  return Boolean(context?.repo?.owner+'/'+context?.repo?.repo===REPO &&
   context.eventName==='pull_request_target' &&
-  context.ref==='refs/heads/'+PROD &&
+  context.ref==='refs/heads/codex/bootstrap-books' &&
   ACTIONS.has(context.payload?.action) &&
   Number.isSafeInteger(pr?.number)&&pr.number>0 &&
   pr.state==='open'&&!pr.draft&&pr.base?.ref===PROD &&

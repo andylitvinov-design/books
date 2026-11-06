@@ -55,7 +55,7 @@ function trustedContext(context){
  if(context.repo?.owner+'/'+context.repo?.repo!==REPO)return false;
  if(context.eventName==='pull_request_target'){
   const pr=context.payload?.pull_request;
-  return context.ref==='refs/heads/'+PROD &&
+  return context.ref==='refs/heads/'+DEFAULT &&
    ['opened','reopened','synchronize','ready_for_review'].includes(context.payload?.action) &&
    Number.isSafeInteger(pr?.number)&&pr.number>0&&!pr.draft &&
    pr.base?.ref===PROD&&pr.head?.repo?.full_name===REPO&&

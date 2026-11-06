@@ -13,7 +13,7 @@ const pr=(labels=[],extra={})=>({
 });
 const context=()=>({
  repo:{owner:'andylitvinov-design',repo:'books'},
- eventName:'pull_request_target',ref:'refs/heads/'+base,
+ eventName:'pull_request_target',ref:'refs/heads/codex/bootstrap-books',
  payload:{action:'opened',pull_request:pr()}
 });
 function fixture(initial=pr()){
@@ -31,7 +31,7 @@ test('only signed same-repository production pull-request events are eligible',(
  assert.equal(trustedEvent(context()),true);
  for(const edit of [
   c=>c.eventName='push',
-  c=>c.ref='refs/heads/codex/bootstrap-books',
+  c=>c.ref='refs/heads/codex/public-book-library',
   c=>c.payload.action='labeled',
   c=>c.payload.pull_request.head.repo.full_name='outside/books',
   c=>c.payload.pull_request.base.ref='codex/bootstrap-books',

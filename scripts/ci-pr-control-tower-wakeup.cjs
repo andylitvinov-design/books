@@ -135,7 +135,7 @@ function trustedWatchdogWakeContext(context){
      ['schedule','workflow_run','workflow_dispatch','push'].includes(context.eventName))
     return true;
   if(context.eventName!=='pull_request_target' ||
-     context.ref!=='refs/heads/codex/public-book-library' ||
+     context.ref!=='refs/heads/'+DEFAULT ||
      !['opened','reopened','synchronize','ready_for_review'].includes(context.payload?.action))
     return false;
   const pr=context.payload?.pull_request;

@@ -224,7 +224,7 @@ test('trusted production PR event safely wakes old cron once; rejects forged eve
  const {trustedWatchdogWakeContext,wakeStaleWatchdog}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
  const old=new Date(NOW-20*60_000).toISOString();
  const context={repo:{owner:'andylitvinov-design',repo:'books'},
-  ref:'refs/heads/codex/public-book-library',eventName:'pull_request_target',
+  ref:'refs/heads/codex/bootstrap-books',eventName:'pull_request_target',
   payload:{action:'opened',pull_request:{number:77,state:'open',draft:false,
    base:{ref:'codex/public-book-library'},
    head:{repo:{full_name:'andylitvinov-design/books'},sha:'a'.repeat(40)}}}};
@@ -244,7 +244,7 @@ test('trusted production PR event safely wakes old cron once; rejects forged eve
  assert.equal(sent,1);assert.equal(read,2);
  const variants=[
   {...context,repo:{owner:'wrong',repo:'books'}},
-  {...context,ref:'refs/heads/codex/bootstrap-books'},
+  {...context,ref:'refs/heads/codex/public-book-library'},
   {...context,payload:{...context.payload,action:'edited'}},
   {...context,payload:{...context.payload,pull_request:{...context.payload.pull_request,draft:true}}},
   {...context,payload:{...context.payload,pull_request:{...context.payload.pull_request,
