@@ -1,0 +1,52 @@
+name: HH Real Video Vault Wave 4 — 28 unique filmed sources offline QA
+on:
+  push:
+    branches: [codex/filmed-video-vault-wave4-source-qa-20261106]
+    paths:
+      - '.github/workflows/hh-real-video-vault-wave4-once.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-real-video-vault-wave4-20261106
+  cancel-in-progress: false
+jobs:
+  physical-film-source-screening:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Strict offline licence/identity contract and syntax
+        run: |
+          node --check scripts/review-dareful-wave4-20261106.mjs
+          node scripts/review-dareful-wave4-20261106.mjs --check
+          node --test tests/cinematic-wave4-source-rights.test.mjs
+      - name: Screen independently filmed video with already available FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          node scripts/review-dareful-wave4-20261106.mjs
+      - name: No public clip publishing
+        if: success()
+        run: |
+          test -f artifacts/cinematic-dareful-wave4-20261106/report.json
+          git diff --exit-code -- public/ data/video-catalog/scene-taxonomy.json data/video-catalog/free-stock-scenes.json
+      - name: One private technical QA artifact, all rights and R2 still HOLD
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-real-video-wave4-28-sources-private-qa
+          path: |
+            artifacts/cinematic-dareful-wave4-20261106/*.mp4
+            artifacts/cinematic-dareful-wave4-20261106/*.jpg
+            artifacts/cinematic-dareful-wave4-20261106/report.json
+            artifacts/cinematic-dareful-wave4-20261106/README.txt
+          retention-days: 5
+          compression-level: 6
+          if-no-files-found: warn
