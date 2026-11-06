@@ -4,6 +4,8 @@ import {readFileSync,existsSync,statSync} from "node:fs";
 import {createHash} from "node:crypto";
 import {isApprovedMontageScene,validateMontageClips,montageReplacementOptions} from "../lib/mandala/video-montage-sources.mjs";
 import {videoQualityEvidence} from "../lib/mandala/video-quality-evidence.mjs";
+// Run physical SHA, two-aspect crop and source-rights proof inside the existing HD specialist CI.
+import "./warm-sunlight-filmed-release.test.mjs";
 const json=p=>JSON.parse(readFileSync(new URL("../"+p,import.meta.url),"utf8"));
 const catalog=json("data/video-catalog/scene-taxonomy.json");
 const sources=json("data/video-catalog/free-stock-scenes.json");
