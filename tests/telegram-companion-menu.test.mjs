@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseTelegramHomeAction,telegramMenuKeyboard,parseTelegramHomeCallback,companionMessage,companionDailyDue,companionLocalDate,telegramCompanionConsentButtons,companionDatabaseDay} from '../lib/crm/telegram-companion-menu.mjs';
+import {parseTelegramHomeAction,telegramMenuKeyboard,parseTelegramHomeCallback,companionMessage,companionDailyDue,companionLocalDate,telegramCompanionConsentButtons,companionDatabaseDay,telegramHomeRecipientAllowed,companionReplyBudgetAllows} from '../lib/crm/telegram-companion-menu.mjs';
 test('typed commands and owner screenshot greetings',()=>{
  assert.equal(parseTelegramHomeAction('Привет','holistichouse_bot')?.action,'home');
  assert.equal(parseTelegramHomeAction('Privet','holistichouse_bot')?.action,'home');
@@ -37,4 +37,21 @@ test('PostgreSQL DATE may arrive as Date or ISO text: daily dedupe and rate cap 
  assert.equal(companionDatabaseDay('2026-11-06T00:00:00Z'),'2026-11-06');
  assert.equal(companionDatabaseDay(null),'');
  assert.equal(companionDatabaseDay(new Date(NaN)),'');
+});
+
+test('recipient preflight accepts real numeric private chat IDs',()=>{
+ assert.equal(telegramHomeRecipientAllowed('123456789'),true);
+ assert.equal(telegramHomeRecipientAllowed(123456789),true);
+ assert.equal(telegramHomeRecipientAllowed('\\d'),false);
+ assert.equal(telegramHomeRecipientAllowed('0'),false);
+ assert.equal(telegramHomeRecipientAllowed('-1001234'),false);
+ assert.equal(telegramHomeRecipientAllowed('abc'),false);
+});
+test('AI and morning opt-outs remain available after 40 replies',()=>{
+ for(const action of ['ai_off','daily_off']){
+  assert.equal(companionReplyBudgetAllows(action,40,40),true);
+  assert.equal(companionReplyBudgetAllows(action,100,40),true);
+ }
+ assert.equal(companionReplyBudgetAllows('ai_text',40,40),false);
+ assert.equal(companionReplyBudgetAllows('checkin',39,40),true);
 });
