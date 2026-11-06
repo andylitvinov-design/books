@@ -4036,7 +4036,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
   const importMontageSetups=()=>{
     const chosen=affirmationLines.slice(0,5);
-    const imported=distributeMontageSetups(chosen,duration);
+    const imported:TimelineTextClip[]=distributeMontageSetups(chosen,duration).map(clip=>({
+      ...clip,styleId:"classic" as const,motionId:"fade" as const,positionId:"center" as const
+    }));
     if(!imported.length)return;
     recordBeforeEditorChange("setups-import");
     setTimelineTextClips(current=>[
