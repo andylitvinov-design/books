@@ -111,17 +111,19 @@ function planCandidates(prs,now){
  const source=ranked.filter(pr=>laneOf(pr)==='repair');
  const conflict=ranked.find(pr=>laneOf(pr)==='conflict');
  const ci=ranked.find(pr=>laneOf(pr)==='ci');
- // Bounded rotation: the first exact-HEAD manual task may already have a
- // signed terminal receipt. Inspect up to four old PRs in the SAME existing
- // Watchdog cycle and skip handled ones; do not starve 80+ other old PRs.
- // At most ONE new legacy worker is accepted per sweep (guard below).
+ // Legacy PREPARED is signed read-only metadata, not source repair.
+ // Previous 4-candidate/10-minute rotation launched many no-source workers
+ // per hour even with no free code executor; these compete with real Core.
+ // Reuse the existing ten-minute schedule and only inspect ONE stable legacy
+ // candidate during the first 20 minutes of each UTC hour. The signed exact
+ // task receipt prevents same-HEAD redispatch within that window. No new cron,
+ // slot, workflow or source writing authority is created.
  const legacy=ranked.filter(pr=>laneOf(pr)==='legacy')
   .sort((a,b)=>a.number-b.number);
- const LEGACY_PROBE_LIMIT=4;
- const legacyStart=legacy.length?
-  (Math.floor(now/3600000)*LEGACY_PROBE_LIMIT)%legacy.length:0;
- const oldCandidates=Array.from({length:Math.min(LEGACY_PROBE_LIMIT,legacy.length)},
-  (_,i)=>legacy[(legacyStart+i)%legacy.length]);
+ const legacyWindowOpen=Number.isFinite(now)&&now>=0&&
+  now%3600000<20*60000;
+ const legacyStart=legacy.length?Math.floor(now/3600000)%legacy.length:0;
+ const oldCandidates=legacyWindowOpen&&legacy.length?[legacy[legacyStart]]:[];
  // During conflict-only backlogs, rotate a bounded window rather than reread
  // the same 16 already handed-off exact HEADs on each ten-minute cycle.
  if(!source.length&&!ci){

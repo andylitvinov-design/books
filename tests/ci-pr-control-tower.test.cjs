@@ -1573,3 +1573,34 @@ test('one normal source repair and one manual preflight share the existing two w
  assert.ok(f.calls.dispatched.every(x=>x.workflow_id==='hh-pr-repair-worker.yml'));
  assert.equal(f.calls.removed.length,0,'no manual hold is released by preflight');
 });
+
+test('read-only legacy preflight uses one stable hourly candidate, not 4 per ten-minute sweep',()=>{
+ const history=Array.from({length:24},(_,i)=>pr(4000+i,'repair',{
+  title:'feat(support): old manual stage '+i,
+  labels:[{name:'hh:repair-manual'}]
+ }));
+ const first=planCandidates(history,NOW);
+ const same=planCandidates(history,NOW+10*60000);
+ const last=planCandidates(history,NOW+19*60000);
+ const closed=planCandidates(history,NOW+20*60000);
+ const following=planCandidates(history,NOW+3600000);
+ assert.equal(first.length,1);
+ assert.equal(first[0].lane,'legacy');
+ assert.deepEqual(same,first,'multiple watchdog wakes during one hour must inspect the same signed task');
+ assert.deepEqual(last,first);
+ assert.deepEqual(closed,[],'later ten-minute sweeps reserve all worker slots for actionable changes');
+ assert.equal(following.length,1);
+ assert.notEqual(following[0].pr_number,first[0].pr_number,'next hour visits next old PR');
+ const normal=planCandidates([...history,pr(22,'repair'),pr(23,'ci')],NOW+30*60000);
+ assert.equal(normal[0].lane,'repair');
+ assert.ok(normal.some(x=>x.lane==='ci'));
+ assert.ok(normal.every(x=>x.lane!=='legacy'));
+});
+test('old manual PR remains read-only; source-repair takes precedence in hourly window',()=>{
+ const old=pr(4000,'repair',{labels:[{name:'hh:repair-manual'}]});
+ const normal=pr(35,'repair');
+ const planned=planCandidates([old,normal],NOW);
+ assert.equal(planned[0].lane,'repair');
+ assert.ok(planned.some(x=>x.lane==='legacy'));
+ assert.equal(planned.filter(x=>x.lane==='legacy').length,1);
+});
