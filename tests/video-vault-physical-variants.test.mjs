@@ -24,6 +24,7 @@ const variant=(a,hash,i=1)=>({
  r2_object_key:'masters/'+a+'-portrait-'+i+'/'+sha(hash)+'.mp4',
  poster_object_key:'posters/'+a+'-portrait-'+i+'/'+sha(hash)+'.jpg',
  owner_review_status:'approved',visual_review_score:4,raw_client_delivery_ok:true,
+ human_reviewer:'owner curator',owner_approved_at:now,
  technical_verified_at:now,r2_head_checked_at:now,status:'generator_eligible'
 });
 const fixture=()=>({sourceOriginals:2,physicalMP4:3,entries:[
@@ -64,7 +65,10 @@ test('unapproved, not-deliverable and wrong-identity variants never become gener
   {master_asset_id:'scene-b'},{status:'pending'},{owner_review_status:'pending'},
   {raw_client_delivery_ok:false},{r2_readback_sha256:sha('c')},
   {r2_bucket:'wrong-bucket'},{width:1280},{fps:15},
-  {variant_id:'../../escape'},{file_bytes:20000000}
+  {variant_id:'../../escape'},{file_bytes:20000000},
+  {human_reviewer:''},{owner_approved_at:null},
+  {r2_object_key:'masters/wrong/'+sha('b')+'.mp4'},
+  {sha256:sha('a'),r2_readback_sha256:sha('a')}
  ])assert.equal(isVaultVariantEligible({...v,...patch},m),false);
  assert.equal(isVaultVariantEligible(v,{...m,raw_client_delivery_ok:false}),false);
 });
@@ -97,5 +101,8 @@ test('variant SQL is private, keeps parent uniqueness, force RLS and denies publ
  assert.match(sql,/current_setting\('hh\.video_vault_ingest',true\)='approved'/i);
  assert.match(sql,/raw_client_delivery_ok/i);
  assert.match(sql,/r2_readback_sha256/i);
+ assert.match(sql,/m\.r2_bucket=video_vault_variants_v1\.r2_bucket/i);
+ assert.match(sql,/owner_approved_at is not null/i);
+ assert.match(sql,/r2_object_key='masters\/'/i);
  assert.doesNotMatch(sql,/grant .*\bto (anon|authenticated)\b/i);
 });

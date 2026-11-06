@@ -3,7 +3,7 @@
 -- IMPORTANT: 410 private staging previews remain RESEARCH_ONLY until physically
 -- R2-verified, legally approved and parent master is generator-eligible.
 create table if not exists app.video_vault_variants_v1 (
- variant_id text primary key check (variant_id ~ '^[a-z0-9][a-z0-9_-]{2,99}$'),
+ variant_id text primary key check (variant_id ~ '^[a-z][a-z0-9-]{2,63}$'),
  master_asset_id text not null references app.video_vault_assets_v1(asset_id) on delete restrict,
  take_index integer not null check (take_index between 1 and 4),
  aspect_ratio text not null check (aspect_ratio in ('landscape','portrait')),
@@ -24,6 +24,8 @@ create table if not exists app.video_vault_variants_v1 (
  owner_review_status text not null default 'pending'
   check (owner_review_status in ('pending','approved','rejected')),
  visual_review_score integer not null default 0 check (visual_review_score between 0 and 5),
+ human_reviewer text not null check (char_length(btrim(human_reviewer)) between 3 and 180),
+ owner_approved_at timestamptz,
  raw_client_delivery_ok boolean not null default false,
  status text not null default 'pending'
   check (status in ('pending','r2_verified','generator_eligible','retired')),
@@ -31,6 +33,10 @@ create table if not exists app.video_vault_variants_v1 (
  created_at timestamptz not null default now(),
  constraint hh_video_vault_variant_take_aspect_unique
   unique (master_asset_id,take_index,aspect_ratio),
+ constraint hh_video_vault_variant_object_identity check (
+  r2_object_key='masters/'||variant_id||'/'||sha256||'.mp4' and
+  poster_object_key='posters/'||variant_id||'/'||sha256||'.jpg'
+ ),
  constraint hh_video_vault_variant_geometry_valid check (
   (aspect_ratio='landscape' and
    ((width=1280 and height=720) or (width=1920 and height=1080))) or
@@ -41,6 +47,7 @@ create table if not exists app.video_vault_variants_v1 (
   status<>'generator_eligible' or
   (owner_review_status='approved' and visual_review_score>=4
    and raw_client_delivery_ok and sha256=r2_readback_sha256
+   and owner_approved_at is not null
    and technical_verified_at is not null and r2_head_checked_at is not null)
  )
 );
@@ -57,6 +64,7 @@ create policy hh_video_vault_variant_ready_read on app.video_vault_variants_v1
  for select to hh_app_backend using (
    status='generator_eligible' and owner_review_status='approved'
    and visual_review_score>=4 and raw_client_delivery_ok
+   and owner_approved_at is not null
    and sha256=r2_readback_sha256
    and exists (
     select 1 from app.video_vault_assets_v1 m
@@ -64,7 +72,7 @@ create policy hh_video_vault_variant_ready_read on app.video_vault_variants_v1
       and m.status='generator_eligible'
       and m.owner_review_status='approved'
       and m.commercial_use_ok and m.derivative_edit_ok
-      and m.raw_client_delivery_ok and m.r2_bucket=r2_bucket
+      and m.raw_client_delivery_ok and m.r2_bucket=video_vault_variants_v1.r2_bucket
    )
  );
 drop policy if exists hh_video_vault_variant_operator_insert on app.video_vault_variants_v1;
@@ -74,6 +82,7 @@ create policy hh_video_vault_variant_operator_insert on app.video_vault_variants
    and status='generator_eligible'
    and owner_review_status='approved'
    and visual_review_score>=4 and raw_client_delivery_ok
+   and owner_approved_at is not null
    and sha256=r2_readback_sha256
    and exists (
     select 1 from app.video_vault_assets_v1 m
@@ -81,6 +90,6 @@ create policy hh_video_vault_variant_operator_insert on app.video_vault_variants
       and m.status='generator_eligible'
       and m.owner_review_status='approved'
       and m.commercial_use_ok and m.derivative_edit_ok
-      and m.raw_client_delivery_ok and m.r2_bucket=r2_bucket
+      and m.raw_client_delivery_ok and m.r2_bucket=video_vault_variants_v1.r2_bucket
    )
  );
