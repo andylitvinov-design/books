@@ -5,7 +5,7 @@
  const periods=[1,6,24,72];
  const STAGES=[['workflow_wait','Запуск workflow → создание jobs'],
    ['runner_wait','Ожидание runner'],
-   ['checks','Проверки CI'],
+   ['checks','Все активные CI jobs (Core, Specialist, merge-check)'],
    ['between_waves_unknown','Между волнами CI (причина не установлена)'],
    ['other_unknown','Другие интервалы без подтверждения']];
  const dateFmt=new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',
@@ -85,6 +85,24 @@
      body.append(pieces,total,el('p','hh-ci-archive-note',
        'Каждая строка — средний вклад этапа на 1 PR из одной выборки n='+breakdown.n+
        '. Сумма строк равна общему среднему (с учётом округления). Параллельные jobs учитываются один раз. Промежутки без доказательств вынесены отдельно.'));
+     // Named job durations overlap the stage chart: never add them to total.
+     const named=data.job_clock_summary;
+     if(named?.schema==='HH_CI_NAMED_JOB_CLOCK_V1'&&named.n===n){
+       body.append(el('h5','','Фактическое время Core, Specialist и Merge jobs'));
+       const clocks=el('div','hh-ci-journey-pieces');
+       for(const [key,title] of [['core','Core CI'],['specialist','Specialist'],
+         ['merge_gate','Merge-check']]){
+         const clock=named.clocks?.[key],line=el('div');
+         const caption=el('span','',title);
+         caption.append(el('small','hh-ci-stage-sample',
+           ' · n='+(clock?.measured_prs??0)+'/'+n+
+           ' · P95 '+fmtMin(clock?.p95_minutes)));
+         line.append(caption,el('b','',fmtMin(clock?.mean_minutes)));
+         clocks.append(line);
+       }
+       body.append(clocks,el('p','hh-ci-archive-note',
+         'Отдельные jobs, не дополнительное время PR. Их длительности могут перекрываться; отсутствие метки остаётся неизвестным, не нулём.'));
+     }
      const head=data.wave_head_evidence;
      if(head?.schema==='HH_CI_WAVE_HEAD_EVIDENCE_V1'&&head.reconciled===true){
        const kind=head.transition_counts,span=head.transition_total_ms;
@@ -138,6 +156,15 @@
          const line=el('div');line.append(el('span','',name),runLink(url,dt(time)));stamps.append(line);
        }
        detail.append(stamps);
+       if(r.job_clock_ms){
+         for(const [key,title] of [['core','Core job'],['specialist','Specialist job'],
+           ['merge_gate','Merge-check job']]){
+           const line=el('div','hh-ci-archive-stage');
+           line.append(el('span','',title+' · запущен'),
+             el('b','',fmtMs(r.job_clock_ms[key])));
+           detail.append(line);
+         }
+       }
        for(const [key,name] of STAGES){
          const line=el('div','hh-ci-archive-stage');
          line.append(el('span','',name),el('b','',fmtMs(r.stages_ms?.[key])));detail.append(line);

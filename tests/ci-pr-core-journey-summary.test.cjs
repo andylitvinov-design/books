@@ -151,3 +151,34 @@ test('jobless-only PR has coverage but cannot fake zero-minute CI success',()=>{
  assert.equal(snapshot.summary.average_minutes,null);
  assert.deepEqual(snapshot.rows,[]);
 });
+
+test('named Core and Specialist clocks are separate from additive all-jobs time',()=>{
+ const named=(id,name,start,end)=>({...job(id,start,end),name});
+ const input=run(902,1902,-40,-20,[
+   named(2021,'core-lint-types-build',-40,-35),
+   named(2022,'hh-specialist',-35,-23),
+   named(2023,'hh-merge-check',-23,-22),
+   named(2024,'browser',-36,-20)
+ ]);
+ const row=summarizePR(902,[input]);
+ assert.equal(row.stages_ms.checks,20*60000);
+ assert.equal(row.job_clock_ms.core,5*60000);
+ assert.equal(row.job_clock_ms.specialist,12*60000);
+ assert.equal(row.job_clock_ms.merge_gate,60000);
+ const data=report(source([input]),24,NOW);
+ assert.equal(data.job_clock_summary.clocks.core.mean_minutes,5);
+ assert.equal(data.job_clock_summary.clocks.specialist.mean_minutes,12);
+ assert.equal(data.job_clock_summary.clocks.merge_gate.mean_minutes,1);
+ assert.equal(data.stage_breakdown.reconciled,true);
+});
+test('overlapping same-name jobs are unioned; missing jobs remain null',()=>{
+ const named=(id,start,end)=>({...job(id,start,end),name:'core-lint-types-build'});
+ const input=run(903,1903,-30,-20,[named(3001,-30,-23),named(3002,-28,-20)]);
+ const row=summarizePR(903,[input]);
+ assert.equal(row.job_clock_ms.core,10*60000);
+ assert.equal(row.job_clock_ms.specialist,null);
+ const reportData=report(source([input]),24,NOW);
+ assert.equal(reportData.job_clock_summary.clocks.core.mean_minutes,10);
+ assert.equal(reportData.job_clock_summary.clocks.specialist.mean_minutes,null);
+ assert.equal(reportData.job_clock_summary.clocks.specialist.measured_prs,0);
+});
