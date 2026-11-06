@@ -294,6 +294,9 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
         const cabinetEntry = header.locator('.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
         const trigger = menu.locator('summary')
+        // Wait for React's real keyboard handlers, not only SSR DOM visibility.
+        // Escape and focus-return assertions below remain strict.
+        await expect(menu).toHaveAttribute('data-hh-keyboard-ready', 'true')
         await expect(trigger).toHaveText(locale.toUpperCase())
         await expect(cabinetEntry).toHaveCount(1)
         await expect(cabinetEntry).toHaveAttribute('aria-haspopup', 'dialog')

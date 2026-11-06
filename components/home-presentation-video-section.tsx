@@ -1,15 +1,16 @@
 import { SiteVideoPlayer } from "@/components/site-video-player";
+import { approvedTelegramPresentation } from "@/lib/crm/telegram-presentation.mjs";
 import { videoKey, type PublishedSiteVideo } from "@/lib/site-videos/model";
 import { getPublishedSiteVideo } from "@/lib/site-videos/public";
 
 // This precise Russian film was approved by the owner and published as an
 // Unlisted YouTube video on 2026-10-30. Never use a temporary HeyGen MP4 URL.
 const approvedRussianPresentation: PublishedSiteVideo = {
-  youtubeId: "G0Db6yOCMto",
+  youtubeId: approvedTelegramPresentation("ru")?.youtubeId ?? "",
   title: "Holistic House — Начните с себя",
   description: "Знакомство с Holistic House: энергия, отношения, работа, смысл и первый бесплатный личный тест.",
   language: "ru",
-  durationSeconds: 96.862,
+  durationSeconds: approvedTelegramPresentation("ru")?.durationSeconds ?? 0,
   transcript: [
     "Когда в жизни слишком много стресса, мы быстро устаём и теряем энергию. А ведь так хочется чувствовать спокойствие, внутреннюю силу и снова радоваться каждому дню.",
     "Не менее важны и наши отношения. Нам всем хочется любви, тепла, доверия и близости с дорогими людьми.",
@@ -42,7 +43,7 @@ const copy = {
  * substitute for the first full EN presentation. Publication is a separate
  * explicit gate.
  */
-const approvedEnglishYoutubeId: string = "";
+const approvedEnglishYoutubeId: string = approvedTelegramPresentation("en")?.youtubeId ?? "";
 
 function isApprovedEnglishPresentation(video: PublishedSiteVideo | undefined): video is PublishedSiteVideo {
   return Boolean(
@@ -57,7 +58,9 @@ function isApprovedEnglishPresentation(video: PublishedSiteVideo | undefined): v
 export async function HomePresentationVideoSection({ locale }: { locale: "en" | "ru" }) {
   // Do not even READ an old or arbitrary admin home-intro record before
   // the finished English film's identity has been explicitly approved.
+  // Never render a foreign-language presentation as the locale-specific welcome.
   if (locale === "en" && !approvedEnglishYoutubeId) return null;
+  if (locale === "ru" && !approvedRussianPresentation.youtubeId) return null;
   let video: PublishedSiteVideo;
   if (locale === "ru") {
     video = approvedRussianPresentation;

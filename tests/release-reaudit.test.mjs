@@ -33,7 +33,7 @@ function navigationHarness() {
   const menus = ['language', 'site'].map(name => {
     const inside = new Node();
     const menu = {
-      name, inside, open: true, focusCount: 0,
+      name, inside, open: true, focusCount: 0, dataset: {},
       contains: target => target === inside || target === menu,
       querySelector: selector => {
         assert.equal(selector, 'summary');
@@ -362,4 +362,31 @@ test('Maya hub route remains fatal with bounded WebKit navigation and poster dec
     'clearTimeout(decodeDeadline)',
     "throw new Error('Poster identity/readiness changed during decode')",
   ]) assert.ok(poster.includes(anchor), 'Strict bounded poster decoding: ' + anchor);
+});
+
+test('language menu keyboard readiness is installed with native handlers and cleared on cleanup', () => {
+  const { menus, listeners, cleanup } = navigationHarness();
+  assert.equal(menus[0].dataset.hhKeyboardReady, 'true');
+  assert.equal(listeners.has('keydown'),true);
+  cleanup();
+  assert.equal(menus[0].dataset.hhKeyboardReady,undefined);
+  assert.equal(listeners.size,0);
+});
+
+test('client landing locale pages use independent real browser pages and retain fatal acceptance', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const isolate = verifier.indexOf("if (['/en/client','/ru/client','/es/client'].includes(path))");
+  const assertRoute = verifier.indexOf("const routePassed = await check('public-page'", isolate);
+  assert.ok(isolate > 0 && assertRoute > isolate,
+    'all three guest Client locales isolate the previous WebKit document before audit');
+  const scope = verifier.slice(isolate, assertRoute);
+  for (const assertion of ['await page.close()', 'publicPageState = await createPublicPage()',
+    'page = publicPageState.page', 'errors = publicPageState.errors'])
+    assert.ok(scope.includes(assertion), 'isolated route retains new document tracking: ' + assertion);
+  for (const required of ['const routeTimer = setTimeout(',
+    "process.exit(1)", "await settlePublicDocument('before-assertions')",
+    "await settlePublicDocument('before-next-navigation')",
+    'await decodeReadyPoster(image, expect)', "assert.equal(state.htmlLang, locale",
+    "if (path === '/books/maya-tradition')"])
+    assert.ok(verifier.includes(required), 'Do not skip original public/CSP/locale checks: ' + required);
 });

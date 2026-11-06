@@ -53,6 +53,17 @@ export async function GET(request) {
               await reconcileOwnerYoutubePublications(config)
             }catch{console.error('HH_OWNER_PUBLICATIONS_RECONCILE_FAILED')}
           }
+          // Existing daily CRON_SECRET maintenance doubles as a no-cost
+          // retention and pending-reply safety net (not near-real-time recovery).
+          if(process.env.HH_SUBSCRIBER_AI_SCHEMA_READY==='true'){
+            try{
+              const {pruneSubscriberAiState,drainSubscriberAiOutbox}=await import(
+                '@/lib/app/subscriber-ai-telegram')
+              await pruneSubscriberAiState(config)
+              if(process.env.HH_SUBSCRIBER_AI_ENABLED==='true')
+                await drainSubscriberAiOutbox(config,process.env,{limit:3})
+            }catch{console.error('HH_SUBSCRIBER_AI_HOUSEKEEPING_FAILED')}
+          }
           return result
         } catch (error) {
           await recordAppHousekeepingFailure(config).catch(() => {})
