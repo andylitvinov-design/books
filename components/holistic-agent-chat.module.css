@@ -212,6 +212,31 @@
 .root[data-compact] .startActions .startIcon{font-size:21px;line-height:1.1}
 .root[data-compact] .startActions strong{font:750 13px/1.23 system-ui,sans-serif}
 .root[data-compact] .startActions small{font:550 11px/1.25 system-ui,sans-serif;color:#67736a}
+/* After a user turn, the existing four entry actions become quiet, single-line
+   suggestions in the chat. Initial welcome keeps its larger, two-column cards;
+   guided video/meditation/test flows continue to own their step-specific buttons. */
+.root[data-compact][data-has-messages="true"] .startActions{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:2px;margin:2px 0 0;
+}
+.root[data-compact][data-has-messages="true"] .startActions :is(button,a){
+ flex-direction:row;justify-content:flex-start;gap:8px;text-align:left;
+ min-height:44px;padding:7px 10px;border:0;border-radius:9px;
+ background:transparent;box-shadow:none;
+}
+.root[data-compact][data-has-messages="true"] .startActions button:first-child{
+ background:transparent;border:0;
+}
+.root[data-compact][data-has-messages="true"] .startActions :is(button,a):hover{
+ background:var(--hh-light-surface-soft,#f5ecdc);
+}
+.root[data-compact][data-has-messages="true"] .startActions .startIcon{
+ flex:0 0 20px;font-size:15px;line-height:1.2;
+}
+.root[data-compact][data-has-messages="true"] .startActions strong{
+ font:600 13px/1.4 system-ui,sans-serif;color:#176e6e;
+}
+.root[data-compact][data-has-messages="true"] .startActions small{display:none}
+
 .root[data-compact] .testLink{
  display:inline-flex;align-items:center;align-self:flex-start;min-height:44px;
  border:1px solid #b8d9c9;border-radius:11px;padding:9px 13px;
