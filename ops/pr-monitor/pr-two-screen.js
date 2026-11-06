@@ -394,31 +394,46 @@
     document.body.classList.add('hh2-active');
     mounted=true;
   }
+  // Missing measurements must never be rendered as 0.00 minutes. The legacy
+  // lower dashboard may put the unit ("мин/PR") inside the numeric element.
+  function legacyUnmeasuredDurationText(value) {
+    return /^0[,.]00(?:\s*мин(?:\s*\/\s*PR)?)?$/i.test(
+      String(value??'').replace(/\u00a0/g,' ').trim());
+  }
+  function legacyUnmeasuredCandidates(leaf,section) {
+    if(!/Проверено:\s*0\s+из\s+\d+\s+PR/i.test(leaf?.textContent||''))return [];
+    // Select only values in the NEAREST stage card with exactly one proof
+    // count; never climb to a table with other stages and real measurements.
+    for(let cur=leaf,depth=0;cur&&cur!==section&&depth<10;
+        cur=cur.parentElement,depth++){
+      const descendants=Array.from(cur.querySelectorAll('*'));
+      const proofs=descendants.filter(el=>el.childElementCount===0&&
+        /Проверено:\s*\d+\s+из\s+\d+\s+PR/i.test(el.textContent||''));
+      if(proofs.length>1)return [];
+      const numbers=descendants.filter(el=>el.childElementCount===0&&
+        legacyUnmeasuredDurationText(el.textContent));
+      if(proofs.length===1&&numbers.length)return numbers;
+    }
+    return [];
+  }
   function repairLegacyUnmeasuredZeros() {
-    // Existing lower monitor section (separate backend) incorrectly formats
-    // missing-stage n=0 as 0.00 min. Preserve the section and its controls;
-    // change ONLY such empty evidence cells into an explicit missing state.
+    // Keep historical panels and their real counts unchanged. Only normalize
+    // missing duration cells proven by exactly 0 measured PR in the same row.
     const headings=Array.from(document.querySelectorAll('h2,h3,h4,h5'));
-    const title=headings.find(function(h){
-      return /Где прошло время до merge/i.test(h.textContent||'');
-    });
+    const title=headings.find(h=>/Где прошло время до merge/i.test(h.textContent||''));
     if(!title)return;
     const section=title.closest('section,article')||title.parentElement?.parentElement;
     if(!section)return;
-    const evidenceLeaves=Array.from(section.querySelectorAll('*')).filter(function(el){
-      return el.childElementCount===0&&/Проверено:\s*0\s+из\s+\d+\s+PR/i.test(el.textContent||'');
-    });
-    for(const leaf of evidenceLeaves) {
-      let cur=leaf,found=false;
-      for(let depth=0;depth<4&&cur&&cur!==section;depth++,cur=cur.parentElement) {
-        const numbers=Array.from(cur.querySelectorAll('strong,b,[class*="value"],[class*="amount"]'))
-          .filter(function(el){return el.childElementCount===0&&/^\s*0[,\.]00\s*$/.test(el.textContent||'');});
-        if(numbers.length){
-          numbers.forEach(function(el){el.textContent='—';el.title='Нет проверенной пары событий для этапа; это не ноль минут';});
-          found=true;break;
-        }
+    const evidenceLeaves=Array.from(section.querySelectorAll('*')).filter(el=>
+      el.childElementCount===0&&
+      /Проверено:\s*0\s+из\s+\d+\s+PR/i.test(el.textContent||''));
+    for(const leaf of evidenceLeaves){
+      const targets=legacyUnmeasuredCandidates(leaf,section);
+      for(const el of targets){
+        el.textContent='—';
+        el.title='Нет проверенной пары событий для этапа; это не ноль минут';
       }
-      if(found)leaf.title='0 подтверждённых PR. Длительность не измерена.';
+      if(targets.length)leaf.title='0 подтверждённых PR. Длительность не измерена.';
     }
     if(evidenceLeaves.length&&!section.querySelector('.hh2-legacy-proof-notice')){
       const notice=make('p','hh2-legacy-proof-notice hh2-diagnostic',
