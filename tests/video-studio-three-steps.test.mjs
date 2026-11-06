@@ -18,11 +18,16 @@ test("Goal has real category/subcategory and separate optional topic and request
  const field=director.slice(director.indexOf("const requestField="),director.indexOf("const requestInput="));
  assert.doesNotMatch(field,/setSelectedSubcategoryId\(|setSelectedTopicId\(/);
 });
-test("Idea owns topic, meaning, motif and scenario drill-down",()=>{
+test("Ideas owns meaning/scenarios and Montage owns motif",()=>{
  assert.match(studio,/data-video-director-idea-controls/);
  assert.match(director,/setIdeaTarget\(document\.querySelector<HTMLElement>\("\[data-video-director-idea-controls\]"\)\)/);
  assert.match(director,/createPortal\(<details[\s\S]*?data-video-ideas-refinement[\s\S]*?,ideaTarget\)/);
- assert.match(director,/data-mytube-meaning-axes[\s\S]*?data-mytube-motif-choices[\s\S]*?data-mytube-scenario-concepts/);
+ const ideaAt=director.indexOf("const topicPanel=");
+ const idea=director.slice(ideaAt,director.indexOf("return <section className={css.root}",ideaAt));
+ const montage=director.slice(director.indexOf("const montageStylePanel="),ideaAt);
+ assert.match(idea,/data-mytube-meaning-axes[\s\S]*?data-mytube-scenario-concepts/);
+ assert.doesNotMatch(idea,/data-mytube-motif-choices|data-mytube-style-filter/);
+ assert.match(montage,/data-mytube-motif-choices[\s\S]*?data-mytube-style-advanced/);
  assert.match(director,/createPortal\(quickTopicPanel,topicTarget\)/);
  assert.doesNotMatch(director,/createPortal\(topicPanel,topicTarget\)/);
 });
@@ -39,11 +44,11 @@ test("Montage owns visual-style recommendations without changing rights gates",(
 test("Three short prompts are labeled in EN/RU/ES",()=>{
  for(const token of ["1б. Подкатегория","1b. Subcategoría","1b. Subcategory",
  "2. Тема (по желанию)","2. Topic (optional)","2. Tema (opcional)",
- "Refine topic, meaning, motif and story (optional)",
+ "Refine topic, meaning and story (optional)",
  "Рекомендуемый визуальный стиль","Recommended visual style"])
    assert.ok(director.includes(token),token);
- for(const token of ["3. Опишите ваш запрос (необязательно)",
- "3. Describe your request (optional)","3. Describe tu idea (opcional)"])
+ for(const token of ["3. Ваше желание (необязательно)",
+ "3. Your wish (optional)","3. Tu deseo (opcional)"])
    assert.ok(studio.includes(token),token);
  assert.equal((studio.match(/<MandalaAutoVideoDirector/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
@@ -78,4 +83,14 @@ test("legacy deep links reveal the real advanced video catalog on mobile",()=>{
  assert.match(studio,/if\(anchor==="video-templates"\)\{[\s\S]*?setVideoScenarioOpen\(true\)/);
  assert.match(studio,/setShowAdvancedVideo\(true\)/);
  assert.match(studio,/data-free-film-compilation-catalog/);
+});
+
+test("optional motif is chosen inside Montage Style without delaying Ideas",()=>{
+ const mark=director.indexOf("const chooseMeaningAxis=");
+ const logic=director.slice(mark,director.indexOf("const chooseTaxonomyScenario=",mark));
+ assert.match(logic,/setSelectedMotifId\(listMyTubeMeaningMotifs\(selectedTopicId,id,locale\)\[0\]\?\.id\|\|""\)/);
+ assert.doesNotMatch(logic,/setSelectedMotifId\(id\);setSelectedScenarioId\(""/);
+ assert.match(studio,/data-video-director-style-controls hidden=\{montagePanel!=="effects"\}/);
+ const mobile=read("components/mandala-video-mobile.module.css");
+ assert.match(mobile,/data-video-director-style-controls\]\[hidden\]\{display:none!important\}/);
 });

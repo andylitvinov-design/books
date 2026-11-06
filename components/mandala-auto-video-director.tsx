@@ -518,14 +518,18 @@ export function MandalaAutoVideoDirector({
  };
  const chooseMeaningAxis=(id:string)=>{
    if(!taxonomyMeanings.some(x=>x.id===id)||id===selectedMeaningAxisId)return;
-   onInvalidate?.();setSelectedMeaningAxisId(id);setSelectedMotifId("");setSelectedStyleId("");
+   onInvalidate?.();setSelectedMeaningAxisId(id);
+   setSelectedMotifId(listMyTubeMeaningMotifs(selectedTopicId,id,locale)[0]?.id||"");
+   setSelectedStyleId("");
    setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);
    setMeaningHandoff(null);setIncludeMeaningCaption(false);
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
  };
  const chooseTaxonomyMotif=(id:string)=>{
    if(!suggestedVisualMotifs.some(x=>x.id===id)||id===selectedMotifId)return;
-   onInvalidate?.();setSelectedMotifId(id);setSelectedScenarioId("");setSelectedPlotId("");
+   onInvalidate?.();setSelectedMotifId(id);setSelectedPlotId("");
+   // Motif choices preserve stable scenario IDs but invalidate rendered clips;
+   // media selection and licensing are checked again for the changed motif.
    setSymbolicPlotFallback(false);setOverrideId(null);setSeconds(null);
    setTimelineEdits(null);setConfirmedTimelineKey(null);
  };
@@ -807,11 +811,21 @@ export function MandalaAutoVideoDirector({
    </select>
  </label>;
  const montageStylePanel=<section className={css.montageStyle} data-mytube-style-filter>
-   <strong>{locale==="ru"?"Рекомендуемый визуальный стиль":
-     locale==="es"?"Estilo visual recomendado":"Recommended visual style"}</strong>
-   <p>{locale==="ru"?"Автоподбор по идее; стиль можно изменить.":
-     locale==="es"?"Estilo automático según la idea; puedes cambiarlo.":
-     "Matched automatically to your idea; you can change it."}</p>
+   {selectedMeaningAxisId&&suggestedVisualMotifs.length===4?<div className={css.notice} data-mytube-creative-choices>
+     <strong>{locale==="ru"?"Мотив — выберите один из четырёх образов":
+       locale==="es"?"Motivo — una de cuatro imágenes":"Motif — one of four symbolic images"}</strong>
+     <div className={css.topicChoices} role="group" data-mytube-motif-choices>
+       {suggestedVisualMotifs.map(m=><button key={m.id} type="button" data-mytube-motif={m.id}
+         aria-pressed={selectedMotifId===m.id} title={m.meaning}
+         disabled={disabled} onClick={()=>chooseTaxonomyMotif(m.id)}>{m.label}</button>)}
+     </div>
+
+
+   </div>:null}
+   <details className={css.storyboardDisclosure} data-mytube-style-advanced>
+     <summary>{locale==="ru"?"Уточнить подбор стиля по сценарию (необязательно)":
+       locale==="es"?"Ajustar el estilo según el guion (opcional)":
+       "Refine style matching for the story (optional)"}</summary>
    <div className={css.montageStyleChoices} role="group" data-mytube-style-choices
      aria-label={locale==="ru"?"Стиль видео":locale==="es"?"Estilo del vídeo":"Video style"}>
      <button type="button" data-mytube-style="auto" aria-pressed={!selectedStyleId}
@@ -823,6 +837,7 @@ export function MandalaAutoVideoDirector({
        onClick={()=>chooseCreativeVisuals(selectedMotifId||"",selectedStyleId===style.id?"":style.id)}>
        {style.label}</button>)}
    </div>
+   </details>
    {selectedScenarioId&&creativeSelectionUnavailable?<p className={css.warning} role="status"
      data-mytube-creative-availability>
      {locale==="ru"?"Подходящих разрешённых клипов для выбранного стиля недостаточно.":
@@ -880,17 +895,6 @@ export function MandalaAutoVideoDirector({
        chooseTaxonomyScenario(scenarioId);
        setTransitionSelection(context?{scenarioId,...context}:null);
      }}/>:null}
-   {selectedMeaningAxisId&&suggestedVisualMotifs.length===4?<div className={css.notice} data-mytube-creative-choices>
-     <strong>{locale==="ru"?"Мотив — выберите один из четырёх образов":
-       locale==="es"?"Motivo — una de cuatro imágenes":"Motif — one of four symbolic images"}</strong>
-     <div className={css.topicChoices} role="group" data-mytube-motif-choices>
-       {suggestedVisualMotifs.map(m=><button key={m.id} type="button" data-mytube-motif={m.id}
-         aria-pressed={selectedMotifId===m.id} title={m.meaning}
-         disabled={disabled} onClick={()=>chooseTaxonomyMotif(m.id)}>{m.label}</button>)}
-     </div>
-
-
-   </div>:null}
    {selectedTopicId&&selectedMotifId&&taxonomyScenarios.length===4?<div className={css.storyChoices} data-mytube-scenario-concepts>
      <p className={css.variantsTitle}>{locale==="ru"?"Четыре сценария для выбранного мотива":locale==="es"?"Cuatro guiones del motivo":"Four film scenarios for this motif"}</p>
      {taxonomyScenarios.map((scenario,index)=>{
@@ -1062,9 +1066,9 @@ export function MandalaAutoVideoDirector({
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
    {ideaTarget?createPortal(<details className={css.ideaRefinement} data-video-ideas-refinement>
-     <summary>{locale==="ru"?"Уточнить тему, смысл, мотив и сценарий (по желанию)":
+     <summary>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
        locale==="es"?"Explorar tema, significado y guion (opcional)":
-       "Refine topic, meaning, motif and story (optional)"}</summary>
+       "Refine topic, meaning and story (optional)"}</summary>
      {topicPanel}
    </details>,ideaTarget):null}
    {montageTarget?createPortal(montageStylePanel,montageTarget):null}

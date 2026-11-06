@@ -4413,3 +4413,6 @@
 .montageAudioMode .montageAudioNativeUpload[data-selected=true]{background:#078568;color:#fff}
 .montageAudioNativeUpload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .montageAudioNativeUpload input:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+
+/* Style-specific story motif stays hidden in other Montage sub-tabs. */
+.studio [data-video-director-style-controls][hidden]{display:none!important}

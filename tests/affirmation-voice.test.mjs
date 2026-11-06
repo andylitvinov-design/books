@@ -434,3 +434,13 @@ test("the post-export stale-narration check revisits Voice through visible Monta
     "second consent-bound Voice check uses the mounted Audio subtab, never a hidden selector");
   assert.ok(source.slice(audio,disabled).includes('[data-video-montage-settings] [data-video-basic-tab="voice"]'));
 });
+
+test("WebKit release follows the real Montage Settings, Audio, and voice disclosure",()=>{
+ assert.match(source,/const settingsTab=page\.locator\('\[data-video-montage-tab="settings"\]'\)/);
+ assert.match(source,/const durationSelect=page\.locator\('\[data-video-montage-preference="duration"\]'\)/);
+ assert.match(source,/await durationSelect\.selectOption\("10"\)/);
+ assert.match(source,/await expect\(page\.locator\('\[data-video-montage-audio\]'\)\)\.toBeVisible\(\)/);
+ assert.match(source,/const voicePanel=page\.locator\("\[data-video-voice-studio\]"\)/);
+ assert.match(source,/voicePanel\.locator\(":scope > summary"\)\.click\(\)/);
+ assert.doesNotMatch(source,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
+});

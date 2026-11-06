@@ -67,19 +67,30 @@ try {
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();
-  const settings = page.locator('[data-video-montage-settings]');
-  await settings.waitFor({ state: 'visible' });
-  if (await settings.getAttribute('open') === null) await settings.locator(':scope > summary').click();
-  await settings.locator('[data-video-basic-tab="music"]').click();
-  const duration = settings.locator('[data-video-music-editor] [data-video-audio-length="20"]');
-  await duration.click();
-  assert.equal(await duration.getAttribute('aria-pressed'), 'true');
+  // Match the real post-#3676 Montage. Format/duration live in Settings.
+  const settingsTab=page.locator('[data-video-montage-tab="settings"]');
+  await settingsTab.waitFor({state:'visible'});
+  await settingsTab.click();
+  assert.equal(await settingsTab.getAttribute('aria-pressed'),'true');
+  const duration=page.locator('[data-video-montage-preference="duration"]');
+  await duration.waitFor({state:'visible'});
+  await duration.selectOption('20');
+  assert.equal(await duration.inputValue(),'20');
+  const audioTab=page.locator('[data-video-montage-tab="audio"]');
+  await audioTab.click();
+  assert.equal(await audioTab.getAttribute('aria-pressed'),'true');
+  await page.locator('[data-video-montage-audio]').waitFor({state:'visible'});
   const generate = page.locator('[data-video-quick-generate]');
   await generate.click({ timeout: 30000 });
-  const attach = page.locator('[data-video-audio-attach]');
-  await attach.waitFor({ state: 'visible', timeout: 15000 });
-  await attach.click();
-  await generate.click();
+  // The compact Audio attach control is the real, visible user action.
+  // Some pre-approved music is already attached; in that case export
+  // continues without an unnecessary second click or duplicate track.
+  const attach=page.locator('[data-video-audio-compact-attach]');
+  await attach.waitFor({state:'visible',timeout:15000});
+  if(await attach.isEnabled()){
+    await attach.click();
+    await generate.click();
+  }
   const save = page.locator('[data-mandala-video-download]');
   try { await save.waitFor({ state: 'visible', timeout: 150000 }); }
   catch (error) {

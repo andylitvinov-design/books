@@ -174,25 +174,23 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
-      // Navigate the actual visible Montage → Audio tab first; settings are conditional.
+      // Four visible Montage sub-tabs are Style, Add text, Audio, Settings.
+      // Duration is only in Settings, never duplicated in Audio.
+      const settingsTab=page.locator('[data-video-montage-tab="settings"]');
+      await settingsTab.waitFor({state:"visible",timeout:25000});
+      await settingsTab.click();
+      await expect(settingsTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      const durationSelect=page.locator('[data-video-montage-preference="duration"]');
+      await durationSelect.waitFor({state:"visible",timeout:25000});
+      await durationSelect.selectOption("10");
+      await expect(durationSelect).toHaveValue("10");
+      // Check the actual compact Audio screen, not the removed nested tabs.
       const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
       await montageAudioTab.waitFor({state:"visible",timeout:25000});
       await expect(montageAudioTab).toBeEnabled();
       await montageAudioTab.click();
       await expect(montageAudioTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
-      const montageSettings=page.locator('[data-video-montage-settings]');
-      await montageSettings.waitFor({state:"visible",timeout:25000});
-      if(await montageSettings.getAttribute("open")===null)
-        await montageSettings.locator(":scope > summary").click();
-      const musicTab=montageSettings.locator('[data-video-basic-tab="music"]');
-      await musicTab.waitFor({state:"visible",timeout:25000});
-      await musicTab.click();
-      await expect(musicTab).toHaveAttribute("aria-pressed","true");
-      const lengthButton=montageSettings.locator(
-        '[data-video-music-editor] [data-video-audio-length="10"]');
-      await lengthButton.waitFor({state:"visible",timeout:25000});
-      await lengthButton.click();
-      await expect(lengthButton).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -676,10 +674,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(reenterAudioTab).toBeVisible({timeout:15000});
       await reenterAudioTab.click();
       await expect(reenterAudioTab).toHaveAttribute("aria-pressed","true");
-      const reenterVoiceTab=page.locator('[data-video-montage-settings] [data-video-basic-tab="voice"]');
-      await expect(reenterVoiceTab).toBeVisible({timeout:15000});
-      await reenterVoiceTab.click();
-      await expect(reenterVoiceTab).toHaveAttribute("aria-pressed","true");
+      // Cloud narration is now directly in the Audio tab, under an
+      // explicit user-invoked disclosure; preserve its consent boundary.
+      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       // The phrase warning is intentionally unmounted in Montage. If the
       // old narration is still attached there, export must remain disabled;
       // an independently selected soundtrack is not stale narration.
