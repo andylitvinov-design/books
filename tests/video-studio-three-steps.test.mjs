@@ -94,3 +94,14 @@ test("optional motif is chosen inside Montage Style without delaying Ideas",()=>
  const mobile=read("components/mandala-video-mobile.module.css");
  assert.match(mobile,/data-video-director-style-controls\]\[hidden\]\{display:none!important\}/);
 });
+
+
+test("visitor-opened iHelp remains visible above the compact three-question Goal without exposing legacy tools",()=>{
+ const mobile=read("components/mandala-video-mobile.module.css");
+ assert.ok(mobile.includes('[data-video-scenario-open="false"][data-hh-video-ihelp-open="true"]'),
+   "only explicitly opened video iHelp overrides the Goals stage hiding rule");
+ assert.ok(mobile.includes('[data-video-director-chat-details][data-workspace-section="video"]'));
+ assert.match(mobile,/\/\* The compact Goal screen hides legacy advanced sections\./);
+ assert.match(studio,/window\.addEventListener\("hh:ihelp-open-video-director"/);
+ assert.match(studio,/role=\{videoIHelpOpen\?"dialog":undefined\}/);
+});
