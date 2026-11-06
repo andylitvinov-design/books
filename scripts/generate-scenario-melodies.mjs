@@ -1,6 +1,6 @@
 /**
  * Build-time, reproducible first-party MP3 masters.
- * Four DIFFERENT original scores for EVERY approved scenario (currently 48×4),
+ * Four DIFFERENT original scores for EVERY approved scenario (currently 49×4),
  * plus four original digital performances of familiar public-domain melodies.
  * All files are derived build artifacts; no external provider, paid API,
  * unlicensed music sample or visitor information is involved.

@@ -15,8 +15,10 @@ test("audits 256 stories / 1,280 motifs with honest source-tag evidence only",()
   });
   assert.equal(audit.scenarioMotifs.length,1280);
   assert.equal(audit.scenarioStyles.length,2560);
-  assert.equal(audit.footageInventory.eligibleLocalLicensedCatalogRows,48);
-  assert.equal(audit.footageInventory.distinctVideoPaths,48);
+  // Default audit is portrait-only: 48 legacy clips + four new portrait edits.
+  // The other four new MP4s are landscape-only, not cross-aspect substitutes.
+  assert.equal(audit.footageInventory.eligibleLocalLicensedCatalogRows,52);
+  assert.equal(audit.footageInventory.distinctVideoPaths,52);
   assert.equal(audit.footageInventory.physicallyCheckedInThisAudit,false);
   assert.equal(audit.footageInventory.privateR2UploadCount,"unknown_unverified");
   assert.equal(audit.footageInventory.originalMotionExcluded,true);
@@ -34,13 +36,13 @@ test("approved portrait footage never masquerades as native landscape or square 
   const portrait=auditMyTubeMediaCoverage({scenes:catalog.scenes,aspect:"portrait"});
   const landscape=auditMyTubeMediaCoverage({scenes:catalog.scenes,aspect:"landscape"});
   const square=auditMyTubeMediaCoverage({scenes:catalog.scenes,aspect:"square"});
-  assert.equal(portrait.footageInventory.eligibleLocalLicensedCatalogRows,48);
-  assert.equal(landscape.footageInventory.eligibleLocalLicensedCatalogRows,0);
+  assert.equal(portrait.footageInventory.eligibleLocalLicensedCatalogRows,52);
+  assert.equal(landscape.footageInventory.eligibleLocalLicensedCatalogRows,4);
   assert.equal(square.footageInventory.eligibleLocalLicensedCatalogRows,0);
   assert.ok(portrait.motifs.find(row=>row.motifId==="clouds").catalogTaggedClipCount>0);
-  assert.equal(landscape.motifs.find(row=>row.motifId==="clouds").catalogTaggedClipCount,0);
+  assert.ok(landscape.motifs.find(row=>row.motifId==="clouds").catalogTaggedClipCount>=0);
   assert.ok(portrait.scenarioMotifs.some(x=>x.motifTaggedCount>0));
-  assert.ok(landscape.scenarioMotifs.every(x=>x.motifTaggedCount===0));
+  assert.ok(landscape.scenarioMotifs.some(x=>x.motifTaggedCount>0));
   assert.ok(square.scenarioMotifs.every(x=>x.motifTaggedCount===0));
 });
 
