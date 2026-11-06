@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseTelegramHomeAction,telegramMenuKeyboard,parseTelegramHomeCallback,companionMessage,companionDailyDue,companionLocalDate,telegramCompanionConsentButtons} from '../lib/crm/telegram-companion-menu.mjs';
+import {parseTelegramHomeAction,telegramMenuKeyboard,parseTelegramHomeCallback,companionMessage,companionDailyDue,companionLocalDate,telegramCompanionConsentButtons,companionDatabaseDay} from '../lib/crm/telegram-companion-menu.mjs';
 test('typed commands and owner screenshot greetings',()=>{
  assert.equal(parseTelegramHomeAction('Привет','holistichouse_bot')?.action,'home');
  assert.equal(parseTelegramHomeAction('Privet','holistichouse_bot')?.action,'home');
@@ -29,4 +29,12 @@ test('daily scheduling is Toronto DST-safe',()=>{
  assert.equal(companionDailyDue(new Date('2026-07-06T13:00:00Z')),true);
  assert.equal(companionDailyDue(new Date('2026-07-06T14:00:00Z')),false);
  assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(companionLocalDate(new Date('2026-11-06T14:00:00Z'))));
+});
+
+test('PostgreSQL DATE may arrive as Date or ISO text: daily dedupe and rate cap compare same day',()=>{
+ assert.equal(companionDatabaseDay(new Date('2026-11-06T00:00:00.000Z')),'2026-11-06');
+ assert.equal(companionDatabaseDay('2026-11-06'),'2026-11-06');
+ assert.equal(companionDatabaseDay('2026-11-06T00:00:00Z'),'2026-11-06');
+ assert.equal(companionDatabaseDay(null),'');
+ assert.equal(companionDatabaseDay(new Date(NaN)),'');
 });
