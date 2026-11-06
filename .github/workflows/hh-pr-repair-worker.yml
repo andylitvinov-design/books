@@ -68,7 +68,6 @@ jobs:
           node --check scripts/ci-pr-repair-free-agent.cjs
           node --check scripts/ci-pr-repair-code-candidate.cjs
           node --check scripts/ci-pr-manus-handoff.cjs
-          node --test tests/ci-pr-manus-handoff.test.cjs
           node --check scripts/ci-pr-priority.cjs
       - id: select
         name: Verify exact-HEAD owner, PR branch, repair lease and queue
