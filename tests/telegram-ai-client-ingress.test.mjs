@@ -16,7 +16,7 @@ test('explicit first-party video commands only, unrelated client bot traffic pre
   assert.equal(parse(msg(text),'andydotbot',NOW),null,text)
 })
 test('same verified bot, sender, private chat, replay age and STOP are strict',()=>{
- assert.ok(parse(msg('/video@andydotbot лес'),'andydotbot',NOW))
+ assert.equal(parse(msg('/video@andydotbot лес'),'andydotbot',NOW)?.rawText,'/video лес')
  assert.equal(parse(msg('/video@otherbot лес'),'andydotbot',NOW),null)
  assert.equal(parse(msg('/video лес',{message:{from:{id:654321}}}),'andydotbot',NOW),null)
  assert.equal(parse(msg('/video лес',{message:{chat:{id:123456,type:'group'}}}),'andydotbot',NOW),null)
