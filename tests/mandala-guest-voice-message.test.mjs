@@ -113,3 +113,16 @@ test("macOS WebKit exercises explicit accessible adult consent and revocation",(
  assert.ok(!source.includes("await page.bringToFront()"),
   "no original-tab interaction should depend on restoring focus after another tab");
 });
+
+test("Ideas advanced voice stays opt-in and is exercised through a real WebKit click",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(studio,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
+ assert.ok(studio.includes('setIdeasVoiceAdvancedOpen(true)'),"the visible Ideas audio shortcut opens the editor");
+ assert.ok(studio.includes('activeWorkspace==="phrases" ?'),"voice editor is available only within Ideas");
+ assert.ok(studio.includes('{deepHypnoPane}'),"existing voice and approval controls are retained");
+ assert.ok(browser.includes("await advancedVoice.locator(\":scope > summary\").click()"),
+  "Mac WebKit must open the real disclosure, not force hidden controls");
+ assert.ok(browser.includes("await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible()"));
+ assert.ok(!browser.includes("advancedVoice.click({force:true})"),"never force hidden voice controls");
+});

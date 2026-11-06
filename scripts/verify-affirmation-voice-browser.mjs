@@ -319,6 +319,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
+      // Ideas offers a compact set of five phrases by default. The original
+      // consented voice editor is an opt-in advanced section, not a missing
+      // Phrases control or a forced hidden test-only shortcut.
+      const advancedVoice=phrases.locator('[data-video-ideas-advanced-voice]');
+      await advancedVoice.waitFor({state:"visible",timeout:15000});
+      await expect(advancedVoice).not.toHaveAttribute("open","");
+      await advancedVoice.locator(":scope > summary").click();
+      await expect(advancedVoice).toHaveAttribute("open","");
+      await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
       await phrases.locator("[data-hypno-select-tone]").selectOption("balanced");
