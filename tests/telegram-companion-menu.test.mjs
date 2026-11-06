@@ -72,6 +72,8 @@ test('five non-persistent check-in faces use only fixed first-party callbacks',(
 });
 
 test('finishing an already-started check-in is possible even at reply quota',()=>{
- assert.equal(companionReplyBudgetAllows('checkin_3',40,40),true);
+ assert.equal(companionReplyBudgetAllows('checkin_3',40,40,'checkin'),true);
+ assert.equal(companionReplyBudgetAllows('checkin_3',40,40,'menu'),false);
+ assert.equal(companionReplyBudgetAllows('checkin_3',40,40,'ai'),false);
  assert.equal(companionReplyBudgetAllows('checkin_6',40,40),false);
 });
