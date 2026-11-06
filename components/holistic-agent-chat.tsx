@@ -130,7 +130,7 @@ const messengerStarter = {
   hintQuestion:"Что вы хотите лучше понять сейчас: стресс, отношения, ресурсы или другую тему? Можно начать с бесплатного теста и затем обсудить результат здесь. Тест не является диагнозом.",
   chooseTheme:"Тема готового видео",themes:{stress:"Спокойствие",relationships:"Любовь",energy:"Энергия",meaning:"Смыслы"},
   readyVideos:"Смотреть готовые видео бесплатно",requestVideo:"Создать персональное видео",
-  videoAuth:"Для заявки на персональную генерацию войдите через Google. Подбор и просмотр готовых видео доступны без входа.",
+  videoAuth:"Войдите через Google, чтобы продолжить создание видео. Готовые ролики доступны без входа.",checkingSignIn:"Проверяем вход…",retrySignIn:"Не удалось проверить вход. Повторить",
   safety:"Если вам или кому-то рядом угрожает непосредственная опасность, обратитесь в экстренную службу. Я могу помочь найти доступные материалы, когда это безопасно.",
  },
  en:{
@@ -148,7 +148,7 @@ const messengerStarter = {
   hintQuestion:"What would you like to understand better: stress, relationships, personal resources or something else? You can start with a free test, then discuss the result here. A test is not a diagnosis.",
   chooseTheme:"Topic for ready-made videos",themes:{stress:"Calm",relationships:"Love",energy:"Energy",meaning:"Meaning"},
   readyVideos:"Watch ready-made videos for free",requestVideo:"Create my personal video",
-  videoAuth:"To request a custom generated video, sign in with Google. Exploring and watching existing videos needs no account.",
+  videoAuth:"Sign in with Google to continue creating your video. Ready-made videos remain free to watch.",checkingSignIn:"Checking your sign-in…",retrySignIn:"Could not verify sign-in. Retry",
   safety:"If you or someone nearby is in immediate danger, contact local emergency services. I can help find public resources when it's safe.",
  },
  es:{
@@ -166,7 +166,7 @@ const messengerStarter = {
   hintQuestion:"¿Qué te gustaría comprender mejor: el estrés, las relaciones, tus recursos u otro tema? Puedes empezar con un test gratuito y luego comentar el resultado aquí. Un test no es un diagnóstico.",
   chooseTheme:"Tema de un vídeo disponible",themes:{stress:"Calma",relationships:"Amor",energy:"Energía",meaning:"Sentido"},
   readyVideos:"Ver vídeos disponibles gratis",requestVideo:"Crear mi vídeo personal",
-  videoAuth:"Para solicitar un vídeo personalizado, entra con Google. Explorar y ver los vídeos existentes no requiere cuenta.",
+  videoAuth:"Entra con Google para continuar creando tu vídeo. Los vídeos existentes siguen disponibles sin entrar.",checkingSignIn:"Comprobando el acceso…",retrySignIn:"No se pudo comprobar el acceso. Reintentar",
   safety:"Si tú u otra persona estáis en peligro inmediato, contacta los servicios de emergencia locales. Puedo ayudarte a buscar recursos públicos cuando sea seguro.",
  },
 } as const;
@@ -193,8 +193,9 @@ type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal}
 type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
   create:(options?:unknown)=>Promise<NativePromptSession> };
 export type HolisticAgentQuickPrompt = {revision:number;text:string;format?:"video"|"audio"|"course"|"service"|"test"};
-export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticated=false}:{
- locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean
+export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticated=false,authStatus="guest",onAuthRetry}:{
+ locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean;
+ authStatus?:"guest"|"checking"|"authenticated"|"unavailable";onAuthRetry?:()=>void
 }) {
   const t=copy[locale];
   const starter=messengerStarter[locale];
@@ -521,6 +522,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     </details>
   );
   return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
+    data-video-auth-status={compact?(authenticated?"authenticated":authStatus):undefined}
     data-has-messages={messages.length>0||undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {!compact&&settings}
@@ -568,9 +570,12 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
           {authenticated?
             <a className={styles.personalVideoButton} data-hh-video-open-studio
               href={"/"+locale+"/holistic-support/mandala"}>{starter.requestVideo}</a>:
-            <button className={styles.personalVideoButton} data-hh-personal-video-request
+            authStatus==="checking"?<p role="status" data-hh-video-auth-check>{starter.checkingSignIn}</p>:
+            authStatus==="unavailable"?<button type="button" data-hh-video-auth-retry
+              onClick={()=>onAuthRetry?.()} disabled={!onAuthRetry}>{starter.retrySignIn}</button>:
+            showVideoSignIn?null:<button className={styles.personalVideoButton} data-hh-personal-video-request
               type="button" onClick={()=>setShowVideoSignIn(true)}>{starter.requestVideo}</button>}
-          {showVideoSignIn&&!authenticated&&<div className={styles.videoAuth} data-hh-video-sign-in>
+          {showVideoSignIn&&!authenticated&&authStatus==="guest"&&<div className={styles.videoAuth} data-hh-video-sign-in>
             <p>{starter.videoAuth}</p>
             <MessengerSignIn locale={locale} continueTo="video-studio"/>
           </div>}
@@ -610,21 +615,28 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
               .find(item=>item.id===videoDraft.mytubeTopicId)?.label
           }</p>}
           <p>{videoDraft.duration} s · {videoDraft.aspect==="portrait"?"9:16":videoDraft.aspect==="square"?"1:1":"16:9"} · {videoCopy.editNames.music}: {videoDraft.music==="none"?videoCopy.musicNames[3]:videoDraft.music}</p>
-          <div className={styles.videoEditOptions} role="group" aria-label={videoCopy.edit}>
+          <details className={styles.videoEditDetails} data-hh-video-edit-details>
+            <summary>{videoCopy.edit}</summary>
+            <div className={styles.videoEditOptions} role="group" aria-label={videoCopy.edit}>
             {(["category","subcategory","mytube-topic","topic","scenario","idea","phrase","mood","aspect","duration","music","phrases"] as const).map(step=><button
               type="button" key={step} disabled={busy} data-hh-video-edit-step={step}
               onClick={()=>openVideoEdit(step,step in videoCopy.editNames?
                 videoCopy.editNames[step as keyof typeof videoCopy.editNames]:messengerVideoQuestion(step,locale))}>
               {step in videoCopy.editNames?videoCopy.editNames[step as keyof typeof videoCopy.editNames]:videoCopy[step]}</button>)}
-          </div>
+            </div>
+          </details>
           {authenticated?<a className={styles.videoStudioLink} data-hh-video-open-studio
             href={"/"+locale+"/holistic-support/mandala#video-director-chat"}
             onClick={event=>{if(!stageVideoHandoff())event.preventDefault();}}>
             {videoCopy.toStudio}</a>:
-            <button type="button" className={styles.videoStudioLink} data-hh-personal-video-request
+            authStatus==="checking"?<p role="status" data-hh-video-auth-check>{starter.checkingSignIn}</p>:
+            authStatus==="unavailable"?<button type="button" className={styles.videoStudioLink}
+              data-hh-video-auth-retry onClick={()=>onAuthRetry?.()} disabled={!onAuthRetry}>
+              {starter.retrySignIn}</button>:
+            showVideoSignIn?null:<button type="button" className={styles.videoStudioLink} data-hh-personal-video-request
               onClick={()=>{if(stageVideoHandoff())setShowVideoSignIn(true);}}>
-              {starter.requestVideo}</button>}
-          {showVideoSignIn&&!authenticated&&<div className={styles.videoAuth} data-hh-video-sign-in>
+              {videoCopy.toStudio}</button>}
+          {showVideoSignIn&&!authenticated&&authStatus==="guest"&&<div className={styles.videoAuth} data-hh-video-sign-in>
             <p>{starter.videoAuth}</p>
             <MessengerSignIn locale={locale} continueTo="video-studio"/>
           </div>}
