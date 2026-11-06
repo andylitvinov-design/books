@@ -111,7 +111,7 @@ test('optional Link is merchant-gated and preserves catalog totals on both payme
     assert.ok(payments.includes(value), 'missing locale disclosure: ' + value)
   }
   const configured = {...approved, VERCEL_ENV: 'production',
-    HH_CARD_PAYMENT_LINK_50_EUR: 'https://buy.stripe.com/abcDEFGHIJK1234'}
+    HH_CARD_PAYMENT_LINK_50_EUR: 'https://buy.stripe.com/QwErTy123AbcD45'}
   const links = configuredIndividualCardLinks(configured)
   assert.equal(buildIndividualCardPaymentUrl([ids[0]], links), configured.HH_CARD_PAYMENT_LINK_50_EUR)
   assert.equal(buildIndividualCardPaymentUrl([ids[1]], links), configured.HH_CARD_PAYMENT_LINK_100_EUR)
