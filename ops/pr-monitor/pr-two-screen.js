@@ -126,8 +126,8 @@
     var running=one(2), queued=one(1);
     cells.running.n.textContent=running;
     cells.queued.n.textContent=queued;
-    cells.running.sub.textContent='Workflows · jobs выполняются: '+one(4);
-    cells.queued.sub.textContent='Workflows · jobs ожидают: '+one(3);
+    cells.running.sub.textContent='Workflows (не PR) · jobs выполняются: '+one(4);
+    cells.queued.sub.textContent='Workflows (не PR) · jobs ожидают: '+one(3);
     status.textContent='GitHub CI · PR ждут: '+one(0)+'. '+
       (queueError ? 'Источник очереди: '+queueError+'. Повторить через штатную кнопку «Обновить».' :
        'Только подтверждённые числа; неизвестное не равно 0.');
