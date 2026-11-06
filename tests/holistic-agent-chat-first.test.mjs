@@ -50,6 +50,9 @@ test('the mobile transcript contains sent messages, inline errors, settings and 
  assert.ok(agent.includes('data-hh-ai-welcome'))
  assert.ok(agent.includes('data-hh-ai-start="video"'))
  assert.ok(agent.includes('data-hh-ai-start="meditation"'))
+ assert.ok(agent.includes('data-hh-ai-start="hint"'))
+ assert.ok(agent.includes('data-hh-ai-start="master"'))
+ assert.ok(agent.includes('data-hh-ai-tests-link'))
  assert.ok(agent.includes('isCasualGreeting(text)'))
 })
 
@@ -65,4 +68,6 @@ test('RU EN ES greetings answer without a paid model; focused iPhone editor fill
  const css=source('components/holistic-agent-chat.module.css')
  assert.ok(css.includes('.startActions button'))
  assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'))
+ for(const label of ['Получить ИИ-подсказку','Получить личную блиц-диагностику','Get an AI suggestion','Solicitar revisión exprés personal'])
+  assert.ok(source('components/holistic-agent-chat.tsx').includes(label),label)
 })
