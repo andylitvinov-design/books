@@ -120,6 +120,55 @@ test('publisher verifies owner, SHA, changed file blob and commits exactly once'
   assert.equal(f.log.commit,1);
   assert.equal(f.log.read,1);
 });
+
+test('publisher blocks a foreign source writer who claims the same HEAD during isolated repair',async()=>{
+  const lease={body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+    schema:'HH_PR_SWEEP_LEASE_V1',owner:'independent-codex-writer',
+    head_sha:sha,state:'active',expires_at:'2099-01-01T00:00:00Z'
+  }),user:{login:owner}};
+  const f=fixture({comments:[lease]});
+  const candidate={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,
+    base64:'Y29uc3QgYT0xOwo='}]};
+  await assert.rejects(publish({github:f.github,core,context,prNumber:11,
+    expectedSha:sha,candidate,writer:f.writer}),
+    /HH_REPAIR_PUBLISH_OWNER_LEASE_CHANGED_OR_UNVERIFIED/);
+  assert.equal(f.log.commit,0,'foreign lease must prevent remote publication');
+});
+
+test('publisher fails closed on malformed or incomplete source lease history',async()=>{
+  const candidate={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,
+    base64:'Y29uc3QgYT0xOwo='}]};
+  for(const lease of [
+    {body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n{broken-json'},
+    {body:'HH_PR_SWEEP_LEASE_V1 no json'}
+  ]){
+    const f=fixture({comments:[lease]});
+    await assert.rejects(publish({github:f.github,core,context,prNumber:11,
+      expectedSha:sha,candidate,writer:f.writer}),
+      /HH_REPAIR_PUBLISH_OWNER_LEASE_CHANGED_OR_UNVERIFIED/);
+    assert.equal(f.log.commit,0);
+  }
+});
+
+test('publisher reads all comment pages before publication and rejects late foreign lease',async()=>{
+  const lease={body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({
+    schema:'HH_PR_SWEEP_LEASE_V1',owner:'work-source-owner',
+    head_sha:sha,state:'active',expires_at:'2099-01-01T00:00:00Z'
+  }),user:{login:owner}};
+  const f=fixture(), pages=[];
+  f.github.rest.issues.listComments=async({page,per_page})=>{
+    assert.equal(per_page,100);
+    pages.push(page);
+    return {data:page===1?Array.from({length:100},()=>({body:'historical note'})):[lease]};
+  };
+  await assert.rejects(publish({github:f.github,core,context,prNumber:11,
+    expectedSha:sha,candidate:{head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,
+    base64:'Y29uc3QgYT0xOwo='}]},writer:f.writer}),
+    /HH_REPAIR_PUBLISH_OWNER_LEASE_CHANGED_OR_UNVERIFIED/);
+  assert.deepEqual(pages,[1,2]);
+  assert.equal(f.log.commit,0);
+});
+
 test('publisher refuses to claim SHA publication without remote ref and parent proof',async()=>{
  const candidate={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,
    base64:Buffer.from('const a=1;\n').toString('base64')}]};
