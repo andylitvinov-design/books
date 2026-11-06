@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {analyzePrLoss, summarizePrLoss, exclusiveStageMinutes,readRepairMarkers,analyzePrLifecycle,lifecycleConnected,analyzeCoreWaveGaps} from '../lib/ci/pr-loss-metrics.mjs';
 import {collectCohort, formatSummary, searchQuery} from '../scripts/ci-pr-loss-report.mjs';
 import {analyzeRepairCycles} from '../lib/ci/pr-repair-cycle.mjs';
+import './ci-pr-base-advance.test.mjs';
 
 const head='a'.repeat(40), old='b'.repeat(40);
 const pr=(overrides={})=>({number:99,created_at:'2026-11-04T10:00:00Z',

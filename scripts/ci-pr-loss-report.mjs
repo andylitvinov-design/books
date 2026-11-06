@@ -6,6 +6,7 @@ import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {analyzePrLoss, summarizePrLoss, analyzePrLifecycle, lifecycleConnected, analyzeCoreWaveGaps} from '../lib/ci/pr-loss-metrics.mjs';
 import {analyzeRepairCycles} from '../lib/ci/pr-repair-cycle.mjs';
+import {classifyBaseAdvance} from '../lib/ci/pr-base-advance.mjs';
 
 const bounded=(value,fallback,min,max)=>{
   const n=Number(value);
@@ -37,7 +38,7 @@ export function searchQuery(repo,start,end,page=1){
     per_page:'100',page:String(page)});
 }
 export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDays=0,
-  prLimit=6,runLimit=12}={}) {
+  prLimit=6,runLimit=12,baseAdvanceProbe=false}={}) {
   const end=now-offsetDays*86400_000,start=end-hours*3600_000;
   if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start) throw Error('INVALID_COHORT');
   const items=[],seen=new Set();
@@ -59,6 +60,12 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
     if(page===3)searchTruncated=true;
   }
   const output=[],errors=[];
+  // One read of protected production per sampled cohort, never a PR failure.
+  let production=null;
+  if(baseAdvanceProbe){
+    try{production=await read('/repos/'+repo+'/branches/codex%2Fpublic-book-library');}
+    catch(error){errors.push('base-head:'+String(error.message||error));}
+  }
   let inspected=0;
   for(const issue of items) {
     if(output.length>=prLimit || inspected>=prLimit*4) break;
@@ -127,6 +134,20 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
       row.repair_cycles=analyzeRepairCycles(pr,selected,jobRows,comments,timeline,{
         runHistoryComplete:row.core_waves.run_history_complete,commentsComplete
       });
+      row.base_advance=classifyBaseAdvance(pr,production);
+      // Compare only actual differing, identity-checked SHA snapshots. A
+      // changed BASE alone neither proves a CI error nor demands a new wave.
+      if(baseAdvanceProbe && pr.state==='open' && production?.protected===true &&
+          production?.name==='codex/public-book-library' &&
+          /^[0-9a-f]{40}$/i.test(pr.base?.sha||'') &&
+          /^[0-9a-f]{40}$/i.test(production?.commit?.sha||'') &&
+          pr.base.sha!==production.commit.sha){
+        try{
+          const compare=await read('/repos/'+repo+'/compare/'+pr.base.sha+'...'+
+            production.commit.sha+'?per_page=100');
+          row.base_advance=classifyBaseAdvance(pr,production,compare);
+        }catch(error){errors.push('base-compare:'+pr.number+':'+String(error.message||error));}
+      }
       output.push(row);
     }catch(err) {errors.push('pr:'+issue.number+':'+String(err.message||err));}
   }
@@ -184,6 +205,20 @@ export function formatSummary(report) {
       ' | '+fmt(w.core_job_work.mean_minutes)+' | '+(w.run_history_complete?'complete':'partial')+' |');
   }
   lines.push('','Gap is previous Core run updated_at → next Core run created_at. Same-HEAD repeat, changed HEAD, runner wait and execution are distinct; timestamps alone never establish the root cause. Missing/overlapping history remains unknown.');
+  lines.push('','### BASE_ADVANCED — independent production movement signal');
+  const advanced=report.rows.filter(r=>r.base_advance?.signal==='BASE_ADVANCED');
+  const baseUnknown=report.rows.filter(r=>r.base_advance?.state==='UNKNOWN');
+  lines.push('Verified base advances: '+advanced.length+' PRs; unknown proof: '+
+    baseUnknown.length+' PRs in this sampled cohort. An advance is NOT a failed PR check.');
+  for(const r of advanced){
+    const a=r.base_advance;
+    lines.push('- #'+r.pr+': BASE_ADVANCED +'+a.commits_ahead+' protected-base commits ' +
+      '[GitHub ancestry]('+a.evidence_url+'). A new CI wave is NOT inferred.');
+  }
+  if(!advanced.length)lines.push('- No ancestry-verified base advance in this sample.');
+  lines.push('A matching PR.base.sha is aligned only at the read snapshot; it does not prove '+
+    'no past base movement. Missing or truncated GitHub Compare remains UNKNOWN. '+
+    'BASE_ADVANCED never counts as PR failure, Repair duration, or runner delay.');
   lines.push('','### Repair cycle — each observed interval (UTC, exact PR/HEAD)');
   lines.push('| PR | Failed job / step | CI failure | Lease claim | Repair declared | Next HEAD / commit event | New Core CI | First job | Runner |');
   lines.push('| ---: | --- | --- | --- | --- | --- | --- | --- | --- |');
@@ -240,7 +275,7 @@ async function main(){
   const offsetDays=bounded(env.HH_PR_LOSS_OFFSET_DAYS,0,0,60);
   const prLimit=bounded(env.HH_PR_LOSS_PR_LIMIT,6,1,12);
   const runLimit=bounded(env.HH_PR_LOSS_RUN_LIMIT,12,1,20);
-  const report=await collectCohort(read,repo,{hours,offsetDays,prLimit,runLimit});
+  const report=await collectCohort(read,repo,{hours,offsetDays,prLimit,runLimit,baseAdvanceProbe:true});
   const summary=formatSummary(report);
   console.log(summary);
   console.log('HH_PR_LOSS_P1 '+JSON.stringify(report));
