@@ -979,15 +979,16 @@ function compileFreeFilmPreset(
     const certified=FREE_FILM_CATALOG.flatMap(source=>{
       const scene=verifiedCategorySource(source);
       if(!scene||!isSafeMontageScene(scene)||!verifiedSceneAspect(scene,aspect)||
-         !firstPartyFilmFor(scene.theme as VideoTheme,scene.id))return [];
+         !firstPartyFilmFor(source.theme as VideoTheme,scene.id))return [];
       const masterKey=canonicalSourceMasterKey(scene);
       if(!masterKey)return [];
       return [{
-        id:scene.id,theme:scene.theme,durationSeconds:scene.durationSeconds,
-        certified:true,masterKey,media:scene.media,sourceId:scene.sourceId,
+        id:scene.id,theme:source.theme,durationSeconds:scene.durationSeconds,
+        certified:true,masterKey,media:source.media,
+        sourceId:"sourceId" in source&&typeof source.sourceId==="string"?source.sourceId:"", 
         origins:Array.isArray(scene.originMasterKeys)?scene.originMasterKeys:[],
         group:typeof scene.perceptualGroupId==="string"?scene.perceptualGroupId:null,
-        tags:scene.tags,motifs:scene.motifs
+        tags:[...source.tags],motifs:[...source.motifs]
       }];
     });
     const legacyStageSeconds=allocateAdaptiveFilmTimeline(durationSeconds,[...clipIds])
