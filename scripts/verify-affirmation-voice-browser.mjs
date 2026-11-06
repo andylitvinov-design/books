@@ -225,7 +225,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const advanced=phrases.locator('[data-video-phrase-audio-shortcut]');
       await expect(advanced).toBeVisible();
       await expect(advanced).toHaveAttribute("aria-expanded","false");
-      await expect(phrases.locator("[data-hypno-select-tone]")).toHaveCount(0);
+      await expect(phrases.locator("[data-hypno-select-tone]")).toBeHidden();
       await advanced.click();
       await expect(advanced).toHaveAttribute("aria-expanded","true");
       await expect(phrases.locator("[data-video-advanced-phrase-editor]")).toBeVisible();

@@ -136,7 +136,7 @@ test("the optional Ideas audio button mounts the authentic Hypno voice editor af
  const to=studio.indexOf('data-workspace-section="effects"',from);
  assert.ok(from>=0&&to>from);
  const ideas=studio.slice(from,to);
- assert.match(ideas,/activeWorkspace==="phrases" && phraseAudioExpanded/);
+ assert.match(studio,/const advancedPhraseEditorVisible=activeWorkspace==="phrases" && phraseAudioExpanded;/);
  assert.match(ideas,/data-video-advanced-phrase-editor/);
  assert.match(ideas,/\{deepHypnoPane\}/);
  assert.match(ideas,/data-video-phrase-audio-shortcut aria-expanded=\{phraseAudioExpanded\}/);

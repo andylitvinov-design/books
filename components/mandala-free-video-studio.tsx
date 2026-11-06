@@ -4544,6 +4544,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
       </section>
   );
+  const advancedPhraseEditorVisible=activeWorkspace==="phrases" && phraseAudioExpanded;
   const deepHypnoPane = (
       <section className={videoStyles.hypnosisSection} id="video-hypnosis" data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
         <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
@@ -5384,14 +5385,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onCreate={goToMontageFromIdeas}/>
-          {/* Keep Ideas compact; reveal the real legacy phrase/voice editor
-              only after the user's explicit advanced audio action. */}
-          {activeWorkspace==="phrases" && phraseAudioExpanded ?
-            <div data-video-advanced-phrase-editor>{deepHypnoPane}</div> :
-            activeWorkspace!=="phrases" ?
-              <div data-video-legacy-phrase-editor hidden aria-hidden="true">
-                {deepHypnoPane}
-              </div> : null}
+          {/* Keep a SINGLE mounted Hypno editor to preserve approved phrase
+              state. Native Ideas is compact until the visitor opens audio. */}
+          <div data-video-advanced-phrase-editor={advancedPhraseEditorVisible?"true":undefined}
+            data-video-legacy-phrase-editor={advancedPhraseEditorVisible?undefined:"true"}
+            hidden={!advancedPhraseEditorVisible}
+            aria-hidden={!advancedPhraseEditorVisible}>
+            {deepHypnoPane}
+          </div>
         </div>
         <button type="button" className={videoStyles.phraseAudioNext}
           data-video-phrase-audio-shortcut aria-expanded={phraseAudioExpanded}

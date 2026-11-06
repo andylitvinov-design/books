@@ -3318,10 +3318,6 @@
    Scope all changes to Phrases; do not modify the canonical video Canvas,
    Montage controls or Hypno Effect audio authoring. */
 .studio[data-active-workspace="phrases"] .workspaceHeading,
-.studio[data-active-workspace="phrases"] .phraseMusicSection,
-.studio[data-active-workspace="phrases"] .phraseAudioSettings,
-.studio[data-active-workspace="phrases"] .phraseAudioNext,
-.studio[data-active-workspace="phrases"] .phraseVoiceAction,
 .studio[data-active-workspace="phrases"] [data-hypno-video-advanced],
 .studio[data-active-workspace="phrases"] [data-hypno-preview],
 .studio[data-active-workspace="phrases"] [data-video-quick-audio-choices]{display:none!important}

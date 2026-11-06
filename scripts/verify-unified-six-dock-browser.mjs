@@ -328,8 +328,8 @@ try{
  await chat.locator("[data-hh-ai-welcome]").waitFor({state:"visible"});
  const log=chat.locator('[role="log"]');
  const starters=chat.locator('[data-hh-ai-start]');
- assert.equal(await starters.count(),2,"real video and meditation start actions");
- for(const id of ["video","meditation"]){
+ assert.equal(await starters.count(),4,"real video, meditation, test and master start actions");
+ for(const id of ["video","meditation","hint","master"]){
    const item=chat.locator('[data-hh-ai-start="'+id+'"]');
    await item.waitFor({state:"visible"});
    const rect=await item.boundingBox();
@@ -353,6 +353,25 @@ try{
    .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
+ // Test every starter against its real route or visible live message.
+ await chat.getByRole("button",{name:"Новый разговор"}).click();
+ await chat.locator('[data-hh-ai-start="meditation"]').click();
+ await chat.getByText(/сколько минут у вас есть/).waitFor({state:"visible"});
+ await chat.getByRole("button",{name:"Новый разговор"}).click();
+ await chat.locator('[data-hh-ai-start="hint"]').click();
+ const testLink=chat.locator("[data-hh-ai-tests-link]");
+ await testLink.waitFor({state:"visible"});
+ assert.equal(await testLink.getAttribute("href"),"/ru/tests");
+ await testLink.click();
+ await page.waitForURL(/\/ru\/tests\/?$/,{timeout:45000});
+ await page.locator('[data-free-entry-landing="tests"]').waitFor({state:"visible",timeout:30000});
+ await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+ await chat.locator('[data-hh-ai-start="master"]').waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-start="master"]').click();
+ await page.waitForURL(/\/ru\/services\/free-situation-review\/?$/,{timeout:45000});
+ await page.locator('[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:30000});
+ await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+ await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
  await page.locator("#hh-orders-panel").waitFor({state:"visible"});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-clients-panel"]').click();
@@ -364,7 +383,7 @@ try{
  assert.equal(await page.locator("[data-support-practice-tabs] > *").count(),3);
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
- results.push({journey:"MyTube → Video → live AI transcript and two starters → private Orders/Clients → Practice",passed:true});
+ results.push({journey:"MyTube → Video → live AI transcript and four active starters → private Orders/Clients → Practice",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
  // with one seventh link to the REAL free express-review page.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
