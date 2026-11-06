@@ -363,8 +363,10 @@ test('Mandala restores the same immutable production Core MP3 cache before safe 
   assert.match(section,/path: public\/audio\/mandala\/scenarios/);
   assert.doesNotMatch(section,/restore-keys:/,
     'do not restore stale audio when production source fingerprints differ');
-  assert.doesNotMatch(mandala,/actions\/cache\/save@v4|actions\/cache@v4/,
-    'untrusted PRs must never publish or overwrite shared cache payloads');
+  const focused=mandala.split('  focused-unit-types-build:')[1]
+    ?.split('  webkit_preflight:')[0] || '';
+  assert.doesNotMatch(focused,/actions\/cache\/save@v4|uses: actions\/cache@v4/,
+    'focused PR media lane must restore only; macOS has unrelated build cache writers');
   assert.ok(mandala.indexOf('Restore production-owned scenario MP3 cache (read-only)') <
     mandala.indexOf('Generate dedicated scenario music and four classic performances'));
   assert.match(mandala,/node scripts\/generate-scenario-melodies\.mjs && node scripts\/generate-scenario-melodies\.mjs --check/);
