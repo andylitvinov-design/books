@@ -109,6 +109,7 @@ function summarizePR(pr,runs){
  // time to GitHub runners. Count only intervals after ALL prior jobs ended.
  const wave={new_head:{count:0,ms:0},same_head:{count:0,ms:0},
    unverified_head:{count:0,ms:0},after_failure:{count:0,ms:0}};
+ const waveRows=[];
  let prev=null,lastFinished=null;
  for(const r of sorted){
    const a=t(r.queued_at),b=t(r.completed_at);
@@ -118,6 +119,17 @@ function summarizePR(pr,runs){
        ? (lastFinished.source_head===r.source_head?'same_head':'new_head')
        : 'unverified_head';
      const duration=a-prev;
+     // Observed GitHub run pair, not proof of repair, actor or cause of the delay.
+     waveRows.push({kind:relation,started_at:new Date(prev).toISOString(),
+       ended_at:new Date(a).toISOString(),duration_ms:duration,
+       prior_conclusion:typeof lastFinished?.conclusion==='string'?lastFinished.conclusion:'unknown',
+       after_failure:['failure','timed_out','startup_failure'].includes(lastFinished?.conclusion),
+       prior_head:SHA.test(lastFinished?.source_head||'')?lastFinished.source_head.toLowerCase():null,
+       next_head:SHA.test(r.source_head||'')?r.source_head.toLowerCase():null,
+       prior_url:safeRun(lastFinished?.workflow_url)||msurl(lastFinished.run_id),
+       next_url:safeRun(r.workflow_url)||msurl(r.run_id),
+       actor_verified:false,
+       evidence:'ARCHIVED_WORKFLOW_TIMES_AND_SHA_NOT_CAUSAL_PROOF'});
      wave[relation].count++;wave[relation].ms+=duration;
      if(['failure','timed_out','startup_failure'].includes(lastFinished?.conclusion)){
        wave.after_failure.count++;wave.after_failure.ms+=duration;
@@ -168,6 +180,7 @@ function summarizePR(pr,runs){
  return {pr,first_at:new Date(first).toISOString(),last_at:new Date(end).toISOString(),
    job_clock_ms:jobClockMs,
    elapsed_ms:end-first,elapsed_minutes:rnd((end-first)/60000),stages_ms:stages,
+   wave_rows:waveRows,
    wave_head_evidence:{
      new_head_count:wave.new_head.count,new_head_ms:wave.new_head.ms,
      same_head_count:wave.same_head.count,same_head_ms:wave.same_head.ms,
@@ -267,7 +280,18 @@ function report(store,h,now=Date.now()){
      total_mean_minutes:nums.length?rnd(sum/nums.length/60000):null,
      observed_elapsed_ms:sum,stage_total_ms:stageTotals,
      reconciled},
-   rows:rows.slice(0,250)};
+   // Drilldown is requested by user interaction, never on the overview load.
+   rows:rows.slice(0,250).map(({wave_rows,...row})=>row)};
+}
+function waveDetail(store,pr,h,now=Date.now()){
+ const matches=store.runs.filter(run=>run.pr===pr);
+ const row=matches.length?summarizePR(pr,matches):null;
+ const available=!!row&&t(row.last_at)>=now-h*3600000&&t(row.last_at)<=now+60000;
+ return {schema:'HH_CI_WAVE_DETAIL_V1',pr,period_hours:h,available,
+   total_waves:available?row.wave_rows.length:0,history_complete:false,
+   pagination_partial:store.pagination_partial===true,
+   waves:available?row.wave_rows:[],
+   note:'Sequence and HEAD are observed; person, trigger and cause remain unverified. Overlapping runs are not counted as idle time.'};
 }
 module.exports=async(req,res)=>{
  res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -278,8 +302,15 @@ module.exports=async(req,res)=>{
  if(req.method!=='GET'){res.statusCode=405;res.setHeader('Allow','GET');return res.end(JSON.stringify({error:'METHOD_NOT_ALLOWED'}));}
  const hours=Number(req.query?.hours||24);
  if(!HOURS.includes(hours)){res.statusCode=400;return res.end(JSON.stringify({error:'INVALID_HOURS'}));}
- try{res.statusCode=200;res.end(JSON.stringify(report(await fetchArchive(force),hours)));}
+ const rawPr=req.query?.pr;
+ if(rawPr!==undefined&&(typeof rawPr!=='string'||!/^[1-9][0-9]{0,5}$/.test(rawPr))){
+   res.statusCode=400;return res.end(JSON.stringify({error:'INVALID_PR'}));}
+ try{
+   const store=await fetchArchive(force);
+   res.statusCode=200;
+   res.end(JSON.stringify(rawPr===undefined?report(store,hours):waveDetail(store,Number(rawPr),hours)));
+ }
  catch(e){res.statusCode=503;res.end(JSON.stringify({schema:'HH_CI_FIRST_LAST_ARCHIVE_V1',
    error:String(e.message||e).slice(0,90),missing_is_not_zero:true}));}
 };
-module.exports._test={parse,summarizePR,report};
+module.exports._test={parse,summarizePR,report,waveDetail};
