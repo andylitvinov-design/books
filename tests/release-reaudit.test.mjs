@@ -33,7 +33,7 @@ function navigationHarness() {
   const menus = ['language', 'site'].map(name => {
     const inside = new Node();
     const menu = {
-      name, inside, open: true, focusCount: 0,
+      name, inside, open: true, focusCount: 0, dataset: {},
       contains: target => target === inside || target === menu,
       querySelector: selector => {
         assert.equal(selector, 'summary');
@@ -288,3 +288,12 @@ test('release audit preserves all four browser lanes while isolating CI process 
     assert.ok(verifier.includes(safety), 'Preserve release safety contract: ' + safety);
   }
 });
+
+test('site language menu readiness tracks actual installed native keyboard listeners',()=>{
+ const {menus,listeners,cleanup}=navigationHarness()
+ assert.equal(menus[0].dataset.hhKeyboardReady,'true')
+ assert.equal(listeners.has('keydown'),true)
+ cleanup()
+ assert.equal(menus[0].dataset.hhKeyboardReady,undefined)
+ assert.equal(listeners.size,0)
+})
