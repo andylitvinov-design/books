@@ -39,7 +39,8 @@ import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
 import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, allocateVariableFilmTimeline, shiftAdaptiveFilmBoundary, shiftVariableFilmBoundary, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
-import {validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
+import {validateMontageClips,isSafeMontageScene} from "@/lib/mandala/video-montage-sources.mjs";
+import {autoFillApprovedFilm} from "@/lib/mandala/auto-fill-approved-film.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
 import {clampTrackSecond,timedCaptionAt,splitTimelineCaption,duplicateTimelineCaption} from "@/lib/mandala/editable-timeline.mjs";
 import {distributeMontageSetups,isMontageSetupClip,reorderMontageSetups,retimeMontageSetups} from "@/lib/mandala/creative-editor-setups.mjs";
@@ -968,8 +969,36 @@ function compileFreeFilmPreset(
 ):CinematicStoryboard {
   // Both legacy four cuts and adaptive 4–12 cuts use the SAME Canvas/MP4 engine.
   // A semantic plan cannot bypass trusted physical source, format or rights checks.
-  const clipIds=edit?.clipIds??(aspect==="portrait"&&preset.portraitClips?preset.portraitClips:preset.clips);
-  const adaptive=clipIds.length!==4;
+  // Prefer the owner's four approved beats, but never stretch a short MP4.
+  // Unedited presets can add vetted, separate source masters in 9:16. User
+  // edits/semantic plots are never silently replaced with a different film.
+  let clipIds:readonly string[]=edit?.clipIds??
+    (aspect==="portrait"&&preset.portraitClips?preset.portraitClips:preset.clips);
+  let adaptive=clipIds.length!==4;
+  if(!edit&&clipIds.length===4){
+    const certified=FREE_FILM_CATALOG.flatMap(source=>{
+      const scene=verifiedCategorySource(source);
+      if(!scene||!isSafeMontageScene(source)||!verifiedSceneAspect(scene,aspect)||
+         !firstPartyFilmFor(source.theme as VideoTheme,scene.id))return [];
+      const masterKey=canonicalSourceMasterKey(scene);
+      if(!masterKey)return [];
+      return [{
+        id:scene.id,theme:source.theme,durationSeconds:scene.durationSeconds,
+        certified:true,masterKey,media:source.media,
+        sourceId:"sourceId" in source&&typeof source.sourceId==="string"?source.sourceId:"", 
+        origins:Array.isArray(scene.originMasterKeys)?scene.originMasterKeys:[],
+        group:typeof scene.perceptualGroupId==="string"?scene.perceptualGroupId:null,
+        tags:[...source.tags],motifs:[...source.motifs]
+      }];
+    });
+    const legacyStageSeconds=allocateAdaptiveFilmTimeline(durationSeconds,[...clipIds])
+      .map(shot=>shot.durationSeconds);
+    const filled=autoFillApprovedFilm({initialIds:[...clipIds],scenes:certified,
+      theme:preset.theme,durationSeconds,legacyStageSeconds});
+    if(!filled.ok)throw Error("AUTO_FILM_"+filled.code);
+    clipIds=filled.clipIds;
+    adaptive=filled.usedVariableTiming||clipIds.length!==4;
+  }
   if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,
     [...(edit?.excludedMotifs??[])],aspect,adaptive))
     throw Error("invalid_free_film_replacement");
@@ -1870,6 +1899,59 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [studioHydrated,setStudioHydrated] = useState(false);
   useEffect(()=>setStudioHydrated(true),[]);
   const [directorChatOpen,setDirectorChatOpen] = useState(false);
+  const [videoIHelpOpen,setVideoIHelpOpen] = useState(false);
+  const videoIHelpCloseRef=useRef<HTMLButtonElement|null>(null);
+  // Sitewide iHelp opens the SAME Director, without resetting Studio state,
+  // previously selected clips, text, audio or video settings.
+  useEffect(()=>{
+    const openVideoHelp=(event:Event)=>{
+      const request=event as CustomEvent<{handled?:boolean}>;
+      if(request.detail)request.detail.handled=true;
+      setDirectorChatOpen(true);
+      setVideoIHelpOpen(true);
+    };
+    window.addEventListener("hh:ihelp-open-video-director",openVideoHelp);
+    return ()=>{
+      window.removeEventListener("hh:ihelp-open-video-director",openVideoHelp);
+      window.dispatchEvent(new CustomEvent("hh:ihelp-video-director-state",{detail:{open:false}}));
+    };
+  },[]);
+  function closeVideoIHelp(){
+    setVideoIHelpOpen(false);
+    window.requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>(
+      "[data-hh-ihelp-trigger]")?.focus({preventScroll:true}));
+  }
+  useEffect(()=>{
+    window.dispatchEvent(new CustomEvent("hh:ihelp-video-director-state",
+      {detail:{open:videoIHelpOpen}}));
+    if(!videoIHelpOpen)return;
+    const overflowBefore=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    const focusFrame=window.requestAnimationFrame(()=>videoIHelpCloseRef.current?.focus({preventScroll:true}));
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==="Escape"){
+        event.preventDefault();closeVideoIHelp();return;
+      }
+      if(event.key!=="Tab")return;
+      const dialog=document.querySelector<HTMLElement>("[data-video-director-chat-details][role='dialog']");
+      const focusable=Array.from(dialog?.querySelectorAll<HTMLElement>(
+        "button:not([disabled]),a[href],textarea:not([disabled]),input:not([disabled]),select:not([disabled])"
+      )||[]).filter(el=>el.getClientRects().length>0);
+      if(!focusable.length){event.preventDefault();return;}
+      const first=focusable[0],last=focusable[focusable.length-1];
+      if(event.shiftKey&&(document.activeElement===first||!dialog?.contains(document.activeElement))){
+        event.preventDefault();last.focus();
+      }else if(!event.shiftKey&&(document.activeElement===last||!dialog?.contains(document.activeElement))){
+        event.preventDefault();first.focus();
+      }
+    };
+    document.addEventListener("keydown",onKey);
+    return ()=>{
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown",onKey);
+      document.body.style.overflow=overflowBefore;
+    };
+  },[videoIHelpOpen]);
   const [phraseAudioExpanded,setPhraseAudioExpanded] = useState(false);
   const [phrasePending,setPhrasePending] = useState(false);
   const [catalogPhraseDraft,setCatalogPhraseDraft] = useState<string|null>(null);
@@ -2106,6 +2188,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [videoEffectStarted,setVideoEffectStarted] = useState(false);
   const [videoEffectEnded,setVideoEffectEnded] = useState(false);
   const [notice, setNotice] = useState("");
+  const [portraitRetry,setPortraitRetry]=useState<{
+    presetId:string;seconds:10|15|20|30|60;edit?:FreeFilmCompilationEdit
+  }|null>(null);
   // Zero-cash video XP: separate from Growth Points and unmerged paid CAD wallet.
   const [creditCatalog,setCreditCatalog]=useState<{
     chargeRequired:boolean;ready:boolean;blocked:boolean;priceCredits:number
@@ -4126,7 +4211,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(!preset){setNotice(ui.videoUnavailable);return false;}
     try{
       const plan=compileFreeFilmPreset(preset,locale,seconds,outputAspect,edit);
-      resetEditorHistory();
+      resetEditorHistory();setPortraitRetry(null);
       setCreationMode("catalog");setActiveFreeFilmPreset(preset.id);
       selectScenarioMusic(preset.id);
       if(edit?.semanticScenePlan){
@@ -4140,8 +4225,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setAspect(outputAspect);setDuration(seconds);setCinematicPlan(plan);
       setTimelineTextClips(null);setPreviewSeekSeconds(0);setPreviewPlayhead(0);
       setPreviewPlaying(false);setSuggestion("");
-      setNotice(locale==="ru"?"Бесплатный монтаж выбран. Нажмите «Создать видео».":locale==="es"
-        ?"Montaje gratuito seleccionado. Pulsa Crear vídeo.":"Free film selected. Choose Create video.");
+      const added=plan.shots.length>4;
+      const hasAbstract=plan.shots.some(shot=>
+        FREE_FILM_CATALOG_BY_ID.get(shot.sceneId)?.media==="original_motion_mp4");
+      setNotice(added
+        ? locale==="ru"
+          ?`Подобрано ${plan.shots.length} разных проверенных MP4 без повторения кадров.${hasAbstract?" Часть — авторская абстрактная анимация.":""} Нажмите «Создать видео».`
+          :locale==="es"
+          ?`${plan.shots.length} clips verificados sin repetir escenas.${hasAbstract?" Algunos son animaciones abstractas originales.":""} Pulsa Crear vídeo.`
+          :`${plan.shots.length} verified source clips selected without repeating shots.${hasAbstract?" Some are original abstract animations.":""} Choose Create video.`
+        :locale==="ru"?"Бесплатный монтаж выбран. Нажмите «Создать видео».":locale==="es"
+          ?"Montaje gratuito seleccionado. Pulsa Crear vídeo.":"Free film selected. Choose Create video.");
       // Confirm does not render or jump away from the next action.
       // After the React commit, scroll to the genuine local Create control.
       window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
@@ -4149,8 +4243,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           behavior:"smooth",block:"nearest"
         })));
       return true;
-    }catch{
-      setNotice(ui.videoUnavailable);
+    }catch(error){
+      const reason=error instanceof Error?error.message:"";
+      const formatUnavailable=outputAspect!=="portrait"&&(
+        reason==="invalid_free_film_replacement"||
+        reason.includes("INITIAL_SOURCES_NOT_VERIFIED")||
+        reason==="UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
+      if(formatUnavailable){
+        setPortraitRetry({presetId,seconds,edit});
+        setNotice(locale==="ru"
+          ?"Исходные MP4 этого сюжета вертикальные. Выберите «Создать в 9:16» — видео будет собрано из проверенных сцен."
+          :locale==="es"?"Los MP4 de esta historia son verticales. Elige crear en 9:16."
+          :"These sources are portrait video. Choose Create in 9:16 to use verified footage.");
+      }else{
+        setPortraitRetry(null);
+        setNotice(reason.includes("INSUFFICIENT_DISTINCT_APPROVED_FOOTAGE")
+          ?locale==="ru"?"Для такой длительности не хватает различных разрешённых MP4. Выберите короткий ролик или другую тему."
+            :locale==="es"?"No hay suficientes MP4 distintos para esta duración. Elige un vídeo más corto u otro tema."
+            :"Not enough distinct approved MP4 sources for this length. Choose a shorter film or another topic."
+          :ui.videoUnavailable);
+      }
       return false;
     }
   };
@@ -4994,6 +5106,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // for every mode; portal relocation previously changed geometry and focus.
   return (
     <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
+      data-hh-video-ihelp-open={videoIHelpOpen||undefined}
       data-mandala-free-video data-video-studio-mode={studioMode}
       data-video-advanced-open={showAdvancedVideo?"true":"false"}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
@@ -5163,8 +5276,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
         {/* Original verified AI Director from #2913: open only from the free-help
             chip, keep the default iPhone design and a single MediaRecorder. */}
-        <details className={videoStyles.directorChatDetails}
+        {videoIHelpOpen&&<button type="button" tabIndex={-1}
+          className={videoStyles.iHelpVideoBackdrop} data-video-ihelp-backdrop
+          aria-label={locale==="ru"?"Закрыть iHelp":locale==="es"?"Cerrar iHelp":"Close iHelp"}
+          onClick={closeVideoIHelp}/>}
+        <details id="hh-ihelp-video-director-dialog" className={videoStyles.directorChatDetails}
           data-video-director-chat-details data-workspace-section="video"
+          role={videoIHelpOpen?"dialog":undefined}
+          aria-modal={videoIHelpOpen?"true":undefined}
+          aria-label={videoIHelpOpen?(locale==="ru"?"iHelp — AI-видеорежиссёр":
+            locale==="es"?"iHelp — director de vídeo":"iHelp — AI Video Director"):undefined}
           open={directorChatOpen}
           onToggle={event=>setDirectorChatOpen(event.currentTarget.open)}>
           <summary><Sparkles size={17} aria-hidden="true"/>
@@ -5173,10 +5294,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               "AI assistant — refine your brief"}
             <ChevronDown size={17} aria-hidden="true"/>
           </summary>
+        {videoIHelpOpen&&<div className={videoStyles.iHelpVideoBar} data-video-ihelp-header>
+          <strong>iHelp</strong><span>{locale==="ru"?"AI-помощник, не человек и не психотерапевт":
+            locale==="es"?"Asistente de IA, no una persona ni terapeuta":
+            "AI assistant, not a person or therapist"}</span>
+          <button type="button" ref={videoIHelpCloseRef} onClick={closeVideoIHelp}
+            aria-label={locale==="ru"?"Закрыть iHelp":locale==="es"?"Cerrar iHelp":"Close iHelp"}>
+            <X size={20} aria-hidden="true"/>
+          </button>
+        </div>}
         {/* Conversation-first entrypoint: the existing Studio supplies the ONE renderer/player.
             Visual styling reuses the approved Messenger pattern without importing CRM data. */}
         <MandalaVideoDirectorChat
           locale={locale} goal={wish} theme={theme}
+          helpVisible={videoIHelpOpen}
+          helpTab={activeWorkspace==="phrases"?"ideas":
+            activeWorkspace==="editor"?montagePanel:
+            activeWorkspace==="effects"?"effects":"video"}
           presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}
           renderOptions={{quality,brightness,volumePercent:soundVolume}}
           disabled={recording||preparing} canCreate={canGenerate}
@@ -5217,11 +5351,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             return true;
           }}
           onCreate={createQuickVideo}
-          onOpenResult={()=>document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})}
-          onOpenDelivery={()=>{setDeliveryChooserOpen(true);document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"});}}
-          onOpenEditor={()=>openQuickDetailed("video-settings")}
-          onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
-          onOpenAudio={()=>openQuickDetailed("video-audio")}/>
+          onOpenResult={()=>{
+            // The result lives on the Studio page, not inside the modal.
+            // Close the optional iHelp overlay and reveal the real MP4 viewer.
+            setVideoIHelpOpen(false);setActiveWorkspace("video");
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})));
+          }}
+          onOpenDelivery={()=>{
+            setVideoIHelpOpen(false);setActiveWorkspace("video");setDeliveryChooserOpen(true);
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})));
+          }}
+          onOpenEditor={()=>{
+            setVideoIHelpOpen(false);openQuickDetailed("video-settings");
+          }}
+          onPickPhoto={()=>{
+            setVideoIHelpOpen(false);setBackgroundOnly(false);onPickPhoto();
+          }}
+          onOpenAudio={()=>{
+            setVideoIHelpOpen(false);openQuickDetailed("video-audio");
+          }}/>
 
         </details>
 
@@ -7404,6 +7554,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {!source?<p role="status" className={videoStyles.warning}>{t.imagePending}</p>:null}
       {notice?<p role="status" className={videoStyles.notice} aria-live="polite"
         data-video-export-unavailable={exportUnavailable?"true":undefined}>{notice}</p>:null}
+      {portraitRetry&&!recording&&!preparing?
+        <button type="button" data-video-portrait-retry
+          className={videoStyles.audioDirectLink}
+          onClick={()=>applyAutoFilm(portraitRetry.presetId,portraitRetry.seconds,
+            portraitRetry.edit,"portrait")}>
+          {locale==="ru"?"Создать в 9:16":locale==="es"?"Crear en 9:16":"Create in 9:16"}
+        </button>:null}
       {exportUnavailable && !result && originalFallbackMp4 ?
         <div className={videoStyles.warning} data-video-original-fallback role="note">
           <p>{locale==="ru"
