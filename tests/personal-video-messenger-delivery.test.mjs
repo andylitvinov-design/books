@@ -124,3 +124,18 @@ test('private library has owner-controlled Telegram consent, revocation and save
  assert.match(route,/\(!body.enabled\|\|body.consent===true\)/)
  assert.doesNotMatch(panel,/HH_CRM_MSG_WHATSAPP/)
 });
+
+
+test('future-video opt-in cannot upload the current MP4 silently and iPhone Share failures preserve local save',()=>{
+ const ui=source('components/mandala-video-delivery.tsx')
+ const studio=source('components/mandala-free-video-studio.tsx')
+ assert.match(ui,/const automaticAtResultLoad=useRef\(false\)/)
+ assert.match(ui,/automaticAtResultLoad\.current=next\.telegram\.automatic===true/)
+ assert.match(ui,/!automaticAtResultLoad\.current\|\|!state\?\.telegram\.automatic/)
+ assert.match(ui,/automaticAtResultLoad\.current=false/)
+ assert.match(ui,/async function changeAutomatic\(enabled:boolean\)/)
+ assert.match(ui,/async function shareFromDevice\(\)\{\s*try\{/)
+ assert.match(ui,/typeof navigator\.canShare==="function"/)
+ assert.match(ui,/setNotice\(t\.noShare\)/)
+ assert.match(studio,/key=\{result\.url\}/)
+});

@@ -15,6 +15,11 @@ import {
   changeMessengerVideoPhraseStyle,encodeMessengerVideoHandoff,
 } from "@/lib/mandala/video-chat-messenger-flow.mjs";
 import styles from "./holistic-agent-chat.module.css";
+import dynamic from "next/dynamic";
+
+const MessengerTestJourney = dynamic(() => import("@/components/app/messenger-test-journey"), { ssr: false });
+const MessengerAudioVideo = dynamic(() => import("@/components/app/messenger-audio-video")
+  .then(module => module.MessengerAudioVideo), { ssr: false });
 
 type Mode = "rules" | "device" | "owned";
 type PublicVideoGoal = "all" | "stress" | "energy" | "relationships" | "work" | "meaning" | "practices";
@@ -127,7 +132,7 @@ const messengerStarter = {
   hintQuestion:"Что вы хотите лучше понять сейчас: стресс, отношения, ресурсы или другую тему? Можно начать с бесплатного теста и затем обсудить результат здесь. Тест не является диагнозом.",
   chooseTheme:"Тема готового видео",themes:{stress:"Спокойствие",relationships:"Любовь",energy:"Энергия",meaning:"Смыслы"},
   readyVideos:"Смотреть готовые видео бесплатно",requestVideo:"Создать персональное видео",
-  videoAuth:"Для заявки на персональную генерацию войдите через Google. Подбор и просмотр готовых видео доступны без входа.",
+  videoAuth:"Войдите через Google, чтобы продолжить создание видео. Готовые ролики доступны без входа.",checkingSignIn:"Проверяем вход…",retrySignIn:"Не удалось проверить вход. Повторить",
   safety:"Если вам или кому-то рядом угрожает непосредственная опасность, обратитесь в экстренную службу. Я могу помочь найти доступные материалы, когда это безопасно.",
  },
  en:{
@@ -145,7 +150,7 @@ const messengerStarter = {
   hintQuestion:"What would you like to understand better: stress, relationships, personal resources or something else? You can start with a free test, then discuss the result here. A test is not a diagnosis.",
   chooseTheme:"Topic for ready-made videos",themes:{stress:"Calm",relationships:"Love",energy:"Energy",meaning:"Meaning"},
   readyVideos:"Watch ready-made videos for free",requestVideo:"Create my personal video",
-  videoAuth:"To request a custom generated video, sign in with Google. Exploring and watching existing videos needs no account.",
+  videoAuth:"Sign in with Google to continue creating your video. Ready-made videos remain free to watch.",checkingSignIn:"Checking your sign-in…",retrySignIn:"Could not verify sign-in. Retry",
   safety:"If you or someone nearby is in immediate danger, contact local emergency services. I can help find public resources when it's safe.",
  },
  es:{
@@ -163,7 +168,7 @@ const messengerStarter = {
   hintQuestion:"¿Qué te gustaría comprender mejor: el estrés, las relaciones, tus recursos u otro tema? Puedes empezar con un test gratuito y luego comentar el resultado aquí. Un test no es un diagnóstico.",
   chooseTheme:"Tema de un vídeo disponible",themes:{stress:"Calma",relationships:"Amor",energy:"Energía",meaning:"Sentido"},
   readyVideos:"Ver vídeos disponibles gratis",requestVideo:"Crear mi vídeo personal",
-  videoAuth:"Para solicitar un vídeo personalizado, entra con Google. Explorar y ver los vídeos existentes no requiere cuenta.",
+  videoAuth:"Entra con Google para continuar creando tu vídeo. Los vídeos existentes siguen disponibles sin entrar.",checkingSignIn:"Comprobando el acceso…",retrySignIn:"No se pudo comprobar el acceso. Reintentar",
   safety:"Si tú u otra persona estáis en peligro inmediato, contacta los servicios de emergencia locales. Puedo ayudarte a buscar recursos públicos cuando sea seguro.",
  },
 } as const;
@@ -189,9 +194,11 @@ type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal}
   destroy?:()=>void };
 type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
   create:(options?:unknown)=>Promise<NativePromptSession> };
+export type HolisticAgentPageHelp = {greeting:string;section?:string;actions:Array<{id:string;label:string;prompt:string;reply:string;href?:string;track?:"video"|"meditation"|"hint"}>};
 export type HolisticAgentQuickPrompt = {revision:number;text:string;format?:"video"|"audio"|"course"|"service"|"test"};
-export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticated=false}:{
- locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean
+export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticated=false,authStatus="guest",onAuthRetry,pageHelp}:{
+ locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean;
+ authStatus?:"guest"|"checking"|"authenticated"|"unavailable";onAuthRetry?:()=>void;pageHelp?:HolisticAgentPageHelp|null
 }) {
   const t=copy[locale];
   const starter=messengerStarter[locale];
@@ -208,11 +215,14 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const [draft,setDraft]=useState("");
   const [entryOpen,setEntryOpen]=useState(true);
   const [guideLink,setGuideLink]=useState<"tests"|null>(null);
+  const [testChatOpen,setTestChatOpen]=useState(false);
+  const [testRevision,setTestRevision]=useState(0);
   const [guidedTrack,setGuidedTrack]=useState<GuidedTrack>(null);
   const [videoGoal,setVideoGoal]=useState<PublicVideoGoal>("all");
   const [showVideoSignIn,setShowVideoSignIn]=useState(false);
   const [needsPrivateSignIn,setNeedsPrivateSignIn]=useState(false);
   const [messages,setMessages]=useState<Message[]>([]);
+  const [pageHelpLink,setPageHelpLink]=useState<{href:string;label:string}|null>(null);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
   const [videoDraft,setVideoDraft]=useState<MessengerVideoDraft>(
     ()=>initialMessengerVideoDraft() as MessengerVideoDraft);
@@ -229,9 +239,15 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const followTail=useRef(true);
   const [newBelow,setNewBelow]=useState(false);
   useEffect(()=>{
+    if(pageHelp){setEntryOpen(true);setPageHelpLink(null);}
+  },[pageHelp]);
+  useEffect(()=>{
     if(!quickPrompt)return;
     setDraft(quickPrompt.text.slice(0,2000));
     if(quickPrompt.format)setFormat(quickPrompt.format);
+    if(compact&&quickPrompt.format==="test"){
+      setTestChatOpen(true);setGuidedTrack("hint");setGuideLink("tests");setEntryOpen(false);
+    }
     // The user explicitly selected a rail action: prepare, never auto-send it.
     if(!compact)composerRef.current?.focus({preventScroll:true});
   },[quickPrompt,compact]);
@@ -250,7 +266,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     const frame=window.requestAnimationFrame(revealLatest);
     return ()=>window.cancelAnimationFrame(frame);
   },[messages.length,status,choices.length,videoStep,videoDraft,
-    videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink]);
+    videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen]);
   useEffect(()=>{
     if(!compact)return;
     const input=composerRef.current;
@@ -344,14 +360,26 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     try{window.sessionStorage.setItem(MESSENGER_VIDEO_HANDOFF_KEY,payload);return true;}
     catch{setStatus(t.error);return false;}
   }
+  function selectPageHelpAction(action:HolisticAgentPageHelp["actions"][number]){
+    if(busy)return;
+    if(action.track){setPageHelpLink(null);startGuided(action.track);return;}
+    followTail.current=true;setNewBelow(false);
+    setEntryOpen(false);setVideoStep(null);setGuidedTrack(null);
+    setStatus("");setSource("");setChoices([]);
+    setNeedsPrivateSignIn(false);setShowVideoSignIn(false);
+    setPageHelpLink(action.href?{href:action.href,label:action.label}:null);
+    setMessages(prev=>[...prev,{role:"user" as const,text:action.prompt},
+      {role:"assistant" as const,text:action.reply}].slice(-30));
+  }
   function startGuided(kind:"video"|"meditation"|"hint") {
     if(busy)return;
     followTail.current=true;setNewBelow(false);
     setFormat(kind==="video"?"video":kind==="meditation"?"audio":"test");
     setVideoStep(kind==="video"?"category":null);
     if(kind==="video"){setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setVideoPendingCategory(null);}
-    setGuidedTrack(kind);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);
+    setGuidedTrack(kind);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setPageHelpLink(null);
     setGuideLink(kind==="hint"?"tests":null);
+    setTestChatOpen(kind==="hint");
     setEntryOpen(false);setStatus("");setSource("");setChoices([]);
     setDraft("");
     const intent=kind==="video"?starter.videoIntent:
@@ -376,7 +404,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     }
     if(compact&&isVideoCreationIntent(text)){
       followTail.current=true;setNewBelow(false);setDraft("");setStatus("");setChoices([]);
-      setEntryOpen(false);setGuidedTrack("video");setFormat("video");
+      setEntryOpen(false);setGuidedTrack("video");setFormat("video");setTestChatOpen(false);
       setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
       setVideoStep("category");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);
       setMessages(prev=>[...prev,{role:"user" as const,text},
@@ -512,7 +540,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     </details>
   );
   return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
-    data-has-messages={messages.length>0||undefined}>
+    data-video-auth-status={compact?(authenticated?"authenticated":authStatus):undefined}
+    data-page-help={pageHelp?"true":undefined} data-has-messages={messages.length>0||undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {!compact&&settings}
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
@@ -520,12 +549,24 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
-      {compact&&<p className={styles.assistant} data-hh-ai-welcome>{starter.welcome}</p>}
+      {compact&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
+      {compact&&pageHelpLink&&<a className={styles.testLink} data-hh-ihelp-link href={pageHelpLink.href}>{pageHelpLink.label} · {t.option}</a>}
       {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
-      {compact&&entryOpen&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
+      {compact&&testChatOpen&&<MessengerTestJourney locale={locale}
+        onAdvance={()=>setTestRevision(value=>value+1)} onClose={()=>setTestChatOpen(false)}/>}
+      {compact&&entryOpen&&pageHelp&&<div className={styles.startActions} role="group"
+        aria-label={starter.actions} data-hh-ihelp-actions>
+        {pageHelp.actions.map(action=><button type="button" key={action.id}
+          data-hh-ihelp-option={action.id} disabled={busy}
+          onClick={()=>selectPageHelpAction(action)}>{action.label}</button>)}
+        <button type="button" data-hh-ihelp-ask onClick={()=>{
+          setEntryOpen(false);composerRef.current?.focus({preventScroll:true});
+        }}>{locale==="ru"?"Задать другой вопрос":locale==="es"?"Hacer otra pregunta":"Ask another question"}</button>
+      </div>}
+      {compact&&entryOpen&&!pageHelp&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
         <button type="button" data-hh-ai-start="video" disabled={busy} onClick={()=>startGuided("video")}>
           <span className={styles.startIcon} aria-hidden="true">🎬</span>
           <strong>{starter.video}</strong><small>{starter.videoSub}</small>
@@ -557,9 +598,12 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
           {authenticated?
             <a className={styles.personalVideoButton} data-hh-video-open-studio
               href={"/"+locale+"/holistic-support/mandala"}>{starter.requestVideo}</a>:
-            <button className={styles.personalVideoButton} data-hh-personal-video-request
+            authStatus==="checking"?<p role="status" data-hh-video-auth-check>{starter.checkingSignIn}</p>:
+            authStatus==="unavailable"?<button type="button" data-hh-video-auth-retry
+              onClick={()=>onAuthRetry?.()} disabled={!onAuthRetry}>{starter.retrySignIn}</button>:
+            showVideoSignIn?null:<button className={styles.personalVideoButton} data-hh-personal-video-request
               type="button" onClick={()=>setShowVideoSignIn(true)}>{starter.requestVideo}</button>}
-          {showVideoSignIn&&!authenticated&&<div className={styles.videoAuth} data-hh-video-sign-in>
+          {showVideoSignIn&&!authenticated&&authStatus==="guest"&&<div className={styles.videoAuth} data-hh-video-sign-in>
             <p>{starter.videoAuth}</p>
             <MessengerSignIn locale={locale} continueTo="video-studio"/>
           </div>}
@@ -599,21 +643,28 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
               .find(item=>item.id===videoDraft.mytubeTopicId)?.label
           }</p>}
           <p>{videoDraft.duration} s · {videoDraft.aspect==="portrait"?"9:16":videoDraft.aspect==="square"?"1:1":"16:9"} · {videoCopy.editNames.music}: {videoDraft.music==="none"?videoCopy.musicNames[3]:videoDraft.music}</p>
-          <div className={styles.videoEditOptions} role="group" aria-label={videoCopy.edit}>
+          <details className={styles.videoEditDetails} data-hh-video-edit-details>
+            <summary>{videoCopy.edit}</summary>
+            <div className={styles.videoEditOptions} role="group" aria-label={videoCopy.edit}>
             {(["category","subcategory","mytube-topic","topic","scenario","idea","phrase","mood","aspect","duration","music","phrases"] as const).map(step=><button
               type="button" key={step} disabled={busy} data-hh-video-edit-step={step}
               onClick={()=>openVideoEdit(step,step in videoCopy.editNames?
                 videoCopy.editNames[step as keyof typeof videoCopy.editNames]:messengerVideoQuestion(step,locale))}>
               {step in videoCopy.editNames?videoCopy.editNames[step as keyof typeof videoCopy.editNames]:videoCopy[step]}</button>)}
-          </div>
+            </div>
+          </details>
           {authenticated?<a className={styles.videoStudioLink} data-hh-video-open-studio
             href={"/"+locale+"/holistic-support/mandala#video-director-chat"}
             onClick={event=>{if(!stageVideoHandoff())event.preventDefault();}}>
             {videoCopy.toStudio}</a>:
-            <button type="button" className={styles.videoStudioLink} data-hh-personal-video-request
+            authStatus==="checking"?<p role="status" data-hh-video-auth-check>{starter.checkingSignIn}</p>:
+            authStatus==="unavailable"?<button type="button" className={styles.videoStudioLink}
+              data-hh-video-auth-retry onClick={()=>onAuthRetry?.()} disabled={!onAuthRetry}>
+              {starter.retrySignIn}</button>:
+            showVideoSignIn?null:<button type="button" className={styles.videoStudioLink} data-hh-personal-video-request
               onClick={()=>{if(stageVideoHandoff())setShowVideoSignIn(true);}}>
-              {starter.requestVideo}</button>}
-          {showVideoSignIn&&!authenticated&&<div className={styles.videoAuth} data-hh-video-sign-in>
+              {videoCopy.toStudio}</button>}
+          {showVideoSignIn&&!authenticated&&authStatus==="guest"&&<div className={styles.videoAuth} data-hh-video-sign-in>
             <p>{starter.videoAuth}</p>
             <MessengerSignIn locale={locale} continueTo="video-studio"/>
           </div>}
@@ -653,11 +704,13 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
     </form>
+    {compact&&<MessengerAudioVideo locale={locale}
+      initialGoal={videoDraft.goal||""} disabled={busy}/>}
     {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>
       <summary>{t.programTitle}</summary>
       <p className={styles.muted}>{t.programInfo}</p>
