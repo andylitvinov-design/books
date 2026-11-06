@@ -318,17 +318,19 @@ test("MyTube cards display the original scenario, not the four generic archetype
  assert.match(director,/Scenario concept; matching footage is verified separately/);
 });
 
-test("owner correction: two independent subtopics selected, prompt first and style script shared",()=>{
+test("owner correction: canonical subcategory and optional topic and request precede the story",()=>{
  const goals=director.slice(director.indexOf("const goalPanel="),director.indexOf("return <section className={css.root}"));
- const goalBlock=goals.slice(0,goals.indexOf("const topicPanel="));
+ const goalBlock=goals.slice(0,goals.indexOf("const quickTopicPanel="));
  assert.match(goalBlock,/subcategoriesOpen\?<div className=\{css\.subcategories\}/);
- assert.match(goalBlock,/popularTopicOrder\[selectedCategoryId\]\.map/);
+ assert.match(goalBlock,/taxonomySubcategories\.map\(item=>/);
+ assert.match(goalBlock,/data-auto-video-subcategory=\{item\.id\}/);
+ assert.match(goalBlock,/selectedSubcategoryId===item\.id/);
  assert.doesNotMatch(goalBlock,/categoryPoster|scenePoster\(item.poster\)/);
  assert.match(director,/setSelectedGoalIds\(nextIds\)/);
  assert.match(director,/goalId:nextIds\[0\],locale,\s*fallbackTheme:selectedTheme,preferredTheme:selectedTheme/,
    "subtopics must refine, never silently replace, the selected parent video category");
- assert.match(director,/selectedGoalIds\.includes\(item\.id\)/);
- assert.match(director,/selectedGoalIds\.length>=2/);
+ assert.match(director,/data-video-optional-topic/);
+ assert.match(director,/data-auto-video-input value=\{requestDraft\}/);
  assert.match(director,/createPortal\(requestInput,requestTarget\)/,
    "the single manual prompt remains in the production first-screen slot");
  assert.match(studio,/const selectedStyleScenario=timelineTextClips\?\.length/,
