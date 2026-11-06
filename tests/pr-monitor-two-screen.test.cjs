@@ -8,10 +8,10 @@ const vm=require('node:vm');
 const app=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/pr-two-screen.js'),'utf8');
 const marker="  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true});";
 assert.ok(app.includes(marker),'Test must instrument the active browser bundle');
-const instrumented=app.replace(marker,"  window.__hhTests={aggregate:aggregate,duration:duration,legacyUnmeasuredDurationText:legacyUnmeasuredDurationText,legacyUnmeasuredCandidates:legacyUnmeasuredCandidates,repairLegacyUnmeasuredZeros:repairLegacyUnmeasuredZeros,isLegacyStageMutation:isLegacyStageMutation};\n"+marker);
+const instrumented=app.replace(marker,"  window.__hhTests={aggregate:aggregate,duration:duration,legacyUnmeasuredDurationText:legacyUnmeasuredDurationText,legacyUnmeasuredCandidates:legacyUnmeasuredCandidates,repairLegacyUnmeasuredZeros:repairLegacyUnmeasuredZeros,isLegacyStageMutation:isLegacyStageMutation,repairLegacyZeroTableRows:repairLegacyZeroTableRows};\n"+marker);
 const context={window:{},document:{readyState:'loading',addEventListener(){}}};
 vm.runInNewContext(instrumented,context,{filename:'pr-two-screen.js'});
-const {aggregate,duration,legacyUnmeasuredDurationText,legacyUnmeasuredCandidates,repairLegacyUnmeasuredZeros,isLegacyStageMutation}=context.window.__hhTests;
+const {aggregate,duration,legacyUnmeasuredDurationText,legacyUnmeasuredCandidates,repairLegacyUnmeasuredZeros,isLegacyStageMutation,repairLegacyZeroTableRows}=context.window.__hhTests;
 
 function row(number,created,merged){
  return {number,created_at:'2026-11-03T'+created+':00Z',
@@ -131,4 +131,34 @@ test('watcher recognizes late DOM changes in stage panel but ignores unrelated b
  context.document.querySelectorAll=()=>[title];
  assert.equal(isLegacyStageMutation(value),true);
  assert.equal(isLegacyStageMutation(mockElement('unrelated')),false);
+});
+
+test('legacy source table corrects only stage rows without verified PR evidence',()=>{
+ const proofMissing={textContent:'1. До последнего коммита PR Проверено: 0 из 64 PR'};
+ const missingValue={textContent:'0,00мин/PR'};
+ const proofMeasured={textContent:'6. Другое Проверено: 64 из 64 PR'};
+ const measuredValue={textContent:'0,00мин/PR'};
+ const row=(left,right)=>({textContent:left.textContent+' '+right.textContent,
+   querySelectorAll(selector){
+    assert.equal(selector,'td,th,[role="cell"]');return [left,right];
+   }});
+ const missingRow=row(proofMissing,missingValue),measuredRow=row(proofMeasured,measuredValue);
+ const table={textContent:'До последнего коммита PR; Итого Created → Merged',
+   querySelectorAll(sel){assert.equal(sel,'tr,[role="row"]');return [missingRow,measuredRow];}};
+ context.document.querySelectorAll=sel=>{
+   if(sel==='table,[role="table"]')return [table];
+   if(sel==='h2,h3,h4,h5')return [];
+   return [];
+ };
+ assert.equal(repairLegacyZeroTableRows(),1);
+ assert.equal(missingValue.textContent,'—');
+ assert.equal(measuredValue.textContent,'0,00мин/PR');
+ assert.equal(repairLegacyZeroTableRows(),0,'idempotent after normalization');
+});
+test('table normalization fails closed for unrelated/missing-identity tables',()=>{
+ const row={textContent:'Проверено: 0 из 64 PR',
+  querySelectorAll(){return [{textContent:'N'},{textContent:'0,00мин/PR'}]}};
+ const other={textContent:'Unrelated summary',querySelectorAll(){return [row]}};
+ context.document.querySelectorAll=selector=>selector==='table,[role="table"]'?[other]:[];
+ assert.equal(repairLegacyZeroTableRows(),0);
 });

@@ -416,7 +416,31 @@
     }
     return [];
   }
+  // A legacy summary is a real HTML table with separate evidence and duration
+  // cells. Normalize at the row boundary instead of guessing DOM ancestry.
+  function repairLegacyZeroTableRows() {
+    let corrected=0;
+    const tables=Array.from(document.querySelectorAll('table,[role="table"]'));
+    for(const table of tables){
+      const tableText=String(table.textContent||'');
+      if(!/До последнего коммита PR/i.test(tableText)||
+         !/Итого Created\s*→?\s*Merged/i.test(tableText))continue;
+      const rows=Array.from(table.querySelectorAll('tr,[role="row"]'));
+      for(const row of rows){
+        if(!/Проверено:\s*0\s+из\s+\d+\s+PR/i.test(row.textContent||''))continue;
+        const cells=Array.from(row.querySelectorAll('td,th,[role="cell"]'));
+        if(cells.length<2)continue;
+        const valueCell=cells.at(-1);
+        if(!legacyUnmeasuredDurationText(valueCell?.textContent))continue;
+        valueCell.textContent='—';
+        valueCell.title='Нет проверенных измерений по данному этапу';
+        corrected++;
+      }
+    }
+    return corrected;
+  }
   function repairLegacyUnmeasuredZeros() {
+    repairLegacyZeroTableRows();
     // Keep historical panels and their real counts unchanged. Only normalize
     // missing duration cells proven by exactly 0 measured PR in the same row.
     const headings=Array.from(document.querySelectorAll('h2,h3,h4,h5'));
@@ -711,6 +735,10 @@
   }
   function isLegacyStageMutation(target) {
     const element=target?.nodeType===3?target.parentElement:target;
+    const table=typeof element?.closest==='function'?
+      element.closest('table,[role="table"]'):null;
+    if(table&&/До последнего коммита PR/i.test(table.textContent||''))
+      return true;
     const section=legacyStageSection();
     return Boolean(element&&section&&typeof section.contains==='function'&&
       section.contains(element));
