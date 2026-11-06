@@ -38,19 +38,35 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","false",{timeout:60000});
     await expect(tabs).toHaveCount(6);
     for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
+    // Goals deliberately hides legacy story/advanced controls. Hydration must
+    // not make them tappable on the three-question first screen.
     const allStories=page.locator('[data-auto-video-all-scenes]');
     await expect(allStories).toBeDisabled();
+    await expect(allStories).toBeHidden();
     await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
     await expect(allStories).toBeEnabled();
-    await allStories.click();
-    await expect(studio).toHaveAttribute("data-video-advanced-open","true");
-    const phrases=page.locator('[data-video-quick-control="phrases"]');
-    await expect(phrases).toBeEnabled();
-    await phrases.click();
-    await expect(phrases).toHaveAttribute("aria-pressed","true");
+    await expect(allStories).toBeHidden();
+
+    // The first actionable hydration check is now the visible Ideas tab,
+    // followed by its actual meaning/story disclosure (not a hidden legacy CTA).
+    const ideas=page.locator('[data-video-quick-control="phrases"]');
+    await expect(ideas).toBeEnabled();
+    await ideas.click();
+    await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
+    const refinement=page.locator('[data-video-ideas-refinement]');
+    await expect(refinement.locator("summary")).toBeVisible();
+    await refinement.locator("summary").click();
+    await expect(refinement).toHaveAttribute("open","");
+    await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
+
+    // Visual-style recommendations must instead be reachable on Montage.
+    const montage=page.locator('[data-video-quick-control="editor"]');
+    await montage.click();
+    await expect(montage).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeVisible();
   }finally{release();await context.close();}
 }
 // Linux WebKit often lacks Canvas capture codecs. Run the very same real
