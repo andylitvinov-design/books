@@ -14,8 +14,7 @@ test("the existing public editor retains one real video renderer and the new com
   assert.equal((source.match(/ref=\{premiumVideoRef\}/g)||[]).length,1,
     "one original H264 film master feeds preview and recording");
   assert.match(page, /<MandalaMeditationClient/,"canonical Mandala route must mount this editor");
-  // Match the actual JSX nav, not an earlier querySelector in the Ideas/Goal step.
-  const order=["data-video-quick-builder","<nav className={videoStyles.quickVideoNav} data-video-quick-controls",
+  const order=["data-video-quick-builder",'<nav className={videoStyles.quickVideoNav} data-video-quick-controls',
     "data-video-quick-section=\"1\"","data-video-live-stage","data-video-mandala-hero",
     "data-video-mini-source","data-video-quick-live-preview",
     "data-video-therapy-banner",

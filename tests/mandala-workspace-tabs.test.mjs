@@ -206,7 +206,7 @@ test("pending Phrases selection blocks the actual shared hero handler in every w
   }
 });
 
-test("compact Ideas uses existing renderer while hiding old phrase editor",()=>{
+test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  const start=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="phrases"');
  const end=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="effects"',start);
  assert.ok(start>0 && end>start);
@@ -216,12 +216,8 @@ test("compact Ideas uses existing renderer while hiding old phrase editor",()=>{
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
  assert.match(section,/<MandalaVideoIdeas/);
- assert.ok(studio.includes('const advancedPhraseEditorVisible=activeWorkspace==="phrases" && phraseAudioExpanded;'));
- assert.ok(section.includes('data-video-advanced-phrase-editor={advancedPhraseEditorVisible?"true":undefined}'));
- assert.ok(section.includes('data-video-legacy-phrase-editor={advancedPhraseEditorVisible?undefined:"true"}'));
- assert.ok(section.includes('hidden={!advancedPhraseEditorVisible} aria-hidden={!advancedPhraseEditorVisible}'));
- assert.ok(section.includes('data-video-phrase-audio-shortcut aria-expanded={phraseAudioExpanded}'));
- assert.ok(css.includes('[data-video-advanced-phrase-editor="true"] .phraseAudioSettings'));
+ assert.match(section,/data-video-legacy-phrase-editor\s+hidden=\{activeWorkspace!=="phrases"\} aria-hidden=\{activeWorkspace!=="phrases"\}/);
+ assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);

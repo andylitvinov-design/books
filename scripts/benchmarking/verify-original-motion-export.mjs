@@ -49,7 +49,7 @@ try {
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
   await addVideo.click();
-  await page.locator('[data-free-film-compilation-catalog]').waitFor({ state: 'visible' });
+  await page.locator('[data-free-film-compilation-catalog]').waitFor({state:'visible'});
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
   const more = page.locator('[data-free-film-more]');
   if (await more.getAttribute('aria-expanded') !== 'true') await more.click();

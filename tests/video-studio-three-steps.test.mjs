@@ -20,8 +20,8 @@ test("Goal has real category/subcategory and separate optional topic and request
 });
 test("Ideas refinement stays open after a real Safari summary tap and portal rerender",()=>{
  assert.match(director,/const \[ideaRefinementOpen,setIdeaRefinementOpen\]=useState\(false\)/);
- assert.match(director,/data-video-ideas-refinement open=\{ideaRefinementOpen\}/);
- assert.match(director,/onClick=\{event=>\{event\.preventDefault\(\);setIdeaRefinementOpen\(open=>!open\);\}\}/);
+ assert.match(director,/data-video-ideas-refinement[\s\S]*?open=\{ideaRefinementOpen\} onToggle=\{event=>setIdeaRefinementOpen\(event\.currentTarget\.open\)\}/);
+ assert.doesNotMatch(director,/onClick=\{event=>\{event\.preventDefault\(\);setIdeaRefinementOpen\(open=>!open\);\}\}/);
  assert.match(director,/createPortal\(<details[\s\S]*?data-video-ideas-refinement[\s\S]*?,ideaTarget\)/);
 });
 test("Ideas owns meaning/scenarios and Montage owns motif",()=>{

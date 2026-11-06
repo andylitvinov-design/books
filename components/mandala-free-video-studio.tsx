@@ -16,6 +16,9 @@ import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
 import { MandalaFreeVideoGenerator } from "./mandala-free-video-generator";
 import { MandalaVideoDelivery } from "./mandala-video-delivery";
+import {appFetch} from "@/lib/app/client-fetch";
+import {paintVideoBrandStamp,resolveVideoExportVariant} from "@/lib/mandala/video-branding.mjs";
+import type {VideoExportVariant,VideoExportCapability} from "@/lib/mandala/video-branding.mjs";
 import { MandalaVideoEffectJourney } from "./mandala-video-effect-journey";
 import { paintFreeVideoFrame } from "@/lib/mandala/free-video-renderer";
 import type { FreeVideoPlan } from "@/lib/mandala/free-video-renderer";
@@ -101,7 +104,7 @@ const BACKGROUND_CLIP="local-money-background-only";
 type Aspect = "square" | "portrait" | "landscape";
 type Quality = "hd" | "fullhd";
 type Result =
-  | { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blob; mime: string; mode?: never }
+  | { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blob; mime: string; brandVariant: VideoExportVariant; mode?: never }
   | { url: string; extension: "mp4"; bytes: 0; mime: "video/mp4"; mode: "catalog" };
 type StudioWorkspace = "video" | "phrases" | "effects" | "practices" | "pro" | "editor";
 type Speed = "slow" | "dynamic";
@@ -1852,6 +1855,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
+  const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
@@ -2580,7 +2584,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
        shot.transitionIn||"soft",shot.colorLook||"original",shot.motion??null,
        shot.sourcePhasePercent??0,shot.sourceSpeed??1]),appliedStory,
     creationMode,currentFreeVideoPlan?.seed,currentFreeVideoPlan?.family,currentFreeVideoPlan?.palette,
-    currentFreeVideoPlan?.motion,currentFreeVideoPlan?.variation,currentFreeVideoPlan?.reducedMotion]);
+    currentFreeVideoPlan?.motion,currentFreeVideoPlan?.variation,currentFreeVideoPlan?.reducedMotion,professionalMode]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   // Keep the real Create button reachable when user must attach/authorize audio.
@@ -3111,6 +3115,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(creditOpRef.current)return; // never reserve twice while confirmation is pending
     preparingRef.current=true;
     setPreparing(true);
+    // Only professional exports are branded. No extra credit debit or upload.
+    // A capability must come from this account's authenticated server session.
+    let exportBrandVariant:VideoExportVariant=resolveVideoExportVariant({professionalMode});
+    if(professionalMode){
+      const controller=new AbortController();
+      const timeout=window.setTimeout(()=>controller.abort(),1200);
+      try{
+        const capability=await appFetch("video-export/capabilities",undefined,undefined,
+          {signal:controller.signal}) as VideoExportCapability;
+        exportBrandVariant=resolveVideoExportVariant({professionalMode,capability});
+      }catch{/* Missing, expired or unavailable rights always keep the brand. */}
+      finally{window.clearTimeout(timeout);}
+    }
     if(creditCatalog.chargeRequired){
       const operationId=crypto.randomUUID();
       try{
@@ -3272,6 +3289,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       paintHypnoLightOverlay(ctx,0,hypnoLight);
       if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
       paintStageCaptionOverlay(ctx,0,cinematicPlan,timelineTextClips);
+       paintVideoBrandStamp(ctx,exportBrandVariant);
       // Device-aware capture targets smoother frames while keeping low-end
       // iPhone and timed subliminal-frame fallback bounded.
       const baselineFramesPerSecond = affirmations.enabled && affirmations.visibility.includes("frame") && affirmationLines.length
@@ -3336,13 +3354,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               paintHypnoLightOverlay(ctx,time,hypnoLight);
               if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,time,affirmationLines,affirmations);
               paintStageCaptionOverlay(ctx,time,cinematicPlan,timelineTextClips);
+              paintVideoBrandStamp(ctx,exportBrandVariant);
               return true;
             },
           });
           if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
           creditValidRef.current=Boolean(creditOpRef.current);
           setResult({url:URL.createObjectURL(blob),extension:"mp4",bytes:blob.size,
-            blob,mime:"video/mp4"});
+            blob,mime:"video/mp4",brandVariant:exportBrandVariant});
           setProgress(100);
           setPlaybackStatus("checking");
           setNotice(locale==="ru"?"Проверяем настоящий MP4 с вашим звуком.":
@@ -3498,7 +3517,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           return;
         }
         creditValidRef.current=Boolean(creditOpRef.current);
-        setResult({url:URL.createObjectURL(blob),extension,bytes:blob.size,blob,mime:type});
+        setResult({url:URL.createObjectURL(blob),extension,bytes:blob.size,blob,mime:type,
+          brandVariant:exportBrandVariant});
         setPlaybackStatus("checking");
         setNotice(locale==="ru"
           ?"Проверяем готовое "+extension.toUpperCase()+". При необходимости нажмите ▶."
@@ -3538,6 +3558,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           paintHypnoLightOverlay(ctx,frameTime,hypnoLight);
           if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,frameTime,affirmationLines,affirmations);
       paintStageCaptionOverlay(ctx,frameTime,cinematicPlan,timelineTextClips);
+          paintVideoBrandStamp(ctx,exportBrandVariant);
           lastFrame=now;
           if(now-lastProgress>650){
             lastProgress=now;
@@ -5823,21 +5844,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onCreate={goToMontageFromIdeas}/>
-          {/* Keep ONE canonical Hypno editor; advanced voice is opt-in, not hidden forever. */}
-          <div id="video-advanced-phrase-editor"
-            data-video-advanced-phrase-editor={advancedPhraseEditorVisible?"true":undefined}
-            data-video-legacy-phrase-editor={advancedPhraseEditorVisible?undefined:"true"}
-            hidden={!advancedPhraseEditorVisible} aria-hidden={!advancedPhraseEditorVisible}>
-            {deepHypnoPane}
+          {/* One persistent editor instance; collapsed by default in Ideas.
+              Do not unmount it between workspaces or duplicate audio state. */}
+          <div data-video-legacy-phrase-editor
+            hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
+            <details className={videoStyles.phraseAudioSettings}
+              data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}
+              onToggle={event=>setIdeasVoiceAdvancedOpen(event.currentTarget.open)}>
+              <summary><AudioLines size={18} aria-hidden="true"/>
+                {locale==="ru"?"Дополнительные настройки фраз и голоса":
+                  locale==="es"?"Opciones adicionales de frases y voz":
+                    "Advanced phrase and voice settings"}
+                <ChevronDown size={18} aria-hidden="true"/>
+              </summary>
+              {deepHypnoPane}
+            </details>
           </div>
         </div>
         <div data-video-director-idea-controls />
         <button type="button" className={videoStyles.phraseAudioNext}
-          data-video-phrase-audio-shortcut aria-expanded={phraseAudioExpanded}
-          aria-controls="video-advanced-phrase-editor" disabled={recording||preparing}
+          data-video-phrase-audio-shortcut disabled={recording||preparing}
           onClick={()=>{
+            // The advanced voice editor lives in Ideas. Reveal it on an actual
+            // visitor action before trying to focus the nested audio settings.
+            setIdeasVoiceAdvancedOpen(true);
             setPhraseAudioExpanded(true);
-            window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"}));
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"})));
           }}>
           <Music2 size={19} aria-hidden="true"/>
           {locale==="ru"?"Настроить аудиогид, музыку и голос":
@@ -6102,6 +6135,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <strong>{wish.trim().slice(0,60)||(locale==="ru"?"Моё персональное видео":locale==="es"?"Mi vídeo personal":"My personal video")}</strong>
               <small>{result.extension.toUpperCase()} · {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"} · {Math.max(1,Math.round(result.bytes/1024))} KB</small>
             </div>:null}
+            {professionalMode&&result.mode!=="catalog"&&playbackStatus==="ready" ?
+              <p className={videoStyles.resultMeta} role="status" data-video-brand-status={result.brandVariant}>
+                {result.brandVariant==="clean"
+                  ?(locale==="ru"?"Пилот PRO · экспорт без логотипа Holistic House":
+                    locale==="es"?"Piloto PRO · exportación sin marca Holistic House":
+                    "PRO pilot · export without Holistic House watermark")
+                  :(locale==="ru"?"FREE · скачиваемое видео с логотипом Holistic House":
+                    locale==="es"?"FREE · vídeo descargado con la marca Holistic House":
+                    "FREE · downloaded video with Holistic House mark")}
+              </p> : null}
             {playbackStatus==="ready"&&result.mode!=="catalog"&&
               !creditConfirmed&&creditCatalog?.chargeRequired?<p role="status"
                 data-video-credit-confirmation>
