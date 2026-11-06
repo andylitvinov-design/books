@@ -139,19 +139,19 @@ test("Safari repair branches must reach real macOS WebKit video/audio acceptance
 // iPhone regression: the previous alternate-WebM button regenerated MP4
 // because the Safari WebCodecs branch ignored createVideo(true).
 test("explicit Safari WebM retry uses a different recorder, preserves sound",async()=>{
-  const {useWebCodecsForRecording,orderRecordingMimes}=await import("../lib/mandala/recording-codecs.mjs");
-  assert.equal(useWebCodecsForRecording({hasWebCodecs:true,safariWebKit:true}),true);
-  assert.equal(useWebCodecsForRecording({hasWebCodecs:true,safariWebKit:true,preferWebm:true}),false);
-  assert.equal(useWebCodecsForRecording({hasWebCodecs:true,safariWebKit:true,
+  const {selectWebCodecsForRecording,orderRecordingMimes}=await import("../lib/mandala/recording-codecs.mjs");
+  assert.equal(selectWebCodecsForRecording({hasWebCodecs:true,safariWebKit:true}),true);
+  assert.equal(selectWebCodecsForRecording({hasWebCodecs:true,safariWebKit:true,preferWebm:true}),false);
+  assert.equal(selectWebCodecsForRecording({hasWebCodecs:true,safariWebKit:true,
     procedural:true,proceduralRoute:"webcodecs",preferWebm:true}),false);
-  assert.equal(useWebCodecsForRecording({hasWebCodecs:true,procedural:true,
+  assert.equal(selectWebCodecsForRecording({hasWebCodecs:true,procedural:true,
     proceduralRoute:"webcodecs"}),true);
-  assert.equal(useWebCodecsForRecording({hasWebCodecs:false,safariWebKit:true}),false);
+  assert.equal(selectWebCodecsForRecording({hasWebCodecs:false,safariWebKit:true}),false);
   const formats=orderRecordingMimes({mp4:["video/mp4"],
     webm:['video/webm;codecs="vp8,opus"',"video/webm"],preferWebm:true,
     userAgent:"Mozilla/5.0 (iPhone) AppleWebKit/605.1.15"});
   assert.deepEqual(formats,['video/webm;codecs="vp8,opus"',"video/webm"]);
-  assert.ok(studio.includes("const useWebCodecsMp4=useWebCodecsForRecording({"));
+  assert.ok(studio.includes("const useWebCodecsMp4=selectWebCodecsForRecording({"));
   assert.ok(studio.includes("hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm"));
   assert.ok(studio.includes('const mimeTypes = preferWebm\n        ? recordingMimes(Boolean(musicSession),true).filter(mime=>mime.startsWith("video/webm"))'));
   assert.ok(studio.includes("if (musicSession) stream.addTrack(musicSession.track);"));
