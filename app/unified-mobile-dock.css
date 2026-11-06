@@ -66,3 +66,9 @@ body:has([data-mytube-page]) [data-unified-dock-item]:focus-visible{
  [data-hh-unified-dock][data-hh-home-route]{display:none!important}
  body:has([data-free-entry-landing="situation"]) [data-hh-unified-dock]{display:none!important}
 }
+
+/* Only detected keyboard hides dock; lingering input focus does not. */
+@media(max-width:760px){
+ body:has(.hh-messages-page [data-keyboard-open="true"]) [data-hh-unified-dock]{display:none!important}
+ body:has(.hh-messages-page [data-keyboard-open="true"]) .hh-app.hh-messages-page{padding-bottom:0!important}
+}

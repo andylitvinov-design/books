@@ -76,7 +76,9 @@ test("real studio consumes edited storyboard and invalidates stale exported vide
   assert.match(ui,/durationSecondsByStage:stageDurations/);
   assert.match(studio,/compileFreeFilmPreset\(preset,locale,seconds,outputAspect,edit\)/);
   assert.match(studio,/allocateAdaptiveFilmTimeline\(/);
-  assert.match(studio,/retimeAdaptiveFilmPlan\(plan,seconds\)/);
+  assert.match(studio,/allocateAdaptiveFilmTimeline\(seconds,ids\)/);
+  assert.match(studio,/allocateVariableFilmTimeline\(seconds,ids\)/);
+  assert.match(studio,/verified\.durationSeconds>=timeline\[index\]\.durationSeconds/);
   assert.match(studio,/shot\.sceneId,shot\.startSeconds,shot\.durationSeconds/);
   assert.match(ui,/onInvalidate\?\.\(\)/,"shot edits must invalidate stale output immediately");
   assert.match(studio,/onInvalidate=\{\(\)=>\{setPreviewPlaying\(false\);setCinematicPlan\(null\);\}\}/);
@@ -105,7 +107,9 @@ test("reframing retains the approved source shots and manual stage timings",asyn
 test("all format controls call the same plan-preserving reframe handler",()=>{
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   assert.match(studio,/const changeVideoAspect=\(nextAspect:Aspect\)=>\{/);
-  assert.match(studio,/setCinematicPlan\(plan=>plan\?reframeCinematicPlan\(plan,nextAspect\)/);
+  assert.match(studio,/setCinematicPlan\(plan=>\{/);
+  assert.match(studio,/verifiedSceneAspect\(verified,nextAspect\)/);
+  assert.match(studio,/reframeCinematicPlan\(plan,nextAspect\)/);
   for(const [selector,handler] of [
     ["data-video-aspect={format}","changeVideoAspect(format)"],
     ["data-video-quick-aspect={value}","changeVideoAspect(value)"],

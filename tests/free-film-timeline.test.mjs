@@ -28,7 +28,10 @@ test("Studio uses the same four-shot timeline and never indexes nonexistent clip
   const slice=source.slice(source.indexOf("function compileFreeFilmPreset("),source.indexOf("\n\nconst effects:"));
   assert.match(slice,/allocateAdaptiveFilmTimeline\(/);
   assert.match(slice,/durationSeconds:20/);
-  assert.match(slice,/shotCount:4/);
+  assert.match(slice,/shotCount:count/);
+  assert.match(slice,/const count=clipIds\.length/);
+  assert.match(slice,/verifiedCategorySource/);
+  assert.match(slice,/allocateVariableFilmTimeline/);
   assert.match(slice,/providerPrompt:""/);
   assert.doesNotMatch(slice,/preset\.clips\[i\]/);
 });
