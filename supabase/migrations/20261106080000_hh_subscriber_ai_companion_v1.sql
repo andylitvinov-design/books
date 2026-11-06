@@ -30,7 +30,6 @@ create table if not exists app_private.subscriber_ai_outbox (
  lease_until timestamptz,
  provider_message_id text check(provider_message_id is null or length(provider_message_id)<=64),
  created_at timestamptz not null default now(),
- updated_at timestamptz not null default now(),
  unique(session_id,update_id)
 );
 create index if not exists subscriber_ai_outbox_pending on app_private.subscriber_ai_outbox(available_at,created_at)
