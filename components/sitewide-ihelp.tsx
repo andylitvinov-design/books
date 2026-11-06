@@ -41,12 +41,23 @@ export function SitewideIHelp(){
  const locale=routeLocale(pathname);
  const t=UI[locale];
  const [open,setOpen]=useState(false);
+ const [nativeVideoOpen,setNativeVideoOpen]=useState(false);
  const [mounted,setMounted]=useState(false);
  const [context,setContext]=useState<IHelpPageContext>(()=>pageHelpFromRoute({locale,pathname}));
  const launcher=useRef<HTMLButtonElement>(null);
  const dialog=useRef<HTMLElement>(null);
  const closeButton=useRef<HTMLButtonElement>(null);
  const priorPath=useRef(pathname);
+ // The video studio reports whether its ONE real Director drawer is open.
+ // We do not mount a second copy of the video chatbot here.
+ useEffect(()=>{
+   const stateChanged=(event:Event)=>{
+     const state=(event as CustomEvent<{open:boolean}>).detail;
+     setNativeVideoOpen(state?.open===true);
+   };
+   window.addEventListener("hh:ihelp-video-director-state",stateChanged);
+   return ()=>window.removeEventListener("hh:ihelp-video-director-state",stateChanged);
+ },[]);
 
  useEffect(()=>{
    if(priorPath.current!==pathname){
@@ -93,6 +104,17 @@ export function SitewideIHelp(){
    window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
  }
  function show(){
+   // Video Studio already has an executable, single-instance AI Video Director.
+   // Launch its existing conversation without resetting the Studio draft.
+   if(/^\/(?:ru|en|es)\/(?:holistic-support\/mandala|video-studio)(?:\/|$)/.test(pathname)){
+     const studio=document.querySelector<HTMLElement>("[data-mandala-free-video]");
+     if(studio?.querySelector("[data-video-director-chat-details]")){
+       const request=new CustomEvent<{handled:boolean}>("hh:ihelp-open-video-director",
+         {detail:{handled:false}});
+       window.dispatchEvent(request);
+       if(request.detail.handled)return;
+     }
+   }
    // The dedicated Messages page already owns this same AI component.
    // Activate its AI tab rather than mounting a second concurrent chat.
    if(/^\/(?:ru|en|es)\/app\/messages(?:\/|$)/.test(pathname)){
@@ -118,7 +140,8 @@ export function SitewideIHelp(){
  return <>
    <button type="button" ref={launcher} className={styles.launcher}
      data-hh-ihelp-trigger aria-label={t.open} aria-haspopup="dialog"
-     aria-controls="hh-ihelp-panel" aria-expanded={open} onClick={show}>
+     aria-controls={nativeVideoOpen?"hh-ihelp-video-director-dialog":"hh-ihelp-panel"}
+     aria-expanded={open||nativeVideoOpen} onClick={show}>
      <MessageCircleQuestion size={18} aria-hidden="true"/><span>iHelp</span>
    </button>
    {mounted&&<div className={styles.overlay} data-hh-ihelp-overlay hidden={!open}>

@@ -1,3 +1,4 @@
+import {readFileSync} from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {pageHelpFromRoute} from "../lib/ihelp/page-context.mjs";
@@ -52,4 +53,55 @@ test("all suggested routes are allowlisted internal paths with no side effects",
    }
   }
  }
+});
+
+test("video-page iHelp opens the existing single Director, not a parallel chat",()=>{
+ const trigger=readFileSync(new URL("../components/sitewide-ihelp.tsx",import.meta.url),"utf8");
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const native=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+ assert.match(trigger,/hh:ihelp-open-video-director/);
+ assert.match(trigger,/request\.detail\.handled/);
+ assert.match(studio,/hh:ihelp-open-video-director/);
+ assert.match(studio,/request\.detail\.handled=true/);
+ assert.match(studio,/setVideoIHelpOpen\(true\)/);
+ assert.match(studio,/data-hh-video-ihelp-open/);
+ assert.equal((studio.match(/<MandalaVideoDirectorChat\b/g)||[]).length,1);
+ assert.match(native,/data-video-director-chat/);
+ assert.match(native,/helpVisible=|helpVisible\?:boolean/);
+ assert.match(native,/data-video-ihelp-context/);
+ assert.doesNotMatch(trigger,/createVideo\(|renderVideo\(|\bfetch\(/);
+});
+test("changing video wizard tabs updates help without restarting prior answers",()=>{
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const native=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+ const source=studio.slice(studio.indexOf('const openVideoHelp='),studio.indexOf('const [phraseAudioExpanded',studio.indexOf('const openVideoHelp=')));
+ assert.doesNotMatch(source,/setActiveWorkspace|setWish|setCinematicPlan|setTheme|setDuration|setMusic/);
+ assert.match(native,/\[locale,helpTab,helpVisible\]/);
+ const contextual=native.slice(native.indexOf("{pageHelp&&<section"),native.indexOf('<div ref={threadRef}',native.indexOf("{pageHelp&&<section")));
+ assert.match(contextual,/data-video-ihelp-choice/);
+ assert.match(contextual,/addLine\("assistant"/);
+ assert.doesNotMatch(contextual,/setDraft\(|setStep\(|setAiConsent\(|onConfirm\(|onCreate\(/);
+ for(const tab of ["ideas","effects","audio","text","settings","video"]){
+   const help=pageHelpFromRoute({locale:"ru",pathname:"/ru/holistic-support/mandala",activeTab:tab});
+   assert.equal(help.actions.length,3,tab);
+ }
+});
+test("native Director retains protected real-video finalization and dismisses safely",()=>{
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const native=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+ assert.match(studio,/aria-modal=\{videoIHelpOpen\?"true":undefined\}/);
+ assert.match(studio,/event\.key==="Escape"/);
+ assert.match(studio,/data-video-ihelp-backdrop/);
+ assert.match(studio,/data-hh-ihelp-trigger/);
+ assert.match(native,/onConfirm\(\{scenario:executable\}\)/);
+ assert.match(native,/onCreate\(\)/);
+ assert.match(native,/data-video-chat-result/);
+ assert.match(native,/const next=\{\.\.\.draft,goal:goal\.trim\(\)\.slice\(0,800\)\} as Draft/);
+ assert.match(studio,/applyAutoFilm\(scenario\.presetId/);
+ assert.match(studio,/onCreate=\{createQuickVideo\}/);
+ assert.match(css,/data-hh-video-ihelp-open/);
+ assert.match(css,/position:fixed!important/);
+ const overlay=css.slice(css.lastIndexOf("/* iHelp opens the ONE existing Director"));
+ assert.doesNotMatch(overlay,/pointer-events:none/);
 });
