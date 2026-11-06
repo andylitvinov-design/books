@@ -139,7 +139,7 @@ jobs:
               # Ordinary product changes still execute their real lint, type,
               # build, privacy and applicable specialist checks.
               case "$f" in
-                .github/workflows/*|scripts/ci-*|lib/ci/*|tests/ci-*|tests/pr-fast-lane.test.mjs|tests/pr-sweep-guard.test.mjs|scripts/pr-sweep-guard.mjs|docs/operations/CI_RELEASE_POLICY.md|package.json|package-lock.json|next.config.ts|tsconfig.json)
+                .github/workflows/*|scripts/ci-*|scripts/vercel-scenario-music-cache.mjs|scripts/generate-soft-ocean-melody.mjs|lib/ci/*|tests/ci-*|tests/pr-fast-lane.test.mjs|tests/pr-sweep-guard.test.mjs|scripts/pr-sweep-guard.mjs|docs/operations/CI_RELEASE_POLICY.md|package.json|package-lock.json|next.config.ts|tsconfig.json)
                   ci_touched=true ;;
               esac
               case "$f" in
@@ -285,7 +285,7 @@ jobs:
           fi
       - name: Verify Source Preflight unit contracts
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.ci_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
-        run: node --test tests/ci-source-preflight.test.mjs
+        run: node --test tests/ci-source-preflight.test.mjs tests/ci-vercel-scenario-music-cache.test.mjs
       - name: Source Preflight — syntax and TypeScript before costly Next build
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         id: source_preflight
