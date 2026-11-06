@@ -98,6 +98,12 @@ Each `HH_OPT_ACTION` uses a stable root ID, priority, exact current evidence/HEA
 
 If a real free provider (e.g., TTS) reaches 429/exhausted, **HOLD**: wait for documented free-quota reset or owner-approved safe means; do not retry blindly, switch to a paid key or create more accounts. Prior PR numbers and exact SHAs in historical automation messages are examples, **not current facts**.
 
+## 6.1 Manus secondary source repair — owner authorization 2026-11-06
+
+The user now authorizes a **disabled-by-default** incoming Manus Automation webhook on the existing Repair Worker after a verified signed terminal MANUAL source-repair outcome. This narrowly amends the former no-new-provider restriction without changing existing Watchdog schedules, routing, Core/Specialist/Guard, owner leases, branch policy or LIVE proof. The sender may dispatch at most once per exact PR HEAD, gated by GitHub Variables HH_MANUS_ENABLED=true and HH_MANUS_CREDITS_APPROVED=true and protected Secrets HH_MANUS_WEBHOOK_URL and HH_MANUS_WEBHOOK_AUTH_HEADER. No default paid fallback, new workflow, cron or polling; no retry after uncertain delivery. Confirm remaining included Manus credits, never assume zero metered overage.
+
+The MANUAL marker and webhook receipt **do not authorize source changes or merge**. Manus must verify current HEAD, signed root, lease, no Draft/hold/dirty/sensitive scope and no ongoing exact-HEAD tests; read GLOBAL_PR_ONE_PUBLISH_V1, stage full local patch and tests before one publish, reuse existing PR, never force, bypass checks, change consent/payment/privacy, or auto-merge. Only protected merge and separately verified LIVE complete the task. See [HH_MANUS_REPAIR_WEBHOOK_V1](HH_MANUS_REPAIR_WEBHOOK_V1.md).
+
 ## 7. Completion, rollback and change control
 
 - **Created PR** ⇒ `IN_PR`; **applicable PASS** ⇒ `GREEN`; **GitHub merge** ⇒ `MERGED`; **served production ancestry plus user-flow smoke** ⇒ `LIVE_VERIFIED`. Source-only policy merged into control plane ⇒ `CONTROL_MERGED` until a scheduled agent actually reads this version.

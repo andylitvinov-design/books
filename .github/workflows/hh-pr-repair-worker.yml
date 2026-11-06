@@ -67,6 +67,8 @@ jobs:
           node --check scripts/ci-pr-repair-deterministic.cjs
           node --check scripts/ci-pr-repair-free-agent.cjs
           node --check scripts/ci-pr-repair-code-candidate.cjs
+          node --check scripts/ci-pr-manus-handoff.cjs
+          node --test tests/ci-pr-manus-handoff.test.cjs
           node --check scripts/ci-pr-priority.cjs
       - id: select
         name: Verify exact-HEAD owner, PR branch, repair lease and queue
@@ -733,10 +735,51 @@ jobs:
               candidateSnapshot:process.env.HH_CANDIDATE_SNAPSHOT,
               dryRun:process.env.HH_AUDIT_ONLY==='true'||String(inputs.dry_run||'false')==='true'});
             core.info('HH_REPAIR_FINAL_OUTCOME '+JSON.stringify(result));
+            core.setOutput('terminal_state',result.state||'');
+            core.setOutput('terminal_reason',result.reason_code||'');
             // The authenticated final outcome is recorded before the job can fail.
             // Never report a claimed repair GREEN without a published source SHA.
             if(worker.claimedRepairMissingSourceProof(result))
               core.setFailed('HH_REPAIR_SOURCE_NOT_PUBLISHED: claimed task has no verified remote SHA; state='+result.state);
+      - name: Manus optional single-HEAD manual repair handoff
+        if: >-
+          always() &&
+          steps.finalize_outcome.outputs.terminal_state == 'MANUAL' &&
+          needs.claim.outputs.claim_status == 'claimed' &&
+          needs.claim.outputs.audit_only != 'true'
+        uses: actions/github-script@v7
+        env:
+          HH_MANUS_ENABLED: ${{ vars.HH_MANUS_ENABLED }}
+          HH_MANUS_CREDITS_APPROVED: ${{ vars.HH_MANUS_CREDITS_APPROVED }}
+          HH_MANUS_WEBHOOK_URL: ${{ secrets.HH_MANUS_WEBHOOK_URL }}
+          HH_MANUS_WEBHOOK_AUTH_HEADER: ${{ secrets.HH_MANUS_WEBHOOK_AUTH_HEADER }}
+          HH_MANUS_PR: ${{ needs.claim.outputs.pr_number }}
+          HH_MANUS_SHA: ${{ needs.claim.outputs.sha }}
+          HH_MANUS_TASK_KEY: ${{ needs.claim.outputs.task_key }}
+          HH_MANUS_TERMINAL_STATE: ${{ steps.finalize_outcome.outputs.terminal_state }}
+          HH_MANUS_TERMINAL_REASON: ${{ steps.finalize_outcome.outputs.terminal_reason }}
+          HH_MANUS_CLAIM_STATUS: ${{ needs.claim.outputs.claim_status }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const manus=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-manus-handoff.cjs');
+            try {
+              const result=await manus.handoff({github,core,context,
+                number:Number(process.env.HH_MANUS_PR||0),
+                sha:process.env.HH_MANUS_SHA,
+                taskKey:process.env.HH_MANUS_TASK_KEY,
+                terminalState:process.env.HH_MANUS_TERMINAL_STATE,
+                terminalReason:process.env.HH_MANUS_TERMINAL_REASON,
+                claimStatus:process.env.HH_MANUS_CLAIM_STATUS,
+                enabled:process.env.HH_MANUS_ENABLED,
+                creditsApproved:process.env.HH_MANUS_CREDITS_APPROVED,
+                url:process.env.HH_MANUS_WEBHOOK_URL,
+                authHeader:process.env.HH_MANUS_WEBHOOK_AUTH_HEADER});
+              core.info('HH_MANUS_RESULT '+JSON.stringify(result));
+            } catch(error) {
+              core.warning('HH_MANUS_HANDOFF_UNAVAILABLE '+String(error?.name||'GUARD_ERROR').slice(0,40));
+            }
+
   finalize:
     # Always close an addressed task, even if claim, npm, tests or publish fail.
     # A workflow dispatch or claim is not proof of a source commit.
