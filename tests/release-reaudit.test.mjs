@@ -372,3 +372,21 @@ test('language menu keyboard readiness is installed with native handlers and cle
   assert.equal(menus[0].dataset.hhKeyboardReady,undefined);
   assert.equal(listeners.size,0);
 });
+
+test('client landing locale pages use independent real browser pages and retain fatal acceptance', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const isolate = verifier.indexOf("if (['/en/client','/ru/client','/es/client'].includes(path))");
+  const assertRoute = verifier.indexOf("const routePassed = await check('public-page'", isolate);
+  assert.ok(isolate > 0 && assertRoute > isolate,
+    'all three guest Client locales isolate the previous WebKit document before audit');
+  const scope = verifier.slice(isolate, assertRoute);
+  for (const assertion of ['await page.close()', 'publicPageState = await createPublicPage()',
+    'page = publicPageState.page', 'errors = publicPageState.errors'])
+    assert.ok(scope.includes(assertion), 'isolated route retains new document tracking: ' + assertion);
+  for (const required of ['const routeTimer = setTimeout(',
+    "process.exit(1)", "await settlePublicDocument('before-assertions')",
+    "await settlePublicDocument('before-next-navigation')",
+    'await decodeReadyPoster(image, expect)', "assert.equal(state.htmlLang, locale",
+    "if (path === '/books/maya-tradition')"])
+    assert.ok(verifier.includes(required), 'Do not skip original public/CSP/locale checks: ' + required);
+});
