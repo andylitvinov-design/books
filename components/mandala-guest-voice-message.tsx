@@ -26,6 +26,10 @@ export function MandalaGuestVoiceMessage({locale}:{locale:Locale}){
  const [phrase,setPhrase]=useState("");
  const [origin,setOrigin]=useState("");
  const [approved,setApproved]=useState(false);
+ // Real iPhone taps can emit touchend without a synthesized click in headed WebKit.
+ // Track an intentional short touch; keep keyboard/mouse click and prevent double toggles.
+ const consentTouchOrigin=useRef<{x:number;y:number}|null>(null);
+ const lastConsentTouchAt=useRef(0);
  const [busy,setBusy]=useState(false);
  const [audioUrl,setAudioUrl]=useState("");
  const [file,setFile]=useState<File|null>(null);
@@ -123,7 +127,29 @@ export function MandalaGuestVoiceMessage({locale}:{locale:Locale}){
    <section className={styles.card}>
     <h2>{ui.record}</h2>
     <button className={styles.check} type="button" role="checkbox" aria-checked={approved}
-     onClick={()=>setApproved(current=>!current)} data-guest-message-consent>
+     onTouchStart={event=>{
+      const finger=event.touches[0];
+      consentTouchOrigin.current=event.touches.length===1&&finger
+       ?{x:finger.clientX,y:finger.clientY}:null;
+     }}
+     onTouchMove={event=>{
+      const start=consentTouchOrigin.current,finger=event.touches[0];
+      if(start&&finger&&Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>12)
+       consentTouchOrigin.current=null;
+     }}
+     onTouchCancel={()=>{consentTouchOrigin.current=null;}}
+     onTouchEnd={event=>{
+      const start=consentTouchOrigin.current,finger=event.changedTouches[0];
+      consentTouchOrigin.current=null;
+      if(!start||event.changedTouches.length!==1||!finger||
+       Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>12)return;
+      lastConsentTouchAt.current=Date.now();
+      setApproved(current=>!current);
+     }}
+     onClick={()=>{
+      if(Date.now()-lastConsentTouchAt.current>=700)
+       setApproved(current=>!current);
+     }} data-guest-message-consent>
      <span className={styles.checkIcon} aria-hidden="true">{approved?"✓":""}</span>
      <span>{ui.consent}</span></button>
     <div className={styles.actions}>

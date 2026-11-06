@@ -81,7 +81,15 @@ test("macOS WebKit exercises explicit accessible adult consent and revocation",(
  const ui=read("components/mandala-guest-voice-message.tsx");
  const css=read("components/mandala-guest-voice-message.module.css");
  assert.match(ui,/type="button" role="checkbox" aria-checked=\{approved\}/);
- assert.ok(ui.includes('onClick={()=>setApproved(current=>!current)}'));
+ // WebKit's emulated iPhone emits touchend but can omit the compatibility click.
+ // Preserve explicit opt-in, swipe cancellation, keyboard click and no double-toggle.
+ for(const expected of [
+  'onTouchStart={event=>{','onTouchMove={event=>{','onTouchCancel={()=>{consentTouchOrigin.current=null;}',
+  'onTouchEnd={event=>{','lastConsentTouchAt.current=Date.now();',
+  'Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>12',
+  'if(Date.now()-lastConsentTouchAt.current>=700)',
+  'setApproved(current=>!current)'
+ ])assert.ok(ui.includes(expected),expected);
  assert.ok(ui.includes('data-guest-message-consent'));
  assert.ok(ui.includes('disabled={!approved}'));
  assert.ok(ui.includes('if(!approved||busy||pending.current'));
