@@ -43,7 +43,19 @@ export async function decodeReadyPoster(image, expect) {
         && el.getAttribute('src') === expected.src && el.getAttribute('srcset') === expected.srcset
         && !!selected && el.currentSrc === selected && el.complete && el.naturalWidth > 0 && el.naturalHeight > 0;
       if (!unchanged()) throw new Error('Poster identity/readiness changed before decode');
-      await el.decode();
+      // A stalled browser-native decoder must not hold the entire release
+      // audit hostage. Failure is fatal; identity and real decode stay required.
+      let decodeDeadline = null;
+      try {
+        await Promise.race([
+          el.decode(),
+          new Promise((_, reject) => {
+            decodeDeadline = setTimeout(() => reject(new Error('Poster decode timed out after 7000ms')), 7000);
+          }),
+        ]);
+      } finally {
+        if (decodeDeadline !== null) clearTimeout(decodeDeadline);
+      }
       if (!unchanged()) throw new Error('Poster identity/readiness changed during decode');
     }, { ...source, selected });
   } catch (error) {
