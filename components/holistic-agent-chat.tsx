@@ -16,6 +16,7 @@ import {
 } from "@/lib/mandala/video-chat-messenger-flow.mjs";
 import styles from "./holistic-agent-chat.module.css";
 import dynamic from "next/dynamic";
+import EmotionalAvatar from "@/components/app/emotional-avatar";
 
 const MessengerTestJourney = dynamic(() => import("@/components/app/messenger-test-journey"), { ssr: false });
 const MessengerAudioVideo = dynamic(() => import("@/components/app/messenger-audio-video")
@@ -660,6 +661,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     data-page-help={pageHelp?"true":undefined} data-has-messages={messages.length>0||undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {!compact&&settings}
+    <EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact}/>
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
