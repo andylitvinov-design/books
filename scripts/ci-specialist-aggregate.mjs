@@ -557,7 +557,18 @@ export async function verify(api,ctx,files,options={}) {
   const recovered = new Map();
   const probeTimes = new Map();
   const refreshTimes = new Map();
+  // A sensitive exact-base PR can become stale while independent specialists
+  // wait on a GitHub runner. Recheck without scheduling/retrying any workflow.
+  // This bounds wasted polling after a protected production promotion.
+  const sensitiveFreshnessInterval = 90_000;
+  let nextSensitiveFreshnessCheck = start + sensitiveFreshnessInterval;
   for (;;) {
+    if (requireCurrentBase && now() >= nextSensitiveFreshnessCheck) {
+      // Fresh PR identity/HEAD and production ref; existing exception logic
+      // still admits only exhaustively verified, disjoint BASE advances.
+      await verifyCurrentBase(await api.pr(ctx.number));
+      nextSensitiveFreshnessCheck = now() + sensitiveFreshnessInterval;
+    }
     const indexed = await api.runs(ctx.head);
     // Cache only GitHub-returned evidence. A recovered pending workflow must
     // still finish successfully; refresh its immutable ID if the HEAD index lags.

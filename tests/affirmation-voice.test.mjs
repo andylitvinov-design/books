@@ -434,6 +434,8 @@ test("Safari voice lifecycle never silently aborts identical inputs or mistakes 
   const video=read("components/mandala-free-video-studio.tsx");
   // On mount/StrictMode replays, no change to the actual approved transcript
   // or voice means the current in-flight job and consent remain untouched.
+  assert.match(voice,/useLayoutEffect\(\(\)=>\{\s*const previous=originRef\.current/,
+    "invalidate stale voice synchronously before the next WebKit click");
   assert.match(voice,/previous\.speechText===speechText && previous\.voiceId===voiceId/);
   assert.match(voice,/previous\.language===language\)return/);
   assert.match(voice,/\[speechText,voiceId,language,busy,mixing,locale\]/);

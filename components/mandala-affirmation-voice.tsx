@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AudioLines, Check, Download, LoaderCircle, Play, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { VOICE_STUDIO_MODEL, VOICE_STUDIO_SAMPLE, VOICE_STUDIO_VOICES } from "@/lib/mandala/voice-studio.mjs";
@@ -156,7 +156,7 @@ export function MandalaAffirmationVoice({
     return ()=>controller.abort();
   },[]);
 
-  useEffect(()=>{
+  useLayoutEffect(()=>{
     const previous=originRef.current;
     // React may replay mount effects in Strict Mode. Reset only for a REAL
     // change of approved spoken text, selected voice or language: re-running

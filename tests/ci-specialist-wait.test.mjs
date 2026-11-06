@@ -357,3 +357,44 @@ test('completed workflow with an unfinished jobs API never masquerades as a fail
   }), /SPECIALIST_DEPENDENCY_JOB_PENDING_TIMEOUT/);
   assert.equal(elapsed, 1500);
 });
+
+test('sensitive pending Specialist stops within one 90s probe after a real production-base change', async () => {
+  let elapsed=0, prReads=0, targetReads=0, workflowReads=0;
+  const currentBase='c'.repeat(40);
+  const files={...sources, changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  const api={
+    pr:async()=>{prReads++;return pr;},
+    target:async()=>{targetReads++;return elapsed>=60_000?currentBase:base;},
+    runs:async()=>{workflowReads++;return [run('in_progress',null)];},
+    jobs:async()=>{throw Error('pending workflow must never count as green');},
+  };
+  await assert.rejects(()=>verify(api,ctx,files,{
+    now:()=>elapsed, sleep:async ms=>{assert.ok(ms>0&&ms<=30_000);elapsed+=ms;},
+    maxWaitMs:35*60_000,pollMs:30_000,
+  }),/PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED/);
+  assert.ok(elapsed>=90_000&&elapsed<=120_000,'stop long before a 35-minute Specialist timeout');
+  assert.ok(prReads>=2&&targetReads>=2,'verify live PR identity and protected target again');
+  assert.ok(workflowReads<=4,'do not poll stale workflows until the long deadline');
+});
+
+test('ordinary public Specialist does not add live-base polling or skip applicable checks',async()=>{
+  let elapsed=0, prReads=0, targetReads=0, jobsRead=0;
+  const publicYaml=yaml.replace('lib/crm/**','components/**');
+  const files={base:new Map([[path,publicYaml]]),
+    current:new Map([[path,publicYaml]]),
+    changedRows:[{filename:'components/public-faq.js',status:'M'}]};
+  const api={
+    pr:async()=>{prReads++;return pr;},
+    target:async()=>{targetReads++;return 'c'.repeat(40);},
+    runs:async()=>[elapsed<4*60_000?run('in_progress',null):run('completed','success')],
+    jobs:async()=>{jobsRead++;return [{name:'test',status:'completed',conclusion:'success'}];},
+  };
+  const passed=await verify(api,ctx,files,{
+    now:()=>elapsed,sleep:async ms=>{elapsed+=ms;},maxWaitMs:10*60_000,
+  });
+  assert.equal(passed.executed.length,1,'still require the completed real Specialist job');
+  assert.ok(elapsed>=4*60_000);
+  assert.equal(prReads,2,'ordinary public PR keeps original start/end liveness reads');
+  assert.equal(targetReads,0,'unrelated production changes need no extra sensitive BASE probes');
+  assert.equal(jobsRead,1);
+});
