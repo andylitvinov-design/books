@@ -26,4 +26,5 @@ test('no extra polling or CI and boot includes both assets',()=>{
  assert.doesNotMatch(ui,/setInterval\s*\(|workflow_dispatch|setTimeout\s*\(/);
  assert.match(ui,/MutationObserver/);
  assert.match(boot,/gpt-agent-counter\.js/);assert.match(boot,/gpt-agent-counter\.css/);
+ assert.match(ui,/target\.append\(el\)/);assert.match(ui,/Обычные чаты и Work не учтены/);
 });

@@ -36,12 +36,15 @@
     const el=document.createElement('section');el.id='hh-gpt-agent-counter';el.className='hh-gpt-counter';
     el.setAttribute('aria-label','Число работающих автоматизаций ChatGPT');
     const label=document.createElement('span');label.className='hh-gpt-counter-title';
-    label.textContent='GPT-агенты в работе';
+    label.textContent='GPT-агенты';
     const value=document.createElement('strong');value.className='hh-gpt-counter-count';
     value.setAttribute('aria-live','polite');value.textContent='—';
     const note=document.createElement('small');note.className='hh-gpt-counter-note';
-    note.textContent='Проверяю последний подтверждённый срез автоматизаций…';
-    el.append(label,value,note);first.insertBefore(el,target);
+    note.textContent='Автоматизации, не чаты';
+    el.append(label,value,note);target.append(el);
+    const scope=document.createElement('p');scope.className='hh-gpt-counter-scope';
+    scope.textContent='GPT: проверяю автоматизации; обычные чаты не измеряются.';
+    target.insertAdjacentElement('afterend',scope);
     fetch(URL,{cache:'default',headers:{Accept:'application/vnd.github+json'}})
       .then(r=>{if(!r.ok)throw Error('SOURCE_UNAVAILABLE');return r.json();})
       .then(obj=>{
@@ -51,13 +54,14 @@
         el.dataset.fresh=String(p.fresh);
         const clock=new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',
           hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(p.at));
-        note.textContent=(p.expired?'Данные устарели · ':p.partial?'Нижняя граница · ':'')+
-          'Включено '+p.enabled+' · проверено '+p.observed+' · срез '+clock+
-          ' Торонто ('+p.ageMin+' мин назад). Обычные чаты не учтены.';
+        note.textContent='Только автоматизации';
+        scope.textContent='GPT: '+(p.expired?'данные устарели · ':p.partial?'нижняя граница · ':'')+
+          'включено '+p.enabled+' · проверено '+p.observed+' · срез '+clock+
+          ' Торонто ('+p.ageMin+' мин назад). Обычные чаты и Work не учтены.';
         value.title='Только последнее наблюдение зарегистрированных автоматизаций ChatGPT';
       })
-      .catch(()=>{value.textContent='—';note.textContent=
-        'Данных об активности нет · это не 0. Обычные чаты не учтены.';});
+      .catch(()=>{value.textContent='—';note.textContent='Автоматизации: —';
+        scope.textContent='GPT: источник недоступен, значение не равно 0. Обычные чаты и Work не учтены.';});
     return true;
   }
   function start(){
