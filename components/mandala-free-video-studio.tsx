@@ -17,6 +17,7 @@ import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno
 import { MandalaFreeVideoGenerator } from "./mandala-free-video-generator";
 import {planAudioVisualStoryboard} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import {consumeVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
+import {requestConsentedTimedTranscript} from "@/lib/mandala/consented-audio-stt";
 import type {TimedSpeechTranscript,AudioVisualPlan} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import { MandalaVideoDelivery } from "./mandala-video-delivery";
 import { MandalaVideoEffectJourney } from "./mandala-video-effect-journey";
@@ -66,6 +67,7 @@ import type { FilmSource } from "@/lib/mandala/film-collection-v2";
 import { otherVideoScenes, paintThemedVideoFrame, paintRealThemedVideoFrame } from "@/lib/mandala/holistic-video-themes";
 import type { LocalSceneId, OtherTheme, VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPresetAudio, startPresetMixAudio, startUploadedAudio, startLayeredVideoAudio } from "@/lib/mandala/local-video-music";
+import {consumeMessengerAudio} from "@/lib/mandala/messenger-audio-video-handoff.mjs";
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import { mandalaAudioTracks, recommendMandalaAudio } from "@/lib/mandala/audio-recommendations.mjs";
 import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
@@ -2119,6 +2121,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const restoreAudioSessionRef = useRef<(() => void) | null>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [uploadedAudio,setUploadedAudio] = useState<{file:File;url:string}|null>(null);
+  const [importedAudioSeconds,setImportedAudioSeconds]=useState<number|null>(null);
+  const messengerAudioHandoffRef=useRef<{locale:PublicLocale;promise:ReturnType<typeof consumeMessengerAudio>}|null>(null);
   const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
   const [audioPlaybackError,setAudioPlaybackError] = useState(false);
   const [audioRights,setAudioRights] = useState(false);
@@ -3688,6 +3692,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(uploadedAudioRef.current)URL.revokeObjectURL(uploadedAudioRef.current.url);
     uploadedAudioRef.current=null;
     setUploadedAudio(null);
+    setImportedAudioSeconds(null);
     setAudioRights(false);
     if(audioInputRef.current)audioInputRef.current.value="";
   }
@@ -3707,6 +3712,43 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setMusicWarning("");
     return entry;
   }
+  // React StrictMode can replay effects: reuse ONE promise so its first
+  // cleanup cannot consume and discard the Messenger's one-use File.
+  useEffect(()=>{
+    let mounted=true;
+    if(messengerAudioHandoffRef.current?.locale!==locale)
+      messengerAudioHandoffRef.current={locale,promise:consumeMessengerAudio(locale)};
+    void messengerAudioHandoffRef.current.promise.then(packet=>{
+      if(!mounted||!packet||recording||preparing)return;
+      const entry=chooseAudioFile(packet.file);
+      if(!entry){
+        setNotice(locale==="ru"?"Не удалось принять аудио. Загрузите его в студии.":
+          locale==="es"?"No se pudo adjuntar el audio. Súbelo en el Estudio.":
+          "Could not attach this audio. Please upload it in Studio.");
+        return;
+      }
+      // Rights were explicitly checked in Messenger; sound is never submitted
+      // to an AI model, uploaded to a provider or silently turned into a charge.
+      setAudioRights(true);
+      setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
+      setImportedAudioSeconds(packet.seconds);
+      setDuration(packet.duration);
+      setStudioMode("pump");setActiveWorkspace("video");
+      setDirectorChatOpen(true);setVideoScenarioOpen(true);
+      if(packet.goal.trim())setWish(packet.goal.slice(0,160));
+      setNotice(locale==="ru"
+        ?"Аудиозапись добавлена без повторов. Проверьте сюжет и длительность перед созданием видео."
+        :locale==="es"
+        ?"Audio original adjunto sin repetición. Revisa las escenas y la duración antes de crear."
+        :"Original audio attached without looping. Review the scenes and length before creating.");
+    }).catch(()=>{
+      if(mounted)setNotice(locale==="ru"?"Не удалось восстановить аудиозапись.":
+        locale==="es"?"No se pudo recuperar el audio.":"Could not restore the recording.");
+    });
+    return()=>{mounted=false;};
+  // Only the one-use Messenger transfer, not a re-render subscription.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[locale]);
   function attachGeneratedAffirmationAudio(clip:AffirmationVoiceResult){
     if(recording||preparing)return;
     const entry=chooseAudioFile(clip.file);
@@ -4321,21 +4363,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     sttAbortRef.current=controller;setSttBusy(true);setSttError("");
     setVoiceTranscript(null);setVoiceVisualPlan(null);
     try{
-      const form=new FormData();
-      form.append("file",entry.file,entry.file.name);
-      form.append("locale",locale);form.append("consent","yes");
-      const response=await fetch("/api/holistic-support/audio-storyboard",{
-        method:"POST",cache:"no-store",credentials:"same-origin",
-        body:form,signal:controller.signal
-      });
-      const data=await response.json() as {
-        transcript?:TimedSpeechTranscript;error?:string
-      };
-      if(!response.ok||!data.transcript)
-        throw Error(data.error||"AUDIO_STT_UNAVAILABLE");
+      const transcript=await requestConsentedTimedTranscript(entry.file,locale,sttConsent,controller.signal);
       if(sttAbortRef.current!==controller||
         uploadedAudioRef.current?.file!==entry.file)return;
-      setVoiceTranscript(data.transcript);
+      setVoiceTranscript(transcript);
       setNotice(locale==="ru"?"Расшифровка с временными метками готова. Проверьте текст перед монтажом.":
         locale==="es"?"Transcripción con tiempos lista. Revisa el texto.":"Timed transcript ready. Review it before editing.");
     }catch(error){
@@ -5505,10 +5536,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             // The ONLY executable boundary: one validated scenario -> existing
             // MP4 timeline, audio selection, on-screen text, Canvas and MediaRecorder.
             // An AI string never becomes a guessed media URL or paid render.
-            if(uploadedAudio||attachedAudio?.kind==="file"){
-              setNotice(locale==="ru"?"Сначала настройте уже добавленный голос в разделе аудио."
-                :locale==="es"?"Configura primero la voz añadida en el panel de audio."
-                :"Please review your existing voice recording in the audio settings first.");
+            const preserveMessengerAudio = Boolean(uploadedAudio &&
+              attachedAudio?.kind==="file" &&
+              attachedAudio.file===uploadedAudio.file &&
+              audioRights && !audioDurationInvalid && !audioNeedsAttachment);
+            if((uploadedAudio||attachedAudio?.kind==="file")&&!preserveMessengerAudio){
+              setNotice(locale==="ru"?"Сначала подтвердите права и прикрепите аудио в разделе звука."
+                :locale==="es"?"Primero confirma los derechos y adjunta el audio."
+                :"Confirm audio rights and attach the recording first.");
+              return false;
+            }
+            if(preserveMessengerAudio&&importedAudioSeconds!==null &&
+              scenario.durationSeconds+0.05<importedAudioSeconds){
+              setNotice(locale==="ru"
+                ?"Сценарий короче записи. Выберите не меньше "+Math.ceil(importedAudioSeconds)+" секунд."
+                :locale==="es"
+                ?"El vídeo es más corto que el audio. Elige al menos "+Math.ceil(importedAudioSeconds)+" segundos."
+                :"The video is shorter than your recording. Choose at least "+Math.ceil(importedAudioSeconds)+" seconds.");
               return false;
             }
             if(!scenario.readyToExecute||scenario.version!=="hh-executable-video-scenario-v1")
@@ -5518,10 +5562,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               scenario.edit,scenario.aspect as Aspect);
             if(!ok)return false;
             const soundtrack=scenario.audio.trackId as AmbientMusic;
-            chooseMusic(soundtrack);
-            setAttachedAudio(soundtrack==="none"?null:{kind:"preset",id:soundtrack});
+            // A validated voice recording takes precedence over stock music.
+            // applyAutoFilm() also skips auto music when audioAuto=false.
+            if(!preserveMessengerAudio){
+              chooseMusic(soundtrack);
+              setAttachedAudio(soundtrack==="none"?null:{kind:"preset",id:soundtrack});
+              setSoundVolume(scenario.audio.volumePercent);
+            }
             setAudioAuto(false);setSpeed(scenario.rendering.motion as Speed);
-            setSoundVolume(scenario.audio.volumePercent);
             setQuality(scenario.rendering.quality as Quality);
             setBrightness(scenario.rendering.brightness as Brightness);
             // Stage captions come from scenario.shots in the verified film

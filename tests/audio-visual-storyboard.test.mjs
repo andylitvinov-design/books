@@ -63,6 +63,13 @@ test("provider never transcribes without explicit free-project approval",()=>{
  assert.match(route,/timestamp_granularities\[\]/);
  assert.match(route,/consent/);
  assert.match(route,/MAX_AUDIO_BYTES=4\*1024\*1024/);
+ const helper=readFileSync(new URL("../lib/mandala/consented-audio-stt.ts",import.meta.url),"utf8");
+ assert.match(helper,/if\(!consent\)throw Error\("AUDIO_STT_CONSENT_REQUIRED"\)/);
+ assert.match(helper,/fetch\("\/api\/holistic-support\/audio-storyboard"/);
+ assert.match(helper,/method:"POST",cache:"no-store",credentials:"same-origin"/);
+ assert.match(helper,/form.append\("consent","yes"\)/);
+ assert.match(source,/requestConsentedTimedTranscript\(entry.file,locale,sttConsent,controller.signal\)/);
+ assert.doesNotMatch(source,/\bfetch\s*\(|\bFormData\b/);
 });
 
 test("iHelp voice attachment hands off only through local one-use storage",async()=>{
