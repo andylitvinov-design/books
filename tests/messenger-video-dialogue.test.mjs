@@ -87,3 +87,15 @@ test('the real studio owns the only validated MediaRecorder; Messenger UI is com
  assert.ok(css.includes('min-height:44px'));
  assert.equal(typeof MESSENGER_VIDEO_HANDOFF_KEY,'string');
 });
+
+test('a greeting interrupts video categorization and receives a quick response',()=>{
+ const chat=source('components/holistic-agent-chat.tsx');
+ const handler=chat.slice(chat.indexOf('  async function submit('),chat.indexOf('  const settings = ('));
+ const greeting=handler.indexOf('if(compact&&isCasualGreeting(text))');
+ const video=handler.indexOf('if(compact&&videoStep)');
+ assert.ok(greeting>=0&&video>greeting,'greeting must run before video classification');
+ assert.ok(handler.slice(greeting,video).includes('messengerStarter.ru.hello'));
+ assert.ok(handler.slice(greeting,video).includes('messengerStarter.es.hello'));
+ assert.ok(handler.slice(greeting,video).includes('starter.hello'));
+ assert.ok(handler.slice(video).includes('answerVideo(text);return;'));
+});

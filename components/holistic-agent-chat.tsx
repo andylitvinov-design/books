@@ -349,17 +349,17 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     event.preventDefault();
     const text=draft.trim().slice(0,2000);
     if(!text||busy||mode==="owned"&&!agree)return;
-    if(compact&&videoStep){
-      if(!requiresProtectedReply(text,locale)){answerVideo(text);return;}
-      // Urgent/human-review messages must not leave video options visible.
-      setVideoStep(null);setGuidedTrack(null);
-    }
     if(compact&&isCasualGreeting(text)){
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
       setMessages(prev=>[...prev,{role:"user" as const,text},
         {role:"assistant" as const,text:/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
           /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:starter.hello}].slice(-30));
       return;
+    }
+    if(compact&&videoStep){
+      if(!requiresProtectedReply(text,locale)){answerVideo(text);return;}
+      // Urgent/human-review messages must not leave video options visible.
+      setVideoStep(null);setGuidedTrack(null);
     }
     setEntryOpen(false);
     // Keep every user turn intact for server safety preflight (UI max 2,000).
