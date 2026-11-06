@@ -6,9 +6,11 @@ import {STOCK_POLICIES,assessStockClip,validateFreeSceneBrief} from "../lib/mand
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 const now=new Date("2026-10-30T12:00:00Z");
 const clip=(i,p="mixkit")=>({provider:p,file:"video-"+i+".mp4",author:"Owner "+i,
- clipTitle:"Landscape "+i,sourcePage:STOCK_POLICIES[p].sourcePath
-   ?STOCK_POLICIES[p].license
-   :"https://"+STOCK_POLICIES[p].host+"/nature/"+i,
+ clipTitle:"Landscape "+i,sourcePage:p==="free_nature_stock"
+   ? "https://freenaturestock.com/video/red-sunset/"
+   : STOCK_POLICIES[p].sourcePath
+     ? STOCK_POLICIES[p].license
+     : "https://"+STOCK_POLICIES[p].host+"/nature/"+i,
  licenseId:STOCK_POLICIES[p].id,licenseUrl:STOCK_POLICIES[p].license,checkedOn:"2026-10-29",
  licenseEvidence:"Verified on individual stock asset page",
  exactClipLicenseConfirmed:true,commercialUseApproved:true,editingApproved:true,identifiableSubjectsCleared:true,
