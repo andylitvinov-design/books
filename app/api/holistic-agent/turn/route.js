@@ -16,6 +16,8 @@ import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offe
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
+import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
+import { signJudgmentChoice, verifyJudgmentChoice } from "@/lib/holistic-support/judgment-token.mjs";
 import { buildHolisticGuidedTurn } from "@/lib/holistic-support/holistic-guide-adapter.mjs";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import { generateOwnedOllama, validatedOllamaConfig } from "@/lib/holistic-support/owned-ollama.mjs";
@@ -61,7 +63,8 @@ function validatedAxes(value) {
 
 function inputOf(body) {
   onlyKeys(body,["locale","message","history","mode","ownedInferenceConsent","selectedGoal",
-    "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback"]);
+    "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback",
+    "judgmentContext","judgmentChoice"]);
   if (!LOCALES.has(body.locale) || typeof body.message !== "string" ||
     !body.message.trim() || body.message.length > 3000 ||
     !MODES.has(body.mode) || typeof body.ownedInferenceConsent !== "boolean" ||
@@ -72,7 +75,13 @@ function inputOf(body) {
     (body.chosenAxes !== undefined && !validatedAxes(body.chosenAxes)) ||
     (body.preferredFormat !== undefined && body.preferredFormat !== null &&
       !GUIDE_FORMATS.has(body.preferredFormat)) ||
-    (body.feedback !== undefined && !validFeedback(body.feedback)))
+    (body.feedback !== undefined && !validFeedback(body.feedback)) ||
+    (body.judgmentContext !== undefined && body.judgmentContext !== null &&
+      (typeof body.judgmentContext !== "string" || body.judgmentContext.length > 1600 ||
+        !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(body.judgmentContext))) ||
+    (body.judgmentChoice !== undefined && body.judgmentChoice !== null &&
+      (!["a","b","helpful","not_helpful"].includes(body.judgmentChoice) ||
+        !body.judgmentContext)))
     throw new AppError("INVALID_AGENT_INPUT",400);
   if (!Array.isArray(body.history) || body.history.length > 6 ||
     body.history.some(row => !row || !["user","assistant"].includes(row.role) ||
@@ -83,6 +92,9 @@ function inputOf(body) {
 }
 function preflight(text,locale) {
   // Preliminary conservative lexical gate only, NOT a clinical risk diagnosis.
+  // Acute medical/violence cues strengthen escalation; absence is not clearance.
+  if(/(?:боль в груди|не могу дышать|трудно дышать|меня бьют|физическое насилие|chest pain|can(?:not|t) breathe|trouble breathing|domestic violence|dolor en el pecho|no puedo respirar|violencia domestica)/iu.test(text))
+    return {status:"human_review"};
   // This pilot is non-clinical and remains feature-flagged until evaluated.
   if (/(?:не хочу (?:больше )?жить(?:[.!?]|$)|i do not want to live(?:[.!?]|$)|i dont want to live(?:[.!?]|$)|ya no quiero vivir(?:[.!?]|$))/iu.test(text))
     return {status:"urgent"};
@@ -133,6 +145,37 @@ export async function POST(request) {
         browserModelAllowed:false,
         decision:{status:"clarify",message:fastRule.reply,question:null,suggestions:[]},
       },{headers:PRIVATE_HEADERS}));
+    }
+    // A narrow, no-cost reasoning path. All verified owner, origin, rate and
+    // safety checks above stay authoritative. On abstain, the existing
+    // protected catalog + natural dialogue route continues untouched.
+    if (body.mode==="rules" && safety.status==="clear" && !recentUnsafe) {
+      const context=body.judgmentContext
+        ? verifyJudgmentChoice({config,actor,token:body.judgmentContext,history:body.history})
+        : null;
+      if(body.judgmentContext && !context)throw new AppError("INVALID_JUDGMENT_CONTEXT",400);
+      const judgment=planJudgmentTurn({
+        message:body.message,locale:body.locale,safety,
+        pending:context?.pending||null,choiceId:body.judgmentChoice||null,
+      });
+      if(judgment.status!=="abstain") {
+        const signed=judgment.pending ? signJudgmentChoice({
+          config,actor,pending:judgment.pending,reply:judgment.reply,
+          revision:(context?.conversationRevision||0)+1,
+        }) : null;
+        const publicJudgment={...judgment,pending:null,
+          token:signed?.token||null,
+          turnId:signed?.turnId||null,
+          conversationRevision:signed?.conversationRevision||null};
+        return auth.apply(NextResponse.json({
+          status:judgment.status==="handoff"?"safety_handoff":"clarify",
+          reply:judgment.reply,modelUsed:false,source:"judgment-rules",
+          memorySaved:false,userAuthorized:true,suggestions:[],
+          usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+          browserModelAllowed:false,judgment:publicJudgment,
+          decision:{status:"clarify",message:judgment.reply,question:null,suggestions:[]},
+        },{headers:PRIVATE_HEADERS}));
+      }
     }
     const focus=resolveConversationFocus({message:body.message,locale:body.locale,
       history:body.history,selectedGoal:body.selectedGoal});
