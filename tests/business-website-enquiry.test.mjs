@@ -33,6 +33,10 @@ test("public intake is fail-closed, encrypted and never claims a confirmed booki
   assert.match(store,/seal\(payload/);
   assert.match(store,/hh_app_inbox|inbox:true/);
   assert.match(store,/on conflict do nothing/);
+  assert.match(store,/referenceCode: "HH-" \+ digest\.slice\(0, 12\)\.toUpperCase\(\)/);
+  assert.match(form,/body\?\.received===true && \/\^HH-/);
+  assert.match(form,/router\.push\("\/"\+locale\+"\/thank-you"\)/);
+  assert.match(form,/RECEIPT_SESSION_KEY/);
   assert.doesNotMatch(store,/on conflict\\(operation_hash\\)/);
   // The inbox role has only column-level INSERT; naming the arbiter column
   // would additionally require SELECT privilege, defeating least privilege.
