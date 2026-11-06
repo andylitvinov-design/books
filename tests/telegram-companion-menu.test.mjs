@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseTelegramHomeAction,telegramMenuKeyboard,parseTelegramHomeCallback,companionMessage,companionDailyDue,companionLocalDate,telegramCompanionConsentButtons,companionDatabaseDay,telegramHomeRecipientAllowed,companionReplyBudgetAllows} from '../lib/crm/telegram-companion-menu.mjs';
+import {parseTelegramHomeAction,telegramMenuKeyboard,parseTelegramHomeCallback,companionMessage,companionDailyDue,companionLocalDate,telegramCompanionConsentButtons,companionDatabaseDay,telegramHomeRecipientAllowed,companionReplyBudgetAllows,telegramCompanionCheckinButtons,companionCheckinReply} from '../lib/crm/telegram-companion-menu.mjs';
 test('typed commands and owner screenshot greetings',()=>{
  assert.equal(parseTelegramHomeAction('Привет','holistichouse_bot')?.action,'home');
  assert.equal(parseTelegramHomeAction('Privet','holistichouse_bot')?.action,'home');
@@ -54,4 +54,26 @@ test('AI and morning opt-outs remain available after 40 replies',()=>{
  }
  assert.equal(companionReplyBudgetAllows('ai_text',40,40),false);
  assert.equal(companionReplyBudgetAllows('checkin',39,40),true);
+});
+
+test('five non-persistent check-in faces use only fixed first-party callbacks',()=>{
+ for(const locale of ['ru','en','es']){
+  const markup=telegramCompanionCheckinButtons(locale);
+  assert.equal(markup.inline_keyboard.length,1);
+  assert.equal(markup.inline_keyboard[0].length,5);
+  for(let i=0;i<5;i++){
+   const button=markup.inline_keyboard[0][i];
+   assert.equal(parseTelegramHomeCallback(button.callback_data)?.action,'checkin_'+(i+1));
+   assert.ok(companionCheckinReply(locale,i+1).length<220);
+  }
+  assert.equal(parseTelegramHomeCallback('hhhome:'+locale+':checkin_6'),null);
+  assert.equal(parseTelegramHomeCallback('hhhome:'+locale+':checkin_0'),null);
+ }
+});
+
+test('finishing an already-started check-in is possible even at reply quota',()=>{
+ assert.equal(companionReplyBudgetAllows('checkin_3',40,40,'checkin'),true);
+ assert.equal(companionReplyBudgetAllows('checkin_3',40,40,'menu'),false);
+ assert.equal(companionReplyBudgetAllows('checkin_3',40,40,'ai'),false);
+ assert.equal(companionReplyBudgetAllows('checkin_6',40,40),false);
 });
