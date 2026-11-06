@@ -384,12 +384,15 @@ test('cheap Mandala UI source contracts fail before macOS WebKit without skippin
   for(const file of [
     'tests/video-studio-question-registry.test.mjs',
     'tests/mandala-video-goal-media-coverage.test.mjs',
-    'tests/mandala-workspace-tabs.test.mjs',
     'tests/mandala-approved-mobile-studio.test.mjs',
   ]) {
     assert.ok(preflight.includes(file),'fast source preflight missing '+file);
     assert.ok(focused.includes(file),'full independent source acceptance must remain '+file);
   }
+  assert.ok(focused.includes('tests/mandala-workspace-tabs.test.mjs'),
+    'TypeScript-dependent workspace test remains in the required full suite');
+  assert.ok(!preflight.includes('tests/mandala-workspace-tabs.test.mjs'),
+    'a no-install preflight must never import TypeScript-dependent workspace tests');
   assert.ok(preflight.includes('node scripts/ci-pr-readiness.mjs'));
   assert.ok(preflight.includes('git rev-parse HEAD^2'));
   assert.doesNotMatch(preflight,/npm ci|npm run build|actions\/cache\/save/,'preflight must remain a cheap no-install gate');
