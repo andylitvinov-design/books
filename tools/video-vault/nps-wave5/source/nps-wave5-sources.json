@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "hh-nps-acadia-wave5-v1",
+  "sourcePolicy": "Official NPGallery pages with per-asset Public domain:Full Granting Rights only; independent filmed masters, never counted twice for crops or trim excerpts",
+  "publication": "unapproved_private_editorial_review_only",
+  "sourceKind": "us_national_park_service_public_domain_broll",
+  "sources": [
+    {"id":"acadia-coastal-scenery","uuid":"6fc09aec-7fc2-47ed-b8cc-e1b10861dd3e","title":"Acadia coastal waves and rocky shore","theme":"water","tags":["ocean","coast","waves","rocks"],"peoplePossible":false},
+    {"id":"acadia-foliage","uuid":"1f2e862d-d3e1-49c5-ac76-133ddc631d82","title":"Acadia forest and green foliage","theme":"nature","tags":["forest","leaves","flowers","meadow"],"peoplePossible":false},
+    {"id":"acadia-peaks-scenery","uuid":"a84245c3-7109-46a0-bf28-0165a464c515","title":"Acadia peaks and mountain vistas","theme":"nature","tags":["mountain","forest","lake","view"],"peoplePossible":false},
+    {"id":"acadia-wildlife","uuid":"26be359b-c937-4c58-8848-d67f10b071f5","title":"Acadia birds and woodland wildlife","theme":"nature","tags":["wildlife","birds","animals","nature"],"peoplePossible":false},
+    {"id":"acadia-scenic-drives","uuid":"03b07cfa-2383-4eeb-80fc-779571b48b34","title":"Acadia scenic coastal roads","theme":"work","tags":["roads","travel","mountain","journey"],"peoplePossible":true},
+    {"id":"acadia-hiking-trails","uuid":"99ba7527-b163-432d-a1c4-f949b0140520","title":"Acadia hiking on forest trails","theme":"people","tags":["hiking","trail","nature","people"],"peoplePossible":true},
+    {"id":"acadia-local-community","uuid":"09020b83-5e2f-4855-ada1-53782e2665e1","title":"Acadia Bar Harbor community","theme":"work","tags":["town","harbor","boats","city"],"peoplePossible":true},
+    {"id":"acadia-visitor-activities","uuid":"98e923e4-d794-4399-b345-da0bf102588f","title":"Acadia walking paddling and outdoor activity","theme":"people","tags":["hiking","kayaking","people","outdoor"],"peoplePossible":true},
+    {"id":"acadia-park-staff","uuid":"d2f72765-6363-4fe6-bcfa-483f41091a38","title":"Acadia national park staff at work","theme":"work","tags":["rangers","team","work","animals"],"peoplePossible":true},
+    {"id":"acadia-shuttle-service","uuid":"912bee55-667e-4753-af94-ca2ba8df608f","title":"Acadia island shuttle transit","theme":"work","tags":["bus","transport","travel","people"],"peoplePossible":true},
+    {"id":"acadia-carriage-roads","uuid":"7caaa0c8-364f-471a-b026-91ab9dfcc745","title":"Acadia historic carriage roads","theme":"heritage","tags":["carriage","road","cycling","heritage"],"peoplePossible":true},
+    {"id":"acadia-traffic-parking","uuid":"c8b96826-9808-4b0a-9774-e030063c8404","title":"Acadia roads and traffic","theme":"work","tags":["roads","cars","travel","city"],"peoplePossible":true},
+    {"id":"acadia-visitor-crowds","uuid":"cfe808a8-5d04-470a-8082-d24e154d744f","title":"Acadia visitor crowds and visitor services","theme":"people","tags":["crowds","people","town","events"],"peoplePossible":true}
+  ]
+}

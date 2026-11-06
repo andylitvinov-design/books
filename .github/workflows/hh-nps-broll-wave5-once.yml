@@ -1,0 +1,72 @@
+name: HH NPS Real Video Vault Wave 5 - one-time official public-domain quality screen
+on:
+  push:
+    branches: [codex/hh-nps-broll-wave5-20261106]
+    paths:
+      - '.github/workflows/hh-nps-broll-wave5-once.yml'
+      - 'tools/video-vault/nps-wave5/**'
+permissions:
+  contents: read
+concurrency:
+  group: hh-nps-broll-wave5-one-shot
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/codex/hh-nps-broll-wave5-20261106'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Only reviewed official source list and local offline safety contracts
+        run: |
+          set -euo pipefail
+          node --check tools/video-vault/nps-wave5/source/nps-wave5-screen.mjs
+          cd tools/video-vault/nps-wave5
+          node --test tests/nps-wave5.test.mjs
+      - name: Ensure no source release and no extra paid accounts
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- public/ data/video-catalog/scene-taxonomy.json
+  screen:
+    needs: validate
+    if: github.ref == 'refs/heads/codex/hh-nps-broll-wave5-20261106'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reuse runner preinstalled FFmpeg (no paid encoder service)
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -1
+      - name: Fetch each NPGallery source only if per-asset public domain is independently verified
+        run: |
+          cd tools/video-vault/nps-wave5
+          node source/nps-wave5-screen.mjs --shard=${{ matrix.shard }}
+      - name: Preserve private H264 samples, posters, SHA and rights manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-nps-wave5-private-screen-${{ matrix.shard }}
+          path: tools/video-vault/nps-wave5/artifacts/nps-wave5-shard${{ matrix.shard }}/**/*
+          if-no-files-found: warn
+          retention-days: 5
+          compression-level: 6
