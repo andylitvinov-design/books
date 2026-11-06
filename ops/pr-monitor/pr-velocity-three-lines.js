@@ -21,7 +21,12 @@
       const merge=valid(b.total?.median_minutes)&&b.total?.n>0?b.total.median_minutes:null;
       const first=valid(s.first_ci?.median_minutes)&&s.first_ci.n>0?s.first_ci.median_minutes:null;
       const head=valid(s.ci_to_head_upper?.median_minutes)&&s.ci_to_head_upper.n>0?s.ci_to_head_upper.median_minutes:null;
-      return {merge,first,head,merged:b.count,merge_n:b.total?.n||0,first_n:s.first_ci.n,head_n:s.ci_to_head_upper.n,start:b.start,end:b.end};
+      const lastHead=valid(s.last_head_wave_upper?.median_minutes)&&s.last_head_wave_upper?.n>0?s.last_head_wave_upper.median_minutes:null;
+      if(s.last_head_wave_upper && (!Number.isSafeInteger(s.last_head_wave_upper.n) || s.last_head_wave_upper.n<0 ||
+          s.last_head_wave_upper.n>s.merged_count))throw Error('Некорректная выборка последней волны HEAD');
+      return {merge,first,head,lastHead,merged:b.count,merge_n:b.total?.n||0,
+        first_n:s.first_ci.n,head_n:s.ci_to_head_upper.n,lastHead_n:s.last_head_wave_upper?.n??0,
+        start:b.start,end:b.end};
     });
     return {points,coverage:more.coverage,period};
   }
@@ -51,7 +56,7 @@
       for(const [key,label,color] of [
         ['merge','● PR → Merge',COLORS.merge],
         ['first','● PR → первая CI',COLORS.first],
-        ['head','◌ CI → новый HEAD (по CI)',COLORS.head]
+        ['head','◌ Весь цикл новых HEAD (по CI)',COLORS.head]
       ]){
         let node=doc.createElement('span');node.dataset.hhLineKey=key;
         node.style.color=color;node.textContent=label;legend.appendChild(node);
@@ -61,7 +66,7 @@
     if(!note){note=doc.createElement('p');note.className='hhv-three-note';host?.querySelector('.hhv-foot')?.insertAdjacentElement('afterend',note);}
     const firstN=model.points.reduce((n,p)=>n+p.first_n,0);
     const headN=model.points.reduce((n,p)=>n+p.head_n,0);
-    note.textContent='Временные линии: P50 по минутам (правая шкала), Merge/ч — левая. Первая CI: '+firstN+' PR с архивной записью. CI → HEAD: '+headN+' PR с новой SHA; пунктир показывает верхнюю границу до CI на новом HEAD, а не точный момент публикации коммита. Отсутствующие события = «—», не 0.'+
+    note.textContent='Временные линии: P50 по минутам (правая шкала), Merge/ч — левая. Первая CI: '+firstN+' PR с архивной записью. Новые HEAD: '+headN+' PR; пунктир показывает ВЕСЬ цикл от первой CI до CI на последнем отличающемся HEAD, не задержку одного ремонта. В карточках ниже — отдельно последняя наблюдаемая волна (тоже верхняя граница, не точный timestamp push). Выборка n<5 нестабильна. Отсутствующие события = «—», не 0.'+
       (model.coverage?.merged_complete===false?' Список слияний частичный.':'')+
       (model.coverage?.archive_complete===false?' Архив CI частичный.':'');
   }
@@ -105,7 +110,7 @@
     const binEls=host.querySelectorAll('.hhv-buckets .hhv-bin');
     if(binEls.length===6)model.points.forEach((p,i)=>{
       binEls[i].querySelectorAll('[data-hh-extraline]').forEach(x=>x.remove());
-      for(const [key,label] of [['first','CI'],['head','HEAD ≤']]){
+      for(const [key,label] of [['first','CI'],['head','Весь HEAD-цикл ≤'],['lastHead','Последняя волна ≤']]){
         const el=doc.createElement('small');el.dataset.hhExtraline=key;
         el.textContent=label+': '+minutes(p[key])+' (n='+p[key+'_n']+')';binEls[i].appendChild(el);
       }

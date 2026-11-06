@@ -99,26 +99,38 @@ async function fetchArchive(fetcher) {
   return {runs:collectRuns(all),complete,comments:all.length};
 }
 function evidence(pr,runs) {
-  if (!runs?.length) return {first:null,headUpper:null};
+  if (!runs?.length) return {first:null,headUpper:null,lastWaveUpper:null,headTransitions:0};
   const clean=runs.filter(r=>Math.abs(pr.created-r.created)<=60000 && r.queued>=pr.created-60000 && r.queued<=pr.merged);
-  if (!clean.length) return {first:null,headUpper:null};
+  if (!clean.length) return {first:null,headUpper:null,lastWaveUpper:null,headTransitions:0};
   const first=clean[0],firstMinutes=(first.queued-pr.created)/60000;
-  if (!validMinutes(firstMinutes)) return {first:null,headUpper:null};
+  if (!validMinutes(firstMinutes)) return {first:null,headUpper:null,lastWaveUpper:null,headTransitions:0};
   // GitHub Actions queued_at of the last newly observed source_head only bounds
   // the time of the HEAD update from above; it is NOT the publication time.
   let lastNewHead=null;
+  let previousHeadQueued=first.queued;
+  let headTransitions=0;
   let current=first.head;
   for (const run of clean.slice(1)) {
-    if (run.head!==current) {current=run.head;lastNewHead=run.queued;}
+    if (run.head!==current) {
+      // Distinct observed HEAD wave, not the actual source publication timestamp.
+      previousHeadQueued=lastNewHead??first.queued;
+      current=run.head;lastNewHead=run.queued;headTransitions++;
+    }
   }
   const headUpper=lastNewHead===null?null:(lastNewHead-first.queued)/60000;
-  return {first:firstMinutes,headUpper:validMinutes(headUpper)?headUpper:null};
+  // This is the most recent inter-HEAD CI-queue interval; the original
+  // lifetime metric remains unchanged for historical compatibility.
+  const lastWaveUpper=lastNewHead===null?null:(lastNewHead-previousHeadQueued)/60000;
+  return {first:firstMinutes,
+    headUpper:validMinutes(headUpper)?headUpper:null,
+    lastWaveUpper:validMinutes(lastWaveUpper)?lastWaveUpper:null,headTransitions};
 }
 function buildBins({prs,ci,from,to,hours,completeMerges,completeArchive,archiveComments}) {
   const step=(to-from)/6, bins=Array.from({length:6},(_,i)=>({
     start:new Date(from+step*i).toISOString(),end:new Date(from+step*(i+1)).toISOString(),
     merged_count:0,first_ci:{median_minutes:null,n:0},ci_to_head_upper:{median_minutes:null,n:0,kind:'UPPER_BOUND_FROM_NEXT_CI_NEW_HEAD'},
-    _first:[],_head:[]
+    last_head_wave_upper:{median_minutes:null,n:0,kind:'LATEST_INTER_HEAD_CI_QUEUE_UPPER_BOUND'},
+    _first:[],_head:[],_lastHead:[]
   }));
   for (const pr of prs) {
     const idx=Math.min(5,Math.max(0,Math.floor((pr.merged-from)/step)));
@@ -126,18 +138,22 @@ function buildBins({prs,ci,from,to,hours,completeMerges,completeArchive,archiveC
     const ev=evidence(pr,ci.get(pr.number));
     if (validMinutes(ev.first)) bin._first.push(ev.first);
     if (validMinutes(ev.headUpper)) bin._head.push(ev.headUpper);
+    if (validMinutes(ev.lastWaveUpper)) bin._lastHead.push(ev.lastWaveUpper);
   }
   for (const b of bins) {
     b.first_ci={median_minutes:median(b._first),n:b._first.length};
     b.ci_to_head_upper={median_minutes:median(b._head),n:b._head.length,kind:'UPPER_BOUND_FROM_NEXT_CI_NEW_HEAD'};
-    delete b._first;delete b._head;
+    b.last_head_wave_upper={median_minutes:median(b._lastHead),n:b._lastHead.length,kind:'LATEST_INTER_HEAD_CI_QUEUE_UPPER_BOUND'};
+    delete b._first;delete b._head;delete b._lastHead;
   }
   return {schema:'HH_PR_MERGE_CI_HEAD_TRENDS_V1',period_hours:hours,generated_at:new Date().toISOString(),
     from:new Date(from).toISOString(),to:new Date(to).toISOString(),buckets:bins,
     coverage:{merged_complete:completeMerges,archive_complete:completeArchive,merged_sample:prs.length,archive_comments:archiveComments,
-      first_ci_sample:bins.reduce((a,b)=>a+b.first_ci.n,0),head_upper_sample:bins.reduce((a,b)=>a+b.ci_to_head_upper.n,0)},
+      first_ci_sample:bins.reduce((a,b)=>a+b.first_ci.n,0),head_upper_sample:bins.reduce((a,b)=>a+b.ci_to_head_upper.n,0),
+      last_head_wave_sample:bins.reduce((a,b)=>a+b.last_head_wave_upper.n,0)},
     definitions:{first_ci:'created_at → earliest archived exact-PR Core queued_at (first *observed*, not necessarily earliest-ever CI)',
-      ci_to_head_upper:'earliest archived CI queued_at → earliest archived CI queued_at on the last different SHA; upper bound, not actual HEAD publication timestamp',
+      ci_to_head_upper:'earliest archived CI queued_at → earliest archived CI queued_at on the last different SHA; full repeated-HEAD cycle upper bound, not actual HEAD publication timestamp',
+      last_head_wave_upper:'previous distinct HEAD CI queued_at → latest distinct HEAD CI queued_at; last observed inter-HEAD wave upper bound, not source repair time or runner wait',
       merge_cohort:'Each row is grouped by verified GitHub merged_at on codex/public-book-library; missing events remain null, not 0.'}};
 }
 async function fetchSources(fetcher,now) {
