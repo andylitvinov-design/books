@@ -92,28 +92,46 @@ const copy = {
 
 const messengerStarter = {
  ru:{
-  welcome:"Приветствую! Я помогу вам создать отличное видео или подобрать медитацию. С чего начнём? Или напишите, что вам сейчас актуально.",
-  hello:"Я здесь! Давайте начнём: хотите создать видео, подобрать медитацию или обсудить другую задачу?",
-  video:"Создать видео",meditation:"Подобрать медитацию",actions:"Выберите, с чего начать",
+  welcome:"Приветствую! Могу помочь с поддерживающим видео, практикой, тестом или личной экспресс-диагностикой. Выберите вариант или напишите свой вопрос.",
+  hello:"Я здесь! Можем создать видео, подобрать практику, выбрать тест или обратиться за личной экспресс-диагностикой. Что вам актуально?",
+  video:"Создать видео",videoSub:"Для поддержки",
+  meditation:"Подобрать медитацию",meditationSub:"Практику для сейчас",
+  hint:"Получить ИИ-подсказку",hintSub:"Пройти тест",
+  master:"Получить личную блиц-диагностику",masterSub:"От мастера",
+  actions:"Выберите, с чего начать",testsLink:"Открыть бесплатные тесты",
   videoIntent:"Хочу создать видео",meditationIntent:"Хочу подобрать медитацию",
+  hintIntent:"Хочу получить ИИ-подсказку через тест",
   videoQuestion:"С удовольствием! Для начала расскажите, о чём будет видео и что вы хотите почувствовать или изменить после просмотра.",
-  meditationQuestion:"Конечно! Как вы себя чувствуете сейчас и к какому состоянию хотите прийти с помощью медитации?",
+  meditationQuestion:"Конечно! Как вы себя чувствуете сейчас, сколько минут у вас есть и к какому состоянию хотите прийти?",
+  hintQuestion:"Что вы хотите лучше понять сейчас: стресс, отношения, ресурсы или другую тему? Можно начать с бесплатного теста и затем обсудить результат здесь. Тест не является диагнозом.",
  },
  en:{
-  welcome:"Welcome! I can help you create a beautiful personal video or find a meditation. Which shall we start with? Or tell me what matters to you now.",
-  hello:"I'm here! Would you like to create a video, find a meditation, or talk about something else?",
-  video:"Create a video",meditation:"Find a meditation",actions:"Choose where to start",
+  welcome:"Welcome! I can help with a supportive video, a practice for now, a test or a personal express review. Choose an option or write your question.",
+  hello:"I'm here! We can create a video, choose a practice, explore a test or request a personal express review. What matters to you now?",
+  video:"Create a video",videoSub:"For support",
+  meditation:"Choose a meditation",meditationSub:"A practice for now",
+  hint:"Get an AI suggestion",hintSub:"Take a test",
+  master:"Get a personal express review",masterSub:"With a practitioner",
+  actions:"Choose where to start",testsLink:"Explore free tests",
   videoIntent:"I want to create a video",meditationIntent:"I want to find a meditation",
+  hintIntent:"I want a suggestion based on a test",
   videoQuestion:"Of course! What would you like the video to be about, and how would you like to feel after watching it?",
-  meditationQuestion:"Of course! How do you feel right now, and how would you like to feel after the meditation?",
+  meditationQuestion:"Of course! How do you feel right now, how many minutes do you have and how would you like to feel after the meditation?",
+  hintQuestion:"What would you like to understand better: stress, relationships, personal resources or something else? You can start with a free test, then discuss the result here. A test is not a diagnosis.",
  },
  es:{
-  welcome:"¡Bienvenido! Puedo ayudarte a crear un bonito vídeo personal o encontrar una meditación. ¿Por dónde empezamos? O escribe lo que necesitas hoy.",
-  hello:"¡Aquí estoy! ¿Quieres crear un vídeo, elegir una meditación o hablar de otra cosa?",
-  video:"Crear un vídeo",meditation:"Elegir una meditación",actions:"Elige cómo empezar",
+  welcome:"¡Hola! Puedo ayudarte con un vídeo de apoyo, una práctica para ahora, un test o una revisión exprés personal. Elige una opción o escribe tu pregunta.",
+  hello:"¡Aquí estoy! Podemos crear un vídeo, elegir una práctica, hacer un test o solicitar una revisión personal. ¿Qué necesitas ahora?",
+  video:"Crear un vídeo",videoSub:"Para apoyo",
+  meditation:"Elegir meditación",meditationSub:"Una práctica para ahora",
+  hint:"Obtener una sugerencia de IA",hintSub:"Hacer un test",
+  master:"Solicitar revisión exprés personal",masterSub:"Con un profesional",
+  actions:"Elige cómo empezar",testsLink:"Explorar tests gratuitos",
   videoIntent:"Quiero crear un vídeo",meditationIntent:"Quiero elegir una meditación",
+  hintIntent:"Quiero una sugerencia mediante un test",
   videoQuestion:"¡Claro! ¿De qué te gustaría que tratara el vídeo y cómo quieres sentirte después de verlo?",
-  meditationQuestion:"¡Claro! ¿Cómo te sientes ahora y cómo te gustaría sentirte después de la meditación?",
+  meditationQuestion:"¡Claro! ¿Cómo te sientes ahora, cuántos minutos tienes y cómo te gustaría sentirte después?",
+  hintQuestion:"¿Qué te gustaría comprender mejor: el estrés, las relaciones, tus recursos u otro tema? Puedes empezar con un test gratuito y luego comentar el resultado aquí. Un test no es un diagnóstico.",
  },
 } as const;
 function isCasualGreeting(raw:string):boolean {
@@ -144,6 +162,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
   const [completedIds,setCompletedIds]=useState<string[]>([]);
   const [draft,setDraft]=useState("");
   const [entryOpen,setEntryOpen]=useState(true);
+  const [guideLink,setGuideLink]=useState<"tests"|null>(null);
   const [messages,setMessages]=useState<Message[]>([]);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
   const [status,setStatus]=useState("");
@@ -205,15 +224,20 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     finally{setOutlineBusy(false);}
   }
 
-  function startGuided(kind:"video"|"meditation") {
+  function startGuided(kind:"video"|"meditation"|"hint") {
     if(busy)return;
     followTail.current=true;setNewBelow(false);
-    setFormat(kind==="video"?"video":"audio");
+    setFormat(kind==="video"?"video":kind==="meditation"?"audio":"test");
+    setGuideLink(kind==="hint"?"tests":null);
     setEntryOpen(false);setStatus("");setSource("");setChoices([]);
     setDraft("");
+    const intent=kind==="video"?starter.videoIntent:
+      kind==="meditation"?starter.meditationIntent:starter.hintIntent;
+    const question=kind==="video"?starter.videoQuestion:
+      kind==="meditation"?starter.meditationQuestion:starter.hintQuestion;
     setMessages(prev=>[...prev,
-      {role:"user" as const,text:kind==="video"?starter.videoIntent:starter.meditationIntent},
-      {role:"assistant" as const,text:kind==="video"?starter.videoQuestion:starter.meditationQuestion},
+      {role:"user" as const,text:intent},
+      {role:"assistant" as const,text:question},
     ].slice(-30));
   }
   async function submit(event:FormEvent<HTMLFormElement>) {
@@ -344,13 +368,25 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       {compact&&<p className={styles.assistant} data-hh-ai-welcome>{starter.welcome}</p>}
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
+      {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
+        href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
       {compact&&entryOpen&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
         <button type="button" data-hh-ai-start="video" disabled={busy} onClick={()=>startGuided("video")}>
-          <span aria-hidden="true">🎬</span>{starter.video}
+          <span className={styles.startIcon} aria-hidden="true">🎬</span>
+          <strong>{starter.video}</strong><small>{starter.videoSub}</small>
         </button>
         <button type="button" data-hh-ai-start="meditation" disabled={busy} onClick={()=>startGuided("meditation")}>
-          <span aria-hidden="true">🪷</span>{starter.meditation}
+          <span className={styles.startIcon} aria-hidden="true">🪷</span>
+          <strong>{starter.meditation}</strong><small>{starter.meditationSub}</small>
         </button>
+        <button type="button" data-hh-ai-start="hint" disabled={busy} onClick={()=>startGuided("hint")}>
+          <span className={styles.startIcon} aria-hidden="true">✨</span>
+          <strong>{starter.hint}</strong><small>{starter.hintSub}</small>
+        </button>
+        <a data-hh-ai-start="master" href={"/"+locale+"/services/free-situation-review"}>
+          <span className={styles.startIcon} aria-hidden="true">🤝</span>
+          <strong>{starter.master}</strong><small>{starter.masterSub}</small>
+        </a>
       </div>}
       {compact&&settings}
       {compact&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
@@ -380,7 +416,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");}}>{t.reset}</button>
+        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
