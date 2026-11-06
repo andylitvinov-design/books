@@ -10,7 +10,7 @@ test('Messenger retains real AI, Orders and Clients and the protected agent API'
  for(const section of ['ai','orders','clients'])
   assert.match(hub,new RegExp('id="hh-'+section+'-panel"'))
  assert.match(hub,/onClick=\{\(\)=>chooseSection\('ai'\)\}/)
- assert.match(workspace,/HolisticAgentChat locale=\{locale\} compact\/>/)
+ assert.match(workspace,/HolisticAgentChat locale=\{locale\} compact authenticated=\{authenticated\}\/>/)
  assert.match(agent,/fetch\("\/api\/holistic-agent\/turn"/)
  assert.match(agent,/ownedInferenceConsent:mode==="owned"&&agree/)
  assert.doesNotMatch(workspace,/fetch\(/)
@@ -40,11 +40,10 @@ test('response, safety and keyboard controls remain inside the transcript',()=>{
  const agent=read('components/holistic-agent-chat.tsx')
  const css=read('app/unified-mobile-dock.css')
  assert.match(dock,/case "ai": return prefix\+"\/app\/messages\?section=ai"/)
- for(const word of ['data-hh-video-chat-options','data-hh-video-open-studio','messages.map','role="alert"','className={styles.choices}'])
+ for(const word of ['messages.map','role="alert"','className={styles.choices}','data-hh-guest-ready-videos','data-hh-video-chat-options','data-hh-video-open-studio'])
   assert.ok(agent.includes(word),word)
- assert.ok(!agent.includes('{compact&&settings}'),'Settings not displayed in Messenger');
- assert.ok(!agent.includes('{compact&&<p className={styles.compactDisclosure}>'),'visible disclosure removed');
- 
+ assert.ok(!agent.includes('{compact&&settings}'))
+ assert.ok(!agent.includes('className={styles.compactDisclosure}'))
  assert.ok(css.includes('data-chat-editing="true"'))
  assert.match(agent,/followTail.current=true;setNewBelow\(false\)/)
 })

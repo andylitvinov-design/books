@@ -32,25 +32,25 @@ test('reviewed question responses answer user identity/process/pricing in RU EN 
  assert.equal(explainUserQuestion('Are you human?','en',{status:'safety_handoff'}),null)
 })
 
-test('the mobile transcript contains sent messages, inline video choices, errors and approved suggestions',()=>{
+test('the mobile transcript contains sent messages, inline errors, settings and approved suggestions',()=>{
  const agent=source('components/holistic-agent-chat.tsx')
  const start=agent.indexOf('ref={threadRef}')
  const end=agent.indexOf('    </div>\n    {newBelow',start)
  assert.ok(start>0&&end>start,'chat scroll log bounds found')
  const log=agent.slice(start,end)
- for(const text of ['data-hh-video-chat-options','data-hh-video-open-studio','messages.map','className={styles.choices}','role="alert"'])
+ for(const text of ['messages.map','className={styles.choices}','role="alert"','data-hh-public-video-choices','data-hh-video-chat-options','data-hh-video-open-studio'])
   assert.ok(log.includes(text),text)
- assert.ok(!agent.includes('{compact&&settings}'),'compact messenger does not show Settings');
- assert.ok(!agent.includes('{compact&&<p className={styles.compactDisclosure}>'),'compact identity disclosure removed');
- assert.ok(log.includes('data-hh-video-chat-choice'),'choices are within the scrollable thread');
- 
  assert.ok(agent.includes('followTail.current=true;setNewBelow(false)'))
  assert.ok(agent.includes('response.status===401'))
  assert.ok(agent.includes('response.status===503'))
+ assert.ok(agent.includes('{!compact&&settings}'))
+ assert.ok(!agent.includes('{compact&&settings}'))
+ assert.ok(!agent.includes('className={styles.compactDisclosure}'))
+ assert.ok(log.includes('data-hh-video-chat-choice'))
  assert.ok(agent.includes('{!compact&&<details className={styles.programPanel}'))
  const workspace=source('components/app/messenger-ai-workspace.jsx')
  assert.doesNotMatch(workspace,/css\.(welcome|prepared|footer)/)
- assert.ok(workspace.includes('<HolisticAgentChat locale={locale} compact/>'))
+ assert.ok(workspace.includes('<HolisticAgentChat locale={locale} compact authenticated={authenticated}/>'))
  assert.ok(agent.includes('data-hh-ai-welcome'))
  assert.ok(agent.includes('data-hh-ai-start="video"'))
  assert.ok(agent.includes('data-hh-ai-start="meditation"'))

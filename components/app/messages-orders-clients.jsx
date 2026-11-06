@@ -337,7 +337,7 @@ export default function MessagesOrdersClients({locale='en',children}){
       </span>
     </header>
     <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
-      <MessengerAiWorkspace key={aiSession} locale={locale}/>
+      <MessengerAiWorkspace key={aiSession} locale={locale} authenticated={Boolean(ordersData?.accountId)}/>
     </div>
     <div id="hh-orders-panel" role="tabpanel" className={styles.panel} hidden={section!=='orders'}>
       {listHelper}
