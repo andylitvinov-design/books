@@ -51,3 +51,11 @@ test('no competing CRM AI queue; keep all existing client bot and media protecti
  assert.match(client,/receiveSubscriberAiTelegramUpdate/)
  assert.doesNotMatch(client,/setWebhook\(/)
 })
+test('pending video topic cannot steal confirm, cancel or finished-media check-in',()=>{
+ for(const raw of ['/hhvideo_confirm','/hhvideo_cancel','/watched','/stop_checkin','/skip_checkin'])
+  assert.deepEqual(telegramAiIntent(raw,true),{kind:'message',text:raw})
+ assert.deepEqual(telegramAiIntent('лес над озером',true),{kind:'video',goal:'лес над озером'})
+ const source=readFileSync(new URL('../lib/app/telegram-ai-queue.js',import.meta.url),'utf8')
+ assert.match(source,/event\.feedbackOnly===true\?\{kind:'message',text:raw\}/)
+ assert.match(source,/awaiting_video_goal=false/)
+})
