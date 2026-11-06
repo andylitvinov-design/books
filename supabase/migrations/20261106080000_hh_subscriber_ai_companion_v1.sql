@@ -26,7 +26,6 @@ create table if not exists app_private.subscriber_ai_outbox (
    check(status in ('pending','leased','done','dead','unknown','suppressed')),
  attempts smallint not null default 0 check(attempts between 0 and 5),
  available_at timestamptz not null default now(),
- updated_at timestamptz not null default now(),
  lease_until timestamptz,
  provider_message_id text check(provider_message_id is null or length(provider_message_id)<=64),
  created_at timestamptz not null default now(),
