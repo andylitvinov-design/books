@@ -97,6 +97,7 @@ test('production scheduler includes guarded housekeeping and consented phone ale
     { path: '/api/internal/practice-telegram-digest', schedule: '0 13,14,19,20 * * *' },
     { path: '/api/internal/council-archive-telegram', schedule: '0 16,17 * * *' },
     { path: '/api/internal/market-intel-telegram', schedule: '0 18,19 * * *' },
+    {path:'/api/internal/pr-watchdog-backstop',schedule:'*/10 * * * *'},
   ])
 })
 
@@ -126,4 +127,261 @@ test('R1 database and browser workflows verify canonical-base pull requests', ()
     assert.doesNotMatch(trigger.replace(/^    types:.*$/m,''),
       /^    types:\s*\[opened, synchronize, reopened, ready_for_review, converted_to_draft\]\s*$/m)
   }
+})
+
+
+test('external backstop verifies an exact dispatch ID, real jobs and idle receipt',async()=>{
+  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const now=Date.parse('2026-11-03T20:00:00Z'),at='2026-11-03T19:58:00Z'
+  const log='HH_CONTROL_TOWER: '+JSON.stringify({
+    schema:'HH_CONTROL_DISPATCH_V1',dryRun:false,candidates:0,
+    dispatchAccepted:0,workerRuns:[],reason:'NO_ACTIONABLE_PR'
+  })+'\nHH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
+    candidates:0,dispatched:0,blocked:{}})
+  const calls=[]
+  const getResponse=x=>({status:200,headers:{get:()=> '4800'},json:async()=>x})
+  const fetcher=async(url,opt)=>{
+    calls.push({url,method:opt.method||'GET'})
+    if(url.includes('/runs?event=')&&url.includes('&per_page=5'))
+      return getResponse({total_count:0,workflow_runs:[]})
+    if(url.endsWith('/dispatches'))return {status:200,json:async()=>({workflow_run_id:200})}
+    if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=') &&
+       url.includes('&per_page=10'))
+      return getResponse({total_count:0,workflow_runs:[]})
+    if(url.endsWith('/runs/200'))return getResponse({
+      id:200,workflow_id:403593743,event:'workflow_dispatch',
+      status:'completed',head_branch:'codex/bootstrap-books',created_at:at})
+    if(url.endsWith('/runs/200/jobs?per_page=50'))return getResponse({
+      total_count:2,jobs:[
+        {id:1,run_id:200,name:'reconcile',status:'completed',started_at:at,runner_name:'GitHub Actions 1'},
+        {id:2,run_id:200,name:'direct-handoff',status:'completed',
+          conclusion:'success',started_at:at,runner_name:'GitHub Actions 2'}]})
+    if(url.endsWith('/jobs/2/logs'))return {status:200,text:async()=>log}
+    throw Error('Unexpected URL '+url)
+  }
+  const value=await runWatchdogBackstop({token:'synthetic-token-for-test-only-123456',
+    now,fetcher,timeout:()=>undefined,wait:async()=>{}})
+  assert.equal(value.status,200)
+  assert.equal(value.body.status,'idle_verified')
+  assert.equal(value.body.runnerStarted,true)
+  assert.equal(value.body.executionVerified,true)
+  assert.equal(value.body.ciStartedVerified,false)
+  assert.equal(value.body.taskDeliveryVerified,false)
+  assert.equal(value.body.dispatchRunId,200)
+  assert.deepEqual(calls.map(x=>x.method),['GET','GET','POST','GET','GET','GET'])
+})
+test('a green Watchdog without actual handoff is not successful execution',async()=>{
+  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const at='2026-11-03T19:58:00Z',now=Date.parse('2026-11-03T20:00:00Z')
+  const fixture=x=>({status:200,headers:{get:()=> '4800'},json:async()=>x})
+  const blocked={schema:'HH_CONTROL_DISPATCH_V1',dryRun:false,candidates:2,
+    dispatchAccepted:0,workerRuns:[],reason:'BLOCKED_TASKS',
+    blocked:{SOURCE_PROOF_MISSING:1,STACKED_PARENT:1}}
+  const fetcher=async(url,opt)=>{
+    if(opt.method==='POST')assert.fail('recent run must not be dispatched twice')
+    if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=workflow_dispatch&per_page=10'))
+      return fixture({total_count:0,workflow_runs:[]})
+    if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=schedule&per_page=10'))return fixture({total_count:1,
+      workflow_runs:[{id:300,event:'schedule',head_branch:'codex/bootstrap-books',
+        status:'completed',conclusion:'success',created_at:at}]})
+    if(url.endsWith('/runs/300'))return fixture({id:300,workflow_id:403593743,
+      event:'schedule',head_branch:'codex/bootstrap-books',
+      status:'completed',conclusion:'success',created_at:at})
+    if(url.endsWith('/runs/300/jobs?per_page=50'))return fixture({total_count:2,
+      jobs:[{id:3,run_id:300,name:'reconcile',status:'completed',started_at:at,runner_name:'GitHub Actions 1'},
+        {id:4,run_id:300,name:'direct-handoff',status:'completed',
+          conclusion:'success',started_at:at,runner_name:'GitHub Actions 2'}]})
+    if(url.endsWith('/jobs/4/logs'))return {status:200,text:async()=>(
+      'HH_CONTROL_TOWER: '+JSON.stringify(blocked)+'\n'+
+      'HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
+        candidates:2,dispatched:0,blocked:blocked.blocked}))}
+    throw Error('Unexpected URL '+url)
+  }
+  const value=await runWatchdogBackstop({token:'synthetic-token-for-test-only-123456',
+    now,fetcher,timeout:()=>undefined})
+  assert.equal(value.status,503)
+  assert.equal(value.body.status,'task_delivery_blocked')
+  assert.equal(value.body.runnerStarted,true)
+  assert.equal(value.body.taskDeliveryVerified,false)
+  assert.equal(value.body.blocked.SOURCE_PROOF_MISSING,1)
+  assert.equal(value.body.executionVerified,false)
+})
+test('a worker handoff confirms CI only after matching PR SHA and started Core job',async()=>{
+  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const now=Date.parse('2026-11-03T20:00:00Z'),at='2026-11-03T19:55:00Z'
+  const sha='a'.repeat(40),f=x=>({status:200,headers:{get:()=> '4800'},json:async()=>x})
+  const task={pr_number:551,head_sha:sha,task_key:'ci:551:test',
+    lane:'ci',outcome:'DISPATCH_ACCEPTED'}
+  const summary={schema:'HH_CONTROL_DISPATCH_V1',dryRun:false,candidates:1,
+    dispatchAccepted:1,workerRuns:[task],checkedAt:at}
+  const fetcher=async(url,opt)=>{
+    if(opt.method==='POST')assert.fail('recent real Watchdog should not dispatch')
+    if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=schedule&per_page=10'))
+      return f({total_count:0,workflow_runs:[]})
+    if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=workflow_dispatch&per_page=10'))return f({total_count:1,
+      workflow_runs:[{id:400,event:'workflow_dispatch',status:'completed',
+        head_branch:'codex/bootstrap-books',created_at:at}]})
+    if(url.endsWith('/runs/400'))return f({id:400,workflow_id:403593743,
+      event:'workflow_dispatch',status:'completed',
+      head_branch:'codex/bootstrap-books',created_at:at})
+    if(url.endsWith('/runs/400/jobs?per_page=50'))return f({total_count:2,jobs:[
+      {id:41,run_id:400,name:'reconcile',status:'completed',started_at:at,runner_name:'GitHub Actions 1'},
+      {id:42,run_id:400,name:'direct-handoff',status:'completed',
+        conclusion:'success',started_at:at,runner_name:'GitHub Actions 2'}]})
+    if(url.endsWith('/jobs/42/logs'))return {status:200,text:async()=>(
+      'HH_CONTROL_TOWER: '+JSON.stringify(summary)+'\n'+
+      'HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
+        candidates:1,dispatched:1,blocked:{}}))}
+    if(url.includes('/hh-pr-ci-worker.yml/runs?'))return f({total_count:1,
+      workflow_runs:[{id:501,event:'workflow_dispatch',status:'completed',
+        head_branch:'codex/bootstrap-books',
+        created_at:'2026-11-03T19:56:00Z'}]})
+    if(url.endsWith('/runs/501/jobs?per_page=50'))return f({total_count:1,jobs:[
+      {id:502,run_id:501,name:'bootstrap',status:'completed',runner_name:'GitHub Actions 3',
+        started_at:'2026-11-03T19:56:10Z'}]})
+    if(url.endsWith('/jobs/502/logs'))return {status:200,text:async()=>(
+      'HH_CI_METADATA_WAKE '+JSON.stringify({
+        schema:'HH_PR_CI_METADATA_WAKE_V1',pr_number:551,
+        status:'CI_WAKE_REQUESTED',metadataEditAccepted:true}))}
+    if(url.endsWith('/pulls/551'))return f({
+      number:551,state:'open',draft:false,
+      base:{ref:'codex/public-book-library'},
+      head:{sha,ref:'fix/test-ci-wake',
+        repo:{full_name:'andylitvinov-design/books'}}
+    })
+    if(url.includes('/workflows/400848212/runs?')){
+      assert.match(url,/branch=fix%2Ftest-ci-wake/)
+      assert.match(url,/created=%3E%3D/)
+      return f({total_count:1,
+      workflow_runs:[{id:601,event:'pull_request',name:'HH PR core release gate',
+        created_at:'2026-11-03T19:57:00Z',
+        status:'completed',head_branch:'fix/test-ci-wake',head_sha:sha,
+        path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/bootstrap-books',
+        repository:{full_name:'andylitvinov-design/books'},
+        head_repository:{full_name:'andylitvinov-design/books'},
+        pull_requests:[]}]})
+    }
+    if(url.endsWith('/runs/601/jobs?per_page=50'))return f({total_count:1,
+      jobs:[{id:602,run_id:601,name:'core-lint-types-build',status:'in_progress',runner_name:'GitHub Actions 4',
+        started_at:'2026-11-03T19:58:00Z'}]})
+    throw Error('Unexpected URL '+url)
+  }
+  const value=await runWatchdogBackstop({token:'synthetic-token-for-test-only-123456',
+    now,fetcher,timeout:()=>undefined})
+  assert.equal(value.status,200)
+  assert.equal(value.body.status,'ci_runner_verified')
+  assert.equal(value.body.taskDeliveryVerified,true)
+  assert.equal(value.body.ciStartedVerified,true)
+  assert.equal(value.body.workerEvidence[0].pr_number,551)
+  assert.equal(value.body.executionVerified,true)
+})
+test('dispatch accepted without run ID, pending runner and uncertain history fail closed',async()=>{
+  const {runWatchdogBackstop,decideWatchdogWake}=
+    await import('../lib/automation/github-watchdog-backstop.mjs')
+  const now=Date.parse('2026-11-03T20:00:00Z')
+  const token='synthetic-token-for-test-only-123456'
+  assert.equal(decideWatchdogWake({total_count:1,workflow_runs:[]},now).reason,
+    'INCOMPLETE_HISTORY')
+  const history=(total_count,workflow_runs)=>({
+    status:200,headers:{get:()=> '4800'},json:async()=>({total_count,workflow_runs})})
+  const fetcher=async(url,opt)=>{
+    if(opt.method==='POST')return {status:204}
+    return history(0,[])
+  }
+  const missing=await runWatchdogBackstop({token,now,fetcher,
+    timeout:()=>undefined})
+  assert.equal(missing.status,503)
+  assert.equal(missing.body.reason,'DISPATCH_ACCEPTED_BUT_RUN_ID_MISSING')
+  const queued=await runWatchdogBackstop({token,now,timeout:()=>undefined,
+    wait:async()=>{},fetcher:async(url,opt)=>{
+      if(opt.method==='POST')return {status:200,
+        json:async()=>({workflow_run_id:600})}
+      if(url.includes('/hh-pr-ten-minute-watchdog.yml/runs?event=') &&
+         url.includes('&per_page=10'))return history(0,[])
+      if(url.endsWith('/runs/600'))return {
+        status:200,headers:{get:()=> '4800'},json:async()=>({
+          id:600,workflow_id:403593743,event:'workflow_dispatch',
+          head_branch:'codex/bootstrap-books',status:'queued',
+          created_at:'2026-11-03T19:59:00Z'})}
+      if(url.endsWith('/runs/600/jobs?per_page=50'))return {status:200,
+        headers:{get:()=> '4800'},json:async()=>({total_count:0,jobs:[]})}
+      throw Error('Unexpected '+url)
+    }})
+  assert.equal(queued.status,202)
+  assert.equal(queued.body.status,'runner_pending')
+  assert.equal(queued.body.executionVerified,false)
+  const route=readFileSync(root+'/app/api/internal/pr-watchdog-backstop/route.js','utf8')
+  assert.match(route,/cronAuthorized/)
+  assert.match(route,/HH_PR_CRON_DISPATCH_TOKEN/)
+  const code=readFileSync(root+'/lib/automation/github-watchdog-backstop.mjs','utf8')
+  assert.doesNotMatch(code,/update-branch|merge_pull_request|sourceChanged:true/)
+})
+
+
+test('green callback-only Watchdog does not suppress real independent CI wake',async()=>{
+  const {runWatchdogBackstop}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const at='2026-11-03T19:59:00Z',now=Date.parse('2026-11-03T20:00:00Z')
+  const get=x=>({status:200,headers:{get:()=> '4800'},json:async()=>x})
+  let dispatches=0
+  const fetcher=async(url,opt)=>{
+    if(opt.method==='POST'){
+      dispatches++;return {status:200,json:async()=>({workflow_run_id:601})}
+    }
+    if(url.endsWith('/runs?per_page=10'))return get({total_count:1,workflow_runs:[{
+      id:600,workflow_id:403593743,event:'workflow_run',status:'completed',
+      conclusion:'success',head_branch:'codex/bootstrap-books',created_at:at
+    }]})
+    if(url.endsWith('/runs/600'))return get({id:600,workflow_id:403593743,
+      event:'workflow_run',status:'completed',conclusion:'success',
+      head_branch:'codex/bootstrap-books',created_at:at})
+    if(url.endsWith('/runs/600/jobs?per_page=50'))return get({total_count:2,jobs:[
+      {id:7,run_id:600,name:'reconcile',status:'completed',conclusion:'skipped'},
+      {id:8,run_id:600,name:'direct-handoff',status:'completed',conclusion:'skipped'}
+    ]})
+    if(url.includes('/runs?event='))return get({total_count:0,workflow_runs:[]})
+    if(url.endsWith('/runs/601'))return get({id:601,workflow_id:403593743,
+      event:'workflow_dispatch',status:'queued',head_branch:'codex/bootstrap-books',
+      created_at:at})
+    if(url.endsWith('/runs/601/jobs?per_page=50'))return get({total_count:0,jobs:[]})
+    throw Error('unexpected '+url)
+  }
+  const outcome=await runWatchdogBackstop({token:'synthetic-token-for-test-only-123456',
+    now,fetcher,timeout:()=>undefined,wait:async()=>{}})
+  assert.equal(dispatches,1)
+  assert.equal(outcome.body.dispatchRunId,601)
+  assert.equal(outcome.body.executionVerified,false)
+  assert.equal(outcome.body.status,'runner_pending')
+})
+
+
+test('Core runner provenance uses exact SHA when GitHub omits pull_requests',async()=>{
+  const {coreRunMatchesTask}=await import('../lib/automation/github-watchdog-backstop.mjs')
+  const now=Date.parse('2026-11-03T20:00:00Z')
+  const since=Date.parse('2026-11-03T19:55:00Z')
+  const sha='a'.repeat(40)
+  const task={pr_number:551,head_sha:sha}
+  const pr={number:551,state:'open',draft:false,
+    base:{ref:'codex/public-book-library'},
+    head:{ref:'fix/test-ci-wake',sha,
+      repo:{full_name:'andylitvinov-design/books'}}}
+  const run={id:601,name:'HH PR core release gate',
+    event:'pull_request',status:'completed',
+    path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/bootstrap-books',
+    repository:{full_name:'andylitvinov-design/books'},
+    head_repository:{full_name:'andylitvinov-design/books'},
+    head_branch:'fix/test-ci-wake',
+    head_sha:sha,created_at:'2026-11-03T19:57:00Z',
+    pull_requests:[]}
+  assert.equal(coreRunMatchesTask(run,task,pr,since,now),true)
+  assert.equal(coreRunMatchesTask({...run,head_sha:'b'.repeat(40)},task,pr,since,now),false)
+  assert.equal(coreRunMatchesTask({...run,head_branch:'other-branch'},task,pr,since,now),false)
+  assert.equal(coreRunMatchesTask({...run,repository:{full_name:'untrusted/repo'}},task,pr,since,now),false)
+  assert.equal(coreRunMatchesTask({...run,created_at:'2026-11-03T19:40:00Z'},task,pr,since,now),false)
+  assert.equal(coreRunMatchesTask(run,task,{...pr,draft:true},since,now),false)
+  assert.equal(coreRunMatchesTask(run,task,{...pr,head:{...pr.head,sha:'b'.repeat(40)}},since,now),false)
+  const synthetic={...run,head_sha:'b'.repeat(40),pull_requests:[
+    {number:551,head:{sha},base:{ref:'codex/public-book-library'}}]}
+  assert.equal(coreRunMatchesTask(synthetic,task,pr,since,now),true)
+  assert.equal(coreRunMatchesTask({...synthetic,pull_requests:[
+    {number:551,head:{sha},base:{ref:'wrong-base'}}]},task,pr,since,now),false)
 })
