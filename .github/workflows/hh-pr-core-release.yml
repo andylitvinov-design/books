@@ -302,16 +302,15 @@ jobs:
             checked_base="$(git rev-parse HEAD)"
           fi
           args=(--base "$checked_base")
-          # Next full production build performs its own full-project TypeScript
-          # check after compilation. Delegate duplicate early tsc only on the
-          # BASE-trusted ordinary CORE route with Next build still required.
-          # The source preflight independently refuses missing/altered Next
-          # config, dependencies, compiler settings and CI policy changes.
-          # FULL (security/payment/consent), DOCK, manual and merge_group retain
-          # the separate standalone tsc; all routes retain syntax diagnostics.
+          # Next's mandatory production build already checks all TypeScript.
+          # CORE and an EXACT media-editor subset of FULL can delegate the
+          # duplicate early tsc. The fail-closed source classifier rejects
+          # auth, payment, consent, provider, config, CI and any mixed paths.
+          # DOCK, manual, merge_group and all other FULL keep standalone tsc;
+          # all existing syntax, specialist and browser checks still execute.
           if [[ "$GITHUB_EVENT_NAME" != pull_request || "${{ steps.fast.outputs.route }}" == DOCK ]]; then
             args+=(--full-types)
-          elif [[ "${{ steps.fast.outputs.route }}" == CORE && "${{ steps.diff.outputs.ci_only }}" != true ]]; then
+          elif [[ ( "${{ steps.fast.outputs.route }}" == CORE || "${{ steps.fast.outputs.route }}" == FULL ) && "${{ steps.diff.outputs.ci_only }}" != true ]]; then
             args+=(--defer-types-to-next)
           fi
           node scripts/ci-source-preflight.mjs "${args[@]}"
