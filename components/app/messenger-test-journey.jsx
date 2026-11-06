@@ -3,10 +3,10 @@
 import { useMemo, useRef, useState } from 'react'
 import { MONITORING_CATALOG } from '@/data/assessments/catalog'
 import { ASSESSMENT_DEFINITIONS, getDefinitionById } from '@/lib/assessments/definitions'
-import { chatAnswerLabel, chatAnswerOptions, chatChoosePayload, chatProgress } from '@/lib/assessments/test-chat-flow.mjs'
+import { chatAnswerLabel, chatPermittedOptions, chatChoosePayload, chatProgress } from '@/lib/assessments/test-chat-flow.mjs'
 import { hasTraumaAdministration } from '@/lib/assessments/trauma-administration'
 import { safetySignal, SAFETY_COPY } from '@/lib/assessments/safety'
-import { Asrs6SourceNotice } from '@/components/app/asrs6-source-notice'
+import { Asrs6SourceNotice, Asrs6ChoiceMarker, asrs6ChoiceClass } from '@/components/app/asrs6-source-notice'
 import css from './messenger-test-journey.module.css'
 
 const COPY = {
@@ -94,6 +94,7 @@ function timezone() {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' }
 }
 
+/** @param {{ locale?: 'en'|'ru'|'es', onAdvance?: (() => void)|null, onClose?: (() => void)|null }} props */
 export default function MessengerTestJourney({ locale = 'en', onAdvance = null, onClose = null }) {
   const t = COPY[locale] || COPY.en
   const [selectedKey, setSelectedKey] = useState('')
@@ -117,7 +118,7 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
   }, [run, active, locale])
   const state = chatProgress(definition, run)
   const question = definition?.questions[state.index]
-  const choices = chatAnswerOptions(definition, question)
+  const choices = chatPermittedOptions(definition, question, run?.answers || {})
   const signal = run && safetySignal(definition, run.answers || {})
   const signalKey = signal ? signal.questionId + ':' + signal.value : null
   const transcript = definition && run ? definition.questions.slice(Math.max(0, state.index - 3), state.index)
@@ -130,7 +131,7 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
   function notify() { onAdvance?.() }
   function changeTest(key) {
     if (busy) return
-    setSelectedKey(key);setRun(null);setResult(null);setError('');setAcknowledgedSafety(null)
+    setSelectedKey(key);setRun(null);setResult(null);setError('');setAdult(false);setAcknowledgedSafety(null)
     operation.current = null;completion.current = null;startId.current = null
     notify()
   }
@@ -260,6 +261,8 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
         <fieldset className={css.question} disabled={busy || !!operation.current}>
           <legend className={css.assistant} lang={definition.instrumentLocale}>{question.text}</legend>
           {question.section && <small>{question.section}</small>}
+          {definition.key === 'cdc-hrqol-4' && question.id === 'hrqol4.04' && run.answers?.['hrqol4.02'] === 0 && run.answers?.['hrqol4.03'] === 0 &&
+            <p className={css.note}>{locale === 'ru' ? 'По правилам CDC, если физически и психологически нездоровых дней не было, выберите 0.' : locale === 'es' ? 'Según el CDC, si no hubo días de malestar físico ni mental, elija 0.' : 'CDC guidance: when physical and mental unhealthy days were both zero, select 0.'}</p>}
           <div className={css.choices} role="group" aria-label={t.answers}>
             {choices.length > 11 ? <label>
               <span className={css.srOnly}>{t.days}</span>
@@ -268,8 +271,10 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
                 {choices.map(choice=><option key={choice.value} value={choice.value}>{choice.label}</option>)}
               </select>
             </label> : choices.map(choice=><button type="button" key={choice.value} disabled={busy}
+              className={asrs6ChoiceClass(definition, question, choice.value)}
               lang={definition.instrumentLocale} onClick={()=>saveAnswer(choice.value)}>
               {choice.label === String(choice.value) ? choice.label : <><b>{choice.value}</b> {choice.label}</>}
+              <Asrs6ChoiceMarker definition={definition} question={question} value={choice.value} />
             </button>)}
           </div>
           {question.anchors?.length > 0 && <small className={css.note} lang={definition.instrumentLocale}>

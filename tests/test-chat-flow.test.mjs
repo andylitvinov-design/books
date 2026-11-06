@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { chatAnswerOptions, chatAnswerLabel, chatChoosePayload, chatProgress } from '../lib/assessments/test-chat-flow.mjs'
+import { chatAnswerOptions, chatAnswerLabel, chatChoosePayload, chatPermittedOptions, chatProgress } from '../lib/assessments/test-chat-flow.mjs'
 
 const def = {
   answerScale: { min: 0, max: 2 },
@@ -36,4 +36,13 @@ test('revising an answered question requires persisted cursor, not answer deleti
   assert.deepEqual(chatChoosePayload(def,prior,9,'retry-123'),{
     answers:{b:9},context:{},progress:2,expectedRevision:4,operationId:'retry-123',
   })
+})
+
+test('CDC Healthy Days consistency is enforced in chat options and saved payloads', () => {
+  const cdc = { key:'cdc-hrqol-4', answerScale:{min:0,max:30},
+    questions:[{id:'hrqol4.02',min:0,max:30},{id:'hrqol4.03',min:0,max:30},{id:'hrqol4.04',min:0,max:30}] }
+  const run={progress:2,revision:2,context:{},answers:{'hrqol4.02':0,'hrqol4.03':0}}
+  assert.deepEqual(chatPermittedOptions(cdc,cdc.questions[2],run.answers),[{value:0,label:'0'}])
+  assert.throws(()=>chatChoosePayload(cdc,run,3,'cdc-retry-op'),/CHAT_INVALID_OPTION/)
+  assert.equal(chatChoosePayload(cdc,run,0,'cdc-retry-op').answers['hrqol4.04'],0)
 })
