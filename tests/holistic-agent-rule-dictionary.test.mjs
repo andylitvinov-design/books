@@ -114,7 +114,7 @@ const cases=[
  [
   "Сколько сцен нужно в видео?",
   "ru",
-  "video_scenes"
+  "video_scene_count"
  ],
  [
   "Можно видео без музыки?",
@@ -271,7 +271,7 @@ const cases=[
  [
   "How many scenes for a video?",
   "en",
-  "video_scenes",
+  "video_scene_count",
   "en"
  ],
  [
@@ -427,7 +427,7 @@ const cases=[
 ];
 
 test("dictionary v2 covers 50+ meaningful intents and RU/EN/ES free-form utterances",()=>{
- assert.equal(RULE_CONVERSATION_VERSION,"hh-rule-conversation-v2");
+ assert.equal(RULE_CONVERSATION_VERSION,"hh-rule-conversation-v3");
  assert.ok(cases.length>=65);
  const seen=new Set;
  for(const [message,locale,expected,language,history] of cases){
@@ -509,4 +509,409 @@ test("server-side quick rules run only after rate/safety/verified owner",()=>{
  assert.ok(route.includes('if(body.mode!=="rules"&&!experimentalEnabled)'));
  assert.ok(route.includes("ownedInferenceConsent"));
  assert.ok(route.includes('return {status:"urgent"}'));
+});
+
+const extendedV3Cases=[
+  [
+    "video_four_goals",
+    "Какие четыре категории видео?"
+  ],
+  [
+    "video_purpose",
+    "Какая цель моего видео?"
+  ],
+  [
+    "video_category",
+    "Как выбрать категорию видео?"
+  ],
+  [
+    "video_subtopic",
+    "Подтема видео"
+  ],
+  [
+    "video_idea",
+    "Как выбрать идею для видео?"
+  ],
+  [
+    "video_meaning_axis",
+    "Нужна смысловая ось"
+  ],
+  [
+    "video_motive",
+    "Как выбрать мотив видео?"
+  ],
+  [
+    "video_script",
+    "Как написать сценарий видео?"
+  ],
+  [
+    "video_storyboard",
+    "Сделай раскадровку"
+  ],
+  [
+    "video_emotional_vector",
+    "Что такое эмоциональный вектор?"
+  ],
+  [
+    "video_emotional_strategy",
+    "Эмоциональная стратегия"
+  ],
+  [
+    "video_scene_count",
+    "Сколько сцен?"
+  ],
+  [
+    "video_scene_tags",
+    "Какие ключевые теги сцен?"
+  ],
+  [
+    "video_footage",
+    "Как подобрать видеоряд?"
+  ],
+  [
+    "video_unique_footage",
+    "Видео без повторов кадров"
+  ],
+  [
+    "video_orientation",
+    "Вертикальное видео 9:16"
+  ],
+  [
+    "video_style",
+    "Выбор стиля видео"
+  ],
+  [
+    "video_text",
+    "Как добавить текст на видео?"
+  ],
+  [
+    "video_affirmations",
+    "Хочу аффирмации"
+  ],
+  [
+    "video_text_motion",
+    "Анимация текста"
+  ],
+  [
+    "video_voiceover",
+    "Голос для видео"
+  ],
+  [
+    "video_music",
+    "Музыка для видео"
+  ],
+  [
+    "video_mix",
+    "Как микшировать аудио?"
+  ],
+  [
+    "video_preview",
+    "Предпросмотр"
+  ],
+  [
+    "video_render",
+    "Как сделать рендер видео?"
+  ],
+  [
+    "video_render_queue",
+    "Видео в очереди"
+  ],
+  [
+    "video_export",
+    "Как экспортировать видео?"
+  ],
+  [
+    "video_license",
+    "Лицензия клипа"
+  ],
+  [
+    "video_delivery_queue",
+    "Готовое видео в Телеграм"
+  ],
+  [
+    "meditation_script",
+    "Написать текст медитации"
+  ],
+  [
+    "meditation_imagery",
+    "Визуализация"
+  ],
+  [
+    "meditation_breath",
+    "Дыхательная медитация"
+  ],
+  [
+    "meditation_grounding",
+    "Заземление"
+  ],
+  [
+    "meditation_sleep",
+    "Медитация для сна"
+  ],
+  [
+    "meditation_anxiety",
+    "Медитация при тревоге"
+  ],
+  [
+    "meditation_duration_short",
+    "Короткая медитация"
+  ],
+  [
+    "meditation_personalize",
+    "Персонализация медитации"
+  ],
+  [
+    "meditation_voice",
+    "Голос для медитации"
+  ],
+  [
+    "meditation_music",
+    "Музыка для медитации"
+  ],
+  [
+    "meditation_silent",
+    "Медитация без голоса"
+  ],
+  [
+    "meditation_repeat",
+    "Как часто медитировать?"
+  ],
+  [
+    "chat_voice_message",
+    "Как записать голосовое сообщение?"
+  ],
+  [
+    "chat_telegram",
+    "Как подключить Телеграм бот?"
+  ],
+  [
+    "chat_whatsapp",
+    "Как подключить Whatsapp?"
+  ],
+  [
+    "chat_history",
+    "История переписки"
+  ],
+  [
+    "chat_delete",
+    "Как удалить переписку?"
+  ],
+  [
+    "chat_bug",
+    "Чат не отвечает"
+  ],
+  [
+    "chat_keyboard",
+    "Клавиатура закрывает поле ввода"
+  ],
+  [
+    "chat_modes",
+    "Режим ответа без нейросети"
+  ],
+  [
+    "chat_guest",
+    "Чат без регистрации"
+  ],
+  [
+    "chat_live_person",
+    "Хочу поговорить с живым оператором"
+  ],
+  [
+    "tests_stress",
+    "Тест на стресс"
+  ],
+  [
+    "tests_relationship",
+    "Тест отношений"
+  ],
+  [
+    "tests_explain",
+    "Как читать результат теста?"
+  ],
+  [
+    "course_reiki",
+    "Курс Рейки"
+  ],
+  [
+    "course_opora",
+    "Курс ОПОРА"
+  ],
+  [
+    "course_progress",
+    "Прогресс курса"
+  ],
+  [
+    "reiki_initiation",
+    "Инициация Рейки"
+  ],
+  [
+    "wu_xing",
+    "Профиль У-Син"
+  ],
+  [
+    "personal_review",
+    "Бесплатный разбор ситуации"
+  ],
+  [
+    "session_booking",
+    "Как записаться к мастеру?"
+  ],
+  [
+    "video_scene_count",
+    "How many scenes?",
+    "en"
+  ],
+  [
+    "video_style",
+    "How to choose video style?",
+    "en"
+  ],
+  [
+    "video_script",
+    "How to write a video script?",
+    "en"
+  ],
+  [
+    "video_storyboard",
+    "How to make a storyboard?",
+    "en"
+  ],
+  [
+    "video_music",
+    "Music for video",
+    "en"
+  ],
+  [
+    "video_export",
+    "How to export video?",
+    "en"
+  ],
+  [
+    "video_render_queue",
+    "Video queued",
+    "en"
+  ],
+  [
+    "meditation_breath",
+    "Breathing meditation",
+    "en"
+  ],
+  [
+    "meditation_script",
+    "Meditation script",
+    "en"
+  ],
+  [
+    "meditation_voice",
+    "Meditation voice",
+    "en"
+  ],
+  [
+    "chat_telegram",
+    "Connect Telegram",
+    "en"
+  ],
+  [
+    "chat_guest",
+    "Chat without login",
+    "en"
+  ],
+  [
+    "course_reiki",
+    "Reiki course",
+    "en"
+  ],
+  [
+    "video_purpose",
+    "Objetivo del video",
+    "es"
+  ],
+  [
+    "video_meaning_axis",
+    "Eje de sentido",
+    "es"
+  ],
+  [
+    "video_scene_count",
+    "Cuantas escenas?",
+    "es"
+  ],
+  [
+    "video_text",
+    "Agregar texto al video",
+    "es"
+  ],
+  [
+    "video_orientation",
+    "Formato vertical",
+    "es"
+  ],
+  [
+    "meditation_music",
+    "Musica para meditacion",
+    "es"
+  ],
+  [
+    "chat_voice_message",
+    "Mensaje de voz en chat",
+    "es"
+  ],
+  [
+    "chat_whatsapp",
+    "Conectar Whatsapp",
+    "es"
+  ],
+  [
+    "reiki_initiation",
+    "Iniciacion de Reiki",
+    "es"
+  ],
+  [
+    "course_reiki",
+    "Curso de Reiki",
+    "es"
+  ],
+  [
+    "personal_review",
+    "Revision gratuita",
+    "es"
+  ]
+];
+
+test("v3 has 117 reviewed intents; new vocabulary follows the user's actual subject in RU EN ES",()=>{
+ const cases=extendedV3Cases;
+ assert.ok(cases.length>=80);
+ for(const [intent,text,language="ru"] of cases){
+  const reply=ask(text,language);
+  assert.equal(reply?.id,intent,text);
+  assert.equal(reply.locale,language,text+" language");
+  assert.equal(reply.source,"reviewed-rules");
+  assert.ok(reply.reply.length>=20&&reply.reply.length<500,text+" quality");
+ }
+});
+
+test("v3 distinguishes scenecount, cost, status, special video questions and safety",()=>{
+ for(const [text,expected,language="ru"] of [
+  ["Сколько сцен нужно в видео?","video_scene_count"],
+  ["Сколько стоит видео?","price"],
+  ["Как написать сценарий ролика?","video_story"],
+  ["Видео в очереди","video_render_queue"],
+  ["Where is my video render?","video_status","en"],
+  ["Quiero crear un video","video_start","es"],
+  ["Como descargar el video","video_download","es"],
+  ["Привет Ау","hello"],
+ ]){
+  assert.equal(ask(text,language)?.id,expected,text);
+ }
+ for(const text of ["Я хочу умереть","I want to die","Quiero morir"]){
+  assert.equal(ask(text),null,text);
+ }
+ const guide=read("lib/holistic-support/rule-conversation.mjs");
+ assert.match(guide,/matchVideoRuleV3\(s\)/);
+ assert.match(guide,/matchSupportRuleV3\(s\)/);
+ assert.match(guide,/const expanded=matchSupportRuleV3\(s\)\|\|matchVideoRuleV3\(s\)/);
+ for(const path of ["lib/holistic-support/rule-video-v3.mjs","lib/holistic-support/rule-support-v3.mjs"]){
+  const content=read(path);
+  assert.doesNotMatch(content,/\bfetch\(|XMLHttpRequest|localStorage|sessionStorage|process\.env|createBooking/);
+ }
 });

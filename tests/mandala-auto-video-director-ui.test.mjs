@@ -146,7 +146,7 @@ test("mobile six workspaces use short locale labels without changing full panel 
    "Video tab is selected on the initial one-screen mock");
 });
 
-test("desktop retains six explicit theme choices while iPhone offers five compact goal pills",()=>{
+test("desktop keeps six themes while iPhone uses four canonical MyTube goals",()=>{
  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
  assert.match(studio,/quickThemeAdvancedRef=useRef<HTMLDetailsElement>\(null\)/);
  assert.match(studio,/window\.matchMedia\("\(min-width: 760px\)"\)/);
@@ -171,7 +171,7 @@ test("the selected real soundtrack is synchronized with the original central Can
 test("approved home displays a source-backed example before rendering",()=>{
  assert.match(director,/recommendAutoVideo\(\{goal,locale,fallbackTheme:theme,presets,scenes\}\)/);
  assert.match(director,/const videoGoalCategories=\[/);
- assert.match(director,/const taxonomySubcategories=listMyTubeSubcategories\(taxonomyCategoryForGoal\[selectedCategoryId\],locale\)/);
+ assert.match(director,/const taxonomySubcategories=listMyTubeSubcategories\(selectedCategoryId,locale\)/);
  assert.match(director,/data-auto-video-topic-panel/);
  assert.match(director,/data-auto-video-category=\{item.id\}/);
  assert.match(director,/data-auto-video-preview-example/);
@@ -181,7 +181,7 @@ test("approved home displays a source-backed example before rendering",()=>{
  assert.match(director,/data-auto-video-create/);
 });
 
-test("five photo-free goal pills, two selectable inline subcategories, and real scenario/audio continuation",()=>{
+test("four canonical goal pills, exclusive subcategories and real scenario/audio continuation",()=>{
  const css=readFileSync(new URL("../components/mandala-auto-video-director.module.css",import.meta.url),"utf8");
  assert.match(css,/\.goalPanel \.goalChoices\{\s*display:flex;flex-wrap:nowrap/,"five scrollable mobile goal pills override the former four columns");
  assert.match(css,/\.topicChoices\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);

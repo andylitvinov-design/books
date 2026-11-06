@@ -406,35 +406,34 @@ test('stale narration safety remains checked after the phrase warning unmounts',
   assert.match(after,/expectedFileName/);
 });
 
-test("actual WebKit uses visible Montage Audio before testing real sound and export",()=>{
-  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
-  const studio=read("components/mandala-free-video-studio.tsx");
-  const entry=browser.indexOf('const editorTab=page.locator');
-  const audio=browser.indexOf('const montageAudioTab=page.locator',entry);
-  const click=browser.indexOf("await montageAudioTab.click()",audio);
-  const selected=browser.indexOf('await expect(montageAudioTab).toHaveAttribute("aria-pressed","true"',click);
-  const settings=browser.indexOf('const montageSettings=page.locator',selected);
-  assert.ok(entry>=0&&audio>entry&&click>audio&&selected>click&&settings>selected,
-    "real user selects the mounted Audio panel before the source-backed media checks");
-  assert.ok(studio.includes("data-video-montage-tab={item.id}"));
-  assert.ok(studio.includes('montagePanel==="audio" ?'));
-  assert.ok(browser.includes('data-video-voice-studio'));
-  assert.ok(browser.includes('data-video-quick-generate'));
+test("real WebKit selects Settings duration, then Audio and real voice before rendering",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const entry=browser.indexOf("const editorTab=page.locator");
+ const settings=browser.indexOf("const settingsTab=page.locator",entry);
+ const duration=browser.indexOf("const durationSelect=page.locator",settings);
+ const audio=browser.indexOf("const montageAudioTab=page.locator",duration);
+ const click=browser.indexOf("await montageAudioTab.click()",audio);
+ const selected=browser.indexOf('await expect(montageAudioTab).toHaveAttribute("aria-pressed","true"',click);
+ assert.ok(entry>=0&&settings>entry&&duration>settings&&audio>duration&&click>audio&&selected>click,
+   "actual mobile route uses Settings for duration and mounted Audio for sound");
+ assert.ok(studio.includes("data-video-montage-tab={item.id}"));
+ assert.ok(studio.includes('montagePanel==="audio" ?'));
+ assert.ok(browser.includes('data-video-voice-studio'));
+ assert.ok(browser.includes('data-video-quick-generate'));
 });
-
-test("the post-export stale-narration check revisits Voice through visible Montage Audio",()=>{
-  const start=source.indexOf("removed spoken phrase must block stale WAV reuse or detach it");
-  const audio=source.indexOf('const reenterAudioTab=page.locator',start);
-  const actualTap=source.indexOf('await reenterAudioTab.click()',audio);
-  const shown=source.indexOf('await expect(reenterAudioTab).toHaveAttribute("aria-pressed","true")',actualTap);
-  const voice=source.indexOf('const reenterVoiceTab=page.locator',shown);
-  const voiceClick=source.indexOf('await reenterVoiceTab.click()',voice);
-  const disabled=source.indexOf('const stillHasOldVoice=',voiceClick);
-  assert.ok(start>=0&&audio>start&&actualTap>audio&&shown>actualTap&&voice>shown&&voiceClick>voice&&disabled>voiceClick,
-    "second consent-bound Voice check uses the mounted Audio subtab, never a hidden selector");
-  assert.ok(source.slice(audio,disabled).includes('[data-video-montage-settings] [data-video-basic-tab="voice"]'));
+test("post-export stale narration refusal reopens mounted Audio and consented Voice",()=>{
+ const start=source.indexOf("removed spoken phrase must block stale WAV reuse or detach it");
+ const audio=source.indexOf("const reenterAudioTab=page.locator",start);
+ const tap=source.indexOf("await reenterAudioTab.click()",audio);
+ const selected=source.indexOf('await expect(reenterAudioTab).toHaveAttribute("aria-pressed","true")',tap);
+ const disabled=source.indexOf("const stillHasOldVoice=",selected);
+ const voice=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")',disabled);
+ const expand=source.indexOf('voicePanel.locator(":scope > summary").click()',voice);
+ assert.ok(start>=0&&audio>start&&tap>audio&&selected>tap&&disabled>selected&&voice>disabled&&expand>voice,
+   "stale consented WAV is refused before user can open a fresh Voice disclosure");
+ assert.doesNotMatch(source.slice(audio,expand),/data-video-montage-settings|data-video-basic-tab/);
 });
-
 test("WebKit release follows the real Montage Settings, Audio, and voice disclosure",()=>{
  assert.match(source,/const settingsTab=page\.locator\('\[data-video-montage-tab="settings"\]'\)/);
  assert.match(source,/const durationSelect=page\.locator\('\[data-video-montage-preference="duration"\]'\)/);
