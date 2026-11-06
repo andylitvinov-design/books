@@ -244,6 +244,13 @@ jobs:
             core.info('HH_CONFLICT_EVENT_HANDOFF '+JSON.stringify(result));
             await core.summary.addHeading('Conflict: exact-HEAD event handoff')
               .addCodeBlock(JSON.stringify(result,null,2)).write();
+            // No new runner or job: use this authenticated PR event to detect
+            // stale GitHub cron while respecting active-job and cooldown gates.
+            const {wakeStaleWatchdog}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-control-tower-wakeup.cjs');
+            const liveness=await wakeStaleWatchdog({github,context,
+              summary:{production:1},dryRun:false,log:msg=>core.info(msg)});
+            core.info('HH_PR_EVENT_WATCHDOG_LIVENESS '+JSON.stringify(liveness));
   completion-wait:
     # Wait without holding the direct task writer lease.
     if: >-

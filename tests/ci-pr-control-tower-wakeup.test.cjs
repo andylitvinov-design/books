@@ -220,6 +220,66 @@ test('existing queued Watchdog or malformed schedule inventory blocks fallback',
  assert.equal(dispatches,0);
 });
 
+test('trusted production PR event safely wakes old cron once; rejects forged events',async()=>{
+ const {trustedWatchdogWakeContext,wakeStaleWatchdog}=require('../scripts/ci-pr-control-tower-wakeup.cjs');
+ const old=new Date(NOW-20*60_000).toISOString();
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/public-book-library',eventName:'pull_request_target',
+  payload:{action:'opened',pull_request:{number:77,state:'open',draft:false,
+   base:{ref:'codex/public-book-library'},
+   head:{repo:{full_name:'andylitvinov-design/books'},sha:'a'.repeat(40)}}}};
+ let sent=0,read=0;
+ const github={rest:{actions:{
+  listWorkflowRuns:async({event})=>{read++;return {data:{total_count:1,workflow_runs:[
+   {id:event==='schedule'?31:32,status:'completed',created_at:old,updated_at:old}]}}},
+  createWorkflowDispatch:async({workflow_id,ref,inputs})=>{
+   assert.equal(workflow_id,'hh-pr-ten-minute-watchdog.yml');
+   assert.equal(ref,'codex/bootstrap-books');
+   assert.deepEqual(inputs,{dry_run:'false'});sent++;
+  }
+ }}};
+ assert.equal(trustedWatchdogWakeContext(context),true);
+ const result=await wakeStaleWatchdog({github,context,summary:{production:1},now:NOW});
+ assert.equal(result.decision,'EVENT_WATCHDOG_WAKE_ACCEPTED');
+ assert.equal(sent,1);assert.equal(read,2);
+ const variants=[
+  {...context,repo:{owner:'wrong',repo:'books'}},
+  {...context,ref:'refs/heads/codex/bootstrap-books'},
+  {...context,payload:{...context.payload,action:'edited'}},
+  {...context,payload:{...context.payload,pull_request:{...context.payload.pull_request,draft:true}}},
+  {...context,payload:{...context.payload,pull_request:{...context.payload.pull_request,
+   head:{...context.payload.pull_request.head,repo:{full_name:'untrusted/books'}}}}},
+  {...context,payload:{...context.payload,pull_request:{...context.payload.pull_request,
+   base:{ref:'codex/bootstrap-books'}}}},
+  {...context,payload:{...context.payload,pull_request:{...context.payload.pull_request,
+   head:{...context.payload.pull_request.head,sha:'invalid'}}}}
+ ];
+ for(const invalid of variants){
+  const n=read;
+  assert.equal(trustedWatchdogWakeContext(invalid),false);
+  assert.equal((await wakeStaleWatchdog({github,context:invalid,
+   summary:{production:1},now:NOW})).decision,'NOT_ELIGIBLE');
+  assert.equal(read,n,'untrusted events cannot spend an API call');
+ }
+ const busy={rest:{actions:{
+  listWorkflowRuns:async({event})=>({data:{total_count:1,workflow_runs:[{
+   id:event==='schedule'?51:52,
+   status:event==='schedule'?'completed':'in_progress',
+   created_at:old,updated_at:old}]}}),
+  createWorkflowDispatch:async()=>{throw Error('must not dispatch while Watchdog active');}
+ }}};
+ assert.equal((await wakeStaleWatchdog({github:busy,context,summary:{production:1},now:NOW})).decision,
+   'WATCHDOG_ALREADY_RUNNING');
+});
+test('PR event backstop runs in the original Watchdog job without new cron',()=>{
+ const fs=require('node:fs');
+ const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const job=yaml.split('  conflict-event-handoff:')[1]?.split('  completion-wait:')[0];
+ assert.ok(job);assert.match(job,/HH_PR_EVENT_WATCHDOG_LIVENESS/);
+ assert.match(job,/wakeStaleWatchdog/);
+ assert.match(job,/github.event_name == 'pull_request_target'/);
+ assert.doesNotMatch(job,/^\s*schedule:/m);
+});
 // A genuine protected control-plane push may recover a delayed Watchdog.
 // Unknown/foreign branches and cron history never authorize dispatch.
 test('protected default push calls existing Watchdog only when cron is stale',async()=>{
