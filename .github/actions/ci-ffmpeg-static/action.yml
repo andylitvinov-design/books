@@ -26,13 +26,24 @@ runs:
         archive="$(mktemp "${RUNNER_TEMP}/hh-ffmpeg-6.1.1-XXXXXXXX.gz")"
         binary="$(mktemp "${RUNNER_TEMP}/hh-ffmpeg-6.1.1-XXXXXXXX")"
         trap 'rm -f "$archive" "$binary.tmp"' EXIT
-        curl --fail --show-error --silent --location \
+        # Two official GitHub paths only; both must match the same two pinned digests.
+        if ! curl --fail --show-error --silent --location \
           --connect-timeout 10 --max-time 100 --retry 1 --retry-delay 1 \
           --header 'Accept: application/octet-stream' \
           --header 'X-GitHub-Api-Version: 2022-11-28' \
           --header 'User-Agent: HolisticHouse-IntegrityCI' \
           'https://api.github.com/repos/eugeneware/ffmpeg-static/releases/assets/316528626' \
-          --output "$archive"
+          --output "$archive"; then
+          echo 'Official release API refused this runner; trying the same pinned GitHub browser download URL' >&2
+          rm -f "$archive"
+          curl --fail --show-error --silent --location \
+            --connect-timeout 10 --max-time 100 --retry 1 --retry-delay 1 \
+            'https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-linux-x64.gz' \
+            --output "$archive" || {
+            echo 'Both official FFmpeg sources unavailable; refusing to bypass SHA-256 verification' >&2
+            exit 1
+          }
+        fi
         printf '%s  %s\n' \
           'bfe8a8fc511530457b528c48d77b5737527b504a3797a9bc4866aeca69c2dffa' "$archive" \
           | sha256sum --check --status || {
