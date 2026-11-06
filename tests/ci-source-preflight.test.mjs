@@ -110,12 +110,38 @@ test('Core preflight skips only redundant CSS/data typing; Next and DOCK remain 
   assert.match(workflow,/^  hh-merge-check:/m);
 });
 
-test('only verified CORE Next build can own duplicate TypeScript; all sensitive/unknown changes retain tsc',()=>{
+test('CORE and only exact non-sensitive Mandala media FULL share mandatory Next TypeScript',()=>{
   const cfg=readFileSync('next.config.ts','utf8');
   const p=(paths,route='CORE',ciOnly='false',eventName='pull_request',nextConfig=cfg)=>
     mayDelegateTypesToNext(paths,{eventName,route,ciOnly,nextConfig});
   assert.equal(p(['components/mandala-free-video-studio.tsx']),true);
   assert.equal(p(['app/en/explore/page.tsx','app/en/explore/page.module.css']),true);
+  // The BASE-trusted FULL route owns browser/codec/consent checks as before.
+  // Delegation removes only the duplicate early TypeScript compile.
+  const reviewed=[
+    'components/mandala-free-video-studio.tsx',
+    'components/mandala-auto-video-director.tsx',
+    'components/mandala-multitrack-timeline.tsx',
+    'components/mandala-video-mobile.module.css',
+    'components/mandala-auto-video-director.module.css',
+    'components/mandala-multitrack-timeline.module.css',
+  ];
+  for(const file of reviewed.filter(path=>path.endsWith('.tsx')))
+    assert.equal(p([file],'FULL'),true,file);
+  assert.equal(p(['components/mandala-free-video-studio.tsx',
+    'components/mandala-video-mobile.module.css'],'FULL'),true);
+  for(const extra of [
+    'app/api/holistic-support/voice/route.js',
+    'components/mandala-affirmation-voice.tsx',
+    'lib/crm/direct-messages.ts','lib/auth/session.ts',
+    'lib/payments/checkout.ts','supabase/migrations/001.sql',
+    'app/[locale]/client/page.tsx','tests/mandala-workspace-tabs.test.mjs',
+    'scripts/verify-affirmation-voice-browser.mjs','public/videos/scene.mp4',
+    'package-lock.json','next.config.ts','tsconfig.json',
+    '.github/workflows/hh-pr-core-release.yml',
+  ])assert.equal(p(['components/mandala-free-video-studio.tsx',extra],'FULL'),false,extra);
+  assert.equal(p(['components/mandala-affirmation-voice.tsx'],'FULL'),false);
+  assert.equal(p(['components/mandala-video-mobile.module.css'],'FULL'),false);
   const denied=[
     [],['app/en/explore/page.module.css'],
     ['components/public.tsx','package.json'],['components/public.tsx','package-lock.json'],
@@ -128,6 +154,10 @@ test('only verified CORE Next build can own duplicate TypeScript; all sensitive/
   for(const route of ['FULL','DOCK','ASSETS','TEXT','UNKNOWN'])
     assert.equal(p(['components/public.tsx'],route),false,'route '+route);
   assert.equal(p(['components/public.tsx'],'CORE','true'),false);
+  assert.equal(p(['components/mandala-free-video-studio.tsx'],'FULL','true'),false);
+  assert.equal(p(['components/mandala-free-video-studio.tsx'],'FULL','false','workflow_dispatch'),false);
+  assert.equal(p(['components/mandala-free-video-studio.tsx'],'FULL','false','pull_request',
+    cfg+'\nconst x={typescript:{ignoreBuildErrors:true}};'),false);
   assert.equal(p(['components/public.tsx'],'CORE','false','workflow_dispatch'),false);
   assert.equal(p(['components/public.tsx'],'CORE','false','pull_request',
     cfg+'\nconst x={typescript:{ignoreBuildErrors:true}};'),false);
@@ -145,7 +175,12 @@ test('delegated preflight reports unchecked types honestly and still demands exa
   for(const marker of ['HH_PREFLIGHT_ROUTE:', 'HH_PREFLIGHT_CI_ONLY:',
     '--defer-types-to-next', '--full-types'])assert.ok(step.includes(marker),'missing '+marker);
   assert.ok(step.includes('steps.fast.outputs.route'), 'require BASE-trusted router');
-  assert.ok(step.includes('== CORE'), 'ordinary CORE only');
+  assert.ok(step.includes('== CORE'), 'CORE route remains supported');
+  assert.ok(step.includes('== FULL'), 'reviewed FULL can delegate to Next');
+  assert.ok(source.includes('FULL_MEDIA_EDITOR_ONLY'));
+  assert.ok(source.includes("route==='FULL'"));
+  assert.match(flow,/run: npm run build/);
+  assert.match(flow,/^  hh-specialist:/m);
   assert.ok(build.includes('run: npm run build'));
   assert.ok(build.includes("steps.diff.outputs.ci_only != 'true'"));
   assert.ok(build.includes("steps.fast.outputs.route != 'DOCK'"));
