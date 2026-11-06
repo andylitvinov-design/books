@@ -122,9 +122,9 @@
       if (/^\d+$/.test(a||'')) return a;
       if (validCount(direct?.[index])) return String(direct[index]);
       // Only backup workflow counts; PR and job counts stay explicitly unknown.
-      if (index===2&&validCount(queueFallback?.running))return String(queueFallback.running);
+      if (index===2&&validCount(queueFallback?.running))return '≥'+String(queueFallback.running);
       if (index===1&&validCount(queueFallback?.queued))
-        return (queueFallback.queue_complete?'':'≥')+String(queueFallback.queued);
+        return '≥'+String(queueFallback.queued);
       return '—';
     }
     var running=one(2), queued=one(1);
@@ -134,10 +134,10 @@
     cells.queued.sub.textContent='Workflows (не PR) · jobs ожидают: '+one(3);
     var sourceNote=queueFallback?
       'Основной API: '+(queueError||'нет полных данных')+
-      '. Резерв GitHub Actions · '+(queueFallback.from_cache?'сохранённый':'проверенный')+
-      ' срез '+(queueFallback.age_minutes??0)+' мин назад'+
-      (queueFallback.queue_complete?'':' · в ожидании показана нижняя граница')+
-      '. PR/jobs резервом не измерены.':null;
+      '. Резерв: отфильтрованные CI workflows · '+(queueFallback.from_cache?'сохранённый':'новый')+
+      ' срез '+(queueFallback.age_minutes??0)+' мин назад · ≥ только найденные CI'+
+      (queueFallback.queue_complete?'':' · очередь частично проверена')+
+      '. Watchdog/AutoMerge исключены; PR/jobs неизвестны.':null;
     status.textContent='GitHub CI · PR ждут: '+one(0)+'. '+
       (sourceNote||(queueError?
        'Источник очереди: '+queueError+'. Повторить через штатную кнопку «Обновить».':
