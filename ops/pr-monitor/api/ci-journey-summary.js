@@ -148,7 +148,25 @@ function summarizePR(pr,runs){
  const lastRun=[...sorted].sort((a,b)=>t(b.completed_at)-t(a.completed_at))[0];
  const firstJob=sorted.flatMap(r=>r.jobs).sort((a,b)=>
    t(a.started_at)-t(b.started_at))[0]||null;
+ // Named jobs are independently observed clocks, not extra additive stages.
+ const names={core:'core-lint-types-build',specialist:'hh-specialist',
+   merge_gate:'hh-merge-check'};
+ const jobClockMs={};
+ for(const [key,name] of Object.entries(names)){
+   const spans=sorted.flatMap(r=>r.jobs.filter(j=>j.name===name)
+     .map(j=>[t(j.started_at),t(j.completed_at)]))
+     .filter(([a,b])=>a!==null&&b!==null&&b>=a)
+     .sort((a,b)=>a[0]-b[0]);
+   let total=0,start=null,endOfGroup=null;
+   for(const [a,b] of spans){
+     if(start===null){start=a;endOfGroup=b;}
+     else if(a<=endOfGroup)endOfGroup=Math.max(endOfGroup,b);
+     else{total+=endOfGroup-start;start=a;endOfGroup=b;}
+   }
+   jobClockMs[key]=start===null?null:total+endOfGroup-start;
+ }
  return {pr,first_at:new Date(first).toISOString(),last_at:new Date(end).toISOString(),
+   job_clock_ms:jobClockMs,
    elapsed_ms:end-first,elapsed_minutes:rnd((end-first)/60000),stages_ms:stages,
    wave_head_evidence:{
      new_head_count:wave.new_head.count,new_head_ms:wave.new_head.ms,
@@ -195,6 +213,14 @@ function report(store,h,now=Date.now()){
  const waveReconciled=Math.abs(waveTotalMs-stageTotals.between_waves_unknown)<=1;
  const stageMeans=Object.fromEntries(stages.map(k=>[k,rows.length?
    rnd(stageTotals[k]/rows.length/60000):null]));
+ const jobClockSummary=Object.fromEntries(['core','specialist','merge_gate'].map(key=>{
+   const observed=rows.map(row=>row.job_clock_ms?.[key])
+     .filter(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0);
+   return [key,{measured_prs:observed.length,cohort_prs:rows.length,
+     mean_minutes:observed.length?rnd(observed.reduce((a,b)=>a+b,0)/observed.length/60000):null,
+     p50_minutes:observed.length?rnd(quant(observed,.5)/60000):null,
+     p95_minutes:observed.length?rnd(quant(observed,.95)/60000):null}];
+ }));
  return {schema:'HH_CI_FIRST_LAST_ARCHIVE_V1',
    generated_at:new Date(now).toISOString(),
    period_hours:h,cohort:'LAST_OBSERVED_CORE_JOB_COMPLETED_IN_WINDOW',
@@ -230,6 +256,10 @@ function report(store,h,now=Date.now()){
          same_head_count:row.wave_head_evidence.same_head_count,
          last_url:row.last_url})),
      note:'Новый HEAD доказан сохранёнными SHA, но причина задержки публикации следующего коммита и длительность Repair остаются неизвестными. Архив неполон.'},
+   job_clock_summary:{schema:'HH_CI_NAMED_JOB_CLOCK_V1',
+     scope:'ARCHIVED_NAMED_JOBS_NON_ADDITIVE_UNION',
+     cohort:'SAME_OBSERVED_CI_ROWS_AS_SUMMARY',n:rows.length,
+     history_complete:false,clocks:jobClockSummary},
    stage_breakdown:{schema:'HH_CI_JOURNEY_CONTRIBUTIONS_V1',
      cohort:'SAME_OBSERVED_CI_ROWS_AS_SUMMARY',
      n:rows.length,mean_minutes_per_pr:stageMeans,
