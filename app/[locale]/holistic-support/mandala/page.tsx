@@ -86,6 +86,9 @@ export default async function MandalaMeditationPage({ params, searchParams }: Pr
         <Link href={"/"+locale+"/holistic-support/mandala?mode=photo"} prefetch={false} aria-current={photoMode ? "page" : undefined}>
           {locale === "ru" ? "Фотомандалы" : locale === "es" ? "Mandalas de fotos" : "Photo mandalas"}
         </Link>
+        <Link href={"/"+locale+"/holistic-support/voice-message"} prefetch={false}>
+          {locale === "ru" ? "Голос близкого" : locale === "es" ? "Voz cercana" : "Loved voice"}
+        </Link>
       </nav>
       {photoMode ? <MentalicaPhotoMandala locale={locale} /> :
         <MandalaMeditationClient locale={locale} videos={freeMeditationVideos(locale)}

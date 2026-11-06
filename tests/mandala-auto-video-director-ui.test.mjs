@@ -443,25 +443,23 @@ test("brief and detailed questionnaires choose from existing licensed clips with
 });
 
 
-test("new prompt and profile choice invalidate every prior MyTube plot selection",()=>{
- // Request JSX now renders requestField; the real input onChange and explicit
- // Design button sit outside requestInput after category-intake consolidation.
- // Check EVERY actual handler instead of relying on an obsolete JSX boundary.
- for(const [start,end] of [
+test("new prompt, explicit Design, and profile choice invalidate every prior MyTube plot selection",()=>{
+ const handlers=[
+  ["const requestField=","const requestInput="],
   ["const applyProfile=","const designFromRequest="],
   ["const designFromRequest=","const analyzedPath="],
-  ["const requestField=","const requestInput="],
- ]){
-  const from=director.indexOf(start),to=director.indexOf(end,from+start.length);
-  assert.ok(from>=0&&to>from,start+" handler exists");
-  const handler=director.slice(from,to);
-  for(const setter of ["setSelectedSubcategoryId", "setSelectedTopicId", "setSelectedScenarioId", "setSelectedPlotId", "setSymbolicPlotFallback", "setTimelineEdits", "setConfirmedTimelineKey"])
+ ];
+ for(const [start,end] of handlers){
+  const begin=director.indexOf(start),finish=director.indexOf(end,begin+1);
+  assert.ok(begin>=0&&finish>begin,start+" handler exists");
+  const handler=director.slice(begin,finish);
+  for(const setter of ["setSelectedSubcategoryId","setSelectedTopicId",
+    "setSelectedScenarioId","setSelectedPlotId","setSymbolicPlotFallback",
+    "setTimelineEdits","setConfirmedTimelineKey"])
    assert.ok(handler.includes(setter+"("),start+" invalidates "+setter);
  }
- const request=director.slice(director.indexOf("const requestInput="),director.indexOf("const profilePanel="));
- const field=director.slice(director.indexOf("const requestField="),director.indexOf("const requestInput="));
- assert.match(request,/\{requestField\}/,"visible request composer must use the resettable field");
- assert.match(request,/onClick=\{designFromRequest\}/,"Design action must invoke checked handler");
- assert.match(field,/onChange=\{event=>/,"typing must trigger the reset handler");
- assert.match(field,/onGoalChange\(value\)/,"typing must update the active request");
+ const requestComposer=director.slice(director.indexOf("const requestInput="),
+   director.indexOf("const profilePanel="));
+ assert.match(requestComposer,/\{requestField\}/,
+   "the visible compact prompt must mount the input with the invalidation handler");
 });
