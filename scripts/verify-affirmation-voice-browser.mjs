@@ -46,6 +46,14 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
+    // The separately validated Messenger handoff may open this existing
+    // compact Goals disclosure; the non-handoff UI remains closed/hidden.
+    const handoffPanel=page.locator('[data-video-director-chat-details][data-workspace-section="video"]');
+    await expect(handoffPanel).toBeHidden();
+    await handoffPanel.evaluate(element=>{element.open=true;});
+    await expect(handoffPanel).toBeVisible({timeout:15000});
+    await handoffPanel.evaluate(element=>{element.open=false;});
+    await expect(handoffPanel).toBeHidden();
     await expect(continueToIdeas).toBeEnabled();
     await continueToIdeas.click();
     const ideas=page.locator('[data-video-quick-control="phrases"]');

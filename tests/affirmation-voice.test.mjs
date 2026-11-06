@@ -152,12 +152,23 @@ test("all six voices can be selected and their real samples requested before phr
 });
 
 
-test("voice browser follows visible Ideas and Montage after hydration; hidden legacy story button stays hidden",()=>{
-  assert.match(source,/await expect\(allStories\)\.toBeHidden\(\)/);
-  assert.doesNotMatch(source,/await allStories\.click\(\)/);
-  assert.match(source,/await continueToIdeas\.click\(\)[\s\S]*?data-video-ideas-refinement[\s\S]*?refinement\.locator\("summary"\)\.click\(\)/);
-  assert.match(source,/await montage\.click\(\)[\s\S]*?data-video-director-style-controls/);
-  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
+test("voice browser follows native Ideas and Montage on one visitor click; hidden legacy remains hidden",()=>{
+ const start=source.indexOf("async function verifyWorkspaceHydration");
+ const end=source.indexOf("// Real guest route browser acceptance",start);
+ const flow=source.slice(start,end);
+ const click=flow.indexOf("await continueToIdeas.click()");
+ const ideas=flow.indexOf('data-active-workspace","phrases"',click);
+ const refinement=flow.indexOf('const refinement=page.locator',ideas);
+ const tap=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
+ const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
+ const topic=flow.indexOf('data-auto-video-topic-panel',open);
+ const montage=flow.indexOf('await montage.click()',topic);
+ const style=flow.indexOf('data-video-director-style-controls',montage);
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&style>montage,
+   "real visitor must open Ideas refinement and reach Montage without hidden selectors");
+ assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
+ assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
+ assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
 });
 
 test("voice browser selects the visible montage workspace before recording",()=>{
@@ -414,32 +425,34 @@ test("real WebKit selects Settings duration, then Audio and real voice before re
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const entry=browser.indexOf("const editorTab=page.locator");
- const settings=browser.indexOf("const settingsTab=page.locator",entry);
+ const settings=browser.indexOf("const montageSettingsTab=page.locator",entry);
  const duration=browser.indexOf("const durationSelect=page.locator",settings);
- const audio=browser.indexOf("const montageAudioTab=page.locator",duration);
- const click=browser.indexOf("await montageAudioTab.click()",audio);
- const selected=browser.indexOf('await expect(montageAudioTab).toHaveAttribute("aria-pressed","true"',click);
+ const audio=browser.indexOf("const montageAudio=page.locator",duration);
+ const click=browser.indexOf("await montageAudio.click()",audio);
+ const selected=browser.indexOf('await expect(montageAudio).toHaveAttribute("aria-pressed","true")',click);
  assert.ok(entry>=0&&settings>entry&&duration>settings&&audio>duration&&click>audio&&selected>click,
-   "actual mobile route uses Settings for duration and mounted Audio for sound");
+   "actual visitor must set duration in Settings then open Audio");
  assert.ok(studio.includes("data-video-montage-tab={item.id}"));
  assert.ok(studio.includes('montagePanel==="audio" ?'));
  assert.ok(browser.includes('data-video-voice-studio'));
  assert.ok(browser.includes('data-video-quick-generate'));
 });
+
 test("post-export stale narration refusal reopens mounted Audio and consented Voice",()=>{
  const start=source.indexOf("removed spoken phrase must block stale WAV reuse or detach it");
- const audio=source.indexOf("const reenterAudioTab=page.locator",start);
- const tap=source.indexOf("await reenterAudioTab.click()",audio);
- const selected=source.indexOf('await expect(reenterAudioTab).toHaveAttribute("aria-pressed","true")',tap);
+ const audio=source.indexOf("const montageAudioAfterExport=page.locator",start);
+ const tap=source.indexOf("await montageAudioAfterExport.click()",audio);
+ const selected=source.indexOf('await expect(montageAudioAfterExport).toHaveAttribute("aria-pressed","true")',tap);
  const disabled=source.indexOf("const stillHasOldVoice=",selected);
  const voice=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")',disabled);
- const expand=source.indexOf('voicePanel.locator(":scope > summary").click()',voice);
+ const expand=source.indexOf('await voicePanel.locator(":scope > summary").click()',voice);
  assert.ok(start>=0&&audio>start&&tap>audio&&selected>tap&&disabled>selected&&voice>disabled&&expand>voice,
-   "stale consented WAV is refused before user can open a fresh Voice disclosure");
+   "stale WAV must be blocked before visitor can reopen consented Voice");
  assert.doesNotMatch(source.slice(audio,expand),/data-video-montage-settings|data-video-basic-tab/);
 });
+
 test("WebKit release follows the real Montage Settings, Audio, and voice disclosure",()=>{
- assert.match(source,/const settingsTab=page\.locator\('\[data-video-montage-tab="settings"\]'\)/);
+ assert.match(source,/const montageSettingsTab=page\.locator\('\[data-video-montage-tab="settings"\]'\)/);
  assert.match(source,/const durationSelect=page\.locator\('\[data-video-montage-preference="duration"\]'\)/);
  assert.match(source,/await durationSelect\.selectOption\("10"\)/);
  assert.match(source,/await expect\(page\.locator\('\[data-video-montage-audio\]'\)\)\.toBeVisible\(\)/);
