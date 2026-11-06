@@ -246,14 +246,26 @@ export async function POST(request) {
       }:{},
       channel:allowOwned?"owned":"none",
     });
-    const generated=await finishNaturalDialogue(envelope,allowOwned?prompt=>
-      generateOwnedOllama(prompt,{
+    const generated=await finishNaturalDialogue(envelope,allowOwned?async prompt=>{
+      // A revocation or preference edit during catalogue work MUST invalidate
+      // the already prepared model prompt before any owned-model network call.
+      if(approvedMemory!==null){
+        const latest=await readMyAgentMemory(config,actor);
+        const current=new Map(Array.isArray(latest?.items)?
+          latest.items.map(row=>[row.kind,row.value]):[]);
+        const same=["preferred_name","response_length","avoid_format"]
+          .every(kind=>(current.get(kind)||null)===(approvedMemory[kind]||null));
+        if(latest?.consent!==true||latest?.useInDialogue!==true||!same)
+          throw Error("MEMORY_CONSENT_CHANGED");
+      }
+      return generateOwnedOllama(prompt,{
         endpoint:process.env.HH_AGENT_OLLAMA_ENDPOINT,
         model:process.env.HH_AGENT_OLLAMA_MODEL,
         bearerToken:process.env.HH_AGENT_OLLAMA_TOKEN,
         production:process.env.NODE_ENV==="production",
         signal:AbortSignal.timeout(16000),
-      }):undefined);
+      });
+    }:undefined);
     const suggestions=(Array.isArray(decision.suggestions)?decision.suggestions:[])
       .slice(0,3).map(({id,kind,href,title})=>({id,kind,href,title}));
     return auth.apply(NextResponse.json({

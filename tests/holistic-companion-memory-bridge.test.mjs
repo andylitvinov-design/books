@@ -36,3 +36,11 @@ test('fast factual replies avoid unnecessary private memory reads',()=>{
  assert.ok(route.indexOf('if(fastRule&&FAST_RULE_IDS.has(fastRule.id))') <
    route.indexOf('readMyAgentMemory(config,actor)'));
 });
+
+test('revoking or editing memory during a turn blocks its already composed model prompt',()=>{
+ assert.match(route,/const latest=await readMyAgentMemory\(config,actor\)/);
+ assert.match(route,/latest\?\.consent!==true\|\|latest\?\.useInDialogue!==true/);
+ assert.match(route,/MEMORY_CONSENT_CHANGED/);
+ assert.ok(route.indexOf('const latest=await readMyAgentMemory(config,actor)')<
+   route.indexOf('return generateOwnedOllama(prompt,'));
+});
