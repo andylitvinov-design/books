@@ -163,7 +163,7 @@ test("voice browser selects the visible montage workspace before recording",()=>
 
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
   const phrase=source.indexOf('[data-video-quick-control="phrases"]');
-  const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',phrase);
+  const generate=source.indexOf('await generateNarration.click()',phrase);
   const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav"',generate);
   const visible=source.indexOf('await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName)',expected);
   const remix=source.indexOf('phase(engine,"offline-remix-ready")',visible);
@@ -401,4 +401,42 @@ test('stale narration safety remains checked after the phrase warning unmounts',
   assert.match(after,/stillHasOldVoice[\s\S]*?toBeDisabled\(\)/);
   assert.match(after,/holistic-house-hypno-audio\.wav/);
   assert.match(after,/expectedFileName/);
+});
+
+test("consented narration handles a real WebKit pointer gesture exactly once",()=>{
+  const source=readFileSync(new URL("../components/mandala-affirmation-voice.tsx",import.meta.url),"utf8");
+  assert.match(source,/onPointerDown=\{event=>/);
+  assert.match(source,/onPointerUp=\{event=>/);
+  assert.match(source,/Math\.hypot\(event\.clientX-start\.x,event\.clientY-start\.y\)>14/);
+  assert.match(source,/event\.detail!==0&&Date\.now\(\)-lastSubmitPointerAt\.current<750/);
+  assert.match(source,/voiceRequestInFlight\.current=true/);
+  assert.match(source,/!speechText\|\|!consent\|\|voiceRequestInFlight\.current/);
+  assert.ok(source.includes('body:JSON.stringify({mode:"affirmations",voiceId,language,text:speechText,consent:true})'));
+  assert.match(source,/voiceRequestInFlight\.current=false/);
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.match(browser,/window\.__hhVoiceSubmitProbe/);
+  assert.match(browser,/await generateNarration\.click\(\)/);
+  assert.match(browser,/await page\.locator\("\[data-video-affimations-audio-ready\]"\)\.waitFor/);
+  assert.ok(!browser.includes("generateNarration.click({force:true})"));
+});
+
+
+test("headed WebKit narration uses a real short touch without duplicate provider requests",()=>{
+  const client=readFileSync(new URL("../components/mandala-affirmation-voice.tsx",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  for(const marker of [
+    "onTouchStart={event=>","onTouchMove={event=>","onTouchCancel={()=>{submitTouchStart.current=null;}",
+    "onTouchEnd={event=>","event.changedTouches.length!==1",
+    "Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>14",
+    "lastSubmitTouchAt.current=Date.now()",
+    'event.pointerType==="touch"',
+    "event.detail!==0&&Date.now()-lastSubmitTouchAt.current<950",
+    "voiceRequestInFlight.current=true",
+  ])assert.ok(client.includes(marker),"physical touch / one request contract: "+marker);
+  assert.ok(browser.includes('hasTouch:engine==="webkit"'));
+  assert.ok(browser.includes('if(engine==="webkit")await generateNarration.tap()'));
+  assert.ok(browser.includes('else await generateNarration.click()'));
+  assert.ok(browser.includes('window.__hhVoiceSubmitProbe.touches++'));
+  assert.ok(browser.includes('assert.equal(affirmationRequests.length,1)'));
+  assert.ok(browser.includes('pcm.stdout.some(value=>value!==0)'));
 });
