@@ -18,11 +18,21 @@ test("Goal has real category/subcategory and separate optional topic and request
  const field=director.slice(director.indexOf("const requestField="),director.indexOf("const requestInput="));
  assert.doesNotMatch(field,/setSelectedSubcategoryId\(|setSelectedTopicId\(/);
 });
-test("Ideas refinement stays open after a real Safari summary tap and portal rerender",()=>{
- assert.match(director,/const \[ideaRefinementOpen,setIdeaRefinementOpen\]=useState\(false\)/);
- assert.match(director,/data-video-ideas-refinement[\s\S]*?open=\{ideaRefinementOpen\} onToggle=\{event=>setIdeaRefinementOpen\(event\.currentTarget\.open\)\}/);
- assert.doesNotMatch(director,/onClick=\{event=>\{event\.preventDefault\(\);setIdeaRefinementOpen\(open=>!open\);\}\}/);
+test("Ideas keeps native Safari summary activation and remembers open state across portal remounts",()=>{
+ assert.match(director,/const ideaRefinementOpenRef=useRef\(false\)/);
+ assert.match(director,/const ideaRefinementNodeRef=useRef<HTMLDetailsElement\|null>\(null\)/);
+ assert.match(director,/const bindIdeaRefinement=useCallback\(\(node:HTMLDetailsElement\|null\)=>\{/);
+ assert.match(director,/if\(node && ideaRefinementOpenRef\.current\)node\.open=true/);
+ assert.match(director,/ref=\{bindIdeaRefinement\}/);
+ assert.match(director,/if\(event\.currentTarget===ideaRefinementNodeRef\.current\)/);
+ assert.match(director,/ideaRefinementOpenRef\.current=event\.currentTarget\.open/);
+ assert.doesNotMatch(director,/open=\{ideaRefinementOpen\}/);
+ assert.doesNotMatch(director,/preventDefault\(\);setIdeaRefinementOpen/);
  assert.match(director,/createPortal\(<details[\s\S]*?data-video-ideas-refinement[\s\S]*?,ideaTarget\)/);
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(browser,/await refinement\.locator\(":scope > summary"\)\.click\(\)/);
+ assert.match(browser,/await expect\(refinement\)\.toHaveAttribute\("open",""\)/);
+ assert.doesNotMatch(browser,/refinement\.locator[^\n]*\.click\(\{force:/);
 });
 test("Ideas owns meaning/scenarios and Montage owns motif",()=>{
  assert.match(studio,/data-video-director-idea-controls/);
