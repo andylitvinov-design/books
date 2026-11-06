@@ -211,7 +211,40 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 2
+      - name: Classify exact-head CI-policy-only PR maintenance
+        id: policy
+        shell: bash
+        env:
+          HH_EVENT_NAME: ${{ github.event_name }}
+          HH_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          policy_only=false
+          if [[ "$HH_EVENT_NAME" == pull_request &&
+                "$HH_PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ &&
+                "$(git rev-parse HEAD^2 2>/dev/null || true)" == "$HH_PR_HEAD_SHA" ]]; then
+            policy_only=true
+            count=0
+            while IFS= read -r -d '' status && IFS= read -r -d '' file; do
+              count=$((count + 1))
+              # Only established CI-policy tests can accompany modified
+              # workflow YAML on this no-app-install route. Any video test,
+              # app source, unknown file, deletion or rename runs full media QA.
+              case "$status:$file" in
+                M:.github/workflows/*.yml|M:.github/workflows/*.yaml|\
+                M:tests/ci-workflow-globs.test.mjs|\
+                M:tests/pr-fast-lane.test.mjs|\
+                M:tests/ci-heavy-impact.test.mjs) ;;
+                *) policy_only=false ;;
+              esac
+            done < <(git diff --no-renames --name-status -z HEAD^1 HEAD)
+            (( count > 0 )) || policy_only=false
+          fi
+          echo "policy_only=$policy_only" >> "$GITHUB_OUTPUT"
+          echo "Mandala verified CI-policy-only route: $policy_only" >> "$GITHUB_STEP_SUMMARY"
       - name: Classify test-only edits before expensive video build
+        if: steps.policy.outputs.policy_only != 'true'
         id: impact
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -223,7 +256,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
+        if: steps.policy.outputs.policy_only != 'true'
+      - name: Verify focused Mandala and CI scope contracts without app install
+        if: steps.policy.outputs.policy_only == 'true'
+        run: node --test tests/ci-heavy-impact.test.mjs tests/ci-workflow-globs.test.mjs
       - name: Verify pending Dareful editorial source rights (no network)
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           if [ -e scripts/preview-dareful-candidates.mjs ] || [ -e tests/dareful-preview-candidates.test.mjs ]; then
             test -f scripts/preview-dareful-candidates.mjs
@@ -265,60 +303,83 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Check browser acceptance script syntax before slow production build
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --check lib/mandala/video-executable-director.mjs && node --check lib/mandala/video-chat-executable-ai.mjs && node --check app/api/holistic-support/video-director-plan/route.js && node --check lib/mandala/first-video-director.mjs && node --check lib/mandala/first-video-free-providers.mjs && node --check app/api/holistic-support/first-video-prompt/route.js && node --check lib/mandala/video-studio-question-registry.mjs && node --check scripts/import-dareful-verified-batch.mjs && node --check scripts/import-free-stock-scene.mjs && node --check lib/mandala/free-stock-sources.mjs && node --check scripts/verify-holistic-mandala-browser.mjs && node --check scripts/cinematic-video-assemble.mjs && node --check scripts/video-ai-gpu-readiness.mjs && node --check scripts/verify-affirmation-voice-browser.mjs && node --check lib/mandala/auto-video-director.mjs && node --check lib/mandala/free-film-timeline.mjs && node --check app/api/holistic-support/hypno-strategy/route.js && node --check lib/mandala/hypno-visual-overlay.mjs && node --check scripts/audit-scenario-media.mjs && node --check scripts/import-scenario-video-batch.mjs && node --check scripts/read-live-film-presets.mjs && node --check lib/mandala/scenario-soundtracks.mjs && node --check lib/mandala/video-goal-media-coverage.mjs
       # WAV masters are reproducible build output; avoid 31MB of binaries in Git.
       # Generate locally before source/asset parity checks; production npm run
       # build has the identical prebuild hook.
+      # Reuse the already populated, immutable production Core MP3 cache.
+      # Same content hash, no PR cache write or fallback to old revisions:
+      # source changes get a miss and regenerate the originals below.
+      - name: Restore production-owned scenario MP3 cache (read-only)
+        if: steps.policy.outputs.policy_only != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
       - name: Generate original first-party melody masters
+        if: steps.policy.outputs.policy_only != 'true'
         run: node scripts/generate-mandala-melodies.mjs
       - name: Generate dedicated scenario music and four classic performances
+        if: steps.policy.outputs.policy_only != 'true'
         run: node scripts/generate-scenario-melodies.mjs && node scripts/generate-scenario-melodies.mjs --check
       - name: Verify 48 scenarios each have four real unique music files
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/mandala-scenario-audio.test.mjs
       - name: Video chat conversational intent contracts (RU/EN/ES)
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           node --check lib/mandala/video-chat-understanding.mjs
           node --check lib/mandala/video-chat-tree.mjs
           node --test tests/video-chat-understanding.test.mjs tests/video-chat-tree.test.mjs tests/video-chat-contextual-understanding.test.mjs tests/video-director-chat-live-acceptance.test.mjs
           npx --no-install eslint lib/mandala/video-chat-understanding.mjs lib/mandala/video-chat-tree.mjs
       - name: Video phrase catalog deterministic content and security contracts
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           node --check lib/mandala/video-phrase-catalog.mjs
           node --check app/api/holistic-support/video-phrases/route.js
           node --test tests/mandala-video-phrase-catalog.test.mjs
           npx --no-install eslint components/mandala-phrase-catalog.tsx lib/mandala/video-phrase-catalog.mjs app/api/holistic-support/video-phrases/route.js
       - name: Verify all 120 editorial scenarios map to four real soundtrack files
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/goal-tree-audio-playlists.test.mjs
       - name: Verify copyrighted audio cannot be silently imported as reusable tracks
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/import-reviewed-audio.test.mjs
       - name: Verify recording rights, provenance and deterministic audio contracts
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           node --test tests/curated-audio-selection.test.mjs
           # Media tools are not installed on this fast runner. The exact same
           # release must pass full physical ffmpeg/ffprobe validation on macOS.
           node --test --test-name-pattern="five exact|remote master|source provenance|lossy source|short licensed recordings|curated rights review" tests/curated-music-wave.test.mjs
       - name: Mandala and mobile support contracts
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/video-chat-ai.test.mjs tests/original-motion-library.test.mjs tests/video-chat-intent.test.mjs tests/video-executable-director.test.mjs tests/video-project-v2.test.mjs tests/render-plan-v2.test.mjs tests/first-video-director.test.mjs tests/first-video-licensed-render.test.mjs tests/free-film-source-loader.test.mjs tests/video-catalog-probe.test.mjs tests/video-scenario-bindings.test.mjs tests/video-library-growth.test.mjs tests/free-film-source-clock.test.mjs tests/mandala-free-stock-sources.test.mjs tests/real-money-film-library.test.mjs tests/film-collection-v2.test.mjs tests/holistic-mandala-meditation.test.mjs tests/mandala-export.test.mjs tests/mandala-free-video.test.mjs tests/mandala-video-studio-telegram-handoff.test.mjs tests/mandala-mobile-video-design.test.mjs tests/mandala-approved-mobile-studio.test.mjs tests/mandala-workspace-tabs.test.mjs tests/personal-video-intent.test.mjs tests/mandala-sound.test.mjs tests/mandala-native-audio-files.test.mjs tests/mandala-smart-audio.test.mjs tests/mandala-audio-attach.test.mjs tests/video-affirmations.test.mjs tests/personal-guided-course.test.mjs tests/mandala-video-therapy-focus.test.mjs tests/holistic-support-meditations.test.mjs tests/holistic-support-mobile-alternative.test.mjs tests/meditation-filters.test.mjs tests/meditation-narration.test.mjs tests/personal-meditation-script.test.mjs tests/cinematic-studio.test.mjs tests/cinematic-creative-brief.test.mjs tests/video-studio-question-registry.test.mjs tests/video-ai-gpu-readiness.test.mjs tests/voice-studio.test.mjs tests/affirmation-voice.test.mjs tests/wav-pcm-mixer.test.mjs tests/mandala-webcodecs-mp4.test.mjs tests/cinematic-kling-handoff.test.mjs tests/free-film-timeline.test.mjs tests/adaptive-free-film-timeline.test.mjs tests/stage-caption-track.test.mjs tests/mandala-creative-editor-draft-history.test.mjs tests/mandala-creative-timeline.test.mjs tests/mandala-multitrack-timeline.test.mjs tests/mandala-auto-video-director.test.mjs tests/mandala-auto-video-director-ui.test.mjs tests/mandala-free-scene-taxonomy.test.mjs tests/hypno-wave-engine.test.mjs tests/mandala-hypnocorrection-mobile.test.mjs tests/mandala-meditation-courses.test.mjs tests/meditation-course-enquiry.test.mjs tests/adaptive-meditation-course.test.mjs tests/meditation-regeneration.test.mjs tests/video-scene-match.test.mjs tests/mandala-therapy-video-intro.test.mjs tests/scenario-media-coverage.test.mjs tests/mandala-classical-melodies.test.mjs tests/mandala-scenario-media-import-contract.test.mjs tests/mandala-scenario-soundtracks.test.mjs tests/mandala-video-goal-media-coverage.test.mjs tests/video-owner-review.test.mjs tests/free-video-generator.test.mjs tests/cartoon-storyboard.test.mjs tests/video-quality-evidence.test.mjs tests/hd-published-stock-quality.test.mjs
       - name: MyTube scenario motifs and visual style safeguards (same CI wave)
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           node scripts/audit-mytube-creative-choices.mjs
           node --test tests/mytube-creative-choices.test.mjs tests/mytube-content-taxonomy.test.mjs tests/mytube-video-tagging.test.mjs tests/mytube-plot-montage.test.mjs
       - name: Original Mentalica photo-mandala coordinates and local privacy contracts
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/mentalica-photo-mandala.test.mjs
       - name: Voice provider contract and negative cases
+        if: steps.policy.outputs.policy_only != 'true'
         run: node --check lib/mandala/voice-studio-openrouter-provider.mjs && node --test tests/voice-studio-provider.test.mjs tests/voice-studio-openrouter.test.mjs tests/voice-selected-phrase-free.test.mjs tests/voice-selected-phrase-live.test.mjs
 
       # One deliberately bounded real PRODUCTION request for a fixed public
       # phrase in the selected Leon/Puck Gemini voice. Runs once per owner PR
       # revision; no app secrets, no user data, no paid backup, no WAV artifact.
       - name: Genuine free selected phrase spoken by selected voice (owner opt-in)
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.head_ref == 'fix/voice-picker-single-phrase-20261103' && github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ steps.policy.outputs.policy_only != 'true' && github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.head_ref == 'fix/voice-picker-single-phrase-20261103' && github.event.pull_request.head.repo.full_name == github.repository }}
         env:
           HH_VOICE_SELECTED_LIVE_OWNER_OPT_IN: 'true'
         run: |
           node --check scripts/verify-live-selected-voice-phrase.mjs
           node scripts/verify-live-selected-voice-phrase.mjs
       - name: Stories and Characters exact source acceptance
+        if: steps.policy.outputs.policy_only != 'true'
         run: |
           if [ -e components/mandala-stories-characters.tsx ] || [ -e tests/mandala-stories-characters.test.mjs ]; then
             test -f components/mandala-stories-characters.tsx
@@ -328,6 +389,7 @@ jobs:
             npx --no-install eslint components/mandala-stories-characters.tsx lib/mandala/story-addon-catalog.ts
           fi
       - name: Targeted lint
+        if: steps.policy.outputs.policy_only != 'true'
         run: npx --no-install eslint lib/mandala/video-executable-director.mjs lib/mandala/video-project-v2.mjs lib/mandala/render-plan-v2.mjs lib/mandala/video-chat-executable-ai.mjs app/api/holistic-support/video-director-plan/route.js components/mandala-video-director-chat.tsx lib/mandala/video-chat-intent.mjs lib/mandala/video-chat-ai.mjs app/api/holistic-support/video-director-chat/route.js app/api/holistic-support/first-video-prompt/route.js components/mandala-first-video-start.tsx lib/mandala/first-video-director.mjs lib/mandala/first-video-free-providers.mjs scripts/import-dareful-verified-batch.mjs scripts/import-free-stock-scene.mjs lib/mandala/free-stock-sources.mjs lib/mandala/film-collection-v2.ts lib/mandala/personal-video-intent.mjs lib/mandala/real-money-film-library.ts lib/mandala/cinematic-money-video.ts lib/mandala/holistic-video-themes.ts lib/mandala/video-affirmations.ts lib/mandala/personal-guided-course.mjs lib/mandala/local-video-music.ts lib/mandala/audio-recommendations.mjs lib/mandala/money-flow-effects.ts components/holistic-support-mobile.tsx components/mandala-free-video-studio.tsx components/mandala-video-affirmations.tsx components/mandala-hypno-compact.tsx components/mandala-guided-course.tsx components/mandala-personal-meditation.tsx lib/mandala/meditation-narration.mjs lib/mandala/meditation-narrative-blocks.mjs lib/mandala/personal-meditation-script.mjs components/mandala-cinematic-director.tsx lib/mandala/cinematic-director.mjs lib/mandala/cinematic-production.mjs lib/mandala/cinematic-creative-brief.mjs lib/mandala/video-studio-question-registry.mjs scripts/cinematic-video-assemble.mjs scripts/video-ai-gpu-readiness.mjs components/mandala-meditation-client.tsx 'app/[locale]/holistic-support/mandala/page.tsx' 'app/[locale]/holistic-support/page.tsx' lib/public-locales.ts components/mandala-cloud-voice-studio.tsx components/mandala-affirmation-voice.tsx lib/mandala/wav-pcm-mixer.mjs lib/mandala/affirmation-voice.mjs lib/mandala/voice-studio.mjs lib/mandala/voice-studio-openrouter-provider.mjs lib/mandala/voice-audio-mix.ts 'app/[locale]/holistic-support/voice-studio/route.ts' app/api/holistic-support/voice/route.js lib/mandala/hypno-wave-engine.mjs lib/mandala/cinematic-kling-handoff.mjs lib/mandala/free-film-timeline.mjs components/mandala-auto-video-director.tsx lib/mandala/auto-video-director.mjs app/api/holistic-support/hypno-strategy/route.js components/mandala-hypnocorrection-mobile.tsx components/meditation-course-enquiry.tsx lib/mandala/video-owner-review.mjs lib/mandala/video-owner-review-html.mjs app/admin/videos/scenario-review/route.js
       # Mandatory Core checks exact-head TypeScript on production-bound PRs;
       # retain independent full typing for any other future event/ref.
@@ -436,7 +498,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Publish synthetic mobile Hypno screenshots
-        if: always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+        if: always() && steps.policy.outputs.policy_only != 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-artifact@v4
         with:
           name: hypno-compact-mobile-screenshots

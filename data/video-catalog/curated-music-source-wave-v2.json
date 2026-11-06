@@ -1,0 +1,572 @@
+{
+  "version": "hh-curated-source-wave-v2",
+  "sourceRepository": "tannerhelland/free-music",
+  "sourceCommit": "f6bfe16f49feab2181075ab86b13b24740592aa6",
+  "rightsEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/README.md",
+  "licenseEvidence": "https://github.com/tannerhelland/free-music/blob/f6bfe16f49feab2181075ab86b13b24740592aa6/LICENSE.md",
+  "recordingLicense": "CC-BY-4.0",
+  "compositionLicense": "CC-BY-4.0",
+  "editorialStatus": "recordings_not_published_pending_listening_review",
+  "entries": [
+    {
+      "id": "curated-crossroads",
+      "title": "Crossroads",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Crossroads.mp3",
+      "sourceMp3GitSha": "b200ec70487b18eff394b3022a5da3d7bcf31c07",
+      "sourceMp3Bytes": 8493184,
+      "sourceMidi": "Crossroads.mid",
+      "sourceMidiGitSha": "3c45ef8607bc9eddb3a6e47b095e63ed6d17e80b",
+      "sourceMidiBytes": 58068,
+      "localMidiPath": "assets/audio/curated-midi-v2/crossroads.mid",
+      "name": {
+        "en": "Crossroads",
+        "ru": "Перекрёстки",
+        "es": "Encrucijadas"
+      },
+      "categories": [
+        "business",
+        "energy"
+      ],
+      "moods": [
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-cyarons-gate",
+      "title": "Cyaron's Gate",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Cyaron's Gate.mp3",
+      "sourceMp3GitSha": "722029df1d1505f7f1becdb74f6a5ee48bc2f229",
+      "sourceMp3Bytes": 5052544,
+      "sourceMidi": "Cyaron's Gate.mid",
+      "sourceMidiGitSha": "519f80f09fe97a2e42c75af124f3416e9969c6ac",
+      "sourceMidiBytes": 31112,
+      "localMidiPath": "assets/audio/curated-midi-v2/cyarons-gate.mid",
+      "name": {
+        "en": "Cyaron's Gate",
+        "ru": "Врата Киарона",
+        "es": "La puerta de Cyaron"
+      },
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-deeper",
+      "title": "Deeper",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Deeper.mp3",
+      "sourceMp3GitSha": "92aeb67f2b283744c99472f0a83a734e43ccb6d7",
+      "sourceMp3Bytes": 8542336,
+      "sourceMidi": "Deeper.mid",
+      "sourceMidiGitSha": "e2d25d8ad80ba69ea1eead9adcefcf122259fc56",
+      "sourceMidiBytes": 27231,
+      "localMidiPath": "assets/audio/curated-midi-v2/deeper.mid",
+      "name": {
+        "en": "Deeper",
+        "ru": "Глубже",
+        "es": "Más profundo"
+      },
+      "categories": [
+        "stress",
+        "body"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-deserve-to-be-loved",
+      "title": "Deserve to be Loved",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Deserve to be Loved.mp3",
+      "sourceMp3GitSha": "ce6d00a211cb05883106ca69150e0cfa4c746f7d",
+      "sourceMp3Bytes": 7043200,
+      "sourceMidi": "Deserve to be Loved.mid",
+      "sourceMidiGitSha": "0ff9101c5ecf7cacc081d6a3ff2818e69cf89419",
+      "sourceMidiBytes": 20845,
+      "localMidiPath": "assets/audio/curated-midi-v2/deserve-to-be-loved.mid",
+      "name": {
+        "en": "Deserve to be Loved",
+        "ru": "Достоин любви",
+        "es": "Merecer amor"
+      },
+      "categories": [
+        "love",
+        "body"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-destiny",
+      "title": "Destiny",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Destiny.mp3",
+      "sourceMp3GitSha": "576b5c409068440a7fd82cc77711cd29f4c6c77b",
+      "sourceMp3Bytes": 6850688,
+      "sourceMidi": "Destiny.mid",
+      "sourceMidiGitSha": "a3ae511b100e1205f547ae375e9f6f008a76eeea",
+      "sourceMidiBytes": 5246,
+      "localMidiPath": "assets/audio/curated-midi-v2/destiny.mid",
+      "name": {
+        "en": "Destiny",
+        "ru": "Судьба",
+        "es": "Destino"
+      },
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "steady",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-faith",
+      "title": "Faith",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Faith.mp3",
+      "sourceMp3GitSha": "b9ad2b476b6145a758517a2e34d2444cacdd0595",
+      "sourceMp3Bytes": 9992218,
+      "sourceMidi": "Faith.mid",
+      "sourceMidiGitSha": "a6778ec3831732f9fd60d89f0718d050708c5d21",
+      "sourceMidiBytes": 46322,
+      "localMidiPath": "assets/audio/curated-midi-v2/faith.mid",
+      "name": {
+        "en": "Faith",
+        "ru": "Вера",
+        "es": "Fe"
+      },
+      "categories": [
+        "stress",
+        "love"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-familiar-roads",
+      "title": "Familiar Roads",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Familiar Roads.mp3",
+      "sourceMp3GitSha": "9ec7e087c01ca0b4a7063b0e84085e7c03e052b5",
+      "sourceMp3Bytes": 7245952,
+      "sourceMidi": "Familiar Roads.mid",
+      "sourceMidiGitSha": "c5e69878f9dee4ac5d35113829c3fcf308d7cbf3",
+      "sourceMidiBytes": 30569,
+      "localMidiPath": "assets/audio/curated-midi-v2/familiar-roads.mid",
+      "name": {
+        "en": "Familiar Roads",
+        "ru": "Знакомые дороги",
+        "es": "Caminos conocidos"
+      },
+      "categories": [
+        "body",
+        "love"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-fate",
+      "title": "Fate",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Fate.mp3",
+      "sourceMp3GitSha": "1bef14fd04dd7ddc725f6bf50f1ba237093624b2",
+      "sourceMp3Bytes": 2658304,
+      "sourceMidi": "Fate.mid",
+      "sourceMidiGitSha": "663bcd9f749e727d8ab5b13d514bd1b4f171dff5",
+      "sourceMidiBytes": 16236,
+      "localMidiPath": "assets/audio/curated-midi-v2/fate.mid",
+      "name": {
+        "en": "Fate",
+        "ru": "Путь судьбы",
+        "es": "El destino"
+      },
+      "categories": [
+        "business",
+        "energy"
+      ],
+      "moods": [
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-find-you",
+      "title": "Find You",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Find You.mp3",
+      "sourceMp3GitSha": "ba1a996c179952701b1b92ed45c75a9a87d34818",
+      "sourceMp3Bytes": 3539072,
+      "sourceMidi": "Find You.mid",
+      "sourceMidiGitSha": "f82501fb5bb4231bd413693ba229c7f33a8141b8",
+      "sourceMidiBytes": 9341,
+      "localMidiPath": "assets/audio/curated-midi-v2/find-you.mid",
+      "name": {
+        "en": "Find You",
+        "ru": "Найти тебя",
+        "es": "Encontrarte"
+      },
+      "categories": [
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-from-here",
+      "title": "From Here",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "From Here.mp3",
+      "sourceMp3GitSha": "b693f0bfef5513955e3421121039ccbc7905f122",
+      "sourceMp3Bytes": 5073024,
+      "sourceMidi": "From Here.mid",
+      "sourceMidiGitSha": "908f4e2b3a0e0c612dbc22216cc2049ccf5a765b",
+      "sourceMidiBytes": 13965,
+      "localMidiPath": "assets/audio/curated-midi-v2/from-here.mid",
+      "name": {
+        "en": "From Here",
+        "ru": "Отсюда",
+        "es": "Desde aquí"
+      },
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "steady",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-hidden-tears",
+      "title": "Hidden Tears",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Hidden Tears.mp3",
+      "sourceMp3GitSha": "e7957a0018aacc4ee6d53483eae5b971cddc84e3",
+      "sourceMp3Bytes": 2535424,
+      "sourceMidi": "Hidden Tears.mid",
+      "sourceMidiGitSha": "5de466b9d831218938ad7ff6ca07c02b97394c45",
+      "sourceMidiBytes": 4302,
+      "localMidiPath": "assets/audio/curated-midi-v2/hidden-tears.mid",
+      "name": {
+        "en": "Hidden Tears",
+        "ru": "Скрытые слёзы",
+        "es": "Lágrimas ocultas"
+      },
+      "categories": [
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-king-of-desert",
+      "title": "King of the Desert",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "King of the Desert.mp3",
+      "sourceMp3GitSha": "1554e8b73c4ea50441f1a94d13a227588d155faf",
+      "sourceMp3Bytes": 6633600,
+      "sourceMidi": "King of the Desert.mid",
+      "sourceMidiGitSha": "1b4becb1577372135ddde182e8ff067907f7309f",
+      "sourceMidiBytes": 26152,
+      "localMidiPath": "assets/audio/curated-midi-v2/king-of-desert.mid",
+      "name": {
+        "en": "King of the Desert",
+        "ru": "Король пустыни",
+        "es": "Rey del desierto"
+      },
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "active",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-lost-islands",
+      "title": "Lost Islands",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Lost Islands.mp3",
+      "sourceMp3GitSha": "359a7cfb42adcadfc0d3831b90fe608b3d5c7adc",
+      "sourceMp3Bytes": 2261830,
+      "sourceMidi": "Lost Islands.mid",
+      "sourceMidiGitSha": "1a170f2e0c0d71819b124bb82e41b94d3884a430",
+      "sourceMidiBytes": 15825,
+      "localMidiPath": "assets/audio/curated-midi-v2/lost-islands.mid",
+      "name": {
+        "en": "Lost Islands",
+        "ru": "Затерянные острова",
+        "es": "Islas perdidas"
+      },
+      "categories": [
+        "body",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-nevermore",
+      "title": "Nevermore",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Nevermore.mp3",
+      "sourceMp3GitSha": "de5ac3bbfb3a9fbd9b30bbdd56762eacee1bc31e",
+      "sourceMp3Bytes": 3518215,
+      "sourceMidi": "Nevermore.mid",
+      "sourceMidiGitSha": "d11f0432827f2e1664e44d3e6f257353d3cbd467",
+      "sourceMidiBytes": 5855,
+      "localMidiPath": "assets/audio/curated-midi-v2/nevermore.mid",
+      "name": {
+        "en": "Nevermore",
+        "ru": "Никогда больше",
+        "es": "Nunca más"
+      },
+      "categories": [
+        "stress",
+        "body"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-now-or-never",
+      "title": "Now or Never",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Now or Never.mp3",
+      "sourceMp3GitSha": "b33d0d7757ab6b7bfdb740ddf116be42629f2163",
+      "sourceMp3Bytes": 2064384,
+      "sourceMidi": "Now or Never.mid",
+      "sourceMidiGitSha": "7a03914ccdf41cecb2b6bc2ac30b267470d67fb1",
+      "sourceMidiBytes": 13764,
+      "localMidiPath": "assets/audio/curated-midi-v2/now-or-never.mid",
+      "name": {
+        "en": "Now or Never",
+        "ru": "Сейчас или никогда",
+        "es": "Ahora o nunca"
+      },
+      "categories": [
+        "business",
+        "energy"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "active",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-remember",
+      "title": "Remember",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Remember.mp3",
+      "sourceMp3GitSha": "e3a8bf7a711295c9455d1668a84c216c4296c181",
+      "sourceMp3Bytes": 1506369,
+      "sourceMidi": "Remember.mid",
+      "sourceMidiGitSha": "55c2c924d2343106453122eb430bd7cfc6e8c7b9",
+      "sourceMidiBytes": 8440,
+      "localMidiPath": "assets/audio/curated-midi-v2/remember.mid",
+      "name": {
+        "en": "Remember",
+        "ru": "Помни",
+        "es": "Recuerda"
+      },
+      "categories": [
+        "love",
+        "stress"
+      ],
+      "moods": [
+        "calm"
+      ],
+      "pace": "slow",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-surreptitious",
+      "title": "Surreptitious",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Surreptitious.mp3",
+      "sourceMp3GitSha": "a56620247dd2b119235f744701b5e584674b2d78",
+      "sourceMp3Bytes": 1756517,
+      "sourceMidi": "Surreptitious.mid",
+      "sourceMidiGitSha": "1d8cf2425292122546b7cbb1e041d577d5189a7f",
+      "sourceMidiBytes": 9365,
+      "localMidiPath": "assets/audio/curated-midi-v2/surreptitious.mid",
+      "name": {
+        "en": "Surreptitious",
+        "ru": "Тайное движение",
+        "es": "Sigilo"
+      },
+      "categories": [
+        "business",
+        "energy"
+      ],
+      "moods": [
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-syntheticity",
+      "title": "Syntheticity",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Syntheticity.mp3",
+      "sourceMp3GitSha": "ed384a37e1a76a736daa1522d9bd2b2104590855",
+      "sourceMp3Bytes": 7326849,
+      "sourceMidi": "Syntheticity.mid",
+      "sourceMidiGitSha": "e688c88b47c860947cb387b53cb1d1c2879deae4",
+      "sourceMidiBytes": 38367,
+      "localMidiPath": "assets/audio/curated-midi-v2/syntheticity.mid",
+      "name": {
+        "en": "Syntheticity",
+        "ru": "Синтетический мир",
+        "es": "Mundo sintético"
+      },
+      "categories": [
+        "energy",
+        "business"
+      ],
+      "moods": [
+        "focus"
+      ],
+      "pace": "steady",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-unknown",
+      "title": "Unknown",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Unknown.mp3",
+      "sourceMp3GitSha": "4bb8f932c8b80a2766a85f960baaf2c02eb462dd",
+      "sourceMp3Bytes": 2285654,
+      "sourceMidi": "Unknown.mid",
+      "sourceMidiGitSha": "078d7832f0424080478b192a0883b74819a25656",
+      "sourceMidiBytes": 20075,
+      "localMidiPath": "assets/audio/curated-midi-v2/unknown.mid",
+      "name": {
+        "en": "Unknown",
+        "ru": "Неизвестное",
+        "es": "Lo desconocido"
+      },
+      "categories": [
+        "energy",
+        "body"
+      ],
+      "moods": [
+        "focus"
+      ],
+      "pace": "slow",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    },
+    {
+      "id": "curated-wild-waters",
+      "title": "Wild Waters",
+      "creator": "Tanner Helland",
+      "performer": "Tanner Helland",
+      "sourceMp3": "Wild Waters.mp3",
+      "sourceMp3GitSha": "c9cfb860f21b45ad8124090a9908f9ec1e1f2d28",
+      "sourceMp3Bytes": 1967169,
+      "sourceMidi": "Wild Waters.mid",
+      "sourceMidiGitSha": "1069707c66a83fe892a1f7c78bbfed216e2e0021",
+      "sourceMidiBytes": 18549,
+      "localMidiPath": "assets/audio/curated-midi-v2/wild-waters.mid",
+      "name": {
+        "en": "Wild Waters",
+        "ru": "Дикие воды",
+        "es": "Aguas salvajes"
+      },
+      "categories": [
+        "energy",
+        "body"
+      ],
+      "moods": [
+        "uplift"
+      ],
+      "pace": "steady",
+      "voiceSafe": false,
+      "sourceStatus": "candidate_pending_listening"
+    }
+  ]
+}

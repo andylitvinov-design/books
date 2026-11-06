@@ -71,3 +71,18 @@ test("Goals shows one green continuation and no embedded storyboard or bonus too
  for(const caption of ["Далее к идеям","Continue to ideas","Continuar a ideas"])
    assert.ok(studio.includes(caption),"missing locale CTA "+caption);
 });
+
+test("WebKit finished four-shot MP4 is verified by a real user Play gesture before Files download",()=>{
+  const movieBrowser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+  assert.match(studio,/data-video-verify-playback/);
+  assert.match(studio,/if\(player\.readyState<2\)player\.load\(\)/);
+  assert.match(studio,/player\.play\(\)\.then\(\(\)=>confirmVideoPlayback\(player\)\)/);
+  assert.match(studio,/if\(video\.videoWidth>0 && video\.videoHeight>0 && video\.readyState>=2 && !video\.error\)/);
+  assert.match(studio,/playbackStatus==="ready"&&\(result\.mode==="catalog"\|\|creditConfirmed\)/);
+  assert.match(movieBrowser,/await page\.locator\('\[data-video-result\]'\)\.waitFor/);
+  assert.match(movieBrowser,/await verify\.click\(\{timeout:10000\}\)/);
+  assert.match(movieBrowser,/await save\.waitFor\(\{state:'visible',timeout:30000\}\)/);
+  assert.match(movieBrowser,/licensedFrameCorrelations|LICENSED_SCENE_NOT_VISIBLE/);
+  assert.match(movieBrowser,/SELECTED_SOUNDTRACK_MISSING_FROM_EXPORT/);
+  assert.match(movieBrowser,/SOUNDTRACK_IS_SILENT/);
+});

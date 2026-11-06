@@ -161,8 +161,9 @@ test("video UI choices affect the actual free MP4/WebM recording and the user se
   const audio=read("lib/mandala/local-video-music.ts");
   assert.match(studio,/const durations = \[10, 15, 20, 30, 60\] as const/);
   assert.match(studio,/formatDimensions\(aspect, quality\)/);
-  assert.match(studio,/data-video-aspect=\{format\}/);
-  assert.match(studio,/setSpeed\("dynamic"\)/);
+  assert.match(studio,/data-video-montage-preference="format"/);
+  assert.match(studio,/data-video-montage-preference="speed"/);
+  assert.match(studio,/onChange=\{event=>setSpeed\(event.currentTarget.value as Speed\)\}/);
   assert.match(studio,/setBrightness\("bright"\)/);
   assert.match(studio,/captionMode==="custom"/);
   // Selection now uses the filtered catalog's stable track IDs, not the

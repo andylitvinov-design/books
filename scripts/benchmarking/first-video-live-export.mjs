@@ -195,8 +195,17 @@ try {
     return Boolean(button && !button.disabled);
   }, undefined, {timeout: 40000});
   await create.click({timeout: 15000});
+  // Safari can keep a freshly recorded blob in metadata-only mode until a
+  // visitor explicitly taps Play. Exercise the real visible preview action,
+  // not a synthetic loadeddata event or a DOM-set "ready" state.
+  await page.locator('[data-video-result]').waitFor({state:'visible',timeout:80000});
   const save = page.locator('[data-mandala-video-download]');
-  await save.waitFor({state: 'visible', timeout: 80000});
+  if(!await save.isVisible()){
+    const verify=page.locator('[data-video-verify-playback]');
+    await verify.waitFor({state:'visible',timeout:10000});
+    await verify.click({timeout:10000});
+  }
+  await save.waitFor({state:'visible',timeout:30000});
   assert.equal(await page.locator('[data-video-result]').getAttribute('data-video-result-mode'),
     'rendered', 'CATALOG_CLIP_IS_NOT_PERSONALIZED_OUTPUT');
   // Primary Save opens the real Files / Telegram / WhatsApp delivery chooser.
@@ -335,6 +344,17 @@ try {
             })),
             progress:Number(progress?.getAttribute('aria-valuenow')||0),
             hadResult:Boolean(document.querySelector('[data-mandala-video-download]')),
+            playbackCheckVisible:Boolean(document.querySelector('[data-video-verify-playback]')),
+            playbackFailed:Boolean(document.querySelector('[data-video-playback-error]')),
+            creditConfirmationPending:Boolean(document.querySelector('[data-video-credit-confirmation]')),
+            nativePreview:(()=>{
+              const video=document.querySelector('[data-mandala-video-preview]');
+              return video instanceof HTMLVideoElement?{
+                readyState:video.readyState,videoWidth:video.videoWidth,
+                videoHeight:video.videoHeight,errorCode:video.error?.code||null,
+                paused:video.paused
+              }:null;
+            })(),
           };
         }),
         new Promise((_,reject)=>setTimeout(()=>reject(Error('WEBKIT_MEDIA_DIAGNOSTIC_TIMEOUT')),3000)),
