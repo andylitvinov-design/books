@@ -225,5 +225,8 @@ if(!isMainThread&&workerData?.hhScenarioMusicShard===true){
     process.exitCode=1;
   }
 }
-if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))
+// Worker threads execute ONLY their assigned shard. process.argv[1] may
+// equal this module inside a Worker too; without isMainThread the CLI entry
+// regenerates every track in EACH worker and races other shards' FFmpeg files.
+if(isMainThread&&process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))
   console.log("[hh-scenario-audio]",JSON.stringify(buildScenarioMusic()));
