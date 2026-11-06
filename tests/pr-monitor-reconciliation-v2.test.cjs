@@ -45,6 +45,9 @@ test('monitor labels distinguish non-Draft, CI workflow count and stale Watchdog
  assert.match(source,/Workflows \(не PR\) · jobs ожидают/);
  assert.match(watchdog,/info\.dataset\.stale/);
  assert.match(watchdog,/20/);
+ const workflow=fs.readFileSync(path.join(__dirname,'../.github/workflows/hh-pr-watchdog-contract-ci.yml'),'utf8');
+ for(const name of ['pr-open-queue.js','pr-two-screen.js','watchdog-control-tower.js','pr-monitor-reconciliation-v2.test.cjs'])
+  assert.ok(workflow.includes(name),'existing CI must cover '+name);
 });
 test('queue snapshot handles genuine zero, but refuses missing as zero',()=>{
  const mapped=queueNumbers({counts:{workflows_running:0,workflows_queued:2,jobs_running:1,jobs_queued:4,prs_waiting_ci:3}});
