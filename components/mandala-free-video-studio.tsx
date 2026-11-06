@@ -978,7 +978,7 @@ function compileFreeFilmPreset(
   if(!edit&&clipIds.length===4){
     const certified=FREE_FILM_CATALOG.flatMap(source=>{
       const scene=verifiedCategorySource(source);
-      if(!scene||!isSafeMontageScene(scene)||!verifiedSceneAspect(scene,aspect)||
+      if(!scene||!isSafeMontageScene(source)||!verifiedSceneAspect(scene,aspect)||
          !firstPartyFilmFor(source.theme as VideoTheme,scene.id))return [];
       const masterKey=canonicalSourceMasterKey(scene);
       if(!masterKey)return [];
