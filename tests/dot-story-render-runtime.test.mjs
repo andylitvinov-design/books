@@ -152,7 +152,10 @@ test('actual MyTube topic coverage enables real matched story clips; unbound con
  for(const plot of listTelegramStoryPlots('stress-relief-s1')){
   const result=inspectStoryPlotCoverage(plot.id);
   assert.equal(result.readyForPlanning,false,plot.id);
-  assert.equal(result.candidateCount,0);
+  // A single newly catalogued clip is not four approved shots and must NOT
+  // enable a narrative preview. Keep strict non-ready/physical-media checks.
+  assert.ok(Number.isInteger(result.candidateCount) &&
+    result.candidateCount>=0 && result.candidateCount<result.minimumSources,plot.id);
   assert.equal(result.mediaFidelity,'unverified_editorial_plot');
   assert.equal(result.physicalMediaVerified,false);
  }
