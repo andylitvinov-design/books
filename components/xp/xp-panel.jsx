@@ -13,7 +13,8 @@ const copy={
     copied:'Ссылка скопирована',error:'Баллы временно недоступны',referral:'За приглашение',
     assessment:'За завершённый тест',consultation:'За услугу',spend:'Видео',
     sync:'Обновить XP',explainer:'XP нельзя перевести другому человеку или обменять на деньги.',
-    off:'Платное списание XP ещё не подключено.',
+    off:'Списание кредитов за видео пока не подключено.',starter:'Стартовые и бонусные',monthly:'В этом месяце',
+    monthlyNote:'1 300 стартовых кредитов + 300 каждый следующий месяц (UTC). Неиспользованные месячные кредиты сгорают.',
     dispute:'Возврат или спор по пополнению: новые списания приостановлены до проверки платежа.',
   },
   en:{
@@ -24,7 +25,8 @@ const copy={
     copied:'Link copied',error:'XP temporarily unavailable',referral:'Referral',
     assessment:'Completed assessment',consultation:'Completed service',spend:'Video',
     sync:'Refresh XP',explainer:'XP cannot be transferred or exchanged for cash.',
-    off:'Paid XP redemption is not enabled yet.',
+    off:'Video credit charging is not enabled yet.',starter:'Starter & bonus',monthly:'This month',
+    monthlyNote:'1,300 starter credits + 300 each following month (UTC). Unused monthly credits expire.',
     dispute:'A wallet refund or dispute is pending. New XP spending is paused until the payment is reconciled.',
   },
   es:{
@@ -35,7 +37,8 @@ const copy={
     copied:'Enlace copiado',error:'XP temporalmente no disponible',referral:'Invitación',
     assessment:'Prueba completada',consultation:'Servicio completado',spend:'Vídeo',
     sync:'Actualizar XP',explainer:'Los XP no se pueden transferir ni cambiar por dinero.',
-    off:'Los pagos con XP aún no están activos.',
+    off:'El cobro de créditos por vídeo aún no está activo.',starter:'Iniciales y bonus',monthly:'Este mes',
+    monthlyNote:'1.300 créditos iniciales + 300 cada mes siguiente (UTC). Los créditos mensuales no se acumulan.',
     dispute:'Hay un reembolso o disputa pendiente. El gasto de XP está en pausa hasta la conciliación.',
   },
 }
@@ -85,16 +88,18 @@ export default function XpPanel({accountId,locale='en'}){
         aria-label={t.sync} className={styles.reload}><RefreshCw size={19}/></button>
     </div>
     <div className={styles.stats}>
-      <div><b>{data.earnedXp} XP</b><small>{t.earned}</small></div>
-      <div><b>{data.paidXp} XP</b><small>{t.paid}</small></div>
+      <div><b>{data.earnedXp} XP</b><small>{t.starter}</small></div>
+      <div><b>{data.monthlyXp||0} XP</b><small>{t.monthly}</small></div>
+      {data.paidXp>0&&<div><b>{data.paidXp} XP</b><small>{t.paid}</small></div>
     </div>
     <div className={styles.actions}>
       <button type="button" onClick={copyLink} disabled={!invitation}>
         <Share2 size={17}/>{copied?t.copied:t.invite}</button>
       <Link href={'/'+loc+'/app/wallet#wallet-topup'}><Gift size={17}/>{t.topup}</Link>
     </div>
+    <p className={styles.hint}>{t.monthlyNote}</p>
     <p className={styles.hint}>{t.test} · {t.video}</p>
-    {!data.available?.hypno_video && <p className={styles.hint}>{t.off}</p>}
+    {!data.available?.basic_video && <p className={styles.hint}>{t.off}</p>
     {Number.isSafeInteger(data.debtMinor) && data.debtMinor>0 &&
       <p role="alert" className={styles.error}>{t.dispute}</p>}
     <p className={styles.foot}>{t.explainer}</p>

@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { XP_PRICES, XP_CAD_MINOR_PER_POINT, XP_REFERRAL_POINTS,
-  XP_ASSESSMENT_POINTS, xpSettings, xpQuote, xpCatalog, xpAmounts,
+  XP_ASSESSMENT_POINTS, XP_STARTER_POINTS, XP_MONTHLY_POINTS,
+  xpSettings, xpQuote, xpCatalog, xpAmounts,
 } from '../lib/xp/model.js'
 
 const src = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
@@ -11,7 +12,10 @@ const enabled={
   HH_XP_CHARGE_HYPNO:'true',HH_WALLET_SCHEMA_APPROVED:'true',
   HH_WALLET_ENABLED:'true',HH_XP_WALLET_REDEMPTION_APPROVED:'true',
 }
-test('XP prices are fixed on the server: local Basic remains free',()=>{
+test('XP prices are fixed on the server: enabled video costs 10 XP',()=>{
+  assert.equal(XP_PRICES.basic_video,10)
+  assert.equal(XP_STARTER_POINTS,1300)
+  assert.equal(XP_MONTHLY_POINTS,300)
   assert.equal(XP_PRICES.hypno_video,10)
   assert.equal(XP_PRICES.ai_voice,10)
   assert.equal(XP_PRICES.personalization,20)
@@ -87,7 +91,7 @@ test('XP consumes the real CAD wallet only once and cannot make a second checkou
 test('video charges only for real enabled hypno content and releases failed exports',()=>{
   const video=src('components/mandala-free-video-studio.tsx')
   assert.match(video,/const hasHypnoContent=affirmations\.enabled && affirmationLines\.length>0/)
-  assert.match(video,/const requiresVideoXp=hasHypnoContent && videoXpCatalog\?\.available\?\.hypno_video===true/)
+  assert.match(video,/const requiresVideoXp=videoXpCatalog\?\.enabled===true/)
   assert.match(video,/videoXpRequest\("hold"/)
   assert.match(video,/videoXpRequest\("complete"/)
   assert.match(video,/releaseVideoXp\(/)
@@ -104,7 +108,7 @@ test('video charges only for real enabled hypno content and releases failed expo
 test('refund/chargeback debt is visible and cannot mint new spendable XP', () => {
   const earned = xpAmounts({ rewardsXp:15, promoSpentXp:5,
     creditedMinor:200, chargedMinor:100, walletRedemption:true })
-  assert.deepEqual(earned, {earnedXp:10, paidXp:10, balanceXp:20,
+  assert.deepEqual(earned, {earnedXp:10, monthlyXp:0, paidXp:10, balanceXp:20,
     debtMinor:0, walletAvailable:true})
   const dispute = xpAmounts({ rewardsXp:15, promoSpentXp:5,
     creditedMinor:-100, chargedMinor:100, walletRedemption:true })

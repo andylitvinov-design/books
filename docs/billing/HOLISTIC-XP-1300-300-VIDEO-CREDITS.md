@@ -1,0 +1,10 @@
+# Holistic House — 1300 starter + 300 monthly video credits
+Owner request: 2026-11-05. Implementation staged above XP draft #2705; not an assertion of LIVE.
+
+- Authenticated active accounts receive 1300 promotional XP once on first authenticated XP status/sync/hold, including existing members when this launches. These non-cash, non-transferable points persist.
+- Starting the FIRST FULL UTC month AFTER that initial grant, a fresh 300 XP monthly is available during that calendar month. Unspent monthly balance does not carry forward, and missed months are not backfilled. Idempotent on-demand claims; no cron.
+- Spending priority: current-month XP -> persistent starter/referral/assessment XP -> existing verified CAD wallet ONLY when separately approved. No new money provider. The existing credit card/PayPal merchant approvals remain necessary before CAD-to-XP.
+- Every local Video Studio export costs 10 XP when HH_XP_CHARGE_VIDEO and all parent XP gates are approved. If hypno affirmation mode is additionally approved, that video costs another 10 XP. True AI video still needs its own verified deliverable and ready flag.
+- Video only starts after authenticated UUID-idempotent XP hold, and is downloadable only after a nonempty Blob and confirmed server debit. Cancel, failure and expired holds release the reservation; the server serializes concurrent operations via app.accounts row locks. Client cannot set tariff, reward or balance. All plan tables are private FORCE-RLS, immutable after insertion.
+- Known limitation: for on-device Canvas recorder, the server cannot cryptographically prove the Blob's origin; premium server-rendered videos must use signed artifact receipts. Chargebacks block spending in the canonical XP service.
+- Release: protected #2634 CAD wallet first, #2705 XP base next, review SQL migrations and RLS/concurrency tests, then stacked PR code; configure XP/schema gates and HH_XP_CHARGE_VIDEO only following owner approval and real signed-in Chrome/Safari E2E. Exact production deployment/alias verification required. Do not declare LIVE on CI alone. No new services, workflows, subscriptions or billing keys.

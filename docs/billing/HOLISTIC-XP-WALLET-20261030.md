@@ -118,3 +118,7 @@ reward clawback audit and product-level unit economics before broad rollout.
   the next cabinet visit; no client-side amount or referrer identity is trusted.
 - Wallet UX announces an outstanding CAD refund/dispute and does not misrepresent
   bonus XP as spendable while server-side spending is paused.
+
+
+## Follow-up: 1300 starter, 300 monthly and 10 XP per video
+The original free-Basic XP tariff applies only while the new HH_XP_CHARGE_VIDEO flag remains OFF. The requested full model, after protected activation, is specified in [HOLISTIC-XP-1300-300-VIDEO-CREDITS.md](HOLISTIC-XP-1300-300-VIDEO-CREDITS.md); all previous merchant and paid-provider gates remain effective.

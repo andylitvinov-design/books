@@ -1543,9 +1543,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setMeditationFocus(focus);
   },[]);
   const [affirmations,setAffirmations] = useState<AffirmationSettings>(defaultAffirmations);
-  // XP never replaces the existing free local renderer. A signed-in XP
-  // reservation is required only when the server explicitly enables a priced
-  // feature. Fail closed for that feature if its public price cannot load.
+  // Previews remain free. When video credits are enabled, every export needs
+  // a signed-in hold before rendering and completion after the real Blob exists.
+  // Fail closed on pricing errors; never waive an approved charge on network failure.
   const [videoXpCatalog,setVideoXpCatalog] = useState<{
     enabled:boolean;available:Record<string,boolean>;prices:Record<string,number>;
   }|null>(null);
@@ -1561,7 +1561,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       .catch(()=>{
         // Never silently waive a potential paid feature when pricing is offline.
         if(active)setVideoXpCatalog({
-          enabled:true,available:{hypno_video:true},prices:{hypno_video:10},
+          enabled:true,available:{basic_video:true,hypno_video:true},
+          prices:{basic_video:10,hypno_video:10},
         });
       });
     return ()=>{active=false};
@@ -1608,7 +1609,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     captionMode==="custom" ? customCaption.trim() : sceneName;
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
   const hasHypnoContent=affirmations.enabled && affirmationLines.length>0;
-  const requiresVideoXp=hasHypnoContent && videoXpCatalog?.available?.hypno_video===true;
+  const requiresVideoXp=videoXpCatalog?.enabled===true &&
+    videoXpCatalog?.available?.basic_video===true;
+  const videoXpPrice=(videoXpCatalog?.prices?.basic_video||10)+
+    (hasHypnoContent&&videoXpCatalog?.available?.hypno_video===true
+      ?(videoXpCatalog?.prices?.hypno_video||10):0);
   const selectedAudioKey=uploadedAudio?"file:"+uploadedAudio.url:music==="none"?"none":"preset:"+music;
   const attachedAudioKey=attachedAudio===null?"none":attachedAudio.kind==="preset"
     ?"preset:"+attachedAudio.id:"file:"+attachedAudio.id;
@@ -1623,7 +1628,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     (backgroundOnly || (Boolean(photoUrl) && photoConsent)) &&
     (!uploadedAudio || audioRights) && !audioNeedsAttachment &&
     !audioDurationInvalid && !micRecording && !preparing && !recording &&
-    (!hasHypnoContent || videoXpCatalog!==null);
+    videoXpCatalog!==null;
   const previewAudioUrl = uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
@@ -1914,7 +1919,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(requiresVideoXp){
       const operationId=crypto.randomUUID();
       try {
-        const hold=await videoXpRequest("hold",{operationId,features:["hypno_video"]});
+        const features=["basic_video",
+          ...(hasHypnoContent&&videoXpCatalog?.available?.hypno_video===true
+            ?["hypno_video"]:[])];
+        const hold=await videoXpRequest("hold",{operationId,features});
         if(hold.status!=="held")throw new Error("XP_HOLD_INVALID");
         reservedXpId=operationId;
         xpHoldRef.current=operationId;
@@ -2477,7 +2485,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <ArrowRight size={20} aria-hidden="true"/>
           </Link>
           <strong><Leaf size={23} aria-hidden="true"/>Holistic House</strong>
-          <span className={videoStyles.quickBrandFree}><Check size={15} aria-hidden="true"/>{practiceCopy.free}</span>
+          <span className={videoStyles.quickBrandFree}><Check size={15} aria-hidden="true"/>{requiresVideoXp?videoXpPrice+" XP":practiceCopy.free}</span>
         </nav>
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
@@ -3076,13 +3084,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>
           </div>
         </details>
-        {hasHypnoContent && videoXpCatalog?.available?.hypno_video &&
+        {requiresVideoXp &&
           <p className={videoStyles.quickHint} data-video-xp-quote>
-            <span>{locale==="ru"?"Видео с гипноаффирмациями":
-              locale==="es"?"Vídeo con hipnoafirmaciones":"Hypnoaffirmation video"}:
-              {" "}{videoXpCatalog.prices?.hypno_video||10} XP</span>
+            <span>{locale==="ru"?"Создание одного ролика":
+              locale==="es"?"Crear un vídeo":"Create one video"}:
+              {" "}{videoXpPrice} XP</span>
             {" · "}<Link href={"/"+(["en","ru"].includes(locale)?locale:"en")+"/app/wallet"}>
-              {locale==="ru"?"Получить XP":locale==="es"?"Obtener XP":"Get XP"}
+              {locale==="ru"?"Мои кредиты":locale==="es"?"Mis créditos":"My credits"}
             </Link>
           </p>}
         <div className={videoStyles.quickOrderBar} data-video-order-bar>
@@ -3096,14 +3104,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
             disabled={recording||preparing||!freeVideoSelected||(usingFreeFilmCompilation&&!freeFilmReady)} onClick={createQuickVideo}>
             {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
-            {recording||preparing?quick.creating:freeVideoSelected?quick.create:practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
+            {recording||preparing?quick.creating:requiresVideoXp
+              ?(locale==="ru"?"Создать за ":locale==="es"?"Crear por ":"Create for ")+videoXpPrice+" XP"
+              :freeVideoSelected?quick.create:practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
           </button>
         </div>
         {recording?<div className={videoStyles.quickProgress} role="progressbar"
           aria-label={quick.creating} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
           <span style={{width:progress+"%"}}/></div>:null}
         {notice?<p role="status" className={videoStyles.quickStatus} aria-live="polite">{notice}</p>:null}
-        <p className={videoStyles.quickPrivacy}><Check size={16} aria-hidden="true"/>{quick.noAI}</p>
+        <p className={videoStyles.quickPrivacy}><Check size={16} aria-hidden="true"/>
+          {requiresVideoXp?(locale==="ru"?"Кредиты списываются только за готовый ролик":
+            locale==="es"?"Solo se cobran créditos por un vídeo terminado":
+            "Credits are charged only for a finished video"):quick.noAI}</p>
         <button type="button" className={videoStyles.quickTherapy}
           data-video-quick-therapy disabled={recording||preparing}
           onClick={()=>{setCinematicPlan(null);setStudioMode("therapy");setQuickDetailedOpen(true);
