@@ -4414,3 +4414,11 @@
 .montageAudioDialogFooter button:disabled{opacity:.5}
 @media(min-width:760px){.montageAudioOverlay{align-items:center;padding:24px}.montageAudioDialog{border-radius:26px;max-height:86dvh}}
 @media(max-width:359px){.montageAudioDialogScroll{padding:4px 9px 12px}.montageAudioDialogFooter{padding-left:9px;padding-right:9px}.montageAudioDialogFooter button{font-size:12px}}
+
+
+/* Hypno follows Montage: the already-selected goal stays in Goal/Ideas,
+   and one existing shared video player precedes three Hypno effect tabs. */
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-quick-section="1"],
+.studio[data-active-workspace="effects"] .quickBuilder>.hypnoIntroSlot{display:none!important}
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel]{order:3!important}
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-result]{order:4!important}

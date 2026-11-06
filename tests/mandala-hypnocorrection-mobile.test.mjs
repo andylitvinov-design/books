@@ -82,76 +82,45 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
 });
 
-test("owner's third workspace exposes three image-led groups in approved order and one real Create handler",()=>{
+test("06 Nov Hypno uses three exclusive effect tabs under the one actual player",()=>{
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
   const videoCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
-  const order=["phrases","visual","audio"].map(id=>ui.indexOf('id:"'+id+'",title:t.'));
-  assert.ok(order.every(value=>value>=0)&&order.every((value,i)=>i===0||value>order[i-1]));
-  assert.match(ui,/useState<GroupId\[\]>\(\["phrases","visual","audio"\]\)/);
-  assert.match(ui,/data-hypno-card/);
-  assert.match(ui,/note==="voice"/,
-    "opening the speech control reveals the inline voice editor");
-  assert.match(ui,/voiceEditor\|\|<p className=\{styles\.note\}>\{t\.voiceHint\}<\/p>/,
-    "audio guidance offers the inline phrase-voice editor or a clear prerequisite");
-  assert.match(ui,/audioEffectBusy/,"audio controls expose their real render-busy state");
-  assert.match(ui,/data-photo=\{Boolean\(poster\)\}/);
+  for(const id of ["phrases","visual","audio"])assert.match(ui,new RegExp('id:"'+id+'"'));
+  assert.match(ui,/useState<GroupId>\("visual"\)/);
+  assert.match(ui,/data-hypno-tabs/);
+  assert.match(ui,/role="tablist"/);
+  assert.match(ui,/role="tabpanel"/);
+  assert.match(ui,/aria-selected=\{activeGroup===group.id\}/);
+  assert.match(ui,/hidden=\{activeGroup!==group.id\}/);
+  assert.match(ui,/data-hypno-speech-settings/);
+  assert.match(ui,/data-hypno-binaural-settings/);
+  assert.match(ui,/data-hypno-light-settings/);
   assert.match(ui,/data-hypno-create/);
-  assert.match(ui,/createPortal\(intro,introTarget\)/);
-  assert.match(ui,/data-hypno-intro/);
-  assert.match(studio,/data-hypno-intro-slot/);
-  assert.match(css,/\.intro\{display:grid/);
-  assert.match(studio,/onCreate=\{startFromHero\}/);
-  assert.match(studio,/studioMode==="pump"&&activeWorkspace!=="effects"/);
-  assert.match(css,/groupContent:not\(\[hidden\]\)\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css,/@media\(max-width:374px\)/);
-  assert.match(css,/\.switch\{position:relative;display:flex;align-items:center;justify-content:flex-start;/);
-  assert.match(ui,/groups\.map\(\(group,index\)=>/, "number all three approved illustrated groups");
-  assert.match(ui,/styles\.groupNumber/, "number badge is on original photo tile");
-  assert.match(css,/\.groupNumber\{position:absolute/, "number badge remains legible on photo");
-  assert.match(css,/\.feature\{height:124px;min-height:124px;max-height:124px;/,
-    "375-430 CSS-pixel iPhone cards must be compact, not 170px high");
-  assert.match(css,/\.meditation \.meditationStart\{display:grid/,
-    "meditation action uses white card override over legacy purple button");
-  assert.match(videoCss,/scroll-margin-top:min\(44svh,390px\)/,
-    "third-tab deep-link must reveal the original header/Wave/player above groups");
-  assert.match(videoCss,/not\(\[data-active-workspace="effects"\]\) \.quickBuilder>\[data-video-result\]/,
-    "generated video result must remain visible in third workspace");
-  assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-effects-panel\]\{order:3\}/,
-    "the four groups appear immediately after the single player/navigation");
-  assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-result\]\{order:4\}/,
-    "real generated output and Save appear after Effects/Create, not above them");
-  assert.match(videoCss,/data-active-workspace="effects"\] \.previewStage \.hero\{aspect-ratio:3\.3\/1!important\}/);
-  assert.match(css,/@media\(min-width:375px\) and \(max-width:759px\)\{\s*\.groupHeader\{min-height:128px\}/);
-  assert.match(css,/\.feature\{min-height:128px;grid-template-rows:38px 1fr\}/);
-  assert.match(css,/@media\(max-width:374px\)\{\s*\.groupHeader\{min-height:84px\}/);
-  for(const locale of ["ru","en","es"])assert.match(ui,new RegExp(locale+": \\{"));
-  assert.doesNotMatch(ui,/unavailable onToggle=/, "no dead placeholder remains in the three live groups");
-  assert.match(ui,/data-hypno-create[\s\S]{0,140}onClick=\{onCreate\}/);
+  assert.match(ui,/data-hypno-without-effects/);
+  assert.match(ui,/onClick=\{onCreateWithoutEffects\}/);
+  assert.doesNotMatch(ui,/createPortal|data-hypno-intro-slot|data-hypno-meditation-action/);
+  assert.doesNotMatch(ui,/Yes, add|keep simple|Browse hypno library/);
+  assert.match(css,/\.groupTabs\{/);
+  assert.match(css,/\.group\[hidden\]\{display:none!important\}/);
+  assert.match(css,/@media\(max-width:359px\)/);
+  assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-quick-section="1"\],[\s\S]*?display:none!important/);
+  assert.match(studio,/onCreate=\{startFromHero\} onCreateWithoutEffects=\{generateWithoutHypnoEffects\}/);
+  assert.equal((studio.match(/id="video-hero"/g)||[]).length,1);
 });
-
-test("02 Nov reference has six real, full-width goal chips and three accessible full-width cards per effects row",()=>{
+test("Generate without effects strips Hypno layers before original local renderer",()=>{
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
-  const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
-  const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
-  const videoCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
-  assert.match(studio,/const effectsThemeOrder: VideoTheme\[\] = \["life","energy","relationships","goals","money","health"\]/);
-  assert.match(studio,/open=\{activeWorkspace==="effects"\|\|undefined\}/);
-  assert.match(studio,/effectsThemeNames\[locale\]\[value\]/);
-  assert.match(videoCss,/\.studio\[data-active-workspace="effects"\] \.quickBuilder>\[data-video-quick-section="1"\]\{\s*display:grid!important;order:3/);
-  assert.match(videoCss,/\.quickThemeRail\{\s*display:grid!important;grid-auto-flow:row;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css,/\.group\{display:block;grid-template-columns:none/);
-  assert.match(css,/\.groupContent:not\(\[hidden\]\)\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css,/\.groupHeader::after,\.groupHeader>img\{display:none\}/);
-  assert.match(css,/\.feature,.feature\[data-photo=true\]\{position:relative/);
-  assert.match(css,/\.feature\[data-photo=true\] \.featurePoster\{position:absolute/);
-  assert.match(css,/\.switch\{grid-column:1;grid-row:1;z-index:3/);
-  assert.doesNotMatch(ui,/data-hypno-meditation-action/, "personal meditation action belongs to Practices");
-  assert.doesNotMatch(ui,/id:"meditation"|styles\.meditation/);
-  assert.equal((ui.match(/data-hypno-create/g)||[]).length,1,"one original local recording callback");
-  assert.match(ui,/onClick=\{onCreate\}/);
-  assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|new MediaRecorder\(/);
+  const start=studio.indexOf("async function generateWithoutHypnoEffects");
+  const action=studio.slice(start,studio.indexOf("// This is a local, non-persistent preview.",start));
+  assert.ok(start>0);
+  assert.match(action,/hypnoWhisperEnabled\|\|hypnoBinauralEnabled/);
+  assert.match(action,/await applyHypnoAudioEffects\(\{whisper:false,binaural:false/);
+  assert.match(action,/if\(previousHypnoAudioRef\.current\)return/);
+  assert.match(action,/setHypnoLight\(value=>\(\{\.\.\.value,enabled:false\}\)\)/);
+  assert.match(action,/setAffirmations\(value=>\(\{\.\.\.value,enabled:false\}\)\)/);
+  assert.match(action,/freshHypnoCreateRef\.current\(\)/);
+  assert.doesNotMatch(action,/setAttachedAudio\(|setTimelineTextClips\(/);
 });
 
 test("Effects shares the one compact in-flow tab rail and preserves the original video",()=>{
