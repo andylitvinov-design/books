@@ -65,6 +65,7 @@
       '.hh-watchdog-control .hh-watchdog-metric:nth-child(3) strong{color:#65dfc0}'+
       '.hh-watchdog-control .hh-watchdog-metric span{overflow-wrap:anywhere}'+
       '.hh-watchdog-control-meta{margin:7px 0 2px;color:#adc0d4;font-size:11px;line-height:1.45}'+
+      '.hh-watchdog-control-meta[data-stale="true"]{color:#ffc48f;font-weight:700}'+
       '.hh-watchdog-control a{display:inline-block;margin:2px 0 4px;color:#99cfff;font-size:11px;text-decoration:underline}'+
       '.hh-watchdog-control a[hidden]{display:none}'+
       '.hh-ct-blockers,.hh-ct-handoff{border-top:1px solid #35516b;margin-top:10px;padding-top:9px}'+
@@ -95,6 +96,7 @@
         }
         const date=new Date(data.checked_at);
         const minutes=Number.isFinite(+date)?Math.max(0,Math.round((Date.now()-date)/60000)):null;
+        info.dataset.stale=String(minutes===null||minutes>20);
         info.textContent='Control Tower · '+(Number.isFinite(+date)?clock.format(date)+' Торонто':'время неизвестно')+
           (minutes===null?'':' · '+minutes+' мин назад')+
           ' · production PR: '+(Number.isSafeInteger(data.counts.production_prs)?
@@ -235,6 +237,7 @@
         last=Date.now();
       }catch{
         for(const node of Object.values(nodes)){node.textContent='—';node.setAttribute('aria-label','Данные недоступны');}
+        info.dataset.stale='true';
         info.textContent='Нет подтверждённых данных Control Tower. Нулём отсутствие отчёта не считается.';
         blockersTitle.textContent='Блокировки · отчёт недоступен';
         blockersList.replaceChildren();blockers.open=true;

@@ -96,7 +96,7 @@
     if(doc.getElementById('hh-open-queue'))return true;
     root=doc.createElement('section');root.id='hh-open-queue';root.className='hh-open-queue';root.setAttribute('aria-label','Открытые PR в production');
     root.innerHTML='<div class="hhq-row"><span class="hhq-title">Очередь PR <b data-hhq="production">—</b></span><span class="hhq-kind">Ф <b data-hhq="functional">—</b></span><span class="hhq-kind">Т <b data-hhq="technical">—</b></span><span class="hhq-kind">? <b data-hhq="unknown">—</b></span><button type="button" data-hhq="refresh" aria-label="Обновить очередь PR">↻</button></div>'+ 
-      '<div class="hhq-footer"><span>Ready <b data-hhq="ready">—</b> · Draft <b data-hhq="draft">—</b> · все базы <b data-hhq="total">—</b> (другие <b data-hhq="other">—</b>)</span> <a href="https://github.com/andylitvinov-design/books/pulls?q=is%3Apr+is%3Aopen" target="_blank" rel="noopener noreferrer">Открыть PR</a></div>'+
+      '<div class="hhq-footer"><span title="Не Draft означает только открытый PR; CI и merge могут быть заблокированы">Не Draft <b data-hhq="ready">—</b> · Draft <b data-hhq="draft">—</b> · все базы <b data-hhq="total">—</b> (другие <b data-hhq="other">—</b>)</span> <a href="https://github.com/andylitvinov-design/books/pulls?q=is%3Apr+is%3Aopen" target="_blank" rel="noopener noreferrer">Открыть PR</a></div>'+
       '<p class="hhq-status" data-hhq="status" role="status" aria-live="polite">Проверяю GitHub…</p>';
     header.insertAdjacentElement('afterend',root);
     find('refresh').addEventListener('click',()=>refresh(true));

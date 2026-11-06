@@ -36,6 +36,16 @@ test('same PR cohort with five disjoint stages reconciles',()=>{
  assert.equal(result.ok,true);
  assert.equal(result.sum,84);
 });
+test('monitor labels distinguish non-Draft, CI workflow count and stale Watchdog evidence',()=>{
+ const queue=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/pr-open-queue.js'),'utf8');
+ const watchdog=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/watchdog-control-tower.js'),'utf8');
+ assert.match(queue,/Не Draft <b data-hhq="ready">/);
+ assert.match(queue,/CI и merge могут быть заблокированы/);
+ assert.match(source,/Workflows \(не PR\) · jobs выполняются/);
+ assert.match(source,/Workflows \(не PR\) · jobs ожидают/);
+ assert.match(watchdog,/info\.dataset\.stale/);
+ assert.match(watchdog,/20/);
+});
 test('queue snapshot handles genuine zero, but refuses missing as zero',()=>{
  const mapped=queueNumbers({counts:{workflows_running:0,workflows_queued:2,jobs_running:1,jobs_queued:4,prs_waiting_ci:3}});
  assert.deepEqual(Array.from(mapped),[3,2,0,4,1]);
