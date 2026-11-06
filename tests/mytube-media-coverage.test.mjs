@@ -15,8 +15,10 @@ test("audits 256 stories / 1,280 motifs with honest source-tag evidence only",()
   });
   assert.equal(audit.scenarioMotifs.length,1280);
   assert.equal(audit.scenarioStyles.length,2560);
-  assert.equal(audit.footageInventory.eligibleLocalLicensedCatalogRows,56);
-  assert.equal(audit.footageInventory.distinctVideoPaths,56);
+  // Default audit is portrait-only: 48 legacy clips + four new portrait edits.
+  // The other four new MP4s are landscape-only, not cross-aspect substitutes.
+  assert.equal(audit.footageInventory.eligibleLocalLicensedCatalogRows,52);
+  assert.equal(audit.footageInventory.distinctVideoPaths,52);
   assert.equal(audit.footageInventory.physicallyCheckedInThisAudit,false);
   assert.equal(audit.footageInventory.privateR2UploadCount,"unknown_unverified");
   assert.equal(audit.footageInventory.originalMotionExcluded,true);

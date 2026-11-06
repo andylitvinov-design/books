@@ -166,7 +166,9 @@ test('48 legacy portrait films survive while 4 independent new landscape films a
   assert.ok(stock.scenes.slice(0,48).every(s=>s.width<s.height&&
     s.allowedAspects.length===1&&s.allowedAspects[0]==='portrait'));
   assert.equal(stock.scenes.filter(s=>s.allowedAspects?.includes('landscape')).length,4);
-  assert.equal(stock.scenes.filter(s=>s.id.startsWith('sun-')&&s.allowedAspects?.includes('portrait')).length,4);
+  // Old sun-trees-forest also begins with sun-; only four *new* originals
+  // have sourceOriginalGroupId and a separate portrait companion.
+  assert.equal(stock.scenes.filter(s=>s.sourceOriginalGroupId&&s.allowedAspects?.includes('portrait')).length,4);
   assert.ok(stock.scenes.every(s=>s.originMasterKeys.length>0));
   const deep=stock.scenes.find(s=>s.id==='river-grounding');
   const other=stock.scenes.find(s=>s.id==='forest-renewal');
