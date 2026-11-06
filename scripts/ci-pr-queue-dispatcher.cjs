@@ -111,17 +111,18 @@ function planCandidates(prs,now){
  const source=ranked.filter(pr=>laneOf(pr)==='repair');
  const conflict=ranked.find(pr=>laneOf(pr)==='conflict');
  const ci=ranked.find(pr=>laneOf(pr)==='ci');
- // Bounded rotation: the first exact-HEAD manual task may already have a
- // signed terminal receipt. Inspect up to four old PRs in the SAME existing
- // Watchdog cycle and skip handled ones; do not starve 80+ other old PRs.
- // At most ONE new legacy worker is accepted per sweep (guard below).
+ // Legacy PREPARED is signed read-only metadata, not source repair.
+ // Previous 4-candidate/10-minute rotation launched many no-source workers
+ // per hour even with no free code executor; these compete with real Core.
+ // Inspect ONE stable legacy candidate during each UTC hour, regardless of
+ // scheduler jitter. A signed terminal task receipt suppresses repeat work
+ // for that exact source HEAD; the next hour rotates to a different old PR.
+ // No extra cron, slot, workflow or source writing authority is created.
  const legacy=ranked.filter(pr=>laneOf(pr)==='legacy')
   .sort((a,b)=>a.number-b.number);
- const LEGACY_PROBE_LIMIT=4;
- const legacyStart=legacy.length?
-  (Math.floor(now/3600000)*LEGACY_PROBE_LIMIT)%legacy.length:0;
- const oldCandidates=Array.from({length:Math.min(LEGACY_PROBE_LIMIT,legacy.length)},
-  (_,i)=>legacy[(legacyStart+i)%legacy.length]);
+ const legacyStart=legacy.length?Math.floor(now/3600000)%legacy.length:0;
+ const oldCandidates=Number.isFinite(now)&&now>=0&&legacy.length?
+  [legacy[legacyStart]]:[];
  // During conflict-only backlogs, rotate a bounded window rather than reread
  // the same 16 already handed-off exact HEADs on each ten-minute cycle.
  if(!source.length&&!ci){
@@ -150,7 +151,10 @@ function planCandidates(prs,now){
  const offset=tail.length?(Math.floor(now/600000)*Math.max(1,sourceRoom))%tail.length:0;
  for(let i=0;i<tail.length&&picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0);i++)add(tail[(offset+i)%tail.length]);
  add(conflict);
- const rest=ranked.filter(pr=>!chosen.has(pr.number)).sort((a,b)=>a.number-b.number);
+ // Legacy is a read-only hourly lane; never let the generic refill loop
+ // re-add 20+ old tasks and bypass the single-candidate hour budget.
+ const rest=ranked.filter(pr=>!chosen.has(pr.number)&&laneOf(pr)!=='legacy')
+  .sort((a,b)=>a.number-b.number);
  const room=Math.min(MAX_INSPECT-picked.length,rest.length);
  const start=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
