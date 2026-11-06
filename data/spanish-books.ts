@@ -3,6 +3,14 @@ type BookCopy = { title: string; description: string; category: string };
 // Translate the complete catalog copy. The archived books are original editions,
 // not silently replaced by translations or summaries.
 export const spanishBooks: Record<string, BookCopy> = {
+  "egypt-osiris-temple-magic": { title: "Egipto · Osiris y fundamentos de la magia del templo", description: "Manual original sobre Osiris, Maat, los cuerpos simbólicos y las prácticas del templo.", category: "Tradición egipcia" },
+  "egypt-maat-isis-attunements": { title: "Egipto · Maat, Isis y sintonizaciones de autor", description: "Notas de la tradición egipcia y sintonizaciones de Maat, Isis y Serapis.", category: "Tradición egipcia" },
+  "greek-temple-attunements": { title: "Misterios griegos · dioses y sintonizaciones de templo", description: "Sintonizaciones originales de misterios griegos con referencias a templos y lugares.", category: "Misterios griegos" },
+  "greek-metaphysics-planning": { title: "Tradición griega · metafísica y planificación", description: "Dos guías originales: un modelo simbólico antiguo y un plan de objetivos.", category: "Misterios griegos" },
+  "greek-dionysus-asclepius-course": { title: "Tradición griega · módulos de Asclepio y Dioniso", description: "Manual del curso original de Asclepio y Dioniso, distinto del archivo de templos.", category: "Misterios griegos" },
+  "roman-imperial-temples": { title: "Tradición romana · arquetipos imperiales y templos", description: "Notas originales sobre Roma y sus templos, separadas del corpus griego.", category: "Tradición romana" },
+  "zoroastrian-tradition-notes": { title: "Tradición zoroástrica · Asha, Vohu Manah y Spenta Armaiti", description: "Notas originales sobre niveles y sintonizaciones en los estudios zoroástricos.", category: "Zoroastrismo y Mitra" },
+  "mithra-mysteries": { title: "Misterios de Mitra · tradiciones persa y romana", description: "Notas originales sobre el mitraísmo persa y romano y sus etapas de iniciación.", category: "Zoroastrismo y Mitra" },
   'alchemy-homeopathy-foundations': { title: 'Libro 01. Homeopatía: fundamentos y método', description: 'Volumen fundacional de Alquimia del Alma que presenta el enfoque, sus principios básicos y la lógica inicial del método.', category: 'Alquimia del Alma' },
   'alchemy-homeopathy-remedies': { title: 'Libro 02. Remedios homeopáticos y perfiles', description: 'Continuación práctica centrada en los remedios, sus perfiles y la consulta aplicada del material.', category: 'Alquimia del Alma' },
   'alchemy-naturopathy-hormones': { title: 'Libro 03. Naturopatía: suplementos, minerales y apoyo hormonal', description: 'Volumen de naturopatía dedicado al apoyo, los suplementos y el acompañamiento desde una perspectiva sistémica.', category: 'Alquimia del Alma' },

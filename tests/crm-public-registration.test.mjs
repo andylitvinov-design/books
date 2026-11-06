@@ -15,6 +15,29 @@ const payload = {
   website:'',
 }
 
+test('free-only service filter cannot lose an early pre-hydration selection',()=>{
+  const view=read('components/services-smart-discovery.tsx')
+  assert.match(view,/const \[facetsHydrated,setFacetsHydrated\] = useState\(false\)/)
+  assert.match(view,/useEffect\(\(\)=>\{setFacetsHydrated\(true\)\},\[\]\)/)
+  assert.match(view,/data-free-services-only\s+disabled=\{!facetsHydrated\}/)
+  assert.match(view,/setBudget\(event\.target\.checked \? "free" : ""\)/)
+})
+
+test('service offering identity is optional, a UUID claim only and checked against published owner data',()=>{
+  const valid='fcef611f-e68b-5b30-b9f4-b0aa5614654d'
+  assert.equal(normalizePublicServiceEnquiry({...payload,serviceOfferingId:valid}).serviceOfferingId,valid)
+  for(const bad of ['', '1', '../secrets', '00000000-0000-0000-0000-00000000000q', 13])
+    assert.throws(()=>normalizePublicServiceEnquiry({...payload,serviceOfferingId:bad}))
+  const store=read('lib/practitioners/public-service-enquiry.js')
+  assert.match(store,/app[.]service_offerings/)
+  assert.match(store,/practitioner_id=\$1 and active=true/)
+  assert.match(store,/status='published'/)
+  assert.match(store,/localized_copy->\$2->>'title'/)
+  assert.match(store,/if\(serviceOfferingId && offerings.length!==1\)/)
+  assert.match(store,/SERVICE_OFFERING_NOT_VERIFIED/)
+  assert.match(store,/service_offering_id/)
+  assert.match(store,/row[.]service_offering_id\|\|null/)
+})
 test('public course registration normalizes consented contact and marks source as academy',()=>{
   const result=normalizePublicServiceEnquiry(payload)
   assert.equal(result.contact.displayName,'Alex Example')
@@ -92,7 +115,7 @@ test('guest registration creates an encrypted CRM contact in the same transactio
   assert.match(backend,/on conflict do nothing/i)
   assert.match(backend,/contactConsent|replyConsent/)
   assert.match(backend,/seal\(\{\s*displayName: contact\.displayName/)
-  assert.match(backend,/contactProvenance: manuallyRecorded\?\.submittedByVisitor/)
+  assert.match(backend,/contactProvenance: row\.telegram_thread_id\?'consented_telegram_thread':\s*manuallyRecorded\?\.submittedByVisitor/)
   assert.match(backend,/enquiry: \{ referenceCode, serviceTitle, sourcePath \}/)
   assert.match(endpoint,/requireSameOrigin\(request, config\)/)
   assert.match(endpoint,/consumeRate/)
@@ -131,4 +154,25 @@ test('shared course/service chooser requires a reply contact and opt-in; name is
   assert.match(contacts,/contact\.enquiry\?\.serviceTitle/)
   assert.match(contacts,/contact\.enquiry\.referenceCode/)
   assert.match(store,/\.\.\.\(former\.enquiry \? \{enquiry:former\.enquiry\} : \{\}\)/)
+})
+
+test('new guest enquiry links only the contact created by the same committed operation',()=>{
+  const backend=read('lib/practitioners/public-service-enquiry.js')
+  const schema=read('supabase/migrations/20261104155150_hh_public_enquiry_contact_links_v1.sql')
+  // The optional Telegram handoff wraps the same enquiry insert in a replay-safe
+  // try/catch; the contact insert must still follow the committed enquiry.
+  const posEnquiry=backend.indexOf('inserted=await db.query(insert.text,insert.values)')
+  const posContact=backend.indexOf('const contactInsert=await db.query(')
+  const posLink=backend.indexOf('insert into app_private.public_enquiry_contact_links')
+  assert.ok(posEnquiry>0&&posContact>posEnquiry&&posLink>posContact,
+    'enquiry, new unverified contact and link must be committed in that order')
+  assert.match(backend,/if \(contactInsert\.rowCount === 1\)/)
+  assert.match(backend,/on conflict do nothing/)
+  assert.doesNotMatch(backend,/update app\.crm_contacts set|on conflict.*do update/is)
+  assert.match(schema,/FORCE ROW LEVEL SECURITY/i)
+  assert.match(schema,/created_from_this_enquiry/)
+  assert.match(schema,/for insert to hh_app_backend/i)
+  assert.match(schema,/current_setting\('hh\.public_enquiry_operation',true\)/)
+  assert.match(schema,/foreign key \(contact_id,owner_id\)/i)
+  assert.doesNotMatch(schema,/grant .* (anon|authenticated)/i)
 })

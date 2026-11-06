@@ -1,0 +1,665 @@
+"use client";
+
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
+import type { PublicLocale } from "@/lib/public-locales";
+import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
+import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
+import MessengerSignIn from "@/components/app/messenger-sign-in";
+import {interpretSupportUtterance} from "@/lib/holistic-support/guide-dialogue.mjs";
+import {classifyVideoChatQuestion,answerVideoChatQuestion} from "@/lib/mandala/video-chat-dialogue-knowledge.mjs";
+import {
+  MESSENGER_VIDEO_HANDOFF_KEY,initialMessengerVideoDraft,messengerVideoCopy,
+  messengerVideoQuestion,messengerVideoChoices,advanceMessengerVideo,
+  changeMessengerVideoPhraseStyle,encodeMessengerVideoHandoff,
+} from "@/lib/mandala/video-chat-messenger-flow.mjs";
+import styles from "./holistic-agent-chat.module.css";
+
+type Mode = "rules" | "device" | "owned";
+type PublicVideoGoal = "all" | "stress" | "energy" | "relationships" | "work" | "meaning" | "practices";
+type GuidedTrack = "video" | "meditation" | "hint" | null;
+type PreviewFocus = "" | "stress" | "relationships" | "self_worth" | "meaning";
+type Outline = {status:"draft_ready";title:string;lessons:Array<{number:number;title:string;steps:string[];videoReady:false}>;published:false;mediaReady:false};
+type Message = { role: "user" | "assistant"; text: string };
+type MessengerVideoDraft = {
+  goal:string;categoryId:string|null;topicId:string|null;scenarioId:string|null;
+  ideaId:string|null;phraseId:string|null;phraseText:string|null;
+  tone:"gentle"|"confident"|"grounded"|"inspiring";speaker:"self"|"support";
+  length:"short"|"extended";mood:"slow"|"dynamic"|null;
+  aspect:"portrait"|"landscape"|"square"|null;duration:10|15|20|30|60|null;
+  music:"love"|"meditation"|"harmony"|"none"|null;phrases:boolean|null;
+};
+type AgentDecision = { status: string; message?: string; question?: {key:string;text:string}|null;
+  suggestions?: {id:string;kind:string;title:string;href:string}[] };
+type AgentReply = { status:string;reply:string;modelUsed:boolean;source:string;
+  suggestions:{id:string;kind:string;title:string;href:string}[];decision:AgentDecision;
+  browserModelAllowed:boolean; usedSavedTestEvidence?:boolean; usedSavedVideoHistory?:boolean };
+const copy = {
+  ru:{ title:"Разговор с AI-проводником",disclosure:"Я — AI-проводник Holistic House, не человек и не психотерапевт.",
+    intro:"Опишите запрос свободно. По вашему согласию можно учесть проверенные результаты выбранной темы без передачи баллов нейросети.",
+    placeholder:"Что сейчас для вас важно?",send:"Отправить",cancel:"Остановить",mode:"Способ ответа",
+    rules:"Без нейросети",device:"AI на устройстве (может потребоваться загрузка модели)",owned:"AI на нашем сервере (с согласия)",
+    consent:"Разрешаю передать моё сообщение и последние реплики этого диалога на собственный защищённый AI-сервер Holistic House.",
+    loading:"Формирую ответ…",error:"Не удалось получить ответ. Попробуйте повторить запрос.",signIn:"Личный режим требует защищённого входа. Нажмите кнопку ниже.",modeError:"Этот режим пока недоступен. Выберите «Без нейросети» в настройках чата.",
+    unavailable:"Локальная модель в этом браузере или для русского языка недоступна; показан проверенный ответ.",
+    source:"Источник ответа",suggestions:"Проверенные варианты",start:"Начните с вопроса. Можно сменить режим в любой момент.",
+    option:"Выбрать",reset:"Новый разговор",used:"На устройстве",backend:"Собственный сервер",simple:"Алгоритм",
+    axis:"Тема профиля (необязательно)",axisNone:"Без дополнительной оси",format:"Предпочитаемый формат",
+    allFormats:"Любой подходящий",useTests:"Разрешаю учесть мои сохранённые тесты по выбранной оси только для этого запроса",
+    evidenceUsed:"Учтено наличие проверенного результата; баллы не передавались нейросети.",
+    useHistory:"Учесть отмеченные мной просмотренные видео (только в этом запросе)",
+    historyUsed:"Учтены ранее отмеченные просмотренные видео; личная история не раскрыта нейросети.",
+    kinds:{video:"Видео",audio:"Аудио",test:"Тест",course:"Курс",service:"Сессия"},
+    hide:"Не предлагать снова",tried:"Я попробовал",localFeedback:"Мои отметки действуют только в этом диалоге и не сохраняются в кабинете.",
+    programTitle:"Программа из 8 практик — предварительный план",
+    programInfo:"Это образовательный план. Видео и аудио для этих 8 занятий ещё не созданы. Для индивидуальной психотерапии нужна проверка специалиста.",
+    programFocus:"Выберите тему",programFocusItems:{stress:"Стресс и восстановление",relationships:"Отношения и границы",self_worth:"Самоподдержка и самооценка",meaning:"Смыслы и направление"},
+    programTime:"Предпочитаемая длительность практики (не готового видео)",programSafety:"Я выбираю мягкий образовательный формат и могу остановить его в любой момент. Мне не требуется экстренная помощь.",
+    programImagery:"Добавить добровольные ресурсные образы",programStart:"Подготовить план",
+    programError:"Не удалось сформировать план. Проверьте вход в кабинет или выберите другую тему.",
+    programReady:"План готов для ознакомления, не опубликован. Медиафайлы не создавались.",programEmpty:"Выберите тему и подтвердите готовность.",
+    programStep:"Шаг",programNoMedia:"Сценарный план — не готовое видео."},
+  en:{ title:"Chat with the AI guide",disclosure:"I am Holistic House's AI guide, not a human or a therapist.",
+    intro:"Describe your question. With your permission, verified results for your selected topic can inform suggestions without sharing scores with a model.",
+    placeholder:"What's on your mind?",send:"Send",cancel:"Stop",mode:"Response mode",
+    rules:"Without a language model",device:"On-device AI (may download a model)",owned:"Our AI server (with consent)",
+    consent:"I agree to send this message and recent conversation turns to Holistic House's secured, self-hosted AI server.",
+    loading:"Preparing a reply…",error:"Could not get a reply. Please try again.",signIn:"This private mode requires sign-in. Use the Google button below.",modeError:"This response mode is unavailable. Select Without a language model in chat settings.",
+    unavailable:"The on-device language model isn't available for this browser or language; the verified fallback is shown.",
+    source:"Reply source",suggestions:"Verified options",start:"Start with a question. You can switch modes any time.",
+    option:"Open",reset:"New conversation",used:"On device",backend:"Self-hosted server",simple:"Rules",
+    axis:"Profile topic (optional)",axisNone:"No extra axis",format:"Preferred format",
+    allFormats:"Any suitable option",useTests:"Allow saved test evidence for this axis and this request only",
+    evidenceUsed:"Verified test evidence informed the match; raw scores were not sent to a language model.",
+    useHistory:"Use videos I previously marked watched (this request only)",
+    historyUsed:"Your previously marked videos informed ordering; no private history was sent to a model.",
+    kinds:{video:"Video",audio:"Audio",test:"Test",course:"Course",service:"Session"},
+    hide:"Don't suggest again",tried:"I tried it",localFeedback:"These choices apply only to this conversation; they are not saved to your account.",
+    programTitle:"Eight-practice program — preview outline",
+    programInfo:"Educational outline only. None of the eight video/audio lessons has been produced. Individual psychotherapy requires practitioner review.",
+    programFocus:"Choose a topic",programFocusItems:{stress:"Stress and recovery",relationships:"Relationships and boundaries",self_worth:"Self-support and confidence",meaning:"Meaning and direction"},
+    programTime:"Preferred practice length (not a finished video)",programSafety:"I choose a gentle educational outline, can stop anytime, and do not need immediate emergency help.",
+    programImagery:"Allow optional resource imagery",programStart:"Create outline",
+    programError:"Could not prepare the outline. Check your account or choose another topic.",
+    programReady:"Draft outline, not published. No media was generated.",programEmpty:"Choose a topic and confirm readiness.",
+    programStep:"Step",programNoMedia:"Written outline, not a finished video."},
+  es:{ title:"Habla con el asistente de IA",disclosure:"Soy el asistente de IA de Holistic House, no una persona ni terapeuta.",
+    intro:"Describe tu pregunta. Con tu permiso se pueden considerar resultados del eje elegido sin enviar puntuaciones al modelo.",
+    placeholder:"¿Qué te preocupa ahora?",send:"Enviar",cancel:"Detener",mode:"Tipo de respuesta",
+    rules:"Sin modelo de IA",device:"IA en el dispositivo (puede descargar un modelo)",owned:"Nuestro servidor de IA (con permiso)",
+    consent:"Acepto enviar este mensaje y los últimos turnos de la conversación al servidor privado de IA de Holistic House.",
+    loading:"Preparando una respuesta…",error:"No se pudo obtener respuesta. Vuelve a intentarlo.",signIn:"Este modo privado requiere acceso. Usa el botón de Google abajo.",modeError:"Este modo no está disponible. Selecciona Sin modelo de IA en los ajustes del chat.",
+    unavailable:"El modelo local no está disponible para este navegador o idioma; se muestra la respuesta segura.",
+    source:"Origen",suggestions:"Opciones verificadas",start:"Escribe una pregunta. Puedes cambiar el modo cuando quieras.",
+    option:"Abrir",reset:"Nueva conversación",used:"En el dispositivo",backend:"Servidor propio",simple:"Reglas",
+    axis:"Tema del perfil (opcional)",axisNone:"Sin dimensión adicional",format:"Formato preferido",
+    allFormats:"Cualquier opción adecuada",useTests:"Permito usar pruebas guardadas del eje elegido solo para esta consulta",
+    evidenceUsed:"Se consideró la existencia de una prueba verificada; no se enviaron puntuaciones al modelo.",
+    useHistory:"Usar vídeos que ya marqué como vistos (solo en esta consulta)",
+    historyUsed:"Se tuvieron en cuenta vídeos marcados previamente; no se compartió historial con el modelo.",
+    kinds:{video:"Vídeo",audio:"Audio",test:"Prueba",course:"Curso",service:"Sesión"},
+    hide:"No volver a sugerir",tried:"Lo probé",localFeedback:"Estas marcas solo se aplican a esta conversación y no se guardan en tu cuenta.",
+    programTitle:"Programa de ocho prácticas — borrador",
+    programInfo:"Es un esquema educativo. No se han creado ocho vídeos o audios. La psicoterapia individual requiere revisión profesional.",
+    programFocus:"Elige un tema",programFocusItems:{stress:"Estrés y recuperación",relationships:"Relaciones y límites",self_worth:"Autoapoyo y confianza",meaning:"Sentido y dirección"},
+    programTime:"Duración deseada de la práctica (no del vídeo)",programSafety:"Elijo un esquema educativo suave, puedo detenerlo cuando quiera y no necesito ayuda de emergencia inmediata.",
+    programImagery:"Permitir imágenes de recursos opcionales",programStart:"Preparar esquema",
+    programError:"No se pudo crear el esquema. Comprueba tu cuenta o elige otro tema.",
+    programReady:"Esquema no publicado. No se ha generado ningún vídeo.",programEmpty:"Elige un tema y confirma tu disposición.",
+    programStep:"Paso",programNoMedia:"Esquema escrito; no es un vídeo listo."},
+} as const;
+
+const messengerStarter = {
+ ru:{
+  welcome:"Приветствую! Могу помочь с поддерживающим видео, практикой, тестом или личной экспресс-диагностикой. Выберите вариант или напишите свой вопрос.",
+  hello:"Я здесь! Можем создать видео, подобрать практику, выбрать тест или обратиться за личной экспресс-диагностикой. Что вам актуально?",
+  video:"Создать видео",videoSub:"Для поддержки",
+  meditation:"Подобрать медитацию",meditationSub:"Практику для сейчас",
+  hint:"Получить ИИ-подсказку",hintSub:"Пройти тест",
+  master:"Получить личную блиц-диагностику",masterSub:"От мастера",
+  actions:"Выберите, с чего начать",testsLink:"Открыть бесплатные тесты",
+  videoIntent:"Хочу создать видео",meditationIntent:"Хочу подобрать медитацию",
+  hintIntent:"Хочу получить ИИ-подсказку через тест",
+  videoQuestion:"С удовольствием! Для начала расскажите, о чём будет видео и что вы хотите почувствовать или изменить после просмотра.",
+  meditationQuestion:"Конечно! Как вы себя чувствуете сейчас, сколько минут у вас есть и к какому состоянию хотите прийти?",
+  hintQuestion:"Что вы хотите лучше понять сейчас: стресс, отношения, ресурсы или другую тему? Можно начать с бесплатного теста и затем обсудить результат здесь. Тест не является диагнозом.",
+  chooseTheme:"Тема готового видео",themes:{stress:"Спокойствие",relationships:"Любовь",energy:"Энергия",meaning:"Смыслы"},
+  readyVideos:"Смотреть готовые видео бесплатно",requestVideo:"Создать персональное видео",
+  videoAuth:"Для заявки на персональную генерацию войдите через Google. Подбор и просмотр готовых видео доступны без входа.",
+  safety:"Если вам или кому-то рядом угрожает непосредственная опасность, обратитесь в экстренную службу. Я могу помочь найти доступные материалы, когда это безопасно.",
+ },
+ en:{
+  welcome:"Welcome! I can help with a supportive video, a practice for now, a test or a personal express review. Choose an option or write your question.",
+  hello:"I'm here! We can create a video, choose a practice, explore a test or request a personal express review. What matters to you now?",
+  video:"Create a video",videoSub:"For support",
+  meditation:"Choose a meditation",meditationSub:"A practice for now",
+  hint:"Get an AI suggestion",hintSub:"Take a test",
+  master:"Get a personal express review",masterSub:"With a practitioner",
+  actions:"Choose where to start",testsLink:"Explore free tests",
+  videoIntent:"I want to create a video",meditationIntent:"I want to find a meditation",
+  hintIntent:"I want a suggestion based on a test",
+  videoQuestion:"Of course! What would you like the video to be about, and how would you like to feel after watching it?",
+  meditationQuestion:"Of course! How do you feel right now, how many minutes do you have and how would you like to feel after the meditation?",
+  hintQuestion:"What would you like to understand better: stress, relationships, personal resources or something else? You can start with a free test, then discuss the result here. A test is not a diagnosis.",
+  chooseTheme:"Topic for ready-made videos",themes:{stress:"Calm",relationships:"Love",energy:"Energy",meaning:"Meaning"},
+  readyVideos:"Watch ready-made videos for free",requestVideo:"Create my personal video",
+  videoAuth:"To request a custom generated video, sign in with Google. Exploring and watching existing videos needs no account.",
+  safety:"If you or someone nearby is in immediate danger, contact local emergency services. I can help find public resources when it's safe.",
+ },
+ es:{
+  welcome:"¡Hola! Puedo ayudarte con un vídeo de apoyo, una práctica para ahora, un test o una revisión exprés personal. Elige una opción o escribe tu pregunta.",
+  hello:"¡Aquí estoy! Podemos crear un vídeo, elegir una práctica, hacer un test o solicitar una revisión personal. ¿Qué necesitas ahora?",
+  video:"Crear un vídeo",videoSub:"Para apoyo",
+  meditation:"Elegir meditación",meditationSub:"Una práctica para ahora",
+  hint:"Obtener una sugerencia de IA",hintSub:"Hacer un test",
+  master:"Solicitar revisión exprés personal",masterSub:"Con un profesional",
+  actions:"Elige cómo empezar",testsLink:"Explorar tests gratuitos",
+  videoIntent:"Quiero crear un vídeo",meditationIntent:"Quiero elegir una meditación",
+  hintIntent:"Quiero una sugerencia mediante un test",
+  videoQuestion:"¡Claro! ¿De qué te gustaría que tratara el vídeo y cómo quieres sentirte después de verlo?",
+  meditationQuestion:"¡Claro! ¿Cómo te sientes ahora, cuántos minutos tienes y cómo te gustaría sentirte después?",
+  hintQuestion:"¿Qué te gustaría comprender mejor: el estrés, las relaciones, tus recursos u otro tema? Puedes empezar con un test gratuito y luego comentar el resultado aquí. Un test no es un diagnóstico.",
+  chooseTheme:"Tema de un vídeo disponible",themes:{stress:"Calma",relationships:"Amor",energy:"Energía",meaning:"Sentido"},
+  readyVideos:"Ver vídeos disponibles gratis",requestVideo:"Crear mi vídeo personal",
+  videoAuth:"Para solicitar un vídeo personalizado, entra con Google. Explorar y ver los vídeos existentes no requiere cuenta.",
+  safety:"Si tú u otra persona estáis en peligro inmediato, contacta los servicios de emergencia locales. Puedo ayudarte a buscar recursos públicos cuando sea seguro.",
+ },
+} as const;
+function isCasualGreeting(raw:string):boolean {
+ const text=raw.toLocaleLowerCase().normalize("NFKC").replace(/[!?,.¿¡]+/g," ").replace(/\s+/g," ").trim();
+ // Only exact simple greetings. Do not intercept risk, privacy or other requests.
+ return /^(?:привет|приветик|здравствуй|здравствуйте|доброе утро|добрый день|добрый вечер|ау|ауу|алло|привет ау|ау привет|ты тут|hi|hello|hey|hi there|hello there|hola|buenas|buenos dias)$/.test(text);
+}
+
+// Video choices are local, but urgent/human-review text must still use the
+// existing authenticated safety preflight, not the category-choice reducer.
+function requiresProtectedReply(text:string,locale:PublicLocale):boolean {
+  if(/(?:не хочу (?:больше )?жить(?:[.!?]|$)|i do not want to live(?:[.!?]|$)|i dont want to live(?:[.!?]|$)|ya no quiero vivir(?:[.!?]|$)|мне стало хуже|после упражнения хуже|хочу остановиться|мне страшно продолжать|i feel worse|please stop|after the exercise i feel worse|me siento peor|no quiero continuar)/iu.test(text))
+    return true;
+  for(let i=0;i<text.length;i+=180)
+    if(interpretSupportUtterance(text.slice(i,i+240),locale).kind==="safety")return true;
+  return false;
+}
+type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal})=>Promise<string>;
+  destroy?:()=>void };
+type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
+  create:(options?:unknown)=>Promise<NativePromptSession> };
+export type HolisticAgentQuickPrompt = {revision:number;text:string;format?:"video"|"audio"|"course"|"service"|"test"};
+export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticated=false}:{
+ locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean
+}) {
+  const t=copy[locale];
+  const starter=messengerStarter[locale];
+  const [mode,setMode]=useState<Mode>("rules");
+  const [agree,setAgree]=useState(false);
+  const [axisRef,setAxisRef]=useState("");
+  const [format,setFormat]=useState<""|"video"|"audio"|"test"|"course"|"service">("");
+  const [useSavedTests,setUseSavedTests]=useState(false);
+  const [useSavedHistory,setUseSavedHistory]=useState(false);
+  const [historyUsed,setHistoryUsed]=useState(false);
+  const [evidenceUsed,setEvidenceUsed]=useState(false);
+  const [dismissedIds,setDismissedIds]=useState<string[]>([]);
+  const [completedIds,setCompletedIds]=useState<string[]>([]);
+  const [draft,setDraft]=useState("");
+  const [entryOpen,setEntryOpen]=useState(true);
+  const [guideLink,setGuideLink]=useState<"tests"|null>(null);
+  const [guidedTrack,setGuidedTrack]=useState<GuidedTrack>(null);
+  const [videoGoal,setVideoGoal]=useState<PublicVideoGoal>("all");
+  const [showVideoSignIn,setShowVideoSignIn]=useState(false);
+  const [needsPrivateSignIn,setNeedsPrivateSignIn]=useState(false);
+  const [messages,setMessages]=useState<Message[]>([]);
+  const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
+  const [videoDraft,setVideoDraft]=useState<MessengerVideoDraft>(
+    ()=>initialMessengerVideoDraft() as MessengerVideoDraft);
+  const [videoStep,setVideoStep]=useState<string|null>(null);
+  const videoCopy=messengerVideoCopy(locale);
+  const videoChoices=compact&&videoStep?messengerVideoChoices(videoDraft,videoStep,locale):[];
+  const [status,setStatus]=useState("");
+  const [source,setSource]=useState("");
+  const [busy,setBusy]=useState(false);
+  const controller=useRef<AbortController|null>(null);
+  const composerRef=useRef<HTMLTextAreaElement|null>(null);
+  const threadRef=useRef<HTMLDivElement|null>(null);
+  const followTail=useRef(true);
+  const [newBelow,setNewBelow]=useState(false);
+  useEffect(()=>{
+    if(!quickPrompt)return;
+    setDraft(quickPrompt.text.slice(0,2000));
+    if(quickPrompt.format)setFormat(quickPrompt.format);
+    // The user explicitly selected a rail action: prepare, never auto-send it.
+    if(!compact)composerRef.current?.focus({preventScroll:true});
+  },[quickPrompt,compact]);
+  useEffect(()=>{
+    const thread=threadRef.current;
+    if(!thread)return;
+    if(followTail.current){
+      thread.scrollTop=thread.scrollHeight;
+      setNewBelow(false);
+    }else if(messages.length){
+      setNewBelow(true);
+    }
+  },[messages.length,status,choices.length]);
+  useEffect(()=>{
+    if(!compact)return;
+    const input=composerRef.current;
+    if(!input)return;
+    input.style.height='44px';
+    input.style.height=Math.max(44,Math.min(100,input.scrollHeight))+'px';
+  },[draft,compact]);
+  const [previewFocus,setPreviewFocus]=useState<PreviewFocus>("");
+  const [previewMinutes,setPreviewMinutes]=useState<8|12|20>(12);
+  const [previewReady,setPreviewReady]=useState(false);
+  const [previewImagery,setPreviewImagery]=useState(false);
+  const [outline,setOutline]=useState<Outline|null>(null);
+  const [outlineBusy,setOutlineBusy]=useState(false);
+  const [outlineError,setOutlineError]=useState("");
+  async function createOutline(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if(!previewFocus||!previewReady||outlineBusy)return;
+    setOutlineBusy(true);setOutlineError("");setOutline(null);
+    try{
+      const response=await fetch("/api/holistic-agent/program",{
+        method:"POST",credentials:"same-origin",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({locale,focus:previewFocus,minutes:previewMinutes,
+          resourceImagery:previewImagery,safetyAcknowledged:previewReady}),
+      });
+      if(!response.ok)throw Error("PROGRAM_UNAVAILABLE");
+      const data=await response.json() as Outline;
+      if(data.status!=="draft_ready" || data.mediaReady!==false ||
+        data.published!==false || data.lessons?.length!==8)throw Error("NOT_A_REVIEWED_DRAFT");
+      setOutline(data);
+    }catch{setOutlineError(t.programError);}
+    finally{setOutlineBusy(false);}
+  }
+
+  function guestAnswer(text:string,prior:Message[]):string {
+    const reviewed=ruleConversationReply({message:text,locale,history:prior});
+    const goal=publicVideoGoalForMessage(text);
+    if(goal)setVideoGoal(goal as PublicVideoGoal);
+    if(!reviewed){setGuidedTrack(null);return starter.safety;}
+    if(reviewed.id.startsWith("video"))setGuidedTrack("video");
+    else if(reviewed.id.startsWith("meditation"))setGuidedTrack("meditation");
+    return reviewed.reply;
+  }
+  function answerVideo(value:string,label=value) {
+    if(!compact||!videoStep||busy)return;
+    const questionKind=classifyVideoChatQuestion(value);
+    if(questionKind){
+      const response=answerVideoChatQuestion(questionKind,{
+        locale,stage:videoStep,options:videoChoices.map(option=>option.label),
+      });
+      followTail.current=true;setNewBelow(false);setDraft("");
+      setMessages(prev=>[...prev,{role:"user" as const,text:label},
+        {role:"assistant" as const,text:response}].slice(-30));
+      return;
+    }
+    const result=advanceMessengerVideo(videoDraft,videoStep,value,locale);
+    setVideoDraft(result.draft as MessengerVideoDraft);
+    setVideoStep(result.step);
+    setDraft("");setStatus("");setSource("");setChoices([]);
+    followTail.current=true;setNewBelow(false);
+    setMessages(prev=>[...prev,
+      {role:"user" as const,text:label},
+      {role:"assistant" as const,text:(result.valid?"":videoCopy.unknown+"\\n")+
+        messengerVideoQuestion(result.step,locale)},
+    ].slice(-30));
+  }
+  function updateVideoPhraseStyle(key:"tone"|"speaker"|"length",value:string,label:string) {
+    if(!compact||videoStep!=="phrase"||busy)return;
+    const next=changeMessengerVideoPhraseStyle(videoDraft,key,value);
+    if(!next)return;
+    setVideoDraft(next as MessengerVideoDraft);setStatus("");setChoices([]);
+    followTail.current=true;setNewBelow(false);
+    setMessages(prev=>[...prev,{role:"user" as const,text:label},
+      {role:"assistant" as const,text:messengerVideoQuestion("phrase",locale)}].slice(-30));
+  }
+  function openVideoEdit(step:string,label:string) {
+    setVideoStep(step);setShowVideoSignIn(false);followTail.current=true;setNewBelow(false);
+    setMessages(prev=>[...prev,{role:"user" as const,text:label},
+      {role:"assistant" as const,text:messengerVideoQuestion(step,locale)}].slice(-30));
+  }
+  function stageVideoHandoff():boolean {
+    const payload=encodeMessengerVideoHandoff(videoDraft,locale);
+    if(!payload){setStatus(videoCopy.unknown);return false;}
+    try{window.sessionStorage.setItem(MESSENGER_VIDEO_HANDOFF_KEY,payload);return true;}
+    catch{setStatus(t.error);return false;}
+  }
+  function startGuided(kind:"video"|"meditation"|"hint") {
+    if(busy)return;
+    followTail.current=true;setNewBelow(false);
+    setFormat(kind==="video"?"video":kind==="meditation"?"audio":"test");
+    setVideoStep(kind==="video"?"category":null);
+    if(kind==="video")setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
+    setGuidedTrack(kind);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);
+    setGuideLink(kind==="hint"?"tests":null);
+    setEntryOpen(false);setStatus("");setSource("");setChoices([]);
+    setDraft("");
+    const intent=kind==="video"?starter.videoIntent:
+      kind==="meditation"?starter.meditationIntent:starter.hintIntent;
+    const question=kind==="video"?messengerVideoQuestion("category",locale):
+      kind==="meditation"?starter.meditationQuestion:starter.hintQuestion;
+    setMessages(prev=>[...prev,
+      {role:"user" as const,text:intent},
+      {role:"assistant" as const,text:question},
+    ].slice(-30));
+  }
+  async function submit(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text=draft.trim().slice(0,2000);
+    if(!text||busy||mode==="owned"&&!agree)return;
+    if(compact&&isCasualGreeting(text)){
+      followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
+      setMessages(prev=>[...prev,{role:"user" as const,text},
+        {role:"assistant" as const,text:/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
+          /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:starter.hello}].slice(-30));
+      return;
+    }
+    if(compact&&videoStep){
+      if(!requiresProtectedReply(text,locale)){answerVideo(text);return;}
+      // Urgent/human-review messages must not leave video options visible.
+      setVideoStep(null);setGuidedTrack(null);
+    }
+    setEntryOpen(false);
+    // Keep every user turn intact for server safety preflight (UI max 2,000).
+    // Bound unusually long assistant replies without altering user risk cues.
+    const prior=messages.slice(-6).map(row=>({
+      role:row.role,text:row.role==="user"?row.text:row.text.slice(0,4000),
+    })),abort=new AbortController();
+    // Guest discovery uses public editorial rules, not private account APIs.
+    if(compact&&!authenticated&&mode==="rules"){
+      followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);
+      setNeedsPrivateSignIn(false);setShowVideoSignIn(false);setEntryOpen(false);setDraft("");
+      const answer=requiresProtectedReply(text,locale)?starter.safety:guestAnswer(text,prior);
+      setMessages(prev=>[...prev,{role:"user" as const,text},
+        {role:"assistant" as const,text:answer}].slice(-30));
+      return;
+    }
+    followTail.current=true;setNewBelow(false);setNeedsPrivateSignIn(false);setShowVideoSignIn(false);
+    controller.current=abort;setBusy(true);setStatus("");setChoices([]);setDraft("");
+    setMessages(prev=>[...prev,{role:"user" as const,text}]);
+    try {
+      const response=await fetch("/api/holistic-agent/turn",{
+        method:"POST",credentials:"same-origin",signal:abort.signal,
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({locale,message:text,mode,history:prior,
+          selectedGoal:null,ownedInferenceConsent:mode==="owned"&&agree,
+          chosenAxes:axisRef?[axisRef]:[],
+          preferredFormat:format||null,
+          usePrivateProfile:useSavedTests&&Boolean(axisRef),
+          usePrivateHistory:useSavedHistory,
+          feedback:{dismissedIds,completedIds}}),
+      });
+      if(!response.ok)throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"MODE_UNAVAILABLE":"CHAT_UNAVAILABLE");
+      const data=await response.json() as AgentReply;
+      let reply=data.reply,used=data.source||"none";
+      if(mode==="device"&&data.browserModelAllowed&&!abort.signal.aborted){
+        try {
+          const native=(window as Window & {LanguageModel?:NativeLanguageModel}).LanguageModel;
+          const languages=[locale];
+          const caps={expectedInputs:[{type:"text",languages}],
+            expectedOutputs:[{type:"text",languages}]};
+          if(!native||await native.availability(caps)==="unavailable")
+            throw Error("DEVICE_UNAVAILABLE");
+          const envelope=prepareNaturalDialogue({locale,message:text,history:prior,decision:data.decision,
+            channel:"browser",consent:{browserInference:true}});
+          if(!envelope.modelAllowed||!envelope.modelRequest)throw Error("DEVICE_DISABLED");
+          const session=await native.create(caps);
+          try{
+            const generated=await finishNaturalDialogue(envelope,async request=>{
+              const prompt=request.messages.map(x=>x.role+": "+x.content).join("\n\n");
+              return session.prompt(prompt,{signal:abort.signal});
+            });
+            if(generated.modelUsed){reply=generated.text;used="browser";}
+          } finally {session.destroy?.();}
+        } catch {
+          setStatus(t.unavailable);
+        }
+      }
+      if(abort.signal.aborted)return;
+      setChoices(Array.isArray(data.suggestions)?data.suggestions:[]);
+      setEvidenceUsed(data.usedSavedTestEvidence===true);
+      setHistoryUsed(data.usedSavedVideoHistory===true);
+      setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
+      setSource(used==="browser"?t.used:used==="owned"?t.backend:t.simple);
+    } catch (error) {
+      if(!abort.signal.aborted){
+        const reason=error instanceof Error?error.message:"";
+        if(reason==="SIGN_IN_REQUIRED"&&compact&&mode==="rules"){
+          // Expired session: answer from public rules; private API stays protected.
+          const answer=requiresProtectedReply(text,locale)?starter.safety:guestAnswer(text,prior);
+          setMessages(prev=>[...prev,{role:"assistant" as const,text:answer}].slice(-30));
+          setSource("");setStatus("");
+        }else{
+          setNeedsPrivateSignIn(reason==="SIGN_IN_REQUIRED");
+          setStatus(reason==="SIGN_IN_REQUIRED"?t.signIn:reason==="MODE_UNAVAILABLE"?t.modeError:t.error);
+        }
+      }
+    } finally {
+      setBusy(false);controller.current=null;
+    }
+  }
+  const settings = (
+    <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
+      <summary>{compact?(locale==="ru"?"Настройки":locale==="es"?"Ajustes":"Settings"):(locale==="ru"?"Режим ответа и конфиденциальность":locale==="es"?"Modo y privacidad":"Response mode and privacy")}</summary>
+    <label className={styles.mode}>{t.mode}
+      <select value={mode} onChange={event=>{setMode(event.target.value as Mode);setStatus("");}}>
+        <option value="rules">{t.rules}</option>
+        <option value="device">{t.device}</option>
+        <option value="owned">{t.owned}</option>
+      </select>
+    </label>
+    <div className={styles.preferences}>
+      <label className={styles.mode}>{t.axis}
+        <select value={axisRef} onChange={e=>{
+          setAxisRef(e.target.value);if(!e.target.value)setUseSavedTests(false);
+        }}>
+          <option value="">{t.axisNone}</option>
+          {Object.entries(AXIS_REFS).map(([id,axis])=>
+            <option key={id} value={id}>{axis.label[locale]||axis.label.en}</option>)}
+        </select>
+      </label>
+      <label className={styles.mode}>{t.format}
+        <select value={format} onChange={e=>setFormat(e.target.value as typeof format)}>
+          <option value="">{t.allFormats}</option>
+          {(["video","audio","test","course","service"] as const).map(kind=>
+            <option key={kind} value={kind}>{t.kinds[kind]}</option>)}
+        </select>
+      </label>
+    </div>
+    <label className={styles.consent}>
+      <input type="checkbox" disabled={!axisRef} checked={useSavedTests}
+        onChange={e=>setUseSavedTests(e.target.checked)}/>
+      {t.useTests}
+    </label>
+    <label className={styles.consent}>
+      <input type="checkbox" checked={useSavedHistory}
+        onChange={e=>setUseSavedHistory(e.target.checked)}/>
+      {t.useHistory}
+    </label>
+    {mode==="owned"&&<label className={styles.consent}>
+      <input type="checkbox" checked={agree} onChange={event=>setAgree(event.target.checked)}/>
+      {t.consent}
+    </label>}
+    </details>
+  );
+  return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
+    data-has-messages={messages.length>0||undefined}>
+    {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
+    {!compact&&settings}
+    <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
+      onScroll={event=>{const el=event.currentTarget;
+        const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
+        followTail.current=atBottom;
+        if(atBottom)setNewBelow(false)}}>
+      {compact&&<p className={styles.assistant} data-hh-ai-welcome>{starter.welcome}</p>}
+      {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
+      {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
+      {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
+        href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
+      {compact&&entryOpen&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
+        <button type="button" data-hh-ai-start="video" disabled={busy} onClick={()=>startGuided("video")}>
+          <span className={styles.startIcon} aria-hidden="true">🎬</span>
+          <strong>{starter.video}</strong><small>{starter.videoSub}</small>
+        </button>
+        <button type="button" data-hh-ai-start="meditation" disabled={busy} onClick={()=>startGuided("meditation")}>
+          <span className={styles.startIcon} aria-hidden="true">🪷</span>
+          <strong>{starter.meditation}</strong><small>{starter.meditationSub}</small>
+        </button>
+        <button type="button" data-hh-ai-start="hint" disabled={busy} onClick={()=>startGuided("hint")}>
+          <span className={styles.startIcon} aria-hidden="true">✨</span>
+          <strong>{starter.hint}</strong><small>{starter.hintSub}</small>
+        </button>
+        <a data-hh-ai-start="master" href={"/"+locale+"/services/free-situation-review"}>
+          <span className={styles.startIcon} aria-hidden="true">🤝</span>
+          <strong>{starter.master}</strong><small>{starter.masterSub}</small>
+        </a>
+      </div>}
+      {compact&&(guidedTrack==="meditation"||(guidedTrack==="video"&&!videoStep))&&messages.length>0&&
+        <div className={styles.publicVideoActions} data-hh-public-video-choices>
+          <div className={styles.topicChoices} role="group" aria-label={starter.chooseTheme}>
+            {(["stress","relationships","energy","meaning"] as const).map(goal=>
+              <button type="button" key={goal} aria-pressed={videoGoal===goal}
+                onClick={()=>{setVideoGoal(goal);setShowVideoSignIn(false);}}>
+                {starter.themes[goal]}
+              </button>)}
+          </div>
+          <a className={styles.readyVideoLink} data-hh-guest-ready-videos
+            href={"/"+locale+"/mytube?goal="+videoGoal}>{starter.readyVideos}</a>
+          {authenticated?
+            <a className={styles.personalVideoButton} data-hh-video-open-studio
+              href={"/"+locale+"/holistic-support/mandala"}>{starter.requestVideo}</a>:
+            <button className={styles.personalVideoButton} data-hh-personal-video-request
+              type="button" onClick={()=>setShowVideoSignIn(true)}>{starter.requestVideo}</button>}
+          {showVideoSignIn&&!authenticated&&<div className={styles.videoAuth} data-hh-video-sign-in>
+            <p>{starter.videoAuth}</p>
+            <MessengerSignIn locale={locale} continueTo="video-studio"/>
+          </div>}
+        </div>}
+      {compact&&videoStep&&<div className={styles.videoInline} data-hh-video-chat-step={videoStep}>
+        {videoStep==="phrase"&&<div className={styles.videoPhraseFilters} data-hh-video-phrase-filters>
+          {(["tone","speaker","length"] as const).map(key=><fieldset key={key}>
+            <legend>{videoCopy[key]}</legend>
+            <div>{(key==="tone"?["gentle","confident","grounded","inspiring"]:
+              key==="speaker"?["self","support"]:["short","extended"]).map((value,index)=>{
+              const label=(key==="tone"?videoCopy.tones:key==="speaker"?videoCopy.speakers:videoCopy.lengths)[index];
+              return <button type="button" key={value} disabled={busy}
+                aria-pressed={videoDraft[key]===value} data-hh-video-phrase-style={key+"-"+value}
+                onClick={()=>updateVideoPhraseStyle(key,value,label)}>{label}</button>;
+            })}</div>
+          </fieldset>)}
+        </div>}
+        {videoChoices.length>0&&<div className={styles.videoOptions} role="group"
+          aria-label={messengerVideoQuestion(videoStep,locale)} data-hh-video-chat-options>
+          {videoChoices.map(item=><button type="button" key={item.id} disabled={busy}
+            data-hh-video-chat-choice={item.id} onClick={()=>answerVideo(item.id,item.label)}>{item.label}</button>)}
+        </div>}
+        {videoStep==="category"&&<a className={styles.videoDiscoveryTextLink}
+          data-hh-guest-ready-videos href={"/"+locale+"/mytube?goal=all"}>{starter.readyVideos}</a>}
+        {videoStep==="review"?<div className={styles.videoReview} data-hh-video-chat-review>
+          <p>{videoDraft.duration} s · {videoDraft.aspect==="portrait"?"9:16":videoDraft.aspect==="square"?"1:1":"16:9"} · {videoCopy.editNames.music}: {videoDraft.music==="none"?videoCopy.musicNames[3]:videoDraft.music}</p>
+          <div className={styles.videoEditOptions} role="group" aria-label={videoCopy.edit}>
+            {(["category","topic","scenario","idea","phrase","mood","aspect","duration","music","phrases"] as const).map(step=><button
+              type="button" key={step} disabled={busy} data-hh-video-edit-step={step}
+              onClick={()=>openVideoEdit(step,step in videoCopy.editNames?
+                videoCopy.editNames[step as keyof typeof videoCopy.editNames]:messengerVideoQuestion(step,locale))}>
+              {step in videoCopy.editNames?videoCopy.editNames[step as keyof typeof videoCopy.editNames]:videoCopy[step]}</button>)}
+          </div>
+          {authenticated?<a className={styles.videoStudioLink} data-hh-video-open-studio
+            href={"/"+locale+"/holistic-support/mandala#video-director-chat"}
+            onClick={event=>{if(!stageVideoHandoff())event.preventDefault();}}>
+            {videoCopy.toStudio}</a>:
+            <button type="button" className={styles.videoStudioLink} data-hh-personal-video-request
+              onClick={()=>{if(stageVideoHandoff())setShowVideoSignIn(true);}}>
+              {starter.requestVideo}</button>}
+          {showVideoSignIn&&!authenticated&&<div className={styles.videoAuth} data-hh-video-sign-in>
+            <p>{starter.videoAuth}</p>
+            <MessengerSignIn locale={locale} continueTo="video-studio"/>
+          </div>}
+        </div>:<div className={styles.videoCommands} role="group" aria-label={videoCopy.edit}>
+          {videoStep!=="category"&&<button type="button" disabled={busy} data-hh-video-chat-back
+            onClick={()=>answerVideo("назад",videoCopy.back)}>{videoCopy.back}</button>}
+          {videoStep==="phrase"&&<button type="button" disabled={busy} data-hh-video-chat-skip
+            onClick={()=>answerVideo("пропусти",videoCopy.noPhrases)}>{videoCopy.noPhrases}</button>}
+          {videoStep!=="category"&&<button type="button" disabled={busy} data-hh-video-chat-auto
+            onClick={()=>answerVideo("выбери сам",videoCopy.auto)}>{videoCopy.auto}</button>}
+        </div>}
+      </div>}
+    {source&&<p className={styles.muted}>{t.source}: {source}</p>}
+    {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
+    {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
+    {choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id)).length>0&&
+      <div className={styles.choices}><h2>{t.suggestions}</h2>
+        {choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id)).map(x=>
+          <div className={styles.offer} key={x.id}>
+            <a href={x.href} rel="noreferrer">{x.title} · {t.option}</a>
+            <div className={styles.feedbackActions}>
+              <button type="button" onClick={()=>setDismissedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.hide}</button>
+              <button type="button" onClick={()=>setCompletedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.tried}</button>
+            </div>
+          </div>)}
+        <small className={styles.muted}>{t.localFeedback}</small>
+      </div>}
+    {status&&<p role="alert" className={styles.assistant}>{status}</p>}
+    {compact&&needsPrivateSignIn&&<MessengerSignIn locale={locale}/>}
+    </div>
+    {newBelow&&<button type="button" className={styles.jumpToLatest} onClick={()=>{
+      followTail.current=true;
+      if(threadRef.current)threadRef.current.scrollTop=threadRef.current.scrollHeight;
+      setNewBelow(false);
+    }}>{locale==="ru"?"↓ Новые сообщения":locale==="es"?"↓ Mensajes nuevos":"↓ New messages"}</button>}
+    <form onSubmit={submit} className={styles.form}>
+      <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
+        maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
+      <div className={styles.actions}>
+        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
+        <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
+        {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
+      </div>
+    </form>
+    {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>
+      <summary>{t.programTitle}</summary>
+      <p className={styles.muted}>{t.programInfo}</p>
+      <form onSubmit={createOutline} className={styles.form}>
+        <label className={styles.mode}>{t.programFocus}
+          <select value={previewFocus} onChange={e=>{
+            setPreviewFocus(e.target.value as PreviewFocus);
+            setOutline(null);
+          }}>
+            <option value="">{t.programFocus}</option>
+            {(["stress","relationships","self_worth","meaning"] as const).map(item=>
+              <option key={item} value={item}>{t.programFocusItems[item]}</option>)}
+          </select>
+        </label>
+        <label className={styles.mode}>{t.programTime}
+          <select value={previewMinutes}
+            onChange={e=>setPreviewMinutes(Number(e.target.value) as typeof previewMinutes)}>
+            {[8,12,20].map(n=><option key={n} value={n}>{n} min</option>)}
+          </select>
+        </label>
+        <label className={styles.consent}>
+          <input type="checkbox" checked={previewImagery}
+            onChange={e=>setPreviewImagery(e.target.checked)}/>{t.programImagery}
+        </label>
+        <label className={styles.consent}>
+          <input type="checkbox" checked={previewReady}
+            onChange={e=>setPreviewReady(e.target.checked)}/>{t.programSafety}
+        </label>
+        <button type="submit" disabled={!previewFocus||!previewReady||outlineBusy}>
+          {outlineBusy?t.loading:t.programStart}
+        </button>
+      </form>
+      {outlineError&&<p role="status">{outlineError}</p>}
+      {outline&&<section aria-label={t.programTitle} className={styles.outline}>
+        <h2>{outline.title}</h2>
+        <p className={styles.muted} role="status">{t.programReady}</p>
+        <ol>{outline.lessons.map(item=><li key={item.number}>
+          <strong>{t.programStep} {item.number}. {item.title}</strong>
+          {item.steps.length>0&&<ul>{item.steps.map((step,i)=><li key={i}>{step}</li>)}</ul>}
+          <small>{t.programNoMedia}</small>
+        </li>)}</ol>
+      </section>}
+    </details>}
+  </section>;
+}

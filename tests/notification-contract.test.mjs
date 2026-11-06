@@ -25,9 +25,23 @@ test('Only generic bilingual course messages are allowed',()=>{
 test('Holistic House app has its own branded install manifest, without renaming the legacy library PWA',async()=>{
   const {readFile}=await import('node:fs/promises')
   const page=await readFile(new URL('../app/[locale]/app/[[...path]]/page.jsx',import.meta.url),'utf8')
-  const manifest=JSON.parse(await readFile(new URL('../public/holistic-house.webmanifest',import.meta.url),'utf8'))
-  assert.match(page,/manifest: '\/holistic-house\.webmanifest'/)
-  assert.equal(manifest.name,'Holistic House')
-  assert.equal(manifest.start_url,'/en/app')
-  assert.ok(manifest.icons.some(icon=>icon.src==='/holistic-house-app.svg'))
+  // EN/RU/ES share the existing app install identity; OPORA has a separate,
+  // explicit programme manifest. The installed entry is the Messages hub.
+  assert.match(page,/manifest: oporaInstall \?/)
+  for(const locale of ['en','ru','es']){
+    const suffix=locale==='en'?'':'-'+locale
+    const manifest=JSON.parse(await readFile(new URL('../public/holistic-house-app'+suffix+'.webmanifest',import.meta.url),'utf8'))
+    assert.equal(manifest.name,'Holistic House')
+    assert.equal(manifest.lang,locale)
+    assert.equal(manifest.id,'/en/app','locales must not create duplicate installations')
+    assert.equal(manifest.start_url,'/'+locale+'/app/messages')
+    assert.ok(manifest.icons.some(icon=>icon.src==='/holistic-house-icon/192'))
+    assert.ok(manifest.icons.some(icon=>icon.src==='/holistic-house-icon/512' && icon.purpose==='maskable'))
+    assert.ok(manifest.icons.some(icon=>icon.src==='/icons/holistic-house-teal.svg'))
+  }
+  assert.match(page,/\/opora-antistress-ru\.webmanifest/)
+  assert.match(page,/\/opora-antistress-en\.webmanifest/)
+  assert.match(page,/\/holistic-house-app-ru\.webmanifest/)
+  assert.match(page,/\/holistic-house-app-es\.webmanifest/)
+  assert.match(page,/\/holistic-house-app\.webmanifest/)
 })

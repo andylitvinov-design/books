@@ -4,8 +4,9 @@
 // Acceptance contract: one useful, non-score-prefixed primary action per selected
 // verified scale; professional/safety precedence; original guidance preserved in
 // disclosure without an identical primary duplicate; one final methodology/source
-// section. Ordinary selection starts at the lowest valid within-range fraction,
-// stable ties; same-result rerenders preserve the choice and new results reset it.
+// section. Declared resource scales prioritize low positions, difficulty scales
+// high positions; neutral/missing direction preserves source order. Same-result
+// rerenders preserve the choice and new results reset it.
 // Bach ranking and scoring/provenance contracts are covered by dedicated suites.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -44,6 +45,7 @@ const transpile = relative => ts.transpileModule(fs.readFileSync(path.join(work,
   fileName: relative, compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
 }).outputText;
 const overview = addVirtual('overview', transpile('lib/assessments/result-overview.js'));
+addVirtual('primary-fixtures', transpile('scripts/fixtures/assessment-primary-report.js'));
 // Keep the current evidence-status logic in the real synthetic report, not a fake
 // clinical-quality status. This pure module requires no account or network data.
 const evidenceStatus = addVirtual('evidence-status', transpile('lib/assessments/assessment-evidence-status.js'));
@@ -64,15 +66,11 @@ addVirtual('component', transpile('components/app/compact-assessment-report.jsx'
 });
 const bootstrap = `
 const React=load(${JSON.stringify(react)}),{createRoot}=load(${JSON.stringify(client)}),{flushSync}=load(${JSON.stringify(dom)}),{CompactAssessmentReport}=load('component');
+const {primaryReportFixtureProps:propsFor,PRIMARY_REPORT_POLARITY_CASES:polarityCases}=load('primary-fixtures');
 window.acceptanceErrors=[];window.addEventListener('error',e=>window.acceptanceErrors.push(e.message));
 const originalError=console.error;console.error=(...args)=>{window.acceptanceErrors.push(args.map(String).join(' '));originalError(...args)};
 const root=createRoot(document.getElementById('app'));
-function propsFor(id,locale='en',guest=false,review=false){
- const ru=locale==='ru'; const values=id==='B'?[6,8,1]:[8,2,6];
- const sections=values.map((value,i)=>({key:'scale-'+i,construct:(ru?'Шкала ':'Scale ')+(i+1),value,min:0,max:10,bandBasis:'descriptive',band:ru?'Описательная шкала':'Descriptive scale',summary:(ru?'Краткое объяснение ':'Short explanation ')+i,meaning:(ru?'Полное исходное объяснение ':'Full original explanation ')+i,primarySupport:(ru?'Можно спокойно отметить один полезный пример ':'Consider one helpful example ')+i,steps:[(ru?'Исходное наблюдение с баллом ':'Original score-linked observation ')+value,(ru?'Можно спокойно отметить один полезный пример ':'Consider one helpful example ')+i,(ru?'Дополнительный исходный шаг ':'Additional original step ')+i],followUp:(ru?'Обсудите беспокоящие симптомы со специалистом ':'Discuss concerning symptoms with a professional ')+i,source:'https://example.invalid/'+id+'/'+locale+'/scale-'+i,recommendedReview:review&&i===0}));
- return {locale,result:{...(guest?{}:{id}),definitionKey:'synthetic-local-fixture',dimensions:sections.map(({key,value,min,max})=>({key,value,min,max}))},report:{verified:true,sections,rulesVersion:'synthetic-acceptance-only',methodology:ru?'Методика синтетической проверки':'Synthetic acceptance methodology',seekSupport:sections[0].followUp,purpose:ru?'Синтетические данные':'Synthetic data',note:ru?'Не клинические данные':'No clinical data'}};
-}
-window.acceptance={propsFor,render(props){flushSync(()=>root.render(React.createElement(CompactAssessmentReport,props)))},click(key){flushSync(()=>document.querySelector('[data-assessment-scale-trigger="'+key+'"]').click())},errors:window.acceptanceErrors};
+window.acceptance={propsFor,polarityCases,render(props){flushSync(()=>root.render(React.createElement(CompactAssessmentReport,props)))},click(key){flushSync(()=>document.querySelector('[data-assessment-scale-trigger="'+key+'"]').click())},errors:window.acceptanceErrors};
 window.acceptance.render(propsFor('A'));
 `;
 const mapText = Object.entries(modules).map(([id,{code,deps}])=>`${JSON.stringify(id)}:[function(module,exports,require){\n${code}\n},${JSON.stringify(deps)}]`).join(',\n');
@@ -109,12 +107,17 @@ const fixtureUrl = pathToFileURL(fixture).href
      check(label+' original global support stays accessible',document.getElementById('app').textContent.includes(props.report.seekSupport));
    }
    for(const locale of ['en','ru']){
-     const a=acceptance.propsFor('A',locale),b=acceptance.propsFor('B',locale);acceptance.render(b);acceptance.render(a);
-     check(locale+' initial lowest fraction',active()==='scale-1',active());content(a,1,locale+' initial');
-     acceptance.click('scale-0');check(locale+' real click changes panel',active()==='scale-0',active());content(a,0,locale+' clicked');
-     acceptance.render(structuredClone(a));check(locale+' same-id clone retains choice',active()==='scale-0',active());
-     acceptance.render(b);check(locale+' B resets to its default',active()==='scale-2',active());content(b,2,locale+' B');
-     acceptance.render(a);check(locale+' A return resets stale choice',active()==='scale-1',active());content(a,1,locale+' A return');
+     for(const {name,direction,expectedA,expectedB} of acceptance.polarityCases){
+       const label=locale+' '+name;
+       const a=acceptance.propsFor('A',locale,false,false,direction),b=acceptance.propsFor('B',locale,false,false,direction);
+       acceptance.render(b);acceptance.render(a);
+       check(label+' initial declared-direction default',active()==='scale-'+expectedA,active());content(a,expectedA,label+' initial');
+       const clicked=a.report.sections.findIndex((_,index)=>index!==expectedA&&index!==expectedB);
+       acceptance.click('scale-'+clicked);check(label+' real click changes panel',active()==='scale-'+clicked,active());content(a,clicked,label+' clicked');
+       acceptance.render(structuredClone(a));check(label+' same-id clone retains choice',active()==='scale-'+clicked,active());
+       acceptance.render(b);check(label+' B resets to its default',active()==='scale-'+expectedB,active());content(b,expectedB,label+' B');
+       acceptance.render(a);check(label+' A return resets stale choice',active()==='scale-'+expectedA,active());content(a,expectedA,label+' A return');
+     }
      const review=acceptance.propsFor('review-'+locale,locale,false,true);acceptance.render(review);check(locale+' professional review precedence',active()==='scale-0',active());content(review,0,locale+' review');
      const guest=acceptance.propsFor('A',locale,true);acceptance.render(guest);acceptance.click('scale-2');acceptance.render(structuredClone(guest));check(locale+' guest clone retains choice',active()==='scale-2',active());
      check(locale+' correct localized heading',document.querySelector('[data-primary-support]').previousElementSibling.textContent===(locale==='ru'?'Поддержка в вашем темпе':'Support at your own pace'));
@@ -146,6 +149,7 @@ const fixtureUrl = pathToFileURL(fixture).href
  result.checkedAt=new Date().toISOString();result.browserVersion=browser.version();result.browserName=browserName;result.viewport={width:390,height:844};result.unexpectedRequests=unexpectedRequests;result.consoleErrors=consoleErrors;
  result.componentSha256=crypto.createHash('sha256').update(fs.readFileSync(path.join(work,'components/app/compact-assessment-report.jsx'))).digest('hex');
  result.overviewSha256=crypto.createHash('sha256').update(fs.readFileSync(path.join(work,'lib/assessments/result-overview.js'))).digest('hex');
+ result.fixtureSha256=crypto.createHash('sha256').update(fs.readFileSync(path.join(work,'scripts/fixtures/assessment-primary-report.js'))).digest('hex');
  result.passed=result.passed&&!unexpectedRequests.length&&!consoleErrors.length;
  fs.writeFileSync(path.join(evidenceDirectory,'react-browser-acceptance.json'),JSON.stringify(result,null,2));
  console.log(JSON.stringify({passed:result.passed,checks:result.checks.length,react:result.reactVersion,browser:result.browserVersion,unexpectedRequests,consoleErrors},null,2));

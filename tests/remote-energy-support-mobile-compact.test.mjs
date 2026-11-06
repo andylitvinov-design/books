@@ -10,17 +10,25 @@ test("focus-first: compact choice and optional preferences before published spec
   const route = read("app/[locale]/services/remote-energy-support/page.tsx");
   assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf('id="remote-intention"'));
   assert.ok(jsx.indexOf('id="remote-intention"') < jsx.indexOf('data-remote-find-options'));
-  assert.ok(jsx.indexOf('data-remote-find-options') < jsx.indexOf("masters.map((master) => {"));
-  assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf("masters.map((master) => {"));
-  assert.ok(jsx.indexOf('className={styles.results}') < jsx.indexOf("masters.map((master) => {"));
+  assert.ok(jsx.indexOf('data-remote-find-options') < jsx.indexOf("matchingMasters.map((master) => {"));
+  assert.ok(jsx.indexOf('className={styles.focusChips}') < jsx.indexOf("matchingMasters.map((master) => {"));
+  assert.ok(jsx.indexOf('className={styles.results}') < jsx.indexOf("matchingMasters.map((master) => {"));
   assert.match(jsx, /maxLength=\{1000\} rows=\{2\}/);
   assert.match(jsx, /master\.photo\s*\?\s*<img src=\{master\.photo\} alt=""/);
   assert.match(jsx, /master\.description \|\| t\.defaultDescription/);
   assert.match(jsx, /<details className=\{styles\.cardDetails\}>/);
   assert.match(jsx, /className=\{styles\.requestButton\}/);
-  assert.match(jsx, /\{isOpen && \(\s*<form id=/);
-  assert.match(route, /description: service\.copy\?\.shortDescription \|\| service\.copy\?\.description/);
-  assert.match(route, /service\.slug === "remote-energy-support" && service\.areaKey === "energy_spiritual"/);
+  assert.match(jsx, /\{isOpen && \(requestKind === "talisman" \? \(/);
+  assert.match(jsx, /<form id=\{"remote-request-" \+ master\.serviceId\} className=\{styles\.bookingForm\} onSubmit=\{submit\}>/);
+  // Inline flow now groups the existing booking form and a separate opt-in contact step.
+  assert.match(jsx, /\) : \(\s*<>\s*<form id=/);
+  assert.match(jsx, /data-remote-public-order-contact/);
+  assert.match(jsx, /<ContactChannelChooser[\s\S]*?quick cartContact stayAfterSave/);
+  assert.match(jsx, /disabled=\{requestKind === "energy" && !offers\.length\}/);
+  const sharedOffers = read("lib/practitioners/public-remote-support-masters.ts");
+  assert.match(route, /listRemoteEnergySupportMasters\(locale\)/);
+  assert.match(sharedOffers, /description: service\.copy\?\.shortDescription \|\| service\.copy\?\.description/);
+  assert.match(sharedOffers, /service\.slug === "remote-energy-support" && service\.areaKey === "energy_spiritual"/);
   assert.match(css, /\.masterCard\{display:grid;grid-template-columns:minmax\(110px,34%\) minmax\(0,1fr\)/);
   assert.match(css, /@media\(max-width:365px\)/);
   assert.match(css, /\.masterCard\{grid-template-columns:87px minmax\(0,1fr\)/);
@@ -30,7 +38,7 @@ test("focus-first: compact choice and optional preferences before published spec
 
 test("only published duration and price pairs are displayed, never invented options", () => {
   const jsx = read("components/remote-energy-support-booking.tsx");
-  assert.match(jsx, /master\.priceOptions\s*\.filter\(\(offer\) => Number\.isFinite\(offer\.price\) && offer\.price > 0\)/);
+  assert.match(jsx, /master\.priceOptions\s*\.filter\(\(offer\) => Number\.isFinite\(offer\.price\) && offer\.price > 0 &&/);
   assert.match(jsx, /REMOTE_SUPPORT_DURATIONS\.map/);
   assert.match(jsx, /disabled=\{!published\} checked=\{duration === minutes\}/);
   assert.match(jsx, /<span>\{minutes\} \{t\.minutes\}<\/span>/);

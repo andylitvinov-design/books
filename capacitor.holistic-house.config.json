@@ -3,7 +3,7 @@
   "appName": "Holistic House",
   "webDir": "native-web",
   "server": {
-    "url": "https://holistichouse.vercel.app/en/app/portrait",
+    "url": "https://holistichouse.vercel.app/en/app/messages",
     "cleartext": false,
     "allowNavigation": [
       "holistichouse.vercel.app"

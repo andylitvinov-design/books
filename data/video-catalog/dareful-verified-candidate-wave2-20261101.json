@@ -1,0 +1,76 @@
+{
+  "version": "hh-dareful-source-candidates-v1",
+  "reviewedOn": "2026-11-01",
+  "approvedForPublication": false,
+  "editorialStatus": "individual_pages_cc_by_verified_moving_footage_and_visual_qc_pending",
+  "licenseEvidence": "Four individual Dareful video pages show commercial reusable MP4 under CC BY 4.0, verified on 2026-11-01. Video streams need decoding, portrait composition and independent visual QC before approval.",
+  "publisher": "Dareful",
+  "creator": "Joel Holland",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "sources": [
+    {
+      "id": "flying-over-a-river",
+      "sourcePage": "https://dareful.com/flying-over-a-river/",
+      "mediaUrl": "https://stream.mux.com/1Sv4DdHSpB2wktE00IIVW2DXa2DRM3LF3000119GvvTHu4.m3u8",
+      "durationSeconds": 40,
+      "suggestedTheme": "health",
+      "targetScenarioId": "body-release-s1",
+      "targetShot": 2,
+      "visualMotif": "river",
+      "suggestedNames": {
+        "ru": "Полёт над рекой",
+        "en": "Flying over a river",
+        "es": "Vuelo sobre un río"
+      },
+      "visualReviewRequired": true
+    },
+    {
+      "id": "wetlands-field-grass",
+      "sourcePage": "https://dareful.com/wetlands-field-grass/",
+      "mediaUrl": "https://stream.mux.com/38emP1mhSlFp02tqP02YViXZ3q2Q5HygwTwq00wRQ7qFMc.m3u8",
+      "durationSeconds": 50,
+      "suggestedTheme": "health",
+      "targetScenarioId": "body-release-s1",
+      "targetShot": 4,
+      "visualMotif": "meadow",
+      "suggestedNames": {
+        "ru": "Луг у воды",
+        "en": "Wetland meadow",
+        "es": "Pradera junto al agua"
+      },
+      "visualReviewRequired": true
+    },
+    {
+      "id": "fall-foliage-forest",
+      "sourcePage": "https://dareful.com/fall-foliage-forest/",
+      "mediaUrl": "https://stream.mux.com/bPcbOyf3JwyTRsDA5gpqduQ1hOne00HU1Ju4Xwah02ZMU.m3u8",
+      "durationSeconds": 59,
+      "suggestedTheme": "life",
+      "targetScenarioId": "energy-fresh-start-s3",
+      "targetShot": 1,
+      "visualMotif": "forest",
+      "suggestedNames": {
+        "ru": "Осенний лес с высоты",
+        "en": "Autumn forest from above",
+        "es": "Bosque otoñal desde arriba"
+      },
+      "visualReviewRequired": true
+    },
+    {
+      "id": "mountain-foliage-fall",
+      "sourcePage": "https://dareful.com/mountain-foliage-fall/",
+      "mediaUrl": "https://stream.mux.com/7lLCv01rgqvjHF7gr2qV9kvXmt028RbGHmsBko2gCrB00A.m3u8",
+      "durationSeconds": 11,
+      "suggestedTheme": "money",
+      "targetScenarioId": "work-support-s3",
+      "targetShot": 3,
+      "visualMotif": "mountain",
+      "suggestedNames": {
+        "ru": "Горная перспектива",
+        "en": "Mountain foliage vista",
+        "es": "Panorama otoñal de montaña"
+      },
+      "visualReviewRequired": true
+    }
+  ]
+}
