@@ -177,6 +177,23 @@ try{
       'CREATIVE_BRIEF_LIMIT_REGRESSION');
     const before=await chat.boundingBox();
     assert.ok(before&&before.width<=sizes[locale]+2,'CHAT_OVERFLOWS_MOBILE_VIEWPORT');
+    const welcome=chat.locator('[data-video-chat-welcome]');
+    if(entryStep==='category'&&await welcome.count()===1){
+      assert.equal(await chat.locator('[data-video-chat-welcome-goal]').count(),5,
+        'CALM_WELCOME_CANONICAL_FIVE_GOALS');
+      for(const selector of ['[data-video-chat-welcome-create]',
+        '[data-video-chat-welcome-browse]','[data-video-chat-welcome-help]',
+        '[data-video-chat-welcome-how]']){
+        assert.equal(await chat.locator(selector).count(),1,
+          'CALM_WELCOME_ACTION_MISSING_'+selector);
+      }
+      const hero=await chat.locator('[data-video-chat-welcome] h2').boundingBox();
+      assert.ok(hero&&hero.width<=sizes[locale]+2,'CALM_WELCOME_HERO_OVERFLOW');
+      await chat.locator('[data-video-chat-welcome-create]').click();
+      await chat.locator('[data-chat-inline-choices]').waitFor({state:'visible',timeout:10000});
+      assert.equal(await chat.locator('[data-video-chat-welcome]').count(),0,
+        'CALM_WELCOME_MUST_YIELD_TO_REAL_CHAT');
+    }
     let selectedCaption=null;
     if(entryStep==='category'){
       // The same canonical category/topic/scenario/idea/phrase registry drives
