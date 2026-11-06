@@ -241,7 +241,7 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
  const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
  const scenario=editor.indexOf('data-video-editor-scenario');
- assert.ok(scenario>=0&&scenario<editor.indexOf('id="video-basic-heading"'),"script leads Montage");
+ assert.ok(scenario>=0&&scenario<editor.indexOf('data-video-montage-audio'),"script is available before Audio");
  assert.match(editor,/data-video-montage-script-update/);
  assert.match(editor,/normalizeStageCaption\(lines\[index\]\|\|""\)/,
    "editing a four-shot montage changes the local actual caption track");
