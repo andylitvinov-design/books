@@ -14,7 +14,8 @@ export const maxDuration=300
 export async function GET(request){
  if(!cronAuthorized(request,process.env))
   return NextResponse.json({error:'UNAUTHORIZED'},{status:401,headers:PRIVATE_HEADERS})
- if(!aiQueueEnabled()||process.env.VERCEL_ENV==='preview')
+ if(!aiQueueEnabled()||process.env.VERCEL_ENV!=='production'||
+   process.env.HH_AI_TELEGRAM_RENDER_BUDGET_APPROVED!=='true')
   return NextResponse.json({status:'disabled'},{headers:PRIVATE_HEADERS})
  try{
   const config=getAppConfig()

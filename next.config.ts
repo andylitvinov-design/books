@@ -150,6 +150,9 @@ const nextConfig: NextConfig = {
     "/api/app/notification-channels/telegram/webhook": ["./node_modules/ffmpeg-static/ffmpeg"],
     // Opt-in three-lane AI recovery worker can render one licensed MP4.
     "/api/internal/telegram-ai-work": ["./node_modules/ffmpeg-static/ffmpeg"],
+    // The existing five-minute direct-message-push recovery cron also runs
+    // one approved AI MP4 render. Trace the same pinned binary here too.
+    "/api/internal/direct-message-push": ["./node_modules/ffmpeg-static/ffmpeg"],
     "/api/holistic-support/talismans": [
       "./node_modules/@img/sharp-linux-x64/**/*",
       "./node_modules/@img/sharp-libvips-linux-x64/**/*",

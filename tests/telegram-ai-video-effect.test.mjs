@@ -112,4 +112,12 @@ test('secure Telegram queue uses approved account, real status, lease fencing an
  assert.match(migration,/from public,anon,authenticated/);
  assert.match(cron,/HH_AI_TELEGRAM_RENDER_BUDGET_APPROVED/);
  assert.doesNotMatch(cron,/setInterval|cron\.schedule/);
+ const direct=root('../app/api/internal/telegram-ai-work/route.js');
+ const next=root('../next.config.ts');
+ assert.match(direct,/HH_AI_TELEGRAM_RENDER_BUDGET_APPROVED/,
+  'the direct worker must enforce the same independent render cost approval');
+ assert.match(direct,/VERCEL_ENV!=='production'/,
+  'preview and nonproduction must never render private Telegram videos');
+ assert.match(next,/"\/api\/internal\/direct-message-push": \["\.\/node_modules\/ffmpeg-static\/ffmpeg"\]/,
+  'the reused five-minute recovery worker must trace its FFmpeg executable');
 });
