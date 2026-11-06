@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
   FREE_FILM_DURATIONS,FREE_FILM_STAGE_WEIGHTS,FREE_FILM_MIN_STAGE_SECONDS,
-  allocateFreeFilmTimeline,allocateAdaptiveFilmTimeline,
+  allocateFreeFilmTimeline,allocateAdaptiveFilmTimeline,allocateSourceBoundedFilmTimeline,
   shiftAdaptiveFilmBoundary,retimeAdaptiveFilmPlan,
 } from "../lib/mandala/free-film-timeline.mjs";
 
@@ -75,8 +75,8 @@ test("real studio consumes edited storyboard and invalidates stale exported vide
   assert.match(ui,/shiftAdaptiveFilmBoundary/);
   assert.match(ui,/durationSecondsByStage:stageDurations/);
   assert.match(studio,/compileFreeFilmPreset\(preset,locale,seconds,outputAspect,edit\)/);
-  assert.match(studio,/allocateAdaptiveFilmTimeline\(/);
-  assert.match(studio,/allocateAdaptiveFilmTimeline\(seconds,ids\)/);
+  assert.match(studio,/allocateSourceBoundedFilmTimeline\(/);
+  assert.match(studio,/allocateSourceBoundedFilmTimeline\(seconds,ids,/);
   assert.match(studio,/allocateVariableFilmTimeline\(seconds,ids\)/);
   assert.match(studio,/verified\.durationSeconds>=timeline\[index\]\.durationSeconds/);
   assert.match(studio,/shot\.sceneId,shot\.startSeconds,shot\.durationSeconds/);
@@ -181,4 +181,43 @@ test("optional replacement picker reaches the original recorder with safe valida
   assert.match(studio,/throw Error\("invalid_free_film_replacement"\)/);
   assert.match(studio,/firstPartyFilmFor\(shotTheme,sceneId\)/);
   assert.match(studio,/providerPrompt:""/);
+});
+
+test("20s original motion uses four real 5s masters without stretching a 7s adaptive peak",()=>{
+  const originals=["motion-goals-money-goal-achievement-v1",
+    "motion-goals-money-goal-achievement-v2",
+    "motion-goals-money-goal-achievement-v3",
+    "motion-goals-money-goal-achievement-v4"];
+  assert.deepEqual(allocateAdaptiveFilmTimeline(20,originals)
+    .map(s=>s.durationSeconds),[3,5,7,5],
+    "the prior adaptive third cut exceeds a physical 5s source");
+  const safe=allocateSourceBoundedFilmTimeline(20,originals,[5,5,5,5]);
+  assert.deepEqual(safe.map(s=>s.durationSeconds),[5,5,5,5]);
+  assert.deepEqual(safe.map(s=>s.sceneId),originals,
+    "no duplicate, fabricated or substituted master clips");
+  assert.deepEqual(safe.map(s=>s.startSeconds),[0,5,10,15]);
+  assert.ok(safe.every((shot,i)=>shot.durationSeconds<=5));
+  assert.ok(Object.isFrozen(safe),"the source-backed timeline remains immutable");
+  assert.deepEqual(allocateSourceBoundedFilmTimeline(20,originals,[5,5,7,5])
+    .map(s=>s.durationSeconds),[3,5,7,5],
+    "adaptive cinematic timing stays unchanged when masters support it");
+  assert.deepEqual(allocateSourceBoundedFilmTimeline(20,originals,[5,5,5,5],[5,5,5,5])
+    .map(s=>s.durationSeconds),[5,5,5,5],
+    "a visitor-approved manual 5-second schedule is retained");
+  for(const [seconds,sources,manual] of [
+    [30,[5,5,5,5],null], [20,[5,5,5,5],[3,5,7,5]],
+    [20,[5,5,0,5],null], [20,[5,5,NaN,5],null],
+  ])assert.throws(()=>allocateSourceBoundedFilmTimeline(seconds,originals,sources,manual),
+    /UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE/);
+});
+test("original-motion studio selection and retiming both honor actual source duration",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(studio,/const verified=clipIds\.map\(id=>verifiedCategorySource/);
+  assert.match(studio,/allocateSourceBoundedFilmTimeline\(durationSeconds,\[\.\.\.clipIds\]/);
+  assert.match(studio,/verified\.map\(scene=>scene\?\.durationSeconds\?\?NaN\)/);
+  assert.match(studio,/allocateSourceBoundedFilmTimeline\(seconds,ids,/);
+  assert.match(studio,/verifiedSources\.map\(scene=>scene\?\.durationSeconds\?\?NaN\)/);
+  assert.match(studio,/error\.message==="UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE"/);
+  assert.match(studio,/validateMontageClips\(\[\.\.\.clipIds\],FREE_FILM_CATALOG/);
+  assert.match(studio,/verifiedSceneAspect\(scene,aspect\)/);
 });

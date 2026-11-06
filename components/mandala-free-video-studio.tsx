@@ -38,7 +38,7 @@ import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
-import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, allocateVariableFilmTimeline, shiftAdaptiveFilmBoundary, shiftVariableFilmBoundary, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
+import { allocateFreeFilmTimeline, allocateSourceBoundedFilmTimeline, allocateVariableFilmTimeline, shiftAdaptiveFilmBoundary, shiftVariableFilmBoundary, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import {validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
 import {clampTrackSecond,timedCaptionAt,splitTimelineCaption,duplicateTimelineCaption} from "@/lib/mandala/editable-timeline.mjs";
@@ -991,10 +991,11 @@ function compileFreeFilmPreset(
       throw Error("invalid_emotional_video_scene_script");
   }
   const captions=edit?.captionTexts??Array.from({length:clipIds.length},()=>"");
+  const verified=clipIds.map(id=>verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(id)));
   const timings=adaptive
     ?allocateVariableFilmTimeline(durationSeconds,[...clipIds],edit?.durationSecondsByStage??null)
-    :allocateAdaptiveFilmTimeline(durationSeconds,[...clipIds],edit?.durationSecondsByStage??null);
-  const verified=clipIds.map(id=>verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(id)));
+    :allocateSourceBoundedFilmTimeline(durationSeconds,[...clipIds],
+      verified.map(scene=>scene?.durationSeconds??NaN),edit?.durationSecondsByStage??null);
   if(verified.some((scene,index)=>!scene||!verifiedSceneAspect(scene,aspect)||
     !Number.isFinite(scene.durationSeconds)||
     scene.durationSeconds<timings[index].durationSeconds))
@@ -3889,11 +3890,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(plan.shots.length*2>seconds)return null;
         try{
           const ids=plan.shots.map(shot=>shot.sceneId);
+          const verifiedSources=ids.map(id=>verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(id)));
           const timeline=ids.length===4
-            ?allocateAdaptiveFilmTimeline(seconds,ids)
+            ?allocateSourceBoundedFilmTimeline(seconds,ids,
+              verifiedSources.map(scene=>scene?.durationSeconds??NaN))
             :allocateVariableFilmTimeline(seconds,ids);
           if(!plan.shots.every((shot,index)=>{
-            const verified=verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(shot.sceneId));
+            const verified=verifiedSources[index];
             return Boolean(verified&&verifiedSceneAspect(verified,aspect)&&
               verified.durationSeconds>=timeline[index].durationSeconds);
           }))return null;
@@ -4159,8 +4162,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           behavior:"smooth",block:"nearest"
         })));
       return true;
-    }catch{
-      setNotice(ui.videoUnavailable);
+    }catch(error){
+      const sourceMismatch=error instanceof Error&&
+        error.message==="UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE";
+      setNotice(sourceMismatch
+        ?locale==="ru"?"Эти исходные сцены не подходят к выбранному формату или длительности. Выберите подходящий формат или более короткое видео."
+        :locale==="es"?"Estos clips no alcanzan la duración o el formato elegido. Prueba un vídeo más corto u otro formato."
+        :"These source clips cannot cover the chosen duration or aspect. Choose a shorter film or matching format."
+        :ui.videoUnavailable);
       return false;
     }
   };
