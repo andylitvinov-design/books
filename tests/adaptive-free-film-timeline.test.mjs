@@ -1,3 +1,4 @@
+import {autoFillApprovedFilm} from "../lib/mandala/auto-fill-approved-film.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
@@ -181,4 +182,49 @@ test("optional replacement picker reaches the original recorder with safe valida
   assert.match(studio,/throw Error\("invalid_free_film_replacement"\)/);
   assert.match(studio,/firstPartyFilmFor\(shotTheme,sceneId\)/);
   assert.match(studio,/providerPrompt:""/);
+});
+
+/** Auto Video Director's no-loop source expansion: exercised by existing Mandala CI. */
+const makeAutoSource=(id,change={})=>({id,theme:"money",durationSeconds:5,
+  certified:true,masterKey:"hash:"+id,origins:[],group:null,media:"licensed_mp4",
+  tags:["money","gold"],motifs:["sun","gold"],sourceId:"money-mindset",...change});
+const AUTO_FILM_SEEDS=Array.from({length:4},(_,i)=>makeAutoSource("seed-"+i));
+const AUTO_FILM_EXTRAS=Array.from({length:12},(_,i)=>makeAutoSource("extra-"+i,
+  {media:"original_motion_mp4"}));
+const fillPreset=(durationSeconds,options={})=>autoFillApprovedFilm({
+  initialIds:AUTO_FILM_SEEDS.map(s=>s.id),
+  scenes:[...AUTO_FILM_SEEDS,...AUTO_FILM_EXTRAS],
+  theme:"money",durationSeconds,...options
+});
+test("Free 20s can use four equal 5s originals instead of illegally looping unequal 4-shot weights",()=>{
+  const r=fillPreset(20,{legacyStageSeconds:[3,5,7,5]});
+  assert.equal(r.ok,true);assert.equal(r.addedCount,0);
+  assert.equal(r.usedVariableTiming,true);
+});
+test("Free 30s uses six certified masters and preserves four scene-act anchors",()=>{
+  const r=fillPreset(30,{legacyStageSeconds:[5,7,10,8]});
+  assert.equal(r.ok,true);assert.equal(r.clipIds.length,6);
+  assert.deepEqual([r.clipIds[0],r.clipIds[2],r.clipIds[4],r.clipIds[5]],
+    AUTO_FILM_SEEDS.map(s=>s.id));
+});
+test("Free 60s uses twelve distinct five-second masters in the four approved acts",()=>{
+  const r=fillPreset(60,{legacyStageSeconds:[10,14,20,16]});
+  assert.equal(r.ok,true);assert.equal(r.clipIds.length,12);
+  assert.deepEqual([0,3,6,9].map(i=>r.clipIds[i]),AUTO_FILM_SEEDS.map(s=>s.id));
+  assert.equal(new Set(r.clipIds).size,12);
+});
+test("Free Auto Director does not invent rights, groups, media or subject match",()=>{
+  assert.equal(fillPreset(60,{scenes:[...AUTO_FILM_SEEDS,
+    ...AUTO_FILM_EXTRAS.map(s=>({...s,certified:false}))]}).ok,false);
+  assert.equal(fillPreset(60,{scenes:[...AUTO_FILM_SEEDS,
+    ...AUTO_FILM_EXTRAS.map(s=>({...s,masterKey:AUTO_FILM_SEEDS[0].masterKey}))]}).ok,false);
+  assert.equal(fillPreset(60,{scenes:[...AUTO_FILM_SEEDS,
+    ...AUTO_FILM_EXTRAS.map(s=>({...s,theme:"relationships"}))]}).ok,false);
+});
+test("Studio presents an explicit 9:16 choice instead of lying about 16:9 footage",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(studio,/autoFillApprovedFilm\(/);
+  assert.match(studio,/data-video-portrait-retry/);
+  assert.match(studio,/!edit&&clipIds\.length===4/);
+  assert.match(studio,/!scene\|\|!isSafeMontageScene\(source\)\|\|!verifiedSceneAspect\(scene,aspect\)/);
 });
