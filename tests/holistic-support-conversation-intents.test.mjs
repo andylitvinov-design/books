@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { interpretSupportUtterance, parseSupportMinutes, chooseSupportFormat } from "../lib/holistic-support/guide-dialogue.mjs";
+// Run the expanded reviewed chat dictionary alongside the existing domain
+// suite on the same exact-HEAD Specialist job; do not add a workflow or runner.
+import "./holistic-agent-rule-dictionary.test.mjs";
 
 test("natural-language inputs reuse the existing privacy-safe Home Guide parser", () => {
   assert.deepEqual(interpretSupportUtterance("Да", "ru").kind,"agree");
