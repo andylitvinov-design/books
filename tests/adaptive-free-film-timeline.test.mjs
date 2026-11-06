@@ -111,7 +111,7 @@ test("all format controls call the same plan-preserving reframe handler",()=>{
   assert.match(studio,/verifiedSceneAspect\(verified,nextAspect\)/);
   assert.match(studio,/reframeCinematicPlan\(plan,nextAspect\)/);
   for(const [selector,handler] of [
-    ["data-video-aspect={format}","changeVideoAspect(format)"],
+    ["data-video-montage-preference=\"format\"","changeVideoAspect(event.currentTarget.value as Aspect)"],
     ["data-video-quick-aspect={value}","changeVideoAspect(value)"],
     ["data-video-advanced-aspect","changeVideoAspect(event.currentTarget.value as Aspect)"],
   ]){
