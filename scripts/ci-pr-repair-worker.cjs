@@ -437,16 +437,26 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     catch(error){if(error.status!==404)core.info('Manual source queue cleanup #'+prNumber+': '+error.message);}
     return {status:'manual_required',number:prNumber};
   }
+  // Fix jobs run in isolation. Another Work/Codex writer can take this
+  // PR after the initial claim; re-read ALL lease pages immediately before
+  // source publication, for every repair lane, not just the legacy retry.
+  // Incomplete or malformed ownership history never authorizes a write.
+  let leasePages=0;
+  const comments=await readCompleteIssueComments(github,owner,repo,prNumber,
+    async (_n,request)=>{
+      if(++leasePages>10)throw Error('HH_REPAIR_PUBLISH_LEASE_HISTORY_BUDGET');
+      return request();
+    });
+  const writerLeaseFree=Array.isArray(comments) &&
+    !activeSweepLease(comments,expectedSha,Date.now());
+  if(!writerLeaseFree && !legacy)
+    throw Error('HH_REPAIR_PUBLISH_OWNER_LEASE_CHANGED_OR_UNVERIFIED');
   if(legacy){
-    // The signed claim belongs to THIS trusted GitHub Actions run, not an
-    // arbitrary PR author or an outdated workflow outcome.
-    const comments=await readCompleteIssueComments(github,owner,repo,prNumber,
-      async (_n,request)=>request());
+    // Original signed exact-run legacy authorization stays mandatory.
     const receipts=parseRecords((comments||[]).filter(trustedControlComment));
-    if(!comments||!trustedLegacySourceRetry(pr,comments,allowed)||
+    if(!writerLeaseFree||!trustedLegacySourceRetry(pr,comments,allowed)||
        !receipts?.some(r=>r.lane==='legacy'&&r.state==='CLAIMED'&&
         r.head_sha===expectedSha&&r.owner_run_id===String(context.runId))||
-       activeSweepLease(comments,expectedSha,Date.now())||
        candidate.files.some(f=>!safeFreeSourcePath(f.path)))
       throw Error('HH_REPAIR_LEGACY_MANUAL_NOT_AUTHORIZED');
   }
