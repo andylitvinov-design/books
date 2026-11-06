@@ -241,12 +241,27 @@ async function exercise(engine, browserType, width) {
   };
   try {
     for (const [path, locale] of routes) {
+      // The Maya hub is audited fully, but in a new tab to avoid retaining
+      // the previous eighteen WebKit document/reader render trees.
+      const routeTimer = setTimeout(() => {
+        console.error('[release-reaudit] ROUTE_STALLED ' + engine + '/' + width + ' ' + path +
+          ' after 90s; checkpoints=' + JSON.stringify(publicDiagnostics.checkpoints.slice(-4)));
+        process.exit(1); // Fatal: do not count unverified route as passing.
+      }, 90000);
+      if (path === '/books/maya-tradition') {
+        console.info('[release-reaudit] isolating real Maya hub after previous navigations');
+        await page.close();
+        publicPageState = await createPublicPage();
+        page = publicPageState.page;
+        errors = publicPageState.errors;
+      }
       const routePassed = await check('public-page', { engine, width, path }, async () => {
         publicPhase = path;
         console.info('[release-reaudit] public route ' + engine + '/' + width + ': ' + path);
         publicDiagnostics.checkpoints.push({ type: 'goto', path, from: page.url(), time: Date.now() });
         errors.length = 0;
         const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
+        console.info('[release-reaudit] navigated ' + engine + '/' + width + ': ' + path);
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
         await settlePublicDocument('before-assertions');
@@ -269,14 +284,24 @@ async function exercise(engine, browserType, width) {
         // cannot reduce coverage. Each same element must load and strictly decode.
         const posters = page.locator('.site-video-poster');
         const posterImages = await posters.elementHandles();
-        for (const image of posterImages) {
+        console.info('[release-reaudit] strict poster decode count=' + posterImages.length + ' ' + path);
+        for (const [posterIndex, image] of posterImages.entries()) {
           await expect(posters).toHaveCount(posterImages.length);
           await decodeReadyPoster(image, expect);
+          console.info('[release-reaudit] decoded poster ' + (posterIndex + 1) + '/' + posterImages.length + ' ' + path);
         }
         await expect(posters).toHaveCount(posterImages.length);
         if (['/en/about', '/es/about', '/books/maya-tradition'].includes(path)) {
           await page.evaluate(() => scrollTo(0, 0));
-          await page.screenshot({ path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`, fullPage: true });
+          console.info('[release-reaudit] capture screenshot ' + path);
+          // The four-volume Maya hub gets a real viewport image instead of an
+          // unbounded, memory-intensive full-page WebKit stitched screenshot.
+          // Its rendered DOM, poster decode and locale/CSP assertions remain fatal.
+          await page.screenshot({
+            path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`,
+            fullPage: path !== '/books/maya-tradition', timeout: 15000,
+          });
+          console.info('[release-reaudit] captured screenshot ' + path);
         }
         await settlePublicDocument('before-next-navigation');
         assert.deepEqual(errors, [], 'No page errors after public poster decoding and scrolling');
@@ -295,6 +320,7 @@ async function exercise(engine, browserType, width) {
         page = publicPageState.page;
         errors = publicPageState.errors;
       }
+      clearTimeout(routeTimer);
     }
     await page.goto(origin + '/en/about', { waitUntil: 'networkidle' });
     const menu = page.locator('.site-language-menu');

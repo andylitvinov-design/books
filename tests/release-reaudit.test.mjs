@@ -338,3 +338,28 @@ test('release audit refuses unbounded public animation frame stalls while retain
     "checkpoints.push({ type: 'settled'",
   ]) assert.ok(scope.includes(anchor), 'Bounded WebKit settling preserves '+anchor);
 });
+
+test('Maya hub route remains fatal with bounded WebKit navigation and poster decode', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const poster = read('scripts/public-poster-readiness.mjs');
+  for (const anchor of [
+    "['/books/maya-tradition', 'en']",
+    "['/books/maya-tradition?lang=ru', 'ru']",
+    'const routeTimer = setTimeout(',
+    "'[release-reaudit] ROUTE_STALLED '",
+    'process.exit(1)',
+    "if (path === '/books/maya-tradition')",
+    'publicPageState = await createPublicPage()',
+    "console.info('[release-reaudit] strict poster decode count='",
+    'await decodeReadyPoster(image, expect)',
+    "fullPage: path !== '/books/maya-tradition', timeout: 15000",
+    'clearTimeout(routeTimer)',
+  ]) assert.ok(verifier.includes(anchor), 'Real route remains checked: ' + anchor);
+  for (const anchor of [
+    'await Promise.race([',
+    'el.decode()',
+    'Poster decode timed out after 7000ms',
+    'clearTimeout(decodeDeadline)',
+    "throw new Error('Poster identity/readiness changed during decode')",
+  ]) assert.ok(poster.includes(anchor), 'Strict bounded poster decoding: ' + anchor);
+});
