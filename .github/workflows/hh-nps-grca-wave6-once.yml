@@ -24,7 +24,7 @@ jobs:
           node-version: '22'
       - name: Verify immutable QA source package and unpack isolated tools
         run: |
-          echo 'abb209628137a14c41654e407b10842f59b3470b6734104bd21053046e8704fb  tools/video-vault/nps-wave6/HH_NPS_Wave6_Research_Executable_20261106.zip' | sha256sum -c -
+          echo '9b9c1437d7aaefa22eab4d00a050a05c29656dda69816a4537adc0b5b6349bcc  tools/video-vault/nps-wave6/HH_NPS_Wave6_Research_Executable_20261106.zip' | sha256sum -c -
           unzip -oq tools/video-vault/nps-wave6/HH_NPS_Wave6_Research_Executable_20261106.zip -d tools/video-vault/nps-wave6
       - name: Offline security and rights-gating tests before any remote media acquisition
         run: |
@@ -52,7 +52,7 @@ jobs:
           node-version: '22'
       - name: Unpack source QA scripts (hash verified, no dependency install)
         run: |
-          echo 'abb209628137a14c41654e407b10842f59b3470b6734104bd21053046e8704fb  tools/video-vault/nps-wave6/HH_NPS_Wave6_Research_Executable_20261106.zip' | sha256sum -c -
+          echo '9b9c1437d7aaefa22eab4d00a050a05c29656dda69816a4537adc0b5b6349bcc  tools/video-vault/nps-wave6/HH_NPS_Wave6_Research_Executable_20261106.zip' | sha256sum -c -
           unzip -oq tools/video-vault/nps-wave6/HH_NPS_Wave6_Research_Executable_20261106.zip -d tools/video-vault/nps-wave6
       - name: Existing free runner FFmpeg and ffprobe
         run: |
