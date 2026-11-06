@@ -80,9 +80,12 @@ test('a prior direct chat requires /agree before first message is encrypted into
  assert.equal(calls.ingest.length,1)
  assert.equal(calls.ingest[0].channel,'telegram')
  assert.match(calls.ingest[0].ev.body,/reply consent/)
- const changed=calls.sql.find(x=>x.sql.includes('set stage=$3,consent_at=$4'))
- assert.equal(changed.args[2],'done')
- assert.ok(changed.args[3])
+ const transitions=calls.sql.filter(x=>x.sql.includes('set stage=$3,consent_at=$4'))
+ assert.ok(transitions.length>=2,'both pre-consent and accepted transitions must be recorded')
+ assert.equal(transitions[0].args[2],'consent','unapproved message must stay unconsented')
+ const changed=transitions.at(-1)
+ assert.equal(changed.args[2],'done','explicit /agree must complete the consent transition')
+ assert.ok(changed.args[3],'explicit agreement must set consent time')
 })
 test('a consenting direct client message uses the same encrypted CRM provider ingestion',async()=>{
  const prior={stage:'done',chat_mode:'direct',locale:'en',
