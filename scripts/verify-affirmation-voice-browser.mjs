@@ -38,11 +38,19 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","false",{timeout:60000});
     await expect(tabs).toHaveCount(6);
     for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
+    // The legacy scene editor is intentionally hidden until the visitor
+    // uses the real Continue action; never force-click a hidden control.
+    const continueButton=page.locator('[data-video-continue-scenarios]');
     const allStories=page.locator('[data-auto-video-all-scenes]');
+    await expect(continueButton).toBeDisabled();
     await expect(allStories).toBeDisabled();
     await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
+    await expect(continueButton).toBeEnabled();
+    await continueButton.click();
+    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
+    await expect(allStories).toBeVisible();
     await expect(allStories).toBeEnabled();
     await allStories.click();
     await expect(studio).toHaveAttribute("data-video-advanced-open","true");

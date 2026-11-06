@@ -8,10 +8,10 @@ import {
   SCENARIO_AUDIO_REGISTRY, SCENARIO_AUDIO_VARIANTS, CLASSICAL_THEMES,
   isScenarioAudioId,isClassicalAudioId,scenarioAudioTracks,classicalAudioTracks,
 } from "../lib/mandala/scenario-audio-catalog.mjs";
-import {buildScenarioMusic} from "../scripts/generate-scenario-melodies.mjs";
+import {buildScenarioMusic,buildScenarioMusicParallel} from "../scripts/generate-scenario-melodies.mjs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 
-test("all 48 approved actual film scenarios have four own unique original MP3 paths",()=>{
+test("all 49 approved actual film scenarios have four own unique original MP3 paths",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const start=studio.indexOf("const FREE_FILM_PRESETS:readonly FreeFilmPreset[]");
   const open=studio.indexOf("[",studio.indexOf("=",start));
@@ -20,7 +20,7 @@ test("all 48 approved actual film scenarios have four own unique original MP3 pa
   const first=JSON.parse(studio.slice(open,end).trim().replace(/,\s*$/,"")+"]");
   const second=JSON.parse(read("data/video-catalog/free-film-presets-v2.json")).presets;
   const authoritative=[...first,...second];
-  assert.equal(authoritative.length,48);
+  assert.equal(authoritative.length,49);
   assert.deepEqual(
     SCENARIO_AUDIO_REGISTRY.map(x=>x.id).sort(),
     authoritative.map(x=>x.id).sort(),
@@ -46,7 +46,7 @@ test("all 48 approved actual film scenarios have four own unique original MP3 pa
     }
   }
   assert.deepEqual([...categories].sort(),["body","energy","love","stress","work"]);
-  assert.equal(assigned.size,192);
+  assert.equal(assigned.size,196);
   assert.deepEqual(scenarioAudioTracks("unapproved-scenario"),[]);
   assert.equal(isScenarioAudioId("score-imaginary-1"),false);
 });
@@ -64,11 +64,11 @@ test("four known public-domain melodies have separate first-party digital record
 
 test("generated MP3s are available to actual player and not empty placeholders",()=>{
   const result=buildScenarioMusic({check:true});
-  assert.equal(result.scenarioCount,48);
+  assert.equal(result.scenarioCount,49);
   assert.equal(result.tracksPerScenario,4);
-  assert.equal(result.distinctScenarioMasters,192);
+  assert.equal(result.distinctScenarioMasters,196);
   assert.equal(result.publicDomainThemes,4);
-  assert.equal(result.totalMasterFiles,196);
+  assert.equal(result.totalMasterFiles,200);
   const names=[
     ...SCENARIO_AUDIO_REGISTRY.flatMap(f=>scenarioAudioTracks(f.id).map(x=>x.id)),
     ...CLASSICAL_THEMES.map(x=>x.id)
@@ -83,7 +83,7 @@ test("generated MP3s are available to actual player and not empty placeholders",
     assert.ok(!hashes.has(sha),id+" must have distinct recording bytes");
     hashes.add(sha);
   }
-  assert.equal(hashes.size,196);
+  assert.equal(hashes.size,200);
   const executable=ffmpegPath&&existsSync(ffmpegPath)?ffmpegPath:"ffmpeg";
   // Probe representative compressed recordings, not only their ID3 headers.
   for(const id of [names[0],names[95],names[191],"classic-ode-to-joy"]){
@@ -93,6 +93,20 @@ test("generated MP3s are available to actual player and not empty placeholders",
     assert.equal(probe.status,0,id+" must fully decode as audio: "+probe.stderr?.slice(-350));
     assert.match(probe.stderr,/Audio: mp3/,id);
   }
+});
+
+test("worker shard never reruns all masters via the CLI entrypoint",()=>{
+  const source=read("scripts/generate-scenario-melodies.mjs");
+  assert.ok(source.includes("if(isMainThread&&process.argv[1]"),
+    "worker must never launch the all-tracks generator");
+});
+
+test("warm-cache Core reuses every verified master without extra generation",async()=>{
+  const exact=buildScenarioMusic({check:true});
+  const warm=await buildScenarioMusicParallel({workers:3});
+  assert.equal(warm.generated,0);
+  assert.equal(warm.totalMasterFiles,exact.totalMasterFiles);
+  assert.equal(warm.verified,false);
 });
 
 test("studio exposes four scenario melodies in its existing real audio/video mixer",()=>{
@@ -114,5 +128,5 @@ test("studio exposes four scenario melodies in its existing real audio/video mix
   }
   assert.match(buildAudio,/npm_lifecycle_event === "prebuild"/);
   assert.match(buildAudio,/npm_lifecycle_event === "predev"/);
-  assert.match(buildAudio,/buildScenarioMusic\(\)/);
+  assert.match(buildAudio,/await buildScenarioMusicParallel\(\)/);
 });

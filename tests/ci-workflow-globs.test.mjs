@@ -372,3 +372,34 @@ test('Mandala restores the same immutable production Core MP3 cache before safe 
   assert.match(mandala,/node scripts\/generate-scenario-melodies\.mjs && node scripts\/generate-scenario-melodies\.mjs --check/);
   assert.match(mandala,/run: node --test tests\/mandala-scenario-audio\.test\.mjs/);
 });
+
+test('cheap Mandala UI source contracts fail before macOS WebKit without skipping real media',()=>{
+  const source=workflow('holistic-support-mandala.yml');
+  const preflight=source.split('  webkit_preflight:\n')[1]
+    ?.split('  voice-webkit-macos:\n')[0]||'';
+  const focused=source.split('  focused-unit-types-build:\n')[1]
+    ?.split('  webkit_preflight:\n')[0]||'';
+  const mac=source.split('  voice-webkit-macos:\n')[1]||'';
+  assert.ok(preflight && focused && mac,'all three existing Mandala jobs must remain');
+  for(const file of [
+    'tests/video-studio-question-registry.test.mjs',
+    'tests/mandala-video-goal-media-coverage.test.mjs',
+    'tests/mandala-approved-mobile-studio.test.mjs',
+  ]) {
+    assert.ok(preflight.includes(file),'fast source preflight missing '+file);
+    assert.ok(focused.includes(file),'full independent source acceptance must remain '+file);
+  }
+  assert.ok(focused.includes('tests/mandala-workspace-tabs.test.mjs'),
+    'TypeScript-dependent workspace test remains in the required full suite');
+  assert.ok(!preflight.includes('tests/mandala-workspace-tabs.test.mjs'),
+    'a no-install preflight must never import TypeScript-dependent workspace tests');
+  assert.ok(preflight.includes('node scripts/ci-pr-readiness.mjs'));
+  assert.ok(preflight.includes('git rev-parse HEAD^2'));
+  assert.doesNotMatch(preflight,/npm ci|npm run build|actions\/cache\/save/,'preflight must remain a cheap no-install gate');
+  assert.match(source,/^  voice-webkit-macos:\n    if: .+\n    needs: \[webkit_preflight\]\n    runs-on: macos-15/m);
+  assert.ok(mac.includes('npm run build'),'WebKit must still build the exact tested site');
+  assert.ok(mac.includes('node scripts/verify-affirmation-voice-browser.mjs'));
+  assert.ok(mac.includes('HH_LIVE_VIDEO_ENGINE=webkit'));
+  assert.ok(mac.includes('node scripts/benchmarking/verify-original-motion-export.mjs'));
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});

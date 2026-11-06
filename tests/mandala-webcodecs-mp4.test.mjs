@@ -160,3 +160,21 @@ test("explicit Safari WebM retry uses a different recorder, preserves sound",asy
   assert.ok(studio.includes('if(!isMp4&&!isWebm){'));
   assert.ok(studio.includes('playbackStatus==="ready"&&result.mode!=="catalog"'));
 });
+
+test("hydration opens the hidden Story director only via visible Continue",()=>{
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const start=browser.indexOf("async function verifyWorkspaceHydration");
+  const end=browser.indexOf("// Linux WebKit often lacks Canvas",start);
+  const flow=browser.slice(start,end);
+  const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
+  const continueTap=flow.indexOf("await continueButton.click()");
+  const visible=flow.indexOf("await expect(allStories).toBeVisible()");
+  const sceneTap=flow.indexOf("await allStories.click()");
+  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&visible>continueTap&&sceneTap>visible,
+    "an actual visible Continue tap must reveal the source-backed scenes before the old advanced click");
+  assert.match(flow,/data-video-continue-scenarios/);
+  assert.match(flow,/data-video-scenario-open/);
+  assert.match(flow,/await expect\(allStories\)\.toBeDisabled\(\)/);
+  assert.match(flow,/await expect\(continueButton\)\.toBeDisabled\(\)/);
+  assert.doesNotMatch(flow,/\.click\(\{force:true\}\)/);
+});
