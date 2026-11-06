@@ -427,13 +427,35 @@
     const evidenceLeaves=Array.from(section.querySelectorAll('*')).filter(el=>
       el.childElementCount===0&&
       /Проверено:\s*0\s+из\s+\d+\s+PR/i.test(el.textContent||''));
+    const normalized=new Set();
     for(const leaf of evidenceLeaves){
       const targets=legacyUnmeasuredCandidates(leaf,section);
       for(const el of targets){
         el.textContent='—';
         el.title='Нет проверенной пары событий для этапа; это не ноль минут';
       }
-      if(targets.length)leaf.title='0 подтверждённых PR. Длительность не измерена.';
+      if(targets.length){
+        leaf.title='0 подтверждённых PR. Длительность не измерена.';
+        normalized.add(leaf);
+      }
+    }
+    // Some older tables render the evidence badges in one column and the
+    // duration cells in another. There is no safe nearest-stage DOM ancestor.
+    // Allow a strictly count-matched fallback ONLY if every remaining "0,00"
+    // duration belongs to one still-unresolved n=0 stage. Real measured
+    // zeroes or unrelated durations make the counts differ and stay intact.
+    const unresolved=evidenceLeaves.filter(leaf=>!normalized.has(leaf));
+    if(unresolved.length){
+      const zeroDurations=Array.from(section.querySelectorAll('*')).filter(el=>
+        el.childElementCount===0&&legacyUnmeasuredDurationText(el.textContent));
+      if(zeroDurations.length===unresolved.length){
+        for(const el of zeroDurations){
+          el.textContent='—';
+          el.title='Нет проверенной пары событий; значение не измерено';
+        }
+        for(const leaf of unresolved)
+          leaf.title='0 подтверждённых PR. Длительность не измерена.';
+      }
     }
     if(evidenceLeaves.length&&!section.querySelector('.hh2-legacy-proof-notice')){
       const notice=make('p','hh2-legacy-proof-notice hh2-diagnostic',
@@ -681,13 +703,38 @@
     scheduled=true;
     Promise.resolve().then(function () { scheduled=false; chartAndMetrics(); });
   }
+  let legacyRepairScheduled=false;
+  function legacyStageSection() {
+    const title=Array.from(document.querySelectorAll('h2,h3,h4,h5')).find(h=>
+      /Где прошло время до merge/i.test(h.textContent||''));
+    return title?.closest('section,article')||title?.parentElement?.parentElement||null;
+  }
+  function isLegacyStageMutation(target) {
+    const element=target?.nodeType===3?target.parentElement:target;
+    const section=legacyStageSection();
+    return Boolean(element&&section&&typeof section.contains==='function'&&
+      section.contains(element));
+  }
+  function scheduleLegacyRepair() {
+    if(legacyRepairScheduled||!mounted)return;
+    legacyRepairScheduled=true;
+    Promise.resolve().then(function(){
+      legacyRepairScheduled=false;
+      // Render order can be async inside screen 2. Observe the existing DOM
+      // instead of adding timers, GitHub requests, or another worker.
+      repairLegacyUnmeasuredZeros();
+    });
+  }
   function start() {
     if (mounted || !document.body) return;
     build();chartAndMetrics();void readHistorical();void readCurrentCohort();
     void readQueue();
     document.getElementById('refresh')?.addEventListener('click',()=>void readQueue());
     observer=new MutationObserver(function (changes) {
-      if (changes.some(function (m) { return !root.contains(m.target); })) schedule();
+      if (changes.some(function (m) { return !root.contains(m.target); }))
+        schedule();
+      else if (changes.some(m=>isLegacyStageMutation(m.target)))
+        scheduleLegacyRepair();
     });
     observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:false});
     // One lazy check when the user enters screen 2. No timer, refresh loop
