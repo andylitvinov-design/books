@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {candidate,dedupe,safeNasaId,QUERIES} from './discover.mjs';
-import {safeVideoUrl,selectManifestVideos} from './screen.mjs';
+import {safeVideoUrl,selectManifestVideos,canonicalNasaVideoUrl} from './screen.mjs';
 import {extractLinks,COLLECTIONS} from './fws-discover.mjs';
 const item=(id='iss_123',title='Earth horizon seen from the ISS',center='JSC')=>({data:[{nasa_id:id,title,center,media_type:'video',description:'NASA ISS Earth camera footage'}]});
 test('NASA is strict about duplicate physical original IDs',()=>{
@@ -15,19 +15,22 @@ test('NASA needs official video center and original camera-like title',()=>{
 });
 test('NASA hard rejects unsafe asset IDs and media host redirects',()=>{
  assert.equal(safeNasaId('../anything'),false);
- assert.equal(safeVideoUrl('http://images-assets.nasa.gov/vid/a.mp4'),false);
+ assert.equal(safeVideoUrl('http://images-assets.nasa.gov/vid/a.mp4'),true);
  assert.equal(safeVideoUrl('https://images-assets.nasa.gov.evil.org/vid/a.mp4'),false);
  assert.equal(safeVideoUrl('https://images-assets.nasa.gov/vid/a.mp4'),true);
+ assert.equal(canonicalNasaVideoUrl('http://images-assets.nasa.gov/video/a/b~orig.mp4'),
+  'https://images-assets.nasa.gov/video/a/b~orig.mp4');
+ assert.equal(canonicalNasaVideoUrl('http://evil.com/video/a.mp4'),null);
  assert.equal(safeVideoUrl('https://images-assets.nasa.gov/vid/a.mp4?token=secret'),false);
 });
 test('NASA manifest returns only official MP4 URLs sorted',()=>{
  const r=selectManifestVideos({collection:{items:[
   {href:'https://images-assets.nasa.gov/video/abc/abc~orig.mp4'},
   {href:'https://evil.com/abc.mp4'},
-  {href:'https://images-assets.nasa.gov/video/abc/abc~large.mp4'},
+  {href:'http://images-assets.nasa.gov/video/abc/abc~large.mp4'},
   {href:'https://images-assets.nasa.gov/video/abc/abc~large.mp4'},
  ]}});
- assert.equal(r.length,2);assert.match(r[0],/~large\.mp4$/);
+ assert.equal(r.length,2);assert.match(r[0],/~large\.mp4$/);assert.ok(r.every(x=>x.startsWith('https://')));
 });
 test('FWS only allows official video hosts and dedupes links',()=>{
  const html='<html>'+('<p>long page content</p>'.repeat(15))+

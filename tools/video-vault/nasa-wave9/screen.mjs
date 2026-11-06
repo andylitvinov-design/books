@@ -9,16 +9,25 @@ import {safeNasaId,NASA_LIBRARY} from './discover.mjs';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const API_URL=/^https:\/\/images-api\.nasa\.gov\/asset\/[a-z0-9_\-]+$/i;
 const NASA_ASSET_HOSTS=new Set(['images-assets.nasa.gov','images-api.nasa.gov']);
-export function safeVideoUrl(value){
- try{const u=new URL(value);return u.protocol==='https:'&&NASA_ASSET_HOSTS.has(u.hostname)&&
-  /\.mp4$/i.test(u.pathname)&&!u.username&&!u.password&&!u.hash&&!u.search}
- catch{return false}
+// NASA's own /asset API still returns canonical NASA file links with http://.
+// Upgrade ONLY the exact official host to HTTPS; never fetch insecure HTTP,
+// arbitrary third-party providers, signed/secret URLs or credentials.
+export function canonicalNasaVideoUrl(value){
+ try{
+  const u=new URL(value);
+  if(!['https:','http:'].includes(u.protocol)||!NASA_ASSET_HOSTS.has(u.hostname)||
+     !/\.(mp4|mov)$/i.test(u.pathname)||u.username||u.password||u.search||u.hash)
+    return null;
+  u.protocol='https:';
+  return u.toString();
+ }catch{return null}
 }
+export const safeVideoUrl=value=>canonicalNasaVideoUrl(value)!==null;
 export function selectManifestVideos(json){
  const links=json?.collection?.items;
  if(!Array.isArray(links))return [];
- return [...new Set(links.map(x=>x?.href).filter(safeVideoUrl))]
- .sort((a,b)=>rank(a)-rank(b)).slice(0,5);
+ return [...new Set(links.map(x=>canonicalNasaVideoUrl(x?.href)).filter(Boolean))]
+  .sort((a,b)=>rank(a)-rank(b)).slice(0,5);
 }
 function rank(url){const p=url.toLowerCase();return (p.includes('~large')||p.includes('720p')?-5:0)+(p.includes('~medium')?-2:0)+(p.includes('~orig')?8:0);}
 function exec(bin,args,timeout=110000,{binary=false}={}){

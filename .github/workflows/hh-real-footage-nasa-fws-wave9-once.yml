@@ -4,6 +4,8 @@ on:
     branches: [codex/hh-nasa-fws-wave9-20261106]
     paths:
       - '.github/workflows/hh-real-footage-nasa-fws-wave9-once.yml'
+      - 'tools/video-vault/nasa-wave9/screen.mjs'
+      - 'tools/video-vault/nasa-wave9/tests.mjs'
 permissions:
   contents: read
 concurrency:
