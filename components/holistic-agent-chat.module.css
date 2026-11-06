@@ -323,6 +323,13 @@
 .root[data-compact] .videoReview p{
   margin:0!important;color:#55635c;font:600 13px/1.45 system-ui,sans-serif
 }
+.root[data-compact] .videoEditDetails{min-width:0}
+.root[data-compact] .videoEditDetails>summary{
+  padding:8px 10px;min-height:42px;box-sizing:border-box;cursor:pointer;
+  color:#52675f;font:650 13px/1.45 system-ui,sans-serif
+}
+.root[data-compact] .videoEditDetails:not([open]) .videoEditOptions{display:none}
+.root[data-compact] .videoEditDetails[open] .videoEditOptions{margin-top:8px}
 .root[data-compact] .videoStudioLink{
   display:flex;align-items:center;justify-content:center;min-height:52px;
   padding:11px 14px;border-radius:13px;text-align:center;text-decoration:none;

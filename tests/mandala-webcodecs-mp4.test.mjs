@@ -185,7 +185,11 @@ test("Safari deferred MP4 decoding requires a real user Play gesture, not a fals
   assert.match(studio,/playbackStatus==="ready"&&\(result\.mode==="catalog"\|\|creditConfirmed\)/,
     "a finished download remains gated by real playback and confirmed video credits");
   const e2e=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
-  assert.match(e2e,/await verifyPlayback\.click\(\)/,
-    "WebKit acceptance really taps Play instead of fabricating a decoded frame");
+  assert.match(e2e,/await verifyPlayback\.click\(\{timeout:2000\}\)/,
+    "WebKit acceptance performs a bounded real Play click, never a mock frame");
+  assert.match(e2e,/if\(await output\.isVisible\(\)\)return true;/,
+    "a playback-ready unmount must require the visible real download control");
+  assert.match(e2e,/if\(await verifyPlayback\.isVisible\(\)\)throw error;/,
+    "a persistent non-clickable Play button remains a test failure");
   assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
 });

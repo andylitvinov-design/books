@@ -3,10 +3,10 @@ import {HolisticAgentChat} from '../holistic-agent-chat'
 import css from './messenger-ai-workspace.module.css'
 
 // Reuse the existing protected agent rather than creating a second chatbot.
-export default function MessengerAiWorkspace({locale='en',authenticated=false}){
+export default function MessengerAiWorkspace({locale='en',authenticated=false,authStatus='guest',onAuthRetry=undefined}){
  return <div className={css.layout} data-hh-compact-ai-workspace>
    <div className={css.content}>
-     <HolisticAgentChat locale={locale} compact authenticated={authenticated}/>
+     <HolisticAgentChat locale={locale} compact authenticated={authenticated} authStatus={authStatus} onAuthRetry={onAuthRetry}/>
    </div>
  </div>
 }
