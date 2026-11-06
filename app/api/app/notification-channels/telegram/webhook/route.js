@@ -3,6 +3,7 @@ import {getAppConfig} from '@/lib/app/config'
 import {PRIVATE_HEADERS} from '@/lib/app/http'
 import {verifyClientTelegramSecret} from '@/lib/app/client-telegram-policy'
 import {receiveClientTelegramWebhook} from '@/lib/app/client-telegram-webhook'
+import {receiveSubscriberAiTelegramUpdate,drainSubscriberAiOutbox,answerSubscriberAiCallback} from '@/lib/app/subscriber-ai-telegram'
 import {dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
 import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
 import {receiveOwnerAiTelegramWebhook} from '@/lib/practitioners/owner-ai-telegram-service'
@@ -72,13 +73,24 @@ export async function POST(request){
   }
   const owner=await receiveOwnerAiTelegramWebhook(config,update)
   if(!owner.handled){
-    const customer=await receiveClientTelegramWebhook(config,update)
+    // Client AI is independent of owner/CRM and never steals an unconsented
+    // verification /start, global /stop or ordinary practitioner Reply.
+    const subscriber=await receiveSubscriberAiTelegramUpdate(config,update)
+    if(subscriber.queued||subscriber.callbackId)after(async()=>{
+      try{
+        if(subscriber.callbackId)await answerSubscriberAiCallback(subscriber.callbackId)
+        await drainSubscriberAiOutbox(config)
+      }catch{console.error('HH_SUBSCRIBER_AI_DELIVERY_FAILED')}
+    })
+    if(!subscriber.handled){
+      const customer=await receiveClientTelegramWebhook(config,update)
     if(customer.relayMessageId){
       const id=customer.relayMessageId
       after(async()=>{await Promise.allSettled([
         dispatchPractitionerMessagePush(config,id),
         dispatchClientTelegramNotification(config,id),
       ])})
+      }
     }
   }
   // No account existence, token status, or chat ID is returned to Telegram.
