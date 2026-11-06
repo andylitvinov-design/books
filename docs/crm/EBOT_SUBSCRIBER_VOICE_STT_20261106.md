@@ -79,3 +79,17 @@ No personal video generation, XP charge or private test data is added here.
 
 GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=partial;
 post_open_head_updates=0; extra_waves=none; cost_new_spend=NO_NEW_SERVICES
+
+## Revocation hardening — 6 November 2026
+
+After STT, the encrypted outbox retains the distinct `voice_reply` kind
+instead of converting audio-derived content into an ordinary `chat` job.
+The `/voice_off` handler suppresses queued `voice` and `voice_reply`
+work, and the final Telegram sender checks both AI consent and the current
+STT consent/provider gate while holding the recipient session lock.
+Ordinary typed messages continue uninterrupted. A message already accepted
+by Telegram cannot be retracted by a subsequent revoke.
+
+Apply `20261106151500_hh_subscriber_ai_voice_reply_revocation.sql` only
+after reviewed protected merge. Recheck FORCE RLS and the outbox kind
+constraint before enabling the voice feature.
