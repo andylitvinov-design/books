@@ -29,30 +29,26 @@ page.on('console', message => {
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
-  // This earlier Studio opens the scenario drawer from visible Goal
-  // Continue (the newer three-step branch instead advances to Ideas).
-  const continueToScenarios=page.locator('[data-video-continue-scenarios]');
-  await continueToScenarios.waitFor({state:'visible',timeout:20000});
-  await continueToScenarios.click();
-  assert.equal(await page.locator('[data-mandala-free-video]')
-    .getAttribute('data-video-scenario-open'),'true','GOAL_CONTINUE_MUST_REVEAL_SCENARIOS');
-  // Real original-motion master clips are native portrait and about five
-  // seconds each. Choose 9:16 and 20s BEFORE the preset's eligibility gate.
+  // Select real source footage through the visitor-visible three-stage route.
+  await page.locator('[data-video-continue-scenarios]').click();
+  assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
+    'true','GOALS_MUST_OPEN_IDEAS');
   await page.locator('[data-video-quick-control="editor"]').click();
-  const sourceSettingsTab=page.locator('[data-video-montage-tab="settings"]');
-  await sourceSettingsTab.waitFor({state:'visible',timeout:20000});
-  await sourceSettingsTab.click();
+  await page.locator('[data-video-montage-tab="settings"]').click();
   const sourceFormat=page.locator('[data-video-montage-preference="format"]');
   await sourceFormat.waitFor({state:'visible',timeout:20000});
   await sourceFormat.selectOption('portrait');
-  assert.equal(await sourceFormat.inputValue(),'portrait','PHYSICAL_SOURCE_MUST_BE_PORTRAIT');
+  assert.equal(await sourceFormat.inputValue(),'portrait',
+    'original-motion source must not masquerade as landscape footage');
   const sourceDuration=page.locator('[data-video-montage-preference="duration"]');
+  await sourceDuration.waitFor({state:'visible',timeout:20000});
   await sourceDuration.selectOption('20');
-  assert.equal(await sourceDuration.inputValue(),'20','FOUR_FIVE_SECOND_SOURCES_REQUIRE_20S');
-  await page.locator('[data-video-quick-control="video"]').click();
-  const allStories=page.locator('[data-auto-video-all-scenes]');
-  await allStories.waitFor({state:'visible',timeout:20000});
-  await allStories.click();
+  assert.equal(await sourceDuration.inputValue(),'20',
+    'four real source-backed 5-second scenes require 20s before selecting a preset');
+  await page.locator('[data-video-montage-tab="text"]').click();
+  const addVideo=page.locator('[data-video-timeline-add-video]');
+  await addVideo.waitFor({state:'visible',timeout:20000});
+  await addVideo.click();
   await page.locator('[data-free-film-compilation-catalog]').waitFor({state:'visible'});
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
   const more = page.locator('[data-free-film-more]');
