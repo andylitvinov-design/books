@@ -9,7 +9,7 @@ export const runtime='nodejs'
 export const preferredRegion='yul1'
 export const dynamic='force-dynamic'
 export const revalidate=0
-export const maxDuration=45
+export const maxDuration=300
 
 // An existing CRON_SECRET, not a public or account-authenticated endpoint.
 // Web Push is delivered only to devices which explicitly enabled message alerts.
@@ -20,7 +20,22 @@ export async function GET(request){
     return NextResponse.json({error:'NOT_AVAILABLE'},{status:404,headers:PRIVATE_HEADERS})
   try{
     const config=getAppConfig()
-    return NextResponse.json(await recoverDirectMessagePush(config),{headers:PRIVATE_HEADERS})
+    const push=await recoverDirectMessagePush(config)
+    // Reuse the SAME existing 5-minute CRON_SECRET invocation. Not a second
+    // scheduler, external service or unbounded worker. Video rendering is
+    // completely OFF until the exact owner/billing gate is independently approved.
+    if(process.env.VERCEL_ENV==='production' &&
+      process.env.HH_AI_TELEGRAM_QUEUE_ENABLED==='true' &&
+      process.env.HH_AI_TELEGRAM_RENDER_BUDGET_APPROVED==='true'){
+      try{
+        const {aiVideoBotIdentityReady}=await import('@/lib/app/telegram-ai-account-boundary')
+        if(aiVideoBotIdentityReady()){
+          const {runTelegramAiQueues}=await import('@/lib/app/telegram-ai-worker')
+          await runTelegramAiQueues(config,{messages:2,videos:1,deliveries:2})
+        }
+      }catch{console.error('HH_AI_VIDEO_EXISTING_CRON_RECOVERY_FAILED')}
+    }
+    return NextResponse.json(push,{headers:PRIVATE_HEADERS})
   }catch{
     console.error('HH_DIRECT_PUSH_RECOVERY_FAILED')
     return NextResponse.json({error:'SERVICE_UNAVAILABLE'},
