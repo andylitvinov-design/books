@@ -108,9 +108,9 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   const auto=read("components/mandala-auto-video-director.tsx");
   assert.match(s,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/,
     "approved goal comes from the single local wish state");
-  assert.match(auto,/data-auto-video-input value=\{goal\}[\s\S]*?maxLength=\{160\}/,
+  assert.match(auto,/data-auto-video-input value=\{requestDraft\}[\s\S]*?maxLength=\{160\}/,
     "the same personal goal retains its strict 160-character browser limit");
-  assert.match(auto,/const value=event\.currentTarget\.value;[\s\S]*?onGoalChange\(value\)/,
+  assert.match(auto,/const text=event\.currentTarget\.value;[\s\S]*?onGoalChange\(nextGoal\)/,
     "typing updates the same local state and real source-backed proposal without remote upload");
   assert.match(s,/data-video-basic-tab=\{item.id\}/);
   assert.match(s,/sourceText=\{currentAffirmationSpeech\}/,

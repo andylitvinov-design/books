@@ -70,7 +70,7 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
    "the theme card provides exactly one portal host for the actual Director input");
  assert.match(director,/createPortal\(goalPanel,goalTarget\)/,
    "the same interactive goal controls move to the theme card; no second goal state");
- assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
+ assert.equal((director.match(/data-auto-video-input value=\{requestDraft\}/g)||[]).length,1);
  assert.match(director,/const videoGoalCategories=\[/);
  assert.match(director,/data-auto-video-category=\{item.id\}/);
  assert.match(director,/data-auto-video-topic-panel/);
@@ -200,13 +200,13 @@ test("five photo-free goal pills, two selectable inline subcategories, and real 
  assert.doesNotMatch(topicHandler,/setSelectedCategoryId\(/,
    "choosing a topic must not silently replace the selected high-level goal");
  assert.match(director,/onGoalChange\(nextGoal\)/);
- assert.match(director,/setProposal\(recommendAutoVideo\(\{goal:value/);
+ assert.match(director,/setProposal\(recommendAutoVideo\(\{goal:nextGoal/);
  assert.match(director,/onContinue\?\.\(\)/);
  assert.match(studio,/onContinue=\{\(\)=>\{/);
  assert.match(studio,/setActiveWorkspace\("phrases"\)/);
  assert.match(studio,/data-video-phrase-audio-shortcut/);
  assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setPhraseAudioExpanded\(true\)[\s\S]*?getElementById\("phrase-audio-settings"\)/);
- assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
+ assert.equal((director.match(/data-auto-video-input value=\{requestDraft\}/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-advanced-toggle/);
 });
@@ -418,10 +418,12 @@ test("goal, topic and one free-text prompt precede the four scenario choices",()
  assert.ok(goal>=0&&goal<topic&&topic<prompt,"the owner-approved goal and topic precede the single text request");
  assert.match(studio,/data-video-continue-scenarios/);
  assert.match(studio,/setVideoScenarioOpen\(true\)/);
- assert.equal((director.match(/data-auto-video-input value=\{goal\}/g)||[]).length,1);
+ assert.equal((director.match(/data-auto-video-input value=\{requestDraft\}/g)||[]).length,1);
  assert.match(director,/createPortal\(requestInput,requestTarget\)/);
  assert.match(director,/createPortal\(goalPanel,goalTarget\)/);
- assert.match(director,/createPortal\(topicPanel,topicTarget\)/);
+ assert.match(director,/createPortal\(quickTopicPanel,topicTarget\)/);
+ assert.match(director,/createPortal\(<details[\s\S]*?,ideaTarget\)/);
+ assert.match(director,/createPortal\(montageStylePanel,montageTarget\)/);
  assert.match(director,/data-auto-video-story-options/);
 });
 
@@ -446,7 +448,6 @@ test("new prompt and profile choice invalidate every prior MyTube plot selection
  for(const [start,end] of [
   ["const applyProfile=","const designFromRequest="],
   ["const designFromRequest=","const analyzedPath="],
-  ["const requestField=","const requestInput="],
  ]){
   const from=director.indexOf(start),to=director.indexOf(end,from+start.length);
   assert.ok(from>=0&&to>from,start+" handler exists");
@@ -459,5 +460,9 @@ test("new prompt and profile choice invalidate every prior MyTube plot selection
  assert.match(request,/\{requestField\}/,"visible request composer must use the resettable field");
  assert.match(request,/onClick=\{designFromRequest\}/,"Design action must invoke checked handler");
  assert.match(field,/onChange=\{event=>/,"typing must trigger the reset handler");
- assert.match(field,/onGoalChange\(value\)/,"typing must update the active request");
+ assert.match(field,/onGoalChange\(nextGoal\)/,"typing must update the active request");
+ for(const setter of ["setSelectedSubcategoryId(","setSelectedTopicId("])
+   assert.ok(!field.includes(setter),"optional request preserves taxonomy");
+ for(const setter of ["setSelectedScenarioId(","setSelectedPlotId(","setTimelineEdits("])
+   assert.ok(field.includes(setter),"new request invalidates stale storyboard");
 });

@@ -192,6 +192,7 @@ export function MandalaAutoVideoDirector({
  const [overrideId,setOverrideId]=useState<string|null>(null);
  const [seconds,setSeconds]=useState<10|15|20|30|60|null>(null);
  const [selectedSubcategoryId,setSelectedSubcategoryId]=useState<string>("");
+ const [requestDraft,setRequestDraft]=useState("");
  const [selectedTopicId,setSelectedTopicId]=useState<string>("");
  const [selectedMeaningAxisId,setSelectedMeaningAxisId]=useState<string>("");
  const [selectedScenarioId,setSelectedScenarioId]=useState<string>("");
@@ -211,6 +212,8 @@ export function MandalaAutoVideoDirector({
    ()=>videoGoalCategories.find(item=>item.theme===theme)?.id ?? "strength");
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
  const [topicTarget,setTopicTarget]=useState<HTMLElement|null>(null);
+ const [ideaTarget,setIdeaTarget]=useState<HTMLElement|null>(null);
+ const [montageTarget,setMontageTarget]=useState<HTMLElement|null>(null);
  const [requestTarget,setRequestTarget]=useState<HTMLElement|null>(null);
  const [profileTarget,setProfileTarget]=useState<HTMLElement|null>(null);
  const [profileMode,setProfileMode]=useState<"short"|"extended"|null>(null);
@@ -228,6 +231,8 @@ export function MandalaAutoVideoDirector({
  useEffect(()=>{
    setGoalTarget(document.querySelector<HTMLElement>("[data-video-director-goal-controls]"));
    setTopicTarget(document.querySelector<HTMLElement>("[data-video-director-topic-controls]"));
+   setIdeaTarget(document.querySelector<HTMLElement>("[data-video-director-idea-controls]"));
+   setMontageTarget(document.querySelector<HTMLElement>("[data-video-director-style-controls]"));
    setRequestTarget(document.querySelector<HTMLElement>("[data-video-request-prompt]"));
    setProfileTarget(document.querySelector<HTMLElement>("[data-video-profile-picker]"));
  },[]);
@@ -471,7 +476,7 @@ export function MandalaAutoVideoDirector({
  const chooseCategory=(nextTheme:VideoTheme,categoryId:keyof typeof popularTopicOrder)=>{
    setPromptDesignedFor(null);setPromptClassification(null);
    if(disabled)return;
-   const nextGoal=selectedGoalIds.length||selectedSubcategoryId?"":goal;
+   const nextGoal=requestDraft.trim();
    onInvalidate?.();onCategoryChange?.(nextTheme);
    if(nextGoal!==goal)onGoalChange(nextGoal);
    setSelectedCategoryId(categoryId);setSubcategoriesOpen(true);
@@ -491,15 +496,16 @@ export function MandalaAutoVideoDirector({
    setSelectedGoalId(null);setSelectedGoalIds([]);
    setSelectedSubcategoryId(subcategoryId);setSelectedTopicId("");setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
-   onGoalChange(item.label);
-   setProposalContext({goal:item.label,theme:nextTheme});
-   setProposal(recommendAutoVideo({goal:item.label,locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
+   const nextGoal=requestDraft.trim()||item.label;
+   onGoalChange(nextGoal);
+   setProposalContext({goal:nextGoal,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
  };
  const chooseTaxonomyTopic=(topicId:string)=>{
    setPromptDesignedFor(null);setPromptClassification(null);
    const found=getMyTubeTopic(topicId);if(!found)return;
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
-   const label=found.topic.label[locale];
+   const label=requestDraft.trim()||found.topic.label[locale];
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
    const recommended=recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes});
@@ -553,12 +559,14 @@ export function MandalaAutoVideoDirector({
    setTimelineEdits(selectedTopicId?timelineForTopic(selectedTopicId,selectedScenarioId,recommended,plot):null);
  };
  const chooseCreativeVisuals=(motifId:string,styleId:string)=>{
-   if(!selectedScenarioId||!selectedMotifId||motifId!==selectedMotifId||!selectedTopicId||!proposal)return;
+   if(disabled||(motifId&&motifId!==selectedMotifId))return;
    onInvalidate?.();setConfirmedTimelineKey(null);setSymbolicPlotFallback(false);
    setSelectedStyleId(styleId);
-   setTimelineEdits(timelineForTopic(selectedTopicId,selectedScenarioId,proposal,
-     selectedTaxonomyPlot||null,length as 10|15|20|30|60,chosen?.id,
-     selectedMotifId,styleId||null));
+   // The style is optional: it can be selected before a story has been approved.
+   setTimelineEdits(selectedScenarioId&&selectedTopicId&&proposal?
+     timelineForTopic(selectedTopicId,selectedScenarioId,proposal,
+       selectedTaxonomyPlot||null,length as 10|15|20|30|60,chosen?.id,
+       selectedMotifId||null,styleId||null):null);
  };
  const useAvailableSymbolicCategory=()=>{
    if(disabled||!categoryPlan.ok)return;
@@ -626,8 +634,8 @@ export function MandalaAutoVideoDirector({
  // Interpret only when the visitor explicitly presses Design. Reuse existing
  // canonical category/topic UI and the same verified four-shot film renderer.
  const designFromRequest=()=>{
-  if(disabled||!goal.trim())return;
-  const classification=classifyMyTubeRequest(goal,locale);
+  if(disabled||!requestDraft.trim())return;
+  const classification=classifyMyTubeRequest(requestDraft,locale);
   onInvalidate?.();
   setPromptClassification(classification);setPromptDesignedFor(goal);
   setSelectedGoalId(null);setSelectedGoalIds([]);
@@ -657,18 +665,23 @@ export function MandalaAutoVideoDirector({
  const analyzedPath=promptClassification?getMyTubeTopic(promptClassification.topicId):null;
  const requestField=<label className={css.topicInput} data-video-request-input>
    <span className={css.srOnly}>{t.input}</span>
-   <input type="text" data-auto-video-input value={goal}
+   <input type="text" data-auto-video-input value={requestDraft}
      maxLength={160} disabled={disabled} placeholder={t.placeholder}
      onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();designFromRequest();}}}
      onChange={event=>{
-       const value=event.currentTarget.value;
-       onInvalidate?.();onGoalChange(value);
-    setPromptDesignedFor(null);setPromptClassification(null);
-       setProposalContext({goal:value,theme});
-       setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
-       setOverrideId(null);setSeconds(null);setSelectedGoalId(null);setSelectedGoalIds([]);
-       setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
-       setTimelineEdits(null);setConfirmedTimelineKey(null);
+       const text=event.currentTarget.value;
+       const fallback=selectedTaxonomyTopic?.topic.label[locale]||
+         taxonomySubcategories.find(row=>row.id===selectedSubcategoryId)?.label||"";
+       const nextGoal=text.trim()||fallback;
+       setRequestDraft(text);
+       onInvalidate?.();onGoalChange(nextGoal);
+       setPromptDesignedFor(null);setPromptClassification(null);
+       setProposalContext({goal:nextGoal,theme});
+       setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:theme,presets,scenes}));
+       setOverrideId(null);setSeconds(null);setSelectedMeaningAxisId("");
+       setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);
+       setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);
+       setIncludeMeaningCaption(false);setTimelineEdits(null);setConfirmedTimelineKey(null);
      }}/>
  </label>;
  const requestInput=<div className={css.requestComposer} data-video-request-composer>
@@ -766,21 +779,61 @@ export function MandalaAutoVideoDirector({
      </button>)}
    </div>
    {subcategoriesOpen?<div className={css.subcategories} data-auto-video-subcategories>
-     <p className={css.popularHeading}>{locale==="ru"?"Подкатегории · выберите до двух":
-       locale==="es"?"Subcategorías · elige hasta dos":"Subcategories · choose up to two"}</p>
-     <div className={css.topicChoices} role="group" aria-label={
-       locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
-       {popularTopicOrder[selectedCategoryId].map(id=>{
-         const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===id);
-         return item?renderTopic(item):null;
-       })}
+     <p className={css.popularHeading}>{locale==="ru"?"1б. Подкатегория":
+       locale==="es"?"1b. Subcategoría":"1b. Subcategory"}</p>
+     <div className={css.topicChoices} role="group" data-mytube-subcategories
+       aria-label={locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
+       {taxonomySubcategories.map(item=><button type="button" key={item.id}
+         data-auto-video-subcategory={item.id} aria-pressed={selectedSubcategoryId===item.id}
+         disabled={disabled} title={item.chooseWhen}
+         onClick={()=>chooseTaxonomySubcategory(item.id)}><span>{item.label}</span></button>)}
      </div>
    </div>:null}
  </div>;
+ const quickTopicPanel=<label className={css.optionalTopic} data-video-optional-topic-field>
+   <span>{locale==="ru"?"2. Тема (по желанию)":
+     locale==="es"?"2. Tema (opcional)":"2. Topic (optional)"}</span>
+   <select data-video-optional-topic disabled={disabled||!selectedSubcategoryId}
+     value={selectedTopicId}
+     onChange={event=>{
+       const topicId=event.currentTarget.value;
+       if(topicId)chooseTaxonomyTopic(topicId);
+       else if(selectedSubcategoryId)chooseTaxonomySubcategory(selectedSubcategoryId);
+     }}>
+     <option value="">{selectedSubcategoryId?
+       (locale==="ru"?"Подобрать автоматически":locale==="es"?"Elegir automáticamente":"Choose automatically"):
+       (locale==="ru"?"Сначала выберите подкатегорию":locale==="es"?"Primero elige la subcategoría":"Choose a subcategory first")}</option>
+     {taxonomyTopics.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}
+   </select>
+ </label>;
+ const montageStylePanel=<section className={css.montageStyle} data-mytube-style-filter>
+   <strong>{locale==="ru"?"Рекомендуемый визуальный стиль":
+     locale==="es"?"Estilo visual recomendado":"Recommended visual style"}</strong>
+   <p>{locale==="ru"?"Автоподбор по идее; стиль можно изменить.":
+     locale==="es"?"Estilo automático según la idea; puedes cambiarlo.":
+     "Matched automatically to your idea; you can change it."}</p>
+   <div className={css.montageStyleChoices} role="group" data-mytube-style-choices
+     aria-label={locale==="ru"?"Стиль видео":locale==="es"?"Estilo del vídeo":"Video style"}>
+     <button type="button" data-mytube-style="auto" aria-pressed={!selectedStyleId}
+       disabled={disabled} onClick={()=>chooseCreativeVisuals(selectedMotifId||"","")}>
+       {locale==="ru"?"Авто":locale==="es"?"Auto":"Auto"}</button>
+     {availableVisualStyles.map(style=><button type="button" key={style.id}
+       data-mytube-style={style.id} aria-pressed={selectedStyleId===style.id}
+       title={style.description} disabled={disabled}
+       onClick={()=>chooseCreativeVisuals(selectedMotifId||"",selectedStyleId===style.id?"":style.id)}>
+       {style.label}</button>)}
+   </div>
+   {selectedScenarioId&&creativeSelectionUnavailable?<p className={css.warning} role="status"
+     data-mytube-creative-availability>
+     {locale==="ru"?"Подходящих разрешённых клипов для выбранного стиля недостаточно.":
+       locale==="es"?"Faltan clips aprobados para el estilo elegido.":
+       "Not enough approved footage for the selected style."}
+   </p>:null}
+ </section>;
  const topicPanel=<div className={css.topicPanel} data-auto-video-topic-panel>
    <div className={css.topicHead}>
      <h3><Leaf size={19} aria-hidden="true"/>
-       {locale==="ru"?"2. Выберите тему":locale==="es"?"2. Elige el tema":"2. Choose your topic"}</h3>
+       {locale==="ru"?"Уточните тему, смысл и сценарий":locale==="es"?"Precisa la idea y el guion":"Refine the theme, meaning and story"}</h3>
      <button type="button" data-auto-video-clarify
        disabled={disabled} aria-expanded={onClarify?helpOpen:refineOpen}
        onClick={()=>{
@@ -793,17 +846,6 @@ export function MandalaAutoVideoDirector({
          "I'll help clarify your situation and goal. Free."}</span>
        <ArrowRight size={16} aria-hidden="true"/>
      </button>
-   </div>
-   <p className={css.popularHeading}>
-     {locale==="ru"?"Подкатегория — выберите одну из четырёх":
-       locale==="es"?"Subcategoría — elige una de cuatro":"Subcategory — choose one of four"}
-   </p>
-   <div className={css.topicChoices} role="group" aria-label={t.goalsTitle} data-mytube-subcategories>
-     {taxonomySubcategories.map(item=><button key={item.id} type="button" data-auto-video-subcategory={item.id}
-       aria-pressed={selectedSubcategoryId===item.id} disabled={disabled}
-       title={item.chooseWhen} onClick={()=>chooseTaxonomySubcategory(item.id)}>
-       <span>{item.label}</span>
-     </button>)}
    </div>
    {selectedSubcategoryId?<>
      <p className={css.popularHeading}>{locale==="ru"?"Тема — выберите конкретный запрос":locale==="es"?"Tema — elige una necesidad concreta":"Theme — choose a specific need"}</p>
@@ -846,28 +888,8 @@ export function MandalaAutoVideoDirector({
          aria-pressed={selectedMotifId===m.id} title={m.meaning}
          disabled={disabled} onClick={()=>chooseTaxonomyMotif(m.id)}>{m.label}</button>)}
      </div>
-     {selectedMotifId?<details data-mytube-style-filter className={css.storyboardDisclosure}>
-       <summary>{locale==="ru"?"Визуальный стиль (необязательно)":
-         locale==="es"?"Estilo visual (opcional)":"Visual style (optional)"}
-         {selectedStyleId?" · "+availableVisualStyles.find(s=>s.id===selectedStyleId)?.label:""}</summary>
-       <div className={css.topicChoices} role="group" data-mytube-style-choices>
-         <button type="button" data-mytube-style="auto" aria-pressed={!selectedStyleId}
-           disabled={disabled||!selectedScenarioId} onClick={()=>chooseCreativeVisuals(selectedMotifId,"")}>
-           {locale==="ru"?"Авто":locale==="es"?"Automático":"Auto"}</button>
-         {availableVisualStyles.map(style=><button key={style.id} type="button"
-           data-mytube-style={style.id} aria-pressed={selectedStyleId===style.id}
-           title={style.description} disabled={disabled||!selectedScenarioId}
-           onClick={()=>chooseCreativeVisuals(selectedMotifId,style.id===selectedStyleId?"":style.id)}>{style.label}</button>)}
-       </div>
-     </details>:null}
-     {selectedScenarioId?<p role="status" data-mytube-creative-availability
-       data-ready={creativeSelectionUnavailable?"false":"true"}>
-       {creativeSelectionUnavailable?
-         (locale==="ru"?"Не хватает четырёх разрешённых клипов по мотиву и стилю.":
-         locale==="es"?"No hay cuatro clips aprobados para este motivo y estilo.":"Not enough approved clips for motif and style."):
-         (locale==="ru"?"Теги совпадают. Проверьте реальные кадры перед экспортом.":
-         locale==="es"?"Las etiquetas coinciden. Comprueba los fotogramas.":"Matching catalog tags. Review real footage before export.")}
-     </p>:null}
+
+
    </div>:null}
    {selectedTopicId&&selectedMotifId&&taxonomyScenarios.length===4?<div className={css.storyChoices} data-mytube-scenario-concepts>
      <p className={css.variantsTitle}>{locale==="ru"?"Четыре сценария для выбранного мотива":locale==="es"?"Cuatro guiones del motivo":"Four film scenarios for this motif"}</p>
@@ -1038,7 +1060,14 @@ export function MandalaAutoVideoDirector({
    {requestTarget?createPortal(requestInput,requestTarget):requestInput}
    {profileTarget?createPortal(profilePanel,profileTarget):profilePanel}
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
-   {topicTarget?createPortal(topicPanel,topicTarget):topicPanel}
+   {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
+   {ideaTarget?createPortal(<details className={css.ideaRefinement} data-video-ideas-refinement>
+     <summary>{locale==="ru"?"Уточнить тему, смысл, мотив и сценарий (по желанию)":
+       locale==="es"?"Explorar tema, significado y guion (opcional)":
+       "Refine topic, meaning, motif and story (optional)"}</summary>
+     {topicPanel}
+   </details>,ideaTarget):null}
+   {montageTarget?createPortal(montageStylePanel,montageTarget):null}
    {showProposal&&proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
    <div className={css.notice} data-mytube-category-storyboard
      data-storyboard-status={categoryPlan.status}>

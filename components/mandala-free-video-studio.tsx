@@ -4981,8 +4981,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             locale==="ru"?"2. Выберите тему":locale==="es"?"2. Elige el tema":"2. Choose your topic"}>
           <div data-video-director-topic-controls className={videoStyles.quickTopicHost}/>
           <div className={videoStyles.quickPromptStep} data-video-request-after-topic>
-            <h4 className={videoStyles.quickPromptTitle}>{locale==="ru"?"3. Опишите ваш запрос":
-              locale==="es"?"3. Describe tu idea":"3. Describe your request"}</h4>
+            <h4 className={videoStyles.quickPromptTitle}>{locale==="ru"?"3. Опишите ваш запрос (необязательно)":
+              locale==="es"?"3. Describe tu idea (opcional)":"3. Describe your request (optional)"}</h4>
             <div className={videoStyles.quickRequestHost} data-video-request-prompt/>
             <button type="button" className={videoStyles.quickPromptContinue}
               data-video-continue-scenarios
@@ -5398,6 +5398,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             {deepHypnoPane}
           </div> : null}
         </div>
+        <div data-video-director-idea-controls />
         <button type="button" className={videoStyles.phraseAudioNext}
           data-video-phrase-audio-shortcut disabled={recording||preparing}
           onClick={()=>{
@@ -6096,6 +6097,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 } as const)[item.id][locale]}</span>
               </button>)}
           </nav>
+          <div data-video-director-style-controls />
           <div id="video-montage-active-panel" className={videoStyles.montageActivePanel}>
           {montagePanel==="settings" ? <div className={videoStyles.montagePreferences} data-video-montage-preferences>
             <div className={videoStyles.montagePreferencesHeader}>
