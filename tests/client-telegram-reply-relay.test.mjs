@@ -58,7 +58,7 @@ test('new SQL is ciphertext-only, notification/chat-bound, consent gated and at-
  assert.match(sql,/n.topics->>'messages'='true'/)
  assert.match(sql,/p.active=true/)
  assert.match(sql,/r.status in \('requested','contacted'\)/)
- assert.match(sql,/FOR UPDATE/)
+ assert.match(sql,/for update/i)
  assert.match(sql,/on conflict do nothing/)
  assert.match(sql,/GRANT EXECUTE ON FUNCTION/)
  assert.match(sql,/TO hh_app_inbox/)

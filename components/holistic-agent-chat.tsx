@@ -247,7 +247,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     if(compact&&isCasualGreeting(text)){
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
       setMessages(prev=>[...prev,{role:"user" as const,text},
-        {role:"assistant" as const,text:starter.hello}].slice(-30));
+        {role:"assistant" as const,text:/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
+          /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:starter.hello}].slice(-30));
       return;
     }
     setEntryOpen(false);
