@@ -70,7 +70,7 @@ export default async function AutomationsPage(){
   let snapshot:DbSnapshot|null=null;
   try{
     snapshot=await transaction(getAppConfig(),null,
-      db=>readAutomationSnapshot(db),{server:true}) as DbSnapshot;
+      (db: unknown)=>readAutomationSnapshot(db),{server:true}) as DbSnapshot;
   }catch{ /* Unknown database state is not an empty/successful report. */ }
   finally{await closeDatabase();}
   const scout=snapshot?.tasks.find(task=>task.task_id==='video-scout-hourly');
