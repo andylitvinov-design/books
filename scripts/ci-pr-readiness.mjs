@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 const SHA = /^[0-9a-f]{40}$/i;
 const fail = (code, message) => ({ ready: false, code, message });
 
-export function assessPrReadiness(event, live, repository, ancestryProof = null) {
+export function assessPrReadiness(event, live, repository, ancestryProof = null, baseAdvanceProof = null) {
   const pr = event?.pull_request;
   if (!pr || !live || event.repository?.full_name !== repository) {
     return fail('invalid_event', 'Cannot confirm PR and repository identity');
@@ -56,8 +56,19 @@ export function assessPrReadiness(event, live, repository, ancestryProof = null)
   if ((live.mergeable !== true || live.mergeable_state === 'unknown') && !exactFastForward) {
     return fail('mergeability_pending', 'GitHub has not confirmed mergeability');
   }
+  // Only independently ancestor-proven event BASE -> live BASE is BASE_ADVANCED.
+  // Missing/invalid Compare evidence cannot be silently treated as a verified move.
+  const baseMoved = pr.base.sha !== live.base.sha;
+  const provenAdvance = baseMoved && baseAdvanceProof?.status === 'ahead' &&
+    baseAdvanceProof.base_sha === pr.base.sha &&
+    baseAdvanceProof.head_sha === live.base.sha &&
+    baseAdvanceProof.merge_base_sha === pr.base.sha;
+  const diagnostic_signal = provenAdvance?'BASE_ADVANCED':
+    baseMoved?'BASE_CHANGED_UNVERIFIED':null;
   // Blocked/unstable may be caused by pending CI or reviews: never deadlock CI.
-  return { ready: true, code: 'ready', message: 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
+  // The immutable-base Specialist still independently enforces strict freshness.
+  return { ready: true, code: 'ready', diagnostic_signal,
+    message: 'Exact HEAD and mergeability verified; trusted release gate pins the tested merge base' };
 }
 
 async function readLivePr(repository, number, token) {
@@ -119,9 +130,11 @@ export function verifiedPublicServicesCheckout(env = process.env, cwd = process.
 function emit(result) {
   const status = result.ready ? 'PASS' : 'BLOCK';
   console.log(`PR early-readiness ${status}: ${result.code}: ${result.message}`);
+  if(result.diagnostic_signal)console.log('PR BASE diagnostic signal: '+result.diagnostic_signal);
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-      `- PR early-readiness **${status}**: ${result.code} — ${result.message}\n`);
+      `- PR early-readiness **${status}**: ${result.code} — ${result.message}\n`+
+      (result.diagnostic_signal?`- PR BASE signal: **${result.diagnostic_signal}** (advisory; does not modify security gates)\n`:''));
   }
 }
 
@@ -145,7 +158,12 @@ export async function main() {
     const ancestryProof = live.mergeable === false || live.mergeable_state === 'dirty'
       ? await readExactBaseAncestry(repository, live, token)
       : null;
-    const result = assessPrReadiness(event, live, repository, ancestryProof);
+    const baseAdvanceProof = SHA.test(event.pull_request.base?.sha ?? '') &&
+      SHA.test(live.base?.sha ?? '') && event.pull_request.base.sha !== live.base.sha
+      ? await readExactBaseAncestry(repository,
+        {base:{sha:event.pull_request.base.sha},head:{sha:live.base.sha}},token)
+      : null;
+    const result = assessPrReadiness(event, live, repository, ancestryProof, baseAdvanceProof);
     if (result.code !== 'mergeability_pending' || attempt === 2) {
       if (result.ready) {
         const publicWorkspace = verifiedPublicServicesCheckout();

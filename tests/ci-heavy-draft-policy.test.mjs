@@ -572,6 +572,22 @@ test('early readiness accepts current mergeable HEAD without deadlocking pending
   assert.equal(assessPrReadiness(earlyEvent, advanced, earlyRepo).ready, true);
 });
 
+test('BASE_ADVANCED is a separate ancestry-proven advisory, never a security bypass',()=>{
+  const moved={...earlyLive,base:{...earlyLive.base,sha:'c'.repeat(40)}};
+  const proof={status:'ahead',base_sha:earlyEvent.pull_request.base.sha,
+    head_sha:moved.base.sha,merge_base_sha:earlyEvent.pull_request.base.sha};
+  assert.equal(assessPrReadiness(earlyEvent,moved,earlyRepo).diagnostic_signal,'BASE_CHANGED_UNVERIFIED');
+  assert.equal(assessPrReadiness(earlyEvent,moved,earlyRepo,null,proof).diagnostic_signal,'BASE_ADVANCED');
+  for(const invalid of [
+    {...proof,status:'diverged'},
+    {...proof,base_sha:'d'.repeat(40)},
+    {...proof,head_sha:'d'.repeat(40)},
+    {...proof,merge_base_sha:'d'.repeat(40)},
+  ])assert.equal(assessPrReadiness(earlyEvent,moved,earlyRepo,null,invalid).diagnostic_signal,'BASE_CHANGED_UNVERIFIED');
+  assert.equal(assessPrReadiness(earlyEvent,{...moved,mergeable:false},earlyRepo,null,proof).ready,false);
+  assert.equal(assessPrReadiness(earlyEvent,earlyLive,earlyRepo,null,proof).diagnostic_signal,null);
+});
+
 test('stale dirty mergeability is overridden only by an exact fast-forward Compare proof', () => {
   const proof = {
     status: 'ahead',
