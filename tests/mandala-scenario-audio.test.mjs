@@ -95,6 +95,12 @@ test("generated MP3s are available to actual player and not empty placeholders",
   }
 });
 
+test("worker shard never reruns all masters via the CLI entrypoint",()=>{
+  const source=read("scripts/generate-scenario-melodies.mjs");
+  assert.ok(source.includes("if(isMainThread&&process.argv[1]"),
+    "worker must never launch the all-tracks generator");
+});
+
 test("warm-cache Core reuses every verified master without extra generation",async()=>{
   const exact=buildScenarioMusic({check:true});
   const warm=await buildScenarioMusicParallel({workers:3});
