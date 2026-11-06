@@ -289,11 +289,86 @@ test('release audit preserves all four browser lanes while isolating CI process 
   }
 });
 
-test('site language menu readiness tracks actual installed native keyboard listeners',()=>{
- const {menus,listeners,cleanup}=navigationHarness()
- assert.equal(menus[0].dataset.hhKeyboardReady,'true')
- assert.equal(listeners.has('keydown'),true)
- cleanup()
- assert.equal(menus[0].dataset.hhKeyboardReady,undefined)
- assert.equal(listeners.size,0)
-})
+
+test('release re-audit follows the real private Profile and public builder across CSP boundaries', () => {
+  const source = read('scripts/verify-release-reaudit.mjs');
+  const navigation = read('lib/site-navigation-model.js');
+  const hub = read('components/app/profile-hub-tabs.jsx');
+  const guest = read('components/app/cabinet-guest-overview.jsx');
+  const builder = read('components/personality-profiles-builder.tsx');
+  assert.ok(navigation.includes("profile: 'app/portrait'"), 'Profile dock uses the existing private Cabinet');
+  assert.ok(hub.includes("create: '/' + selected + '/personality-profiles'"), 'Private Profile has a real public Create tab');
+  assert.ok(guest.includes('data-cabinet-guest-overview'), 'Anonymous Profile must remain guest-only');
+  assert.ok(builder.includes('data-profile-direct-tests'), 'Builder preserves a real protected tests link');
+  const start = source.indexOf('// The unified Profile dock now opens the PRIVATE Cabinet first.');
+  const finish = source.indexOf('const discoveryBottom = cspPage.locator(');
+  assert.ok(start > 0 && finish > start + 1000, 'The real CSP journey is present');
+  const flow = source.slice(start, finish);
+  for (const assertion of [
+    "toHaveURL(origin + '/en/app/portrait')",
+    "toHaveAttribute('data-csp-class', 'private')",
+    "window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document'",
+    "locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible()",
+    "locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0)",
+    "locator('[data-profile-hub-tabs] [data-profile-tab=\"create\"]').click()",
+    "toHaveURL(origin + '/en/personality-profiles')",
+    "toHaveAttribute('data-csp-class', 'public-video')",
+    "window.__cspDocumentProbe), undefined, 'Private Profile to public builder must load a new document'",
+    "locator('[data-profile-direct-tests]').click()",
+    "toHaveURL(origin + '/en/client/tests')",
+    "window.__cspDocumentProbe), undefined, 'Public tests to private must load a new document'",
+  ]) assert.ok(flow.includes(assertion), 'Missing required CSP/guest regression: ' + assertion);
+  assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"));
+  assert.ok(!source.includes('Public profile discovery must retain same-policy soft navigation'));
+});
+
+test('release audit refuses unbounded public animation frame stalls while retaining real browser coverage', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const begin = verifier.indexOf('const settlePublicDocument = async stage =>');
+  const end = verifier.indexOf('const routePassed = await check(', begin);
+  assert.ok(begin > 0 && end > begin, 'Exact public document settling scope exists');
+  const scope = verifier.slice(begin, end);
+  for (const anchor of [
+    'await Promise.race([',
+    'requestAnimationFrame(() => requestAnimationFrame(resolve))',
+    'frameTimer = setTimeout(() => reject(new Error',
+    'two-frame wait exceeded 5000ms',
+    'clearTimeout(frameTimer)',
+    'pendingPublicRequests.size === 0',
+    "checkpoints.push({ type: 'settled'",
+  ]) assert.ok(scope.includes(anchor), 'Bounded WebKit settling preserves '+anchor);
+});
+
+test('Maya hub route remains fatal with bounded WebKit navigation and poster decode', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const poster = read('scripts/public-poster-readiness.mjs');
+  for (const anchor of [
+    "['/books/maya-tradition', 'en']",
+    "['/books/maya-tradition?lang=ru', 'ru']",
+    'const routeTimer = setTimeout(',
+    "'[release-reaudit] ROUTE_STALLED '",
+    'process.exit(1)',
+    "if (path === '/books/maya-tradition')",
+    'publicPageState = await createPublicPage()',
+    "console.info('[release-reaudit] strict poster decode count='",
+    'await decodeReadyPoster(image, expect)',
+    "fullPage: path !== '/books/maya-tradition', timeout: 15000",
+    'clearTimeout(routeTimer)',
+  ]) assert.ok(verifier.includes(anchor), 'Real route remains checked: ' + anchor);
+  for (const anchor of [
+    'await Promise.race([',
+    'el.decode()',
+    'Poster decode timed out after 7000ms',
+    'clearTimeout(decodeDeadline)',
+    "throw new Error('Poster identity/readiness changed during decode')",
+  ]) assert.ok(poster.includes(anchor), 'Strict bounded poster decoding: ' + anchor);
+});
+
+test('language menu keyboard readiness is installed with native handlers and cleared on cleanup', () => {
+  const { menus, listeners, cleanup } = navigationHarness();
+  assert.equal(menus[0].dataset.hhKeyboardReady, 'true');
+  assert.equal(listeners.has('keydown'),true);
+  cleanup();
+  assert.equal(menus[0].dataset.hhKeyboardReady,undefined);
+  assert.equal(listeners.size,0);
+});
