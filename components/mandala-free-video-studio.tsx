@@ -1825,6 +1825,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(()=>setStudioHydrated(true),[]);
   const [directorChatOpen,setDirectorChatOpen] = useState(false);
   const [phraseAudioExpanded,setPhraseAudioExpanded] = useState(false);
+  const [phraseAudioActivated,setPhraseAudioActivated] = useState(false);
   const [phrasePending,setPhrasePending] = useState(false);
   const [catalogPhraseDraft,setCatalogPhraseDraft] = useState<string|null>(null);
   const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({enabled:false,cyclesPerMinute:6,opacity:.18});
@@ -5403,9 +5404,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onCreate={goToMontageFromIdeas}/>
-          {(activeWorkspace!=="phrases"||phraseAudioExpanded) ? <div
+          {phraseAudioActivated ? <div
             data-video-legacy-phrase-editor data-video-audio-expanded={phraseAudioExpanded?"true":"false"}
-            hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
+            hidden={activeWorkspace!=="phrases"||!phraseAudioExpanded} aria-hidden={activeWorkspace!=="phrases"||!phraseAudioExpanded}>
             {deepHypnoPane}
           </div> : null}
         </div>
@@ -5413,8 +5414,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-video-phrase-audio-shortcut disabled={recording||preparing} aria-expanded={phraseAudioExpanded}
           onClick={()=>{
             const open=!phraseAudioExpanded;
-            setPhraseAudioExpanded(open);
-            if(open)window.requestAnimationFrame(()=>document.querySelector<HTMLElement>("[data-video-legacy-phrase-editor]")?.scrollIntoView({behavior:"smooth",block:"nearest"}));
+            if(open){setPhraseAudioActivated(true);setPhraseAudioExpanded(true);}
+            else setPhraseAudioExpanded(false);
+            if(open)window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"}));
           }}>
           <Music2 size={19} aria-hidden="true"/>
           {locale==="ru"?"Настроить аудиогид, музыку и голос":

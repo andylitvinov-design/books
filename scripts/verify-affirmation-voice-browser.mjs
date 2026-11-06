@@ -456,8 +456,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
       await page.locator("[data-video-generate-affirmation-audio]").click();
+      const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav";
       try {
-        await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
+        // The shared video stage must confirm a real attached WAV, not merely a transient preview.
+        await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName,{timeout:30000});
+        // After asynchronous mixing, restore the visitor-opened optional voice editor if collapsed.
+        if(await optionalAudio.getAttribute("aria-expanded")==="false"){
+          await optionalAudio.click();
+          await expect(optionalAudio).toHaveAttribute("aria-expanded","true");
+        }
+        await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:15000});
         phase(engine,"voice-wav-ready");
       }catch(error){
         const status=await page.locator('[data-video-affirmation-voice] [role="status"]').allTextContents();
@@ -471,7 +479,6 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(affirmationRequests[0].voiceId,"leon");
       assert.equal(affirmationRequests[0].consent,true);
       assert.equal(affirmationRequests[0].language,locale);
-      const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav";
       // Real attached WAV is reflected on the shared live video stage, not
       // merely in a hidden legacy audio panel or a transient preview label.
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
