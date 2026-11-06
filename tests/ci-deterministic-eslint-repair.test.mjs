@@ -84,12 +84,13 @@ test('the repair lane is optional, BASE-owned and cannot satisfy the required me
   const job=workflow.slice(start,end);
   assert.match(job,/needs: \[scope\]/);
   assert.match(job,/needs\.scope\.result == 'failure'/);
+  assert.match(job,/needs\.scope\.outputs\.lint_failed == 'true'/);
   assert.match(job,/failure\(\)/);
   assert.match(job,/contents: write/);
   assert.match(job,/pull-requests: write/);
   assert.match(job,/issues: write/);
-  assert.ok(job.includes('token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || github.token }}'));
-  assert.ok(job.includes('HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN }}'));
+  assert.ok(job.includes('token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || secrets.HH_AUTOMERGE_TOKEN || github.token }}'));
+  assert.ok(job.includes('HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN || secrets.HH_AUTOMERGE_TOKEN }}'));
   assert.ok(job.includes('Upload verified ESLint autofix patch'));
   assert.match(job,/git cat-file -e "\$HH_BASE_SHA:scripts\/ci-deterministic-eslint-repair\.mjs"/);
   assert.match(job,/git show "\$HH_BASE_SHA:scripts\/ci-deterministic-eslint-repair\.mjs"/);
@@ -108,4 +109,18 @@ test('fast ubuntu-slim preflight checks deterministic repair contract before slo
   const install=workflow.indexOf('      - name: Install checksum-verified actionlint');
   assert.ok(fast>=0&&fast<install,'the cheap contract test must run on the faster runner before actionlint install and Core scheduling');
   assert.match(workflow,/node --test tests\/ci-deterministic-eslint-repair\.test\.mjs/);
+});
+
+
+test('only a confirmed failing Core changed-file ESLint step can start source Repair',()=>{
+  const workflow=readFileSync(new URL('../.github/workflows/hh-pr-core-release.yml',import.meta.url),'utf8');
+  assert.match(workflow,/^      lint_failed: \$\{\{ steps\.changed_lint\.outcome == 'failure' \}\}$/m);
+  assert.match(workflow,/^      - name: Lint changed JS\/TS sources on PR; full lint for manual\/merge queue\n        id: changed_lint$/m);
+  const job=workflow.split(/^  hh-eslint-repair:/m)[1]?.split(/^  # Both GitHub production protection sources/m)[0];
+  assert.ok(job);
+  assert.match(job,/needs\.scope\.outputs\.lint_failed == 'true'/);
+  assert.doesNotMatch(job,/continue-on-error:\s*true/);
+  const autoMerge=readFileSync(new URL('../.github/workflows/hh-native-auto-merge.yml',import.meta.url),'utf8');
+  assert.ok(autoMerge.includes('GH_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN || github.token }}'),
+    'fallback reuses the existing authorized repository token, not a new external service');
 });

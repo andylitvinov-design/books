@@ -1654,3 +1654,20 @@ test('Tantra keeps real 1.64.0 Chromium/WebKit acceptance with preinstalled Nobl
   assert.doesNotMatch(s,/^\s+.*\/bin\/playwright install --with-deps/m);
   assert.doesNotMatch(s,/continue-on-error:\s*true/);
 });
+
+
+test('billing specialist avoids repeated global TypeScript with all dedicated payment/RLS checks retained',()=>{
+  const billing=workflow('hh-billing-isolated.yml');
+  const core=workflow('hh-pr-core-release.yml');
+  assert.doesNotMatch(billing,/^      - '\.github\/workflows\/hh-billing-isolated\.yml'$/m);
+  assert.doesNotMatch(billing,/\bnpx tsc --noEmit\b/);
+  for(const test of ['tests/video-credits-postgres.integration.mjs',
+    'tests/square-ledger-isolated.integration.mjs',
+    'tests/service-square-api-cart.test.mjs', 'npm run test:billing:db']) {
+    assert.ok(billing.includes(test),'payment and SQL/RLS coverage must stay: '+test);
+  }
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/node scripts\/ci-source-preflight\.mjs/);
+  assert.match(core,/^  hh-merge-check:/m);
+  assert.match(core,/^    needs: \[scope, hh-specialist\]$/m);
+});

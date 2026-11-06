@@ -143,7 +143,7 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
   return report;
 }
 export function formatSummary(report) {
-  const fmt=n=>n===null?'n/a':n.toFixed(2);
+  const fmt=n=>typeof n==='number'&&Number.isFinite(n)?n.toFixed(2):'n/a';
   const labels={green_to_merge:'Green → Merge',
     error_to_repair:'Error → Repair (explicit marker)',
     dependency_timeout:'Confirmed dependency timeout',
@@ -152,13 +152,14 @@ export function formatSummary(report) {
   const lines=['## P1 — Confirmed PR time exposure (read-only)',
     'PRs created: '+report.cohort.created_utc_start+' — '+report.cohort.created_utc_end+
       '; sampled '+report.sampled_prs+'; cohort total unknown.',
+    report.low_n?'LOW_N: n<5 PRs. Descriptive only: p50/p95 and TOP-3 are not stable population estimates.':'Stage-level n is shown; do not infer population guarantees.',
     'TOP-3 is limited to verified, mutually exclusive timestamp intervals in this sample.',
     '',
     '| Rank | Stage | Observed PR-min | PRs | Mean (observed) | p50 | p95 |',
     '| ---: | --- | ---: | ---: | ---: | ---: | ---: |'];
   report.top3.forEach((x,i)=>lines.push('| '+(i+1)+' | '+labels[x.stage]+
     ' | '+fmt(x.minutes)+' | '+x.pr_count+' | '+fmt(x.mean_minutes)+
-    ' | '+fmt(x.p50_minutes)+' | '+fmt(x.p95_minutes)+' |'));
+    ' | '+fmt(x.p50_minutes)+' | '+fmt(x.p95_minutes)+(x.low_n?' (n<5)':'')+' |'));
   if(!report.top3.length) lines.push('| — | Insufficient confirmed timestamps | — | — | — | — | — |');
   lines.push('','### PR → LIVE timestamps (observed UTC; unknown never equals zero)');
   lines.push('| PR | Ready | First Core CI | Runner | Error | Repair | New HEAD first CI* | Final PASS | Merge | Vercel provider READY* | Vercel skipped* | Functional smoke |');
@@ -180,7 +181,7 @@ export function formatSummary(report) {
     lines.push('| #'+row.pr+' | '+w.observed_core_runs+' | '+w.historical_core_runs_relinked+' | '+w.same_head_repeat_runs+
       ' | '+w.new_head_runs+' | '+w.gaps_measured.n+' | '+
       [w.gaps_measured.mean_minutes,w.gaps_measured.p50_minutes,w.gaps_measured.p95_minutes]
-        .map(fmt).join(' / ')+' | '+fmt(w.first_runner_wait.mean_minutes)+
+        .map(fmt).join(' / ')+(w.gaps_measured.n<5?' (n<5)':'')+' | '+fmt(w.first_runner_wait.mean_minutes)+
       ' | '+fmt(w.core_job_work.mean_minutes)+' | '+(w.run_history_complete?'complete':'partial')+' |');
   }
   lines.push('','Gap is previous Core run updated_at → next Core run created_at. Same-HEAD repeat, changed HEAD, runner wait and execution are distinct; timestamps alone never establish the root cause. Missing/overlapping history remains unknown.');
@@ -210,9 +211,10 @@ export function formatSummary(report) {
   }
   if(!repairs.length)lines.push('| — | n/a | n/a | n/a | n/a | n/a | n/a |');
   lines.push('','Lease claim = ownership, not proof an agent read the task. Repair declaration is not observed local editing. GitHub committed event is not independently verified push time. Queues include dependencies/concurrency, not proven runner shortages. Failed job/step is a location, not log-verified root cause. Unknown is n/a, never agent idle or zero.');
+  lines.push('','BASE_ADVANCED is reported independently by the ancestry-proven CI readiness advisory and the strict trusted Specialist; this read-only cohort report does not infer it from a changed HEAD.');
   lines.push('','### Stage coverage');
   for(const x of report.categories)lines.push('- '+labels[x.stage]+': '+
-    fmt(x.minutes)+' PR-min, confirmed PRs='+x.pr_count);
+    fmt(x.minutes)+' PR-min, confirmed PRs='+x.pr_count+(x.low_n?' (n<5; descriptive)':''));
   lines.push('','### Direct evidence (largest PR per stage)');
   for(const stage of report.top3) {
     const top=stage.evidence[0];
