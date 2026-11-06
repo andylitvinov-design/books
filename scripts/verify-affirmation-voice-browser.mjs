@@ -171,6 +171,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Navigate the actual visible Montage → Audio tab first; settings are conditional.
+      const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
+      await montageAudioTab.waitFor({state:"visible",timeout:25000});
+      await expect(montageAudioTab).toBeEnabled();
+      await montageAudioTab.click();
+      await expect(montageAudioTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
       const montageSettings=page.locator('[data-video-montage-settings]');
       await montageSettings.waitFor({state:"visible",timeout:25000});
       if(await montageSettings.getAttribute("open")===null)

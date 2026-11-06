@@ -405,3 +405,19 @@ test('stale narration safety remains checked after the phrase warning unmounts',
   assert.match(after,/holistic-house-hypno-audio\.wav/);
   assert.match(after,/expectedFileName/);
 });
+
+test("actual WebKit uses visible Montage Audio before testing real sound and export",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const entry=browser.indexOf('const editorTab=page.locator');
+  const audio=browser.indexOf('const montageAudioTab=page.locator',entry);
+  const click=browser.indexOf("await montageAudioTab.click()",audio);
+  const selected=browser.indexOf('await expect(montageAudioTab).toHaveAttribute("aria-pressed","true"',click);
+  const settings=browser.indexOf('const montageSettings=page.locator',selected);
+  assert.ok(entry>=0&&audio>entry&&click>audio&&selected>click&&settings>selected,
+    "real user selects the mounted Audio panel before the source-backed media checks");
+  assert.ok(studio.includes("data-video-montage-tab={item.id}"));
+  assert.ok(studio.includes('montagePanel==="audio" ?'));
+  assert.ok(browser.includes('data-video-voice-studio'));
+  assert.ok(browser.includes('data-video-quick-generate'));
+});
