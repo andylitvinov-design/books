@@ -151,7 +151,7 @@ test("explicit Safari WebM retry uses a different recorder, preserves sound",asy
     webm:['video/webm;codecs="vp8,opus"',"video/webm"],preferWebm:true,
     userAgent:"Mozilla/5.0 (iPhone) AppleWebKit/605.1.15"});
   assert.deepEqual(formats,['video/webm;codecs="vp8,opus"',"video/webm"]);
-  assert.ok(studio.includes("const useWebCodecsMp4=selectWebCodecsForRecording({"));
+  assert.ok(studio.includes("const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording({"));
   assert.ok(studio.includes("hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm"));
   assert.ok(studio.includes('const mimeTypes = preferWebm\n        ? recordingMimes(Boolean(musicSession),true).filter(mime=>mime.startsWith("video/webm"))'));
   assert.ok(studio.includes("if (musicSession) stream.addTrack(musicSession.track);"));

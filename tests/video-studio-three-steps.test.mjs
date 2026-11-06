@@ -72,3 +72,10 @@ test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the rea
   assert.match(live,/SELECTED_SOUNDTRACK_MISSING_FROM_EXPORT/);
   assert.match(motion,/ffprobe/);
 });
+
+test("legacy deep links reveal the real advanced video catalog on mobile",()=>{
+ assert.match(studio,/if\(hash==="video-templates"\)\{[\s\S]*?setVideoScenarioOpen\(true\)/);
+ assert.match(studio,/if\(anchor==="video-templates"\)\{[\s\S]*?setVideoScenarioOpen\(true\)/);
+ assert.match(studio,/setShowAdvancedVideo\(true\)/);
+ assert.match(studio,/data-free-film-compilation-catalog/);
+});

@@ -155,7 +155,7 @@ test("all six voices can be selected and their real samples requested before phr
 test("voice browser follows visible Ideas and Montage after hydration; hidden legacy story button stays hidden",()=>{
   assert.match(source,/await expect\(allStories\)\.toBeHidden\(\)/);
   assert.doesNotMatch(source,/await allStories\.click\(\)/);
-  assert.match(source,/await ideas\.click\(\)[\s\S]*?data-video-ideas-refinement[\s\S]*?refinement\.locator\("summary"\)\.click\(\)/);
+  assert.match(source,/await continueToIdeas\.click\(\)[\s\S]*?data-video-ideas-refinement[\s\S]*?refinement\.locator\("summary"\)\.click\(\)/);
   assert.match(source,/await montage\.click\(\)[\s\S]*?data-video-director-style-controls/);
   assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
 });

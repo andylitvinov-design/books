@@ -28,10 +28,13 @@ test("the existing public editor retains one real video renderer and the new com
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
     "data-video-quick-section=\"3\"","data-video-quick-section=\"5\"",
     "data-video-quick-section=\"6\""];
+  // Walk the actual JSX source in forward order. A handler's earlier
+  // querySelector("[data-free-film-compilation-catalog]") is not the markup.
+  let cursor=0;
   for(let i=0;i<order.length;i++){
-    assert.ok(source.includes(order[i]),"missing "+order[i]);
-    if(i>0)assert.ok(source.indexOf(order[i])>source.indexOf(order[i-1]),
-      "video studio hierarchy changed at "+order[i]);
+    const location=source.indexOf(order[i],cursor);
+    assert.ok(location>=0,"video studio hierarchy changed at "+order[i]);
+    cursor=location+order[i].length;
   }
   assert.match(source,/className=\{videoStyles.previewCoverOptions\} data-video-cover-options/);
   assert.match(source,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/);
@@ -112,15 +115,16 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "the same personal goal retains its strict 160-character browser limit");
   assert.match(auto,/const text=event\.currentTarget\.value;[\s\S]*?onGoalChange\(nextGoal\)/,
     "typing updates the same local state and real source-backed proposal without remote upload");
-  assert.match(s,/data-video-basic-tab=\{item.id\}/);
+  assert.match(s,/data-video-montage-tab=\{item.id\}/);
+  assert.match(s,/data-video-voice-studio/);
   assert.match(s,/sourceText=\{currentAffirmationSpeech\}/,
     "phrases supply the existing shared narration source");
   assert.match(s,/setAffirmations\(/,
     "existing phrase controls remain functional outside the new basic settings");
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
-  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\)/,
-    "missing audio opens the original fifth-tab attachment and consent controls");
+  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*setActiveWorkspace\("editor"\);setMontagePanel\("audio"\);setBasicPanelTab\("music"\)/,
+    "missing audio opens Montage Audio attachment and consent controls");
   assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}\s*else openAffirmationPreview\(\)/,
     "Canvas-only topics must play the visible main screen without expanding the editor");
   assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,
