@@ -326,7 +326,14 @@ test('interrupted Core recovery never resubmits intentional cancellation or a st
   assert.ok(recover, 'trusted infra-only recovery must remain');
   assert.ok(recover.includes('new Set(["timed_out","startup_failure"])'));
   assert.ok(recover.includes('reRunJobForWorkflowRun'), 'only interrupted job is retried');
-  assert.ok(!recover.includes('reRunWorkflow('), 'never rerun all successful jobs');
+  // The ONLY whole-run exception is a jobless first-attempt startup failure:
+  // no successful job exists to repeat. All ordinary interruptions stay targeted.
+  assert.ok(recover.includes('reRunWorkflow('), 'jobless startup needs a full retry');
+  assert.ok(recover.includes('event.conclusion==="startup_failure" && jobs.total_count===0'));
+  assert.ok(recover.includes('selectJoblessStartupRerun'));
+  assert.ok(recover.includes('joblessStartupReference'));
+  assert.ok(recover.includes('decision.action==="rerun_workflow"'));
+  assert.ok(recover.includes('!runs.some(r=>r.id===event.id)'));
   assert.ok(!recover.includes('new Set(["cancelled"'), 'superseded HEAD cancellations cannot be retried');
   assert.ok(recover.includes('parents[1]?.sha !== live.head.sha'));
   assert.ok(recover.includes('parents[0]?.sha !== live.base.sha'));

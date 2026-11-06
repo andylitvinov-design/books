@@ -50,7 +50,16 @@ function getJobs(response,run){
      completed_at:done,conclusion:String(j.conclusion||'unknown').slice(0,24),
      url:'https://github.com/'+OWNER+'/'+REPO+'/actions/runs/'+run.run_id+'/job/'+j.id});
  }
- if(!rows.length)throw Error('NO_CONFIRMED_JOBS');
+ // Startup failures with zero jobs still prove the workflow registration;
+ // they do NOT prove that any Core source checks or runners executed.
+ if(!rows.length){
+   const ended=iso(run.updated_at);
+   if(data.total_count===0&&run.conclusion==='startup_failure'&&ended&&
+      Date.parse(ended)>=Date.parse(run.queued_at))
+     return {jobs:[],completed_at:ended,partial_jobs:true,
+       registration_only:true,empty_job_reason:'STARTUP_FAILURE_NO_JOBS'};
+   throw Error('NO_CONFIRMED_JOBS');
+ }
  if(rows.length>30)throw Error('TOO_MANY_JOBS');
  const completed_at=rows.map(x=>x.completed_at).sort().at(-1);
  if(Date.parse(completed_at)<Date.parse(run.queued_at))throw Error('JOB_BEFORE_RUN');
@@ -73,14 +82,26 @@ async function archive({github,context,minRemaining=80}){
        row=fromEvent({...context.payload.workflow_run,pull_requests:related.data});
    } catch(_) { /* no association proof: fail closed */ }
  }
+ // A jobless GitHub startup failure can have no pull_requests reference at
+ // all. Allow one bounded recovery by immutable source SHA, never branch alone.
+ if(!row&&context.payload?.workflow_run?.conclusion==='startup_failure'){
+   try {
+     const event=context.payload.workflow_run;
+     const matches=await github.rest.pulls.list({owner:OWNER,repo:REPO,
+       head:OWNER+':'+event.head_branch,state:'open',per_page:2});
+     const {joblessStartupReference}=require('./ci-pr-jobless-startup.cjs');
+     const reference=joblessStartupReference(event,matches.data);
+     if(reference)row=fromEvent({...event,pull_requests:[reference]});
+   } catch(_) { /* unknown association stays unarchived */ }
+ }
  if(!row)return {status:'UNVERIFIED_PR_ASSOCIATION'};
- if(!['success','failure','timed_out','startup_failure'].includes(row.conclusion))
+ if(!['success','failure','timed_out','startup_failure','cancelled'].includes(row.conclusion))
     return {status:'NON_TERMINAL_CONCLUSION'};
  const {owner,repo}=context.repo;
  // At most 4 GETs and 1 comment write; never touch a PR or its CI status.
  const response=await github.rest.actions.listJobsForWorkflowRun({owner,repo,
     run_id:row.run_id,per_page:100,filter:'latest'});
- row={...row,...getJobs(response,row)};
+ row={...row,...getJobs(response,{...row,updated_at:context.payload.workflow_run.updated_at})};
  const {data:pull}=await github.rest.pulls.get({owner,repo,pull_number:row.pr});
  const created=iso(pull?.created_at);
  if(!created||pull?.base?.ref!==BASE||pull?.head?.repo?.full_name!==OWNER+'/'+REPO||

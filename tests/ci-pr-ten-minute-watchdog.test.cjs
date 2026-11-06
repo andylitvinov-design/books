@@ -379,7 +379,12 @@ test('obsolete release-ready recovery is absent while interrupted-core recovery 
   assert.match(source,/^  workflow_run:/m);
   assert.match(source,/^      - 'HH PR core release gate'$/m);
   assert.ok(source.includes('github.rest.actions.reRunJobForWorkflowRun'));
-  assert.ok(!source.includes('github.rest.actions.reRunWorkflow('));
+  // Legacy blanket prohibition is now refined: a workflow with zero jobs
+  // can be retried exactly once after immutable Ready PR/HEAD verification.
+  assert.ok(source.includes('github.rest.actions.reRunWorkflow({owner,repo,run_id:event.id})'));
+  assert.ok(source.includes('const decide=jobs=>event.conclusion==="startup_failure" && jobs.total_count===0'));
+  assert.ok(source.includes('const latestDecision=decide(latestJobs)'));
+  assert.ok(source.includes('selectInterruptedMandatoryJob'), 'ordinary job retries stay targeted');
   assert.ok(source.includes('fresh.run_attempt !== 1'));
   assert.ok(source.includes('event.head_repository?.full_name !== fullRepo'));
   assert.ok(source.includes('github-token: ${{ github.token }}'));
