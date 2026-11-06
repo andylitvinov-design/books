@@ -210,11 +210,39 @@ jobs:
           ref: ${{ github.sha }}
           path: .hh-trusted
           persist-credentials: false
+      # A signed claim can become obsolete before the isolated runner begins.
+      # One current-HEAD check avoids npm, build and tests on a stale source.
+      # Read errors fail closed; finalization and publisher checks remain.
+      - id: fresh_head
+        name: Recheck current source HEAD before expensive repair steps
+        uses: actions/github-script@v7
+        env:
+          HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
+          HH_REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const worker=require(process.env.GITHUB_WORKSPACE+
+              '/.hh-trusted/scripts/ci-pr-repair-worker.cjs');
+            const number=Number(process.env.HH_REPAIR_PR);
+            const expected=String(process.env.HH_REPAIR_SHA||'');
+            if(!Number.isSafeInteger(number)||number<1||
+               !/^[a-f0-9]{40}$/i.test(expected))
+              throw Error('HH_PRE_NPM_INVALID_SIGNED_CLAIM');
+            const {owner,repo}=context.repo;
+            const pr=(await github.rest.pulls.get({
+              owner,repo,pull_number:number})).data;
+            const current=worker.currentRepairHead(pr,number,expected);
+            core.setOutput('current',String(current));
+            core.info('HH_REPAIR_PRE_NPM '+JSON.stringify({
+              status:current?'CURRENT':'SUPERSEDED_OR_HELD',
+              number,expected_sha:expected,source_published:false,
+              requires_finalization:true}));
       # No safe scoped tests in a legacy PR = no need for a full npm install.
       # This shortens a metadata-only preflight without changing any repair gate.
       - id: legacy_deps
         name: Identify whether legacy focused tests need npm dependencies
-        if: needs.claim.outputs.strategy == 'legacy'
+        if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy == 'legacy'
         shell: bash
         run: |
           node <<'NODE'
@@ -229,16 +257,16 @@ jobs:
           console.log('HH_LEGACY_DEPENDENCY_SCOPE '+JSON.stringify({needed,files:files.length}));
           NODE
       - uses: actions/setup-node@v4
-        if: needs.claim.outputs.strategy != 'legacy' || steps.legacy_deps.outputs.needed == 'true'
+        if: steps.fresh_head.outputs.current == 'true' && (needs.claim.outputs.strategy != 'legacy' || steps.legacy_deps.outputs.needed == 'true')
         with:
           node-version: '22'
           cache: npm
       - name: Install dependencies without running lifecycle scripts
-        if: needs.claim.outputs.strategy != 'legacy' || steps.legacy_deps.outputs.needed == 'true'
+        if: steps.fresh_head.outputs.current == 'true' && (needs.claim.outputs.strategy != 'legacy' || steps.legacy_deps.outputs.needed == 'true')
         run: npm ci --ignore-scripts --no-audit --no-fund
       - id: legacy_scan
         name: Cloud-only legacy source comparison and focused test preflight
-        if: needs.claim.outputs.strategy == 'legacy'
+        if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy == 'legacy'
         shell: bash
         run: |
           node <<'NODE'
@@ -330,25 +358,25 @@ jobs:
           console.log('HH_LEGACY_PREPARED '+JSON.stringify(report));
           NODE
       - uses: actions/upload-artifact@v4
-        if: needs.claim.outputs.strategy == 'legacy'
+        if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy == 'legacy'
         with:
           name: hh-legacy-preflight
           path: legacy-prep.json
           retention-days: 1
           if-no-files-found: error
       - name: Apply trusted TypeScript type-only import codemods
-        if: needs.claim.outputs.strategy != 'legacy'
+        if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy != 'legacy'
         env:
           REPAIR_SHA: ${{ needs.claim.outputs.sha }}
           REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
         run: node .hh-trusted/scripts/ci-pr-repair-deterministic.cjs
       - name: Verify deterministic Core repair with TypeScript
-        if: needs.claim.outputs.strategy == 'code'
+        if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy == 'code'
         timeout-minutes: 5
         continue-on-error: true
         run: npx tsc --noEmit --incremental false
       - id: build_candidate
-        if: needs.claim.outputs.strategy != 'legacy'
+        if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy != 'legacy'
         name: Try targeted ESLint autofix and write bounded patch candidate
         shell: bash
         run: |
@@ -427,7 +455,7 @@ jobs:
             source_files:result.files.map(file=>file.path)}));
           NODE
       - uses: actions/upload-artifact@v4
-        if: needs.claim.outputs.strategy != 'legacy'
+        if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy != 'legacy'
         with:
           name: hh-repair-candidate
           path: candidate.json

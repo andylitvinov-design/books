@@ -211,9 +211,9 @@ test('legacy worker skips npm only when no safe focused tests exist',()=>{
  assert.match(fix,/id: legacy_deps/);
  assert.match(fix,/HH_LEGACY_DEPENDENCY_SCOPE/);
  assert.ok(fix.includes('.hh-trusted/scripts/ci-pr-repair-free-agent.cjs'));
- const gating="if: needs.claim.outputs.strategy != 'legacy' || steps.legacy_deps.outputs.needed == 'true'";
+ const gating="if: steps.fresh_head.outputs.current == 'true' && (needs.claim.outputs.strategy != 'legacy' || steps.legacy_deps.outputs.needed == 'true')";
  assert.equal(fix.split(gating).length-1,2,
-  'Node setup and npm ci must share the same conservative condition');
+  'Node setup and npm ci must share the same fail-closed HEAD and dependency condition');
  assert.ok(fix.includes('if(allowlisted.length)'),
   'existing focused legacy tests must still run when allowed source exists');
  assert.match(fix,/npm ci --ignore-scripts --no-audit --no-fund/);

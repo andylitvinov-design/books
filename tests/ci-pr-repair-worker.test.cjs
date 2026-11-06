@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
+const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const {taskFor,commentBody,reservation,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {stageLine,parseComment,timelineStages}=require('../scripts/ci-pr-stage-receipts.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
@@ -960,4 +960,38 @@ test('Repair Worker refuses a newly active foreign lease after verified reservat
  assert.equal(result.status,'skipped');
  assert.equal(f.log.comments,0);
  assert.equal(reads,2,'signed reservation and owner lease need last read before claim');
+});
+
+test('pre-npm veto checks exact-head liveness without granting source write',()=>{
+ const current=pr();
+ assert.equal(currentRepairHead(current,11,sha),true);
+ // Manual legacy tasks may still perform their existing read-only preflight.
+ assert.equal(currentRepairHead(pr({labels:[{name:'hh:repair-manual'}]}),11,sha),true);
+ for(const changed of [
+  pr({number:12}),pr({head:{...current.head,sha:newSha}}),
+  pr({head:{...current.head,ref:'../../unsafe'}}),
+  pr({head:{...current.head,repo:{full_name:'foreign/repo'}}}),
+  pr({base:{ref:'codex/bootstrap-books'}}),pr({state:'closed'}),
+  pr({draft:true}),pr({user:{login:'outsider'}}),
+  pr({labels:[{name:'hh:hold'}]}),pr({labels:[{name:'hh:blocked'}]}),
+  pr({labels:[{name:'hh:direction-override:invalid'}]}),pr({labels:null})
+ ])assert.equal(currentRepairHead(changed,11,sha),false);
+ assert.equal(currentRepairHead(current,11,'not-a-sha'),false);
+ assert.equal(currentRepairHead(current,0,sha),false);
+});
+test('fix job checks live source HEAD before npm and protects all candidate-producing steps',()=>{
+ const fs=require('node:fs'),src=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const fix=src.split('\n  fix:\n')[1]?.split('\n  code_fix:\n')[0];assert.ok(fix);
+ const pre=fix.indexOf('id: fresh_head'),npm=fix.indexOf('Install dependencies without running lifecycle scripts');
+ assert.ok(pre>0&&pre<npm,'liveness check must precede npm');
+ assert.ok(fix.includes('worker.currentRepairHead(pr,number,expected)'));
+ for(const needle of [
+  'id: legacy_deps','name: Install dependencies without running lifecycle scripts',
+  'id: legacy_scan','name: Apply trusted TypeScript type-only import codemods',
+  'name: Verify deterministic Core repair with TypeScript','id: build_candidate',
+  'name: hh-repair-candidate','name: hh-legacy-preflight']){
+   const at=fix.indexOf(needle);assert.ok(at>0,needle);
+   const step=fix.slice(fix.lastIndexOf('\n      - ',at),at+needle.length+220);
+   assert.ok(step.includes("steps.fresh_head.outputs.current == 'true'"),needle);
+ }
 });
