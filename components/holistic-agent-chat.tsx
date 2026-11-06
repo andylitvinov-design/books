@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
+import type { IHelpAction, IHelpContext } from "@/lib/ihelp-context.mjs";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
@@ -190,8 +191,9 @@ type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal}
 type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
   create:(options?:unknown)=>Promise<NativePromptSession> };
 export type HolisticAgentQuickPrompt = {revision:number;text:string;format?:"video"|"audio"|"course"|"service"|"test"};
-export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticated=false}:{
- locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean
+export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticated=false,entryContext}:{
+ locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean;
+ entryContext?:IHelpContext|null
 }) {
   const t=copy[locale];
   const starter=messengerStarter[locale];
@@ -363,6 +365,19 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       {role:"assistant" as const,text:question},
     ].slice(-30));
   }
+  function chooseContextAction(action:IHelpAction) {
+    if(!entryContext||busy)return;
+    followTail.current=true;setNewBelow(false);
+    setEntryOpen(false);setGuideLink(null);setGuidedTrack(null);
+    setVideoStep(null);setShowVideoSignIn(false);setNeedsPrivateSignIn(false);
+    setChoices([]);setStatus("");setSource("");setDraft("");
+    // A local, reviewed navigation explanation, not a fabricated AI inference.
+    // Follow-up free-form questions use the unchanged protected/guest reply path.
+    setMessages(prev=>[...prev,
+      {role:"user" as const,text:action.question},
+      {role:"assistant" as const,text:action.reply},
+    ].slice(-30));
+  }
   async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text=draft.trim().slice(0,2000);
@@ -520,12 +535,26 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
-      {compact&&<p className={styles.assistant} data-hh-ai-welcome>{starter.welcome}</p>}
+      {compact&&(!entryContext||entryOpen)&&<p className={styles.assistant} data-hh-ai-welcome>{entryContext?.intro||starter.welcome}</p>}
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
       {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
-      {compact&&entryOpen&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
+      {compact&&entryContext&&entryOpen&&<div className={styles.contextActions}
+        role="group" aria-label={entryContext.intro} data-hh-ihelp-context-options>
+        {entryContext.actions.map(action=><button type="button" key={action.id}
+          disabled={busy} data-hh-ihelp-option={action.id}
+          onClick={()=>chooseContextAction(action)}>{action.label}</button>)}
+        <button type="button" className={styles.contextOther} disabled={busy}
+          data-hh-ihelp-other-question onClick={()=>{
+            setEntryOpen(false);
+            setMessages(prev=>[...prev,{role:"assistant" as const,
+              text:locale==="ru"?"Конечно! Напишите свой вопрос здесь.":
+                locale==="es"?"¡Claro! Escribe tu pregunta aquí.":"Of course! Ask your question below."}].slice(-30));
+            composerRef.current?.focus({preventScroll:true});
+          }}>{entryContext.otherLabel}</button>
+      </div>}
+      {compact&&!entryContext&&entryOpen&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
         <button type="button" data-hh-ai-start="video" disabled={busy} onClick={()=>startGuided("video")}>
           <span className={styles.startIcon} aria-hidden="true">🎬</span>
           <strong>{starter.video}</strong><small>{starter.videoSub}</small>

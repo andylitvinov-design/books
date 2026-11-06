@@ -349,3 +349,18 @@
 /* Canonical four-goal selection before requesting a personal video brief. */
 .root[data-compact] .videoOptions button[aria-pressed="true"]{background:#e6f6f1;border-color:#067a67;box-shadow:inset 0 0 0 1px #067a67;color:#143d3a}
 .root[data-compact] .videoStudioLink:disabled{opacity:.5;cursor:not-allowed}
+
+/* iHelp is an opt-in entry into the EXISTING chat; contextual choices are
+   readable compact rows, not a second large welcome dashboard. */
+.root[data-compact] .contextActions{display:grid;gap:6px;min-width:0;width:100%;margin:4px 0 6px}
+.root[data-compact] .contextActions button{
+  display:block;min-width:0;min-height:44px;padding:9px 12px;box-sizing:border-box;
+  text-align:left;border:1px solid #d5e9df;border-radius:12px;
+  background:#e6f6f1;color:#164d40;font:650 13px/1.35 system-ui,sans-serif;
+  cursor:pointer;white-space:normal
+}
+.root[data-compact] .contextActions .contextOther{
+  border-color:#e9dfd1;background:#fffcf7;color:#315e53;font-weight:550
+}
+.root[data-compact] .contextActions button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.root[data-compact] .contextActions button:disabled{opacity:.6;cursor:wait}

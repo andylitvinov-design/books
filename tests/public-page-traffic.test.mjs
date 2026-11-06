@@ -135,8 +135,16 @@ test('P0 nonessential popup policy: approved global shell only, no automatic req
   'PublicPageTraffic',
   'MobileBottomNavigation',
   // Approved shared six-tab dock is a persistent navigation surface, not an auto-open popup.
-  'UnifiedMobileDock'
+  'UnifiedMobileDock',
+  // Owner-approved iHelp: user-clicked only, never an unsolicited popup.
+  'SitewideIHelp'
  ],'Unexpected global widget: review for nonessential auto-open prompts before changing this guard')
+ const ihelp=readFileSync(new URL('../components/sitewide-ihelp.tsx',import.meta.url),'utf8')
+ assert.match(ihelp,/data-hh-ihelp-launch/)
+ assert.match(ihelp,/useState\(false\)/)
+ assert.match(ihelp,/onClick=\{showHelp\}/)
+ assert.match(ihelp,/dialog\.showModal\(\)/)
+ assert.match(ihelp,/entryContext=\{context\}/)
  const dock=readFileSync(new URL('../components/unified-mobile-dock.tsx',import.meta.url),'utf8')
  assert.match(dock,/if \(!visible\) return null;/,'Global MyTube nav stays route-scoped')
  assert.match(dock,/<nav ref=\{navRef\} data-hh-unified-dock/,'Only the approved navigation region is mounted')
