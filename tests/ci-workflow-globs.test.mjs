@@ -347,3 +347,26 @@ test('Mandala workflow-only speed route fails closed for all product or deleted 
   assert.match(source,/HH_LIVE_VIDEO_ENGINE=webkit/);
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
+
+test('Mandala restores the same immutable production Core MP3 cache before safe generation', () => {
+  const core=workflow('hh-pr-core-release.yml');
+  const mandala=workflow('holistic-support-mandala.yml');
+  const cacheKey="key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}";
+  const section=mandala.split('      - name: Restore production-owned scenario MP3 cache (read-only)\n')[1]
+    ?.split('      - name: Generate original first-party melody masters\n')[0];
+  assert.ok(section,'Mandala must reuse existing Core media, not build a parallel cache');
+  assert.ok(core.includes(cacheKey),'Core source hash must match the approved Mandala cache');
+  assert.ok(section.includes(cacheKey),'a changed generator, catalog or lockfile must miss the cache');
+  assert.ok(section.includes("if: steps.policy.outputs.policy_only != 'true'"),
+    'workflow/CI-policy edits must not spend time downloading media');
+  assert.match(section,/uses: actions\/cache\/restore@v4/);
+  assert.match(section,/path: public\/audio\/mandala\/scenarios/);
+  assert.doesNotMatch(section,/restore-keys:/,
+    'do not restore stale audio when production source fingerprints differ');
+  assert.doesNotMatch(mandala,/actions\/cache\/save@v4|actions\/cache@v4/,
+    'untrusted PRs must never publish or overwrite shared cache payloads');
+  assert.ok(mandala.indexOf('Restore production-owned scenario MP3 cache (read-only)') <
+    mandala.indexOf('Generate dedicated scenario music and four classic performances'));
+  assert.match(mandala,/node scripts\/generate-scenario-melodies\.mjs && node scripts\/generate-scenario-melodies\.mjs --check/);
+  assert.match(mandala,/run: node --test tests\/mandala-scenario-audio\.test\.mjs/);
+});
