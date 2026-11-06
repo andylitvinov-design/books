@@ -50,6 +50,17 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(allStories).toBeEnabled();
     await expect(allStories).toBeHidden();
 
+    // Compact Goals intentionally hides legacy panels. A one-use validated
+    // Messenger packet opens this exact existing <details> via panel.open=true.
+    // Verify the actual 390px WebKit visibility after that state transition;
+    // don't force-click or pretend it generated an MP4.
+    const handoffPanel=page.locator('[data-video-director-chat-details][data-workspace-section="video"]');
+    await expect(handoffPanel).toBeHidden();
+    await handoffPanel.evaluate(element=>{element.open=true;});
+    await expect(handoffPanel).toBeVisible({timeout:15000});
+    await handoffPanel.evaluate(element=>{element.open=false;});
+    await expect(handoffPanel).toBeHidden();
+
     // Verify the REAL sole Goals CTA moves to Ideas after React hydration.
     // A hidden legacy "All Stories" DOM node must never substitute this tap.
     const continueToIdeas=page.locator('[data-video-continue-scenarios]');

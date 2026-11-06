@@ -4485,3 +4485,14 @@
    display:flex!important;
  }
 }
+
+/* Messenger Video validated handoff visibility.
+   The compact Goals screen hides unopened advanced panels, not the original
+   Director explicitly opened after a verified, one-use chat handoff.
+   Do not expose another video renderer or override the iHelp modal layout. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-video-scenario-open="false"]:not([data-hh-video-ihelp-open="true"]) .quickBuilder>
+   [data-video-director-chat-details][data-workspace-section="video"][open]{
+   display:grid!important;
+ }
+}
