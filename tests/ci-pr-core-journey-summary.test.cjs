@@ -21,13 +21,53 @@ test('parallel jobs count once on real PR wall clock',()=>{
  assert.equal(observed.stages_ms.checks,600000);
  assert.equal(observed.stages_ms.other_unknown,0);
 });
-test('gap between repeated runs stays unknown',()=>{
+test('gap between repeated runs stays unknown but same-HEAD evidence is recorded',()=>{
  const r1=run(13,103,-50,-45),r2=run(13,104,-42,-38);
  const row=summarizePR(13,[r1,r2]);
  assert.equal(row.runs,2);
  assert.equal(row.repeats,1);
  assert.equal(row.stages_ms.between_waves_unknown,180000);
+ assert.equal(row.wave_head_evidence.same_head_count,1);
+ assert.equal(row.wave_head_evidence.same_head_ms,180000);
+ assert.equal(row.wave_head_evidence.new_head_count,0);
  assert.equal(Object.values(row.stages_ms).reduce((a,b)=>a+b,0),row.elapsed_ms);
+});
+test('failed Core to next changed HEAD is distinct from a same-HEAD retry',()=>{
+ const a={...run(17,207,-50,-45),conclusion:'failure'};
+ const b={...run(17,208,-42,-38),source_head:'b'.repeat(40)};
+ const row=summarizePR(17,[a,b]);
+ assert.equal(row.wave_head_evidence.new_head_count,1);
+ assert.equal(row.wave_head_evidence.new_head_ms,180000);
+ assert.equal(row.wave_head_evidence.previous_failed_count,1);
+ assert.equal(row.wave_head_evidence.previous_failed_ms,180000);
+ assert.equal(row.stages_ms.between_waves_unknown,180000);
+ assert.equal(row.stages_ms.checks,540000);
+});
+test('overlapping Core waves never manufacture idle gap or source-repair time',()=>{
+ const a=run(18,210,-50,-40);
+ const b={...run(18,211,-45,-35),source_head:'b'.repeat(40)};
+ const row=summarizePR(18,[a,b]);
+ assert.equal(row.stages_ms.between_waves_unknown,0);
+ assert.equal(row.wave_head_evidence.new_head_count,0);
+ assert.equal(row.wave_head_evidence.previous_failed_count,0);
+ const data=report(source([a,b]),24,NOW);
+ assert.equal(data.wave_head_evidence.reconciled,true);
+ assert.equal(data.wave_head_evidence.total_gap_ms,0);
+});
+test('cohort wave-head and idle-time sums reconcile without fabricated causes',()=>{
+ const a={...run(19,219,-50,-45),conclusion:'failure'};
+ const b={...run(19,220,-42,-38),source_head:'b'.repeat(40)};
+ const c=run(20,221,-50,-43),d=run(20,222,-41,-37);
+ const reportData=report(source([a,b,c,d]),24,NOW);
+ const evidence=reportData.wave_head_evidence;
+ assert.equal(evidence.n,2);
+ assert.equal(evidence.reconciled,true);
+ assert.equal(evidence.total_gap_count,2);
+ assert.equal(evidence.transition_counts.new_head,1);
+ assert.equal(evidence.transition_counts.same_head,1);
+ assert.equal(evidence.after_failed_count,1);
+ assert.equal(evidence.total_gap_ms,reportData.stage_breakdown.stage_total_ms.between_waves_unknown);
+ assert.equal(evidence.top_delays[0].pr,19);
 });
 test('per PR mean contributions add up to mean total in same cohort',()=>{
  const obs=report(source([

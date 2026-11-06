@@ -85,6 +85,35 @@
      body.append(pieces,total,el('p','hh-ci-archive-note',
        'Каждая строка — средний вклад этапа на 1 PR из одной выборки n='+breakdown.n+
        '. Сумма строк равна общему среднему (с учётом округления). Параллельные jobs учитываются один раз. Промежутки без доказательств вынесены отдельно.'));
+     const head=data.wave_head_evidence;
+     if(head?.schema==='HH_CI_WAVE_HEAD_EVIDENCE_V1'&&head.reconciled===true){
+       const kind=head.transition_counts,span=head.transition_total_ms;
+       const share=head.total_gap_ms>0?
+         Number((100*span.new_head/head.total_gap_ms).toFixed(1))+'%':'—';
+       body.append(el('h5','','Почему паузы между волнами CI'),
+         el('p','hh-ci-archive-note',
+           'В '+head.total_gap_count+' измеренных паузах: новый HEAD — '+
+           kind.new_head+' ('+fmtMs(span.new_head)+'), тот же HEAD — '+
+           kind.same_head+' ('+fmtMs(span.same_head)+
+           '), без подтверждённого SHA — '+kind.unverified_head+
+           '. На смену HEAD приходится '+share+' времени пауз. После неуспешной CI — '+
+           head.after_failed_count+' пауз. Смена HEAD доказывает новую версию исходников, но не причину ожидания; это НЕ очередь runner и не доказанное время Repair.'));
+       if(Array.isArray(head.top_delays)&&head.top_delays.length){
+         const examples=el('div','hh-ci-archive-list');
+         for(const row of head.top_delays){
+           if(!Number.isSafeInteger(row.pr)||row.pr<1)continue;
+           const p=el('div','hh-ci-archive-stage');
+           const a=el('a','','PR #'+row.pr);
+           a.href='https://github.com/andylitvinov-design/books/pull/'+row.pr;
+           a.target='_blank';a.rel='noopener noreferrer';
+           p.append(a,el('span','',fmtMin(row.minutes)+
+             ' · новых HEAD: '+row.new_head_count));examples.append(p);
+         }
+         const moreDelays=el('details','hh-ci-archive-more');
+         moreDelays.append(el('summary','','Самые длинные паузы · '+examples.childElementCount+' PR'),examples);
+         body.append(moreDelays);
+       }
+     }
      const heading=el('div','hh-ci-rows-head');
      heading.append(el('h5','','История PR: первый и последний CI'),
        el('span','',n+' проверенных PR'));
@@ -117,7 +146,8 @@
        pr.href='https://github.com/andylitvinov-design/books/pull/'+r.pr;
        pr.target='_blank';pr.rel='noopener noreferrer';
        detail.append(el('p','hh-ci-archive-note',
-         'HEAD SHA: '+r.distinct_heads+' · ошибки: '+r.failures+
+         'HEAD SHA: '+r.distinct_heads+' · смен HEAD в паузах: '+
+         (r.wave_head_evidence?.new_head_count??'—')+' · ошибки: '+r.failures+
          ' · startup без jobs: '+(r.jobless_startup_runs||0)+
          ' · наблюдаемая история CI может не включать старые запуски.'),pr);
        row.append(detail);
