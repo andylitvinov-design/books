@@ -15,3 +15,6 @@ export type VideoChatConversationReply={
 };
 export function understandVideoChatReply(value:string,
   stage?:VideoChatConversationStage):VideoChatConversationReply;
+
+/** Explicit repair keeps only the final stated alternative, never approves media. */
+export function extractVideoChatCorrection(raw:string):{text:string;corrected:boolean};
