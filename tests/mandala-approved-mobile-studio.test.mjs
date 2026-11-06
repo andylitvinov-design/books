@@ -14,8 +14,7 @@ test("the existing public editor retains one real video renderer and the new com
   assert.equal((source.match(/ref=\{premiumVideoRef\}/g)||[]).length,1,
     "one original H264 film master feeds preview and recording");
   assert.match(page, /<MandalaMeditationClient/,"canonical Mandala route must mount this editor");
-  // Match the actual JSX nav, not an earlier querySelector in the Ideas/Goal step.
-  const order=["data-video-quick-builder","<nav className={videoStyles.quickVideoNav} data-video-quick-controls",
+  const order=["data-video-quick-builder",'<nav className={videoStyles.quickVideoNav} data-video-quick-controls',
     "data-video-quick-section=\"1\"","data-video-live-stage","data-video-mandala-hero",
     "data-video-mini-source","data-video-quick-live-preview",
     "data-video-therapy-banner",
@@ -28,10 +27,13 @@ test("the existing public editor retains one real video renderer and the new com
     "data-video-quick-personal","data-video-quick-generate","data-video-quick-legacy",
     "data-video-quick-section=\"3\"","data-video-quick-section=\"5\"",
     "data-video-quick-section=\"6\""];
+  // Walk the actual JSX source in forward order. A handler's earlier
+  // querySelector("[data-free-film-compilation-catalog]") is not the markup.
+  let cursor=0;
   for(let i=0;i<order.length;i++){
-    assert.ok(source.includes(order[i]),"missing "+order[i]);
-    if(i>0)assert.ok(source.indexOf(order[i])>source.indexOf(order[i-1]),
-      "video studio hierarchy changed at "+order[i]);
+    const location=source.indexOf(order[i],cursor);
+    assert.ok(location>=0,"video studio hierarchy changed at "+order[i]);
+    cursor=location+order[i].length;
   }
   assert.match(source,/className=\{videoStyles.previewCoverOptions\} data-video-cover-options/);
   assert.match(source,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/);
@@ -108,9 +110,9 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   const auto=read("components/mandala-auto-video-director.tsx");
   assert.match(s,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/,
     "approved goal comes from the single local wish state");
-  assert.match(auto,/data-auto-video-input value=\{goal\}[\s\S]*?maxLength=\{160\}/,
+  assert.match(auto,/data-auto-video-input value=\{requestDraft\}[\s\S]*?maxLength=\{160\}/,
     "the same personal goal retains its strict 160-character browser limit");
-  assert.match(auto,/const value=event\.currentTarget\.value;[\s\S]*?onGoalChange\(value\)/,
+  assert.match(auto,/const text=event\.currentTarget\.value;[\s\S]*?onGoalChange\(nextGoal\)/,
     "typing updates the same local state and real source-backed proposal without remote upload");
   assert.match(s,/data-video-montage-tab=\{item.id\}/);
   assert.match(s,/data-video-voice-studio/);
@@ -232,8 +234,11 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.match(src,/const canGenerate =[\s\S]*freeFilmSourcesListed/);
   assert.match(src,/if\(!\(await filmPreparation\)\)/,
     "a failed decoded-source check must never output a partial four-scene movie");
-  assert.match(src,/allocateAdaptiveFilmTimeline\(/,
-    "Auto Director uses the verified adaptive four-stage timeline");
+  assert.match(src,/allocateSourceBoundedFilmTimeline\(/,
+    "Auto Director must respect verified clip durations before adaptive timing");
+  assert.match(read("lib/mandala/free-film-timeline.mjs"),
+    /const adaptive=allocateAdaptiveFilmTimeline\(/,
+    "the same four-stage adaptive pacing stays active when physical sources fit");
   assert.match(src,/edit\?\.durationSecondsByStage\?\?null/,
     "explicit stage edits must be passed through to the same timing engine");
   assert.match(read("lib/mandala/free-film-timeline.mjs"),

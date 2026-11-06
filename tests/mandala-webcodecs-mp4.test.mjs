@@ -151,7 +151,7 @@ test("explicit Safari WebM retry uses a different recorder, preserves sound",asy
     webm:['video/webm;codecs="vp8,opus"',"video/webm"],preferWebm:true,
     userAgent:"Mozilla/5.0 (iPhone) AppleWebKit/605.1.15"});
   assert.deepEqual(formats,['video/webm;codecs="vp8,opus"',"video/webm"]);
-  assert.ok(studio.includes("const useWebCodecsMp4=selectWebCodecsForRecording({"));
+  assert.ok(studio.includes("const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording({"));
   assert.ok(studio.includes("hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm"));
   assert.ok(studio.includes('const mimeTypes = preferWebm\n        ? recordingMimes(Boolean(musicSession),true).filter(mime=>mime.startsWith("video/webm"))'));
   assert.ok(studio.includes("if (musicSession) stream.addTrack(musicSession.track);"));
@@ -161,34 +161,71 @@ test("explicit Safari WebM retry uses a different recorder, preserves sound",asy
   assert.ok(studio.includes('playbackStatus==="ready"&&result.mode!=="catalog"'));
 });
 
-test("hydration opens the hidden Story director only via visible Continue",()=>{
+test("hydration progresses Goals → Ideas through a real tap without hidden legacy clicks",()=>{
   const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const start=browser.indexOf("async function verifyWorkspaceHydration");
-  const end=browser.indexOf("// Linux WebKit often lacks Canvas",start);
+  const end=browser.indexOf("// Real guest route browser acceptance",start);
   const flow=browser.slice(start,end);
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
-  const continueTap=flow.indexOf("await continueButton.click()");
-  const visible=flow.indexOf("await expect(allStories).toBeVisible()");
-  const sceneTap=flow.indexOf("await allStories.click()");
-  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&visible>continueTap&&sceneTap>visible,
-    "an actual visible Continue tap must reveal the source-backed scenes before the old advanced click");
+  const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
+  const refinement=flow.indexOf('await refinement.locator(":scope > summary").click()',continueTap);
+  const montage=flow.indexOf("await montage.click()",refinement);
+  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&refinement>continueTap&&montage>refinement,
+    "actual visible Goals tap must reveal Ideas then the user-opened refinement before Montage");
   assert.match(flow,/data-video-continue-scenarios/);
-  assert.match(flow,/data-video-scenario-open/);
-  assert.match(flow,/await expect\(allStories\)\.toBeDisabled\(\)/);
-  assert.match(flow,/await expect\(continueButton\)\.toBeDisabled\(\)/);
-  assert.doesNotMatch(flow,/\.click\(\{force:true\}\)/);
+  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
+  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
+  assert.match(flow,/data-active-workspace/);
 });
 
-test("physical voice WebKit uses actual Montage Settings then Audio and direct Voice disclosure",()=>{
+test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs and Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
- const settings=browser.indexOf('const settingsTab=page.locator');
+ const settings=browser.indexOf('const montageSettingsTab=page.locator');
  const selectDuration=browser.indexOf('await durationSelect.selectOption("10")',settings);
- const openAudio=browser.indexOf('await montageAudioTab.click()',selectDuration);
+ const openAudio=browser.indexOf('await montageAudio.click()',selectDuration);
  const phrases=browser.indexOf("const phrases=page.locator",openAudio);
- const reenter=browser.indexOf('await reenterAudioTab.click()',phrases);
+ const reenter=browser.indexOf('await montageAudioAfterExport.click()',phrases);
  const voice=browser.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")',reenter);
  assert.ok(settings>=0&&selectDuration>settings&&openAudio>selectDuration&&phrases>openAudio&&reenter>phrases&&voice>reenter,
-   "a visitor must use mounted Settings and Audio tabs before source-backed voice, stale-phrase and MP4 checks");
+   "visitor must use the actual Settings, Audio and Voice before recording the real MP4");
+ assert.match(browser,/const hypnoTabs=page\.locator\('\[data-hypno-tabs\]'\)/);
+ assert.match(browser,/for\(const group of \["phrases","visual","audio"\]\)/);
+ assert.match(browser,/await expect\(tab\)\.toHaveAttribute\("aria-selected","true"\)/);
+ assert.match(browser,/await expect\(page\.locator\('\[data-hypno-group="'\+group\+'"\]'\)\)\.toBeVisible\(\)/);
  assert.doesNotMatch(browser,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
  assert.match(browser,/encoded-audio-verified/);
+ assert.match(browser,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
+});
+
+test("native MP4 retry does not silently rerun Safari WebCodecs after failed WebM",()=>{
+  assert.match(studio,/const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording\(\{/);
+  assert.match(studio,/result\.extension==="webm"[\s\S]*?createVideo\(false,true\)/);
+  assert.match(studio,/recordingMimes\(Boolean\(musicSession\), preferWebm, forceMp4ForRetry\)/);
+  assert.match(studio,/const mimeTypes = preferWebm[\s\S]*?recordingMimes\(Boolean\(musicSession\),true\)\.filter/);
+});
+
+
+test("Safari deferred MP4 decoding requires a real user Play gesture, not a false timeout failure",()=>{
+  const start=studio.indexOf('if (!result || playbackStatus !== "checking") return;');
+  const end=studio.indexOf('},[result,playbackStatus,locale]);',start);
+  assert.ok(start>0&&end>start,"the bounded deferred-decoding check is retained");
+  const timer=studio.slice(start,end);
+  assert.match(timer,/setNotice\(/,"20s only provides useful visitor guidance");
+  assert.doesNotMatch(timer,/setPlaybackStatus\("failed"\)/,
+    "a timer cannot pronounce a valid deferred iPhone video corrupt");
+  assert.match(studio,/data-video-verify-playback/);
+  assert.match(studio,/player\.play\(\)\.then\(\(\)=>confirmVideoPlayback\(player\)\)/);
+  assert.match(studio,/video\.videoWidth>0 && video\.videoHeight>0/);
+  assert.match(studio,/onError=\{event=>\{[\s\S]*?setPlaybackStatus\("failed"\)/,
+    "genuine native media decoding errors must still be rejected");
+  assert.match(studio,/playbackStatus==="ready"&&\(result\.mode==="catalog"\|\|creditConfirmed\)/,
+    "a finished download remains gated by real playback and confirmed video credits");
+  const e2e=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.match(e2e,/await verifyPlayback\.click\(\{timeout:2000\}\)/,
+    "WebKit acceptance performs a bounded real Play click, never a mock frame");
+  assert.match(e2e,/if\(await output\.isVisible\(\)\)return true;/,
+    "a playback-ready unmount must require the visible real download control");
+  assert.match(e2e,/if\(await verifyPlayback\.isVisible\(\)\)throw error;/,
+    "a persistent non-clickable Play button remains a test failure");
+  assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
 });

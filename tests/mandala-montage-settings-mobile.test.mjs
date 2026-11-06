@@ -77,3 +77,15 @@ test("Montage iPhone retains the compact header, real six selectors and on-scree
   assert.match(css,/\[data-video-order-bar\] \.quickGenerate\{\s*min-height:50px!important/);
   assert.match(studio,/data-video-montage-auto-sound/);
 });
+
+test("Original motion WebKit export uses physical Audio and Settings controls, no retired tabs",()=>{
+ const motion=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
+ assert.match(motion,/data-video-montage-tab="settings"/);
+ assert.match(motion,/data-video-montage-preference="duration"/);
+ assert.match(motion,/await duration\.selectOption\('20'\)/);
+ assert.match(motion,/data-video-montage-tab="audio"/);
+ assert.match(motion,/data-video-audio-compact-attach/);
+ assert.match(motion,/await generate\.click\(\)/);
+ assert.match(motion,/ffprobe|ffmpeg/);
+ assert.doesNotMatch(motion,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
+});

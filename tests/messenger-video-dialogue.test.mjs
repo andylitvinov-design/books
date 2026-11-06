@@ -90,6 +90,10 @@ test('the real studio owns the only validated MediaRecorder; Messenger UI is com
  assert.ok(messenger.includes('data-hh-video-chat-options'));
  assert.ok(messenger.includes('data-hh-video-chat-choice'));
  assert.ok(messenger.includes('data-hh-video-open-studio'));
+ assert.ok(messenger.includes('data-hh-video-edit-details'));
+ assert.ok(messenger.includes('data-hh-video-auth-retry'));
+ assert.ok(messenger.includes('showVideoSignIn&&!authenticated&&authStatus==="guest"'));
+ assert.ok(messenger.includes('window.sessionStorage.setItem(MESSENGER_VIDEO_HANDOFF_KEY,payload)'));
  assert.ok(messenger.includes('if(!requiresProtectedReply(text,locale)){answerVideo(text);return;}'));
  assert.ok(messenger.includes('interpretSupportUtterance(text.slice(i,i+240),locale)'));
  assert.ok(messenger.includes('classifyVideoChatQuestion(value)'));
