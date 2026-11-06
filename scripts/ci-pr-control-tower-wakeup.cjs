@@ -125,13 +125,31 @@ function watchdogCronDecision(schedule,manual,now){
   if(recent)return 'WATCHDOG_MANUAL_RECENT';
   return 'WAKE_STALE_WATCHDOG';
 }
+// An already-running trusted production PR-event job is a second clock if
+// GitHub suppresses every scheduled controller tick. Event SHA and base are
+// authenticated; fork, Draft, edited and other-base events cannot wake work.
+function trustedWatchdogWakeContext(context){
+  if(context?.repo?.owner+'/'+context?.repo?.repo!=='andylitvinov-design/books')
+    return false;
+  if(context.ref==='refs/heads/'+DEFAULT &&
+     ['schedule','workflow_run','workflow_dispatch','push'].includes(context.eventName))
+    return true;
+  if(context.eventName!=='pull_request_target' ||
+     context.ref!=='refs/heads/codex/public-book-library' ||
+     !['opened','reopened','synchronize','ready_for_review'].includes(context.payload?.action))
+    return false;
+  const pr=context.payload?.pull_request;
+  return pr?.state==='open' && pr.draft===false &&
+     Number.isSafeInteger(pr.number) && pr.number>0 &&
+     pr.base?.ref==='codex/public-book-library' &&
+     pr.head?.repo?.full_name==='andylitvinov-design/books' &&
+     /^[0-9a-f]{40}$/i.test(pr.head?.sha||'');
+}
 async function wakeStaleWatchdog({github,context,summary,dryRun=false,
   now=Date.now(),log=()=>{}}){
   const info={decision:'NOT_ELIGIBLE',dispatchAccepted:false,cronAgeMinutes:null};
   const report=()=>{log('HH_WATCHDOG_CRON_BACKSTOP '+JSON.stringify(info));return info;};
-  if(dryRun||context?.repo?.owner+'/'+context?.repo?.repo!=='andylitvinov-design/books'||
-     context.ref!=='refs/heads/'+DEFAULT||
-     !['schedule','workflow_run','workflow_dispatch','push'].includes(context.eventName)||
+  if(dryRun||!trustedWatchdogWakeContext(context)||
      !Number.isSafeInteger(summary?.production)||summary.production<1)return report();
   const {owner,repo}=context.repo;
   try{
@@ -164,4 +182,4 @@ async function wakeStaleWatchdog({github,context,summary,dryRun=false,
   return report();
 }
 
-module.exports={needsWake,readyHistory,wake,wakeAfterWorker,waitForWorkerCompletion,relayCompletionWake,DISPATCHER,watchdogCronDecision,wakeStaleWatchdog};
+module.exports={needsWake,readyHistory,wake,wakeAfterWorker,waitForWorkerCompletion,relayCompletionWake,DISPATCHER,watchdogCronDecision,trustedWatchdogWakeContext,wakeStaleWatchdog};
