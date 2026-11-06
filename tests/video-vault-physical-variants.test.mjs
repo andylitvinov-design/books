@@ -47,6 +47,16 @@ test('operator registry 2 originals and 3 aspect edits: never 3 physical source 
  assert.equal(r.generatorEligibleFromThisRegistry,0);
  assert.equal(r.independentCameraTakesIndependentlyAttested,false);
 });
+test('registry normalizes only exact ffprobe 24/1 to 24fps, but never 25 or unknown',()=>{
+ const film=fixture();
+ film.entries[0].files[0].fps='24/1';
+ film.entries[1].files[0].fps='24/1';
+ assert.equal(auditPrivatePhysicalRegistry(film).valid,true);
+ for(const fps of ['24/0','23.976','25/1','24.0',25,null]){
+  const invalid=fixture();invalid.entries[0].files[0].fps=fps;
+  assert.equal(auditPrivatePhysicalRegistry(invalid).valid,false,String(fps));
+ }
+});
 test('reject same physical file hash in different aspect variants',()=>{
  const x=fixture();x.entries[1].files[0].sha256=sha('b');
  assert.equal(auditPrivatePhysicalRegistry(x).valid,false);
