@@ -59,7 +59,7 @@ test("approved phrases retain reusable audio but Apply transitions to Montage wi
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(phrases,/children\?:ReactNode/);
   assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
-  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}[\s\S]*?onApply=\{\(\)=>\{[\s\S]*?activeWorkspace==="phrases" \? hypnoVoiceEditor : null[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
+  assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}[\s\S]*?onApply=\{\(\)=>\{[\s\S]*?\{hypnoVoiceEditor\}[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
   assert.match(phrases,/onClick=\{onApply\?\?onCreate\}/);
   assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseMusicSection/);
   assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseAudioSettings/);
@@ -72,7 +72,8 @@ test("the six-voice chooser appears once below approved phrases and soundtrack c
  const definition=studio.slice(studio.indexOf("const deepHypnoPane = ("),studio.indexOf("const deepVideoPane",studio.indexOf("const deepHypnoPane = (")));
  const voiceEditor=studio.slice(studio.indexOf("const hypnoVoiceEditor = ("),studio.indexOf("const deepHypnoPane = ("));
  assert.match(voiceEditor,/data-hypno-voice/,"the one shared voice editor is real");
- assert.match(definition,/\{activeWorkspace==="phrases" \? hypnoVoiceEditor : null\}/);
+ assert.match(definition,/\{hypnoVoiceEditor\}/,
+   "retain the single voice editor mounted across Montage and Ideas navigation");
  assert.ok(definition.indexOf("hypnoVoiceEditor")<definition.indexOf("data-hypno-music"));
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.ok(studio.indexOf('data-hypno-voice')<studio.indexOf('<MandalaAffirmationVoice locale='));
@@ -179,4 +180,22 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
   assert.match(browser,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
   assert.match(browser,/assert\.ok\(audioTrack/);
+});
+
+test("optional old Hypno voice path remains accessible without duplicating the new Ideas view",()=>{
+ const section=studio.slice(studio.indexOf('data-workspace-section="phrases" data-video-quick-phrases'),
+   studio.indexOf('data-workspace-section="effects"'));
+ assert.match(section,/data-video-ideas-compact|<MandalaVideoIdeas/);
+ assert.match(section,/data-video-phrase-advanced/);
+ assert.match(section,/hidden=\{activeWorkspace!=="phrases"\}/);
+ assert.match(section,/\{deepHypnoPane\}/);
+ assert.match(studioCss,/\.phraseAdvanced\[hidden\]\{display:none!important\}/);
+ assert.match(studioCss,/\.phraseAdvanced>summary\{display:list-item;min-height:44px/);
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(browser,/const advanced=phrases.locator\("\[data-video-phrase-advanced\]"\)/);
+ assert.match(browser,/await advanced.locator\(":scope > summary"\).click\(\)/);
+ assert.match(browser,/await expect\(advanced.locator\("\[data-hypno-overview\]"\)\).toBeVisible\(\)/);
+ assert.match(browser,/data-video-ideas-phrases/);
+ assert.match(browser,/data-hypno-select-tone/);
+ assert.match(browser,/data-video-affimations-audio-ready/);
 });

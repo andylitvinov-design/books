@@ -44,9 +44,19 @@ async function verifyWorkspaceHydration(browser,locale){
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
     await expect(allStories).toBeEnabled();
+    // On compact iPhones the scene director is intentionally hidden on Step 1.
+    // Exercise the real visible Continue action, never click a hidden control.
+    await expect(allStories).toBeHidden();
+    const continueScenario=page.locator('[data-video-continue-scenarios]');
+    await expect(continueScenario).toBeVisible({timeout:15000});
+    await expect(continueScenario).toBeEnabled();
+    await continueScenario.click();
+    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
+    await expect(allStories).toBeVisible({timeout:15000});
     await allStories.click();
     await expect(studio).toHaveAttribute("data-video-advanced-open","true");
     const phrases=page.locator('[data-video-quick-control="phrases"]');
+    await expect(phrases).toBeVisible({timeout:15000});
     await expect(phrases).toBeEnabled();
     await phrases.click();
     await expect(phrases).toHaveAttribute("aria-pressed","true");
@@ -155,6 +165,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // The real Audio tool is a conditional Montage sub-tab, not the default Settings.
+      const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
+      await montageAudioTab.waitFor({state:"visible",timeout:25000});
+      await montageAudioTab.click();
+      await expect(montageAudioTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
       const montageSettings=page.locator('[data-video-montage-settings]');
       await montageSettings.waitFor({state:"visible",timeout:25000});
       if(await montageSettings.getAttribute("open")===null)
@@ -204,6 +219,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
+      // Public Ideas now shows eight sense axes and five suggested phrases.
+      // Legacy phrase tone/focus/length, consented TTS and actual encoded MP4
+      // remain reachable through an optional, user-opened disclosure.
+      const ideas=phrases.locator("[data-video-ideas-compact]");
+      await expect(ideas).toBeVisible();
+      await expect(ideas.locator("[data-video-ideas-current]")).toBeVisible();
+      await expect(ideas.locator("[data-video-ideas-desired]")).toBeVisible();
+      await expect(ideas.locator("[data-video-ideas-phrases] [data-video-idea-phrase]")).toHaveCount(5);
+      const advanced=phrases.locator("[data-video-phrase-advanced]");
+      await expect(advanced).toBeVisible();
+      await expect(advanced).not.toHaveAttribute("open","");
+      await advanced.locator(":scope > summary").click();
+      await expect(advanced).toHaveAttribute("open","");
+      await expect(advanced.locator("[data-hypno-overview]")).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
       await phrases.locator("[data-hypno-select-tone]").selectOption("balanced");
@@ -432,9 +461,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await voiceOptions.locator(":scope > summary").click();
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible();
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
-      await page.locator("[data-video-affirmation-voice-consent]").check();
-      await page.locator("[data-video-generate-affirmation-audio]").click();
+      const consentCheck=page.locator("[data-video-affirmation-voice-consent]");
+      await consentCheck.check();
+      await expect(consentCheck).toBeChecked();
+      const generateVoice=page.locator("[data-video-generate-affirmation-audio]");
+      // In macOS WebKit a tap immediately after a long disclosure auto-scroll
+      // can be consumed by that scroll. Stabilize the real visible control
+      // before ONE ordinary unforced click; do not fake an API call or retry.
+      await generateVoice.evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
+      await expect(generateVoice).toBeInViewport({ratio:.8});
+      await expect(generateVoice).toBeEnabled();
+      const affirmationsBefore=payloads.filter(item=>item.mode==="affirmations").length;
+      await generateVoice.click();
       try {
+        await expect.poll(()=>payloads.filter(item=>item.mode==="affirmations").length,
+          {timeout:8000,message:"first actual generate tap must submit one approved phrase to local mock"}).toBe(affirmationsBefore+1);
         await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
         phase(engine,"voice-wav-ready");
       }catch(error){

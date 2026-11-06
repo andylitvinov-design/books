@@ -48,6 +48,21 @@ test("WebKit mixes local audio to stereo before AAC encoding",()=>{
     "AAC capability preflight must request the same two-channel stream that is encoded");
   assert.match(helper,/new AudioBufferSource\(\{codec:"aac"/);
 });
+test("Safari native H.264 latency is not mistaken for missing shot frames",()=>{
+  // Encoding is permitted to consume actual time without changing any MP4
+  // presentation timestamp, reusing an old source shot or relaxing the
+  // absolute export deadline. Real browser media acceptance remains required.
+  assert.match(helper,/let encoderHoldMs=0/);
+  assert.match(helper,/const frameWorkStartedAt=performance\.now\(\)/);
+  assert.match(helper,/const decoderHoldBeforeFrame=decoderHoldMs/);
+  assert.match(helper,/workElapsedMs-\(decoderHoldMs-decoderHoldBeforeFrame\)-1000\/frameRate/);
+  assert.match(helper,/startedAt\+decoderHoldMs\+encoderHoldMs\+\(i\*1000\/frameRate\)/);
+  assert.match(helper,/time\*1000\+decoderHoldMs\+encoderHoldMs\+750/);
+  assert.match(helper,/const time=i\/frameRate/);
+  assert.match(helper,/if\(!decodedRealFrame\)throw new Error\("licensed_scene_frame_unavailable"\)/);
+  assert.match(helper,/if\(performance\.now\(\)-startedAt>\(seconds\+20\)\*1000\+decoderHoldMs\)/);
+});
+
 test("Narration does not loop and actual user gain is mastered into AAC",()=>{
   assert.match(studio,/loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true/);
   assert.match(studio,/audio:files\.length\?\{files,volume:soundVolume\}:undefined/);

@@ -169,19 +169,18 @@ const runEngine = async ([engine, browserType]) => {
           "the original language-aware mobile navigation remains mounted");
         const quick=page.locator("[data-video-quick-builder]");
         await quick.waitFor({state:"visible",timeout:12000});
-        // Owner 03 Nov: one compact row of five photo-free goal pills. Subtopics
-        // appear directly underneath and allow at most two selected choices.
+        // Canonical 4x4x4x4: exactly four public categories.
         const goalCards=quick.locator('[data-video-director-goal-controls] [data-auto-video-category]');
-        const topicCards=quick.locator('[data-video-director-goal-controls] [data-auto-video-subcategories] [data-auto-video-goal]');
+        const topicCards=quick.locator('[data-video-director-topic-controls] [data-mytube-subcategories] [data-auto-video-subcategory]');
         await expect(goalCards.first()).toBeVisible({timeout:15000});
-        assert.equal(await goalCards.count(),5,"five photo-free goal pills in one row");
-        assert.equal(await goalCards.locator("img").count(),0,"no photo thumbnails in goals");
+        assert.equal(await goalCards.count(),4,"four canonical public categories");
+        assert.equal(await goalCards.locator("img").count(),0,"photo-free goals");
         const goalRects=await goalCards.evaluateAll(nodes=>nodes.map(node=>({
           x:node.getBoundingClientRect().x,y:node.getBoundingClientRect().y,
           width:node.getBoundingClientRect().width,height:node.getBoundingClientRect().height
         })));
         assert.ok(goalRects.every(rect=>Math.abs(rect.y-goalRects[0].y)<=2),
-          engine+" "+locale+" "+width+" five categories must share one row: "+JSON.stringify(goalRects));
+          engine+" "+locale+" "+width+" categories must share one row: "+JSON.stringify(goalRects));
         const continueButton=quick.locator("[data-video-continue-scenarios]");
         const customInput=quick.locator("[data-video-request-after-topic] [data-auto-video-input]");
         const initialStories=quick.locator("[data-auto-video-story-options] [data-auto-video-option]");
@@ -243,16 +242,18 @@ const runEngine = async ([engine, browserType]) => {
         }
         if(width===320||width===390)await page.setViewportSize({width,height:820});
         await expect(topicCards.first()).toBeVisible({timeout:10000});
-        assert.equal(await topicCards.count(),6,"six subcategories visible on entry");
+        assert.equal(await topicCards.count(),4,"four unique subcategories per category");
+        const firstSet=await topicCards.allTextContents();
         await goalCards.nth(1).click();
         await expect(topicCards.first()).toBeVisible({timeout:10000});
-        assert.equal(await topicCards.count(),6,"subcategories appear beneath selected category");
-        await topicCards.nth(0).click();await topicCards.nth(1).click();
-        assert.equal(await quick.locator('[data-video-director-goal-controls] [data-auto-video-subcategories] [data-auto-video-goal][aria-pressed="true"]').count(),2,
-          "exactly two subcategories can be selected");
-        assert.equal(await topicCards.nth(2).isDisabled(),true,"third choice is blocked");
-        await topicCards.nth(1).click();
-        assert.equal(await topicCards.nth(2).isEnabled(),true,"deselecting frees one choice");
+        assert.equal(await topicCards.count(),4);
+        const secondSet=await topicCards.allTextContents();
+        assert.equal(new Set([...firstSet,...secondSet]).size,8,
+          "no shared subcategory labels across categories");
+        await topicCards.nth(0).click();
+        assert.equal(await topicCards.nth(0).getAttribute("aria-pressed"),"true");
+        assert.equal(await quick.locator('[data-video-director-topic-controls] [data-auto-video-themes] [data-auto-video-topic]').count(),4,
+          "selected subcategory has four canonical topics");
         assert.equal(await initialStories.count(),4,"the four licensed choices stay mounted for step 2");
         await expect(initialStories.first()).toBeHidden();
         await continueButton.click();
@@ -264,13 +265,10 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await initialAdvanced.isVisible(),false,
           "old Video-level advanced button is not displayed");
         const topicPanel=quick.locator("[data-auto-video-topic-panel]");
-        const recommendations=topicPanel.locator("[data-auto-video-popular-topics]");
-        await expect(recommendations).toBeVisible();
+        assert.equal(await quick.locator("[data-auto-video-popular-topics]").count(),0,
+          "remove old duplicated popular suggestions");
+        await expect(topicPanel.locator("[data-mytube-subcategories]")).toBeVisible();
         await expect(customInput).toBeVisible();
-        const topicOrder=await Promise.all([recommendations,customInput].map(async node=>
-          node.evaluate(el=>el.getBoundingClientRect().top)));
-        assert.ok(topicOrder[1]>topicOrder[0],
-          "extra suggestions belong to step two; the editable brief stays in the first step");
         const originalShellWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
         assert.ok(originalShellWidth<=width+2,"approved 320-430px first screen must not overflow");
         // Free Help is a real launcher for #2913's existing AI Director; it
@@ -2307,11 +2305,11 @@ const runEngine = async ([engine, browserType]) => {
           const topicPanel=page.locator("[data-video-director-topic-controls]");
           await auto.waitFor({state:"visible",timeout:12000});
           await topicPanel.locator("[data-auto-video-input]").waitFor({state:"visible",timeout:12000});
-          assert.equal(await goalPanel.locator("[data-auto-video-category]").count(),5,
-            "four high-level goals are individually selectable");
-          await goalPanel.locator('[data-auto-video-category="strength"]').click();
-          assert.equal(await goalPanel.locator("[data-auto-video-goal]").count(),6,
-            "six inline contextual subtopics, no obligatory 49-question intake");
+          assert.equal(await goalPanel.locator("[data-auto-video-category]").count(),4,
+            "four canonical public categories");
+          await goalPanel.locator('[data-auto-video-category="energy-confidence"]').click();
+          assert.equal(await topicPanel.locator("[data-mytube-subcategories] [data-auto-video-subcategory]").count(),4,
+            "four exclusive subcategories, no obligatory 49-question intake");
           // Owner-reported iPhone regression: focus must not zoom, trailing
           // whitespace must survive, user intent must change the real proposal,
           // and one of the alternative film cards must be selectable.
@@ -2342,7 +2340,8 @@ const runEngine = async ([engine, browserType]) => {
             "approved Video flow keeps sound adjustment after the storyboard");
 
           const planBefore=await page.locator("[data-free-film-original-masters]").count();
-          await goalPanel.locator('[data-auto-video-goal="calm"]').click();
+          await goalPanel.locator('[data-auto-video-category="stress-anxiety"]').click();
+          await topicPanel.locator('[data-auto-video-subcategory="anxiety-fears"]').click();
           await auto.locator("[data-auto-video-proposal]").waitFor({state:"visible",timeout:12000});
           assert.equal(await auto.locator("[data-auto-video-storyboard] li").count(),4,
             "goal gives four actual source scenes");

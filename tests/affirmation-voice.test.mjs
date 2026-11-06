@@ -79,21 +79,32 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(browser,/page\.route/);
 });
 
-test("six-voice affirmation editor is mounted in the approved Phrases workspace rather than legacy extras",()=>{
+test("one consented voice editor remains mounted inside the optional Phrases disclosure",()=>{
   const page=read("components/mandala-free-video-studio.tsx");
   const voiceEditor=page.indexOf("const hypnoVoiceEditor = (");
   const deepPane=page.indexOf("const deepHypnoPane = (");
-  const phraseMount=page.indexOf('{activeWorkspace==="phrases" ? hypnoVoiceEditor : null}',deepPane);
-  const music=page.indexOf("data-hypno-music",phraseMount);
-  const hidden=page.indexOf("data-video-quick-legacy");
-  assert.ok(voiceEditor>0 && deepPane>voiceEditor && phraseMount>deepPane && music>phraseMount && hidden>music,
-    "the single consented voice editor is mounted after the phrase catalog and before music in Phrases");
+  const voiceMount=page.indexOf("{hypnoVoiceEditor}",deepPane);
+  const music=page.indexOf("data-hypno-music",voiceMount);
+  const phraseSection=page.indexOf('data-workspace-section="phrases" data-video-quick-phrases');
+  const disclosure=page.indexOf("data-video-phrase-advanced",phraseSection);
+  const disclosureMount=page.indexOf("{deepHypnoPane}",disclosure);
+  assert.ok(voiceEditor>0 && deepPane>voiceEditor && voiceMount>deepPane &&
+    music>voiceMount && phraseSection>music && disclosure>phraseSection &&
+    disclosureMount>disclosure,
+    "one real voice editor remains within the explicit optional Phrases disclosure");
+  assert.match(page.slice(disclosure,disclosureMount),/hidden=\{activeWorkspace!=="phrases"\}/,
+    "the detailed editor is hidden in other workspaces, not deleted on navigation");
   assert.match(page.slice(voiceEditor,deepPane),/data-hypno-voice[\s\S]*data-video-narration-stale/);
   assert.equal((page.match(/<MandalaAffirmationVoice locale/g)||[]).length,1,
-    "do not duplicate the voice editor or API requests");
-  assert.match(page.slice(voiceEditor,deepPane),/data-video-narration-stale/,
-    "the stale narration warning stays inside the visible voice editor");
-});;
+    "never duplicate the voice editor, consent or TTS requests");
+  assert.doesNotMatch(page,/activeWorkspace==="phrases" \? hypnoVoiceEditor : null/,
+    "retain live voice-recording state on a Montage round trip");
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  assert.match(browser,/await advanced.locator\(":scope > summary"\).click\(\)/,
+    "WebKit must tap the real disclosure, not interact with hidden controls");
+  assert.match(browser,/data-video-affimations-audio-ready/,
+    "real audio generation and encoded movie verification remain in place");
+});
 
 test("three women and three men use original voices, never autoplay on selection",()=>{
  const ui=read("components/mandala-affirmation-voice.tsx");

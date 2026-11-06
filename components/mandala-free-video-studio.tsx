@@ -4741,7 +4741,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ?.scrollIntoView({block:"nearest",behavior:"smooth"}));
           }}/> : null}
       </details>
-      {activeWorkspace==="phrases" ? hypnoVoiceEditor : null}
+      {hypnoVoiceEditor}
       <section className={videoStyles.phraseMusicSection} data-hypno-music>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Music2 size={23} aria-hidden="true"/></span>
@@ -5544,9 +5544,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onCreate={goToMontageFromIdeas}/>
-          {activeWorkspace!=="phrases" ? <div data-video-legacy-phrase-editor hidden aria-hidden="true">
+          {/* Keep detailed voice/phrase settings reachable by an intentional tap.
+              The eight-axis Ideas editor remains the only default visible journey.
+              Reuse the one existing Hypno voice/consent/audio instance, even across tabs. */}
+          <details className={videoStyles.phraseAdvanced} data-video-phrase-advanced
+            hidden={activeWorkspace!=="phrases"}>
+            <summary>{locale==="ru"?"Дополнительно: тон фраз и озвучка":
+              locale==="es"?"Opcional: frases y voz avanzada":"Optional: phrase tone and voice"}</summary>
             {deepHypnoPane}
-          </div> : null}
+          </details>
         </div>
         <button type="button" className={videoStyles.phraseAudioNext}
           data-video-phrase-audio-shortcut disabled={recording||preparing}

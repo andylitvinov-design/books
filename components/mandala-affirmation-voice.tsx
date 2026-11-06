@@ -385,7 +385,12 @@ export function MandalaAffirmationVoice({
   },[audioUrl]);
 
   async function createAudio(){
-    if(!languageAvailable||disabled||approvalPending||busy||!speechText||!consent)return;
+    if(!languageAvailable||disabled||approvalPending||busy||!speechText||!consent){
+      // Do not silently swallow a fast tap during a React consent or phrase
+      // transition. Show the next action without sending any provider data.
+      if(!busy&&!disabled)setMessage(approvalPending?t.pendingText:!speechText?t.enable:t.error);
+      return;
+    }
     const job=++jobRef.current;
     const controller=new AbortController();
     controllerRef.current=controller;
