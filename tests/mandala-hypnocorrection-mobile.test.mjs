@@ -107,6 +107,10 @@ test("06 Nov Hypno uses three exclusive effect tabs under the one actual player"
   assert.match(css,/@media\(max-width:359px\)/);
   assert.match(videoCss,/data-active-workspace="effects"\] \.quickBuilder>\[data-video-quick-section="1"\],[\s\S]*?display:none!important/);
   assert.match(studio,/onCreate=\{startFromHero\} onCreateWithoutEffects=\{generateWithoutHypnoEffects\}/);
+  assert.match(studio,/data-hypno-stage-intro/);
+  assert.match(videoCss,/\.hypnoStageTitle\{display:none\}/);
+  assert.match(videoCss,/\.studio\[data-active-workspace="effects"\] \.previewStage \.heroRail\{display:none!important\}/);
+  assert.match(videoCss,/\.studio\[data-active-workspace="effects"\] \.heroEditorial\{display:none!important\}/);
   assert.equal((studio.match(/id="video-hero"/g)||[]).length,1);
 });
 test("Generate without effects strips Hypno layers before original local renderer",()=>{

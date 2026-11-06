@@ -5333,6 +5333,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <RefreshCw size={20} aria-hidden="true"/>
         </button>
       </aside>
+      {activeWorkspace==="effects" ? <aside className={videoStyles.hypnoStageTitle}
+        data-hypno-stage-intro aria-label={locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipnóticos":"Hypno effects"}>
+        <Sparkles size={23} aria-hidden="true"/>
+        <div>
+          <h3>{locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipnóticos":"Hypno effects"}</h3>
+          <p>{locale==="ru"?"Выберите мягкие дополнительные эффекты для видео.":
+            locale==="es"?"Elige capas suaves opcionales para tu vídeo.":
+            "Choose optional gentle layers for your video."}</p>
+        </div>
+      </aside> : null}
       {activeWorkspace==="editor" && montagePanel==="audio" ? (
         <aside className={videoStyles.montageAudioHero} data-video-audio-intro>
           <Music2 size={27} aria-hidden="true"/>
