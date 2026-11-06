@@ -13,8 +13,8 @@
       '<script src="/pr-timestamp-coverage.js?v=20261104-5" defer><\/script>'+
       '<link rel="stylesheet" href="/pr-two-screen.css?v=20261104-4">'+
       '<script src="/pr-cohort-wall-clock.js?v=20261104-kpi-p95-3476" defer><\/script>'+
-      '<script src="/ci-queue-backup.js?v=20261106-rescue-v1" defer><\/script>'+
-      '<script src="/pr-two-screen.js?v=20261106-rescue-v1" defer><\/script>'+
+      '<script src="/ci-queue-backup.js?v=20261106-ci-filter-v2" defer><\/script>'+
+      '<script src="/pr-two-screen.js?v=20261106-ci-filter-v2" defer><\/script>'+
       '<link rel="stylesheet" href="/pr-three-kpi-ui.css?v=20261104-kpi1">'+
       '<script src="/pr-three-kpi-ui.js?v=20261104-kpi1" defer><\/script>';
     // Preserve the manually deployed LIVE monitor extensions; source archives in
