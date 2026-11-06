@@ -31,6 +31,7 @@ jobs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
       ci_only: ${{ steps.diff.outputs.ci_only }}
       route: ${{ steps.fast.outputs.route }}
+      lint_failed: ${{ steps.changed_lint.outcome == 'failure' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -332,6 +333,7 @@ jobs:
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (github.event_name != 'pull_request' || steps.diff.outputs.ci_touched == 'true') }}
         run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs
       - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
+        id: changed_lint
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         shell: bash
         env:
@@ -520,7 +522,7 @@ jobs:
   hh-eslint-repair:
     name: hh-eslint-repair
     needs: [scope]
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && failure() && needs.scope.result == 'failure' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && failure() && needs.scope.result == 'failure' && needs.scope.outputs.lint_failed == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     concurrency:
@@ -536,7 +538,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 2
-          token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || github.token }}
+          token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || secrets.HH_AUTOMERGE_TOKEN || github.token }}
           persist-credentials: true
       - uses: actions/setup-node@v4
         with:
@@ -546,7 +548,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
-          HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN }}
+          HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN || secrets.HH_AUTOMERGE_TOKEN }}
           HH_PR_NUMBER: ${{ github.event.pull_request.number }}
           HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
