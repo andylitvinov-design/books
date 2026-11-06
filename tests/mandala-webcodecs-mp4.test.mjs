@@ -185,6 +185,6 @@ test("real macOS WebKit voice acceptance opens visible Montage Audio and Voice t
   assert.match(source,/await montageAudioTab\.click\(\);[\s\S]*?const montageSettings=page\.locator/);
   assert.match(source,/await montageAudioForVoice\.click\(\);[\s\S]*?await voiceDisclosure\.locator\('\[data-video-basic-tab="voice"\]'\)\.click\(\)/);
   assert.match(source,/await expect\(montageAudioForVoice\)\.toHaveAttribute\("aria-pressed","true"\)/);
-  assert.match(source,/await page\.locator\('\[data-video-generate-affirmation-audio\]'\)\.click\(\)/);
+  assert.match(source,/await page\.locator\(["']\[data-video-generate-affirmation-audio\]["']\)\.click\(\)/);
   assert.match(source,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
 });
