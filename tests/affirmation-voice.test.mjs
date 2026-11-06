@@ -421,3 +421,16 @@ test("actual WebKit uses visible Montage Audio before testing real sound and exp
   assert.ok(browser.includes('data-video-voice-studio'));
   assert.ok(browser.includes('data-video-quick-generate'));
 });
+
+test("the post-export stale-narration check revisits Voice through visible Montage Audio",()=>{
+  const start=source.indexOf("removed spoken phrase must block stale WAV reuse or detach it");
+  const audio=source.indexOf('const reenterAudioTab=page.locator',start);
+  const actualTap=source.indexOf('await reenterAudioTab.click()',audio);
+  const shown=source.indexOf('await expect(reenterAudioTab).toHaveAttribute("aria-pressed","true")',actualTap);
+  const voice=source.indexOf('const reenterVoiceTab=page.locator',shown);
+  const voiceClick=source.indexOf('await reenterVoiceTab.click()',voice);
+  const disabled=source.indexOf('const stillHasOldVoice=',voiceClick);
+  assert.ok(start>=0&&audio>start&&actualTap>audio&&shown>actualTap&&voice>shown&&voiceClick>voice&&disabled>voiceClick,
+    "second consent-bound Voice check uses the mounted Audio subtab, never a hidden selector");
+  assert.ok(source.slice(audio,disabled).includes('[data-video-montage-settings] [data-video-basic-tab="voice"]'));
+});
