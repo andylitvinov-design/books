@@ -1,8 +1,11 @@
 import {NextResponse,after} from 'next/server'
 import {getAppConfig} from '@/lib/app/config'
 import {PRIVATE_HEADERS} from '@/lib/app/http'
-import {verifyClientTelegramSecret} from '@/lib/app/client-telegram-policy'
+import {verifyClientTelegramSecret,telegramClientBotUsername} from '@/lib/app/client-telegram-policy'
 import {receiveClientTelegramWebhook} from '@/lib/app/client-telegram-webhook'
+import {receiveSubscriberAiTelegramUpdate,drainSubscriberAiOutbox,answerSubscriberAiCallback} from '@/lib/app/subscriber-ai-telegram'
+import {dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
+import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
 import {receiveOwnerAiTelegramWebhook} from '@/lib/practitioners/owner-ai-telegram-service'
 import {parseOwnerAiUpdate} from '@/lib/practitioners/owner-ai-telegram.mjs'
 import {receiveOwnerTelegramAudioWebhook} from '@/lib/practitioners/owner-telegram-audio-service'
@@ -54,7 +57,13 @@ export async function POST(request){
     after(async()=>{
       try{
         const result=await receiveOwnerAiTelegramWebhook(config,update)
-        if(!result.handled)await receiveClientTelegramWebhook(config,update)
+        if(!result.handled){
+          const client=await receiveClientTelegramWebhook(config,update)
+          if(client.relayMessageId)await Promise.allSettled([
+            dispatchPractitionerMessagePush(config,client.relayMessageId),
+            dispatchClientTelegramNotification(config,client.relayMessageId),
+          ])
+        }
       }catch{
         // No secrets, update text, client data or chat ID in logs.
         console.error('HH_OWNER_AI_AFTER_DELIVERY_FAILED')
@@ -63,7 +72,59 @@ export async function POST(request){
     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
   }
   const owner=await receiveOwnerAiTelegramWebhook(config,update)
-  if(!owner.handled)await receiveClientTelegramWebhook(config,update)
+  if(!owner.handled){
+    // Client AI is independent of owner/CRM and never steals an unconsented
+    // verification /start, global /stop or ordinary practitioner Reply.
+    const subscriber=await receiveSubscriberAiTelegramUpdate(config,update)
+    if(subscriber.queued||subscriber.callbackId)after(async()=>{
+      try{
+        if(subscriber.callbackId)await answerSubscriberAiCallback(subscriber.callbackId)
+        await drainSubscriberAiOutbox(config)
+      }catch{console.error('HH_SUBSCRIBER_AI_DELIVERY_FAILED')}
+    })
+    if(!subscriber.handled){
+      let aiHandled=false
+      // The verified client bot has ONE inbound URL. Keep all owner,
+      // subscriber, /start-link, customer Reply and callback paths intact.
+      // Only user-initiated /video or /hhvideo_* enters this separate lane.
+      if(process.env.HH_AI_TELEGRAM_QUEUE_ENABLED==='true'&&
+         process.env.VERCEL_ENV==='production'){
+        const {aiVideoBotIdentityReady}=await import('@/lib/app/telegram-ai-account-boundary')
+        if(aiVideoBotIdentityReady()){
+          const {parseTelegramVideoClientIngress}=await import('@/lib/app/telegram-ai-client-ingress.mjs')
+          const event=parseTelegramVideoClientIngress(update,telegramClientBotUsername())
+          if(event){
+            const {aiQueueEnabled,receiveTelegramAiUpdate}=await import('@/lib/app/telegram-ai-queue')
+            if(aiQueueEnabled()){
+              // STOP must also revoke the existing client link and other
+              // client permissions, then erase queued AI work.
+              if(event.stop)await receiveClientTelegramWebhook(config,update)
+              const result=await receiveTelegramAiUpdate(config,event)
+              aiHandled=Boolean(result.handled||event.stop)
+              if(aiHandled&&(result.queued||result.consented||result.consentRequired))
+                after(async()=>{
+                  try{
+                    const {runTelegramAiQueues}=await import('@/lib/app/telegram-ai-worker')
+                    // Existing authorized recovery owns the heavy render.
+                    await runTelegramAiQueues(config,{messages:2,videos:0,deliveries:3})
+                  }catch{console.error('HH_AI_CLIENT_VIDEO_QUEUE_AFTER_FAILED')}
+                })
+            }
+          }
+        }
+      }
+      if(!aiHandled){
+        const customer=await receiveClientTelegramWebhook(config,update)
+        if(customer.relayMessageId){
+          const id=customer.relayMessageId
+          after(async()=>{await Promise.allSettled([
+            dispatchPractitionerMessagePush(config,id),
+            dispatchClientTelegramNotification(config,id),
+          ])})
+        }
+      }
+    }
+  }
   // No account existence, token status, or chat ID is returned to Telegram.
   return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
  }catch{
