@@ -24,6 +24,7 @@ type Outline = {status:"draft_ready";title:string;lessons:Array<{number:number;t
 type Message = { role: "user" | "assistant"; text: string };
 type MessengerVideoDraft = {
   goal:string;categoryId:string|null;topicId:string|null;scenarioId:string|null;
+  mytubeCategoryId:string|null;mytubeSubcategoryId:string|null;mytubeTopicId:string|null;
   ideaId:string|null;phraseId:string|null;phraseText:string|null;
   tone:"gentle"|"confident"|"grounded"|"inspiring";speaker:"self"|"support";
   length:"short"|"extended";mood:"slow"|"dynamic"|null;
@@ -593,9 +594,13 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
              if(selected)answerVideo(selected.id,selected.label);
            }}>{starter.requestVideo}</button>}
         {videoStep==="review"?<div className={styles.videoReview} data-hh-video-chat-review>
+          {videoDraft.mytubeTopicId&&<p data-hh-video-canonical-topic>{
+            messengerVideoChoices(videoDraft,"mytube-topic",locale)
+              .find(item=>item.id===videoDraft.mytubeTopicId)?.label
+          }</p>}
           <p>{videoDraft.duration} s · {videoDraft.aspect==="portrait"?"9:16":videoDraft.aspect==="square"?"1:1":"16:9"} · {videoCopy.editNames.music}: {videoDraft.music==="none"?videoCopy.musicNames[3]:videoDraft.music}</p>
           <div className={styles.videoEditOptions} role="group" aria-label={videoCopy.edit}>
-            {(["category","topic","scenario","idea","phrase","mood","aspect","duration","music","phrases"] as const).map(step=><button
+            {(["category","subcategory","mytube-topic","topic","scenario","idea","phrase","mood","aspect","duration","music","phrases"] as const).map(step=><button
               type="button" key={step} disabled={busy} data-hh-video-edit-step={step}
               onClick={()=>openVideoEdit(step,step in videoCopy.editNames?
                 videoCopy.editNames[step as keyof typeof videoCopy.editNames]:messengerVideoQuestion(step,locale))}>

@@ -359,6 +359,14 @@ try{
  await videoGoals.nth(1).click();
  assert.equal(await personal.isEnabled(),true,"selected video goal enables personal brief");
  await personal.click();
+ await chat.locator('[data-hh-video-chat-step="subcategory"]').waitFor({state:"visible"});
+ const subcategoryChoices=chat.locator('[data-hh-video-chat-step="subcategory"] [data-hh-video-chat-choice]');
+ assert.equal(await subcategoryChoices.count(),4,"chosen category owns four exclusive subcategories");
+ await subcategoryChoices.first().click();
+ await chat.locator('[data-hh-video-chat-step="mytube-topic"]').waitFor({state:"visible"});
+ const canonicalTopics=chat.locator('[data-hh-video-chat-step="mytube-topic"] [data-hh-video-chat-choice]');
+ assert.equal(await canonicalTopics.count(),4,"chosen subcategory owns four exact canonical topics");
+ await canonicalTopics.first().click();
  await chat.locator('[data-hh-video-chat-step="topic"]').waitFor({state:"visible"});
  await page.waitForFunction(()=>{
    const el=document.querySelector('[data-hh-agent-preview] [role="log"]');
