@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {analyzePrLoss, summarizePrLoss, exclusiveStageMinutes,readRepairMarkers,analyzePrLifecycle,lifecycleConnected,analyzeCoreWaveGaps} from '../lib/ci/pr-loss-metrics.mjs';
 import {collectCohort, formatSummary, searchQuery} from '../scripts/ci-pr-loss-report.mjs';
+import {analyzeRepairCycles} from '../lib/ci/pr-repair-cycle.mjs';
 
 const head='a'.repeat(40), old='b'.repeat(40);
 const pr=(overrides={})=>({number:99,created_at:'2026-11-04T10:00:00Z',
@@ -501,4 +502,65 @@ test('P1 collector restores true first Core despite GitHub moving old PR link SH
   assert.equal(report.rows[0].core_waves.observed_core_runs,2);
   assert.equal(report.rows[0].runs_considered,2);
   assert.match(formatSummary(report),/Historical HEADs relinked/);
+});
+
+test('Repair-cycle stage clocks separate failure, immutable lease, repair declaration, commit event, CI and runner',()=>{
+  const broken=run(800,at('10:01'),at('10:12'),{head_sha:old,conclusion:'failure',
+    pull_requests:[{number:99,base:{ref:'codex/public-book-library'},head:{sha:old}}]});
+  const after=run(801,at('10:35'),at('10:55'));
+  const jobs={800:{total_count:1,jobs:[job(8001,'core-lint-types-build',at('10:01'),at('10:03'),at('10:10'),'failure',
+    {steps:[{name:'TypeScript',conclusion:'failure'}]})]},801:{total_count:1,
+    jobs:[job(8011,'core-lint-types-build',at('10:36'),at('10:40'),at('10:55'))]}};
+  const lease={id:900,created_at:at('10:16'),updated_at:at('10:16'),
+    body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',
+      owner:'ci-agent',head_sha:old,base_sha:'c'.repeat(40),
+      expires_at:at('11:00'),last_action:'claimed'})};
+  const receipt={id:901,created_at:at('10:20'),
+    body:'<!-- HH_PR_REPAIR_STARTED_V1 -->\n'+JSON.stringify({schema:'HH_PR_REPAIR_STARTED_V1',
+      action:'repair_started',owner:'ci-agent',failed_run_id:800,failed_head_sha:old})};
+  const history=[{event:'committed',sha:old,created_at:at('10:00')},
+    {event:'committed',sha:head,created_at:at('10:30')}];
+  const actual=analyzeRepairCycles(pr(),[broken,after],jobs,[lease,receipt],history,
+    {runHistoryComplete:true,commentsComplete:true});
+  assert.equal(actual.observed_failed_heads,1);
+  const c=actual.cycles[0],d=c.durations_minutes,t=c.timestamps;
+  assert.equal(c.failed_head,old);assert.equal(c.new_head,head);
+  assert.equal(c.failure.observed_failed_step,'TypeScript');
+  assert.equal(c.failure.root_cause_verified,false);
+  assert.equal(c.owner,'ci-agent');
+  assert.equal(t.new_head_commit_event_at,'2026-11-04T10:30:00.000Z');
+  assert.deepEqual([d.failure_to_claim,d.claim_to_repair_declaration,
+    d.repair_declaration_to_commit_event,d.commit_event_to_new_ci,
+    d.workflow_to_first_job,d.first_runner_job_queue],[6,4,10,5,1,4]);
+  assert.equal(t.actual_edit_started_at,null);
+  assert.equal(d.actual_edit_work,null);
+  assert.equal(c.evidence.agent_received_task_verified,false);
+  assert.equal(c.evidence.comments_complete,true);
+});
+
+test('Repair-cycle unknowns: no fake assignment, edit time, push time or runner shortage',()=>{
+  const broken=run(810,at('10:01'),at('10:12'),{head_sha:old,conclusion:'failure',
+    pull_requests:[{number:99,base:{ref:'codex/public-book-library'},head:{sha:old}}]});
+  const after=run(811,at('10:35'),at('10:55'));
+  const jobs={810:{total_count:1,jobs:[
+    job(8101,'core-lint-types-build',at('10:01'),at('10:03'),at('10:10'),'failure')]},
+    811:{total_count:1,jobs:[job(8111,'core-lint-types-build',at('10:36'),at('10:40'),at('10:55'))]}};
+  const updatedLease={id:910,created_at:at('10:16'),updated_at:at('10:21'),
+    body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify({schema:'HH_PR_SWEEP_LEASE_V1',
+      owner:'ci-agent',head_sha:old,base_sha:'c'.repeat(40),
+      expires_at:at('11:00'),last_action:'heartbeat'})};
+  const truncated=Array.from({length:100},()=>({event:'committed',sha:head,created_at:at('10:30')}));
+  const c=analyzeRepairCycles(pr(),[broken,after],jobs,[updatedLease],truncated).cycles[0];
+  assert.equal(c.timestamps.ci_failed_at,'2026-11-04T10:10:00.000Z');
+  assert.equal(c.timestamps.lease_claimed_at,null);
+  assert.equal(c.timestamps.repair_declared_at,null);
+  assert.equal(c.timestamps.new_head_commit_event_at,null);
+  assert.equal(c.timestamps.new_ci_created_at,'2026-11-04T10:35:00.000Z');
+  assert.equal(c.durations_minutes.failure_to_claim,null);
+  assert.equal(c.evidence.comments_complete,false);
+  assert.equal(c.evidence.timeline_complete,false);
+  const stranger={...after,pull_requests:[{number:900,base:{ref:'codex/public-book-library'}}]};
+  assert.equal(analyzeRepairCycles(pr(),[broken,stranger],jobs,[],null).cycles[0].new_head,null);
+  assert.equal(analyzeRepairCycles(pr(),[broken,after],
+    {810:{total_count:2,jobs:jobs[810].jobs},811:jobs[811]},[],null).cycles.length,0);
 });
