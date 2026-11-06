@@ -4302,6 +4302,38 @@
   }
 }
 
+
+/* Compact owner-approved Montage Text on mobile, one existing Canvas editor. */
+.studio[data-active-workspace="editor"] [data-video-montage-text]{
+  padding:9px!important;gap:7px!important;border-radius:18px;
+  background:var(--hh-light-surface,#fffcf7);
+}
+.studio[data-active-workspace="editor"] [data-video-montage-text] .montageScenario{
+  display:block;min-width:0;padding:0 8px!important;margin:0!important;
+  border-radius:11px;border:1px solid #d4e5db;background:#f9fcf9;
+}
+.studio[data-active-workspace="editor"] [data-video-montage-text] .montageScenario>summary,
+.studio[data-active-workspace="editor"] .montageAdvancedTools>summary{
+  display:flex;align-items:center;min-height:44px;padding:8px 5px;
+  font-size:12px;font-weight:750;color:#226f58;cursor:pointer
+}
+.studio[data-active-workspace="editor"] .montageScenarioBody{display:grid;gap:6px;padding:5px 0 9px}
+.studio[data-active-workspace="editor"] .montageScenarioBody textarea{min-height:72px}
+.studio[data-active-workspace="editor"] .montageAdvancedTools{
+  padding:0 9px;border:1px solid #e2e8dc;border-radius:11px;background:#fbfcf8
+}
+.studio[data-active-workspace="editor"] .montageAdvancedTools .editorDraftTools{
+  margin:4px 0 7px;gap:6px
+}
+.studio[data-active-workspace="editor"] .montageAdvancedTools .editorDraftTools button{min-height:44px}
+.studio[data-active-workspace="editor"] [data-video-montage-text] [data-video-multitrack-timeline]{
+  margin:0;padding:7px;border:1px solid #cbe4d6;border-radius:13px;background:#fffdf8
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="editor"] [data-video-montage-text]{padding:5px!important}
+}
+
+
 /* 06 Nov owner-approved Montage Audio: one compact primary screen, original
    catalogue/rights/player and exporter remain mounted only under disclosure. */
 .montageAudioHero{display:none}

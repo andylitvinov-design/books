@@ -28,3 +28,16 @@ test("Style, Add text, Audio, Settings and real audio source actions remain",()=
   assert.ok(source.includes('chooseAudioFile(event.currentTarget.files?.[0])'));
   assert.ok(source.includes('data-video-audio-rights'));
 });
+
+test("The compact Audio pane preserves one opt-in consented RU/EN voice editor",()=>{
+  const panel=source.slice(source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}'),
+    source.indexOf('{musicWarning?<p role="alert" className={videoStyles.montageAudioWarning}>'));
+  assert.ok(panel.includes('data-video-voice-studio open={voiceStudioActivated}'));
+  assert.ok(panel.includes('onToggle={event=>setVoiceStudioActivated(event.currentTarget.open)}'));
+  assert.match(panel,/voiceStudioActivated\?<MandalaCloudVoiceStudio locale=\{locale\}/);
+  assert.match(panel,/sourceText=\{currentAffirmationSpeech\} sourceIsPublic/);
+  assert.match(panel,/onAudioReady=\{attachMeditationNarration\}/);
+  assert.match(panel,/onAudioInvalidated=\{\(\)=>setAttachedAudio/);
+  assert.doesNotMatch(panel,/data-video-basic-tab/);
+  assert.ok(source.includes('if(hash==="voice-studio"){setMontagePanel("audio");setBasicPanelTab("voice");setVoiceStudioActivated(true);}'));
+});
