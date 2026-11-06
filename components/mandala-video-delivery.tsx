@@ -6,6 +6,7 @@ import {Download,Send,RefreshCw,MessageCircle,CheckCircle2} from "lucide-react";
 import {appFetch} from "@/lib/app/client-fetch";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-video-delivery.module.css";
+import CommunityVideoPublishPanel from "./community-video-publish-panel";
 
 type State={
  cloudAvailable:boolean;
@@ -37,6 +38,8 @@ const COPY={
   error:"Не удалось подтвердить отправку или сохранить настройки. Видео осталось на устройстве; проверьте кабинет и попробуйте позже.",
   cancelled:"Поделиться отменено.",
   privacy:"Файл загружается на сервер только после разрешения на доставку. Автоотправку можно отключить здесь в любое время.",
+  house:"Сохранить в My House",community:"На общий YouTube Holistic House",
+  houseSaved:"Готовый MP4 сохранён только в вашем приватном кабинете. YouTube не получал этот файл.",
  },
  en:{
   title:"Where should we send your video?",device:"Download file",telegram:"Telegram",
@@ -57,6 +60,8 @@ const COPY={
   error:"Could not verify delivery or save preferences. Your local video remains available; review your account before trying again.",
   cancelled:"Sharing cancelled.",
   privacy:"The video is uploaded only after you agree to delivery. You can disable automatic delivery here.",
+  house:"Save in My House",community:"Holistic House community YouTube",
+  houseSaved:"The final MP4 was saved only in your private cabinet. Nothing was sent to YouTube.",
  },
  es:{
   title:"¿Dónde enviar tu vídeo?",device:"Descargar archivo",telegram:"Telegram",
@@ -77,6 +82,8 @@ const COPY={
   error:"No se pudo verificar el envío o guardar la preferencia. El vídeo local sigue disponible; revisa tu cuenta antes de reintentarlo.",
   cancelled:"Compartir cancelado.",
   privacy:"El vídeo solo se sube cuando autorizas el envío. Puedes desactivar el envío automático aquí.",
+  house:"Guardar en Mi Casa",community:"YouTube comunitario de Holistic House",
+  houseSaved:"El MP4 terminado está solo en tu biblioteca privada. No se envió a YouTube.",
  }
 } as const;
 const MAX_BYTES=12_000_000;
@@ -92,6 +99,8 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  const [notice,setNotice]=useState("");
  const [busy,setBusy]=useState(false);
  const [botUrl,setBotUrl]=useState("");
+ const [communityAssetId,setCommunityAssetId]=useState<string|null>(null);
+ const [showCommunity,setShowCommunity]=useState(false);
  const inFlight=useRef<Promise<string>|null>(null);
  const autoAttempted=useRef(false);
  // A new video may auto-send only if opt-in was already active when this result loaded.
@@ -165,7 +174,17 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   void task.catch(()=>{if(inFlight.current===task)inFlight.current=null;});
   return task;
  }
- async function sendViaBot(automatic:boolean){
+  async function saveToMyHouse(showEditor:boolean){
+   if(busy||!readyMp4)return;
+   setBusy(true);setNotice("");
+   try{
+    // Only an explicit tap may trigger private upload. This is NOT consent for YouTube.
+    const id=await privateUpload();
+    setCommunityAssetId(id);setShowCommunity(showEditor);
+    setNotice(t.houseSaved);
+   }catch{setNotice(t.error)}finally{setBusy(false)}
+  }
+  async function sendViaBot(automatic:boolean){
   if(busy||!readyMp4)return;
   if(!automatic){
    // A manual send supersedes this result's pending automatic delivery.
@@ -241,6 +260,14 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
    </button>
   </div>
   <p className={css.help}>{t.hint}</p>
+  {session==="signed_in"&&state?.cloudAvailable&&readyMp4?<div className={css.choices}>
+   <button type="button" disabled={busy} data-video-save-my-house
+    onClick={()=>void saveToMyHouse(false)}>{t.house}</button>
+   <button type="button" disabled={busy} data-video-community-youtube
+    onClick={()=>void saveToMyHouse(true)}>{t.community}</button>
+  </div>:null}
+  {communityAssetId&&showCommunity?<CommunityVideoPublishPanel
+   videoId={communityAssetId} locale={locale}/>:null}
   {session==="guest"?<p className={css.hint}>{t.guest}{" "}
    <Link href={"/"+accountLocale+"/app/settings#hh-telegram-connect"} prefetch={false}>{t.login}</Link></p>:null}
   {session==="signed_in"&&state?.telegram.linkAvailable?
