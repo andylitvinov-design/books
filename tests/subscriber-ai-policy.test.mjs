@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {parseSubscriberAiUpdate,subscriberAiResponse,subscriberAiEnabled,
  SUBSCRIBER_AI_CONSENT_VERSION} from '../lib/app/subscriber-ai-policy.mjs';
@@ -55,4 +56,11 @@ test('no fake private resource access, no fake video order or booking',()=>{
  assert.match(subscriberAiResponse('materials','ru').text,/не открываю/);
  assert.match(subscriberAiResponse('video','ru').text,/заказ сейчас не создан/);
  assert.match(subscriberAiResponse('master','en').text,/No booking/);
+});
+
+test('SQL outbox definition contains one updated_at column',()=>{
+ const sql=readFileSync(new URL('../supabase/migrations/20261106080000_hh_subscriber_ai_companion_v1.sql',import.meta.url),'utf8');
+ const table=sql.split('create table if not exists app_private.subscriber_ai_outbox (')[1]?.split('\n);')[0];
+ assert.ok(table,'outbox table must exist');
+ assert.equal((table.match(/updated_at timestamptz/g)||[]).length,1);
 });
