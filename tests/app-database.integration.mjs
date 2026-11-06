@@ -2366,3 +2366,10 @@ test('guest Bach v2 EN/RU lifecycle retains weighted themes and session isolatio
 test('Holistic Companion memory two-owner RLS, session, consent and erase', async () => {
   await import('../scripts/verify-agent-memory-rls-ci.mjs')
 })
+
+// Community video publication RLS acceptance uses the same disposable App R1
+// PostgreSQL fixture, with independent synthetic authors and account sessions.
+// No production schema or additional CI runners are involved.
+test('Community videos require two-owner FORCE RLS and independent sharing consent', async () => {
+  await import('../scripts/verify-community-video-rls-ci.mjs')
+})
