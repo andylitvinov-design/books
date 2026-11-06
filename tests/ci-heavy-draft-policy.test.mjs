@@ -359,8 +359,17 @@ test('Ideas & Coaching PR validates source contracts while manual acceptance own
   const tsGate='        if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   assert.ok(source.includes('      - name: TypeScript noEmit\n'+tsGate+'\n        run: npx --no-install tsc --noEmit'),
     'Manual/other branch typecheck stays, production PR relies on core');
+  // The focused job runs discovery in an existing multi-file node --test
+  // command. Require real execution, not an obsolete single-file invocation.
+  assert.ok(source.split('\n').some(line=>line.includes('node --test ') &&
+    line.includes('tests/public-coaching-discovery.test.mjs')),
+    'public discovery must remain a real executed specialist source test');
+  // Core runs the same contract in the mandatory package prebuild; retain
+  // both real gates while rejecting the stale literal command formatting.
+  const prebuild=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')).scripts.prebuild;
+  assert.ok(prebuild.includes('node --test tests/public-coaching-discovery.test.mjs'),
+    'mandatory Core Next build must still execute public coaching discovery');
   for(const preserved of [
-    'node --test tests/public-coaching-discovery.test.mjs',
     '- name: Next.js production build (manual full acceptance only)\n        if: github.event_name != \'pull_request\'\n        run: npm run build',
     'playwright install --with-deps chromium webkit',
     'node scripts/verify-coaching-lounge-mobile.mjs',
