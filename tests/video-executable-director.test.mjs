@@ -253,3 +253,21 @@ test("chat commands confirm and create the currently approved AI cut without sil
     "confirm/create command must run before the editor drops the approved AI cut");
   assert.match(chat,/approvedPlanKeyRef.current!==executionKey/);
 });
+
+test("sunlight dual-aspect director never selects a landscape MP4 for portrait output",()=>{
+  const extra=JSON.parse(readFileSync(new URL("../data/video-catalog/free-film-presets-v2.json",import.meta.url),"utf8"));
+  const sun=extra.presets.find(p=>p.id==="warm-pleasant-sun");
+  assert.ok(sun&&sun.portraitClips?.length===4);
+  const common={...base,presets:[...presets,sun],selectedPresetId:sun.id,
+    alternativePresetIds:[],excludedMotifs:[],goal:"Тёплое приятное солнце"};
+  for(const aspect of ["portrait","landscape"]){
+    const film=compileExecutableVideoScenario({...common,
+      draft:{...draft,aspect,goal:"Тёплое приятное солнце"}});
+    assert.equal(film.shots.length,4);
+    assert.ok(validateMontageClips(film.edit.clipIds,scenes,[],aspect));
+    const ids=aspect==="portrait"?sun.portraitClips:sun.clips;
+    assert.ok(film.edit.clipIds.some(id=>ids.includes(id)),aspect+" preserves some selected preset clips");
+    assert.ok(film.edit.clipIds.every(id=>scenes.some(scene=>scene.id===id&&
+      (!scene.allowedAspects||scene.allowedAspects.includes(aspect)))));
+  }
+});
