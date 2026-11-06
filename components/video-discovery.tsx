@@ -81,6 +81,12 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
   const t=labels[locale];
   const [area,setArea]=useState("all");
   const [goal,setGoal]=useState("all");
+  // Public guest-chat referrals can preselect only a reviewed category.
+  useEffect(()=>{
+    if(variant!=="mytube")return;
+    const requested=new URLSearchParams(window.location.search).get("goal");
+    if(requested&&VIDEO_GOALS.includes(requested))setGoal(requested);
+  },[variant]);
   const [contentType,setContentType]=useState("all");
   const [direction,setDirection]=useState("all");
   const [tradition,setTradition]=useState("all");
