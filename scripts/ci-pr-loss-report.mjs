@@ -6,6 +6,7 @@ import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {analyzePrLoss, summarizePrLoss, analyzePrLifecycle, lifecycleConnected, analyzeCoreWaveGaps} from '../lib/ci/pr-loss-metrics.mjs';
 import {explainCoreWave, explainCoreRerunAttempt} from '../lib/ci/pr-wave-attribution.mjs';
+import {analyzeRepairCycles} from '../lib/ci/pr-repair-cycle.mjs';
 
 const bounded=(value,fallback,min,max)=>{
   const n=Number(value);
@@ -88,14 +89,15 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
           jobRows[run.id]=await read('/repos/'+repo+'/actions/runs/'+run.id+'/jobs?per_page=100&page=1');
         } catch(err){jobRows[run.id]={jobs:[],total_count:-1};errors.push('jobs:'+run.id+':'+String(err.message||err));}
       }
-      let comments=[];
+      let comments=[],commentsComplete=false;
       // Capture immutable explicit repair-start markers only. Claiming a PR
       // lease or pushing a new HEAD is not independently proven start of Repair.
       if(selected.some(r=>['failure','timed_out'].includes(r.conclusion))) {
         try {
           comments=await read('/repos/'+repo+'/issues/'+pr.number+'/comments?per_page=100&page=1');
           if(!Array.isArray(comments)) throw Error('INCOMPLETE_COMMENTS');
-          if(comments.length===100)searchTruncated=true;
+          commentsComplete=comments.length<100;
+          if(!commentsComplete)searchTruncated=true;
         }catch(err){errors.push('comments:'+pr.number+':'+String(err.message||err));}
       }
       // Read-only supplementary P1 lifecycle evidence. Failed or incomplete
@@ -129,6 +131,9 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
           (pr.commits<=1||(Array.isArray(timeline)&&
             new Set(timeline.filter(e=>e.event==='committed'&&
               /^[0-9a-f]{40}$/i.test(e.sha||'')).map(e=>e.sha)).size>=pr.commits))
+      });
+      row.repair_cycles=analyzeRepairCycles(pr,selected,jobRows,comments,timeline,{
+        runHistoryComplete:row.core_waves.run_history_complete,commentsComplete
       });
       output.push(row);
     }catch(err) {errors.push('pr:'+issue.number+':'+String(err.message||err));}
@@ -240,6 +245,32 @@ export function formatSummary(report) {
       ' | '+fmt(w.core_job_work.mean_minutes)+' | '+(w.run_history_complete?'complete':'partial')+' |');
   }
   lines.push('','Gap is previous Core run updated_at → next Core run created_at. Same-HEAD repeat, changed HEAD, runner wait and execution are distinct; timestamps alone never establish the root cause. Missing/overlapping history remains unknown.');
+  lines.push('','### Repair cycle — each observed interval (UTC, exact PR/HEAD)');
+  lines.push('| PR | Failed job / step | CI failure | Lease claim | Repair declared | Next HEAD / commit event | New Core CI | First job | Runner |');
+  lines.push('| ---: | --- | --- | --- | --- | --- | --- | --- | --- |');
+  const safe=x=>String(x??'unknown').replace(/[\r\n|]/g,' ').slice(0,100);
+  const short=x=>x?.slice(0,10)||'unknown';
+  const repairs=report.rows.flatMap(r=>(r.repair_cycles?.cycles||[]).map(c=>({pr:r.pr,c})));
+  for(const {pr,c} of repairs){
+    const t=c.timestamps;
+    lines.push('| #'+pr+' | [job '+c.failure.job_id+']('+c.failure.job_url+') '+
+      safe(c.failure.job_name)+(c.failure.observed_failed_step?' / '+safe(c.failure.observed_failed_step):'')+
+      ' | '+(t.ci_failed_at||'unknown')+' | '+(t.lease_claimed_at||'unknown')+
+      ' | '+(t.repair_declared_at||'unknown')+' | '+short(c.new_head)+' / '+
+      (t.new_head_commit_event_at||'unknown')+' | '+(t.new_ci_created_at||'unknown')+
+      ' | '+(t.first_job_created_at||'unknown')+' | '+(t.first_runner_started_at||'unknown')+' |');
+  }
+  if(!repairs.length)lines.push('| — | No confirmed failed Core job in sample | unknown | unknown | unknown | unknown | unknown | unknown | unknown |');
+  lines.push('','| PR / failed HEAD | Failure → claim | Claim → declared Repair | Declaration → commit event | Commit event → CI | CI → first job | Job created → runner |');
+  lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: |');
+  for(const {pr,c} of repairs){
+    const d=c.durations_minutes;
+    lines.push('| #'+pr+' / '+short(c.failed_head)+' | '+[d.failure_to_claim,
+      d.claim_to_repair_declaration,d.repair_declaration_to_commit_event,
+      d.commit_event_to_new_ci,d.workflow_to_first_job,d.first_runner_job_queue].map(fmt).join(' | ')+' |');
+  }
+  if(!repairs.length)lines.push('| — | n/a | n/a | n/a | n/a | n/a | n/a |');
+  lines.push('','Lease claim = ownership, not proof an agent read the task. Repair declaration is not observed local editing. GitHub committed event is not independently verified push time. Queues include dependencies/concurrency, not proven runner shortages. Failed job/step is a location, not log-verified root cause. Unknown is n/a, never agent idle or zero.');
   lines.push('',formatWaveDiagnostics(report));
   lines.push('','### Stage coverage');
   for(const x of report.categories)lines.push('- '+labels[x.stage]+': '+
