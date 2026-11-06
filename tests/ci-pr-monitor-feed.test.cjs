@@ -325,3 +325,96 @@ test('Control Tower API validates and shows bounded CI wake timing without false
  assert.match(body,/ci_wake_handoff/);
  assert.match(body,/wake_to_outcome/);
 });
+
+
+test('event-driven CI fallback samples only when the existing signal is stale',async()=>{
+  const {publishCiSignalOnly}=require('../scripts/ci-pr-monitor-feed.cjs');
+  const prior=buildMonitorSnapshot(report(),context);
+  prior.ci_daytime_signals={schema:'HH_CI_DAYTIME_SIGNALS_V1',
+    armed:true,cycle_id:'2026-11-06T16:00:00.000Z',
+    highest_level:0,last_running:21,last_queued:2,
+    last_seen_at:'2026-11-06T16:00:00.000Z'};
+  let body=renderSnapshot(prior),calls=[],comments=[],updates=0;
+  const github={rest:{
+    issues:{
+      get:async()=>({data:{state:'open',comments:0,body}}),
+      update:async x=>{updates++;body=x.body;return {data:{}};},
+      listComments:async()=>({data:comments}),
+      createComment:async x=>{comments.push({user:{login:'github-actions[bot]'},body:x.body});}
+    },
+    actions:{listWorkflowRunsForRepo:async x=>{
+      calls.push(x.status);
+      return {data:{total_count:x.status==='in_progress'?10:2,
+        workflow_runs:[]}};
+    }}
+  }};
+  const ctx={...context,eventName:'pull_request_target',runId:712345};
+  const at=Date.parse('2026-11-06T16:10:00Z');
+  const result=await publishCiSignalOnly({github,context:ctx,nowMs:at});
+  assert.equal(result.status,'POSTED');
+  assert.equal(result.running,10);
+  assert.deepEqual(calls,['in_progress','queued']);
+  assert.equal(updates,1);
+  assert.equal(comments.length,1);
+  const after=parseExisting(body);
+  assert.equal(after.ci_daytime_signals.highest_level,1);
+  assert.equal(after.checked_at,prior.checked_at,'signal cannot refresh unrelated KPI evidence');
+  assert.equal(after.run_id,prior.run_id);
+  const repeated=await publishCiSignalOnly({github,context:ctx,nowMs:at+1000});
+  assert.equal(repeated.status,'FRESH_SIGNAL_ALREADY_OBSERVED');
+  assert.deepEqual(calls,['in_progress','queued']);
+  assert.equal(comments.length,1);
+});
+test('event-only fallback refuses untrusted context and invalid CI counts',async()=>{
+  const {publishCiSignalOnly}=require('../scripts/ci-pr-monitor-feed.cjs');
+  const prior=buildMonitorSnapshot(report(),context);
+  let writes=0;
+  const github={rest:{
+    issues:{get:async()=>({data:{state:'open',comments:0,body:renderSnapshot(prior)}}),
+      update:async()=>{writes++;return {data:{}};}},
+    actions:{listWorkflowRunsForRepo:async()=>({data:{total_count:null,workflow_runs:[]}})}
+  }};
+  assert.equal((await publishCiSignalOnly({github,context:{
+    ...context,ref:'refs/heads/codex/public-book-library',
+    eventName:'pull_request_target'
+  }})).status,'UNTRUSTED_OR_TOO_FREQUENT_EVENT');
+  assert.equal((await publishCiSignalOnly({github,context:{
+    ...context,eventName:'pull_request_target'
+  },nowMs:Date.parse('2026-11-06T16:10:00Z')})).status,'CI_COUNT_UNVERIFIED');
+  assert.equal(writes,0);
+});
+test('event-only fallback excludes its own exact active watchdog, not unrelated ones',async()=>{
+  const {publishCiSignalOnly}=require('../scripts/ci-pr-monitor-feed.cjs');
+  const prior=buildMonitorSnapshot(report(),context);
+  const own={id:12345,status:'in_progress',name:'HH PR 10-minute watchdog',
+    head_branch:'codex/bootstrap-books'};
+  let written=null;
+  const github={rest:{
+    issues:{get:async()=>({data:{state:'open',comments:0,body:renderSnapshot(prior)}}),
+      update:async x=>{written=parseExisting(x.body);return {data:{}};}},
+    actions:{listWorkflowRunsForRepo:async x=>({data:{
+      total_count:x.status==='in_progress'?15:0,
+      workflow_runs:x.status==='in_progress'?[own]:[]
+    }})}
+  }};
+  const result=await publishCiSignalOnly({github,context:{
+    ...context,eventName:'pull_request_target',runId:12345
+  },nowMs:Date.parse('2026-11-06T16:10:00Z')});
+  assert.equal(result.running,14);
+  assert.equal(result.watchdog_excluded,true);
+  assert.equal(written.ci_daytime_signals.last_running,14);
+});
+test('event fallback failure cannot silently discard source state',async()=>{
+  const {publishCiSignalOnly}=require('../scripts/ci-pr-monitor-feed.cjs');
+  const prior=buildMonitorSnapshot(report(),context);
+  let updated=false;
+  const gh={rest:{issues:{get:async()=>({data:{state:'open',comments:0,body:renderSnapshot(prior)}}),
+    update:async()=>{updated=true;}},
+    actions:{listWorkflowRunsForRepo:async()=>{throw Error('403');}}
+  }};
+  const result=await publishCiSignalOnly({github:gh,context:{
+    ...context,eventName:'pull_request_target'
+  },nowMs:Date.parse('2026-11-06T16:10:00Z')});
+  assert.equal(result.status,'CI_API_UNAVAILABLE');
+  assert.equal(updated,false);
+});
