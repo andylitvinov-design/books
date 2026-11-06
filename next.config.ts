@@ -20,7 +20,13 @@ const practitionerRecordingSources = [
 ];
 
 // Only the LIVE host can ask the user for microphone permission.
-const liveAudioHostSources = ["/en/live/host", "/ru/live/host", "/es/live/host"];
+// Allow the existing user-initiated voice recorder ONLY inside Video Studio.
+// The global site-wide camera/microphone deny policy remains unchanged.
+const liveAudioHostSources = [
+  "/en/live/host", "/ru/live/host", "/es/live/host",
+  "/en/holistic-support/mandala", "/ru/holistic-support/mandala",
+  "/es/holistic-support/mandala",
+];
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

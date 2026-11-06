@@ -14,6 +14,8 @@ import {
   messengerVideoQuestion,messengerVideoChoices,advanceMessengerVideo,
   changeMessengerVideoPhraseStyle,encodeMessengerVideoHandoff,
 } from "@/lib/mandala/video-chat-messenger-flow.mjs";
+import {stageVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
+import type {TimedSpeechTranscript} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import styles from "./holistic-agent-chat.module.css";
 import dynamic from "next/dynamic";
 
@@ -210,6 +212,14 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const [dismissedIds,setDismissedIds]=useState<string[]>([]);
   const [completedIds,setCompletedIds]=useState<string[]>([]);
   const [draft,setDraft]=useState("");
+  const [voiceFile,setVoiceFile]=useState<File|null>(null);
+  const [voiceConsent,setVoiceConsent]=useState(false);
+  const [voiceBusy,setVoiceBusy]=useState(false);
+  const [voiceError,setVoiceError]=useState("");
+  const [voiceTranscript,setVoiceTranscript]=useState<TimedSpeechTranscript|null>(null);
+  const [voiceHandoffReady,setVoiceHandoffReady]=useState(false);
+  const voiceAbortRef=useRef<AbortController|null>(null);
+  useEffect(()=>()=>voiceAbortRef.current?.abort(),[]);
   const [entryOpen,setEntryOpen]=useState(true);
   const [guideLink,setGuideLink]=useState<"tests"|null>(null);
   const [testChatOpen,setTestChatOpen]=useState(false);
@@ -387,6 +397,63 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       {role:"user" as const,text:intent},
       {role:"assistant" as const,text:question},
     ].slice(-30));
+  }
+  function selectVoiceMessage(file:File|null){
+    voiceAbortRef.current?.abort();voiceAbortRef.current=null;
+    setVoiceBusy(false);setVoiceFile(file);setVoiceConsent(false);
+    setVoiceError("");setVoiceTranscript(null);setVoiceHandoffReady(false);
+  }
+  async function transcribeChatAudio(){
+    const file=voiceFile;
+    if(!file||voiceBusy||!voiceConsent||busy)return;
+    if(file.size>4*1024*1024){
+      setVoiceError(locale==="ru"?"Файл больше 4 МБ. Сожмите его в M4A/MP3.":
+        locale==="es"?"El audio supera 4 MB. Comprímelo a M4A/MP3.":"Audio exceeds 4 MB. Compress it to M4A/MP3.");
+      return;
+    }
+    voiceAbortRef.current?.abort();
+    const abort=new AbortController();voiceAbortRef.current=abort;
+    setVoiceBusy(true);setVoiceError("");
+    try{
+      const body=new FormData();
+      body.append("file",file,file.name);
+      body.append("locale",locale);body.append("consent","yes");
+      const response=await fetch("/api/holistic-support/audio-storyboard",{
+        method:"POST",body,cache:"no-store",credentials:"same-origin",signal:abort.signal
+      });
+      const data=await response.json() as {transcript?:TimedSpeechTranscript;error?:string};
+      if(!response.ok||!data.transcript)throw Error(data.error||"VOICE_STT_UNAVAILABLE");
+      if(voiceAbortRef.current!==abort)return;
+      const stored=await stageVoiceStudioHandoff(file,data.transcript);
+      if(voiceAbortRef.current!==abort)return;
+      setVoiceTranscript(data.transcript);setVoiceHandoffReady(stored);
+      setVideoStep(null);setGuidedTrack("video");
+      setMessages(old=>[...old,
+        {role:"user" as const,text:(locale==="ru"?"Голосовое сообщение: ":"Voice message: ")+file.name},
+        {role:"assistant" as const,text:locale==="ru"?
+          "Расшифровка с таймкодами готова. Откройте студию, чтобы сопоставить смысловые фрагменты с видеосценами.":
+          locale==="es"?"Transcripción con tiempos lista. Abre el estudio para elegir escenas según cada momento.":
+            "Timed transcript ready. Open Studio to match approved footage to each spoken moment."}
+      ].slice(-30));
+      if(!stored)setVoiceError(locale==="ru"?
+        "Браузер не сохранил временную передачу. Откройте студию и загрузите запись повторно.":
+        locale==="es"?"No se pudo transferir el archivo. Cárgalo de nuevo en el estudio.":
+          "Local voice handoff unavailable. Reattach the recording in Studio.");
+    }catch(error){
+      if(abort.signal.aborted)return;
+      const code=error instanceof Error?error.message:"";
+      setVoiceError(code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"?
+        (locale==="ru"?"Бесплатное распознавание пока не подключено. Аудио не отправлялось провайдеру.":
+          locale==="es"?"El reconocimiento gratuito no está configurado. No se envió el audio.":
+            "Free transcription is not configured. Audio was not sent to a provider.") :
+        (locale==="ru"?"Не удалось распознать голос с таймкодами. Проверьте файл и подключение.":
+          locale==="es"?"No se pudo transcribir con tiempos. Comprueba el archivo y la conexión.":
+            "Timed transcription failed. Check the file and connection."));
+    }finally{
+      if(voiceAbortRef.current===abort){
+        voiceAbortRef.current=null;setVoiceBusy(false);
+      }
+    }
   }
   async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -686,11 +753,62 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       if(threadRef.current)threadRef.current.scrollTop=threadRef.current.scrollHeight;
       setNewBelow(false);
     }}>{locale==="ru"?"↓ Новые сообщения":locale==="es"?"↓ Mensajes nuevos":"↓ New messages"}</button>}
+    {compact&&voiceFile&&<section className={styles.videoReview}
+      data-hh-voice-to-video aria-label={locale==="ru"?"Аудио в видео":locale==="es"?"Audio a vídeo":"Voice to video"}>
+      <strong>{locale==="ru"?"🎙 Аудиосообщение → видеоряд":
+        locale==="es"?"🎙 Audio → vídeo":"🎙 Voice message → video"}</strong>
+      <p>{voiceFile.name} · {(voiceFile.size/1024/1024).toFixed(2)} MB</p>
+      <label className={styles.consent}>
+        <input type="checkbox" checked={voiceConsent} disabled={voiceBusy}
+          onChange={event=>setVoiceConsent(event.currentTarget.checked)}
+          data-hh-voice-stt-consent/>
+        {locale==="ru"?"Разрешаю один раз передать запись внешнему распознавателю. Наш сервер не сохраняет аудио.":
+          locale==="es"?"Autorizo el reconocimiento externo una vez. Nuestro servidor no guarda el audio.":
+            "I allow one-time external transcription. Our server does not store the audio."}
+      </label>
+      <button type="button" data-hh-voice-transcribe
+        disabled={!voiceConsent||voiceBusy||busy}
+        onClick={()=>void transcribeChatAudio()}>
+        {voiceBusy?(locale==="ru"?"Расшифровываю…":locale==="es"?"Transcribiendo…":"Transcribing…"):
+          (locale==="ru"?"Расшифровать аудиосообщение":
+            locale==="es"?"Transcribir audio":"Transcribe voice message")}
+      </button>
+      {voiceError&&<p role="alert">{voiceError}</p>}
+      {voiceTranscript&&<div data-hh-voice-timed-result>
+        <p>{locale==="ru"?"Смысловых отрезков":locale==="es"?"Fragmentos":"Timed segments"}:
+          {" "}{voiceTranscript.segments.length} · {voiceTranscript.durationSeconds.toFixed(1)} s</p>
+        <details><summary>{locale==="ru"?"Просмотреть текст и таймкоды":
+          locale==="es"?"Ver texto y tiempos":"Review text and timecodes"}</summary>
+          <ol>{voiceTranscript.segments.map((segment,index)=>
+            <li key={index}><small>{segment.startSeconds.toFixed(1)}–
+              {segment.endSeconds.toFixed(1)} s</small>{" "}{segment.text}</li>)}</ol>
+        </details>
+        {voiceHandoffReady&&<a className={styles.videoStudioLink}
+          data-hh-voice-open-studio href={"/"+locale+"/holistic-support/mandala#video-audio"}>
+          {locale==="ru"?"Открыть студию с записью и расшифровкой":
+            locale==="es"?"Abrir estudio con audio y transcripción":
+              "Open Studio with audio and transcript"}
+        </a>}
+      </div>}
+    </section>}
     <form onSubmit={submit} className={styles.form}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
+        {compact&&<label className={styles.mode} data-hh-voice-message-upload
+          style={{display:"inline-flex",alignItems:"center",cursor:"pointer",fontSize:13}}>
+          {locale==="ru"?"🎙 Аудио":locale==="es"?"🎙 Audio":"🎙 Voice"}
+          <input type="file"
+            accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,audio/ogg,.mp3,.m4a,.wav,.webm,.ogg,.aac"
+            aria-label={locale==="ru"?"Прикрепить аудиосообщение":locale==="es"?"Adjuntar audio":"Attach voice message"}
+            disabled={voiceBusy||busy}
+            style={{position:"absolute",width:1,height:1,opacity:0}}
+            onChange={event=>{
+              selectVoiceMessage(event.currentTarget.files?.[0]||null);
+              event.currentTarget.value="";
+            }}/>
+        </label>}
+        <button type="button" onClick={()=>{controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
