@@ -19,7 +19,7 @@ The feature is **OFF by default**, guarded by `HH_SUBSCRIBER_AI_QUIZ_SCHEMA_READ
 ## Safety constraints
 
 - Telegram parser requires exact bot username, private chat, sender=chat, unique update ID, only known callback prefix and max 64-byte callback_data.
-- Quiz commands have strict grammar: `hhq:m:N` (catalog page), `hhq:s:N` (test index), `hhq:g` (separate consent), `hhq:a:REV:VALUE` (one answer), `hhq:p:REV:PAGE` (numeric options page), `hhq:b:REV` (back), `hhq:k:REV` (risk acknowledgement), `hhq:r` (result), `hhq:n` (new test), `hhq:x` (stop). No account identity, token, or sensitive text in callbacks.
+- Quiz commands have strict grammar: `hhq:m:N` (catalog page), `hhq:s:N` (test index), `hhq:g:TEST_KEY` (separate consent bound to exact instrument), `hhq:a:REV:VALUE` (one answer), `hhq:p:REV:PAGE` (numeric options page), `hhq:b:REV` (back), `hhq:k:REV` (risk acknowledgement), `hhq:r` (result), `hhq:n` (new test), `hhq:x` (stop). No account identity, token, or sensitive text in callbacks.
 - Advisory repeat and stale protection: same event ID deduped by existing subscriber session; revision checked against single DB row under the same transaction/lock. Outbound messages use existing encrypted `subscriber_ai_outbox` kind `tests`. Unknown sends are not blindly retried; `/tests` reopens current question.
 - Risky/extra-consent trauma screening or rights-restricted methods are not offered for Telegram delivery; use protected website runner. Original ASRS-6 shaded markers and CDC 0-day consistency rules reuse already-approved Web Test Chat presentation helper.
 - No external LLM receives answers. No raw answer transcript is appended to AI dialogue logs, event metrics or public reports.
