@@ -4,9 +4,24 @@ import test from "node:test";
 
 const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
 
-test("voice browser opens the real Montage music controls before using them",()=>{
-  assert.match(source,/data-video-quick-control="editor"/);
-  assert.match(source,/montageSettings\.waitFor\(\{state:"visible"[\s\S]*?montageSettings\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?musicTab\.click\(\)/);
+test("voice browser uses current Montage Settings duration and compact Audio tabs",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  for(const marker of [
+    'data-video-montage-preference="duration"',
+    'data-video-montage-audio',
+    'data-video-audio-mode="library"',
+    'data-video-voice-studio'
+  ])assert.ok(studio.includes(marker),"real current UI: "+marker);
+  for(const marker of [
+    'await montageSettingsTab.click()',
+    'await durationSelect.selectOption("10")',
+    'await expect(durationSelect).toHaveValue("10")',
+    'await montageAudio.click()',
+    'await expect(page.locator(\'[data-video-montage-audio]\')).toBeVisible()',
+    'await expect(page.locator(\'[data-video-audio-mode="library"]\')).toBeVisible()'
+  ])assert.ok(source.includes(marker),"real visitor control: "+marker);
+  assert.ok(!source.includes('data-video-montage-settings'));
+  assert.ok(!source.includes('data-video-basic-tab'));
 });
 
 test("voice browser selects the visible montage workspace before recording",()=>{

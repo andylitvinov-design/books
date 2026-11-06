@@ -267,22 +267,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
       // Modern Montage shows the voice and music controls only after choosing Audio.
       // Exercise the real visible tab instead of waiting for an unmounted drawer.
+      // Current Montage has four compact tabs. Real duration is under Settings
+      // and current sound/library controls are in the independent Audio tab.
+      const montageSettingsTab=page.locator('[data-video-montage-tab="settings"]');
+      await montageSettingsTab.click();
+      await expect(montageSettingsTab).toHaveAttribute("aria-pressed","true");
+      const durationSelect=page.locator('[data-video-montage-preference="duration"]');
+      await durationSelect.waitFor({state:"visible",timeout:25000});
+      await durationSelect.selectOption("10");
+      await expect(durationSelect).toHaveValue("10");
       const montageAudio=page.locator('[data-video-montage-tab="audio"]');
       await montageAudio.click();
       await expect(montageAudio).toHaveAttribute("aria-pressed","true");
-      const montageSettings=page.locator('[data-video-montage-settings]');
-      await montageSettings.waitFor({state:"visible",timeout:25000});
-      if(await montageSettings.getAttribute("open")===null)
-        await montageSettings.locator(":scope > summary").click();
-      const musicTab=montageSettings.locator('[data-video-basic-tab="music"]');
-      await musicTab.waitFor({state:"visible",timeout:25000});
-      await musicTab.click();
-      await expect(musicTab).toHaveAttribute("aria-pressed","true");
-      const lengthButton=montageSettings.locator(
-        '[data-video-music-editor] [data-video-audio-length="10"]');
-      await lengthButton.waitFor({state:"visible",timeout:25000});
-      await lengthButton.click();
-      await expect(lengthButton).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+      await expect(page.locator('[data-video-audio-mode="library"]')).toBeVisible();
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -777,11 +775,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const montageAudioAfterExport=page.locator('[data-video-montage-tab="audio"]');
       await montageAudioAfterExport.click();
       await expect(montageAudioAfterExport).toHaveAttribute("aria-pressed","true");
-      const voiceAudioDetails=page.locator('[data-video-montage-settings]');
-      await voiceAudioDetails.waitFor({state:"visible",timeout:25000});
-      if(await voiceAudioDetails.getAttribute("open")===null)
-        await voiceAudioDetails.locator(":scope > summary").click();
-      await voiceAudioDetails.locator('[data-video-basic-tab="voice"]').click();
+      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+      // Compact Audio preserves an explicitly opened cloud Voice Studio,
+      // without the retired basic nested tab.
       // The phrase warning is intentionally unmounted in Montage. If the
       // old narration is still attached there, export must remain disabled;
       // an independently selected soundtrack is not stale narration.
