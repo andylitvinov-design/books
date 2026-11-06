@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {parseSubscriberAiUpdate} from '../lib/app/subscriber-ai-policy.mjs'
-import {subscriberVoiceReady,transcribeSubscriberVoice,voiceCopy,
+import {subscriberVoiceReady,validSubscriberVoiceMeta,transcribeSubscriberVoice,voiceCopy,
   voiceDisclosureButtons} from '../lib/app/subscriber-ai-voice.mjs'
 const now=1762400000000,seconds=now/1000
 const voice={file_id:'AbCdEfGhIjKlMnOpQrStUvWxYz1234567890',
@@ -15,6 +15,7 @@ test('Telegram private voice is admitted without hijacking global STOP and clien
  const admitted=parsed(update({voice}))
  assert.equal(admitted?.action,'voice')
  assert.equal(admitted.voice.bytes,160)
+ assert.equal(validSubscriberVoiceMeta({fileId:voice.file_id,bytes:160,seconds:5,mime:'audio/ogg'}),true)
  assert.equal(parsed(update({text:'/voice'}))?.action,'voice-open')
  assert.equal(parsed(update({text:'/voice_off'}))?.action,'voice-disable')
  assert.equal(parsed(update({text:'/stop'})),null)
