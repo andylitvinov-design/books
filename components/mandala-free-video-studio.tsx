@@ -6771,22 +6771,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 :"The exported mix uses the selected levels; native iPhone preview volume may differ."}
             </p>
           </details>
-            </details>
-            {/* Preserve the existing consented RU/EN narration as a genuinely
-                user-invoked tool, not the removed duplicate Audio toolbar. */}
-            <details id="voice-studio" className={[videoStyles.extraControls,videoStyles.basicVoicePane].join(" ")}
-              data-video-voice-studio open={voiceStudioActivated}
-              onToggle={event=>setVoiceStudioActivated(event.currentTarget.open)}>
-              <summary><AudioLines size={18} aria-hidden="true"/>
-                {locale==="ru"?"Озвучить текст · голоса RU/EN":
-                  locale==="es"?"Narración · voces RU/EN":
-                    "Voice narration · RU/EN voices"}
-              </summary>
-              {voiceStudioActivated?<MandalaCloudVoiceStudio locale={locale}
-                sourceText={currentAffirmationSpeech} sourceIsPublic
-                onAudioReady={attachMeditationNarration}
-                onAudioInvalidated={()=>setAttachedAudio(current=>
-                  current?.kind==="file"&&current.nonLoop?null:current)}/>:null}
 
                 </div>
                 <footer className={videoStyles.montageAudioDialogFooter}>
@@ -6806,6 +6790,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 </footer>
               </section>
             </div> : null}
+            {/* Preserve the existing consented RU/EN narration as a genuinely
+                user-invoked tool, not the removed duplicate Audio toolbar. */}
+            <details id="voice-studio" className={[videoStyles.extraControls,videoStyles.basicVoicePane].join(" ")}
+              data-video-voice-studio open={voiceStudioActivated}
+              onToggle={event=>setVoiceStudioActivated(event.currentTarget.open)}>
+              <summary><AudioLines size={18} aria-hidden="true"/>
+                {locale==="ru"?"Озвучить текст · голоса RU/EN":
+                  locale==="es"?"Narración · voces RU/EN":
+                    "Voice narration · RU/EN voices"}
+              </summary>
+              {voiceStudioActivated?<MandalaCloudVoiceStudio locale={locale}
+                sourceText={currentAffirmationSpeech} sourceIsPublic
+                onAudioReady={attachMeditationNarration}
+                onAudioInvalidated={()=>setAttachedAudio(current=>
+                  current?.kind==="file"&&current.nonLoop?null:current)}/>:null}
+            </details>
             {musicWarning?<p role="alert" className={videoStyles.montageAudioWarning}>{musicWarning}</p>:null}
           </div> : null}
           </div>
