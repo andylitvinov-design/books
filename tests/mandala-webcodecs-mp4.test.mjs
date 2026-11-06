@@ -178,3 +178,13 @@ test("actual WebKit media E2E navigates through the visible scenario step",()=>{
   assert.match(live,/ENCODED_VIDEO_STREAM_MISSING/);
   assert.match(motion,/ffprobe/);
 });
+
+test("real macOS WebKit voice acceptance opens visible Montage Audio and Voice tabs",()=>{
+  const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.match(source,/await montagePreferences\.waitFor\(\{state:"visible",timeout:25000\}\)/);
+  assert.match(source,/await montageAudioTab\.click\(\);[\s\S]*?const montageSettings=page\.locator/);
+  assert.match(source,/await montageAudioForVoice\.click\(\);[\s\S]*?await voiceDisclosure\.locator\('\[data-video-basic-tab="voice"\]'\)\.click\(\)/);
+  assert.match(source,/await expect\(montageAudioForVoice\)\.toHaveAttribute\("aria-pressed","true"\)/);
+  assert.match(source,/await page\.locator\('\[data-video-generate-affirmation-audio\]'\)\.click\(\)/);
+  assert.match(source,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
+});

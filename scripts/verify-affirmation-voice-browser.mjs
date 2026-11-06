@@ -162,6 +162,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // The third workspace opens on Settings; the real music editor is
+      // mounted only after the visitor explicitly chooses its Audio tab.
+      const montagePreferences=page.locator('[data-video-montage-preferences]');
+      await montagePreferences.waitFor({state:"visible",timeout:25000});
+      const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
+      await montageAudioTab.waitFor({state:"visible",timeout:15000});
+      await montageAudioTab.click();
+      await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
       const montageSettings=page.locator('[data-video-montage-settings]');
       await montageSettings.waitFor({state:"visible",timeout:25000});
       if(await montageSettings.getAttribute("open")===null)
@@ -643,7 +651,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(!await page.locator("[data-video-narration-stale]").isVisible())
         await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
       await page.locator('[data-video-quick-control="editor"]').click();
-      await page.locator('[data-video-basic-tab="voice"]').click();
+      // React resets Montage to Settings on re-entry. Open the real Audio
+      // section again before selecting its nested Voice tab.
+      const montageAudioForVoice=page.locator('[data-video-montage-tab="audio"]');
+      await montageAudioForVoice.waitFor({state:"visible",timeout:15000});
+      await montageAudioForVoice.click();
+      await expect(montageAudioForVoice).toHaveAttribute("aria-pressed","true");
+      const voiceDisclosure=page.locator('[data-video-montage-settings]');
+      await voiceDisclosure.waitFor({state:"visible",timeout:25000});
+      if(await voiceDisclosure.getAttribute("open")===null)
+        await voiceDisclosure.locator(":scope > summary").click();
+      await voiceDisclosure.locator('[data-video-basic-tab="voice"]').click();
       // The phrase warning is intentionally unmounted in Montage. If the
       // old narration is still attached there, export must remain disabled;
       // an independently selected soundtrack is not stale narration.
