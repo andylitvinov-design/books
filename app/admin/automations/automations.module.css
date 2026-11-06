@@ -14,6 +14,6 @@
 .history summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700}.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.slots>div{display:flex;justify-content:space-between;gap:6px;border-bottom:1px solid #ece5d9;padding:7px;font-size:13px}
 .candidates{grid-template-columns:repeat(2,minmax(0,1fr))}.candidate{display:grid;gap:7px;background:#fff;border:1px solid #e9dfd1;border-radius:16px;padding:15px;min-width:0}
 .candidate h3{margin:0;font-size:17px;overflow-wrap:anywhere}.candidate p{margin:0;color:#5d6a71;font-size:14px}.candidate small{font-size:12px;color:#5d6a71}.candidate a{display:inline-flex;min-height:44px;align-items:center;color:#067a67;font-weight:700;text-decoration:underline;text-underline-offset:2px}
-.content a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.content a:focus-visible,.content button:focus-visible,.content summary:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
 @media(max-width:760px){.run{grid-template-columns:1fr auto}.run small{grid-column:1/-1}.candidates{grid-template-columns:1fr}}
 @media(max-width:480px){.content{padding:12px;gap:14px}.metrics{gap:8px}.metric,.section{padding:13px;border-radius:16px}.metric strong{font-size:22px}.metric span{font-size:12px}.task{display:grid;gap:8px}.tag{justify-self:start}.actions{display:grid}.slots{grid-template-columns:1fr}}
