@@ -1870,6 +1870,59 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [studioHydrated,setStudioHydrated] = useState(false);
   useEffect(()=>setStudioHydrated(true),[]);
   const [directorChatOpen,setDirectorChatOpen] = useState(false);
+  const [videoIHelpOpen,setVideoIHelpOpen] = useState(false);
+  const videoIHelpCloseRef=useRef<HTMLButtonElement|null>(null);
+  // Sitewide iHelp opens the SAME Director, without resetting Studio state,
+  // previously selected clips, text, audio or video settings.
+  useEffect(()=>{
+    const openVideoHelp=(event:Event)=>{
+      const request=event as CustomEvent<{handled?:boolean}>;
+      if(request.detail)request.detail.handled=true;
+      setDirectorChatOpen(true);
+      setVideoIHelpOpen(true);
+    };
+    window.addEventListener("hh:ihelp-open-video-director",openVideoHelp);
+    return ()=>{
+      window.removeEventListener("hh:ihelp-open-video-director",openVideoHelp);
+      window.dispatchEvent(new CustomEvent("hh:ihelp-video-director-state",{detail:{open:false}}));
+    };
+  },[]);
+  function closeVideoIHelp(){
+    setVideoIHelpOpen(false);
+    window.requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>(
+      "[data-hh-ihelp-trigger]")?.focus({preventScroll:true}));
+  }
+  useEffect(()=>{
+    window.dispatchEvent(new CustomEvent("hh:ihelp-video-director-state",
+      {detail:{open:videoIHelpOpen}}));
+    if(!videoIHelpOpen)return;
+    const overflowBefore=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    const focusFrame=window.requestAnimationFrame(()=>videoIHelpCloseRef.current?.focus({preventScroll:true}));
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==="Escape"){
+        event.preventDefault();closeVideoIHelp();return;
+      }
+      if(event.key!=="Tab")return;
+      const dialog=document.querySelector<HTMLElement>("[data-video-director-chat-details][role='dialog']");
+      const focusable=Array.from(dialog?.querySelectorAll<HTMLElement>(
+        "button:not([disabled]),a[href],textarea:not([disabled]),input:not([disabled]),select:not([disabled])"
+      )||[]).filter(el=>el.getClientRects().length>0);
+      if(!focusable.length){event.preventDefault();return;}
+      const first=focusable[0],last=focusable[focusable.length-1];
+      if(event.shiftKey&&(document.activeElement===first||!dialog?.contains(document.activeElement))){
+        event.preventDefault();last.focus();
+      }else if(!event.shiftKey&&(document.activeElement===last||!dialog?.contains(document.activeElement))){
+        event.preventDefault();first.focus();
+      }
+    };
+    document.addEventListener("keydown",onKey);
+    return ()=>{
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown",onKey);
+      document.body.style.overflow=overflowBefore;
+    };
+  },[videoIHelpOpen]);
   const [phraseAudioExpanded,setPhraseAudioExpanded] = useState(false);
   const [phrasePending,setPhrasePending] = useState(false);
   const [catalogPhraseDraft,setCatalogPhraseDraft] = useState<string|null>(null);
@@ -4994,6 +5047,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // for every mode; portal relocation previously changed geometry and focus.
   return (
     <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
+      data-hh-video-ihelp-open={videoIHelpOpen||undefined}
       data-mandala-free-video data-video-studio-mode={studioMode}
       data-video-advanced-open={showAdvancedVideo?"true":"false"}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
@@ -5163,8 +5217,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
         {/* Original verified AI Director from #2913: open only from the free-help
             chip, keep the default iPhone design and a single MediaRecorder. */}
-        <details className={videoStyles.directorChatDetails}
+        {videoIHelpOpen&&<button type="button" tabIndex={-1}
+          className={videoStyles.iHelpVideoBackdrop} data-video-ihelp-backdrop
+          aria-label={locale==="ru"?"Закрыть iHelp":locale==="es"?"Cerrar iHelp":"Close iHelp"}
+          onClick={closeVideoIHelp}/>}
+        <details id="hh-ihelp-video-director-dialog" className={videoStyles.directorChatDetails}
           data-video-director-chat-details data-workspace-section="video"
+          role={videoIHelpOpen?"dialog":undefined}
+          aria-modal={videoIHelpOpen?"true":undefined}
+          aria-label={videoIHelpOpen?(locale==="ru"?"iHelp — AI-видеорежиссёр":
+            locale==="es"?"iHelp — director de vídeo":"iHelp — AI Video Director"):undefined}
           open={directorChatOpen}
           onToggle={event=>setDirectorChatOpen(event.currentTarget.open)}>
           <summary><Sparkles size={17} aria-hidden="true"/>
@@ -5173,10 +5235,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               "AI assistant — refine your brief"}
             <ChevronDown size={17} aria-hidden="true"/>
           </summary>
+        {videoIHelpOpen&&<div className={videoStyles.iHelpVideoBar} data-video-ihelp-header>
+          <strong>iHelp</strong><span>{locale==="ru"?"AI-помощник, не человек и не психотерапевт":
+            locale==="es"?"Asistente de IA, no una persona ni terapeuta":
+            "AI assistant, not a person or therapist"}</span>
+          <button type="button" ref={videoIHelpCloseRef} onClick={closeVideoIHelp}
+            aria-label={locale==="ru"?"Закрыть iHelp":locale==="es"?"Cerrar iHelp":"Close iHelp"}>
+            <X size={20} aria-hidden="true"/>
+          </button>
+        </div>}
         {/* Conversation-first entrypoint: the existing Studio supplies the ONE renderer/player.
             Visual styling reuses the approved Messenger pattern without importing CRM data. */}
         <MandalaVideoDirectorChat
           locale={locale} goal={wish} theme={theme}
+          helpVisible={videoIHelpOpen}
+          helpTab={activeWorkspace==="phrases"?"ideas":
+            activeWorkspace==="editor"?montagePanel:
+            activeWorkspace==="effects"?"effects":"video"}
           presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}
           renderOptions={{quality,brightness,volumePercent:soundVolume}}
           disabled={recording||preparing} canCreate={canGenerate}
@@ -5217,11 +5292,27 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             return true;
           }}
           onCreate={createQuickVideo}
-          onOpenResult={()=>document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})}
-          onOpenDelivery={()=>{setDeliveryChooserOpen(true);document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"});}}
-          onOpenEditor={()=>openQuickDetailed("video-settings")}
-          onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
-          onOpenAudio={()=>openQuickDetailed("video-audio")}/>
+          onOpenResult={()=>{
+            // The result lives on the Studio page, not inside the modal.
+            // Close the optional iHelp overlay and reveal the real MP4 viewer.
+            setVideoIHelpOpen(false);setActiveWorkspace("video");
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})));
+          }}
+          onOpenDelivery={()=>{
+            setVideoIHelpOpen(false);setActiveWorkspace("video");setDeliveryChooserOpen(true);
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("personal-video-result")?.scrollIntoView({behavior:"smooth",block:"start"})));
+          }}
+          onOpenEditor={()=>{
+            setVideoIHelpOpen(false);openQuickDetailed("video-settings");
+          }}
+          onPickPhoto={()=>{
+            setVideoIHelpOpen(false);setBackgroundOnly(false);onPickPhoto();
+          }}
+          onOpenAudio={()=>{
+            setVideoIHelpOpen(false);openQuickDetailed("video-audio");
+          }}/>
 
         </details>
 

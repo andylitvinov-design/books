@@ -4414,3 +4414,36 @@
 .montageAudioDialogFooter button:disabled{opacity:.5}
 @media(min-width:760px){.montageAudioOverlay{align-items:center;padding:24px}.montageAudioDialog{border-radius:26px;max-height:86dvh}}
 @media(max-width:359px){.montageAudioDialogScroll{padding:4px 9px 12px}.montageAudioDialogFooter{padding-left:9px;padding-right:9px}.montageAudioDialogFooter button{font-size:12px}}
+
+/* iHelp opens the ONE existing Director as an opt-in overlay. Its React state
+   remains mounted across Video/Ideas/Effects/Montage tab switches. */
+.iHelpVideoBackdrop{position:fixed;inset:0;z-index:180;width:100vw;height:100dvh;
+ border:0;padding:0;background:rgba(18,43,37,.48);cursor:pointer}
+.iHelpVideoBar{display:flex;align-items:center;gap:9px;flex:none;min-height:55px;
+ padding:6px 12px;border-bottom:1px solid #e9dfd1;background:#f5ecdc;color:#143d3a}
+.iHelpVideoBar strong{font:800 17px/1.3 system-ui,sans-serif}
+.iHelpVideoBar span{font:550 12px/1.4 system-ui,sans-serif;color:#5d6a71;flex:1}
+.iHelpVideoBar button{display:grid;place-items:center;flex:none;width:44px;height:44px;
+ border:1px solid #d5dfd8;background:#fffcf7;color:#143d3a;border-radius:13px;cursor:pointer}
+.iHelpVideoBar button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.studio[data-hh-video-ihelp-open="true"] .quickBuilder .directorChatDetails{
+ position:fixed!important;display:flex!important;flex-direction:column;box-sizing:border-box;
+ z-index:190;top:max(72px,calc(env(safe-area-inset-top,0px) + 56px));
+ right:max(12px,env(safe-area-inset-right,0px));left:auto;bottom:auto;
+ width:min(460px,calc(100vw - 24px));height:min(730px,calc(100dvh - 92px));
+ min-height:0;max-width:none;margin:0;overflow:hidden;
+ border:1px solid #e9dfd1;border-radius:21px;background:#fffcf7;
+ box-shadow:0 18px 56px rgba(13,40,32,.26)}
+.studio[data-hh-video-ihelp-open="true"] .directorChatDetails>summary{display:none}
+.studio[data-hh-video-ihelp-open="true"] .directorChatDetails>:global([data-video-director-chat]){
+ display:flex;flex:1 1 auto;min-height:0;max-height:none;height:100%;width:100%;
+ margin:0;overflow:hidden;border:0;border-radius:0;box-shadow:none}
+@media(max-width:760px){
+ .studio[data-hh-video-ihelp-open="true"] .quickBuilder .directorChatDetails{
+  inset:0;top:0;right:0;left:0;bottom:0;width:100vw;height:100dvh;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  border:0;border-radius:0}
+ .studio[data-hh-video-ihelp-open="true"] .directorChatDetails>:global([data-video-director-chat][data-compose-active="true"]){
+  position:relative!important;inset:auto!important;top:auto!important;left:auto!important;
+  right:auto!important;z-index:auto!important;max-height:none;margin:0}
+}
