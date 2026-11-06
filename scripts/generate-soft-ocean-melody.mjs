@@ -100,8 +100,8 @@ console.log("[holistic-original-melodies] generated",authoredMusic.masters,"orig
  */
 if (process.env.npm_lifecycle_event === "prebuild" ||
     process.env.npm_lifecycle_event === "predev") {
-  const {buildScenarioMusic} = await import("./generate-scenario-melodies.mjs");
-  const report = buildScenarioMusic();
+  const {buildScenarioMusicParallel} = await import("./generate-scenario-melodies.mjs");
+  const report = await buildScenarioMusicParallel();
   console.log("[hh-scenario-music]",report.totalMasterFiles,"physical MP3s; generated",report.generated);
 }
 
