@@ -706,7 +706,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     mergeConflicts:0,conflictLabelsQueued:0,mergeStateUnknown:0,behindProduction:0,
     staleHead:0,legacyRequiredPending:0,protectionUnverified:0,
     transientCiReruns:0,sourceRepairQueued:0,repairWorkerDispatched:0,repairQueueBacklog,missingCore:0,coreAssociationUnverified:0,blockedByCapacity:false,repairBlockedByCapacity:false,controlTowerWake:'NOT_PROBED',
-    activeActions:null,queuedActions:null,legacyCoreProbes:0,legacyCoreBootstraps:0,
+    activeActions:null,queuedActions:null,ciSignalRunning:null,
+    ciSignalObservedAt:null,ciSignalSelfExcluded:false,legacyCoreProbes:0,legacyCoreBootstraps:0,
      liveBatchUsed:false,liveRestLookups:0,graphqlRemaining:null,
     checkedAt:new Date(now).toISOString(),eventPrNumber:priorityNumber,
     verifiedSourceFailures:0,failedCoreCronState,cronBackstop,
@@ -853,9 +854,19 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   let active = Infinity, queued = Infinity;
   try {
     const [a,q] = await Promise.all(['in_progress','queued'].map(status =>
-      limited('ci-capacity',()=>github.rest.actions.listWorkflowRunsForRepo({owner,repo,status,per_page:1}))));
+      limited('ci-capacity',()=>github.rest.actions.listWorkflowRunsForRepo({owner,repo,status,
+        per_page:status==='in_progress'?12:1}))));
     active = a.data.total_count;
     queued = q.data.total_count;
+    // One READ already used for CI capacity. Exclude only this exact
+    // in-progress Watchdog run from notification thresholds; all other CI stays.
+    const {withoutCurrentWatchdog}=require('./ci-pr-ci-daytime-signals.cjs');
+    const signal=withoutCurrentWatchdog(active,a.data?.workflow_runs,context.runId);
+    if(Number.isSafeInteger(active)&&active>=0&&Number.isSafeInteger(queued)&&queued>=0){
+      summary.ciSignalRunning=signal.running;
+      summary.ciSignalSelfExcluded=signal.excluded;
+      summary.ciSignalObservedAt=new Date().toISOString();
+    }
   } catch(e) { log('CI capacity unknown; no new retries: '+e.message); }
   // Central dispatcher, when enabled by the trusted workflow, owns handoffs.
   const centralDispatch=process.env.HH_CONTROL_TOWER_ENABLED==='true';

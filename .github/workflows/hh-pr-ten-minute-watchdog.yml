@@ -40,7 +40,9 @@ on:
       - 'scripts/ci-pr-queue-dispatcher.cjs'
       - 'scripts/ci-pr-capacity.cjs'
       - 'scripts/ci-pr-monitor-feed.cjs'
+      - 'scripts/ci-pr-ci-daytime-signals.cjs'
       - 'tests/ci-pr-monitor-feed.test.cjs'
+      - 'tests/ci-pr-ci-daytime-signals.test.cjs'
       - 'scripts/ci-pr-ci-wake-reconcile.cjs'
       - 'tests/ci-pr-ci-wake-reconcile.test.cjs'
       - 'tests/ci-pr-control-tower.test.cjs'
@@ -179,7 +181,10 @@ jobs:
                 const result=await publishMonitorSnapshot({github,context,report:routed,
                   inventorySnapshot:report.prInventorySnapshot,
                   // Reuse authenticated cron history from THIS Watchdog runner.
-                  watchdogLiveness:{health:report.cronHealth,lastSeen:report.cronLastSeen}});
+                  watchdogLiveness:{health:report.cronHealth,lastSeen:report.cronLastSeen},
+                  ciActivity:{schema:'HH_CI_WATCHDOG_RUN_COUNTS_V1',
+                    running:report.ciSignalRunning,queued:report.queuedActions,
+                    observed_at:report.ciSignalObservedAt}});
                 core.info('HH_SNAPSHOT_HANDOFF_MONITOR_'+result.status+
                   ' #3128'+(result.run_id?' run='+result.run_id:''));
               }catch(error){
