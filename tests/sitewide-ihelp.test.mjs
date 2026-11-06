@@ -105,3 +105,14 @@ test("native Director retains protected real-video finalization and dismisses sa
  const overlay=css.slice(css.lastIndexOf("/* iHelp opens the ONE existing Director"));
  assert.doesNotMatch(overlay,/pointer-events:none/);
 });
+
+test("finishing video exits iHelp overlay to the one real MP4 result and editor",()=>{
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const result=studio.slice(studio.indexOf("onOpenResult={()=>{"),studio.indexOf("onOpenEditor={()=>{",studio.indexOf("onOpenResult={()=>{")));
+ assert.match(result,/setVideoIHelpOpen\(false\);setActiveWorkspace\("video"\)/);
+ assert.match(result,/personal-video-result/);
+ assert.match(result,/onOpenDelivery=\{\(\)=>\{/);
+ assert.match(result,/setDeliveryChooserOpen\(true\)/);
+ assert.match(studio,/onOpenEditor=\{\(\)=>\{\s*setVideoIHelpOpen\(false\);openQuickDetailed\("video-settings"\)/);
+ assert.match(studio,/onOpenAudio=\{\(\)=>\{\s*setVideoIHelpOpen\(false\);openQuickDetailed\("video-audio"\)/);
+});
