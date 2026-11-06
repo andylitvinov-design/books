@@ -21,3 +21,12 @@ test('daily requires explicit consent and never replays uncertain send',()=>{
  assert.match(svc,/for update skip locked/);
  assert.match(svc,/daily_opt_out_at>=s\.daily_opt_in_at/);
 });
+
+test('real Telegram private chat recipient check uses reviewed numeric-ID policy',()=>{
+ const provider=readFileSync(new URL('../lib/crm/messenger-provider.js',import.meta.url),'utf8');
+ assert.ok(provider.includes('if(!telegramHomeRecipientAllowed(to)'));
+});
+test('privacy opt-out bypasses daily reply limit without violating DB bound',()=>{
+ assert.ok(svc.includes('companionReplyBudgetAllows(selected?.action,count,ALLOWED_REPLY)'));
+ assert.ok(svc.includes('Math.min(ALLOWED_REPLY,count+1)'));
+});
