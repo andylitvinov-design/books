@@ -154,33 +154,25 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // On Safari an early click can be swallowed and leave Montage hidden.
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
       phase(engine,"editor-ready");
-      // A real visitor sets duration using Montage → Music, then moves to
-      // Phrases. The retired Video quick-audio disclosure is intentionally
-      // hidden by the canonical six-workspace layout: do not bypass its CSS.
+      // Current production Montage opens on Style. Duration belongs ONLY
+      // to Settings, never the retired Audio length buttons. Use the actual
+      // visible four-tab flow on Safari without forcing hidden controls.
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
-      // Montage defaults to Settings. The audio disclosure is mounted only
-      // after a visible user tap on its Audio tab; never click a hidden panel.
+      const montageSettingsTab=page.locator('[data-video-montage-tab="settings"]');
+      await montageSettingsTab.waitFor({state:"visible",timeout:15000});
+      await montageSettingsTab.click();
+      await expect(montageSettingsTab).toHaveAttribute("aria-pressed","true");
       const preferences=page.locator('[data-video-montage-preferences]');
       await preferences.waitFor({state:"visible",timeout:25000});
+      const durationSelect=preferences.locator('[data-video-montage-preference="duration"]');
+      await durationSelect.selectOption("10");
+      await expect(durationSelect).toHaveValue("10");
       const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
-      await montageAudioTab.waitFor({state:"visible",timeout:15000});
       await montageAudioTab.click();
       await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
-      const montageSettings=page.locator('[data-video-montage-settings]');
-      await montageSettings.waitFor({state:"visible",timeout:25000});
-      if(await montageSettings.getAttribute("open")===null)
-        await montageSettings.locator(":scope > summary").click();
-      const musicTab=montageSettings.locator('[data-video-basic-tab="music"]');
-      await musicTab.waitFor({state:"visible",timeout:25000});
-      await musicTab.click();
-      await expect(musicTab).toHaveAttribute("aria-pressed","true");
-      const lengthButton=montageSettings.locator(
-        '[data-video-music-editor] [data-video-audio-length="10"]');
-      await lengthButton.waitFor({state:"visible",timeout:25000});
-      await lengthButton.click();
-      await expect(lengthButton).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-video-audio-compact-selected]')).toBeVisible();
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -683,11 +675,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const montageAudioForVoice=page.locator('[data-video-montage-tab="audio"]');
       await montageAudioForVoice.click();
       await expect(montageAudioForVoice).toHaveAttribute("aria-pressed","true");
-      const voiceDisclosure=page.locator('[data-video-montage-settings]');
-      await voiceDisclosure.waitFor({state:"visible",timeout:25000});
-      if(await voiceDisclosure.getAttribute("open")===null)
-        await voiceDisclosure.locator(":scope > summary").click();
-      await voiceDisclosure.locator('[data-video-basic-tab="voice"]').click();
+      // The current Audio pane mounts Voice as its own user-opened details.
+      // The removed Audio basic-tab wrapper must not be required in WebKit.
       // The phrase warning is intentionally unmounted in Montage. If the
       // old narration is still attached there, export must remain disabled;
       // an independently selected soundtrack is not stale narration.

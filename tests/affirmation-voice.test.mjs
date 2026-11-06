@@ -152,12 +152,16 @@ test("all six voices can be selected and their real samples requested before phr
 });
 
 
-test("voice browser opens visible Montage Audio before real media controls",()=>{
-  assert.match(source,/const preferences=page\.locator\('\[data-video-montage-preferences\]'\)/);
+test("voice browser follows current Montage Style → Settings duration → Audio",()=>{
+  assert.match(source,/const montageSettingsTab=page\.locator\('\[data-video-montage-tab="settings"\]'\)/);
+  assert.match(source,/await montageSettingsTab\.click\(\)/);
   assert.match(source,/await preferences\.waitFor\(\{state:"visible",timeout:25000\}\)/);
+  assert.match(source,/const durationSelect=preferences\.locator\('\[data-video-montage-preference="duration"\]'\)/);
+  assert.match(source,/await durationSelect\.selectOption\("10"\)/);
   assert.match(source,/await montageAudioTab\.click\(\)/);
   assert.match(source,/await expect\(montageAudioTab\)\.toHaveAttribute\("aria-pressed","true"\)/);
-  assert.match(source,/const montageSettings=page\.locator\('\[data-video-montage-settings\]'\)/);
+  assert.match(source,/data-video-audio-compact-selected/);
+  assert.doesNotMatch(source,/data-video-montage-settings|data-video-audio-length="10"/);
   assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
 });
 
