@@ -494,7 +494,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           <button type="button" className={styles.delete} disabled={busy} onClick={erase}><Trash2 size={15}/>{t.delete}</button>
           <small className={styles.disclaimer}>{t.completeNote}</small>
         </div>
-        : pendingFollowup ? <div className={styles.session} data-coaching-authored-followup>
+        : pendingFollowup ? <div className={styles.session} data-coaching-authored-followup data-coaching-one-viewport>
           <div className={styles.progressHeader}>
             <span className={styles.eyebrow}>{followupCopy[lang].title}</span>
             <strong>{t.question} {index+1} {t.of} {activeQuestions.length}</strong>
@@ -502,13 +502,13 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.progressTrack}><span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/></div>
           <div className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||pendingFollowup.stage.toUpperCase()}</span>
-            <CoachingChatThread turn={followupTurn} locale={lang}>
+            <CoachingChatThread turn={followupTurn} locale={lang} compact>
               <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
-                        <p className={styles.messageTip}>{followupCopy[lang].why}</p>
-             {error&&<p className={styles.error} role="alert">{error}</p>}
+            <p className={styles.messageTip}>{followupCopy[lang].why}</p>
           </div>
           <footer className={styles.footer} data-coaching-messenger-footer>
+            {error&&<p className={styles.footerMessage} role="alert">{error}</p>}
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
               <textarea id="hh-coaching-followup" className={styles.textarea}
@@ -526,7 +526,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 <small className={styles.draftCount}>{reflectionDraft.length}/500</small>
               </div>
               <details className={styles.reportDetails}><summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
-                <small id="hh-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+                <div className={styles.reportPop}><small id="hh-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</small></div>
               </details>
             </div>
             <div className={styles.footerActions}>
@@ -543,7 +543,7 @@ export default function PersonalCoaching({locale='en',accountId}){
         : !question ? <div className={styles.center} role="alert">
             {langCopy.loadingCatalog} <button type="button" onClick={reload}>{t.retry}</button>
           </div>
-        : <div className={styles.session} data-coaching-one-question data-coaching-question={question.id}>
+        : <div className={styles.session} data-coaching-one-question data-coaching-one-viewport data-coaching-question={question.id}>
           <div className={styles.progressHeader}>
             <span className={styles.eyebrow}>{t.title}</span>
             <strong>{t.question} {index+1} {t.of} {activeQuestions.length}</strong>
@@ -557,19 +557,20 @@ export default function PersonalCoaching({locale='en',accountId}){
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
             <div data-coaching-gentle-guide>
-              <CoachingChatThread turn={conversationTurn} locale={lang}
-                 draftPreview={quickChoices&&draft.startsWith('choice:')?prettyAnswer(draft,question,lang,t.noAnswer):''}>
+              <CoachingChatThread turn={conversationTurn} locale={lang} compact>
                 <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
               </CoachingChatThread>
             </div>
-            {adaptive&&<div className={styles.adaptivePanel} data-coaching-adaptive-prompt>
-              <span><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</span>
-              <p>{adaptive.why}</p>
-              <button type="button" disabled={busy||dictating}
-                onClick={()=>setUseStandardPrompt(value=>!value)}>
-                {useStandardPrompt?iCopy.tailored:iCopy.standard}
-              </button>
-            </div>}
+            {adaptive&&<details className={styles.adaptivePanel} data-coaching-adaptive-prompt>
+              <summary><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</summary>
+              <div className={styles.adaptiveMore}>
+                <p>{adaptive.why}</p>
+                <button type="button" disabled={busy||dictating}
+                  onClick={()=>setUseStandardPrompt(value=>!value)}>
+                  {useStandardPrompt?iCopy.tailored:iCopy.standard}
+                </button>
+              </div>
+            </details>}
             {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
@@ -597,10 +598,10 @@ export default function PersonalCoaching({locale='en',accountId}){
 
             
             <p className={styles.subtle}>{t.change}</p>
-            {notice&&<p className={styles.notice} role="status"><Check size={15}/>{notice}</p>}
-            {error&&<p className={styles.error} role="alert">{error}</p>}
-          </div>
+                      </div>
           <footer className={styles.footer} data-coaching-messenger-footer>
+            {notice&&<p className={styles.footerMessage} role="status"><Check size={15}/>{notice}</p>}
+            {error&&<p className={styles.footerMessage} role="alert">{error}</p>}
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
                 {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
@@ -622,7 +623,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 <small className={styles.draftCount}>{draft.startsWith('choice:')?0:draft.length}/800</small>
               </div>
               <details className={styles.reportDetails}><summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
-                <small id="hh-personal-coach-answer-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+                <div className={styles.reportPop}><small id="hh-personal-coach-answer-report-note" data-coaching-save-report-notice>{t.reportNotice}</small></div>
               </details>
             </div>
             <div className={styles.footerActions}>
