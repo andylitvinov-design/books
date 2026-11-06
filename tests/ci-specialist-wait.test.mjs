@@ -398,3 +398,63 @@ test('ordinary public Specialist does not add live-base polling or skip applicab
   assert.equal(targetReads,0,'unrelated production changes need no extra sensitive BASE probes');
   assert.equal(jobsRead,1);
 });
+
+test('one final running Specialist uses bounded fast polling and still requires successful jobs',async()=>{
+  const second='.github/workflows/video-qa.yml';
+  const files={base:new Map([[path,yaml],[second,yaml]]),
+    current:new Map([[path,yaml],[second,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  let elapsed=0,reads=0;const sleeps=[];
+  const done={...run('completed','success'),id:151,path};
+  const pending={...run('in_progress',null),id:152,path:second};
+  const api={pr:async()=>pr,target:async()=>base,
+    runs:async()=>{reads++;return [done,elapsed>=17_000?{...pending,status:'completed',conclusion:'success'}:pending];},
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+  const result=await verify(api,ctx,files,{now:()=>elapsed,
+    maxWaitMs:120_000,pollMs:30_000,
+    sleep:async ms=>{sleeps.push(ms);elapsed+=ms;}});
+  assert.equal(result.executed.length,2,'fast polling is not a passing test');
+  assert.deepEqual(sleeps,[10_000,10_000]);
+  assert.equal(elapsed,20_000,'no extra full thirty-second wait');
+  assert.equal(reads,3);
+});
+
+test('final-wave fast poll expires after 90 seconds then returns to low-API cadence',async()=>{
+  const second='.github/workflows/video-qa.yml';
+  const files={base:new Map([[path,yaml],[second,yaml]]),
+    current:new Map([[path,yaml],[second,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  let elapsed=0;const sleeps=[];
+  const done={...run('completed','success'),id:151,path};
+  const pending={...run('in_progress',null),id:152,path:second};
+  const api={pr:async()=>pr,target:async()=>base,
+    runs:async()=>[done,elapsed>=120_000?{...pending,status:'completed',conclusion:'success'}:pending],
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+  const result=await verify(api,ctx,files,{now:()=>elapsed,
+    maxWaitMs:180_000,pollMs:30_000,
+    sleep:async ms=>{assert.ok(ms>0&&ms<=30_000);sleeps.push(ms);elapsed+=ms;}});
+  assert.equal(result.executed.length,2);
+  assert.deepEqual(sleeps.slice(0,9),Array(9).fill(10_000));
+  assert.equal(sleeps[9],30_000,'normal poll resumes after the final fast budget');
+  assert.equal(elapsed,120_000);
+});
+
+test('multiple in-progress Specialist workflows keep normal thirty-second polling',async()=>{
+  const second='.github/workflows/video-qa.yml';
+  const files={base:new Map([[path,yaml],[second,yaml]]),
+    current:new Map([[path,yaml],[second,yaml]]),
+    changedRows:[{filename:'lib/crm/a.js',status:'M'}]};
+  let elapsed=0;const sleeps=[];
+  const a={...run('in_progress',null),id:151,path};
+  const b={...run('in_progress',null),id:152,path:second};
+  const api={pr:async()=>pr,target:async()=>base,
+    runs:async()=>elapsed>=60_000
+      ? [{...a,status:'completed',conclusion:'success'},{...b,status:'completed',conclusion:'success'}]
+      : [a,b],
+    jobs:async()=>[{name:'test',status:'completed',conclusion:'success'}]};
+  const result=await verify(api,ctx,files,{now:()=>elapsed,
+    maxWaitMs:120_000,pollMs:30_000,
+    sleep:async ms=>{sleeps.push(ms);elapsed+=ms;}});
+  assert.equal(result.executed.length,2);
+  assert.deepEqual(sleeps,[30_000,30_000]);
+});
