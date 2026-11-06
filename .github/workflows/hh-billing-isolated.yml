@@ -74,6 +74,8 @@ jobs:
         run: node --test tests/service-square-api-cart.test.mjs
       - name: Talisman fixed-price provider checkout gate and Google account return
         run: node --test tests/talisman-google-checkout.test.mjs
+      - name: Video XP RLS, grants and terminal ledger on fresh PostgreSQL 17
+        run: node --test tests/video-credits-postgres.integration.mjs
       - name: Square isolated payment-ledger FORCE RLS on PostgreSQL 17
         run: node --test tests/square-ledger-isolated.integration.mjs
       - name: ZEN checkout signatures, IPN, merchant readback and legacy Stripe regression

@@ -111,7 +111,7 @@ test("all format controls call the same plan-preserving reframe handler",()=>{
   assert.match(studio,/verifiedSceneAspect\(verified,nextAspect\)/);
   assert.match(studio,/reframeCinematicPlan\(plan,nextAspect\)/);
   for(const [selector,handler] of [
-    ["data-video-aspect={format}","changeVideoAspect(format)"],
+    ["data-video-montage-preference=\"format\"","changeVideoAspect(event.currentTarget.value as Aspect)"],
     ["data-video-quick-aspect={value}","changeVideoAspect(value)"],
     ["data-video-advanced-aspect","changeVideoAspect(event.currentTarget.value as Aspect)"],
   ]){
@@ -129,7 +129,7 @@ test("approved real catalogue replacement excludes wrong origins and unknown URL
     await import("../lib/mandala/video-montage-sources.mjs");
   const realCatalogue=JSON.parse(readFileSync(
     new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url),"utf8")).scenes;
-  assert.equal(realCatalogue.length,48,"only physical licensed MP4 assets, including four screened portrait edits");
+  assert.equal(realCatalogue.length,56,"48 existing physical MP4 scenes plus eight verified sunlight variants");
   assert.ok(realCatalogue.every(isApprovedMontageScene),
     "all published first-party / approved CC-BY masters have stable URLs and provenance");
   const firstFour=realCatalogue.slice(0,4);

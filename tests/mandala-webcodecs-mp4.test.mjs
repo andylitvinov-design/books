@@ -161,30 +161,44 @@ test("explicit Safari WebM retry uses a different recorder, preserves sound",asy
   assert.ok(studio.includes('playbackStatus==="ready"&&result.mode!=="catalog"'));
 });
 
-test("actual WebKit media E2E navigates through the visible scenario step",()=>{
-  const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
-  const voice=read("scripts/verify-affirmation-voice-browser.mjs");
-  const live=read("scripts/benchmarking/first-video-live-export.mjs");
-  const motion=read("scripts/benchmarking/verify-original-motion-export.mjs");
+test("real WebKit media acceptance enters compact Goals through visible visitor navigation",()=>{
+  const file=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
+  const voice=file("scripts/verify-affirmation-voice-browser.mjs");
+  const live=file("scripts/benchmarking/first-video-live-export.mjs");
+  const motion=file("scripts/benchmarking/verify-original-motion-export.mjs");
   for(const source of [voice,live,motion]){
     assert.match(source,/data-video-continue-scenarios/);
-    assert.match(source,/data-video-scenario-open/);
-    assert.match(source,/data-auto-video-all-scenes/);
+    assert.match(source,/await continueButton\.click\(\)/);
+    assert.doesNotMatch(source,/click\(\{force:\s*true\}\)/);
   }
   assert.match(voice,/await continueButton\.click\(\);[\s\S]*?await allStories\.click\(\);/);
-  assert.match(live,/await continueToScenarios\.click\(\);[\s\S]*?await allStories\.click\(\);/);
-  assert.match(motion,/await page\.locator\('\[data-video-continue-scenarios\]'\)\.click\(\);[\s\S]*?await allStories\.click\(\);/);
-  assert.match(voice,/await expect\(studio\)\.toHaveAttribute\("data-video-advanced-open","true"\)/);
-  assert.match(live,/ENCODED_VIDEO_STREAM_MISSING/);
+  assert.match(live,/await continueButton\.click\(\);[\s\S]*?await allStories\.click\(\);/);
+  // The four camera-like procedural originals are actually 9:16, never
+  // falsely claimed to be landscape. The real Add video control selects them.
+  assert.match(motion,/data-video-timeline-add-video/);
+  assert.match(motion,/data-video-montage-preference="format"/);
+  assert.match(motion,/aspect\.selectOption\('portrait'\)/);
+  assert.match(motion,/length\.selectOption\('20'\)/);
+  assert.match(motion,/video\.width === 720 && video\.height === 1280/);
   assert.match(motion,/ffprobe/);
+  assert.match(motion,/assert\.ok\(scores\[i\] > 0\.6/);
+  assert.match(motion,/exported audio is silent/);
 });
 
-test("real macOS WebKit voice acceptance opens visible Montage Audio and Voice tabs",()=>{
-  const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
-  assert.match(source,/await montagePreferences\.waitFor\(\{state:"visible",timeout:25000\}\)/);
-  assert.match(source,/await montageAudioTab\.click\(\);[\s\S]*?const montageSettings=page\.locator/);
-  assert.match(source,/await montageAudioForVoice\.click\(\);[\s\S]*?await voiceDisclosure\.locator\('\[data-video-basic-tab="voice"\]'\)\.click\(\)/);
-  assert.match(source,/await expect\(montageAudioForVoice\)\.toHaveAttribute\("aria-pressed","true"\)/);
-  assert.match(source,/await page\.locator\(["']\[data-video-generate-affirmation-audio\]["']\)\.click\(\)/);
-  assert.match(source,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
+test("real macOS audio test navigates Settings and Audio with no retired hidden tabs",()=>{
+  const voice=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const motion=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
+  assert.match(voice,/await settingsTab\.click\(\)/);
+  assert.match(voice,/durationSelect\.selectOption\("10"\)/);
+  assert.match(voice,/await audioTab\.click\(\)/);
+  assert.match(voice,/await audioTabForVoice\.click\(\)/);
+  assert.match(voice,/await optionalAudio\.click\(\)/);
+  assert.match(voice,/data-video-legacy-phrase-editor/);
+  assert.match(voice,/aria-expanded/);
+  assert.match(voice,/data-video-voice-studio/);
+  assert.match(voice,/data-video-generate-affirmation-audio/);
+  assert.doesNotMatch(voice,/data-video-basic-tab/);
+  assert.doesNotMatch(voice,/data-video-montage-settings/);
+  assert.match(motion,/data-video-audio-compact-attach/);
+  assert.doesNotMatch(motion,/data-video-basic-tab/);
 });

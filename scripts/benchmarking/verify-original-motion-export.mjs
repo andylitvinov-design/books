@@ -29,14 +29,28 @@ page.on('console', message => {
 try {
   await page.goto(`${origin}/ru/holistic-support/mandala`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
-  // Enter the scenario step with the real visible mobile CTA first.
-  await page.locator('[data-video-continue-scenarios]').click();
-  await page.locator('[data-mandala-free-video][data-video-scenario-open="true"]')
-    .waitFor({state:'attached',timeout:15000});
-  const allStories=page.locator('[data-auto-video-all-scenes]');
-  await allStories.waitFor({state:'visible',timeout:15000});
-  await allStories.click();
-  await page.locator('[data-free-film-compilation-catalog]').waitFor({ state: 'visible' });
+  // Physically verified originals are portrait 432×768, 5 seconds each.
+  // Use the real visitor path and set 9:16 / 20s BEFORE choosing a preset.
+  const continueButton=page.locator('[data-video-continue-scenarios]');
+  await continueButton.waitFor({state:'visible'});
+  await continueButton.click();
+  await page.locator('[data-video-quick-control="editor"]').click();
+  const settingsTab=page.locator('[data-video-montage-tab="settings"]');
+  await settingsTab.waitFor({state:'visible'});
+  await settingsTab.click();
+  assert.equal(await settingsTab.getAttribute('aria-pressed'),'true');
+  const aspect=page.locator('[data-video-montage-preference="format"]');
+  await aspect.waitFor({state:'visible'});
+  await aspect.selectOption('portrait');
+  assert.equal(await aspect.inputValue(),'portrait');
+  const length=page.locator('[data-video-montage-preference="duration"]');
+  await length.selectOption('20');
+  assert.equal(await length.inputValue(),'20');
+  await page.locator('[data-video-montage-tab="text"]').click();
+  const addVideo=page.locator('[data-video-timeline-add-video]');
+  await addVideo.waitFor({state:'visible'});
+  await addVideo.click();
+  await page.locator('[data-free-film-compilation-catalog]').waitFor({state:'visible'});
   const preset = page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
   const more = page.locator('[data-free-film-more]');
   if (await more.getAttribute('aria-expanded') !== 'true') await more.click();
@@ -64,20 +78,20 @@ try {
   }
   assert.equal(await preset.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
-  await page.locator('[data-video-quick-control="editor"]').click();
-  const settings = page.locator('[data-video-montage-settings]');
-  await settings.waitFor({ state: 'visible' });
-  if (await settings.getAttribute('open') === null) await settings.locator(':scope > summary').click();
-  await settings.locator('[data-video-basic-tab="music"]').click();
-  const duration = settings.locator('[data-video-music-editor] [data-video-audio-length="20"]');
-  await duration.click();
-  assert.equal(await duration.getAttribute('aria-pressed'), 'true');
+  // The current Montage has a direct Audio tab, not retired basic Music tabs.
+  const audioTab=page.locator('[data-video-montage-tab="audio"]');
+  await audioTab.waitFor({state:'visible'});
+  await audioTab.click();
+  assert.equal(await audioTab.getAttribute('aria-pressed'),'true');
+  await page.locator('[data-video-montage-audio]').waitFor({state:'visible'});
   const generate = page.locator('[data-video-quick-generate]');
   await generate.click({ timeout: 30000 });
-  const attach = page.locator('[data-video-audio-attach]');
-  await attach.waitFor({ state: 'visible', timeout: 15000 });
-  await attach.click();
-  await generate.click();
+  const attach=page.locator('[data-video-audio-compact-attach]');
+  await attach.waitFor({state:'visible',timeout:15000});
+  if(await attach.isEnabled()){
+    await attach.click();
+    await generate.click();
+  }
   const save = page.locator('[data-mandala-video-download]');
   try { await save.waitFor({ state: 'visible', timeout: 150000 }); }
   catch (error) {
@@ -106,10 +120,11 @@ try {
   assert.deepEqual(errors, []);
   const probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', movie], { encoding: 'utf8' }));
   const video = probe.streams.find(s => s.codec_type === 'video');
-  assert.ok(video && video.width === 1280 && video.height === 720);
+  assert.ok(video && video.width === 720 && video.height === 1280,
+    'source-backed 9:16 test must not claim landscape footage');
   assert.ok(probe.streams.some(s => s.codec_type === 'audio'));
   assert.ok(Number(probe.format.duration) >= 18 && Number(probe.format.duration) <= 23);
-  const frame = (file, time) => execFileSync('ffmpeg', ['-v', 'error', '-ss', String(time), '-i', file, '-frames:v', '1', '-vf', 'scale=64:36:force_original_aspect_ratio=increase,crop=64:36', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 100000 });
+  const frame = (file, time) => execFileSync('ffmpeg', ['-v', 'error', '-ss', String(time), '-i', file, '-frames:v', '1', '-vf', 'scale=36:64:force_original_aspect_ratio=increase,crop=36:64', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 100000 });
   const corr = (a, b) => {
     assert.equal(a.length, 64 * 36 * 3); assert.equal(b.length, a.length);
     let sa = 0, sb = 0, aa = 0, bb = 0, ab = 0;

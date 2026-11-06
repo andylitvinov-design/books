@@ -15,6 +15,7 @@ import {initialVideoChatTree,nextVideoChatTreeStep,videoChatTreeOptions,
 import {isGenericVideoRequest,parseVideoChatAction,mergeVideoChatPreferences,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
 import {understandVideoChatReply} from "@/lib/mandala/video-chat-understanding.mjs";
 import {classifyVideoChatQuestion,answerVideoChatQuestion} from "@/lib/mandala/video-chat-dialogue-knowledge.mjs";
+import {MESSENGER_VIDEO_HANDOFF_KEY,decodeMessengerVideoHandoff} from "@/lib/mandala/video-chat-messenger-flow.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-director-chat.module.css";
@@ -139,6 +140,34 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    setLines(existing=>[...existing.slice(-34),{id:++counter.current,role,text}]);
  };
  const question=(next:Step)=>next==="done"?t.done:next==="ready"?t.ready:t[next];
+ // Messenger collects validated choices but never renders or approves a plan.
+ // The handoff is consumed once, in the existing Studio/MediaRecorder controller.
+ useEffect(()=>{
+   let packet="";
+   try{
+     packet=window.sessionStorage.getItem(MESSENGER_VIDEO_HANDOFF_KEY)||"";
+     if(packet)window.sessionStorage.removeItem(MESSENGER_VIDEO_HANDOFF_KEY);
+   }catch{return;}
+   if(!packet)return;
+   const incoming=decodeMessengerVideoHandoff(packet,locale) as Draft|null;
+   if(!incoming)return;
+   const next=nextVideoChatTreeStep(incoming) as Step;
+   if(next!=="review")return;
+   setDraft(incoming);setStep(next);setInput("");
+   setLines([{id:++counter.current,role:"assistant",text:t.review}]);
+   approvedPlanKeyRef.current="";
+   setAlternative(0);setSymbolicAllowed(false);setAiConsent(false);
+   cutAbortRef.current?.abort();semanticAbortRef.current?.abort();
+   setAiCut(null);setAiCutState("idle");setSemanticStatus("idle");
+   onGoalChange(incoming.goal);onInvalidate();
+   const panel=windowRef.current?.closest("details");
+   if(panel instanceof HTMLDetailsElement)panel.open=true;
+   window.requestAnimationFrame(()=>windowRef.current?.scrollIntoView({
+     block:"start",behavior:"instant" as ScrollBehavior,
+   }));
+ // This is a one-shot user-directed navigation handoff, never a reactive sync.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[]);
  // The same client-local goal field is edited by the existing Studio controls.
  useEffect(()=>{
    if(goal.trim()===draft.goal.trim()||!goal.trim())return;

@@ -3,7 +3,7 @@
 
 import {useRef,useState} from "react";
 import type {PointerEvent as ReactPointerEvent,KeyboardEvent as ReactKeyboardEvent} from "react";
-import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors,Copy,Magnet,ZoomIn,ZoomOut,Undo2,Redo2} from "lucide-react";
+import {Film,Music2,Pause,Play,Plus,Trash2,Type,Scissors,Copy,Magnet,ZoomIn,ZoomOut,Undo2,Redo2,GripVertical,ChevronUp,ChevronDown,Sparkles} from "lucide-react";
 import {snapTimelineSecond} from "@/lib/mandala/editable-timeline.mjs";
 import {motionPreset} from "@/lib/mandala/creative-editor-keyframes.mjs";
 import type {MyTubeMotion} from "@/lib/mandala/creative-editor-keyframes.mjs";
@@ -16,7 +16,9 @@ export type TimelineTextClip={
   startSeconds:number;
   durationSeconds:number;
   styleId?:"classic"|"cinema"|"minimal"|"glow";
-  motionId?:"none"|"fade"|"slide_up"|"pop";
+  motionId?:"none"|"fade"|"slide_up"|"pop"|"move"|"grow"|"shrink"|"rotate"|"float"|"pulse"|"type";
+  motionSpeed?:.5|1|1.5|2;
+  motionDirection?:"left"|"right";
   positionId?:"bottom"|"center"|"top";
 };
 export type TimelineTransition="soft"|"cut"|"fade_black"|"flash_white";
@@ -61,6 +63,9 @@ type Props={
   onSetShotEffect?:(index:number,patch:{transitionIn?:TimelineTransition;colorLook?:TimelineLook})=>void;
   onSetShotMotion?:(index:number,motion:MyTubeMotion|null)=>void;
   onSetShotSourceTiming?:(index:number,patch:{sourcePhasePercent?:number;sourceSpeed?:number})=>void;
+  setupCandidates:readonly string[];
+  onImportSetups:()=>void;
+  onReorderSetups:(from:number,to:number,autoTiming:boolean)=>void;
   onOpenAudio:()=>void;
   onChangeAudioStart:(seconds:number)=>void;
 };
@@ -98,7 +103,8 @@ const copy={
     endPanY:"Сдвиг в конце (Y)",endRotation:"Поворот в конце",
     sourceTiming:"Монтаж исходника",sourcePhase:"Начальная позиция видео",
     sourceSpeed:"Скорость видеокадров",sourceNote:"Длительность видео, звук и надписи не меняются.",
-    bedLane:"Фоновая музыка"},
+    bedLane:"Фоновая музыка",setupImport:"Добавить установки",setupImportHelp:"Перенести выбранные установки",setupHeading:"Установки",autoTiming:"Автовремя",dragSetup:"Перетащить установку",moveUp:"Выше",moveDown:"Ниже",addTextFull:"Добавить текст",speed:"Скорость",direction:"Направление",left:"Влево",right:"Вправо",
+    motionPresets:{none:"Нет",move:"Движение",grow:"Увеличить",shrink:"Уменьшить",rotate:"Вращать",float:"Плавать",pulse:"Пульс",type:"Печатать"}},
   en:{video:"Video",text:"Text",audio:"Audio",addVideo:"Video",addText:"Text",addAudio:"Audio",
     empty:"Choose a video story",emptyText:"Add a caption",emptyAudio:"Add music or narration",
     editor:"Editing tracks",editText:"Edit caption",textValue:"Text",start:"Start, sec",
@@ -121,7 +127,8 @@ const copy={
     endPanY:"End vertical pan",endRotation:"End rotation",
     sourceTiming:"Source editing",sourcePhase:"Video starting position",
     sourceSpeed:"Source playback speed",sourceNote:"Film length, soundtrack and captions stay unchanged.",
-    bedLane:"Music bed"},
+    bedLane:"Music bed",setupImport:"Add setups",setupImportHelp:"Insert chosen affirmations from Ideas",setupHeading:"Setups",autoTiming:"Auto timing",dragSetup:"Drag to reorder setup",moveUp:"Move up",moveDown:"Move down",addTextFull:"Add text",speed:"Speed",direction:"Direction",left:"Left",right:"Right",
+    motionPresets:{none:"None",move:"Move",grow:"Grow",shrink:"Shrink",rotate:"Rotate",float:"Float",pulse:"Pulse",type:"Type"}},
   es:{video:"Vídeo",text:"Texto",audio:"Audio",addVideo:"Vídeo",addText:"Texto",addAudio:"Audio",
     empty:"Elige una historia",emptyText:"Añade un texto",emptyAudio:"Añade música o voz",
     editor:"Pistas de montaje",editText:"Editar texto",textValue:"Texto",start:"Inicio, seg",
@@ -144,14 +151,15 @@ const copy={
     endPanY:"Panorámica Y final",endRotation:"Rotación final",
     sourceTiming:"Editar origen",sourcePhase:"Posición inicial",
     sourceSpeed:"Velocidad de la escena",sourceNote:"No cambia la duración, el audio ni los subtítulos.",
-    bedLane:"Música de fondo"}
+    bedLane:"Música de fondo",setupImport:"Añadir afirmaciones",setupImportHelp:"Insertar frases elegidas",setupHeading:"Afirmaciones",autoTiming:"Tiempo auto.",dragSetup:"Arrastrar para reordenar",moveUp:"Subir",moveDown:"Bajar",addTextFull:"Añadir texto",speed:"Velocidad",direction:"Dirección",left:"Izquierda",right:"Derecha",
+    motionPresets:{none:"Nada",move:"Mover",grow:"Agrandar",shrink:"Reducir",rotate:"Girar",float:"Flotar",pulse:"Pulso",type:"Escribir"}}
 } as const;
 
 export function MandalaMultiTrackTimeline({
   locale,seconds,shots,captions,audio,musicBed,playheadSeconds,playing,disabled,
   onSeek,onTogglePlay,canUndo,canRedo,onUndo,onRedo,onAddVideo,onMoveShot,onResizeShot,onAddCaption,
   onSetCaption,onRemoveCaption,onSplitCaption,onDuplicateCaption,onSetShotEffect,onSetShotMotion,
-  onSetShotSourceTiming,onOpenAudio,onChangeAudioStart
+  onSetShotSourceTiming,setupCandidates,onImportSetups,onReorderSetups,onOpenAudio,onChangeAudioStart
 }:Props){
   const t=copy[locale];
   const drag=useRef<Drag|null>(null);
@@ -159,6 +167,9 @@ export function MandalaMultiTrackTimeline({
   const [selectedShot,setSelectedShot]=useState<number|null>(null);
   const [zoom,setZoom]=useState(1);
   const [snapEnabled,setSnapEnabled]=useState(true);
+  const [autoTiming,setAutoTiming]=useState(true);
+  const setupDrag=useRef<{index:number;y:number}|null>(null);
+  const setupClips=captions.filter(clip=>/^setup-[1-5]$/.test(clip.id));
   const chosen=captions.find(clip=>clip.id===selectedText);
   const cutMarks=[0,seconds,...shots.map(shot=>shot.startSeconds)];
   const snapPosition=(at:number,max=seconds)=>snapEnabled
@@ -218,6 +229,21 @@ export function MandalaMultiTrackTimeline({
     }
   };
   const addText=()=>setSelectedText(onAddCaption());
+  const addSetups=()=>{if(!setupCandidates.length||disabled)return;onImportSetups();setSelectedText("setup-1");};
+  const finishSetupDrag=(event:ReactPointerEvent<HTMLButtonElement>)=>{
+    const active=setupDrag.current;setupDrag.current=null;
+    if(!active)return;
+    if(event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    const rows=event.currentTarget.closest("[data-video-setup-list]")?.querySelectorAll<HTMLElement>("[data-video-setup-row]");
+    if(!rows?.length)return;
+    let target=rows.length-1;
+    for(let i=0;i<rows.length;i++){
+      if(event.clientY<rows[i].getBoundingClientRect().bottom){target=i;break;}
+    }
+    if(target!==active.index&&Math.abs(event.clientY-active.y)>6)
+      onReorderSetups(active.index,target,autoTiming);
+  };
   const handleEditorKeys=(event:ReactKeyboardEvent<HTMLElement>)=>{
     if(disabled||!(event.metaKey||event.ctrlKey)||event.altKey)return;
     // Do not steal the browser's undo stack from a caption input or select.
@@ -233,6 +259,46 @@ export function MandalaMultiTrackTimeline({
 
   return <section className={css.editor} data-video-multitrack-timeline
     aria-label={t.editor} onKeyDown={handleEditorKeys}>
+    <div className={css.setupAddBar} data-video-setup-actions>
+      <button type="button" data-video-setup-import onClick={addSetups}
+        disabled={disabled||!setupCandidates.length} title={t.setupImportHelp}>
+        <Sparkles size={16} aria-hidden="true"/>{t.setupImport} ({setupCandidates.length})
+      </button>
+      <button type="button" data-video-timeline-add-text onClick={addText}
+        disabled={disabled||captions.length>=16}><Plus size={16} aria-hidden="true"/>{t.addTextFull}</button>
+    </div>
+    {setupClips.length?<div className={css.setupList} data-video-setup-list>
+      <div className={css.setupHeading}><strong>{t.setupHeading} ({setupClips.length})</strong>
+        <label>{t.autoTiming}<input type="checkbox" checked={autoTiming} disabled={disabled}
+          data-video-setup-auto-timing onChange={event=>setAutoTiming(event.currentTarget.checked)}/></label>
+      </div>
+      {setupClips.map((clip,index)=><div className={css.setupRow}
+        key={clip.id} data-video-setup-row={clip.id} data-active={selectedText===clip.id}>
+        <button type="button" className={css.setupGrip} disabled={disabled}
+          data-video-setup-drag={clip.id} title={t.dragSetup} aria-label={t.dragSetup+" "+(index+1)}
+          onPointerDown={event=>{if(disabled||event.button!==0)return;
+            setupDrag.current={index,y:event.clientY};
+            event.currentTarget.setPointerCapture(event.pointerId);event.preventDefault();}}
+          onPointerUp={finishSetupDrag}
+          onPointerCancel={event=>{setupDrag.current=null;
+            if(event.currentTarget.hasPointerCapture(event.pointerId))
+              event.currentTarget.releasePointerCapture(event.pointerId);}}>
+          <GripVertical size={15}/></button>
+        <button type="button" className={css.setupSelect} data-video-setup-select={clip.id}
+          aria-pressed={selectedText===clip.id} disabled={disabled}
+          onClick={()=>setSelectedText(clip.id)}>
+          <span className={css.setupNumber}>{index+1}</span>
+          <span className={css.setupText}>{clip.text}</span>
+          <small>{time(clip.startSeconds)}–{time(clip.startSeconds+clip.durationSeconds)}</small>
+        </button>
+        <div className={css.setupMove}>
+          <button type="button" data-video-setup-up={clip.id} disabled={disabled||index===0}
+            onClick={()=>onReorderSetups(index,index-1,autoTiming)} aria-label={t.moveUp}><ChevronUp size={15}/></button>
+          <button type="button" data-video-setup-down={clip.id} disabled={disabled||index===setupClips.length-1}
+            onClick={()=>onReorderSetups(index,index+1,autoTiming)} aria-label={t.moveDown}><ChevronDown size={15}/></button>
+        </div>
+      </div>)}
+    </div>:null}
     <div className={css.transport}>
       <strong><Scissors size={17} aria-hidden="true"/>{t.editor}</strong>
       <div className={css.transportActions}>
@@ -345,12 +411,35 @@ export function MandalaMultiTrackTimeline({
     <div className={css.addBar}>
       <button type="button" disabled={disabled} onClick={onAddVideo}
         data-video-timeline-add-video><Plus size={16}/><Film size={15}/>{t.addVideo}</button>
-      <button type="button" disabled={disabled} onClick={addText}
-        data-video-timeline-add-text><Plus size={16}/><Type size={15}/>{t.addText}</button>
       <button type="button" disabled={disabled} onClick={onOpenAudio}
         data-video-timeline-add-audio><Plus size={16}/><Music2 size={15}/>{t.addAudio}</button>
     </div>
-    {chosen?<div className={css.inspector} data-video-timeline-caption-inspector>
+    {chosen?<div className={css.motionStrip} data-video-caption-motion-strip>
+      <strong>{t.textMotion} · {chosen.text}</strong>
+      <div className={css.motionChoices} role="group" aria-label={t.textMotion}>
+        {(["none","move","grow","shrink","rotate","float","pulse","type"] as const).map(preset=>
+          <button type="button" key={preset} data-video-caption-motion-preset={preset}
+            aria-pressed={(chosen.motionId??"none")===preset} disabled={disabled}
+            onClick={()=>onSetCaption(chosen.id,{motionId:preset})}>{t.motionPresets[preset]}</button>)}
+      </div>
+      <div className={css.motionAdjust}>
+        <label>{t.speed}
+          <select data-video-caption-motion-speed value={chosen.motionSpeed??1} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{motionSpeed:Number(e.currentTarget.value) as .5|1|1.5|2})}>
+            {[.5,1,1.5,2].map(value=><option key={value} value={value}>{value}×</option>)}
+          </select>
+        </label>
+        <label>{t.direction}
+          <select data-video-caption-motion-direction value={chosen.motionDirection??"right"} disabled={disabled}
+            onChange={e=>onSetCaption(chosen.id,{motionDirection:e.currentTarget.value as "left"|"right"})}>
+            <option value="left">{t.left}</option><option value="right">{t.right}</option>
+          </select>
+        </label>
+      </div>
+    </div>:null}
+    {chosen?<details className={css.inspectorDisclosure} data-video-timeline-caption-inspector>
+      <summary>{t.editText}: {chosen.text}</summary>
+      <div className={css.inspector}>
       <strong>{t.editText}</strong>
       <label>{t.textValue}
         <input type="text" maxLength={96} disabled={disabled} value={chosen.text}
@@ -387,6 +476,13 @@ export function MandalaMultiTrackTimeline({
             <option value="fade">{t.fadeMotion}</option>
             <option value="slide_up">{t.slideMotion}</option>
             <option value="pop">{t.popMotion}</option>
+            <option value="move">{t.motionPresets.move}</option>
+            <option value="grow">{t.motionPresets.grow}</option>
+            <option value="shrink">{t.motionPresets.shrink}</option>
+            <option value="rotate">{t.motionPresets.rotate}</option>
+            <option value="float">{t.motionPresets.float}</option>
+            <option value="pulse">{t.motionPresets.pulse}</option>
+            <option value="type">{t.motionPresets.type}</option>
           </select>
         </label>
         <label>{t.textPosition}
@@ -414,7 +510,8 @@ export function MandalaMultiTrackTimeline({
       <button type="button" className={css.remove} disabled={disabled}
         onClick={()=>{onRemoveCaption(chosen.id);setSelectedText(null);}}>
         <Trash2 size={15}/>{t.remove}</button>
-    </div>:null}
+      </div>
+    </details>:null}
     {selectedShot!==null&&shots.length>1&&shots[selectedShot]?<div className={css.shotActions}
       data-video-timeline-shot-inspector>
       <span>{t.shot} {selectedShot+1}</span>

@@ -39,7 +39,6 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(tabs).toHaveCount(6);
     for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
     const allStories=page.locator('[data-auto-video-all-scenes]');
-    // The first-screen director is deliberately hidden until "Continue".
     const continueButton=page.locator('[data-video-continue-scenarios]');
     await expect(continueButton).toBeDisabled();
     await expect(allStories).toBeDisabled();
@@ -162,27 +161,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
-      // The third workspace opens on Settings; the real music editor is
-      // mounted only after the visitor explicitly chooses its Audio tab.
-      const montagePreferences=page.locator('[data-video-montage-preferences]');
-      await montagePreferences.waitFor({state:"visible",timeout:25000});
-      const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
-      await montageAudioTab.waitFor({state:"visible",timeout:15000});
-      await montageAudioTab.click();
-      await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
-      const montageSettings=page.locator('[data-video-montage-settings]');
-      await montageSettings.waitFor({state:"visible",timeout:25000});
-      if(await montageSettings.getAttribute("open")===null)
-        await montageSettings.locator(":scope > summary").click();
-      const musicTab=montageSettings.locator('[data-video-basic-tab="music"]');
-      await musicTab.waitFor({state:"visible",timeout:25000});
-      await musicTab.click();
-      await expect(musicTab).toHaveAttribute("aria-pressed","true");
-      const lengthButton=montageSettings.locator(
-        '[data-video-music-editor] [data-video-audio-length="10"]');
-      await lengthButton.waitFor({state:"visible",timeout:25000});
-      await lengthButton.click();
-      await expect(lengthButton).toHaveAttribute("aria-pressed","true");
+      // Real Montage settings own duration, and Audio is a separate user tab.
+      const settingsTab=page.locator('[data-video-montage-tab="settings"]');
+      await settingsTab.waitFor({state:"visible",timeout:25000});
+      await settingsTab.click();
+      await expect(settingsTab).toHaveAttribute("aria-pressed","true");
+      const durationSelect=page.locator('[data-video-montage-preference="duration"]');
+      await durationSelect.waitFor({state:"visible",timeout:25000});
+      await durationSelect.selectOption("10");
+      await expect(durationSelect).toHaveValue("10");
+      const audioTab=page.locator('[data-video-montage-tab="audio"]');
+      await audioTab.click();
+      await expect(audioTab).toHaveAttribute("aria-pressed","true");
+      await page.locator('[data-video-montage-audio]').waitFor({state:"visible"});
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -219,6 +210,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
+      // Advanced sound controls are intentionally unmounted until a real visitor
+      // chooses the visible optional Ideas audio editor.
+      const optionalAudio=phrases.locator('[data-video-phrase-audio-shortcut]');
+      await optionalAudio.waitFor({state:"visible"});
+      await expect(optionalAudio).toHaveAttribute("aria-expanded","false");
+      await optionalAudio.click();
+      await expect(optionalAudio).toHaveAttribute("aria-expanded","true");
+      await phrases.locator('[data-video-legacy-phrase-editor][data-video-audio-expanded="true"]')
+        .waitFor({state:"visible",timeout:15000});
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
       await phrases.locator("[data-hypno-select-tone]").selectOption("balanced");
@@ -651,17 +651,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(!await page.locator("[data-video-narration-stale]").isVisible())
         await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
       await page.locator('[data-video-quick-control="editor"]').click();
-      // React resets Montage to Settings on re-entry. Open the real Audio
-      // section again before selecting its nested Voice tab.
-      const montageAudioForVoice=page.locator('[data-video-montage-tab="audio"]');
-      await montageAudioForVoice.waitFor({state:"visible",timeout:15000});
-      await montageAudioForVoice.click();
-      await expect(montageAudioForVoice).toHaveAttribute("aria-pressed","true");
-      const voiceDisclosure=page.locator('[data-video-montage-settings]');
-      await voiceDisclosure.waitFor({state:"visible",timeout:25000});
-      if(await voiceDisclosure.getAttribute("open")===null)
-        await voiceDisclosure.locator(":scope > summary").click();
-      await voiceDisclosure.locator('[data-video-basic-tab="voice"]').click();
+      const audioTabForVoice=page.locator('[data-video-montage-tab="audio"]');
+      await audioTabForVoice.waitFor({state:"visible"});
+      await audioTabForVoice.click();
+      await expect(audioTabForVoice).toHaveAttribute("aria-pressed","true");
       // The phrase warning is intentionally unmounted in Montage. If the
       // old narration is still attached there, export must remain disabled;
       // an independently selected soundtrack is not stale narration.
