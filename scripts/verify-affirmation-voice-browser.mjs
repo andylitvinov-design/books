@@ -39,10 +39,17 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(tabs).toHaveCount(6);
     for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
     const allStories=page.locator('[data-auto-video-all-scenes]');
+    // The first-screen director is deliberately hidden until "Continue".
+    const continueButton=page.locator('[data-video-continue-scenarios]');
+    await expect(continueButton).toBeDisabled();
     await expect(allStories).toBeDisabled();
     await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
+    await expect(continueButton).toBeEnabled();
+    await continueButton.click();
+    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
+    await expect(allStories).toBeVisible();
     await expect(allStories).toBeEnabled();
     await allStories.click();
     await expect(studio).toHaveAttribute("data-video-advanced-open","true");

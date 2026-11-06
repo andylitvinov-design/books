@@ -160,3 +160,21 @@ test("explicit Safari WebM retry uses a different recorder, preserves sound",asy
   assert.ok(studio.includes('if(!isMp4&&!isWebm){'));
   assert.ok(studio.includes('playbackStatus==="ready"&&result.mode!=="catalog"'));
 });
+
+test("actual WebKit media E2E navigates through the visible scenario step",()=>{
+  const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
+  const voice=read("scripts/verify-affirmation-voice-browser.mjs");
+  const live=read("scripts/benchmarking/first-video-live-export.mjs");
+  const motion=read("scripts/benchmarking/verify-original-motion-export.mjs");
+  for(const source of [voice,live,motion]){
+    assert.match(source,/data-video-continue-scenarios/);
+    assert.match(source,/data-video-scenario-open/);
+    assert.match(source,/data-auto-video-all-scenes/);
+  }
+  assert.match(voice,/await continueButton\.click\(\);[\s\S]*?await allStories\.click\(\);/);
+  assert.match(live,/await continueToScenarios\.click\(\);[\s\S]*?await allStories\.click\(\);/);
+  assert.match(motion,/await page\.locator\('\[data-video-continue-scenarios\]'\)\.click\(\);[\s\S]*?await allStories\.click\(\);/);
+  assert.match(voice,/await expect\(studio\)\.toHaveAttribute\("data-video-advanced-open","true"\)/);
+  assert.match(live,/ENCODED_VIDEO_STREAM_MISSING/);
+  assert.match(motion,/ffprobe/);
+});

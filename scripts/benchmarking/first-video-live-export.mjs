@@ -135,6 +135,13 @@ try {
   // Compact Video hides its extended source editor until the visitor chooses
   // "All stories". Exercise that REAL visible button, not a hidden DOM node
   // or direct React state manipulation, before testing the actual export.
+  // Compact first screen intentionally hides "All stories" until the
+  // visitor enters step 2. Navigate via its visible, hydrated button.
+  const continueToScenarios=page.locator('[data-video-continue-scenarios]');
+  await continueToScenarios.waitFor({state:'visible',timeout:40000});
+  await continueToScenarios.click();
+  await page.locator('[data-mandala-free-video][data-video-scenario-open="true"]')
+    .waitFor({state:'attached',timeout:15000});
   const allStories = page.locator('[data-auto-video-all-scenes]');
   await allStories.waitFor({state:'visible',timeout:40000});
   await allStories.click();
