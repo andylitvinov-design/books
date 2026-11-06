@@ -97,7 +97,7 @@ test("generated MP3s are available to actual player and not empty placeholders",
 
 test("worker shard never reruns the full CLI master generator",()=>{
   const source=read("scripts/generate-scenario-melodies.mjs");
-  assert.match(source,/if\\(isMainThread&&process\\.argv\\[1\\]/,
+  assert.ok(source.includes("if(isMainThread&&process.argv[1]"),
     "a Worker must not independently execute the all-tracks CLI entrypoint");
 });
 
