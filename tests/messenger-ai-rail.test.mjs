@@ -40,8 +40,11 @@ test('response, safety and keyboard controls remain inside the transcript',()=>{
  const agent=read('components/holistic-agent-chat.tsx')
  const css=read('app/unified-mobile-dock.css')
  assert.match(dock,/case "ai": return prefix\+"\/app\/messages\?section=ai"/)
- for(const word of ['{compact&&settings}','messages.map','role="alert"','className={styles.choices}'])
+ for(const word of ['data-hh-video-chat-options','data-hh-video-open-studio','messages.map','role="alert"','className={styles.choices}'])
   assert.ok(agent.includes(word),word)
+ assert.ok(!agent.includes('{compact&&settings}'),'Settings not displayed in Messenger');
+ assert.ok(!agent.includes('{compact&&<p className={styles.compactDisclosure}>'),'visible disclosure removed');
+ 
  assert.ok(css.includes('data-chat-editing="true"'))
  assert.match(agent,/followTail.current=true;setNewBelow\(false\)/)
 })

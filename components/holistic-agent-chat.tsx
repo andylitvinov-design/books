@@ -4,12 +4,25 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
+import {
+  MESSENGER_VIDEO_HANDOFF_KEY,initialMessengerVideoDraft,messengerVideoCopy,
+  messengerVideoQuestion,messengerVideoChoices,advanceMessengerVideo,
+  changeMessengerVideoPhraseStyle,encodeMessengerVideoHandoff,
+} from "@/lib/mandala/video-chat-messenger-flow.mjs";
 import styles from "./holistic-agent-chat.module.css";
 
 type Mode = "rules" | "device" | "owned";
 type PreviewFocus = "" | "stress" | "relationships" | "self_worth" | "meaning";
 type Outline = {status:"draft_ready";title:string;lessons:Array<{number:number;title:string;steps:string[];videoReady:false}>;published:false;mediaReady:false};
 type Message = { role: "user" | "assistant"; text: string };
+type MessengerVideoDraft = {
+  goal:string;categoryId:string|null;topicId:string|null;scenarioId:string|null;
+  ideaId:string|null;phraseId:string|null;phraseText:string|null;
+  tone:"gentle"|"confident"|"grounded"|"inspiring";speaker:"self"|"support";
+  length:"short"|"extended";mood:"slow"|"dynamic"|null;
+  aspect:"portrait"|"landscape"|"square"|null;duration:10|15|20|30|60|null;
+  music:"love"|"meditation"|"harmony"|"none"|null;phrases:boolean|null;
+};
 type AgentDecision = { status: string; message?: string; question?: {key:string;text:string}|null;
   suggestions?: {id:string;kind:string;title:string;href:string}[] };
 type AgentReply = { status:string;reply:string;modelUsed:boolean;source:string;
@@ -165,6 +178,11 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
   const [guideLink,setGuideLink]=useState<"tests"|null>(null);
   const [messages,setMessages]=useState<Message[]>([]);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
+  const [videoDraft,setVideoDraft]=useState<MessengerVideoDraft>(
+    ()=>initialMessengerVideoDraft() as MessengerVideoDraft);
+  const [videoStep,setVideoStep]=useState<string|null>(null);
+  const videoCopy=messengerVideoCopy(locale);
+  const videoChoices=compact&&videoStep?messengerVideoChoices(videoDraft,videoStep,locale):[];
   const [status,setStatus]=useState("");
   const [source,setSource]=useState("");
   const [busy,setBusy]=useState(false);
@@ -224,16 +242,45 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     finally{setOutlineBusy(false);}
   }
 
+  function answerVideo(value:string,label=value) {
+    if(!compact||!videoStep||busy)return;
+    const result=advanceMessengerVideo(videoDraft,videoStep,value,locale);
+    setVideoDraft(result.draft as MessengerVideoDraft);
+    setVideoStep(result.step);
+    setDraft("");setStatus("");setSource("");setChoices([]);
+    followTail.current=true;setNewBelow(false);
+    setMessages(prev=>[...prev,
+      {role:"user" as const,text:label},
+      {role:"assistant" as const,text:(result.valid?"":videoCopy.unknown+"\\n")+
+        messengerVideoQuestion(result.step,locale)},
+    ].slice(-30));
+  }
+  function updateVideoPhraseStyle(key:"tone"|"speaker"|"length",value:string,label:string) {
+    if(!compact||videoStep!=="phrase"||busy)return;
+    const next=changeMessengerVideoPhraseStyle(videoDraft,key,value);
+    if(!next)return;
+    setVideoDraft(next as MessengerVideoDraft);setStatus("");setChoices([]);
+    followTail.current=true;setNewBelow(false);
+    setMessages(prev=>[...prev,{role:"user" as const,text:label},
+      {role:"assistant" as const,text:messengerVideoQuestion("phrase",locale)}].slice(-30));
+  }
+  function openVideoEdit(step:string,label:string) {
+    setVideoStep(step);followTail.current=true;setNewBelow(false);
+    setMessages(prev=>[...prev,{role:"user" as const,text:label},
+      {role:"assistant" as const,text:messengerVideoQuestion(step,locale)}].slice(-30));
+  }
   function startGuided(kind:"video"|"meditation"|"hint") {
     if(busy)return;
     followTail.current=true;setNewBelow(false);
     setFormat(kind==="video"?"video":kind==="meditation"?"audio":"test");
+    setVideoStep(kind==="video"?"category":null);
+    if(kind==="video")setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
     setGuideLink(kind==="hint"?"tests":null);
     setEntryOpen(false);setStatus("");setSource("");setChoices([]);
     setDraft("");
     const intent=kind==="video"?starter.videoIntent:
       kind==="meditation"?starter.meditationIntent:starter.hintIntent;
-    const question=kind==="video"?starter.videoQuestion:
+    const question=kind==="video"?messengerVideoQuestion("category",locale):
       kind==="meditation"?starter.meditationQuestion:starter.hintQuestion;
     setMessages(prev=>[...prev,
       {role:"user" as const,text:intent},
@@ -244,6 +291,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     event.preventDefault();
     const text=draft.trim().slice(0,2000);
     if(!text||busy||mode==="owned"&&!agree)return;
+    if(compact&&videoStep){answerVideo(text);return;}
     if(compact&&isCasualGreeting(text)){
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
       setMessages(prev=>[...prev,{role:"user" as const,text},
@@ -389,8 +437,50 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
           <strong>{starter.master}</strong><small>{starter.masterSub}</small>
         </a>
       </div>}
-      {compact&&settings}
-      {compact&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
+      {compact&&videoStep&&<div className={styles.videoInline} data-hh-video-chat-step={videoStep}>
+        {videoStep==="phrase"&&<div className={styles.videoPhraseFilters} data-hh-video-phrase-filters>
+          {(["tone","speaker","length"] as const).map(key=><fieldset key={key}>
+            <legend>{videoCopy[key]}</legend>
+            <div>{(key==="tone"?["gentle","confident","grounded","inspiring"]:
+              key==="speaker"?["self","support"]:["short","extended"]).map((value,index)=>{
+              const label=(key==="tone"?videoCopy.tones:key==="speaker"?videoCopy.speakers:videoCopy.lengths)[index];
+              return <button type="button" key={value} disabled={busy}
+                aria-pressed={videoDraft[key]===value} data-hh-video-phrase-style={key+"-"+value}
+                onClick={()=>updateVideoPhraseStyle(key,value,label)}>{label}</button>;
+            })}</div>
+          </fieldset>)}
+        </div>}
+        {videoChoices.length>0&&<div className={styles.videoOptions} role="group"
+          aria-label={messengerVideoQuestion(videoStep,locale)} data-hh-video-chat-options>
+          {videoChoices.map(item=><button type="button" key={item.id} disabled={busy}
+            data-hh-video-chat-choice={item.id} onClick={()=>answerVideo(item.id,item.label)}>{item.label}</button>)}
+        </div>}
+        {videoStep==="review"?<div className={styles.videoReview} data-hh-video-chat-review>
+          <p>{videoDraft.duration} s · {videoDraft.aspect==="portrait"?"9:16":videoDraft.aspect==="square"?"1:1":"16:9"} · {videoCopy.editNames.music}: {videoDraft.music==="none"?videoCopy.musicNames[3]:videoDraft.music}</p>
+          <div className={styles.videoEditOptions} role="group" aria-label={videoCopy.edit}>
+            {(["category","topic","scenario","idea","phrase","mood","aspect","duration","music","phrases"] as const).map(step=><button
+              type="button" key={step} disabled={busy} data-hh-video-edit-step={step}
+              onClick={()=>openVideoEdit(step,step in videoCopy.editNames?
+                videoCopy.editNames[step as keyof typeof videoCopy.editNames]:messengerVideoQuestion(step,locale))}>
+              {step in videoCopy.editNames?videoCopy.editNames[step as keyof typeof videoCopy.editNames]:videoCopy[step]}</button>)}
+          </div>
+          <a className={styles.videoStudioLink} data-hh-video-open-studio
+            href={"/"+locale+"/holistic-support/mandala#video-director-chat"}
+            onClick={event=>{
+              const payload=encodeMessengerVideoHandoff(videoDraft,locale);
+              if(!payload){event.preventDefault();setStatus(videoCopy.unknown);return;}
+              try{window.sessionStorage.setItem(MESSENGER_VIDEO_HANDOFF_KEY,payload);}
+              catch{event.preventDefault();setStatus(t.error);}
+            }}>{videoCopy.toStudio}</a>
+        </div>:<div className={styles.videoCommands} role="group" aria-label={videoCopy.edit}>
+          {videoStep!=="category"&&<button type="button" disabled={busy} data-hh-video-chat-back
+            onClick={()=>answerVideo("назад",videoCopy.back)}>{videoCopy.back}</button>}
+          {videoStep==="phrase"&&<button type="button" disabled={busy} data-hh-video-chat-skip
+            onClick={()=>answerVideo("пропусти",videoCopy.noPhrases)}>{videoCopy.noPhrases}</button>}
+          {videoStep!=="category"&&<button type="button" disabled={busy} data-hh-video-chat-auto
+            onClick={()=>answerVideo("выбери сам",videoCopy.auto)}>{videoCopy.auto}</button>}
+        </div>}
+      </div>}
     {source&&<p className={styles.muted}>{t.source}: {source}</p>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
     {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
@@ -417,7 +507,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);setVideoStep(null);
+          setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
