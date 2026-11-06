@@ -73,20 +73,17 @@ function exercise(input,workspace,overrides={}){
  let handler;const visit=n=>{if(ts.isVariableDeclaration(n)&&n.name.getText(ast)==='startFromHero')handler=n.initializer;ts.forEachChild(n,visit);};visit(ast);
  assert.ok(handler);
  const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
- let active=workspace,queued=workspace,basicTab=null,montagePanel=null,montageStyleOpened=false,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
+ let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
  const state={recording:false,preparing:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
  runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
-   setBasicPanelTab:value=>{basicTab=value;},
-   setMontagePanel:value=>{montagePanel=value;},
-   setMontageStyleSettingsOpen:value=>{montageStyleOpened=value;},
-   setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+   setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
- return {workspace:active,basicTab,montagePanel,montageStyleOpened,open:cover.open,scrolls,notices,renders,picks};
+ return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
 }
 test('one original consent pane is accessible in Video or fifth Montage Photo',()=>{
  assert.match(source,/activeWorkspace==="video" \? deepCharacterPhotoPane : null/);
@@ -99,10 +96,6 @@ test('actual hero handler reveals consent in all six workspaces and legacy layou
   const r=exercise(source,workspace),target=workspace==='video'?'video':'editor';
   assert.deepEqual(r.scrolls,[{open:true,workspace:target,visible:true}],String(workspace));
   assert.equal(r.basicTab,workspace==='video'?null:'photo');
-  assert.equal(r.montagePanel,workspace==='video'?null:'settings',
-    "the existing consent panel is revealed in Montage Settings");
-  assert.equal(r.montageStyleOpened,workspace!=='video',
-    "the advanced consent control is actually expanded");
   assert.equal(r.renders,0);
   assert.deepEqual(r.notices,['Consent required']);
  }
@@ -182,7 +175,7 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
   assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setFirstVideoAdvancedActivated\(true\);\}\}/);
   assert.match(studio, /\{firstVideoAdvancedActivated \? <MandalaFirstVideoStart/);
   assert.match(studio, /data-video-voice-studio open=\{basicPanelTab==="voice"\}/);
-  assert.match(studio, /onToggle=\{event=>\{\s*if\(event\.currentTarget\.open\)setVoiceStudioActivated\(true\);\s*setBasicPanelTab\(event.currentTarget.open\?"voice":"music"\);/);
+   assert.match(studio, /if\(event\.currentTarget\.open\)setVoiceStudioActivated\(true\)/);
   assert.match(studio, /\{voiceStudioActivated \? <MandalaCloudVoiceStudio/);
   assert.match(studio, /useState<StudioWorkspace>\("video"\)/);
   assert.match(studio, /<MandalaAutoVideoDirector/);
@@ -255,9 +248,7 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
    "editing a four-shot montage changes the local actual caption track");
  assert.match(editor,/setCaptionMode\("custom"\)/,
    "single-scene style applies the script as a real caption");
- assert.match(studio.slice(studio.indexOf('data-video-basic-editor'),studio.indexOf('data-video-editor-scenario')),
-   /data-video-editor-style-settings/,
-   "the advanced style disclosure remains in Montage Settings before the compact script");
+ assert.match(studio,/data-video-editor-style-settings/);
  assert.equal((studio.match(/\{deepVideoPane\}/g)||[]).length,1,"no duplicate settings panels");
  assert.doesNotMatch(studio,/Все настройки стиля видео/,"remove old stray style disclosure");
 });

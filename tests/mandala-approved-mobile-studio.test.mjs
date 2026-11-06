@@ -121,7 +121,7 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
   assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*setActiveWorkspace\("editor"\);setMontagePanel\("audio"\);setBasicPanelTab\("music"\)/,
-    "missing audio opens the original Montage Audio tab and consent controls");
+    "missing audio opens Montage Audio attachment and consent controls");
   assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}\s*else openAffirmationPreview\(\)/,
     "Canvas-only topics must play the visible main screen without expanding the editor");
   assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,

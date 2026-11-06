@@ -282,33 +282,35 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
 });
 
 
-test("owner-approved third Montage and sixth PRO reuse one operational video/audio pipeline",()=>{
- const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
- assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
- assert.match(studio,/\{id:"practices",Icon:Leaf\},\{id:"pro",Icon:Zap\}/);
- assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
- assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
- assert.match(studio,/data-video-basic-editor/);
- for(const id of ["effects","text","audio","settings"])assert.ok(studio.includes('id:"'+id+'"'),
-   "real four-tool Montage navigation preserves "+id);
- assert.match(studio,/data-video-montage-style=\{index\}/);
- assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
- assert.match(studio,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
- assert.match(studio,/data-video-montage-audio/);
- assert.match(studio,/data-video-voice-studio open=\{basicPanelTab==="voice"\}/);
- assert.equal((studio.match(/<MandalaCloudVoiceStudio /g)||[]).length,1,
-   "only the original voice panel is mounted in Montage");
- assert.equal((studio.match(/id="video-audio"/g)||[]).length,1,
-   "single shared audio editor and native playback dock");
- assert.equal((studio.match(/<MandalaCinematicDirector /g)||[]).length,1);
- assert.equal((studio.match(/<MandalaStoriesCharacters /g)||[]).length,1);
- assert.match(studio,/data-video-montage-preference="format"/);
- assert.match(studio,/data-video-montage-preference="duration"/);
- assert.match(studio,/data-video-final-editor/);
- assert.match(studio,/data-video-editor-style-settings/);
- assert.match(studio,/data-video-quick-generate/);
- assert.match(css,/\.basicTabs\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
- assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+test("Montage and PRO retain one operational video/audio pipeline without duplicate controls",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
+  assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
+  assert.match(studio,/\{id:"practices",Icon:Leaf\},\{id:"pro",Icon:Zap\}/);
+  assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
+  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
+  assert.match(studio,/data-video-basic-editor/);
+  const nav=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'),
+    studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.montageQuickTools}')));
+  assert.deepEqual([...nav.matchAll(/id:"(effects|text|audio|settings)",Icon:/g)].map(m=>m[1]),
+    ["effects","text","audio","settings"],"Style, Add text, Audio, Settings");
+  assert.match(studio,/data-video-montage-style=\{index\}/);
+  assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
+  assert.match(studio,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
+  assert.match(studio,/data-video-montage-photo-open/);
+  assert.match(studio,/\{deepAudioPane\}/);
+  assert.match(studio,/data-video-voice-studio/);
+  assert.equal((studio.match(/<MandalaCloudVoiceStudio /g)||[]).length,1);
+  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
+  assert.equal((studio.match(/<MandalaCinematicDirector /g)||[]).length,1);
+  assert.equal((studio.match(/<MandalaStoriesCharacters /g)||[]).length,1);
+  assert.match(studio,/data-video-montage-preference="format"/);
+  assert.match(studio,/data-video-montage-preference="duration"/);
+  assert.doesNotMatch(studio,/data-video-basic-tab=|data-video-basic-format=|data-video-basic-duration=/);
+  assert.match(studio,/data-video-final-editor/);
+  assert.match(studio,/data-video-editor-style-settings/);
+  assert.match(studio,/data-video-quick-generate/);
+  assert.match(css,/\.montageQuickTools\{\s*display:grid!important;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 
 test("MyTube cards display the original scenario, not the four generic archetype headings",()=>{

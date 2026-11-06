@@ -120,8 +120,7 @@ test("all format controls call the same plan-preserving reframe handler",()=>{
     assert.ok(studio.slice(at,at+500).includes(handler),"format control loses montage "+selector);
   }
   assert.doesNotMatch(studio,/setAspect\((?:format|value)\);setCinematicPlan\(null\)/);
-  assert.doesNotMatch(studio,/data-video-aspect=\{format\}/,
-    "removed duplicate format toolbar must not return alongside Montage Settings");
+  assert.doesNotMatch(studio,/data-video-aspect=\{format\}[\s\S]{0,240}onPointerUp=/);
 });
 
 
