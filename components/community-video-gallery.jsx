@@ -6,6 +6,12 @@ const t={
  ru:{title:'Видео участников',all:'Все авторы',any:'Все темы',author:'Автор',watch:'Смотреть на YouTube',empty:'Публичных видео участников пока нет.'},
  es:{title:'Vídeos comunitarios',all:'Todos los autores',any:'Todas las categorías',author:'Autor',watch:'Ver en YouTube',empty:'Aún no hay vídeos comunitarios públicos.'}
 }
+/**
+ * A typed read-only public gallery. An untyped default [] would infer never[].
+ * @typedef {{id:string,title:string,author:string,authorUrl:string,
+ *   category:string,duration:number,url:string,thumbnail:string}} CommunityVideoCard
+ * @param {{videos?:CommunityVideoCard[],locale?:string,heading?:boolean}} props
+ */
 export default function CommunityVideoGallery({videos=[],locale='en',heading=true}){
  const text=t[locale]||t.en
  const [author,setAuthor]=useState('all'),[category,setCategory]=useState('all')
