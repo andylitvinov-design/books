@@ -46,8 +46,19 @@ function parse(comment){
      t(j.queued_at)!==null&&t(j.started_at)!==null&&t(j.completed_at)!==null&&
      t(j.queued_at)<=t(j.started_at)&&t(j.started_at)<=t(j.completed_at)&&
      t(j.completed_at)<=t(r.completed_at)+120000);
-   if(!jobs.length)return null;
-   return {...r,jobs,partial_jobs:r.partial_jobs===true||jobs.length!==r.jobs.length};
+   // A GitHub workflow may be registered but fail before creating any jobs.
+   // This proves registration, never a runner start or successful Core check.
+   const registrationOnly=r.registration_only===true&&
+     r.empty_job_reason==='STARTUP_FAILURE_NO_JOBS'&&
+     r.conclusion==='startup_failure'&&r.attempt===1&&
+     r.partial_jobs===true&&r.jobs.length===0&&
+     Number.isSafeInteger(r.run_id)&&r.run_id>0&&
+     r.workflow_url===msurl(r.run_id)&&
+     t(r.pr_created_at)!==null&&t(r.pr_created_at)<=t(r.queued_at);
+   if(r.registration_only===true&&!registrationOnly)return null;
+   if(!jobs.length&&!registrationOnly)return null;
+   return {...r,jobs,registration_only:registrationOnly,
+     partial_jobs:registrationOnly||r.partial_jobs===true||jobs.length!==r.jobs.length};
  }).filter(Boolean);
 }
 async function fetchArchive(force=false){
@@ -88,7 +99,8 @@ async function fetchArchive(force=false){
 function summarizePR(pr,runs){
  const sorted=[...runs].sort((a,b)=>t(a.queued_at)-t(b.queued_at));
  const first=t(sorted[0].queued_at),end=Math.max(...sorted.map(x=>t(x.completed_at)));
- if(first===null||end<=first)return null;
+ // Never report a fake zero-minute CI when no runner job has existed.
+ if(first===null||end<=first||!sorted.some(r=>r.jobs.length))return null;
  const intervals=[];
  const add=(name,a,b)=>{if(a!==null&&b!==null&&b>a&&a<end&&b>first)
    intervals.push({name,start:Math.max(first,a),end:Math.min(end,b)});};
@@ -119,9 +131,14 @@ function summarizePR(pr,runs){
  }
  if(Math.abs(Object.values(stages).reduce((a,b)=>a+b,0)-(end-first))>1)return null;
  const lastRun=[...sorted].sort((a,b)=>t(b.completed_at)-t(a.completed_at))[0];
+ const firstJob=sorted.flatMap(r=>r.jobs).sort((a,b)=>
+   t(a.started_at)-t(b.started_at))[0]||null;
  return {pr,first_at:new Date(first).toISOString(),last_at:new Date(end).toISOString(),
    elapsed_ms:end-first,elapsed_minutes:rnd((end-first)/60000),stages_ms:stages,
    runs:sorted.length,repeats:Math.max(0,sorted.length-1),
+   jobless_startup_runs:sorted.filter(r=>r.registration_only===true).length,
+   first_job_started_at:firstJob?.started_at||null,
+   first_job_url:firstJob?.url||null,
    distinct_heads:new Set(sorted.map(x=>x.source_head)).size,
    failures:sorted.filter(x=>['failure','timed_out','startup_failure'].includes(x.conclusion)).length,
    partial:sorted.some(x=>x.partial_jobs),
@@ -156,17 +173,21 @@ function report(store,h,now=Date.now()){
    period_hours:h,cohort:'LAST_OBSERVED_CORE_JOB_COMPLETED_IN_WINDOW',
    archive_url:'https://github.com/andylitvinov-design/books/issues/'+ISSUE,
    coverage:{label:'VERIFIED_RUN_SAMPLE_NOT_ALL_PRS',comments_seen:store.comments,
+     jobless_startup_runs:store.runs.filter(r=>r.registration_only===true).length,
+     jobless_startup_only_prs:[...byPR.values()].filter(rs=>
+       rs.every(r=>r.registration_only===true)).length,
      archived_runs:store.runs.length,archived_prs:byPR.size,
      partial_prs:rows.filter(x=>x.partial).length,
      history_complete:false,pagination_partial:store.pagination_partial,
      rows_returned:Math.min(250,rows.length),rows_total:rows.length,
      api_remaining:store.remaining,stale:store.stale===true,
      archive_fetched_at:store.fetched_at,
-     note:'Первая и последняя CI из наблюдаемых Core runs; отсутствие старых workflow_run событий может уменьшать длительность.'},
+     note:'Первая регистрация Core может быть startup_failure без jobs; первый реально стартовавший job показан отдельно. Draft и отсутствие прежних запусков не являются ожиданием runner.'},
    summary:{n:rows.length,median_minutes:nums.length?rnd(quant(nums,.5)/60000):null,
      average_minutes:nums.length?rnd(sum/nums.length/60000):null,
      p90_minutes:nums.length?rnd(quant(nums,.9)/60000):null,
      repeats:rows.reduce((n,x)=>n+x.repeats,0),
+     jobless_startup_runs:rows.reduce((n,x)=>n+x.jobless_startup_runs,0),
      failures:rows.reduce((n,x)=>n+x.failures,0)},
    stage_breakdown:{schema:'HH_CI_JOURNEY_CONTRIBUTIONS_V1',
      cohort:'SAME_OBSERVED_CI_ROWS_AS_SUMMARY',

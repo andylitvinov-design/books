@@ -51,6 +51,10 @@
      item.append(el('span','',title),el('strong','',value));header.append(item);
    }
    body.append(header);
+   const jobless=data.coverage?.jobless_startup_runs;
+   if(Number.isSafeInteger(jobless)&&jobless>0)
+     body.append(el('p','hh-ci-archive-note',
+       'Во всём доступном архиве: '+jobless+' регистраций Core завершились startup_failure до создания jobs. Это не работа runner и не успешная CI.'));
    if(!n){
      body.append(el('p','hh-ci-archive-empty',
       'В архиве пока нет завершённых Core CI за выбранный период. По мере завершения новых проверок данные появятся автоматически. Это не означает 0 минут.'));
@@ -99,7 +103,8 @@
        const detail=el('div','hh-ci-archive-pr-detail');
        const stamps=el('div','hh-ci-archive-timestamps');
        for(const [name,time,url] of [
-         ['Первая CI · очередь',r.first_at,r.first_url],
+         ['Первая регистрация Core (включая сбои)',r.first_at,r.first_url],
+         ['Первый реально запущенный job',r.first_job_started_at,r.first_job_url],
          ['Последний job CI · завершение',r.last_at,r.last_url]]){
          const line=el('div');line.append(el('span','',name),runLink(url,dt(time)));stamps.append(line);
        }
@@ -113,6 +118,7 @@
        pr.target='_blank';pr.rel='noopener noreferrer';
        detail.append(el('p','hh-ci-archive-note',
          'HEAD SHA: '+r.distinct_heads+' · ошибки: '+r.failures+
+         ' · startup без jobs: '+(r.jobless_startup_runs||0)+
          ' · наблюдаемая история CI может не включать старые запуски.'),pr);
        row.append(detail);
        if(index<4)list.append(row);else moreList.append(row);
@@ -133,7 +139,7 @@
      'Срез: '+dt(data.coverage.archive_fetched_at)+' Toronto · охват '+data.coverage.archived_prs+
      ' PR / '+data.coverage.archived_runs+' runs · '+(data.coverage.stale?'УСТАРЕВШИЙ СРЕЗ':'сохранён в GitHub')),
      source,el('span','',
-      'Выборка по последнему завершённому Core job. Значок ≥ обозначает нижнюю границу времени из сохранённых запусков: более ранние CI могут отсутствовать. Пропуски ≠ ноль.'));
+      'Выборка по последнему завершённому Core job; подтверждённые startup_failure без jobs показаны отдельно. Время Draft — не очередь runner. Пропуски ≠ ноль.'));
    exportBtn.disabled=!Array.isArray(data.rows)||!data.rows.length;
    exportBtn.textContent=data.coverage.rows_total>data.coverage.rows_returned?
      'CSV · первые '+data.coverage.rows_returned+' PR':'Экспорт CSV';
