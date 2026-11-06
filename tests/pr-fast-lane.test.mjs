@@ -345,7 +345,18 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
         assert.equal(result.signal, null, 'invalid base is a normal Git failure, not timeout');
         assert.ok(!existsSync(join(dir, 'output')) || !readFileSync(join(dir, 'output'), 'utf8').includes('docs_only=true'));
       } else {
-        assert.deepEqual(readFileSync(join(dir, 'output'), 'utf8').trim().split('\n'), [`docs_only=${expected}`,`ci_only=${expectedCiOnly}`]);
+        // Exact regressions prove CI-policy changes stay covered without
+        // classifying an unrelated runtime-only PR as CI infrastructure.
+        const expectedCiTouched = new Set([
+          'workflow-to-doc rename',
+          'CI workflow YAML edit', 'CI workflow YAML deletion',
+          'CI source aggregator edit', 'CI policy test edit',
+          'CI workflow validation test edit', 'CI YAML plus runtime code',
+          'CI YAML rename to runtime file', 'dependency lockfile edit',
+        ]).has(name);
+        assert.deepEqual(readFileSync(join(dir, 'output'), 'utf8').trim().split('\n'),
+          [`docs_only=${expected}`,`ci_only=${expectedCiOnly}`,
+            `ci_touched=${expectedCiTouched}`]);
       }
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -401,7 +412,7 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
         GITHUB_OUTPUT:output,GITHUB_STEP_SUMMARY:summary});
     assert.equal(checked.status,0,checked.stderr);
     assert.deepEqual(readFileSync(output,'utf8').trim().split('\n'),
-      ['docs_only=false','ci_only=true']);
+      ['docs_only=false','ci_only=true','ci_touched=true']);
     assert.deepEqual(readFileSync(join(dir,'changed.z'),'utf8').split('\0').filter(Boolean),
       ['.github/workflows/example.yml']);
     const bad=run('bash',['--noprofile','--norc','-c',script],

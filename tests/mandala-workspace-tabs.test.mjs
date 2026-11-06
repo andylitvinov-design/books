@@ -80,7 +80,7 @@ function exercise(input,workspace,overrides={}){
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
  runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
-   setBasicPanelTab:value=>{basicTab=value;},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+   setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
  return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
@@ -109,7 +109,7 @@ test('recording/preparing locks, consent, background, missing photo and audio ga
  }
 });
 test('negative control rejects previous handler in four nonowner workspaces',()=>{
- const line='      if(activeWorkspace!=="video"){setActiveWorkspace("editor");setBasicPanelTab("photo");}';
+ const line='      if(activeWorkspace!=="video"){setActiveWorkspace("editor");setMontagePanel("settings");setMontageStyleSettingsOpen(true);setBasicPanelTab("photo");}';
  assert.equal(source.split(line).length,2);
  for(const workspace of ['phrases','effects','practices','pro']){
   const r=exercise(source.replace(line,''),workspace);
@@ -174,8 +174,11 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
   }
   assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setFirstVideoAdvancedActivated\(true\);\}\}/);
   assert.match(studio, /\{firstVideoAdvancedActivated \? <MandalaFirstVideoStart/);
-  assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setVoiceStudioActivated\(true\);\}\}/);
-  assert.match(studio, /\{voiceStudioActivated \? <MandalaCloudVoiceStudio/);
+  // Voice can now be activated by a deep link and its one live details
+  // panel owns the same state as the lazily mounted studio.
+  assert.match(studio, /data-video-voice-studio open=\{voiceStudioActivated\}/);
+  assert.match(studio, /onToggle=\{event=>setVoiceStudioActivated\(event\.currentTarget\.open\)\}/);
+  assert.match(studio, /\{voiceStudioActivated\?<MandalaCloudVoiceStudio/);
   assert.match(studio, /useState<StudioWorkspace>\("video"\)/);
   assert.match(studio, /<MandalaAutoVideoDirector/);
 });
@@ -241,13 +244,13 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
  const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
  const scenario=editor.indexOf('data-video-editor-scenario');
- assert.ok(scenario>=0&&scenario<editor.indexOf('id="video-basic-heading"'),"script leads Montage");
+ assert.ok(scenario>=0&&scenario<editor.indexOf('data-video-montage-audio'),"script is available before Audio");
  assert.match(editor,/data-video-montage-script-update/);
  assert.match(editor,/normalizeStageCaption\(lines\[index\]\|\|""\)/,
    "editing a four-shot montage changes the local actual caption track");
  assert.match(editor,/setCaptionMode\("custom"\)/,
    "single-scene style applies the script as a real caption");
- assert.match(editor,/data-video-editor-style-settings/);
+ assert.match(studio,/data-video-editor-style-settings/);
  assert.equal((studio.match(/\{deepVideoPane\}/g)||[]).length,1,"no duplicate settings panels");
  assert.doesNotMatch(studio,/Все настройки стиля видео/,"remove old stray style disclosure");
 });
