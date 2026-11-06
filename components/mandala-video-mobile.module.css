@@ -4307,6 +4307,15 @@
 .studio[data-active-workspace="phrases"] .phraseAudioNext{
   display:flex!important;align-items:center;justify-content:center;gap:8px;
 }
+/* The compact Ideas opt-in must remain an actual visible, keyboard/tap-accessible
+   button even when older generic Phrases selectors hide legacy audio. This
+   selector intentionally wins over the retired .phraseAudioNext rule. */
+.studio[data-active-workspace="phrases"] .quickBuilder
+  >[data-workspace-section="phrases"][data-video-quick-phrases]
+  >button[data-video-phrase-audio-shortcut]{
+  display:flex!important;visibility:visible!important;
+  opacity:1!important;min-height:44px!important;pointer-events:auto!important
+}
 .studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"]{
   display:block!important;min-width:0;max-width:100%;
 }

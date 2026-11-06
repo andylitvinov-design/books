@@ -167,3 +167,25 @@ test("native MP4 retry does not silently rerun Safari WebCodecs after failed Web
   assert.match(studio,/recordingMimes\(Boolean\(musicSession\), preferWebm, forceMp4ForRetry\)/);
   assert.match(studio,/const mimeTypes = preferWebm[\s\S]*?recordingMimes\(Boolean\(musicSession\),true\)\.filter/);
 });
+
+
+test("Safari deferred MP4 decoding requires a real user Play gesture, not a false timeout failure",()=>{
+  const start=studio.indexOf('if (!result || playbackStatus !== "checking") return;');
+  const end=studio.indexOf('},[result,playbackStatus,locale]);',start);
+  assert.ok(start>0&&end>start,"the bounded deferred-decoding check is retained");
+  const timer=studio.slice(start,end);
+  assert.match(timer,/setNotice\(/,"20s only provides useful visitor guidance");
+  assert.doesNotMatch(timer,/setPlaybackStatus\("failed"\)/,
+    "a timer cannot pronounce a valid deferred iPhone video corrupt");
+  assert.match(studio,/data-video-verify-playback/);
+  assert.match(studio,/player\.play\(\)\.then\(\(\)=>confirmVideoPlayback\(player\)\)/);
+  assert.match(studio,/video\.videoWidth>0 && video\.videoHeight>0/);
+  assert.match(studio,/onError=\{event=>\{[\s\S]*?setPlaybackStatus\("failed"\)/,
+    "genuine native media decoding errors must still be rejected");
+  assert.match(studio,/playbackStatus==="ready"&&\(result\.mode==="catalog"\|\|creditConfirmed\)/,
+    "a finished download remains gated by real playback and confirmed video credits");
+  const e2e=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.match(e2e,/await verifyPlayback\.click\(\)/,
+    "WebKit acceptance really taps Play instead of fabricating a decoded frame");
+  assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+});

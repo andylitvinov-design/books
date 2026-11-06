@@ -230,7 +230,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The owner-approved Ideas screen is compact until an ACTUAL visitor
       // opens the one original voice/phrase editor; never force-show a hidden pane.
       const advancedPhrases=phrases.locator("[data-video-phrase-audio-shortcut]");
-      await expect(advancedPhrases).toBeVisible();
+      // Actual WebKit root cause was a legacy Phrases selector overriding the
+      // opt-in button's display. Verify the parent is in Ideas and the *computed*
+      // control is accessible; never force-click hidden elements to pass QA.
+      await expect(page.locator('[data-video-quick-control="phrases"]'))
+        .toHaveAttribute("aria-pressed","true");
+      await expect(advancedPhrases).toBeVisible({timeout:15000});
+      const visibility=await advancedPhrases.evaluate(node=>({
+        display:getComputedStyle(node).display,
+        visibility:getComputedStyle(node).visibility,
+        width:node.getBoundingClientRect().width,
+        height:node.getBoundingClientRect().height,
+      }));
+      assert.ok(visibility.display!=="none"&&visibility.visibility==="visible"&&
+        visibility.width>0&&visibility.height>=40,
+        "WebKit Ideas audio opener must be physically visible: "+JSON.stringify(visibility));
       await expect(advancedPhrases).toHaveAttribute("aria-expanded","false");
       await expect(phrases.locator("[data-hypno-select-tone]")).toBeHidden();
       await advancedPhrases.click();
@@ -562,6 +576,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const output=page.locator("[data-mandala-video-download]");
         phase(engine,"waiting-for-export");
         try {
+          // An iPhone/WebKit MP4 can require a physical Play gesture before
+          // the native video element decodes its first frame. The export is NOT
+          // considered ready or downloadable before native playback succeeds.
+          let verificationTapped=false;
+          const verifyPlayback=page.locator("[data-video-verify-playback]");
+          await expect.poll(async()=>{
+            if(await output.isVisible())return true;
+            if(!verificationTapped&&await verifyPlayback.isVisible()){
+              verificationTapped=true;
+              await verifyPlayback.click();
+            }
+            return false;
+          },{timeout:45000,intervals:[250,500,1000]}).toBe(true);
           await output.waitFor({state:"visible",timeout:45000});
         } catch (error) {
           phase(engine,"download-control-timed-out");
