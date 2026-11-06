@@ -32,13 +32,14 @@ test("compact Ideas screen uses actual selectors, sliders and one working Montag
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
 });
 
-test("Ideas CTA advances to Montage Settings with no renderer, no audio library and no source gate",()=>{
+test("Ideas CTA advances to Montage Style with no renderer, no audio library and no source gate",()=>{
  const start=studio.indexOf("const goToMontageFromIdeas = () => {");
  const end=studio.indexOf("const createQuickVideo = () => {",start);
  assert.ok(start>0&&end>start,"Ideas navigation handler");
  const action=studio.slice(start,end);
  assert.match(action,/setActiveWorkspace\("editor"\)/);
- assert.match(action,/setMontagePanel\("settings"\)/);
+ assert.match(action,/setMontagePanel\("effects"\)/);
+  assert.match(studio,/Choose your style/);
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
  assert.match(studio,/onCreate=\{goToMontageFromIdeas\}\/>/);

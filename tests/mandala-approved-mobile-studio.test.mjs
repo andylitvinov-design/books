@@ -120,8 +120,8 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "existing phrase controls remain functional outside the new basic settings");
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
-  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\)/,
-    "missing audio opens the original fifth-tab attachment and consent controls");
+  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*setActiveWorkspace\("editor"\);setMontagePanel\("audio"\);setBasicPanelTab\("music"\)/,
+    "missing audio selects the actual Audio tab before revealing attachment and consent controls");
   assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}\s*else openAffirmationPreview\(\)/,
     "Canvas-only topics must play the visible main screen without expanding the editor");
   assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,

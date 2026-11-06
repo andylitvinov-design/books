@@ -289,23 +289,25 @@ test("owner-approved third Montage and sixth PRO reuse one operational video/aud
  assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
  assert.match(studio,/data-video-basic-editor/);
- for(const id of ["style","photo","voice","music"])assert.ok(studio.includes('id:"'+id+'"'));
- assert.match(studio,/data-video-basic-style=\{index\}/);
+ for(const id of ["effects","text","audio","settings"])assert.ok(studio.includes('id:"'+id+'"'));
+ assert.match(studio,/data-video-montage-style=\{index\}/);
  assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
  assert.match(studio,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
- assert.match(studio,/basicPanelTab==="music" \? <div className=\{videoStyles.basicMusicPane\}/);
+ assert.match(studio,/data-video-montage-audio/);
+  assert.match(studio,/data-video-music-editor/);
+  assert.match(studio,/data-video-voice-studio/);
  assert.equal((studio.match(/<MandalaCloudVoiceStudio /g)||[]).length,1,
    "only the original voice panel is mounted in Montage");
  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1,
    "single shared audio editor and native playback dock");
  assert.equal((studio.match(/<MandalaCinematicDirector /g)||[]).length,1);
  assert.equal((studio.match(/<MandalaStoriesCharacters /g)||[]).length,1);
- assert.match(studio,/data-video-basic-format=\{value\}/);
- assert.match(studio,/data-video-basic-duration=\{value\}/);
+ assert.match(studio,/data-video-montage-preference="format"/);
+ assert.match(studio,/data-video-montage-preference="duration"/);
  assert.match(studio,/data-video-final-editor/);
  assert.match(studio,/data-video-editor-style-settings/);
  assert.match(studio,/data-video-quick-generate/);
- assert.match(css,/\.basicTabs\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.studio\[data-active-workspace="editor"\] \.montageQuickTools\{[\s\S]*?grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 

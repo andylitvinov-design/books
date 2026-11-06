@@ -73,17 +73,17 @@ function exercise(input,workspace,overrides={}){
  let handler;const visit=n=>{if(ts.isVariableDeclaration(n)&&n.name.getText(ast)==='startFromHero')handler=n.initializer;ts.forEachChild(n,visit);};visit(ast);
  assert.ok(handler);
  const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
- let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
+ let active=workspace,queued=workspace,basicTab=null,montagePanel=null,advancedOpen=false,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
  const state={recording:false,preparing:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
  runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
-   setBasicPanelTab:value=>{basicTab=value;},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+   setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:value=>{montagePanel=value;},setMontageStyleSettingsOpen:value=>{advancedOpen=value;},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
- return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
+ return {workspace:active,basicTab,montagePanel,advancedOpen,open:cover.open,scrolls,notices,renders,picks};
 }
 test('one original consent pane is accessible in Video or fifth Montage Photo',()=>{
  assert.match(source,/activeWorkspace==="video" \? deepCharacterPhotoPane : null/);
@@ -96,6 +96,8 @@ test('actual hero handler reveals consent in all six workspaces and legacy layou
   const r=exercise(source,workspace),target=workspace==='video'?'video':'editor';
   assert.deepEqual(r.scrolls,[{open:true,workspace:target,visible:true}],String(workspace));
   assert.equal(r.basicTab,workspace==='video'?null:'photo');
+   assert.equal(r.montagePanel,workspace==='video'?null:'settings');
+   assert.equal(r.advancedOpen,workspace!=='video');
   assert.equal(r.renders,0);
   assert.deepEqual(r.notices,['Consent required']);
  }
@@ -105,11 +107,15 @@ test('recording/preparing locks, consent, background, missing photo and audio ga
   for(const flag of [{recording:true},{preparing:true},{photoPending:true}]){const r=exercise(source,workspace,flag);assert.equal(r.workspace,workspace);assert.equal(r.open,false);assert.equal(r.renders,0);assert.deepEqual(r.scrolls,[]);}
   for(const flag of [{photoConsent:true},{backgroundOnly:true}]){const r=exercise(source,workspace,flag);assert.equal(r.renders,1);assert.equal(r.workspace,workspace);assert.equal(r.open,false);}
   const missing=exercise(source,workspace,{photoUrl:null});assert.equal(missing.picks,1);assert.equal(missing.renders,0);assert.equal(missing.workspace,workspace);
-  for(const flag of [{photoConsent:true,audioNeedsAttachment:true},{photoConsent:true,uploadedAudio:{},audioRights:false}])assert.equal(exercise(source,workspace,flag).renders,0);
+  for(const flag of [{photoConsent:true,audioNeedsAttachment:true},{photoConsent:true,uploadedAudio:{},audioRights:false}]){
+    const r=exercise(source,workspace,flag);
+    assert.equal(r.renders,0);
+    assert.equal(r.montagePanel,"audio","blocked audio must reveal the actual Audio pane");
+   }
  }
 });
 test('negative control rejects previous handler in four nonowner workspaces',()=>{
- const line='      if(activeWorkspace!=="video"){setActiveWorkspace("editor");setBasicPanelTab("photo");}';
+ const line='      if(activeWorkspace!=="video"){setActiveWorkspace("editor");setMontagePanel("settings");setMontageStyleSettingsOpen(true);setBasicPanelTab("photo");}';
  assert.equal(source.split(line).length,2);
  for(const workspace of ['phrases','effects','practices','pro']){
   const r=exercise(source.replace(line,''),workspace);
@@ -174,7 +180,7 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
   }
   assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setFirstVideoAdvancedActivated\(true\);\}\}/);
   assert.match(studio, /\{firstVideoAdvancedActivated \? <MandalaFirstVideoStart/);
-  assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setVoiceStudioActivated\(true\);\}\}/);
+  assert.match(studio, /data-video-voice-studio open=\{basicPanelTab==="voice"\}[\s\S]*?onToggle=\{event=>\{[\s\S]*?if\(event\.currentTarget\.open\)setVoiceStudioActivated\(true\);[\s\S]*?setBasicPanelTab\(event\.currentTarget\.open\?"voice":"music"\);/);
   assert.match(studio, /\{voiceStudioActivated \? <MandalaCloudVoiceStudio/);
   assert.match(studio, /useState<StudioWorkspace>\("video"\)/);
   assert.match(studio, /<MandalaAutoVideoDirector/);
@@ -247,7 +253,7 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
    "editing a four-shot montage changes the local actual caption track");
  assert.match(editor,/setCaptionMode\("custom"\)/,
    "single-scene style applies the script as a real caption");
- assert.match(editor,/data-video-editor-style-settings/);
+ assert.match(studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal")),/data-video-editor-style-settings/);
  assert.equal((studio.match(/\{deepVideoPane\}/g)||[]).length,1,"no duplicate settings panels");
  assert.doesNotMatch(studio,/Все настройки стиля видео/,"remove old stray style disclosure");
 });
