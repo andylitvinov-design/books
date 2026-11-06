@@ -13,7 +13,8 @@ import { listVideoProgress } from "@/lib/app/video-progress";
 import { freeMeditationVideos } from "@/data/academy/holistic-support-meditations";
 import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendations";
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
-import { interpretSupportUtterance } from "@/lib/holistic-support/guide-dialogue.mjs";
+import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
+import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { buildHolisticGuidedTurn } from "@/lib/holistic-support/holistic-guide-adapter.mjs";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
@@ -28,6 +29,13 @@ const LOCALES = new Set(["ru","en","es"]);
 const MODES = new Set(["rules","device","owned"]);
 const GUIDE_FORMATS = new Set(["video","audio","test","course","service"]);
 const SAFE_CONTENT_ID = /^[a-z][a-z0-9_-]*:[A-Za-z0-9_:-]{1,85}$/;
+// These factual, side-effect-free intents can answer promptly without running
+// the media catalogue; all origin, auth, rate and safety checks still apply.
+const FAST_RULE_IDS = new Set([
+  "hello","thanks","bye","restart","identity","capabilities","language",
+  "price","privacy","login","technical","orders","video_status",
+  "video_delivery","video_download","video_definition","human_help",
+]);
 function validFeedback(value) {
   return value && typeof value==="object" && !Array.isArray(value) &&
     Object.keys(value).every(k=>["dismissedIds","completedIds"].includes(k)) &&
@@ -72,6 +80,8 @@ function inputOf(body) {
 function preflight(text,locale) {
   // Preliminary conservative lexical gate only, NOT a clinical risk diagnosis.
   // This pilot is non-clinical and remains feature-flagged until evaluated.
+  if (/(?:не хочу (?:больше )?жить(?:[.!?]|$)|i do not want to live(?:[.!?]|$)|i dont want to live(?:[.!?]|$)|ya no quiero vivir(?:[.!?]|$))/iu.test(text))
+    return {status:"urgent"};
   if (/мне стало хуже|после упражнения хуже|хочу остановиться|мне страшно продолжать|i feel worse|please stop|after the exercise i feel worse|me siento peor|no quiero continuar/iu.test(text))
     return {status:"human_review"};
   for (let i=0;i<text.length;i+=180) {
@@ -83,11 +93,8 @@ function preflight(text,locale) {
 export async function POST(request) {
   let auth;
   try {
-    // Off by default: installing source code does not publish a clinical agent.
-    if (process.env.HH_AGENT_CHAT_ENABLED !== "true" ||
-      (process.env.VERCEL_ENV === "production" &&
-        process.env.HH_AGENT_PRODUCTION_APPROVED !== "true"))
-      throw new AppError("AGENT_DISABLED",503);
+    // The verified, non-clinical rules guide has no model, billing or external sends.
+    // Experimental browser/owned inference still needs the explicit production gate.
     const config = getAppConfig();
     requireSameOrigin(request,config);
     auth = createRequestAuth(request,config);
@@ -95,6 +102,11 @@ export async function POST(request) {
     const repository = createAppRepository(config);
     await repository.ensureAccount(actor);
     const body = inputOf(await readBody(request,32000));
+    const experimentalEnabled=process.env.HH_AGENT_CHAT_ENABLED==="true" &&
+      (process.env.VERCEL_ENV!=="production" ||
+        process.env.HH_AGENT_PRODUCTION_APPROVED==="true");
+    if(body.mode!=="rules"&&!experimentalEnabled)
+      throw new AppError("AGENT_DISABLED",503);
     await consumeRate(config,{op:"holistic-agent-turn",actorId:actor.id},10,60);
     await consumeRate(config,{op:"holistic-agent-daily",actorId:actor.id},100,86400);
     const safety = preflight(body.message,body.locale);
@@ -104,6 +116,20 @@ export async function POST(request) {
     const recentUnsafe = body.history.some(turn => turn.role==="user" &&
       preflight(turn.text,body.locale).status!=="clear");
     if (recentUnsafe && safety.status==="clear") safety.status="human_review";
+    // A short reviewed FAQ should not depend on media scans or paid inference.
+    // Safety and authorization have already been verified for this exact turn.
+    const fastRule=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe
+      ? ruleConversationReply({message:body.message,locale:body.locale,history:body.history})
+      : null;
+    if(fastRule&&FAST_RULE_IDS.has(fastRule.id)){
+      return auth.apply(NextResponse.json({
+        status:"clarify",reply:fastRule.reply,modelUsed:false,
+        source:"rules",memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+        browserModelAllowed:false,
+        decision:{status:"clarify",message:fastRule.reply,question:null,suggestions:[]},
+      },{headers:PRIVATE_HEADERS}));
+    }
     const focus=resolveConversationFocus({message:body.message,locale:body.locale,
       history:body.history,selectedGoal:body.selectedGoal});
     const goal=focus.goal;
@@ -180,8 +206,10 @@ export async function POST(request) {
       production:process.env.NODE_ENV==="production",
     }) !== null && (process.env.HH_AGENT_OLLAMA_TOKEN||"").length >= 20;
     const allowOwned=body.mode==="owned"&&body.ownedInferenceConsent===true&&configured;
+    const explanation=explainUserQuestion(body.message,body.locale,decision,body.history);
+    const spokenDecision=explanation?{...decision,message:explanation}:decision;
     const envelope=prepareNaturalDialogue({
-      locale:body.locale,message:body.message,history:body.history,decision,
+      locale:body.locale,message:body.message,history:body.history,decision:spokenDecision,
       access:{authenticated:true,ownerScoped:true},
       consent:{ownedInference:allowOwned,browserInference:false,agentMemory:false},
       channel:allowOwned?"owned":"none",

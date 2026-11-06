@@ -3,6 +3,8 @@ import {getAppConfig} from '@/lib/app/config'
 import {PRIVATE_HEADERS} from '@/lib/app/http'
 import {verifyClientTelegramSecret} from '@/lib/app/client-telegram-policy'
 import {receiveClientTelegramWebhook} from '@/lib/app/client-telegram-webhook'
+import {dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
+import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
 import {receiveOwnerAiTelegramWebhook} from '@/lib/practitioners/owner-ai-telegram-service'
 import {parseOwnerAiUpdate} from '@/lib/practitioners/owner-ai-telegram.mjs'
 import {receiveOwnerTelegramAudioWebhook} from '@/lib/practitioners/owner-telegram-audio-service'
@@ -54,7 +56,13 @@ export async function POST(request){
     after(async()=>{
       try{
         const result=await receiveOwnerAiTelegramWebhook(config,update)
-        if(!result.handled)await receiveClientTelegramWebhook(config,update)
+        if(!result.handled){
+          const client=await receiveClientTelegramWebhook(config,update)
+          if(client.relayMessageId)await Promise.allSettled([
+            dispatchPractitionerMessagePush(config,client.relayMessageId),
+            dispatchClientTelegramNotification(config,client.relayMessageId),
+          ])
+        }
       }catch{
         // No secrets, update text, client data or chat ID in logs.
         console.error('HH_OWNER_AI_AFTER_DELIVERY_FAILED')
@@ -63,7 +71,16 @@ export async function POST(request){
     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
   }
   const owner=await receiveOwnerAiTelegramWebhook(config,update)
-  if(!owner.handled)await receiveClientTelegramWebhook(config,update)
+  if(!owner.handled){
+    const customer=await receiveClientTelegramWebhook(config,update)
+    if(customer.relayMessageId){
+      const id=customer.relayMessageId
+      after(async()=>{await Promise.allSettled([
+        dispatchPractitionerMessagePush(config,id),
+        dispatchClientTelegramNotification(config,id),
+      ])})
+    }
+  }
   // No account existence, token status, or chat ID is returned to Telegram.
   return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
  }catch{
