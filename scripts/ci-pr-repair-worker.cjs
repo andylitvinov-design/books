@@ -581,6 +581,38 @@ function parseLegacySnapshotSummary(value){
       only_production:onlyProduction,unknown},
     ancestry_verified:false,source_write_authorized:false,merge_authorized:false};
 }
+
+// Machine-readable delivery outcome is not a second merge/repair authority.
+// Green workflow / PREPARED cannot imply a published source commit.
+function sourceDeliveryStatus({state,sourcePublished,codeAvailable}) {
+  if(state==='PUBLISHED'&&sourcePublished===true)
+    return {delivery_status:'SOURCE_PUBLISHED_CI_UNVERIFIED',
+      next_action:'VERIFY_EXACT_HEAD_REQUIRED_CI'};
+  if(state==='PREPARED')
+    return {delivery_status:'READ_ONLY_PREFLIGHT_NO_SOURCE',
+      next_action:'HANDOFF_EXISTING_SOURCE_OWNER'};
+  if(state==='SUPERSEDED')
+    return {delivery_status:'SUPERSEDED_NO_SOURCE',
+      next_action:'REINSPECT_NEW_HEAD_AND_OWNER'};
+  if(state==='VERIFY_REQUIRED')
+    return {delivery_status:'SOURCE_COMMIT_UNVERIFIED',
+      next_action:'VERIFY_SOURCE_COMMIT_AND_PR_HEAD'};
+  if(state==='MANUAL'&&codeAvailable!==true)
+    return {delivery_status:'NO_FREE_CODE_EXECUTOR_NO_SOURCE',
+      next_action:'HANDOFF_EXISTING_SOURCE_OWNER'};
+  if(state==='MANUAL')
+    return {delivery_status:'SOURCE_CODING_MANUAL_NO_SOURCE',
+      next_action:'HANDOFF_EXISTING_SOURCE_OWNER'};
+  if(state==='REJECTED')
+    return {delivery_status:'CLAIM_REJECTED_NO_SOURCE',
+      next_action:'VERIFY_CLAIM_PERMISSION_AND_LEASE'};
+  if(state==='NO_CLAIM_RETRYABLE')
+    return {delivery_status:'CLAIM_RETRY_PENDING_NO_SOURCE',
+      next_action:'WAIT_SIGNED_RESERVATION_RETRY'};
+  return {delivery_status:'NO_VERIFIED_SOURCE_COMMIT',
+    next_action:'DIAGNOSE_EXACT_HEAD_FAILED_STEP'};
+}
+
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   claimStatus='',claimReason='',claimResult='',fixResult='',strategy='lint',
   codeAvailable=false,codeResult='',codeStatus='',codeDetail='',
@@ -724,7 +756,9 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     (allowedLegacyDetails.has(candidateDetail)?candidateDetail:'PREFLIGHT_DETAIL_UNVERIFIED'):
     state==='MANUAL'||state==='FAILED'?
       agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
+  const delivery=sourceDeliveryStatus({state,sourcePublished,codeAvailable});
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
+    ...delivery,verified_source_fix:state==='PUBLISHED'&&sourcePublished===true,
     head_sha:expectedSha,lane:strategy==='legacy'?'legacy':'repair',
     state,reason_code:reason,strategy,
     source_published:sourcePublished,new_sha:newSha,failed_step:failedStep,
@@ -778,9 +812,14 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     }
   }
   core.info('HH_REPAIR_OUTCOME '+JSON.stringify(result));
+  // A zero-error read-only preparation must NOT look like a completed repair
+  // to Workflow/Optimizer consumers; the existing job itself remains green.
+  if(result.verified_source_fix!==true)
+    core.warning('HH_REPAIR_NOT_PUBLISHED '+result.delivery_status+
+      ' reason='+reason+' next='+result.next_action);
   await core.summary.addHeading('HH Repair Worker — verified final outcome')
     .addCodeBlock(JSON.stringify(result,null,2)).write();
   return result;
 }
 
-module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,PROD,SOURCE,CONFLICT,MARKER};

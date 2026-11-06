@@ -995,3 +995,34 @@ test('fix job checks live source HEAD before npm and protects all candidate-prod
    assert.ok(step.includes("steps.fresh_head.outputs.current == 'true'"),needle);
  }
 });
+
+test('repair delivery statuses never infer source publication from green read-only jobs',()=>{
+ const {sourceDeliveryStatus}=require('../scripts/ci-pr-repair-worker.cjs');
+ const prepared=sourceDeliveryStatus({state:'PREPARED',sourcePublished:false,codeAvailable:false});
+ assert.deepEqual(prepared,{delivery_status:'READ_ONLY_PREFLIGHT_NO_SOURCE',
+   next_action:'HANDOFF_EXISTING_SOURCE_OWNER'});
+ assert.equal(sourceDeliveryStatus({state:'MANUAL',sourcePublished:false,
+   codeAvailable:false}).delivery_status,'NO_FREE_CODE_EXECUTOR_NO_SOURCE');
+ assert.equal(sourceDeliveryStatus({state:'SUPERSEDED',sourcePublished:false})
+   .next_action,'REINSPECT_NEW_HEAD_AND_OWNER');
+ assert.equal(sourceDeliveryStatus({state:'FAILED',sourcePublished:false})
+   .delivery_status,'NO_VERIFIED_SOURCE_COMMIT');
+ assert.equal(sourceDeliveryStatus({state:'PUBLISHED',sourcePublished:true})
+   .delivery_status,'SOURCE_PUBLISHED_CI_UNVERIFIED');
+ assert.notEqual(sourceDeliveryStatus({state:'PREPARED',sourcePublished:true})
+   .delivery_status,'SOURCE_PUBLISHED_CI_UNVERIFIED');
+});
+test('read-only legacy finalization remains PREPARED and emits no-source delivery receipt',async()=>{
+ const f=fixture();
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+   number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+   claimResult:'success',fixResult:'success',strategy:'legacy',
+   candidateStatus:'prepared',candidateDetail:'GIT_TREE_MERGES_WITHOUT_CONFLICT',
+   publishResult:'skipped'});
+ assert.equal(result.state,'PREPARED');
+ assert.equal(result.source_published,false);
+ assert.equal(result.verified_source_fix,false);
+ assert.equal(result.delivery_status,'READ_ONLY_PREFLIGHT_NO_SOURCE');
+ assert.equal(result.next_action,'HANDOFF_EXISTING_SOURCE_OWNER');
+ assert.equal(f.log.commit,0);
+});
