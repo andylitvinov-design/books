@@ -26,11 +26,22 @@ export function parsePaths(raw) {
 }
 export const syntaxCandidates = paths => paths.filter(p => JS_SYNTAX.test(p));
 export const impactsTypes = paths => paths.some(p => TS_IMPACT.test(p));
-// Only a BASE-trusted ordinary CORE PR with unchanged compiler/build policy
-// may reuse Next's own mandatory full-project TypeScript check. FULL, DOCK,
-// config/dependency/CI changes and unknown inputs always keep standalone tsc.
+// Next's mandatory production build typechecks the exact tested candidate.
+// CORE remains safe. FULL is eligible only for isolated reviewed editor files.
+// Auth, payment, consent, provider, config, CI and unknown inputs retain tsc.
+// All affected media/browser/security Specialists remain fully required.
+const FULL_MEDIA_EDITOR_ONLY=new Set([
+  'components/mandala-free-video-studio.tsx',
+  'components/mandala-auto-video-director.tsx',
+  'components/mandala-multitrack-timeline.tsx',
+  'components/mandala-video-mobile.module.css',
+  'components/mandala-auto-video-director.module.css',
+  'components/mandala-multitrack-timeline.module.css',
+]);
 export function mayDelegateTypesToNext(paths,{eventName,route,ciOnly,nextConfig}={}) {
-  if(eventName!=='pull_request'||route!=='CORE'||ciOnly!=='false'||
+  const trustedRoute=route==='CORE'||(route==='FULL'&&
+    Array.isArray(paths)&&paths.every(path=>FULL_MEDIA_EDITOR_ONLY.has(path)));
+  if(eventName!=='pull_request'||!trustedRoute||ciOnly!=='false'||
       !Array.isArray(paths)||!paths.length||!impactsTypes(paths)||
       typeof nextConfig!=='string'||!nextConfig.includes('export default nextConfig;')||
       /ignoreBuildErrors|ignoreDuringBuilds|\btypescript\s*:/.test(nextConfig)) return false;

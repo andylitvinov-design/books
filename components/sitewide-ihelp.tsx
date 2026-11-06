@@ -10,9 +10,9 @@ import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./sitewide-ihelp.module.css";
 
 const UI={
- ru:{open:"Открыть iHelp — помощник по странице",close:"Закрыть iHelp",title:"iHelp",subtitle:"AI-помощник по этой странице"},
- en:{open:"Open iHelp — page-aware guide",close:"Close iHelp",title:"iHelp",subtitle:"AI help for this page"},
- es:{open:"Abrir iHelp — guía de la página",close:"Cerrar iHelp",title:"iHelp",subtitle:"Asistente IA para esta página"},
+ ru:{open:"Открыть iHelp — помощник по странице",close:"Закрыть iHelp",title:"iHelp",subtitle:"ИИ-помощник по странице · не психотерапевт"},
+ en:{open:"Open iHelp — page-aware guide",close:"Close iHelp",title:"iHelp",subtitle:"AI guide for this page · not a therapist"},
+ es:{open:"Abrir iHelp — guía de la página",close:"Cerrar iHelp",title:"iHelp",subtitle:"Guía IA de esta página · no es terapeuta"},
 } as const;
 
 function routeLocale(pathname:string):PublicLocale {
