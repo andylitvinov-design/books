@@ -235,8 +235,11 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   assert.match(src,/const canGenerate =[\s\S]*freeFilmSourcesListed/);
   assert.match(src,/if\(!\(await filmPreparation\)\)/,
     "a failed decoded-source check must never output a partial four-scene movie");
-  assert.match(src,/allocateAdaptiveFilmTimeline\(/,
-    "Auto Director uses the verified adaptive four-stage timeline");
+  assert.match(src,/allocateSourceBoundedFilmTimeline\(/,
+    "Auto Director must respect verified clip durations before adaptive timing");
+  assert.match(read("lib/mandala/free-film-timeline.mjs"),
+    /const adaptive=allocateAdaptiveFilmTimeline\(/,
+    "the same four-stage adaptive pacing stays active when physical sources fit");
   assert.match(src,/edit\?\.durationSecondsByStage\?\?null/,
     "explicit stage edits must be passed through to the same timing engine");
   assert.match(read("lib/mandala/free-film-timeline.mjs"),
