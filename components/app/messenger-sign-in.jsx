@@ -11,7 +11,7 @@ const COPY={
   ru:{button:'Войти через Google',busy:'Открываем защищённый вход…',error:'Не удалось открыть вход. Попробуйте ещё раз.'},
   es:{button:'Continuar con Google',busy:'Abriendo acceso seguro…',error:'No se pudo abrir el acceso. Inténtalo de nuevo.'},
 }
-export default function MessengerSignIn({locale='en',recipientSlug='',label=''}){
+export default function MessengerSignIn({locale='en',recipientSlug='',label='',continueTo='direct-messages'}){
   const c=COPY[locale]||COPY.en
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
@@ -19,12 +19,13 @@ export default function MessengerSignIn({locale='en',recipientSlug='',label=''})
     if(busy)return
     setBusy(true);setError('')
     try{
-      const recipient=directMessengerRecipient(recipientSlug||null)
+      if(!['direct-messages','video-studio'].includes(continueTo))throw new Error('INVALID_CONTINUATION')
+      const recipient=continueTo==='direct-messages'?directMessengerRecipient(recipientSlug||null):null
       const native=isNativeHolisticHouse()
       const response=await fetch('/api/app/auth/start',{
         method:'POST',credentials:'same-origin',cache:'no-store',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({locale,continueTo:'direct-messages',
+        body:JSON.stringify({locale,continueTo,
           ...(recipient?{recipientSlug:recipient}:{}),
           ...(native?{native:true}:{})}),
       })
