@@ -30,6 +30,7 @@ test('gap between repeated runs stays unknown but same-HEAD evidence is recorded
  assert.equal(row.wave_head_evidence.same_head_count,1);
  assert.equal(row.wave_head_evidence.same_head_ms,180000);
  assert.equal(row.wave_head_evidence.new_head_count,0);
+ assert.equal(row.wave_head_evidence.new_head_after_success_count,0);
  assert.equal(Object.values(row.stages_ms).reduce((a,b)=>a+b,0),row.elapsed_ms);
 });
 test('failed Core to next changed HEAD is distinct from a same-HEAD retry',()=>{
@@ -40,8 +41,22 @@ test('failed Core to next changed HEAD is distinct from a same-HEAD retry',()=>{
  assert.equal(row.wave_head_evidence.new_head_ms,180000);
  assert.equal(row.wave_head_evidence.previous_failed_count,1);
  assert.equal(row.wave_head_evidence.previous_failed_ms,180000);
+ assert.equal(row.wave_head_evidence.new_head_after_success_count,0);
  assert.equal(row.stages_ms.between_waves_unknown,180000);
  assert.equal(row.stages_ms.checks,540000);
+});
+test('Core success then changed HEAD flags review, not confirmed unnecessary source update',()=>{
+ const a=run(91,901,-50,-45),b={...run(91,902,-42,-38),source_head:'b'.repeat(40)};
+ const row=summarizePR(91,[a,b]);
+ assert.equal(row.wave_head_evidence.new_head_after_success_count,1);
+ assert.equal(row.wave_head_evidence.new_head_after_success_ms,180000);
+ assert.equal(row.wave_head_evidence.new_head_count,1);
+ assert.equal(row.wave_head_evidence.previous_failed_count,0);
+ const cohort=report(source([a,b]),24,NOW);
+ assert.equal(cohort.wave_head_evidence.new_head_after_success_count,1);
+ assert.equal(cohort.wave_head_evidence.new_head_after_success_ms,180000);
+ assert.equal(cohort.wave_head_evidence.total_gap_ms,180000);
+ assert.equal(cohort.wave_head_evidence.reconciled,true);
 });
 test('overlapping Core waves never manufacture idle gap or source-repair time',()=>{
  const a=run(18,210,-50,-40);

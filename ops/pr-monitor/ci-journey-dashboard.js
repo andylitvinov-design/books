@@ -160,6 +160,14 @@
            '), без подтверждённого SHA — '+kind.unverified_head+
            '. На смену HEAD приходится '+share+' времени пауз. После неуспешной CI — '+
            head.after_failed_count+' пауз. Смена HEAD доказывает новую версию исходников, но не причину ожидания; это НЕ очередь runner и не доказанное время Repair.'));
+       if(Number.isSafeInteger(head.new_head_after_success_count)&&
+          head.new_head_after_success_count>0){
+         body.append(el('p','hh-ci-archive-note',
+           'Из них смена HEAD после успешной предыдущей Core CI: '+
+           head.new_head_after_success_count+' пауз ('+
+           fmtMs(head.new_head_after_success_ms)+
+           '). Это повод проверить необходимость новой публикации, НЕ доказательство лишнего коммита: Specialist, Guard и другие обязательные проверки могли ещё выполняться либо завершиться ошибкой.'));
+       }
        if(Array.isArray(head.top_delays)&&head.top_delays.length){
          const examples=el('div','hh-ci-archive-list');
          for(const row of head.top_delays){
