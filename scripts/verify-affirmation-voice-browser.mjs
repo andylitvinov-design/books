@@ -44,12 +44,17 @@ async function verifyWorkspaceHydration(browser,locale){
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
     await expect(allStories).toBeEnabled();
+    await expect(allStories).toBeHidden();
+    const next=page.locator('[data-video-continue-ideas]');
+    await expect(next).toBeEnabled();
+    await next.click();
+    const phrases=page.locator('[data-video-quick-control="phrases"]');
+    await expect(phrases).toHaveAttribute("aria-pressed","true");
+    await expect(allStories).toBeHidden();
+    await page.locator('[data-video-show-storyboard]').click();
+    await expect(allStories).toBeVisible();
     await allStories.click();
     await expect(studio).toHaveAttribute("data-video-advanced-open","true");
-    const phrases=page.locator('[data-video-quick-control="phrases"]');
-    await expect(phrases).toBeEnabled();
-    await phrases.click();
-    await expect(phrases).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
   }finally{release();await context.close();}
 }
@@ -149,25 +154,25 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // On Safari an early click can be swallowed and leave Montage hidden.
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
       phase(engine,"editor-ready");
-      // A real visitor sets duration using Montage → Music, then moves to
-      // Phrases. The retired Video quick-audio disclosure is intentionally
-      // hidden by the canonical six-workspace layout: do not bypass its CSS.
+      // Current production Montage opens on Style. Duration belongs ONLY
+      // to Settings, never the retired Audio length buttons. Use the actual
+      // visible four-tab flow on Safari without forcing hidden controls.
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
-      const montageSettings=page.locator('[data-video-montage-settings]');
-      await montageSettings.waitFor({state:"visible",timeout:25000});
-      if(await montageSettings.getAttribute("open")===null)
-        await montageSettings.locator(":scope > summary").click();
-      const musicTab=montageSettings.locator('[data-video-basic-tab="music"]');
-      await musicTab.waitFor({state:"visible",timeout:25000});
-      await musicTab.click();
-      await expect(musicTab).toHaveAttribute("aria-pressed","true");
-      const lengthButton=montageSettings.locator(
-        '[data-video-music-editor] [data-video-audio-length="10"]');
-      await lengthButton.waitFor({state:"visible",timeout:25000});
-      await lengthButton.click();
-      await expect(lengthButton).toHaveAttribute("aria-pressed","true");
+      const montageSettingsTab=page.locator('[data-video-montage-tab="settings"]');
+      await montageSettingsTab.waitFor({state:"visible",timeout:15000});
+      await montageSettingsTab.click();
+      await expect(montageSettingsTab).toHaveAttribute("aria-pressed","true");
+      const preferences=page.locator('[data-video-montage-preferences]');
+      await preferences.waitFor({state:"visible",timeout:25000});
+      const durationSelect=preferences.locator('[data-video-montage-preference="duration"]');
+      await durationSelect.selectOption("10");
+      await expect(durationSelect).toHaveValue("10");
+      const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
+      await montageAudioTab.click();
+      await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-video-audio-compact-selected]')).toBeVisible();
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -204,6 +209,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
+      // Modern Ideas owns the visible phrase screen; voice/tone are optional.
+      // Exercise real user disclosure before probing the historic filters.
+      const optionalAudio=phrases.locator("[data-video-phrase-audio-shortcut]");
+      await expect(optionalAudio).toBeVisible();
+      await expect(optionalAudio).toHaveAttribute("aria-expanded","false");
+      await expect(phrases.locator("[data-video-legacy-phrase-editor]")).toHaveCount(0);
+      await optionalAudio.click();
+      await expect(optionalAudio).toHaveAttribute("aria-expanded","true");
+      await expect(phrases.locator('[data-video-legacy-phrase-editor][data-video-audio-expanded="true"]')).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
       await phrases.locator("[data-hypno-select-tone]").selectOption("balanced");
@@ -434,14 +448,35 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
       await page.locator("[data-video-generate-affirmation-audio]").click();
+      const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav";
       try {
-        await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
+        // The shared video stage must confirm a real attached WAV, not merely a transient preview.
+        await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName,{timeout:30000});
+        // Voice API success is not an attached audio track. Keep the exact
+        // real WebKit criterion, plus observable non-sensitive lifecycle proof.
+        await expect(page.locator("[data-video-affirmation-voice]"))
+          .toHaveAttribute("data-video-affirmation-phase","attached");
+        // After asynchronous mixing, restore the visitor-opened optional voice editor if collapsed.
+        if(await optionalAudio.getAttribute("aria-expanded")==="false"){
+          await optionalAudio.click();
+          await expect(optionalAudio).toHaveAttribute("aria-expanded","true");
+        }
+        await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:15000});
         phase(engine,"voice-wav-ready");
       }catch(error){
         const status=await page.locator('[data-video-affirmation-voice] [role="status"]').allTextContents();
         const buttonDisabled=await page.locator("[data-video-generate-affirmation-audio]").isDisabled();
+        const voicePhase=await page.locator("[data-video-affirmation-voice]")
+          .getAttribute("data-video-affirmation-phase");
+        const voiceUi=await page.evaluate(()=>({
+          attachedAudioVisible:Boolean(document.querySelector("[data-video-live-audio]")),
+          generatedWavReady:Boolean(document.querySelector("[data-video-affimations-audio-ready]")),
+          approvedPhraseCount:document.querySelectorAll("[data-hypno-phrase][aria-pressed='true']").length,
+          consentChecked:Boolean(document.querySelector("[data-video-affirmation-voice-consent]")?.checked),
+          selectedVoice:document.querySelector("[data-video-affirmation-voice-card][aria-pressed='true']")?.getAttribute("data-video-affirmation-voice-card")||null
+        }));
         throw new Error(engine+" voice failed: "+JSON.stringify({status,buttonDisabled,
-          providerRequests:payloads.length,networkRequests:requests,jsErrors:errors}),{cause:error});
+          voicePhase,voiceUi,providerRequests:payloads.length,networkRequests:requests,jsErrors:errors}),{cause:error});
       }
       const affirmationRequests=payloads.filter(item=>item.mode==="affirmations");
       assert.equal(affirmationRequests.length,1);
@@ -449,7 +484,6 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(affirmationRequests[0].voiceId,"leon");
       assert.equal(affirmationRequests[0].consent,true);
       assert.equal(affirmationRequests[0].language,locale);
-      const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav";
       // Real attached WAV is reflected on the shared live video stage, not
       // merely in a hidden legacy audio panel or a transient preview label.
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
@@ -636,7 +670,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(!await page.locator("[data-video-narration-stale]").isVisible())
         await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
       await page.locator('[data-video-quick-control="editor"]').click();
-      await page.locator('[data-video-basic-tab="voice"]').click();
+      // Modern Montage mounts its basic Voice tab only inside the Audio section.
+      // Follow the actual visible visitor path; never force-click hidden controls.
+      const montageAudioForVoice=page.locator('[data-video-montage-tab="audio"]');
+      await montageAudioForVoice.click();
+      await expect(montageAudioForVoice).toHaveAttribute("aria-pressed","true");
+      // The current Audio pane mounts Voice as its own user-opened details.
+      // The removed Audio basic-tab wrapper must not be required in WebKit.
       // The phrase warning is intentionally unmounted in Montage. If the
       // old narration is still attached there, export must remain disabled;
       // an independently selected soundtrack is not stale narration.

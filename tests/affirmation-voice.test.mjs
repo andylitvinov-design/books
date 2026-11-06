@@ -152,8 +152,16 @@ test("all six voices can be selected and their real samples requested before phr
 });
 
 
-test("voice browser opens the compact studio advanced audio controls before using them",()=>{
-  assert.match(source,/allStories\.click\(\)[\s\S]*?data-video-advanced-open/);
+test("voice browser follows current Montage Style → Settings duration → Audio",()=>{
+  assert.match(source,/const montageSettingsTab=page\.locator\('\[data-video-montage-tab="settings"\]'\)/);
+  assert.match(source,/await montageSettingsTab\.click\(\)/);
+  assert.match(source,/await preferences\.waitFor\(\{state:"visible",timeout:25000\}\)/);
+  assert.match(source,/const durationSelect=preferences\.locator\('\[data-video-montage-preference="duration"\]'\)/);
+  assert.match(source,/await durationSelect\.selectOption\("10"\)/);
+  assert.match(source,/await montageAudioTab\.click\(\)/);
+  assert.match(source,/await expect\(montageAudioTab\)\.toHaveAttribute\("aria-pressed","true"\)/);
+  assert.match(source,/data-video-audio-compact-selected/);
+  assert.doesNotMatch(source,/data-video-montage-settings|data-video-audio-length="10"/);
   assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
 });
 
@@ -306,8 +314,8 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
   assert.ok(ui.includes('setConsent(false)'));
   assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
   const speechChangeEffect=ui.slice(
-    ui.indexOf('    const textChanged=originRef.current.speechText!==speechText;'),
-    ui.indexOf('  },[speechText,voiceId,language]);'));
+    ui.indexOf('    const textChanged=previous.speechText!==speechText;'),
+    ui.indexOf('  },[speechText,voiceId,language,busy,mixing,locale]);'));
   assert.match(speechChangeEffect,/if\(voiceDataRef\.current\)onInvalidateRef\.current\?\.\(\)/,
     "changing the spoken phrase must detach its previous WAV");
   assert.doesNotMatch(speechChangeEffect,/voiceDataRef\.current&&!textChanged/,
@@ -401,4 +409,53 @@ test('stale narration safety remains checked after the phrase warning unmounts',
   assert.match(after,/stillHasOldVoice[\s\S]*?toBeDisabled\(\)/);
   assert.match(after,/holistic-house-hypno-audio\.wav/);
   assert.match(after,/expectedFileName/);
+});
+
+
+test("Ideas optional voice authoring is opt-in but genuinely reachable in the real browser",()=>{
+  const page=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  assert.ok(page.includes('{phraseAudioActivated ? <div'),"voice editor mounts on explicit opt-in");
+  assert.ok(page.includes('hidden={activeWorkspace!=="phrases"||!phraseAudioExpanded}'),"collapse hides but does not unmount the consented WAV");
+  assert.ok(page.includes('setPhraseAudioActivated(true);setPhraseAudioExpanded(true)'),"real first tap mounts optional voice editor");
+  assert.ok(page.includes('data-video-audio-expanded={phraseAudioExpanded?"true":"false"}'));
+  assert.ok(browser.includes('await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName,{timeout:30000})'),"real audio attachment is tested before remix/download");
+  assert.ok(browser.includes('const montageAudioForVoice=page.locator(\'[data-video-montage-tab="audio"]\')'),"select visible Montage Audio before Voice");
+  assert.ok(browser.includes('await expect(montageAudioForVoice).toHaveAttribute("aria-pressed","true")'),"audio subsection must be visibly selected");
+  assert.ok(page.includes('data-video-phrase-audio-shortcut disabled={recording||preparing} aria-expanded={phraseAudioExpanded}'));
+  assert.ok(css.includes('[data-video-legacy-phrase-editor][data-video-audio-expanded="true"]'));
+  assert.ok(browser.includes('await optionalAudio.click()'));
+  assert.ok(browser.includes('await expect(optionalAudio).toHaveAttribute("aria-expanded","true")'));
+  for(const marker of ['[data-hypno-select-tone]','[data-hypno-approve]','[data-video-affirmation-voice-select]','assert.equal(affirmationRequests[0].consent,true)','const audioTrack=streams.find(row=>row.codec_type==="audio")','pcm.stdout.some(value=>value!==0)'])
+    assert.ok(browser.includes(marker),"real voice/MP4/consent gate lost: "+marker);
+});
+
+
+test("Safari voice lifecycle never silently aborts identical inputs or mistakes API response for attached WAV",()=>{
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  const script=read("scripts/verify-affirmation-voice-browser.mjs");
+  const video=read("components/mandala-free-video-studio.tsx");
+  // On mount/StrictMode replays, no change to the actual approved transcript
+  // or voice means the current in-flight job and consent remain untouched.
+  assert.match(voice,/useLayoutEffect\(\(\)=>\{\s*const previous=originRef\.current/,
+    "invalidate stale voice synchronously before the next WebKit click");
+  assert.match(voice,/previous\.speechText===speechText && previous\.voiceId===voiceId/);
+  assert.match(voice,/previous\.language===language\)return/);
+  assert.match(voice,/\[speechText,voiceId,language,busy,mixing,locale\]/);
+  // Genuine phrase/voice changes STILL abort stale output and require a new
+  // user-approved request. Never auto-repeat the paid-capable provider call.
+  assert.match(voice,/controllerRef\.current\?\.abort\(\)/);
+  assert.match(voice,/setGenerationPhase\(interrupted\?"cancelled":"idle"\)/);
+  assert.match(voice,/setMessage\(interrupted\?/);
+  assert.match(voice,/code==="AbortError"\?"cancelled":"failed"/);
+  assert.match(voice,/data-video-affirmation-phase=\{generationPhase\}/);
+  assert.match(voice,/onAttach\(\{file,speechFile,[\s\S]*?setGenerationPhase\("attached"\)/);
+  assert.match(video,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,narration:true/);
+  assert.match(script,/toContainText\(expectedFileName,\{timeout:30000\}\)/);
+  assert.match(script,/toHaveAttribute\("data-video-affirmation-phase","attached"\)/);
+  assert.match(script,/voicePhase,voiceUi,providerRequests:/);
+  for(const guard of ["assert.equal(affirmationRequests.length,1)","ffprobe",
+    "assert.equal(Number(audioTrack.channels),2,","pcm.stdout.some(value=>value!==0)"])
+    assert.ok(script.includes(guard),"Safari real-media gate lost: "+guard);
 });

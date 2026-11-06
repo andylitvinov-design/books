@@ -1834,6 +1834,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(()=>setStudioHydrated(true),[]);
   const [directorChatOpen,setDirectorChatOpen] = useState(false);
   const [phraseAudioExpanded,setPhraseAudioExpanded] = useState(false);
+  const [phraseAudioActivated,setPhraseAudioActivated] = useState(false);
   const [phrasePending,setPhrasePending] = useState(false);
   const [catalogPhraseDraft,setCatalogPhraseDraft] = useState<string|null>(null);
   const [hypnoLight,setHypnoLight] = useState<HypnoLightSettings>({enabled:false,cyclesPerMinute:6,opacity:.18});
@@ -2568,12 +2569,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(() => {
     if (!result || playbackStatus !== "checking") return;
     const timer=window.setTimeout(()=>{
-      setPlaybackStatus("failed");
-      setNotice(locale==="ru"
-        ?"Не удалось проверить воспроизведение. Файл не готов к сохранению. Попробуйте другой формат ниже."
-        :locale==="es"
-        ?"No se pudo verificar la reproducción. El archivo aún no se puede guardar. Prueba otro formato."
-        :"Video playback could not be verified. The file is not ready to save. Try the alternative format.");
+      // Safari may defer decoding until a real user Play gesture. An elapsed
+      // timer cannot prove the MP4 is corrupt or release a pending credit hold.
+      // Keep Save locked and offer the explicit verification button.
+      setNotice(locale==="ru"?"Нажмите «Воспроизвести и проверить» перед сохранением видео.":
+        locale==="es"?"Pulsa «Reproducir y verificar» antes de guardar.":
+        "Tap Play & verify video before saving.");
     },20000);
     return ()=>window.clearTimeout(timer);
   },[result,playbackStatus,locale]);
@@ -4409,11 +4410,32 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return startFromHero();
   };
 
+  const continueToIdeas = () => {
+    // Reuse the original device-only request classifier; no provider or render.
+    const designButton=document.querySelector<HTMLButtonElement>("[data-video-request-design]");
+    if(designButton&&!designButton.disabled)designButton.click();
+    quickNavTokenRef.current++;
+    setVideoScenarioOpen(false);
+    setActiveWorkspace("phrases");
+    setStudioMode("pump");
+    setTherapyJumpRequested(false);
+    setIntroPlaying(false);
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      document.querySelector("[data-video-quick-controls]")?.scrollIntoView({
+        behavior:"instant" as ScrollBehavior,block:"start",
+      })));
+  };
   const openVideoScenarioStep = () => {
+    // Explicit four-shot review belongs to Ideas, never embedded in Goals.
+    quickNavTokenRef.current++;
     setVideoScenarioOpen(true);
+    setActiveWorkspace("phrases");
+    setStudioMode("pump");
+    setTherapyJumpRequested(false);
+    setIntroPlaying(false);
     window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
       document.querySelector("[data-auto-video-director]")?.scrollIntoView({
-        behavior:"smooth",block:"start",
+        behavior:"instant" as ScrollBehavior,block:"start",
       })));
   };
   const deepAudioPane = (
@@ -5016,6 +5038,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             // A new workspace is explicit user intent: retire stale catalog jumps.
             quickNavTokenRef.current++;
             setActiveWorkspace(item.id);
+            if(item.id!=="phrases")setVideoScenarioOpen(false);
             if(item.id==="editor")setMontagePanel("effects");
             if(item.id!=="practices")setIntroPlaying(false);
             setStudioMode(item.id==="practices"?"therapy":"pump");
@@ -5114,12 +5137,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               locale==="es"?"3. Describe tu idea":"3. Describe your request"}</h4>
             <div className={videoStyles.quickRequestHost} data-video-request-prompt/>
             <button type="button" className={videoStyles.quickPromptContinue}
-              data-video-continue-scenarios
+              data-video-continue-scenarios data-video-continue-ideas="true"
               disabled={!studioHydrated||recording||preparing}
-              onClick={openVideoScenarioStep}>
-              <Film size={18} aria-hidden="true"/>
-              <span>{locale==="ru"?"Продолжить к созданию видео":
-                locale==="es"?"Continuar para crear el vídeo":"Continue to video creation"}</span>
+              onClick={continueToIdeas}>
+              <Heart size={18} aria-hidden="true"/>
+              <span>{locale==="ru"?"Далее к идеям":
+                locale==="es"?"Continuar a ideas":"Continue to ideas"}</span>
               <ArrowRight size={19} aria-hidden="true"/>
             </button>
           </div>
@@ -5127,7 +5150,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {/* Original verified AI Director from #2913: open only from the free-help
             chip, keep the default iPhone design and a single MediaRecorder. */}
         <details className={videoStyles.directorChatDetails}
-          data-video-director-chat-details data-workspace-section="video"
+          data-video-director-chat-details data-workspace-section="phrases"
           open={directorChatOpen}
           onToggle={event=>setDirectorChatOpen(event.currentTarget.open)}>
           <summary><Sparkles size={17} aria-hidden="true"/>
@@ -5534,20 +5557,33 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onCreate={goToMontageFromIdeas}/>
-          {activeWorkspace!=="phrases" ? <div data-video-legacy-phrase-editor hidden aria-hidden="true">
+          {phraseAudioActivated ? <div
+            data-video-legacy-phrase-editor data-video-audio-expanded={phraseAudioExpanded?"true":"false"}
+            hidden={activeWorkspace!=="phrases"||!phraseAudioExpanded} aria-hidden={activeWorkspace!=="phrases"||!phraseAudioExpanded}>
             {deepHypnoPane}
           </div> : null}
         </div>
         <button type="button" className={videoStyles.phraseAudioNext}
-          data-video-phrase-audio-shortcut disabled={recording||preparing}
+          data-video-phrase-audio-shortcut disabled={recording||preparing} aria-expanded={phraseAudioExpanded}
           onClick={()=>{
-            setPhraseAudioExpanded(true);
-            window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"}));
+            const open=!phraseAudioExpanded;
+            if(open){setPhraseAudioActivated(true);setPhraseAudioExpanded(true);}
+            else setPhraseAudioExpanded(false);
+            if(open)window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"}));
           }}>
           <Music2 size={19} aria-hidden="true"/>
           {locale==="ru"?"Настроить аудиогид, музыку и голос":
             locale==="es"?"Configurar audioguía, música y voz":"Set up audio guidance, music & voice"}
           <ArrowRight size={17} aria-hidden="true"/>
+        </button>
+        <button type="button" className={videoStyles.phraseStoryToggle}
+          data-video-show-storyboard aria-expanded={videoScenarioOpen}
+          disabled={!studioHydrated||recording||preparing}
+          onClick={()=>setVideoScenarioOpen(open=>!open)}>
+          <ListVideo size={18} aria-hidden="true"/>
+          <span>{locale==="ru"?"Раскадровка из 4 сцен (по желанию)":
+            locale==="es"?"Plan de 4 escenas (opcional)":"4-shot storyboard (optional)"}</span>
+          <ChevronDown size={18} aria-hidden="true"/>
         </button>
       </section>
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
@@ -5820,11 +5856,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   {locale==="ru"?"Повторить подтверждение":locale==="es"?"Reintentar":"Retry confirmation"}
                 </button>:null}
               </p>:null}
-            {playbackStatus==="checking"?<p role="status" data-video-playback-check>
-              {locale==="ru"?"Проверяем воспроизведение. Если кадр не появился, нажмите ▶."
-                :locale==="es"?"Verificando. Si no aparece un fotograma, pulsa ▶."
-                :"Checking playback. Tap ▶ if no frame appears."}
-            </p>:null}
+            {playbackStatus==="checking"?<div data-video-playback-check>
+              <p role="status">{locale==="ru"?"Проверяем готовый MP4. Safari может потребовать нажатия Play.":
+                locale==="es"?"Verificando el MP4. Safari puede requerir pulsar Reproducir.":
+                "Checking the MP4. Safari may require a Play tap to decode the movie."}</p>
+              <button type="button" className={videoStyles.audioDirectLink}
+                data-video-verify-playback
+                onClick={()=>{
+                  // Real user gesture: never set Ready without native decoded frames.
+                  const player=resultVideoRef.current;
+                  if(!player||player.error)return;
+                  try{
+                    if(player.readyState<2)player.load();
+                    void player.play().then(()=>confirmVideoPlayback(player)).catch(()=>{
+                      setNotice(locale==="ru"?"Safari не воспроизводит файл. Попробуйте ▶ в видеоплеере.":
+                        locale==="es"?"Safari no pudo reproducir el archivo. Usa ▶ en el reproductor.":
+                        "Safari could not play this file. Try ▶ in the native video player.");
+                    });
+                  }catch{setNotice(ui.videoUnavailable);}
+                }}>
+                <Play size={17} aria-hidden="true"/>
+                {locale==="ru"?"Воспроизвести и проверить":
+                  locale==="es"?"Reproducir y verificar":"Play & verify video"}
+              </button>
+            </div>:null}
             {playbackStatus==="failed"?<div role="alert" data-video-playback-error>
               <p>{locale==="ru"
                 ?"Этот файл не прошёл проверку воспроизведения. Видео не готово."

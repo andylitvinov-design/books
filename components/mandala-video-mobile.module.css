@@ -4397,3 +4397,57 @@
 .montageAudioMode .montageAudioNativeUpload[data-selected=true]{background:#078568;color:#fff}
 .montageAudioNativeUpload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .montageAudioNativeUpload input:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+
+/* Goals is exactly the player, categories, topic, request and one green CTA.
+   Keep the source director mounted for React portals, but never show its
+   embedded story/bonus/workspace actions on Goals. */
+.studio[data-active-workspace="video"] .quickBuilder>
+  :not(.quickBrandBar):not(.quickVideoNav):not(.previewStage):not([data-video-quick-section="1"]):not([data-video-topic-section]){
+  display:none!important;
+}
+.studio[data-active-workspace="video"] [data-video-request-composer]>[data-video-request-design],
+.studio[data-active-workspace="video"] [data-video-request-composer]>[data-video-request-analysis]{
+  display:none!important;
+}
+/* Four-scene story review and detailed first-video editing are opt-in
+   inside Ideas; reuse the original renderer and assets. */
+.phraseStoryToggle{
+  display:flex;align-items:center;gap:9px;min-height:44px;width:100%;
+  margin:10px 0 0;padding:9px 12px;border-radius:12px;
+  border:1px solid var(--hh-light-border,#e9dfd1);
+  background:var(--hh-light-surface,#fffcf7);color:var(--hh-light-text,#143d3a);
+  font:700 14px/1.25 Arial,Helvetica,sans-serif;cursor:pointer;text-align:left;
+}
+.phraseStoryToggle span{flex:1;min-width:0}
+.phraseStoryToggle[aria-expanded="true"]>svg:last-child{transform:rotate(180deg)}
+.phraseStoryToggle:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.phraseStoryToggle:disabled{opacity:.6;cursor:not-allowed}
+.studio[data-active-workspace="phrases"][data-video-scenario-open="true"]
+  .quickBuilder>[data-auto-video-director]{
+  display:grid!important;order:6!important;min-width:0;
+}
+.studio[data-active-workspace="phrases"][data-video-scenario-open="true"]
+  .quickBuilder>[data-video-first-video-advanced]{
+  display:block!important;order:7!important;min-width:0;
+}
+.studio[data-active-workspace="phrases"][data-video-scenario-open="true"]
+  .quickBuilder>[data-video-director-chat-details][open]{
+  display:grid!important;order:8!important;
+}
+
+/* Optional, explicit Ideas audio entry. Preserve compact Ideas by default. */
+.studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut]{
+  display:flex!important;min-height:38px;padding:7px 10px;margin:5px 0 0;
+  background:#f7fbf7;border-color:#d4e6dd;color:#235c4b;
+  font-size:12px;line-height:1.3
+}
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-audio-expanded="true"]{
+  display:block!important;width:100%;min-width:0
+}
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-audio-expanded="true"] .phraseMusicSection,
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-audio-expanded="true"] .phraseAudioSettings{
+  display:block!important
+}
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-audio-expanded="true"] .phraseVoiceAction{
+  display:flex!important
+}
