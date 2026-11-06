@@ -27,7 +27,7 @@ test('real Telegram private chat recipient check uses reviewed numeric-ID policy
  assert.ok(provider.includes('if(!telegramHomeRecipientAllowed(to)'));
 });
 test('privacy opt-out bypasses daily reply limit without violating DB bound',()=>{
- assert.ok(svc.includes('companionReplyBudgetAllows(selected?.action,count,ALLOWED_REPLY)'));
+ assert.ok(svc.includes('companionReplyBudgetAllows(selected?.action,count,ALLOWED_REPLY,row.mode)'));
  assert.ok(svc.includes('Math.min(ALLOWED_REPLY,count+1)'));
 });
 
