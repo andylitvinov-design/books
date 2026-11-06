@@ -21,7 +21,7 @@ test("calm iHelp first screen reuses canonical Video Director and five localized
  assert.match(component,/data-video-chat-tree-choice=\{value\}/);
  assert.match(component,/showWelcome\?<div className=\{css\.welcome\}/);
  assert.match(component,/\:lines\.map\(line=>line\.role===/);
- assert.match(component,/href=\{"/"\+locale\+"\/mytube"\}/);
+ assert.ok(component.includes('href={"/"+locale+"/mytube"}'));
 });
 test("welcome is readable and safe, then yields to the existing conversation",()=>{
  for(const value of ["Привет!","Let's create your video","Creemos tu vídeo",
