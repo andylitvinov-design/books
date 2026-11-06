@@ -12,6 +12,7 @@ import {listMyTubePlots} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import type {MyTubePlot} from "@/lib/mandala/mytube-scenario-plots.mjs";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {classifyMyTubeRequest} from "@/lib/mandala/mytube-prompt-classifier.mjs";
+import {buildPersonalVideoBrief} from "@/lib/mandala/mytube-personal-video-brief.mjs";
 import {listMyTubeMeaningAxes,listMyTubeMeaningMotifs,listMyTubeMotifScenarios} from "@/lib/mandala/mytube-meaning-hierarchy.mjs";
 import {listMyTubeStyles,evaluateMyTubeMontageCreativeMatch} from "@/lib/mandala/mytube-creative-choices.mjs";
 import {getStateTransitionScenario} from "@/lib/mandala/state-transition/scenario-engine.mjs";
@@ -194,6 +195,7 @@ export function MandalaAutoVideoDirector({
  const [refineText,setRefineText]=useState("");
  const [promptClassification,setPromptClassification]=useState<ReturnType<typeof classifyMyTubeRequest>|null>(null);
  const [promptDesignedFor,setPromptDesignedFor]=useState<string|null>(null);
+ const [clientWish,setClientWish]=useState(""); // Independent, ephemeral visitor wording
  const [categoryManuallySelected,setCategoryManuallySelected]=useState(false);
  const [timelineEdits,setTimelineEdits]=useState<{
    presetId:string;totalSeconds:number;clipIds:string[];durations:number[];captions:string[];userEdited?:boolean;
@@ -252,20 +254,34 @@ export function MandalaAutoVideoDirector({
  const length=seconds||proposal?.durationSeconds||30;
  // Build the four narrative beats from the selected category before using
  // any preset. The planner proves real source geometry from published manifests.
+ const videoBrief=useMemo(()=>buildPersonalVideoBrief({
+   clientWish:clientWish||((promptDesignedFor===goal)?goal:""),
+   categoryId:selectedCategoryId,subcategoryId:selectedSubcategoryId,
+   topicId:selectedTopicId,locale,
+   scenarioLabel:taxonomyScenarios.find(x=>x.id===selectedScenarioId)?.label||"",
+   plotLabel:selectedTaxonomyPlot?.label||"",
+   meaningLabel:taxonomyMeanings.find(x=>x.id===selectedMeaningAxisId)?.label||"",
+   motifLabel:suggestedVisualMotifs.find(x=>x.id===selectedMotifId)?.label||"",
+   excludedMotifs:proposal?.excludedMotifs||[]
+ }),[clientWish,promptDesignedFor,goal,selectedCategoryId,selectedSubcategoryId,
+   selectedTopicId,locale,selectedScenarioId,selectedPlotId,selectedMeaningAxisId,
+   selectedMotifId,proposal?.excludedMotifs]);
  const categoryPlan=useMemo(()=>planMyTubeCategory({
    categoryId:selectedCategoryId,locale,aspect,
    durationSeconds:length,styleId:selectedStyleId||null,
    excludedMotifs:proposal?.excludedMotifs||[],scenes,
- }),[selectedCategoryId,locale,aspect,length,selectedStyleId,proposal?.excludedMotifs,scenes]);
+   stageVisualTags:videoBrief.stages.map(stage=>stage.visualTags),
+ }),[selectedCategoryId,locale,aspect,length,selectedStyleId,proposal?.excludedMotifs,scenes,videoBrief]);
  const activeTimelineEdits=chosen&&timelineEdits?.presetId===chosen.id&&
    timelineEdits.totalSeconds===length?timelineEdits:null;
  // One local licensed source is chosen for EACH storyboard beat, not merely
  // the fixed four clips attached to the nearest old template. Switching to a
  // different template is an intentional override; editing clips wins over both.
  const promptShotPlan=useMemo(()=>recommendPromptShotPlan({
-   goal,theme:proposal?.theme||theme,scenes,
+   goal:videoBrief.prompt,theme:proposal?.theme||theme,scenes,
+   stageGoals:videoBrief.stages.map(stage=>stage.sceneQuery),
    excludedMotifs:proposal?.excludedMotifs||[],baseClipIds:chosen?.clips||[],
- }),[goal,theme,scenes,proposal,chosen]);
+ }),[videoBrief,theme,scenes,proposal,chosen]);
  const personalizedShotIds=(!overrideId&&promptShotPlan.mode==="personalized"&&
    promptShotPlan.canExport)?promptShotPlan.clipIds:null;
  // An explicitly confirmed emotional vector plus meaning + motif + scenario
@@ -284,11 +300,12 @@ export function MandalaAutoVideoDirector({
    plot:selectedTaxonomyPlot,emotional:confirmedTransition,
    durationSeconds:length,aspect,locale,scenes,
    excludedMotifs:proposal?.excludedMotifs||[],styleId:selectedStyleId||null,
+   personalVisualTags:videoBrief.visualTags,
    allowAbstractMotion:false
  }):null,[semanticRequired,selectedTopicId,selectedMeaningAxisId,selectedMotifId,
    selectedScenarioId,selectedTaxonomyPlot,confirmedTransition?.currentStateId,
    confirmedTransition?.desiredStateId,confirmedTransition?.intensity,
-   confirmedTransition?.energy,length,aspect,locale,scenes,proposal?.excludedMotifs,selectedStyleId]);
+   confirmedTransition?.energy,length,aspect,locale,scenes,proposal?.excludedMotifs,selectedStyleId,videoBrief]);
  const semanticReady=Boolean(semanticPlan?.ok);
  const categoryClipIds=categoryPlan.ok&&!selectedTopicId&&!selectedScenarioId&&!selectedPlotId?
    categoryPlan.shots.map((shot:{sceneId:string})=>shot.sceneId):null;
@@ -328,7 +345,8 @@ export function MandalaAutoVideoDirector({
  const stageCaptions=manualStageCaptions.map((caption,index)=>
    index===finalStageIndex&&meaningCaptionUsed?meaningCaption!:caption);
  const timelineKey=JSON.stringify([chosen?.id,length,stageClipIds,stageDurations,
-   stageCaptions,selectedMeaningAxisId,selectedMotifId,selectedStyleId,aspect,
+   stageCaptions,clientWish,selectedCategoryId,selectedSubcategoryId,selectedTopicId,
+   selectedScenarioId,selectedPlotId,selectedMeaningAxisId,selectedMotifId,selectedStyleId,aspect,
    meaningHandoff?.ideaBrief?.confirmedIdeaId||null,meaningHandoff?.ideaBrief?.ideaText||null]);
  const topicMediaCoverage=selectedTopicId?recommendMyTubeTopicStoryClips({
    topicId:selectedTopicId,scenarioId:selectedScenarioId||null,scenes,
@@ -401,14 +419,48 @@ export function MandalaAutoVideoDirector({
    motifId:string|null=selectedMotifId||null,styleId:string|null=selectedStyleId||null,
    meaningAxisId:string|null=selectedMeaningAxisId||null)=>{
    if(!recommended.presetId)return null;
-   const clipIds=plot?recommendMyTubePlotMontage({
-     plot,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,targetAspect:aspect,
-   }).clipIds:recommendMyTubeTopicStoryClips({
+   const topicMedia=recommendMyTubeTopicStoryClips({
      topicId,scenarioId,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,
-     meaningAxisId,targetAspect:aspect,
-   }).clipIds;
-   if(clipIds.length!==4)return null;
+     meaningAxisId,targetAspect:aspect
+   });
+   const originalIds=plot?recommendMyTubePlotMontage({
+     plot,scenes,excludedMotifs:recommended.excludedMotifs,motifId,styleId,targetAspect:aspect
+   }).clipIds:topicMedia.clipIds;
+   if(originalIds.length!==4)return null;
    const desiredSeconds=requestedSeconds||recommended.durationSeconds;
+   const durationByStage=allocateAdaptiveFilmTimeline(desiredSeconds,originalIds)
+      .map(shot=>shot.durationSeconds);
+   // The canonical topic still restricts candidate footage. Personal imagery
+   // affects how four different, physical MP4s are ranked within that topic.
+   const found=getMyTubeTopic(topicId);
+   const topicBrief=buildPersonalVideoBrief({
+     clientWish,locale,categoryId:found?.category.id||selectedCategoryId,
+     subcategoryId:found?.subcategory.id||selectedSubcategoryId,topicId,
+     scenarioLabel:scenarioId||"",plotLabel:plot?.label||"",
+     excludedMotifs:recommended.excludedMotifs
+   });
+   const candidateIds=new Set((topicMedia.candidates||[]).map(item=>item.sceneId));
+   const topicSources=scenes.filter(source=>{
+     if(!candidateIds.has(source.id))return false;
+     const verified=verifiedCategorySource(source);
+     return Boolean(verified&&verifiedSceneAspect(verified,aspect)&&
+       verified.durationSeconds>=Math.max(...durationByStage));
+   });
+   const personalized=clientWish.trim()&&!plot&&topicSources.length>=4?
+     recommendPromptShotPlan({
+       goal:topicBrief.prompt,stageGoals:topicBrief.stages.map(stage=>stage.sceneQuery),
+       theme:recommended.theme,scenes:topicSources,
+       excludedMotifs:recommended.excludedMotifs,baseClipIds:originalIds
+     }):null;
+   const proposalIds=personalized?.mode==="personalized"&&personalized.canExport?
+     personalized.clipIds:originalIds;
+   const physical=proposalIds.map(id=>verifiedCategorySource(scenes.find(item=>item.id===id)));
+   const safe=proposalIds.length===4&&
+     validateMontageClips(proposalIds,scenes,recommended.excludedMotifs,aspect)&&
+     physical.every((item,index)=>item&&verifiedSceneAspect(item,aspect)&&
+       item.durationSeconds>=durationByStage[index])&&
+     new Set(physical.map(item=>canonicalSourceMasterKey(item))).size===4;
+   const clipIds=safe?proposalIds:originalIds;
    return {presetId:presetOverride||recommended.presetId,totalSeconds:desiredSeconds,
      clipIds,durations:allocateAdaptiveFilmTimeline(desiredSeconds,clipIds)
        .map(shot=>shot.durationSeconds),
@@ -427,7 +479,7 @@ export function MandalaAutoVideoDirector({
  const chooseCategory=(nextTheme:VideoTheme,categoryId:CanonicalCategoryId)=>{
    if(disabled||!videoGoalCategories.some(item=>item.id===categoryId))return;
    setCategoryManuallySelected(true);setPromptDesignedFor(null);setPromptClassification(null);
-   const nextGoal="";
+   const nextGoal=clientWish.trim();
    onInvalidate?.();onCategoryChange?.(nextTheme);
    if(goal!==nextGoal)onGoalChange(nextGoal);
    setSelectedCategoryId(categoryId);
@@ -448,9 +500,10 @@ export function MandalaAutoVideoDirector({
    onInvalidate?.();onCategoryChange?.(nextTheme);
    setSelectedSubcategoryId(subcategoryId);setSelectedTopicId("");setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
-   onGoalChange(item.label);
-   setProposalContext({goal:item.label,theme:nextTheme});
-   setProposal(recommendAutoVideo({goal:item.label,locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
+   const nextGoal=clientWish.trim()||item.label;
+   onGoalChange(nextGoal);
+   setProposalContext({goal:nextGoal,theme:nextTheme});
+   setProposal(recommendAutoVideo({goal:[clientWish,item.label].filter(Boolean).join(' · '),locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
  };
  const chooseTaxonomyTopic=(topicId:string)=>{
    setCategoryManuallySelected(true);
@@ -459,13 +512,14 @@ export function MandalaAutoVideoDirector({
    if(!found||found.category.id!==selectedCategoryId||found.subcategory.id!==selectedSubcategoryId)return;
    const nextTheme=legacyThemeForSubcategory[found.subcategory.id]||theme;
    const label=found.topic.label[locale];
-   onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(label);
-   const recommended=recommendAutoVideo({goal:label,locale,fallbackTheme:nextTheme,
+   const nextGoal=clientWish.trim()||label;
+   onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(nextGoal);
+   const recommended=recommendAutoVideo({goal:[clientWish,label].filter(Boolean).join(' · '),locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes});
    setSelectedTopicId(topicId);setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
    setMeaningHandoff(null);setIncludeMeaningCaption(false);
    setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
-   setProposalContext({goal:label,theme:nextTheme});
+   setProposalContext({goal:nextGoal,theme:nextTheme});
    setProposal(recommended);
    setTimelineEdits(timelineForTopic(topicId,null,recommended));
  };
@@ -487,10 +541,10 @@ export function MandalaAutoVideoDirector({
    setSelectedScenarioId(scenarioId);setSelectedPlotId("");setSymbolicPlotFallback(false);
    setTransitionSelection(null);
    const topicLabel=selectedTaxonomyTopic?.topic.label[locale]||goal;
-   const nextGoal=(topicLabel+" · "+scenario.label).slice(0,160);
+   const nextGoal=clientWish.trim()||(topicLabel+" · "+scenario.label).slice(0,160);
    onInvalidate?.();onGoalChange(nextGoal);
    const nextTheme=legacyThemeForSubcategory[selectedTaxonomyTopic?.subcategory.id||""]||theme;
-   const recommended=recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
+   const recommended=recommendAutoVideo({goal:[clientWish,topicLabel,scenario.label].filter(Boolean).join(" · "),locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes});
    setProposalContext({goal:nextGoal,theme:nextTheme});
    setProposal(recommended);
@@ -502,9 +556,9 @@ export function MandalaAutoVideoDirector({
    if(!plot||plot.scenarioId!==selectedScenarioId||!selectedTaxonomyTopic)return;
    setSelectedPlotId(plotId);setSymbolicPlotFallback(false);
    const nextTheme=legacyThemeForSubcategory[selectedTaxonomyTopic.subcategory.id]||theme;
-   const nextGoal=(selectedTaxonomyTopic.topic.label[locale]+" · "+plot.label).slice(0,160);
+   const nextGoal=clientWish.trim()||(selectedTaxonomyTopic.topic.label[locale]+" · "+plot.label).slice(0,160);
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(nextGoal);
-   const recommended=recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,
+   const recommended=recommendAutoVideo({goal:[clientWish,selectedTaxonomyTopic.topic.label[locale],plot.label].filter(Boolean).join(" · "),locale,fallbackTheme:nextTheme,
      preferredTheme:nextTheme,presets,scenes});
    setProposalContext({goal:nextGoal,theme:nextTheme});setProposal(recommended);
    setOverrideId(null);setSeconds(null);setConfirmedTimelineKey(null);
@@ -524,7 +578,7 @@ export function MandalaAutoVideoDirector({
    onInvalidate?.();
    const category=videoGoalCategories.find(item=>item.id===selectedCategoryId);
    const nextTheme=(category?.theme||theme) as VideoTheme;
-   const nextGoal=taxonomyCategories.find(item=>item.id===selectedCategoryId)?.label||goal;
+   const nextGoal=clientWish.trim()||taxonomyCategories.find(item=>item.id===selectedCategoryId)?.label||goal;
    setSelectedSubcategoryId("");setSelectedTopicId("");
    setSelectedMeaningAxisId("");setSelectedMotifId("");setSelectedScenarioId("");
    setSelectedPlotId("");setSelectedStyleId("");setSymbolicPlotFallback(false);
@@ -554,7 +608,7 @@ export function MandalaAutoVideoDirector({
    const focus=profileSubcategories.find(item=>item.id===effectiveProfileFocus);
    if(!category||!focus)return;
    const nextTheme=legacyThemeForSubcategory[focus.id]||category.theme;
-   const nextGoal=[focus.label,
+   const nextGoal=clientWish.trim()||[focus.label,
      ...(profileMode==="extended"&&profileDetails.trim()?[profileDetails.trim().slice(0,160)]:[])
    ].join(" · ").slice(0,300);
    onInvalidate?.();onCategoryChange?.(nextTheme);onGoalChange(nextGoal);
@@ -564,7 +618,7 @@ export function MandalaAutoVideoDirector({
    setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);setConfirmedTimelineKey(null);
    setProposalContext({goal:nextGoal,theme:nextTheme});
-   setProposal(recommendAutoVideo({goal:nextGoal,locale,
+   setProposal(recommendAutoVideo({goal:[clientWish,focus.label,profileDetails].filter(Boolean).join(" · "),locale,
      fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
    setProfileMode(null);
  };
@@ -572,6 +626,7 @@ export function MandalaAutoVideoDirector({
  // canonical category/topic UI and the same verified four-shot film renderer.
  const designFromRequest=()=>{
   if(disabled||!goal.trim())return;
+   setClientWish(goal.trim().slice(0,160));
   const inferred=classifyMyTubeRequest(goal,locale);
   // Keep explicit category selection even when the brief mentions another life area.
   const classification=inferred&&(!categoryManuallySelected||inferred.categoryId===selectedCategoryId)?inferred:null;
@@ -603,7 +658,7 @@ export function MandalaAutoVideoDirector({
      onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();designFromRequest();}}}
      onChange={event=>{
        const value=event.currentTarget.value;
-       onInvalidate?.();onGoalChange(value);
+       onInvalidate?.();setClientWish(value);onGoalChange(value);
     setPromptDesignedFor(null);setPromptClassification(null);
        setProposalContext({goal:value,theme});
        setProposal(recommendAutoVideo({goal:value,locale,fallbackTheme:theme,presets,scenes}));
@@ -614,6 +669,10 @@ export function MandalaAutoVideoDirector({
  </label>;
  const requestInput=<div className={css.requestComposer} data-video-request-composer>
   {requestField}
+  {clientWish.trim()?<small className={css.notice} data-video-client-wish-preserved>
+    {locale==="ru"?"Ваше пожелание сохранено для плана сцен":locale==="es"?
+      "Tu petición se conserva para el plan":"Your wording is preserved for the scene plan"}
+  </small>:null}
   <button type="button" data-video-request-design className={css.designRequest}
    disabled={disabled||!goal.trim()} onClick={designFromRequest}>
    <Sparkles size={17} aria-hidden="true"/>
@@ -940,8 +999,8 @@ export function MandalaAutoVideoDirector({
      <textarea id="auto-video-refine" rows={2} maxLength={120}
        disabled={disabled} value={refineText} onChange={event=>setRefineText(event.currentTarget.value)}/>
      <button type="button" disabled={disabled||!refineText.trim()} onClick={()=>{
-       const next=[goal.trim(),refineText.trim()].filter(Boolean).join(". ").slice(0,160);
-       onInvalidate?.();onGoalChange(next);
+       const next=[clientWish.trim()||goal.trim(),refineText.trim()].filter(Boolean).join(". ").slice(0,160);
+       onInvalidate?.();setClientWish(next);onGoalChange(next);
        setProposal(recommendAutoVideo({goal:next,locale,fallbackTheme:theme,presets,scenes}));
        setProposalContext({goal:next,theme});
        setSelectedTopicId("");setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");setMeaningHandoff(null);setIncludeMeaningCaption(false);setOverrideId(null);setRefineOpen(false);setRefineText("");
@@ -963,6 +1022,20 @@ export function MandalaAutoVideoDirector({
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {topicTarget?createPortal(topicPanel,topicTarget):topicPanel}
    {showProposal&&proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
+  {clientWish.trim()?<details className={css.storyboardDisclosure} data-video-personal-brief>
+    <summary>{locale==="ru"?"Ваш запрос и эмоциональный сценарий":locale==="es"?
+      "Tu petición y plan emocional":"Your request and emotional scene plan"}</summary>
+    <p data-video-client-request>{videoBrief.clientWish}</p>
+    <p data-video-brief-taxonomy>{videoBrief.hierarchy.join(" → ")}</p>
+    <p data-video-emotional-relief>{videoBrief.fromEmotion+" → "+videoBrief.toEmotion}</p>
+    <ol data-video-emotional-scenes>{videoBrief.stages.map(stage=>
+      <li key={stage.index}>{stage.index}. {stage.title}: {stage.sceneQuery}</li>)}</ol>
+    <pre data-video-compiled-prompt style={{whiteSpace:"pre-wrap",
+       overflowWrap:"anywhere",fontSize:12,lineHeight:1.5}}>{videoBrief.prompt}</pre>
+    <small>{locale==="ru"?"Только проверенные и неповторяющиеся MP4; реальные кадры необходимо проверить.":
+      locale==="es"?"Solo MP4 aprobados y distintos; revisa las escenas.":
+      "Approved, distinct MP4 footage only; review the actual shots."}</small>
+  </details>:null}
    <div className={css.notice} data-mytube-category-storyboard
      data-storyboard-status={categoryPlan.status}>
      <strong>{locale==="ru"?"Раскадровка по категории":locale==="es"?
