@@ -1,0 +1,117 @@
+name: HH warm-sunlight filmed MP4 stage - one shot, no new standing worker
+on:
+  push:
+    branches:
+      - codex/warm-sunlight-filmed-import-20261106
+    paths:
+      - '.github/workflows/hh-warm-sunlight-filmed-stage-once.yml'
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: hh-warm-sunlight-20261106-one-shot
+  cancel-in-progress: false
+jobs:
+  stage-verified-asset-pairs:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/codex/warm-sunlight-filmed-import-20261106'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source head, authenticated one-shot for binary commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 1
+      - name: Ensure free FFmpeg tools exist
+        run: |
+          if ! command -v ffprobe >/dev/null || ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+      - name: Retrieve previously decoded CC BY 4.0 moving asset previews from same repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/hh-sun-source
+          gh run download 41977542713 --repo "${GITHUB_REPOSITORY}" \
+            --name hh-cinematic-hd-wave2-editorial-review-20261105 \
+            --dir /tmp/hh-sun-source
+          test -s /tmp/hh-sun-source/report.json
+      - name: Validate each real MP4, scene origin and bytes then stage approved-format drafts
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,subprocess,shutil,datetime
+          from pathlib import Path
+          source=Path('/tmp/hh-sun-source')
+          report=json.loads((source/'report.json').read_text())
+          assert report['publicationStatus']=='ALL_UNAPPROVED_REVIEW_ONLY'
+          assert report['reviewedSourceCandidates']==25 and report['technicalPass']>=4
+          selection=[
+            ('dusk-dawn-ocean','sun-warm-ocean-dawn','https://dareful.com/dusk-dawn-ocean/'),
+            ('aspen-trees-autumn-4k','sun-golden-aspen','https://dareful.com/free-4k-stock-video-of-autumn-fall-foliage-aspen-trees-stock-footage/'),
+            ('trees-looking-up','sun-leaves-canopy','https://dareful.com/trees-looking-up/'),
+            ('autumn-mountain-landscape','sun-autumn-hills','https://dareful.com/autumn-mountain-landscape/'),
+          ]
+          by_id={item['id']:item for item in report['sources']}
+          dst=Path('public/videos/holistic-house/film-collection-v3')
+          dst.mkdir(parents=True,exist_ok=True)
+          evidence={'schemaVersion':'hh-warm-sun-filmed-import-evidence-v1',
+           'date':'2026-11-06','sourceArtifactId':13392457705,'sourceRun':41977542713,
+           'originalsRedistributed':False,'physicalFormats':['landscape_1280x720_24fps','portrait_720x1280_24fps'],
+           'readyForPublication':False,'ownerViewedEachSource':False,
+           'stage':'TECHNICALLY_VERIFIED_ASSETS_IN_PR_BRANCH_NOT_APPROVED_FOR_LIVE',
+           'sources':[]}
+          for old_id,new_id,url in selection:
+            item=by_id[old_id]
+            assert item['qualityStatus']=='technical_pass_needs_editor' and item['sourcePage']==url
+            variants={}
+            for src_suffix,out_suffix,proof_key,w,h in [
+              ('-landscape','', 'landscapeQuality',1280,720),
+              ('','-portrait','quality',720,1280),
+            ]:
+              movie=source/(old_id+src_suffix+'.mp4')
+              assert movie.is_file() and movie.stat().st_size>65000
+              real_hash=hashlib.sha256(movie.read_bytes()).hexdigest()
+              assert real_hash==item[proof_key]['sha256'],(old_id,'checksum')
+              probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-show_format','-of','json',str(movie)]))
+              video=next(x for x in probe['streams'] if x['codec_type']=='video')
+              assert (video['codec_name'],video['width'],video['height'],video['pix_fmt'],video['avg_frame_rate'])==('h264',w,h,'yuv420p','24/1')
+              assert 4.85<=float(probe['format']['duration'])<=5.15
+              out=dst/(new_id+out_suffix+'.mp4')
+              assert not out.exists()
+              shutil.copy2(movie,out)
+              poster=dst/(new_id+out_suffix+'.jpg')
+              subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-nostdin',
+                '-ss','2','-i',str(out),'-frames:v','1','-q:v','3','-y',str(poster)],check=True)
+              assert poster.stat().st_size>3000
+              variants['portrait' if out_suffix else 'landscape']={
+                'video':'/videos/holistic-house/film-collection-v3/'+out.name,
+                'poster':'/videos/holistic-house/film-collection-v3/'+poster.name,
+                'sha256':real_hash,'bytes':movie.stat().st_size,'width':w,'height':h,'fps':24,
+                'posterSha256':hashlib.sha256(poster.read_bytes()).hexdigest()}
+            evidence['sources'].append({'id':new_id,'sourceId':old_id,'sourcePage':url,
+               'creator':'Joel Holland','publisher':'Dareful',
+               'licenseUrl':'https://creativecommons.org/licenses/by/4.0/',
+               'changed':'five-second H264 excerpt, mute audio, portrait center-crop from landscape, landscape downscale',
+               'actualVisualReviewRequiredBeforeMerge':True,
+               'sourceArtQuality':{'portraitMotion':item['quality']['motion'],'portraitScore':item['quality']['score'],
+                   'landscapeScore':item['landscapeQuality']['score']},'variants':variants})
+          evidence_path=Path('data/video-catalog/sunlight-physical-import-evidence-20261106.json')
+          evidence_path.write_text(json.dumps(evidence,ensure_ascii=False,indent=2)+'\n')
+          print('Staged '+str(len(evidence['sources']))+' source films, 8 real H264 files and 8 JPG posters')
+          PY
+      - name: Self-delete single-use workflow and commit only real footage and evidence
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -f .github/workflows/hh-warm-sunlight-filmed-stage-once.yml
+          git add public/videos/holistic-house/film-collection-v3 data/video-catalog/sunlight-physical-import-evidence-20261106.json
+          git diff --cached --check
+          git diff --cached --stat
+          test "$(git diff --cached --name-only | grep -Ec '^public/videos/holistic-house/film-collection-v3/.*\.mp4$')" -eq 8
+          test "$(git diff --cached --name-only | grep -Ec '^public/videos/holistic-house/film-collection-v3/.*\.jpg$')" -eq 8
+          git commit -m 'assets(video): stage four CC BY warm sunlight films in two real MP4 aspects'
+          git push origin HEAD:codex/warm-sunlight-filmed-import-20261106
