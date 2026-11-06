@@ -223,18 +223,57 @@ async function exercise(engine, browserType, width) {
     // queued Next prefetches. Observe their actual completion after hydration,
     // including requests triggered by poster scrolling, before replacing a page.
     await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')), { timeout: 15000 }).toBe(true);
-    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    let frameTimer = null;
+    try {
+      // WebKit may stall requestAnimationFrame on a background or suspended page.
+      // Fail this real release check explicitly rather than hanging the 35-minute job.
+      await Promise.race([
+        page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))),
+        new Promise((_, reject) => {
+          frameTimer = setTimeout(() => reject(new Error('Release re-audit two-frame wait exceeded 5000ms at ' + stage + ' ' + publicPhase)), 5000);
+        }),
+      ]);
+    } finally {
+      if (frameTimer !== null) clearTimeout(frameTimer);
+    }
     await expect.poll(() => publicPageState.pendingPublicRequests.size === 0 && Date.now() - publicPageState.lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
     publicDiagnostics.checkpoints.push({ type: 'settled', stage, path: publicPhase, time: Date.now(), pendingRequests: publicPageState.pendingPublicRequests.size, lastRequestActivity: publicPageState.lastPublicRequestActivity });
   };
   try {
     for (const [path, locale] of routes) {
+      // The Maya hub is audited fully, but in a new tab to avoid retaining
+      // the previous eighteen WebKit document/reader render trees.
+      const routeTimer = setTimeout(() => {
+        console.error('[release-reaudit] ROUTE_STALLED ' + engine + '/' + width + ' ' + path +
+          ' after 90s; checkpoints=' + JSON.stringify(publicDiagnostics.checkpoints.slice(-4)));
+        process.exit(1); // Fatal: do not count unverified route as passing.
+      }, 90000);
+      if (path === '/books/maya-tradition') {
+        console.info('[release-reaudit] isolating real Maya hub after previous navigations');
+        await page.close();
+        publicPageState = await createPublicPage();
+        page = publicPageState.page;
+        errors = publicPageState.errors;
+      }
+      // In the real WebKit mobile audit /en/client completed and fully settled,
+      // but the following /ru/client navigation never resolved. Each private
+      // landing locale now gets an isolated page so no prior guest/Next document
+      // can block the NEXT locale's navigation. All route, CSP, poster, language,
+      // 90-second fatal timeout, and no-JS-error assertions still execute.
+      if (['/en/client','/ru/client','/es/client'].includes(path)) {
+        console.info('[release-reaudit] isolating real client landing document: ' + path);
+        await page.close();
+        publicPageState = await createPublicPage();
+        page = publicPageState.page;
+        errors = publicPageState.errors;
+      }
       const routePassed = await check('public-page', { engine, width, path }, async () => {
         publicPhase = path;
         console.info('[release-reaudit] public route ' + engine + '/' + width + ': ' + path);
         publicDiagnostics.checkpoints.push({ type: 'goto', path, from: page.url(), time: Date.now() });
         errors.length = 0;
         const response = await page.goto(origin + path, { waitUntil: 'networkidle', timeout: 35000 });
+        console.info('[release-reaudit] navigated ' + engine + '/' + width + ': ' + path);
         assert.equal(response.status(), 200);
         await page.locator('main').first().waitFor();
         await settlePublicDocument('before-assertions');
@@ -257,14 +296,24 @@ async function exercise(engine, browserType, width) {
         // cannot reduce coverage. Each same element must load and strictly decode.
         const posters = page.locator('.site-video-poster');
         const posterImages = await posters.elementHandles();
-        for (const image of posterImages) {
+        console.info('[release-reaudit] strict poster decode count=' + posterImages.length + ' ' + path);
+        for (const [posterIndex, image] of posterImages.entries()) {
           await expect(posters).toHaveCount(posterImages.length);
           await decodeReadyPoster(image, expect);
+          console.info('[release-reaudit] decoded poster ' + (posterIndex + 1) + '/' + posterImages.length + ' ' + path);
         }
         await expect(posters).toHaveCount(posterImages.length);
         if (['/en/about', '/es/about', '/books/maya-tradition'].includes(path)) {
           await page.evaluate(() => scrollTo(0, 0));
-          await page.screenshot({ path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`, fullPage: true });
+          console.info('[release-reaudit] capture screenshot ' + path);
+          // The four-volume Maya hub gets a real viewport image instead of an
+          // unbounded, memory-intensive full-page WebKit stitched screenshot.
+          // Its rendered DOM, poster decode and locale/CSP assertions remain fatal.
+          await page.screenshot({
+            path: `${evidence}/${label}-${engine}-${width}-${path.replaceAll('/', '_')}.png`,
+            fullPage: path !== '/books/maya-tradition', timeout: 15000,
+          });
+          console.info('[release-reaudit] captured screenshot ' + path);
         }
         await settlePublicDocument('before-next-navigation');
         assert.deepEqual(errors, [], 'No page errors after public poster decoding and scrolling');
@@ -283,6 +332,7 @@ async function exercise(engine, browserType, width) {
         page = publicPageState.page;
         errors = publicPageState.errors;
       }
+      clearTimeout(routeTimer);
     }
     await page.goto(origin + '/en/about', { waitUntil: 'networkidle' });
     const menu = page.locator('.site-language-menu');
@@ -552,15 +602,30 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
+          // The unified Profile dock now opens the PRIVATE Cabinet first.
+          // Verify the hard CSP boundary, guest isolation and the public
+          // "Create" tab instead of assuming the old public-only destination.
           await cspPage.locator('.mobile-bottom-navigation [data-nav-item="profile"]').click();
+          await expect(cspPage).toHaveURL(origin + '/en/app/portrait');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document');
+          await expect(cspPage.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
+          await expect(cspPage.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
+          await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-create'; });
+          await cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="create"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/personality-profiles');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
-          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Public profile discovery must retain same-policy soft navigation');
+          await waitForDocument();
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Private Profile to public builder must load a new document');
+          await expect(cspPage.locator('[data-profile-direct-tests]')).toBeVisible();
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-builder-before-private-tests'; });
           await cspPage.locator('[data-profile-direct-tests]').click();
           await expect(cspPage).toHaveURL(origin + '/en/client/tests');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
-          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Entering private must load a new document');
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public tests to private must load a new document');
           await cspPage.evaluate(() => {
             window.__cspViolations = [];
             document.addEventListener('securitypolicyviolation', event => window.__cspViolations.push(event.effectiveDirective));
@@ -569,14 +634,14 @@ async function exercise(engine, browserType, width) {
             document.body.append(frame);
           });
           await expect.poll(() => cspPage.evaluate(() => window.__cspViolations.includes('frame-src'))).toBe(true);
-          // Test discovery keeps public navigation while retaining private CSP.
+          // Private test discovery keeps the six-dock navigation under private CSP.
           // Check the actual private account separately, without altering this
           // page's Back/Forward chain or reading an authenticated account.
           const discoveryBottom = cspPage.locator('.mobile-bottom-navigation');
           await expect(discoveryBottom).toBeVisible();
           await expect(discoveryBottom.locator('[aria-current="page"]')).toHaveCount(1);
           await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('aria-current', 'page');
-          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/en/personality-profiles');
+          await expect(discoveryBottom.locator('[data-nav-item="profile"]')).toHaveAttribute('href', '/en/app/portrait');
           const privateContext = await cspBrowser.newContext({viewport:{width,height:900}, serviceWorkers: 'block'});
           await privateContext.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort());
           const privatePage = await privateContext.newPage();

@@ -82,7 +82,12 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     document.addEventListener('pointerdown', dismiss);
     document.addEventListener('focusin', dismiss);
     document.addEventListener('keydown', escape);
+    // Only advertise readiness after the Escape/focus handlers are installed.
+    // SSR markup alone is not proof that React has hydrated this menu.
+    const languageMenu = languageRef.current;
+    if (languageMenu) languageMenu.dataset.hhKeyboardReady = 'true';
     return () => {
+      if (languageMenu) delete languageMenu.dataset.hhKeyboardReady;
       document.removeEventListener('pointerdown', dismiss);
       document.removeEventListener('focusin', dismiss);
       document.removeEventListener('keydown', escape);

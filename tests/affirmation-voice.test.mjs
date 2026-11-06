@@ -426,3 +426,30 @@ test("Ideas optional voice authoring is opt-in but genuinely reachable in the re
   for(const marker of ['[data-hypno-select-tone]','[data-hypno-approve]','[data-video-affirmation-voice-select]','assert.equal(affirmationRequests[0].consent,true)','const audioTrack=streams.find(row=>row.codec_type==="audio")','pcm.stdout.some(value=>value!==0)'])
     assert.ok(browser.includes(marker),"real voice/MP4/consent gate lost: "+marker);
 });
+
+
+test("Safari voice lifecycle never silently aborts identical inputs or mistakes API response for attached WAV",()=>{
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  const script=read("scripts/verify-affirmation-voice-browser.mjs");
+  const video=read("components/mandala-free-video-studio.tsx");
+  // On mount/StrictMode replays, no change to the actual approved transcript
+  // or voice means the current in-flight job and consent remain untouched.
+  assert.match(voice,/previous\.speechText===speechText && previous\.voiceId===voiceId/);
+  assert.match(voice,/previous\.language===language\)return/);
+  assert.match(voice,/\[speechText,voiceId,language,busy,mixing,locale\]/);
+  // Genuine phrase/voice changes STILL abort stale output and require a new
+  // user-approved request. Never auto-repeat the paid-capable provider call.
+  assert.match(voice,/controllerRef\.current\?\.abort\(\)/);
+  assert.match(voice,/setGenerationPhase\(interrupted\?"cancelled":"idle"\)/);
+  assert.match(voice,/setMessage\(interrupted\?/);
+  assert.match(voice,/code==="AbortError"\?"cancelled":"failed"/);
+  assert.match(voice,/data-video-affirmation-phase=\{generationPhase\}/);
+  assert.match(voice,/onAttach\(\{file,speechFile,[\s\S]*?setGenerationPhase\("attached"\)/);
+  assert.match(video,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,narration:true/);
+  assert.match(script,/toContainText\(expectedFileName,\{timeout:30000\}\)/);
+  assert.match(script,/toHaveAttribute\("data-video-affirmation-phase","attached"\)/);
+  assert.match(script,/voicePhase,voiceUi,providerRequests:/);
+  for(const guard of ["assert.equal(affirmationRequests.length,1)","ffprobe",
+    "assert.equal(Number(audioTrack.channels),2)","pcm.stdout.some(value=>value!==0)"])
+    assert.ok(script.includes(guard),"Safari real-media gate lost: "+guard);
+});

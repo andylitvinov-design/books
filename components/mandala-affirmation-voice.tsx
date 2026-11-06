@@ -111,6 +111,9 @@ export function MandalaAffirmationVoice({
   const languageAvailable=available&&availableLanguages.includes(language);
   const [busy,setBusy]=useState(false);
   const [mixing,setMixing]=useState(false);
+  // Read-only lifecycle marker: real WAV attachment is distinct from a
+  // completed API request. Never expose the approved private transcript.
+  const [generationPhase,setGenerationPhase]=useState<"idle"|"requesting"|"mixing"|"attached"|"cancelled"|"failed">("idle");
   const [audioUrl,setAudioUrl]=useState("");
   const [message,setMessage]=useState("");
   const [speechSeconds,setSpeechSeconds]=useState(0);
@@ -154,8 +157,15 @@ export function MandalaAffirmationVoice({
   },[]);
 
   useEffect(()=>{
+    const previous=originRef.current;
+    // React may replay mount effects in Strict Mode. Reset only for a REAL
+    // change of approved spoken text, selected voice or language: re-running
+    // this effect with an identical identity used to abort a live WebKit WAV.
+    if(previous.speechText===speechText && previous.voiceId===voiceId &&
+       previous.language===language)return;
+    const interrupted=Boolean(controllerRef.current)||busy||mixing;
     if(balanceTimerRef.current)clearTimeout(balanceTimerRef.current);
-    const textChanged=originRef.current.speechText!==speechText;
+    const textChanged=previous.speechText!==speechText;
     originRef.current={speechText,voiceId,language};
     // Consent applies to the exact approved transcript, not to future edits.
     // Public fixed voice samples remain available before new approval.
@@ -171,9 +181,15 @@ export function MandalaAffirmationVoice({
     if(previous){URL.revokeObjectURL(previous);audioUrlRef.current="";}
     jobRef.current++;
     controllerRef.current?.abort();
-    setBusy(false);setMixing(false);setAudioUrl("");setMessage("");setSpeechSeconds(0);
+    setBusy(false);setMixing(false);setAudioUrl("");setSpeechSeconds(0);
+    setGenerationPhase(interrupted?"cancelled":"idle");
+    // A cancelled consented request is not a successful output and cannot
+    // silently leave the previously attached music looking like a new WAV.
+    setMessage(interrupted?(locale==="ru"?"Фраза или голос изменились во время подготовки. Проверьте текст и создайте озвучку заново.":
+      locale==="es"?"La frase o la voz cambió durante la generación. Revisa el texto y vuelve a crear el audio.":
+      "The phrase or voice changed while preparing audio. Review the text and create the voice again."):"");
     onGeneratingRef.current(false);
-  },[speechText,voiceId,language]);
+  },[speechText,voiceId,language,busy,mixing,locale]);
 
   useEffect(()=>{
     setDeviceSpeechAvailable(typeof window!=="undefined" &&
@@ -203,7 +219,7 @@ export function MandalaAffirmationVoice({
     selected:{bed:Bed;voiceLevel:number;musicLevel:number},
     job:number,
   ){
-    setMixing(true);
+    setMixing(true);setGenerationPhase("mixing");
     onGeneratingRef.current(true);
     try{
       // Offline remix is deterministic: it never asks Google to synthesize again.
@@ -216,10 +232,12 @@ export function MandalaAffirmationVoice({
       audioUrlRef.current=uri;setAudioUrl(uri);setSpeechSeconds(clip.seconds);
       const speechFile=new File([clip.blob],"holistic-house-affirmations-speech.wav",{type:"audio/wav"});
       onAttach({file,speechFile,spokenText:speechText,voiceId,language,speechSeconds:clip.seconds,mixSeconds:clip.mixSeconds,bed:selected.bed});
+      setGenerationPhase("attached");
       setMessage(t.ready+(clip.providerNotice||""));
     }catch(error){
       if(job!==jobRef.current)return;
       const code=error instanceof Error?error.message:"";
+      setGenerationPhase("failed");
       setMessage(code==="TOO_LONG"?t.tooLong:t.error);
     }finally{
       if(job===jobRef.current){setMixing(false);onGeneratingRef.current(false);}
@@ -233,7 +251,7 @@ export function MandalaAffirmationVoice({
     if(balanceTimerRef.current)clearTimeout(balanceTimerRef.current);
     onInvalidateRef.current?.();
     if(audioUrlRef.current){URL.revokeObjectURL(audioUrlRef.current);audioUrlRef.current="";}
-    setAudioUrl("");setMixing(true);setMessage(levels.remixing);
+    setAudioUrl("");setMixing(true);setGenerationPhase("mixing");setMessage(levels.remixing);
     onGeneratingRef.current(true);
     balanceTimerRef.current=setTimeout(()=>{balanceTimerRef.current=null;void renderBalance(clip,next,job);},250);
   }
@@ -390,7 +408,7 @@ export function MandalaAffirmationVoice({
     const controller=new AbortController();
     controllerRef.current=controller;
     playGeneratedAfterRequestRef.current=true;
-    setBusy(true);setMessage("");setAudioUrl("");setSpeechSeconds(0);
+    setBusy(true);setGenerationPhase("requesting");setMessage("");setAudioUrl("");setSpeechSeconds(0);
     onGeneratingRef.current(true);
     try {
       // No wishes, photos, client tests or profile fields in this request.
@@ -415,17 +433,23 @@ export function MandalaAffirmationVoice({
         reply.headers.get("X-HH-Voice-Provider")==="openrouter-free" ? t.freeUsed : "";
       const clip={blob:voice,seconds,mixSeconds,providerNotice};
       voiceDataRef.current=clip;
+      setGenerationPhase("mixing");
       await renderBalance(clip,{bed,voiceLevel,musicLevel},job);
     } catch(e) {
       if(job!==jobRef.current)return;
       playGeneratedAfterRequestRef.current=false;
       const code=e instanceof Error?e.message:"";
-      if(code!=="AbortError")setMessage(code==="QUOTA"?t.quota:code==="TOO_LONG"?t.tooLong:t.error);
+      setGenerationPhase(code==="AbortError"?"cancelled":"failed");
+      setMessage(code==="AbortError"?(locale==="ru"?"Генерация голоса прервана. Проверьте фразу и повторите запрос.":
+        locale==="es"?"La generación de voz se interrumpió. Comprueba la frase antes de reintentar.":
+        "Voice generation was interrupted. Review the phrase before retrying."):
+        code==="QUOTA"?t.quota:code==="TOO_LONG"?t.tooLong:t.error);
     } finally {
       if(job===jobRef.current){setBusy(false);controllerRef.current=null;onGeneratingRef.current(false);}
     }
   }
-  return <section className={css.panel} id="video-affirmation-voice" data-video-affirmation-voice aria-labelledby="video-affirmation-voice-title">
+  return <section className={css.panel} id="video-affirmation-voice" data-video-affirmation-voice
+    data-video-affirmation-phase={generationPhase} aria-labelledby="video-affirmation-voice-title">
     <div className={css.heading}>
       <AudioLines size={20} aria-hidden="true"/>
       <div><h4 id="video-affirmation-voice-title">{t.title}</h4><p>{t.lead}</p></div>

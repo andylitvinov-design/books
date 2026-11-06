@@ -87,6 +87,24 @@ test('Current State v2 is seeded as a new immutable definition and retains encry
     desired_change: 'Synthetic desired change',
   })
 })
+test('My Practice bootstrap keeps verified account but excludes unrelated assessments', async () => {
+  const full = await repo.bootstrap(v2Actor)
+  assert.ok(full.results.length > 0, 'fixture has private result data')
+  const lite = await repo.bootstrap(v2Actor, { view: 'practice' })
+  assert.equal(lite.account.id, v2Actor.id)
+  assert.equal(lite.account.onboardingState, 'active')
+  assert.deepEqual(lite.results, [])
+  assert.deepEqual(lite.runs, [])
+  assert.deepEqual(lite.requests, [])
+  assert.deepEqual(lite.services, [])
+  assert.deepEqual(lite.savedReports, [])
+  assert.equal(lite.snapshot, null)
+  assert.deepEqual(Object.keys(lite).sort(), Object.keys(full).sort())
+  const another = await repo.bootstrap(b, { view: 'practice' })
+  assert.equal(another.account.id, b.id)
+  assert.deepEqual(another.results, [])
+})
+
 const start = (who = a, def = en) =>
   repo.startRun(who, {
     definitionKey: def.key,

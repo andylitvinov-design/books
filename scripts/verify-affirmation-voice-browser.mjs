@@ -460,6 +460,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       try {
         // The shared video stage must confirm a real attached WAV, not merely a transient preview.
         await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName,{timeout:30000});
+        // Voice API success is not an attached audio track. Keep the exact
+        // real WebKit criterion, plus observable non-sensitive lifecycle proof.
+        await expect(page.locator("[data-video-affirmation-voice]"))
+          .toHaveAttribute("data-video-affirmation-phase","attached");
         // After asynchronous mixing, restore the visitor-opened optional voice editor if collapsed.
         if(await optionalAudio.getAttribute("aria-expanded")==="false"){
           await optionalAudio.click();
@@ -470,8 +474,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       }catch(error){
         const status=await page.locator('[data-video-affirmation-voice] [role="status"]').allTextContents();
         const buttonDisabled=await page.locator("[data-video-generate-affirmation-audio]").isDisabled();
+        const voicePhase=await page.locator("[data-video-affirmation-voice]")
+          .getAttribute("data-video-affirmation-phase");
+        const voiceUi=await page.evaluate(()=>({
+          attachedAudioVisible:Boolean(document.querySelector("[data-video-live-audio]")),
+          generatedWavReady:Boolean(document.querySelector("[data-video-affimations-audio-ready]")),
+          approvedPhraseCount:document.querySelectorAll("[data-hypno-phrase][aria-pressed='true']").length,
+          consentChecked:Boolean(document.querySelector("[data-video-affirmation-voice-consent]")?.checked),
+          selectedVoice:document.querySelector("[data-video-affirmation-voice-card][aria-pressed='true']")?.getAttribute("data-video-affirmation-voice-card")||null
+        }));
         throw new Error(engine+" voice failed: "+JSON.stringify({status,buttonDisabled,
-          providerRequests:payloads.length,networkRequests:requests,jsErrors:errors}),{cause:error});
+          voicePhase,voiceUi,providerRequests:payloads.length,networkRequests:requests,jsErrors:errors}),{cause:error});
       }
       const affirmationRequests=payloads.filter(item=>item.mode==="affirmations");
       assert.equal(affirmationRequests.length,1);

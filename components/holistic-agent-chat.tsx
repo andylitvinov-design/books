@@ -4,9 +4,14 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
+import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
+import MessengerSignIn from "@/components/app/messenger-sign-in";
 import styles from "./holistic-agent-chat.module.css";
 
 type Mode = "rules" | "device" | "owned";
+type PublicVideoGoal = "all" | "stress" | "energy" | "relationships" | "work" | "meaning" | "practices";
+type GuidedTrack = "video" | "meditation" | "hint" | null;
 type PreviewFocus = "" | "stress" | "relationships" | "self_worth" | "meaning";
 type Outline = {status:"draft_ready";title:string;lessons:Array<{number:number;title:string;steps:string[];videoReady:false}>;published:false;mediaReady:false};
 type Message = { role: "user" | "assistant"; text: string };
@@ -21,7 +26,7 @@ const copy = {
     placeholder:"Что сейчас для вас важно?",send:"Отправить",cancel:"Остановить",mode:"Способ ответа",
     rules:"Без нейросети",device:"AI на устройстве (может потребоваться загрузка модели)",owned:"AI на нашем сервере (с согласия)",
     consent:"Разрешаю передать моё сообщение и последние реплики этого диалога на собственный защищённый AI-сервер Holistic House.",
-    loading:"Формирую ответ…",error:"Не удалось получить ответ. Попробуйте повторить запрос.",signIn:"Для ответа войдите в кабинет Holistic House.",modeError:"Этот режим пока недоступен. Выберите «Без нейросети» в настройках чата.",
+    loading:"Формирую ответ…",error:"Не удалось получить ответ. Попробуйте повторить запрос.",signIn:"Личный режим требует защищённого входа. Нажмите кнопку ниже.",modeError:"Этот режим пока недоступен. Выберите «Без нейросети» в настройках чата.",
     unavailable:"Локальная модель в этом браузере или для русского языка недоступна; показан проверенный ответ.",
     source:"Источник ответа",suggestions:"Проверенные варианты",start:"Начните с вопроса. Можно сменить режим в любой момент.",
     option:"Выбрать",reset:"Новый разговор",used:"На устройстве",backend:"Собственный сервер",simple:"Алгоритм",
@@ -45,7 +50,7 @@ const copy = {
     placeholder:"What's on your mind?",send:"Send",cancel:"Stop",mode:"Response mode",
     rules:"Without a language model",device:"On-device AI (may download a model)",owned:"Our AI server (with consent)",
     consent:"I agree to send this message and recent conversation turns to Holistic House's secured, self-hosted AI server.",
-    loading:"Preparing a reply…",error:"Could not get a reply. Please try again.",signIn:"Sign in to your Holistic House cabinet to receive a reply.",modeError:"This response mode is unavailable. Select Without a language model in chat settings.",
+    loading:"Preparing a reply…",error:"Could not get a reply. Please try again.",signIn:"This private mode requires sign-in. Use the Google button below.",modeError:"This response mode is unavailable. Select Without a language model in chat settings.",
     unavailable:"The on-device language model isn't available for this browser or language; the verified fallback is shown.",
     source:"Reply source",suggestions:"Verified options",start:"Start with a question. You can switch modes any time.",
     option:"Open",reset:"New conversation",used:"On device",backend:"Self-hosted server",simple:"Rules",
@@ -69,7 +74,7 @@ const copy = {
     placeholder:"¿Qué te preocupa ahora?",send:"Enviar",cancel:"Detener",mode:"Tipo de respuesta",
     rules:"Sin modelo de IA",device:"IA en el dispositivo (puede descargar un modelo)",owned:"Nuestro servidor de IA (con permiso)",
     consent:"Acepto enviar este mensaje y los últimos turnos de la conversación al servidor privado de IA de Holistic House.",
-    loading:"Preparando una respuesta…",error:"No se pudo obtener respuesta. Vuelve a intentarlo.",signIn:"Inicia sesión en Holistic House para recibir una respuesta.",modeError:"Este modo no está disponible. Selecciona Sin modelo de IA en los ajustes del chat.",
+    loading:"Preparando una respuesta…",error:"No se pudo obtener respuesta. Vuelve a intentarlo.",signIn:"Este modo privado requiere acceso. Usa el botón de Google abajo.",modeError:"Este modo no está disponible. Selecciona Sin modelo de IA en los ajustes del chat.",
     unavailable:"El modelo local no está disponible para este navegador o idioma; se muestra la respuesta segura.",
     source:"Origen",suggestions:"Opciones verificadas",start:"Escribe una pregunta. Puedes cambiar el modo cuando quieras.",
     option:"Abrir",reset:"Nueva conversación",used:"En el dispositivo",backend:"Servidor propio",simple:"Reglas",
@@ -104,6 +109,10 @@ const messengerStarter = {
   videoQuestion:"С удовольствием! Для начала расскажите, о чём будет видео и что вы хотите почувствовать или изменить после просмотра.",
   meditationQuestion:"Конечно! Как вы себя чувствуете сейчас, сколько минут у вас есть и к какому состоянию хотите прийти?",
   hintQuestion:"Что вы хотите лучше понять сейчас: стресс, отношения, ресурсы или другую тему? Можно начать с бесплатного теста и затем обсудить результат здесь. Тест не является диагнозом.",
+  chooseTheme:"Тема готового видео",themes:{stress:"Спокойствие",relationships:"Любовь",energy:"Энергия",meaning:"Смыслы"},
+  readyVideos:"Смотреть готовые видео бесплатно",requestVideo:"Создать персональное видео",
+  videoAuth:"Для заявки на персональную генерацию войдите через Google. Подбор и просмотр готовых видео доступны без входа.",
+  safety:"Если вам или кому-то рядом угрожает непосредственная опасность, обратитесь в экстренную службу. Я могу помочь найти доступные материалы, когда это безопасно.",
  },
  en:{
   welcome:"Welcome! I can help with a supportive video, a practice for now, a test or a personal express review. Choose an option or write your question.",
@@ -118,6 +127,10 @@ const messengerStarter = {
   videoQuestion:"Of course! What would you like the video to be about, and how would you like to feel after watching it?",
   meditationQuestion:"Of course! How do you feel right now, how many minutes do you have and how would you like to feel after the meditation?",
   hintQuestion:"What would you like to understand better: stress, relationships, personal resources or something else? You can start with a free test, then discuss the result here. A test is not a diagnosis.",
+  chooseTheme:"Topic for ready-made videos",themes:{stress:"Calm",relationships:"Love",energy:"Energy",meaning:"Meaning"},
+  readyVideos:"Watch ready-made videos for free",requestVideo:"Create my personal video",
+  videoAuth:"To request a custom generated video, sign in with Google. Exploring and watching existing videos needs no account.",
+  safety:"If you or someone nearby is in immediate danger, contact local emergency services. I can help find public resources when it's safe.",
  },
  es:{
   welcome:"¡Hola! Puedo ayudarte con un vídeo de apoyo, una práctica para ahora, un test o una revisión exprés personal. Elige una opción o escribe tu pregunta.",
@@ -132,6 +145,10 @@ const messengerStarter = {
   videoQuestion:"¡Claro! ¿De qué te gustaría que tratara el vídeo y cómo quieres sentirte después de verlo?",
   meditationQuestion:"¡Claro! ¿Cómo te sientes ahora, cuántos minutos tienes y cómo te gustaría sentirte después?",
   hintQuestion:"¿Qué te gustaría comprender mejor: el estrés, las relaciones, tus recursos u otro tema? Puedes empezar con un test gratuito y luego comentar el resultado aquí. Un test no es un diagnóstico.",
+  chooseTheme:"Tema de un vídeo disponible",themes:{stress:"Calma",relationships:"Amor",energy:"Energía",meaning:"Sentido"},
+  readyVideos:"Ver vídeos disponibles gratis",requestVideo:"Crear mi vídeo personal",
+  videoAuth:"Para solicitar un vídeo personalizado, entra con Google. Explorar y ver los vídeos existentes no requiere cuenta.",
+  safety:"Si tú u otra persona estáis en peligro inmediato, contacta los servicios de emergencia locales. Puedo ayudarte a buscar recursos públicos cuando sea seguro.",
  },
 } as const;
 function isCasualGreeting(raw:string):boolean {
@@ -145,8 +162,8 @@ type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal}
 type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
   create:(options?:unknown)=>Promise<NativePromptSession> };
 export type HolisticAgentQuickPrompt = {revision:number;text:string;format?:"video"|"audio"|"course"|"service"|"test"};
-export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
- locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null
+export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticated=false}:{
+ locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean
 }) {
   const t=copy[locale];
   const starter=messengerStarter[locale];
@@ -163,6 +180,10 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
   const [draft,setDraft]=useState("");
   const [entryOpen,setEntryOpen]=useState(true);
   const [guideLink,setGuideLink]=useState<"tests"|null>(null);
+  const [guidedTrack,setGuidedTrack]=useState<GuidedTrack>(null);
+  const [videoGoal,setVideoGoal]=useState<PublicVideoGoal>("all");
+  const [showVideoSignIn,setShowVideoSignIn]=useState(false);
+  const [needsPrivateSignIn,setNeedsPrivateSignIn]=useState(false);
   const [messages,setMessages]=useState<Message[]>([]);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
   const [status,setStatus]=useState("");
@@ -224,10 +245,20 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     finally{setOutlineBusy(false);}
   }
 
+  function guestAnswer(text:string,prior:Message[]):string {
+    const reviewed=ruleConversationReply({message:text,locale,history:prior});
+    const goal=publicVideoGoalForMessage(text);
+    if(goal)setVideoGoal(goal as PublicVideoGoal);
+    if(!reviewed){setGuidedTrack(null);return starter.safety;}
+    if(reviewed.id.startsWith("video"))setGuidedTrack("video");
+    else if(reviewed.id.startsWith("meditation"))setGuidedTrack("meditation");
+    return reviewed.reply;
+  }
   function startGuided(kind:"video"|"meditation"|"hint") {
     if(busy)return;
     followTail.current=true;setNewBelow(false);
     setFormat(kind==="video"?"video":kind==="meditation"?"audio":"test");
+    setGuidedTrack(kind);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);
     setGuideLink(kind==="hint"?"tests":null);
     setEntryOpen(false);setStatus("");setSource("");setChoices([]);
     setDraft("");
@@ -247,7 +278,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     if(compact&&isCasualGreeting(text)){
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
       setMessages(prev=>[...prev,{role:"user" as const,text},
-        {role:"assistant" as const,text:starter.hello}].slice(-30));
+        {role:"assistant" as const,text:/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
+          /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:starter.hello}].slice(-30));
       return;
     }
     setEntryOpen(false);
@@ -256,7 +288,16 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     const prior=messages.slice(-6).map(row=>({
       role:row.role,text:row.role==="user"?row.text:row.text.slice(0,4000),
     })),abort=new AbortController();
-    followTail.current=true;setNewBelow(false);
+    // Guest discovery uses public editorial rules, not private account APIs.
+    if(compact&&!authenticated&&mode==="rules"){
+      followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);
+      setNeedsPrivateSignIn(false);setShowVideoSignIn(false);setEntryOpen(false);setDraft("");
+      const answer=guestAnswer(text,prior);
+      setMessages(prev=>[...prev,{role:"user" as const,text},
+        {role:"assistant" as const,text:answer}].slice(-30));
+      return;
+    }
+    followTail.current=true;setNewBelow(false);setNeedsPrivateSignIn(false);setShowVideoSignIn(false);
     controller.current=abort;setBusy(true);setStatus("");setChoices([]);setDraft("");
     setMessages(prev=>[...prev,{role:"user" as const,text}]);
     try {
@@ -306,7 +347,15 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     } catch (error) {
       if(!abort.signal.aborted){
         const reason=error instanceof Error?error.message:"";
-        setStatus(reason==="SIGN_IN_REQUIRED"?t.signIn:reason==="MODE_UNAVAILABLE"?t.modeError:t.error);
+        if(reason==="SIGN_IN_REQUIRED"&&compact&&mode==="rules"){
+          // Expired session: answer from public rules; private API stays protected.
+          const answer=guestAnswer(text,prior);
+          setMessages(prev=>[...prev,{role:"assistant" as const,text:answer}].slice(-30));
+          setSource("");setStatus("");
+        }else{
+          setNeedsPrivateSignIn(reason==="SIGN_IN_REQUIRED");
+          setStatus(reason==="SIGN_IN_REQUIRED"?t.signIn:reason==="MODE_UNAVAILABLE"?t.modeError:t.error);
+        }
       }
     } finally {
       setBusy(false);controller.current=null;
@@ -388,8 +437,27 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
           <strong>{starter.master}</strong><small>{starter.masterSub}</small>
         </a>
       </div>}
-      {compact&&settings}
-      {compact&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
+      {compact&&(guidedTrack==="video"||guidedTrack==="meditation")&&messages.length>0&&
+        <div className={styles.publicVideoActions} data-hh-public-video-choices>
+          <div className={styles.topicChoices} role="group" aria-label={starter.chooseTheme}>
+            {(["stress","relationships","energy","meaning"] as const).map(goal=>
+              <button type="button" key={goal} aria-pressed={videoGoal===goal}
+                onClick={()=>{setVideoGoal(goal);setShowVideoSignIn(false);}}>
+                {starter.themes[goal]}
+              </button>)}
+          </div>
+          <a className={styles.readyVideoLink} data-hh-guest-ready-videos
+            href={"/"+locale+"/mytube?goal="+videoGoal}>{starter.readyVideos}</a>
+          {authenticated?
+            <a className={styles.personalVideoButton} data-hh-video-open-studio
+              href={"/"+locale+"/holistic-support/mandala"}>{starter.requestVideo}</a>:
+            <button className={styles.personalVideoButton} data-hh-personal-video-request
+              type="button" onClick={()=>setShowVideoSignIn(true)}>{starter.requestVideo}</button>}
+          {showVideoSignIn&&!authenticated&&<div className={styles.videoAuth} data-hh-video-sign-in>
+            <p>{starter.videoAuth}</p>
+            <MessengerSignIn locale={locale} continueTo="video-studio"/>
+          </div>}
+        </div>}
     {source&&<p className={styles.muted}>{t.source}: {source}</p>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
     {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
@@ -406,6 +474,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
         <small className={styles.muted}>{t.localFeedback}</small>
       </div>}
     {status&&<p role="alert" className={styles.assistant}>{status}</p>}
+    {compact&&needsPrivateSignIn&&<MessengerSignIn locale={locale}/>}
     </div>
     {newBelow&&<button type="button" className={styles.jumpToLatest} onClick={()=>{
       followTail.current=true;
@@ -416,7 +485,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
