@@ -104,11 +104,26 @@ function summarizePR(pr,runs){
  const intervals=[];
  const add=(name,a,b)=>{if(a!==null&&b!==null&&b>a&&a<end&&b>first)
    intervals.push({name,start:Math.max(first,a),end:Math.min(end,b)});};
- let prev=null;
+ // These are observed HEAD transitions, not inferred repair/queue causes.
+ // Never call a new HEAD proof of a successful repair or attribute the idle
+ // time to GitHub runners. Count only intervals after ALL prior jobs ended.
+ const wave={new_head:{count:0,ms:0},same_head:{count:0,ms:0},
+   unverified_head:{count:0,ms:0},after_failure:{count:0,ms:0}};
+ let prev=null,lastFinished=null;
  for(const r of sorted){
    const a=t(r.queued_at),b=t(r.completed_at);
-   if(prev!==null&&a>prev)add('between_waves_unknown',prev,a);
-   prev=Math.max(prev||0,b);
+   if(prev!==null&&a>prev){
+     add('between_waves_unknown',prev,a);
+     const relation=SHA.test(lastFinished?.source_head||'')&&SHA.test(r.source_head||'')
+       ? (lastFinished.source_head===r.source_head?'same_head':'new_head')
+       : 'unverified_head';
+     const duration=a-prev;
+     wave[relation].count++;wave[relation].ms+=duration;
+     if(['failure','timed_out','startup_failure'].includes(lastFinished?.conclusion)){
+       wave.after_failure.count++;wave.after_failure.ms+=duration;
+     }
+   }
+   if(prev===null||b>=prev){prev=b;lastFinished=r;}
    let firstJob=Infinity;
    for(const j of r.jobs){
      const q=t(j.queued_at),s=t(j.started_at),c=t(j.completed_at);
@@ -135,6 +150,11 @@ function summarizePR(pr,runs){
    t(a.started_at)-t(b.started_at))[0]||null;
  return {pr,first_at:new Date(first).toISOString(),last_at:new Date(end).toISOString(),
    elapsed_ms:end-first,elapsed_minutes:rnd((end-first)/60000),stages_ms:stages,
+   wave_head_evidence:{
+     new_head_count:wave.new_head.count,new_head_ms:wave.new_head.ms,
+     same_head_count:wave.same_head.count,same_head_ms:wave.same_head.ms,
+     unverified_head_count:wave.unverified_head.count,unverified_head_ms:wave.unverified_head.ms,
+     previous_failed_count:wave.after_failure.count,previous_failed_ms:wave.after_failure.ms},
    runs:sorted.length,repeats:Math.max(0,sorted.length-1),
    jobless_startup_runs:sorted.filter(r=>r.registration_only===true).length,
    first_job_started_at:firstJob?.started_at||null,
@@ -166,6 +186,13 @@ function report(store,h,now=Date.now()){
    row=>(row.stages_ms?.[k]||0)>0).length]));
  const stageSum=Object.values(stageTotals).reduce((a,b)=>a+b,0);
  const reconciled=Math.abs(stageSum-sum)<=Math.max(1,rows.length);
+ const waveKinds=['new_head','same_head','unverified_head'];
+ const waveCounts=Object.fromEntries(waveKinds.map(k=>
+   [k,rows.reduce((n,row)=>n+(row.wave_head_evidence?.[k+'_count']||0),0)]));
+ const waveMs=Object.fromEntries(waveKinds.map(k=>
+   [k,rows.reduce((n,row)=>n+(row.wave_head_evidence?.[k+'_ms']||0),0)]));
+ const waveTotalMs=Object.values(waveMs).reduce((n,v)=>n+v,0);
+ const waveReconciled=Math.abs(waveTotalMs-stageTotals.between_waves_unknown)<=1;
  const stageMeans=Object.fromEntries(stages.map(k=>[k,rows.length?
    rnd(stageTotals[k]/rows.length/60000):null]));
  return {schema:'HH_CI_FIRST_LAST_ARCHIVE_V1',
@@ -189,6 +216,20 @@ function report(store,h,now=Date.now()){
      repeats:rows.reduce((n,x)=>n+x.repeats,0),
      jobless_startup_runs:rows.reduce((n,x)=>n+x.jobless_startup_runs,0),
      failures:rows.reduce((n,x)=>n+x.failures,0)},
+   wave_head_evidence:{schema:'HH_CI_WAVE_HEAD_EVIDENCE_V1',
+     cohort:'SAME_OBSERVED_CI_ROWS_AS_SUMMARY',
+     n:rows.length,total_gap_count:Object.values(waveCounts).reduce((n,v)=>n+v,0),
+     total_gap_ms:waveTotalMs,transition_counts:waveCounts,transition_total_ms:waveMs,
+     after_failed_count:rows.reduce((n,row)=>n+(row.wave_head_evidence?.previous_failed_count||0),0),
+     after_failed_ms:rows.reduce((n,row)=>n+(row.wave_head_evidence?.previous_failed_ms||0),0),
+     reconciled:waveReconciled,
+     top_delays:[...rows].filter(row=>(row.stages_ms?.between_waves_unknown||0)>0)
+       .sort((a,b)=>b.stages_ms.between_waves_unknown-a.stages_ms.between_waves_unknown)
+       .slice(0,5).map(row=>({pr:row.pr,minutes:rnd(row.stages_ms.between_waves_unknown/60000),
+         new_head_count:row.wave_head_evidence.new_head_count,
+         same_head_count:row.wave_head_evidence.same_head_count,
+         last_url:row.last_url})),
+     note:'Новый HEAD доказан сохранёнными SHA, но причина задержки публикации следующего коммита и длительность Repair остаются неизвестными. Архив неполон.'},
    stage_breakdown:{schema:'HH_CI_JOURNEY_CONTRIBUTIONS_V1',
      cohort:'SAME_OBSERVED_CI_ROWS_AS_SUMMARY',
      n:rows.length,mean_minutes_per_pr:stageMeans,
