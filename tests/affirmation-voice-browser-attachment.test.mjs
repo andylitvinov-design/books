@@ -15,7 +15,7 @@ test("voice browser selects the visible montage workspace before recording",()=>
 
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
   const phrase=source.indexOf('[data-video-quick-control="phrases"]');
-  const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',phrase);
+  const generate=source.indexOf('await generateNarration.click()',phrase);
   const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav"',generate);
   const visible=source.indexOf('await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName)',expected);
   const remix=source.indexOf('phase(engine,"offline-remix-ready")',visible);

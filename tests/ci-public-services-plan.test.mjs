@@ -931,7 +931,14 @@ test('only exact owner-approved Home film PR #2758 uses verified Home+Site Video
   assert.match(home,/pull_request:/);
   assert.match(video,/pull_request:/);
   const source=readFileSync(new URL('../components/home-presentation-video-section.tsx',import.meta.url),'utf8');
-  assert.ok(source.includes('G0Db6yOCMto'),'only approved Russian video source');
+  // The reviewed RU YouTube master was normalized into one shared, immutable
+  // Telegram/Home allowlist (#3651). Home must consume that canonical source,
+  // and the allowlist must retain the exact owner-approved video identity.
+  const presentation=readFileSync(new URL('../lib/crm/telegram-presentation.mjs',import.meta.url),'utf8');
+  assert.ok(source.includes('youtubeId: approvedTelegramPresentation("ru")?.youtubeId') &&
+    source.includes('if (locale === "ru" && !approvedRussianPresentation.youtubeId) return null;') &&
+    presentation.includes("youtubeId: 'G0Db6yOCMto'"),
+    'only approved Russian video source via shared publication allowlist');
 });
 
 

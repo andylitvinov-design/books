@@ -548,15 +548,35 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         await voiceOptions.locator(":scope > summary").click();
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible();
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
-      await page.locator("[data-video-affirmation-voice-consent]").check();
-      await page.locator("[data-video-generate-affirmation-audio]").click();
+      const narrationConsent=page.locator("[data-video-affirmation-voice-consent]");
+      await narrationConsent.check();
+      await expect(narrationConsent).toBeChecked();
+      const generateNarration=page.locator("[data-video-generate-affirmation-audio]");
+      await expect(generateNarration).toBeEnabled();
+      // Observe real user input on macOS without recording the approved text,
+      // credentials, media or account data in any CI log.
+      await page.evaluate(()=>{
+        const button=document.querySelector("[data-video-generate-affirmation-audio]");
+        window.__hhVoiceSubmitProbe={pointers:0,clicks:0};
+        button?.addEventListener("pointerup",()=>{window.__hhVoiceSubmitProbe.pointers++;});
+        button?.addEventListener("click",()=>{window.__hhVoiceSubmitProbe.clicks++;});
+      });
+      await generateNarration.click();
       try {
         await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
         phase(engine,"voice-wav-ready");
       }catch(error){
         const status=await page.locator('[data-video-affirmation-voice] [role="status"]').allTextContents();
         const buttonDisabled=await page.locator("[data-video-generate-affirmation-audio]").isDisabled();
-        throw new Error(engine+" voice failed: "+JSON.stringify({status,buttonDisabled,
+        const state=await page.evaluate(()=>({
+          gesture:window.__hhVoiceSubmitProbe??null,
+          consented:document.querySelector("[data-video-affirmation-voice-consent]")?.checked===true,
+          wordsLength:document.querySelector("[data-video-affirmation-spoken-text]")?.textContent?.trim().length??0,
+          readyNodes:document.querySelectorAll("[data-video-affimations-audio-ready]").length,
+          mountedPanels:document.querySelectorAll("[data-video-affirmation-voice]").length
+        }));
+        throw new Error(engine+" voice failed: "+JSON.stringify({status,buttonDisabled,state,
+          providerModes:payloads.map(item=>item.mode),
           providerRequests:payloads.length,networkRequests:requests,jsErrors:errors}),{cause:error});
       }
       const affirmationRequests=payloads.filter(item=>item.mode==="affirmations");
