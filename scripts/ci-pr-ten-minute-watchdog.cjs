@@ -431,6 +431,31 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
     return recovered;
   }
   const failed = (jobs || []).filter(j=>j.conclusion === 'failure').map(j=>j.name).slice(0,7);
+
+  // Reuse exact Core job evidence already fetched by Watchdog; no extra API.
+  // Only literal BASE-known source-step names enter the signed handoff.
+  // Arbitrary PR-supplied step names and logs may contain private data.
+  const trustedSourceSteps=new Set([
+    'Lint changed sources',
+    'Lint changed JS/TS sources on PR; full lint for manual/merge queue',
+    'Source Preflight — syntax and TypeScript before costly Next build',
+    'Mobile Dock Core geometry and iPhone keyboard contracts',
+    'Exact proposed release production build and TypeScript check',
+    'TypeScript check','TypeScript build'
+  ]);
+  const sourceJob=(jobs || []).find(j=>j.name==='core-lint-types-build'&&
+    j.conclusion==='failure');
+  const namedSteps=(Array.isArray(sourceJob?.steps)?sourceJob.steps:[])
+    .filter(step=>step?.conclusion==='failure'&&trustedSourceSteps.has(step.name))
+    .slice(0,3).map(step=>step.name);
+  const jobUrl=Number.isSafeInteger(sourceJob?.id)&&sourceJob.id>0&&
+    Number.isSafeInteger(run?.id)&&run.id>0?
+    'https://github.com/'+owner+'/'+repo+'/actions/runs/'+run.id+'/job/'+sourceJob.id:null;
+  const causalHint=namedSteps.length?
+    'Confirmed failed Core source step: '+namedSteps.join(', ')+'.\n'+
+    (jobUrl?'Exact job: '+jobUrl+'\n':''):
+    'Exact failed source step could not be identified from job metadata; inspect the Core run.\n';
+
   const body = `${marker}
 **PR Control Tower: требуется исправление исходного кода**
 
@@ -440,6 +465,7 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
     `Failed jobs: ${failed.length ? failed.join(', ') : 'inspect run logs'}.
 
 `+
+    causalHint+'\n'+
     `Repair: inspect the exact-HEAD failure, batch source changes, run focused tests and push one verified commit. `+
     `Do not delete required checks or force-merge. This is a handoff to existing Repair workers, `+
     `**not** a claim that source code has already been fixed.

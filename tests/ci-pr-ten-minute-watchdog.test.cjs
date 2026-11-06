@@ -1810,3 +1810,65 @@ test('ghost-capacity recovery fails closed on active jobs, partial pages, fresh 
  await trial({all:[...active,{...active[0],id:42199902000}]},'RUN_CAPACITY_SATURATED',0);
  await trial({all:active.map((x,i)=>i?x:{...x,run_attempt:2})},'RUN_CAPACITY_SATURATED',0);
 });
+
+test('source Repair handoff includes verified failing Core step and job deep link',async()=>{
+  const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const sha='a'.repeat(40),pr={number:788,head:{sha},labels:[]};
+  const calls={reads:0,comments:0,labels:0,body:''};
+  const gh={rest:{issues:{
+    listComments:async()=>{calls.reads++;return {data:[]};},
+    createComment:async x=>{calls.comments++;calls.body=x.body;return {data:{id:1}};},
+    addLabels:async()=>{calls.labels++;return {data:[]};}
+  }}};
+  const jobs=[{id:128000123456,name:'core-lint-types-build',conclusion:'failure',steps:[
+    {name:'Source Preflight — syntax and TypeScript before costly Next build',conclusion:'failure'},
+    {name:'UNTRUSTED_SECRET',conclusion:'success'}
+  ]},{name:'hh-merge-check',conclusion:'failure'}];
+  const outcome=await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
+    {id:42268851137,run_attempt:1},jobs,false,()=>{},async(_,fn)=>fn());
+  assert.equal(outcome,true);
+  assert.equal(calls.reads,1);
+  assert.equal(calls.comments,1);
+  assert.equal(calls.labels,1);
+  assert.ok(calls.body.includes('Confirmed failed Core source step: Source Preflight — syntax and TypeScript before costly Next build'));
+  assert.ok(calls.body.includes('actions/runs/42268851137/job/128000123456'));
+  assert.ok(calls.body.includes('Failed jobs: core-lint-types-build, hh-merge-check'));
+  assert.ok(!calls.body.includes('UNTRUSTED_SECRET'));
+  assert.ok(calls.body.includes('source code has already been fixed'));
+});
+test('unknown failed step cannot mint a source Repair handoff or expose arbitrary text',async()=>{
+  const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const sha='b'.repeat(40),pr={number:789,head:{sha},labels:[]};
+  let writes=0,reads=0;
+  const gh={rest:{issues:{
+    listComments:async()=>{reads++;return {data:[]};},
+    createComment:async()=>{writes++;return {data:{}};},
+    addLabels:async()=>{writes++;return {data:{}};}
+  }}};
+  const jobs=[{name:'core-lint-types-build',conclusion:'failure',steps:[
+    {name:'ARBITRARY_EXTERNAL_STEP',conclusion:'failure'}
+  ]},{name:'hh-merge-check',conclusion:'failure'}];
+  assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
+    {id:101,run_attempt:1},jobs,false,()=>{},async(_,fn)=>fn()),false);
+  assert.equal(writes,0);
+  assert.equal(reads,0);
+});
+test('missing verified job ID keeps original signed handoff but never constructs fake job URL',async()=>{
+  const {recordRepairHandoff}=require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+  const sha='c'.repeat(40),pr={number:790,head:{sha},labels:[]};
+  let body='',labels=0;
+  const gh={rest:{issues:{
+    listComments:async()=>({data:[]}),
+    createComment:async x=>{body=x.body;return {data:{id:1}};},
+    addLabels:async()=>{labels++;return {data:[]};}
+  }}};
+  const jobs=[{name:'core-lint-types-build',conclusion:'failure',steps:[
+    {name:'Exact proposed release production build and TypeScript check',conclusion:'failure'}
+  ]}];
+  assert.equal(await recordRepairHandoff(gh,'andylitvinov-design','books',pr,
+    {id:101,run_attempt:1},jobs,false,()=>{},async(_,fn)=>fn()),true);
+  assert.ok(body.includes('HH_PR_10MIN_SOURCE_REPAIR_V1 '+sha));
+  assert.ok(body.includes('Confirmed failed Core source step'));
+  assert.ok(!body.includes('/job/'));
+  assert.equal(labels,1);
+});
