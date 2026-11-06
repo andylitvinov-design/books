@@ -226,5 +226,5 @@ test("Studio presents an explicit 9:16 choice instead of lying about 16:9 footag
   assert.match(studio,/autoFillApprovedFilm\(/);
   assert.match(studio,/data-video-portrait-retry/);
   assert.match(studio,/!edit&&clipIds\.length===4/);
-  assert.match(studio,/isSafeMontageScene\(scene\)/);
+  assert.match(studio,/!scene\|\|!isSafeMontageScene\(source\)\|\|!verifiedSceneAspect\(scene,aspect\)/);
 });
