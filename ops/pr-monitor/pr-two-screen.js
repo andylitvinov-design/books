@@ -22,7 +22,7 @@
   var root, graphSlot, graphHint, comparison, prList, coverage, status, firstFoot, secondFoot;
   var sourceSnapshot = null, baseline = null, detailed = null, mounted = false;
   var scheduled = false, detailBusy = false, observer = null;
-  var queueSnapshot = null, queueError = null, archive = null, archivePending = false;
+  var queueSnapshot = null, queueFallback = null, queueError = null, archive = null, archivePending = false;
   var auditRequests = 0, auditBusy = false, auditCache = new Map();
   var diagnostics = null, archiveNote = null;
   var number = new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 1});
@@ -121,6 +121,10 @@
       // The direct endpoint is only a fallback if that widget did not mount.
       if (/^\d+$/.test(a||'')) return a;
       if (validCount(direct?.[index])) return String(direct[index]);
+      // Only backup workflow counts; PR and job counts stay explicitly unknown.
+      if (index===2&&validCount(queueFallback?.running))return String(queueFallback.running);
+      if (index===1&&validCount(queueFallback?.queued))
+        return (queueFallback.queue_complete?'':'≥')+String(queueFallback.queued);
       return '—';
     }
     var running=one(2), queued=one(1);
@@ -128,14 +132,21 @@
     cells.queued.n.textContent=queued;
     cells.running.sub.textContent='Workflows (не PR) · jobs выполняются: '+one(4);
     cells.queued.sub.textContent='Workflows (не PR) · jobs ожидают: '+one(3);
+    var sourceNote=queueFallback?
+      'Основной API: '+(queueError||'нет полных данных')+
+      '. Резерв GitHub Actions · '+(queueFallback.from_cache?'сохранённый':'проверенный')+
+      ' срез '+(queueFallback.age_minutes??0)+' мин назад'+
+      (queueFallback.queue_complete?'':' · в ожидании показана нижняя граница')+
+      '. PR/jobs резервом не измерены.':null;
     status.textContent='GitHub CI · PR ждут: '+one(0)+'. '+
-      (queueError ? 'Источник очереди: '+queueError+'. Повторить через штатную кнопку «Обновить».' :
-       'Только подтверждённые числа; неизвестное не равно 0.');
+      (sourceNote||(queueError?
+       'Источник очереди: '+queueError+'. Повторить через штатную кнопку «Обновить».':
+       'Только подтверждённые числа; неизвестное не равно 0.'));
   }
   async function readQueue() {
     try {
       if (originalQueue()?.slice(1,3).every(function(v){return /^\d+$/.test(v);})) {
-        queueError=null;showQueue();return;
+        queueFallback=null;queueError=null;showQueue();return;
       }
       // This is the EXISTING queue endpoint and an on-demand GET only.
       // No new schedules, no GitHub client token, no interval polling.
@@ -143,9 +154,16 @@
         headers:{Accept:'application/json'}});
       if (!response.ok) throw Error('HTTP '+response.status);
       var data=await response.json();
-      if (!queueNumbers(data)) throw Error('Формат счётчиков не подтверждён');
-      queueSnapshot=data;queueError=null;
-    }catch(e){queueError=String(e.message||e).slice(0,95);}
+      var complete=queueNumbers(data);
+      if(!complete||!validCount(complete[1])||!validCount(complete[2]))
+        throw Error('Отсутствуют подтверждённые CI-счётчики');
+      queueSnapshot=data;queueFallback=null;queueError=null;
+    }catch(e){
+      queueError=String(e.message||e).slice(0,95);
+      // Only on failure, maximum 5 public GETs. Never start/restart any CI.
+      try{queueFallback=await window.HHCIQueueBackup?.read?.()||null;}
+      catch(_){queueFallback=null;}
+    }
     showQueue();
   }
   function setSubstep(key, name, value, note) {
