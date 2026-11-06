@@ -18,6 +18,8 @@ import styles from "./holistic-agent-chat.module.css";
 import dynamic from "next/dynamic";
 
 const MessengerTestJourney = dynamic(() => import("@/components/app/messenger-test-journey"), { ssr: false });
+const MessengerAudioVideo = dynamic(() => import("@/components/app/messenger-audio-video")
+  .then(module => module.MessengerAudioVideo), { ssr: false });
 
 type Mode = "rules" | "device" | "owned";
 type PublicVideoGoal = "all" | "stress" | "energy" | "relationships" | "work" | "meaning" | "practices";
@@ -707,6 +709,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
     </form>
+    {compact&&<MessengerAudioVideo locale={locale}
+      initialGoal={videoDraft.goal||""} disabled={busy}/>}
     {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>
       <summary>{t.programTitle}</summary>
       <p className={styles.muted}>{t.programInfo}</p>
