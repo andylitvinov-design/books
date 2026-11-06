@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {analyzePrLoss, summarizePrLoss, exclusiveStageMinutes,readRepairMarkers,analyzePrLifecycle,lifecycleConnected,analyzeCoreWaveGaps} from '../lib/ci/pr-loss-metrics.mjs';
-import {collectCohort, formatSummary, searchQuery} from '../scripts/ci-pr-loss-report.mjs';
+import {collectCohort, formatSummary, formatWaveDiagnostics, searchQuery} from '../scripts/ci-pr-loss-report.mjs';
+import {explainCoreWave,explainCoreRerunAttempt} from '../lib/ci/pr-wave-attribution.mjs';
 
 const head='a'.repeat(40), old='b'.repeat(40);
 const pr=(overrides={})=>({number:99,created_at:'2026-11-04T10:00:00Z',
@@ -501,4 +502,63 @@ test('P1 collector restores true first Core despite GitHub moving old PR link SH
   assert.equal(report.rows[0].core_waves.observed_core_runs,2);
   assert.equal(report.rows[0].runs_considered,2);
   assert.match(formatSummary(report),/Historical HEADs relinked/);
+});
+
+
+test('each new-HEAD Core wave reports technical proof but no invented commit author',()=>{
+  const a=run(801,at('10:01'),at('10:10'),{head_sha:old,actor:{login:'owner'}});
+  const b=run(802,at('10:20'),at('10:25'),{head_sha:head,actor:{login:'github-actions[bot]'}});
+  const cause=explainCoreWave({previous_run_id:801,run_id:802,head_relation:'new_head'},[a,b],
+    [{event:'committed',sha:head,author:{name:'forged-identity'}}]);
+  assert.equal(cause.code,'HEAD_CHANGED');
+  assert.equal(cause.confidence,'confirmed_technical');
+  assert.equal(cause.initiator,'github-actions[bot]');
+  assert.equal(cause.initiator_source,'workflow_actor');
+  assert.equal(cause.commit_sha,head);
+});
+test('metadata event has an observed actor but is not falsely marked a proven trigger',()=>{
+  const a=run(811,at('10:01'),at('10:10'));
+  const b=run(812,at('10:20'),at('10:26'),{actor:{login:'owner'}});
+  const cause=explainCoreWave({previous_run_id:811,run_id:812,
+    head_relation:'same_head',overlapping_or_unverified:false},[a,b],
+    [{event:'edited',created_at:at('10:19'),actor:{login:'owner'}}]);
+  assert.equal(cause.code,'PR_EVENT_CORRELATED');
+  assert.equal(cause.confidence,'correlated');
+  assert.equal(cause.initiator,'owner');
+  assert.equal(cause.event,'edited');
+  assert.equal(cause.initiator_source,'timeline_actor');
+});
+test('unknown, overlapping and conflicting same-HEAD repeats fail closed on attribution',()=>{
+  const a=run(821,at('10:01'),at('10:10'));
+  const b=run(822,at('10:20'),at('10:26'),{actor:{login:'owner'}});
+  const gap={previous_run_id:821,run_id:822,head_relation:'same_head',
+    overlapping_or_unverified:false};
+  const changed={event:'edited',created_at:at('10:19'),actor:{login:'different'}};
+  assert.equal(explainCoreWave(gap,[a,b],[changed]).code,'ACTOR_MISMATCH');
+  assert.equal(explainCoreWave(gap,[a,b],null).confidence,'unknown');
+  assert.equal(explainCoreWave({...gap,overlapping_or_unverified:true},[a,b],[]).code,'SAME_HEAD_UNVERIFIED');
+  assert.equal(explainCoreWave(gap,[a,b],[changed,{...changed,event:'reopened'}]).code,'MULTIPLE_PR_EVENTS');
+  assert.equal(explainCoreWave(gap,[a,run(823,at('10:20'),at('10:26'))],[]).confidence,'unknown');
+});
+test('repeat attempts preserve latest verified triggering_actor without pretending prior job history',()=>{
+  const retry=explainCoreRerunAttempt(run(831,at('10:01'),at('10:40'),
+    {run_attempt:3,triggering_actor:{login:'owner'}}));
+  assert.equal(retry.previous_attempts_without_history,2);
+  assert.equal(retry.latest_initiator,'owner');
+  assert.equal(retry.confidence,'unknown');
+  assert.equal(explainCoreRerunAttempt(run(832,at('10:01'),at('10:40'))),null);
+});
+test('P1 Markdown displays each repeat pair, actor, reason, evidence and reruns',()=>{
+  const report={rows:[{pr:99,core_waves:{gaps:[{previous_run_id:1,run_id:2,
+    minutes:5,head_relation:'new_head',cause:{code:'HEAD_CHANGED',label:'Новый HEAD PR',
+      confidence:'confirmed_technical',prior_sha:old,next_sha:head,
+      initiator:'owner',initiator_source:'workflow_actor'}}],
+    rerun_attempts:[{run_id:2,attempts:2,latest_initiator:'owner',
+      reason:'Почему запущен — неизвестно',previous_attempts_without_history:1}]}}]};
+  const md=formatWaveDiagnostics(report);
+  assert.match(md,/Причины каждой повторной волны Core CI/);
+  assert.match(md,/github.com\/andylitvinov-design\/books\/actions\/runs\/2/);
+  assert.match(md,/подтверждён новый HEAD: 1/);
+  assert.match(md,/@owner/);
+  assert.match(md,/Повторные попытки внутри одного run/);
 });
