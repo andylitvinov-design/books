@@ -71,10 +71,7 @@ jobs:
           components/remote-energy-support-booking.tsx
           components/reiki-referral-landing.tsx
           components/public-antistress-landing.tsx
-      # Core checks the exact-HEAD production types; this job still builds
-      # the real site for mandatory Chromium/WebKit journeys below.
       - name: Typecheck changed pages in full project context
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npx --no-install tsc --noEmit
       - name: Production build (no external payment or lead traffic)
         run: |
