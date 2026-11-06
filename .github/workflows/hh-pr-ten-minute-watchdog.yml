@@ -227,6 +227,8 @@ jobs:
           node --check scripts/ci-pr-conflict-event-handoff.cjs
           node --check scripts/ci-pr-direction-event-label.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
+          node --check scripts/ci-pr-monitor-feed.cjs
+          node --check scripts/ci-pr-ci-daytime-signals.cjs
       - name: Route only the current verified dirty PR to Conflict Repair
         uses: actions/github-script@v7
         with:
@@ -258,6 +260,17 @@ jobs:
             const liveness=await wakeStaleWatchdog({github,context,
               summary:{production:1},dryRun:false,log:msg=>core.info(msg)});
             core.info('HH_PR_EVENT_WATCHDOG_LIVENESS '+JSON.stringify(liveness));
+            // Existing verified PR event: fill missing scheduled signal
+            // observations under the same Control Tower writer lease.
+            try{
+              const {publishCiSignalOnly}=require(process.env.GITHUB_WORKSPACE+
+                '/scripts/ci-pr-monitor-feed.cjs');
+              const signal=await publishCiSignalOnly({github,context});
+              core.info('HH_PR_EVENT_CI_DAYTIME_SIGNAL '+JSON.stringify(signal));
+            }catch(e){
+              core.warning('HH_PR_EVENT_CI_SIGNAL_UNAVAILABLE '+
+                String(e?.message||e).slice(0,120));
+            }
   completion-wait:
     # Wait without holding the direct task writer lease.
     if: >-
@@ -364,6 +377,12 @@ jobs:
                 const outcome=await publishMonitorSnapshot({github,context,report});
                 core.info('HH_DIRECT_HANDOFF_MONITOR_'+outcome.status+
                   ' #3128'+(outcome.run_id?' run='+outcome.run_id:''));
+                // Worker completion is a trusted real event even when GitHub's
+                // nominal ten-minute schedule is late. No new workflow/job.
+                const {publishCiSignalOnly}=require(process.env.GITHUB_WORKSPACE+
+                  '/scripts/ci-pr-monitor-feed.cjs');
+                const signal=await publishCiSignalOnly({github,context});
+                core.info('HH_WORKER_EVENT_CI_DAYTIME_SIGNAL '+JSON.stringify(signal));
               }catch(error){
                 core.warning('HH_DIRECT_HANDOFF_MONITOR_UNAVAILABLE '+
                   String(error?.message||'unknown').slice(0,80));

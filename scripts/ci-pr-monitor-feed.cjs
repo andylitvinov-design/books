@@ -5,7 +5,8 @@
 const REPO='andylitvinov-design/books';
 const {capture,rows:timestampRows,VERSION:TIMESTAMP_SCHEMA}=require('./ci-pr-timestamp-inventory.cjs');
 const {reconcileBlockerProgress}=require('./ci-pr-blocker-progress.cjs');
-const {deliver:deliverCiDaytimeSignal}=require('./ci-pr-ci-daytime-signals.cjs');
+const {deliver:deliverCiDaytimeSignal,OBS_SCHEMA:CI_OBS_SCHEMA,
+  withoutCurrentWatchdog}=require('./ci-pr-ci-daytime-signals.cjs');
 const ISSUE_NUMBER=3128;
 const MARKER='<!-- HH_CONTROL_TOWER_PUBLIC_KPI_V1 -->';
 const SCHEMA='HH_CONTROL_DISPATCH_METRICS_V1';
@@ -349,6 +350,69 @@ async function publishMonitorSnapshot({github,context,report,inventorySnapshot=n
   await github.rest.issues.update({owner,repo,issue_number:ISSUE_NUMBER,body});
   return {status:'PUBLISHED',run_id:next.run_id,checked_at:next.checked_at};
 }
+
+// Opportunistic signal fallback inside already-running event jobs. GitHub's
+// 10-minute scheduled workflows are sometimes delayed for hours: real PR/Worker
+// events already hold the identical single-writer concurrency lease, so they
+// can bridge this gap without creating another runner, cron or polling service.
+// Never advance checked_at/run_id of the KPI snapshot: those are independent
+// Watchdog / Control Tower evidence.
+async function publishCiSignalOnly({github,context,nowMs=Date.now(),minGapMs=9*60*1000}){
+  if(context?.repo?.owner+'/'+context?.repo?.repo!==REPO||
+     context?.ref!=='refs/heads/codex/bootstrap-books'||
+     !['pull_request_target','workflow_run','workflow_dispatch'].includes(context?.eventName)||
+     !Number.isSafeInteger(context?.runId)||context.runId<1||
+     !Number.isFinite(nowMs)||minGapMs<8*60*1000)
+    return {status:'UNTRUSTED_OR_TOO_FREQUENT_EVENT'};
+  const {owner,repo}=context.repo;
+  const issue=(await github.rest.issues.get({owner,repo,issue_number:ISSUE_NUMBER})).data;
+  if(!issue||issue.state!=='open'||issue.pull_request)
+    return {status:'MONITOR_ISSUE_UNAVAILABLE'};
+  const existing=parseExisting(issue.body);
+  const previous=existing.ci_daytime_signals||null;
+  const last=Date.parse(previous?.last_seen_at||'');
+  // Skip both freshly observed and future-dated snapshots: no extra CI reads
+  // or repeated Owner mentions when many PR events arrive together.
+  if(Number.isFinite(last)&&nowMs-last<minGapMs)
+    return {status:'FRESH_SIGNAL_ALREADY_OBSERVED',last_seen_at:previous.last_seen_at};
+  let active,queued;
+  try{
+    [active,queued]=await Promise.all(['in_progress','queued'].map(status=>
+      github.rest.actions.listWorkflowRunsForRepo({
+        owner,repo,status,per_page:status==='in_progress'?12:1
+      })));
+  }catch{return {status:'CI_API_UNAVAILABLE'};}
+  const a=active?.data,q=queued?.data;
+  if(!Number.isSafeInteger(a?.total_count)||a.total_count<0||
+     !Number.isSafeInteger(q?.total_count)||q.total_count<0||
+     !Array.isArray(a.workflow_runs)||!Array.isArray(q.workflow_runs))
+    return {status:'CI_COUNT_UNVERIFIED'};
+  const adjusted=withoutCurrentWatchdog(a.total_count,a.workflow_runs,context.runId);
+  if(!Number.isSafeInteger(adjusted.running)||adjusted.running<0)
+    return {status:'CI_SELF_EXCLUSION_UNVERIFIED'};
+  const observation={schema:CI_OBS_SCHEMA,observed_at:new Date(nowMs).toISOString(),
+    running:adjusted.running,queued:q.total_count};
+  const result=await deliverCiDaytimeSignal({
+    github,issue,prior:previous,observation,nowMs
+  });
+  if(!result.state||result.status==='INVALID_PREVIOUS'||
+     result.status==='DELIVERY_UNVERIFIED_RETRYABLE'||
+     result.status==='UNVERIFIED_ISSUE_COMMENTS')
+    return {status:result.status||'CI_SIGNAL_NOT_RECORDED'};
+  if(result.status==='OLDER_OR_DUPLICATE'||result.status==='UNKNOWN_OR_STALE')
+    return {status:result.status};
+  const next={...existing,ci_daytime_signals:result.state};
+  const body=renderSnapshot(next);
+  // Retain the full original Control Tower census. A dedicated signal writer
+  // must never delete or replace its authenticated PR timestamp inventory.
+  if(body.length>58000)return {status:'SIGNAL_BODY_OVER_SAFE_BUDGET'};
+  await github.rest.issues.update({owner,repo,issue_number:ISSUE_NUMBER,body});
+  return {status:result.status,observed_at:observation.observed_at,
+    running:adjusted.running,queued:q.total_count,
+    watchdog_excluded:adjusted.excluded,
+    signal_level:result.alert?.level||null};
+}
+
 // A trusted control-code push already runs the Watchdog in inspection-only mode.
 // Reuse its verified, already-fetched FULL list to seed first-observed times
 // immediately, even when GitHub's scheduled Watchdog delivery is delayed.
@@ -388,5 +452,5 @@ async function publishTimestampInventoryOnly({github,context,watchdog}){
 }
 module.exports={MARKER,SCHEMA,buildMonitorSnapshot,ciWakeTimingSummary,
  parseExisting,renderSnapshot,
- publishMonitorSnapshot,publishTimestampInventoryOnly,nativeCronEvidence};
+ publishMonitorSnapshot,publishTimestampInventoryOnly,publishCiSignalOnly,nativeCronEvidence};
 
