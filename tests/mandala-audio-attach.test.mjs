@@ -17,12 +17,14 @@ test("audio-only mobile list: no fake video images, real readable controls and f
   const section=studio.slice(start,end);
   assert.doesNotMatch(section,/<video\b|<img\b/,"this block selects audio, not video scenes");
   for(const hook of ["data-video-audio-context","data-video-audio-kind","data-video-audio-mood",
-    "data-video-audio-pace","data-video-audio-length","data-video-audio-search",
+    "data-video-audio-pace","data-video-audio-search",
     "data-video-audio-sort","data-video-audio-more","data-video-music=",
     "data-video-audio-player","data-video-audio-upload","data-video-audio-mic",
     "data-video-audio-attach","data-video-audio-attached"]){
     assert.ok(section.includes(hook),hook);
   }
+  assert.doesNotMatch(section,/data-video-audio-length/,"Duration belongs to Montage Settings");
+  assert.match(studio,/data-video-montage-preference="duration"/);
   assert.match(section,/visibleAudio\.map\(/);
   assert.match(section,/AudioLines/);
   assert.match(section,/audioUi\.pick/);

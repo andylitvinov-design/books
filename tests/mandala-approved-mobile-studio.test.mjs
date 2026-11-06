@@ -112,7 +112,8 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "the same personal goal retains its strict 160-character browser limit");
   assert.match(auto,/const value=event\.currentTarget\.value;[\s\S]*?onGoalChange\(value\)/,
     "typing updates the same local state and real source-backed proposal without remote upload");
-  assert.match(s,/data-video-basic-tab=\{item.id\}/);
+  assert.match(s,/data-video-montage-tab=\{item.id\}/);
+  assert.match(s,/data-video-voice-studio/);
   assert.match(s,/sourceText=\{currentAffirmationSpeech\}/,
     "phrases supply the existing shared narration source");
   assert.match(s,/setAffirmations\(/,
