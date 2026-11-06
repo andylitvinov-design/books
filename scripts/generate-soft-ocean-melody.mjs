@@ -100,8 +100,16 @@ console.log("[holistic-original-melodies] generated",authoredMusic.masters,"orig
  */
 if (process.env.npm_lifecycle_event === "prebuild" ||
     process.env.npm_lifecycle_event === "predev") {
-  const {buildScenarioMusicParallel} = await import("./generate-scenario-melodies.mjs");
-  const report = await buildScenarioMusicParallel();
+  const {buildScenarioMusicParallel,buildScenarioMusic} = await import("./generate-scenario-melodies.mjs");
+  // Vercel already persists .next/cache between successful deployments.
+  // Cache only source-pinned, SHA-checked, complete first-party scenario MP3s.
+  // CI, local predev and a cold/mismatched build still synthesize normally.
+  const report = process.env.VERCEL_ENV==="production"
+    ? await (await import("./vercel-scenario-music-cache.mjs")).withScenarioBuildCache({
+        generate:()=>buildScenarioMusicParallel(),
+        verify:()=>buildScenarioMusic({check:true}),
+      })
+    : await buildScenarioMusicParallel();
   console.log("[hh-scenario-music]",report.totalMasterFiles,"physical MP3s; generated",report.generated);
 }
 
