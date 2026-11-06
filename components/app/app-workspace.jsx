@@ -56,6 +56,7 @@ import NotificationSettings from '@/components/app/notification-settings'
 import ClientContactPhone from '@/components/app/client-contact-phone'
 import NativeMessageNotifications from '@/components/app/native-message-notifications'
 import MessengerNotificationSettings from '@/components/app/messenger-notification-settings'
+import VideoCreditsPanel from '@/components/app/video-credits-panel'
 import AccountLoginMethods from '@/components/app/account-login-methods'
 import AccountMessagingEntry from '@/components/app/account-messaging-entry'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
@@ -179,7 +180,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     const epoch = ++loadEpoch.current
     setError(null)
     try {
-      const fresh = await appFetch(page === 'portrait' ? 'bootstrap?view=portrait' : page === 'practice' ? 'bootstrap?view=practice' : 'bootstrap')
+      const fresh = await appFetch(page === 'portrait' ? 'bootstrap?view=portrait' : 'bootstrap')
       if (epoch !== loadEpoch.current) return
       setData(fresh)
       setState('ready')
@@ -727,7 +728,10 @@ export default function AppWorkspace({ locale, path = [] }) {
              : <PersonalCoaching key={data.account.id} accountId={data.account.id} locale={locale} />)}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null}
             accountId={data.account.id} key={data.account.id} showcaseEntry />}
-          {page === 'videos' && <MyPersonalVideos locale={locale} accountId={data.account.id} key={data.account.id} />}
+          {page === 'videos' && <>
+            <VideoCreditsPanel accountId={data.account.id} locale={locale}/>
+            <MyPersonalVideos locale={locale} accountId={data.account.id} key={data.account.id} />
+          </>}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}
