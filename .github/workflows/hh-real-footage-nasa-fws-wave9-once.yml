@@ -1,0 +1,87 @@
+name: HH Real Footage Wave 9 — NASA camera QA + USFWS B-roll research once
+on:
+  push:
+    branches: [codex/hh-nasa-fws-wave9-20261106]
+    paths:
+      - '.github/workflows/hh-real-footage-nasa-fws-wave9-once.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hh-real-footage-nasa-fws-wave9-once
+  cancel-in-progress: false
+jobs:
+  discover:
+    if: github.ref == 'refs/heads/codex/hh-nasa-fws-wave9-20261106'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate fail-closed NASA and FWS policies offline
+        run: |
+          node --check tools/video-vault/nasa-wave9/discover.mjs
+          node --check tools/video-vault/nasa-wave9/screen.mjs
+          node --check tools/video-vault/nasa-wave9/fws-discover.mjs
+          node --test tools/video-vault/nasa-wave9/tests.mjs
+      - name: Discover 40 NASA original video candidate IDs, without media/public release
+        run: node tools/video-vault/nasa-wave9/discover.mjs
+      - name: Research official USFWS wildlife/birds/places video links, no download
+        if: always()
+        run: node tools/video-vault/nasa-wave9/fws-discover.mjs
+      - name: Archive immutable private first-party research only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-nasa-fws-wave9-research-only
+          path: |
+            artifacts/nasa-wave9/candidates.json
+            artifacts/fws-wave9/official-source-pages.json
+          retention-days: 5
+          if-no-files-found: warn
+  camera-screen:
+    if: github.ref == 'refs/heads/codex/hh-nasa-fws-wave9-20261106'
+    needs: [discover]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: hh-nasa-fws-wave9-research-only
+          path: artifacts/wave9-research
+      - name: Use already available system FFmpeg without paid provider
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          mkdir -p artifacts/nasa-wave9
+          cp artifacts/wave9-research/nasa-wave9/candidates.json artifacts/nasa-wave9/candidates.json
+      - name: Check real official NASA source camera, H264, motion, SHA and both formats
+        run: node tools/video-vault/nasa-wave9/screen.mjs --shard=${{ matrix.shard }}
+      - name: Never publish NASA footage or R2 keys or claim generator eligibility
+        if: always()
+        run: git diff --exit-code -- public/ data/video-catalog/scene-taxonomy.json data/video-catalog/free-stock-scenes.json
+      - name: Save private moving previews, contact sheets and physical receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-nasa-wave9-qa-${{ matrix.shard }}
+          path: artifacts/nasa-wave9-shard${{ matrix.shard }}/
+          retention-days: 5
+          compression-level: 6
+          if-no-files-found: warn
