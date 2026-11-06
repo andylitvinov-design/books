@@ -37,6 +37,11 @@ test('exact-head repeated workflow wave and actual runner start wait keep PR-min
   assert.deepEqual(summary.top3.map(x=>x.stage),['green_to_merge','repeat_ci_wave','runner_start_wait']);
   assert.equal(summary.partial,false);
   assert.equal(summary.top3[0].p95_minutes,100);
+  assert.equal(summary.low_n,true);
+  assert.equal(summary.top3[0].low_n,true);
+  assert.match(formatSummary({...summary,cohort:{
+    created_utc_start:at('10:00'),created_utc_end:at('13:00'),inspected_prs:1,
+  }}),/LOW_N: n<5/);
 });
 
 test('never mistake parallel PR jobs or duplicate job intervals for additive PR minutes',()=>{
