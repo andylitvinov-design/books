@@ -5,6 +5,7 @@ import {appendFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {analyzePrLoss, summarizePrLoss, analyzePrLifecycle, lifecycleConnected, analyzeCoreWaveGaps} from '../lib/ci/pr-loss-metrics.mjs';
+import {explainCoreWave, explainCoreRerunAttempt} from '../lib/ci/pr-wave-attribution.mjs';
 import {analyzeRepairCycles} from '../lib/ci/pr-repair-cycle.mjs';
 
 const bounded=(value,fallback,min,max)=>{
@@ -114,6 +115,13 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
             new Set(timeline.filter(e=>e.event==='committed'&&
               /^[0-9a-f]{40}$/i.test(e.sha||'')).map(e=>e.sha)).size>=pr.commits))
       });
+      row.core_waves.gaps=row.core_waves.gaps.map(gap=>{
+        const cause=explainCoreWave(gap,selected,timeline);
+        return {...gap,cause,reason_confirmed:cause.confidence==='confirmed_technical'};
+      });
+      row.core_waves.rerun_attempts=selected.filter(r=>
+        r.name==='HH PR core release gate' && lifecycleConnected(r,pr,timeline))
+        .map(explainCoreRerunAttempt).filter(Boolean);
       row.lifecycle=analyzePrLifecycle(pr,selected,jobRows,comments,timeline,commitStatus,{
         // Full branch run index + bounded jobs + full commit timeline are
         // necessary before calling the earliest Ready/Core timestamps exact.
@@ -141,6 +149,59 @@ export async function collectCohort(read,repo,{now=Date.now(),hours=24,offsetDay
   report.read_errors=errors.slice(0,15);
   report.search_truncated=searchTruncated;
   return report;
+}
+export function formatWaveDiagnostics(report) {
+  const lines=[
+    '### Причины каждой повторной волны Core CI — проверяемый журнал',
+    '| PR / волна | Core run: предыдущий → новый | HEAD | Пауза (мин) | Причина | Инициатор события | Уровень доказательств |',
+    '| --- | --- | --- | ---: | --- | --- | --- |',
+  ];
+  const runLink = id => Number.isSafeInteger(id) && id > 0 ?
+    '['+id+'](https://github.com/andylitvinov-design/books/actions/runs/'+id+')' : 'нет ссылки';
+  const confidence = {confirmed_technical:'HEAD подтверждён',correlated:'корреляция, не доказанная причина',unknown:'причина не подтверждена'};
+  let gapCount=0, proof=0, correlated=0, unknown=0;
+  for (const row of report.rows || []) {
+    for (const [index,gap] of (row.core_waves?.gaps || []).entries()) {
+      const cause=gap.cause || {};
+      const level=cause.confidence || 'unknown';
+      gapCount++;
+      if(level==='confirmed_technical') proof++;
+      else if(level==='correlated') correlated++;
+      else unknown++;
+      const heads=cause.prior_sha && cause.next_sha ?
+        (cause.prior_sha===cause.next_sha ? 'тот же '+cause.next_sha.slice(0,7) :
+          cause.prior_sha.slice(0,7)+' → '+cause.next_sha.slice(0,7)) : 'не проверен';
+      const who=cause.initiator ? '@'+cause.initiator+' ('+
+        (cause.initiator_source==='timeline_actor'?'GitHub timeline':'GitHub run')+')' : 'не установлен';
+      const evidence=cause.event ? ' · '+cause.event+' @ '+cause.event_at : '';
+      const why=cause.label || 'Недостаточно данных';
+      const gapMinutes=Number.isFinite(gap.minutes) ? gap.minutes.toFixed(2) : 'н/д';
+      lines.push('| #'+row.pr+' / '+(index+2)+' | '+runLink(gap.previous_run_id)+' → '+runLink(gap.run_id)+
+        ' | '+heads+' | '+gapMinutes+' | '+why+' | '+who+' | '+(confidence[level]||confidence.unknown)+evidence+' |');
+    }
+  }
+  if(!gapCount)lines.push('| — | — | — | — | Повторные пары не подтверждены в выборке | — | — |');
+  lines.push('',
+    'В выборке: '+gapCount+' повторных пар; подтверждён новый HEAD: '+proof+
+    '; вероятный триггер: '+correlated+'; причина неизвестна: '+unknown+'.',
+    'Инициатор GitHub run — не доказанный автор коммита и не автоматически виновник задержки. События timeline — подсказки, пока нет прямого payload действия.',
+    'При неполной истории, неоднозначных событиях или пересечении запусков причина остаётся неподтверждённой.',
+    '',
+    '#### Повторные попытки внутри одного run (run_attempt > 1)',
+    '| PR / run | Попытки | Инициатор последней попытки | Причина | Доказательства |',
+    '| --- | ---: | --- | --- | --- |');
+  let retryRows=0;
+  for (const row of report.rows || []) {
+    for (const retry of row.core_waves?.rerun_attempts || []) {
+      retryRows++;
+      lines.push('| #'+row.pr+' / '+runLink(retry.run_id)+' | '+retry.attempts+
+        ' | '+(retry.latest_initiator?'@'+retry.latest_initiator:'не установлен')+
+        ' | '+retry.reason+' | Исходные попытки без отдельной истории jobs: '+
+        retry.previous_attempts_without_history+' |');
+    }
+  }
+  if(!retryRows)lines.push('| — | — | — | Нет наблюдаемых retry в выборке | — |');
+  return lines.join('\n');
 }
 export function formatSummary(report) {
   const fmt=n=>typeof n==='number'&&Number.isFinite(n)?n.toFixed(2):'n/a';
@@ -212,6 +273,7 @@ export function formatSummary(report) {
   if(!repairs.length)lines.push('| — | n/a | n/a | n/a | n/a | n/a | n/a |');
   lines.push('','Lease claim = ownership, not proof an agent read the task. Repair declaration is not observed local editing. GitHub committed event is not independently verified push time. Queues include dependencies/concurrency, not proven runner shortages. Failed job/step is a location, not log-verified root cause. Unknown is n/a, never agent idle or zero.');
   lines.push('','BASE_ADVANCED is reported independently by the ancestry-proven CI readiness advisory and the strict trusted Specialist; this read-only cohort report does not infer it from a changed HEAD.');
+  lines.push('',formatWaveDiagnostics(report));
   lines.push('','### Stage coverage');
   for(const x of report.categories)lines.push('- '+labels[x.stage]+': '+
     fmt(x.minutes)+' PR-min, confirmed PRs='+x.pr_count+(x.low_n?' (n<5; descriptive)':''));
