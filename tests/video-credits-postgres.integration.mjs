@@ -98,7 +98,7 @@ test('video credits: genuine PG17 grants, FORCE RLS, idempotency, monthly reset 
       (account_id,grant_key,kind,period_start,credits)
       values($1,'monthly:'||to_char(date_trunc('month',timezone('UTC',now())),'YYYY-MM'),
         'monthly',date_trunc('month',timezone('UTC',now()))::date,300)`
-    await assert.rejects(as('hh_app_backend',owner,()=>db.query(monthSQL,[owner])),codeIs('42501'))
+    await assert.rejects(as('hh_app_backend',owner,()=>db.query(monthSQL,[owner])),codeIs('23514'))
     await assert.rejects(as('hh_app_backend',owner,()=>db.query(
       "insert into app_private.video_credit_grants(account_id,grant_key,kind,credits) values($1,'starter','starter',1300)",
       [owner])),codeIs('23505'))
@@ -131,6 +131,15 @@ test('video credits: genuine PG17 grants, FORCE RLS, idempotency, monthly reset 
     assert.equal(after.rowCount,0,'completed credit cannot be refunded or edited')
     await assert.rejects(as('hh_app_backend',owner,()=>db.query(
       "delete from app_private.video_credit_charges where operation_id=$1",[op])),codeIs('42501'))
+    // An explicit account deletion must still cascade the private credit
+    // history. Blocking data erasure with an immutable DELETE trigger is a bug.
+    await db.query('delete from app.accounts where id=$1',[owner])
+    assert.equal((await db.query(
+      'select count(*)::int as n from app_private.video_credit_charges where account_id=$1',[owner]
+    )).rows[0].n,0)
+    assert.equal((await db.query(
+      'select count(*)::int as n from app_private.video_credit_grants where account_id=$1',[owner]
+    )).rows[0].n,0)
   } finally {
     if(begun)await db.query('ROLLBACK').catch(()=>{})
     await db.end()

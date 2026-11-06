@@ -74,6 +74,8 @@ import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loadi
 import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedSourcePlayback } from "@/lib/mandala/free-film-source-clock.mjs";
 
 import type { PublicLocale } from "@/lib/public-locales";
+import {fetchVideoCreditCatalog,fetchVideoCreditStatus,
+  postVideoCreditAction,releaseVideoCreditOnExit} from "@/lib/video-credits/client.mjs";
 import { SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import styles from "./mandala-meditation.module.css";
 import videoStyles from "./mandala-video-mobile.module.css";
@@ -2073,8 +2075,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const creditCompletingRef=useRef(false);
   useEffect(()=>{
     let active=true;
-    void fetch("/api/app/video-credits/catalog",{cache:"no-store",credentials:"same-origin"})
-      .then(async response=>{if(!response.ok)throw Error("VIDEO_CREDIT_CATALOG");return response.json();})
+    void fetchVideoCreditCatalog()
       .then(data=>{if(active)setCreditCatalog(data);})
       .catch(()=>{if(active)setCreditCatalog({chargeRequired:true,ready:false,blocked:true,priceCredits:10});});
     return()=>{active=false;};
@@ -2082,8 +2083,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(()=>{
     if(!creditCatalog?.ready)return;
     let active=true;
-    void fetch("/api/app/video-credits/status",{cache:"no-store",credentials:"same-origin"})
-      .then(async response=>{if(!response.ok)throw Error("CREDITS_AUTH");return response.json();})
+    void fetchVideoCreditStatus()
       .then(data=>{if(active)setCreditBalance(data.balanceCredits);})
       .catch(()=>{if(active)setCreditBalance(null);});
     return()=>{active=false;};
@@ -2541,11 +2541,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       creditOpRef.current=null;
       creditValidRef.current=false;
       if(unusedCredit){
-        void fetch("/api/app/video-credits/release",{
-          method:"POST",credentials:"same-origin",keepalive:true,
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({operationId:unusedCredit}),
-        }).catch(()=>{});
+        releaseVideoCreditOnExit(unusedCredit);
       }
       webCodecJobRef.current?.abort();
       const job = jobRef.current;
@@ -2901,13 +2897,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     creationMode,currentFreeVideoPlan,backgroundOnly,photoConsent,photoUrl]);
 
   async function videoCreditRequest(action:"hold"|"complete"|"release",body:Record<string,unknown>){
-    const response=await fetch("/api/app/video-credits/"+action,{
-      method:"POST",credentials:"same-origin",cache:"no-store",
-      headers:{"Content-Type":"application/json"},body:JSON.stringify(body),
-    });
-    const data=await response.json();
-    if(!response.ok)throw new Error(data.error||"VIDEO_CREDITS_UNAVAILABLE");
-    return data as {status:string;balance?:{balanceCredits:number}};
+    return postVideoCreditAction(action,body);
   }
   async function releaseCredit(operationId:string){
     try{await videoCreditRequest("release",{operationId});}
@@ -6851,10 +6841,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.quickOrderBar} data-workspace-section="editor" data-video-order-bar>
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
             <small>{practiceCopy.total}</small>
-            <strong>{selectedDraftPrice===null?practiceCopy.noQuote:
-              selectedDraftPrice===0?practiceCopy.free:"$"+selectedDraftPrice.toFixed(2)}</strong>
+            <strong>{creditCatalog?.chargeRequired&&freeVideoSelected
+              ?creditCatalog.priceCredits+" XP"
+              :selectedDraftPrice===null?practiceCopy.noQuote:
+                selectedDraftPrice===0?practiceCopy.free:"$"+selectedDraftPrice.toFixed(2)}</strong>
             <small>{practiceCopy.names[practiceType]} · {practiceCopy.quality[practiceLevels[practiceType]]}
-              {" · "}{selectedDraftPrice===0?practiceCopy.noCredits:practiceCopy.draft}</small>
+              {" · "}{creditCatalog?.chargeRequired&&freeVideoSelected
+                ?(locale==="ru"?"Списание только после готового видео":
+                  locale==="es"?"Se cobra tras crear el vídeo":"Charged only after the video is ready")
+                :selectedDraftPrice===0?practiceCopy.noCredits:practiceCopy.draft}</small>
           </div>
           <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
             disabled={recording||preparing||!freeVideoSelected||(usingFreeFilmCompilation&&!freeFilmSourcesListed)||voiceGenerating||narrationInvalid||phrasePending} onClick={createQuickVideo}>
@@ -7288,7 +7283,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       ):(
         <button type="button" className={videoStyles.generate} data-mandala-video-generate
           disabled={!canGenerate} onClick={()=>void createVideo()}>
-          <Play size={21} fill="currentColor" aria-hidden="true"/>{ui.create}
+          <Play size={21} fill="currentColor" aria-hidden="true"/>
+          {creditCatalog?.chargeRequired
+            ?(locale==="ru"?"Создать за ":locale==="es"?"Crear por ":"Create for ")+creditCatalog.priceCredits+" XP"
+            :ui.create}
         </button>
       )}
       {!source?<p role="status" className={videoStyles.warning}>{t.imagePending}</p>:null}
@@ -7309,7 +7307,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </a>
         </div>:null}
       {musicWarning?<p role="status" className={videoStyles.warning}>{musicWarning}</p>:null}
-      <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>{ui.noStorage}</p>
+      <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>
+        {creditCatalog?.chargeRequired
+          ?(locale==="ru"?"Ваше видео создаётся на устройстве; после готовности списываются 10 XP.":
+            locale==="es"?"Se crea en tu dispositivo; se descuentan 10 XP al terminar.":
+            "Created on your device; 10 XP charged after the finished video is verified.")
+          :ui.noStorage}</p>
 
       </details>
       {studioMode==="therapy" && activeWorkspace!=="practices" ? <MandalaPersonalMeditation

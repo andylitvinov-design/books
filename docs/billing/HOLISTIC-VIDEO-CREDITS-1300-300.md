@@ -20,3 +20,5 @@ Owner instruction: 5 November 2026. This independent production-port uses the **
 
 ## Rollback
 Set `HH_VIDEO_CREDITS_ENABLED=false`, redeploy through the existing protected flow; no direct ledger deletion and no data loss. Database ledgers remain immutable for audit.
+
+Data erasure: the backend is denied DELETE on video-credit ledgers, but FK ON DELETE CASCADE deliberately removes the account's private history during an authorized account deletion; an immutable DELETE trigger must never block privacy erasure.

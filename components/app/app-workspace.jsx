@@ -728,10 +728,8 @@ export default function AppWorkspace({ locale, path = [] }) {
              : <PersonalCoaching key={data.account.id} accountId={data.account.id} locale={locale} />)}
           {page === 'practice' && <PracticeWorkspace locale={locale} ownerTools={data.practitioner ? <OwnerTools locale={locale} /> : null}
             accountId={data.account.id} key={data.account.id} showcaseEntry />}
-          {page === 'videos' && <>
-            <VideoCreditsPanel accountId={data.account.id} locale={locale}/>
-            <MyPersonalVideos locale={locale} accountId={data.account.id} key={data.account.id} />
-          </>}
+          {page === 'videos' && <VideoCreditsPanel accountId={data.account.id} locale={locale}/>}
+          {page === 'videos' && <MyPersonalVideos locale={locale} accountId={data.account.id} key={data.account.id} />}
           {page === 'monitoring' && (
             <PsiMonitoring
               data={data}

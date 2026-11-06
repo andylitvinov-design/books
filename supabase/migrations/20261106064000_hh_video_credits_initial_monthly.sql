@@ -56,16 +56,29 @@ create policy video_credit_grants_read on app_private.video_credit_grants for se
 create policy video_credit_grants_create on app_private.video_credit_grants for insert
   to hh_app_backend with check(
     account_id=(select auth.uid()) and (select app_private.account_active()) and
-    (
-      (kind='starter') or
-      (kind='monthly' and
-       period_start=date_trunc('month',timezone('UTC',now()))::date and
-       exists(select 1 from app_private.video_credit_grants g
-         where g.account_id=(select auth.uid()) and g.kind='starter' and
-         g.created_at<(date_trunc('month',timezone('UTC',now())) at time zone 'UTC'))
-      )
-    )
+    (kind='starter' or (kind='monthly' and
+       period_start=date_trunc('month',timezone('UTC',now()))::date))
   );
+-- Do not query video_credit_grants from its own INSERT RLS policy:
+-- PostgreSQL 17 detects policy recursion, even on starter INSERT.
+-- A SECURITY INVOKER trigger can query the owner-scoped SELECT policy safely.
+create function app_private.video_credit_grant_due_guard() returns trigger
+  language plpgsql security invoker set search_path='' as $
+begin
+  if new.kind='monthly' and not exists(
+    select 1 from app_private.video_credit_grants g
+    where g.account_id=new.account_id and g.grant_key='starter'
+      and g.created_at<
+        (date_trunc('month',timezone('UTC',now())) at time zone 'UTC')
+  ) then
+    raise exception 'VIDEO_CREDITS_MONTHLY_NOT_DUE' using errcode='23514';
+  end if;
+  return new;
+end $;
+create trigger video_credit_grant_due before insert on app_private.video_credit_grants
+  for each row execute function app_private.video_credit_grant_due_guard();
+revoke execute on function app_private.video_credit_grant_due_guard() from public,anon,authenticated;
+grant execute on function app_private.video_credit_grant_due_guard() to hh_app_backend;
 create policy video_credit_charges_read on app_private.video_credit_charges for select
   to hh_app_backend using(account_id=(select auth.uid()));
 create policy video_credit_charges_create on app_private.video_credit_charges for insert
@@ -83,7 +96,11 @@ create function app_private.video_credit_immutable_guard() returns trigger
 begin
   raise exception 'VIDEO_CREDIT_IMMUTABLE';
 end $$;
-create trigger video_credit_grant_immutable before update or delete
+-- No explicit DELETE trigger: GDPR/account deletion must cascade under the
+-- existing app.accounts FK. Backend lacks DELETE privilege, so ordinary
+-- client/service ledger tampering remains denied. Administrative deletion
+-- requires the separately approved account-deletion process.
+create trigger video_credit_grant_immutable before update
   on app_private.video_credit_grants for each row
   execute function app_private.video_credit_immutable_guard();
 
@@ -107,8 +124,5 @@ end $$;
 create trigger video_credit_charge_transition before update
   on app_private.video_credit_charges for each row
   execute function app_private.video_credit_charge_transition_guard();
-create trigger video_credit_charge_no_delete before delete
-  on app_private.video_credit_charges for each row
-  execute function app_private.video_credit_immutable_guard();
 revoke execute on function app_private.video_credit_immutable_guard() from public,anon,authenticated;
 revoke execute on function app_private.video_credit_charge_transition_guard() from public,anon,authenticated;
