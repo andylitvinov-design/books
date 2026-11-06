@@ -1,0 +1,144 @@
+{
+  "schemaVersion": "hh-video-goal-mytube-crosswalk-v1",
+  "editorialStatus": "topic_mapping_only_no_media_or_story_approval",
+  "studioToMyTube": {
+    "body-release": [
+      "muscle-relaxation",
+      "body-awareness",
+      "stress-relief"
+    ],
+    "body-sleep": [
+      "evening-fatigue",
+      "recovery-after-load",
+      "stress-relief"
+    ],
+    "body-breath": [
+      "breathing-practices",
+      "calm-presence"
+    ],
+    "body-comfort": [
+      "body-awareness",
+      "self-acceptance",
+      "muscle-relaxation"
+    ],
+    "body-care": [
+      "healthy-habits",
+      "recovery-after-load"
+    ],
+    "body-confidence": [
+      "self-confidence",
+      "body-awareness",
+      "self-acceptance"
+    ],
+    "work-support": [
+      "work-stress",
+      "career-growth",
+      "self-confidence"
+    ],
+    "money-stability": [
+      "financial-stability",
+      "money-mindset"
+    ],
+    "work-focus": [
+      "mental-clarity",
+      "mental-tiredness",
+      "procrastination"
+    ],
+    "work-decision": [
+      "business-decisions",
+      "self-confidence",
+      "goal-setting"
+    ],
+    "work-opportunity": [
+      "entrepreneurship",
+      "income-growth",
+      "career-growth"
+    ],
+    "work-speaking": [
+      "leadership",
+      "self-confidence",
+      "calm-presence"
+    ],
+    "energy-vitality": [
+      "low-energy",
+      "recovery-after-load"
+    ],
+    "energy-morning": [
+      "morning-energy",
+      "low-energy"
+    ],
+    "energy-inspiration": [
+      "motivation-drive",
+      "personal-growth"
+    ],
+    "energy-inner-strength": [
+      "self-confidence",
+      "self-acceptance",
+      "calm-presence"
+    ],
+    "energy-fresh-start": [
+      "life-transitions",
+      "goal-setting"
+    ],
+    "energy-purpose": [
+      "life-purpose",
+      "finding-self"
+    ],
+    "love-closeness": [
+      "emotional-intimacy",
+      "ready-relationship"
+    ],
+    "love-trust": [
+      "rebuilding-trust",
+      "fear-intimacy"
+    ],
+    "love-heart": [
+      "emotional-intimacy",
+      "self-acceptance"
+    ],
+    "love-boundaries": [
+      "relationship-problems",
+      "emotional-dependency",
+      "self-confidence"
+    ],
+    "love-self": [
+      "self-acceptance",
+      "low-self-esteem"
+    ],
+    "love-dialogue": [
+      "couple-communication",
+      "couple-conflict",
+      "family-relationships"
+    ],
+    "stress-anxiety": [
+      "constant-anxiety",
+      "anxiety-no-reason",
+      "stress-relief"
+    ],
+    "stress-fast-calm": [
+      "stress-relief",
+      "panic-attacks",
+      "calm-presence"
+    ],
+    "stress-after-day": [
+      "evening-fatigue",
+      "recovery-after-load",
+      "work-stress"
+    ],
+    "stress-release": [
+      "stress-relief",
+      "muscle-relaxation",
+      "chronic-stress"
+    ],
+    "stress-before-event": [
+      "calm-presence",
+      "work-stress",
+      "self-confidence"
+    ],
+    "stress-safety": [
+      "stress-relief",
+      "fear-being-alone",
+      "calm-presence"
+    ]
+  }
+}
