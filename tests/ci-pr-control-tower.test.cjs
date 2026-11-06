@@ -1466,7 +1466,7 @@ test('16 verified inspections preserve overlapping DIRTY/Core/Specialist blocker
  assert.equal(report.actionable,16,'manual preflight candidates count as routable');
  assert.equal(report.nonmanualRouted,0,'no manual source write was permitted');
  assert.equal(report.legacyPrepEligible,16);
- assert.equal(report.candidates,4,'four bounded old candidate probes, not four dispatches');
+ assert.equal(report.candidates,1,'one bounded legacy candidate, not four read-only runners');
  assert.equal(report.dispatchAccepted,0,'the mock never proves capacity or a lease');
  assert.match(report.reason,/^CAPACITY_UNVERIFIED:/);
  assert.equal(report.watchdogSampleStatus,'VERIFIED_BOUNDED_SAMPLE');
@@ -1535,27 +1535,31 @@ test('previous DIRTY conflict handoff cannot starve manual cloud preflight',asyn
  assert.equal(f.calls.removed.length,0,'do not remove conflict/manual labels');
 });
 
-test('handled old PR is skipped and next legacy candidate dispatches once',async()=>{
+test('handled old PR does not cause another read-only worker until the next UTC hour',async()=>{
  const old=[204,205,206].map(number=>pr(number,'repair',{
   mergeable:false,mergeable_state:'dirty',
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]
  }));
- const picked=planCandidates(old,NOW).filter(x=>x.lane==='legacy');
- assert.equal(picked.length,3);
- const first=picked[0],second=picked[1];
- const done={...first,state:'PREPARED'};
+ const first=planCandidates(old,NOW).filter(x=>x.lane==='legacy')[0];
+ assert.ok(first);
  const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
   performed_via_github_app:{id:15368,slug:'github-actions'},
-  body:commentBody(done)};
+  body:commentBody({...first,state:'PREPARED'})};
  const f=fixture(old,{comments:{[first.pr_number]:[bot]}});
- const result=await run({github:f.github,core:core(),context,now:NOW,
+ const handled=await run({github:f.github,core:core(),context,now:NOW,
   capacityFn:f.capacityFn});
- assert.equal(result.blocked.ALREADY_HANDLED,1);
- assert.equal(result.legacyDispatchAccepted,1);
- assert.equal(result.repairDispatchAccepted,0);
- assert.equal(f.calls.dispatched.length,1,'one worker per sweep');
- assert.equal(f.calls.dispatched[0].inputs.pr_number,String(second.pr_number));
- assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
+ assert.equal(handled.blocked.ALREADY_HANDLED,1);
+ assert.equal(handled.legacyDispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,0);
+ const next=planCandidates(old,NOW+3600000).filter(x=>x.lane==='legacy')[0];
+ assert.ok(next);
+ assert.notEqual(next.pr_number,first.pr_number);
+ const later=await run({github:f.github,core:core(),context,now:NOW+3600000,
+  capacityFn:f.capacityFn});
+ assert.equal(later.legacyDispatchAccepted,1);
+ assert.equal(later.repairDispatchAccepted,0);
+ assert.equal(f.calls.dispatched.length,1);
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,String(next.pr_number));
 });
 
 test('one normal source repair and one manual preflight share the existing two worker slots',async()=>{
@@ -1582,19 +1586,20 @@ test('read-only legacy preflight uses one stable hourly candidate, not 4 per ten
  const first=planCandidates(history,NOW);
  const same=planCandidates(history,NOW+10*60000);
  const last=planCandidates(history,NOW+19*60000);
- const closed=planCandidates(history,NOW+20*60000);
+ const later=planCandidates(history,NOW+20*60000);
  const following=planCandidates(history,NOW+3600000);
  assert.equal(first.length,1);
  assert.equal(first[0].lane,'legacy');
  assert.deepEqual(same,first,'multiple watchdog wakes during one hour must inspect the same signed task');
  assert.deepEqual(last,first);
- assert.deepEqual(closed,[],'later ten-minute sweeps reserve all worker slots for actionable changes');
+ assert.deepEqual(later,first,'late GitHub cron must still inspect the same signed hourly candidate');
  assert.equal(following.length,1);
  assert.notEqual(following[0].pr_number,first[0].pr_number,'next hour visits next old PR');
  const normal=planCandidates([...history,pr(22,'repair'),pr(23,'ci')],NOW+30*60000);
  assert.equal(normal[0].lane,'repair');
  assert.ok(normal.some(x=>x.lane==='ci'));
- assert.ok(normal.every(x=>x.lane!=='legacy'));
+ assert.equal(normal.filter(x=>x.lane==='legacy').length,1,
+  'generic refill cannot re-add extra legacy jobs after the hourly choice');
 });
 test('old manual PR remains read-only; source-repair takes precedence in hourly window',()=>{
  const old=pr(4000,'repair',{labels:[{name:'hh:repair-manual'}]});

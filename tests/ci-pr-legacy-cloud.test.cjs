@@ -38,11 +38,11 @@ test('stable old candidate survives arbitrary delayed cron ticks and rotates hou
  const at=planCandidates(old,NOW).filter(x=>x.lane==='legacy');
  const late=planCandidates(old,NOW+600000).filter(x=>x.lane==='legacy');
  const next=planCandidates(old,NOW+1200000).filter(x=>x.lane==='legacy');
- assert.equal(at.length,4);
- assert.equal(late.length,4,'late :50 tick preserves the same bounded pool');
+ assert.equal(at.length,1);
+ assert.equal(late.length,1,'late :50 tick preserves the single signed candidate');
  assert.deepEqual(late.map(x=>x.pr_number),at.map(x=>x.pr_number),
-  'a repeated 10-minute tick in one hour probes the same signed tasks');
- assert.equal(next.length,4);
+  'repeated delayed ticks in the same UTC hour probe the same exact task');
+ assert.equal(next.length,1);
  assert.notDeepEqual(next.map(x=>x.pr_number),at.map(x=>x.pr_number),
   'next UTC hour rotates to avoid starvation');
  const receipt=task.taskFor(old[0],{tier:'P4',direction:'academy-courses'});

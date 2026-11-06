@@ -114,16 +114,15 @@ function planCandidates(prs,now){
  // Legacy PREPARED is signed read-only metadata, not source repair.
  // Previous 4-candidate/10-minute rotation launched many no-source workers
  // per hour even with no free code executor; these compete with real Core.
- // Reuse the existing ten-minute schedule and only inspect ONE stable legacy
- // candidate during the first 20 minutes of each UTC hour. The signed exact
- // task receipt prevents same-HEAD redispatch within that window. No new cron,
- // slot, workflow or source writing authority is created.
+ // Inspect ONE stable legacy candidate during each UTC hour, regardless of
+ // scheduler jitter. A signed terminal task receipt suppresses repeat work
+ // for that exact source HEAD; the next hour rotates to a different old PR.
+ // No extra cron, slot, workflow or source writing authority is created.
  const legacy=ranked.filter(pr=>laneOf(pr)==='legacy')
   .sort((a,b)=>a.number-b.number);
- const legacyWindowOpen=Number.isFinite(now)&&now>=0&&
-  now%3600000<20*60000;
  const legacyStart=legacy.length?Math.floor(now/3600000)%legacy.length:0;
- const oldCandidates=legacyWindowOpen&&legacy.length?[legacy[legacyStart]]:[];
+ const oldCandidates=Number.isFinite(now)&&now>=0&&legacy.length?
+  [legacy[legacyStart]]:[];
  // During conflict-only backlogs, rotate a bounded window rather than reread
  // the same 16 already handed-off exact HEADs on each ten-minute cycle.
  if(!source.length&&!ci){
@@ -152,7 +151,10 @@ function planCandidates(prs,now){
  const offset=tail.length?(Math.floor(now/600000)*Math.max(1,sourceRoom))%tail.length:0;
  for(let i=0;i<tail.length&&picked.length<MAX_INSPECT-(conflict&&!chosen.has(conflict.number)?1:0);i++)add(tail[(offset+i)%tail.length]);
  add(conflict);
- const rest=ranked.filter(pr=>!chosen.has(pr.number)).sort((a,b)=>a.number-b.number);
+ // Legacy is a read-only hourly lane; never let the generic refill loop
+ // re-add 20+ old tasks and bypass the single-candidate hour budget.
+ const rest=ranked.filter(pr=>!chosen.has(pr.number)&&laneOf(pr)!=='legacy')
+  .sort((a,b)=>a.number-b.number);
  const room=Math.min(MAX_INSPECT-picked.length,rest.length);
  const start=rest.length?(Math.floor(now/600000)*Math.max(1,room))%rest.length:0;
  for(let i=0;i<room;i++)add(rest[(start+i)%rest.length]);
