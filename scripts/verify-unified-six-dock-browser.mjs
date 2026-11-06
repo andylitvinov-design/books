@@ -343,6 +343,29 @@ try{
      && root.querySelectorAll('[role="log"] p').length>=count+2;
  },before,{timeout:10000});
  assert.equal(await starters.count(),0,"introduction gives way to the live transcript");
+ // Personal-video creation has the exact MyTube four-goal hierarchy, no
+ // unrelated ready-made-video CTA and no Google wall before the brief.
+ const videoGoals=chat.locator("[data-hh-video-chat-options] [data-hh-video-chat-choice]");
+ await videoGoals.first().waitFor({state:"visible"});
+ assert.deepEqual(await videoGoals.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-video-chat-choice"))),
+   ["goals-money","love-relationships","energy-confidence","stress-anxiety"]);
+ assert.equal(await chat.locator("[data-hh-guest-ready-videos]").count(),0,
+   "personal video branch must not offer ready-made videos");
+ assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
+   "guest prepares the personal video without premature Google login");
+ const personal=chat.locator("[data-hh-personal-video-request]");
+ assert.equal(await personal.isDisabled(),true,"pick a video goal before continuing");
+ await videoGoals.nth(1).click();
+ assert.equal(await personal.isEnabled(),true,"selected video goal enables personal brief");
+ await personal.click();
+ await chat.locator('[data-hh-video-chat-step="topic"]').waitFor({state:"visible"});
+ await page.waitForFunction(()=>{
+   const el=document.querySelector('[data-hh-agent-preview] [role="log"]');
+   return !!el&&el.scrollHeight-el.scrollTop-el.clientHeight<12;
+ },null,{timeout:10000});
+ assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
+   "no login before the creative questionnaire");
  const agentComposer=chat.locator("textarea");
  await agentComposer.waitFor({state:"visible"});
  assert.equal((await agentComposer.inputValue()).trim(),"",

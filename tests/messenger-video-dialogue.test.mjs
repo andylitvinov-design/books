@@ -99,3 +99,25 @@ test('a greeting interrupts video categorization and receives a quick response',
  assert.ok(handler.slice(greeting,video).includes('starter.hello'));
  assert.ok(handler.slice(video).includes('answerVideo(text);return;'));
 });
+
+test('canonical 4-goal Messenger offers one CTA and live-scrolls new options without early Google login',()=>{
+ const chat=source('components/holistic-agent-chat.tsx');
+ const css=source('components/holistic-agent-chat.module.css');
+ for(const locale of ['ru','en','es']){
+   const choices=messengerVideoChoices(initialMessengerVideoDraft(),'category',locale);
+   assert.equal(choices.length,4);
+   assert.deepEqual(choices.map(c=>c.id),['goals-money','love-relationships','energy-confidence','stress-anxiety']);
+   for(const item of choices){
+     const turn=advanceMessengerVideo(initialMessengerVideoDraft(),'category',item.label,locale);
+     assert.equal(turn.valid,true,locale+' '+item.label);
+     assert.equal(turn.step,'topic');
+   }
+ }
+ assert.match(chat,/isVideoCreationIntent\(text\)/);
+ assert.match(chat,/videoPendingCategory/);
+ assert.match(chat,/data-hh-personal-video-request disabled=\{busy\|\|!videoPendingCategory\}/);
+ assert.match(chat,/videoStep,videoDraft,[\s\S]*showVideoSignIn/);
+ assert.match(chat,/requestAnimationFrame\(revealLatest\)/);
+ assert.match(css,/videoOptions button\[aria-pressed="true"\]/);
+ assert.doesNotMatch(chat,/videoStep==="category"&&<a className=\{styles\.videoDiscoveryTextLink\}/);
+});
