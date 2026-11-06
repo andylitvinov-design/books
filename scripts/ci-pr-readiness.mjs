@@ -84,12 +84,12 @@ async function readLivePr(repository, number, token) {
   return response.json();
 }
 
-async function readExactBaseAncestry(repository, live, token) {
+export async function readExactBaseAncestry(repository, live, token, transport = fetch) {
   const base = live?.base?.sha;
   const head = live?.head?.sha;
-  if (!SHA.test(base ?? '') || !SHA.test(head ?? '')) return null;
-  const response = await fetch(
-    `https://api.github.com/repos/${repository}/compare/${base}...${head}`, {
+  if (!SHA.test(base ?? '') || !SHA.test(head ?? '') || base === head) return null;
+  const response = await transport(
+    `https://api.github.com/repos/${repository}/compare/${base}...${head}?per_page=100`, {
       headers: {
         accept: 'application/vnd.github+json',
         authorization: `Bearer ${token}`,
@@ -99,12 +99,19 @@ async function readExactBaseAncestry(repository, live, token) {
     });
   if (!response.ok) return null;
   const comparison = await response.json();
-  return {
-    status: comparison.status,
-    base_sha: comparison.base_commit?.sha,
-    head_sha: comparison.head_commit?.sha,
-    merge_base_sha: comparison.merge_base_commit?.sha,
-  };
+  // REST Compare intentionally has no head_commit property. The last complete
+  // commit item proves the exact target only with an untruncated, forward-only
+  // ancestry chain and verified base/merge-base SHA.
+  if (comparison?.status !== 'ahead' || comparison?.behind_by !== 0 ||
+      !Number.isSafeInteger(comparison?.ahead_by) || comparison.ahead_by < 1 ||
+      comparison.ahead_by > 100 ||
+      comparison.total_commits !== comparison.ahead_by ||
+      !Array.isArray(comparison.commits) ||
+      comparison.commits.length !== comparison.ahead_by ||
+      comparison.base_commit?.sha !== base ||
+      comparison.merge_base_commit?.sha !== base ||
+      comparison.commits.at(-1)?.sha !== head) return null;
+  return {status:'ahead',base_sha:base,head_sha:head,merge_base_sha:base};
 }
 
 // The Public Services job uses a pinned Playwright container. actions/checkout
