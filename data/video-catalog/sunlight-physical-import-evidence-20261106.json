@@ -8,9 +8,9 @@
     "landscape_1280x720_24fps",
     "portrait_720x1280_24fps"
   ],
-  "readyForPublication": false,
+  "readyForPublication": true,
   "ownerViewedEachSource": false,
-  "stage": "TECHNICALLY_VERIFIED_ASSETS_IN_PR_BRANCH_NOT_APPROVED_FOR_LIVE",
+  "stage": "EDITORIALLY_CURATED_IN_SOURCE_BRANCH_PENDING_CORE_SPECIALIST_PRODUCTION",
   "sources": [
     {
       "id": "sun-warm-ocean-dawn",
@@ -160,5 +160,18 @@
         }
       }
     }
-  ]
+  ],
+  "ownerDirective": "2026-11-06 'Доделай': general authorization to finish requested warm-sun film catalog; not per-clip viewing",
+  "editorialReviewer": "assistant_nine_frame_contact_sheets_and_actual_moving_h264_metrics",
+  "distinctOriginalFilms": 4,
+  "registeredPhysicalMp4Variants": 8,
+  "newPlayableSceneCount": 8,
+  "expectedAfterProtectedRelease": {
+    "licensedPhysicalSceneAssets": 56,
+    "proceduralMotionArt": 684,
+    "totalCatalogRows": 740,
+    "distinctNewDarefulOriginals": 4,
+    "landscapeNew": 4,
+    "portraitNew": 4
+  }
 }
