@@ -367,6 +367,8 @@ jobs:
       - name: Voice provider contract and negative cases
         if: steps.policy.outputs.policy_only != 'true'
         run: node --check lib/mandala/voice-studio-openrouter-provider.mjs && node --test tests/voice-studio-provider.test.mjs tests/voice-studio-openrouter.test.mjs tests/voice-selected-phrase-free.test.mjs tests/voice-selected-phrase-live.test.mjs
+      - name: Guest real voice message consent and device-only handoff contracts
+        run: node --test tests/mandala-guest-voice-message.test.mjs
 
       # One deliberately bounded real PRODUCTION request for a fixed public
       # phrase in the selected Leon/Puck Gemini voice. Runs once per owner PR
@@ -616,6 +618,12 @@ jobs:
             test -f tests/curated-music-wave.test.mjs
             node --test tests/curated-music-wave.test.mjs
           fi
+      # Guest recording stays browser-local: test the fragment invitation,
+      # voluntary adult consent and zero cloud TTS POST on the existing Mac job.
+      - name: Guest voice consent and invitation contract (macOS gate)
+        run: |
+          node --check scripts/verify-affirmation-voice-browser.mjs
+          node --test tests/mandala-guest-voice-message.test.mjs
       - name: WebKit recorded movie contains video and audible consented voice
         run: |
           set -euo pipefail

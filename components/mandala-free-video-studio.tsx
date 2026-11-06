@@ -1855,6 +1855,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
+  const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
@@ -5951,15 +5952,32 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onCreate={goToMontageFromIdeas}/>
-          {activeWorkspace!=="phrases" ? <div data-video-legacy-phrase-editor hidden aria-hidden="true">
-            {deepHypnoPane}
-          </div> : null}
+          {/* One persistent editor instance; collapsed by default in Ideas.
+              Do not unmount it between workspaces or duplicate audio state. */}
+          <div data-video-legacy-phrase-editor
+            hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
+            <details className={videoStyles.phraseAudioSettings}
+              data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}
+              onToggle={event=>setIdeasVoiceAdvancedOpen(event.currentTarget.open)}>
+              <summary><AudioLines size={18} aria-hidden="true"/>
+                {locale==="ru"?"Дополнительные настройки фраз и голоса":
+                  locale==="es"?"Opciones adicionales de frases y voz":
+                    "Advanced phrase and voice settings"}
+                <ChevronDown size={18} aria-hidden="true"/>
+              </summary>
+              {deepHypnoPane}
+            </details>
+          </div>
         </div>
         <button type="button" className={videoStyles.phraseAudioNext}
           data-video-phrase-audio-shortcut disabled={recording||preparing}
           onClick={()=>{
+            // The advanced voice editor lives in Ideas. Reveal it on an actual
+            // visitor action before trying to focus the nested audio settings.
+            setIdeasVoiceAdvancedOpen(true);
             setPhraseAudioExpanded(true);
-            window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"}));
+            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+              document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"})));
           }}>
           <Music2 size={19} aria-hidden="true"/>
           {locale==="ru"?"Настроить аудиогид, музыку и голос":
