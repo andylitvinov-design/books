@@ -1650,7 +1650,7 @@ test('Tantra keeps real 1.64.0 Chromium/WebKit acceptance with preinstalled Nobl
 test('billing specialist avoids repeated global TypeScript with all dedicated payment/RLS checks retained',()=>{
   const billing=workflow('hh-billing-isolated.yml');
   const core=workflow('hh-pr-core-release.yml');
-  assert.match(billing,/^      - '\.github\/workflows\/hh-billing-isolated\.yml'$/m);
+  assert.doesNotMatch(billing,/^      - '\.github\/workflows\/hh-billing-isolated\.yml'$/m);
   assert.doesNotMatch(billing,/\bnpx tsc --noEmit\b/);
   for(const test of ['tests/video-credits-postgres.integration.mjs',
     'tests/square-ledger-isolated.integration.mjs',

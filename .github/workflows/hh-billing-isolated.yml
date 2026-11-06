@@ -3,7 +3,6 @@ on:
   pull_request:
     branches: ['codex/public-book-library']
     paths:
-      - '.github/workflows/hh-billing-isolated.yml'
       - 'tests/talisman-google-checkout.test.mjs'
       - 'app/**/cart/**'
       - 'app/api/payments/**'
