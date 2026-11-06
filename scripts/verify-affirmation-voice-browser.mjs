@@ -220,6 +220,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
+      // The Ideas step intentionally starts without the retired Hypno
+      // controls. A real user first opens the optional voice/audio editor.
+      const advanced=phrases.locator('[data-video-phrase-audio-shortcut]');
+      await expect(advanced).toBeVisible();
+      await expect(advanced).toHaveAttribute("aria-expanded","false");
+      await expect(phrases.locator("[data-hypno-select-tone]")).toHaveCount(0);
+      await advanced.click();
+      await expect(advanced).toHaveAttribute("aria-expanded","true");
+      await expect(phrases.locator("[data-video-advanced-phrase-editor]")).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
       await phrases.locator("[data-hypno-select-tone]").selectOption("balanced");

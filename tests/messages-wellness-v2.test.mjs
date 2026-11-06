@@ -207,7 +207,7 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
 })
 
 
-test('owner Messenger top switcher and real five horizontal AI prompt actions',()=>{
+test('owner Messenger keeps a clear welcome and two big chat choices, not five mini-cards',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const ai=source('components/app/messenger-ai-workspace.jsx')
  const css=source('components/app/messenger-ai-workspace.module.css')
@@ -215,12 +215,13 @@ test('owner Messenger top switcher and real five horizontal AI prompt actions',(
  const mobile=source('app/[locale]/app/messages/messages-page.css')
  assert.ok(ui.indexOf('<div className={styles.sections} role="tablist"')<
    ui.indexOf('<header className={styles.head}>'))
- assert.match(css,/\.rail\{display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/)
  assert.match(css,/\.layout\{display:flex;flex-direction:column/)
- for(const id of ['video','meditation','practice','course','ritual'])
-   assert.ok(ai.includes("id:'"+id+"'"),id)
- for(const word of ['выше','above','arriba'])assert.ok(ai.includes(word),word)
- assert.match(ai,/setQuickPrompt\(prev=>/)
+ assert.match(css,/\.content\{display:flex;flex:1/)
+ assert.ok(chat.includes('data-hh-ai-welcome'))
+ for(const id of ['video','meditation'])assert.ok(chat.includes('data-hh-ai-start="'+id+'"'))
+ assert.ok(chat.includes('startGuided(kind:'))
+ assert.ok(chat.includes('isCasualGreeting(text)'))
+ assert.doesNotMatch(ai,/data-chat-menu-rail|setQuickPrompt\(/)
  assert.match(chat,/method:"POST",credentials:"same-origin"/)
  assert.ok(mobile.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) [data-hh-unified-dock]'))
  assert.match(ui,/data-free-order-offers/)
@@ -309,7 +310,9 @@ test('mobile dock follows the actual visual keyboard, not lingering input focus'
  assert.ok(nav.includes('messengerPage.dataset.hhMobileKeyboardOpen = hideForKeyboard'))
  assert.ok(detector.includes('Math.max(fromLayout, fromUnfocused) > 140'))
  assert.ok(hub.includes('const limit=keyboard?bottom:'))
+ assert.ok(hub.includes('sharedKeyboard||window.innerHeight-bottom>92'))
  assert.ok(page.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"])'))
  assert.ok(!page.includes(':has(input:focus,textarea:focus)'))
- assert.ok(aiCss.includes('[data-keyboard-open="true"] .rail'))
+ assert.ok(aiCss.includes('.content{display:flex;flex:1'))
+ assert.ok(source('components/holistic-agent-chat.module.css').includes('>.form'))
 })

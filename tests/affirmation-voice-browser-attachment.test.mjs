@@ -129,3 +129,21 @@ test("consent click diagnostics retain one genuine click and never capture conta
   assert.match(block,/elementFromPoint/);
   assert.doesNotMatch(block,/\.check\(|force:\s*true|\.value\b/);
 });
+
+test("the optional Ideas audio button mounts the authentic Hypno voice editor after a real WebKit click",()=>{
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const from=studio.indexOf("data-video-phrase-editor-first");
+ const to=studio.indexOf('data-workspace-section="effects"',from);
+ assert.ok(from>=0&&to>from);
+ const ideas=studio.slice(from,to);
+ assert.match(ideas,/activeWorkspace==="phrases" && phraseAudioExpanded/);
+ assert.match(ideas,/data-video-advanced-phrase-editor/);
+ assert.match(ideas,/\{deepHypnoPane\}/);
+ assert.match(ideas,/data-video-phrase-audio-shortcut aria-expanded=\{phraseAudioExpanded\}/);
+ assert.match(source,/await advanced\.click\(\)/);
+ assert.match(source,/await expect\(advanced\)\.toHaveAttribute\("aria-expanded","true"\)/);
+ assert.match(source,/await expect\(phrases\.locator\("\[data-video-advanced-phrase-editor\]"\)\)\.toBeVisible\(\)/);
+ assert.match(source,/await phrases\.locator\("\[data-hypno-select-tone\]"\)\.selectOption\("balanced"\)/);
+ assert.match(source,/await page\.locator\("\[data-video-generate-affirmation-audio\]"\)\.click\(\)/);
+ assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
+});
