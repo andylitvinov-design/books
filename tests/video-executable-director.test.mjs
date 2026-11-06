@@ -68,10 +68,12 @@ test("requested silence and no captions remain silent and caption-free",()=>{
   assert.ok(script.edit.captionTexts.every(x=>x===""));
   assert.equal(script.shots.reduce((sum,s)=>sum+s.durationSeconds,0),10);
   assert.ok(script.shots.every(s=>s.durationSeconds>=2));
-  // No square-native MP4 is in this rights-checked inventory.
+  // No square-native MP4 is in this rights-checked inventory. The aspect
+  // filter now rejects the request before attempting a four-shot render plan:
+  // never treat portrait/landscape clips as square or weaken source validation.
   assert.throws(()=>compileExecutableVideoScenario({...base,
     draft:{...draft,duration:10,aspect:"square",music:"none",phrases:false}}),
-    /unlicensed_or_excluded_video_scene/);
+    /insufficient_licensed_video_sources/);
 });
 test("AI cannot invent clip, duplicate source, bypass excluded motif or distort duration",()=>{
   const candidates=executableSceneCandidates({presetId:base.selectedPresetId,
