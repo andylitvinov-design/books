@@ -225,5 +225,7 @@ if(!isMainThread&&workerData?.hhScenarioMusicShard===true){
     process.exitCode=1;
   }
 }
-if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))
+// Workers only run their assigned shard; the inherited argv may otherwise
+// rerun the complete CLI generator inside EACH worker, racing FFmpeg outputs.
+if(isMainThread&&process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))
   console.log("[hh-scenario-audio]",JSON.stringify(buildScenarioMusic()));
