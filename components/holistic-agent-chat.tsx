@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
+import {interpretSupportUtterance} from "@/lib/holistic-support/guide-dialogue.mjs";
+import {classifyVideoChatQuestion,answerVideoChatQuestion} from "@/lib/mandala/video-chat-dialogue-knowledge.mjs";
 import {
   MESSENGER_VIDEO_HANDOFF_KEY,initialMessengerVideoDraft,messengerVideoCopy,
   messengerVideoQuestion,messengerVideoChoices,advanceMessengerVideo,
@@ -153,6 +155,15 @@ function isCasualGreeting(raw:string):boolean {
  return /^(?:привет|приветик|здравствуй|здравствуйте|доброе утро|добрый день|добрый вечер|ау|ауу|алло|привет ау|ау привет|ты тут|hi|hello|hey|hi there|hello there|hola|buenas|buenos dias)$/.test(text);
 }
 
+// Video choices are local, but urgent/human-review text must still use the
+// existing authenticated safety preflight, not the category-choice reducer.
+function requiresProtectedReply(text:string,locale:PublicLocale):boolean {
+  if(/(?:не хочу (?:больше )?жить(?:[.!?]|$)|i do not want to live(?:[.!?]|$)|i dont want to live(?:[.!?]|$)|ya no quiero vivir(?:[.!?]|$)|мне стало хуже|после упражнения хуже|хочу остановиться|мне страшно продолжать|i feel worse|please stop|after the exercise i feel worse|me siento peor|no quiero continuar)/iu.test(text))
+    return true;
+  for(let i=0;i<text.length;i+=180)
+    if(interpretSupportUtterance(text.slice(i,i+240),locale).kind==="safety")return true;
+  return false;
+}
 type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal})=>Promise<string>;
   destroy?:()=>void };
 type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
@@ -244,6 +255,16 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
 
   function answerVideo(value:string,label=value) {
     if(!compact||!videoStep||busy)return;
+    const questionKind=classifyVideoChatQuestion(value);
+    if(questionKind){
+      const response=answerVideoChatQuestion(questionKind,{
+        locale,stage:videoStep,options:videoChoices.map(option=>option.label),
+      });
+      followTail.current=true;setNewBelow(false);setDraft("");
+      setMessages(prev=>[...prev,{role:"user" as const,text:label},
+        {role:"assistant" as const,text:response}].slice(-30));
+      return;
+    }
     const result=advanceMessengerVideo(videoDraft,videoStep,value,locale);
     setVideoDraft(result.draft as MessengerVideoDraft);
     setVideoStep(result.step);
@@ -291,7 +312,11 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     event.preventDefault();
     const text=draft.trim().slice(0,2000);
     if(!text||busy||mode==="owned"&&!agree)return;
-    if(compact&&videoStep){answerVideo(text);return;}
+    if(compact&&videoStep){
+      if(!requiresProtectedReply(text,locale)){answerVideo(text);return;}
+      // Do not continue offering video options after a safety escalation.
+      setVideoStep(null);
+    }
     if(compact&&isCasualGreeting(text)){
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
       setMessages(prev=>[...prev,{role:"user" as const,text},
