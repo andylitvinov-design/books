@@ -595,10 +595,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           await expect.poll(async()=>{
             if(await output.isVisible())return true;
             if(!verificationTapped&&await verifyPlayback.isVisible()){
-              verificationTapped=true;
-              await verifyPlayback.click();
+              try{
+                await verifyPlayback.click({timeout:2000});
+                verificationTapped=true;
+              }catch(error){
+                // Native MP4 may become playable between isVisible and click:
+                // React then unmounts this optional button. Require the real
+                // download control, never accept a status label or mock file.
+                if(await output.isVisible())return true;
+                if(await verifyPlayback.isVisible())throw error;
+              }
             }
-            return false;
+            return await output.isVisible();
           },{timeout:45000,intervals:[250,500,1000]}).toBe(true);
           await output.waitFor({state:"visible",timeout:45000});
         } catch (error) {
