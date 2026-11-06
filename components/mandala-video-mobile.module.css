@@ -4301,3 +4301,19 @@
     display:none!important
   }
 }
+
+/* Ideas starts compact, but explicit audio tap must reveal the ORIGINAL editor.
+   Keep the retired editor absent from the visible layout until its opt-in. */
+.studio[data-active-workspace="phrases"] .phraseAudioNext{
+  display:flex!important;align-items:center;justify-content:center;gap:8px;
+}
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"]{
+  display:block!important;min-width:0;max-width:100%;
+}
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"] .phraseMusicSection,
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"] .phraseAudioSettings{
+  display:block!important;
+}
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"] .phraseVoiceAction{
+  display:flex!important;
+}

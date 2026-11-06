@@ -226,6 +226,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
+      // The owner-approved Ideas screen is compact until an ACTUAL visitor
+      // opens the one original voice/phrase editor; never force-show a hidden pane.
+      const advancedPhrases=phrases.locator("[data-video-phrase-audio-shortcut]");
+      await expect(advancedPhrases).toBeVisible();
+      await expect(advancedPhrases).toHaveAttribute("aria-expanded","false");
+      await expect(phrases.locator("[data-hypno-select-tone]")).toBeHidden();
+      await advancedPhrases.click();
+      await expect(advancedPhrases).toHaveAttribute("aria-expanded","true");
+      await expect(phrases.locator("[data-video-advanced-phrase-editor]")).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
       await phrases.locator("[data-hypno-select-tone]").selectOption("balanced");

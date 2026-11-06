@@ -4694,6 +4694,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
       </section>
   );
+  const advancedPhraseEditorVisible=activeWorkspace==="phrases" && phraseAudioExpanded;
   const deepHypnoPane = (
       <section className={videoStyles.hypnosisSection} id="video-hypnosis" data-video-hypnosis-section aria-labelledby="video-hypnosis-heading">
         <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
@@ -5544,13 +5545,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onCreate={goToMontageFromIdeas}/>
-          {activeWorkspace!=="phrases" ? <div data-video-legacy-phrase-editor hidden aria-hidden="true">
+          {/* Keep ONE canonical Hypno editor; advanced voice is opt-in, not hidden forever. */}
+          <div id="video-advanced-phrase-editor"
+            data-video-advanced-phrase-editor={advancedPhraseEditorVisible?"true":undefined}
+            data-video-legacy-phrase-editor={advancedPhraseEditorVisible?undefined:"true"}
+            hidden={!advancedPhraseEditorVisible} aria-hidden={!advancedPhraseEditorVisible}>
             {deepHypnoPane}
-          </div> : null}
+          </div>
         </div>
         <div data-video-director-idea-controls />
         <button type="button" className={videoStyles.phraseAudioNext}
-          data-video-phrase-audio-shortcut disabled={recording||preparing}
+          data-video-phrase-audio-shortcut aria-expanded={phraseAudioExpanded}
+          aria-controls="video-advanced-phrase-editor" disabled={recording||preparing}
           onClick={()=>{
             setPhraseAudioExpanded(true);
             window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"}));
