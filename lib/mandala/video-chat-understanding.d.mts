@@ -1,6 +1,6 @@
 export const VIDEO_CHAT_EDIT_STEPS: readonly string[];
 export type VideoChatConversationStage =
-  "goal"|"category"|"topic"|"scenario"|"idea"|"phrase"|
+  "goal"|"category"|"subcategory"|"mytube-topic"|"topic"|"scenario"|"idea"|"phrase"|
   "mood"|"aspect"|"duration"|"music"|"phrases"|"review"|"ready"|"done";
 export type VideoChatConversationFilters={
   mood?:"slow"|"dynamic";aspect?:"portrait"|"landscape"|"square";

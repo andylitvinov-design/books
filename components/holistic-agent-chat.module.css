@@ -345,3 +345,7 @@
   display:flex;align-items:center;justify-content:center;min-height:44px;
   color:#176c53;text-decoration:underline;font:650 13px/1.4 system-ui,sans-serif;
 }
+
+/* Canonical four-goal selection before requesting a personal video brief. */
+.root[data-compact] .videoOptions button[aria-pressed="true"]{background:#e6f6f1;border-color:#067a67;box-shadow:inset 0 0 0 1px #067a67;color:#143d3a}
+.root[data-compact] .videoStudioLink:disabled{opacity:.5;cursor:not-allowed}

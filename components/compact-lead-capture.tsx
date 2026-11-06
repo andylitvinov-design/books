@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, MessageCircle, Send, ShieldCheck } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { StaticPortrait } from "@/components/static-portrait";
 import { EnquiryAttributionChoice } from "@/components/enquiry-attribution-choice";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -114,6 +114,7 @@ export function CompactLeadCapture({
 }) {
   const t = copy[locale];
   const pathname = usePathname();
+  const router = useRouter();
   const [localAddress, setLocalAddress] = useState("");
   const formRef = useRef<HTMLFormElement | null>(null);
   // The server renders this form before its client-side event handlers exist.
@@ -194,6 +195,9 @@ export function CompactLeadCapture({
       try {
         window.sessionStorage.setItem(RECEIPT_SESSION_KEY,
           JSON.stringify({ referenceCode: committedReference, createdAt: Date.now() }));
+        // No-channel saves redirect only after CRM commit; explicit messenger
+        // handoffs retain their reserved Safari tab and inline receipt.
+        if (!channel) router.push("/" + locale + "/thank-you");
       } catch { /* Receipt storage is optional; the DB commit is already authoritative. */ }
     } catch {
       try { handoffWindow?.close(); } catch { /* Never navigate after a failed DB save. */ }

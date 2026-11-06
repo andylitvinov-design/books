@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  parsePaths,syntaxCandidates,impactsTypes,rootFingerprint,
+  parsePaths,syntaxCandidates,impactsTypes,mayDelegateTypesToNext,rootFingerprint,
   parseTypescriptDiagnostics,summarizeFindings,formatReport,checkJavascriptSyntax,
 } from '../scripts/ci-source-preflight.mjs';
 
@@ -98,7 +98,7 @@ test('Core preflight skips only redundant CSS/data typing; Next and DOCK remain 
   assert.match(block,/DOCK/);
   assert.match(block,/args\+=\(--full-types\)/);
   assert.match(block,/node scripts\/ci-source-preflight\.mjs/);
-  assert.match(source,/const typechecked=fullTypes\|\|impactsTypes\(paths\)/);
+  assert.match(source,/const typechecked=fullTypes\|\|\(!typecheckDelegated&&impactsTypes\(paths\)\)/);
   assert.equal(impactsTypes(['app/[locale]/about/page.module.css','public/images/home.webp']),false);
   assert.equal(impactsTypes(['app/[locale]/about/page.tsx']),true);
   assert.equal(impactsTypes(['components/app/messages-bottom-navigation.jsx']),true);
@@ -108,4 +108,52 @@ test('Core preflight skips only redundant CSS/data typing; Next and DOCK remain 
   assert.match(workflow,/run: npm run build/);
   assert.match(workflow,/^  hh-specialist:/m);
   assert.match(workflow,/^  hh-merge-check:/m);
+});
+
+test('only verified CORE Next build can own duplicate TypeScript; all sensitive/unknown changes retain tsc',()=>{
+  const cfg=readFileSync('next.config.ts','utf8');
+  const p=(paths,route='CORE',ciOnly='false',eventName='pull_request',nextConfig=cfg)=>
+    mayDelegateTypesToNext(paths,{eventName,route,ciOnly,nextConfig});
+  assert.equal(p(['components/mandala-free-video-studio.tsx']),true);
+  assert.equal(p(['app/en/explore/page.tsx','app/en/explore/page.module.css']),true);
+  const denied=[
+    [],['app/en/explore/page.module.css'],
+    ['components/public.tsx','package.json'],['components/public.tsx','package-lock.json'],
+    ['components/public.tsx','tsconfig.json'],['components/public.tsx','next.config.ts'],
+    ['components/public.tsx','next-env.d.ts'],['components/public.tsx','.github/workflows/hh-pr-core-release.yml'],
+    ['components/public.tsx','tests/ci-source-preflight.test.mjs'],
+    ['components/public.tsx','scripts/ci-source-preflight.mjs'],
+  ];
+  for(const files of denied)assert.equal(p(files),false,'must keep standalone tsc: '+files);
+  for(const route of ['FULL','DOCK','ASSETS','TEXT','UNKNOWN'])
+    assert.equal(p(['components/public.tsx'],route),false,'route '+route);
+  assert.equal(p(['components/public.tsx'],'CORE','true'),false);
+  assert.equal(p(['components/public.tsx'],'CORE','false','workflow_dispatch'),false);
+  assert.equal(p(['components/public.tsx'],'CORE','false','pull_request',
+    cfg+'\nconst x={typescript:{ignoreBuildErrors:true}};'),false);
+  assert.equal(p(['components/public.tsx'],'CORE','false','pull_request',''),false);
+  assert.equal(cfg.includes('ignoreBuildErrors'),false,'Next must still check all types');
+});
+
+test('delegated preflight reports unchecked types honestly and still demands exact Next build',()=>{
+  const source=readFileSync('scripts/ci-source-preflight.mjs','utf8');
+  const flow=readFileSync('.github/workflows/hh-pr-core-release.yml','utf8');
+  const step=flow.split('      - name: Source Preflight — syntax and TypeScript before costly Next build')[1]
+    ?.split('      - name: Upload Source Preflight root diagnostics on failure')[0]||'';
+  const build=flow.split('      - name: Exact proposed release production build and TypeScript check')[1]
+    ?.split('  hh-specialist:')[0]||'';
+  for(const marker of ['HH_PREFLIGHT_ROUTE:', 'HH_PREFLIGHT_CI_ONLY:',
+    '--defer-types-to-next', '--full-types'])assert.ok(step.includes(marker),'missing '+marker);
+  assert.ok(step.includes('steps.fast.outputs.route'), 'require BASE-trusted router');
+  assert.ok(step.includes('== CORE'), 'ordinary CORE only');
+  assert.ok(build.includes('run: npm run build'));
+  assert.ok(build.includes("steps.diff.outputs.ci_only != 'true'"));
+  assert.ok(build.includes("steps.fast.outputs.route != 'DOCK'"));
+  assert.ok(flow.includes('hh-specialist:')&&flow.includes('hh-merge-check:'));
+  assert.ok(source.includes('CONFLICTING_TYPECHECK_OWNERS'));
+  assert.ok(source.includes('mayDelegateTypesToNext(paths'));
+  const report=formatReport(['components/public.tsx'],[],false,true);
+  assert.equal(report.typechecked,false);
+  assert.equal(report.typecheckDelegated,true);
+  assert.equal(report.status,'passed');
 });

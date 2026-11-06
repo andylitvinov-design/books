@@ -6,7 +6,7 @@ import {interpretDialogueCoherence,DIALOGUE_COHERENCE_VERSION} from "../lib/holi
 import {ruleConversationReply} from "../lib/holistic-support/rule-conversation.mjs";
 import {resolveConversationFocus} from "../lib/holistic-support/conversation-context.mjs";
 import {understandVideoChatReply,extractVideoChatCorrection} from "../lib/mandala/video-chat-understanding.mjs";
-import {advanceMessengerVideo,initialMessengerVideoDraft} from "../lib/mandala/video-chat-messenger-flow.mjs";
+import {advanceMessengerVideo,initialMessengerVideoDraft,messengerVideoChoices} from "../lib/mandala/video-chat-messenger-flow.mjs";
 import {chooseVideoChatTreeOption} from "../lib/mandala/video-chat-tree.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
@@ -62,10 +62,20 @@ test("editing corrections: last explicit alternative wins, but contradictions cl
 
 test("canonical tree resolves corrected ordinal exactly like the corresponding button",()=>{
   let draft=initialMessengerVideoDraft();
-  const category=advanceMessengerVideo(draft,"category","love","ru");
+  const category=advanceMessengerVideo(draft,"category","love-relationships","ru");
   assert.equal(category.valid,true);
-  const topic=advanceMessengerVideo(category.draft,"topic","love-trust","ru");
+  const subId=messengerVideoChoices(category.draft,"subcategory","ru")[0]?.id;
+  const sub=advanceMessengerVideo(category.draft,"subcategory",subId,"ru");
+  assert.equal(sub.valid,true);
+  const topicId=messengerVideoChoices(sub.draft,"mytube-topic","ru")[0]?.id;
+  const specific=advanceMessengerVideo(sub.draft,"mytube-topic",topicId,"ru");
+  assert.equal(specific.valid,true);
+  // Old licensed storyboard remains one validated supporting renderer.
+  const topic=advanceMessengerVideo(specific.draft,"topic","love-trust","ru");
   assert.equal(topic.valid,true);
+  assert.equal(topic.draft.mytubeCategoryId,"love-relationships");
+  assert.equal(topic.draft.mytubeSubcategoryId,subId);
+  assert.equal(topic.draft.mytubeTopicId,topicId);
   const button=chooseVideoChatTreeOption(topic.draft,"scenario","3","ru");
   assert.ok(button?.scenarioId);
   const text=advanceMessengerVideo(topic.draft,"scenario","второй сценарий, точнее третий","ru");
