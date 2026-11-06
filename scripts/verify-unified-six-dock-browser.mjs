@@ -86,8 +86,8 @@ async function inspect(browserType,locale,width){
     id+" selected direction is always directly visible");
   assert.equal(await refined.isVisible(),false,
     id+" deeper taxonomy must not push videos down by default");
-  assert.equal(await page.locator("[data-mytube-duration-tabs] button").count(),3,
-    id+" All Shorts Study are visible");
+  assert.equal(await page.locator("[data-mytube-format-tabs] button").count(),3,
+    id+" three semantic learning shelves are visible");
   const filterBounds=await moreFilters.boundingBox();
   assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
     id+" single slim accessible taxonomy bar");
@@ -147,9 +147,13 @@ async function inspect(browserType,locale,width){
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
   for(const mode of ["shorts","study","all"]){
-    const control=page.locator('[data-mytube-duration-mode="'+mode+'"]');
+    const control=page.locator('[data-mytube-format-mode="'+mode+'"]');
     await control.click();
     assert.equal(await control.getAttribute("aria-pressed"),"true",id+" active "+mode);
+    if(locale==="en" && (mode==="shorts"||mode==="study")){
+      await page.waitForFunction(()=>Number(document.querySelector("[data-mytube-result-count]")?.textContent)>0,
+        null,{timeout:15000});
+    }
   }
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
@@ -317,16 +321,38 @@ try{
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),3);
- const rail=page.locator("[data-chat-menu-rail]");
- await rail.waitFor({state:"visible",timeout:30000});
- assert.equal(await rail.locator("button").count(),5);
- await rail.locator('[data-hh-ai-quick-action="video"]').click();
- const agentComposer=page.locator("[data-hh-agent-preview] textarea");
+ const chat=page.locator("[data-hh-agent-preview]");
+ await chat.waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("[data-chat-menu-rail]").count(),0,
+   "obsolete five-button rail must not consume transcript space");
+ await chat.locator("[data-hh-ai-welcome]").waitFor({state:"visible"});
+ const log=chat.locator('[role="log"]');
+ const starters=chat.locator('[data-hh-ai-start]');
+ assert.equal(await starters.count(),2,"real video and meditation start actions");
+ for(const id of ["video","meditation"]){
+   const item=chat.locator('[data-hh-ai-start="'+id+'"]');
+   await item.waitFor({state:"visible"});
+   const rect=await item.boundingBox();
+   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible start button");
+ }
+ const before=await log.locator("p").count();
+ await chat.locator('[data-hh-ai-start="video"]').click();
+ await page.waitForFunction(count=>{
+   const root=document.querySelector("[data-hh-agent-preview]");
+   return root?.getAttribute("data-has-messages")==="true"
+     && root.querySelectorAll('[role="log"] p').length>=count+2;
+ },before,{timeout:10000});
+ assert.equal(await starters.count(),0,"introduction gives way to the live transcript");
+ const agentComposer=chat.locator("textarea");
  await agentComposer.waitFor({state:"visible"});
- await page.waitForFunction(()=>{
-   const field=document.querySelector("[data-hh-agent-preview] textarea");
-   return field instanceof HTMLTextAreaElement && field.value.trim().length>10;
- },null,{timeout:10000});
+ assert.equal((await agentComposer.inputValue()).trim(),"",
+   "clicking Video asks a question in chat, not a fake prepared send");
+ await agentComposer.fill("Привет Ау");
+ await chat.locator('button[type="submit"]').click();
+ await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [role="log"] p')]
+   .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
+ assert.equal(await chat.locator("video").count(),0,
+   "no completed video is claimed before rendering");
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
  await page.locator("#hh-orders-panel").waitFor({state:"visible"});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-clients-panel"]').click();
@@ -338,7 +364,7 @@ try{
  assert.equal(await page.locator("[data-support-practice-tabs] > *").count(),3);
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
- results.push({journey:"MyTube → Video → Messenger AI rail → private Orders/Clients → Practice",passed:true});
+ results.push({journey:"MyTube → Video → live AI transcript and two starters → private Orders/Clients → Practice",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
  // with one seventh link to the REAL free express-review page.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});

@@ -37,7 +37,7 @@ import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import { suggestPersonalVideoScene, captionFromWish, graphemeTrim } from "@/lib/mandala/personal-video-intent.mjs";
 import { cinematicPreviewSeconds, buildCinematicStoryboard } from "@/lib/mandala/cinematic-director.mjs";
 import { FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION } from "@/lib/mandala/first-video-director.mjs";
-import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, shiftAdaptiveFilmBoundary, retimeAdaptiveFilmPlan, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
+import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, allocateVariableFilmTimeline, shiftAdaptiveFilmBoundary, shiftVariableFilmBoundary, reframeCinematicPlan } from "@/lib/mandala/free-film-timeline.mjs";
 import {validateMontageClips} from "@/lib/mandala/video-montage-sources.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
 import {clampTrackSecond,timedCaptionAt,splitTimelineCaption,duplicateTimelineCaption} from "@/lib/mandala/editable-timeline.mjs";
@@ -68,6 +68,7 @@ import {curatedAudioTracks,recommendCuratedAudio} from "@/lib/mandala/curated-au
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes, proceduralMp4Route } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
+import {verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
 import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loading.mjs";
 import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedSourcePlayback } from "@/lib/mandala/free-film-source-clock.mjs";
 
@@ -949,39 +950,99 @@ function firstPartyFilmFor(theme:VideoTheme,id:string):{src:string;poster:string
   if(theme==="money")return getRealMoneyFilm(id as MoneySceneId)||getThemedRealFilm(theme,id as LocalSceneId);
   return getThemedRealFilm(theme,id as LocalSceneId);
 }
+type EmotionalCutMetadata={sceneId:string;beatIndex:number;strategyId:string;requiredTags:readonly string[]};
+type EmotionalVideoEdit={pathId:string;emotionalAxisId:string;pace:"gentle"|"steady";
+  shots:readonly EmotionalCutMetadata[]};
+type FreeFilmCompilationEdit={
+  clipIds:readonly string[];durationSecondsByStage:readonly number[];
+  captionTexts:readonly string[];excludedMotifs?:readonly string[];
+  semanticScenePlan?:EmotionalVideoEdit;
+};
 function compileFreeFilmPreset(
   preset:FreeFilmPreset,locale:VideoLocale,durationSeconds:number,aspect:Aspect,
-  edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[];excludedMotifs?:readonly string[]},
+  edit?:FreeFilmCompilationEdit,
 ):CinematicStoryboard {
-  // All four shots must pass the live source-rights whitelist, even after replacement.
-  // Explicit avoid-water/forest/night exclusions survive montage editing.
+  // Both legacy four cuts and adaptive 4–12 cuts use the SAME Canvas/MP4 engine.
+  // A semantic plan cannot bypass trusted physical source, format or rights checks.
   const clipIds=edit?.clipIds??(aspect==="portrait"&&preset.portraitClips?preset.portraitClips:preset.clips);
-  if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,[...(edit?.excludedMotifs??[])],aspect))
+  const adaptive=clipIds.length!==4;
+  if(!validateMontageClips([...clipIds],FREE_FILM_CATALOG,
+    [...(edit?.excludedMotifs??[])],aspect,adaptive))
     throw Error("invalid_free_film_replacement");
-  if(edit && (!Array.isArray(edit.captionTexts)||edit.captionTexts.length!==4||
-    edit.captionTexts.some(value=>typeof value!=="string")))
+  if(edit&&(!Array.isArray(edit.captionTexts)||edit.captionTexts.length!==clipIds.length||
+     edit.captionTexts.some(value=>typeof value!=="string")))
     throw Error("invalid_stage_caption_track");
-  const captions=edit?.captionTexts??["","","",""];
-  const timings=allocateAdaptiveFilmTimeline(
-    durationSeconds,clipIds,edit?.durationSecondsByStage??null);
+  const semantic=edit?.semanticScenePlan;
+  if(semantic){
+    if(!/^[a-z0-9_-]+(?:::[a-z0-9_-]+){3}$/.test(semantic.pathId)||
+      !/^ev64:[a-z_]+>[a-z_]+$/.test(semantic.emotionalAxisId)||
+      !["gentle","steady"].includes(semantic.pace)||
+      !Array.isArray(semantic.shots)||semantic.shots.length!==clipIds.length||
+      semantic.shots.some((shot,index)=>shot.sceneId!==clipIds[index]||
+        !Number.isInteger(shot.beatIndex)||shot.beatIndex<1||shot.beatIndex>4||
+        !/^S0[1-8]$/.test(shot.strategyId)||
+        !Array.isArray(shot.requiredTags)||shot.requiredTags.length===0||
+        shot.requiredTags.length>12||shot.requiredTags.some((tag:string)=>typeof tag!=="string"||
+          !/^[a-z][a-z0-9-]{1,32}$/.test(tag))))
+      throw Error("invalid_emotional_video_scene_script");
+  }
+  const captions=edit?.captionTexts??Array.from({length:clipIds.length},()=>"");
+  const timings=adaptive
+    ?allocateVariableFilmTimeline(durationSeconds,[...clipIds],edit?.durationSecondsByStage??null)
+    :allocateAdaptiveFilmTimeline(durationSeconds,[...clipIds],edit?.durationSecondsByStage??null);
+  const verified=clipIds.map(id=>verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(id)));
+  if(verified.some((scene,index)=>!scene||!verifiedSceneAspect(scene,aspect)||
+    !Number.isFinite(scene.durationSeconds)||
+    scene.durationSeconds<timings[index].durationSeconds))
+    throw Error("UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
+  if(semantic&&!semantic.shots.every((shot,index)=>{
+    const source=verified[index];
+    if(!source)return false;
+    const mediaTags=new Set([...(source.tags||[]),...(source.motifs||[]),
+      source.label?.en||"",source.description?.en||""].join(" ")
+      .toLowerCase().match(/[a-z][a-z0-9]{2,}/g)||[]);
+    return shot.requiredTags.some(tag=>mediaTags.has(tag));
+  }))throw Error("emotional_stage_media_tag_mismatch");
+  const originKeys=verified.map(scene=>canonicalSourceMasterKey(scene));
+  if(originKeys.some(key=>!key)||new Set(originKeys).size!==clipIds.length)
+    throw Error("UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
+  // Cropped copies of the SAME filmed source can have different file hashes.
+  // Enforce every declared master key, not only the chosen canonical key.
+  const allOrigins=verified.flatMap(scene=>Array.from(new Set(
+    Array.isArray(scene?.originMasterKeys)&&scene.originMasterKeys.length
+      ?scene.originMasterKeys:[canonicalSourceMasterKey(scene)])));
+  const visualGroups=verified.map(scene=>scene?.perceptualGroupId)
+    .filter((id):id is string=>typeof id==="string"&&Boolean(id));
+  if(new Set(allOrigins).size!==allOrigins.length||
+     new Set(visualGroups).size!==visualGroups.length)
+    throw Error("UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE");
   const base=buildCinematicStoryboard({
     theme:preset.theme,locale,style:"nature",aspect,durationSeconds:20
   });
   if(base.shots.length!==4)throw Error("invalid_free_film_base_shot_count");
-  const shots=base.shots.map((shot:{id:string;number:number;title:string;startSeconds:number;durationSeconds:number},i:number)=>{
-    const timing=timings[i];
+  const count=clipIds.length;
+  const shots=timings.map((timing,i)=>{
+    const frame=base.shots[Math.min(3,Math.floor(i*4/count))];
     const sceneId=timing.sceneId,shotTheme=FREE_FILM_CLIP_THEMES[sceneId];
-    if(!shotTheme||!firstPartyFilmFor(shotTheme,sceneId))throw Error("unavailable_free_film_clip");
-    return {...shot,sceneId,theme:shotTheme,visualCue:preset.label.en,
+    if(!shotTheme||!firstPartyFilmFor(shotTheme,sceneId))
+      throw Error("unavailable_free_film_clip");
+    return {...frame,id:"licensed-cut-"+(i+1),number:i+1,sceneId,theme:shotTheme,
+      visualCue:preset.label.en,
       startSeconds:timing.startSeconds,durationSeconds:timing.durationSeconds,
-      overlayText:normalizeStageCaption(captions[i]),
-      providerPrompt:""}; // No paid video provider or personal-data upload.
+      overlayText:normalizeStageCaption(captions[i]),providerPrompt:"",
+      ...(semantic?{emotionalStageId:semantic.shots[i].strategyId,
+        beatIndex:semantic.shots[i].beatIndex,
+        requiredTags:[...semantic.shots[i].requiredTags]}:{})};
   });
-  return {...base,shotCount:4,version:FREE_FILM_PLAN_VERSION,timelineMode:"adaptive",durationSeconds,shots,
-    sceneChoices:shots.map((shot:{sceneId:string;theme:VideoTheme})=>({
-      sceneId:shot.sceneId,theme:shot.theme,visualCue:preset.label.en
+  return {...base,shotCount:count,version:FREE_FILM_PLAN_VERSION,timelineMode:"adaptive",
+    durationSeconds,shots,
+    sceneChoices:shots.map(shot=>({
+      sceneId:shot.sceneId,theme:shot.theme,visualCue:shot.visualCue
     })),
-    noExternalClientData:true,paidRenderApproved:false,localPreview:true} as CinematicStoryboard;
+    noExternalClientData:true,paidRenderApproved:false,localPreview:true,
+    ...(semantic?{emotionalPathId:semantic.pathId,
+      emotionalAxisId:semantic.emotionalAxisId,
+      emotionalPace:semantic.pace}:{})} as CinematicStoryboard;
 }
 
 const effects: Effect[] = ["glow", "energy", "prosperity", "temple"];
@@ -2025,8 +2086,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Safari may postpone decoding hidden MP4 until a trusted Create gesture.
   // Presence of all four verified catalogue sources unlocks the button;
   // the actual decoded-frame check remains mandatory during export.
-  const freeFilmSourcesListed=freeFilmShots.length===4 &&
-    freeFilmShots.every(shot=>Boolean(shot.film));
+  const freeFilmSourcesListed=freeFilmShots.length>=4&&freeFilmShots.length<=12&&
+    freeFilmShots.every((shot,index)=>{
+      const verified=verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(shot.sceneId));
+      return Boolean(shot.film&&verified&&verifiedSceneAspect(verified,aspect)&&
+        verified.durationSeconds>=cinematicPlan!.shots[index].durationSeconds);
+    })&&new Set(freeFilmShots.map(shot=>
+      canonicalSourceMasterKey(verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(shot.sceneId))))).size===freeFilmShots.length;
   // If iOS rejects a finalized Canvas recording, preserve a real, public,
   // licensed MP4 source as an explicitly UNEDITED escape hatch. Never present
   // it as the personal montage, with applied music/photo/text or duration.
@@ -2833,7 +2899,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       // Prime the four licensed scene decoders before awaiting audio.
       const filmPreparation=usingFreeFilmCompilation
         ? prepareFourFilmSources(freeFilmShots,freeFilmPlayerRefs.current,{
-            timeoutMs:20000,
+            timeoutMs:20000,adaptive:freeFilmShots.length!==4,
             onProgress:(ready:number,total:number)=>setNotice(locale==="ru"
               ?`Подготавливаем видеосцены: ${ready} из ${total}…`
               :locale==="es"?`Preparando escenas: ${ready} de ${total}…`
@@ -3600,15 +3666,36 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(recording||preparing||nextAspect===aspect)return;
     recordBeforeEditorChange("aspect");
     setAspect(nextAspect);
-    setCinematicPlan(plan=>plan?reframeCinematicPlan(plan,nextAspect) as CinematicStoryboard:null);
+    setCinematicPlan(plan=>{
+      if(!plan)return null;
+      if(plan.version===FREE_FILM_PLAN_VERSION&&!plan.shots.every(shot=>{
+        const verified=verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(shot.sceneId));
+        return Boolean(verified&&verifiedSceneAspect(verified,nextAspect));
+      }))return null;
+      return reframeCinematicPlan(plan,nextAspect) as CinematicStoryboard;
+    });
   };
   const changeVideoDuration=(seconds:(typeof durations)[number])=>{
     if(seconds===duration)return;
     recordBeforeEditorChange("duration");
     setDuration(seconds);
     setCinematicPlan(plan=>{
-      if(plan?.version===FREE_FILM_PLAN_VERSION)
-        return retimeAdaptiveFilmPlan(plan,seconds) as CinematicStoryboard;
+      if(plan?.version===FREE_FILM_PLAN_VERSION){
+        if(plan.shots.length*2>seconds)return null;
+        try{
+          const ids=plan.shots.map(shot=>shot.sceneId);
+          const timeline=ids.length===4
+            ?allocateAdaptiveFilmTimeline(seconds,ids)
+            :allocateVariableFilmTimeline(seconds,ids);
+          if(!plan.shots.every((shot,index)=>{
+            const verified=verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(shot.sceneId));
+            return Boolean(verified&&verifiedSceneAspect(verified,aspect)&&
+              verified.durationSeconds>=timeline[index].durationSeconds);
+          }))return null;
+          return {...plan,durationSeconds:seconds,
+            shots:plan.shots.map((shot,index)=>({...shot,...timeline[index]}))} as CinematicStoryboard;
+        }catch{return null;}
+      }
       if(plan?.version===FIRST_VIDEO_FOOD_CANVAS_PLAN_VERSION){
         const timing=allocateFreeFilmTimeline(seconds,plan.shots.map(shot=>shot.sceneId));
         return {...plan,durationSeconds:seconds,
@@ -3635,9 +3722,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const reorderFilmScene=(index:number,delta:-1|1)=>{
     recordBeforeEditorChange("shot-reorder");
     setCinematicPlan(current=>{
-      if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length!==4)return current;
+      if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length<4||current.shots.length>12)return current;
       const nextIndex=index+delta;
-      if(nextIndex<0||nextIndex>=4)return current;
+      if(nextIndex<0||nextIndex>=current.shots.length)return current;
       const ordered=[...current.shots];
       [ordered[index],ordered[nextIndex]]=[ordered[nextIndex],ordered[index]];
       let startSeconds=0;
@@ -3655,9 +3742,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const shiftFilmCut=(index:number,direction:-1|1)=>{
     recordBeforeEditorChange("shot-trim");
     setCinematicPlan(current=>{
-      if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length!==4)return current;
+      if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length<4||current.shots.length>12)return current;
       const durations=current.shots.map(shot=>shot.durationSeconds);
-      const next=shiftAdaptiveFilmBoundary(durations,index,direction);
+      const next=durations.length===4?shiftAdaptiveFilmBoundary(durations,index,direction):shiftVariableFilmBoundary(durations,index,direction);
       let startSeconds=0;
       const shots=current.shots.map((shot,i)=>{
         const updated={...shot,startSeconds,durationSeconds:next[i]};
@@ -3673,8 +3760,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(recording||preparing||from===to)return;
     recordBeforeEditorChange("shot-reorder");
     setCinematicPlan(current=>{
-      if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length!==4||
-        from<0||from>=4||to<0||to>=4||from===to)return current;
+      if(current?.version!==FREE_FILM_PLAN_VERSION||current.shots.length<4||current.shots.length>12||
+        from<0||from>=current.shots.length||to<0||to>=current.shots.length||from===to)return current;
       const order=[...current.shots];order.splice(to,0,...order.splice(from,1));
       let cursor=0;
       const shots=order.map((shot,i)=>{
@@ -3816,7 +3903,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setMusicWarning("");
   };
   const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,
-    edit?:{clipIds:readonly string[];durationSecondsByStage:readonly number[];captionTexts:readonly string[];excludedMotifs?:readonly string[]},
+    edit?:FreeFilmCompilationEdit,
     outputAspect:Aspect=aspect)=>{
     if(recording||preparing)return false;
     const preset=FREE_FILM_PRESETS.find(item=>item.id===presetId);
@@ -3826,6 +3913,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       resetEditorHistory();
       setCreationMode("catalog");setActiveFreeFilmPreset(preset.id);
       selectScenarioMusic(preset.id);
+      if(edit?.semanticScenePlan){
+        setSpeed(edit.semanticScenePlan.pace==="gentle"?"slow":"dynamic");
+        if(edit.semanticScenePlan.pace==="gentle")setBrightness("soft");
+      }
       setTheme(preset.theme);setVideoCategory(preset.theme);
       if(preset.theme==="money")setMoneyScene(preset.id.startsWith("motion-film-")?null:preset.clips[0] as MoneySceneId);
       else {setMoneyScene(null);setOtherScene(otherVideoScenes[preset.theme][0].id);}
@@ -5108,7 +5199,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.previewMiniSource} data-video-mini-source>
             <div>
               <strong>{locale==="ru"?"Пример видеоряда":locale==="es"?"Ejemplo de vídeo":"Footage example"}</strong>
-              <small>{activeFilm?"Full HD · MP4":usingFreeFilmCompilation?"4 MP4 · "+duration+quick.seconds:
+              <small>{activeFilm?"Full HD · MP4":usingFreeFilmCompilation?cinematicPlan!.shots.length+" MP4 · "+duration+quick.seconds:
                 locale==="ru"?"Анимированная сцена":locale==="es"?"Escena animada":"Animated scene"}</small>
             </div>
             <div className={videoStyles.quickFormatDemo} data-video-quick-live-preview>
@@ -6089,8 +6180,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   }))??null);
                 }else{
                   setTimelineTextClips(null);
-                  if(cinematicPlan?.version===FREE_FILM_PLAN_VERSION&&cinematicPlan.shots.length===4){
-                    setCinematicPlan(current=>current?.version===FREE_FILM_PLAN_VERSION&&current.shots.length===4
+                  if(cinematicPlan?.version===FREE_FILM_PLAN_VERSION&&cinematicPlan.shots.length>=4){
+                    setCinematicPlan(current=>current?.version===FREE_FILM_PLAN_VERSION&&current.shots.length>=4
                       ? {...current,shots:current.shots.map((shot,index)=>({
                           ...shot,overlayText:normalizeStageCaption(lines[index]||"")
                         }))} as CinematicStoryboard:current);
@@ -6444,7 +6535,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               if(storySelectionItems(next).some(item=>item.capability!=="local"))return;
               const scene=availableStoryScene(next);
               if(scene){
-                if(cinematicPlan?.version===FREE_FILM_PLAN_VERSION && cinematicPlan.shots.length===4){
+                if(cinematicPlan?.version===FREE_FILM_PLAN_VERSION && cinematicPlan.shots.length>=4){
                   const source=otherVideoScenes[scene.theme].find(item=>item.id===scene.id);
                   if(!source)return;
                   const visualCue=source.label[locale];
@@ -6481,7 +6572,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.editorTimeline} data-video-editor-timeline>
             <strong>{locale==="ru"?"Порядок и длительность сцен":locale==="es"?
               "Orden y duración de escenas":"Scene order and duration"}</strong>
-            {usingFreeFilmCompilation&&cinematicPlan?.shots.length===4 ? <>
+            {usingFreeFilmCompilation&&cinematicPlan?.shots.length>=4&&cinematicPlan?.shots.length<=12 ? <>
               <div className={videoStyles.editorTimelineBar} role="list" aria-label="Shot durations">
                 {cinematicPlan.shots.map((shot,index)=><div key={shot.sceneId}
                   role="listitem" style={{flexGrow:shot.durationSeconds}} title={freeFilmClipLabel(shot.sceneId)}>
@@ -6494,11 +6585,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 <div className={videoStyles.editorTimelineActions}>
                   <button type="button" disabled={recording||preparing||index===0}
                     aria-label={"Move clip left "+(index+1)} onClick={()=>reorderFilmScene(index,-1)}>←</button>
-                  <button type="button" disabled={recording||preparing||index===3}
+                  <button type="button" disabled={recording||preparing||index===cinematicPlan.shots.length-1}
                     aria-label={"Move clip right "+(index+1)} onClick={()=>reorderFilmScene(index,1)}>→</button>
-                  {index<3?<button type="button" disabled={recording||preparing||shot.durationSeconds<=2}
+                  {index<cinematicPlan.shots.length-1?<button type="button" disabled={recording||preparing||shot.durationSeconds<=2}
                     aria-label={"Shorten clip "+(index+1)} onClick={()=>shiftFilmCut(index,-1)}>−1s</button>:null}
-                  {index<3?<button type="button"
+                  {index<cinematicPlan.shots.length-1?<button type="button"
                     disabled={recording||preparing||cinematicPlan.shots[index+1].durationSeconds<=2}
                     aria-label={"Lengthen clip "+(index+1)} onClick={()=>shiftFilmCut(index,1)}>+1s</button>:null}
                 </div>

@@ -223,7 +223,19 @@ async function exercise(engine, browserType, width) {
     // queued Next prefetches. Observe their actual completion after hydration,
     // including requests triggered by poster scrolling, before replacing a page.
     await expect.poll(() => page.evaluate(() => history.pushState.toString().includes('__NA')), { timeout: 15000 }).toBe(true);
-    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    let frameTimer = null;
+    try {
+      // WebKit may stall requestAnimationFrame on a background or suspended page.
+      // Fail this real release check explicitly rather than hanging the 35-minute job.
+      await Promise.race([
+        page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))),
+        new Promise((_, reject) => {
+          frameTimer = setTimeout(() => reject(new Error('Release re-audit two-frame wait exceeded 5000ms at ' + stage + ' ' + publicPhase)), 5000);
+        }),
+      ]);
+    } finally {
+      if (frameTimer !== null) clearTimeout(frameTimer);
+    }
     await expect.poll(() => publicPageState.pendingPublicRequests.size === 0 && Date.now() - publicPageState.lastPublicRequestActivity >= 500, { timeout: 15000, message: 'Hydrated public document requests must finish before the next audit navigation' }).toBe(true);
     publicDiagnostics.checkpoints.push({ type: 'settled', stage, path: publicPhase, time: Date.now(), pendingRequests: publicPageState.pendingPublicRequests.size, lastRequestActivity: publicPageState.lastPublicRequestActivity });
   };

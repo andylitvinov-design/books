@@ -321,3 +321,20 @@ test('release re-audit follows the real private Profile and public builder acros
   assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"));
   assert.ok(!source.includes('Public profile discovery must retain same-policy soft navigation'));
 });
+
+test('release audit refuses unbounded public animation frame stalls while retaining real browser coverage', () => {
+  const verifier = read('scripts/verify-release-reaudit.mjs');
+  const begin = verifier.indexOf('const settlePublicDocument = async stage =>');
+  const end = verifier.indexOf('const routePassed = await check(', begin);
+  assert.ok(begin > 0 && end > begin, 'Exact public document settling scope exists');
+  const scope = verifier.slice(begin, end);
+  for (const anchor of [
+    'await Promise.race([',
+    'requestAnimationFrame(() => requestAnimationFrame(resolve))',
+    'frameTimer = setTimeout(() => reject(new Error',
+    'two-frame wait exceeded 5000ms',
+    'clearTimeout(frameTimer)',
+    'pendingPublicRequests.size === 0',
+    "checkpoints.push({ type: 'settled'",
+  ]) assert.ok(scope.includes(anchor), 'Bounded WebKit settling preserves '+anchor);
+});
