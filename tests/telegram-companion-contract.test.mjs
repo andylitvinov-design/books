@@ -27,6 +27,15 @@ test('real Telegram private chat recipient check uses reviewed numeric-ID policy
  assert.ok(provider.includes('if(!telegramHomeRecipientAllowed(to)'));
 });
 test('privacy opt-out bypasses daily reply limit without violating DB bound',()=>{
- assert.ok(svc.includes('companionReplyBudgetAllows(selected?.action,count,ALLOWED_REPLY)'));
+ assert.ok(svc.includes('companionReplyBudgetAllows(selected?.action,count,ALLOWED_REPLY,row.mode)'));
  assert.ok(svc.includes('Math.min(ALLOWED_REPLY,count+1)'));
+});
+
+test('check-in choice is ephemeral: no score persistence and stale callbacks cannot replay',()=>{
+ const menu=readFileSync(new URL('../lib/crm/telegram-companion-menu.mjs',import.meta.url),'utf8');
+ assert.match(menu,/checkin_\[1-5\]/);
+ assert.match(svc,/if\(row\.mode==='checkin'\)/);
+ assert.match(svc,/companionCheckinReply\(language,Number\(action\.slice\(-1\)\)\)/);
+ assert.match(svc,/mode='menu'/);
+ assert.doesNotMatch(svc,/insert into .*checkin|update .*checkin_score/i);
 });
