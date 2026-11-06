@@ -255,6 +255,18 @@ async function exercise(engine, browserType, width) {
         page = publicPageState.page;
         errors = publicPageState.errors;
       }
+      // In the real WebKit mobile audit /en/client completed and fully settled,
+      // but the following /ru/client navigation never resolved. Each private
+      // landing locale now gets an isolated page so no prior guest/Next document
+      // can block the NEXT locale's navigation. All route, CSP, poster, language,
+      // 90-second fatal timeout, and no-JS-error assertions still execute.
+      if (['/en/client','/ru/client','/es/client'].includes(path)) {
+        console.info('[release-reaudit] isolating real client landing document: ' + path);
+        await page.close();
+        publicPageState = await createPublicPage();
+        page = publicPageState.page;
+        errors = publicPageState.errors;
+      }
       const routePassed = await check('public-page', { engine, width, path }, async () => {
         publicPhase = path;
         console.info('[release-reaudit] public route ' + engine + '/' + width + ': ' + path);
