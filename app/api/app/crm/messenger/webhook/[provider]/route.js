@@ -5,8 +5,9 @@ import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
 import { operationHash } from '@/lib/app/crypto'
 import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnostics.mjs'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
-import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback } from '@/lib/crm/messenger-provider'
+import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
+import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -62,7 +63,30 @@ export async function POST(request,{params}){
             messageId:event.callbackMessageId})}catch{}
           continue
         }
-        const intake=await processTelegramDiagnostic(event,config)
+        const companion=await processTelegramCompanion(event,config)
+        if(companion.handled){
+          if(event.callbackId){
+            try{await acknowledgeTelegramInlineCallback({
+              callbackId:event.callbackId,to:event.userId,
+              messageId:event.callbackMessageId})}catch{}
+          }
+          if(companion.text){
+            try{await sendTelegramCompanionMessage({
+              to:companion.to,text:companion.text,
+              markup:companion.markup,locale:companion.locale,
+              presentation:companion.presentationFirstStart===true})
+            }catch(error){
+              const evidence=telegramPromptFailureEvidence(event.eventId,error,
+                value=>operationHash(value,config))
+              console.error('HH_CRM_TG_HOME_SEND_FAILED',evidence)
+            }
+          }
+          continue
+        }
+        const diagnosticEvent=companion.reviewRequested
+          ?{...event,rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null}
+          :event
+        const intake=await processTelegramDiagnostic(diagnosticEvent,config)
         if(intake.handled){
           if(event.callbackId){
             // Acknowledge only after the encrypted stage transition commits.
