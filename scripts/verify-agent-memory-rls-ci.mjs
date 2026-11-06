@@ -9,7 +9,7 @@ import {randomUUID} from 'node:crypto';
 import pg from 'pg';
 import {getAppConfig} from '../lib/app/config.js';
 import {closeDatabase} from '../lib/app/database.js';
-import {A,B,actor,rawAs} from '../tests/helpers/app-db-setup.mjs';
+import {actor,rawAs} from '../tests/helpers/app-db-setup.mjs';
 import {
  readMyAgentMemory,consentToAgentMemory,configureOwnAgentMemoryUse,
  saveOwnAgentMemory,deleteOwnAgentMemory,eraseAllOwnAgentMemory,
@@ -28,11 +28,23 @@ try {
   b.username==='hh_app_ci_login';
 } catch {}
 if(!isolated)throw Error('ISOLATED_APP_POSTGRES_REQUIRED');
+const TEST_A='7a000001-0000-4000-8000-000000000001';
+const TEST_B='7a000002-0000-4000-8000-000000000002';
+const SESSION_A='7b000001-0000-4000-8000-000000000001';
+const SESSION_B='7b000002-0000-4000-8000-000000000002';
 const db=new pg.Client({connectionString:adminUrl});
 await db.connect();
 try {
- const accounts=await db.query('select id from app.accounts where id = any($1::uuid[])',[[A,B]]);
- if(accounts.rowCount!==2)throw Error('TWO_SYNTHETIC_OWNER_FIXTURES_REQUIRED');
+ const exists=await db.query('select id from auth.users where id=any($1::uuid[])',[[TEST_A,TEST_B]]);
+ if(exists.rowCount!==0)throw Error('ISOLATED_MEMORY_TEST_IDENTITIES_NOT_FRESH');
+ // The earlier App R1 suite intentionally revokes/blocks its own owners.
+ // Create two NEW synthetic sessions and accounts so these security tests
+ // never rely on a state mutated by unrelated earlier integration tests.
+ await db.query('insert into auth.users(id,email) values($1,$2),($3,$4)',
+   [TEST_A,'agent-memory-a@example.invalid',TEST_B,'agent-memory-b@example.invalid']);
+ await db.query('insert into auth.sessions(id,user_id) values($1,$2),($3,$4)',
+   [SESSION_A,TEST_A,SESSION_B,TEST_B]);
+ await db.query("insert into app.accounts(id,status,onboarding_state) values($1,'active','active'),($2,'active','active')",[TEST_A,TEST_B]);
  const schema=await db.query("select to_regclass('app_private.agent_memory_item') as item, to_regclass('app_private.agent_memory_consent') as consent");
  if(schema.rows[0].item||schema.rows[0].consent)throw Error('TEST_SCHEMA_NOT_FRESH');
  // This reference role exists in production; add it only to disposable CI.
@@ -49,7 +61,7 @@ try {
  }
 }finally{await db.end();}
 
-const config=getAppConfig(),first=actor(A),second=actor(B);
+const config=getAppConfig(),first=actor(TEST_A,SESSION_A),second=actor(TEST_B,SESSION_B);
 try{
  assert.equal((await readMyAgentMemory(config,first)).consent,false);
  await assert.rejects(()=>saveOwnAgentMemory(config,first,'preferred_name','Alice'),/MEMORY_CONSENT_REQUIRED/);
@@ -61,7 +73,7 @@ try{
  assert.equal(own.consent,true);
  assert.equal(own.useInDialogue,true);
  assert.deepEqual(own.items.map(x=>x.kind).sort(),['preferred_name','response_length']);
- const ciphertext=await rawAs(first,'hh_app_backend',c=>c.query('select value_ciphertext from app_private.agent_memory_item where account_id=$1',[A]));
+ const ciphertext=await rawAs(first,'hh_app_backend',c=>c.query('select value_ciphertext from app_private.agent_memory_item where account_id=$1',[TEST_A]));
  assert.equal(ciphertext.rowCount,2);
  assert.ok(ciphertext.rows.every(x=>!x.value_ciphertext.includes('Alice')));
  const other=await readMyAgentMemory(config,second);
@@ -71,11 +83,11 @@ try{
   const seen=await rawAs(second,'hh_app_backend',c=>c.query('select * from app_private.'+table));
   assert.equal(seen.rowCount,0,'B cannot read '+table);
  }
- const update=await rawAs(second,'hh_app_backend',c=>c.query("update app_private.agent_memory_item set value_ciphertext='UNAUTHORIZED' where account_id=$1",[A]));
+ const update=await rawAs(second,'hh_app_backend',c=>c.query("update app_private.agent_memory_item set value_ciphertext='UNAUTHORIZED' where account_id=$1",[TEST_A]));
  assert.equal(update.rowCount,0);
- await assert.rejects(()=>rawAs(second,'hh_app_backend',c=>c.query("insert into app_private.agent_memory_item(account_id,kind,value_ciphertext) values($1,'avoid_format','UNAUTHORIZED')",[A])),/row-level security/i);
+ await assert.rejects(()=>rawAs(second,'hh_app_backend',c=>c.query("insert into app_private.agent_memory_item(account_id,kind,value_ciphertext) values($1,'avoid_format','UNAUTHORIZED')",[TEST_A])),/row-level security/i);
  await assert.rejects(()=>rawAs(first,'authenticated',c=>c.query('select * from app_private.agent_memory_item')),/permission denied/i);
- await assert.rejects(()=>readMyAgentMemory(config,actor(A,randomUUID())),/SIGN_IN_REQUIRED/);
+ await assert.rejects(()=>readMyAgentMemory(config,actor(TEST_A,randomUUID())),/SIGN_IN_REQUIRED/);
  await deleteOwnAgentMemory(config,first,'response_length');
  assert.deepEqual((await readMyAgentMemory(config,first)).items.map(x=>x.kind),['preferred_name']);
  await consentToAgentMemory(config,first,false);
