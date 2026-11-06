@@ -12,6 +12,22 @@ function report(patch={}){return {schema:'HH_CONTROL_DISPATCH_V1',dryRun:false,
   checkedAt:at,discovered:170,production:160,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,runnerStartedConfirmed:0,blocked:{},
   blockerExamples:{},reason:'NO_ACTIONABLE_PR',...patch};}
+test('cron warning derives from verified schedule history, never event freshness',()=>{
+ const {nativeCronEvidence}=require('../scripts/ci-pr-monitor-feed.cjs');
+ const report={health:'watchdog:STALE | ci:HEALTHY | repair:DISPATCH_ONLY | hourly:STALE',
+  lastSeen:'watchdog:2026-11-03T12:00:00.000Z | ci:2026-11-03T13:20:00.000Z | repair:NOT_SCHEDULED | hourly:none'};
+ const evidence=nativeCronEvidence(report,at);
+ assert.equal(evidence.watchdog,'STALE');assert.equal(evidence.ci,'HEALTHY');
+ assert.equal(evidence.watchdog_last,'2026-11-03T12:00:00.000Z');
+ assert.equal(nativeCronEvidence({health:'NOT_PROBED',lastSeen:'NOT_PROBED'},at),null);
+ assert.equal(nativeCronEvidence({...report,health:'watchdog:FAKE | ci:HEALTHY | repair:DISPATCH_ONLY | hourly:STALE'},at),null);
+ const s=buildMonitorSnapshot(reportForTest(),context,report);
+ assert.equal(s.native_cron.watchdog,'STALE');
+ assert.deepEqual(parseExisting(renderSnapshot(s)),s);
+ const ui=require('node:fs').readFileSync('ops/pr-monitor/watchdog-control-tower.js','utf8');
+ assert.match(ui,/Событийный Watchdog не подтверждает 10-минутный cron/);
+});
+function reportForTest(){return report();}
 test('zero eligible queue preserves 160 production PRs, never zero global backlog',()=>{
   const snapshot=buildMonitorSnapshot(report(),context);
   assert.equal(snapshot.counts.production_prs,160);

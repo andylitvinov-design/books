@@ -53,7 +53,11 @@
     const handoffList=document.createElement('div');
     handoffList.className='hh-ct-blocker-list';
     handoff.append(handoffTitle,handoffList);
-    panel.append(heading,grid,info,blockers,handoff,link);
+    const cronNote=document.createElement('p');
+    cronNote.className='hh-watchdog-control-meta hh-native-cron';
+    cronNote.setAttribute('role','status');
+    cronNote.textContent='Нативный GitHub cron: нет подтверждённого наблюдения.';
+    panel.append(heading,grid,info,cronNote,blockers,handoff,link);
     const after=section.querySelector('.hh-watchdog-meta');
     if(after)after.insertAdjacentElement('afterend',panel);
     else section.append(panel);
@@ -65,6 +69,7 @@
       '.hh-watchdog-control .hh-watchdog-metric:nth-child(3) strong{color:#65dfc0}'+
       '.hh-watchdog-control .hh-watchdog-metric span{overflow-wrap:anywhere}'+
       '.hh-watchdog-control-meta{margin:7px 0 2px;color:#adc0d4;font-size:11px;line-height:1.45}'+
+      '.hh-native-cron[data-warning="true"]{color:#ffbd89;font-weight:700}'+ 
       '.hh-watchdog-control-meta[data-stale="true"]{color:#ffc48f;font-weight:700}'+
       '.hh-watchdog-control a{display:inline-block;margin:2px 0 4px;color:#99cfff;font-size:11px;text-decoration:underline}'+
       '.hh-watchdog-control a[hidden]{display:none}'+
@@ -108,6 +113,20 @@
           ' · глубоко проверено: '+(Number.isSafeInteger(data.watchdog_sample?.inspected)?
             data.watchdog_sample.inspected:'—')+
           (minutes!==null&&minutes>20?' · УСТАРЕВШИЙ ОТЧЁТ':'');
+        const cron=data.native_cron,observed=Date.parse(cron?.observed_at||'');
+        if(cron&&Number.isFinite(observed)){
+          const format=state=>state==='HEALTHY'?'штатно':
+            state==='STALE'?'ПРОСРОЧЕН':
+            state==='UNOBSERVED'?'нет запусков':'неизвестно';
+          const age=Math.max(0,Math.round((Date.now()-observed)/60000));
+          cronNote.dataset.warning=String(cron.watchdog!=='HEALTHY'||cron.ci!=='HEALTHY');
+          cronNote.textContent='Нативный cron · Watchdog '+format(cron.watchdog)+
+            ' · CI '+format(cron.ci)+' · проверено '+age+' мин назад.'+
+            ' Событийный Watchdog не подтверждает 10-минутный cron.';
+        }else{
+          cronNote.dataset.warning='true';
+          cronNote.textContent='Нативный cron: состояние неизвестно; событийные запуски не доказывают расписание.';
+        }
         if(/^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+$/.test(data.run_url||'')){
           link.href=data.run_url;link.hidden=false;
         }
@@ -239,6 +258,7 @@
         for(const node of Object.values(nodes)){node.textContent='—';node.setAttribute('aria-label','Данные недоступны');}
         info.dataset.stale='true';
         info.textContent='Нет подтверждённых данных Control Tower. Нулём отсутствие отчёта не считается.';
+        cronNote.dataset.warning='true';cronNote.textContent='Нативный cron: наблюдение недоступно.';
         blockersTitle.textContent='Блокировки · отчёт недоступен';
         blockersList.replaceChildren();blockers.open=true;
         handoffTitle.textContent='CI · подтверждённые задержки недоступны';

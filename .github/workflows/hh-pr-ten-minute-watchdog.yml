@@ -177,7 +177,9 @@ jobs:
                 const {publishMonitorSnapshot}=require(process.env.GITHUB_WORKSPACE+
                   '/scripts/ci-pr-monitor-feed.cjs');
                 const result=await publishMonitorSnapshot({github,context,report:routed,
-                  inventorySnapshot:report.prInventorySnapshot});
+                  inventorySnapshot:report.prInventorySnapshot,
+                  // Reuse authenticated cron history from THIS Watchdog runner.
+                  watchdogLiveness:{health:report.cronHealth,lastSeen:report.cronLastSeen}});
                 core.info('HH_SNAPSHOT_HANDOFF_MONITOR_'+result.status+
                   ' #3128'+(result.run_id?' run='+result.run_id:''));
               }catch(error){
