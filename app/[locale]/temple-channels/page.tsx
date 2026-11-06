@@ -30,6 +30,7 @@ const copy = {
     uncertain: "Место указано так, как описано в источнике; историческая география отдельно не подтверждалась.",
     source: "Исходная методичка", archive: "К программе Temple Studies",
     note: "Это авторские символические и поэтические практики, а не исторические античные гимны, медицинская рекомендация или гарантия результата. Стихи оставлены на языке оригинала.",
+    libraryNavigation: "Материалы традиции", overviewManual: "Методичка · описание", allManuals: "Все методички", cardArchive: "Карточки · настройки",
     photo: "Снимок из исходной методички", index: "Изучить каналы",
     morePhotos: "Другие фотографии из оригинала", previous: "Назад", next: "Далее", page: "Страница",
   },
@@ -48,6 +49,7 @@ const copy = {
     uncertain: "Place names follow the source record; historical geography is not independently verified.",
     source: "Source manual", archive: "Return to Temple Studies",
     note: "These are contemporary author-written symbolic and poetic practices, not ancient hymns, medical advice or guaranteed effects. Texts remain in the original Russian.",
+    libraryNavigation: "Tradition materials", overviewManual: "Manual · overview", allManuals: "All manuals", cardArchive: "Cards · attunements",
     photo: "Photograph from the source manual", index: "Explore channels",
     morePhotos: "More original photographs", previous: "Previous", next: "Next", page: "Page",
   },
@@ -66,10 +68,18 @@ const copy = {
     uncertain: "Los lugares proceden del texto original y no han sido verificados geográficamente.",
     source: "Manual de origen", archive: "Volver a Temple Studies",
     note: "Son prácticas simbólicas y poéticas contemporáneas, no himnos históricos, consejos médicos ni garantías de resultados. Los textos se conservan en ruso.",
+    libraryNavigation: "Materiales de la tradición", overviewManual: "Manual · descripción", allManuals: "Todos los manuales", cardArchive: "Fichas · sintonizaciones",
     photo: "Fotografía del manual original", index: "Explorar canales",
     morePhotos: "Más fotografías originales", previous: "Anterior", next: "Siguiente", page: "Página",
   },
 } as const;
+
+const overviewBooksByTradition: Record<string, string> = {
+  maya: "maya-egregor-gods",
+  egyptian: "egypt-osiris-temple-magic",
+  greek: "greek-metaphysics-planning",
+  roman: "roman-imperial-temples",
+};
 
 function single(value?: string | string[]) {
   return (Array.isArray(value) ? value[0] : value ?? "").slice(0, 140);
@@ -170,6 +180,7 @@ export default async function TempleChannelsPage({ params, searchParams }: Props
     (!selectedTradition || channelTradition.id === selectedTradition.id));
   const traditionId = selectedTradition?.id ?? (validChannel ? channelTradition?.id ?? "" : "");
   const channelId = validChannel ? selectedChannel[1] : "";
+  const guideBookId = overviewBooksByTradition[traditionId] ?? null;
   const query = single(input.q).trim();
   const legacy = telegramArchive.attunements
     .filter((record) => matchTelegram(record, traditionId, channelId, query))
@@ -204,6 +215,13 @@ export default async function TempleChannelsPage({ params, searchParams }: Props
           </div>
           <span className={styles.heroSymbol} aria-hidden="true">✦</span>
         </header>
+        <nav className={styles.librarySwitch} aria-label={t.libraryNavigation}>
+          <span className={styles.librarySwitchLabel}>{t.libraryNavigation}</span>
+          <Link className={styles.librarySwitchLink} prefetch={false} href={guideBookId ? `/${language}/books/${guideBookId}` : `/${language}/books`}>
+            <BookOpenText size={17} aria-hidden="true" /> {guideBookId ? t.overviewManual : t.allManuals}
+          </Link>
+          <span className={styles.librarySwitchCurrent} aria-current="page"><Sparkles size={16} aria-hidden="true" /> {t.cardArchive}</span>
+        </nav>
         <form method="get" action={`/${language}/temple-channels`} className={styles.filters} role="search">
           <label htmlFor="temple-tradition">{t.tradition}
             <select name="tradition" id="temple-tradition" defaultValue={selectedTradition?.id ?? ""}>
@@ -254,7 +272,7 @@ export default async function TempleChannelsPage({ params, searchParams }: Props
                       <span>{[entry.place.city[language], entry.place.site[language], entry.place.country[language]].filter(Boolean).join(" · ")}</span>
                     </p>
                     {entry.place.note ? <p className={styles.provenanceNote}>{entry.place.note[language]}</p> : null}
-                    <details className={styles.poem}>
+                    <details className={styles.poem} open={query === entry.id}>
                       <summary>{entry.format === "verse" ? t.read : t.readPractice}</summary>
                       <div>
                         <p className={styles.original}>{t.original}</p>
