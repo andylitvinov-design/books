@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import vm from 'node:vm'
-import {mount,findButton,textOf,deferred} from './helpers/course-ui-harness.mjs'
+import {mount,findButton,textOf,deferred,nodes} from './helpers/course-ui-harness.mjs'
 const read=p=>readFileSync(p,'utf8')
 test('both cron URLs share exactly one canonical sender and daily claim ledger',()=>{
  const canonical=read('app/api/internal/notification-dispatch/route.js')
@@ -95,4 +95,28 @@ test('native control cleans a listener that resolves after its owner session end
  const view=live(bridge);await view.settle();assert.equal(added,1)
  view.unmount();pending.resolve({remove(){removed++}});await view.settle()
  assert.equal(removed,1)
+})
+
+test('message alert preference saves without enabling Web Push or requesting device permission',async()=>{
+ const calls=[]
+ const initial={...state,enabled:false,deviceCount:0,messageAlerts:false}
+ const view=ui(async(path,body,_method,options)=>{
+  calls.push({path,body,options})
+  return path==='notifications'?initial:{...initial,messageAlerts:body.messageAlerts}
+ })
+ await view.settle()
+ const checkbox=nodes(view.tree).find(node=>node.type==='input'&&node.props.type==='checkbox')
+ assert.ok(checkbox)
+ checkbox.props.onChange({target:{checked:true}});await view.settle()
+ const save=findButton(view.tree,'Save')
+ assert.ok(save,'message alerts must have a save action even with zero push devices')
+ await save.props.onClick();await view.settle()
+ const saved=calls.filter(call=>call.path==='notifications/preferences')
+ assert.equal(saved.length,1)
+ assert.equal(saved[0].body.messageAlerts,true)
+ assert.equal(saved[0].body.enabled,false)
+ assert.equal(saved[0].options.accountId,'owner-a')
+ assert.equal(calls.some(call=>call.path==='notifications/subscribe'),false)
+ assert.match(textOf(view.tree),/Saved|saved/)
+ view.unmount()
 })

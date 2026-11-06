@@ -250,7 +250,12 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
     setQuestOpen(false)
     setReviewLesson(null)
     setFocusOpen(true)
-    setView('today')
+    // Returning learners land on the existing zigzag 14-day quest map instead
+    // of replaying the scenic first-start screen. Keep the first-ever lesson
+    // and post-assessment direct launch unchanged.
+    const resumingStress = response?.programme?.id === 'stress' &&
+      (Number(response?.progress?.practiceCount || 0) > 0 || Number(response?.cycle?.day || 0) > 1)
+    setView(resumingStress ? 'path' : 'today')
   }else {
     if(response?.currentSession){
       setBeforeNow(response.currentSession.beforeNow)
@@ -428,7 +433,7 @@ export default function CourseToday({locale='en',courseId,accountId,access,onCou
      day:data.roadmap?.find(item=>item.day===reviewLesson.day)?.programmeDay||data.programme.day}:null,
    currentSession:reviewLesson.session,currentCheckin:null,
  }:data
- const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null);setView('path')}
+ const closeLessonPlayer=()=>{setQuestOpen(false);setReviewLesson(null)}
  const finishLessonPlayer=()=>{closeLessonPlayer();setView('path')}
  function startFocusLesson(){
    if(!mounted.current||generation.current!==focusEpoch||currentScope.current.accountId!==accountId||currentScope.current.courseId!==courseId||currentScope.current.cycleId!==cycle?.id||busy||data.readOnly||(paused&&resumeBlocked))return

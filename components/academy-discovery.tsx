@@ -22,6 +22,9 @@ const COPY = {
     eyebrow: "HOLISTIC HOUSE · ACADEMY",
     title: "Find your learning path",
     description: "Explore Reiki, Temple Studies and stress relief. Start free or choose a full learning program.",
+    entryLead: "Start with a free lesson, explore a full course, or join a live workshop.",
+    entryPrompt: "How would you like to begin?",
+    finderPrompt: "Looking for a specific course?",
     videoTitle: "Explore video lessons",
     videoDescription: "Original lessons and guided practices organized by program and language.",
     searchLabel: "Find a learning course",
@@ -56,6 +59,9 @@ const COPY = {
     eyebrow: "HOLISTIC HOUSE · АКАДЕМИЯ",
     title: "Найдите свою программу обучения",
     description: "Изучайте Рейки, храмовые практики и антистресс. Начните бесплатно или выберите полную программу.",
+    entryLead: "Начните с бесплатных уроков, выберите полную программу или посетите живую встречу.",
+    entryPrompt: "С чего хотите начать?",
+    finderPrompt: "Ищете определённый курс?",
     videoTitle: "Выберите видеоуроки",
     videoDescription: "Авторские уроки и практики, сгруппированные по программам и языкам записи.",
     searchLabel: "Поиск курсов",
@@ -90,6 +96,9 @@ const COPY = {
     eyebrow: "HOLISTIC HOUSE · ACADEMIA",
     title: "Encuentra tu ruta de aprendizaje",
     description: "Explora Reiki, Temple Studies y antiestrés. Empieza gratis o elige un programa completo.",
+    entryLead: "Empieza con un curso gratis, sigue un programa completo o asiste a un taller.",
+    entryPrompt: "¿Por dónde quieres empezar?",
+    finderPrompt: "¿Buscas un curso concreto?",
     videoTitle: "Explora las videolecciones",
     videoDescription: "Lecciones y prácticas organizadas por programa e idioma original.",
     searchLabel: "Buscar cursos",
@@ -276,7 +285,7 @@ export function AcademyDiscovery({
   const resultCount = matchedItems.length + (matchedCoachingItem ? 1 : 0) + matchedLegacyCourses.length + matchedLegacyVideos.length + matchedEvents.length;
 
   function scrollToResults() {
-    const target = document.getElementById("academy-programs");
+    const target = document.getElementById("academy-course-results");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     target?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
   }
@@ -288,48 +297,100 @@ export function AcademyDiscovery({
 
   return (
     <>
-      <section className={styles.hero} aria-labelledby="academy-discovery-title">
-        <div className={styles.topline}>
-          <p className={styles.eyebrow}><Sparkles aria-hidden="true" size={16} />{t.eyebrow}</p>
-          <DiscoverySectionTabs locale={locale} active="courses" />
-        </div>
-        <h1 id="academy-discovery-title">{view === "videos" ? t.videoTitle : t.title}</h1>
-        <p className={styles.intro}>{view === "videos" ? t.videoDescription : t.description}</p>
-        {view === "programs" ? (
-          <form className={styles.form} role="search" onSubmit={submitSearch}>
-            <label className={styles.srOnly} htmlFor="academy-program-query">{t.searchLabel}</label>
-            <input
-              id="academy-program-query"
-              type="search"
-              className={styles.search}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              maxLength={120}
-              placeholder={t.placeholder}
-              autoComplete="off"
-            />
-            <button className={styles.submit} type="submit">
-              {t.searchButton}<Search aria-hidden="true" size={19} />
-            </button>
-          </form>
-        ) : (
+      {view === "programs" ? (
+        <section className={styles.journeyHero} aria-labelledby="academy-discovery-title" data-academy-first-screen>
+          <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill priority
+            sizes="(max-width: 700px) 100vw, 1190px" className={styles.journeyBackdrop} />
+          <div className={styles.journeyShade} aria-hidden="true" />
+          <div className={styles.journeyInner}>
+            <p className={styles.journeyEyebrow}><Sparkles size={17} aria-hidden="true" />{t.eyebrow}</p>
+            <h1 id="academy-discovery-title">{t.title}</h1>
+            <p className={styles.journeyLead}>{t.entryLead}</p>
+            <h2 className={styles.journeyPrompt}>{t.entryPrompt}</h2>
+            <nav className={styles.quickPaths} aria-label={t.paths}>
+              <a className={styles.pathCard} href="#academy-free-courses" data-academy-path="free">
+                <span className={styles.pathPhoto}>
+                  <Image src="/images/holistic-house/reiki-practitioner-sunrise.webp" alt="" fill
+                    sizes="(max-width: 700px) 100px, 330px" />
+                </span>
+                <span className={styles.pathCopy}>
+                  <span className={styles.pathIcon}><BookOpen size={18} aria-hidden="true" /></span>
+                  <strong>{t.freeCourses}</strong>
+                  <small>{t.freeDescription}</small>
+                </span>
+                <ArrowRight className={styles.pathArrow} size={20} aria-hidden="true" />
+              </a>
+              <a className={styles.pathCard} href="#academy-study-programs" data-academy-path="study">
+                <span className={styles.pathPhoto}>
+                  <Image src="/academy/reiki-yggdrasil/source/temple-studies.png" alt="" fill
+                    sizes="(max-width: 700px) 100px, 330px" />
+                </span>
+                <span className={styles.pathCopy}>
+                  <span className={styles.pathIcon}><GraduationCap size={18} aria-hidden="true" /></span>
+                  <strong>{t.studyPrograms}</strong>
+                  <small>{t.studyDescription}</small>
+                </span>
+                <ArrowRight className={styles.pathArrow} size={20} aria-hidden="true" />
+              </a>
+              <a className={styles.pathCard} href="#academy-live-events" data-academy-path="events">
+                <span className={styles.pathPhoto}>
+                  <Image src="/images/holistic-house/video-posters/constellations-en-v1.webp" alt="" fill
+                    sizes="(max-width: 700px) 100px, 330px" />
+                </span>
+                <span className={styles.pathCopy}>
+                  <span className={styles.pathIcon}><CalendarDays size={18} aria-hidden="true" /></span>
+                  <strong>{t.liveEvents}</strong>
+                  <small>{t.liveDescription}</small>
+                </span>
+                <ArrowRight className={styles.pathArrow} size={20} aria-hidden="true" />
+              </a>
+            </nav>
+          </div>
+        </section>
+      ) : (
+        <section className={styles.hero} aria-labelledby="academy-discovery-title">
+          <div className={styles.topline}>
+            <p className={styles.eyebrow}><Sparkles aria-hidden="true" size={16} />{t.eyebrow}</p>
+            <DiscoverySectionTabs locale={locale} active="courses" />
+          </div>
+          <h1 id="academy-discovery-title">{t.videoTitle}</h1>
+          <p className={styles.intro}>{t.videoDescription}</p>
           <Link className={styles.videoButton} href="#academy-video-courses">
             {t.videoLink}<ArrowRight aria-hidden="true" size={18} />
           </Link>
-        )}
-        {view === "programs" ? (
-          <nav className={styles.quickPaths} aria-label={t.paths}>
-            <a href="#academy-free-courses"><BookOpen size={16} aria-hidden="true" />{t.freeCourses}</a>
-            <a href="#academy-study-programs"><GraduationCap size={16} aria-hidden="true" />{t.studyPrograms}</a>
-            {legacyCourses.length || legacyVideos.length ? <a href="#academy-psimaster-courses"><Archive size={16} aria-hidden="true" />{t.psimasterShort}</a> : null}
-            <a href="#academy-live-events"><CalendarDays size={16} aria-hidden="true" />{t.liveEvents}</a>
-          </nav>
-        ) : null}
-      </section>
+        </section>
+      )}
       {view === "programs" ? (
         <section className={styles.results} id="academy-programs" aria-label={label}>
           <AcademyMyCourses locale={locale} />
-          <div className={styles.listHeading}>
+          <div className={styles.finder} data-academy-course-finder>
+            <div className={styles.finderTop}>
+              <h2>{t.finderPrompt}</h2>
+              <DiscoverySectionTabs locale={locale} active="courses" />
+            </div>
+            <form className={styles.form} role="search" onSubmit={submitSearch}>
+              <label className={styles.srOnly} htmlFor="academy-program-query">{t.searchLabel}</label>
+              <input
+                id="academy-program-query"
+                type="search"
+                className={styles.search}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                maxLength={120}
+                placeholder={t.placeholder}
+                autoComplete="off"
+              />
+              <button className={styles.submit} type="submit">
+                {t.searchButton}<Search aria-hidden="true" size={19} />
+              </button>
+            </form>
+            {legacyCourses.length || legacyVideos.length ? (
+              <a className={styles.archiveLink} href="#academy-psimaster-courses">
+                <Archive size={16} aria-hidden="true" />{t.psimasterShort}<ArrowRight size={15} aria-hidden="true" />
+              </a>
+            ) : null}
+          </div>
+          <div id="academy-course-results" className={styles.listHeading}>
             <div>
               <p className={styles.listKicker}>{t.catalogLabel}</p>
               <h2>{isSearching ? t.results : t.browse}</h2>

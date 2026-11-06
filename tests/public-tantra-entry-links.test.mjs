@@ -49,7 +49,9 @@ const freePaths = loadComponent('components/home-free-paths.tsx', {
 shared['@/components/home-free-paths'] = { HomeFreePaths: freePaths };
 const home = loadComponent('components/holistic-house-home.tsx', {
   ...shared,
+  react: React,
   '@/components/acquisition-event-link': { AcquisitionEventLink: anchor },
+  '@/components/home-presentation-video-section': { HomePresentationVideoSection: empty },
   '@/components/homepage-contact-cta': { HomepageContactCta: empty },
   '@/components/services-solutions': { ServicesSolutions: empty },
   '@/components/homepage-topic-journeys': { HomepageTopicJourneys: empty },
@@ -154,10 +156,10 @@ for (const locale of ['en', 'ru', 'es']) {
 }
 
 
-test('Home retains server-provided intro content and consultation CTA after contextual link addition', () => {
+test('Home keeps consultation CTAs and testimonials without the retired HeyGen intro', () => {
   for (const locale of ['en', 'ru']) {
-    const html = renderToStaticMarkup(React.createElement(home, { locale, introVideoContent: React.createElement('section', { 'data-streamed-intro': 'preserved' }, 'Original intro') }));
-    assert.match(html, /data-streamed-intro="preserved"/);
+    const html = renderToStaticMarkup(React.createElement(home, { locale }));
+    assert.doesNotMatch(html, /data-video-slot="home-intro"|data-streamed-intro/);
     assert.ok(links(html).some((link) => link.href === `/${locale}/services#consultation`));
   }
   assert.ok(renderLinks(spanishHome, {}).some((link) => link.href === '/es/services#consultation'));

@@ -143,36 +143,114 @@
 }
 
 
-/* Academy discovery: three blue quick paths inspired by Services suggestion chips. */
-.quickPaths {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 9px;
-  max-width: 1040px;
-  margin-top: 13px;
-}
-.quickPaths a {
-  box-sizing: border-box;
-  display: inline-flex;
+
+/* Academy and Holistic Support share one-screen, photo-led entry conventions. */
+.journeyHero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-width: 0;
-  min-height: 44px;
-  padding: 9px 10px;
-  border: 1px solid #8bc7ed;
-  border-radius: 999px;
-  background: linear-gradient(105deg, #20547d, #2b567b);
-  color: #fff;
-  font: 750 12px/1.2 system-ui, sans-serif;
-  text-align: center;
-  text-decoration: none;
-  transition: background .15s ease, box-shadow .15s ease;
+  min-height: min(650px, calc(100svh - 180px));
+  overflow: hidden;
+  margin: 12px 0 16px;
+  border: 1px solid #cdbba4;
+  border-radius: 23px;
+  background: #273e37;
+  color: #fff8ee;
 }
-.quickPaths a svg { flex: none; }
-.quickPaths a:hover {
-  background: #386d94;
-  box-shadow: inset 0 0 0 1px #b3e9ff;
+.journeyBackdrop { z-index: -2; object-fit: cover; object-position: center 53%; }
+.journeyShade {
+  position: absolute; z-index: -1; inset: 0; pointer-events: none;
+  background: linear-gradient(93deg, rgba(24,43,35,.96) 0%, rgba(30,47,40,.86) 55%, rgba(33,42,36,.65) 100%),
+              linear-gradient(0deg, rgba(22,38,32,.69), transparent 76%);
+}
+.journeyInner { width: 100%; min-width: 0; padding: clamp(22px,4vw,48px); }
+.journeyEyebrow {
+  display: flex; align-items: center; gap: 7px; margin: 0 0 9px;
+  color: #f3d3ad; font: 800 10px/1.4 system-ui,sans-serif; letter-spacing: .12em;
+}
+.journeyEyebrow svg { flex: none; }
+.journeyHero h1 {
+  max-width: 940px; margin: 0; color: #fffaf2;
+  font: 400 clamp(42px,6.5vw,78px)/1.04 Georgia,"Times New Roman",serif;
+  letter-spacing: -.045em; text-wrap: balance;
+}
+.journeyLead { max-width: 690px; margin: 12px 0 20px; color: #f6eee2; font: 15px/1.5 system-ui,sans-serif; }
+.journeyPrompt {
+  margin: 0 0 12px; color: #fcebd1;
+  font: 600 clamp(17px,2vw,22px)/1.2 Georgia,"Times New Roman",serif;
+}
+.quickPaths { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; min-width: 0; }
+.pathCard {
+  box-sizing: border-box; position: relative; display: flex; flex-direction: column; align-items: stretch;
+  gap: 0; min-width: 0; min-height: 255px; padding: 9px;
+  border: 1px solid rgba(249,234,214,.75); border-radius: 17px;
+  background: rgba(255,250,242,.96); color: #3c3027;
+  text-align: left; text-decoration: none;
+  box-shadow: 0 9px 25px rgb(18 35 29 / 15%);
+  transition: transform .16s, border-color .16s, background .16s;
+}
+.pathCard:hover { transform: translateY(-2px); background: #fffdf7; border-color: #eecf9e; }
+.pathCard:focus-visible { outline: 3px solid #f7d18a; outline-offset: 3px; }
+.pathPhoto { position: relative; display: block; flex: none; width: 100%; height: 135px; overflow: hidden; border-radius: 11px; background: #ded1be; }
+.pathPhoto img { object-fit: cover; object-position: center; }
+.pathCopy { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; padding: 12px 25px 8px 4px; }
+.pathIcon { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: #efe3d5; color: #80543a; }
+.pathCopy strong { font: 400 clamp(20px,2.2vw,27px)/1.14 Georgia,"Times New Roman",serif; overflow-wrap: anywhere; }
+.pathCopy small { color: #67594b; font: 12px/1.4 system-ui,sans-serif; overflow-wrap: break-word; }
+.pathArrow { position: absolute; right: 15px; bottom: 24px; color: #886449; }
+.finder {
+  min-width: 0; margin: 14px 0 22px; padding: 17px;
+  border: 1px solid #e2d4c4; border-radius: 19px;
+  background: #faf6ef;
+}
+.finderTop { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin: 0 0 11px; }
+.finderTop h2 { margin: 0; color: #4a352b; font: 400 clamp(22px,2.8vw,28px)/1.2 Georgia,serif; }
+.finder .form { max-width: none; border-color: #e5d7c9; box-shadow: none; }
+.archiveLink { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin-top: 8px; color: #75503d; font: 750 12px/1.35 system-ui,sans-serif; text-decoration: underline; text-underline-offset: 3px; }
+.finder :is(a,input,button):focus-visible { outline: 3px solid #a05b69; outline-offset: 3px; }
+#academy-course-results { scroll-margin-top: 80px; }
+@media (max-width: 700px) {
+  .journeyHero { min-height: 0; border-radius: 18px; }
+  .journeyBackdrop { object-position: 63% 45%; }
+  .journeyInner { padding: 18px 13px 16px; }
+  .journeyEyebrow { margin-bottom: 7px; font-size: 9px; letter-spacing: .09em; }
+  .journeyHero h1 { font-size: clamp(32px,8.9vw,44px); line-height: 1.03; }
+  .journeyLead { margin: 9px 0 13px; font-size: 12.5px; line-height: 1.38; }
+  .journeyPrompt { margin-bottom: 9px; font-size: 17px; }
+  .quickPaths { grid-template-columns: minmax(0,1fr); gap: 7px; }
+  .pathCard { display: grid; grid-template-columns: 82px minmax(0,1fr) 19px; align-items: center; gap: 10px; min-height: 98px; padding: 7px; border-radius: 13px; }
+  .pathPhoto { width: 82px; height: 84px; border-radius: 9px; }
+  .pathCopy { gap: 3px; padding: 1px 0; }
+  .pathIcon { width: 23px; height: 23px; border-radius: 7px; }
+  .pathIcon svg { width: 15px; height: 15px; }
+  .pathCopy strong { font-size: clamp(19px,5vw,23px); }
+  .pathCopy small { font-size: 11.4px; line-height: 1.29; }
+  .pathArrow { position: static; width: 18px; height: 18px; }
+  .finder { padding: 12px; border-radius: 15px; }
+}
+@media (max-width: 350px) {
+  .journeyInner { padding: 14px 9px 13px; }
+  .journeyHero h1 { font-size: 31px; }
+  .journeyLead { margin: 7px 0 11px; font-size: 11.7px; }
+  .journeyPrompt { font-size: 16px; }
+  .pathCard { grid-template-columns: 73px minmax(0,1fr) 16px; gap: 7px; min-height: 91px; padding: 6px; }
+  .pathPhoto { width: 73px; height: 78px; }
+  .pathCopy strong { font-size: 17.5px; }
+  .pathCopy small { font-size: 10.7px; }
+}
+@media (max-width: 700px) and (max-height: 700px) {
+  .journeyInner { padding-top: 12px; padding-bottom: 12px; }
+  .journeyLead { margin: 6px 0 9px; }
+  .journeyPrompt { margin-bottom: 6px; }
+  .quickPaths { gap: 5px; }
+  .pathCard { min-height: 87px; }
+  .pathPhoto { height: 76px; }
+  .pathCopy { gap: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pathCard { transition: none; }
+  .pathCard:hover { transform: none; }
 }
 
 /* Each pathway owns a clearly separated but compact card feed. */
@@ -328,9 +406,6 @@
   .form { padding: 5px; gap: 4px; }
   .search { min-height: 46px; padding: 10px; }
   .submit { min-height: 43px; }
-  .quickPaths { gap: 5px; margin-top: 11px; }
-  .quickPaths a { min-height: 44px; gap: 5px; padding: 7px 4px; font-size: 10px; line-height: 1.2; }
-  .quickPaths a svg { width: 14px; height: 14px; }
   .categoryGroup { scroll-margin-top: 72px; margin-top: 13px; }
   .categoryGroup + .categoryGroup { margin-top: 22px; padding-top: 16px; }
   .categoryHeading { gap: 8px; margin-bottom: 10px; }
@@ -351,12 +426,8 @@
   .eventRegister { min-height: 36px; padding: 7px 9px; font-size: 11px; }
   .eventExpanded { padding: 10px 11px; }
 }
-@media (max-width: 360px) {
-  .quickPaths a { gap: 3px; padding-inline: 2px; font-size: 9px; }
-  .quickPaths a svg { width: 12px; height: 12px; }
-}
 @media (prefers-reduced-motion: reduce) {
-  .quickPaths a,.eventDetailsButton svg { transition: none; }
+  .pathCard,.eventDetailsButton svg { transition: none; }
 }
 
 /* Russian-language archives reuse the same photo-left course cards above. */
@@ -373,7 +444,6 @@
 .legacyVideos h4 { margin: 0; color: #19566a; font: 400 22px/1.2 Georgia, serif; }
 .legacyVideos p { margin: 4px 0 12px; color: #647f8d; font: 500 12px/1.45 system-ui, sans-serif; }
 @media (max-width: 620px) {
-  .quickPaths { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .legacyVideos h4 { font-size: 20px; }
 }
 @media (prefers-reduced-motion: reduce) { .legacyToggle svg { transition: none; } }

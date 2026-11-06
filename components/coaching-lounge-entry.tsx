@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Flower2, HeartHandshake, Sparkles } from "lucide-react";
@@ -119,9 +118,12 @@ const copy = {
   },
 } as const;
 
-export function CoachingLoungeEntry({ locale }: { locale: Locale }) {
+// The parent owns this selection so its bottom "Request session" CTA and the
+// three photo cards always open the SAME consented enquiry, never the free form.
+export function CoachingLoungeEntry({ locale, selected, onSelect }: {
+  locale: Locale; selected: Choice; onSelect: (next: Choice) => void;
+}) {
   const t = copy[locale];
-  const [selected, setSelected] = useState<Choice>("free");
   const offers = [
     { id: "free", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", badge: t.freeBadge,
       title: t.freeTitle, body: t.freeBody, detail: t.freeDetail },
@@ -142,10 +144,10 @@ export function CoachingLoungeEntry({ locale }: { locale: Locale }) {
         <p className={styles.heroHeadline}>{t.headline}</p>
         <p className={styles.heroLead}>{t.lead}</p>
         <nav className={styles.heroChoices} aria-label={t.choose}>
-          <a href="#coaching-intake" onClick={() => setSelected("free")} data-coaching-hero-choice="free">
+          <a href="#coaching-intake" onClick={() => onSelect("free")} data-coaching-hero-choice="free">
             <Sparkles size={20} aria-hidden="true"/><span>{t.freeAction}</span><ArrowRight size={19} aria-hidden="true"/>
           </a>
-          <a href="#coaching-intake" onClick={() => setSelected("session")} data-coaching-hero-choice="session">
+          <a href="#coaching-intake" onClick={() => onSelect("session")} data-coaching-hero-choice="session">
             <HeartHandshake size={20} aria-hidden="true"/><span>{t.sessionAction}</span><ArrowRight size={19} aria-hidden="true"/>
           </a>
           <Link href={"/" + locale + "/services/imagery-therapy#request-session"} prefetch={false} data-coaching-hero-choice="deep">
@@ -180,7 +182,7 @@ export function CoachingLoungeEntry({ locale }: { locale: Locale }) {
                   prefetch={false} data-coaching-select="deep">{t.learn}<ArrowRight size={15} aria-hidden="true"/></Link>
               ) : (
                 <a href="#coaching-intake" className={styles.cardButton}
-                  onClick={() => setSelected(offer.id as Choice)} data-coaching-select={offer.id}>
+                  onClick={() => onSelect(offer.id as Choice)} data-coaching-select={offer.id}>
                   {t.request}<ArrowRight size={15} aria-hidden="true"/>
                 </a>
               )}

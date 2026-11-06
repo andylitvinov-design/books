@@ -39,3 +39,11 @@ The Coaching Lounge previously hotlinked the Egyptian papyrus and Greek Athena f
 - Mirror **18** images at build time using `scripts/cache-ancient-coaching-photos.mjs`. Validate the actual file bytes, format and size; abort the build if any of the 18 originals is missing or invalid. Serve images locally from `/images/holistic-house/coaching-ancient/`, not from a third-party host in the visitor's browser.
 - The public Coaching cards, the private introductory step, the eight-stage roadmap and the question-by-question visual guide share these images. This keeps the original 11 Egyptian / 10 Greek screens, all three locales, saved encrypted answers and the source attribution. No new courses, database migration, paid rendering, CRM or notification.
 - Release gate: exact production READY SHA and canonical alias; verify local image requests return HTTP 200 with correct MIME. Signed-in account Save → reload → PDF and physical Safari remain separate E2E gates. Do not close issue #1708 based on build/visual code alone.
+
+## 2026-10-25 · Owner screenshot after #1995: JPEG 200 but Safari still blank
+
+The second iPhone screenshot proves that same-origin HTTP 200 and the server-rendered `<img src>` are not enough. On the live coaching page, the two author covers were still `next/image fill loading="lazy"` images, absolutely positioned in a long mobile grid. The image element could remain unloaded/unpainted in iOS Safari even when the file was available on the CDN.
+
+Remediation: only for the existing Egyptian and Greek Coaching Lounge cards, render an explicit, sized native `<img loading="eager">` and paint the identical first-party image as a CSS `background-image` on the clickable photo area. Enforce a stretch/minimum-height layout for narrow screens, retain unchanged CTA, EN/RU/ES, credit links, and all private 8-stage course photos. The CSS fallback ensures the page does not present empty left-side slabs while Safari evaluates lazy images.
+
+Extend the existing real Playwright WebKit/Chromium 320/390/430px coaching release script to scroll both cards into view, decode both images, require `naturalWidth>0`, correct background URL, meaningful painted rectangle and screenshot the mobile cards. The owner still needs a physical iPhone tap-through; a green build or virtual WebKit is not a full device test.

@@ -248,9 +248,9 @@ test('public lounge uses horizontal photo-left cards, filtered offers and origin
  assert.match(ui,/traditionKey="egyptian"/)
  assert.match(ui,/traditionKey="greek"/)
  for(const marker of ["chooseTradition:'Choose this session'","chooseTradition:'Выбрать сессию'","chooseTradition:'Elegir sesión'"])assert.ok(ui.includes(marker))
- assert.match(ui, /<CoachingLoungeEntry locale=\{lang\} \/>/,
+ assert.match(ui, /<CoachingLoungeEntry locale=\{lang\} selected=\{coachingChoice\} onSelect=\{setCoachingChoice\} \/>/,
    'three visible personal options now live in the Coaching Lounge first screen')
- assert.ok(ui.indexOf('<CoachingLoungeEntry locale={lang} />')<ui.indexOf('className={styles.morePaths}'),
+ assert.ok(ui.indexOf('<CoachingLoungeEntry locale={lang} selected={coachingChoice} onSelect={setCoachingChoice} />')<ui.indexOf('className={styles.morePaths}'),
    'the three personal options precede the model discovery catalogue')
  assert.ok(ui.indexOf('className={styles.morePaths}')<ui.indexOf('data-coaching-session-capture'),
    'author traditions are still shown before the practitioner checklist and repeat CTA')
@@ -495,4 +495,27 @@ test('the Egyptian and Greek coaching cards reference self-hosted covers, not Wi
  }
  assert.match(ui,/className=\{styles\.loungePhoto\}/)
  assert.match(ui,/unoptimized referrerPolicy="no-referrer"/)
+})
+
+
+test('Safari historical coaching photo slots have a painted CSS backup and eager, sized native images',async()=>{
+ const ui=read('components/public-coaching-discovery.jsx')
+ const css=read('components/public-coaching-discovery.module.css')
+ const {traditionCoachingArt}=await import('../lib/coaching/public-session-art.js')
+ // The old Next <Image fill loading="lazy"> produced empty colored panels on
+ // the owner's iPhone, even though the same-origin files returned HTTP 200.
+ assert.match(ui,/traditionKey\s*\?\s*<>/)
+ assert.match(ui,/className=\{styles\.loungeTraditionPhoto\}/)
+ assert.match(ui,/loading="eager" decoding="async" width="640" height="720"/)
+ assert.match(ui,/:\s*<Image src=\{cardArtworkUrl\(image\)\} alt="" fill loading="lazy"/)
+ assert.match(css,/\.loungeTraditionPhoto\s*\{[^}]*position:absolute;inset:0;width:100%;height:100%/)
+ for(const slug of ['egyptian','greek']){
+  assert.equal(traditionCoachingArt[slug],'/images/holistic-house/coaching-ancient/'+slug+'-cover.jpg')
+  assert.ok(css.includes('.loungeCard[data-coaching-tradition="'+slug+'"] .loungePhoto{'))
+  assert.ok(css.includes('background-image:url("/images/holistic-house/coaching-ancient/'+slug+'-cover.jpg")'))
+ }
+ const browser=read('scripts/verify-coaching-lounge-mobile.mjs')
+ assert.match(browser,/image\.complete&&image\.naturalWidth>0/)
+ assert.match(browser,/style\.backgroundImage/)
+ assert.match(browser,/data-coaching-tradition/)
 })

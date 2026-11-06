@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import {useEffect,useMemo,useRef,useState} from 'react'
 import PracticeRequestConversation from './practice-request-conversation'
+import FreeExpressOwnerCase, { isOwnerFreeExpressRequest } from './free-express-owner-case'
 import PractitionerRequestTasks from './practitioner-request-tasks'
 import {torontoToday} from '@/lib/practitioners/task-policy'
 import {groupVerifiedPractitionerClients} from '@/lib/practitioners/client-profile-groups'
@@ -72,7 +73,16 @@ const MANUAL_COPY={
 const labelDate=(value,locale)=>value?new Intl.DateTimeFormat(locale,{
   dateStyle:'medium',timeZone:'America/Toronto',
 }).format(new Date(value)):''
-export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onRefresh,isOwner=false,onOpenLegacy,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null}){
+// Remote session states are distinct from a canceled ordinary enquiry.
+const remoteMessageStatus=(status,locale)=>{
+ const labels={
+  en:{reschedule_proposed:'Reschedule proposed',confirmed:'Confirmed',in_progress:'In progress',completed:'Completed',declined:'Declined'},
+  ru:{reschedule_proposed:'Предложен перенос',confirmed:'Подтверждено',in_progress:'В процессе',completed:'Завершено',declined:'Отклонено'},
+  es:{reschedule_proposed:'Cambio de fecha',confirmed:'Confirmada',in_progress:'En curso',completed:'Completada',declined:'Rechazada'},
+ }
+ return (labels[locale]||labels.en)[status]||status
+}
+export default function PractitionerClientProfiles({items=[],services=[],accountId,locale='en',busy=false,onStatus,onRefresh,isOwner=false,onOpenLegacy,onCreateReport,focusRequestId='',practitionerTasks=[],practitionerTaskSummary=null,freeExpressV2Enabled=false}){
   const lang=COPY[locale]?locale:'en',t=COPY[lang],u=MANUAL_COPY[lang]
   const groups=useMemo(()=>groupVerifiedPractitionerClients(items,lang),[items,lang])
   const [selectedKey,setSelectedKey]=useState(''),[filter,setFilter]=useState('all')
@@ -128,6 +138,12 @@ export default function PractitionerClientProfiles({items=[],services=[],account
     return ()=>abort.abort()
   },[isOwner,accountId,manualRetry])
   const selected=groups.find(item=>item.key===selectedKey)
+  // Current focus comes only from authenticated, practitioner-owned requests.
+  // Never fabricate a consultation, payment, medical summary or follow-up date.
+  const currentRequest=selected?.items.find(item=>['requested','contacted','reschedule_proposed','confirmed','in_progress'].includes(item.status))||selected?.items[0]||null
+  const linkedService=services.find(item=>item.id===currentRequest?.serviceId)
+  const currentTitle=linkedService?.localizedCopy?.[lang]?.title||linkedService?.copy?.title||
+    currentRequest?.serviceTitle||t.service
   const currentDay=torontoToday()
   const queue=useMemo(()=>buildPractitionerWorkQueue(groups,practitionerTasks,currentDay,practitionerTaskSummary),
     [groups,practitionerTasks,currentDay,practitionerTaskSummary])
@@ -281,8 +297,14 @@ export default function PractitionerClientProfiles({items=[],services=[],account
       </aside>
       {selected&&<div className={styles.profile}>
         <>
-          <div className={styles.profileHead}>
-            <h3>{selected.name}</h3>
+          <div className={styles.profileHead} data-practice-client-card>
+            <div className={styles.profileIdentity}>
+              <span className={styles.largeAvatar} aria-hidden="true">{selected.name.slice(0,1).toUpperCase()}</span>
+              <div><h3>{selected.name}</h3>
+                <small>{selected.open>0?(lang==='ru'?'В работе':lang==='es'?'En curso':'In progress'):
+                  (lang==='ru'?'История обращений':lang==='es'?'Historial':'Request history')}</small>
+              </div>
+            </div>
             <button type="button" onClick={()=>{setSelectedKey('');setTaskFocus(null)}}>{t.closeProfile}</button>
           </div>
           <dl className={styles.facts}>
@@ -290,31 +312,55 @@ export default function PractitionerClientProfiles({items=[],services=[],account
             <div><dt>{t.requests}</dt><dd>{selected.items.length}</dd></div>
             <div><dt>{t.pending}</dt><dd>{selected.open}</dd></div>
           </dl>
+          {currentRequest&&<section className={styles.currentFocus} data-client-current-request aria-label={lang==='ru'?'Текущая заявка':lang==='es'?'Solicitud actual':'Current request'}>
+            <div className={styles.focusHeading}><span>{lang==='ru'?'ТЕКУЩАЯ ЗАЯВКА':lang==='es'?'SOLICITUD ACTUAL':'CURRENT REQUEST'}</span>
+              <small>{currentRequest.status==='requested'?t.requested:
+                currentRequest.status==='contacted'?t.contacted:currentRequest.status}</small>
+            </div>
+            <strong>{currentTitle}</strong>
+            <p>{currentRequest.remoteBooking
+              ?currentRequest.remoteBooking.duration+' min · '+(lang==='ru'?'Дистанционно':lang==='es'?'A distancia':'Remote')+
+                 ' · '+(lang==='ru'?'Время подтверждается отдельно':lang==='es'?'Horario por confirmar':'Time to confirm')
+              :(lang==='ru'?'Условия и время обсуждаются до записи.':lang==='es'?'Condiciones y horario por confirmar.':'Terms and timing are confirmed before booking.')}</p>
+            <a className={styles.focusAction} href={'#client-request-'+currentRequest.id}>
+              {lang==='ru'?'Открыть заявку':lang==='es'?'Abrir solicitud':'Open request'} →
+            </a>
+          </section>}
           <p className={styles.hint}>{t.noPortal}</p>
-          <h4>{t.history}</h4>
+          <h4 id="client-request-history">{t.history}</h4>
           <div className={styles.history}>
             {selected.items.map(request=>{
               const service=services.find(item=>item.id===request.serviceId)
               const name=service?.localizedCopy?.[lang]?.title||service?.copy?.title||request.serviceTitle||t.service
-              return <article className={taskFocus?.requestId===request.id?`${styles.request} ${styles.focusedRequest}`:styles.request} key={request.id}>
+              return <article id={'client-request-'+request.id} className={taskFocus?.requestId===request.id?`${styles.request} ${styles.focusedRequest}`:styles.request} key={request.id}>
                 <div className={styles.requestHead}>
                   <strong>{name}</strong>
                   <small>{labelDate(request.createdAt,lang)} · {
-                    request.status==='requested'?t.requested:
-                    request.status==='contacted'?t.contacted:
-                    request.status==='closed'?t.closedStatus:t.cancelled
+                    request.remoteBooking&&['reschedule_proposed','confirmed','in_progress','completed','declined'].includes(request.status)
+                      ?remoteMessageStatus(request.status,lang)
+                      :request.status==='requested'?t.requested:
+                       request.status==='contacted'?t.contacted:
+                       request.status==='closed'?t.closedStatus:t.cancelled
                   }{request.messageCount>0?' · '+t.messageCount+': '+request.messageCount:''}
                   {request.needsReply?' · '+t.awaiting:''}
                   {request.newMessageCount>0?' · '+t.newMessages+': '+request.newMessageCount:''}</small>
                 </div>
-                {request.message&&<p className={styles.original}>{request.message}</p>}
+                {!(isOwner&&freeExpressV2Enabled&&isOwnerFreeExpressRequest(request))&&request.message&&<p className={styles.original}>{request.message}</p>}
+                {(request.accountRequest===true||request.reportEligible===true) &&
+                  <div className={styles.actions}>
+                    <button type="button" disabled={busy} onClick={()=>onCreateReport?.(request)}>
+                      {lang==='ru'?'Сформировать отчёт':lang==='es'?'Crear informe':'Create report'}
+                    </button>
+                  </div>}
                 {['requested','contacted'].includes(request.status)&&<div className={styles.actions}>
                   {request.status==='requested'&&<button type="button" disabled={busy}
                     onClick={()=>onStatus?.(request,'contacted')}>{t.markContacted}</button>}
                   <button type="button" disabled={busy} onClick={()=>onStatus?.(request,'closed')}>{t.markClosed}</button>
                 </div>}
                 {request.requestKind==='public'
-                  ? <p className={styles.hint}>{t.awaitPortal}</p>
+                  ? isOwner&&freeExpressV2Enabled&&isOwnerFreeExpressRequest(request)
+                    ? <FreeExpressOwnerCase request={request} locale={lang} accountId={accountId}/>
+                    : <p className={styles.hint}>{t.awaitPortal}</p>
                   : <>
                       <PractitionerRequestTasks key={'tasks:'+request.id} requestId={request.id}
                         focusTaskId={taskFocus?.requestId===request.id?taskFocus.taskId:''}
@@ -322,7 +368,7 @@ export default function PractitionerClientProfiles({items=[],services=[],account
                         accountId={accountId} locale={lang} onChanged={()=>onRefresh?.()}/>
                       <PracticeRequestConversation key={request.id} requestId={request.id}
                         accountId={accountId} locale={lang} initialMessage={typeof request.message==='string'?request.message:''}
-                        createdAt={request.createdAt} autoOpen={request.id===focusRequestId}
+                        createdAt={request.createdAt} autoOpen={request.id===focusRequestId || request.newMessageCount>0}
                         onSaved={()=>onRefresh?.()} onViewed={()=>onRefresh?.()}/>
                     </>}
               </article>

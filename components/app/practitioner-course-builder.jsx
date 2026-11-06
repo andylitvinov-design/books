@@ -2,6 +2,8 @@
 import {useEffect,useRef,useState} from 'react'
 import {createClient} from '@supabase/supabase-js'
 import {preparePhoto} from '@/components/session-photo-uploader'
+import {normalizePhoneAudioFile} from '@/lib/clients/phone-audio-file'
+import {canProxyOwnerAudio} from '@/lib/clients/owner-audio-upload'
 import {BookOpen,Image as ImageIcon,Headphones,Film,Link2,Plus,ArrowUp,ArrowDown,Trash2,Share2,Save,Eye,Globe2,Download,ExternalLink,ChevronRight,Copy,LockKeyhole,MessageCircleQuestion,AlignLeft,Pencil,X} from 'lucide-react'
 import CourseSlideRecorder from './course-slide-recorder'
 import styles from './practitioner-course-builder.module.css'
@@ -55,12 +57,36 @@ const request=async(body,accountId)=>{
  if(!response.ok)throw new Error(data.error||'REQUEST_FAILED')
  return data
 }
-const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',audio:'audio/mpeg,audio/mp4,audio/x-m4a',video:'video/mp4,video/quicktime'}
+const fileAccept={image:'image/jpeg,image/png,image/webp,image/heic,image/heif',audio:'audio/*,.m4a,.mp3,.wav,.wave,.webm,.ogg,.oga,.opus,.flac,.aac',video:'video/mp4,video/quicktime'}
 function href(item){
  return '/'+(item?.published?.locale||item?.draft?.locale||'en')+'/courses/masters/'+item.slug
 }
-export default function PractitionerCourseBuilder({locale='en',accountId=null,searchQuery='',startCreate=false,onOpenYoutube=null}){
- const t=translations[locale]||translations.en
+export default function PractitionerCourseBuilder({locale='en',accountId=null,searchQuery='',startCreate=false,meditationType='',onOpenYoutube=null,isOwner=false}){
+ const base=translations[locale]||translations.en
+ const isMeditation=meditationType==='audio'||meditationType==='video'
+ const meditationCopy=locale==='ru'?{
+   heading:meditationType==='audio'?'Аудиомедитация':'Видеомедитация',
+   sub:'Создайте черновик, добавьте запись и опубликуйте после одобрения профиля.',
+   new:'Новая медитация',startTitle:'Как называется ваша медитация?',
+   startHint:meditationType==='audio'?'Сначала название, затем можно записать голос или загрузить аудиофайл.':'Сначала название, затем загрузите видео или добавьте ссылку.',
+   startExample:meditationType==='audio'?'Например, Подкачка солнца':'Например, Полёт к солнцу',
+   createNow:'Создать черновик медитации',
+ }:locale==='es'?{
+   heading:meditationType==='audio'?'Meditación en audio':'Meditación en vídeo',
+   sub:'Crea el borrador, añade la grabación y publica tras la aprobación de tu perfil.',
+   new:'Nueva meditación',startTitle:'¿Cómo se llama tu meditación?',
+   startHint:meditationType==='audio'?'Escribe el título y después graba o sube el audio.':'Escribe el título y después sube un vídeo o añade un enlace.',
+   startExample:meditationType==='audio'?'Por ejemplo, Energía del sol':'Por ejemplo, Vuelo hacia el sol',
+   createNow:'Crear borrador de meditación',
+ }:{
+   heading:meditationType==='audio'?'Audio meditation':'Video meditation',
+   sub:'Create a draft, attach your recording and publish after your profile is approved.',
+   new:'New meditation',startTitle:'What is your meditation called?',
+   startHint:meditationType==='audio'?'Start with a title. Then record your voice or upload audio.':'Start with a title. Then upload a video or add a link.',
+   startExample:meditationType==='audio'?'e.g. A moment of sunshine':'e.g. Flight to the Sun',
+   createNow:'Create meditation draft',
+ }
+ const t=isMeditation?{...base,...meditationCopy}:base
  const api=body=>request(body,accountId)
  const [items,setItems]=useState([])
  const [selected,setSelected]=useState(null)
@@ -84,6 +110,9 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
  const [recording,setRecording]=useState(false)
  const [error,setError]=useState('')
  const [message,setMessage]=useState('')
+ const [libraryAudios,setLibraryAudios]=useState(null)
+ const [librarySelection,setLibrarySelection]=useState('')
+ const [libraryLoading,setLibraryLoading]=useState(false)
  const current=items.find(x=>x.id===selected)
  const active=draft?.slides?.find(x=>x.id===slideId)
  const coverId=active?.coverAssetId||(active?.kind==='image'?active?.assetId:null)
@@ -107,6 +136,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   let alive=true
   setLoading(true);setLoadFailed(false);setError('')
   setItems([]);setSelected(null);setDraft(null);setSlideId(null);setCreating(false);setListOpen(false);setShowPreview(false)
+  setLibraryAudios(null);setLibrarySelection('')
   api().then(data=>{
    if(!alive)return
    const list=data.items||[]
@@ -196,7 +226,7 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   if(!title){setError(t.enterTitle);return}
   setBusy(true);setError('');setMessage('')
   try{
-   const course={title,description:'',locale:newLocale,slides:[makeSlide()]}
+   const course={title,description:'',locale:newLocale,contentType:isMeditation?meditationType+'_meditation':'course',slides:[isMeditation?{...makeSlide(),kind:meditationType}:makeSlide()]}
    const {item}=await api({action:'create',course})
    applyItem(item);setMessage(t.saved)
   }catch(e){setError(e.message||t.createError)}
@@ -234,21 +264,62 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
   const slideBefore=active.id,courseBefore=current.id
   const mediaKind=target==='cover'?'image':active.kind
   try{
-   const prepared=mediaKind==='image'?await preparePhoto(file):file
+   const prepared=mediaKind==='image'?await preparePhoto(file):mediaKind==='audio'?normalizePhoneAudioFile(file):file
    const mime=prepared.type.split(';')[0].toLowerCase()
-   if(!Object.keys({image:{'image/jpeg':1,'image/png':1,'image/webp':1},audio:{'audio/mpeg':1,'audio/mp4':1,'audio/x-m4a':1},video:{'video/mp4':1,'video/quicktime':1}}[mediaKind]||{}).includes(mime))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
+   if(!Object.keys({image:{'image/jpeg':1,'image/png':1,'image/webp':1},audio:{'audio/mpeg':1,'audio/mp4':1,'audio/x-m4a':1,'audio/webm':1,'audio/wav':1,'audio/x-wav':1,'audio/ogg':1,'audio/flac':1,'audio/aac':1},video:{'video/mp4':1,'video/quicktime':1}}[mediaKind]||{}).includes(mime))throw new Error('MEDIA_TYPE_NOT_ALLOWED')
    const limit=mediaKind==='image'?4000000:mediaKind==='audio'?20000000:25000000
    if(prepared.size>limit||prepared.size<128)throw new Error('MEDIA_SIZE_NOT_ALLOWED')
    const {item:intent}=await api({action:'upload-intent',courseId:courseBefore,mime,bytes:prepared.size})
-   const client=createClient(intent.supabaseUrl,intent.publishableKey,{auth:{persistSession:false,autoRefreshToken:false}})
-   const result=await client.storage.from(intent.bucket).uploadToSignedUrl(intent.objectKey,intent.token,prepared,{contentType:mime,upsert:false})
-   if(result.error)throw new Error(result.error.message||'MEDIA_UPLOAD_FAILED')
+   if(mediaKind==='audio'&&canProxyOwnerAudio(prepared)){
+    const response=await fetch('/api/app/practice/courses/'+encodeURIComponent(intent.assetId)+'/audio-upload',{
+     method:'POST',credentials:'same-origin',cache:'no-store',body:prepared,
+     headers:{'content-type':mime,...(accountId?{'x-hh-account-id':accountId}:{})},
+    })
+    const result=await response.json().catch(()=>({}))
+    if(!response.ok||result.item?.uploaded!==true)throw new Error(result.error||'MEDIA_UPLOAD_FAILED')
+   }else{
+    const client=createClient(intent.supabaseUrl,intent.publishableKey,{auth:{persistSession:false,autoRefreshToken:false}})
+    const result=await client.storage.from(intent.bucket).uploadToSignedUrl(intent.objectKey,intent.token,prepared,{contentType:mime,upsert:false})
+    if(result.error)throw new Error(result.error.message||'MEDIA_UPLOAD_FAILED')
+   }
    await api({action:'upload-complete',assetId:intent.assetId})
    if(selected!==courseBefore)throw new Error('ACCOUNT_CHANGED')
    setDraft(d=>({...d,slides:d.slides.map(s=>s.id===slideBefore?{...s,...(target==='cover'?(s.kind==='image'?{assetId:intent.assetId,coverAssetId:null}:{coverAssetId:intent.assetId}):{assetId:intent.assetId})}:s)}))
    setMessage(t.fileReady+' · '+t.save)
    return true
   }catch(e){setError(e.message);return false}
+  finally{setUploading(false)}
+ }
+ async function loadLibraryAudio(){
+  if(!isOwner||libraryLoading||busy||uploading)return
+  setLibraryLoading(true);setError('')
+  try{
+   const grant=await fetch('/api/app/practitioner/open',{
+    method:'POST',credentials:'same-origin',cache:'no-store',
+    headers:{'content-type':'application/json'},body:JSON.stringify({destination:'materials'}),
+   })
+   const opened=await grant.json().catch(()=>({}))
+   if(!grant.ok||opened.redirectUrl!=='/admin/materials')throw new Error('NOT_AUTHORIZED')
+   const response=await fetch('/api/admin/materials',{credentials:'same-origin',cache:'no-store'})
+   const catalog=await response.json().catch(()=>({}))
+   if(!response.ok)throw new Error(catalog.error||'MATERIAL_UNAVAILABLE')
+   const recordings=(catalog.materials||[]).filter(item=>item.kind==='audio')
+   setLibraryAudios(recordings)
+   setLibrarySelection(recordings[0]?.id||'')
+  }catch(e){setError(e.message||'MATERIAL_UNAVAILABLE')}
+  finally{setLibraryLoading(false)}
+ }
+ async function importLibraryAudio(){
+  if(!isOwner||!librarySelection||!current||!active||active.kind!=='audio'||
+   busy||uploading||recording)return
+  const courseBefore=current.id,slideBefore=active.id
+  setUploading(true);setError('');setMessage('')
+  try{
+   const {item}=await api({action:'import-library-audio',courseId:courseBefore,materialId:librarySelection})
+   if(selected!==courseBefore)throw new Error('ACCOUNT_CHANGED')
+   setDraft(d=>({...d,slides:d.slides.map(s=>s.id===slideBefore?{...s,assetId:item.assetId}:s)}))
+   setMessage(t.fileReady+' · '+t.save)
+  }catch(e){setError(e.message||t.error)}
   finally{setUploading(false)}
  }
  async function share(){
@@ -372,6 +443,24 @@ export default function PractitionerCourseBuilder({locale='en',accountId=null,se
             {!showPreview&&<label className={styles.mediaUpload}><Plus size={16}/>{uploading?t.uploading:t.upload}
              <input type="file" accept={fileAccept[active.kind]} disabled={busy||uploading||recording}
               onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void upload(file)}}/></label>}
+            {!showPreview&&active.kind==='audio'&&isOwner&&<div className={styles.libraryImport}>
+         <button type="button" className={styles.secondary} onClick={()=>void loadLibraryAudio()}
+          disabled={busy||uploading||recording||libraryLoading}>
+          <Headphones size={16}/>{libraryLoading?'…':locale==='ru'?'Выбрать из моей аудиобиблиотеки':locale==='es'?'Elegir audio guardado':'Choose saved library audio'}
+         </button>
+         {Array.isArray(libraryAudios)&&(libraryAudios.length?
+          <div className={styles.libraryImportRow}>
+           <select aria-label={locale==='ru'?'Запись из библиотеки':locale==='es'?'Audio de biblioteca':'Library recording'}
+            value={librarySelection} disabled={busy||uploading||recording}
+            onChange={e=>setLibrarySelection(e.target.value)}>
+            {libraryAudios.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}
+           </select>
+           <button type="button" className={styles.secondary} disabled={!librarySelection||busy||uploading||recording}
+            onClick={()=>void importLibraryAudio()}>
+            {locale==='ru'?'Добавить в слайд':locale==='es'?'Usar en diapositiva':'Use on slide'}
+           </button>
+          </div>:<small>{locale==='ru'?'Аудиофайлов пока нет. Добавьте запись в разделе «Материалы».':locale==='es'?'Sin audios guardados. Añade uno en Materiales.':'No saved audio yet. Upload a file under Materials.'}</small>)}
+        </div>}
             {!showPreview&&<CourseSlideRecorder key={active.id+':'+active.kind} kind={active.kind} locale={locale} busy={busy||uploading}
              onRecordingChange={setRecording} onUpload={file=>upload(file,true)}/>}
             {active.assetId&&<div className={styles.preview}>

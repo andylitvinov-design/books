@@ -21,6 +21,7 @@ import { gaugeModel, gaugeChange } from '../../lib/assessments/dashboard-gauges.
 import { assessmentResultOverview } from '../../lib/assessments/result-overview.js'
 import { scoreChangeReading } from '../../lib/assessments/score-change-reading.js'
 import { assessmentEvidenceStatus } from '../../lib/assessments/assessment-evidence-status.js'
+import { buildMotivatorMessage } from '../../lib/assessments/motivator-mind.mjs'
 import { syntheticTraumaContext } from '../../tests/helpers/trauma-context-fixtures.mjs'
 
 export const reportMobileFixtureScope =
@@ -50,6 +51,8 @@ const reportPath = 'components/app/compact-assessment-report.jsx'
 const dialPath = 'components/app/assessment-gauge.jsx'
 const reportCssPath = 'components/app/compact-assessment-report.module.css'
 const dialCssPath = 'components/app/assessment-gauge.module.css'
+const motivatorPath = 'components/app/motivator-mind.jsx'
+const motivatorCssPath = 'components/app/motivator-mind.module.css'
 const rootRoute = 'app/[locale]/app/[[...path]]/page.jsx'
 export function reportMobileFixturePath({key,version,instrumentLocale,locale,pattern}) {
   assert.ok(reportMobileCases.some(item=>item.key===key && item.version===version &&
@@ -114,6 +117,12 @@ export async function buildReportMobileRenderer(){
   }
   const gaugeCss=scopeReportModuleCss(await source(dialCssPath),'hh_qa_gauge',dialCssPath)
   const reportCss=scopeReportModuleCss(await source(reportCssPath),'hh_qa_report',reportCssPath)
+  const motivatorCss=scopeReportModuleCss(await source(motivatorCssPath),'hh_qa_motivator',motivatorCssPath)
+  const Motivator=transpile(motivatorPath,await source(motivatorPath),{
+    'react/jsx-runtime':jsxRuntime,
+    '@/lib/assessments/motivator-mind.mjs':{buildMotivatorMessage},
+    './motivator-mind.module.css':motivatorCss.styles,
+  })
   const Gauge=transpile(dialPath,await source(dialPath),{
     'react/jsx-runtime':jsxRuntime,
     '@/lib/assessments/dashboard-gauges':{gaugeModel,gaugeChange},
@@ -124,6 +133,7 @@ export async function buildReportMobileRenderer(){
     'react/jsx-runtime':jsxRuntime,react:React,
     './free-course-banner':{FreeCourseBanner:()=>null},
     './assessment-gauge':Gauge,
+    './motivator-mind':Motivator,
     '@/lib/assessments/scale-guides':{getTestScaleGuide},
     '@/lib/assessments/dashboard-gauges':{gaugeModel},
     '@/lib/assessments/result-overview':{assessmentResultOverview},
@@ -149,7 +159,7 @@ export async function buildReportMobileRenderer(){
       styles.push(compiled.css)
     }else styles.push(css)
   }
-  styles.push(gaugeCss.css,reportCss.css)
+  styles.push(gaugeCss.css,reportCss.css,motivatorCss.css)
   const css=styles.join('\n').replace(/<\/style/gi,'<\\/style')
   return {
     sourceProof,scope:reportMobileFixtureScope,

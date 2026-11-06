@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { AnalyticsPreferences } from '@/components/analytics-consent'
+import { AnalyticsPreferences, FirstPartyStatsPreferences } from '@/components/analytics-consent'
 
 export const metadata: Metadata = {
   title: 'Privacy — Holistic House',
@@ -22,9 +22,10 @@ export default function PrivacyPage() {
       <p>Your laboratory records are not automatically shared with a practitioner, customer-management system, advertiser or external AI processor. You may open and remove each saved report from your private cabinet and include your lab history in your account data export. Deleting the account also deletes these records from the active application database; separately retained backups, where applicable, follow the service provider’s backup retention policy. Do not use this educational comparison tool for emergency medical decisions.</p>
       <h2>Choices</h2>
       <p>You can use available guest features without Google sign-in where offered. You may request account deletion from the account privacy area; deletion removes the associated application data according to the displayed workflow.</p>
-      <h2>Optional website analytics</h2>
-      <p>We do not show a consent popup. Public website analytics stay off unless you enable them below. You can switch them off again at any time, without affecting access to the site or your account.</p>
+      <h2>Website statistics and optional analytics</h2>
+      <p>We automatically count aggregate entrances, page views and button/link clicks on public marketing pages, with coarse traffic sources. These statistics do not store visitor or session IDs, IP addresses, full referrers, search queries, assessment answers or private account activity, and do not set tracking cookies. Counts are deleted after 90 days. You can opt out of future counting below without affecting site access. Previously aggregated counts cannot be linked back to you. Google and Meta analytics remain disabled.</p>
       <AnalyticsPreferences />
+      <FirstPartyStatsPreferences />
       <h2>Important scope</h2>
       <p>Holistic House content and assessments are for reflection and education. They are not medical advice, diagnosis, treatment, or emergency support.</p>
       <p><Link href="/terms">Read the Terms of Use</Link></p>

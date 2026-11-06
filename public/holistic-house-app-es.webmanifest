@@ -1,0 +1,50 @@
+{
+  "name": "Holistic House",
+  "short_name": "Holistic House",
+  "description": "Tu espacio privado de Holistic House: mensajes, consultas, pruebas, informes y cursos",
+  "lang": "es",
+  "start_url": "/es/app/messages",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4faf7",
+  "theme_color": "#163d38",
+  "icons": [
+    {
+      "src": "/holistic-house-icon/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/holistic-house-icon/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/holistic-house-teal.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mensajes",
+      "short_name": "Mensajes",
+      "url": "/es/app/messages"
+    },
+    {
+      "name": "Mis pruebas",
+      "short_name": "Pruebas",
+      "url": "/es/app/tests"
+    },
+    {
+      "name": "Mis cursos",
+      "short_name": "Cursos",
+      "url": "/es/app/course"
+    }
+  ],
+  "id": "/en/app"
+}

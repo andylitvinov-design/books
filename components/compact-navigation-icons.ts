@@ -1,4 +1,4 @@
-import { BookOpen, BriefcaseBusiness, Flame, GraduationCap, Heart, House, Landmark, UserRound, MessagesSquare, HeartHandshake, Sparkles } from 'lucide-react';
+import { BookOpen, BriefcaseBusiness, Flame, FlaskConical, GraduationCap, Heart, House, Landmark, UserRound, HeartHandshake, Sparkles } from 'lucide-react';
 
 // The hamburger and mobile bar share their visitor-facing directions.
 export const compactNavigationIcons = {
@@ -6,7 +6,7 @@ export const compactNavigationIcons = {
   analysis: Sparkles,
   courses: BookOpen,
   profile: UserRound,
-  coaching: MessagesSquare,
+  alchemy: FlaskConical,
   insights: Sparkles,
   support: HeartHandshake,
   energy: Flame,

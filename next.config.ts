@@ -19,8 +19,14 @@ const practitionerRecordingSources = [
   "/admin/clients/:id/sessions/:path*",
 ];
 
+// Only the LIVE host can ask the user for microphone permission.
+const liveAudioHostSources = ["/en/live/host", "/ru/live/host", "/es/live/host"];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // ffmpeg-static uses __dirname to locate its downloaded native executable.
+  // Keep the package external to Next webpack so its binary path remains valid.
+  serverExternalPackages: ["ffmpeg-static"],
   // The idle Next badge covers fixed mobile navigation in isolated browser CI.
   // This supported option preserves compile/runtime error badges and overlays.
   devIndicators: process.env.CI === "true" &&
@@ -69,7 +75,7 @@ const nextConfig: NextConfig = {
       },
       // Versioned public video artwork is safe to cache; never apply this policy
       // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
-      ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*"].map((source) => ({
+      ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*", "/images/reiki-originals/:path*"].map((source) => ({
         source,
         headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600" }],
       })),
@@ -89,6 +95,10 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
         ],
+      })),
+      ...liveAudioHostSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
       })),
       // Record the owner's course narration directly on iPhone Safari. Only
       // these two PIN-protected editing pages need a microphone, not a camera.
@@ -129,6 +139,32 @@ const nextConfig: NextConfig = {
     // The /sitemap.xml metadata route reads remedy files through fs at runtime.
     // They exist in Git, but automatic NFT tracing can omit them from Vercel Functions.
     // Keep this scoped to the sitemap; do not replicate the corpus across all routes.
+    // Sharp 0.35 loads libvips from an optional native package. Next tracing
+    // otherwise bundles the .node file without libvips-cpp.so into the Function.
+    // Include only for this small private upload route, never all routes.
+    // Photo/audio rendering is confined to the authenticated owner Telegram webhook.
+    // Only this Function traces the pinned FFmpeg binary (no external render API).
+    "/api/app/crm/messenger/webhook/*": ["./node_modules/ffmpeg-static/ffmpeg"],
+    // Owner-private Dot /audio → /video uses its existing signed webhook.
+    // The same pinned FFmpeg binary must be available in this function too.
+    "/api/app/notification-channels/telegram/webhook": ["./node_modules/ffmpeg-static/ffmpeg"],
+    "/api/holistic-support/talismans": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+    // This route also re-encodes personal drawings/photos with Sharp. Vercel's
+    // file tracer may omit native libvips from a dynamically imported module.
+    // Scope native assets to this PRIVATE upload Function, not all app routes.
+    "/api/free-express/media": [
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+    // The nine-stage Tantra Reiki guide loads immutable author archives server-side.
+    // Scope these to the PDF API route instead of copying them into all Functions.
+    "/api/academy/reiki-guide": [
+      "./data/academy/tantra-reiki-full.generated.json",
+      "./data/academy/tantra-reiki-ru-en.generated.json",
+    ],
     "/sitemap.xml": [
       "./data/spanish-remedies.json",
       "./content/remedies/en/*.md",
@@ -146,6 +182,12 @@ const nextConfig: NextConfig = {
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
       "./source-books/book-3-maya-tradition/outputs/*.html",
+      // Restore only the 8 small, published tradition HTML manuals to reader
+      // functions. Exclude raw archives and photographs to protect function size.
+      "./source-books/book-4-egyptian-tradition/*.html",
+      "./source-books/book-5-greek-mysteries/*.html",
+      "./source-books/book-6-roman-tradition/*.html",
+      "./source-books/book-7-zoroastrian-mithra/*.html",
     ]] as const).reduce<Record<string, string[]>>((all, [route, files]) => {
       all[route] = [...files]; return all;
     }, {}),

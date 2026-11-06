@@ -3,7 +3,6 @@ on:
   pull_request:
     branches: [codex/public-book-library]
     paths:
-      - '.github/workflows/hh-personal-coaching-session.yml'
       - 'lib/personal-coaching/**'
       - 'lib/app/personal-coaching.js'
       - 'lib/app/personal-coaching-catalog.js'
@@ -15,15 +14,24 @@ on:
       - 'components/app/tradition-coaching*'
       - 'components/app/coaching-question-voice.jsx'
       - 'components/app/business-coaching.jsx'
-      - 'components/app/app-workspace.jsx'
       - 'components/app/my-courses-dashboard.jsx'
       - 'components/app/my-course.jsx'
       - 'components/app/development-program.jsx'
       - 'components/direction-offers.tsx'
       - 'components/academy-hub.tsx'
       - 'components/academy-tradition-coaching-landing*'
-      - 'app/api/app/**'
-      - 'app/[locale]/app/**'
+      - 'app/api/app/coaching/**'
+      - 'app/api/app/\[...path\]/route.js'
+      # The exact dispatcher is cross-domain. Node's BASE-trusted glob reader
+      # does not match GitHub's escaped Next route, so also use this narrowly
+      # bounded one-segment route with explicit Messenger exclusions.
+      - 'app/api/app/*/route.js'
+      - '!app/api/app/direct-messages/**'
+      - '!app/api/app/practitioner-client-messages/**'
+      - '!app/api/app/notification-channels/**'
+      - 'app/api/app/personal-coaching/**'
+      - 'app/**/app/coaching/**'
+      - 'app/**/app/personal-coaching/**'
       - 'tests/personal-coaching-session.test.mjs'
       - 'tests/personal-coaching-voice.test.mjs'
       - 'tests/personal-coaching-model-selection.test.mjs'
@@ -59,8 +67,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: personal-coaching-${{ github.ref }}
-  cancel-in-progress: true
+  group: personal-coaching-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   focused-verification:
     runs-on: ubuntu-latest

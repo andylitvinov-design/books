@@ -14,7 +14,7 @@ test("Holistic Support is the seventh public tab and preserves separate Temple I
   for (const locale of ["en", "ru", "es"]) {
     const links = getCompactNavigation(locale);
     assert.equal(links.length, 7);
-    assert.deepEqual(links.map(item => item.id), ["home", "analysis", "courses", "profile", "coaching", "pro", "temple"]);
+    assert.deepEqual(links.map(item => item.id), ["home", "analysis", "courses", "profile", "alchemy", "pro", "temple"]);
     assert.equal(links[1].href, "/" + locale + "/services/free-situation-review");
     assert.equal(links[2].href, "/" + locale + "/academy");
     assert.equal(links[6].href, "/" + locale + "/holistic-support");
@@ -37,8 +37,9 @@ test("Holistic Support is the seventh public tab and preserves separate Temple I
   assert.match(homeCss, /repeat\(7, minmax\(0,1fr\)\)/);
 });
 
-test("Holistic Support puts an interactive scenic goal-or-situation card first in EN/RU/ES", () => {
+test("Holistic Support puts three accessible, photo-backed support choices first in EN/RU/ES", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
+  const chooser = read("components/holistic-support-choices.tsx");
   const ideas = read("components/ideas-discovery.tsx");
   const scenic = read("components/ideas-discovery.module.css");
   const styles = read("app/[locale]/holistic-support/holistic-support.module.css");
@@ -53,10 +54,13 @@ test("Holistic Support puts an interactive scenic goal-or-situation card first i
   }
   assert.ok(old.includes('permanentRedirect("/" + locale + "/holistic-support")'));
   assert.ok(page.includes("data-holistic-support"));
-  assert.ok(page.includes("data-holistic-first-screen"));
-  assert.ok(page.includes('<IdeasDiscovery locale={locale} variant="holistic" />'));
-  assert.equal((page.match(/<IdeasDiscovery /g) || []).length, 1, "only one symbolic-engine form");
-  assert.ok(page.indexOf("data-holistic-first-screen") < page.indexOf("data-holistic-healing"));
+  assert.ok(chooser.includes("data-holistic-first-screen"));
+  assert.ok(page.includes('<HolisticSupportChoices locale={locale} />'));
+  assert.ok(chooser.includes('<IdeasDiscovery locale={locale} variant="holistic-dao" />'));
+  assert.equal((chooser.match(/<IdeasDiscovery /g) || []).length, 1, "reuse existing Dao engine once, only after selection");
+  assert.ok(page.indexOf("<HolisticSupportChoices") < page.indexOf("<HolisticSupportTopicFilter"));
+  assert.ok(page.indexOf("<HolisticSupportTopicFilter") < page.indexOf("data-holistic-meditations"));
+  for (const option of ["meditations", "energy", "dao"]) assert.ok(chooser.includes('data-holistic-choose="' + option + '"'));
   assert.ok(!page.includes("<FreeDiagnosticStart") && !page.includes("<CompactLeadCapture"),
     "the personal coaching form moves to Coaching");
   assert.ok(!page.includes("styles.hero"), "the big coaching hero was removed");
@@ -82,19 +86,20 @@ test("Holistic Support puts an interactive scenic goal-or-situation card first i
   assert.ok(existsSync(new URL("../public/images/holistic-house/ideas-pine-sharp.avif", import.meta.url)));
 });
 
-test("energy support reuses the published practitioner, privacy and request journeys", () => {
+test("the thematic energy support path preserves privacy and request journeys without duplicate offers", () => {
   const page = read("app/[locale]/holistic-support/page.tsx");
   const remote = read("components/remote-energy-support-booking.tsx");
   const bridge = read("lib/practitioners/remote-energy-support.js");
-  assert.ok(page.includes("data-holistic-healing"));
-  for (const id of ["energy", "alchemy", "practitioner"]) {
-    assert.ok(page.includes('data-holistic-offer="' + id + '"'), "missing offer " + id);
-  }
-  for (const link of ["/services/remote-energy-support", "/services/alchemy-of-soul",
-    "/pro#profi-practice", "/masters"]) assert.ok(page.includes(link), "missing link "+link);
-  assert.ok(page.includes("data-holistic-practitioner-cta"));
-  assert.ok(page.includes("MarketplaceMasterFinder practitioners={energyPractitioners}"));
-  assert.ok(page.includes('service.status === "published"'));
+  const filter = read("components/holistic-support-topic-filter.tsx");
+  assert.ok(page.includes("<HolisticSupportTopicFilter locale={locale} />"));
+  assert.doesNotMatch(page, /data-holistic-healing|data-holistic-offer=/);
+  assert.ok(filter.includes('href="#meditation-practices"'), "meditations must retain an in-page anchor");
+  for (const trigger of ["talisman", "expert"])
+    assert.ok(filter.includes('data-holistic-order-trigger={id}'), "order cards must open the existing inline request panel: " + trigger);
+  assert.match(filter, /<HolisticInlineSupportOrder locale=\{locale\}/);
+  assert.ok(filter.includes("data-holistic-topic-card={id}"));
+  assert.doesNotMatch(page, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
+  assert.match(read("app/[locale]/pro/page.tsx"), /MarketplaceMasterFinder practitioners=\{practitioners\}/);
   assert.ok(page.includes("data-holistic-coaching-followup"));
   assert.ok(page.includes('href={"/" + locale + "/coaching"}'));
   assert.ok(page.includes("€50 / 30"));
@@ -115,7 +120,7 @@ test("independent Temple Insights keeps its own diagnostic CTA and natural sceni
   assert.ok(ideas.includes('href={"/" + locale + "/coaching#free-diagnostic-start"}'));
   assert.ok(ideas.includes("data-ideas-personal-diagnostic"));
   assert.ok(ideas.includes("data-ideas-free-test"));
-  assert.ok(ideas.includes('const HeadingTag = variant === "temple" ? "h2" : "h1"'));
+  assert.ok(ideas.includes('const HeadingTag = variant === "temple" || daoFocused ? "h2" : "h1"'));
   assert.ok(scenic.includes('data-temple-mode="true"'));
   assert.ok(scenic.includes('.templeScenic::before'));
 });
@@ -125,8 +130,11 @@ test("Coaching Lounge owns the former scenic first screen and exactly three dist
   const layout = read("components/coaching-lounge-entry.module.css");
   const lounge = read("components/public-coaching-discovery.jsx");
   const ideas = read("components/ideas-discovery.tsx");
-  assert.match(lounge, /<CoachingLoungeEntry locale=\{lang\} \/>/);
+  assert.match(lounge, /<CoachingLoungeEntry locale=\{lang\} selected=\{coachingChoice\} onSelect=\{setCoachingChoice\} \/>/);
   assert.doesNotMatch(lounge, /<CoachingLiveSessionCapture/);
+  assert.match(lounge, /data-coaching-human-to-intake/);
+  assert.match(lounge, /onClick=\{\(\)=>setCoachingChoice\("session"\)\}/);
+  assert.match(entry, /onSelect\(offer\.id as Choice\)/);
   assert.match(entry, /data-coaching-first-screen/);
   assert.match(entry, /hero-olive-incense\.webp/);
   assert.match(entry, /data-coaching-three-paths/);

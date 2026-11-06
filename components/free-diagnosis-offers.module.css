@@ -29,8 +29,9 @@
 .formWrap{position:relative;width:min(860px,100%);margin:25px auto 0;padding:18px;border:1px solid #dccabc;border-radius:22px;background:#fffdf9;box-shadow:0 10px 28px rgba(80,55,37,.08);scroll-margin-top:92px}
 .formHeading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 7px}
 .formHeading h3{margin:0;color:#4b352e;font:400 clamp(21px,2.5vw,29px)/1.15 Georgia,'Times New Roman',serif}
-.formWrap :global([data-free-diagnostic-start]){margin:8px 0 0}
-.formWrap :global([data-service-lead-capture]){width:100%;margin:8px 0 0;padding:14px;box-shadow:none}
+.formLead{margin:9px 0 12px;color:#61564f;font-size:13px;line-height:1.48}
+.formWrap :global([data-reiki-phone-enquiry]){margin:0;padding:13px;border:1px solid #d6c6b8;border-radius:17px;background:#fff;box-shadow:0 3px 12px rgba(75,45,30,.06)}
+.modalSafety{margin:13px 2px 1px;color:#766c65;font-size:11px;line-height:1.5}
 .scrim{position:fixed;inset:0;z-index:110;width:100%;border:0;background:rgba(30,24,22,.58);cursor:pointer}
 .formWrap[data-open="true"]{position:fixed;z-index:111;bottom:0;left:50%;transform:translateX(-50%);width:min(720px,100%);max-height:calc(100dvh - 15px);margin:0;padding:18px 19px max(20px,env(safe-area-inset-bottom));overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;border-radius:23px 23px 0 0;background:#fffaf4;box-shadow:0 -12px 40px rgba(28,21,16,.27)}
 .formWrap[data-open="true"] .formHeading{position:relative}
@@ -63,7 +64,7 @@
  .formWrap{padding:13px;margin-top:16px;border-radius:17px}
  .formWrap[data-open="true"]{padding:15px 12px max(15px,env(safe-area-inset-bottom));max-height:calc(100dvh - 18px)}
  .formHeading h3{font-size:22px}
- .formWrap :global([data-service-lead-capture]){padding:12px 10px}
+ .formWrap :global([data-reiki-phone-enquiry]){padding:12px 10px}
 }
 @media(max-width:390px){
  .content{padding:12px 13px 13px;gap:6px}
@@ -90,9 +91,70 @@
 }
 @media(prefers-reduced-motion:reduce){.scene{scroll-behavior:auto}}
 
-/* Two compact, always visible phone captures; the selected offer still opens its bottom sheet. */
-.inlineCapture{width:min(860px,100%);margin:0 auto 20px;scroll-margin-top:88px}
-.inlineCapture[data-diagnosis-placement="bottom"]{margin:22px auto 0}
-.inlineCapture :global([data-free-diagnostic-phone-only]){margin:0;background:#f8efe4;border-color:#d7c0ac}
+/* A single progressive, consented messenger form opens only after tapping Request.
+   Keep the top/bottom invitations short; don't expose an extra questionnaire. */
+.inlineCapture{display:grid;gap:7px;width:min(860px,100%);margin:0 auto 19px;padding:12px;border:1px solid #decbbb;border-radius:17px;background:#faf1e8;scroll-margin-top:88px}
+.inlineCapture[data-diagnosis-placement="bottom"]{margin:21px auto 0}
+.inlineRequest{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:50px;padding:10px 15px;border:0;border-radius:13px;background:#843e53;color:#fff;font-size:15px;font-weight:800;cursor:pointer}
+.inlineRequest:hover{background:#994b62}
+.inlineRequest svg{flex:none}
+.inlineHint{margin:0;color:#745d4e;font-size:11px;line-height:1.35;text-align:center}
 .formWrap[data-open="false"]{display:none}
-@media(max-width:720px){.inlineCapture{width:100%;margin-bottom:14px}.inlineCapture[data-diagnosis-placement="bottom"]{margin-top:18px}}
+@media(max-width:720px){
+ .inlineCapture{width:100%;margin-bottom:12px;padding:10px}
+ .inlineCapture[data-diagnosis-placement="bottom"]{margin-top:16px}
+ .inlineRequest{min-height:46px;font-size:14px}
+ .formLead{font-size:12px;line-height:1.4}
+}
+@media(max-width:350px){
+ .formWrap[data-open="true"]{padding:12px 9px max(14px,env(safe-area-inset-bottom))}
+ .inlineRequest{gap:7px;font-size:13px}
+ .formWrap :global([data-reiki-phone-enquiry]){padding:10px 8px}
+}
+
+/* Benefits-first review landing 2026-10-25: only this route opts into compact choice cards. */
+.wrap[data-diagnosis-layout="compact"]{width:min(1120px,100%);margin:25px auto 22px}
+.wrap[data-diagnosis-layout="compact"] .heading{max-width:100%;padding:0 8px 9px;margin-bottom:12px}
+.wrap[data-diagnosis-layout="compact"] .heading h2{font-size:clamp(30px,3vw,43px)}
+.wrap[data-diagnosis-layout="compact"] .heading>p:last-child{font-size:15px}
+.wrap[data-diagnosis-layout="compact"] .scenes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:14px}
+.wrap[data-diagnosis-layout="compact"] .scene{display:flex;flex-direction:column;min-height:0;height:auto;border-radius:18px}
+.wrap[data-diagnosis-layout="compact"] .photo{flex:none;width:100%;height:clamp(150px,16vw,200px);min-height:0}
+.wrap[data-diagnosis-layout="compact"] .photoIndex{top:10px;left:10px}
+.wrap[data-diagnosis-layout="compact"] .content{flex:1;display:flex;justify-content:flex-start;gap:10px;padding:19px}
+.wrap[data-diagnosis-layout="compact"] .scene h3{font-size:clamp(24px,2.2vw,32px);line-height:1.12}
+.wrap[data-diagnosis-layout="compact"] .summary{font-size:14px;line-height:1.42;font-weight:500}
+.wrap[data-diagnosis-layout="compact"] .order{align-self:stretch;justify-content:center;width:100%;min-width:0;min-height:48px;margin-top:auto;font-size:14px}
+.wrap[data-diagnosis-layout="compact"] .topline{font-size:10px}
+.wrap[data-diagnosis-layout="compact"] .topline strong{font-size:13px}
+.expandedInfo{font-family:Arial,Helvetica,sans-serif;margin:0;padding:0;color:#695a4f}
+.expandedInfo>summary{cursor:pointer;width:fit-content;min-height:35px;padding:8px 0;color:#874f47;font-size:12px;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.expandedInfo>summary:focus-visible{outline:3px solid #b97847;outline-offset:3px}
+.expandedInfo .detail{padding:4px 0 9px;font-size:13px;line-height:1.48}
+.expandedInfo ol{padding:0 0 0 18px;margin:0 0 8px;display:grid;gap:7px;font-size:12px;line-height:1.45}
+.wrap[data-diagnosis-layout="compact"] .inlineCapture[data-diagnosis-placement="top"]{margin:15px auto 25px;width:min(780px,100%)}
+.wrap[data-diagnosis-layout="compact"] .inlineCapture[data-diagnosis-placement="bottom"]{margin:20px auto 0;width:min(780px,100%)}
+@media(max-width:720px){
+ .wrap[data-diagnosis-layout="compact"]{margin:14px auto 17px}
+ .wrap[data-diagnosis-layout="compact"] .scenes{grid-template-columns:minmax(0,1fr);gap:11px}
+ .wrap[data-diagnosis-layout="compact"] .scene{display:grid;grid-template-columns:minmax(96px,34%) minmax(0,1fr);min-height:0;border-radius:15px;overflow:hidden}
+ .wrap[data-diagnosis-layout="compact"] .photo{width:100%;height:100%;min-height:190px;border-radius:0}
+ .wrap[data-diagnosis-layout="compact"] .photoIndex{top:9px;left:7px;font-size:9px;padding:5px 7px}
+ .wrap[data-diagnosis-layout="compact"] .content{padding:13px;gap:7px;min-height:0}
+ .wrap[data-diagnosis-layout="compact"] .scene h3{font-size:clamp(20px,5.3vw,26px);line-height:1.11}
+ .wrap[data-diagnosis-layout="compact"] .summary{font-size:12.5px;line-height:1.4}
+ .wrap[data-diagnosis-layout="compact"] .topline{font-size:9.5px}
+ .wrap[data-diagnosis-layout="compact"] .topline strong{font-size:11px;padding:4px 7px}
+ .wrap[data-diagnosis-layout="compact"] .order{min-height:44px;padding:10px;font-size:13px}
+ .wrap[data-diagnosis-layout="compact"] .heading{padding:0 6px 8px;margin-bottom:8px}
+ .wrap[data-diagnosis-layout="compact"] .heading h2{font-size:clamp(28px,7.5vw,34px)}
+ .wrap[data-diagnosis-layout="compact"] .heading>p:last-child{font-size:13px}
+ .wrap[data-diagnosis-layout="compact"] .inlineCapture[data-diagnosis-placement="top"]{margin:12px auto 20px}
+}
+@media(max-width:360px){
+ .wrap[data-diagnosis-layout="compact"] .scene{grid-template-columns:96px minmax(0,1fr)}
+ .wrap[data-diagnosis-layout="compact"] .content{padding:11px 10px;gap:6px}
+ .wrap[data-diagnosis-layout="compact"] .scene h3{font-size:19px}
+ .wrap[data-diagnosis-layout="compact"] .summary{font-size:12px}
+ .wrap[data-diagnosis-layout="compact"] .photo{min-height:178px}
+}

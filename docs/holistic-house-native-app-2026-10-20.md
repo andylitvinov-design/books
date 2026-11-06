@@ -6,7 +6,7 @@ Build **actual Android APK** and a separate iOS native Xcode app for Holistic Ho
 The existing Home Screen PWA remains available and is currently the recommended **functional client notification path** while native authentication and native messaging push are being integrated.
 
 ## Implementation
-- Separate build config: `capacitor.holistic-house.config.json` → `com.holistichouse.app`, name **Holistic House**, remote canonical origin `https://holistichouse.vercel.app/en/app/portrait`.
+- Separate build config: `capacitor.holistic-house.config.json` → `com.holistichouse.app`, name **Holistic House**, remote canonical origin `https://holistichouse.vercel.app/en/app/messages`.
 - `scripts/prepare-holistic-house-native.mjs` brands only the CI working copy before/after Capacitor sync. Source `capacitor.config.json`, original Android and iOS source identifiers stay PsiAlchemy. The iOS Podfile staging replaces the old developer-local npm cache with the checked-out `node_modules`.
 - `scripts/brand-hh-native-artwork.mjs` exports launcher and splash artwork from the approved public Holistic House SVG for native CI.
 - `components/native-link-handler.tsx`, `lib/native/deep-link-policy.js` and `components/native-external-links.tsx` recognize **only allowed exact private conversation URLs** for the Holistic House app and preserve old public PsiAlchemy safeguards. Links remain navigation, not authorization: the backend rechecks the Google session, account and thread participant.

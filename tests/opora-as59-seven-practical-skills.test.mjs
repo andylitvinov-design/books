@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {oporaAs59Day,oporaAs59Valid,OPORA_SEVEN_SKILLS_EDITION} from '../lib/inner-growth/opora-as59-seven-skills.js'
 import {oporaAs60Day,oporaAs60Skills,oporaAs60Valid,OPORA_EXPERIENTIAL_EDITION} from '../lib/inner-growth/opora-as60-experiential-practices.js'
+import {oporaAs60VariedDay} from '../lib/inner-growth/opora-as60-varied-content.js'
 import {oporaAs58Day} from '../lib/inner-growth/opora-as58-one-action.js'
 import {validateOpora54Signals} from '../lib/inner-growth/anti-stress-skills-v6.js'
 import {antiStressBlueprint} from '../lib/inner-growth/anti-stress-blueprint.js'
@@ -73,7 +74,7 @@ test('fresh EN/RU/ES lessons introduce purpose before 3-step experiment, without
   for(const locale of langs)for(let day=1;day<=14;day++){
     const h=make(day,locale)
     try{
-      const target=oporaAs60Day(day,locale)
+      const target=oporaAs60VariedDay(day,locale)
       assert.equal(nodes(h.tree).filter(node=>
         node.props?.['data-opora-practical-skills-version']===OPORA_EXPERIENTIAL_EDITION).length,1)
       await advanceOporaTo(h,'support',next[locale])
