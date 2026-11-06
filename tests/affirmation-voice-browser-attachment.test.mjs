@@ -147,3 +147,20 @@ test("the optional Ideas audio button mounts the authentic Hypno voice editor af
  assert.match(source,/await page\.locator\("\[data-video-generate-affirmation-audio\]"\)\.click\(\)/);
  assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
 });
+
+test("Next native WebKit tap is not stolen by the preceding Continue scroll",()=>{
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const start=studio.indexOf("const openVideoScenarioStep = () => {");
+ const stop=studio.indexOf("const deepAudioPane",start);
+ assert.ok(start>0&&stop>start);
+ const open=studio.slice(start,stop);
+ assert.match(open,/const navigationToken=\+\+quickNavTokenRef\.current/);
+ assert.match(open,/if\(navigationToken!==quickNavTokenRef\.current\)return/);
+ assert.match(open,/behavior:"instant" as ScrollBehavior/);
+ assert.doesNotMatch(open,/behavior:"smooth"/);
+ const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ assert.match(browser,/await continueScenario\.click\(\)/);
+ assert.match(browser,/await allStories\.click\(\)/);
+ assert.match(browser,/data-video-advanced-open","true",\{timeout:15000\}/);
+ assert.doesNotMatch(browser,/force:\s*true/);
+});

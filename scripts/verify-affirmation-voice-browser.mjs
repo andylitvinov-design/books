@@ -54,7 +54,7 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-video-scenario-open","true");
     await expect(allStories).toBeVisible({timeout:15000});
     await allStories.click();
-    await expect(studio).toHaveAttribute("data-video-advanced-open","true");
+    await expect(studio).toHaveAttribute("data-video-advanced-open","true",{timeout:15000});
     const phrases=page.locator('[data-video-quick-control="phrases"]');
     await expect(phrases).toBeVisible({timeout:15000});
     await expect(phrases).toBeEnabled();

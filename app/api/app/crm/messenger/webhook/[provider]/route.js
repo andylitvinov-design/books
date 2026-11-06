@@ -6,6 +6,7 @@ import { operationHash } from '@/lib/app/crypto'
 import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnostics.mjs'
 import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
 import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback } from '@/lib/crm/messenger-provider'
+import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -74,7 +75,8 @@ export async function POST(request,{params}){
             // Unknown provider results are NOT automatically retried (no duplicate prompts).
             try{await sendTelegramDiagnosticPrompt({to:intake.to,text:intake.reply,keyboard:intake.keyboard,
               approvedPilotGuest:intake.approvedPilotGuest===true,locale:intake.locale,
-                webAppUrl:intake.webAppUrl||null})}catch(error){
+                webAppUrl:intake.webAppUrl||null,
+                presentation:intake.presentationFirstStart===true && telegramPresentationOnStart(event.rawText)})}catch(error){
               // Never repeat a prompt after an unknown Telegram result.
               // Log only allowlisted reason and server-secret HMAC correlation.
               const evidence=telegramPromptFailureEvidence(event.eventId,error,
