@@ -5,3 +5,10 @@ export function orderRecordingMimes(args:{
   userAgent?:string; maxTouchPoints?:number;
 }):string[];
 export function proceduralMp4Route(args?:{nativeAvc?:boolean;webCodecs?:boolean;nativeWebm?:boolean;preferNativeWebm?:boolean}):'native'|'native-webm'|'webcodecs'|'unsupported';
+export function useWebCodecsForRecording(args?:{
+  hasWebCodecs?:boolean;
+  safariWebKit?:boolean;
+  procedural?:boolean;
+  proceduralRoute?:'native'|'native-webm'|'webcodecs'|'unsupported';
+  preferWebm?:boolean;
+}):boolean;
