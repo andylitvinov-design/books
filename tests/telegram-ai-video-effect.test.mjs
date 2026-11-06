@@ -121,3 +121,16 @@ test('secure Telegram queue uses approved account, real status, lease fencing an
  assert.match(next,/"\/api\/internal\/direct-message-push": \["\.\/node_modules\/ffmpeg-static\/ffmpeg"\]/,
   'the reused five-minute recovery worker must trace its FFmpeg executable');
 });
+
+
+test('render budget gate is enforced inside queue worker regardless of endpoint',()=>{
+ const root=url=>readFileSync(new URL(url,import.meta.url),'utf8');
+ const worker=root('../lib/app/telegram-ai-worker.js');
+ const bot=root('../lib/app/telegram-ai-account-boundary.js');
+ assert.match(worker,/env\.HH_AI_TELEGRAM_RENDER_BUDGET_APPROVED==='true'/);
+ assert.match(worker,/aiVideoBotIdentityReady\(env\)\?videos:0/);
+ assert.match(worker,/consume\('video',approvedVideos,async job=>\{/);
+ assert.doesNotMatch(worker,/consume\('video',videos,async job=>\{/);
+ assert.match(bot,/telegramPersonalVideoSendReady\(env\)/);
+ assert.match(bot,/timingSafeEqual/);
+});
