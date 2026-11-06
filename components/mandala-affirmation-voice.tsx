@@ -177,8 +177,8 @@ export function MandalaAffirmationVoice({
     if(voiceDataRef.current)onInvalidateRef.current?.();
     voiceDataRef.current=null;
     playGeneratedAfterRequestRef.current=false;
-    const previous=audioUrlRef.current;
-    if(previous){URL.revokeObjectURL(previous);audioUrlRef.current="";}
+    const previousAudioUrl=audioUrlRef.current;
+    if(previousAudioUrl){URL.revokeObjectURL(previousAudioUrl);audioUrlRef.current="";}
     jobRef.current++;
     controllerRef.current?.abort();
     setBusy(false);setMixing(false);setAudioUrl("");setSpeechSeconds(0);

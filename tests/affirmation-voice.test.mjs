@@ -310,8 +310,8 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
   assert.ok(ui.includes('setConsent(false)'));
   assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
   const speechChangeEffect=ui.slice(
-    ui.indexOf('    const textChanged=originRef.current.speechText!==speechText;'),
-    ui.indexOf('  },[speechText,voiceId,language]);'));
+    ui.indexOf('    const textChanged=previous.speechText!==speechText;'),
+    ui.indexOf('  },[speechText,voiceId,language,busy,mixing,locale]);'));
   assert.match(speechChangeEffect,/if\(voiceDataRef\.current\)onInvalidateRef\.current\?\.\(\)/,
     "changing the spoken phrase must detach its previous WAV");
   assert.doesNotMatch(speechChangeEffect,/voiceDataRef\.current&&!textChanged/,
@@ -450,6 +450,6 @@ test("Safari voice lifecycle never silently aborts identical inputs or mistakes 
   assert.match(script,/toHaveAttribute\("data-video-affirmation-phase","attached"\)/);
   assert.match(script,/voicePhase,voiceUi,providerRequests:/);
   for(const guard of ["assert.equal(affirmationRequests.length,1)","ffprobe",
-    "assert.equal(Number(audioTrack.channels),2)","pcm.stdout.some(value=>value!==0)"])
+    "assert.equal(Number(audioTrack.channels),2,","pcm.stdout.some(value=>value!==0)"])
     assert.ok(script.includes(guard),"Safari real-media gate lost: "+guard);
 });
