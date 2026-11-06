@@ -18,6 +18,8 @@
     if(value!==undefined)v.textContent=String(value);return v;};
  const link=raw=>typeof raw==='string'&&
    /^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+(?:\/job\/\d+)?$/.test(raw)?raw:null;
+ const commitLink=sha=>typeof sha==='string'&&/^[0-9a-f]{40}$/.test(sha)?
+   'https://github.com/andylitvinov-design/books/commit/'+sha:null;
  let target,card,body,meta,toolbar,status,exportBtn;
  let current=null,active=24,busy=false,lastKey='',lastAt=0;
  function period(){
@@ -37,6 +39,48 @@
    const a=el(safe?'a':'span','',label);
    if(safe){a.href=safe;a.target='_blank';a.rel='noopener noreferrer';}
    return a;
+ }
+ async function renderWaveDetails(pr,h,host){
+   host.replaceChildren(el('p','hh-ci-archive-note','Читаю подтверждённые интервалы CI…'));
+   try{
+     const response=await fetch('/api/ci-journey-summary?hours='+h+'&pr='+pr,
+       {headers:{Accept:'application/json'},cache:'default'});
+     const data=await response.json();
+     if(!response.ok||data.schema!=='HH_CI_WAVE_DETAIL_V1'||data.pr!==pr||
+        data.period_hours!==h||!Array.isArray(data.waves)||data.total_waves!==data.waves.length)
+       throw Error(data.error||'Список интервалов не подтверждён');
+     host.replaceChildren();
+     if(!data.available){
+       host.append(el('p','hh-ci-archive-note','В выбранном периоде нет подтверждённых интервалов; это не ноль.'));
+       return;
+     }
+     if(!data.waves.length){
+       host.append(el('p','hh-ci-archive-note','Запуски пересекались по времени либо нет подтверждённых пауз.'));
+       return;
+     }
+     const names={new_head:'Новый HEAD',same_head:'Тот же HEAD',unverified_head:'HEAD неизвестен'};
+     for(const w of data.waves){
+       if(!Object.hasOwn(names,w.kind)||!Number.isSafeInteger(w.duration_ms)||w.duration_ms<=0)continue;
+       const item=el('div','hh-ci-wave-item');
+       const head=el('div','hh-ci-archive-stage');
+       head.append(el('strong','',names[w.kind]),el('b','',fmtMs(w.duration_ms)));
+       const note=el('p','hh-ci-archive-note',dt(w.started_at)+' → '+dt(w.ended_at)+'. '+
+          (w.after_failure?'Предыдущий CI завершился ошибкой. ':'')+
+          'Кто инициировал новую волну и причина ожидания не доказаны.');
+       const links=el('p','hh-ci-archive-note');
+       links.append(runLink(w.prior_url,'Предыдущий CI'),' · ',runLink(w.next_url,'Следующий CI'));
+       const commit=commitLink(w.next_head);
+       if(commit){const a=el('a','',' · Коммит');a.href=commit;a.target='_blank';
+         a.rel='noopener noreferrer';links.append(a);}
+       item.append(head,note,links);host.append(item);
+     }
+     host.append(el('p','hh-ci-archive-note',
+       'Смена SHA доказывает новый исходный код, а не причину задержки.'+
+       (data.pagination_partial?' Исторический архив неполный.':'')));
+   }catch(error){
+     host.replaceChildren(el('p','hh-ci-archive-note',
+       'История недоступна: '+String(error.message||error).slice(0,100)+'. Отсутствие данных не равно нулю.'));
+   }
  }
  function render(data){
    current=data;active=data.period_hours;body.replaceChildren();
@@ -156,6 +200,17 @@
          const line=el('div');line.append(el('span','',name),runLink(url,dt(time)));stamps.append(line);
        }
        detail.append(stamps);
+       if(r.repeats>0){
+         const waves=el('details','hh-ci-archive-more');
+         const waveBody=el('div','hh-ci-archive-list');
+         waves.append(el('summary','','Каждая повторная волна · время, SHA, причины'),waveBody);
+         let requested=false;
+         waves.addEventListener('toggle',()=>{
+           if(!waves.open||requested)return;
+           requested=true;void renderWaveDetails(r.pr,data.period_hours,waveBody);
+         });
+         detail.append(waves);
+       }
        if(r.job_clock_ms){
          for(const [key,title] of [['core','Core job'],['specialist','Specialist job'],
            ['merge_gate','Merge-check job']]){
@@ -263,6 +318,7 @@
    const style=el('style');
    style.textContent='.hh-ci-central{padding:12px;margin:12px 0;background:#0b1d30;color:#e9f4ff;border:1px solid #365873;border-radius:13px}.hh-ci-central h4{font-size:15px;margin:0 0 7px}.hh-ci-central h5{font-size:13px;margin:12px 0 8px}.hh-ci-archive-note,.hh-ci-central-status,.hh-ci-central-meta,.hh-ci-archive-empty{font-size:11px;line-height:1.45;color:#acc3d8;margin:8px 0}.hh-ci-central-actions{display:flex;gap:8px;margin:10px 0}.hh-ci-central-actions button{border:1px solid #55758d;background:#25425a;color:#eef8ff;padding:8px 10px;border-radius:8px;font-size:11px}.hh-ci-central-actions button:disabled{opacity:.5}.hh-ci-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.hh-ci-mini{border:1px solid #385c7b;border-radius:9px;background:#101f32;padding:10px 6px;display:flex;flex-direction:column;gap:5px;text-align:center}.hh-ci-mini span{font-size:10px;color:#aec6da}.hh-ci-mini strong{font-size:17px;color:#87c9ff}.hh-ci-journey-bars{height:13px;display:flex;border-radius:8px;overflow:hidden;background:#31465c}.hh-ci-journey-bar{min-width:0}.hh-ci-journey-bar.bar-0{background:#537dba}.hh-ci-journey-bar.bar-1{background:#89c6ff}.hh-ci-journey-bar.bar-2{background:#70debc}.hh-ci-journey-bar.bar-3{background:#ffc077}.hh-ci-journey-bar.bar-4{background:#8f90ae}.hh-ci-journey-pieces{margin-top:9px;display:grid;gap:8px}.hh-ci-journey-pieces>div,.hh-ci-archive-stage{display:flex;justify-content:space-between;gap:10px;font-size:11px}.hh-ci-journey-pieces span,.hh-ci-archive-stage span{color:#b3cada}.hh-ci-rows-head{display:flex;align-items:baseline;flex-wrap:wrap;justify-content:space-between;gap:8px}.hh-ci-rows-head span{font-size:10px;color:#adc3d8}.hh-ci-archive-list{display:grid;gap:6px}.hh-ci-archive-pr{border:1px solid #365674;border-radius:9px;background:#101e31}.hh-ci-archive-pr summary{display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 8px;font-size:11px;flex-wrap:wrap}.hh-ci-pr-number{font-weight:800;color:#a6d5ff}.hh-ci-archive-pr summary strong{color:#71dfbb;font-size:14px}.hh-ci-archive-pr summary small{color:#b5cce1}.hh-ci-arrow{margin-left:auto}.hh-ci-archive-pr-detail{padding:8px 10px 12px;border-top:1px solid #35506b;display:grid;gap:7px}.hh-ci-archive-timestamps{display:grid;gap:5px}.hh-ci-archive-timestamps>div{display:flex;justify-content:space-between;flex-wrap:wrap;gap:7px;font-size:11px}.hh-ci-archive-timestamps span{color:#aec7dc}.hh-ci-central a{color:#94ceff;text-decoration:underline}.hh-ci-central-meta{display:grid;gap:5px;border-top:1px solid #344d67;margin-top:14px;padding-top:10px}';
    style.textContent+=
+     '.hh-ci-wave-item{border:1px solid #365873;border-radius:8px;padding:8px;margin:6px 0}.hh-ci-wave-item p{margin:4px 0}.hh-ci-wave-item a{color:#94ceff;text-decoration:underline}'+
      '.hh-ci-stage-sample{font-size:10px;color:#93a9c4;font-weight:400}'+
      '.hh-ci-journey-total{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #365873;padding-top:9px;margin-top:10px;font-size:12px}'+
      '.hh-ci-journey-total b{color:#71dfbb}'+
