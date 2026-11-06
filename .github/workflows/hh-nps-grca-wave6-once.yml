@@ -1,0 +1,74 @@
+name: HH NPS Grand Canyon filmed footage Wave 6 - one-time 54 official videos QA
+on:
+  push:
+    branches: [codex/hh-nps-grca-wave6-20261106]
+    paths:
+      - '.github/workflows/hh-nps-grca-wave6-once.yml'
+      - 'tools/video-vault/nps-wave6/**'
+permissions:
+  contents: read
+concurrency:
+  group: hh-nps-grca-wave6-source-qa-only
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/codex/hh-nps-grca-wave6-20261106'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify immutable QA source package and unpack isolated tools
+        run: |
+          echo 'abb209628137a14c41654e407b10842f59b3470b6734104bd21053046e8704fb  tools/video-vault/nps-wave6/HH_NPS_Wave6_Research_Executable_20261106.zip' | sha256sum -c -
+          unzip -oq tools/video-vault/nps-wave6/HH_NPS_Wave6_Research_Executable_20261106.zip -d tools/video-vault/nps-wave6
+      - name: Offline security and rights-gating tests before any remote media acquisition
+        run: |
+          node --check tools/video-vault/nps-wave6/nps-grca-wave6-screen.mjs
+          node --test tools/video-vault/nps-wave6/nps-grca-wave6.test.mjs
+          test -f data/video-catalog/nps-grca-research-54-20261106.json
+      - name: No new public stock catalogue or direct app playback
+        run: git diff --exit-code -- public/ data/video-catalog/scene-taxonomy.json
+  screen:
+    needs: [validate]
+    if: github.ref == 'refs/heads/codex/hh-nps-grca-wave6-20261106'
+    runs-on: ubuntu-latest
+    timeout-minutes: 59
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unpack source QA scripts (hash verified, no dependency install)
+        run: |
+          echo 'abb209628137a14c41654e407b10842f59b3470b6734104bd21053046e8704fb  tools/video-vault/nps-wave6/HH_NPS_Wave6_Research_Executable_20261106.zip' | sha256sum -c -
+          unzip -oq tools/video-vault/nps-wave6/HH_NPS_Wave6_Research_Executable_20261106.zip -d tools/video-vault/nps-wave6
+      - name: Existing free runner FFmpeg and ffprobe
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+      - name: Physical official NPS public-domain review-only cuts
+        run: node tools/video-vault/nps-wave6/nps-grca-wave6-screen.mjs --shard=${{ matrix.shard }}
+      - name: Archive physical MP4s and provenance locally as ephemeral review evidence, NOT R2
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-grca-wave6-screen-${{ matrix.shard }}
+          path: artifacts/nps-grca-wave6-shard${{ matrix.shard }}/**
+          retention-days: 3
+          compression-level: 6
+          if-no-files-found: warn
