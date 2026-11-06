@@ -443,3 +443,18 @@ test("WebKit release follows the real Montage Settings, Audio, and voice disclos
  assert.match(source,/voicePanel\.locator\(":scope > summary"\)\.click\(\)/);
  assert.doesNotMatch(source,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
 });
+
+test("one consented WebKit touch produces a real WAV and decoded MP4 without duplicate POST",()=>{
+ const ui=read("components/mandala-affirmation-voice.tsx");
+ assert.match(ui,/voiceRequestInFlight\.current=true/);
+ assert.match(ui,/onTouchEnd=\{event=>\{/);
+ assert.match(ui,/lastSubmitTouchAt\.current=Date\.now\(\)/);
+ assert.match(ui,/onTouchMove=\{event=>/);
+ assert.match(ui,/Math\.hypot\(finger\.clientX-start\.x,finger\.clientY-start\.y\)>14/);
+ assert.match(ui,/if\(event\.detail!==0&&Date\.now\(\)-lastSubmitTouchAt\.current<950\)return/);
+ assert.match(source,/hasTouch:engine==="webkit"/);
+ assert.match(source,/if\(engine==="webkit"\)await generateNarration\.tap\(\)/);
+ assert.match(source,/assert\.equal\(affirmationRequests\.length,1\)/);
+ assert.match(source,/encoded-audio-verified/);
+ assert.match(source,/data-video-affimations-audio-ready/);
+});

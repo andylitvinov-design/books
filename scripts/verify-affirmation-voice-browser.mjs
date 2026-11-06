@@ -110,7 +110,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
     const locale=engine==="webkit"?"ru":"en";
     phase(engine,"workspace-hydration");
     await verifyWorkspaceHydration(browser,locale);
-    const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true,serviceWorkers:"block"});
+    const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true,hasTouch:engine==="webkit",serviceWorkers:"block"});
     // Playwright has no default action timeout: an obscured iPhone control can
     // otherwise hang until the six-minute process watchdog with no locator.
     context.setDefaultTimeout(25000);
@@ -465,7 +465,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible();
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       await page.locator("[data-video-affirmation-voice-consent]").check();
-      await page.locator("[data-video-generate-affirmation-audio]").click();
+      const generateNarration=page.locator("[data-video-generate-affirmation-audio]");
+      await expect(generateNarration).toBeEnabled();
+      // Safari iPhone/WebKit has a real touch gesture; desktop Chromium uses click.
+      // No synthetic hidden click and no mock-ready file.
+      if(engine==="webkit")await generateNarration.tap();
+      else await generateNarration.click();
       try {
         await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
         phase(engine,"voice-wav-ready");

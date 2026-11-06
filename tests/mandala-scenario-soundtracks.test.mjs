@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {loadActiveFilmPresets} from "../scripts/read-live-film-presets.mjs";
 import {recommendScenarioMelodies} from "../lib/mandala/scenario-soundtracks.mjs";
-test("all 48 public scenarios offer four distinct localized real WAV melodies",()=>{
- const {presets}=loadActiveFilmPresets();assert.equal(presets.length,48);
+test("all 49 public scenarios offer four distinct localized real WAV melodies",()=>{
+ const {presets}=loadActiveFilmPresets();assert.equal(presets.length,49);
  for(const p of presets){
    const songs=recommendScenarioMelodies(p);
    assert.equal(songs.length,4,p.id);

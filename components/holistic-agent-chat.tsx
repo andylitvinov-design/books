@@ -15,6 +15,9 @@ import {
   changeMessengerVideoPhraseStyle,encodeMessengerVideoHandoff,
 } from "@/lib/mandala/video-chat-messenger-flow.mjs";
 import styles from "./holistic-agent-chat.module.css";
+import dynamic from "next/dynamic";
+
+const MessengerTestJourney = dynamic(() => import("@/components/app/messenger-test-journey"), { ssr: false });
 
 type Mode = "rules" | "device" | "owned";
 type PublicVideoGoal = "all" | "stress" | "energy" | "relationships" | "work" | "meaning" | "practices";
@@ -24,6 +27,7 @@ type Outline = {status:"draft_ready";title:string;lessons:Array<{number:number;t
 type Message = { role: "user" | "assistant"; text: string };
 type MessengerVideoDraft = {
   goal:string;categoryId:string|null;topicId:string|null;scenarioId:string|null;
+  mytubeCategoryId:string|null;mytubeSubcategoryId:string|null;mytubeTopicId:string|null;
   ideaId:string|null;phraseId:string|null;phraseText:string|null;
   tone:"gentle"|"confident"|"grounded"|"inspiring";speaker:"self"|"support";
   length:"short"|"extended";mood:"slow"|"dynamic"|null;
@@ -166,6 +170,9 @@ const messengerStarter = {
   safety:"Si tú u otra persona estáis en peligro inmediato, contacta los servicios de emergencia locales. Puedo ayudarte a buscar recursos públicos cuando sea seguro.",
  },
 } as const;
+function isVideoCreationIntent(raw:string):boolean {
+ return /^(?:i (?:want to |would like to )?(?:create|make) (?:a |my )?video|create (?:a |my )?video|хочу (?:создать|сделать) (?:сво[её] |личное )?видео|создать (?:сво[её] |личное )?видео|quiero (?:crear|hacer) (?:un |mi )?v[ií]deo|crear (?:un |mi )?v[ií]deo)[.!?]?$/iu.test(raw.trim());
+}
 function isCasualGreeting(raw:string):boolean {
  const text=raw.toLocaleLowerCase().normalize("NFKC").replace(/[!?,.¿¡]+/g," ").replace(/\s+/g," ").trim();
  // Only exact simple greetings. Do not intercept risk, privacy or other requests.
@@ -204,6 +211,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const [draft,setDraft]=useState("");
   const [entryOpen,setEntryOpen]=useState(true);
   const [guideLink,setGuideLink]=useState<"tests"|null>(null);
+  const [testChatOpen,setTestChatOpen]=useState(false);
+  const [testRevision,setTestRevision]=useState(0);
   const [guidedTrack,setGuidedTrack]=useState<GuidedTrack>(null);
   const [videoGoal,setVideoGoal]=useState<PublicVideoGoal>("all");
   const [showVideoSignIn,setShowVideoSignIn]=useState(false);
@@ -213,6 +222,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const [videoDraft,setVideoDraft]=useState<MessengerVideoDraft>(
     ()=>initialMessengerVideoDraft() as MessengerVideoDraft);
   const [videoStep,setVideoStep]=useState<string|null>(null);
+  const [videoPendingCategory,setVideoPendingCategory]=useState<string|null>(null);
   const videoCopy=messengerVideoCopy(locale);
   const videoChoices=compact&&videoStep?messengerVideoChoices(videoDraft,videoStep,locale):[];
   const [status,setStatus]=useState("");
@@ -227,19 +237,28 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     if(!quickPrompt)return;
     setDraft(quickPrompt.text.slice(0,2000));
     if(quickPrompt.format)setFormat(quickPrompt.format);
+    if(compact&&quickPrompt.format==="test"){
+      setTestChatOpen(true);setGuidedTrack("hint");setGuideLink("tests");setEntryOpen(false);
+    }
     // The user explicitly selected a rail action: prepare, never auto-send it.
     if(!compact)composerRef.current?.focus({preventScroll:true});
   },[quickPrompt,compact]);
   useEffect(()=>{
     const thread=threadRef.current;
     if(!thread)return;
-    if(followTail.current){
-      thread.scrollTop=thread.scrollHeight;
-      setNewBelow(false);
-    }else if(messages.length){
-      setNewBelow(true);
-    }
-  },[messages.length,status,choices.length]);
+    const revealLatest=()=>{
+      if(followTail.current){
+        // Scroll only the internal transcript, never the iPhone page or dock.
+        thread.scrollTop=thread.scrollHeight;
+        setNewBelow(false);
+      }else if(messages.length)setNewBelow(true);
+    };
+    revealLatest();
+    // New option groups/auth controls can mount after the message count settles.
+    const frame=window.requestAnimationFrame(revealLatest);
+    return ()=>window.cancelAnimationFrame(frame);
+  },[messages.length,status,choices.length,videoStep,videoDraft,
+    videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen]);
   useEffect(()=>{
     if(!compact)return;
     const input=composerRef.current;
@@ -279,7 +298,12 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     const goal=publicVideoGoalForMessage(text);
     if(goal)setVideoGoal(goal as PublicVideoGoal);
     if(!reviewed){setGuidedTrack(null);return starter.safety;}
-    if(reviewed.id.startsWith("video"))setGuidedTrack("video");
+    if(reviewed.id.startsWith("video")){
+      setGuidedTrack("video");setVideoStep("category");
+      setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
+      setVideoPendingCategory(null);
+      return messengerVideoQuestion("category",locale);
+    }
     else if(reviewed.id.startsWith("meditation"))setGuidedTrack("meditation");
     return reviewed.reply;
   }
@@ -296,6 +320,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       return;
     }
     const result=advanceMessengerVideo(videoDraft,videoStep,value,locale);
+    setVideoPendingCategory(null);
     setVideoDraft(result.draft as MessengerVideoDraft);
     setVideoStep(result.step);
     setDraft("");setStatus("");setSource("");setChoices([]);
@@ -316,6 +341,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       {role:"assistant" as const,text:messengerVideoQuestion("phrase",locale)}].slice(-30));
   }
   function openVideoEdit(step:string,label:string) {
+    setVideoPendingCategory(null);
     setVideoStep(step);setShowVideoSignIn(false);followTail.current=true;setNewBelow(false);
     setMessages(prev=>[...prev,{role:"user" as const,text:label},
       {role:"assistant" as const,text:messengerVideoQuestion(step,locale)}].slice(-30));
@@ -331,9 +357,10 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     followTail.current=true;setNewBelow(false);
     setFormat(kind==="video"?"video":kind==="meditation"?"audio":"test");
     setVideoStep(kind==="video"?"category":null);
-    if(kind==="video")setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
+    if(kind==="video"){setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setVideoPendingCategory(null);}
     setGuidedTrack(kind);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);
     setGuideLink(kind==="hint"?"tests":null);
+    setTestChatOpen(kind==="hint");
     setEntryOpen(false);setStatus("");setSource("");setChoices([]);
     setDraft("");
     const intent=kind==="video"?starter.videoIntent:
@@ -354,6 +381,15 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       setMessages(prev=>[...prev,{role:"user" as const,text},
         {role:"assistant" as const,text:/[а-яё]/iu.test(text)?messengerStarter.ru.hello:
           /^(?:hola|buenas)/i.test(text)?messengerStarter.es.hello:starter.hello}].slice(-30));
+      return;
+    }
+    if(compact&&isVideoCreationIntent(text)){
+      followTail.current=true;setNewBelow(false);setDraft("");setStatus("");setChoices([]);
+      setEntryOpen(false);setGuidedTrack("video");setFormat("video");setTestChatOpen(false);
+      setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);
+      setVideoStep("category");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);
+      setMessages(prev=>[...prev,{role:"user" as const,text},
+        {role:"assistant" as const,text:messengerVideoQuestion("category",locale)}].slice(-30));
       return;
     }
     if(compact&&videoStep){
@@ -498,6 +534,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
       {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
+      {compact&&testChatOpen&&<MessengerTestJourney locale={locale}
+        onAdvance={()=>setTestRevision(value=>value+1)} onClose={()=>setTestChatOpen(false)}/>}
       {compact&&entryOpen&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
         <button type="button" data-hh-ai-start="video" disabled={busy} onClick={()=>startGuided("video")}>
           <span className={styles.startIcon} aria-hidden="true">🎬</span>
@@ -516,7 +554,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
           <strong>{starter.master}</strong><small>{starter.masterSub}</small>
         </a>
       </div>}
-      {compact&&(guidedTrack==="meditation"||(guidedTrack==="video"&&!videoStep))&&messages.length>0&&
+      {compact&&guidedTrack==="meditation"&&messages.length>0&&
         <div className={styles.publicVideoActions} data-hh-public-video-choices>
           <div className={styles.topicChoices} role="group" aria-label={starter.chooseTheme}>
             {(["stress","relationships","energy","meaning"] as const).map(goal=>
@@ -553,14 +591,27 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         {videoChoices.length>0&&<div className={styles.videoOptions} role="group"
           aria-label={messengerVideoQuestion(videoStep,locale)} data-hh-video-chat-options>
           {videoChoices.map(item=><button type="button" key={item.id} disabled={busy}
-            data-hh-video-chat-choice={item.id} onClick={()=>answerVideo(item.id,item.label)}>{item.label}</button>)}
+             aria-pressed={videoStep==="category"?videoPendingCategory===item.id:undefined}
+             data-hh-video-chat-choice={item.id} onClick={()=>{
+               if(videoStep==="category"){
+                 followTail.current=true;setNewBelow(false);setVideoPendingCategory(item.id);
+               }else answerVideo(item.id,item.label);
+             }}>{item.label}</button>)}
         </div>}
-        {videoStep==="category"&&<a className={styles.videoDiscoveryTextLink}
-          data-hh-guest-ready-videos href={"/"+locale+"/mytube?goal=all"}>{starter.readyVideos}</a>}
+        {videoStep==="category"&&<button type="button" className={styles.videoStudioLink}
+           data-hh-personal-video-request disabled={busy||!videoPendingCategory}
+           onClick={()=>{
+             const selected=videoChoices.find(item=>item.id===videoPendingCategory);
+             if(selected)answerVideo(selected.id,selected.label);
+           }}>{starter.requestVideo}</button>}
         {videoStep==="review"?<div className={styles.videoReview} data-hh-video-chat-review>
+          {videoDraft.mytubeTopicId&&<p data-hh-video-canonical-topic>{
+            messengerVideoChoices(videoDraft,"mytube-topic",locale)
+              .find(item=>item.id===videoDraft.mytubeTopicId)?.label
+          }</p>}
           <p>{videoDraft.duration} s · {videoDraft.aspect==="portrait"?"9:16":videoDraft.aspect==="square"?"1:1":"16:9"} · {videoCopy.editNames.music}: {videoDraft.music==="none"?videoCopy.musicNames[3]:videoDraft.music}</p>
           <div className={styles.videoEditOptions} role="group" aria-label={videoCopy.edit}>
-            {(["category","topic","scenario","idea","phrase","mood","aspect","duration","music","phrases"] as const).map(step=><button
+            {(["category","subcategory","mytube-topic","topic","scenario","idea","phrase","mood","aspect","duration","music","phrases"] as const).map(step=><button
               type="button" key={step} disabled={busy} data-hh-video-edit-step={step}
               onClick={()=>openVideoEdit(step,step in videoCopy.editNames?
                 videoCopy.editNames[step as keyof typeof videoCopy.editNames]:messengerVideoQuestion(step,locale))}>
@@ -613,7 +664,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
