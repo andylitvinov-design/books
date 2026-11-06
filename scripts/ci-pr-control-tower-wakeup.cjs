@@ -100,7 +100,9 @@ async function relayCompletionWake({github,context,wait=waitForWorkerCompletion,
 // When GitHub silently delays its scheduled Watchdog, a *real* Control Tower
 // cycle can wake the same trusted workflow. Do not confuse workflow_run
 // wrappers with reconciliation, and do not create a second pending tick.
-const WATCHDOG_CRON_GRACE_MS=35*60_000;
+// A 10-minute cron should get one delayed-tick allowance, not 35 minutes of idle backlog.
+// The existing active-run and 11-minute manual cooldown guards still prevent duplicates.
+const WATCHDOG_CRON_GRACE_MS=16*60_000;
 const WATCHDOG_MANUAL_COOLDOWN_MS=11*60_000;
 function watchdogCronDecision(schedule,manual,now){
   if(!Number.isFinite(now)||!Array.isArray(schedule)||!Array.isArray(manual)||

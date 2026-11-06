@@ -160,6 +160,15 @@ test('stale watchdog cron backstop verifies queue state and dispatches at most o
  const recent=new Date(NOW-5*60_000).toISOString();
  const historical={id:21,status:'completed',created_at:old,updated_at:old};
  assert.equal(watchdogCronDecision([historical],[],NOW),'WAKE_STALE_WATCHDOG');
+ // A late 10-minute tick gets a short grace, but not an extra half-hour stall.
+ const withinGrace={...historical,id:31,created_at:new Date(NOW-15*60_000).toISOString()};
+ const beyondGrace={...historical,id:32,created_at:new Date(NOW-17*60_000).toISOString()};
+ assert.equal(watchdogCronDecision([withinGrace],[],NOW),'WATCHDOG_CRON_HEALTHY');
+ assert.equal(watchdogCronDecision([beyondGrace],[],NOW),'WAKE_STALE_WATCHDOG');
+ const recentManual={...historical,id:33,
+  created_at:new Date(NOW-10*60_000).toISOString(),
+  updated_at:new Date(NOW-10*60_000).toISOString()};
+ assert.equal(watchdogCronDecision([beyondGrace],[recentManual],NOW),'WATCHDOG_MANUAL_RECENT');
  assert.equal(watchdogCronDecision([{...historical,status:'queued'}],[],NOW),
   'WATCHDOG_ALREADY_RUNNING');
  assert.equal(watchdogCronDecision([{...historical,created_at:recent}],[],NOW),
