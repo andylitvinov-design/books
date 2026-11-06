@@ -25,6 +25,21 @@ function validBranch(ref) {
     !ref.includes('//') && !ref.includes('@{') && !ref.endsWith('/') &&
     ref !== PROD && ref !== DEFAULT;
 }
+
+// Read-only veto immediately before expensive isolated repair work.
+// Not proof of a source fix, claim ownership, or permission to merge.
+function currentRepairHead(pr,number,expectedSha){
+ return Boolean(Number.isSafeInteger(number)&&number>0&&
+  SHA.test(expectedSha||'')&&pr?.number===number&&
+  pr.state==='open'&&pr.draft===false&&
+  pr.user?.login===REPO.split('/')[0]&&
+  pr.base?.ref===PROD&&pr.head?.repo?.full_name===REPO&&
+  pr.head?.sha===expectedSha&&validBranch(pr.head?.ref)&&
+  Array.isArray(pr.labels)&&!pr.labels.some(label=>
+   ['hh:hold','hh:blocked','hh:direction-override:invalid']
+    .includes(label?.name)));
+}
+
 function eligible(pr, fullRepo) {
   const owner = fullRepo.split('/')[0];
   return !!(pr && pr.state === 'open' && !pr.draft &&
@@ -768,4 +783,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,PROD,SOURCE,CONFLICT,MARKER};
