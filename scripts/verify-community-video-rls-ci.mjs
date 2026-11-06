@@ -64,8 +64,8 @@ try {
  }
  const users=await db.query('select id from auth.users where id=any($1::uuid[])',[[A,B]])
  assert.equal(users.rowCount,0,'fresh synthetic user ids required')
- await db.query('insert into auth.users(id,email) values($1,$2),($3,$4)',
-  [A,'community-a@example.invalid',B,'community-b@example.invalid'])
+ await db.query('insert into auth.users(id,email) values($1,$2),($3,$4),($5,$6)',
+  [A,'community-a@example.invalid',B,'community-b@example.invalid',C,'community-third@example.invalid'])
  await db.query('insert into auth.sessions(id,user_id) values($1,$2),($3,$4)',[SA,A,SB,B])
  await db.query(`insert into app.accounts(id,status,onboarding_state)
   values($1,'active','active'),($2,'active','active'),($3,'active','active')`,[A,B,C])
