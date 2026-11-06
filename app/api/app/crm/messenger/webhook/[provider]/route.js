@@ -61,21 +61,9 @@ export async function POST(request,{params}){
             messageId:event.callbackMessageId})}catch{}
           continue
         }
-        // Keep the legacy diagnostic route identical while the AI flag is OFF.
-        // Lazy imports avoid loading FFmpeg/queue modules for ordinary CRM tests.
-        if(event.type==='incoming'&&process.env.HH_AI_TELEGRAM_QUEUE_ENABLED==='true'){
-          const {receiveTelegramAiUpdate}=await import('@/lib/app/telegram-ai-queue')
-          const ai=await receiveTelegramAiUpdate(config,event)
-          if(ai.handled){
-            if(ai.queued||ai.consented||ai.consentRequired)after(async()=>{
-              try{
-                const {runTelegramAiQueues}=await import('@/lib/app/telegram-ai-worker')
-                await runTelegramAiQueues(config,{messages:2,videos:1,deliveries:3})
-              }catch{console.error('HH_AI_QUEUE_AFTER_FAILED')}
-            })
-            continue
-          }
-        }
+        // Client-account AI/video intake lives solely on the independently
+        // signed client Telegram webhook. CRM keeps diagnostics and owner
+        // commands; one bot token must never control two inbound URLs.
         const intake=await processTelegramDiagnostic(event,config)
         if(intake.handled){
           if(event.callbackId){
