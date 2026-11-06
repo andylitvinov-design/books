@@ -133,6 +133,8 @@ export function MandalaAffirmationVoice({
   // Keep one consented request per physical gesture, not two paid-capable POSTs.
   const submitPointerStart=useRef<{x:number;y:number}|null>(null);
   const lastSubmitPointerAt=useRef(0);
+  const submitTouchStart=useRef<{x:number;y:number}|null>(null);
+  const lastSubmitTouchAt=useRef(0);
   const voiceRequestInFlight=useRef(false);
   const controllerRef=useRef<AbortController|null>(null);
   const audioUrlRef=useRef("");
@@ -553,15 +555,36 @@ export function MandalaAffirmationVoice({
     </label>
     <button type="button" className={css.action} data-video-generate-affirmation-audio
       disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending}
+      // Mobile Safari may dispatch touchend but not pointerup or compatibility click.
+      // Accept one short intentional touch, never a scroll or consent-free request.
+      onTouchStart={event=>{
+        const finger=event.touches.length===1?event.touches[0]:null;
+        submitTouchStart.current=finger?{x:finger.clientX,y:finger.clientY}:null;
+      }}
+      onTouchMove={event=>{
+        const start=submitTouchStart.current,finger=event.touches[0];
+        if(!start||event.touches.length!==1||!finger||
+          Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>14)
+          submitTouchStart.current=null;
+      }}
+      onTouchCancel={()=>{submitTouchStart.current=null;}}
+      onTouchEnd={event=>{
+        const start=submitTouchStart.current,finger=event.changedTouches[0];
+        submitTouchStart.current=null;
+        if(!start||event.changedTouches.length!==1||!finger||
+          Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>14)return;
+        lastSubmitTouchAt.current=Date.now();
+        void createAudio();
+      }}
       onPointerDown={event=>{
-        submitPointerStart.current=event.isPrimary&&event.button===0
+        submitPointerStart.current=event.pointerType!=="touch"&&event.isPrimary&&event.button===0
           ?{x:event.clientX,y:event.clientY}:null;
       }}
       onPointerCancel={()=>{submitPointerStart.current=null;}}
       onPointerUp={event=>{
         const start=submitPointerStart.current;
         submitPointerStart.current=null;
-        if(!start||!event.isPrimary||event.button!==0||
+        if(event.pointerType==="touch"||!start||!event.isPrimary||event.button!==0||
           Math.hypot(event.clientX-start.x,event.clientY-start.y)>14)return;
         lastSubmitPointerAt.current=Date.now();
         void createAudio();
@@ -569,6 +592,7 @@ export function MandalaAffirmationVoice({
       onClick={event=>{
         // A synthesized click immediately after pointerup is the same action.
         // detail=0 is a keyboard or accessibility activation: always permit.
+        if(event.detail!==0&&Date.now()-lastSubmitTouchAt.current<950)return;
         if(event.detail!==0&&Date.now()-lastSubmitPointerAt.current<750)return;
         void createAudio();
       }}>

@@ -419,3 +419,24 @@ test("consented narration handles a real WebKit pointer gesture exactly once",()
   assert.match(browser,/await page\.locator\("\[data-video-affimations-audio-ready\]"\)\.waitFor/);
   assert.ok(!browser.includes("generateNarration.click({force:true})"));
 });
+
+
+test("headed WebKit narration uses a real short touch without duplicate provider requests",()=>{
+  const client=readFileSync(new URL("../components/mandala-affirmation-voice.tsx",import.meta.url),"utf8");
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  for(const marker of [
+    "onTouchStart={event=>","onTouchMove={event=>","onTouchCancel={()=>{submitTouchStart.current=null;}",
+    "onTouchEnd={event=>","event.changedTouches.length!==1",
+    "Math.hypot(finger.clientX-start.x,finger.clientY-start.y)>14",
+    "lastSubmitTouchAt.current=Date.now()",
+    'event.pointerType==="touch"',
+    "event.detail!==0&&Date.now()-lastSubmitTouchAt.current<950",
+    "voiceRequestInFlight.current=true",
+  ])assert.ok(client.includes(marker),"physical touch / one request contract: "+marker);
+  assert.ok(browser.includes('hasTouch:engine==="webkit"'));
+  assert.ok(browser.includes('if(engine==="webkit")await generateNarration.tap()'));
+  assert.ok(browser.includes('else await generateNarration.click()'));
+  assert.ok(browser.includes('window.__hhVoiceSubmitProbe.touches++'));
+  assert.ok(browser.includes('assert.equal(affirmationRequests.length,1)'));
+  assert.ok(browser.includes('pcm.stdout.some(value=>value!==0)'));
+});

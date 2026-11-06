@@ -111,15 +111,16 @@ test("privacy, local goal and experimental efficacy note remain enforced",()=>{
     "the same personal goal retains its strict 160-character browser limit");
   assert.match(auto,/const value=event\.currentTarget\.value;[\s\S]*?onGoalChange\(value\)/,
     "typing updates the same local state and real source-backed proposal without remote upload");
-  assert.match(s,/data-video-basic-tab=\{item.id\}/);
+  assert.match(s,/data-video-montage-tab=\{item.id\}/);
+  assert.match(s,/data-video-voice-studio/);
   assert.match(s,/sourceText=\{currentAffirmationSpeech\}/,
     "phrases supply the existing shared narration source");
   assert.match(s,/setAffirmations\(/,
     "existing phrase controls remain functional outside the new basic settings");
   assert.match(s,/photoUrl&&!backgroundOnly&&!photoConsent/);
   assert.match(s,/if\(uploadedAudio&&!audioRights\)/);
-  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\)/,
-    "missing audio opens the original fifth-tab attachment and consent controls");
+  assert.match(s,/setNotice\(audioUi\.needsAttach\);\s*setActiveWorkspace\("editor"\);setMontagePanel\("audio"\);setBasicPanelTab\("music"\)/,
+    "missing audio opens Montage Audio attachment and consent controls");
   assert.match(s,/if\(!activeFilm\)\{[\s\S]*?if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}\s*else openAffirmationPreview\(\)/,
     "Canvas-only topics must play the visible main screen without expanding the editor");
   assert.match(s,/const coverOptions=document\.querySelector<HTMLDetailsElement>\("\[data-video-cover-options\]"\)/,

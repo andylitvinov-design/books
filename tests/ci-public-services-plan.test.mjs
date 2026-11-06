@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { matchesGlob } from 'node:path';
 import { parsePrTrigger } from '../lib/ci/specialist-aggregate.mjs';
 import test from 'node:test';
+import { approvedTelegramPresentation } from '../lib/crm/telegram-presentation.mjs';
 import { PUBLIC_BROWSER_CASES, PUBLIC_SOURCE_TESTS, planPublicServicesChangedPaths, planPublicServicesEvent, requiresPublicServicesHeavyPr, publicPlaywrightEngines, isTrustedMandalaOwnerPath, isTrustedCoreCiOwnerPath, verifiedCriticalPublicCases, REVIEWED_VOICE_2629_DELTA, REVIEWED_PHRASES_3006_DELTA , exactReleaseProofAddition, EXACT_RELEASE_PROOF_BLOBS, planPrivatePractitionerMediaRows, PRIVATE_PRACTITIONER_MEDIA_OWNERS, PRIVATE_PRACTITIONER_MEDIA_REVIEWED_ADDITIONS } from '../scripts/ci-public-services-plan.mjs';
 
 const workflow = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
@@ -931,14 +932,18 @@ test('only exact owner-approved Home film PR #2758 uses verified Home+Site Video
   assert.match(home,/pull_request:/);
   assert.match(video,/pull_request:/);
   const source=readFileSync(new URL('../components/home-presentation-video-section.tsx',import.meta.url),'utf8');
-  // The reviewed RU YouTube master was normalized into one shared, immutable
-  // Telegram/Home allowlist (#3651). Home must consume that canonical source,
-  // and the allowlist must retain the exact owner-approved video identity.
-  const presentation=readFileSync(new URL('../lib/crm/telegram-presentation.mjs',import.meta.url),'utf8');
-  assert.ok(source.includes('youtubeId: approvedTelegramPresentation("ru")?.youtubeId') &&
-    source.includes('if (locale === "ru" && !approvedRussianPresentation.youtubeId) return null;') &&
-    presentation.includes("youtubeId: 'G0Db6yOCMto'"),
-    'only approved Russian video source via shared publication allowlist');
+  // The site and Telegram now share ONE reviewed, immutable locale allowlist.
+  // The previously hard-coded RU ID moved into that registry in #3651.
+  const ru=approvedTelegramPresentation('ru');
+  assert.equal(ru?.youtubeId,'G0Db6yOCMto','exact owner-approved RU public film');
+  assert.equal(ru?.locale,'ru');
+  assert.ok(ru.durationSeconds>=70,'no 29-second or private preview substitute');
+  assert.equal(approvedTelegramPresentation('en'),null,'no Russian audio on English site');
+  assert.equal(approvedTelegramPresentation('es'),null,'no Russian audio on Spanish site');
+  assert.ok(source.includes('approvedTelegramPresentation("ru")?.youtubeId'),
+    'Home RU slot resolves the reviewed shared registry, not a hidden hard-coded ID');
+  assert.ok(source.includes('approvedTelegramPresentation("en")?.youtubeId'),
+    'English slot remains gated until a real approved English master exists');
 });
 
 

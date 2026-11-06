@@ -192,7 +192,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
     phase(engine,"guest-local-recording-invitation");
     await verifyGuestVoiceConsent(browser,locale);
     phase(engine,"guest-local-recording-invitation-passed");
-    const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true,serviceWorkers:"block"});
+    const context=await browser.newContext({viewport:{width:390,height:840},acceptDownloads:true,hasTouch:engine==="webkit",serviceWorkers:"block"});
     // Playwright has no default action timeout: an obscured iPhone control can
     // otherwise hang until the six-minute process watchdog with no locator.
     context.setDefaultTimeout(25000);
@@ -557,11 +557,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // credentials, media or account data in any CI log.
       await page.evaluate(()=>{
         const button=document.querySelector("[data-video-generate-affirmation-audio]");
-        window.__hhVoiceSubmitProbe={pointers:0,clicks:0};
+        window.__hhVoiceSubmitProbe={pointers:0,clicks:0,touches:0};
         button?.addEventListener("pointerup",()=>{window.__hhVoiceSubmitProbe.pointers++;});
         button?.addEventListener("click",()=>{window.__hhVoiceSubmitProbe.clicks++;});
+        button?.addEventListener("touchend",()=>{window.__hhVoiceSubmitProbe.touches++;});
       });
-      await generateNarration.click();
+      if(engine==="webkit")await generateNarration.tap();
+      else await generateNarration.click();
       try {
         await page.locator("[data-video-affimations-audio-ready]").waitFor({state:"visible",timeout:30000});
         phase(engine,"voice-wav-ready");

@@ -105,6 +105,7 @@ jobs:
           set -euo pipefail
           docs_only=false
           ci_only=false
+          ci_touched=false
           if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
             # pull_request checkout uses a synthetic merge commit. Production
             # may advance after the PR event base SHA was recorded. Compare
@@ -133,6 +134,14 @@ jobs:
             while IFS= read -r -d '' f; do
               [[ -z "$f" ]] && continue
               count=$((count + 1))
+              # CI contract suites are required when their code, manifests or
+              # dependencies change, even in a mixed application + CI PR.
+              # Ordinary product changes still execute their real lint, type,
+              # build, privacy and applicable specialist checks.
+              case "$f" in
+                .github/workflows/*|scripts/ci-*|lib/ci/*|tests/ci-*|tests/pr-fast-lane.test.mjs|tests/pr-sweep-guard.test.mjs|scripts/pr-sweep-guard.mjs|docs/operations/CI_RELEASE_POLICY.md|package.json|package-lock.json|next.config.ts|tsconfig.json)
+                  ci_touched=true ;;
+              esac
               case "$f" in
                 docs/*.md|README.md) ;;
                 *) docs_only=false ;;
@@ -188,9 +197,12 @@ jobs:
             done < /tmp/hh-pr-changed-files.z
             if [[ "$count" -eq 0 ]]; then docs_only=false; ci_only=false; fi
           fi
-          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
-          echo "ci_only=$ci_only" >> "$GITHUB_OUTPUT"
-          echo "Docs-only: $docs_only; CI-policy-only: $ci_only" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "docs_only=$docs_only"
+            echo "ci_only=$ci_only"
+            echo "ci_touched=$ci_touched"
+          } >> "$GITHUB_OUTPUT"
+          echo "Docs-only: $docs_only; CI-policy-only: $ci_only; CI-touched: $ci_touched" >> "$GITHUB_STEP_SUMMARY"
       - name: Route exact image and proven public JSX changes without Next build
         id: fast
         if: github.event_name == 'pull_request'
@@ -272,7 +284,7 @@ jobs:
             echo 'No Mandala media/voice changes; fast release contracts not applicable' >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Verify Source Preflight unit contracts
-        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.ci_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/ci-source-preflight.test.mjs
       - name: Source Preflight — syntax and TypeScript before costly Next build
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
@@ -307,13 +319,13 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
       - name: Assert fast-lane workflow contracts
-        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.ci_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/pr-fast-lane.test.mjs
       - name: Verify deterministic ESLint repair worker contract
-        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.ci_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/ci-deterministic-eslint-repair.test.mjs
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
-        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (steps.diff.outputs.ci_only == 'true') }}
+        if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (github.event_name != 'pull_request' || steps.diff.outputs.ci_touched == 'true') }}
         run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs
       - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}

@@ -4,22 +4,26 @@ import {readFileSync} from "node:fs";
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 
-test("Montage opens on preferences, preserves real recorder and exactly four functional tabs",()=>{
-  assert.match(studio,/useState<"settings"\|"effects"\|"text"\|"audio">\("settings"\)/);
+test("Montage opens on Style, preserves real recorder and exactly four functional tabs",()=>{
+  assert.match(studio,/useState<"settings"\|"effects"\|"text"\|"audio">\("effects"\)/);
   const tabStart=studio.indexOf("<nav className={videoStyles.montageQuickTools}");
   const tabMarkup=studio.slice(tabStart,studio.indexOf("</nav>",tabStart));
   assert.ok(tabStart>0,"Montage nav must exist");
-  assert.equal((tabMarkup.match(/id:"(settings|effects|text|audio)",Icon:/g)||[]).length,4);
+  assert.deepEqual([...tabMarkup.matchAll(/id:"(settings|effects|text|audio)",Icon:/g)].map(m=>m[1]),["effects","text","audio","settings"]);
   assert.match(studio,/data-video-montage-tab=\{item.id\}/);
-  assert.match(studio,/if\(item.id==="editor"\)setMontagePanel\("settings"\)/);
+  assert.match(studio,/if\(item.id==="editor"\)setMontagePanel\("effects"\)/);
   assert.match(studio,/aria-pressed=\{montagePanel===item.id\}/);
   assert.match(studio,/data-video-montage-preferences/);
-  for(const field of ["format","duration","transitions","speed","quality","style"])
+  for(const field of ["format","duration","transitions","speed","quality"])
     assert.ok(studio.includes('data-video-montage-preference="'+field+'"'),field);
   assert.match(studio,/onChange=\{event=>changeVideoAspect/);
   assert.match(studio,/onChange=\{event=>changeVideoDuration/);
   assert.match(studio,/onChange=\{event=>setQuality/);
-  assert.match(studio,/onChange=\{event=>quickPickStyle/);
+  assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
+  assert.match(studio,/data-video-montage-style=\{index\}/);
+  assert.doesNotMatch(studio,/data-video-montage-preference="style"/);
+  for(const label of ["Choose your style","Add text","Añadir texto","Добавить текст"])
+    assert.ok(studio.includes(label),label);
   assert.match(studio,/onClick=\{createQuickVideo\}/);
   assert.match(studio,/Сгенерировать видео/);
   assert.equal((studio.match(/data-video-montage-export/g)||[]).length,0,"no duplicate export CTA");
@@ -33,6 +37,17 @@ test("The editable timeline, script, audio and draft tools are preserved, but no
   assert.match(studio,/montagePanel==="audio" \? <div[^>]+data-video-montage-audio/);
   assert.match(studio,/data-video-audio-bed-panel/);
   assert.match(studio,/data-video-music-editor/);
+  const audio=studio.slice(studio.indexOf('montagePanel==="audio" ? <div'),
+    studio.indexOf('data-video-audio-bed-panel'));
+  assert.doesNotMatch(audio,/data-video-basic-tab|data-video-basic-duration|data-video-basic-format|data-video-editor-style-settings/);
+  assert.match(audio,/\{deepAudioPane\}/);
+  assert.match(audio,/data-video-voice-studio/);
+  assert.doesNotMatch(studio,/data-video-audio-length=/);
+  const settings=studio.slice(studio.indexOf('montagePanel==="settings" ? <div'),
+    studio.indexOf('montagePanel==="text" ? <div'));
+  assert.match(settings,/\{deepVideoPane\}/);
+  assert.match(settings,/data-video-montage-photo-open/);
+  assert.match(settings,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
   assert.match(css,/\.montagePreferencesGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css,/\.studio\[data-active-workspace="editor"\] \.previewStage \.heroRail\{display:none!important\}/);
 });
