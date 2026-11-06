@@ -308,6 +308,15 @@ jobs:
       # WAV masters are reproducible build output; avoid 31MB of binaries in Git.
       # Generate locally before source/asset parity checks; production npm run
       # build has the identical prebuild hook.
+      # Reuse the already populated, immutable production Core MP3 cache.
+      # Same content hash, no PR cache write or fallback to old revisions:
+      # source changes get a miss and regenerate the originals below.
+      - name: Restore production-owned scenario MP3 cache (read-only)
+        if: steps.policy.outputs.policy_only != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: public/audio/mandala/scenarios
+          key: hh-core-media-v1-${{ runner.os }}-${{ hashFiles('scripts/generate-scenario-melodies.mjs', 'scripts/generate-mandala-melodies.mjs', 'lib/mandala/scenario-audio-catalog.mjs', 'package-lock.json') }}
       - name: Generate original first-party melody masters
         if: steps.policy.outputs.policy_only != 'true'
         run: node scripts/generate-mandala-melodies.mjs
