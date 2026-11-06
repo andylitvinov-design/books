@@ -8,7 +8,7 @@ import {
   SCENARIO_AUDIO_REGISTRY, SCENARIO_AUDIO_VARIANTS, CLASSICAL_THEMES,
   isScenarioAudioId,isClassicalAudioId,scenarioAudioTracks,classicalAudioTracks,
 } from "../lib/mandala/scenario-audio-catalog.mjs";
-import {buildScenarioMusic} from "../scripts/generate-scenario-melodies.mjs";
+import {buildScenarioMusic,buildScenarioMusicParallel} from "../scripts/generate-scenario-melodies.mjs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 
 test("all 49 approved actual film scenarios have four own unique original MP3 paths",()=>{
@@ -95,6 +95,14 @@ test("generated MP3s are available to actual player and not empty placeholders",
   }
 });
 
+test("warm-cache Core reuses every verified master without extra generation",async()=>{
+  const exact=buildScenarioMusic({check:true});
+  const warm=await buildScenarioMusicParallel({workers:3});
+  assert.equal(warm.generated,0);
+  assert.equal(warm.totalMasterFiles,exact.totalMasterFiles);
+  assert.equal(warm.verified,false);
+});
+
 test("studio exposes four scenario melodies in its existing real audio/video mixer",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const player=read("lib/mandala/local-video-music.ts");
@@ -114,5 +122,5 @@ test("studio exposes four scenario melodies in its existing real audio/video mix
   }
   assert.match(buildAudio,/npm_lifecycle_event === "prebuild"/);
   assert.match(buildAudio,/npm_lifecycle_event === "predev"/);
-  assert.match(buildAudio,/buildScenarioMusic\(\)/);
+  assert.match(buildAudio,/await buildScenarioMusicParallel\(\)/);
 });

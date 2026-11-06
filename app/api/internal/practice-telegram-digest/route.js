@@ -23,6 +23,22 @@ export async function GET(request){
     return NextResponse.json({error:'UNAUTHORIZED'},{status:401,headers:PRIVATE_HEADERS})
   const ownerDue=torontoReportDue('operations')
   const masterDue=torontoReportDue('revenue')
+  // Reuse the EXISTING 09:00 Toronto cron slot: a separate daily greeting
+  // only for Telegram chats that explicitly opted in. Never a new scheduler.
+  if(masterDue&&process.env.VERCEL_ENV==='production'&&
+     process.env.HH_CRM_TG_COMPANION_ENABLED==='true'&&
+     process.env.HH_CRM_TG_COMPANION_DAILY_ENABLED==='true'){
+    try{
+      const config=getAppConfig()
+      const {deliverTelegramCompanionDaily}=await import('@/lib/crm/telegram-companion-service')
+      await deliverTelegramCompanionDaily(config,process.env,{limit:5})
+    }catch{
+      // Keep existing owner/practitioner reports independent.
+      console.error('HH_CRM_TG_COMPANION_DAILY_FAILED')
+    }finally{
+      await closeDatabase()
+    }
+  }
   if(!ownerDue&&!masterDue)
     return NextResponse.json({status:'not_due'},{headers:PRIVATE_HEADERS})
   if(process.env.VERCEL_ENV==='preview')
