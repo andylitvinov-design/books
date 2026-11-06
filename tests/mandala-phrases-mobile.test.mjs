@@ -61,8 +61,16 @@ test("approved phrases retain reusable audio but Apply transitions to Montage wi
   assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
   assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}[\s\S]*?onApply=\{\(\)=>\{[\s\S]*?activeWorkspace==="phrases" \? hypnoVoiceEditor : null[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
   assert.match(phrases,/onClick=\{onApply\?\?onCreate\}/);
-  assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseMusicSection/);
-  assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseAudioSettings/);
+  // The new compact Ideas screen intentionally hides the original Hypno
+  // voice/music editor until the visitor opens the advanced audio action.
+  // The original Approve/Apply flow remains mounted exactly ONCE and still
+  // never auto-renders or speaks unapproved phrases.
+  assert.match(studio,/const advancedPhraseEditorVisible=activeWorkspace==="phrases" && phraseAudioExpanded;/);
+  assert.match(studio,/data-video-advanced-phrase-editor=\{advancedPhraseEditorVisible\?"true":undefined\}/);
+  assert.match(studio,/data-video-legacy-phrase-editor=\{advancedPhraseEditorVisible\?undefined:"true"\}/);
+  assert.match(studio,/hidden=\{!advancedPhraseEditorVisible\}/);
+  assert.match(studio,/data-video-phrase-audio-shortcut aria-expanded=\{phraseAudioExpanded\}/);
+  assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \[data-video-legacy-phrase-editor\]\{display:none!important\}/);
   assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
 });
 

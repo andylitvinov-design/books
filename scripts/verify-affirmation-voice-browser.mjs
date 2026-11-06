@@ -661,7 +661,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(!await page.locator("[data-video-narration-stale]").isVisible())
         await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
       await page.locator('[data-video-quick-control="editor"]').click();
-      await page.locator('[data-video-basic-tab="voice"]').click();
+      // Voice mounts only after a real visit to Montage > Audio.
+      const voiceAudioTab=page.locator('[data-video-montage-tab="audio"]');
+      await expect(voiceAudioTab).toBeVisible({timeout:15000});
+      await voiceAudioTab.click();
+      await expect(voiceAudioTab).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-video-montage-settings]')).toBeVisible({timeout:15000});
+      const voiceTab=page.locator('[data-video-basic-tab="voice"]');
+      await expect(voiceTab).toBeVisible({timeout:15000});
+      await voiceTab.click();
+      await expect(voiceTab).toHaveAttribute("aria-pressed","true");
       // The phrase warning is intentionally unmounted in Montage. If the
       // old narration is still attached there, export must remain disabled;
       // an independently selected soundtrack is not stale narration.

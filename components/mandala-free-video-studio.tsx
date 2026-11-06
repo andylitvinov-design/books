@@ -16,6 +16,7 @@ import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
 import { MandalaFreeVideoGenerator } from "./mandala-free-video-generator";
 import { MandalaVideoDelivery } from "./mandala-video-delivery";
+import { MandalaVideoEffectJourney } from "./mandala-video-effect-journey";
 import { paintFreeVideoFrame } from "@/lib/mandala/free-video-renderer";
 import type { FreeVideoPlan } from "@/lib/mandala/free-video-renderer";
 import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
@@ -2056,6 +2057,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [recording, setRecording] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [progress,setProgress] = useState(0);
+  const [videoEffectSession,setVideoEffectSession] = useState(0);
+  const [videoEffectStarted,setVideoEffectStarted] = useState(false);
+  const [videoEffectEnded,setVideoEffectEnded] = useState(false);
   const [notice, setNotice] = useState("");
   const [musicWarning,setMusicWarning] = useState("");
   const [result, setResult] = useState<Result | null>(null);
@@ -2878,6 +2882,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return;
     }
     preparingRef.current=true;
+    setVideoEffectSession(current=>current+1);
+    setVideoEffectStarted(false);setVideoEffectEnded(false);
     setPreparing(true);setProgress(0);
     setNotice(safeWebkitRetry
       ? locale==="ru"?"Экспорт 540p / 8 кадр/с: все сцены и выбранное аудио сохраняются."
@@ -5643,6 +5649,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 :"This is an existing catalog MP4, not your custom montage. Use a browser with Canvas recording to export your selected settings."}
             </p>:null}
             <video ref={resultVideoRef} key={result.url} src={result.url} controls playsInline preload="auto"
+              onPlay={()=>setVideoEffectStarted(true)}
+              onEnded={()=>{setVideoEffectEnded(true);
+                window.requestAnimationFrame(()=>document.getElementById("video-effect-journey")
+                  ?.scrollIntoView({block:"nearest",behavior:"smooth"}));}}
               data-mandala-video-preview
               onLoadedData={event=>confirmVideoPlayback(event.currentTarget)}
               onCanPlay={event=>confirmVideoPlayback(event.currentTarget)}
@@ -5707,6 +5717,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                     :"Open original MP4 scene (without edits)"}
                 </a>
               </div> : null}
+            {playbackStatus==="ready"&&result.mode!=="catalog"?<a href="#video-effect-journey"
+              data-video-effect-open className={videoStyles.audioDirectLink}>
+              {locale==="ru"?"Понравилось видео? Ответьте и сравните 7 оценок":
+               locale==="es"?"¿Te gustó? Evalúa los 7 cambios":"Did you like it? Compare seven ratings"}
+            </a>:null}
             {playbackStatus==="ready" ? <>
             <div className={videoStyles.resultActions}>
               <a className={videoStyles.download} href={result.url}
@@ -6693,9 +6708,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               "Your edited phrases need approval in the Phrases tab before creating the video."}
           </p>}
         </div>
-        {recording?<div className={videoStyles.quickProgress} role="progressbar"
-          aria-label={quick.creating} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
-          <span style={{width:progress+"%"}}/></div>:null}
+        <MandalaVideoEffectJourney key={videoEffectSession} locale={locale}
+          status={preparing?"preparing":recording?"rendering":result&&result.mode!=="catalog"
+            ?playbackStatus==="ready"?"ready":playbackStatus==="failed"?"failed":"verifying"
+            :exportUnavailable?"failed":"idle"}
+          progress={progress} videoStarted={videoEffectStarted} videoEnded={videoEffectEnded}/>
         {notice?<p role="status" className={videoStyles.quickStatus} aria-live="polite">{notice}</p>:null}
         <p className={videoStyles.quickPrivacy} data-workspace-section="video"><Check size={16} aria-hidden="true"/>{quick.noAI}</p>
         <button type="button" className={videoStyles.quickTherapy}
