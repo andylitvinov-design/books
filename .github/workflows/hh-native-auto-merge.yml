@@ -497,11 +497,23 @@ jobs:
             const associated = (event.pull_requests || []).filter(pr =>
               Number.isInteger(pr.number) && /^[0-9a-f]{40}$/.test(pr.head?.sha || "") &&
               pr.base?.ref === "codex/public-book-library");
-            if (associated.length !== 1) {
+            let reference = associated.length === 1 ? associated[0] : null;
+            // GitHub sometimes clears run→PR association on jobless startup.
+            // Restore it only from immutable source SHA + ONE live Ready PR.
+            if (!reference && associated.length === 0 &&
+                event.conclusion === "startup_failure") {
+              const candidate = await github.rest.pulls.list({
+                owner, repo, head: owner + ":" + event.head_branch,
+                state: "open", per_page: 2
+              });
+              const {joblessStartupReference}=require(process.env.GITHUB_WORKSPACE+
+                "/scripts/ci-pr-jobless-startup.cjs");
+              reference=joblessStartupReference(event,candidate.data);
+            }
+            if (!reference) {
               log("SKIP missing or ambiguous exact-head PR association");
               return;
             }
-            const reference = associated[0];
             const live = (await github.rest.pulls.get({owner,repo,pull_number:reference.number})).data;
             if (live.state !== "open" || live.draft || live.base.ref !== "codex/public-book-library" ||
                 live.head.repo?.full_name !== fullRepo || live.head.ref !== event.head_branch ||
@@ -537,9 +549,30 @@ jobs:
             })).data;
             const {selectInterruptedMandatoryJob}=require(process.env.GITHUB_WORKSPACE+
               "/scripts/ci-pr-selective-core-rerun.cjs");
-            const decision=selectInterruptedMandatoryJob(jobData);
+            const {selectJoblessStartupRerun}=require(process.env.GITHUB_WORKSPACE+
+              "/scripts/ci-pr-jobless-startup.cjs");
+            const decide=jobs=>event.conclusion==="startup_failure" && jobs.total_count===0
+              ? selectJoblessStartupRerun(event,jobs)
+              : selectInterruptedMandatoryJob(jobs);
+            const decision=decide(jobData);
             log("JOB_DECISION "+JSON.stringify(decision));
-            if(decision.action!=="rerun_job")return;
+            if(decision.action!=="rerun_job"&&decision.action!=="rerun_workflow")return;
+            if(decision.action==="rerun_workflow"){
+              // If a newer Core wave already exists, retrying an old empty run
+              // wastes resources. The original must be in the newest 20 runs.
+              const page=(await github.rest.actions.listWorkflowRuns({
+                owner,repo,workflow_id:"hh-pr-core-release.yml",
+                event:"pull_request",branch:live.head.ref,per_page:20
+              })).data;
+              const runs=page?.workflow_runs;
+              if(!Array.isArray(runs)||runs.length>20||
+                 !runs.some(r=>r.id===event.id)||
+                 runs.some(r=>r.id!==event.id &&
+                   (!Number.isFinite(Date.parse(r.created_at||""))||
+                     Date.parse(r.created_at)>=Date.parse(event.created_at)))){
+                log("SKIP newer Core wave or incomplete recent run inventory");return;
+              }
+            }
             const fresh = (await github.rest.actions.getWorkflowRun({
               owner,repo,run_id:event.id
             })).data;
@@ -559,18 +592,26 @@ jobs:
             const latestJobs = (await github.rest.actions.listJobsForWorkflowRun({
               owner,repo,run_id:event.id,per_page:100,filter:"latest"
             })).data;
-            const latestDecision=selectInterruptedMandatoryJob(latestJobs);
-            if (latestDecision.action!=="rerun_job" ||
-                latestDecision.jobId!==decision.jobId) {
+            const latestDecision=decide(latestJobs);
+            if (latestDecision.action!==decision.action ||
+                (decision.action==="rerun_job" &&
+                 latestDecision.jobId!==decision.jobId)) {
               log("SKIP job state changed before retry"); return;
             }
-            // GitHub reruns only the selected job, not prior successful workflows.
+            // Retry the whole run only when GitHub never created a job.
+            // Existing interrupted jobs keep their targeted, sibling-safe retry.
             try {
-              await github.rest.actions.reRunJobForWorkflowRun({
-                owner,repo,job_id:decision.jobId
-              });
-              log("TARGETED_JOB_RERUN_ACCEPTED "+decision.jobName+" #"+decision.jobId+
-                " for PR #"+reference.number+"; never equate acceptance with CI PASS");
+              if (decision.action==="rerun_workflow") {
+                await github.rest.actions.reRunWorkflow({owner,repo,run_id:event.id});
+                log("JOBLESS_STARTUP_WORKFLOW_RETRY_ACCEPTED #"+event.id+
+                  " for PR #"+reference.number+"; not CI PASS");
+              } else {
+                await github.rest.actions.reRunJobForWorkflowRun({
+                  owner,repo,job_id:decision.jobId
+                });
+                log("TARGETED_JOB_RERUN_ACCEPTED "+decision.jobName+" #"+decision.jobId+
+                  " for PR #"+reference.number+"; never equate acceptance with CI PASS");
+              }
             } catch (error) {
               if ([403,404,409,422].includes(error.status)) {
                 core.warning("CORE_CI_RECOVERY: targeted rerun denied (HTTP "+error.status+")");

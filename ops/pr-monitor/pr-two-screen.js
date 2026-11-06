@@ -9,7 +9,7 @@
   window.__hhTwoScreensV1 = true;
   var ROOT_ID = 'hh-pr-two-screens';
   var STAGES = [
-    ['before_unknown','До первой сохранённой CI','Границы времени известны; причины внутри не подтверждены'],
+    ['before_unknown','До первой сохранённой CI · неатрибутировано','Включает Draft, подготовку PR и пропущенные Core runs; это НЕ измерение задержки GitHub до первой CI'],
     ['workflow_wait','Workflow → jobs','Время создания jobs в сохранённых Core runs'],
     ['runner_wait','Очередь runner','От jobs queued до started_at'],
     ['checks','Работа Core CI','Подтверждённое wall-clock jobs без двойного счёта'],
@@ -84,7 +84,7 @@
   }
   var SUBSTEPS = {
     before_unknown:[
-      ['before_unknown','Создан → первая сохранённая Core CI'],
+      ['before_unknown','Создан → первая сохранённая Core CI (включая время Draft)'],
       ['ready','Отдельное время Ready'],['triage','Отдельное время Triage'],
       ['repair','Отдельное время Repair']
     ],

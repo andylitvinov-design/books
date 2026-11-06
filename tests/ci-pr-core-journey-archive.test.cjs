@@ -65,3 +65,49 @@ test('quota reserve prevents writes',async()=>{
  assert.equal((await archive({github,context})).status,'RATE_RESERVE');
  assert.equal(writes,0);
 });
+test('jobless startup is archived only as registration, never fabricated runner evidence',()=>{
+ const failed=fromEvent({...event,conclusion:'startup_failure'});
+ const data=getJobs({data:{jobs:[],total_count:0}},
+   {...failed,updated_at:'2026-11-04T14:20:00Z'});
+ assert.equal(data.registration_only,true);
+ assert.equal(data.empty_job_reason,'STARTUP_FAILURE_NO_JOBS');
+ assert.deepEqual(data.jobs,[]);
+ assert.equal(data.completed_at,'2026-11-04T14:20:00.000Z');
+ assert.throws(()=>getJobs({data:{jobs:[],total_count:0}},failed),/NO_CONFIRMED_JOBS/);
+ assert.throws(()=>getJobs({data:{jobs:[],total_count:0}},
+   {...failed,conclusion:'failure',updated_at:'2026-11-04T14:20:00Z'}),/NO_CONFIRMED_JOBS/);
+});
+test('archive verifies exact source SHA before saving a jobless startup event',async()=>{
+ const initial={...event,
+   path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/public-book-library',
+   head_sha:sha,conclusion:'startup_failure',pull_requests:[]};
+ let writes=0,body='';
+ const candidate={number:3420,created_at:'2026-11-04T14:19:00Z',
+   state:'open',draft:false,base:{ref:'codex/public-book-library',sha:'b'.repeat(40)},
+   head:{sha,ref:'fix/timeline',repo:{full_name:'andylitvinov-design/books'}}};
+ const github={rest:{
+   actions:{listJobsForWorkflowRun:async()=>({data:{total_count:0,jobs:[]}})},
+   pulls:{list:async()=>({data:[candidate]}),get:async()=>({data:{
+     ...candidate,merged_at:null}})},
+   issues:{listComments:async()=>({data:[],headers:{'x-ratelimit-remaining':'500'}}),
+     createComment:async x=>{writes++;body=x.body;}}
+ }};
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+   ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_run',
+   payload:{workflow_run:initial}};
+ assert.equal((await archive({github,context})).status,'ARCHIVED');
+ assert.equal(writes,1);
+ const rows=parseShard(body,'2026-11-04T14-failure').runs;
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].registration_only,true);
+ assert.equal(rows[0].source_head,sha);
+ assert.deepEqual(rows[0].jobs,[]);
+ candidate.head.sha='c'.repeat(40);
+ assert.equal((await archive({github,context})).status,'UNVERIFIED_PR_ASSOCIATION');
+ assert.equal(writes,1);
+});
+test('cancelled workflow with real jobs is distinct from jobless startup',()=>{
+ assert.equal(fromEvent({...event,conclusion:'cancelled'}).conclusion,'cancelled');
+ assert.throws(()=>getJobs({data:{total_count:0,jobs:[]}},
+   {queued_at:time,conclusion:'cancelled',updated_at:time}),/NO_CONFIRMED_JOBS/);
+});
