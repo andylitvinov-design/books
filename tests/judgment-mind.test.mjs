@@ -167,7 +167,7 @@ test("Messenger retains existing iHelp and video workflow; two optional buttons 
   assert.match(chat,/pageHelp/);
   assert.match(chat,/messengerVideoQuestion/);
   assert.match(chat,/judgmentContext:judgmentView\?\.token/);
-  assert.match(chat,/judgmentView\.choices\.slice\(0,2\)/);
+  assert.match(chat,/judgmentView\?\.choices\.slice\(0,2\)/);
   assert.match(chat,/data-hh-judgment-skip/);
   assert.match(chat,/judgmentClickLock/);
 });

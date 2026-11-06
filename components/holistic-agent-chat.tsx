@@ -6,6 +6,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
+import type { JudgmentPending, JudgmentChoiceId } from "@/lib/holistic-support/judgment-mind.mjs";
 import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
 import MessengerSignIn from "@/components/app/messenger-sign-in";
 import {interpretSupportUtterance} from "@/lib/holistic-support/guide-dialogue.mjs";
@@ -39,8 +40,8 @@ type MessengerVideoDraft = {
 };
 type AgentDecision = { status: string; message?: string; question?: {key:string;text:string}|null;
   suggestions?: {id:string;kind:string;title:string;href:string}[] };
-type JudgmentView = {status:string;state:string;choices:{id:string;label:string}[];
-  token?:string|null;pending?:{stage:string;situationCode:string;choiceId?:string}|null};
+type JudgmentView = {status:string;state:string;choices:{id:JudgmentChoiceId;label:string}[];
+  token?:string|null;pending?:JudgmentPending|null};
 type AgentReply = { judgment?:JudgmentView|null;status:string;reply:string;modelUsed:boolean;source:string;
   suggestions:{id:string;kind:string;title:string;href:string}[];decision:AgentDecision;
   browserModelAllowed:boolean; usedSavedTestEvidence?:boolean; usedSavedVideoHistory?:boolean };
@@ -400,7 +401,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       {role:"assistant" as const,text:question},
     ].slice(-30));
   }
-  async function sendTurn(rawText:string,judgmentChoice:string|null=null) {
+  async function sendTurn(rawText:string,judgmentChoice:JudgmentChoiceId|null=null) {
     const text=rawText.trim().slice(0,2000);
     if(!text||busy||mode==="owned"&&!agree||
       (judgmentChoice!==null&&judgmentClickLock.current))return;
@@ -721,10 +722,10 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
             onClick={()=>answerVideo("выбери сам",videoCopy.auto)}>{videoCopy.auto}</button>}
         </div>}
       </div>}
-    {judgmentView?.choices?.length>0&&<div className={styles.judgmentChoices}
+    {judgmentView!==null&&judgmentView.choices.length>0&&<div className={styles.judgmentChoices}
       role="group" aria-label={locale==="ru"?"Варианты ответа":
         locale==="es"?"Opciones de respuesta":"Reply options"} data-hh-judgment-choices>
-      {judgmentView.choices.slice(0,2).map(choice=><button type="button"
+      {judgmentView?.choices.slice(0,2).map(choice=><button type="button"
         key={choice.id} data-hh-judgment-choice={choice.id} disabled={busy}
         onClick={()=>void sendTurn(choice.label,choice.id)}>{choice.label}</button>)}
       <button type="button" data-hh-judgment-skip disabled={busy}
