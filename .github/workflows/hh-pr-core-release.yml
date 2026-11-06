@@ -197,9 +197,11 @@ jobs:
             done < /tmp/hh-pr-changed-files.z
             if [[ "$count" -eq 0 ]]; then docs_only=false; ci_only=false; fi
           fi
-          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
-          echo "ci_only=$ci_only" >> "$GITHUB_OUTPUT"
-          echo "ci_touched=$ci_touched" >> "$GITHUB_OUTPUT"
+          {
+            echo "docs_only=$docs_only"
+            echo "ci_only=$ci_only"
+            echo "ci_touched=$ci_touched"
+          } >> "$GITHUB_OUTPUT"
           echo "Docs-only: $docs_only; CI-policy-only: $ci_only; CI-touched: $ci_touched" >> "$GITHUB_STEP_SUMMARY"
       - name: Route exact image and proven public JSX changes without Next build
         id: fast

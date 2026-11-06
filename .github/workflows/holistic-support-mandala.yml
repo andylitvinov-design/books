@@ -211,7 +211,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Classify exact-head workflow-only PR maintenance
+          fetch-depth: 2
+      - name: Classify exact-head CI-policy-only PR maintenance
         id: policy
         shell: bash
         env:
@@ -227,15 +228,21 @@ jobs:
             count=0
             while IFS= read -r -d '' status && IFS= read -r -d '' file; do
               count=$((count + 1))
+              # Only established CI-policy tests can accompany modified
+              # workflow YAML on this no-app-install route. Any video test,
+              # app source, unknown file, deletion or rename runs full media QA.
               case "$status:$file" in
-                M:.github/workflows/*.yml|M:.github/workflows/*.yaml) ;;
+                M:.github/workflows/*.yml|M:.github/workflows/*.yaml|\
+                M:tests/ci-workflow-globs.test.mjs|\
+                M:tests/pr-fast-lane.test.mjs|\
+                M:tests/ci-heavy-impact.test.mjs) ;;
                 *) policy_only=false ;;
               esac
             done < <(git diff --no-renames --name-status -z HEAD^1 HEAD)
             (( count > 0 )) || policy_only=false
           fi
           echo "policy_only=$policy_only" >> "$GITHUB_OUTPUT"
-          echo "Mandala verified workflow-only route: $policy_only" >> "$GITHUB_STEP_SUMMARY"
+          echo "Mandala verified CI-policy-only route: $policy_only" >> "$GITHUB_STEP_SUMMARY"
       - name: Classify test-only edits before expensive video build
         if: steps.policy.outputs.policy_only != 'true'
         id: impact
