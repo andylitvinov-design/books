@@ -1,6 +1,6 @@
 /**
  * Build-time, reproducible first-party MP3 masters.
- * Four DIFFERENT original scores for EVERY approved scenario (currently 48×4),
+ * Four DIFFERENT original scores for EVERY approved scenario (currently 49×4),
  * plus four original digital performances of familiar public-domain melodies.
  * All files are derived build artifacts; no external provider, paid API,
  * unlicensed music sample or visitor information is involved.
@@ -225,5 +225,7 @@ if(!isMainThread&&workerData?.hhScenarioMusicShard===true){
     process.exitCode=1;
   }
 }
-if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))
+// Workers only run their assigned shard; the inherited argv may otherwise
+// rerun the complete CLI generator inside EACH worker, racing FFmpeg outputs.
+if(isMainThread&&process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))
   console.log("[hh-scenario-audio]",JSON.stringify(buildScenarioMusic()));
