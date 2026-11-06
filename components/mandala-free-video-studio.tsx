@@ -1828,6 +1828,43 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"audio">("effects");
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
+  const audioLibraryCloseRef=useRef<HTMLButtonElement>(null);
+  const audioLibraryTriggerRef=useRef<HTMLButtonElement>(null);
+  const audioLibraryInitialMusicRef=useRef<AmbientMusic>("none");
+  const audioLibraryInitialAttachedRef=useRef<AttachedAudio|null>(null);
+  const openAudioLibrary=()=>{
+    audioLibraryInitialMusicRef.current=music;
+    audioLibraryInitialAttachedRef.current=attachedAudio;
+    setAudioLibraryOpen(true);
+  };
+  const closeAudioLibrary=(restore=false)=>{
+    stopSoundPreview();
+    if(restore){
+      setMusic(audioLibraryInitialMusicRef.current);
+      setAttachedAudio(audioLibraryInitialAttachedRef.current);
+    }
+    setAudioLibraryOpen(false);
+    window.requestAnimationFrame(()=>audioLibraryTriggerRef.current?.focus());
+  };
+  useEffect(()=>{
+    if(!audioLibraryOpen)return;
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==="Escape"){event.preventDefault();closeAudioLibrary(true);}
+      if(event.key!=="Tab")return;
+      const dialog=document.querySelector<HTMLElement>("[data-video-audio-library-dialog]");
+      if(!dialog)return;
+      const focusables=Array.from(dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]),input:not([disabled]),select:not([disabled]),a[href],[tabindex="0"]'
+      )).filter(element=>element.getClientRects().length>0);
+      if(!focusables.length)return;
+      const first=focusables[0],last=focusables[focusables.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    };
+    document.addEventListener("keydown",onKey);
+    window.requestAnimationFrame(()=>audioLibraryCloseRef.current?.focus());
+    return()=>document.removeEventListener("keydown",onKey);
+  },[audioLibraryOpen]);
   const [audioCategory,setAudioCategory] = useState("all");
   const [montageTransition,setMontageTransition] = useState<TimelineTransition>("soft");
   // Real browser interactions are safe only after client event handlers hydrate.
@@ -6574,7 +6611,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               aria-label={locale==="ru"?"Источник аудио":locale==="es"?"Fuente de audio":"Audio source"}>
               <button type="button" data-video-audio-mode="library"
                 aria-pressed={!uploadedAudio} disabled={recording||preparing}
-                onClick={()=>{setAudioLibraryOpen(true);setShowAllAudio(false);}}>
+                onClick={()=>{openAudioLibrary();setShowAllAudio(false);}}>
                 <Music2 size={19} aria-hidden="true"/>
                 {locale==="ru"?"Библиотека музыки":locale==="es"?"Biblioteca musical":"Music library"}
               </button>
@@ -6664,9 +6701,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               </button>
             </div>
             <div className={videoStyles.montageAudioActions}>
-              <button type="button" data-video-audio-compact-browse
-                aria-expanded={audioLibraryOpen}
-                onClick={()=>setAudioLibraryOpen(value=>!value)}>
+              <button type="button" data-video-audio-compact-browse ref={audioLibraryTriggerRef}
+                aria-haspopup="dialog" aria-expanded={audioLibraryOpen}
+                onClick={openAudioLibrary}>
                 <Search size={18} aria-hidden="true"/>{audioUi.browse}
                 <ChevronDown size={17} aria-hidden="true"/>
               </button>
@@ -6679,12 +6716,23 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 {audioNeedsAttachment?audioUi.attach:audioUi.attached}
               </button>
             </div>
-            <details className={videoStyles.montageAudioLibrary} data-video-audio-library
-              open={audioLibraryOpen}
-              onToggle={event=>setAudioLibraryOpen(event.currentTarget.open)}>
-              <summary>{locale==="ru"?"Каталог и дополнительные инструменты":
-                locale==="es"?"Biblioteca y opciones adicionales":
-                "Music catalogue and additional audio tools"}</summary>
+            {audioLibraryOpen ? <div className={videoStyles.montageAudioOverlay}
+              data-video-audio-library-overlay onMouseDown={event=>{
+                if(event.target===event.currentTarget)closeAudioLibrary(true);
+              }}>
+              <section className={videoStyles.montageAudioDialog}
+                data-video-audio-library-dialog data-video-audio-library
+                role="dialog" aria-modal="true" aria-labelledby="video-audio-library-title">
+                <div className={videoStyles.montageAudioDialogHandle} aria-hidden="true"/>
+                <header className={videoStyles.montageAudioDialogHeader}>
+                  <h3 id="video-audio-library-title"><Music2 size={23} aria-hidden="true"/>
+                    {locale==="ru"?"Библиотека музыки":locale==="es"?"Biblioteca musical":"Music library"}
+                  </h3>
+                  <button type="button" ref={audioLibraryCloseRef} data-video-audio-library-close
+                    aria-label={locale==="ru"?"Закрыть библиотеку":locale==="es"?"Cerrar biblioteca":"Close music library"}
+                    onClick={()=>closeAudioLibrary(true)}><X size={22} aria-hidden="true"/></button>
+                </header>
+                <div className={videoStyles.montageAudioDialogScroll}>
               <div className={videoStyles.basicMusicPane} data-video-music-editor>
                 {deepAudioPane}
               </div>
@@ -6741,7 +6789,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 :"The exported mix uses the selected levels; native iPhone preview volume may differ."}
             </p>
           </details>
-            </details>
+
+                </div>
+                <footer className={videoStyles.montageAudioDialogFooter}>
+                  <button type="button" data-video-audio-library-cancel
+                    onClick={()=>closeAudioLibrary(true)}>
+                    {locale==="ru"?"Отмена":locale==="es"?"Cancelar":"Cancel"}
+                  </button>
+                  <button type="button" data-video-audio-library-confirm
+                    disabled={recording||preparing||micRecording||audioDurationInvalid||
+                      (Boolean(uploadedAudio)&&!audioRights)}
+                    onClick={()=>{
+                      if(audioNeedsAttachment)attachSelectedAudio();
+                      closeAudioLibrary(false);
+                    }}><Check size={19} aria-hidden="true"/>
+                    {locale==="ru"?"Использовать эту музыку":locale==="es"?"Usar esta música":"Use this music"}
+                  </button>
+                </footer>
+              </section>
+            </div> : null}
             {/* Preserve the existing consented RU/EN narration as a genuinely
                 user-invoked tool, not the removed duplicate Audio toolbar. */}
             <details id="voice-studio" className={[videoStyles.extraControls,videoStyles.basicVoicePane].join(" ")}

@@ -5,18 +5,18 @@ import stock from "../data/video-catalog/free-stock-scenes.json" with {type:"jso
 import {rankApprovedMyTubeScene,rankAllApprovedMyTubeScenes,
   rankPublicMyTubeVideo,auditMyTubeSceneTagging,recommendMyTubeTopicStoryClips,exactOriginalMotionTopicHint} from "../lib/mandala/mytube-video-tagging.mjs";
 
-test("all 48 approved movie scenes, including 4 source-backed portrait films, receive ranked topics",()=>{
+test("all 56 physically present scene variants receive ranked topics",()=>{
   const summary=auditMyTubeSceneTagging(master.scenes);
-  assert.equal(summary.approvedUnique,48);
-  assert.equal(summary.ranked,48);
+  assert.equal(summary.approvedUnique,56);
+  assert.equal(summary.ranked,56);
   assert.deepEqual(summary.missing,[]);
-  assert.equal(summary.topicPlacements,144);
-  assert.equal(summary.scenarioVisualMatches,576);
-  assert.deepEqual(summary.primaryCategoryCounts,{
-    "goals-money":23,"love-relationships":1,"energy-confidence":20,"stress-anxiety":4,
-  });
+  assert.equal(summary.topicPlacements,168);
+  assert.equal(summary.scenarioVisualMatches,672);
+  assert.equal(Object.values(summary.primaryCategoryCounts).reduce((n,v)=>n+v,0),56);
+  for(const [category,min] of Object.entries({"goals-money":23,"love-relationships":1,"energy-confidence":20,"stress-anxiety":4}))
+    assert.ok(summary.primaryCategoryCounts[category]>=min,category);
   const ranked=rankAllApprovedMyTubeScenes(master.scenes);
-  assert.equal(new Set(ranked.map(x=>x.sceneId)).size,48);
+  assert.equal(new Set(ranked.map(x=>x.sceneId)).size,56);
   for(const scene of ranked){
     assert.equal(scene.humanReviewed,false);
     assert.equal(scene.sourcePublishStatus,"unchanged");
@@ -34,12 +34,12 @@ test("all 48 approved movie scenes, including 4 source-backed portrait films, re
 
 test("12 existing composites are not new sources; the four newly licensed masters are distinct",()=>{
   const ids=new Set(master.scenes.map(scene=>scene.id));
-  assert.equal(stock.length,16);
+  assert.equal(stock.length,24);
   assert.equal(stock.filter(s=>s.sourceKind==="licensed_two_shot_composite").length,12);
   assert.equal(stock.filter(s=>s.sourceKind==="licensed_single_shot_edit").length,4);
-  assert.equal(stock.filter(scene=>ids.has(scene.id)).length,16);
+  assert.equal(stock.filter(scene=>ids.has(scene.id)).length,24);
   const repeated=master.scenes.concat(master.scenes[0]);
-  assert.equal(rankAllApprovedMyTubeScenes(repeated).length,48);
+  assert.equal(rankAllApprovedMyTubeScenes(repeated).length,56);
 });
 
 

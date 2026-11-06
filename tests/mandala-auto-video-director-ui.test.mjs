@@ -122,7 +122,7 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(autoCss,/\.storyChoices\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(autoCss,/\.shots\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  const approved=taxonomy.scenes.filter(scene=>scene.status==="approved");
- assert.equal(approved.length,48);
+ assert.equal(approved.length,56);
  assert.ok(approved.every(scene=>scene.poster?.startsWith("/videos/holistic-house/")&&
    scene.poster.endsWith(".jpg") && scene.video.endsWith(".mp4")));
 });

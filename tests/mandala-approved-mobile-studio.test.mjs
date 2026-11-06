@@ -193,11 +193,11 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
   const original=JSON.parse(originalPart+"]");
   const catalogue=[...original,...additions.presets];
   assert.equal(original.length,24);
-  assert.equal(additions.presets.length,24);
-  assert.equal(catalogue.length,48);
-  assert.equal(taxonomy.scenes.length,48);
+  assert.equal(additions.presets.length,25);
+  assert.equal(catalogue.length,49);
+  assert.equal(taxonomy.scenes.length,56);
   const physical=new Set(taxonomy.scenes.filter(item=>item.status==="approved").map(item=>item.id));
-  assert.equal(physical.size,48);
+  assert.equal(physical.size,56);
   const groups=new Map(),ids=new Set(),originalClips=new Set();
   for(const film of catalogue){
     assert.ok(!ids.has(film.id),"every free montage has a distinct id");
@@ -215,12 +215,12 @@ test("forty-eight curated free four-shot compilations use all 44 approved local 
     }
   }
   for(const category of ["money","energy","life","health","relationships","goals"])
-    assert.equal(groups.get(category),8,category);
-  assert.equal(originalClips.size,44,"all 44 licensed source clips appear in ready-to-edit movies");
+    assert.equal(groups.get(category),category==="energy"?9:8,category);
+  assert.equal(originalClips.size,48,"44 existing source clips and 4 new landscape sunlight films appear in movies");
   const portraitSources=new Set([...originalClips,...additions.presets.flatMap(p=>p.portraitClips||[])]);
-  assert.equal(portraitSources.size,48,"all four additional real footage sources are available in portrait film edits");
+  assert.equal(portraitSources.size,56,"all aspect-specific film variants remain available");
   assert.ok([...portraitSources].every(id=>physical.has(id)));
-  assert.equal(additions.presets.filter(p=>p.portraitClips).length,4);
+  assert.equal(additions.presets.filter(p=>p.portraitClips).length,5);
   assert.match(src,/free-film-presets-v2\.json/);
   assert.match(src,/scene-taxonomy\.json/);
   assert.match(src,/data-free-film-compilation-catalog/);
