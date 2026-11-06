@@ -53,8 +53,8 @@ const copy = {
   },
 } as const;
 
-export function MessengerAudioVideo({locale,initialGoal="",disabled=false}:{
-  locale:PublicLocale; initialGoal?:string; disabled?:boolean;
+export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOpen=false}:{
+  locale:PublicLocale; initialGoal?:string; disabled?:boolean; autoOpen?:boolean;
 }) {
   const t = copy[locale];
   const [prepared,setPrepared] = useState<Prepared|null>(null);
@@ -160,7 +160,7 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false}:{
       if(mountedRef.current){setError(t.failure);setState("idle");}
     }
   }
-  return <details className={css.root} data-hh-messenger-audio-video>
+  return <details open={autoOpen} className={css.root} data-hh-messenger-audio-video>
     <summary>{t.title}</summary>
     <div className={css.content}>
       <p>{t.explanation}</p>
