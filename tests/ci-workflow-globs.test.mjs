@@ -307,3 +307,43 @@ test('IA and Mandala browsers allocate expensive runners only after cheap exact-
     assert.doesNotMatch(source, /continue-on-error:\s*true/);
   }
 });
+
+test('Core runs CI policy regressions only when relevant CI or manifest files change',()=>{
+  const source=workflow('hh-pr-core-release.yml');
+  assert.match(source,/ci_touched=false/);
+  assert.match(source,/scripts\/ci-\*/);
+  assert.match(source,/echo "ci_touched=\$ci_touched"/); 
+  assert.match(source,/\} >> "\$GITHUB_OUTPUT"/);
+  for(const name of ['Verify Source Preflight unit contracts','Assert fast-lane workflow contracts',
+    'Verify deterministic ESLint repair worker contract']){
+    const clause=source.split('      - name: '+name+'\n')[1]?.split('\n')[0] || '';
+    assert.match(clause,/steps\.diff\.outputs\.ci_touched == 'true'/,
+      'CI-only contracts must run on mixed application+CI changes: '+name);
+  }
+  assert.match(source,/node scripts\/ci-source-preflight\.mjs/);
+  assert.match(source,/run: npm run build/);
+  assert.match(source,/^  hh-specialist:/m);
+  assert.match(source,/^  hh-merge-check:/m);
+});
+
+test('Mandala workflow-only speed route fails closed for all product or deleted file changes',()=>{
+  const source=workflow('holistic-support-mandala.yml');
+  assert.match(source,/Classify exact-head CI-policy-only PR maintenance/);
+  assert.match(source,/fetch-depth: 2/);
+  assert.match(source,/git rev-parse HEAD\^2/);
+  assert.match(source,/git diff --no-renames --name-status -z HEAD\^1 HEAD/);
+  assert.match(source,/M:\.github\/workflows\/\*\.yml/);
+  assert.match(source,/M:tests\/ci-workflow-globs\.test\.mjs/);
+  assert.match(source,/M:tests\/pr-fast-lane\.test\.mjs/);
+  assert.match(source,/policy_only=false/);
+  assert.match(source,/node --test tests\/ci-heavy-impact\.test\.mjs tests\/ci-workflow-globs\.test\.mjs/);
+  assert.match(source,/- run: npm ci --no-audit --no-fund\n        if: steps\.policy\.outputs\.policy_only != 'true'/);
+  for(const name of ['Mandala and mobile support contracts','Voice provider contract and negative cases','Targeted lint']){
+    const clause=source.split('      - name: '+name+'\n')[1]?.split('\n')[0] || '';
+    assert.match(clause,/steps\.policy\.outputs\.policy_only != 'true'/);
+  }
+  assert.match(source,/^  webkit_preflight:/m);
+  assert.match(source,/^  voice-webkit-macos:/m);
+  assert.match(source,/HH_LIVE_VIDEO_ENGINE=webkit/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true/);
+});

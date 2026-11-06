@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {parseSubscriberAiUpdate} from '../lib/app/subscriber-ai-policy.mjs'
-import {subscriberVoiceReady,validSubscriberVoiceMeta,transcribeSubscriberVoice,voiceCopy,
+import {subscriberVoiceReady,subscriberVoiceReplyAllowed,validSubscriberVoiceMeta,transcribeSubscriberVoice,voiceCopy,
   voiceDisclosureButtons} from '../lib/app/subscriber-ai-voice.mjs'
 const now=1762400000000,seconds=now/1000
 const voice={file_id:'AbCdEfGhIjKlMnOpQrStUvWxYz1234567890',
@@ -92,4 +92,23 @@ test('source enforces consent before download and again before reply, with STOP 
  const sql=readFileSync(new URL('../supabase/migrations/20261106120000_hh_subscriber_ai_voice_consent.sql',import.meta.url),'utf8')
  assert.match(sql,/voice_consent_at timestamptz/)
  assert.match(sql,/subscriber_ai_outbox_kind_check/)
+})
+
+test('voice-derived response obeys speech revocation until final Telegram send',()=>{
+ const env={HH_SUBSCRIBER_AI_STT_ENABLED:'true',HH_SUBSCRIBER_AI_STT_FREE_CONFIRMED:'true',
+  HH_SUBSCRIBER_AI_VOICE_SCHEMA_READY:'true',HH_SUBSCRIBER_AI_STT_GEMINI_KEY:'x'.repeat(32)}
+ const ok={consent_at:new Date(),voice_consent_at:new Date(),stopped_at:null}
+ assert.equal(subscriberVoiceReplyAllowed('voice_reply',ok,env),true)
+ assert.equal(subscriberVoiceReplyAllowed('voice_reply',{...ok,voice_consent_at:null},env),false)
+ assert.equal(subscriberVoiceReplyAllowed('voice_reply',{...ok,consent_at:null},env),false)
+ assert.equal(subscriberVoiceReplyAllowed('voice_reply',{...ok,stopped_at:new Date()},env),false)
+ assert.equal(subscriberVoiceReplyAllowed('voice_reply',ok,{...env,HH_SUBSCRIBER_AI_STT_ENABLED:'false'}),false)
+ assert.equal(subscriberVoiceReplyAllowed('voice_reply',ok,{...env,HH_SUBSCRIBER_AI_VOICE_SCHEMA_READY:'false'}),false)
+ assert.equal(subscriberVoiceReplyAllowed('chat',{...ok,voice_consent_at:null},env),true)
+ const worker=readFileSync(new URL('../lib/app/subscriber-ai-telegram.js',import.meta.url),'utf8')
+ const sql=readFileSync(new URL('../supabase/migrations/20261106151500_hh_subscriber_ai_voice_reply_revocation.sql',import.meta.url),'utf8')
+ assert.match(worker,/kind in \('voice','voice_reply'\)/)
+ assert.match(worker,/set kind='voice_reply'/)
+ assert.match(worker,/subscriberVoiceReplyAllowed\(j.kind,s,env\)/)
+ assert.match(sql,/voice_reply/)
 })
