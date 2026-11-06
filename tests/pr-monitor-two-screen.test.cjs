@@ -8,10 +8,10 @@ const vm=require('node:vm');
 const app=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/pr-two-screen.js'),'utf8');
 const marker="  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true});";
 assert.ok(app.includes(marker),'Test must instrument the active browser bundle');
-const instrumented=app.replace(marker,"  window.__hhTests={aggregate:aggregate,duration:duration,legacyUnmeasuredDurationText:legacyUnmeasuredDurationText,legacyUnmeasuredCandidates:legacyUnmeasuredCandidates,repairLegacyUnmeasuredZeros:repairLegacyUnmeasuredZeros};\n"+marker);
+const instrumented=app.replace(marker,"  window.__hhTests={aggregate:aggregate,duration:duration,legacyUnmeasuredDurationText:legacyUnmeasuredDurationText,legacyUnmeasuredCandidates:legacyUnmeasuredCandidates,repairLegacyUnmeasuredZeros:repairLegacyUnmeasuredZeros,isLegacyStageMutation:isLegacyStageMutation};\n"+marker);
 const context={window:{},document:{readyState:'loading',addEventListener(){}}};
 vm.runInNewContext(instrumented,context,{filename:'pr-two-screen.js'});
-const {aggregate,duration,legacyUnmeasuredDurationText,legacyUnmeasuredCandidates,repairLegacyUnmeasuredZeros}=context.window.__hhTests;
+const {aggregate,duration,legacyUnmeasuredDurationText,legacyUnmeasuredCandidates,repairLegacyUnmeasuredZeros,isLegacyStageMutation}=context.window.__hhTests;
 
 function row(number,created,merged){
  return {number,created_at:'2026-11-03T'+created+':00Z',
@@ -87,4 +87,48 @@ test('rendered legacy unknown stage becomes dash while real zero stays untouched
  assert.equal(measuredValue.textContent,'0,00мин/PR');
  assert.equal(missingText.title,'0 подтверждённых PR. Длительность не измерена.');
  assert.equal(notices,1);
+});
+
+test('column-oriented historical stage rows normalize only when missing counts match',()=>{
+ const count0a=mockElement('Проверено: 0 из 66 PR');
+ const count0b=mockElement('Проверено: 0 из 66 PR');
+ const zeroA=mockElement('0,00мин/PR');
+ const zeroB=mockElement('0,00мин/PR');
+ const proofColumn=mockElement('',[count0a,count0b]);
+ const timeColumn=mockElement('',[zeroA,zeroB]);
+ const section=mockElement('',[proofColumn,timeColumn]);
+ section.querySelector=()=>null;
+ const title={textContent:'Где прошло время до merge',closest:()=>section,
+  insertAdjacentElement(){}};
+ context.document.querySelectorAll=()=>[title];
+ context.document.createElement=()=>({});
+ assert.equal(legacyUnmeasuredCandidates(count0a,section).length,0);
+ repairLegacyUnmeasuredZeros();
+ assert.equal(zeroA.textContent,'—');
+ assert.equal(zeroB.textContent,'—');
+});
+test('column fallback refuses to overwrite observed zero-minute metric',()=>{
+ const missing=mockElement('Проверено: 0 из 66 PR');
+ const known=mockElement('Проверено: 4 из 66 PR');
+ const missingTime=mockElement('0,00мин/PR');
+ const actualZero=mockElement('0,00мин/PR');
+ const section=mockElement('',[mockElement('',[missing,known]),
+  mockElement('',[missingTime,actualZero])]);
+ section.querySelector=()=>null;
+ const title={textContent:'Где прошло время до merge',closest:()=>section,
+  insertAdjacentElement(){}};
+ context.document.querySelectorAll=()=>[title];
+ context.document.createElement=()=>({});
+ repairLegacyUnmeasuredZeros();
+ assert.equal(actualZero.textContent,'0,00мин/PR');
+ assert.equal(missingTime.textContent,'0,00мин/PR');
+});
+test('watcher recognizes late DOM changes in stage panel but ignores unrelated blocks',()=>{
+ const value=mockElement('0,00мин/PR');
+ const section=mockElement('',[value]);
+ section.contains=node=>node===section||section.querySelectorAll('*').includes(node);
+ const title={textContent:'Где прошло время до merge',closest:()=>section};
+ context.document.querySelectorAll=()=>[title];
+ assert.equal(isLegacyStageMutation(value),true);
+ assert.equal(isLegacyStageMutation(mockElement('unrelated')),false);
 });
