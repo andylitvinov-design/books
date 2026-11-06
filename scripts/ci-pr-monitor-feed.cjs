@@ -5,6 +5,7 @@
 const REPO='andylitvinov-design/books';
 const {capture,rows:timestampRows,VERSION:TIMESTAMP_SCHEMA}=require('./ci-pr-timestamp-inventory.cjs');
 const {reconcileBlockerProgress}=require('./ci-pr-blocker-progress.cjs');
+const {deliver:deliverCiDaytimeSignal}=require('./ci-pr-ci-daytime-signals.cjs');
 const ISSUE_NUMBER=3128;
 const MARKER='<!-- HH_CONTROL_TOWER_PUBLIC_KPI_V1 -->';
 const SCHEMA='HH_CONTROL_DISPATCH_METRICS_V1';
@@ -283,7 +284,7 @@ function renderSnapshot(snapshot){
     'Сравнение трёх 24-часовых когорт PR (исторические этапы, coverage, медиана, P90 и GitHub timelines): https://github.com/'+REPO+'/issues/3394', '',
     'Источник: https://github.com/'+REPO+'/actions/runs/'+snapshot.run_id,''].join('\n');
 }
-async function publishMonitorSnapshot({github,context,report,inventorySnapshot=null,watchdogLiveness=null}){
+async function publishMonitorSnapshot({github,context,report,inventorySnapshot=null,watchdogLiveness=null,ciActivity=null}){
   const next=buildMonitorSnapshot(report,context,watchdogLiveness);
   const {owner,repo}=context.repo;
   const issue=(await github.rest.issues.get({owner,repo,issue_number:ISSUE_NUMBER})).data;
@@ -296,6 +297,14 @@ async function publishMonitorSnapshot({github,context,report,inventorySnapshot=n
   // A late queue/old workflow must never replace a newer observed snapshot.
   if(Date.parse(previous.checked_at)>=Date.parse(next.checked_at))
     return {status:'OLDER_OR_DUPLICATE_DROPPED',prior_run_id:previous.run_id};
+  // This routine shares the EXISTING Control Tower issue read and writer lease.
+  // It may issue one @mention only for a newly confirmed daytime crossing.
+  // Failure is retryable and cannot disable the existing KPI publication.
+  const signal=await deliverCiDaytimeSignal({github,issue,
+    prior:previous.ci_daytime_signals||null,observation:ciActivity});
+  if(signal.state)next.ci_daytime_signals=signal.state;
+  else if(previous.ci_daytime_signals)
+    next.ci_daytime_signals=previous.ci_daytime_signals;
   // Reuse the ALREADY-FETCHED full Watchdog PR list. This does not query GitHub
   // again, trigger a CI run or post any per-PR comments.
   const prior=previous.pr_timestamp_inventory;
