@@ -174,9 +174,11 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
   }
   assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setFirstVideoAdvancedActivated\(true\);\}\}/);
   assert.match(studio, /\{firstVideoAdvancedActivated \? <MandalaFirstVideoStart/);
-  assert.match(studio, /data-video-voice-studio open=\{basicPanelTab==="voice"\}/);
-   assert.match(studio, /if\(event\.currentTarget\.open\)setVoiceStudioActivated\(true\)/);
-  assert.match(studio, /\{voiceStudioActivated \? <MandalaCloudVoiceStudio/);
+  // Voice can now be activated by a deep link and its one live details
+  // panel owns the same state as the lazily mounted studio.
+  assert.match(studio, /data-video-voice-studio open=\{voiceStudioActivated\}/);
+  assert.match(studio, /onToggle=\{event=>setVoiceStudioActivated\(event\.currentTarget\.open\)\}/);
+  assert.match(studio, /\{voiceStudioActivated\?<MandalaCloudVoiceStudio/);
   assert.match(studio, /useState<StudioWorkspace>\("video"\)/);
   assert.match(studio, /<MandalaAutoVideoDirector/);
 });
