@@ -67,7 +67,7 @@ import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenari
 import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
 import {curatedAudioTracks,recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
-import { orderRecordingMimes, proceduralMp4Route } from "@/lib/mandala/recording-codecs.mjs";
+import { orderRecordingMimes, proceduralMp4Route, useWebCodecsForRecording } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
 import {verifiedCategorySource,verifiedSceneAspect,canonicalSourceMasterKey} from "@/lib/mandala/category-video-storyboard.mjs";
 import { ensureDecodedVideoOnUserIntent } from "@/lib/mandala/intent-video-loading.mjs";
@@ -2872,7 +2872,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // Prefer the real native VP8/Opus recording on Chromium when AVC/AAC
     // recording is absent. iPhone Safari retains its WebCodecs MP4 path.
     const proceduralRoute=proceduralMp4Route({nativeAvc,webCodecs:hasWebCodecs,nativeWebm,preferNativeWebm:!safariWebKit});
-    const useWebCodecsMp4=hasWebCodecs&&(safariWebKit||(procedural&&proceduralRoute==="webcodecs"));
+    // The alternate WebM retry must not rerun Safari's default MP4 encoder.
+    const useWebCodecsMp4=useWebCodecsForRecording({
+      hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm
+    });
     if(procedural&&!safariWebKit&&proceduralRoute==="unsupported"){
       setResult(null);setPlaybackStatus("checking");
       setExportUnavailable(true);
@@ -3141,7 +3144,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (!stream.getVideoTracks().length) throw new Error("Canvas stream unavailable");
       if (musicSession) stream.addTrack(musicSession.track);
 
-      const mimeTypes = procedural
+      // A user-requested WebM retry must use the native WebM recorder, also
+      // for procedural videos; retain their explicitly attached soundtrack.
+      const mimeTypes = preferWebm
+        ? recordingMimes(Boolean(musicSession),true).filter(mime=>mime.startsWith("video/webm"))
+        : procedural
         ? proceduralRoute==="native-webm"
           ? recordingMimes(Boolean(musicSession),true).filter(mime=>mime===explicitWebmMime)
           : recordingMimes(Boolean(musicSession),false,true).filter(mime=>mime===explicitAvcMime)
