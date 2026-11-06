@@ -100,6 +100,8 @@ export function SitewideIHelp(){
  },[open]);
 
  function close(){
+   // Stop any ongoing browser narration when the user closes iHelp.
+   window.dispatchEvent(new Event("hh:voice-companion-stop"));
    setOpen(false);
    window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
  }

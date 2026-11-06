@@ -15,6 +15,7 @@ import {
   changeMessengerVideoPhraseStyle,encodeMessengerVideoHandoff,
 } from "@/lib/mandala/video-chat-messenger-flow.mjs";
 import styles from "./holistic-agent-chat.module.css";
+import {useVoiceCompanion,VoiceCompanionControls} from "./voice-companion-controls";
 import dynamic from "next/dynamic";
 import EmotionalAvatar from "@/components/app/emotional-avatar";
 
@@ -248,6 +249,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
 }) {
   const t=copy[locale];
   const starter=messengerStarter[locale];
+  const voice=useVoiceCompanion(locale);
+  const voiceEnabled=process.env.NEXT_PUBLIC_HH_VOICE_COMPANION_WEB!=="false";
   const [mode,setMode]=useState<Mode>("rules");
   const [agree,setAgree]=useState(false);
   const [axisRef,setAxisRef]=useState("");
@@ -271,6 +274,21 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const [showVideoSignIn,setShowVideoSignIn]=useState(false);
   const [needsPrivateSignIn,setNeedsPrivateSignIn]=useState(false);
   const [messages,setMessages]=useState<Message[]>([]);
+  // One authoritative AI transcript. Speech never inserts another stored turn.
+  const lastSpeechTurn=useRef<Message|null>(null);
+  useEffect(()=>{
+    const latest=messages[messages.length-1]||null;
+    if(latest===lastSpeechTurn.current)return;
+    lastSpeechTurn.current=latest;
+    if(!voiceEnabled)return;
+    if(latest?.role==="user"){voice.stop();return;}
+    if(latest?.role==="assistant"){
+      // In a batched local turn there is no intermediate user-only render.
+      // Cancel the older spoken answer before showing the latest one.
+      voice.stop();
+      if(voice.autoRead)voice.speak(latest.text);
+    }
+  },[messages,voiceEnabled,voice.autoRead,voice.speak,voice.stop]);
   const [pageHelpLink,setPageHelpLink]=useState<{href:string;label:string}|null>(null);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
   const [videoDraft,setVideoDraft]=useState<MessengerVideoDraft>(
@@ -661,7 +679,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     data-page-help={pageHelp?"true":undefined} data-has-messages={messages.length>0||undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {!compact&&settings}
-    <EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact}/>
+    <EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale}
+       compact={compact} companionVoice={voiceEnabled?voice:undefined}/>
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
@@ -669,7 +688,13 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         if(atBottom)setNewBelow(false)}}>
       {compact&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
-      {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
+      {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>
+        {m.text}
+        {voiceEnabled&&m.role==="assistant"&&<button type="button" data-hh-voice-turn={index}
+          title={voice.t.play} aria-label={voice.t.play} disabled={!voice.playbackConsent||!voice.supported}
+          onClick={()=>voice.speak(m.text)} style={{marginInlineStart:8,minWidth:42,minHeight:42,
+            border:"1px solid #E9DFD1",borderRadius:12,background:"#FFFCF7",color:"#143D3A"}}>🔊</button>}
+      </p>)}
       {compact&&pageHelpLink&&<a className={styles.testLink} data-hh-ihelp-link href={pageHelpLink.href}>{pageHelpLink.label} · {t.option}</a>}
       {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
@@ -832,11 +857,15 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       if(threadRef.current)threadRef.current.scrollTop=threadRef.current.scrollHeight;
       setNewBelow(false);
     }}>{locale==="ru"?"↓ Новые сообщения":locale==="es"?"↓ Mensajes nuevos":"↓ New messages"}</button>}
+    {voiceEnabled&&<VoiceCompanionControls voice={voice} locale={locale}
+      greeting={pageHelp?.greeting??starter.welcome}
+      latestReply={[...messages].reverse().find(item=>item.role==="assistant")?.text}
+      onTranscript={text=>setDraft(prev=>((prev?prev+" ":"")+text).slice(0,2000))}/>}
     <form onSubmit={submit} className={styles.form}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={contentStep==="brief"?160:2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{voice.stop();controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
