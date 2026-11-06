@@ -1,0 +1,70 @@
+name: HH NOAA Ocean Real Footage Wave 8 - one-time official filmed source QA
+on:
+  push:
+    branches: [codex/hh-noaa-ocean-wave8-20261106]
+    paths:
+      - '.github/workflows/hh-noaa-ocean-wave8-once.yml'
+      - 'tools/video-vault/noaa-wave8/**'
+permissions:
+  contents: read
+concurrency:
+  group: hh-noaa-ocean-wave8-one-time
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/codex/hh-noaa-ocean-wave8-20261106'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax, security, provenance and no-live-release rules
+        run: |
+          node --check tools/video-vault/noaa-wave8/screen.mjs
+          node --test tools/video-vault/noaa-wave8/tests.mjs
+  physical:
+    needs: verify
+    if: github.ref == 'refs/heads/codex/hh-noaa-ocean-wave8-20261106'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg system binary only; no new service or paid inference
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends ffmpeg
+          fi
+          ffmpeg -version | head -1
+      - name: Verify 30 hand-selected NOAA credit sources, physically encode clips, no public release
+        run: node tools/video-vault/noaa-wave8/screen.mjs --shard=${{ matrix.shard }}
+      - name: Verify fail-closed manifest has no R2 uploads or public release
+        if: always()
+        run: |
+          test ! -f tools/video-vault/noaa-wave8/artifacts/shard-${{ matrix.shard }}/report.json || \
+          node -e 'let r=require("./tools/video-vault/noaa-wave8/artifacts/shard-${{ matrix.shard }}/report.json");if(r.newCloudflareR2Objects!==0||r.generatorEligible!==0||r.publicCatalogChanges!==0||r.rightsApproval!==false)process.exit(1)'
+          git diff --exit-code -- public/ data/video-catalog/scene-taxonomy.json
+      - name: Preserve private moving MP4 dual-aspect, SHA256, contact sheet and owner QA receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-noaa-wave8-shard-${{ matrix.shard }}
+          path: tools/video-vault/noaa-wave8/artifacts/shard-${{ matrix.shard }}/
+          retention-days: 5
+          compression-level: 6
+          if-no-files-found: warn
