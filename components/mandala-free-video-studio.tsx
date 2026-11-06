@@ -5545,7 +5545,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onCreate={goToMontageFromIdeas}/>
-          {activeWorkspace==="phrases" ?
+          {/* One persistent editor instance; collapsed by default in Ideas.
+              Do not unmount it between workspaces or duplicate audio state. */}
+          <div data-video-legacy-phrase-editor
+            hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
             <details className={videoStyles.phraseAudioSettings}
               data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}
               onToggle={event=>setIdeasVoiceAdvancedOpen(event.currentTarget.open)}>
@@ -5556,10 +5559,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 <ChevronDown size={18} aria-hidden="true"/>
               </summary>
               {deepHypnoPane}
-            </details> :
-            <div data-video-legacy-phrase-editor hidden aria-hidden="true">
-              {deepHypnoPane}
-            </div>}
+            </details>
+          </div>
         </div>
         <button type="button" className={videoStyles.phraseAudioNext}
           data-video-phrase-audio-shortcut disabled={recording||preparing}

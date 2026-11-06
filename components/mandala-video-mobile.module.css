@@ -4301,3 +4301,17 @@
     display:none!important
   }
 }
+
+/* Optional Ideas audio/voice editor: keep the approved compact screen at rest.
+   The original 05 Nov CSS hard-hides the legacy editor and all phrase-audio
+   details. Only a user-visible, explicitly expanded advanced section may
+   restore them; no hidden media or consent controls are silently activated. */
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor]:not([hidden]){
+  display:block!important;min-width:0;margin-top:12px
+}
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor]:not([hidden]) .phraseAudioSettings{
+  display:block!important
+}
+.studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut]{
+  display:flex!important;min-height:44px
+}
