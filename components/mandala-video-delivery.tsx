@@ -94,6 +94,9 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  const [botUrl,setBotUrl]=useState("");
  const inFlight=useRef<Promise<string>|null>(null);
  const autoAttempted=useRef(false);
+ // A new video may auto-send only if opt-in was already active when this result loaded.
+ // Turning on delivery beside an existing video must not upload that file silently.
+ const automaticAtResultLoad=useRef(false);
  const readyMp4=extension==="mp4"&&mime==="video/mp4"&&bytes>=1024&&
   bytes<=MAX_BYTES&&VALID_DURATIONS.includes(duration);
  const fileName="holistic-house-personal."+extension;
@@ -116,18 +119,25 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
     if(active)setSession(errorCode(error)==="SIGN_IN_REQUIRED"?"guest":"unavailable");
     return null;
    }) as State|null;
-   if(active&&next){setState(next);setSession("signed_in");}
+   if(active&&next){
+    automaticAtResultLoad.current=next.telegram.automatic===true;
+    setState(next);setSession("signed_in");
+   }
   })();
   return()=>{active=false};
  },[]);
  async function shareFromDevice(){
-  const file=new File([blob],fileName,{type:mime});
-  if(typeof navigator.share!=="function"||
-    (typeof navigator.canShare==="function"&&!navigator.canShare({files:[file]}))){
-   setNotice(t.noShare);return;
-  }
-  try{await navigator.share({files:[file],title:"Holistic House video"});setNotice("");}
-  catch(error){
+  try{
+   // File construction and navigator.canShare may themselves throw in older
+   // iPhone WebKit. Preserve the working direct-download fallback.
+   const file=new File([blob],fileName,{type:mime});
+   if(typeof navigator.share!=="function"||
+     (typeof navigator.canShare==="function"&&!navigator.canShare({files:[file]}))){
+    setNotice(t.noShare);return;
+   }
+   await navigator.share({files:[file],title:"Holistic House video"});
+   setNotice("");
+  }catch(error){
    setNotice(error instanceof DOMException&&error.name==="AbortError"?t.cancelled:t.noShare);
   }
  }
@@ -157,6 +167,11 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  }
  async function sendViaBot(automatic:boolean){
   if(busy||!readyMp4)return;
+  if(!automatic){
+   // A manual send supersedes this result's pending automatic delivery.
+   automaticAtResultLoad.current=false;
+   autoAttempted.current=true;
+  }
   setBusy(true);setNotice(t.wait);
   try{
    const id=await privateUpload();
@@ -172,7 +187,7 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  useEffect(()=>{
   // Every newly rendered, verified video mounts a fresh instance (result URL
   // key in Studio). The user must previously opt in to this exact verified chat.
-  if(busy||!state?.telegram.automatic||!state.telegram.sendingAvailable||
+  if(busy||!automaticAtResultLoad.current||!state?.telegram.automatic||!state.telegram.sendingAvailable||
    !readyMp4||autoAttempted.current)return;
   autoAttempted.current=true;
   void sendViaBot(true);
@@ -195,6 +210,9 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  }
  async function changeAutomatic(enabled:boolean){
   if(busy)return;
+  // A permission change applies to later renders, not the already completed MP4.
+  // Explicit 'Send via bot' remains available for this existing file.
+  automaticAtResultLoad.current=false;
   setBusy(true);setNotice("");
   try{
    const next=await appFetch("personal-videos/delivery",{
