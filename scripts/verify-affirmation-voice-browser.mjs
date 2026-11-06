@@ -219,6 +219,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
+      // Public Ideas now shows eight sense axes and five suggested phrases.
+      // Legacy phrase tone/focus/length, consented TTS and actual encoded MP4
+      // remain reachable through an optional, user-opened disclosure.
+      const ideas=phrases.locator("[data-video-ideas-compact]");
+      await expect(ideas).toBeVisible();
+      await expect(ideas.locator("[data-video-ideas-current]")).toBeVisible();
+      await expect(ideas.locator("[data-video-ideas-desired]")).toBeVisible();
+      await expect(ideas.locator("[data-video-ideas-phrases] [data-video-idea-phrase]")).toHaveCount(5);
+      const advanced=phrases.locator("[data-video-phrase-advanced]");
+      await expect(advanced).toBeVisible();
+      await expect(advanced).not.toHaveAttribute("open","");
+      await advanced.locator(":scope > summary").click();
+      await expect(advanced).toHaveAttribute("open","");
+      await expect(advanced.locator("[data-hypno-overview]")).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
       await phrases.locator("[data-hypno-select-tone]").selectOption("balanced");

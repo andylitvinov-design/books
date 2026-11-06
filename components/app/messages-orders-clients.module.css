@@ -515,3 +515,18 @@
   flex:1;min-height:0;overflow:hidden
  }
 }
+
+/* Chat-first mobile sizing: keep destination tabs, but let the reply log grow. */
+@media(max-width:760px){
+ .root[data-section="ai"]{padding:4px 8px 3px;background:var(--hh-light-canvas,#fbf5e9)}
+ .root[data-section="ai"] .sections{margin-bottom:5px}
+ .root[data-section="ai"] .sections button,
+ .root[data-section="ai"] .sections .aiTab{height:46px;min-height:46px}
+ .root[data-section="ai"] .head{height:64px;min-height:64px;padding:7px 10px;margin-bottom:5px}
+ .root[data-section="ai"] .head h1{font-size:24px}
+ .root[data-section="ai"][data-chat-editing="true"] .head{
+  height:42px;min-height:42px;padding:5px 10px;margin-bottom:4px
+ }
+ .root[data-section="ai"][data-chat-editing="true"] .sections button,
+ .root[data-section="ai"][data-chat-editing="true"] .sections .aiTab{height:42px;min-height:42px}
+}

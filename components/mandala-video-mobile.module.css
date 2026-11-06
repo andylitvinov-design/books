@@ -4301,3 +4301,14 @@
     display:none!important
   }
 }
+
+/* Optional original phrase / voice editor stays collapsed on the mobile Ideas
+   screen. User action opens the existing consented voice tools, not another AI. */
+.phraseAdvanced{display:block;min-width:0;max-width:100%;margin:8px 0 0;
+ border:1px solid #c8ddd1;border-radius:13px;background:#fbfefb;color:#175442}
+.phraseAdvanced[hidden]{display:none!important}
+.phraseAdvanced>summary{display:list-item;min-height:44px;cursor:pointer;
+ padding:11px 13px;font:700 13px/1.3 system-ui,-apple-system,sans-serif}
+.phraseAdvanced[open]{padding-bottom:9px}
+.phraseAdvanced[open]>[data-video-hypnosis-section]{padding:8px 10px}
+@media(max-width:430px){.phraseAdvanced>summary{font-size:13px}}

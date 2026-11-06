@@ -160,3 +160,80 @@
   order:2;flex:none;margin:0 auto
  }
 }
+
+/* Compact Messenger: settings, source, error and verified options live INSIDE the scrollable log.
+   Only composer/actions reserve height; standalone course outline is not mounted. */
+@media(max-width:760px){
+ :global(.hh-messages-page) .root[data-compact]>.thread{
+  flex:1 1 auto;min-height:0;max-height:none;gap:9px;padding:10px;
+  background:#fffdfb;border:1px solid #e9e0d6;border-radius:16px
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactSettings{
+  flex:none;align-self:flex-start;margin:0 0 2px;padding:0 8px;border-radius:10px;
+  background:#fffaf4;border:1px solid #ede4dc;max-width:100%
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactSettings>summary{
+  min-height:30px;display:flex;align-items:center;padding:5px 3px;
+  font-size:11px;color:#5d6d64
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactSettings[open]{align-self:stretch}
+ :global(.hh-messages-page) .root[data-compact] .thread .choices{
+  flex:none;max-height:none;overflow:visible;margin:2px 0 0;
+  border-top:1px solid #ece6df;padding-top:8px
+ }
+ :global(.hh-messages-page) .root[data-compact] .thread .choices h2{font-size:13px;margin:0}
+ :global(.hh-messages-page) .root[data-compact] .thread>.compactDisclosure{
+  flex:none;font-size:11px;line-height:1.4;margin:0;color:#706c64
+ }
+ :global(.hh-messages-page) .root[data-compact]>.form{
+  flex:none;padding:6px 0 0;gap:5px;margin:0;border-top:0;background:transparent
+ }
+ :global(.hh-messages-page) .root[data-compact]>.form textarea{
+  min-height:46px;height:46px;max-height:100px;padding:10px 12px
+ }
+}
+
+/* Four real chat entry actions with descriptive captions; 2×2 even at 320px. */
+.root[data-compact] .startActions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;margin:6px 0 0
+}
+.root[data-compact] .startActions :is(button,a){
+ display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;
+ min-width:0;min-height:106px;padding:9px 7px;box-sizing:border-box;
+ border:1px solid var(--hh-light-border,#e9dfd1);border-radius:15px;
+ background:var(--hh-light-surface-soft,#f5ecdc);color:var(--hh-light-ink,#143d3a);
+ cursor:pointer;text-align:center;text-decoration:none;overflow-wrap:anywhere
+}
+.root[data-compact] .startActions button:first-child{background:#e7f5ee;border-color:#cde5d8}
+.root[data-compact] .startActions :is(button,a):focus-visible{
+ outline:3px solid var(--hh-light-focus,#176e6e);outline-offset:2px
+}
+.root[data-compact] .startActions button:disabled{opacity:.5;cursor:not-allowed}
+.root[data-compact] .startActions .startIcon{font-size:21px;line-height:1.1}
+.root[data-compact] .startActions strong{font:750 13px/1.23 system-ui,sans-serif}
+.root[data-compact] .startActions small{font:550 11px/1.25 system-ui,sans-serif;color:#67736a}
+.root[data-compact] .testLink{
+ display:inline-flex;align-items:center;align-self:flex-start;min-height:44px;
+ border:1px solid #b8d9c9;border-radius:11px;padding:9px 13px;
+ background:#e7f5ee;color:#155a4b;font:700 13px/1.4 system-ui,sans-serif
+}
+.root[data-compact] .testLink:focus-visible{outline:3px solid #168b71;outline-offset:2px}
+@media(max-width:760px){
+ :global(.hh-messages-page) .root[data-compact] .user,
+ :global(.hh-messages-page) .root[data-compact] .assistant{font-size:15px;line-height:1.5}
+ :global(.hh-messages-page) .root[data-compact] .compactDisclosure{margin:2px 0;color:#63766c;font-size:11px}
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form{
+  grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:6px
+ }
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form .actions{
+  display:flex;align-items:center;gap:4px;flex-wrap:nowrap
+ }
+ :global(.hh-messages-page) [data-chat-editing="true"] .root[data-compact]>.form .actions button:first-child{display:none}
+}
+@media(max-width:354px){
+ .root[data-compact] .startActions{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .root[data-compact] .startActions :is(button,a){min-height:102px;flex-direction:column;padding:8px 4px}
+ .root[data-compact] .startActions strong{font-size:12px;line-height:1.2}
+ .root[data-compact] .startActions small{font-size:10px;line-height:1.2}
+ .root[data-compact] .startActions .startIcon{font-size:19px}
+}

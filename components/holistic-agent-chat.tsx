@@ -21,7 +21,7 @@ const copy = {
     placeholder:"Что сейчас для вас важно?",send:"Отправить",cancel:"Остановить",mode:"Способ ответа",
     rules:"Без нейросети",device:"AI на устройстве (может потребоваться загрузка модели)",owned:"AI на нашем сервере (с согласия)",
     consent:"Разрешаю передать моё сообщение и последние реплики этого диалога на собственный защищённый AI-сервер Holistic House.",
-    loading:"Формирую ответ…",error:"Ответ сейчас недоступен. Проверьте вход в кабинет и попробуйте ещё раз.",
+    loading:"Формирую ответ…",error:"Не удалось получить ответ. Попробуйте повторить запрос.",signIn:"Для ответа войдите в кабинет Holistic House.",modeError:"Этот режим пока недоступен. Выберите «Без нейросети» в настройках чата.",
     unavailable:"Локальная модель в этом браузере или для русского языка недоступна; показан проверенный ответ.",
     source:"Источник ответа",suggestions:"Проверенные варианты",start:"Начните с вопроса. Можно сменить режим в любой момент.",
     option:"Выбрать",reset:"Новый разговор",used:"На устройстве",backend:"Собственный сервер",simple:"Алгоритм",
@@ -45,7 +45,7 @@ const copy = {
     placeholder:"What's on your mind?",send:"Send",cancel:"Stop",mode:"Response mode",
     rules:"Without a language model",device:"On-device AI (may download a model)",owned:"Our AI server (with consent)",
     consent:"I agree to send this message and recent conversation turns to Holistic House's secured, self-hosted AI server.",
-    loading:"Preparing a reply…",error:"Reply unavailable. Check that you're signed into your cabinet and try again.",
+    loading:"Preparing a reply…",error:"Could not get a reply. Please try again.",signIn:"Sign in to your Holistic House cabinet to receive a reply.",modeError:"This response mode is unavailable. Select Without a language model in chat settings.",
     unavailable:"The on-device language model isn't available for this browser or language; the verified fallback is shown.",
     source:"Reply source",suggestions:"Verified options",start:"Start with a question. You can switch modes any time.",
     option:"Open",reset:"New conversation",used:"On device",backend:"Self-hosted server",simple:"Rules",
@@ -69,7 +69,7 @@ const copy = {
     placeholder:"¿Qué te preocupa ahora?",send:"Enviar",cancel:"Detener",mode:"Tipo de respuesta",
     rules:"Sin modelo de IA",device:"IA en el dispositivo (puede descargar un modelo)",owned:"Nuestro servidor de IA (con permiso)",
     consent:"Acepto enviar este mensaje y los últimos turnos de la conversación al servidor privado de IA de Holistic House.",
-    loading:"Preparando una respuesta…",error:"Respuesta no disponible. Comprueba el inicio de sesión e inténtalo de nuevo.",
+    loading:"Preparando una respuesta…",error:"No se pudo obtener respuesta. Vuelve a intentarlo.",signIn:"Inicia sesión en Holistic House para recibir una respuesta.",modeError:"Este modo no está disponible. Selecciona Sin modelo de IA en los ajustes del chat.",
     unavailable:"El modelo local no está disponible para este navegador o idioma; se muestra la respuesta segura.",
     source:"Origen",suggestions:"Opciones verificadas",start:"Escribe una pregunta. Puedes cambiar el modo cuando quieras.",
     option:"Abrir",reset:"Nueva conversación",used:"En el dispositivo",backend:"Servidor propio",simple:"Reglas",
@@ -90,6 +90,56 @@ const copy = {
     programStep:"Paso",programNoMedia:"Esquema escrito; no es un vídeo listo."},
 } as const;
 
+const messengerStarter = {
+ ru:{
+  welcome:"Приветствую! Могу помочь с поддерживающим видео, практикой, тестом или личной экспресс-диагностикой. Выберите вариант или напишите свой вопрос.",
+  hello:"Я здесь! Можем создать видео, подобрать практику, выбрать тест или обратиться за личной экспресс-диагностикой. Что вам актуально?",
+  video:"Создать видео",videoSub:"Для поддержки",
+  meditation:"Подобрать медитацию",meditationSub:"Практику для сейчас",
+  hint:"Получить ИИ-подсказку",hintSub:"Пройти тест",
+  master:"Получить личную блиц-диагностику",masterSub:"От мастера",
+  actions:"Выберите, с чего начать",testsLink:"Открыть бесплатные тесты",
+  videoIntent:"Хочу создать видео",meditationIntent:"Хочу подобрать медитацию",
+  hintIntent:"Хочу получить ИИ-подсказку через тест",
+  videoQuestion:"С удовольствием! Для начала расскажите, о чём будет видео и что вы хотите почувствовать или изменить после просмотра.",
+  meditationQuestion:"Конечно! Как вы себя чувствуете сейчас, сколько минут у вас есть и к какому состоянию хотите прийти?",
+  hintQuestion:"Что вы хотите лучше понять сейчас: стресс, отношения, ресурсы или другую тему? Можно начать с бесплатного теста и затем обсудить результат здесь. Тест не является диагнозом.",
+ },
+ en:{
+  welcome:"Welcome! I can help with a supportive video, a practice for now, a test or a personal express review. Choose an option or write your question.",
+  hello:"I'm here! We can create a video, choose a practice, explore a test or request a personal express review. What matters to you now?",
+  video:"Create a video",videoSub:"For support",
+  meditation:"Choose a meditation",meditationSub:"A practice for now",
+  hint:"Get an AI suggestion",hintSub:"Take a test",
+  master:"Get a personal express review",masterSub:"With a practitioner",
+  actions:"Choose where to start",testsLink:"Explore free tests",
+  videoIntent:"I want to create a video",meditationIntent:"I want to find a meditation",
+  hintIntent:"I want a suggestion based on a test",
+  videoQuestion:"Of course! What would you like the video to be about, and how would you like to feel after watching it?",
+  meditationQuestion:"Of course! How do you feel right now, how many minutes do you have and how would you like to feel after the meditation?",
+  hintQuestion:"What would you like to understand better: stress, relationships, personal resources or something else? You can start with a free test, then discuss the result here. A test is not a diagnosis.",
+ },
+ es:{
+  welcome:"¡Hola! Puedo ayudarte con un vídeo de apoyo, una práctica para ahora, un test o una revisión exprés personal. Elige una opción o escribe tu pregunta.",
+  hello:"¡Aquí estoy! Podemos crear un vídeo, elegir una práctica, hacer un test o solicitar una revisión personal. ¿Qué necesitas ahora?",
+  video:"Crear un vídeo",videoSub:"Para apoyo",
+  meditation:"Elegir meditación",meditationSub:"Una práctica para ahora",
+  hint:"Obtener una sugerencia de IA",hintSub:"Hacer un test",
+  master:"Solicitar revisión exprés personal",masterSub:"Con un profesional",
+  actions:"Elige cómo empezar",testsLink:"Explorar tests gratuitos",
+  videoIntent:"Quiero crear un vídeo",meditationIntent:"Quiero elegir una meditación",
+  hintIntent:"Quiero una sugerencia mediante un test",
+  videoQuestion:"¡Claro! ¿De qué te gustaría que tratara el vídeo y cómo quieres sentirte después de verlo?",
+  meditationQuestion:"¡Claro! ¿Cómo te sientes ahora, cuántos minutos tienes y cómo te gustaría sentirte después?",
+  hintQuestion:"¿Qué te gustaría comprender mejor: el estrés, las relaciones, tus recursos u otro tema? Puedes empezar con un test gratuito y luego comentar el resultado aquí. Un test no es un diagnóstico.",
+ },
+} as const;
+function isCasualGreeting(raw:string):boolean {
+ const text=raw.toLocaleLowerCase().normalize("NFKC").replace(/[!?,.¿¡]+/g," ").replace(/\s+/g," ").trim();
+ // Only exact simple greetings. Do not intercept risk, privacy or other requests.
+ return /^(?:привет|приветик|здравствуй|здравствуйте|доброе утро|добрый день|добрый вечер|ау|ауу|алло|привет ау|ау привет|ты тут|hi|hello|hey|hi there|hello there|hola|buenas|buenos dias)$/.test(text);
+}
+
 type NativePromptSession = { prompt: (text:string,options?:{signal?:AbortSignal})=>Promise<string>;
   destroy?:()=>void };
 type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
@@ -99,6 +149,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
  locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null
 }) {
   const t=copy[locale];
+  const starter=messengerStarter[locale];
   const [mode,setMode]=useState<Mode>("rules");
   const [agree,setAgree]=useState(false);
   const [axisRef,setAxisRef]=useState("");
@@ -110,6 +161,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
   const [dismissedIds,setDismissedIds]=useState<string[]>([]);
   const [completedIds,setCompletedIds]=useState<string[]>([]);
   const [draft,setDraft]=useState("");
+  const [entryOpen,setEntryOpen]=useState(true);
+  const [guideLink,setGuideLink]=useState<"tests"|null>(null);
   const [messages,setMessages]=useState<Message[]>([]);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
   const [status,setStatus]=useState("");
@@ -136,7 +189,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     }else if(messages.length){
       setNewBelow(true);
     }
-  },[messages.length]);
+  },[messages.length,status,choices.length]);
   useEffect(()=>{
     if(!compact)return;
     const input=composerRef.current;
@@ -171,16 +224,40 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
     finally{setOutlineBusy(false);}
   }
 
+  function startGuided(kind:"video"|"meditation"|"hint") {
+    if(busy)return;
+    followTail.current=true;setNewBelow(false);
+    setFormat(kind==="video"?"video":kind==="meditation"?"audio":"test");
+    setGuideLink(kind==="hint"?"tests":null);
+    setEntryOpen(false);setStatus("");setSource("");setChoices([]);
+    setDraft("");
+    const intent=kind==="video"?starter.videoIntent:
+      kind==="meditation"?starter.meditationIntent:starter.hintIntent;
+    const question=kind==="video"?starter.videoQuestion:
+      kind==="meditation"?starter.meditationQuestion:starter.hintQuestion;
+    setMessages(prev=>[...prev,
+      {role:"user" as const,text:intent},
+      {role:"assistant" as const,text:question},
+    ].slice(-30));
+  }
   async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text=draft.trim().slice(0,2000);
     if(!text||busy||mode==="owned"&&!agree)return;
+    if(compact&&isCasualGreeting(text)){
+      followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
+      setMessages(prev=>[...prev,{role:"user" as const,text},
+        {role:"assistant" as const,text:starter.hello}].slice(-30));
+      return;
+    }
+    setEntryOpen(false);
     // Keep every user turn intact for server safety preflight (UI max 2,000).
     // Bound unusually long assistant replies without altering user risk cues.
     const prior=messages.slice(-6).map(row=>({
       role:row.role,text:row.role==="user"?row.text:row.text.slice(0,4000),
     })),abort=new AbortController();
-    controller.current=abort;setBusy(true);setStatus("");setDraft("");
+    followTail.current=true;setNewBelow(false);
+    controller.current=abort;setBusy(true);setStatus("");setChoices([]);setDraft("");
     setMessages(prev=>[...prev,{role:"user" as const,text}]);
     try {
       const response=await fetch("/api/holistic-agent/turn",{
@@ -194,7 +271,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
           usePrivateHistory:useSavedHistory,
           feedback:{dismissedIds,completedIds}}),
       });
-      if(!response.ok)throw Error("CHAT_UNAVAILABLE");
+      if(!response.ok)throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"MODE_UNAVAILABLE":"CHAT_UNAVAILABLE");
       const data=await response.json() as AgentReply;
       let reply=data.reply,used=data.source||"none";
       if(mode==="device"&&data.browserModelAllowed&&!abort.signal.aborted){
@@ -226,18 +303,18 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       setHistoryUsed(data.usedSavedVideoHistory===true);
       setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
       setSource(used==="browser"?t.used:used==="owned"?t.backend:t.simple);
-    } catch {
-      if(!abort.signal.aborted)setStatus(t.error);
+    } catch (error) {
+      if(!abort.signal.aborted){
+        const reason=error instanceof Error?error.message:"";
+        setStatus(reason==="SIGN_IN_REQUIRED"?t.signIn:reason==="MODE_UNAVAILABLE"?t.modeError:t.error);
+      }
     } finally {
       setBusy(false);controller.current=null;
     }
   }
-  return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
-    data-has-messages={messages.length>0||undefined}>
-    {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
-    {compact&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
+  const settings = (
     <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
-      <summary>{locale==="ru"?"Режим ответа и конфиденциальность":locale==="es"?"Modo y privacidad":"Response mode and privacy"}</summary>
+      <summary>{compact?(locale==="ru"?"Настройки":locale==="es"?"Ajustes":"Settings"):(locale==="ru"?"Режим ответа и конфиденциальность":locale==="es"?"Modo y privacidad":"Response mode and privacy")}</summary>
     <label className={styles.mode}>{t.mode}
       <select value={mode} onChange={event=>{setMode(event.target.value as Mode);setStatus("");}}>
         <option value="rules">{t.rules}</option>
@@ -278,19 +355,41 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
       {t.consent}
     </label>}
     </details>
+  );
+  return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
+    data-has-messages={messages.length>0||undefined}>
+    {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
+    {!compact&&settings}
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
-      {!messages.length&&<p className={styles.muted}>{t.start}</p>}
+      {compact&&<p className={styles.assistant} data-hh-ai-welcome>{starter.welcome}</p>}
+      {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
-    </div>
-    {newBelow&&<button type="button" className={styles.jumpToLatest} onClick={()=>{
-      followTail.current=true;
-      if(threadRef.current)threadRef.current.scrollTop=threadRef.current.scrollHeight;
-      setNewBelow(false);
-    }}>{locale==="ru"?"↓ Новые сообщения":locale==="es"?"↓ Mensajes nuevos":"↓ New messages"}</button>}
+      {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
+        href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
+      {compact&&entryOpen&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
+        <button type="button" data-hh-ai-start="video" disabled={busy} onClick={()=>startGuided("video")}>
+          <span className={styles.startIcon} aria-hidden="true">🎬</span>
+          <strong>{starter.video}</strong><small>{starter.videoSub}</small>
+        </button>
+        <button type="button" data-hh-ai-start="meditation" disabled={busy} onClick={()=>startGuided("meditation")}>
+          <span className={styles.startIcon} aria-hidden="true">🪷</span>
+          <strong>{starter.meditation}</strong><small>{starter.meditationSub}</small>
+        </button>
+        <button type="button" data-hh-ai-start="hint" disabled={busy} onClick={()=>startGuided("hint")}>
+          <span className={styles.startIcon} aria-hidden="true">✨</span>
+          <strong>{starter.hint}</strong><small>{starter.hintSub}</small>
+        </button>
+        <a data-hh-ai-start="master" href={"/"+locale+"/services/free-situation-review"}>
+          <span className={styles.startIcon} aria-hidden="true">🤝</span>
+          <strong>{starter.master}</strong><small>{starter.masterSub}</small>
+        </a>
+      </div>}
+      {compact&&settings}
+      {compact&&<p className={styles.compactDisclosure}>{t.disclosure}</p>}
     {source&&<p className={styles.muted}>{t.source}: {source}</p>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
     {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
@@ -306,17 +405,23 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
           </div>)}
         <small className={styles.muted}>{t.localFeedback}</small>
       </div>}
-    {status&&<p role="status">{status}</p>}
+    {status&&<p role="alert" className={styles.assistant}>{status}</p>}
+    </div>
+    {newBelow&&<button type="button" className={styles.jumpToLatest} onClick={()=>{
+      followTail.current=true;
+      if(threadRef.current)threadRef.current.scrollTop=threadRef.current.scrollHeight;
+      setNewBelow(false);
+    }}>{locale==="ru"?"↓ Новые сообщения":locale==="es"?"↓ Mensajes nuevos":"↓ New messages"}</button>}
     <form onSubmit={submit} className={styles.form}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{controller.current?.abort();followTail.current=true;setNewBelow(false);setMessages([]);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setFormat("");setGuideLink(null);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>
     </form>
-    <details className={styles.programPanel} data-hh-eight-session-preview>
+    {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>
       <summary>{t.programTitle}</summary>
       <p className={styles.muted}>{t.programInfo}</p>
       <form onSubmit={createOutline} className={styles.form}>
@@ -358,6 +463,6 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt}:{
           <small>{t.programNoMedia}</small>
         </li>)}</ol>
       </section>}
-    </details>
+    </details>}
   </section>;
 }
