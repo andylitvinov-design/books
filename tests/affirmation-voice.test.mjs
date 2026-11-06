@@ -412,8 +412,13 @@ test("Ideas optional voice authoring is opt-in but genuinely reachable in the re
   const page=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const browser=read("scripts/verify-affirmation-voice-browser.mjs");
-  assert.ok(page.includes('(activeWorkspace!=="phrases"||phraseAudioExpanded)'));
+  assert.ok(page.includes('{phraseAudioActivated ? <div'),"voice editor mounts on explicit opt-in");
+  assert.ok(page.includes('hidden={activeWorkspace!=="phrases"||!phraseAudioExpanded}'),"collapse hides but does not unmount the consented WAV");
+  assert.ok(page.includes('setPhraseAudioActivated(true);setPhraseAudioExpanded(true)'),"real first tap mounts optional voice editor");
   assert.ok(page.includes('data-video-audio-expanded={phraseAudioExpanded?"true":"false"}'));
+  assert.ok(browser.includes('await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName,{timeout:30000})'),"real audio attachment is tested before remix/download");
+  assert.ok(browser.includes('const montageAudioForVoice=page.locator(\'[data-video-montage-tab="audio"]\')'),"select visible Montage Audio before Voice");
+  assert.ok(browser.includes('await expect(montageAudioForVoice).toHaveAttribute("aria-pressed","true")'),"audio subsection must be visibly selected");
   assert.ok(page.includes('data-video-phrase-audio-shortcut disabled={recording||preparing} aria-expanded={phraseAudioExpanded}'));
   assert.ok(css.includes('[data-video-legacy-phrase-editor][data-video-audio-expanded="true"]'));
   assert.ok(browser.includes('await optionalAudio.click()'));

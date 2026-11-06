@@ -665,7 +665,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(!await page.locator("[data-video-narration-stale]").isVisible())
         await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
       await page.locator('[data-video-quick-control="editor"]').click();
-      await page.locator('[data-video-basic-tab="voice"]').click();
+      // Modern Montage mounts its basic Voice tab only inside the Audio section.
+      // Follow the actual visible visitor path; never force-click hidden controls.
+      const montageAudioForVoice=page.locator('[data-video-montage-tab="audio"]');
+      await montageAudioForVoice.click();
+      await expect(montageAudioForVoice).toHaveAttribute("aria-pressed","true");
+      const voiceDisclosure=page.locator('[data-video-montage-settings]');
+      await voiceDisclosure.waitFor({state:"visible",timeout:25000});
+      if(await voiceDisclosure.getAttribute("open")===null)
+        await voiceDisclosure.locator(":scope > summary").click();
+      await voiceDisclosure.locator('[data-video-basic-tab="voice"]').click();
       // The phrase warning is intentionally unmounted in Montage. If the
       // old narration is still attached there, export must remain disabled;
       // an independently selected soundtrack is not stale narration.
