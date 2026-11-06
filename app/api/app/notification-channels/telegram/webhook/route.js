@@ -73,8 +73,39 @@ export async function POST(request){
   }
   const owner=await receiveOwnerAiTelegramWebhook(config,update)
   if(!owner.handled){
-    // Client AI is independent of owner/CRM and never steals an unconsented
-    // verification /start, global /stop or ordinary practitioner Reply.
+    let videoIngress=null,receiveVideoAi=null
+    // The current verified client bot has ONE webhook. Explicit /video
+    // commands are considered before a generic Subscriber AI chat reply,
+    // but AFTER owner video/audio/AI and never for /start account linking.
+    if(process.env.HH_AI_TELEGRAM_QUEUE_ENABLED==='true'&&
+       process.env.VERCEL_ENV==='production'){
+      const {aiVideoBotIdentityReady}=await import('@/lib/app/telegram-ai-account-boundary')
+      if(aiVideoBotIdentityReady()){
+        const {parseTelegramVideoClientIngress}=await import('@/lib/app/telegram-ai-client-ingress.mjs')
+        const event=parseTelegramVideoClientIngress(update,telegramClientBotUsername())
+        if(event){
+          const {aiQueueEnabled,receiveTelegramAiUpdate}=await import('@/lib/app/telegram-ai-queue')
+          if(aiQueueEnabled()){videoIngress=event;receiveVideoAi=receiveTelegramAiUpdate}
+        }
+      }
+    }
+    if(videoIngress&&!videoIngress.stop){
+      const ai=await receiveVideoAi(config,videoIngress)
+      if(ai.handled){
+        if(ai.queued||ai.consented||ai.consentRequired)
+          after(async()=>{
+            try{
+              const {runTelegramAiQueues}=await import('@/lib/app/telegram-ai-worker')
+              // Heavy MP4 rendering is confined to the existing budget-gated
+              // private recovery worker, never the signed HTTP webhook.
+              await runTelegramAiQueues(config,{messages:2,videos:0,deliveries:3})
+            }catch{console.error('HH_AI_CLIENT_VIDEO_QUEUE_AFTER_FAILED')}
+          })
+        return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+      }
+    }
+    // Subscriber /tests /voice /ai callbacks, unconsented /start and direct
+    // practitioner replies remain the pre-existing canonical paths.
     const subscriber=await receiveSubscriberAiTelegramUpdate(config,update)
     if(subscriber.queued||subscriber.callbackId)after(async()=>{
       try{
@@ -82,46 +113,17 @@ export async function POST(request){
         await drainSubscriberAiOutbox(config)
       }catch{console.error('HH_SUBSCRIBER_AI_DELIVERY_FAILED')}
     })
+    // Global /stop always revokes BOTH client account/subscriber and video
+    // queue consent, regardless of whether the subscriber handler consumed it.
+    if(videoIngress?.stop&&receiveVideoAi)await receiveVideoAi(config,videoIngress)
     if(!subscriber.handled){
-      let aiHandled=false
-      // The verified client bot has ONE inbound URL. Keep all owner,
-      // subscriber, /start-link, customer Reply and callback paths intact.
-      // Only user-initiated /video or /hhvideo_* enters this separate lane.
-      if(process.env.HH_AI_TELEGRAM_QUEUE_ENABLED==='true'&&
-         process.env.VERCEL_ENV==='production'){
-        const {aiVideoBotIdentityReady}=await import('@/lib/app/telegram-ai-account-boundary')
-        if(aiVideoBotIdentityReady()){
-          const {parseTelegramVideoClientIngress}=await import('@/lib/app/telegram-ai-client-ingress.mjs')
-          const event=parseTelegramVideoClientIngress(update,telegramClientBotUsername())
-          if(event){
-            const {aiQueueEnabled,receiveTelegramAiUpdate}=await import('@/lib/app/telegram-ai-queue')
-            if(aiQueueEnabled()){
-              // STOP must also revoke the existing client link and other
-              // client permissions, then erase queued AI work.
-              if(event.stop)await receiveClientTelegramWebhook(config,update)
-              const result=await receiveTelegramAiUpdate(config,event)
-              aiHandled=Boolean(result.handled||event.stop)
-              if(aiHandled&&(result.queued||result.consented||result.consentRequired))
-                after(async()=>{
-                  try{
-                    const {runTelegramAiQueues}=await import('@/lib/app/telegram-ai-worker')
-                    // Existing authorized recovery owns the heavy render.
-                    await runTelegramAiQueues(config,{messages:2,videos:0,deliveries:3})
-                  }catch{console.error('HH_AI_CLIENT_VIDEO_QUEUE_AFTER_FAILED')}
-                })
-            }
-          }
-        }
-      }
-      if(!aiHandled){
-        const customer=await receiveClientTelegramWebhook(config,update)
-        if(customer.relayMessageId){
-          const id=customer.relayMessageId
-          after(async()=>{await Promise.allSettled([
-            dispatchPractitionerMessagePush(config,id),
-            dispatchClientTelegramNotification(config,id),
-          ])})
-        }
+      const customer=await receiveClientTelegramWebhook(config,update)
+      if(customer.relayMessageId){
+        const id=customer.relayMessageId
+        after(async()=>{await Promise.allSettled([
+          dispatchPractitionerMessagePush(config,id),
+          dispatchClientTelegramNotification(config,id),
+        ])})
       }
     }
   }
