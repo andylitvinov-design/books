@@ -193,7 +193,7 @@ jobs:
     if: >-
       github.repository == 'andylitvinov-design/books' &&
       github.event_name == 'pull_request_target' &&
-      github.ref == 'refs/heads/codex/public-book-library' &&
+      github.ref == 'refs/heads/codex/bootstrap-books' &&
       github.event.pull_request.base.ref == 'codex/public-book-library' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.draft == false

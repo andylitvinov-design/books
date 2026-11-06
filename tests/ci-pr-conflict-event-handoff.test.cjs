@@ -12,13 +12,13 @@ const source=(labels=[],extra={})=>({
  labels:labels.map(name=>({name})),...extra
 });
 const event=()=>({repo:{owner:'andylitvinov-design',repo:'books'},
- ref:'refs/heads/codex/public-book-library',eventName:'pull_request_target',
+ ref:'refs/heads/codex/bootstrap-books',eventName:'pull_request_target',
  runId:111,payload:{action:'synchronize',pull_request:source()}});
 const core={info(){},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}};
 test('only exact same-repo production PR event permits dirty conflict handoff',()=>{
  assert.equal(trustedConflictEvent(event()),true);
  for(const change of [
-  c=>c.ref='refs/heads/codex/bootstrap-books',
+  c=>c.ref='refs/heads/codex/public-book-library',
   c=>c.payload.pull_request.head.repo.full_name='attacker/books',
   c=>c.payload.pull_request.base.ref='codex/bootstrap-books',
   c=>c.eventName='workflow_dispatch',
