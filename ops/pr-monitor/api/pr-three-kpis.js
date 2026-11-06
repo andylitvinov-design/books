@@ -3,9 +3,12 @@
  * NO GitHub action, schedule, PR mutation, rerun, CI runner, paid provider.
  */
 const model=require('../pr-three-kpi-model.cjs');
+const wavesModel=require('../pr-wave-effectiveness-model.cjs');
 const ROOT='https://api.github.com/repos/andylitvinov-design/books';
 const MAX_PAGES=4,MAX_REPAIR_PR_READS=5,MAX_MERGE_PAGES=2;
 const TTL=300000,DEEP_TTL=600000,MERGE_TTL=600000;
+const CREATED_TTL=600000,MAX_COHORT_PAGES=4;
+let cohortCache=null,cohortAt=0,cohortPromise=null;
 let archiveCache=null,archiveAt=0,archivePromise=null;
 let deepCache=new Map();
 let mergeCache=null,mergeAt=0,mergePromise=null;
@@ -82,6 +85,50 @@ async function recentMerges(now) {
   mergeCache=value;mergeAt=Date.now();return {...value,cache_hit:false};
  })().finally(()=>{mergePromise=null});
  return mergePromise;
+}
+// Only for explicitly requested efficiency panel: bounded, read-only GitHub
+// PR creation cohort. No cron, CI dispatch, HEAD write or new provider.
+async function recentCreated(now) {
+ if(cohortCache&&Date.now()-cohortAt<CREATED_TTL)
+  return {...cohortCache,cache_hit:true};
+ if(cohortPromise)return cohortPromise;
+ cohortPromise=(async()=>{
+  const cutoff=now-48*3600000,prs=[],seen=new Set();
+  let pages=0,complete=false,remaining=null,previous=Infinity;
+  for(let page=1;page<=MAX_COHORT_PAGES;page++){
+   const r=await gh('/pulls?state=all&base=codex%2Fpublic-book-library'+
+    '&sort=created&direction=desc&per_page=100&page='+page);
+   if(!Array.isArray(r.data)||r.data.length>100)
+    throw Error('CREATED_COHORT_PAGE_INVALID');
+   pages=page;remaining=r.remaining;
+   for(const pr of r.data){
+    const created=t(pr?.created_at);
+    if(created===null||created>now+60000||created>previous||
+       !Number.isSafeInteger(pr?.number)||pr.number<=0)
+      throw Error('CREATED_COHORT_CHRONOLOGY_INVALID');
+    previous=created;
+    if(seen.has(pr.number))continue;
+    seen.add(pr.number);
+    if(created>=cutoff&&pr.base?.ref==='codex/public-book-library')prs.push({
+      number:pr.number,created_at:pr.created_at,merged_at:pr.merged_at,
+      merge_commit_sha:pr.merge_commit_sha,head:{sha:pr.head?.sha},
+      base:{ref:pr.base.ref},draft:pr.draft===true,state:pr.state});
+   }
+   if(r.data.length<100||r.data.some(pr=>t(pr.created_at)<cutoff)){
+    complete=true;break;
+   }
+   if(remaining!==null&&remaining<12)break;
+  }
+  const value={prs,pages,complete,remaining,
+   scope:'LAST_48H_CREATED_PRODUCTION_PRS',retrieved_at:new Date().toISOString()};
+  cohortCache=value;cohortAt=Date.now();
+  return {...value,cache_hit:false};
+ })().catch(err=>{
+  if(cohortCache)return {...cohortCache,cache_hit:true,stale:true,
+   stale_reason:String(err.message||err).slice(0,85)};
+  throw err;
+ }).finally(()=>{cohortPromise=null});
+ return cohortPromise;
 }
 async function readRepair(candidates) {
  const seenPR=new Set(),chosen=[];
@@ -163,6 +210,26 @@ async function main(req,res) {
    'Historical October archive has no verifiable Core stage events.',
    'Post-Core merged_at is joined only by exact GitHub PR number and final HEAD, from a bounded recent snapshot.',
    'Historical and unobserved stages remain unknown, not zero; no complete all-PR bottleneck ranking is claimed.'];
+  if(req.query?.efficiency==='1'){
+   // Optional same-origin section shares the already loaded authenticated
+   // Core archive. GitHub PR listing is cached and bounded to <=4 pages.
+   try{
+    const sample=await recentCreated(now);
+    report.release_efficiency=wavesModel.build(store.runs,sample.prs,now,{
+     cohort_complete:sample.complete,pages:sample.pages,
+     stale:sample.stale===true||store.stale===true});
+    report.efficiency_lookup={status:sample.stale?'STALE':
+      sample.complete?'COMPLETE_LISTING':'PARTIAL_LISTING',
+     requested_pages:sample.pages,max_pages:MAX_COHORT_PAGES,
+     cache_hit:sample.cache_hit===true,
+     retrieved_at:sample.retrieved_at,stale_reason:sample.stale_reason||null};
+   }catch(error){
+    report.release_efficiency=null;
+    report.efficiency_lookup={status:'UNAVAILABLE',
+     reason:String(error.message||error).slice(0,105),
+     missing_is_not_zero:true};
+   }
+  }
   res.statusCode=200;res.end(JSON.stringify(report));
  }catch(error){
   res.statusCode=503;res.end(JSON.stringify({schema:model.SCHEMA,
@@ -170,4 +237,4 @@ async function main(req,res) {
  }
 }
 module.exports=main;
-module.exports._test={archive,readRepair,recentMerges,gh};
+module.exports._test={archive,readRepair,recentMerges,recentCreated,gh};
