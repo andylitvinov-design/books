@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {buildSourcingQueue,sourceQueueCsv,CATEGORY_TARGETS,NATIVE_ASPECT_TARGETS} from '../lib/video-vault/sourcing-queue.mjs';
 const row=(id,path,visualTags=[],extra={})=>({id,sourcePage:'https://dareful.com/'+path+'/',visualTags,...extra});
 test('500 unique footage targets, not 500 URLs, and native aspect quotas',()=>{
@@ -69,4 +70,37 @@ test('CSV is inert, quoted, Unicode safe; source data never exports mediaUrl',()
 test('invalid input fails closed, no source-side effects',()=>{
  assert.throws(()=>buildSourcingQueue({sources:{foo:'bar'}}),/INVALID_INPUT/);
  assert.throws(()=>buildSourcingQueue(Array.from({length:5001},(_,i)=>({id:'x'+i}))),/INVALID_INPUT/);
+});
+
+test('Grand Canyon NPS accepts distinct video IDs on one official B-roll page',()=>{
+ const a={id:'ed254bb7-155d-451f-67b12e38646dae7e',provider:'nps_grca',sourcePage:'https://www.nps.gov/grca/learn/photosmultimedia/b-roll_hd14.htm',visualTags:['water']};
+ const b={...a,id:'edae1a5e-155d-451f-67f2a08978c464b2'};
+ const result=buildSourcingQueue([a,b,{...a}]);
+ assert.equal(result.acceptedResearchCandidates,2);
+ assert.equal(result.duplicateResearchEntries,1);
+ assert.equal(result.duplicates[0].reason,'DUPLICATE_SOURCE_ID');
+ assert.ok(result.candidates.every(x=>x.generatorEligible===false&&x.stage==='CANDIDATE_RESEARCH_ONLY'));
+});
+test('NPS provider rejects invalid IDs, unapproved archive pages and spoofed host',()=>{
+ const a={id:'3ce1b6aa-8163-47f6-bd79-01672ab3e64c',provider:'nps_grca',sourcePage:'https://www.nps.gov/grca/learn/photosmultimedia/b-roll_hd02.htm',visualTags:['winter','sky']};
+ const report=buildSourcingQueue([a,{...a,id:'invalid-nps-id'},
+  {...a,sourcePage:'https://nps.gov/grca/learn/photosmultimedia/b-roll_hd02.htm'},
+  {...a,sourcePage:a.sourcePage+'?track=1'},
+  {...a,sourcePage:'https://www.nps.gov/grca/learn/photosmultimedia/video.htm'},
+  {...a,sourcePage:'https://evil.test/grca/learn/photosmultimedia/b-roll_hd02.htm'}]);
+ assert.equal(report.acceptedResearchCandidates,1);
+ assert.equal(report.invalidResearchEntries,5);
+});
+test('54 NPS media-source research records are not approved or counted as originals',()=>{
+ const sources=JSON.parse(readFileSync(new URL('../data/video-catalog/nps-grca-research-54-20261106.json',import.meta.url),'utf8'));
+ assert.equal(sources.individualOfficialMediaIds,54);
+ const report=buildSourcingQueue(sources);
+ assert.equal(report.acceptedResearchCandidates,54);
+ assert.equal(report.invalidResearchEntries,0);
+ assert.equal(report.duplicateResearchEntries,0);
+ assert.equal(report.sourcing.find(x=>x.category==='water').researchCandidates,17);
+ assert.equal(report.sourcing.find(x=>x.category==='nature').researchCandidates,37);
+ assert.equal(report.generatorEligibleFromResearchQueue,0);
+ assert.equal(report.cloudR2VerifiedOriginals,null);
+ assert.ok(report.candidates.every(x=>x.nativeAspect===null&&!x.liveVerified));
 });
