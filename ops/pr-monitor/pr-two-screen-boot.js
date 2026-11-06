@@ -25,6 +25,9 @@
     additions += '<link rel="stylesheet" href="/pr-queue-recovery.css?v=20261105-queue-v1">'+
       '<script src="/pr-open-queue.js?v=20261105-queue-v1" defer><\/script>'+
       '<script src="/pr-trends-recovery.js?v=20261105-history-v1" defer><\/script>';
+    // A single read of the existing public activity snapshot; no additional polling.
+    additions += '<link rel="stylesheet" href="/gpt-agent-counter.css?v=20261106-1">'+
+      '<script src="/gpt-agent-counter.js?v=20261106-1" defer><\/script>';
     // Disable only old layout reordering, preserving all sources and working APIs.
     html=html.replace(/<head>/i,'<head><script src="/pr-two-screen-pre.js"><\/script>');
     html=html.replace(/<\/head>/i,additions+'</head>');
