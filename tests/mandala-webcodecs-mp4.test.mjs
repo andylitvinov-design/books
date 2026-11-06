@@ -178,3 +178,17 @@ test("hydration opens the hidden Story director only via visible Continue",()=>{
   assert.match(flow,/await expect\(continueButton\)\.toBeDisabled\(\)/);
   assert.doesNotMatch(flow,/\.click\(\{force:true\}\)/);
 });
+
+test("physical voice WebKit uses actual Montage Settings then Audio and direct Voice disclosure",()=>{
+ const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ const settings=browser.indexOf('const settingsTab=page.locator');
+ const selectDuration=browser.indexOf('await durationSelect.selectOption("10")',settings);
+ const openAudio=browser.indexOf('await montageAudioTab.click()',selectDuration);
+ const phrases=browser.indexOf("const phrases=page.locator",openAudio);
+ const reenter=browser.indexOf('await reenterAudioTab.click()',phrases);
+ const voice=browser.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")',reenter);
+ assert.ok(settings>=0&&selectDuration>settings&&openAudio>selectDuration&&phrases>openAudio&&reenter>phrases&&voice>reenter,
+   "a visitor must use mounted Settings and Audio tabs before source-backed voice, stale-phrase and MP4 checks");
+ assert.doesNotMatch(browser,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
+ assert.match(browser,/encoded-audio-verified/);
+});
