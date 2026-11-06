@@ -63,7 +63,7 @@ create policy video_credit_grants_create on app_private.video_credit_grants for 
 -- PostgreSQL 17 detects policy recursion, even on starter INSERT.
 -- A SECURITY INVOKER trigger can query the owner-scoped SELECT policy safely.
 create function app_private.video_credit_grant_due_guard() returns trigger
-  language plpgsql security invoker set search_path='' as $
+  language plpgsql security invoker set search_path='' as $$
 begin
   if new.kind='monthly' and not exists(
     select 1 from app_private.video_credit_grants g
@@ -74,7 +74,7 @@ begin
     raise exception 'VIDEO_CREDITS_MONTHLY_NOT_DUE' using errcode='23514';
   end if;
   return new;
-end $;
+end $$;
 create trigger video_credit_grant_due before insert on app_private.video_credit_grants
   for each row execute function app_private.video_credit_grant_due_guard();
 revoke execute on function app_private.video_credit_grant_due_guard() from public,anon,authenticated;

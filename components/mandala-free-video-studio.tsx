@@ -3251,6 +3251,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }
         }finally{
           if(webCodecJobRef.current===controller)webCodecJobRef.current=null;
+          // A failed/aborted WebCodecs encode has no player to confirm. Return
+          // the reserved credits immediately, not after the 30-minute timeout.
+          if(creditOpRef.current&&!creditValidRef.current)
+            void releaseCredit(creditOpRef.current);
           if(aliveRef.current)setRecording(false);
         }
         return;
