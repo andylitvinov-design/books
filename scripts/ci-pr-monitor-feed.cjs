@@ -113,7 +113,34 @@ function ciWakeTimingSummary(rows,maxInspected){
   wake_pending_age:aggregate('wake_pending_age')};
 }
 
-function buildMonitorSnapshot(report,context){
+// This is previously observed schedule history, never proof inferred from a
+// fresh workflow_dispatch or pull_request_target callback.
+function nativeCronEvidence(source,at){
+ if(source?.health==='NOT_PROBED'||!source||
+    typeof source.health!=='string'||typeof source.lastSeen!=='string')return null;
+ const statuses=source.health.split(' | '),seen=source.lastSeen.split(' | ');
+ const labels=['watchdog','ci','repair','hourly'];
+ if(statuses.length!==4||seen.length!==4)return null;
+ const out={},dates={};
+ for(let i=0;i<4;i++){
+  const prefix=labels[i]+':';
+  if(!statuses[i].startsWith(prefix)||!seen[i].startsWith(prefix))return null;
+  out[labels[i]]=statuses[i].slice(prefix.length);
+  dates[labels[i]]=seen[i].slice(prefix.length);
+ }
+ const allowed=new Set(['HEALTHY','STALE','UNOBSERVED','UNKNOWN']);
+ if(!allowed.has(out.watchdog)||!allowed.has(out.ci)||!allowed.has(out.hourly)||
+    out.repair!=='DISPATCH_ONLY'||dates.repair!=='NOT_SCHEDULED')return null;
+ const last=key=>{
+  const value=dates[key],seenAt=Date.parse(value),cutoff=Date.parse(at);
+  return Number.isFinite(seenAt)&&Number.isFinite(cutoff)&&
+    seenAt<=cutoff+60000&&seenAt>=cutoff-365*86400000&&
+    value.startsWith('20')&&value.includes('T')?value:null;
+ };
+ return {observed_at:at,watchdog:out.watchdog,ci:out.ci,
+   watchdog_last:last('watchdog'),ci_last:last('ci')};
+}
+function buildMonitorSnapshot(report,context,watchdogLiveness=null){
   if(report?.schema!=='HH_CONTROL_DISPATCH_V1'||report.dryRun!==false||
      !Number.isFinite(Date.parse(report.checkedAt||''))||
      !Number.isSafeInteger(context?.runId)||context.runId<1||
@@ -228,6 +255,7 @@ function buildMonitorSnapshot(report,context){
     counts,queue_states:queueStates,backlog_label_hints:labelHints,
     watchdog_sample_status:watchdogSampleStatus,watchdog_sample:watchdogSample,
     api_budget:apiBudget,ci_wake_handoff:ciWakeHandoff,
+    native_cron:nativeCronEvidence(watchdogLiveness,report.checkedAt),
     blocked_reasons:blocked,
     blocked_examples:blockedExamples,
     reason:typeof report.reason==='string'?report.reason.slice(0,100):null
@@ -255,13 +283,16 @@ function renderSnapshot(snapshot){
     'Сравнение трёх 24-часовых когорт PR (исторические этапы, coverage, медиана, P90 и GitHub timelines): https://github.com/'+REPO+'/issues/3394', '',
     'Источник: https://github.com/'+REPO+'/actions/runs/'+snapshot.run_id,''].join('\n');
 }
-async function publishMonitorSnapshot({github,context,report,inventorySnapshot=null}){
-  const next=buildMonitorSnapshot(report,context);
+async function publishMonitorSnapshot({github,context,report,inventorySnapshot=null,watchdogLiveness=null}){
+  const next=buildMonitorSnapshot(report,context,watchdogLiveness);
   const {owner,repo}=context.repo;
   const issue=(await github.rest.issues.get({owner,repo,issue_number:ISSUE_NUMBER})).data;
   if(!issue||issue.state!=='open'||issue.pull_request)
     throw Error('MONITOR_FEED_NOT_OPEN_ISSUE');
   const previous=parseExisting(issue.body);
+  // Event-only reports lack schedule history; retain the previous observation
+  // with its original timestamp, never upgrade a stale cron to healthy.
+  if(!next.native_cron&&previous.native_cron)next.native_cron=previous.native_cron;
   // A late queue/old workflow must never replace a newer observed snapshot.
   if(Date.parse(previous.checked_at)>=Date.parse(next.checked_at))
     return {status:'OLDER_OR_DUPLICATE_DROPPED',prior_run_id:previous.run_id};
@@ -348,5 +379,5 @@ async function publishTimestampInventoryOnly({github,context,watchdog}){
 }
 module.exports={MARKER,SCHEMA,buildMonitorSnapshot,ciWakeTimingSummary,
  parseExisting,renderSnapshot,
- publishMonitorSnapshot,publishTimestampInventoryOnly};
+ publishMonitorSnapshot,publishTimestampInventoryOnly,nativeCronEvidence};
 
