@@ -108,7 +108,8 @@ function summarizePR(pr,runs){
  // Never call a new HEAD proof of a successful repair or attribute the idle
  // time to GitHub runners. Count only intervals after ALL prior jobs ended.
  const wave={new_head:{count:0,ms:0},same_head:{count:0,ms:0},
-   unverified_head:{count:0,ms:0},after_failure:{count:0,ms:0}};
+   unverified_head:{count:0,ms:0},after_failure:{count:0,ms:0},
+   new_head_after_success:{count:0,ms:0}};
  const waveRows=[];
  let prev=null,lastFinished=null;
  for(const r of sorted){
@@ -131,6 +132,12 @@ function summarizePR(pr,runs){
        actor_verified:false,
        evidence:'ARCHIVED_WORKFLOW_TIMES_AND_SHA_NOT_CAUSAL_PROOF'});
      wave[relation].count++;wave[relation].ms+=duration;
+     // Core-only success cannot prove Specialist, Guard or merge checks are green.
+     // The following overlapping subset prompts review, never blame or a bypass.
+     if(relation==='new_head'&&lastFinished?.conclusion==='success'){
+       wave.new_head_after_success.count++;
+       wave.new_head_after_success.ms+=duration;
+     }
      if(['failure','timed_out','startup_failure'].includes(lastFinished?.conclusion)){
        wave.after_failure.count++;wave.after_failure.ms+=duration;
      }
@@ -185,7 +192,9 @@ function summarizePR(pr,runs){
      new_head_count:wave.new_head.count,new_head_ms:wave.new_head.ms,
      same_head_count:wave.same_head.count,same_head_ms:wave.same_head.ms,
      unverified_head_count:wave.unverified_head.count,unverified_head_ms:wave.unverified_head.ms,
-     previous_failed_count:wave.after_failure.count,previous_failed_ms:wave.after_failure.ms},
+     previous_failed_count:wave.after_failure.count,previous_failed_ms:wave.after_failure.ms,
+     new_head_after_success_count:wave.new_head_after_success.count,
+     new_head_after_success_ms:wave.new_head_after_success.ms},
    runs:sorted.length,repeats:Math.max(0,sorted.length-1),
    jobless_startup_runs:sorted.filter(r=>r.registration_only===true).length,
    first_job_started_at:firstJob?.started_at||null,
@@ -261,6 +270,8 @@ function report(store,h,now=Date.now()){
      total_gap_ms:waveTotalMs,transition_counts:waveCounts,transition_total_ms:waveMs,
      after_failed_count:rows.reduce((n,row)=>n+(row.wave_head_evidence?.previous_failed_count||0),0),
      after_failed_ms:rows.reduce((n,row)=>n+(row.wave_head_evidence?.previous_failed_ms||0),0),
+     new_head_after_success_count:rows.reduce((n,row)=>n+(row.wave_head_evidence?.new_head_after_success_count||0),0),
+     new_head_after_success_ms:rows.reduce((n,row)=>n+(row.wave_head_evidence?.new_head_after_success_ms||0),0),
      reconciled:waveReconciled,
      top_delays:[...rows].filter(row=>(row.stages_ms?.between_waves_unknown||0)>0)
        .sort((a,b)=>b.stages_ms.between_waves_unknown-a.stages_ms.between_waves_unknown)
