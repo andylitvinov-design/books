@@ -18,7 +18,7 @@ test("current real library has no fake/unknown clip in its four-shot scenarios",
  const p=loadActiveFilmPresets();
  const s=JSON.parse(readFileSync(new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url)));
  const audit=auditScenarioMedia(p.presets,s.scenes);
- assert.equal(audit.scenarios,48);
+ assert.equal(audit.scenarios,49);
  assert.equal(audit.requiredSlots,audit.scenarios*4);
  assert.deepEqual(audit.errors,[]);
  assert.ok(audit.approvedScenes>=44);
@@ -67,9 +67,9 @@ test("editorial queue enumerates the exact independent scenes still required",()
  const presets=loadActiveFilmPresets().presets;
  const scenes=JSON.parse(readFileSync(new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url))).scenes;
  const q=createScenarioAcquisitionQueue(presets,scenes);
- assert.equal(q.expectedNewMp4,144);
- assert.equal(q.slots.length,144);
- assert.equal(new Set(q.slots.map(row=>row.id)).size,144);
+ assert.equal(q.expectedNewMp4,140);
+ assert.equal(q.slots.length,140);
+ assert.equal(new Set(q.slots.map(row=>row.id)).size,140);
  for(const row of q.slots){
    assert.equal(row.importStatus,"not_imported");
    assert.equal(row.rightsStatus,"needs_individual_editorial_review");

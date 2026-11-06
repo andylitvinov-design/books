@@ -1124,6 +1124,190 @@
         "reframe": 81,
         "integration": 87
       }
+    },
+    {
+      "sceneId": "sun-warm-ocean-dawn",
+      "topics": [
+        {
+          "topicId": "calm-presence",
+          "score": 94
+        },
+        {
+          "topicId": "evening-fatigue",
+          "score": 87
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 78
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 75,
+        "shelter": 96,
+        "reframe": 72,
+        "integration": 89
+      }
+    },
+    {
+      "sceneId": "sun-warm-ocean-dawn-portrait",
+      "topics": [
+        {
+          "topicId": "calm-presence",
+          "score": 94
+        },
+        {
+          "topicId": "evening-fatigue",
+          "score": 87
+        },
+        {
+          "topicId": "stress-relief",
+          "score": 78
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 75,
+        "shelter": 96,
+        "reframe": 72,
+        "integration": 89
+      }
+    },
+    {
+      "sceneId": "sun-golden-aspen",
+      "topics": [
+        {
+          "topicId": "life-transitions",
+          "score": 94
+        },
+        {
+          "topicId": "personal-growth",
+          "score": 88
+        },
+        {
+          "topicId": "self-acceptance",
+          "score": 73
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 77,
+        "shelter": 84,
+        "reframe": 86,
+        "integration": 93
+      }
+    },
+    {
+      "sceneId": "sun-golden-aspen-portrait",
+      "topics": [
+        {
+          "topicId": "life-transitions",
+          "score": 94
+        },
+        {
+          "topicId": "personal-growth",
+          "score": 88
+        },
+        {
+          "topicId": "self-acceptance",
+          "score": 73
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 77,
+        "shelter": 84,
+        "reframe": 86,
+        "integration": 93
+      }
+    },
+    {
+      "sceneId": "sun-leaves-canopy",
+      "topics": [
+        {
+          "topicId": "low-energy",
+          "score": 92
+        },
+        {
+          "topicId": "personal-growth",
+          "score": 84
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 71
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 80,
+        "shelter": 85,
+        "reframe": 90,
+        "integration": 88
+      }
+    },
+    {
+      "sceneId": "sun-leaves-canopy-portrait",
+      "topics": [
+        {
+          "topicId": "low-energy",
+          "score": 92
+        },
+        {
+          "topicId": "personal-growth",
+          "score": 84
+        },
+        {
+          "topicId": "calm-presence",
+          "score": 71
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 80,
+        "shelter": 85,
+        "reframe": 90,
+        "integration": 88
+      }
+    },
+    {
+      "sceneId": "sun-autumn-hills",
+      "topics": [
+        {
+          "topicId": "goal-setting",
+          "score": 91
+        },
+        {
+          "topicId": "goal-follow-through",
+          "score": 81
+        },
+        {
+          "topicId": "life-transitions",
+          "score": 74
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 92,
+        "shelter": 74,
+        "reframe": 89,
+        "integration": 91
+      }
+    },
+    {
+      "sceneId": "sun-autumn-hills-portrait",
+      "topics": [
+        {
+          "topicId": "goal-setting",
+          "score": 91
+        },
+        {
+          "topicId": "goal-follow-through",
+          "score": 81
+        },
+        {
+          "topicId": "life-transitions",
+          "score": 74
+        }
+      ],
+      "scenarioVisualFit": {
+        "journey": 92,
+        "shelter": 74,
+        "reframe": 89,
+        "integration": 91
+      }
     }
   ]
 }
