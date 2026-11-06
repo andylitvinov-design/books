@@ -45,17 +45,17 @@ function command(bin,args,{binary=false,timeout=130000}={}){
  if(p.error||p.status!==0)throw Error('tool_failed_'+bin+':'+String(p.stderr||p.error).slice(-260));
  return p.stdout;
 }
-function probe(file){
+export function probe(file,{minimumSeconds=7}={}){
  const j=JSON.parse(command('ffprobe',['-v','error','-show_streams','-show_format','-of','json',file]));
  const v=j.streams?.find(s=>s.codec_type==='video'),seconds=Number(j.format?.duration);
  const [p,q]=String(v?.avg_frame_rate||'0/0').split('/').map(Number);
  const fps=q?p/q:0;
- if(!v||v.width<600||v.height<400||!Number.isFinite(seconds)||seconds<7||
+ if(!v||v.width<600||v.height<400||!Number.isFinite(seconds)||seconds<minimumSeconds||
     seconds>900||fps<15||fps>120)throw Error('source_not_viable');
  return {width:v.width,height:v.height,seconds,codec:v.codec_name,fps:Number(fps.toFixed(2)),pixFmt:v.pix_fmt};
 }
 function checkCanon(file,width,height){
- const p=probe(file);
+ const p=probe(file,{minimumSeconds:4.8});
  if(p.width!==width||p.height!==height||p.codec!=='h264'||p.pixFmt!=='yuv420p'||
    Math.abs(p.fps-24)>.1||p.seconds<4.8||p.seconds>5.2)throw Error('invalid_canonical_mp4');
  const sha=SHA(readFileSync(file));
