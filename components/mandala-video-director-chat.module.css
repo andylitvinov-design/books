@@ -174,3 +174,18 @@
 .chatTabs> :is(a,span){display:flex;align-items:center;justify-content:center;min-width:0;min-height:44px;padding:7px 6px;border:1px solid #dae5dc;border-radius:12px;background:#fff;color:#466957;font:760 13px/1.2 system-ui,sans-serif;text-decoration:none}
 .chatTabs>[aria-current="page"]{background:#dcf3e7;border-color:#a8d6bd;color:#087257}
 .chatTabs a:focus-visible{outline:3px solid #188968;outline-offset:2px}
+
+/* Sitewide iHelp context does not replace or reset the actual scene Director. */
+.pageHelp{display:flex;flex-direction:column;gap:5px;flex:none;max-height:154px;
+ overflow-y:auto;padding:8px 12px;border-bottom:1px solid #e9dfd1;background:#fffaf1}
+.pageHelp p{margin:0;color:#35584a;font:500 12px/1.35 system-ui,sans-serif}
+.pageHelp>div{display:flex;flex-wrap:wrap;gap:4px}
+.pageHelp :is(button,a){display:inline-flex;align-items:center;text-align:left;flex:1 1 auto;
+ min-height:36px;border:0;border-radius:10px;padding:7px 10px;background:#f0f6ed;
+ color:#165b4b;text-decoration:none;font:650 12px/1.35 system-ui,sans-serif;cursor:pointer}
+.pageHelp :is(button,a):hover{background:#e3f0e6}
+.pageHelp :is(button,a):focus-visible{outline:3px solid #176e6e;outline-offset:1px}
+@media(max-width:390px){
+ .pageHelp{max-height:137px;padding:6px 8px}
+ .pageHelp :is(button,a){min-height:36px;padding:6px 7px;font-size:11px}
+}
