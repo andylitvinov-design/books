@@ -292,6 +292,8 @@ jobs:
         shell: bash
         env:
           HH_PREFLIGHT_REPORT: ${{ runner.temp }}/hh-source-preflight.json
+          HH_PREFLIGHT_ROUTE: ${{ steps.fast.outputs.route }}
+          HH_PREFLIGHT_CI_ONLY: ${{ steps.diff.outputs.ci_only }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
@@ -300,14 +302,17 @@ jobs:
             checked_base="$(git rev-parse HEAD)"
           fi
           args=(--base "$checked_base")
-          # Type-impacting PR files already trigger full next typegen + tsc
-          # through the immutable source-preflight impactsTypes() classifier.
-          # For CSS/data-only PRs, Next production build still does its own
-          # mandatory whole-project typecheck; avoid an earlier duplicate.
-          # Keep explicit full types on non-PR/manual/merge_group and on the
-          # DOCK lane (it omits Next build).
+          # Next full production build performs its own full-project TypeScript
+          # check after compilation. Delegate duplicate early tsc only on the
+          # BASE-trusted ordinary CORE route with Next build still required.
+          # The source preflight independently refuses missing/altered Next
+          # config, dependencies, compiler settings and CI policy changes.
+          # FULL (security/payment/consent), DOCK, manual and merge_group retain
+          # the separate standalone tsc; all routes retain syntax diagnostics.
           if [[ "$GITHUB_EVENT_NAME" != pull_request || "${{ steps.fast.outputs.route }}" == DOCK ]]; then
             args+=(--full-types)
+          elif [[ "${{ steps.fast.outputs.route }}" == CORE && "${{ steps.diff.outputs.ci_only }}" != true ]]; then
+            args+=(--defer-types-to-next)
           fi
           node scripts/ci-source-preflight.mjs "${args[@]}"
       - name: Upload Source Preflight root diagnostics on failure
