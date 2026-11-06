@@ -299,6 +299,8 @@ test('IA and Mandala browsers allocate expensive runners only after cheap exact-
     'preflight must execute on every Ready Mandala PR; a new skipped job cannot be waived by the old BASE specialist contract');
   assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/video-')"),
     'macOS WebKit must retain original video release guard');
+  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/voice-timed-storyboard-')"),
+    'the consented voice storyboard must run existing macOS WebKit MP4/AAC release acceptance');
   assert.match(mandala, /^  voice-webkit-macos:\n    if: .+\n    needs: \[webkit_preflight\]\n    runs-on: macos-15/m);
   for (const source of [ia, mandala]) {
     assert.match(source, /node scripts\/ci-pr-readiness\.mjs/);
