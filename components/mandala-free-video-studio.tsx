@@ -5312,15 +5312,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onCreate={goToMontageFromIdeas}/>
-          {activeWorkspace!=="phrases" ? <div data-video-legacy-phrase-editor hidden aria-hidden="true">
+          {(activeWorkspace!=="phrases"||phraseAudioExpanded) ? <div
+            data-video-legacy-phrase-editor data-video-audio-expanded={phraseAudioExpanded?"true":"false"}
+            hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
             {deepHypnoPane}
           </div> : null}
         </div>
         <button type="button" className={videoStyles.phraseAudioNext}
-          data-video-phrase-audio-shortcut disabled={recording||preparing}
+          data-video-phrase-audio-shortcut disabled={recording||preparing} aria-expanded={phraseAudioExpanded}
           onClick={()=>{
-            setPhraseAudioExpanded(true);
-            window.requestAnimationFrame(()=>document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"}));
+            const open=!phraseAudioExpanded;
+            setPhraseAudioExpanded(open);
+            if(open)window.requestAnimationFrame(()=>document.querySelector<HTMLElement>("[data-video-legacy-phrase-editor]")?.scrollIntoView({behavior:"smooth",block:"nearest"}));
           }}>
           <Music2 size={19} aria-hidden="true"/>
           {locale==="ru"?"Настроить аудиогид, музыку и голос":

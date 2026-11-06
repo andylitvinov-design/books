@@ -4338,3 +4338,20 @@
   .quickBuilder>[data-video-director-chat-details][open]{
   display:grid!important;order:8!important;
 }
+
+/* Optional, explicit Ideas audio entry. Preserve compact Ideas by default. */
+.studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut]{
+  display:flex!important;min-height:38px;padding:7px 10px;margin:5px 0 0;
+  background:#f7fbf7;border-color:#d4e6dd;color:#235c4b;
+  font-size:12px;line-height:1.3
+}
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-audio-expanded="true"]{
+  display:block!important;width:100%;min-width:0
+}
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-audio-expanded="true"] .phraseMusicSection,
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-audio-expanded="true"] .phraseAudioSettings{
+  display:block!important
+}
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-audio-expanded="true"] .phraseVoiceAction{
+  display:flex!important
+}

@@ -217,6 +217,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
+      // Modern Ideas owns the visible phrase screen; voice/tone are optional.
+      // Exercise real user disclosure before probing the historic filters.
+      const optionalAudio=phrases.locator("[data-video-phrase-audio-shortcut]");
+      await expect(optionalAudio).toBeVisible();
+      await expect(optionalAudio).toHaveAttribute("aria-expanded","false");
+      await expect(phrases.locator("[data-video-legacy-phrase-editor]")).toHaveCount(0);
+      await optionalAudio.click();
+      await expect(optionalAudio).toHaveAttribute("aria-expanded","true");
+      await expect(phrases.locator('[data-video-legacy-phrase-editor][data-video-audio-expanded="true"]')).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
       await phrases.locator("[data-hypno-select-tone]").selectOption("balanced");

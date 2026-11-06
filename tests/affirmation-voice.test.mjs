@@ -406,3 +406,18 @@ test('stale narration safety remains checked after the phrase warning unmounts',
   assert.match(after,/holistic-house-hypno-audio\.wav/);
   assert.match(after,/expectedFileName/);
 });
+
+
+test("Ideas optional voice authoring is opt-in but genuinely reachable in the real browser",()=>{
+  const page=read("components/mandala-free-video-studio.tsx");
+  const css=read("components/mandala-video-mobile.module.css");
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  assert.ok(page.includes('(activeWorkspace!=="phrases"||phraseAudioExpanded)'));
+  assert.ok(page.includes('data-video-audio-expanded={phraseAudioExpanded?"true":"false"}'));
+  assert.ok(page.includes('data-video-phrase-audio-shortcut disabled={recording||preparing} aria-expanded={phraseAudioExpanded}'));
+  assert.ok(css.includes('[data-video-legacy-phrase-editor][data-video-audio-expanded="true"]'));
+  assert.ok(browser.includes('await optionalAudio.click()'));
+  assert.ok(browser.includes('await expect(optionalAudio).toHaveAttribute("aria-expanded","true")'));
+  for(const marker of ['[data-hypno-select-tone]','[data-hypno-approve]','[data-video-affirmation-voice-select]','assert.equal(affirmationRequests[0].consent,true)','const audioTrack=streams.find(row=>row.codec_type==="audio")','pcm.stdout.some(value=>value!==0)'])
+    assert.ok(browser.includes(marker),"real voice/MP4/consent gate lost: "+marker);
+});
