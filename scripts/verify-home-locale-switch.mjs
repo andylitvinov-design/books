@@ -85,6 +85,33 @@ async function installEntryDiagnostics(context, page) {
   return requests;
 }
 
+// Check the current consent-first analysis request without posting a lead or
+// navigating to a retired direct-link page. Free tests and Reiki remain links.
+async function verifyAnalysisConsentEntry(capture) {
+  const chooser = capture.locator('[data-contact-channel-chooser][data-compact-phone-trigger="true"]');
+  await expect(chooser).toHaveCount(1);
+  await expect(capture.locator('a[data-home-free-action="analysis"]')).toHaveCount(0);
+  const trigger = chooser.locator('button[data-contact-order]');
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  const size = await trigger.evaluate(el => ({ height: el.getBoundingClientRect().height, font: parseFloat(getComputedStyle(el).fontSize) }));
+  assert.ok(size.height >= 46 && size.font >= 14, 'Analysis consent launcher must be tappable: ' + JSON.stringify(size));
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  const form = chooser.locator('form');
+  await expect(form).toBeVisible();
+  await expect(form.locator('input[type="tel"][required]')).toBeVisible();
+  const consent = form.locator('input[type="checkbox"][required]');
+  await expect(consent).toBeVisible();
+  await expect(consent).not.toBeChecked();
+  await expect(form.locator('button[data-contact-channel-submit="whatsapp"]')).toBeVisible();
+  await expect(form.locator('button[data-contact-channel-submit="telegram"]')).toBeVisible();
+  await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(form).toBeHidden();
+}
+
 async function verifyFreeOffers(page, locale, engine, width) {
   await expect(page.locator('[data-free-insights="public"]')).toHaveCount(0);
   const capture = page.locator('[data-home-contact-capture] [data-home-free-capture]');
@@ -96,6 +123,10 @@ async function verifyFreeOffers(page, locale, engine, width) {
     await expect(option).toBeVisible();
     await option.click();
     await expect(option).toHaveAttribute('aria-pressed', 'true');
+    if (id === 'analysis') {
+      await verifyAnalysisConsentEntry(capture);
+      continue;
+    }
     const cta = capture.locator('a[data-home-free-action="' + id + '"]');
     await expect(cta).toHaveAttribute('href', '/' + locale + suffix);
     await expect(cta).toBeVisible();
@@ -103,7 +134,7 @@ async function verifyFreeOffers(page, locale, engine, width) {
     assert.ok(size.height >= 46 && size.font >= 14, 'Small ' + locale + ' ' + id + ' CTA: ' + JSON.stringify(size));
   }
   const captureAfterServices = await capture.evaluate(element => {
-    const services = document.querySelector('[data-core-service-offers="home"]');
+    const services = document.querySelector('[data-home-featured-workspace]');
     return services && (services.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
   });
   assert.equal(captureAfterServices, true, 'Free chooser must be in the bottom capture after the existing service cards');
@@ -128,9 +159,15 @@ async function exerciseFreeJourneys(page, engine, width) {
     return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"APP_UNAVAILABLE"}' });
   });
   for (const locale of ['en', 'ru']) {
+    await page.goto(origin + homePath(locale), { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle');
+    const safeCapture = page.locator('[data-home-free-capture]');
+    await safeCapture.locator('button[data-home-free-option="analysis"]').click();
+    await verifyAnalysisConsentEntry(safeCapture);
+    await expect(page).toHaveURL(origin + homePath(locale));
+    results.push({ engine, width, locale, freeConsentJourney: 'analysis', submitted: false, requiredConsent: true });
     for (const [id, suffix, target] of [
       ['selfTest', '/client/tests', '[data-prelogin-test-picker]'],
-      ['analysis', '/services/free-situation-review', '#free-entry-title'],
       ['reiki', '/academy/principles-of-energywork/learn', '[data-energywork-ai-learner]'],
     ]) {
       await page.goto(origin + homePath(locale), { waitUntil: 'domcontentloaded' });
@@ -234,10 +271,11 @@ async function exercise(engine, browserType, width) {
       await page.goto(origin + homePath(from), { waitUntil: 'domcontentloaded' });
       await expect(page).toHaveURL(origin + homePath(from));
       await expect(page.locator('main.house-home')).toHaveAttribute('lang', from);
-      const current = page.locator(`[data-video-slot="home-intro"][data-video-locale="${from}"]`);
+      const currentId = from === "en" ? "Dk0LBmOivQo" : "MIVLm1GUTtM";
+      const current = page.locator(`[data-personal-testimonials="home"] [data-testimonial-video-id="${currentId}"]`);
       await expect(current.locator('iframe')).toHaveCount(0);
       await current.locator('button.site-video-play').click();
-      const fromYouTubeId = from === 'en' ? 'Y4K4piEwwA8' : 'AE8Pelpo424';
+      const fromYouTubeId = currentId;
       await expect(current.locator('iframe')).toHaveAttribute('src', new RegExp('^https://www\\.youtube-nocookie\\.com/embed/' + fromYouTubeId + '\\?'));
       const countBefore = heldRequests;
       delayedRscGate = new Promise(resolve => { releaseHeldRsc = resolve; });
@@ -246,15 +284,16 @@ async function exercise(engine, browserType, width) {
       await expect.poll(() => heldRequests, { timeout: 15000 }).toBeGreaterThan(countBefore);
       transport.assertHealthy();
       // Before the navigation commits, the new language must not become a clickable
-      // optimistic player that will be discarded when the RSC response arrives.
+      // optimistic testimonial player that would be discarded after the RSC response.
       await expect(page.locator('main.house-home')).toHaveAttribute('lang', from);
-      const next = page.locator(`[data-video-slot="home-intro"][data-video-locale="${to}"]`);
+      const nextId = to === "en" ? "Dk0LBmOivQo" : "MIVLm1GUTtM";
+      const next = page.locator(`[data-personal-testimonials="home"] [data-testimonial-video-id="${nextId}"]`);
       await expect(next).toHaveCount(0);
       releaseHeldRsc();
       await expect(next).toHaveCount(1, { timeout: 20000 });
       transport.assertHealthy();
       await expect(next.locator('iframe')).toHaveCount(0);
-      const toYouTubeId = to === 'en' ? 'Y4K4piEwwA8' : 'AE8Pelpo424';
+      const toYouTubeId = nextId;
       await next.locator('button.site-video-play').click();
       await expect(next.locator('iframe')).toHaveAttribute('src', new RegExp('^https://www\\.youtube-nocookie\\.com/embed/' + toYouTubeId + '\\?'));
       const frame = await next.locator('iframe').elementHandle();
@@ -271,18 +310,26 @@ async function exercise(engine, browserType, width) {
     assert.deepEqual(errors, []);
     phase = 'visual';
     // Owner-approved homepage: assert computed layout and actual image load, not just JSX strings.
-    const offers = page.locator('[data-core-service-offers="home"]');
+    const stableOffer = page.locator('[data-home-slide]');
+    await expect(stableOffer).toHaveAttribute('data-home-slide', 'services');
+    await pause(8000); // Longer than the retired seven-second autoplay window.
+    await expect(stableOffer).toHaveAttribute('data-home-slide', 'services');
+    await expect(page.locator('[data-home-first-screen-cta="paid"]')).toHaveAttribute('href', '/en/services#consultation');
+    const offers = page.locator('[data-home-featured-workspace]');
     await expect(page.locator('main[data-home-design="approved-v2"]')).toHaveCount(1);
     await expect(page.locator('[data-free-insights="public"]')).toHaveCount(0);
     const bottomFree = page.locator('[data-home-contact-capture] [data-home-free-capture]');
     await expect(bottomFree).toHaveCount(1);
     assert.deepEqual(await bottomFree.locator('[data-home-free-option]').evaluateAll(buttons => buttons.map(button => button.dataset.homeFreeOption)), ['selfTest', 'analysis', 'reiki']);
     await expect(bottomFree.locator('a[data-home-free-action="selfTest"]')).toHaveAttribute('href', '/en/client/tests');
-    await expect(offers.locator('[data-core-service-id]')).toHaveCount(4);
-    for (const id of ['situation', 'dao', 'alchemy', 'hypnotherapy']) {
-      await expect(offers.locator('[data-core-service-id="' + id + '"]')).toHaveCount(1);
+    const modules = offers.locator('[data-home-module]');
+    await expect(modules).toHaveCount(7);
+    assert.deepEqual(await modules.evaluateAll(items => items.map(item => item.dataset.homeModule)), ['courses', 'personality', 'situation', 'coaching', 'alchemy', 'energy', 'master']);
+    await expect(offers.locator('[data-home-offer-card]')).toHaveCount(14);
+    for (const id of ['reiki', 'review', 'aiCoaching', 'therapist']) {
+      await expect(offers.locator('[data-home-offer-card="' + id + '"]')).toHaveCount(1);
     }
-    const firstOfferPhoto = offers.locator('[data-core-service-id="situation"] img');
+    const firstOfferPhoto = offers.locator('[data-home-offer-card="review"] img');
     await firstOfferPhoto.scrollIntoViewIfNeeded();
     await expect.poll(() => firstOfferPhoto.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);
     await expect(page.locator('[data-home-contact-capture]')).toHaveCount(1);
@@ -290,7 +337,7 @@ async function exercise(engine, browserType, width) {
     await expect(capture).toBeVisible();
     await expect(capture.locator('[data-choice-layout="home-free"] button')).toHaveCount(3);
     await capture.locator('button[data-home-free-option="analysis"]').click();
-    await expect(capture.locator('a[data-home-free-action="analysis"]')).toHaveAttribute('href', '/en/services/free-situation-review');
+    await verifyAnalysisConsentEntry(capture);
     await capture.locator('button[data-home-free-option="reiki"]').click();
     await expect(capture.locator('a[data-home-free-action="reiki"]')).toHaveAttribute('href', '/en/academy/principles-of-energywork/learn');
     await capture.locator('button[data-home-free-option="selfTest"]').click();
@@ -300,13 +347,14 @@ async function exercise(engine, browserType, width) {
     await expect.poll(() => portrait.evaluate(img => img.complete && img.naturalWidth > 100), { timeout: 15000 }).toBe(true);
     const measurements = await page.evaluate(() => {
       const bounds = selector => document.querySelector(selector)?.getBoundingClientRect();
-      const first = bounds('[data-core-service-id="situation"]');
-      const photo = bounds('[data-core-service-id="situation"] img');
+      const first = bounds('[data-home-offer-card="review"]');
+      const photo = bounds('[data-home-offer-card="review"] img');
       const portrait = bounds('.service-home-about__image');
       const contact = bounds('[data-home-contact-capture]');
       const frame = document.querySelector('[data-home-contact-capture]');
       return {
-        cardCount: document.querySelectorAll('[data-core-service-offers="home"] [data-core-service-id]').length,
+        moduleCount: document.querySelectorAll('[data-home-featured-workspace] [data-home-module]').length,
+        cardCount: document.querySelectorAll('[data-home-featured-workspace] [data-home-offer-card]').length,
         overflow: document.documentElement.scrollWidth - innerWidth,
         featuredCardWidth: first?.width,
         featuredPhotoWidth: photo?.width,
@@ -319,7 +367,8 @@ async function exercise(engine, browserType, width) {
         contactBackground: frame && getComputedStyle(frame.querySelector('[data-consultation-capture="home-free"]')).backgroundImage,
       };
     });
-    assert.equal(measurements.cardCount, 4, 'Home must show all four restored image-left cards');
+    assert.equal(measurements.moduleCount, 7, 'Home must render all seven journey modules');
+    assert.equal(measurements.cardCount, 14, 'Home must render all fourteen journey cards');
     assert.ok(measurements.overflow <= 2, 'Homepage causes horizontal scroll: ' + JSON.stringify(measurements));
     assert.ok(measurements.featuredCardWidth > (width === 390 ? 250 : 200), 'First offer card is too narrow: ' + JSON.stringify(measurements));
     assert.ok(measurements.featuredPhotoWidth >= 90 && measurements.featuredPhotoHeight >= 95, 'Featured service image is tiny or hidden: ' + JSON.stringify(measurements));
@@ -384,11 +433,20 @@ try {
     assert.ok(ready, 'Local production server did not start');
     serverEvent('ready');
   }
-  const outcomes = await Promise.allSettled([['chromium', chromium], ['webkit', webkit]].flatMap(([name, type]) => [390, 1365].map(width => exercise(name, type, width))));
+  const widths = [320, 375, 390, 430, 1365];
+  const outcomes = [];
+  // Two browser workers; keep every phone width without launching ten browsers at once.
+  await Promise.all([['chromium', chromium], ['webkit', webkit]].map(async ([name, type]) => {
+    for (const width of widths) {
+      try { await exercise(name, type, width); outcomes.push({status:'fulfilled'}); }
+      catch (reason) { outcomes.push({status:'rejected', reason}); }
+    }
+  }));
   assert.ok(outcomes.every(result => result.status === 'fulfilled'), 'Locale-switch regression failed; inspect artifact');
-  assert.equal(results.filter(result => result.firstClickRetained).length, 8);
-  assert.equal(results.filter(result => result.freeJourney).length, 24);
-  console.log('PASS: eight delayed-RSC EN/RU switches, Chromium/WebKit, mobile/desktop; no lost inline YouTube playback');
+  assert.equal(results.filter(result => result.firstClickRetained).length, widths.length * 4);
+  assert.equal(results.filter(result => result.freeJourney).length, widths.length * 8);
+  assert.equal(results.filter(result => result.freeConsentJourney === 'analysis' && result.requiredConsent && !result.submitted).length, widths.length * 4);
+  console.log('PASS: twenty delayed-RSC EN/RU switches, Chromium/WebKit,320–430px/desktop; stable offer and no lost inline YouTube playback');
 } finally {
   await writeFile(`${evidence}/${live ? 'live' : 'local'}-results.json`, JSON.stringify({ origin, results, fullPlayback: 'Not claimed by this interaction-only test' }, null, 2));
   app?.kill('SIGTERM');

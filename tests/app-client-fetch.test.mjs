@@ -31,7 +31,7 @@ test('valid active and onboarding bootstrap responses preserve their data', asyn
   }
 })
 
-test('My Practice opens with a minimal bootstrap over authenticated same-origin GET', async t => {
+test('My Practice loads its account-scoped bootstrap through same-origin GET', async t => {
   const practice = { ...bootstrap, practitioner: true,
     practice: { id: 'synthetic-practitioner', status: 'approved' },
     savedReports: [], savedDocuments: [], savedSessions: [] }

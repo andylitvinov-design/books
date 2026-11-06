@@ -43,3 +43,79 @@
 .page :focus-visible{outline:3px solid #0c6590;outline-offset:3px}
 @media(max-width:850px){.hero{grid-template-columns:1fr}.heroPortrait{max-width:590px;width:100%;min-height:360px}.offerGrid{grid-template-columns:1fr 1fr}.process ol{grid-template-columns:1fr}.request{grid-template-columns:1fr;border-radius:18px}.requestIntro{padding:0}}
 @media(max-width:580px){.hero{padding-top:28px;padding-bottom:25px}.hero h1{font-size:clamp(31px,9vw,41px)}.heroPortrait{min-height:310px;border-radius:19px}.offerGrid{grid-template-columns:1fr}.offer{min-height:0;padding:19px}.offerSection{padding-block:27px}.request{padding:22px 15px}.actions a{width:100%}.faq{padding-block:36px}}
+
+/* Wave 2 — scoped warm Holistic House language; preserve Toronto-specific service and enquiry logic. */
+.page {
+  --ink: #273b2f;
+  --muted: #627266;
+  --line: #e0d9ca;
+  min-width: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(207, 230, 211, .62), transparent 37%),
+    linear-gradient(180deg, #f6f7ef, #fffbf5 48%, #f7f0e6);
+  font-family: Arial, Helvetica, sans-serif;
+}
+.hero {
+  width: min(1100px, calc(100% - 28px));
+  min-width: 0;
+  gap: clamp(17px, 3.5vw, 46px);
+  margin-top: 17px;
+  padding: clamp(18px, 3.2vw, 36px);
+  border: 1px solid #ded6c6;
+  border-radius: 25px;
+  background: #fffcf6;
+  box-shadow: 0 9px 26px rgba(53, 67, 51, .055);
+}
+.eyebrow { margin-bottom: 12px; color: #367a5a; font-size: 11px; letter-spacing: .08em; }
+.hero h1 {
+  max-width: 610px;
+  margin-bottom: 16px;
+  color: #263b30;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(32px, 4.5vw, 52px);
+  font-weight: 600;
+  line-height: 1.1;
+}
+.lead { margin-bottom: 20px; color: #4b6657; font-size: clamp(16px, 1.75vw, 19px); }
+.primary { background: #087853; box-shadow: none; }
+.primary:hover { background: #066443; }
+.secondary { border-color: #c6d9c5; background: #eef4e9; color: #275b44; }
+.truth { color: #627265; font-size: 13px; }
+.aboutLink, .offer a, .footer a { color: #226c4e; }
+.heroPortrait {
+  min-width: 0;
+  min-height: 420px;
+  border-radius: 20px;
+  background: #e8e7d8;
+  box-shadow: 0 12px 32px rgba(53, 67, 51, .09);
+}
+.portraitCaption { background: rgba(255, 252, 246, .91); color: #2d3d32; }
+.pathway { box-sizing: border-box; width: min(1100px, calc(100% - 28px)); min-width: 0; margin: 0 auto; }
+.pathway > :first-child { margin-top: 16px; margin-bottom: 4px; }
+.offerSection { padding-block: 27px; }
+.sectionHead h2, .process h2, .request h2, .faq h2 { color: #263b30; font-family: Georgia, "Times New Roman", serif; font-weight: 600; }
+.offer { min-height: 0; border-color: #e0d9ca; background: #fffcf6; box-shadow: 0 6px 19px rgba(52, 68, 50, .04); }
+.offer h3 { color: #283c32; }
+.process li { color: #526b5a; }
+.process li svg { color: #198363; }
+.request { border-color: #d8dfcf; background: linear-gradient(110deg, #e5f0df, #f8f5eb); }
+.requestIntro svg { color: #277457; }
+.requestIntro p { color: #516b5a; }
+.faq details { border-color: #dddacc; background: #fffcf6; }
+.faq p, .footer { color: #647266; }
+.page :focus-visible { outline: 3px solid #c28d2c; outline-offset: 3px; }
+@media (max-width: 850px) {
+  .heroPortrait { min-height: 350px; }
+}
+@media (max-width: 580px) {
+  .hero { width: calc(100% - 24px); gap: 16px; padding: 15px; border-radius: 18px; }
+  .hero h1 { font-size: clamp(29px, 8.5vw, 39px); }
+  .heroPortrait { min-height: 295px; border-radius: 15px; }
+  .pathway { width: calc(100% - 24px); }
+  .pathway > :first-child { margin-top: 11px; margin-bottom: 0; }
+  .actions a { min-height: 46px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page *, .page *::before, .page *::after { scroll-behavior: auto !important; }
+}

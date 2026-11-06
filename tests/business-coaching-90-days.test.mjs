@@ -512,7 +512,7 @@ test('business promotion matches the saved course photo-left design at phone wid
   const css=readFileSync(new URL('../components/app/my-courses-dashboard.module.css',import.meta.url),'utf8')
   assert.match(component,/data-personal-coaching-course-link/)
   assert.match(component,/className=\{styles\.businessTrackPhoto\}/)
-  assert.match(component,/\/images\/holistic-house\/books-library\.webp/)
+  assert.match(component,/\/images\/holistic-house\/report-lighthouse-coast\.avif/)
   assert.match(component,/className=\{styles\.businessTrackAction\}/)
   assert.match(component,/Start my session/)
   assert.match(component,/Начать сессию/)

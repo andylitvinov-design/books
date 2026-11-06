@@ -2,17 +2,20 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import styles from './crm-lead-triage.module.css'
 const COPY={
- en:{title:'Leads needing a next step',intro:'Business leads without an open task. This is not proof that no one has replied or that a booking is confirmed.',empty:'No leads without an open task.',refresh:'Refresh',loading:'Loading…',more:'Load more leads',error:'Could not load leads. Try again.',planned:'Task added. No message was sent.',plan:'Plan a reply',planning:'Planning…',open:'Open contact',reference:'Enquiry',received:'Received',source:'Source',actionError:'Could not plan. Review the contact and retry.',manual:'Manual',website:'Website',academy:'Academy',referral:'Referral',event:'Event',other:'Other',privacy:'Contacts are not verified identities. Creating a task does not grant marketing consent or send messages.'},
- ru:{title:'Лиды без следующего действия',intro:'Контакты без открытой задачи. Это не означает, что ответа не было или запись подтверждена.',empty:'Нет лидов без открытой задачи.',refresh:'Обновить',loading:'Загрузка…',more:'Загрузить ещё лидов',error:'Не удалось загрузить лиды. Повторите.',planned:'Задача создана. Сообщение не отправлено.',plan:'Запланировать ответ',planning:'Создаю…',open:'Открыть контакт',reference:'Заявка',received:'Получен',source:'Источник',actionError:'Не удалось создать задачу. Проверьте контакт.',manual:'Вручную',website:'Сайт',academy:'Академия',referral:'Рекомендация',event:'Мероприятие',other:'Другое',privacy:'Личность контакта не подтверждена. Задача не даёт согласие на рекламу и не отправляет сообщение.'},
- es:{title:'Leads sin siguiente acción',intro:'Contactos sin una tarea abierta. No significa que no se haya respondido o confirmado una reserva.',empty:'No hay leads sin tarea abierta.',refresh:'Actualizar',loading:'Cargando…',more:'Cargar más leads',error:'No se pudieron cargar los leads.',planned:'Tarea creada. No se envió ningún mensaje.',plan:'Planificar respuesta',planning:'Planificando…',open:'Abrir contacto',reference:'Solicitud',received:'Recibido',source:'Origen',actionError:'No se pudo crear la tarea. Revisa el contacto.',manual:'Manual',website:'Sitio',academy:'Academia',referral:'Referencia',event:'Evento',other:'Otro',privacy:'Los contactos no están verificados. La tarea no implica consentimiento publicitario ni envío.'},
+ en:{title:'Leads needing a next step',intro:'Website/course reply tasks are added when you open this tab. Other leads may be planned manually. This is not proof that no one has replied or that a booking is confirmed.',empty:'No leads without an open task.',refresh:'Refresh',loading:'Loading…',more:'Load more leads',error:'Could not load leads. Try again.',planned:'Task added. No message was sent.',plan:'Plan a reply',planning:'Planning…',open:'Open contact',reference:'Enquiry',received:'Received',source:'Source',actionError:'Could not plan. Review the contact and retry.',manual:'Manual',website:'Website',academy:'Academy',referral:'Referral',event:'Event',other:'Other',automatic:'Automatically planned {count} website/course reply tasks for today. No message was sent.',privacy:'Contacts are not verified identities. Creating a task does not grant marketing consent or send messages.'},
+ ru:{title:'Лиды без следующего действия',intro:'При открытии вкладки заявки с сайта и курсов получают задачу на ответ. Остальные лиды планируются вручную. Это не означает, что ответа не было или запись подтверждена.',empty:'Нет лидов без открытой задачи.',refresh:'Обновить',loading:'Загрузка…',more:'Загрузить ещё лидов',error:'Не удалось загрузить лиды. Повторите.',planned:'Задача создана. Сообщение не отправлено.',plan:'Запланировать ответ',planning:'Создаю…',open:'Открыть контакт',reference:'Заявка',received:'Получен',source:'Источник',actionError:'Не удалось создать задачу. Проверьте контакт.',manual:'Вручную',website:'Сайт',academy:'Академия',referral:'Рекомендация',event:'Мероприятие',other:'Другое',automatic:'Автоматически создано задач на ответ сегодня: {count}. Сообщения не отправлены.',privacy:'Личность контакта не подтверждена. Задача не даёт согласие на рекламу и не отправляет сообщение.'},
+ es:{title:'Leads sin siguiente acción',intro:'Las solicitudes web y de cursos reciben una tarea al abrir esta pestaña. Otros leads se gestionan manualmente. No significa que no se haya respondido o confirmado una reserva.',empty:'No hay leads sin tarea abierta.',refresh:'Actualizar',loading:'Cargando…',more:'Cargar más leads',error:'No se pudieron cargar los leads.',planned:'Tarea creada. No se envió ningún mensaje.',plan:'Planificar respuesta',planning:'Planificando…',open:'Abrir contacto',reference:'Solicitud',received:'Recibido',source:'Origen',actionError:'No se pudo crear la tarea. Revisa el contacto.',manual:'Manual',website:'Sitio',academy:'Academia',referral:'Referencia',event:'Evento',other:'Otro',automatic:'Se planificaron {count} tareas de respuesta para hoy. No se envió ningún mensaje.',privacy:'Los contactos no están verificados. La tarea no implica consentimiento publicitario ni envío.'},
 }
 const dateLabel=(date,locale)=>{
  const time=Date.parse(date||'')
  return Number.isFinite(time)?new Intl.DateTimeFormat(locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-CA',{dateStyle:'medium',timeZone:'America/Toronto'}).format(new Date(time)):''
 }
-export default function CrmLeadTriage({accountId,locale='en',busy=false,onAction,onOpenContact}) {
+export default function CrmLeadTriage({accountId,locale='en',busy=false,onAction,onOpenContact,onAutoPlanned}) {
  const t=COPY[locale]||COPY.en
  const active=useRef(null)
+ const autoPlanAccount=useRef('')
+ const onAutoPlannedRef=useRef(onAutoPlanned)
+ onAutoPlannedRef.current=onAutoPlanned
  const [items,setItems]=useState([]),[cursor,setCursor]=useState(null)
  const [total,setTotal]=useState(null),[loading,setLoading]=useState(false)
  const [planning,setPlanning]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('')
@@ -23,20 +26,29 @@ export default function CrmLeadTriage({accountId,locale='en',busy=false,onAction
   active.current=controller
   setLoading(true);setError('')
   try{
-   const res=await fetch('/api/app/crm/leads',{method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{'Content-Type':'application/json','X-HH-Account-Id':accountId},body:JSON.stringify({cursor:nextCursor})})
+   // Bounded owner-only POST once per Leads visit; no external messages.
+   const autoPlan=!nextCursor&&autoPlanAccount.current!==accountId
+   const res=await fetch('/api/app/crm/leads',{method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{'Content-Type':'application/json','X-HH-Account-Id':accountId},body:JSON.stringify({cursor:nextCursor,...(autoPlan?{autoPlan:true}:{})})})
    if(!res.ok)throw new Error('LEADS_UNAVAILABLE')
    const data=await res.json()
-   if(!Array.isArray(data.leads)||data.leads.length>25||!Number.isSafeInteger(data.total)||data.total<0||(data.nextCursor!==null&&typeof data.nextCursor!=='string'))throw new Error('LEADS_UNAVAILABLE')
+   if(!Array.isArray(data.leads)||data.leads.length>25||!Number.isSafeInteger(data.total)||data.total<0||(data.nextCursor!==null&&typeof data.nextCursor!=='string')||!Number.isSafeInteger(data.autoPlanned)||data.autoPlanned<0||data.autoPlanned>12)throw new Error('LEADS_UNAVAILABLE')
    if(controller.signal.aborted)return
    setItems(previous=>{
     if(!nextCursor)return data.leads
     const known=new Set(previous.map(item=>item.id))
     return [...previous,...data.leads.filter(item=>!known.has(item.id))]
    })
-   setTotal(data.total);setCursor(data.nextCursor);setNotice('')
+   setTotal(data.total);setCursor(data.nextCursor)
+   if(autoPlan){
+    autoPlanAccount.current=accountId
+    if(data.autoPlanned>0){
+     setNotice(t.automatic.replace('{count}',String(data.autoPlanned)))
+     onAutoPlannedRef.current?.()
+    }else setNotice('')
+   }else if(!nextCursor)setNotice('')
   }catch(e){if(!controller.signal.aborted&&e?.name!=='AbortError')setError(t.error)}
   finally{if(!controller.signal.aborted)setLoading(false)}
- },[accountId,t.error])
+ },[accountId,t.error,t.automatic])
  useEffect(()=>{void load(null);return ()=>active.current?.abort()},[load])
  async function plan(item){
   if(busy||planning)return

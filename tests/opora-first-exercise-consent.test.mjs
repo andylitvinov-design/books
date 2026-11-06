@@ -68,6 +68,11 @@ for(const locale of ['en','ru','es']){
     try{
       await advanceOporaTo(f.h,'arrive',d.next)
       await tap(f.h,d.yes)
+      assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-current-screen']==='recapPractice'),
+        'After consent show the goal before its instructions')
+      assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-overview-purpose']==='true'))
+      assert.equal(findButton(f.h.tree,d.try),undefined,'Preview cannot report an attempt')
+      await tap(f.h,d.next)
       assert.ok(nodes(f.h.tree).some(n=>n.props?.['data-opora-current-screen']==='practice'))
       assert.ok(textOf(f.h.tree).includes(d.action))
       assert.ok(findButton(f.h.tree,d.try),'Reporting remains voluntary, after the instruction')

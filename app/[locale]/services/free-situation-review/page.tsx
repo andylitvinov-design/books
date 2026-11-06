@@ -6,9 +6,9 @@ import { metadataBaseFor } from "@/data/site-metadata";
 
 type Props = { params: Promise<{ locale: string }> };
 const copy = {
-  en: { title: "Free Situation Review — personal written reflection | Holistic House", description: "A free personal written situation review by Andrey Litvinov based on a short coaching questionnaire and your handwritten ME / GOAL / PROBLEM drawing. No video call or diagnosis." },
-  ru: { title: "Бесплатный письменный разбор ситуации | Holistic House", description: "Личный письменный разбор ситуации по коучинг-анкете и рисунку от руки «Я — цель — проблема». Без видеозвонка, медицинских диагнозов и обязательной оплаты." },
-  es: { title: "Revisión escrita gratuita de tu situación | Holistic House", description: "Revisión personal gratuita por escrito basada en un breve cuestionario y dibujo YO / META / PROBLEMA. Sin videollamada ni diagnóstico médico." },
+  en: { title: "Free Personal Express Review with Andrey | Holistic House", description: "One free personal written express review with Andrey: situation or energy and wellbeing, a fresh perspective and a possible next step. Not medical diagnosis or treatment." },
+  ru: { title: "Личная экспресс-диагностика с Андреем | Holistic House", description: "Одна бесплатная личная экспресс-диагностика с Андреем: запрос по ситуации либо энергии и самочувствию, письменные наблюдения и ориентир для следующего шага. Не медицинская диагностика." },
+  es: { title: "Revisión personal exprés gratuita con Andrey | Holistic House", description: "Una revisión personal exprés escrita gratuita con Andrey: situación o energía y bienestar, sin diagnóstico ni tratamiento médico." },
 } as const;
 export function generateStaticParams() { return [{ locale: "en" }, { locale: "ru" }, { locale: "es" }]; }
 

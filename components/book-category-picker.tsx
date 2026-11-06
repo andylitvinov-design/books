@@ -17,7 +17,7 @@ const copy = {
     books: "книг и материалов",
     choose: "Открыть книги категории",
     back: "Все категории",
-    hint: "Выберите одну из трёх категорий, чтобы увидеть книги.",
+    hint: "Выберите одну из категорий, чтобы увидеть книги.",
     selected: "Открыта категория:",
   },
   en: {
@@ -27,7 +27,7 @@ const copy = {
     books: "books & guides",
     choose: "Open books in this category",
     back: "All categories",
-    hint: "Choose one of three collections to explore its books.",
+    hint: "Choose one of available collections to explore its books.",
     selected: "Selected collection:",
   },
   es: {
@@ -37,7 +37,7 @@ const copy = {
     books: "libros y guías",
     choose: "Abrir libros de esta categoría",
     back: "Todas las categorías",
-    hint: "Elige una de las tres colecciones para ver sus libros.",
+    hint: "Elige una de las colecciones para ver sus libros.",
     selected: "Colección seleccionada:",
   },
 } as const;
@@ -90,7 +90,7 @@ export function BookCategoryPicker({ books, locale, activeCategory, onSelect }: 
                     height={190}
                     sizes="(max-width: 720px) 74px, 92px"
                     loading="lazy"
-                    unoptimized={hasBookCoverArtwork(cover.id)}
+                    unoptimized={hasBookCoverArtwork(cover.id) || cover.cover.endsWith('.svg')}
                   />
                 ) : <BookOpen size={26} />}
               </span>

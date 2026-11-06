@@ -5,6 +5,7 @@ import { runInNewContext } from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
 import * as redirects from '../lib/canonical-redirect.js';
+import { refreshAdminAuth } from '../lib/app/admin-auth-refresh.js';
 import { assertUnsupportedSpanishPrivateLocale } from '../scripts/helpers/es-private-denial-verifier.mjs';
 
 const require = createRequire(import.meta.url);
@@ -27,11 +28,11 @@ function load(path, modules) {
   } });
   return exports;
 }
-const { middleware } = load('middleware.ts', { 'next/server': { NextResponse }, './lib/canonical-redirect': redirects });
+const { middleware } = load('middleware.ts', { 'next/server': { NextResponse }, './lib/canonical-redirect': redirects, './lib/app/admin-auth-refresh': { refreshAdminAuth } });
 
-function denialHeaders() {
+async function denialHeaders() {
   // A contrary cookie and spoofed request header must lose to the Spanish URL.
-  const response = middleware(new NextRequest(target, { headers: {
+  const response = await middleware(new NextRequest(target, { headers: {
     'x-public-page-locale': 'ru', cookie: 'holistic_house_ui_locale=ru; holistic_house_public_locale=en',
   } }));
   assert.equal(response.headers.get('location'), null);
@@ -69,7 +70,7 @@ async function deniedRoute() {
 }
 
 async function scenario({ status = 404, fault } = {}) {
-  const { forwarded, response: middlewareResponse } = denialHeaders();
+  const { forwarded, response: middlewareResponse } = await denialHeaders();
   const route = await deniedRoute();
   if (fault === 'wrong localized content') forwarded.set('x-public-page-locale', 'en');
   const { default: NotFound } = load('app/not-found.tsx', {

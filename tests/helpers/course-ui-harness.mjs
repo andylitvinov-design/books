@@ -25,9 +25,12 @@ import * as oporaStateJourney from '../../lib/inner-growth/opora-state-journey.j
 import * as oporaV5 from '../../lib/inner-growth/anti-stress-skills-v5.js'
 import * as oporaV6 from '../../lib/inner-growth/anti-stress-skills-v6.js'
 import * as oporaV7 from '../../lib/inner-growth/anti-stress-skills-v7.js'
+import * as antiStressBlueprint from '../../lib/inner-growth/anti-stress-blueprint.js'
+import { ENERGYWORK_REVIEW_MIN_CHARS } from '../../data/academy/energywork-ai-schema.js'
 
-const sources = Object.fromEntries(['course-completion-review', 'antistress-module-finder', 'course-entry-selector', 'course-slide-player', 'live-activity-control', 'notification-settings', 'my-course', 'course-today', 'course-immersive-start', 'course-r3-steps', 'account-test-battery', 'my-courses-dashboard', 'course-preset-catalog'].map(name => [name,
+const sources = Object.fromEntries(['course-completion-review', 'antistress-module-finder', 'course-entry-selector', 'course-slide-player', 'live-activity-control', 'notification-settings', 'my-course', 'course-today', 'course-immersive-start', 'opora-first-week-invite', 'course-r3-steps', 'account-test-battery', 'my-courses-dashboard', 'course-preset-catalog'].map(name => [name,
   readFileSync(new URL('../../components/app/' + name + '.jsx', import.meta.url), 'utf8')]))
+sources['reiki-my-reviews'] = readFileSync(new URL('../../components/reiki-my-reviews.jsx', import.meta.url), 'utf8')
 export const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)]
 export const textOf = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(textOf).join(' ') : textOf(tree.props?.children)
 export const findButton = (tree, label) => nodes(tree).find(node => node.type === 'button' && textOf(node).includes(label))
@@ -44,7 +47,7 @@ export const dailyView = (courseId = 'course-a', cycleId = 'cycle-a', extra = {}
   target: { label: 'Synthetic course problem' }, progress: { days: [] }, lesson: null, ...extra,
 })
 
-export function mount(name, { props, search = '', fetcher, enterCourse = false, extraModules = {}, globals = {} } = {}) {
+export function mount(name, { props, search = '', fetcher, enterCourse = false, renderOporaInvite = false, extraModules = {}, globals = {} } = {}) {
   const slots = [], effects = [], calls = [], navigations = [], notified = [], listeners = new Map()
   let index = 0, pending = [], dirty = false, tree, serial = 0
   let url = new URL('https://local.example/en/app/course' + search)
@@ -55,6 +58,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     useId() { return hooks.useRef('id-' + serial++).current },
     useMemo(fn, deps) { const i = index++; if (!same(slots[i]?.deps, deps)) slots[i] = { value: fn(), deps }; return slots[i].value },
     useCallback(fn, deps) { return hooks.useMemo(() => fn, deps) },
+    useLayoutEffect(fn, deps) { return hooks.useEffect(fn, deps) },
     useEffect(fn, deps) { const i = index++; if (!same(slots[i]?.deps, deps)) pending.push(() => { slots[i]?.cleanup?.(); const cleanup = fn(); slots[i] = { deps, cleanup }; if (!effects.includes(i)) effects.push(i) }) },
   }
   const stub = name => Object.assign(() => null, { testName: name })
@@ -63,7 +67,9 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
   const jsx = (type, props, key) => renderedChildren.has(type) ? type(props) : ({ type, props, key })
   const modules = {
     react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
-    'next/link': moduleFor('Link'), 'lucide-react': new Proxy({}, { get: (_, key) => stub(String(key)) }),
+    'next/link': moduleFor('Link'), 'next/image': moduleFor('Image'), 'lucide-react': new Proxy({}, { get: (_, key) => stub(String(key)) }),
+    '@/lib/inner-growth/anti-stress-blueprint': antiStressBlueprint,
+    '@/data/academy/energywork-ai-schema.js': { ENERGYWORK_REVIEW_MIN_CHARS },
     'next/navigation': { useRouter: () => ({ push: value => navigations.push(value), replace: value => navigations.push(value) }), useSearchParams: () => new URLSearchParams(url.search) },
     '@/lib/inner-growth/course-model': { COURSE_STEPS: [], GROWTH_GOALS: {}, COURSE_TOPICS: [], suggestedCourseTopics: () => ({ topics: [] }) },
     '@/lib/inner-growth/trauma-phase-outcomes':phaseOutcomes, '@/lib/inner-growth/anti-stress-measurement-contract':measureContract, '@/lib/inner-growth/trauma-phase-catalog':phaseCatalog, '@/lib/inner-growth/antistress-module-router': moduleRouter, '@/lib/inner-growth/antistress-module-lessons': moduleLessons,
@@ -131,8 +137,13 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     modules['./course-immersive-start'] = loadComponent('course-immersive-start')
     renderedChildren.add(modules['./course-immersive-start'].default)
   }
+  if (!Object.hasOwn(modules, './opora-first-week-invite')) {
+    modules['./opora-first-week-invite'] = renderOporaInvite
+      ? loadComponent('opora-first-week-invite') : moduleFor('OporaFirstWeekInvite')
+    if (renderOporaInvite) renderedChildren.add(modules['./opora-first-week-invite'].default)
+  }
   const exported = loadComponent(name)
-  const component = exported.default || exported.AccountTestBattery
+  const component = exported.default || exported.AccountTestBattery || exported.ReikiMyReviews
   const render = (nextProps = props) => {
     props = nextProps; index = 0; pending = []; dirty = false
     tree = component(props)
@@ -141,6 +152,13 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     }
     pending.forEach(fn => fn())
     return tree
+  }
+  // Probe an uncommitted React render without replacing the visible owner.
+  const speculate = nextProps => {
+    const previous = { index, pending, dirty }
+    index = 0; pending = []; dirty = false
+    try { return component(nextProps) }
+    finally { index = previous.index; pending = previous.pending; dirty = previous.dirty }
   }
   let enteredCourse = false
   const settle = async () => {
@@ -155,7 +173,7 @@ export function mount(name, { props, search = '', fetcher, enterCourse = false, 
     return tree
   }
   render()
-  return { render, settle, calls, navigations, notified, get tree() { return tree },
+  return { render, speculate, settle, calls, navigations, notified, get tree() { return tree },
     async backTo(query) { url = new URL(query, url); listeners.get('popstate')?.(); await settle() },
     unmount() { effects.forEach(i => slots[i]?.cleanup?.()) },
   }

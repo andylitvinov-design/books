@@ -49,10 +49,21 @@ try {
         await expect(page.locator('.site-language-switch a[lang="es"]')).toHaveAttribute('aria-current', 'true');
         assert.equal(await page.locator('.about-biography > section').count(), 7);
         assert.equal(await page.locator('.about-biography li').count(), 7);
-        assert.equal(await page.locator('.about-video-grid .site-video-player').count(), 3);
+        // The current public About design has one independently approved ES
+        // introduction and TEN provenance-checked original testimonials,
+        // not the retired three-card grid. Verify real media cards rather than
+        // weakening the original browser acceptance.
+        const intro = page.locator('[data-video-slot="about-intro"][data-video-locale="es"]');
+        await expect(intro.locator('.site-video-player')).toHaveCount(1);
+        const reviews = page.locator('[data-personal-testimonials="about"]');
+        await expect(reviews.locator('[data-testimonial-video-id] .site-video-player')).toHaveCount(10);
+        await expect(reviews.locator('[data-testimonial-video-id="Dk0LBmOivQo"]')).toHaveCount(1);
+        assert.ok(await reviews.locator('.site-video-caption [lang="en"]').count() > 0);
+        assert.ok(await reviews.locator('.site-video-caption [lang="ru"]').count() > 0);
         await expect(page.getByRole('heading', { name: 'Especializaciones y formación' })).toBeVisible();
         await expect(page.getByRole('heading', { name: 'Área de clientes' })).toBeVisible();
-        const intro = page.locator('[data-video-locale="es"]');
+        // Reuse the exact independent ES introduction scoped above; RU/EN
+        // testimonials retain their original audio and disclosure languages.
         await expect.poll(() => intro.locator('img.site-video-poster').evaluate(el => el.complete && el.naturalWidth >= 320)).toBe(true);
         assert.equal(await page.locator('iframe').count(), 0);
         await expect(intro.locator('.site-video-ai-badge')).toHaveText('Avatar IA');
@@ -64,7 +75,12 @@ try {
         await summary.focus(); await summary.press('Enter');
         await expect(intro.locator('.site-video-more p')).toHaveAttribute('lang', 'es');
         await expect(intro.locator('.site-video-more')).toContainText('Me encantará explorar tu situación contigo');
-        assert.doesNotMatch(await page.locator('main').innerText(), /[\u0400-\u04ff]/);
+        // Never mistake original RU-language testimonial titles for untranslated
+        // Spanish primary copy; preserve their genuine source language.
+        const spanishCopy = await page.locator(
+          '.about-introduction, .about-biography, .about-explore, .about-consultation, .about-client-cabinet',
+        ).allInnerTexts();
+        assert.doesNotMatch(spanishCopy.join('\n'), /[\u0400-\u04ff]/);
         await summary.press('Enter');
         const capture = page.locator('[data-consultation-capture="personal"]');
         await expect(capture).toHaveAttribute('lang', 'es');
@@ -100,7 +116,7 @@ try {
           await expect(page.locator('html')).toHaveAttribute('lang', lang);
         }
         assert.deepEqual(errors, []);
-        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only topic labels' : 'Spanish WhatsApp topic changed locally, not sent', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript', navigation: 'ES/EN/RU round trip', overflow: false });
+        results.push({ engine, width, language: 'Spanish SSR and hydrated UI', biography: 'all 7 sections', form: live ? 'read-only topic labels' : 'Spanish WhatsApp topic changed locally, not sent', video: 'independent Spanish audio 2c251709aba74fd96ae8be43257a080b, real poster, 31 seconds, ES transcript + 10 genuine RU/EN testimonial players', navigation: 'ES/EN/RU round trip', overflow: false });
         console.log(`PASS: ${live ? 'live' : 'local'} ES About ${engine} ${width}`);
         await context.close();
       }

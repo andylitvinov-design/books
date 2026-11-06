@@ -1,0 +1,47 @@
+/* Localized Academy introduction for the historical Lesser Mysteries course. */
+.intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: clamp(16px, 2.8vw, 26px);
+  align-items: center;
+  min-width: 0;
+  margin: 20px 0 10px;
+  padding: clamp(14px, 2.6vw, 22px);
+  border: 1px solid #dcc6b2;
+  border-radius: 20px;
+  background: linear-gradient(138deg, #fffaf4 0%, #f1e6d8 100%);
+  box-shadow: 0 10px 30px rgba(83, 56, 35, .055);
+}
+.media, .copy { min-width: 0; }
+.media :global(.academy-video-choice) { min-width: 0; }
+.media :global(.academy-video-poster),
+.media :global(.academy-video-frame) { display: block; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 12px; }
+.eyebrow {
+  margin: 0 0 10px;
+  color: #945d3f;
+  font: 750 11px/1.35 Arial, Helvetica, sans-serif;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.caption { margin: 5px 0 0; color: #756356; font: 12px/1.45 Arial, Helvetica, sans-serif; }
+.copy h2 {
+  margin: 0 0 12px;
+  color: #37291f;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: clamp(25px, 3.2vw, 34px);
+  font-weight: 500;
+  line-height: 1.13;
+  letter-spacing: -.025em;
+}
+.copy > p:not(.eyebrow) { margin: 0 0 11px; color: #55463a; font: 15px/1.55 Arial, Helvetica, sans-serif; }
+.copy > p:last-child { margin-bottom: 0; }
+@media (max-width: 720px) {
+  .intro { grid-template-columns: minmax(0, 1fr); gap: 14px; margin: 16px 0 8px; padding: 14px; border-radius: 16px; }
+  .copy h2 { font-size: clamp(24px, 6vw, 30px); }
+  .copy > p:not(.eyebrow) { font-size: 14px; }
+}
+@media (max-width: 360px) {
+  .intro { padding: 10px; border-radius: 14px; }
+  .copy h2 { font-size: 24px; }
+  .caption { font-size: 11px; }
+}

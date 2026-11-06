@@ -3,14 +3,23 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Check, ChevronLeft, Copy, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronLeft, Copy, Download, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
+import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingQuestionVoice from './coaching-question-voice'
+import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
+import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
+import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
+import { coachingEntryCopy } from '@/components/coaching-session-onboarding'
+import { coachingRequestTopicLabel } from '@/lib/coaching/session-onboarding'
+import { coachingArt } from '@/lib/coaching/public-session-art'
+import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingAdaptivePrompt, buildCoachingRecap, coachingRecapClipboardText } from '@/lib/personal-coaching/guided-session'
 import styles from './personal-coaching.module.css'
 
@@ -27,12 +36,15 @@ const copy={
     conflict:'Your session changed in another tab. Reload to get the newest saved answers.',
     retry:'Reload session',close:'Exit session',unsaved:'You have an unsaved answer. Leave without saving it?',
     question:'QUESTION',of:'OF',back:'Back',next:'Save & continue',finish:'Save & finish',skip:'Skip this question',
-    hint:'Or type and edit your answer',placeholder:'My answer…',required:'Write at least a few words before continuing.',
+    hint:'Your answer, in your own words (you can also dictate it)',placeholder:'Take your time. A few sentences are enough…',required:'Write at least a few words before continuing.',
+    earlierChoice:'Previous quick answer',replaceChoice:'You can replace this with your own words.',scaleHelp:'For a 0–10 rating, write the number and, if helpful, explain it.',
     stopMic:'Stop dictation and review the recognized text before saving.',
     saving:'Saving…',saved:'Saved in your private cabinet',change:'You can change your answer before finishing.',
     summary:'Your personal session',finished:'Your answers, in one place',plan:'The step I chose',
     noAnswer:'Skipped',history:'Earlier private sessions',historyItem:'Previous session',
     share:'Nothing is sent to a coach or messenger automatically.',
+    reportNotice:'After tapping Save, your answer is kept in your private account. At the end you can download a PDF with your questions, answers and reflections.',
+    pdf:'Download PDF report',pdfError:'Could not create the PDF. Your private answers remain saved.',date:'Session date',
     restart:'This starts a new session and saves the completed one to your private history.',
     home:'My Courses',delete:'Delete my coaching notes',deleteConfirm:'Delete all personal coaching notes and session history? This cannot be undone.',
     completeNote:'This is a self-reflection tool, not a diagnosis, guaranteed result, or booked consultation.',
@@ -49,12 +61,15 @@ const copy={
     conflict:'Сессия изменилась в другой вкладке. Обновите сохранённые ответы.',
     retry:'Обновить сессию',close:'Закрыть сессию',unsaved:'Этот ответ не сохранён. Выйти без сохранения?',
     question:'ВОПРОС',of:'ИЗ',back:'Назад',next:'Сохранить и далее',finish:'Сохранить и завершить',skip:'Пропустить вопрос',
-    hint:'Или напишите и отредактируйте ответ',placeholder:'Мой ответ…',required:'Напишите хотя бы несколько слов, прежде чем продолжить.',
+    hint:'Ваш ответ своими словами (можно продиктовать)',placeholder:'Не спешите. Достаточно нескольких предложений…',required:'Напишите хотя бы несколько слов, прежде чем продолжить.',
+    earlierChoice:'Ранее выбранный вариант',replaceChoice:'Вы можете заменить его собственным ответом.',scaleHelp:'Если это шкала 0–10, напишите число и при желании поясните его.',
     stopMic:'Остановите микрофон и проверьте распознанный текст перед сохранением.',
     saving:'Сохраняем…',saved:'Сохранено в личном кабинете',change:'До завершения ответ можно изменить.',
     summary:'Моя коуч-сессия',finished:'Ваши ответы в одном месте',plan:'Мой выбранный шаг',
     noAnswer:'Пропущено',history:'Предыдущие личные сессии',historyItem:'Прошлая сессия',
     share:'Ответы не отправляются коучу или в мессенджеры автоматически.',
+    reportNotice:'После нажатия «Сохранить» ваш ответ останется в личном кабинете. В конце сможете скачать PDF с вашими мыслями, вопросами и ответами.',
+    pdf:'Скачать PDF-отчёт',pdfError:'Не удалось создать PDF. Ответы сохранены в кабинете.',date:'Дата сессии',
     restart:'Новая сессия сохранит завершённую в вашей личной истории.',
     home:'Мои курсы',delete:'Удалить мои записи',deleteConfirm:'Удалить все ответы и историю коуч-сессий? Это действие нельзя отменить.',
     completeNote:'Это практика размышления, а не диагноз, обещание результата или запись на консультацию.',
@@ -70,11 +85,14 @@ const copy={
     saveError:'No se guardó tu respuesta. Inténtalo de nuevo.',conflict:'Otra pestaña ha modificado la sesión. Actualiza tus datos.',
     retry:'Actualizar sesión',close:'Salir',unsaved:'Tu respuesta no está guardada. ¿Salir?',
     question:'PREGUNTA',of:'DE',back:'Atrás',next:'Guardar y seguir',finish:'Guardar y terminar',skip:'Saltar pregunta',
-    hint:'O escribe y edita tu respuesta',placeholder:'Mi respuesta…',required:'Escribe algunas palabras.',
+    hint:'Tu respuesta, con tus propias palabras (también puedes dictarla)',placeholder:'Sin prisa. Unas frases son suficientes…',required:'Escribe algunas palabras.',
+    earlierChoice:'Respuesta rápida anterior',replaceChoice:'Puedes sustituirla por tus propias palabras.',scaleHelp:'Para una escala de 0 a 10, escribe el número y, si quieres, explícalo.',
     stopMic:'Detén el micrófono y revisa el texto antes de guardar.',
     saving:'Guardando…',saved:'Guardado en tu cuenta privada',change:'Puedes editar antes de terminar.',
     summary:'Mi sesión personal',finished:'Tus respuestas',plan:'El paso elegido',noAnswer:'Omitido',
     history:'Sesiones anteriores',historyItem:'Sesión anterior',share:'No enviamos tus respuestas a otras personas.',
+    reportNotice:'Al pulsar Guardar, tu respuesta queda en tu cuenta privada. Al final podrás descargar un PDF con tus reflexiones, preguntas y respuestas.',
+    pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen guardadas.',date:'Fecha de la sesión',
     restart:'La sesión completada se guardará en tu historial.',home:'Mis cursos',delete:'Borrar mis notas',
     deleteConfirm:'¿Eliminar todas tus respuestas e historial? No se puede deshacer.',
     completeNote:'Esto es autorreflexión, no un diagnóstico ni una consulta reservada.',
@@ -117,6 +135,8 @@ const intelligenceCopy={
     copyError:'No se pudo copiar automáticamente. Selecciona el texto abajo.',
     manual:'Selecciona y copia mi reflexión privada'},
 }
+const entryCopyContinue=locale=>({en:'Continue coaching session',ru:'Продолжить коучинг-сессию',es:'Continuar sesión de coaching'})[locale]||'Continue coaching session'
+const entryCopyBegin=locale=>({en:'Continue to questions',ru:'Перейти к вопросам',es:'Continuar con preguntas'})[locale]||'Continue to questions'
 const translated=(value,lang)=>value?.[lang]||value?.en||''
 const questionsFor=(course,catalog)=>{
   const key=course?.current?.schemeKey
@@ -139,6 +159,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const lang=['en','ru','es'].includes(locale)?locale:'en',t=copy[lang],root='/'+lang+'/app'
   const [state,setState]=useState(null),[catalog,setCatalog]=useState(null)
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[newSelection,setNewSelection]=useState(false)
+  const [entry,setEntry]=useState(null)
   const [error,setError]=useState(''),[notice,setNotice]=useState('')
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
@@ -149,6 +170,17 @@ export default function PersonalCoaching({locale='en',accountId}){
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
   const activeQuestions=questionsFor(course,catalog)
   const question=activeQuestions[index]||activeQuestions[0]
+  const quickChoices=coachingQuickChoicesAllowed(question,index)
+  const previousQuestion=activeQuestions[index-1]
+  const conversationTurn=coachingConversationTurn({
+    question,previousQuestion,previousAnswer:session?.answers?.[previousQuestion?.id],
+    previousReflection:session?.reflections?.[previousQuestion?.id]?.text,
+    index,total:activeQuestions.length,locale:lang,
+  })
+  const followupTurn=pendingFollowup?coachingConversationTurn({
+    question,previousQuestion:question,previousAnswer:session?.answers?.[question?.id],
+    index,total:activeQuestions.length,locale:lang,followup:true,
+  }):null
   const persisted=session?.answers?.[question?.id]
   const dirty=Boolean(session?.status==='active' && question && draft!==(typeof persisted==='string'?persisted:''))
   const finished=session?.status==='completed'
@@ -158,6 +190,8 @@ export default function PersonalCoaching({locale='en',accountId}){
   const visiblePrompt=adaptive&&!useStandardPrompt?adaptive.prompt:standardPrompt
   const recapRows=finished?buildCoachingRecap(session,activeQuestions,lang):[]
   const iCopy=intelligenceCopy[lang]
+  const entryCopy=coachingEntryCopy(lang)
+  const entryModel=entry?.choice?.model||catalog?.models?.find(item=>item.modelKey===entry?.choice?.modelKey)
   const lastApprovedPlan=[session,...(course?.history||[])]
     .find(item=>item?.actionPlan?.approvedAt&&typeof item.actionPlan.actionText==='string')?.actionPlan||null
   function visit(indexToOpen,values,items=activeQuestions){
@@ -206,9 +240,9 @@ export default function PersonalCoaching({locale='en',accountId}){
     return()=>{live=false}
   },[accountId,t.loadError])
   useEffect(()=>{
-    if(loading||!session||finished)return
+    if(loading||(!entry&&!session)||finished&&!entry)return
     titleRef.current?.focus({preventScroll:true})
-  },[index,loading,session?.id,finished,pendingFollowup])
+  },[index,loading,session?.id,finished,pendingFollowup,entry?.step])
   useEffect(()=>{
     // Main answer AND optional dictated follow-up must survive accidental reloads.
     if(!dirty&&!((pendingFollowup&&reflectionDraft.trim().length>0)))return
@@ -229,11 +263,23 @@ export default function PersonalCoaching({locale='en',accountId}){
       return null
     }finally{busyRef.current=false;setBusy(false)}
   }
-  async function begin(choice,clientQuestion){
-    const result=await command('start',{schemeKey:choice.schemeKey,clientQuestion})
+  function prepare(choice,clientQuestion,adultConfirmed){
+    // The picker only prepares a choice. No private record is created until
+    // the visitor has seen the session briefing and selected a request topic.
+    setEntry({choice,clientQuestion,adultConfirmed:adultConfirmed===true,
+      topicAdultConfirmed:adultConfirmed===true,clientTopic:'',checkin:'',step:'intro'})
+    setError('')
+  }
+  async function begin(){
+    if(!entry?.clientTopic||(entry.clientTopic==='sexuality'&&!entry.topicAdultConfirmed))return
+    const {choice,clientQuestion,clientTopic}=entry
+    const adultConfirmed=entry.adultConfirmed||entry.topicAdultConfirmed
+    const result=await command('start',{schemeKey:choice.schemeKey,clientQuestion,clientTopic,
+      ...((choice.modelKey==='tantric_intimacy_v1'||choice.scheme?.tags?.includes('sexuality')||clientTopic==='sexuality')?{adultConfirmed}:{})})
     if(result){
       const list=questionsFor(result.course,catalog)
       visit(firstUnanswered(list,result.course?.current?.answers),result.course?.current?.answers,list)
+      setEntry(null)
       setNewSelection(false)
     }
   }
@@ -316,6 +362,33 @@ export default function PersonalCoaching({locale='en',accountId}){
       setClipboardState('copied')
     }catch{setClipboardState('error')}
   }
+  function downloadReport(target){
+    if(target?.status!=='completed')return
+    const targetQuestions=questionsFor({current:target},catalog)
+    const targetScheme=target.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===target.schemeKey):null
+    const plan=target.actionPlan
+    const planText=plan?.approvedAt?[
+      plan.goal,plan.obstacle,plan.actionText,plan.when,
+      Number.isInteger(plan.confidence)?String(plan.confidence)+'/10':'',
+    ].filter(Boolean).join('\n'):'' // Only the client's approved plan, no auto-inferred goals.
+    try{
+      downloadCoachingSessionPdf({
+        locale:lang,
+        title:targetScheme?coachingSessionTitle(targetScheme.schemeKey,lang,translated(targetScheme.name,lang)):t.title,
+        slug:target.schemeKey||'personal-coaching',
+        sessionDate:target.completedAt||target.startedAt,
+        topic:target.clientTopic?coachingRequestTopicLabel(target.clientTopic,lang):'',
+        clientQuestion:target.clientQuestion||'',
+        entries:targetQuestions.map(item=>({
+          question:translated(item.prompt||item.question,lang),
+          answer:prettyAnswer(target.answers?.[item.id],item,lang,t.noAnswer),
+          reflection:target.reflections?.[item.id]?.text||'',
+        })),
+        actionPlan:planText,
+      })
+      setError('')
+    }catch{setError(t.pdfError)}
+  }
   async function erase(){
     if(!window.confirm(t.deleteConfirm))return
     const result=await command('delete',{confirmed:true})
@@ -335,13 +408,39 @@ export default function PersonalCoaching({locale='en',accountId}){
           <p>{t.loadError}</p>
           <button type="button" className={styles.primary} onClick={reload}>{t.retry}</button>
         </div>
+        : entry ? <div className={styles.session} data-private-coaching-onboarding>
+          <div className={styles.questionArea}>
+            {entry.step==='intro'?<CoachingSessionIntroduction locale={lang} headingRef={titleRef}
+              name={coachingSessionTitle(entry.choice.schemeKey,lang,translated(entry.choice.scheme?.name,lang)||translated(entryModel?.name,lang))}
+              modelName={translated(entryModel?.name,lang)} minutes={entry.choice.scheme?.minutes||20}
+              questionCount={entry.choice.scheme?.questions?.length} style={entry.choice.scheme?.style}
+              approach={translated(entryModel?.focus,lang)} outcome={translated(entry.choice.scheme?.result,lang)}
+              imageSrc={cardArtworkUrl(coachingArt[entry.choice.modelKey]||coachingArt.grow_v1)}
+               checkin={entry.checkin} onCheckinChange={checkin=>setEntry(previous=>({...previous,checkin}))}/>
+            :<CoachingSessionTopic locale={lang} checkin={entry.checkin} value={entry.clientTopic} headingRef={titleRef}
+              onChange={clientTopic=>setEntry(previous=>({...previous,clientTopic,topicAdultConfirmed:previous.adultConfirmed}))}
+              ageConfirmed={entry.topicAdultConfirmed}
+              onAgeConfirm={value=>setEntry(previous=>({...previous,topicAdultConfirmed:value}))}/>}
+            {error&&<p className={styles.error} role="alert">{error}</p>}
+          </div>
+          <footer className={styles.footer}><div className={styles.footerActions}>
+            <button type="button" className={styles.back} disabled={busy}
+              onClick={()=>{if(entry.step==='intro')setEntry(null);else setEntry(previous=>({...previous,step:'intro'}))}}>
+              <ChevronLeft size={18}/>{t.back}</button>
+            <button type="button" className={styles.primary} disabled={busy||(entry.step==='topic'&&(!entry.clientTopic||(entry.clientTopic==='sexuality'&&!entry.topicAdultConfirmed)))}
+              onClick={()=>entry.step==='intro'?setEntry(previous=>({...previous,step:'topic'})):begin()}>
+              {entry.step==='intro'?entryCopyContinue(lang):entryCopyBegin(lang)}<ArrowRight size={18}/></button>
+          </div></footer>
+        </div>
         : (!course||newSelection) ? <PersonalCoachingPicker locale={lang} catalog={catalog}
-          previousPlan={lastApprovedPlan} onChoose={begin} busy={busy} error={error} isNew={Boolean(course)} />
+          previousPlan={lastApprovedPlan} onChoose={prepare} busy={busy} error={error} isNew={Boolean(course)} />
         : finished ? <div className={styles.summary} data-coaching-summary>
           <span className={styles.completed}><Check size={16}/>{t.completed}</span>
           <h1>{t.summary}</h1>
           <p>{t.finished}</p>
-          {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</p>}
+          <p className={styles.subtle}>{t.date}: {coachingReportDate(session.completedAt||session.startedAt,lang)}</p>
+          {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</p>}
+          {session.clientTopic&&<p className={styles.contextQuestion}><strong>{entryCopy.topicTitle}:</strong> {coachingRequestTopicLabel(session.clientTopic,lang)}</p>}
           {session.clientQuestion&&<p className={styles.contextQuestion}><strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
           <div className={styles.answers}>
             {activeQuestions.map(item=><div className={styles.answer} key={item.id}>
@@ -375,20 +474,22 @@ export default function PersonalCoaching({locale='en',accountId}){
                 onFocus={event=>event.target.select()} />
             </label>}
           </section>}
+          <button type="button" className={styles.primary} data-coaching-download-pdf disabled={busy} onClick={()=>downloadReport(session)}><Download size={18}/>{t.pdf}</button>
           <p className={styles.privacyNote}>{t.share}</p>
           {course.history?.length>0&&<details className={styles.history}>
             <summary>{t.history} ({course.history.length})</summary>
             {course.history.map(old=><article key={old.id}>
-              <strong>{t.historyItem} · {new Date(old.completedAt||old.startedAt).toLocaleDateString(lang)}</strong>
+              <strong>{t.historyItem} · {coachingReportDate(old.completedAt||old.startedAt,lang)}</strong>
               {questionsFor({current:old},catalog).map(item=><p key={item.id}>
                 <b>{translated(item.prompt||item.question,lang)}</b> {prettyAnswer(old.answers[item.id],item,lang,t.noAnswer)}
               </p>)}
+              {old.status==='completed'&&<button type="button" className={styles.back} onClick={()=>downloadReport(old)}><Download size={16}/>{t.pdf}</button>}
             </article>)}
           </details>}
           <p className={styles.subtle}>{t.restart}</p>
           {error&&<p className={styles.error} role="alert">{error}</p>}
           <button type="button" className={styles.primary} disabled={busy}
-            onClick={()=>{setNewSelection(true);setError('')}}>{t.new}<ArrowRight size={18}/></button>
+            onClick={()=>{setEntry(null);setNewSelection(true);setError('')}}>{t.new}<ArrowRight size={18}/></button>
           <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.home}</Link>
           <button type="button" className={styles.delete} disabled={busy} onClick={erase}><Trash2 size={15}/>{t.delete}</button>
           <small className={styles.disclaimer}>{t.completeNote}</small>
@@ -401,22 +502,33 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.progressTrack}><span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/></div>
           <div className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||pendingFollowup.stage.toUpperCase()}</span>
-            <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
-            <p>{followupCopy[lang].why}</p>
-            <CoachingQuestionVoice key={'followup-'+question.id+'-'+lang}
-              text={translated(pendingFollowup.prompt,lang)} locale={lang} mode="answer"
-              disabled={busy} speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
-              onListeningChange={setDictating}
-              onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
-            <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
-            <textarea id="hh-coaching-followup" className={styles.textarea}
-              value={reflectionDraft} maxLength={500} rows={3} disabled={busy}
-              placeholder={followupCopy[lang].placeholder}
-              onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
-            <span className={styles.counter}>{reflectionDraft.length}/500</span>
-            {error&&<p className={styles.error} role="alert">{error}</p>}
+            <CoachingChatThread turn={followupTurn} locale={lang}>
+              <h1 ref={titleRef} tabIndex={-1}>{translated(pendingFollowup.prompt,lang)}</h1>
+            </CoachingChatThread>
+                        <p className={styles.messageTip}>{followupCopy[lang].why}</p>
+             {error&&<p className={styles.error} role="alert">{error}</p>}
           </div>
-          <footer className={styles.footer}>
+          <footer className={styles.footer} data-coaching-messenger-footer>
+            <div className={styles.chatComposer} data-coaching-composer>
+              <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
+              <textarea id="hh-coaching-followup" className={styles.textarea}
+                aria-describedby="hh-coaching-followup-report-note" value={reflectionDraft}
+                maxLength={500} rows={2} disabled={busy}
+                placeholder={followupCopy[lang].placeholder}
+                onChange={e=>{setReflectionDraft(e.target.value);setError('')}}/>
+              <div className={styles.composerTools}>
+                <CoachingQuestionVoice key={'followup-'+question.id+'-'+lang} compact
+                  text={[followupTurn?.speech,translated(pendingFollowup.prompt,lang)].filter(Boolean).join(' ')}
+                  locale={lang} mode="answer" disabled={busy}
+                  speechConsent={speechConsent} onConsent={()=>setSpeechConsent(true)}
+                  onListeningChange={setDictating}
+                  onTranscript={words=>{setReflectionDraft(v=>appendSpokenAnswer(v,words));setError('')}}/>
+                <small className={styles.draftCount}>{reflectionDraft.length}/500</small>
+              </div>
+              <details className={styles.reportDetails}><summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
+                <small id="hh-coaching-followup-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+              </details>
+            </div>
             <div className={styles.footerActions}>
               <button className={styles.back} type="button" disabled={busy} onClick={backward}>
                 <ChevronLeft size={18}/>{t.back}
@@ -443,8 +555,13 @@ export default function PersonalCoaching({locale='en',accountId}){
             <span className={styles.stage}>{translated(question.stageTitle,lang)||(question.stage||'').toUpperCase()}</span>
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
-            {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {translated(scheme.name,lang)}</span>}
-            <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
+            {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
+            <div data-coaching-gentle-guide>
+              <CoachingChatThread turn={conversationTurn} locale={lang}
+                 draftPreview={quickChoices&&draft.startsWith('choice:')?prettyAnswer(draft,question,lang,t.noAnswer):''}>
+                <h1 ref={titleRef} tabIndex={-1}>{visiblePrompt}</h1>
+              </CoachingChatThread>
+            </div>
             {adaptive&&<div className={styles.adaptivePanel} data-coaching-adaptive-prompt>
               <span><Sparkles size={14} aria-hidden="true"/>{iCopy.adaptive}</span>
               <p>{adaptive.why}</p>
@@ -453,16 +570,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 {useStandardPrompt?iCopy.tailored:iCopy.standard}
               </button>
             </div>}
-            <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')}
-              text={visiblePrompt} locale={lang}
-              mode="answer" disabled={busy} speechConsent={speechConsent}
-              onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
-              onTranscript={words=>{
-                setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
-                setError('');setNotice('')
-              }}/>
-            <p>{translated(question.reflection||question.hint,lang)}</p>
-            {question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
+            {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
                 {(question.type==='scale_0_10'
@@ -475,30 +583,52 @@ export default function PersonalCoaching({locale='en',accountId}){
             </>}
             {scheme?.requiredCustomPlan&&index===activeQuestions.length-1&&
               <p className={styles.requiredPlan}>{langCopy.woop}</p>}
-            {!question.type&&<div className={styles.suggestions} role="group" aria-label={langCopy.choice}>
+            {quickChoices&&!question.type&&<div className={styles.suggestions} role="group" aria-label={langCopy.choice}>
               {(question.examples?.[lang]||[]).map(option=><button type="button" key={option} disabled={busy||dictating}
                 className={draft.trim()===option?styles.chosen:undefined} aria-pressed={draft.trim()===option}
                 onClick={()=>{setDraft(option);setError('');setNotice('')}}>{option}</button>)}
             </div>}
-            <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
-              {question.type?langCopy.orWrite:t.hint}</label>
-            <textarea id="hh-personal-coach-answer" className={styles.textarea}
-              value={draft.startsWith('choice:')?'':draft}
-              maxLength={800} rows={question.type?2:4} placeholder={t.placeholder} disabled={busy}
-              onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
-            <span className={styles.counter}>{draft.startsWith('choice:')?0:draft.length}/800</span>
+            {!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>
+              <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
+            </p>}
+            {!quickChoices&&question.type==='scale_0_10'&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
+            
             <p className={styles.subtle}>{t.change}</p>
             {notice&&<p className={styles.notice} role="status"><Check size={15}/>{notice}</p>}
             {error&&<p className={styles.error} role="alert">{error}</p>}
           </div>
-          <footer className={styles.footer}>
+          <footer className={styles.footer} data-coaching-messenger-footer>
+            <div className={styles.chatComposer} data-coaching-composer>
+              <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
+                {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
+              <textarea id="hh-personal-coach-answer" className={styles.textarea}
+                aria-describedby="hh-personal-coach-answer-report-note"
+                data-coaching-open-reflection={!quickChoices?'true':undefined}
+                value={draft.startsWith('choice:')?'':draft}
+                maxLength={800} rows={2} placeholder={t.placeholder} disabled={busy}
+                onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
+              <div className={styles.composerTools}>
+                <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')} compact
+                  text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
+                  mode="answer" disabled={busy} speechConsent={speechConsent}
+                  onConsent={()=>setSpeechConsent(true)} onListeningChange={setDictating}
+                  onTranscript={words=>{
+                    setDraft(previous=>appendSpokenAnswer(previous.startsWith('choice:')?'':previous,words))
+                    setError('');setNotice('')
+                  }}/>
+                <small className={styles.draftCount}>{draft.startsWith('choice:')?0:draft.length}/800</small>
+              </div>
+              <details className={styles.reportDetails}><summary>{lang==='ru'?'Сохранение и PDF':lang==='es'?'Guardado y PDF':'Saving & PDF'}</summary>
+                <small id="hh-personal-coach-answer-report-note" data-coaching-save-report-notice>{t.reportNotice}</small>
+              </details>
+            </div>
             <div className={styles.footerActions}>
               <button type="button" className={styles.back} onClick={backward} disabled={busy||index===0}><ChevronLeft size={18}/>{t.back}</button>
               <button type="button" className={styles.primary} disabled={busy} onClick={()=>next(false)}>
-                {busy?t.saving:index===activeQuestions.length-1?t.finish:t.next}<ArrowRight size={18}/>
+                {busy?t.saving:index===activeQuestions.length-1?t.finish:(lang==='ru'?'Отправить и далее':lang==='es'?'Enviar y seguir':'Send & continue')}<ArrowRight size={18}/>
               </button>
             </div>
             {!question.required&&<button type="button" className={styles.skip} disabled={busy} onClick={()=>next(true)}>{t.skip}</button>}

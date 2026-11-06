@@ -71,6 +71,7 @@ test("global fallback is a short consented footer after page content and preserv
   assert.match(suppress, /body:has\(\[data-consultation-cta\]\) \[data-sitewide-capture\]/);
   assert.match(suppress, /body:has\(\[data-reiki-choice-capture\]\) \[data-sitewide-capture\]/);
   assert.match(suppress, /body:has\(\[data-free-entry-landing\]\) \[data-sitewide-capture\]/);
+  assert.match(suppress, /body:has\(\[data-personal-service\]\[data-visual-service-landing\]\) \[data-sitewide-capture\]/);
   assert.match(css, /@media\(max-width:767px\)/);
   assert.match(css, /min-height:48px/);
   assert.match(css, /:focus-visible/);
@@ -85,12 +86,15 @@ test("single-field request is explicit opt-in with real CRM commit receipt and n
   assert.match(form, /data-compact-last-slide/);
   assert.match(form, /data-compact-lead-form/);
   assert.match(form, /contactConsent: true/);
-  assert.match(form, /!consent \|\| sending \|\| reference/);
+  assert.match(form, /if \(busy \|\| reference\) return;/);
+  assert.match(form, /if \(!consent\) \{ setError\(t\.consentRequired\); return; \}/);
+  assert.match(form, /disabled=\{busy !== null\}/);
   assert.match(form, /parseContact\(address\)/);
   assert.match(form, /window.crypto.randomUUID\(\)/);
   assert.match(form, /fetch\("\/api\/service-enquiries"/);
   assert.match(form, /result\?\.saved !== true/);
-  assert.match(form, /setReference\(result.referenceCode\)/);
+  assert.match(form, /committedReference = result\.referenceCode/);
+  assert.match(form, /setReference\(committedReference\)/);
   assert.match(form, /RECEIPT_SESSION_KEY/);
   assert.doesNotMatch(form, /lead_created|booking_confirmed|payment_received|gtag\(/);
   assert.match(api, /createPublicServiceEnquiry/);

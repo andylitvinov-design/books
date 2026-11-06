@@ -1,4 +1,5 @@
 import { SiteVideoPlayer } from "@/components/site-video-player";
+import { PublicVideoStarRating } from "@/components/public-video-star-rating";
 import { englishPsychotherapyLandingVideo, getServiceVideoMedia, type ServiceVideoLocale, type ServiceVideoTopic } from "@/data/service-video-library";
 import { siteVideoWatchUrl } from "@/lib/site-videos/model";
 import styles from "./service-video-showcase.module.css";
@@ -21,6 +22,10 @@ const copy = {
     constellations: {
       heading: "How systemic constellations work",
       context: "A short explanation of exploring roles, relationships and decisions through symbolic constellations.",
+    },
+    "constellation-case": {
+      heading: "Business Constellations — see the approach",
+      context: "Andrey’s recording introduces symbolic systemic mapping. It is a method overview, not the free written review itself or a clinical diagnosis.",
     },
     homeopathy: {
       heading: "My approach to homeopathy",
@@ -45,6 +50,10 @@ const copy = {
       heading: "О подходах к личной работе",
       context: "Это общий русскоязычный ролик. Подробное видео о системных расстановках пока доступно на английском.",
     },
+    "constellation-case": {
+      heading: "Системные расстановки — видео Андрея",
+      context: "Запись об исследовании ситуаций и ролей через символическую карту. Не подменяет сам бесплатный письменный разбор или медицинскую диагностику.",
+    },
     homeopathy: {
       heading: "Мой подход к гомеопатии",
       context: "Образовательное знакомство с дополнительной символической практикой, не заменяющей медицинскую помощь.",
@@ -67,6 +76,10 @@ const copy = {
     constellations: {
       heading: "Constelaciones sistémicas",
       context: "Breve explicación del método, con audio en inglés.",
+    },
+    "constellation-case": {
+      heading: "Constelaciones sistémicas — vídeo de Andrey",
+      context: "Introducción al mapeo simbólico de situaciones y roles. No es la revisión escrita gratuita ni un diagnóstico médico.",
     },
     homeopathy: {
       heading: "Mi enfoque de la homeopatía",
@@ -100,6 +113,7 @@ export function ServiceVideoShowcase({
       <div className={styles.player}>
         <SiteVideoPlayer video={video.video} locale={locale}
           textLanguage={video.video.language} compact fallbackPoster={video.poster} />
+        <PublicVideoStarRating locale={locale} video={video.video} />
         {video.video.heygenId && (
           <a className={styles.original} href={siteVideoWatchUrl(video.video)}
             target="_blank" rel="noopener noreferrer">

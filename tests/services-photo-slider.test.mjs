@@ -81,3 +81,19 @@ test("Same EN/RU/ES slider and filter are wired once before existing offers", ()
   assert.match(hero, /href="#free-insights" data-service-hero-cta="free"/);
   assert.match(hero, /href="#consultation" data-service-hero-cta="paid"/);
 });
+
+
+test("Studio service cards share compact image-left styling with the homepage reference", () => {
+  const source = read("components/services-studio-offers.tsx");
+  const css = read("components/services-studio-offers.module.css");
+  assert.match(css, /\.card\{[^}]*?gap:0;[^}]*?padding:0;/);
+  assert.match(css, /\.photo\{[^}]*?height:auto;[^}]*?border-radius:17px 0 0 17px/);
+  assert.match(css, /\.details summary\{[^}]*?border:0;[^}]*?background:transparent;[^}]*?text-decoration:underline/);
+  assert.match(css, /\.action,\.booking :global\(\[data-contact-order\]\)\{[^}]*?background:linear-gradient\(108deg,#07899c,#305a93\)/);
+  assert.match(css, /@media\(max-width:680px\)/);
+  assert.match(css, /@media\(max-width:365px\)/);
+  assert.match(css, /\.actions\{gap:5px;grid-template-columns:max-content minmax\(0,1fr\)/);
+  assert.match(source, /locale === "ru" \? "БЕСПЛАТНО" : locale === "es" \? "GRATIS" : "FREE"/);
+  assert.match(source, /<ContactChannelChooser/);
+  assert.match(source, /<details className=\{styles\.details\}>/);
+});

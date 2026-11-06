@@ -77,10 +77,10 @@ test("booking links resolve to the service selector anchor in every Services loc
   assert.throws(() => assertBookingAnchor(read("app/es/services/page.tsx"), cta.replace('paypalPersonalEnabled={paypalPersonalEnabled}', 'paypalPersonalEnabled={true}'), capture));
 });
 
-test("existing personal form remains a browser-local questionnaire with an explicit WhatsApp handoff", () => {
+test("existing personal form directs to private saving without a messenger material handoff", () => {
   const intake = read("components/free-drawing-intake.tsx");
-  assert.match(intake, /navigator\.clipboard\.writeText/);
-  assert.match(intake, /event\.preventDefault\(\)/);
-  assert.match(intake, /t\.drawingText/);
-  assert.doesNotMatch(intake, /localStorage|sessionStorage|fetch\(|sendBeacon|XMLHttpRequest/);
+  assert.match(intake, /\/coaching\/intake/);
+  assert.match(intake, /Keep the photo on your device/);
+  assert.match(intake, /Do not send private answers/);
+  assert.doesNotMatch(intake, /navigator\.clipboard|ContactChannelChooser|localStorage|sessionStorage|fetch\(|sendBeacon|XMLHttpRequest/);
 });

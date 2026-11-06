@@ -20,12 +20,12 @@ type PageProps = {
 
 const meta = {
   ru: {
-    title: "Идеи и коучинг — бесплатная сессия, Дао и книги | Holistic House",
-    description: "Выберите бесплатную самостоятельную коуч-сессию или даосскую подсказку. Ниже — афоризмы, книги и методички Holistic House.",
+    title: "Тесты и коучинг — профиль, Дао, практика и сессии | Holistic House",
+    description: "Четыре направления: профиль на основе тестов, даосские и храмовые подсказки, коучинг-сессии и бережные практики. Бесплатные первые шаги и личная поддержка.",
   },
   en: {
-    title: "Ideas & Coaching — free sessions, insights & books | Holistic House",
-    description: "Choose a free self-guided coaching session or Taoist insight, then explore aphorisms and the Holistic House book library.",
+    title: "Tests & Coaching — profiles, insights, sessions & practices | Holistic House",
+    description: "Explore four paths: a test-based personal profile, Taoist and temple insights, coaching sessions, and practical support. Start for free and choose your next step.",
   },
 } as const;
 

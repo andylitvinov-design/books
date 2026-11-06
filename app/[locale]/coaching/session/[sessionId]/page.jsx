@@ -4,7 +4,8 @@ import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, Clock3, ShieldCheck } from 'lucide-react'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { getPublicCoachingCatalog } from '@/lib/coaching/public-coaching-catalog'
-import { coachingArt, humanCoachingArt } from '@/lib/coaching/public-session-art'
+import { coachingArt, coachingSchemeArt, humanCoachingArt } from '@/lib/coaching/public-session-art'
+import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { metadataBaseFor } from '@/data/site-metadata'
 import styles from './page.module.css'
@@ -15,7 +16,7 @@ const locales=['en','ru','es']
 const copy={
  en:{
    back:'All coaching sessions',eyebrow:'HOLISTIC HOUSE · SESSION GUIDE',
-   model:'Free self-guided coaching',human:'Personal coaching with Andrey',
+   model:'Free self-guided coaching',human:'Personal coaching with Andrey',method:'Method',
    minutes:'minutes',free:'Free · €0',about:'About this session',
    fits:'When this model is useful',result:'What you can work toward',
    steps:'How the guided session works',questions:'Questions you will explore',
@@ -29,7 +30,7 @@ const copy={
  },
  ru:{
    back:'Все коуч-сессии',eyebrow:'HOLISTIC HOUSE · ПОДРОБНО О СЕССИИ',
-   model:'Бесплатная самостоятельная сессия',human:'Личный коучинг с Андреем',
+   model:'Бесплатная самостоятельная сессия',human:'Личный коучинг с Андреем',method:'Методика',
    minutes:'минут',free:'Бесплатно · €0',about:'О сессии',
    fits:'Для каких запросов подходит',result:'К чему можно прийти',
    steps:'Как проходит сессия',questions:'Вопросы, с которыми будете работать',
@@ -43,7 +44,7 @@ const copy={
  },
  es:{
    back:'Todas las sesiones',eyebrow:'HOLISTIC HOUSE · GUÍA DE LA SESIÓN',
-   model:'Coaching gratuito autoguiado',human:'Coaching personal con Andrey',
+   model:'Coaching gratuito autoguiado',human:'Coaching personal con Andrey',method:'Método',
    minutes:'minutos',free:'Gratis · €0',about:'Sobre esta sesión',
    fits:'Para qué consultas es útil',result:'Resultado posible',
    steps:'Cómo funciona la sesión',questions:'Preguntas que explorarás',
@@ -75,8 +76,8 @@ export async function generateMetadata({params}){
  const t=copy[locale]
  const name=current.paid
    ? t.human+' · '+current.paid.minutes+' '+t.minutes
-   : tr(current.model.name,locale)+' · '+tr(current.scheme.name,locale)
- const description=current.paid?t.humanIntro:tr(current.model.selectionComment,locale)
+   : coachingSessionTitle(current.scheme.schemeKey,locale,tr(current.scheme.name,locale))
+ const description=current.paid?t.humanIntro:coachingSessionSummary(current.scheme.schemeKey,locale,tr(current.model.selectionComment,locale))
  const path='/'+locale+'/coaching/session/'+sessionId
  return {metadataBase:metadataBaseFor(),title:name+' | Holistic House',
    description,alternates:{canonical:path,
@@ -89,9 +90,9 @@ export default async function CoachingSessionDetails({params}){
  const current=await resolveSession(sessionId)
  if(!current)notFound()
  const t=copy[locale],isPaid=Boolean(current.paid),scheme=current.scheme,model=current.model
- const title=isPaid?t.human+' · '+current.paid.minutes+' '+t.minutes:tr(model.name,locale)
- const description=isPaid?t.humanIntro:tr(model.selectionComment,locale)||tr(model.focus,locale)
- const image=isPaid?humanCoachingArt:coachingArt[model.modelKey]||coachingArt.grow_v1
+ const title=isPaid?t.human+' · '+current.paid.minutes+' '+t.minutes:coachingSessionTitle(scheme.schemeKey,locale,tr(scheme.name,locale))
+ const description=isPaid?t.humanIntro:coachingSessionSummary(scheme.schemeKey,locale,tr(model.selectionComment,locale)||tr(model.focus,locale))
+ const image=isPaid?humanCoachingArt:coachingSchemeArt[scheme.schemeKey]||coachingArt[model.modelKey]||coachingArt.grow_v1
  const href=isPaid?'/'+locale+'/services#consultation':
    '/'+locale+'/coaching?start='+encodeURIComponent(scheme.schemeKey)
  const action=isPaid?t.request:t.begin
@@ -106,7 +107,7 @@ export default async function CoachingSessionDetails({params}){
      <section className={styles.hero}>
        <div className={styles.heroText}>
          <p className={styles.eyebrow}>{t.eyebrow}</p>
-         <p className={styles.category}>{isPaid?t.human:t.model}</p>
+         <p className={styles.category}>{isPaid?t.human:t.model}{!isPaid&&<> · {t.method}: {tr(model.name,locale)}</>}</p>
          <h1>{title}</h1>
          <p className={styles.intro}>{description}</p>
          <div className={styles.meta}><span><Clock3 size={16}/>

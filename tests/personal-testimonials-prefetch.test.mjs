@@ -44,3 +44,30 @@ test('regression rejects re-enabling automatic prefetch on either real component
     assert.throws(() => assertLinks('en', 'home', enabled), /late hydration/);
   }
 });
+
+test('free review shows all twelve genuine videos vertically with original-language audio and locale-first ordering', () => {
+  const english = ['Dk0LBmOivQo', 'aUJde6A-9p0', 'fE6sD1zr1Js', 'itjo2_z2NGk', '4NrryHcEF1A', 'hYwRNMxIMjc'];
+  const russian = ['m9RfDgK76PU', 'MIVLm1GUTtM', 'ttQxUHopaUM', 'VABgpmn4ZYA', 'muOnIHllI7E', '5oj0BIbLT4w'];
+  for (const locale of ['en', 'ru', 'es']) {
+    const rendered = nodes(render(locale, 'all'));
+    const cards = rendered.filter(node => node.props['data-testimonial-video-id']);
+    const players = rendered.filter(node => node.type === 'video-fixture');
+    const expectedIds = locale === 'ru' ? [...russian, ...english] : [...english, ...russian];
+    const expectedLanguages = locale === 'ru' ? [...Array(6).fill('ru'), ...Array(6).fill('en')] : [...Array(6).fill('en'), ...Array(6).fill('ru')];
+    assert.deepEqual(cards.map(node => node.props['data-testimonial-video-id']), expectedIds);
+    assert.equal(new Set(expectedIds).size, 12);
+    assert.deepEqual(players.map(node => node.props.video.language), expectedLanguages);
+    assert.ok(players.every(node => node.props.compact === true), 'Video loading must remain opt-in');
+    const feed = rendered.find(node => node.props['data-vertical-review-list'] === '');
+    assert.ok(feed, locale + ': expected visible vertical list');
+    assert.equal(feed.props.tabIndex, undefined, 'No tab stop for a list that does not scroll');
+    assert.equal(rendered.find(node => node.props['data-personal-testimonials'] === 'all')?.props.lang, locale);
+  }
+  const css = readFileSync(new URL('../components/personal-testimonials.module.css', import.meta.url), 'utf8');
+  const stack = css.match(/\.section\[data-personal-testimonials="all"\] \.videoGrid\s*\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(stack, /flex-direction:\s*column/);
+  assert.match(stack, /overflow:\s*visible/);
+  assert.match(stack, /scroll-snap-type:\s*none/);
+  assert.match(source, /\{isAbout && <p className=\{styles\.swipeHint\}>/);
+  assert.match(css, /@media \(max-width: 767px\)[\s\S]*?\.section\[data-personal-testimonials="all"\] \.videoItem/);
+});

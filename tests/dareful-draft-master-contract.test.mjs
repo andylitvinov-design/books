@@ -1,0 +1,43 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {validateDraftMediaSource} from "../scripts/render-dareful-candidate-masters.mjs";
+const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
+const manifest=JSON.parse(read("data/video-catalog/dareful-verified-candidate-wave-20261101.json"));
+test("four source-backed draft videos cannot be published or use untrusted hosts",()=>{
+ assert.equal(manifest.approvedForPublication,false);
+ for(const source of manifest.sources){
+   assert.equal(validateDraftMediaSource(source,manifest),true);
+   assert.throws(()=>validateDraftMediaSource({...source,mediaUrl:"https://localhost/video.m3u8"},manifest));
+   assert.throws(()=>validateDraftMediaSource({...source,sourcePage:"https://other.example/video"},manifest));
+   assert.throws(()=>validateDraftMediaSource(source,{...manifest,approvedForPublication:true}));
+ }
+});
+test("draft renderer emits real H264 motion and editorial-only artifacts",()=>{
+ const src=read("scripts/render-dareful-candidate-masters.mjs");
+ assert.match(src,/verifyMp4\(mp4\)/);
+ assert.match(src,/static_or_repeated_frames_are_not_unique_footage/);
+ assert.match(src,/DRAFT_REAL_MOVING_VIDEO_NOT_PUBLISHED/);
+ assert.match(src,/libx264/);
+ assert.doesNotMatch(src,/public\/videos\/holistic-house\/film-collection-v3|importFreeStockScene|git push|update_ref/);
+});
+
+test("second candidate wave remains owner-unapproved and limited to trusted Dareful Mux hosts",()=>{
+ const next=JSON.parse(read("data/video-catalog/dareful-verified-candidate-wave2-20261101.json"));
+ assert.equal(next.approvedForPublication,false);
+ for(const source of next.sources){
+   assert.equal(validateDraftMediaSource(source,next),true);
+   assert.equal(source.visualReviewRequired,true);
+ }
+});
+
+test("wave three can only produce unpublished draft MP4s and is not trusted as a render source",()=>{
+ const wave3=JSON.parse(read("data/video-catalog/dareful-verified-candidate-wave3-20261103.json"));
+ assert.equal(wave3.approvedForPublication,false);
+ assert.equal(wave3.sources.length,8);
+ for(const item of wave3.sources)assert.equal(validateDraftMediaSource(item,wave3),true);
+ const renderer=read("scripts/render-dareful-candidate-masters.mjs");
+ assert.match(renderer,/--wave3/);
+ assert.match(renderer,/DRAFT_REAL_MOVING_VIDEO_NOT_PUBLISHED/);
+ assert.doesNotMatch(renderer,/importFreeStockScene|create_pull_request|update_ref/);
+});

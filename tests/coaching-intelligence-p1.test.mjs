@@ -163,7 +163,7 @@ test('UI reuses authenticated encrypted storage, keeps one question and offers e
   assert.match(ui,/coachingAdaptivePrompt\(/)
   assert.match(ui,/data-coaching-adaptive-prompt/)
   assert.match(ui,/setUseStandardPrompt\(value=>!value\)/)
-  assert.match(ui,/text=\{visiblePrompt\} locale=\{lang\}/)
+  assert.match(ui,/text=\{\[conversationTurn\?\.speech,visiblePrompt\]\.filter\(Boolean\)\.join\(' '\)\} locale=\{lang\}/)
   assert.match(ui,/data-coaching-evidence-recap/)
   assert.match(ui,/data-coaching-recap-key=\{row\.key\}/)
   assert.match(ui,/clipboard\.writeText\(coachingRecapClipboardText/)
@@ -178,4 +178,18 @@ test('UI reuses authenticated encrypted storage, keeps one question and offers e
   const ts=(await import('typescript')).default
   const ast=ts.createSourceFile('personal-coaching.jsx',ui,ts.ScriptTarget.ES2022,true,ts.ScriptKind.JSX)
   assert.deepEqual(ast.parseDiagnostics.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')),[])
+})
+
+test('spoken or written numeric scales and saved reflections preserve user evidence',()=>{
+  const scale={id:'s',type:'scale_0_10',stepKey:'scaling'}
+  const next={id:'r',stepKey:'knowhow',type:'single_choice'}
+  const adapted=coachingAdaptivePrompt({question:next,questions:[scale,next],index:1,
+    answers:{s:'3'},locale:'ru'})
+  assert.ok(adapted?.prompt.includes('ресурс'))
+  assert.equal(coachingAnswerText('3',scale,'en'),'3/10')
+  assert.equal(coachingAnswerText('choice:3',scale,'en'),'3/10')
+  const recap=coachingRecapClipboardText({answers:{s:'3'},reflections:{s:{text:'I felt supported.'}}},
+    [{...scale,prompt:{en:'How is it now?',ru:'Как сейчас?',es:'¿Cómo estás?'}}],'en')
+  assert.match(recap,/I felt supported/)
+  assert.doesNotMatch(recap,/undefined/)
 })

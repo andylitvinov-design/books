@@ -1285,6 +1285,23 @@
   grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
 }
 .sessionBottomHeading{grid-column:1/-1;margin:0 0 4px}
+.sessionBottomDescription{
+  margin:9px 0 0;max-width:660px;color:#49677a;
+  font:500 clamp(13px,1.65vw,15px)/1.5 system-ui,-apple-system,sans-serif;
+}
+.sessionBottomSaveAction{display:grid;gap:9px;min-width:0;width:100%}
+.sessionBottomPrimaryCopy{display:grid;gap:3px;min-width:0;text-align:center}
+.sessionBottomPrimaryCopy strong{font:inherit;font-weight:800}
+.sessionBottomPrimaryCopy small{
+  font:500 clamp(11px,1.4vw,13px)/1.35 system-ui,-apple-system,sans-serif;
+  color:#d9e8ef;white-space:normal;
+}
+.sessionBottomTrust{
+  display:flex;gap:7px;align-items:center;justify-content:center;
+  margin:0;color:#54717b;text-align:center;
+  font:500 12px/1.4 system-ui,-apple-system,sans-serif;
+}
+.sessionBottomTrust svg{flex:0 0 auto}
 .cabinetSessionPage .sessionBottomHeading h2{
   margin:3px 0 0;font:650 clamp(21px,3vw,28px)/1.25 Georgia,serif;
   color:#173957;letter-spacing:-.018em

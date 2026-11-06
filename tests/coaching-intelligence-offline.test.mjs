@@ -24,7 +24,7 @@ test('localized, versioned, answer-aware followups with no speculative AI analys
   assert.notEqual(choice.prompt.en,written.prompt.en)
 })
 
-test('no more than one per stage or two per session, danger and unknown stages return no followup',()=>{
+test('one gentle followup per stage, up to five per session; danger and unknown stages skip it',()=>{
   const reality={id:'a',stepKey:'reality'}
   assert.equal(authoredFollowupFor(reality,''),null)
   assert.equal(authoredFollowupFor(reality,'kill myself'),null)
@@ -35,6 +35,23 @@ test('no more than one per stage or two per session, danger and unknown stages r
   assert.equal(authoredFollowupFor({id:'b',stepKey:'obstacle'},'An obstacle',prev),null)
   assert.ok(authoredFollowupFor({id:'b',stepKey:'options'},'An option',prev))
   assert.equal(authoredFollowupFor({id:'c',stepKey:'options'},'An option',{...prev,b:{stage:'options',text:'My note'}}),null)
+  const goal=authoredFollowupFor({id:'g',stepKey:'goal'},'My meaningful change',prev)
+  assert.equal(goal.key,'goal_text_v1')
+  for(const locale of ['en','ru','es'])assert.ok(goal.prompt[locale].length>25)
+  const resources=authoredFollowupFor({id:'k',stepKey:'knowhow'},'I can ask a friend')
+  const action=authoredFollowupFor({id:'w',stepKey:'will'},'One small call')
+  assert.equal(resources.stage,'resources')
+  assert.equal(action.stage,'action')
+  for(const locale of ['en','ru','es']){
+    assert.ok(resources.prompt[locale].length>25)
+    assert.ok(action.prompt[locale].length>25)
+  }
+  assert.equal(authoredFollowupFor({id:'a',stepKey:'will'},'My step',{
+    g:{stage:'goal'},r:{stage:'reality'},k:{stage:'resources'},o:{stage:'options'},w:{stage:'action'},
+  }),null)
+  assert.equal(authoredFollowupFor({id:'o',stepKey:'options'},'One option',{
+    ...prev,g:{stage:'goal',text:'Reason'},o:{stage:'options',text:'Direction'},
+  }),null)
 })
 
 test('action plan draft uses direct user evidence and leaves missing entries blank',()=>{

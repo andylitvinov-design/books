@@ -1,0 +1,58 @@
+name: Tantra Reiki — complete PDF source verification
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - 'lib/academy/reiki-guide-pdf.js'
+      - 'data/academy/tantra-reiki-full.generated.json'
+      - 'data/academy/tantra-reiki-ru-en.generated.json'
+      - 'public/academy/course-guides/tantra.*.txt'
+      - 'app/api/academy/reiki-guide/route.js'
+      - 'tests/reiki-guide-pdf.test.mjs'
+      - 'tests/tantra-pdf-full-original.test.mjs'
+      - 'next.config.ts'
+      - '.github/workflows/tantra-pdf-source-qa.yml'
+permissions:
+  contents: read
+jobs:
+  original-source-pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate complete nine-level author source and PDF Unicode
+        run: node --test tests/reiki-guide-pdf.test.mjs tests/tantra-pdf-full-original.test.mjs
+      - name: Generate and extract real EN RU ES mobile PDFs
+        run: |
+          if ! command -v pdfinfo >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils; fi
+          mkdir -p /tmp/tantra-pdf-qa
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { buildReikiCourseGuidePdf } from './lib/academy/reiki-guide-pdf.js';
+          for (const locale of ['en','ru','es']) {
+            const text=readFileSync('public/academy/course-guides/tantra.'+locale+'.txt','utf8');
+            const pdf=buildReikiCourseGuidePdf({course:'tantra',locale,source:text});
+            writeFileSync('/tmp/tantra-pdf-qa/tantra-'+locale+'.pdf',pdf);
+            console.log(locale,pdf.length,'bytes');
+          }
+          NODE
+          for locale in en ru es; do
+            pdfinfo "/tmp/tantra-pdf-qa/tantra-$locale.pdf" | grep -E '^Pages:|^Page size:'
+            pdftotext -layout "/tmp/tantra-pdf-qa/tantra-$locale.pdf" "/tmp/tantra-pdf-qa/tantra-$locale.txt"
+            grep -Fq 'MASTER TEACHER' "/tmp/tantra-pdf-qa/tantra-$locale.txt"
+            grep -Fq 'TANTRA REIKI TUNINGS' "/tmp/tantra-pdf-qa/tantra-$locale.txt"
+          done
+          grep -Fq 'Родник' "/tmp/tantra-pdf-qa/tantra-ru.txt"
+          grep -Fiq 'nivel' "/tmp/tantra-pdf-qa/tantra-es.txt"
+      - name: Save proof PDFs and extracted course text
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tantra-reiki-original-pdf-qa
+          path: /tmp/tantra-pdf-qa/
+          retention-days: 7
