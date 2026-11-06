@@ -265,6 +265,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Modern Montage shows the voice and music controls only after choosing Audio.
+      // Exercise the real visible tab instead of waiting for an unmounted drawer.
+      const montageAudio=page.locator('[data-video-montage-tab="audio"]');
+      await montageAudio.click();
+      await expect(montageAudio).toHaveAttribute("aria-pressed","true");
       const montageSettings=page.locator('[data-video-montage-settings]');
       await montageSettings.waitFor({state:"visible",timeout:25000});
       if(await montageSettings.getAttribute("open")===null)
@@ -738,7 +743,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(!await page.locator("[data-video-narration-stale]").isVisible())
         await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
       await page.locator('[data-video-quick-control="editor"]').click();
-      await page.locator('[data-video-basic-tab="voice"]').click();
+      const montageAudioAfterExport=page.locator('[data-video-montage-tab="audio"]');
+      await montageAudioAfterExport.click();
+      await expect(montageAudioAfterExport).toHaveAttribute("aria-pressed","true");
+      const voiceAudioDetails=page.locator('[data-video-montage-settings]');
+      await voiceAudioDetails.waitFor({state:"visible",timeout:25000});
+      if(await voiceAudioDetails.getAttribute("open")===null)
+        await voiceAudioDetails.locator(":scope > summary").click();
+      await voiceAudioDetails.locator('[data-video-basic-tab="voice"]').click();
       // The phrase warning is intentionally unmounted in Montage. If the
       // old narration is still attached there, export must remain disabled;
       // an independently selected soundtrack is not stale narration.
