@@ -110,6 +110,7 @@
     const title=el('strong',null,task.id+' · '+task.title);
     head.appendChild(title);head.appendChild(el('span','pm-status pm-'+status(task.status),L[status(task.status)]));
     card.appendChild(head);
+    window.HHPM_ASSIGN?.attach(card,task,stage,project);
     const actions=el('div','pm-task-actions');
     if(!task.prs.length)actions.appendChild(el('small','pm-dim','PR не создан или не привязан'));
     for(const p of task.prs){
@@ -207,6 +208,7 @@
       const data=await response.json();
       if(!valid(data))throw Error('Публичный реестр неполон');
       current=data;root.replaceChildren();
+      window.HHPM_ASSIGN?.init(data);
       const summary=data.projects.flatMap(p=>p.stages.flatMap(s=>s.tasks)),tot=count(summary);
       document.getElementById('pm-projects').textContent=data.projects.length;
       document.getElementById('pm-total').textContent=tot.total;
