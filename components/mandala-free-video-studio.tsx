@@ -6620,11 +6620,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   ?"Safari no reproduce este "+result.extension.toUpperCase()+" (error "+errorCode+"). Prueba otro formato."
                   :"Safari cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Try the alternative format.");
               }}/>
-            {playbackStatus==="ready"&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
+            {result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
               ?<div className={videoStyles.guestPreviewActions} data-video-guest-preview-actions>
                 <button type="button" data-video-guest-play onClick={()=>{
                   const video=resultVideoRef.current;
                   if(!video)return;
+                  // WebKit may defer loading until this explicit guest Play gesture.
+                  if(video.readyState<2)video.load();
                   void video.play().catch(()=>setNotice(locale==="ru"
                     ?"Нажмите ▶ в самом видео, чтобы начать просмотр.":
                     locale==="es"?"Pulsa ▶ en el reproductor de vídeo.":

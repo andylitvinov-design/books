@@ -6,9 +6,9 @@ import type {PublicLocale} from "@/lib/public-locales";
 export type DialogueEntry={user:string;assistant:string;createdAt?:string};
 type HistoryResponse={consent?:boolean;items?:DialogueEntry[];ownerBinding?:string};
 const COPY={
- ru:{summary:"Текстовая история",privacy:"Отдельное разрешение: сохранить последние 30 пар реплик в зашифрованном виде в моём аккаунте. Аудиозаписи не хранятся. Я могу удалить историю в любой момент.",consent:"Сохранять мои текстовые диалоги",continue:"Продолжить прошлый разговор",erase:"Удалить историю и разрешение",empty:"Сохранённых реплик пока нет.",loading:"Загружаю…",error:"История временно недоступна. Разговор продолжится без сохранения.",failed:"Не удалось сохранить или изменить историю.",count:"Сохранено реплик:"},
- en:{summary:"Text conversation history",privacy:"Separate opt-in: encrypt and save my most recent 30 dialogue pairs in my account. Voice recordings are not saved. I can erase the history whenever I want.",consent:"Save my text conversations",continue:"Continue previous conversation",erase:"Erase history and permission",empty:"No saved conversation yet.",loading:"Loading…",error:"History is unavailable. The conversation can continue without saving.",failed:"Could not save or update history.",count:"Saved dialogue pairs:"},
- es:{summary:"Historial de texto",privacy:"Consentimiento separado: guardar cifrados los últimos 30 pares de mensajes en mi cuenta. No se guardan grabaciones de voz. Puedo borrar el historial cuando quiera.",consent:"Guardar mis conversaciones de texto",continue:"Continuar conversación anterior",erase:"Borrar historial y permiso",empty:"Todavía no hay conversaciones guardadas.",loading:"Cargando…",error:"El historial no está disponible. Puede continuar sin guardar.",failed:"No se pudo guardar o modificar el historial.",count:"Pares de mensajes guardados:"},
+ ru:{summary:"Текстовая история",privacy:"Отдельное разрешение: сохранить последние 30 пар реплик в зашифрованном виде в моём аккаунте. Аудиозаписи не хранятся. Я могу удалить историю в любой момент.",consent:"Сохранять мои текстовые диалоги",continue:"Продолжить прошлый разговор",show:"Просмотреть сохранённые сообщения",you:"Вы",assistant:"AI-проводник",erase:"Удалить историю и разрешение",empty:"Сохранённых реплик пока нет.",loading:"Загружаю…",error:"История временно недоступна. Разговор продолжится без сохранения.",failed:"Не удалось сохранить или изменить историю.",count:"Сохранено реплик:"},
+ en:{summary:"Text conversation history",privacy:"Separate opt-in: encrypt and save my most recent 30 dialogue pairs in my account. Voice recordings are not saved. I can erase the history whenever I want.",consent:"Save my text conversations",continue:"Continue previous conversation",show:"View saved messages",you:"You",assistant:"AI guide",erase:"Erase history and permission",empty:"No saved conversation yet.",loading:"Loading…",error:"History is unavailable. The conversation can continue without saving.",failed:"Could not save or update history.",count:"Saved dialogue pairs:"},
+ es:{summary:"Historial de texto",privacy:"Consentimiento separado: guardar cifrados los últimos 30 pares de mensajes en mi cuenta. No se guardan grabaciones de voz. Puedo borrar el historial cuando quiera.",consent:"Guardar mis conversaciones de texto",continue:"Continuar conversación anterior",show:"Ver mensajes guardados",you:"Tú",assistant:"Guía IA",erase:"Borrar historial y permiso",empty:"Todavía no hay conversaciones guardadas.",loading:"Cargando…",error:"El historial no está disponible. Puede continuar sin guardar.",failed:"No se pudo guardar o modificar el historial.",count:"Pares de mensajes guardados:"},
 } as const;
 export function usePrivateChatHistory({authenticated,onRestore}:{
  authenticated:boolean;onRestore:(items:DialogueEntry[])=>void;
@@ -110,6 +110,15 @@ export function SecureDialogueHistory({history,locale}:{history:PrivateChatHisto
      <small>{history.items.length?t.count+" "+history.items.length:t.empty}</small>
      {history.items.length>0?<button type="button" onClick={history.restore}
       style={{minHeight:44}}>{t.continue}</button>:null}
+     {history.items.length>0?<details style={{width:"100%"}}>
+      <summary style={{cursor:"pointer",minHeight:44}}>{t.show}</summary>
+      <div role="log" aria-label={t.show} style={{maxHeight:320,overflowY:"auto",padding:"8px 4px"}}>
+       {history.items.map((item,index)=><div key={index} style={{marginBlock:10,fontSize:14,lineHeight:1.5}}>
+        <strong>{t.you}:</strong> {item.user}
+        <p><strong>{t.assistant}:</strong> {item.assistant}</p>
+       </div>)}
+      </div>
+     </details>:null}
      <button type="button" disabled={history.busy} onClick={()=>void history.erase()}
       style={{minHeight:44}}>{t.erase}</button>
     </div>:null}

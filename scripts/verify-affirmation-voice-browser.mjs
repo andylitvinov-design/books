@@ -804,10 +804,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           await expect(page.locator("[data-video-guest-save-hint]")).toBeVisible();
           const player=page.locator("[data-mandala-video-preview]");
           await expect(player).toBeVisible();
+          // User Play is the required Safari decode gesture; never fake loadeddata.
+          await guestPreview.locator("[data-video-guest-play]").click();
           await expect.poll(()=>player.evaluate(video=>
             video instanceof HTMLVideoElement&&video.readyState>=2&&
-            video.videoWidth>0&&video.videoHeight>0),{timeout:15000}).toBe(true);
-          await guestPreview.locator("[data-video-guest-play]").click();
+            video.videoWidth>0&&video.videoHeight>0&&!video.error),{timeout:20000}).toBe(true);
           // Inspect the genuine locally rendered movie without invoking a
           // privileged download, network upload or fake signed-in session.
           const localMovie=await page.evaluate(async()=>{
