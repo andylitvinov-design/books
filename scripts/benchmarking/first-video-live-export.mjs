@@ -138,6 +138,17 @@ try {
   const ideas=page.locator('[data-video-quick-control="phrases"]');
   assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
   await page.locator('[data-video-quick-control="editor"]').click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  // Montage can retain Settings from a previous step. Explicitly select
+  // the visitor-visible Style tab before its genuine green Next button.
+  const montageStyle=page.locator('[data-video-montage-tab="effects"]');
+  await montageStyle.waitFor({state:'visible',timeout:20000});
+  await montageStyle.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-tab="effects"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   // The real Style panel owns the visible green Next CTA. Avoid clicking a
   // second legacy/hideable Text tab before the visitor progresses naturally.
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');

@@ -116,7 +116,31 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         assert.equal(await order.count(),1,"eight-session offer uses one real CRM form");
         await order.click();
         const form=course.locator("[data-meditation-course-contact]");
-        await form.waitFor({state:"visible"});
+        try{
+          // A completed Playwright click alone does not prove React committed
+          // the form. Verify the real button state and its visible consent form.
+          await expect(order).toHaveAttribute("aria-expanded","true",{timeout:8000});
+          await form.waitFor({state:"visible",timeout:12000});
+        }catch(error){
+          const diagnostic=await page.evaluate(()=>{
+            const course=document.querySelector("[data-video-guided-course]");
+            const button=course?.querySelector("[data-meditation-course-order]");
+            const form=course?.querySelector("[data-meditation-course-contact]");
+            const rect=button?.getBoundingClientRect();
+            const hit=rect?document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2):null;
+            return {planCurrent:course?.getAttribute("data-guided-plan-current"),
+              programmeSignature:course?.getAttribute("data-guided-programme-signature-match"),
+              planClicks:course?.getAttribute("data-guided-plan-click-count"),
+              buttonCount:course?.querySelectorAll("[data-meditation-course-order]").length??0,
+              expanded:button?.getAttribute("aria-expanded")??null,
+              formCount:course?.querySelectorAll("[data-meditation-course-contact]").length??0,
+              formVisible:Boolean(form&&form.getBoundingClientRect().height>0),
+              hitTag:hit?.tagName??null,hitDock:Boolean(hit?.closest(".mobile-bottom-navigation,[data-hh-unified-dock]")),
+              viewportWidth:innerWidth};
+          });
+          throw new Error(engine+" "+locale+" "+width+"px course form not opened by one genuine click: "+
+            JSON.stringify(diagnostic),{cause:error});
+        }
         const send=form.locator("[data-meditation-course-submit]");
         assert.equal(await send.isDisabled(),true,"one-off reply consent is not prechecked");
         await form.locator('input[type="email"]').fill("synthetic@example.invalid");
