@@ -15,8 +15,9 @@ export const revalidate=0;
 async function endpoint(request){
  let auth;
  try{
-  if(process.env.HH_AGENT_CHAT_HISTORY_ENABLED!=='true')
-   throw new AppError('CHAT_HISTORY_UNAVAILABLE',503);
+  // A provider/feature kill switch must NOT lock users out of erasing earlier
+  // saved data. Reads, explicit opt-out and DELETE remain account-protected.
+  const historyEnabled=process.env.HH_AGENT_CHAT_HISTORY_ENABLED==='true';
   const config=getAppConfig();
   if(request.method==='GET')requestOrigin(request,config);
   else requireSameOrigin(request,config);
@@ -36,10 +37,14 @@ async function endpoint(request){
     const body=await readBody(request,30000);
     if(!body||Object.keys(body).some(key=>!['action','accepted','turnId','user','assistant'].includes(key)))
      throw new AppError('INVALID_CHAT_HISTORY_REQUEST',400);
-    if(body.action==='consent'&&Object.keys(body).every(key=>['action','accepted'].includes(key)))
+    if(body.action==='consent'&&Object.keys(body).every(key=>['action','accepted'].includes(key))){
+     if(body.accepted!==false&&!historyEnabled)
+      throw new AppError('CHAT_HISTORY_UNAVAILABLE',503);
      result=await setOwnChatHistoryConsent(config,actor,body.accepted);
-    else if(body.action==='append'&&Object.keys(body).every(key=>['action','turnId','user','assistant'].includes(key)))
+    } else if(body.action==='append'&&Object.keys(body).every(key=>['action','turnId','user','assistant'].includes(key))){
+     if(!historyEnabled)throw new AppError('CHAT_HISTORY_UNAVAILABLE',503);
      result=await appendOwnChatHistory(config,actor,body.turnId,body.user,body.assistant);
+    }
     else throw new AppError('INVALID_CHAT_HISTORY_REQUEST',400);
    }else throw new AppError('METHOD_NOT_ALLOWED',405);
   }
