@@ -4500,6 +4500,114 @@
  }
 }
 
+/* Approved shared Hero rail, header iHelp and in-viewport Montage Style next action. */
+.quickBrandIHelp{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;min-width:68px;min-height:39px;padding:5px 8px;border:1px solid #aed4c4;border-radius:999px;background:#fffcf7;color:#08745d;font:800 13px/1.15 Arial,Helvetica,sans-serif;box-shadow:0 2px 8px #285b4420}
+.quickBrandIHelp:disabled{opacity:.55;cursor:not-allowed}
+.quickBrandIHelp svg{flex:none}
+.heroRailIntro{color:#135442;background:#f6fff8}
+.studioIntroGuide{display:grid;gap:7px;min-width:0;margin-top:7px;padding:12px 13px;border:1px solid #cde2d6;border-radius:15px;background:var(--hh-light-surface,#fffcf7);color:#194e3d}
+.studioIntroGuide[hidden]{display:none!important}
+.studioIntroGuide strong{font-size:16px}
+.studioIntroGuide p{font-size:13px;line-height:1.4}
+.studioIntroSamples{display:flex;flex-wrap:wrap;gap:6px}
+.studioIntroSamples button{display:flex;align-items:center;gap:5px;min-height:44px;padding:7px;border:1px solid #d3e1d7;border-radius:10px;background:#f4fbf6;color:#145c48;font:700 12px/1.2 Arial,Helvetica,sans-serif}
+.studioIntroSamples button:disabled{opacity:.5}
+.montageStepNext{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;width:100%;min-height:52px;padding:10px 13px;margin:2px 0 0;border:1px solid #087b64;border-radius:14px;background:linear-gradient(110deg,#099f78,#067a67);color:#fff;font:800 16px/1.2 Arial,Helvetica,sans-serif;box-shadow:0 3px 11px #12735c24}
+.montageStepNext span{flex:1;min-width:0;text-align:center}
+.montageStepNext:disabled{opacity:.5}
+.montageStepNext:focus-visible,.quickBrandIHelp:focus-visible,.studioIntroSamples button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:759px){
+ .studio[data-active-workspace] .quickBrandIdentity{flex:1 1 0;min-width:0}
+ .studio[data-active-workspace] .quickBrandIdentity strong,
+ .studio[data-active-workspace] .quickBrandIdentity small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .studio[data-active-workspace] .quickBrandIHelp{min-width:61px!important;min-height:39px!important;padding:5px 7px;font-size:12px}
+ .studio[data-active-workspace="video"] .previewStage>.heroWithRail,
+ .studio[data-active-workspace="editor"] .previewStage>.heroWithRail{
+   display:grid!important;grid-template-columns:minmax(0,1fr) clamp(92px,28vw,120px);
+   align-items:stretch;gap:8px;width:100%!important;max-width:none!important;margin:0!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroWithRail>.hero,
+ .studio[data-active-workspace="editor"] .previewStage .heroWithRail>.hero{
+   display:block!important;box-sizing:border-box!important;flex:none!important;width:100%!important;
+   max-width:none!important;aspect-ratio:16/9!important;min-height:0!important;
+   max-height:none!important;border-radius:17px!important;margin:0!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroRail,
+ .studio[data-active-workspace="editor"] .previewStage .heroRail{
+   display:grid!important;grid-template-rows:repeat(2,minmax(0,1fr));gap:7px;
+   width:100%!important;min-width:0!important;flex:none!important;
+   justify-items:stretch;align-items:stretch;padding:0!important;
+   border-radius:0;background:transparent!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroRail button,
+ .studio[data-active-workspace="editor"] .previewStage .heroRail button{
+   position:relative;display:flex!important;align-items:flex-start;flex-direction:column;
+   justify-content:center;gap:1px;min-width:0!important;width:100%!important;
+   min-height:0!important;height:auto!important;flex:auto!important;
+   padding:7px 18px 7px 9px!important;border:1px solid #c9dfd1!important;
+   border-radius:15px!important;background:#f6fff8;color:#135442;text-align:left;
+   box-shadow:0 2px 8px #2f624119
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroRail .heroRailMine,
+ .studio[data-active-workspace="editor"] .previewStage .heroRail .heroRailMine{
+   border-color:#067a67!important;background:linear-gradient(140deg,#12a47e,#067a67)!important;color:#fff!important
+ }
+ .studio .previewStage .heroRail button>svg:first-child{width:17px;height:17px;flex:none}
+ .studio .previewStage .heroRail button>svg:last-child{
+   position:absolute;right:4px;top:50%;transform:translateY(-50%);width:14px;height:14px
+ }
+ .studio .previewStage .heroRail button strong{
+   font:800 clamp(12px,3.2vw,15px)/1.05 Arial,Helvetica,sans-serif;white-space:normal;overflow-wrap:anywhere
+ }
+ .studio .previewStage .heroRail button span{
+   font:600 clamp(9px,2.45vw,11px)/1.13 Arial,Helvetica,sans-serif;overflow-wrap:anywhere
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroPlay,
+ .studio[data-active-workspace="editor"] .previewStage .heroPlay{
+   left:50%!important;top:50%!important;width:46px!important;height:46px!important;
+   min-width:44px!important;min-height:44px!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroEditorial{
+   left:8px!important;bottom:8px!important;max-width:60%!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroEditorial h2{font-size:clamp(14px,3.8vw,17px)!important}
+ .studio[data-active-workspace="video"] .previewStage .heroEditorial p{font-size:clamp(9px,2.4vw,10px)!important}
+ .studio[data-active-workspace="editor"] .montageAudioHero{display:none!important}
+ .studio[data-active-workspace="editor"] .previewStage .heroRail{display:grid!important}
+ .studio[data-active-workspace="editor"] .previewStage>.heroWithRail{width:100%!important;max-width:none!important}
+ .studio[data-active-workspace="editor"] [data-video-director-style-controls]{display:none!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] [data-video-order-bar]{display:none!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montagePane{
+   gap:7px;padding:10px!important;border-radius:17px
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectsGrid{
+   grid-template-columns:repeat(3,minmax(0,1fr));gap:6px
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectsGrid button{
+   gap:3px;padding:4px!important;border-radius:12px;font-size:clamp(10px,2.85vw,12px)
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectsGrid img{
+   display:block;height:clamp(42px,6.2dvh,55px);width:100%;aspect-ratio:auto;object-fit:cover;border-radius:9px
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectBrightness{gap:6px}
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectBrightness button{
+   min-height:40px;padding:6px 10px;font-size:13px
+ }
+ .studio[data-active-workspace="editor"] .quickBuilder>.previewStage,
+ .studio[data-active-workspace="video"] .quickBuilder>.previewStage{padding:0!important}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace] .quickBrandIHelp{min-width:37px!important;width:37px;padding:5px!important}
+ .quickBrandIHelp span{display:none}
+ .studio[data-active-workspace="video"] .previewStage>.heroWithRail,
+ .studio[data-active-workspace="editor"] .previewStage>.heroWithRail{
+   grid-template-columns:minmax(0,1fr) 88px!important;gap:5px!important
+ }
+ .studio .previewStage .heroRail button{padding:5px 14px 5px 6px!important}
+ .studio .previewStage .heroRail button strong{font-size:11px}
+ .studio .previewStage .heroRail button span{font-size:9px}
+}
+
 /* Messenger Video validated handoff visibility.
    The compact Goals screen hides unopened advanced panels, not the original
    Director explicitly opened after a verified, one-use chat handoff.
