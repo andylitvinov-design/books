@@ -1003,9 +1003,19 @@ const runEngine = async ([engine, browserType]) => {
             process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-third-workspace.png");
         }
         await workspaceQuick.locator('[data-video-quick-control="editor"]').click();
+        const conceptPanel=page.locator("[data-video-montage-concept]");
+        await expect(conceptPanel).toBeVisible({timeout:15000});
+        await expect(conceptPanel.locator("[data-video-concept-approve]")).toBeVisible();
+        const conceptTextTools=page.locator("[data-video-concept-text-tools]");
+        if(!(await conceptTextTools.evaluate(node=>node.open)))
+          await conceptTextTools.locator(":scope > summary").click();
+        const conceptScript=page.locator("[data-video-editor-scenario]");
+        if(!(await conceptScript.evaluate(node=>node.open)))
+          await conceptScript.locator(":scope > summary").click();
+        await expect(page.locator('[data-video-montage-script]')).toBeVisible();
+        await page.locator('[data-video-montage-tab="settings"]').click();
         const montageStyleSettings=page.locator('[data-video-editor-style-settings]');
         await expect(montageStyleSettings).toBeVisible({timeout:15000});
-        await expect(page.locator('[data-video-montage-script]')).toBeVisible();
         if(!(await montageStyleSettings.evaluate(node=>node.open)))
           await montageStyleSettings.locator(":scope > summary").click();
         await expect(page.locator('[data-video-duration="30"]')).toBeVisible({timeout:15000});
@@ -2289,6 +2299,12 @@ const runEngine = async ([engine, browserType]) => {
         await workspaceNav.locator('[data-video-quick-control="pro"]').click();
         await expect(page.locator('[data-video-quick-builder] [data-video-cover-options]')).toBeVisible();
         await workspaceNav.locator('[data-video-quick-control="editor"]').click();
+        const conceptText=page.locator('[data-video-concept-text-tools]');
+        if(!(await conceptText.evaluate(node=>node.open)))
+          await conceptText.locator(':scope > summary').click();
+        const scriptPanel=page.locator('[data-video-editor-scenario]');
+        if(!(await scriptPanel.evaluate(node=>node.open)))
+          await scriptPanel.locator(':scope > summary').click();
         if(width<=430){
           const layout=await page.evaluate(()=>{
             const rect=q=>{const r=document.querySelector(q)?.getBoundingClientRect();
@@ -2306,6 +2322,7 @@ const runEngine = async ([engine, browserType]) => {
             layout.script.top>=layout.hero.bottom-2&&layout.nav.width<=layout.viewport,
             engine+" "+locale+" "+width+" iPhone Montage composition: "+JSON.stringify(layout));
         }
+        await page.locator('[data-video-montage-tab="settings"]').click();
         const styleDetails=page.locator("[data-video-editor-style-settings]");
         if(!(await styleDetails.evaluate(node=>node.open)))
           await styleDetails.locator(":scope > summary").click();

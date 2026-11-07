@@ -18,18 +18,22 @@ test('first guest video does not need an account-bound XP hold, but signed-in vi
   assert.doesNotMatch(studio,/Sign in to create videos\./)
 })
 
-test('Style CTA continues to Add text, then Audio; only the final step exports',()=>{
+test('Style advances to Audio; Concept requires free guest approval; only final Create exports',()=>{
   const handler=studio.slice(studio.indexOf('const continueMontageOrGenerate='),
     studio.indexOf('// First mobile step is only',studio.indexOf('const continueMontageOrGenerate=')))
-  assert.match(handler,/montagePanel==="effects"\|\|montagePanel==="text"/)
-  assert.match(handler,/setMontagePanel\(montagePanel==="effects"\?"text":"audio"\)/)
+  assert.match(handler,/if\(montagePanel==="effects"\)\{/)
+  assert.match(handler,/setMontagePanel\("audio"\)/)
+  assert.match(handler,/if\(montagePanel==="concept"\)return/)
   assert.match(handler,/createQuickVideo\(\)/)
   const start=studio.indexOf('data-video-quick-generate')
   const btn=studio.slice(start,studio.indexOf('</button>',start))
   assert.match(btn,/onClick=\{continueMontageOrGenerate\}/)
-  assert.match(btn,/data-video-montage-next/)
-  for(const text of ['Next · Add text','Next · Audio','Далее · Аудио','Siguiente · Añadir texto'])
+  assert.match(btn,/data-video-montage-next=\{montagePanel==="effects"\?"audio":undefined\}/)
+  for(const text of ['Next · Audio','Далее · Аудио','Siguiente · Audio'])
     assert.ok(btn.includes(text),text)
+  assert.match(studio,/<MandalaVideoConcept locale=\{locale\}/)
+  assert.match(studio,/onApprove=\{approved=>/)
+  assert.match(studio,/data-video-concept-text-tools/)
 })
 
 

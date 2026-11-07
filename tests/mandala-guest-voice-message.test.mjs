@@ -79,7 +79,8 @@ test("macOS WebKit follows Goal 1 → Goal 2 → Ideas → Montage with native c
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/onClick=\{openGoalClarification\}/);
+ assert.match(studio,/onClick=\{recipientAudioSelected\?continueToIdeas:openGoalClarification\}/);
+ assert.match(studio,/recipientAudioSelected[\s\S]*?Continue to montage/);
  assert.match(studio,/onContinue=\{continueToIdeas\}/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
 });

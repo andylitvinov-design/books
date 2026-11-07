@@ -179,3 +179,18 @@ test("Ideas refinement survives Safari touch and keyboard disclosure toggles",()
     'await expect(page.locator(\'[data-auto-video-topic-panel]\')).toBeVisible();'
   ])assert.ok(source.includes(marker),"retain real WebKit browser acceptance: "+marker);
 });
+
+test("macOS WebKit voice options persist actual user disclosure across rerenders",()=>{
+  const voice=readFileSync(new URL("../components/mandala-affirmation-voice.tsx",import.meta.url),"utf8");
+  for(const marker of [
+    "ref={bindVoiceAdvanced}",
+    "voiceAdvancedOpenRef=useRef(false)",
+    "node.open=voiceAdvancedOpenRef.current",
+    "event.preventDefault();",
+    "node.open=!node.open;",
+    "voiceAdvancedOpenRef.current=node.open",
+    "data-video-affirmation-bed"
+  ])assert.ok(voice.includes(marker),"voice options controlled by real user click: "+marker);
+  assert.match(source,/await expect\(voiceOptions\)\.toHaveAttribute\("open","",\{timeout:15000\}\)/);
+  assert.match(source,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible/);
+});
