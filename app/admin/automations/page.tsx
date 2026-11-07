@@ -167,7 +167,7 @@ export default async function AutomationsPage({searchParams}:Props){
         <h1>{t.task}</h1>
         {(snapshot?.tasks||[]).map(task=>{
           const lastRun=snapshot?.lastRuns.find(run=>run.task_id===task.task_id)||null;
-          const health=summarizeTaskHealth(task,lastRun,{now:snapshot?.observedAt||new Date()});
+          const health=summarizeTaskHealth(task,lastRun,{now:new Date(snapshot?.observedAt||Date.now())});
           const problem=['failed','quota_paused','missed'].includes(health.status);
           const statusClass=problem?styles.tagProblem:
             health.status==='verified'||health.status==='no_change'?styles.tagVerified:styles.tagAwaiting;
