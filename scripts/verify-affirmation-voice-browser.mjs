@@ -32,6 +32,8 @@ async function verifyWorkspaceHydration(browser,locale){
       return route.continue();
     });
     const page=await context.newPage();
+    const pageErrors=[];
+    page.on("pageerror",error=>pageErrors.push(error.message));
     await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"commit",timeout:90000});
     const studio=page.locator('[data-video-studio-hydrated]');
     const tabs=page.locator('[data-video-quick-controls] button');
@@ -60,11 +62,52 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
-    const refinement=page.locator('[data-video-ideas-refinement]');
+    // Owner's real iPhone regression: the size control must expose the original
+    // Canvas (not its promo poster), and Play must use that same preview.
+    await expect(page.locator('[data-video-idea-phrase]')).toHaveCount(7);
+    const textSize=page.locator('[data-video-ideas-text-size]');
+    const filmCanvas=page.locator('[data-mandala-cinematic-canvas]');
+    await expect(textSize).toBeVisible();
+    await expect(filmCanvas).toBeVisible();
+    await expect.poll(()=>filmCanvas.evaluate(canvas=>
+      getComputedStyle(canvas.parentElement).opacity)).toBe("1");
+    // Compare the actual 16:9 Canvas pixel data, not only the slider's value.
+    // Sample the lower-middle phrase region, where the first selected line
+    // is painted at t=0. A static decorative Aa label cannot satisfy this.
+    const phrasePixels=()=>filmCanvas.evaluate(canvas=>{
+      const ctx=canvas.getContext("2d");
+      if(!ctx||!canvas.width||!canvas.height)throw Error("Ideas video Canvas unavailable");
+      const x=Math.floor(canvas.width*0.09),y=Math.floor(canvas.height*0.57);
+      const w=Math.floor(canvas.width*0.82),h=Math.floor(canvas.height*0.32);
+      const bytes=ctx.getImageData(x,y,w,h).data;
+      let hash=2166136261;
+      for(let index=0;index<bytes.length;index+=73)
+        hash=Math.imul(hash^bytes[index],16777619)>>>0;
+      return hash;
+    });
+    const filmPlay=page.locator('[data-video-preview-toggle]');
+    await textSize.focus();
+    await textSize.press("Home");
+    await expect(textSize).toHaveValue("0");
+    const smallPixels=await phrasePixels();
+    await textSize.press("End");
+    await expect(textSize).toHaveValue("2");
+    await expect.poll(phrasePixels,{timeout:12000}).not.toBe(smallPixels);
+    // The real selected phrases must advance frame-by-frame on the same
+    // Canvas. Playback remains deliberate, without autoplay or speech calls.
+    await filmPlay.click();
+    await expect(page.locator("[data-video-mandala-hero]")).toHaveAttribute("data-preview-playing","true");
+    const firstFrame=await phrasePixels();
+    await expect.poll(phrasePixels,{timeout:9000,intervals:[450,450,450]}).not.toBe(firstFrame);
+    await filmPlay.click();
+    await expect(page.locator("[data-video-mandala-hero]")).toHaveAttribute("data-preview-playing","false");
+    assert.deepEqual(pageErrors,[],"Ideas must not throw a client-side exception");
+    const refinement=page.locator('[data-video-ideas-refine]');
     await expect(refinement.locator(":scope > summary")).toBeVisible();
     await refinement.locator(":scope > summary").click();
     await expect(refinement).toHaveAttribute("open","");
-    await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
+    await expect(refinement.locator('[data-video-ideas-state]')).toBeVisible();
+    await expect(refinement.locator('[data-video-meaning-axis]')).toHaveCount(8);
     const montage=page.locator('[data-video-quick-control="editor"]');
     await montage.click();
     await expect(montage).toHaveAttribute("aria-pressed","true");
@@ -349,20 +392,28 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           "video is 16:9: "+width+" "+JSON.stringify(measured));
         assert.ok(measured.documentWidth<=measured.viewportWidth+2,
           "no horizontal overflow: "+width+" "+JSON.stringify(measured));
-        if(engine==="chromium"){
-          mkdirSync("artifacts/hypno-compact",{recursive:true});
-          await page.screenshot({path:"artifacts/hypno-compact/phrases-"+locale+"-"+width+".png",fullPage:true});
-        }
+        // Guest-only screenshots of the actual native browser at 320/390/430.
+        // These augment geometry, never replace pixel or click assertions.
+        mkdirSync("artifacts/hypno-compact",{recursive:true});
+        await page.screenshot({path:"artifacts/hypno-compact/phrases-"+engine+"-"+locale+"-"+width+".png",
+          fullPage:false,animations:"disabled"});
       }
       await page.setViewportSize({width:390,height:840});
-      // Ideas offers a compact set of five phrases by default. The original
-      // consented voice editor is an opt-in advanced section, not a missing
-      // Phrases control or a forced hidden test-only shortcut.
+      // Seven phrases stay compact. Voice controls are intentionally hidden
+      // until the VISITOR clicks Record; never force the details open in a
+      // test, bypassing the existing microphone/consent workflow.
       const advancedVoice=phrases.locator('[data-video-ideas-advanced-voice]');
-      await advancedVoice.waitFor({state:"visible",timeout:15000});
-      await expect(advancedVoice).not.toHaveAttribute("open","");
-      await advancedVoice.locator(":scope > summary").click();
+      const recordEntry=phrases.locator('[data-video-ideas-record]');
+      await expect(advancedVoice).toBeHidden();
+      await expect(recordEntry).toBeVisible();
+      await recordEntry.click();
+      await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
+      await expect(page.locator('[data-video-affirmation-gender="own"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await expect(page.locator('[data-video-own-voice-record]')).toBeVisible();
+      // The microphone only requests device permission on its own separate
+      // recording button; opening the panel is a permission-free action.
       await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
@@ -716,6 +767,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
         phase(engine,"recording-started");
         const output=page.locator("[data-mandala-video-download]");
+        const preview=page.locator("[data-mandala-video-preview]");
+        const rendered=page.locator('[data-video-result][data-video-result-mode="rendered"]');
         phase(engine,"waiting-for-export");
         try {
           // An iPhone/WebKit MP4 can require a physical Play gesture before
@@ -725,21 +778,32 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           const verifyPlayback=page.locator("[data-video-verify-playback]");
           await expect.poll(async()=>{
             if(await output.isVisible())return true;
+            // Guest first video is playable but Save/Download requires a
+            // signed-in My House. Validate the actual encoded result instead
+            // of waiting for an intentionally protected button.
+            if(await rendered.isVisible()&&await preview.isVisible()){
+              const decoded=await preview.evaluate(video=>
+                video instanceof HTMLVideoElement&&video.readyState>=2&&
+                video.videoWidth>0&&video.videoHeight>0&&!video.error);
+              if(decoded)return true;
+            }
             if(!verificationTapped&&await verifyPlayback.isVisible()){
               try{
                 await verifyPlayback.click({timeout:2000});
                 verificationTapped=true;
               }catch(error){
-                // Native MP4 may become playable between isVisible and click:
-                // React then unmounts this optional button. Require the real
-                // download control, never accept a status label or mock file.
                 if(await output.isVisible())return true;
                 if(await verifyPlayback.isVisible())throw error;
               }
             }
             return await output.isVisible();
           },{timeout:45000,intervals:[250,500,1000]}).toBe(true);
-          await output.waitFor({state:"visible",timeout:45000});
+          if(await output.isVisible()){
+            await output.waitFor({state:"visible",timeout:45000});
+          } else {
+            await rendered.waitFor({state:"visible",timeout:45000});
+            await preview.waitFor({state:"visible",timeout:45000});
+          }
         } catch (error) {
           phase(engine,"download-control-timed-out");
           let uiState;
@@ -770,23 +834,50 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               item.startsWith("HH_WEBKIT_MP4_EXPORT_FAILURE:")).slice(-5)}),{cause:error});
         }
         phase(engine,"download-control-ready");
-        // The main Save action now shows a delivery chooser, it no longer
-        // downloads directly. Verify that real production UX, then use the
-        // explicit device File path before checking encoded movie + audio.
-        await output.click();
-        const delivery=page.locator("[data-video-messenger-delivery]");
-        await expect(delivery).toBeVisible({timeout:10000});
-        await expect(delivery.locator("[data-video-telegram-share]")).toBeVisible();
-        await expect(delivery.locator("[data-video-whatsapp-share]")).toBeVisible();
-        phase(engine,"delivery-chooser-open");
-        const [download]=await Promise.all([
-          page.waitForEvent("download",{timeout:20000}),
-          delivery.locator("[data-video-save-direct-choice]").click(),
-        ]);
-        phase(engine,"download-started");
-        const parts=[];
-        for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
-        const bytes=Buffer.concat(parts);
+        // The actual finished locally encoded movie must be independently
+        // ffprobed in both guest and signed-in modes. A source-backed original
+        // catalog MP4 cannot satisfy the rendered-result requirement.
+        let bytes;
+        if(await output.isVisible()){
+          // Signed-in Save: require a real user-visible delivery chooser and
+          // download of the same encoded movie.
+          await output.click();
+          const delivery=page.locator("[data-video-messenger-delivery]");
+          await expect(delivery).toBeVisible({timeout:10000});
+          await expect(delivery.locator("[data-video-telegram-share]")).toBeVisible();
+          await expect(delivery.locator("[data-video-whatsapp-share]")).toBeVisible();
+          phase(engine,"delivery-chooser-open");
+          const [download]=await Promise.all([
+            page.waitForEvent("download",{timeout:20000}),
+            delivery.locator("[data-video-save-direct-choice]").click(),
+          ]);
+          phase(engine,"download-started");
+          const parts=[];
+          for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
+          bytes=Buffer.concat(parts);
+        } else {
+          // Guest Save and Telegram/YouTube upload remain protected, while
+          // the real browser-created result Blob is playable and testable.
+          await expect(rendered).toBeVisible();
+          assert.equal(await page.locator("[data-video-messenger-delivery]").count(),0,
+            "guest must not receive protected Save/Telegram actions");
+          const encodedBase64=await preview.evaluate(async video=>{
+            const url=video.currentSrc||video.src;
+            if(!url.startsWith("blob:"))throw new Error("Finished movie must be a local encoded Blob");
+            const response=await fetch(url,{cache:"no-store"});
+            if(!response.ok)throw new Error("Cannot read generated local movie Blob");
+            const blob=await response.blob();
+            if(blob.size<=10000)throw new Error("Generated Blob has no meaningful media bytes");
+            return await new Promise((resolve,reject)=>{
+              const reader=new FileReader();
+              reader.onload=()=>resolve(String(reader.result).split(",")[1]);
+              reader.onerror=()=>reject(reader.error||new Error("Generated movie Blob read failed"));
+              reader.readAsDataURL(blob);
+            });
+          });
+          bytes=Buffer.from(encodedBase64,"base64");
+          phase(engine,"guest-physical-encoded-blob-readback");
+        }
         assert.ok(bytes.length>10000,"real video must be recorded");
         const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type,channels",
           "-of","json","-"],{input:bytes,encoding:"utf8",timeout:15000});
