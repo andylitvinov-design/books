@@ -59,7 +59,12 @@ test("iPhone scrub repaints decoded frames and delayed audio starts on the user 
   const component=readFileSync(new URL("../components/mandala-multitrack-timeline.tsx",import.meta.url),"utf8");
   const safari=readFileSync(new URL("../lib/mandala/webcodecs-mp4-export.ts",import.meta.url),"utf8");
   assert.match(studio,/const scrubFrame=freeFilmVideoAt\(previewSeekSeconds,false\)/);
-  assert.match(studio,/if\(!usingFreeFilmCompilation\|\|scrubFrame\)/);
+  assert.ok(studio.includes("const styleFirstBeat=Boolean(selectedStyleFilm&&styleFilmReady"),
+    "the selected style must be decoded before previewing");
+  assert.ok(studio.includes("if(!usingFreeFilmCompilation||scrubFrame||styleFirstBeat)"),
+    "only decoded original frames OR a decoded style source may paint the scrub frame");
+  assert.ok(studio.includes("if(!usingFreeFilmCompilation||stockFrame||styleBeatReady)"),
+    "animated preview has the same source eligibility as paused preview");
   assert.match(studio,/onSeeked=\{\(\)=>\{if\(!previewPlaying\)setPreviewFrameRevision/);
   assert.match(studio,/players\.forEach\(player=>void player\.play\(\)\.catch/);
   assert.match(studio,/player\.volume=delayed\?0:masterVolume/);
