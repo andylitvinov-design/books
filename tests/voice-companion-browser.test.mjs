@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {prepareSpeechText,speechSegments,browserSpeechLanguage,chooseVoiceRoute} from '../lib/voice-companion/browser-voice.mjs';
+import {prepareSpeechText,speechSegments,browserSpeechLanguage,chooseVoiceRoute,createRecognitionGate} from '../lib/voice-companion/browser-voice.mjs';
 
 test('Web speech is always off without a deliberate playback opt-in',()=>{
  assert.equal(chooseVoiceRoute({channel:'web'}),'text');
@@ -32,4 +32,32 @@ test('Supplementary-plane letters survive Safari chunk boundaries',()=>{
  assert.ok(chunks.length>5);
  assert.ok(chunks.every(chunk=>![...chunk].includes('\uFFFD')));
  assert.equal(chunks.join(' ').replace(/\s+/g,''),prepareSpeechText(text).replace(/\s+/g,''));
+});
+
+test('late browser recognition events cannot modify a new chat or session',()=>{
+ let current=1;
+ const first=createRecognitionGate(()=>current===1);
+ assert.equal(first.isActive(),true);
+ current=2;
+ assert.equal(first.isActive(),false);
+ assert.equal(first.accept('private late recognition'),null);
+ const second=createRecognitionGate(()=>current===2);
+ assert.equal(second.accept('   Новый вопрос   '),'Новый вопрос');
+ assert.equal(second.accept('a repeated Safari final transcript'),null);
+ assert.equal(second.accept(null),null);
+});
+test('one capture accepts only its first non-empty result and caps length',()=>{
+ const gate=createRecognitionGate(()=>true);
+ assert.equal(gate.accept('  '),null);
+ assert.equal(gate.accept('x'.repeat(2100)).length,2000);
+ assert.equal(gate.accept('another result'),null);
+});
+test('abort and replacement instance must discard late errors and words',()=>{
+ let generation=3,owner={id:1},instance=owner;
+ const gate=createRecognitionGate(()=>generation===3&&instance===owner);
+ instance={id:2};
+ assert.equal(gate.isActive(),false);
+ assert.equal(gate.accept('old recording'),null);
+ generation++;
+ assert.equal(gate.accept('late result'),null);
 });

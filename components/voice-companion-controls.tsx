@@ -3,7 +3,7 @@
 import {useCallback,useEffect,useRef,useState} from "react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {createDeviceSpeech,type SpeechController} from "@/lib/assistant-avatar/device-speech";
-import {browserSpeechLanguage,speechSegments,chooseVoiceRoute} from "@/lib/voice-companion/browser-voice.mjs";
+import {browserSpeechLanguage,speechSegments,chooseVoiceRoute,createRecognitionGate} from "@/lib/voice-companion/browser-voice.mjs";
 import {normalizeDeviceVoiceId,normalizeSpeechRate,publicPreviewText} from "@/lib/voice-companion/voice-catalog.mjs";
 
 type RecognitionResult={results:ArrayLike<ArrayLike<{transcript:string}>>};
@@ -160,13 +160,20 @@ export function useVoiceCompanion(locale:PublicLocale){
   stop();setNotice('');
   try{
    const instance=new Ctor();recognition.current=instance;
+   // Safari can deliver a final result/error after abort, route change or
+   // a second recording. Only the currently owned capture may edit the composer.
+   const captureGeneration=generation.current;
+   const capture=createRecognitionGate(()=>
+     captureGeneration===generation.current&&recognition.current===instance);
    instance.lang=browserSpeechLanguage(speechLocale);instance.continuous=false;instance.interimResults=false;
    instance.onresult=event=>{
-    const text=event.results?.[0]?.[0]?.transcript?.trim();
-    if(text){onTranscript(text.slice(0,2000));setNotice(t.captured);}
+    const text=capture.accept(event.results?.[0]?.[0]?.transcript);
+    if(text){onTranscript(text);setNotice(t.captured);}
    };
-   instance.onerror=()=>{setNotice(t.error);setRecording(false);};
-   instance.onend=()=>{setRecording(false);recognition.current=null;};
+   instance.onerror=()=>{if(!capture.isActive())return;
+     setNotice(t.error);setRecording(false);recognition.current=null;};
+   instance.onend=()=>{if(!capture.isActive())return;
+     setRecording(false);recognition.current=null;};
    instance.start();setRecording(true);
   }catch{recognition.current=null;setRecording(false);setNotice(t.inputUnavailable);}
  },[speechLocale,sttConsent,stop,t]);

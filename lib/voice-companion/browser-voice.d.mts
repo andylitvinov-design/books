@@ -8,3 +8,4 @@ export type VoiceRouteOptions={channel?:'web'|'telegram'|'local';
   playbackConsent?:boolean;staticPhrase?:boolean;freeTierConfirmed?:boolean;
   cloudConsent?:boolean;piperLocalReady?:boolean};
 export function chooseVoiceRoute(options?:VoiceRouteOptions):VoiceRoute;
+export function createRecognitionGate(isCurrent:()=>boolean):Readonly<{isActive:()=>boolean;accept:(value:unknown)=>string|null}>;
