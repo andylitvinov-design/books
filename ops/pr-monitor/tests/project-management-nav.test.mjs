@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';import {createContext,runInContext} from 'node:vm';
-const js=readFileSync(new URL('../ops/pr-monitor/project-management-nav.js',import.meta.url),'utf8');
-const css=readFileSync(new URL('../ops/pr-monitor/project-management-nav.css',import.meta.url),'utf8');
+const js=readFileSync(new URL('../project-management-nav.js',import.meta.url),'utf8');
+const css=readFileSync(new URL('../project-management-nav.css',import.meta.url),'utf8');
 test('header is separate, owner management target on primary auth origin',()=>{
  assert.match(js,/https:\/\/holistichouse\.vercel\.app\/admin\/project-management/);
  assert.doesNotMatch(js,/setInterval|fetch\(|workflow_dispatch|localStorage|api\.github/);
