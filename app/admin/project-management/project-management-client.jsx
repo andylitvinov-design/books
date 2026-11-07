@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import {useCallback,useState} from 'react';
 import {deliveryLabel,projectProgress} from '@/lib/project-management/plans.mjs';
+import ProjectReports from './project-reports';
 import styles from './project-management.module.css';
 const words={
  ru:{title:'Управление проектами',subtitle:'От большой задачи до проверенного результата',monitor:'PR Monitor',center:'Command Center',projects:'Проекты',new:'Новая большая задача',create:'Создать задачу',problem:'Какая проблема?',result:'Ожидаемый результат',priority:'Приоритет',name:'Название задачи',selectProject:'Выберите проект',noProjects:'Проектов пока нет. Сначала создайте проект в Command Center.',none:'Нет больших задач',noBackend:'Приватная база недоступна или миграция ещё не применена. Данные неизвестны.',choose:'Открыть',plans:'Варианты решения',propose:'Предложить 3 плана',engine:'Бесплатные шаблонные предложения, без вызова платного AI',approve:'Утвердить этот план',selected:'Выбранный план',steps:'Работы',noPR:'PR не привязан',link:'Привязать PR',inspect:'Проверить PR / CI / LIVE',next:'Следующий шаг',refresh:'Обновить',save:'Сохранить',cancel:'Отмена',loading:'Выполняется…',error:'Не удалось подтвердить действие',done:'Изменения сохранены',pr:'Ссылка на GitHub PR',confirmed:'Подтверждённые',unknown:'Пока не измерен',coverage:'Частичный охват',noLive:'LIVE не подтверждён: нужна независимая функциональная проверка',manual:'PR привязан владельцем, статус GitHub проверяется отдельно'},
@@ -58,6 +59,7 @@ export default function ProjectManagementClient({lang='ru',initialSnapshot=null}
      <div><strong>{tasks.length}</strong><small>{t.steps}</small></div>
     </div>
     {!snap.coverage?.complete&&<p className={styles.warning}>{t.coverage}</p>}
+    <ProjectReports lang={lang} snapshot={snap} proofs={proofs} busy={busy} onInspect={taskId=>send('inspect_pr',{taskId})}/>
     <div className={styles.toolbar}>
      <h2>{t.projects}</h2><button type="button" disabled={busy||!snap.projects.length} onClick={()=>setCreate(v=>!v)}>{create?t.cancel:t.new}</button>
      <button type="button" className={styles.secondary} disabled={busy} onClick={()=>refresh().catch(()=>setMessage(t.error))}>{t.refresh}</button>
