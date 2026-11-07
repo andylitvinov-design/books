@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+// Run the new guest-first-video protections in existing Mandala fast CI.
+import "./mandala-guest-first-video-flow.test.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
@@ -82,8 +84,14 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
-  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending\}/,
-    "Create requires the licensed source URLs AND approved phrases; decoding occurs on tap");
+  const finalCreate=source.slice(source.indexOf("data-video-quick-generate"),
+    source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
+  assert.match(finalCreate,/onClick=\{continueMontageOrGenerate\}/,
+    "Montage advances through Style, Text and Audio before creating");
+  assert.match(finalCreate,/montagePanel!=="effects"&&montagePanel!=="text"/,
+    "Style and Text stay navigable before the final export");
+  assert.match(finalCreate,/!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending/,
+    "Final Create still requires approved footage, narration and phrases");
   assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
     "Four local MP4s must prime on the trusted Create click");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
@@ -163,8 +171,10 @@ test("post-generation human handoff is optional, privacy-safe and uses existing 
   assert.equal((result.match(/data-video-upsell-action=/g)||[]).length,2);
   assert.match(result,/href=\{"\/"\+locale\+"\/services#consultation"\}/);
   assert.match(result,/href=\{"\/"\+locale\+"\/services\/remote-energy-support"\}/);
-  assert.equal((result.match(/target="_blank" rel="noopener noreferrer"/g)||[]).length,2,
-    "open optional orders separately so unsaved local video is not lost");
+  assert.equal((result.slice(offer).match(/target="_blank" rel="noopener noreferrer"/g)||[]).length,2,
+    "only the two optional service orders open separately");
+  assert.match(result.slice(0,offer),/data-video-guest-signin/,
+    "guest sign-in is separate from the optional services and preserves the in-memory video");
   for(const locale of ["ru","en","es"]){
     assert.match(source,new RegExp(locale+": \\{[\\s\\S]*?consultationAction:"));
   }
