@@ -77,7 +77,8 @@ import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPre
 import {consumeMessengerAudio} from "@/lib/mandala/messenger-audio-video-handoff.mjs";
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import { mandalaAudioTracks, recommendMandalaAudio } from "@/lib/mandala/audio-recommendations.mjs";
-import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
+import { SCENARIO_AUDIO_REGISTRY, scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
+import {rankPersonalMusic} from "@/lib/mandala/music-match.mjs";
 import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
 import {curatedAudioTracks,recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
@@ -108,6 +109,10 @@ const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-stud
 const MandalaPhraseCatalog = dynamic(() => import("./mandala-phrase-catalog").then(module => module.MandalaPhraseCatalog));
 const MandalaMultiTrackTimeline = dynamic(() => import("./mandala-multitrack-timeline").then(module => module.MandalaMultiTrackTimeline));
 
+// Only published, first-party scenario scores; no unreviewed candidate music.
+const ALL_APPROVED_SCENARIO_MELODIES=Object.freeze(
+  SCENARIO_AUDIO_REGISTRY.flatMap(scenario=>scenarioAudioTracks(scenario.id))
+);
 type Effect = "glow" | "energy" | "prosperity" | "temple";
 const BACKGROUND_CLIP="local-money-background-only";
 type Aspect = "square" | "portrait" | "landscape";
@@ -2733,19 +2738,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const previewAudioUrl = samplePreviewId ? presetAudioUrl(samplePreviewId) : uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
+  // One stable ranking feeds Ideas, Quick Video, Music Library and video export.
+  // The source universe consists only of published/reviewed recordings.
   const audioTheme=audioThemeOverride||theme;
-  // The existing 48 scenario packs each provide four original, distinct tracks.
-  // Preserve the canonical scenario/classical collection in this compact UI.
   const goalTreeTracks=goalTreeAudioScenarioId?getGoalTreeAudioChoices(goalTreeAudioScenarioId):[];
   const filmScenarioTracks=activeFreeFilmPreset&&usingFreeFilmCompilation?scenarioAudioTracks(activeFreeFilmPreset):[];
-  // The phrase catalog's explicit storyboard selection outranks the generic
-  // film preset recommendation. Every choice is a real, prebuilt first-party MP3.
   const scenarioTracks=goalTreeTracks.length?goalTreeTracks:filmScenarioTracks;
-  const matchingScenarioTracks=scenarioTracks.filter(track=>
-    (audioKind==="all"||audioKind===track.kind)&&
-    (audioMood==="all"||track.moods.includes(audioMood))&&
-    (audioPace==="all"||track.pace===audioPace)&&
-    (!audioVoiceFriendly||track.voiceSafe));
   const baseAudioMatches=recommendMandalaAudio({
     theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
     voiceFriendly:audioVoiceFriendly,wish,
@@ -2753,19 +2751,40 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const classicMatches=classicalAudioTracks.filter(track=>
     (audioKind==="all"||audioKind===track.kind)&&
     (audioMood==="all"||track.moods.includes(audioMood))&&
-    (audioPace==="all"||track.pace===audioPace));
+    (audioPace==="all"||track.pace===audioPace)&&
+    (!audioVoiceFriendly||track.voiceSafe));
   const curatedMatches=recommendCuratedAudio({
     theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
     voiceFriendly:audioVoiceFriendly,
   });
-  const audioMatches=[...curatedMatches,...matchingScenarioTracks,...baseAudioMatches,...classicMatches];
-  const availableAudioTracks=[...scenarioTracks,
-    ...filmScenarioTracks.filter(track=>!scenarioTracks.some(selected=>selected.id===track.id)),
+  const rankedAudioPool=[...scenarioTracks,...ALL_APPROVED_SCENARIO_MELODIES,
+    ...curatedMatches,...baseAudioMatches,...classicMatches];
+  // Use ONLY the client's current wish or consented speech transcript.
+  const musicContext={
+    theme:audioTheme,wish,transcript:voiceTranscript?.text||"",
+    scenarioId:activeFreeFilmPreset||"",
+    priorityIds:scenarioTracks.map(track=>track.id),
+    voiceFriendly:audioVoiceFriendly||Boolean(voiceTranscript),
+  };
+  const rankedAudioMelodies=rankPersonalMusic({tracks:rankedAudioPool,
+    ...musicContext,kind:audioKind,mood:audioMood,pace:audioPace,limit:300});
+  const audioMatches=audioKind==="all"?[...rankedAudioMelodies,
+      ...baseAudioMatches.filter(track=>track.kind!=="melody")]:
+    audioKind==="melody"?rankedAudioMelodies:baseAudioMatches;
+  const availableAudioTracks=[...scenarioTracks,...ALL_APPROVED_SCENARIO_MELODIES,
     ...curatedAudioTracks,...classicalAudioTracks,...mandalaAudioTracks];
-  const featuredMelodies=(scenarioTracks.length?scenarioTracks:recommendMandalaAudio({
-    theme:audioTheme,kind:"melody",wish,
-  })).slice(0,4);
-  const recommendedAudioId = (matchingScenarioTracks[0]||curatedMatches[0]||baseAudioMatches[0]||classicMatches[0])?.id as Exclude<AmbientMusic, "none"> | undefined;
+  // One of three suggestions, rather than layering all three simultaneously.
+  // For an existing voice/file, suggest ONLY the five supported background beds.
+  const voiceBedMode=attachedAudio?.kind==="file";
+  const featuredMelodies=rankPersonalMusic({
+    tracks:voiceBedMode?mandalaAudioTracks.filter(track=>MYTUBE_MUSIC_BEDS.includes(track.id)):
+      [...scenarioTracks,...ALL_APPROVED_SCENARIO_MELODIES,...curatedAudioTracks,
+        ...mandalaAudioTracks,...classicalAudioTracks],
+    ...musicContext,kind:"melody",mood:"all",pace:"all",
+    voiceFriendly:voiceBedMode||musicContext.voiceFriendly,limit:3,
+  });
+  const recommendedAudioId = (voiceBedMode?featuredMelodies[0]:
+    audioMatches[0]||featuredMelodies[0])?.id as Exclude<AmbientMusic, "none"> | undefined;
   const selectedAudio = availableAudioTracks.find(item=>item.id===music);
   const reviewedRecording=curatedAudioTracks.find(item=>item.id===music);
   const appliedAudioName=attachedAudio===null?audioUi.noAttached:attachedAudio.kind==="file"
@@ -2904,7 +2923,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
        attachedAudio?.kind==="presets")return;
     const recommended=recommendedAudioId||"none";
     setMusic(current=>current===recommended?current:recommended);
-    if(activeWorkspace!=="editor")return;
+    if(activeWorkspace!=="editor"&&activeWorkspace!=="phrases")return;
     setAttachedAudio(current=>{
       if(current?.kind==="file"||current?.kind==="presets")return current;
       if(recommended==="none")return null;
@@ -3856,6 +3875,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAudioAuto(false);setMusic(next[0]||"none");
     setAttachedAudio(attached);setMusicWarning("");
     if(previewPlaying)startMovieSound(attached,soundVolume);
+  }
+  // Personal music suggestions select one soundtrack and preserve any voice.
+  // Advanced multi-layer mixing stays available in the existing editor.
+  function choosePersonalMusic(choice:PresetId){
+    if(recording||preparing||micRecording)return;
+    if(attachedAudio?.kind==="file"){
+      if(!audioRights){setMusicWarning(ui.audioRightsHelp);return;}
+      if(!MYTUBE_MUSIC_BEDS.includes(choice)){
+        setMusicWarning(locale==="ru"?"Для голоса выберите одну из предложенных фоновых мелодий.":
+          locale==="es"?"Para voz, elige una melodía de fondo compatible.":
+            "For voice, choose a compatible background melody.");
+        return;
+      }
+      changeMusicBed({id:choice as MyTubeMusicBed["id"]});
+      setAudioAuto(false);setMusicWarning("");return;
+    }
+    stopSoundPreview();clearUploadedAudio();setSamplePreviewId(null);
+    setAudioAuto(false);setMusic(choice);setAttachedAudio({kind:"preset",id:choice});
+    setMusicWarning("");
+    if(previewPlaying)startMovieSound({kind:"preset",id:choice},soundVolume);
   }
   function playQuickTrack(choice:PresetId){
     if(recording||preparing||micRecording)return;
@@ -5493,18 +5532,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.phraseAudioHeading}>
           <span><Music2 size={23} aria-hidden="true"/></span>
           <div><h3>{locale==="ru"?"4. Подобрать музыку":locale==="es"?"4. Elegir música":"4. Choose music"}</h3>
-            <p>{locale==="ru"?"Выберите и прослушайте мелодии; отметка добавит их в видео.":locale==="es"?"Escucha y marca las pistas para incluirlas en el vídeo.":"Preview and tick a track to include it in the video."}</p></div>
+            <p>{locale==="ru"?"Три мелодии под вашу цель: прослушайте и выберите одну для видео.":locale==="es"?"Tres melodías para tu objetivo. Escucha y elige una.":"Three melodies matched to your goal. Listen and choose one."}</p></div>
         </div>
-        <div className={videoStyles.phraseMusicList} role="group"
+        <div className={videoStyles.phraseMusicList} role="radiogroup"
           aria-label={locale==="ru"?"Фоновая музыка":locale==="es"?"Música de fondo":"Background music"}>
           {featuredMelodies.slice(0,3).map(track=>{
             const id=track.id as PresetId;
-            const checked=attachedPresetIds.includes(id);
+            const checked=attachedAudio?.kind==="preset"&&attachedAudio.id===id ||
+              attachedAudio?.kind==="file"&&musicBed.id===id;
             const listening=samplePreviewId===id&&soundPreview;
             return <div className={videoStyles.phraseMusicItem} key={id} data-phrase-music-track={id}>
               <button type="button" className={videoStyles.phraseMusicChoice} data-phrase-music-attach={id}
-                aria-pressed={checked} disabled={recording||preparing||micRecording||Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration)}
-                onClick={()=>toggleQuickMusic(id)}>
+                role="radio" aria-checked={checked} disabled={recording||preparing||micRecording}
+                onClick={()=>choosePersonalMusic(id)}>
                 <span aria-hidden="true">{checked?<Check size={21}/>:<Music2 size={21}/>}</span>
                 <span>{track.name[locale]}</span>
               </button>
@@ -6686,7 +6726,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <div className={videoStyles.quickMusicRail} role="group" aria-label={
           locale==="ru"?"Музыкальные дорожки":locale==="es"?"Pistas musicales":"Music tracks"}>
-          {featuredMelodies.slice(0,4).map((track,index)=>{
+          {featuredMelodies.slice(0,3).map((track,index)=>{
             const id=track.id as PresetId;
             const checked=attachedPresetIds.includes(id);
             const listening=samplePreviewId===id&&soundPreview;
