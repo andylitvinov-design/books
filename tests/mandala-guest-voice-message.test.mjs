@@ -67,7 +67,7 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
  const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
  const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
- const montage=flow.indexOf("await montage.click()",verify);
+ const montage=flow.indexOf("await montage.tap()",verify);
  assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
    "one real visitor click reaches Ideas, native topic disclosure, then Montage");
  assert.match(flow,/data-video-continue-scenarios/);

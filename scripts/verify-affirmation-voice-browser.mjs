@@ -66,9 +66,23 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(refinement).toHaveAttribute("open","");
     await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
     const montage=page.locator('[data-video-quick-control="editor"]');
-    await montage.click();
-    await expect(montage).toHaveAttribute("aria-pressed","true");
-    await expect(studio).toHaveAttribute("data-active-workspace","editor");
+    await expect(montage).toBeVisible({timeout:15000});
+    await expect(montage).toBeEnabled({timeout:15000});
+    // On iPhone WebKit the native touch path is authoritative. One
+    // physical user tap, no force, no artificial second click.
+    await montage.tap();
+    try{
+      await expect(studio).toHaveAttribute("data-active-workspace","editor",{timeout:15000});
+      await expect(montage).toHaveAttribute("aria-pressed","true");
+    }catch(error){
+      const state=await page.evaluate(()=>({
+        hydrated:document.querySelector('[data-video-studio-hydrated]')?.getAttribute('data-video-studio-hydrated'),
+        workspace:document.querySelector('[data-mandala-free-video]')?.getAttribute('data-active-workspace'),
+        editorPressed:document.querySelector('[data-video-quick-control="editor"]')?.getAttribute('aria-pressed'),
+        editorDisabled:document.querySelector('[data-video-quick-control="editor"]')?.disabled??null,
+      })).catch(()=>({diagnosticsUnavailable:true}));
+      throw new Error("WEBKIT_MONTAGE_SINGLE_TAP_NOT_COMMITTED "+JSON.stringify(state),{cause:error});
+    }
     // Old MyTube dropdown is intentionally hidden; actual mobile Montage
     // exposes six style cards. Verify one real tap, upper player and frames.
     const styleTab=page.locator('[data-video-montage-tab="effects"]');

@@ -175,7 +175,7 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
   const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
   const refinement=flow.indexOf('await refinement.locator(":scope > summary").click()',continueTap);
-  const montage=flow.indexOf("await montage.click()",refinement);
+  const montage=flow.indexOf("await montage.tap()",refinement);
   assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&refinement>continueTap&&montage>refinement,
     "actual visible Goals tap must reveal Ideas then the user-opened refinement before Montage");
   assert.match(flow,/data-video-continue-scenarios/);
