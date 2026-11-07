@@ -209,6 +209,7 @@
       if(!valid(data))throw Error('Публичный реестр неполон');
       current=data;root.replaceChildren();
       window.HHPM_ASSIGN?.init(data);
+      window.HHPM_AGENT_CHAT?.init(data);
       const summary=data.projects.flatMap(p=>p.stages.flatMap(s=>s.tasks)),tot=count(summary);
       document.getElementById('pm-projects').textContent=data.projects.length;
       document.getElementById('pm-total').textContent=tot.total;
