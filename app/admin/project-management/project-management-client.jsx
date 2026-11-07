@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import {useCallback,useState} from 'react';
 import {deliveryLabel,projectProgress} from '@/lib/project-management/plans.mjs';
+import ProjectReports from './project-reports';
 import styles from './project-management.module.css';
 const words={
  ru:{title:'Управление проектами',subtitle:'От большой задачи до проверенного результата',monitor:'PR Monitor',center:'Command Center',projects:'Проекты',new:'Новая большая задача',create:'Создать задачу',problem:'Какая проблема?',result:'Ожидаемый результат',priority:'Приоритет',name:'Название задачи',selectProject:'Выберите проект',noProjects:'Проектов пока нет. Сначала создайте проект в Command Center.',none:'Нет больших задач',noBackend:'Приватная база недоступна или миграция ещё не применена. Данные неизвестны.',choose:'Открыть',plans:'Варианты решения',propose:'Предложить 3 плана',engine:'Бесплатные шаблонные предложения, без вызова платного AI',approve:'Утвердить этот план',selected:'Выбранный план',steps:'Работы',noPR:'PR не привязан',link:'Привязать PR',inspect:'Проверить PR / CI / LIVE',next:'Следующий шаг',refresh:'Обновить',save:'Сохранить',cancel:'Отмена',loading:'Выполняется…',error:'Не удалось подтвердить действие',done:'Изменения сохранены',pr:'Ссылка на GitHub PR',confirmed:'Подтверждённые',unknown:'Пока не измерен',coverage:'Частичный охват',noLive:'LIVE не подтверждён: нужна независимая функциональная проверка',manual:'PR привязан владельцем, статус GitHub проверяется отдельно'},
@@ -13,6 +14,8 @@ export default function ProjectManagementClient({lang='ru',initialSnapshot=null}
  const t=words[lang]||words.ru;
  const [snap,setSnap]=useState(initialSnapshot),[open,setOpen]=useState(null),[create,setCreate]=useState(false);
  const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[proofs,setProofs]=useState({});
+ const [execPrep,setExecPrep]=useState({}),[execStatus,setExecStatus]=useState({});
+ const [executors,setExecutors]=useState({});
  const [draft,setDraft]=useState({projectId:'',title:'',problem:'',outcome:'',priority:'2'}),[prDraft,setPrDraft]=useState({});
  const refresh=useCallback(async()=>{
   const res=await fetch('/api/admin/project-management',{credentials:'same-origin',cache:'no-store'});
@@ -27,6 +30,11 @@ export default function ProjectManagementClient({lang='ru',initialSnapshot=null}
     headers:{'Content-Type':'application/json'},body:JSON.stringify({action,requestId:crypto.randomUUID(),...payload})});
    const data=await res.json();if(!res.ok||data?.error)throw Error(data?.error||'HTTP '+res.status);
    if(action==='inspect_pr')setProofs(prev=>({...prev,[payload.taskId]:data.proof}));
+   else if(action==='prepare_execution'||action==='prepare_chatgpt_handoff')
+    setExecPrep(prev=>({...prev,[payload.taskId]:data}));
+   else if(action==='execution_status'||action==='launch_execution'||
+           action==='retry_execution'||action==='cancel_future_attempts')
+    setExecStatus(prev=>({...prev,[payload.taskId]:data}));
    else await refresh();
    setMessage(t.done);return data;
   }catch(e){setMessage(t.error+' · '+String(e.message||e).slice(0,85));return null;}
@@ -38,6 +46,28 @@ export default function ProjectManagementClient({lang='ru',initialSnapshot=null}
  };
  const epics=snap?.epics||[],tasks=snap?.tasks||[],opts=snap?.options||[],prs=snap?.prLinks||[];
  const linked=task=>prs.filter(x=>x.task_id===task.id);
+ const launch=async(task,retry=false)=>{
+  const prepared=execPrep[task.id];
+  if(!prepared?.admission?.ok||!prepared?.headSha){
+   setMessage(lang==='ru'?'Сначала проверьте исполнение':lang==='es'?'Primero verifica la ejecución':'Prepare execution first');
+   return;
+  }
+  const ok=window.confirm(lang==='ru'?
+   'Подтвердить реальный запуск GitHub Repair для PR #'+prepared.prNumber+
+   ' на HEAD '+prepared.headSha.slice(0,12)+'? Возможны расходы существующей квоты GitHub Actions.':
+   lang==='es'?'¿Confirmar ejecución real de GitHub Repair para PR #'+prepared.prNumber+'?':
+   'Confirm real GitHub Repair execution for PR #'+prepared.prNumber+'?');
+  if(!ok)return;
+  await send(retry?'retry_execution':'launch_execution',{
+   taskId:task.id,executor:'auto_free_repair',expectedSha:prepared.headSha,confirmed:true});
+ };
+ const prepareHandoff=async task=>{
+  const result=await send('prepare_chatgpt_handoff',{taskId:task.id});
+  if(result?.handoff&&navigator.clipboard?.writeText){
+   try{await navigator.clipboard.writeText(result.handoff);}
+   catch{/* Display handoff text as fallback. */}
+  }
+ };
  const statuses={};for(const task of tasks)statuses[task.id]=proofs[task.id]?deliveryLabel(proofs[task.id]):null;
  return <main className={styles.page} lang={lang}>
   <header className={styles.hero}>
@@ -58,6 +88,7 @@ export default function ProjectManagementClient({lang='ru',initialSnapshot=null}
      <div><strong>{tasks.length}</strong><small>{t.steps}</small></div>
     </div>
     {!snap.coverage?.complete&&<p className={styles.warning}>{t.coverage}</p>}
+    <ProjectReports lang={lang} snapshot={snap} proofs={proofs} busy={busy} onInspect={taskId=>send('inspect_pr',{taskId})}/>
     <div className={styles.toolbar}>
      <h2>{t.projects}</h2><button type="button" disabled={busy||!snap.projects.length} onClick={()=>setCreate(v=>!v)}>{create?t.cancel:t.new}</button>
      <button type="button" className={styles.secondary} disabled={busy} onClick={()=>refresh().catch(()=>setMessage(t.error))}>{t.refresh}</button>
@@ -109,6 +140,60 @@ export default function ProjectManagementClient({lang='ru',initialSnapshot=null}
           <button type="button" disabled={busy||!prDraft[task.id]} className={styles.secondary} onClick={()=>send('link_pr',{taskId:task.id,prUrl:prDraft[task.id]})}>{t.link}</button>
           {(task.source_ref||existing.length>0)&&<button type="button" disabled={busy} onClick={()=>send('inspect_pr',{taskId:task.id})}>{t.inspect}</button>}
          </div>
+         {task.kind==='code_change'&&<section className={styles.execution} aria-label="Execution">
+          <h4>{lang==='ru'?'Исполнение':lang==='es'?'Ejecución':'Execution'}</h4>
+          <label>{lang==='ru'?'AI-исполнитель':lang==='es'?'Agente IA':'AI executor'}
+           <select value={executors[task.id]||'auto_free_repair'}
+            onChange={e=>setExecutors(v=>({...v,[task.id]:e.target.value}))}>
+            <option value="auto_free_repair">Auto Free Repair</option>
+            <option value="chatgpt_work">ChatGPT Work · handoff</option>
+            <option value="codex_host">Codex Host · not connected</option>
+           </select>
+          </label>
+          {(executors[task.id]||'auto_free_repair')==='auto_free_repair'?<>
+           <div className={styles.taskTools}>
+            <button type="button" disabled={busy||!existing.length}
+             onClick={()=>send('prepare_execution',{taskId:task.id,executor:'auto_free_repair'})}>
+             {lang==='ru'?'Проверить запуск':lang==='es'?'Verificar ejecución':'Check readiness'}</button>
+            <button type="button" disabled={busy||!execPrep[task.id]?.admission?.ok||
+              execPrep[task.id]?.executorAvailability?.auto_free_repair!=='ACTIONS_WRITE_UNVERIFIED_UNTIL_DISPATCH'}
+             onClick={()=>launch(task)}>
+             {lang==='ru'?'Запустить исправление':lang==='es'?'Iniciar reparación':'Launch repair'}</button>
+            <button type="button" className={styles.secondary} disabled={busy}
+             onClick={()=>send('execution_status',{taskId:task.id})}>
+             {lang==='ru'?'Журнал / статус':lang==='es'?'Historial / estado':'Execution log'}</button>
+            <button type="button" className={styles.secondary} disabled={busy||!execStatus[task.id]?.history?.length}
+             onClick={()=>launch(task,true)}>
+             {lang==='ru'?'Повторить при новой ошибке':lang==='es'?'Reintentar con nuevo error':'Retry on new failure'}</button>
+            <button type="button" className={styles.secondary} disabled={busy}
+             onClick={()=>window.confirm(lang==='ru'?'Остановить будущие попытки? Текущий CI не будет отменён.':'Stop future attempts? Running CI will not be cancelled.')&&
+              send('cancel_future_attempts',{taskId:task.id,confirmed:true})}>
+             {lang==='ru'?'Остановить будущие попытки':lang==='es'?'Detener intentos futuros':'Stop future attempts'}</button>
+           </div>
+           {execPrep[task.id]&&<div className={styles.proof}>
+            <p>HEAD: {execPrep[task.id].headSha?.slice(0,12)||'—'} · {execPrep[task.id].admission?.reason}</p>
+            <p>{execPrep[task.id].executorAvailability?.auto_free_repair}</p>
+            {execPrep[task.id].admission?.evidence?.checkUrl&&
+             <a target="_blank" rel="noopener noreferrer" href={execPrep[task.id].admission.evidence.checkUrl}>Core failure evidence</a>}
+           </div>}
+          </>: (executors[task.id]==='chatgpt_work'?<>
+           <button type="button" disabled={busy||!existing.length} onClick={()=>prepareHandoff(task)}>
+            {lang==='ru'?'Подготовить и скопировать задание':lang==='es'?'Preparar y copiar tarea':'Prepare and copy handoff'}</button>
+           {execPrep[task.id]?.handoff&&<>
+            <textarea readOnly aria-label="ChatGPT handoff" value={execPrep[task.id].handoff}/>
+            <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">
+             {lang==='ru'?'Открыть ChatGPT и выбрать Work':lang==='es'?'Abrir ChatGPT y elegir Work':'Open ChatGPT and choose Work'}</a>
+            <p className={styles.muted}>HANDOFF_PREPARED_NOT_LAUNCHED</p>
+           </>}
+          </>:<p className={styles.muted}>OAUTH_RUNTIME_NOT_VERIFIED · No automatic execution</p>)}
+          {execStatus[task.id]&&<div className={styles.proof}>
+           <p>{execStatus[task.id].status} · {execStatus[task.id].run?.stage||'RUNNER_NOT_VERIFIED'}</p>
+           {execStatus[task.id].run?.url&&<a href={execStatus[task.id].run.url} target="_blank" rel="noopener noreferrer">GitHub Actions #{execStatus[task.id].run.id}</a>}
+           {(execStatus[task.id].history||[]).map((ev,j)=><p key={j}>
+            {safeTime(ev.created_at)} · {ev.result?.status} · HEAD {ev.result?.headSha?.slice(0,10)||'—'}
+           </p>)}
+          </div>}
+         </section>}
          {proof&&<div className={styles.proof}><small>GitHub · {safeTime(proof.observedAt)} · HEAD {proof.headSha?.slice(0,9)||'—'}</small>
            <p>PR: {proof.prState} · CI: {proof.ci} · Merge: {proof.mergedSha?.slice(0,9)||'—'} · production: {proof.codeOnProduction?'yes':'unverified'}</p>
            <p>{proof.functionalAccepted?status?.label:t.noLive}</p></div>}
