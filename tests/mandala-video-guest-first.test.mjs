@@ -52,12 +52,11 @@ test('finished preview, share, delivery and downloads stay behind verified login
   for(const phrase of ['Первое видео создано бесплатно','Your first video was created for free','Tu primer vídeo se creó gratis'])
     assert.ok(source.includes(phrase),phrase)
 })
-test('modified studio remains syntactically valid TSX',async()=>{
-  const ts=await import('typescript')
-  const diagnostic=ts.transpileModule(source,{
-    fileName:'mandala-free-video-studio.tsx',
-    reportDiagnostics:true,
-    compilerOptions:{jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}
-  }).diagnostics||[]
-  assert.deepEqual(diagnostic.filter(d=>d.category===ts.DiagnosticCategory.Error),[])
+test('guest credit copy has complete RU, EN, ES branches in the lightweight WebKit preflight',()=>{
+  // The browser/production Core run checks TSX syntax; this zero-dependency
+  // WebKit preflight must not require npm's TypeScript package.
+  assert.match(source,/\?\(locale==="ru"\?"1 ролик = 10 кредитов\. Баланс: ":\s*locale==="es"/)
+  assert.match(source,/locale==="es"\?"1 vídeo = 10 créditos\. Saldo: ":\s*"1 video = 10 credits\. Balance: "\)/)
+  assert.match(source,/videoViewer==="guest"\s*\?\(locale==="ru"\?"Первое видео бесплатно\./)
+  assert.doesNotMatch(source,/Sign in to create videos\./)
 })
