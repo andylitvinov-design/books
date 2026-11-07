@@ -17,7 +17,7 @@
   const refresh=make('button','hh-cc-iconbtn','⟳');refresh.type='button';refresh.title='Обновить страницу';refresh.setAttribute('aria-label','Обновить страницу');refresh.addEventListener('click',()=>location.reload());head.append(refresh);
   const more=make('button','hh-cc-iconbtn','⋮');more.type='button';more.title='Разделы мониторинга';more.setAttribute('aria-label','Разделы мониторинга');more.setAttribute('aria-expanded','false');head.append(more);
   const menu=make('div','hh-cc-menu');menu.hidden=true;
-  [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Защищённый Agent Commander','https://holistichouse.vercel.app/admin/command-center']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
+  [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Библиотека навыков','/skills.html'],['Защищённый Agent Commander','https://holistichouse.vercel.app/admin/command-center']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
   head.append(menu);more.addEventListener('click',()=>{menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden))});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
   document.addEventListener('click',e=>{if(!head.contains(e.target)){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
@@ -33,7 +33,9 @@
   document.body.append(nav);
   const bridge=make('script');bridge.id='hh-cc-transfer-loader';
   bridge.src='/commander-transfer.js?v=20261107-task-transfer-v1';document.head.append(bridge);
-  const loader=make('script');loader.id='hh-cc-task-input-loader';
+  const skillCss=make('link');skillCss.rel='stylesheet';skillCss.href='/commander-skills.css?v=20261107-skills-v1';document.head.append(skillCss);
+  const skillJs=make('script');skillJs.src='/commander-skills.js?v=20261107-skills-v1';skillJs.async=false;document.head.append(skillJs);
+  const loader=make('script');loader.id='hh-cc-task-input-loader';loader.async=false;
   loader.src='/commander-task-input.js?v=20261107-voice-decompose-v1';
   loader.onerror=()=>{loader.dataset.failed='true'};
   loader.onload=()=>{loader.dataset.loaded='true'};
