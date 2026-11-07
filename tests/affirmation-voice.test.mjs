@@ -163,9 +163,14 @@ test("voice browser follows native Ideas and Montage on one visitor click; hidde
  const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
  const topic=flow.indexOf('data-auto-video-topic-panel',open);
  const montage=flow.indexOf('await montage.click()',topic);
- const style=flow.indexOf('data-video-director-style-controls',montage);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&style>montage,
-   "real visitor must open Ideas refinement and reach Montage without hidden selectors");
+ const styleTab=flow.indexOf('await styleTab.click()',montage);
+ const style=flow.indexOf('data-video-montage-style="1"',styleTab);
+ const styleTap=flow.indexOf('await styleChoice.click()',style);
+ const selected=flow.indexOf('await expect(styleChoice).toHaveAttribute("aria-pressed","true")',styleTap);
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&styleTab>montage&&style>styleTab&&styleTap>style&&selected>styleTap,
+   "real visitor must open Ideas, enter Montage Style, and select a visible style");
+ assert.doesNotMatch(flow,/data-video-director-style-controls/,
+   "WebKit must not depend on a retired hidden Auto Director selector");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);

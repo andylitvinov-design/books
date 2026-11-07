@@ -5,7 +5,7 @@ import styles from '@/app/admin/automations/automations.module.css';
 
 type Locale='ru'|'en'|'es';
 type Action='pause'|'resume'|'run_now';
-type TaskId='video-scout-hourly'|'video-classifier-batch'|'council-video-review-weekly';
+type TaskId='video-scout-hourly'|'video-classifier-batch'|'council-video-review-weekly'|'video-scout-digest-daily';
 const translations={
   ru:{pause:'Приостановить',resume:'Включить почасовой поиск',run_now:'Проверить сейчас',
     working:'Выполняю действие…',done:'Команда проверена. Обновляю результаты.',
@@ -29,7 +29,10 @@ export default function AutomationControlActions({locale,enabled,taskId='video-s
   const t=translations[locale];
   const classifier=taskId==='video-classifier-batch';
   const council=taskId==='council-video-review-weekly';
-  const enableLabel=council?(locale==='ru'?'Включить еженедельный Совет':
+  const digest=taskId==='video-scout-digest-daily';
+  const enableLabel=digest?(locale==='ru'?'Включить ежедневный отчёт':
+    locale==='es'?'Activar informe diario':'Enable daily report'):
+    council?(locale==='ru'?'Включить еженедельный Совет':
     locale==='es'?'Activar Consejo semanal':'Enable weekly AI Council'):
     classifier?(locale==='ru'?'Включить AI-классификацию':
     locale==='es'?'Activar clasificación IA':'Enable AI classification'):t.resume;
@@ -57,10 +60,13 @@ export default function AutomationControlActions({locale,enabled,taskId='video-s
         onClick={()=>execute(enabled?'pause':'resume')}>
         {busy?t.working:enabled?t.pause:enableLabel}
       </button>
-      <button className={styles.secondary} type="button" disabled={busy||!enabled}
-        onClick={()=>execute('run_now')}>{t.run_now}</button>
+      {!digest&&<button className={styles.secondary} type="button" disabled={busy||!enabled}
+        onClick={()=>execute('run_now')}>{t.run_now}</button>}
     </div>
-    <p className={styles.note}>{council?
+    <p className={styles.note}>{digest?(locale==='ru'?'Один отчёт за сутки · в личный Telegram владельца':
+      locale==='es'?'Un resumen diario · Telegram privado del propietario':
+        'One daily report · private owner Telegram only'):
+      council?
       (locale==='ru'?'Предложения ждут решения владельца · ничего не выполняется автоматически':
         locale==='es'?'Propuestas pendientes del propietario · sin ejecución automática':
           'Owner approval required for every proposal · no automatic execution'):

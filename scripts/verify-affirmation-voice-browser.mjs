@@ -464,6 +464,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Confirm the chosen recorded track survives the ACTUAL local MP4/WebM
         // export. Reading a selection badge or blob URL is not E2E evidence.
         await page.locator('[data-video-quick-control="editor"]').click();
+        // The original recorder's export button is available in the real
+        // Montage Audio step, never in the intentionally hidden Style footer.
+        const ownAudioStep=page.locator('[data-video-montage-tab="audio"]');
+        await ownAudioStep.click();
+        await expect(ownAudioStep).toHaveAttribute("aria-pressed","true");
         const ownCreate=page.locator("[data-video-quick-generate]");
         await expect(ownCreate).toBeEnabled({timeout:30000});
         await ownCreate.click();
@@ -653,6 +658,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
+      // Montage begins on Style. Select its actual Audio step before
+      // expecting Generate: the Style footer is intentionally hidden.
+      const renderAudioStep=page.locator('[data-video-montage-tab="audio"]');
+      await expect(renderAudioStep).toBeVisible();
+      await renderAudioStep.click();
+      await expect(renderAudioStep).toHaveAttribute("aria-pressed","true");
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
       await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
