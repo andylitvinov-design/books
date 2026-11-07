@@ -129,8 +129,10 @@ export function MandalaVideoReady({
   const selectedGoal=(focus.goal||wish).trim().slice(0,100);
   const ritual=useMemo(()=>selectResourcePractice({
     locale,theme,kind:"ritual",revision,
-    focus:{difficulty:focus.difficulty,goal:focus.goal||wish,goals:focus.goals,details:focus.details}
-  }),[locale,theme,revision,focus.difficulty,focus.goal,focus.goals,focus.details,wish]);
+    focus:{difficulty:focus.difficulty,goal:focus.goal||wish,goals:focus.goals,
+      // The optional anchor is user text, so validate it before showing or copying a ritual.
+      details:[anchor,...focus.details]}
+  }),[locale,theme,revision,focus.difficulty,focus.goal,focus.goals,focus.details,anchor,wish]);
   const momentText=moment==="morning"?t.morning:moment==="evening"?t.evening:t.any;
   const placeText=setting==="nature"?t.nature:setting==="desk"?t.desk:t.quiet;
   const actionText=action==="hand"?t.hand:action==="pause"?t.pause:t.observe;
