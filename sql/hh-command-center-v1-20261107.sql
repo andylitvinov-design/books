@@ -160,9 +160,9 @@ DO $$ DECLARE name text; BEGIN
     EXECUTE format('GRANT SELECT, INSERT, UPDATE ON TABLE app_private.%I TO hh_app_backend',name);
     EXECUTE format('ALTER TABLE app_private.%I ENABLE ROW LEVEL SECURITY',name);
     EXECUTE format('ALTER TABLE app_private.%I FORCE ROW LEVEL SECURITY',name);
-    EXECUTE format('DROP POLICY IF EXISTS %I ON app_private.%I','cc_backend_'+name,name);
+    EXECUTE format('DROP POLICY IF EXISTS %I ON app_private.%I','cc_backend_'||name,name);
     EXECUTE format('CREATE POLICY %I ON app_private.%I FOR ALL TO hh_app_backend USING (true) WITH CHECK (true)',
-      'cc_backend_'+name,name);
+      'cc_backend_'||name,name);
   END LOOP;
 END $$;
 -- Append-only evidence/audit. Task and run mutations remain backend-controlled.
