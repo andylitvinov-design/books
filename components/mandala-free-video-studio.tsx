@@ -2165,6 +2165,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [sttError,setSttError]=useState("");
   const [voiceTranscript,setVoiceTranscript]=useState<TimedSpeechTranscript|null>(null);
   const [voiceVisualPlan,setVoiceVisualPlan]=useState<AudioVisualPlan|null>(null);
+  const [audioPlanApplied,setAudioPlanApplied]=useState(false);
+  const [recipientAudioSelected,setRecipientAudioSelected]=useState(false);
   const [pendingAutoVoice,setPendingAutoVoice]=useState<TimedSpeechTranscript|null>(null);
   const sttAbortRef=useRef<AbortController|null>(null);
   useEffect(()=>()=>sttAbortRef.current?.abort(),[]);
@@ -3830,7 +3832,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   function clearUploadedAudio(){
     sttAbortRef.current?.abort();sttAbortRef.current=null;
     setSttBusy(false);setSttConsent(false);setSttError("");
-    setVoiceTranscript(null);setVoiceVisualPlan(null);
+    setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);
     stopSoundPreview();
     if(uploadedAudioRef.current)URL.revokeObjectURL(uploadedAudioRef.current.url);
     uploadedAudioRef.current=null;
@@ -4507,7 +4509,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     sttAbortRef.current?.abort();
     const controller=new AbortController();
     sttAbortRef.current=controller;setSttBusy(true);setSttError("");
-    setVoiceTranscript(null);setVoiceVisualPlan(null);
+    setVoiceTranscript(null);setVoiceVisualPlan(null);setAudioPlanApplied(false);
     try{
       const transcript=await requestConsentedTimedTranscript(entry.file,locale,sttConsent,controller.signal);
       if(sttAbortRef.current!==controller||
@@ -4541,7 +4543,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       // Energy category. Real spoken concepts determine each scene.
       aspect,theme:automatic?"":theme,locale
     });
-    setVoiceVisualPlan(plan);
+    setVoiceVisualPlan(plan);setAudioPlanApplied(false);
     if(!plan.canExport||!plan.edit){
       setSttError(plan.status==="AUDIO_LONGER_THAN_60_SECONDS"?
         (locale==="ru"?"Запись длиннее 59 секунд. Для сохранения всей речи нужен более длинный видеоэкспорт; сократите аудиофайл.":
@@ -4561,6 +4563,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return;
     }
     // Preserve original speech once, never loop a personal message.
+    setAudioPlanApplied(true);
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
     setAudioAuto(false);setSoundVolume(100);setMusic("none");
     setWish(transcript.text.slice(0,800));setVideoScenarioOpen(true);
@@ -5608,6 +5611,86 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }}/>
   );
 
+  const goRecipientAudioToMontage=()=>{
+    if(!audioPlanApplied||!voiceVisualPlan?.canExport)return;
+    setActiveWorkspace("editor");setMontagePanel("effects");setShowAdvancedVideo(true);setVideoScenarioOpen(true);
+    setStudioMode("pump");
+  };
+  // Existing recorder, STT API, shot matcher and Canvas; only a new Goal entry UI.
+  const recipientAudioPanel=<section className={videoStyles.recipientAudioSteps} data-video-recipient-audio-panel>
+    <strong>{locale==="ru"?"Создайте видео из вашей аудиозаписи":locale==="es"?"Crear vídeo desde tu audio":"Create visuals from your audio"}</strong>
+    <div className={videoStyles.recipientAudioStep}>
+      <b>1</b><div><strong>{locale==="ru"?"Загрузите аудио":locale==="es"?"Subir audio":"Upload audio"}</strong>
+      <small>{locale==="ru"?"Подкаст, сообщение, медитация · до 4 МБ и 59 секунд":
+        locale==="es"?"Voz, podcast o meditación · hasta 4 MB y 59 s":
+        "Voice, podcast or meditation · up to 4 MB and 59 seconds"}</small>
+      <div className={videoStyles.recipientAudioActions}>
+        <label htmlFor="recipient-audio-upload"><Paperclip size={17}/>{locale==="ru"?"Выбрать файл":locale==="es"?"Elegir archivo":"Choose file"}</label>
+        <input id="recipient-audio-upload" type="file" data-video-recipient-audio-upload
+          accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
+          disabled={sttBusy||recording||preparing||micRecording}
+          onChange={e=>{const file=e.currentTarget.files?.[0];e.currentTarget.value="";
+            if(!file)return;
+            if(file.size>4*1024*1024){setSttError(locale==="ru"?"Нужен файл до 4 МБ.":locale==="es"?"Archivo máximo 4 MB.":"Maximum 4 MB audio.");return;}
+            chooseAudioFile(file);}}/>
+        <button type="button" data-video-recipient-audio-record disabled={sttBusy||recording||preparing}
+          aria-pressed={micRecording} onClick={()=>{if(micRecording)stopMicRecording();else void startMicRecording();}}>
+          <Mic size={17}/>{micRecording?(locale==="ru"?"Стоп":locale==="es"?"Parar":"Stop"):
+            locale==="ru"?"Записать":locale==="es"?"Grabar":"Record"}</button>
+      </div>
+      {uploadedAudio?<div className={videoStyles.recipientAudioSelected}>
+        <strong>{uploadedAudio.file.name}</strong><button type="button" disabled={sttBusy} onClick={clearUploadedAudio}>×</button>
+        <audio controls preload="metadata" src={uploadedAudio.url}/></div>:null}
+      <label className={videoStyles.recipientAudioConsent}><input type="checkbox" checked={audioRights}
+        data-video-recipient-audio-rights disabled={!uploadedAudio}
+        onChange={e=>setAudioRights(e.currentTarget.checked)}/>
+        {locale==="ru"?"Я имею право использовать запись.":locale==="es"?"Tengo permiso de uso.":"I have permission to use this audio."}</label>
+      </div>
+    </div>
+    <div className={videoStyles.recipientAudioStep}>
+      <b>2</b><div><strong>{locale==="ru"?"Расшифровка и анализ":locale==="es"?"Transcripción":"Transcribe and analyze"}</strong>
+      <small>{locale==="ru"?"Только с вашего согласия передадим запись внешнему сервису один раз, без хранения.":
+        locale==="es"?"Solo con tu permiso enviamos una vez el audio para transcribirlo.":
+        "Explicit consent required for one external transcription request. No storage."}</small>
+      <label className={videoStyles.recipientAudioConsent}><input type="checkbox"
+        data-video-recipient-audio-stt-consent checked={sttConsent} disabled={!uploadedAudio||sttBusy}
+        onChange={e=>setSttConsent(e.currentTarget.checked)}/>
+        {locale==="ru"?"Согласен(на) на разовую передачу аудио.":locale==="es"?"Autorizo enviar este audio una vez.":"I consent to send the audio once."}</label>
+      <button type="button" data-video-recipient-audio-transcribe
+        disabled={!uploadedAudio||!studioHydrated||!sttConsent||!audioRights||sttBusy||recording||preparing||micRecording}
+        onClick={()=>void transcribeVideoVoice()}><AudioLines size={17}/>
+        {sttBusy?(locale==="ru"?"Расшифровываем…":locale==="es"?"Transcribiendo…":"Transcribing…"):
+          locale==="ru"?"Расшифровать":locale==="es"?"Transcribir":"Transcribe"}</button>
+      {voiceTranscript?<details><summary>{locale==="ru"?"Просмотреть текст":locale==="es"?"Ver texto":"Review transcript"}
+        · {voiceTranscript.durationSeconds.toFixed(1)} s</summary><p>{voiceTranscript.text}</p></details>:null}
+      </div>
+    </div>
+    <div className={videoStyles.recipientAudioStep}>
+      <b>3</b><div><strong>{locale==="ru"?"Ключевые слова и концепт":locale==="es"?"Temas y concepto":"Keywords and concept"}</strong>
+      <small>{locale==="ru"?"Подберём видеоряд по смысловым фрагментам речи и времени.":
+        locale==="es"?"Escenas verificadas según los momentos de voz.":"Approved footage matched to speech moments."}</small>
+      <button type="button" data-video-recipient-audio-plan
+        disabled={!voiceTranscript||!audioRights||sttBusy||recording||preparing} onClick={()=>applyTranscriptVideo()}>
+        <Film size={17}/>{locale==="ru"?"Подобрать видеоряд":locale==="es"?"Elegir escenas":"Match footage"}</button>
+      {voiceVisualPlan?.canExport&&audioPlanApplied?<div className={videoStyles.recipientAudioConcept}
+        data-video-recipient-audio-concept><strong>{locale==="ru"?"Ваш концепт":locale==="es"?"Tu concepto":"Your concept"}</strong>
+        <div className={videoStyles.recipientAudioKeywords}>
+          {[...new Set(voiceVisualPlan.shots.flatMap(shot=>shot.concepts))].slice(0,8).map(word=><span key={word}>{word}</span>)}
+        </div><ol>{voiceVisualPlan.shots.map((shot,i)=><li key={i}>
+          {shot.startSeconds}–{shot.endSeconds} s · {shot.visualLabel}{shot.needsReview?" ⚠":""}</li>)}</ol>
+        </div>:null}
+      </div>
+    </div>
+    {sttError?<p role="alert" data-video-recipient-audio-error>{sttError}</p>:null}
+    {musicWarning?<p role="status">{musicWarning}</p>:null}
+    <button type="button" className={videoStyles.recipientAudioNext} data-video-recipient-audio-next
+      disabled={!audioPlanApplied||!voiceVisualPlan?.canExport} onClick={goRecipientAudioToMontage}>
+      <Film size={20}/>{locale==="ru"?"Перейти к монтажу":locale==="es"?"Ir al montaje":"Continue to montage"}<ArrowRight size={20}/>
+    </button>
+    <small>{locale==="ru"?"Это подготовка концепта, а не автоматический рендер или оплата.":
+      locale==="es"?"No se genera ni se cobra automáticamente.":"No automatic rendering or payment."}</small>
+  </section>;
+
   // One idempotent action for mouse, touch/pen and keyboard navigation.
   const activateQuickWorkspace=(id:(typeof workspaceTabs)[number]["id"])=>{
     quickNavTokenRef.current++;
@@ -5800,8 +5883,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={!studioHydrated||recording||preparing}
               onClick={continueToIdeas}>
               <Film size={18} aria-hidden="true"/>
-              <span>{locale==="ru"?"Далее к идеям":
-                locale==="es"?"Continuar a ideas":"Continue to ideas"}</span>
+              <span>{recipientAudioSelected
+                ?locale==="ru"?"Далее к монтажу":locale==="es"?"Continuar al montaje":"Continue to montage"
+                :locale==="ru"?"Далее к идеям":locale==="es"?"Continuar a ideas":"Continue to ideas"}</span>
               <ArrowRight size={19} aria-hidden="true"/>
             </button>
           </div>
@@ -6530,6 +6614,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section> : null}
         <MandalaAutoVideoDirector
           goalContinueRef={goalContinueRef}
+          recipientAudioPanel={recipientAudioPanel}
+          audioStoryboardReady={audioPlanApplied&&Boolean(voiceVisualPlan?.canExport)}
+          onAudioSelectionChange={setRecipientAudioSelected}
+          onAudioToMontage={goRecipientAudioToMontage}
           locale={locale} goal={wish} theme={theme} aspect={aspect} presets={aspectFilmPresets}
           scenes={FREE_FILM_CATALOG}
           disabled={!studioHydrated||recording||preparing}

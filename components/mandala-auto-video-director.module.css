@@ -871,3 +871,25 @@
  .recipientKinds button{min-height:86px;padding:8px 3px}
  .recipientKinds button strong{font-size:11px}
 }
+
+/* Approved warm, photo-led “For others” Goal formats. */
+.recipientFormatTitle{font:850 clamp(17px,4.5vw,22px)/1.2 system-ui,sans-serif;margin:0;color:#143d3a}
+.recipientKinds button{position:relative;justify-content:flex-start;align-items:stretch;gap:0;
+  min-height:0;padding:5px;overflow:hidden;background:#fffcf7!important;border-radius:18px}
+.recipientKinds button[aria-pressed=true]{background:#e6f6f1!important;border:2px solid #07885f}
+.recipientKinds button .recipientFormatArt{display:block;width:100%;aspect-ratio:1.25;object-fit:cover;border-radius:13px}
+.recipientFormatBody{display:grid;grid-template-columns:19px 1fr;gap:4px;padding:9px 5px;align-content:start}
+.recipientFormatBody svg{height:18px!important;width:18px!important;color:#087a62}
+.recipientKinds button .recipientFormatBody strong{color:#143d3a;font:850 clamp(12px,3.3vw,15px)/1.18 system-ui,sans-serif}
+.recipientFormatBody small{grid-column:1/-1;font:500 clamp(11px,2.9vw,13px)/1.26 system-ui,sans-serif;color:#5d6a71}
+.recipientFormatSelected{position:absolute;top:8px;right:8px;display:grid;place-items:center;
+  width:26px;height:26px;border-radius:50%;background:#07885f;color:#fff}
+.recipientKinds button .recipientFormatSelected svg{color:#fff;width:16px!important;height:16px!important}
+.recipientPurposeSwitch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.recipientPurposeSwitch button{min-height:44px;border:1px solid #c0d8cc;border-radius:12px;
+  padding:9px;background:#fffcf7;color:#14523f;font:750 13px/1.2 system-ui,sans-serif}
+.recipientPurposeSwitch button[aria-pressed=true]{background:#e6f6f1;border:2px solid #07885f}
+.recipientPurposeSwitch button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:370px){.recipientKinds{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .recipientKinds button:last-child{grid-column:1/-1;display:grid;grid-template-columns:35% minmax(0,1fr)}
+  .recipientKinds button:last-child .recipientFormatArt{height:100%;min-height:95px;aspect-ratio:auto}}
