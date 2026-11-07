@@ -56,3 +56,23 @@ test('Cyrillic piar from speech is routed to PR Monitor business context',()=>{
  assert.match(prompt,/Категория → Задача → PR/);
  assert.doesNotMatch(prompt,/Преобразовать свободное описание/);
 });
+
+test('new PR categorization must not invent an old unfinished implementation',()=>{
+ const text=buildTaskBrief('Классифицировать новые PR по категориям');
+ assert.match(text,/Основное поручение: Классифицировать PR/);
+ assert.doesNotMatch(text,/закончить существующую реализацию|завершить ранее начатую реализацию/);
+ assert.match(text,/заявленной области задачи/);
+});
+test('GitHub Issues categorization is not falsely interpreted as PR classification',()=>{
+ const raw='Сгруппировать GitHub Issues по категориям';
+ const text=buildTaskBrief(raw);
+ assert.ok(text.includes(raw));
+ assert.doesNotMatch(text,/Категория → Задача → PR/);
+ assert.match(text,/Выполнить главное поручение владельца/);
+});
+test('handoff of an existing prompt must not request a fresh prompt or imaginary source repair',()=>{
+ const text=buildTaskBrief('Передай промпт уже назначенному агенту без изменения задания');
+ assert.match(text,/Передать существующий текст задачи или промпт/);
+ assert.doesNotMatch(text,/Преобразовать свободное описание в проверяемые подзадачи/);
+ assert.doesNotMatch(text,/Доделать обнаруженную реализацию/);
+});
