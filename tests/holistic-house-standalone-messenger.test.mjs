@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs'
 
 const read=path=>readFileSync(path,'utf8')
 
-test('one existing Holistic House app opens Messages on iOS PWA, Android PWA, and Capacitor',()=>{
+test('one existing Holistic House PWA opens Home, while Capacitor keeps private Messages',()=>{
   const en=JSON.parse(read('public/holistic-house-app.webmanifest'))
   const ru=JSON.parse(read('public/holistic-house-app-ru.webmanifest'))
   const es=JSON.parse(read('public/holistic-house-app-es.webmanifest'))
@@ -12,7 +12,7 @@ test('one existing Holistic House app opens Messages on iOS PWA, Android PWA, an
   for(const [manifest,locale] of [[en,'en'],[ru,'ru'],[es,'es'],[legacy,'en']]){
     assert.equal(manifest.id,'/en/app','do not create a second installed icon')
     assert.equal(manifest.display,'standalone')
-    assert.equal(manifest.start_url,`/${locale}/app/messages`)
+    assert.equal(manifest.start_url,`/${locale}`)
     assert.ok(manifest.shortcuts.some(link=>link.url===`/${locale}/app/messages`))
   }
   const native=JSON.parse(read('capacitor.holistic-house.config.json'))
