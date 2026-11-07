@@ -1,0 +1,302 @@
+'use client';
+import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useRouter} from 'next/navigation';
+import styles from './command-center-mobile.module.css';
+
+const labels={
+ ru:{home:'Главная',tasks:'Задачи',agents:'Агенты',projects:'Проекты',hello:'Мой брифинг',subtitle:'Проекты и агенты · фактический статус',
+   newTask:'Новая задача',today:'Главные приоритеты',allTasks:'Все задачи',working:'В работе',blocked:'Блокеры',
+   verified:'Проверено',topProjects:'Состояние проектов',noProjects:'Создайте проект, чтобы группировать задачи',
+   noTasks:'Задач пока нет. Добавьте первую — она сохранится в вашем списке.',
+   plus:'Новая задача',add:'Добавить задачу',taskText:'Что нужно сделать?',taskPlaceholder:'Например: исправить проигрывание готового видео в Video Studio',
+   description:'Критерий готовности или детали (необязательно)',project:'Проект',priority:'Приоритет',type:'Тип задачи',
+   high:'Высокий',normal:'Обычный',source:'Ссылка на GitHub (при наличии)',save:'Сохранить задачу',saving:'Сохраняю…',
+   close:'Закрыть',cancel:'Отмена',saved:'Задача сохранена',couldNotSave:'Не удалось сохранить задачу',
+   needsSetup:'Ожидает настройки',view:'Подробнее',accepted:'Принята',executor:'Агент',pr:'PR',tests:'Тесты',live:'LIVE',
+   current:'Текущий этап',iterations:'Итераций',history:'История выполнений',noRuns:'Пока нет запусков',notKnown:'Нет подтверждения',
+   ready:'Готова к запуску',running:'Выполняется',needsSpec:'Нужен исполнитель',stopped:'Остановлена',
+   verifiedMetadata:'Данные GitHub проверены',noRuntime:'Исполнитель для кода пока не подключён',
+   noLive:'LIVE ещё не подтверждён',prOpened:'PR открыт',prMerged:'PR смержен',prWaiting:'PR ещё не найден',
+   status:'Статус',start:'Запустить безопасную проверку',pause:'Приостановить проверки',
+   resume:'Включить проверки',disabled:'Запуск пока недоступен',readOnly:'Только проверка GitHub',
+   unavailable:'Хранилище задач недоступно. Не удалось подтвердить изменения.',
+   retry:'Повторить разрешённую задачу',tasksFilter:'Фильтр задач',all:'Все',active:'Активные',
+   kindCode:'Разработка',kindSpec:'План / ТЗ',kindPr:'Проверка PR',kindIssue:'Проверка Issue',
+   reset:'Обновить',lastSync:'Последнее обновление',noAgents:'Не подключён',manual:'Ручной запуск',
+   activeAgent:'Доступен для чтения',pausedAgent:'Выключен',chooseProject:'Без проекта',
+   evidence:'Доказательства',noProof:'Нет доказательств выпуска',continue:'Следующий шаг',update:'Проверить статус',
+   created:'Создана',taskCanceled:'Задача отменена',actionFailed:'Изменение не подтверждено',
+   noMetrics:'Метрик пока нет',locked:'Войдите в админ-кабинет',admin:'Админка',
+   healthy:'Доступны данные',unknown:'Статус неизвестен',newProject:'Новый проект',projectName:'Название проекта',
+   projectSummary:'Для чего нужен проект?',createProject:'Создать проект',settings:'Управление автоматизацией',
+   viewAutomations:'Все автоматизации',details:'Подробности',activity:'Журнал агентов',runSafe:'Проверить очередь сейчас',scheduler:'Циклы проверок',nothingVerified:'Нет подтверждённых результатов',partial:'Показаны только последние задачи'},
+ en:{home:'Home',tasks:'Tasks',agents:'Agents',projects:'Projects',hello:'My briefing',subtitle:'Projects and agents · verified status',
+   newTask:'New task',today:'Top priorities',allTasks:'All tasks',working:'Working',blocked:'Blocked',
+   verified:'Verified',topProjects:'Projects',noProjects:'Create a project to group tasks',
+   noTasks:'No tasks yet. Add one to your list.',plus:'New task',add:'Add task',taskText:'What needs to be done?',
+   taskPlaceholder:'For example: fix video playback in Video Studio',description:'Acceptance criteria or details (optional)',
+   project:'Project',priority:'Priority',type:'Task type',high:'High',normal:'Normal',source:'GitHub URL (optional)',
+   save:'Save task',saving:'Saving…',close:'Close',cancel:'Cancel',saved:'Task saved',couldNotSave:'Task was not saved',
+   needsSetup:'Needs setup',view:'Details',accepted:'Accepted',executor:'Agent',pr:'PR',tests:'Tests',live:'LIVE',
+   current:'Current stage',iterations:'Iterations',history:'Execution history',noRuns:'No runs yet',notKnown:'Not verified',
+   ready:'Ready',running:'In progress',needsSpec:'No executor',stopped:'Stopped',verifiedMetadata:'GitHub data verified',
+   noRuntime:'Coding runtime is not connected',noLive:'LIVE has not been verified',prOpened:'PR opened',
+   prMerged:'PR merged',prWaiting:'PR not linked',status:'Status',start:'Run safe check',pause:'Pause checks',
+   resume:'Enable checks',disabled:'Execution unavailable',readOnly:'GitHub read-only',
+   unavailable:'Task storage unavailable; changes could not be confirmed.',retry:'Retry permitted task',
+   tasksFilter:'Task filter',all:'All',active:'Active',kindCode:'Development',kindSpec:'Plan / Spec',
+   kindPr:'PR audit',kindIssue:'Issue audit',reset:'Refresh',lastSync:'Last updated',noAgents:'Not connected',
+   manual:'Manual',activeAgent:'Read-only available',pausedAgent:'Disabled',chooseProject:'No project',
+   evidence:'Evidence',noProof:'No release evidence',continue:'Next step',update:'Refresh status',
+   created:'Created',taskCanceled:'Task cancelled',actionFailed:'Change not confirmed',
+   noMetrics:'No metrics yet',locked:'Admin login required',admin:'Admin',
+   healthy:'Data available',unknown:'Unknown',newProject:'New project',projectName:'Project name',
+   projectSummary:'What is the project for?',createProject:'Create project',settings:'Automation controls',
+   viewAutomations:'All automations',details:'Details',activity:'Agent activity',runSafe:'Check safe queue now',scheduler:'Scheduler cycles',nothingVerified:'No verified results yet',partial:'Showing only the latest tasks'},
+ es:{home:'Inicio',tasks:'Tareas',agents:'Agentes',projects:'Proyectos',hello:'Mi informe',subtitle:'Proyectos y agentes · estado verificado',
+   newTask:'Nueva tarea',today:'Prioridades',allTasks:'Todas las tareas',working:'En curso',blocked:'Bloqueadas',
+   verified:'Verificadas',topProjects:'Proyectos',noProjects:'Crea un proyecto para organizar tareas',
+   noTasks:'No hay tareas. Añade la primera.',plus:'Nueva tarea',add:'Añadir tarea',
+   taskText:'¿Qué hay que hacer?',taskPlaceholder:'Ejemplo: arreglar la reproducción de vídeos',
+   description:'Criterios de aceptación o detalles (opcional)',project:'Proyecto',priority:'Prioridad',type:'Tipo',
+   high:'Alta',normal:'Normal',source:'Enlace GitHub (opcional)',save:'Guardar',saving:'Guardando…',
+   close:'Cerrar',cancel:'Cancelar',saved:'Tarea guardada',couldNotSave:'No se guardó la tarea',
+   needsSetup:'Necesita configuración',view:'Detalles',accepted:'Recibida',executor:'Agente',pr:'PR',tests:'Pruebas',live:'LIVE',
+   current:'Estado',iterations:'Intentos',history:'Historial',noRuns:'Sin ejecuciones',
+   notKnown:'Sin verificar',ready:'Lista',running:'En curso',needsSpec:'Sin ejecutor',
+   stopped:'Detenida',verifiedMetadata:'Datos de GitHub verificados',
+   noRuntime:'No hay ejecutor de código',noLive:'LIVE sin verificar',
+   prOpened:'PR abierto',prMerged:'PR integrado',prWaiting:'PR sin vincular',status:'Estado',
+   start:'Ejecutar revisión segura',pause:'Pausar',resume:'Activar revisiones',disabled:'No disponible',
+   readOnly:'GitHub de solo lectura',unavailable:'Almacenamiento no disponible.',
+   retry:'Reintentar tarea permitida',tasksFilter:'Filtrar tareas',all:'Todas',active:'Activas',
+   kindCode:'Desarrollo',kindSpec:'Plan',kindPr:'Auditar PR',kindIssue:'Auditar Issue',reset:'Actualizar',
+   lastSync:'Actualizado',noAgents:'No conectado',manual:'Manual',activeAgent:'Solo lectura',
+   pausedAgent:'Desactivado',chooseProject:'Sin proyecto',evidence:'Evidencias',noProof:'Sin evidencia de LIVE',
+   continue:'Siguiente paso',update:'Ver estado',created:'Creada',taskCanceled:'Cancelada',
+   actionFailed:'Cambio sin confirmar',noMetrics:'Sin métricas',locked:'Requiere login',
+   admin:'Admin',healthy:'Datos disponibles',unknown:'Desconocido',newProject:'Nuevo proyecto',
+   projectName:'Nombre',projectSummary:'Objetivo',createProject:'Crear proyecto',
+   settings:'Automatizaciones',viewAutomations:'Todas las automatizaciones',details:'Detalles',activity:'Actividad de agentes',runSafe:'Revisar cola segura ahora',scheduler:'Ciclos programados',nothingVerified:'Aún no hay resultados verificados',partial:'Solo se muestran las tareas recientes'}
+};
+const blockedStates=new Set(['needs_spec','blocked_dependency','blocked_no_runner','blocked_external','blocked_approval','blocked_budget','dead_letter']);
+const runningStates=new Set(['running','awaiting_evidence','retry_wait','ready','planned']);
+const verifiedStates=new Set(['completed_verified','completed_live']);
+const safe=(value,max=180)=>typeof value==='string'?value.trim().slice(0,max):'';
+const isTrustedEvidenceUrl=value=>typeof value==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/(pull|issues)\/[1-9]\d{0,7}$/.test(value);
+const date=value=>{if(!value)return '—';try{return new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value));}catch{return '—';}};
+const glyph={home:'⌂',tasks:'☑',agents:'♧',projects:'▦'};
+function stateLabel(state,t){
+ if(state==='completed_live')return 'LIVE ✓';
+ if(verifiedStates.has(state))return t.verifiedMetadata;
+ if(state==='running')return t.running;
+ if(state==='ready'||state==='retry_wait')return t.ready;
+ if(blockedStates.has(state))return t.needsSpec;
+ if(state==='paused'||state==='canceled')return t.stopped;
+ return state||t.notKnown;
+}
+/**
+ * Explicitly type the owner-provided registry: an unannotated [] default
+ * gets inferred as never[] by Next's TypeScript consumer.
+ * @param {{lang?: string, initialSnapshot?: any, registry?: readonly any[], envReady?: boolean}} props
+ */
+export default function CommandCenterMobile({lang='ru',initialSnapshot=null,registry=[],envReady=false}){
+ const t=labels[lang]||labels.ru,router=useRouter();
+ const [snapshot,setSnapshot]=useState(initialSnapshot);
+ const [tab,setTab]=useState('home'),[filter,setFilter]=useState('all');
+ const [selected,setSelected]=useState(null),[composer,setComposer]=useState(false),[projectComposer,setProjectComposer]=useState(false);
+ const [draft,setDraft]=useState(''),[details,setDetails]=useState(''),[source,setSource]=useState(''),[kind,setKind]=useState('code_change'),
+   [project,setProject]=useState(''),[priority,setPriority]=useState('65'),[projectName,setProjectName]=useState(''),[projectSummary,setProjectSummary]=useState('');
+ const [busy,setBusy]=useState(false),[notice,setNotice]=useState('');
+ const enabled=Boolean(snapshot?.settings?.enabled&&envReady),available=Boolean(snapshot);
+ const tasks=snapshot?.tasks||[],projects=snapshot?.projects||[],runs=snapshot?.runs||[],evidences=snapshot?.evidence||[],slots=snapshot?.slots||[];
+ const visibleTasks=useMemo(()=>[...tasks].filter(v=>filter==='all'||(filter==='active'?runningStates.has(v.state):blockedStates.has(v.state)))
+   .sort((a,b)=>(b.priority||0)-(a.priority||0)),[tasks,filter]);
+ const refresh=useCallback(async()=>{
+  try{const res=await fetch('/api/admin/command-center',{method:'GET',credentials:'same-origin',cache:'no-store'});
+   if(!res.ok)return;const data=await res.json();if(data?.status==='database_available')setSnapshot(data);
+  }catch{}
+ },[]);
+ useEffect(()=>{const onFocus=()=>{if(!document.hidden)refresh();};document.addEventListener('visibilitychange',onFocus);
+  const timer=setInterval(()=>{if(!document.hidden)refresh();},45000);
+  return ()=>{document.removeEventListener('visibilitychange',onFocus);clearInterval(timer);};
+ },[refresh]);
+ useEffect(()=>{if(!composer&&!projectComposer)return;
+  const previous=document.body.style.overflow;
+  document.body.style.overflow='hidden';
+  const onKey=(e)=>{if(e.key==='Escape'){setComposer(false);setProjectComposer(false);}};
+  document.addEventListener('keydown',onKey);
+  return ()=>{document.body.style.overflow=previous;document.removeEventListener('keydown',onKey);};
+ },[composer,projectComposer]);
+ const send=async(action,extra={})=>{
+  if(busy||!available)return null;setBusy(true);setNotice('');
+  try{
+   const res=await fetch('/api/admin/command-center',{method:'POST',headers:{'Content-Type':'application/json'},
+    credentials:'same-origin',cache:'no-store',body:JSON.stringify({action,requestId:crypto.randomUUID(),...extra})});
+   const result=await res.json();
+   if(!res.ok||result.error||['unconfirmed','stale_unconfirmed','transition_denied','not_found'].includes(result.status)){
+    setNotice(t.actionFailed+(result?.error?' · '+result.error:''));return null;
+   }
+   await refresh();router.refresh();return result;
+  }catch{setNotice(t.actionFailed);return null;}
+  finally{setBusy(false);}
+ };
+ const saveTask=async e=>{e.preventDefault();const title=safe(draft,140);
+  if(title.length<6){setNotice(t.taskText);return;}
+  const description=safe(details,800)||title+(title.length<10?' — '+t.details:'');
+  const result=await send('create_task',{title,description,kind,projectId:project||null,sourceRef:safe(source)||null,priority:Number(priority)});
+  if(result){setComposer(false);setDraft('');setDetails('');setSource('');setNotice(t.saved);setTab('tasks');setFilter('all');}
+ };
+ const saveProject=async e=>{e.preventDefault();const result=await send('create_project',{title:safe(projectName,120),summary:safe(projectSummary,550)});
+  if(result){setProjectComposer(false);setProjectName('');setProjectSummary('');setTab('projects');}
+ };
+ const selectedTask=tasks.find(v=>v.id===selected);
+ const taskEvidence=evidences.filter(v=>v.task_id===selectedTask?.id);
+ const latestEvidence=taskEvidence[0]||null;
+ const observed=latestEvidence?.observed||null;
+ const prMatched=Boolean(selectedTask?.source_ref?.includes('/pull/'));
+ const merged=Boolean(observed?.merged);
+ const agentActive=Boolean(selectedTask?.state==='running');
+ const phases=[
+  {label:t.accepted,ok:Boolean(selectedTask),current:false},
+  {label:t.executor,ok:agentActive||verifiedStates.has(selectedTask?.state),current:agentActive},
+  {label:t.pr,ok:prMatched&&Boolean(latestEvidence),current:prMatched&&!latestEvidence},
+  {label:t.tests,ok:false,current:false},
+  {label:t.live,ok:selectedTask?.state==='completed_live',current:false}
+ ];
+ const count=(fn)=>tasks.filter(fn).length;
+ const taskCard=(v,i)=> <button key={v.id} type="button" className={styles.taskCard} onClick={()=>setSelected(v.id)}>
+  <span className={styles.rank}>{i+1}</span><span className={styles.taskCopy}><strong>{v.title}</strong>
+  <small>{projects.find(p=>p.id===v.project_id)?.title||t.chooseProject} · {stateLabel(v.state,t)} {v.attempt_count>0?'· '+v.attempt_count+'×':''}</small></span>
+  <span className={blockedStates.has(v.state)?styles.bad:verifiedStates.has(v.state)?styles.good:styles.purple} aria-hidden="true">●</span>
+  </button>;
+ const tabs=[['home',t.home],['tasks',t.tasks],['plus',t.plus],['agents',t.agents],['projects',t.projects]];
+ return <div className={styles.app} lang={lang} data-hh-command-center-mobile>
+  <header className={styles.top}><div className={styles.logo}>✺</div><div className={styles.brand}><strong>Holistic House</strong><small>Command Center</small></div>
+   <button className={styles.refresh} type="button" onClick={refresh} aria-label={t.reset}>↻</button>
+   <a className={styles.admin} href="/admin" aria-label={t.admin}>⋮</a></header>
+  {!available&&<div className={styles.warning} role="status">{t.unavailable}</div>}
+  {notice&&<div className={styles.notice} role="status">{notice}<button type="button" onClick={()=>setNotice('')} aria-label={t.close}>×</button></div>}
+  <main className={styles.main}>
+   {selectedTask? <section className={styles.detail}>
+    <button type="button" className={styles.back} onClick={()=>setSelected(null)}>‹ {t.tasks}</button>
+    <p className={styles.overline}>{t.status} · {stateLabel(selectedTask.state,t)}</p>
+    <h1>{selectedTask.title}</h1><p className={styles.summary}>{selectedTask.description}</p>
+    <div className={styles.chips}><span>{projects.find(p=>p.id===selectedTask.project_id)?.title||t.chooseProject}</span>
+     <span>P{selectedTask.priority}</span><span>{selectedTask.kind}</span></div>
+    <div className={styles.panel}><h2>{t.current}</h2>
+     <div className={styles.pipeline}>{phases.map((p,i)=><div key={p.label} className={styles.phase}>
+       <span className={p.ok?styles.phaseDone:p.current?styles.phaseCurrent:styles.phasePending}>{p.ok?'✓':i+1}</span>
+       <small>{p.label}</small></div>)}</div>
+     <p className={styles.subline}>{merged?t.prMerged:prMatched&&latestEvidence?t.prOpened:t.prWaiting} · {t.noLive}</p>
+    </div>
+    <div className={styles.panel}><h2>{t.executor}</h2><div className={styles.agentLine}>
+       <span className={styles.agentIcon}>⌘</span><div><strong>{selectedTask.kind==='repo_pr_audit'||selectedTask.kind==='repo_issue_audit'?'GitHub Reader':'Codex'}</strong>
+       <small>{selectedTask.auto_allowed?(enabled?t.readOnly:t.pausedAgent):t.noRuntime}</small></div>
+       <span className={selectedTask.auto_allowed&&enabled?styles.greenDot:styles.greyDot}>●</span></div>
+      <p className={styles.subline}>{t.iterations}: {selectedTask.attempt_count||0} · {t.verifiedMetadata}: {latestEvidence?date(latestEvidence.created_at):t.notKnown}</p>
+    </div>
+    <div className={styles.panel}><h2>{t.history}</h2>
+     {runs.filter(r=>r.task_id===selectedTask.id).map(run=><div key={run.id} className={styles.event}>
+       <span>◷</span><div><strong>{run.worker_id} · {run.state}</strong><small>{date(run.started_at)} {run.error_code||''}</small></div></div>)}
+     {!runs.some(r=>r.task_id===selectedTask.id)&&<p className={styles.muted}>{t.noRuns}</p>}
+     {selectedTask.source_ref&&<a className={styles.github} href={selectedTask.source_ref} target="_blank" rel="noopener noreferrer">GitHub ↗</a>}
+     {taskEvidence.map(e=><a key={e.run_id} className={styles.github} target="_blank" rel="noopener noreferrer" href={e.source_url}>{t.evidence} · {date(e.created_at)} ↗</a>)}
+    </div>
+    {selectedTask.auto_allowed&&['paused','retry_wait','dead_letter','blocked_external'].includes(selectedTask.state)&&
+      <button className={styles.primary} disabled={busy} type="button" onClick={async()=>{await send('task_ready',{taskId:selectedTask.id});}}>{t.retry}</button>}
+    <p className={styles.disclaimer}>{t.noLive}</p>
+   </section>:
+   tab==='home'? <section className={styles.home}>
+     <div className={styles.hero}><p>✦ HOLISTIC HOUSE · STRATEGY OS</p><h1>{t.hello}</h1>
+       <span>{t.subtitle}</span></div>
+     <div className={styles.metrics}>
+      {[{n:projects.length,label:t.projects},{n:snapshot?.brief?.total??tasks.length,label:t.tasks},{n:count(v=>v.state==='running'),label:t.working},{n:count(v=>blockedStates.has(v.state)),label:t.blocked}]
+       .map((a,i)=><div key={a.label} className={styles.metric}><b>{available?a.n:'—'}</b><small>{a.label}</small></div>)}
+     </div>
+     <div className={styles.panel}><div className={styles.panelHead}><h2>⭐ {t.today}</h2><button onClick={()=>setTab('tasks')} type="button">›</button></div>
+      {(snapshot?.brief?.focus?.length?snapshot.brief.focus:visibleTasks.slice(0,3)).map((v,i)=>taskCard(v,i))}
+      {!tasks.length&&<p className={styles.muted}>{t.noTasks}</p>}
+     </div>
+     <div className={styles.panel}><div className={styles.panelHead}><h2>▤ {t.topProjects}</h2><button onClick={()=>setTab('projects')} type="button">›</button></div>
+      {projects.slice(0,3).map(p=><div className={styles.projectLine} key={p.id}><span>▰</span><div><strong>{p.title}</strong><small>{p.summary}</small></div><span className={styles.muted}>{p.state}</span></div>)}
+      {!projects.length&&<p className={styles.muted}>{t.noProjects}</p>}
+     </div>
+     <p className={styles.timestamp}>{t.lastSync}: {date(snapshot?.observedAt)}</p>
+    </section>:
+   tab==='tasks'?<section className={styles.section}><div className={styles.heading}><h1>{t.tasks}</h1><span>{snapshot?.partial?tasks.length+'+':snapshot?.brief?.total??tasks.length}</span></div>
+     <div className={styles.filters}>{[['all',t.all],['active',t.active],['blocked',t.blocked]].map(([value,label])=>
+       <button type="button" key={value} onClick={()=>setFilter(value)} className={filter===value?styles.selectedFilter:''}>{label}</button>)}</div>
+     {visibleTasks.map(taskCard)}{!visibleTasks.length&&<div className={styles.empty}>{t.noTasks}</div>}
+    </section>:
+   tab==='agents'?<section className={styles.section}><div className={styles.heading}><h1>{t.agents}</h1><span>{registry.length}</span></div>
+    {registry.map(a=><div key={a.id} className={styles.agentCard}><span className={styles.agentIcon}>{a.id.includes('github')?'⌘':a.id.includes('codex')?'◇':'✧'}</span>
+      <div><strong>{a.id}</strong><small>{a.role}</small><small>{a.status==='not_connected'?t.noAgents:a.status==='manual_only'?t.manual:enabled?t.activeAgent:t.pausedAgent}</small></div>
+      <span className={a.status==='available_when_enabled'&&enabled?styles.greenDot:styles.greyDot}>●</span></div>)}
+    <div className={styles.panel}><h2>{t.settings}</h2><p className={styles.muted}>{t.readOnly}</p>
+     <div className={styles.commandStack}>
+      <button type="button" className={styles.secondary} disabled={!available||busy||!envReady} onClick={()=>send(enabled?'pause_all':'resume_safe')}>
+       {enabled?t.pause:t.resume}</button>
+      <button type="button" className={styles.primary} disabled={!enabled||busy} onClick={()=>send('run_now')}>{t.runSafe}</button>
+     </div>
+     <a className={styles.github} href="/admin/automations">{t.viewAutomations} ↗</a></div>
+    <div className={styles.panel} aria-label={t.activity}>
+     <h2>{t.activity}</h2>
+     {runs.slice(0,5).map(run=><div key={run.id} className={styles.event}>
+      <span aria-hidden="true">◷</span><div><strong>{run.worker_id} · {run.state}</strong><small>{date(run.started_at)} {run.error_code||''}</small></div>
+     </div>)}
+     {!runs.length&&<p className={styles.muted}>{t.noRuns}</p>}
+     <h2>{t.evidence}</h2>
+     {evidences.slice(0,5).map(e=>isTrustedEvidenceUrl(e.source_url)?
+      <a className={styles.github} key={e.run_id} href={e.source_url} target="_blank" rel="noopener noreferrer">{e.evidence_kind} · {date(e.created_at)} ↗</a>:null)}
+     {!evidences.length&&<p className={styles.muted}>{t.nothingVerified}</p>}
+     <h2>{t.scheduler}</h2>
+     {slots.slice(0,4).map(slot=><div className={styles.event} key={slot.slot_utc}>
+      <span aria-hidden="true">↻</span><div><strong>{slot.state}</strong><small>{date(slot.slot_utc)} {slot.last_error||''}</small></div>
+     </div>)}
+     {!slots.length&&<p className={styles.muted}>{t.notKnown}</p>}
+     <p className={styles.disclaimer}>{t.noLive}</p>
+    </div>
+   </section>:
+   <section className={styles.section}><div className={styles.heading}><h1>{t.projects}</h1><button type="button" className={styles.smallAdd} onClick={()=>setProjectComposer(true)}>＋</button></div>
+     {projects.map(p=><div key={p.id} className={styles.projectCard}><div className={styles.projectSymbol}>▰</div>
+       <div><strong>{p.title}</strong><small>{p.summary}</small>
+       <span className={styles.projectMeta}>{count(v=>v.project_id===p.id)} {t.tasks} · {p.state}</span></div></div>)}
+     {!projects.length&&<div className={styles.empty}>{t.noProjects}<button type="button" onClick={()=>setProjectComposer(true)}>{t.newProject}</button></div>}
+   </section>}
+  </main>
+  <nav className={styles.dock} aria-label="Command Center">
+   {tabs.map(([id,label])=><button key={id} type="button" aria-label={label} aria-current={tab===id&&!selectedTask?'page':undefined}
+    className={id==='plus'?styles.plus:!selectedTask&&tab===id?styles.activeTab:styles.tab}
+    onClick={()=>{if(id==='plus'){setComposer(true);setSelected(null);}else{setTab(id);setSelected(null);}}}>
+      <span aria-hidden="true">{id==='plus'?'+':glyph[id]}</span>{id==='plus'?null:<small>{label}</small>}</button>)}
+  </nav>
+  {(composer||projectComposer)&&<div className={styles.sheetBackdrop} role="presentation">
+   <section className={styles.sheet} role="dialog" aria-modal="true" aria-label={composer?t.newTask:t.newProject}>
+    <div className={styles.sheetHeader}><h2>{composer?t.newTask:t.newProject}</h2><button type="button" aria-label={t.close} onClick={()=>{setComposer(false);setProjectComposer(false);}}>×</button></div>
+    {composer?<form onSubmit={saveTask} className={styles.composer}>
+      <label htmlFor="cc-idea">{t.taskText}</label><textarea id="cc-idea" autoFocus minLength={6} maxLength={140} required
+       placeholder={t.taskPlaceholder} value={draft} onChange={e=>setDraft(e.target.value)} rows={3}/>
+      <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={800} value={details}
+        onChange={e=>setDetails(e.target.value)} rows={2}/>
+      <div className={styles.formSplit}><div><label htmlFor="cc-project">{t.project}</label><select id="cc-project" value={project} onChange={e=>setProject(e.target.value)}>
+       <option value="">{t.chooseProject}</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></div>
+       <div><label htmlFor="cc-priority">{t.priority}</label><select id="cc-priority" value={priority} onChange={e=>setPriority(e.target.value)}>
+        <option value="80">{t.high}</option><option value="65">{t.normal}</option><option value="40">P40</option></select></div></div>
+      <label htmlFor="cc-kind">{t.type}</label><select id="cc-kind" value={kind} onChange={e=>setKind(e.target.value)}>
+       <option value="code_change">{t.kindCode}</option><option value="product_spec">{t.kindSpec}</option>
+       <option value="repo_pr_audit">{t.kindPr}</option><option value="repo_issue_audit">{t.kindIssue}</option></select>
+      <label htmlFor="cc-source">{t.source}</label><input id="cc-source" type="url" value={source} onChange={e=>setSource(e.target.value)}
+        placeholder="https://github.com/andylitvinov-design/books/pull/123" maxLength={180} required={kind==='repo_pr_audit'||kind==='repo_issue_audit'}/>
+      <p className={styles.muted}>{kind==='code_change'?t.noRuntime:kind.startsWith('repo_')?t.readOnly:t.needsSetup}</p>
+      <button className={styles.primary} type="submit" disabled={busy||!available||draft.trim().length<6}>{busy?t.saving:t.save}</button>
+     </form>:
+     <form className={styles.composer} onSubmit={saveProject}>
+      <label htmlFor="cc-project-name">{t.projectName}</label><input id="cc-project-name" value={projectName} onChange={e=>setProjectName(e.target.value)} minLength={4} maxLength={120} required/>
+      <label htmlFor="cc-project-summary">{t.projectSummary}</label><textarea id="cc-project-summary" minLength={8} maxLength={550} required
+       value={projectSummary} onChange={e=>setProjectSummary(e.target.value)} rows={3}/>
+      <button type="submit" className={styles.primary} disabled={busy||!available}>{busy?t.saving:t.createProject}</button>
+     </form>}
+   </section></div>}
+ </div>;
+}

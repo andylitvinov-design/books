@@ -216,7 +216,7 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
  assert.match(section,/<MandalaVideoIdeas/);
- assert.match(section,/data-video-legacy-phrase-editor\s+hidden=\{activeWorkspace!=="phrases"\} aria-hidden=\{activeWorkspace!=="phrases"\}/);
+ assert.match(section,/data-video-legacy-phrase-editor data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}\s+hidden=\{activeWorkspace!=="phrases"\} aria-hidden=\{activeWorkspace!=="phrases"\}/);
  assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
