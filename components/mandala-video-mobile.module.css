@@ -4618,3 +4618,37 @@
    display:grid!important;
  }
 }
+
+/* Approved Goal 2/2: one page with three beautiful cards and the sole onward CTA.
+   Existing Goal 1/2, six top tabs, one renderer and all other workspaces remain intact. */
+.goalRefinement{display:grid;gap:12px;min-width:0;width:100%;max-width:900px;margin:0 auto;
+  padding:10px 0 20px;scroll-margin-top:12px}
+.goalRefinement[hidden]{display:none!important}
+.goalRefinementBack{justify-self:start;display:inline-flex;align-items:center;gap:6px;
+  min-height:44px;padding:7px 12px;border:1px solid #dce6d9;border-radius:14px;
+  background:#fffcf7;color:#1b624a;font:750 14px/1.2 Arial,Helvetica,sans-serif}
+.goalRefinementContinue{display:flex;align-items:center;justify-content:center;gap:11px;
+  min-height:56px;width:100%;padding:10px 16px;border:0;border-radius:99px;
+  background:linear-gradient(110deg,#078763,#006c53);color:#fff;
+  font:800 clamp(15px,4.2vw,19px)/1.2 Arial,Helvetica,sans-serif;
+  box-shadow:0 7px 19px #047d5c2c;cursor:pointer}
+.goalRefinementContinue span{flex:0 1 auto;text-align:center}
+.goalRefinementContinue:disabled{opacity:.5;cursor:not-allowed}
+.goalRefinementContinue:focus-visible,.goalRefinementBack:focus-visible{
+  outline:3px solid #176e6e;outline-offset:3px}
+.studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>
+  :not(.quickBrandBar):not(.quickVideoNav):not(.goalRefinement):not([data-video-director-chat-details][open]){
+  display:none!important
+}
+.studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>.goalRefinement{
+  display:grid!important;order:5!important
+}
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder{
+  gap:9px!important;padding-bottom:max(15px,env(safe-area-inset-bottom))}
+ .studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>.goalRefinement{
+  padding:5px 0 18px!important
+ }
+ .goalRefinementContinue{min-height:54px}
+}
+@media(prefers-reduced-motion:reduce){.goalRefinementContinue{transition:none}}

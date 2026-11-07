@@ -256,6 +256,41 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await initialStories.count(),4,"the four licensed choices stay mounted for step 2");
         await expect(initialStories.first()).toBeHidden();
         await continueButton.click();
+        await expect(quick.locator("[data-video-goal-journey]")).toBeVisible({timeout:20000});
+        await expect(quick.locator("[data-video-live-stage]")).toBeHidden();
+        const goalMetrics=await page.evaluate(()=>{
+          const section=document.querySelector('[data-video-goal-journey]');
+          const now=document.querySelector('[data-video-goal-current-options]');
+          const later=document.querySelector('[data-video-goal-desired-options]');
+          const card=document.querySelector('[data-video-ideas-state]');
+          return {pageWidth:document.documentElement.scrollWidth,viewport:innerWidth,
+            currentCount:now?.querySelectorAll('[data-video-goal-current-choice]').length??0,
+            desiredCount:later?.querySelectorAll('[data-video-goal-desired-choice]').length??0,
+            currentScrollable:Boolean(now&&now.scrollHeight>now.clientHeight+4),
+            desiredScrollable:Boolean(later&&later.scrollHeight>later.clientHeight+4),
+            currentImage:card?getComputedStyle(card,'::before').backgroundImage:''};
+        });
+        assert.equal(goalMetrics.currentCount,8,"all eight current-state options remain available");
+        assert.equal(goalMetrics.desiredCount,8,"all eight desired-state options remain available");
+        assert.ok(goalMetrics.currentScrollable&&goalMetrics.desiredScrollable,
+          "both emotion lists must visibly show six and scroll to two additional choices");
+        assert.match(goalMetrics.currentImage,/morning-dew\.jpg/,
+          "approved natural photography must remain attached to Goal 2");
+        assert.ok(goalMetrics.pageWidth<=goalMetrics.viewport+2,
+          "Goal 2 cannot overflow the phone viewport: "+JSON.stringify(goalMetrics));
+
+        // Goal's second page is genuinely interactive and retains its inputs
+        // when the visitor continues to Ideas and then opens Montage's stories.
+        await quick.locator('[data-video-goal-mood="current-happy"]').click();
+        await quick.locator('[data-video-goal-current-choice="positive-2"]').click();
+        await expect(quick.locator('[data-video-goal-current-choice="positive-2"]'))
+          .toHaveAttribute("aria-pressed","true");
+        await quick.locator('[data-video-goal-clarify-continue]').click();
+        await expect(quick.locator('[data-video-quick-control="phrases"]'))
+          .toHaveAttribute("aria-pressed","true");
+        await quick.locator('[data-video-quick-control="editor"]').click();
+        await quick.locator('[data-video-montage-tab="text"]').click();
+        await quick.locator('[data-video-timeline-add-video]').click();
         await expect(initialStories.first()).toBeVisible({timeout:20000});
         await expect(quick.locator("[data-auto-video-confirm]")).toBeVisible();
         await expect(quick.locator("[data-video-practice-shortcuts]")).toBeVisible();

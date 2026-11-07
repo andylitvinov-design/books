@@ -22,12 +22,18 @@ test("eight exact canonical axes, all three languages, five safe unique phrases"
     assert.notDeepEqual(ref,suggestMeaningPhrases(lang,...args));
  }
 });
-test("compact Ideas screen uses actual selectors, sliders and one working Montage action",()=>{
- for(const marker of ["data-video-ideas-current","data-video-ideas-desired","data-video-ideas-state-score",
-   "data-video-ideas-energy-score","data-video-meaning-axis","data-video-idea-phrase","data-video-ideas-create"])
+test("Goal 2 owns meaningful emoji filters and scales; Ideas keeps one phrase editor and real Montage action",()=>{
+ for(const marker of ["data-video-goal-current-options","data-video-goal-desired-options",
+   "data-video-goal-mood","data-video-ideas-state-score","data-video-ideas-energy-score",
+   "data-video-meaning-axis","data-video-idea-phrase","data-video-ideas-create"])
   assert.ok(cmp.includes(marker),marker);
+ assert.match(cmp,/createPortal\(goalCards,clarifyHost\)/);
  assert.match(cmp,/listMeaningAxes\(locale\)/);
+ assert.match(cmp,/moodCurrentOrder\[currentMood\]/);
+ assert.match(cmp,/moodDesiredOrder\[desiredMood\]/);
  assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
+ assert.match(studio,/data-video-goal-page=\{goalPage\}/);
+ assert.match(studio,/data-video-goal-clarify-continue/);
  assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
 });

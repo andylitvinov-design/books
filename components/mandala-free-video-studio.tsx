@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { flushSync } from "react-dom";
-import { ArrowRight, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X, Save, FolderOpen, Type, MessageCircleQuestion } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X, Save, FolderOpen, Type, MessageCircleQuestion } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
 import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v1.json";
@@ -1855,6 +1855,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
+  const [goalPage,setGoalPage] = useState<"intro"|"clarify">("intro");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
@@ -4713,6 +4714,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // The user then moves to Ideas; the actual scene catalogue is an optional
   // visible action from Montage, never a hidden first-screen dialog.
   const continueToIdeas = () => {
+    if(goalPage==="intro"){
+      // First Goal CTA advances to Goal 2/2; only its next CTA opens Ideas.
+      setGoalPage("clarify");
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.querySelector("[data-video-goal-clarification]")?.scrollIntoView({
+          behavior:"smooth",block:"start",
+        })));
+      return;
+    }
     setVideoScenarioOpen(false);
     setActiveWorkspace("phrases");
     setStudioMode("pump");
@@ -4722,6 +4732,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       })));
   };
   const openVideoScenarioStep = () => {
+    setGoalPage("intro");
     setVideoScenarioOpen(true);
     setShowAdvancedVideo(true);
     setFirstVideoAdvancedActivated(true);
@@ -5277,6 +5288,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       data-mandala-free-video data-video-studio-mode={studioMode}
       data-video-advanced-open={showAdvancedVideo?"true":"false"}
       data-video-scenario-open={videoScenarioOpen?"true":"false"}
+      data-video-goal-page={goalPage}
       data-video-studio-hydrated={studioHydrated?"true":"false"}
       data-montage-panel={activeWorkspace==="editor"?montagePanel:undefined}
       lang={locale} aria-label={ui.title}>
@@ -5449,11 +5461,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               disabled={!studioHydrated||recording||preparing}
               onClick={continueToIdeas}>
               <Heart size={18} aria-hidden="true"/>
-              <span>{locale==="ru"?"Далее к идеям":
-                locale==="es"?"Continuar a ideas":"Continue to ideas"}</span>
+              <span>{locale==="ru"?"Далее: уточним состояние":
+                locale==="es"?"Continuar: cómo me siento":"Continue: how I feel"}</span>
               <ArrowRight size={19} aria-hidden="true"/>
             </button>
           </div>
+        </section>
+        {/* Goal 2/2 reuses the single Ideas editor via a React portal.
+            Personal goal choices stay client-side; no duplicate renderer. */}
+        <section className={videoStyles.goalRefinement}
+          data-video-goal-clarification hidden={goalPage!=="clarify"||activeWorkspace!=="video"}
+          aria-label={locale==="ru"?"Уточнить цель видео":locale==="es"?"Aclarar el objetivo":"Clarify your video goal"}>
+          <button type="button" className={videoStyles.goalRefinementBack} data-video-goal-back
+            disabled={recording||preparing} onClick={()=>setGoalPage("intro")}>
+            <ArrowLeft size={17} aria-hidden="true"/>
+            {locale==="ru"?"Назад к выбору цели":locale==="es"?"Volver al objetivo":"Back to video goal"}
+          </button>
+          <div data-video-goal-refinement-host/>
+          <button type="button" className={videoStyles.goalRefinementContinue}
+            data-video-goal-clarify-continue disabled={!studioHydrated||recording||preparing}
+            onClick={continueToIdeas}><Sparkles size={22} aria-hidden="true"/>
+            <span>{locale==="ru"?"Перейти к фразам поддержки":
+              locale==="es"?"Ir a frases de apoyo":"Go to support phrases"}</span>
+            <ArrowRight size={22} aria-hidden="true"/>
+          </button>
         </section>
         {/* Original verified AI Director from #2913: open only from the free-help
             chip, keep the default iPhone design and a single MediaRecorder. */}
@@ -5951,7 +5982,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {/* Same approved Hypno editor. Request/phrases first; voice and sound stay optional. */}
         <div className={videoStyles.phraseEditorLead} data-video-phrase-editor-first>
           <MandalaVideoIdeas locale={locale} theme={theme}
-            active={activeWorkspace==="phrases"} disabled={recording||preparing}
+            active={activeWorkspace==="phrases"} clarify={activeWorkspace==="video"&&goalPage==="clarify"}
+            disabled={recording||preparing}
             settings={affirmations}
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}

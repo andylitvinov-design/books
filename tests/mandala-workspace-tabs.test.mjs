@@ -310,7 +310,12 @@ test("validated Messenger video handoff visibly opens the original Studio Direct
  assert.match(browser,/await expect\(handoffPanel\)\.toBeVisible/);
 
  assert.match(studio,/data-video-director-chat-details data-workspace-section="video"/);
- const rule=css.slice(css.lastIndexOf("/* Messenger Video validated handoff visibility."));
+ const mark=css.lastIndexOf("/* Messenger Video validated handoff visibility.");
+ const next=css.indexOf("/* Approved Goal 2/2",mark);
+ const rule=css.slice(mark,next>mark?next:undefined);
+ const goalRule=css.slice(next);
+ assert.match(goalRule,/:not\(\[data-video-director-chat-details\]\[open\]\)/,
+   "Goal 2 keeps an explicitly opened Messenger/iHelp Director visible");
  assert.ok(rule.length>100,"Goals handoff visibility must survive compact-page CSS");
  assert.match(rule,/data-video-scenario-open="false"\]:not\(\[data-hh-video-ihelp-open="true"\]\)/);
  assert.match(rule,/\[data-video-director-chat-details\]\[data-workspace-section="video"\]\[open\]\s*\{\s*display:grid!important;/);
