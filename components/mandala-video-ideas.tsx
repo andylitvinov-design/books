@@ -1,18 +1,17 @@
 "use client";
 import {useEffect,useMemo,useRef,useState} from "react";
 import type {Dispatch,SetStateAction} from "react";
-import {ArrowDown,Check,Heart,Pencil,Play,Plus,RefreshCw,Sparkles,Target,Zap} from "lucide-react";
-import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
-import {listCurrentEmotionClusters,listDesiredEmotionClusters} from "@/lib/mandala/meaning-emotion/emotional-vector-matrix.mjs";
+import {ArrowDown,Check,Heart,Pencil,Play,Plus,RefreshCw} from "lucide-react";
+import {goalCurrentMeaningId,goalDesiredMeaningId} from "./mandala-video-goal-clarification";
+import type {VideoGoalProfile} from "./mandala-video-goal-clarification";
 import {suggestMeaningPhrases} from "@/lib/mandala/video-meaning-phrases.mjs";
 import {linesForVideoAffirmations} from "@/lib/mandala/video-affirmations";
 import type {AffirmationSettings} from "@/lib/mandala/video-affirmations";
 import type {VideoLocale,VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-ideas.module.css";
-type Axis={id:string;label:string;description:string};
-type Cluster={id:string;label:string};
 type Props={locale:VideoLocale;theme:VideoTheme;active:boolean;disabled:boolean;settings:AffirmationSettings;
- generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
+ goalProfile:VideoGoalProfile;onBackToGoal:()=>void;generating:boolean;
+ onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void};
 const wording={
  ru:{title:"Моё состояние и желание",current:"Состояние сейчас",desired:"Желаемое состояние",energy:"Энергия сейчас",scale:"по 10-балльной шкале",want:"Что бы мне хотелось",hint:"Выберите одно или несколько направлений",phrases:"Ваши фразы",regenerate:"Новые варианты",clear:"Очистить",own:"Добавить свою фразу",edit:"Изменить фразу",save:"Сохранить фразу",preview:"Посмотреть фразу в видео",down:"Переместить вниз",create:"Сгенерировать видео",empty:"Выберите направление, чтобы получить фразы",privacy:"Фразы подбираются автоматически, без передачи ответов внешним сервисам."},
@@ -20,25 +19,28 @@ const wording={
  es:{title:"Mi estado y deseo",current:"Cómo me siento ahora",desired:"Cómo quiero sentirme",energy:"Energía actual",scale:"en una escala de 0 a 10",want:"Qué me gustaría",hint:"Elige una o varias direcciones",phrases:"Tus frases",regenerate:"Nuevas opciones",clear:"Borrar",own:"Escribir mi propia frase",edit:"Editar frase",save:"Guardar frase",preview:"Ver frase en vídeo",down:"Mover abajo",create:"Generar vídeo",empty:"Elige una dirección para las frases",privacy:"Las frases cambian automáticamente sin enviar tus respuestas a proveedores."}
 } as const;
 const allFive=[0,1,2,3,4];
-export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generating,
+export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generating,goalProfile,onBackToGoal,
  onChange,onPendingChange,onPreview,onCreate}:Props){
  const t=wording[locale];
- const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
- const desiredOptions=useMemo<Cluster[]>(()=>listDesiredEmotionClusters(locale),[locale]);
- const axes=useMemo<Axis[]>(()=>listMeaningAxes(locale),[locale]);
- const [current,setCurrent]=useState("fatigue");
- const [desired,setDesired]=useState("calm");
- const [stateScore,setStateScore]=useState(4);
- const [energy,setEnergy]=useState(6);
- const [selectedAxes,setSelectedAxes]=useState<string[]>(["anchor"]);
  const [revision,setRevision]=useState(0);
  const [editing,setEditing]=useState<number|null>(null);
  const [draft,setDraft]=useState("");
  const [cleared,setCleared]=useState(false);
  const lastApplied=useRef("");
- const signature=JSON.stringify([locale,selectedAxes,current,desired,stateScore,energy,revision]);
- const suggested=useMemo(()=>suggestMeaningPhrases(locale,selectedAxes,current,desired,stateScore,energy,revision),
-  [locale,selectedAxes,current,desired,stateScore,energy,revision]);
+ const signature=JSON.stringify([locale,goalProfile,revision]);
+ // Reuse the same offline five-line editor; all selected inputs influence
+ // editorial text, without a new model, diagnosis or provider transfer.
+ const suggested=useMemo(()=>{
+  const currents=goalProfile.current.length?goalProfile.current:["fatigue"];
+  const desireds=goalProfile.desired.length?goalProfile.desired:["calm"];
+  const axes=goalProfile.axes.length?goalProfile.axes:["meaning"];
+  const variants=Array.from({length:5},(_,idx)=>suggestMeaningPhrases(
+   locale,axes,goalCurrentMeaningId(currents[idx%currents.length]),
+   goalDesiredMeaningId(desireds[idx%desireds.length]),
+   goalProfile.desiredLevel,goalProfile.energy,revision+idx));
+  const picked=variants.map((lines,idx)=>lines[idx]).concat(variants.flat());
+  return [...new Set(picked.filter(line=>typeof line==="string"&&line.trim()))].slice(0,5);
+ },[locale,goalProfile,revision]);
  useEffect(()=>{
   if(!active||signature===lastApplied.current)return;
   lastApplied.current=signature;
@@ -60,61 +62,20 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
   const next=[...lines];next[index]=draft;
   if(save(next))setEditing(null);
  };
- const toggleAxis=(id:string)=>{
-  onPendingChange(false);
-  setSelectedAxes(old=>old.includes(id)?(old.length===1?old:old.filter(x=>x!==id)):[...old,id]);
- };
  const moveDown=(index:number)=>{
   if(index>=lines.length-1)return;
   const next=[...lines];[next[index],next[index+1]]=[next[index+1],next[index]];
   save(next);
  };
  return <section className={css.ideas} data-video-ideas-compact aria-label={t.want} hidden={!active}>
-   <div className={css.stateCard} data-video-ideas-state>
-     <h3 className={css.title}><Heart size={22} aria-hidden="true"/>{t.title}</h3>
-     <div className={css.selectGrid}>
-       <label className={css.selectField}><span>{t.current}</span>
-         <select data-video-ideas-current disabled={disabled} value={current}
-           onChange={event=>{setCurrent(event.currentTarget.value);onPendingChange(false)}}>
-           {currentOptions.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}
-         </select>
-       </label>
-       <label className={css.selectField}><span>{t.desired}</span>
-         <select data-video-ideas-desired disabled={disabled} value={desired}
-           onChange={event=>{setDesired(event.currentTarget.value);onPendingChange(false)}}>
-           {desiredOptions.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}
-         </select>
-       </label>
-     </div>
-     <div className={css.sliderGrid}>
-       <label className={css.sliderField}>
-         <span className={css.sliderTitle}><span><Target size={16} aria-hidden="true"/>{t.current}</span>
-           <output htmlFor="video-ideas-state-score">{stateScore}/10</output></span>
-         <span className={css.scaleHint}>{t.scale}</span>
-         <input id="video-ideas-state-score" data-video-ideas-state-score type="range" min={0} max={10} step={1}
-           value={stateScore} disabled={disabled} onChange={event=>{setStateScore(Number(event.currentTarget.value));onPendingChange(false)}}/>
-       </label>
-       <label className={css.sliderField}>
-         <span className={css.sliderTitle}><span><Zap size={16} aria-hidden="true"/>{t.energy}</span>
-           <output htmlFor="video-ideas-energy-score">{energy}/10</output></span>
-         <span className={css.scaleHint}>{t.scale}</span>
-         <input id="video-ideas-energy-score" data-video-ideas-energy-score type="range" min={0} max={10} step={1}
-           value={energy} disabled={disabled} onChange={event=>{setEnergy(Number(event.currentTarget.value));onPendingChange(false)}}/>
-       </label>
-     </div>
-   </div>
-   <div className={css.wishCard} data-video-ideas-axes>
-     <h3 className={css.title}><Sparkles size={22} aria-hidden="true"/>{t.want}</h3>
-     <p className={css.subtitle}>{t.hint}</p>
-     <div className={css.axisGrid} role="group" aria-label={t.want}>
-       {axes.map(axis=><button key={axis.id} type="button" className={css.axisButton}
-         data-video-meaning-axis={axis.id} title={axis.description}
-         aria-pressed={selectedAxes.includes(axis.id)} disabled={disabled}
-         onClick={()=>toggleAxis(axis.id)}>{selectedAxes.includes(axis.id)?
-           <Check size={16} aria-hidden="true"/>:null}{axis.label}</button>)}
-     </div>
-   </div>
-   <section className={css.phrases} data-video-ideas-phrases aria-labelledby="video-ideas-phrases-heading">
+   <div className={css.goalSummary} data-video-ideas-goal-summary>
+   <span>{locale==="ru"?"Цель уточнена · выберите установки":
+    locale==="es"?"Objetivo definido · elige las frases":"Goal clarified · choose your support phrases"}</span>
+   <button type="button" data-video-ideas-edit-goal disabled={disabled} onClick={onBackToGoal}>
+    {locale==="ru"?"Изменить ответы":locale==="es"?"Editar respuestas":"Edit my answers"}
+   </button>
+  </div>
+  <section className={css.phrases} data-video-ideas-phrases aria-labelledby="video-ideas-phrases-heading">
      <div className={css.phraseHeader}><h3 id="video-ideas-phrases-heading">
          <Heart size={22} aria-hidden="true"/>{t.phrases} ({lines.length})</h3>
        <div className={css.actions}>

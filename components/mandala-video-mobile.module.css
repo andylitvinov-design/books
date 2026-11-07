@@ -4510,3 +4510,19 @@
    display:grid!important;
  }
 }
+
+
+/* Owner-approved Goal part 2: the original taxonomy remains mounted, and
+   the single Director, media player, renderer and consent flow are unchanged. */
+.goalClarifyStep{order:2;min-width:0;width:100%;margin:0;padding:0}
+.goalClarifyStep[hidden]{display:none!important}
+.studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder{
+  gap:8px!important;background:#fff8f0!important;padding-bottom:8px!important
+}
+.studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder
+  > :not(.quickBrandBar):not(.quickVideoNav):not(.goalClarifyStep){
+  display:none!important
+}
+.studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>.goalClarifyStep{
+  display:block!important;order:2!important
+}

@@ -62,8 +62,10 @@ test("Three short prompts are labeled in EN/RU/ES",()=>{
 
 test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the real visible route",()=>{
   assert.match(studio,/const continueToIdeas = \(\) => \{[\s\S]*?setActiveWorkspace\("phrases"\)/);
-  assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{continueToIdeas\}/);
-  for(const text of ["Далее к идеям","Continuar a ideas","Continue to ideas"])
+  assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{continueToGoalClarify\}/);
+  assert.match(studio,/data-video-goal-clarify[\s\S]*?onContinue=\{continueToIdeas\}/);
+  assert.match(studio,/data-video-goal-page=\{goalPage\}/);
+  for(const text of ["Уточнить мою цель","Aclarar mi objetivo","Clarify my goal"])
     assert.ok(studio.includes(text),text);
   assert.match(studio,/const openVideoScenarioStep = \(\) => \{[\s\S]*?setVideoScenarioOpen\(true\);[\s\S]*?setShowAdvancedVideo\(true\);[\s\S]*?setActiveWorkspace\("video"\)/);
   assert.match(studio,/onAddVideo=\{\(\)=>\{[\s\S]*?openVideoScenarioStep\(\);/);
@@ -110,4 +112,31 @@ test("visitor-opened iHelp remains visible above the compact three-question Goal
  assert.match(mobile,/\/\* The compact Goal screen hides legacy advanced sections\./);
  assert.match(studio,/window\.addEventListener\("hh:ihelp-open-video-director"/);
  assert.match(studio,/role=\{videoIHelpOpen\?"dialog":undefined\}/);
+});
+
+test("owner 06 Nov: illustrated Goal page 2 feeds one Ideas phrase editor",()=>{
+ const goal=read("components/mandala-video-goal-clarification.tsx");
+ const art=read("components/mandala-video-goal-clarification.module.css");
+ const ideas=read("components/mandala-video-ideas.tsx");
+ const mobile=read("components/mandala-video-mobile.module.css");
+ assert.match(studio,/const \[goalPage,setGoalPage\]/);
+ assert.match(studio,/setGoalPage\("clarify"\)/);
+ assert.match(goal,/data-video-goal-clarify-continue/);
+ for(const mark of ["data-video-goal-mood","data-video-goal-scroll","data-video-goal-energy",
+  "data-video-goal-desired-level","data-video-goal-axis","data-goal-kind=\"current\"",
+  "data-goal-kind=\"desired\"","data-goal-kind=\"strength\""])
+   assert.ok(goal.includes(mark),mark);
+ for(const image of ["morning-dew.jpg","wealth-sunrise.jpg","mountain-air.jpg"])
+   assert.ok(art.includes(image),image);
+ assert.match(mobile,/\[data-video-goal-page="clarify"\]/);
+ assert.match(ideas,/goalProfile:VideoGoalProfile/);
+ assert.match(ideas,/goalCurrentMeaningId/);
+ assert.doesNotMatch(ideas,/data-video-ideas-state|data-video-ideas-axes/);
+ assert.match(ideas,/data-video-ideas-goal-summary/);
+ for(const path of ["scripts/verify-affirmation-voice-browser.mjs",
+  "scripts/benchmarking/first-video-live-export.mjs",
+  "scripts/benchmarking/verify-original-motion-export.mjs"])
+   assert.match(read(path),/data-video-goal-clarify-continue/);
+ assert.equal((studio.match(/<MandalaAutoVideoDirector/g)||[]).length,1);
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });

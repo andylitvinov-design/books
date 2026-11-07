@@ -138,6 +138,7 @@ try {
   const continueToIdeas=page.locator('[data-video-continue-scenarios]');
   await continueToIdeas.waitFor({state:'visible',timeout:40000});
   await continueToIdeas.click();
+  await page.locator('[data-video-goal-clarify-continue]').click();
   const ideas=page.locator('[data-video-quick-control="phrases"]');
   assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
   await page.locator('[data-video-quick-control="editor"]').click();

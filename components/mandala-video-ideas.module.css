@@ -38,3 +38,7 @@
 .privacy{margin:0!important;text-align:center;color:#67786d;font-size:10px}
 @media(max-width:360px){.stateCard,.wishCard{padding:10px 7px}.selectGrid,.sliderGrid{gap:5px}.selectField select{padding-left:5px;font-size:11px}.sliderField{padding:6px 5px}.sliderTitle{font-size:10px}.sliderTitle output{padding:2px 4px}.axisGrid{gap:4px}.axisButton{padding:4px 2px;min-height:44px;font-size:10px}.item{padding:3px 4px;gap:3px}.tool{min-width:30px;min-height:35px}.number{width:23px;height:23px}}
 @media(min-width:760px){.stateCard,.wishCard{padding:15px 18px}.axisButton{min-height:52px;font-size:14px}}
+
+.goalSummary{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:11px 13px;border:1px solid #e6dfd4;border-radius:17px;background:linear-gradient(110deg,#fffcf7,#eff8ef);color:#214e40;font:700 14px/1.32 system-ui,sans-serif}
+.goalSummary span{flex:1;min-width:150px}.goalSummary button{min-height:44px;border:1px solid #addbc2;border-radius:11px;background:#fffdfa;padding:8px 12px;color:#067a67;font:750 13px/1.25 system-ui,sans-serif;cursor:pointer}
+.goalSummary button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
