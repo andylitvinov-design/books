@@ -1,0 +1,95 @@
+{
+  "schema": "HH_RESULTS_SNAPSHOT_V1",
+  "observedDate": "2026-11-07",
+  "refreshedBy": "owner_supplied_coverage_screenshot",
+  "refreshMode": "manual_snapshot_not_live",
+  "sections": [
+    {
+      "id": "pr",
+      "name": "PR и разработки",
+      "status": "live_monitor_separate",
+      "url": "/pr-monitor.html",
+      "description": "CI, очереди, Merge и подтверждение LIVE — в существующем PR Monitor. Здесь не подменяем их статические числа."
+    },
+    {
+      "id": "video",
+      "name": "Видеобиблиотека",
+      "status": "dated_snapshot",
+      "url": "https://holistichouse.vercel.app/admin/video-library",
+      "description": "Редакционные кандидаты по тегам ≠ проверенные кадры, права на сюжет или готовый экспорт."
+    },
+    {
+      "id": "site",
+      "name": "Сайт и контент",
+      "status": "not_connected",
+      "description": "Ожидает отдельного достоверного источника аналитики; пока без вымышленных цифр."
+    },
+    {
+      "id": "courses",
+      "name": "Курсы и программы",
+      "status": "not_connected",
+      "description": "Подключается после проверки источника прохождения и завершения курсов."
+    },
+    {
+      "id": "clients",
+      "name": "Клиенты и обращения",
+      "status": "not_connected",
+      "description": "Публичная панель не раскрывает клиентские данные; только безопасные агрегаты после согласования."
+    }
+  ],
+  "video": {
+    "basis": "Metadata-only summary from the owner-provided admin coverage page on 2026-11-07, not a fresh provider readback",
+    "sourceUrl": "https://holistichouse.vercel.app/admin/video-library",
+    "metrics": [
+      {
+        "id": "mp4",
+        "label": "Все MP4",
+        "value": 740
+      },
+      {
+        "id": "local",
+        "label": "Локальные видеокомпозиции",
+        "value": 56
+      },
+      {
+        "id": "motion",
+        "label": "Анимации",
+        "value": 684
+      },
+      {
+        "id": "topics",
+        "label": "Темы с кандидатами",
+        "value": "29/64"
+      },
+      {
+        "id": "four",
+        "label": "Темы с 4+ кандидатами",
+        "value": "17/64"
+      },
+      {
+        "id": "story",
+        "label": "Проверенные раскадровки",
+        "value": 0
+      }
+    ],
+    "coverage": [
+      {
+        "id": "any",
+        "label": "Есть тематические кандидаты",
+        "count": 29,
+        "total": 64
+      },
+      {
+        "id": "four",
+        "label": "Есть минимум четыре кандидата",
+        "count": 17,
+        "total": 64
+      }
+    ],
+    "gaps": [
+      "35 из 64 тем пока не имеют тематических кандидатов в этом срезе.",
+      "0 подтверждённых раскадровок — это показатель проверки, не число готовых MP4.",
+      "Vault / Supabase / R2, права для конкретного сюжета и фактическое воспроизведение не перепроверены этим снимком."
+    ]
+  }
+}

@@ -20,7 +20,7 @@
   const p=panel('⭐ Главные приоритеты','/project-management-public.html','Все задачи ›');
   priority.forEach((t,i)=>row(p,t.id+' · '+t.title,t.project+' · '+(t.prs.length?'PR #'+t.prs.join(', #'):'PR пока нет'),'/project-management-public.html',String(i+1)));
   const quick=panel('Мониторинг и управление');const links=el('div','hh-cc-quicklinks');
-  [['◷','PR → CI → Merge','/pr-monitor.html'],['▥','Задержки CI → HEAD','/pr-monitor.html'],['☑','Проекты и задачи','/project-management-public.html'],['♧','Работа агентов','/agents.html']].forEach(([icon,label,url])=>{const a=el('a',null,icon+'  '+label);a.href=url;links.append(a)});quick.append(links);
+  [['◉','Результаты по направлениям','/results.html'],['◷','PR → CI → Merge','/pr-monitor.html'],['▥','Задержки CI → HEAD','/pr-monitor.html'],['☑','Проекты и задачи','/project-management-public.html'],['♧','Работа агентов','/agents.html']].forEach(([icon,label,url])=>{const a=el('a',null,icon+'  '+label);a.href=url;links.append(a)});quick.append(links);
   const c=panel('Состояние проектов','/projects.html','Открыть ›');for(const p of ps){const tasks=allTasks(p);row(c,p.title,tasks.length+' подзадач · '+tasks.filter(t=>t.status==='verified').length+' отмечено как подтверждённые','/project-management-public.html','▦')}
   footer(s);
  }
