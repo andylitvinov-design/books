@@ -321,3 +321,20 @@ test("validated Messenger video handoff visibly opens the original Studio Direct
  assert.match(css,/\[data-workspace-section="video"\]:not\(\[data-video-topic-section\]\)\s*\{\s*display:none!important;/,
    "unopened legacy Goals sections remain hidden");
 });
+
+test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>{
+  const at=studio.indexOf("const continueToIdeas = () => {");
+  const until=studio.indexOf("  const openVideoScenarioStep",at);
+  assert.ok(at>=0&&until>at,"one real Continue to Ideas handler");
+  const handler=studio.slice(at,until);
+  assert.match(handler,/navigationToken=\+\+quickNavTokenRef\.current/);
+  assert.match(handler,/if\(navigationToken!==quickNavTokenRef\.current\)return/);
+  assert.match(handler,/behavior:"instant" as ScrollBehavior/);
+  const navAt=studio.indexOf("const activateQuickWorkspace=");
+  assert.ok(navAt>=0);
+  assert.match(studio.slice(navAt,navAt+270),/quickNavTokenRef\.current\+\+/);
+  const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+  assert.match(browser,/MONTAGE_TAB_MUST_ACTIVATE/);
+  assert.match(browser,/data-video-montage-effects/);
+  assert.match(browser,/VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT/);
+});

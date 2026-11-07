@@ -4957,13 +4957,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // Match the one real recipient kind to a verified video plan before Ideas.
     // No export, billing or consent prompt can be triggered by this action.
     if(goalContinueRef.current?.()===false)return;
+    // The visitor can immediately tap Montage after Ideas. Invalidate the
+    // delayed Ideas scroll when another real workspace is requested; Safari
+    // must never slide the pointer target out from under the next click.
+    const navigationToken=++quickNavTokenRef.current;
     setVideoScenarioOpen(false);
     setActiveWorkspace("phrases");
     setStudioMode("pump");
-    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+      if(navigationToken!==quickNavTokenRef.current)return;
       document.querySelector("[data-video-quick-phrases]")?.scrollIntoView({
-        behavior:"smooth",block:"start",
-      })));
+        behavior:"instant" as ScrollBehavior,block:"start",
+      });
+    }));
   };
   const openVideoScenarioStep = () => {
     setVideoScenarioOpen(true);
