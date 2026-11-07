@@ -32,7 +32,7 @@
    summary:summarize(source,String(fullPrompt||''))};
   try{
    win.sessionStorage.setItem(KEY,JSON.stringify(packet));
-   // No URL params, cross-origin postMessage, popup or public task write.
+   // No URL parameters, cross-origin messaging, popup or public task write.
    win.location.assign(PATH);
    if(status)status.textContent='Открываю защищённый редактор на этом же сайте. Задача ещё не сохранена.';
    return true;
