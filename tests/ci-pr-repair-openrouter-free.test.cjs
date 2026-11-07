@@ -57,6 +57,7 @@ test('priced catalog, 429, wrong model, paid usage and invalid reply fail closed
     [response({data:[entry()]}),response({},429),/QUOTA_EXHAUSTED/,2],
     [response({data:[entry()]}),response({model:'paid/model',choices:[{message:{content:'patch'}}]}),/MODEL_MISMATCH/,2],
     [response({data:[entry()]}),response({model:DEFAULT_MODEL,usage:{cost:0.01},choices:[{message:{content:'patch'}}]}),/BILLING_NONZERO/,2],
+    [response({data:[entry()]}),response({model:DEFAULT_MODEL,usage:{cost:null},choices:[{message:{content:'patch'}}]}),/BILLING_NONZERO/,2],
     [response({data:[entry()]}),response({model:DEFAULT_MODEL,choices:[]}),/PATCH_RESPONSE_INVALID/,2],
   ];
   for(const [catalog,completion,re,expected] of cases){

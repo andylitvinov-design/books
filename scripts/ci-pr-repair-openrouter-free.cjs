@@ -69,7 +69,7 @@ async function requestFreePatch({prompt,key,model=DEFAULT_MODEL,fetchImpl=global
   },170000);
   if(completion?.model!==selected)throw Error('FREE_AI_OPENROUTER_MODEL_MISMATCH');
   const cost=completion?.usage?.cost;
-  if(cost!==undefined&&(!Number.isFinite(Number(cost))||Number(cost)!==0))
+  if(cost!==undefined&&(cost===null||!Number.isFinite(Number(cost))||Number(cost)!==0))
     throw Error('FREE_AI_OPENROUTER_BILLING_NONZERO');
   if(completion?.choices?.length!==1||
     typeof completion.choices[0]?.message?.content!=='string'||
