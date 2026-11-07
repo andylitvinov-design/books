@@ -195,11 +195,25 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  assert.ok(settings>=0&&selectDuration>settings&&openAudio>selectDuration&&phrases>openAudio&&reenter>phrases&&voice>reenter,
    "visitor must use the actual Settings, Audio and Voice before recording the real MP4");
  assert.match(browser,/const hypnoTabs=page\.locator\('\[data-hypno-tabs\]'\)/);
- assert.match(browser,/for\(const group of \["phrases","visual","audio"\]\)/);
- assert.match(browser,/await expect\(tab\)\.toHaveAttribute\("aria-selected","true"\)/);
- assert.match(browser,/await expect\(page\.locator\('\[data-hypno-group="'\+group\+'"\]'\)\)\.toBeVisible\(\)/);
+ assert.match(browser,/const visualTab=hypnoTabs\.locator\('\[data-hypno-tab="visual"\]'\)/);
+ assert.match(browser,/const audioTab=hypnoTabs\.locator\('\[data-hypno-tab="audio"\]'\)/);
+ assert.match(browser,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
+ assert.match(browser,/await expect\(visualTab\)\.toHaveAttribute\("aria-selected","true"\)/);
+ assert.match(browser,/await expect\(audioTab\)\.toHaveAttribute\("aria-selected","true"\)/);
+ assert.match(browser,/await balancedLight\.click\(\)/);
+ assert.match(browser,/await textPosition\.click\(\)/);
+ assert.match(browser,/await expect\(visualGroup\)\.toBeHidden\(\)/);
+ assert.match(browser,/await expect\(audioGroup\)\.toBeVisible\(\)/);
  assert.doesNotMatch(browser,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
  assert.match(browser,/encoded-audio-verified/);
+ // Preserve the real first guest movie flow on the current tabbed Montage.
+ const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+ assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
+ assert.match(firstVideo,/await montageStyle\.click\(\)/);
+ assert.match(firstVideo,/await styleNext\.waitFor\(\{state:'visible',timeout:20000\}\)/);
+ assert.match(firstVideo,/await styleNext\.click\(\)/);
+ assert.match(firstVideo,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
+ assert.match(firstVideo,/FOUR_DISTINCT_SOURCES_REQUIRED/);
  assert.match(browser,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
 });
 

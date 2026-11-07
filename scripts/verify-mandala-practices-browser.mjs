@@ -74,8 +74,22 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await kinds.count(),3,"one selectable ritual / exercise / practice row");
       const titles=[];
       for(let i=0;i<3;i++){
-        await kinds.nth(i).click();
-        assert.equal(await kinds.nth(i).getAttribute("aria-pressed"),"true");
+        // WebKit resolves a genuine pointer click before React paints a
+        // committed selection on some locales. Require its real pressed state,
+        // never a second synthetic click or a weakened assertion.
+        const kind=kinds.nth(i);
+        await kind.click();
+        try{
+          await expect(kind).toHaveAttribute("aria-pressed","true",{timeout:15000});
+        }catch(error){
+          const evidence=await kinds.evaluateAll(nodes=>nodes.map(node=>({
+            kind:node.getAttribute("data-guided-practice-kind"),
+            pressed:node.getAttribute("aria-pressed"),
+            disabled:node.disabled,
+          })));
+          throw new Error("GUIDED_KIND_DID_NOT_COMMIT "+engine+" "+locale+
+            " index="+i+" "+JSON.stringify(evidence),{cause:error});
+        }
         titles.push(await practice.locator("h5").innerText());
       }
       assert.equal(new Set(titles).size,3,"all three choices produce genuinely different practices");

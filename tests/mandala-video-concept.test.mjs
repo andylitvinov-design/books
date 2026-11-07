@@ -88,3 +88,16 @@ test("macOS WebKit must enter Style from default Concept before selecting media"
   assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
 });
+
+test("required Hypno two tabs and guided kind click remain browser-tested after Concept",()=>{
+  const webkit=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const guided=readFileSync(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
+  const exportFlow=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+  assert.match(webkit,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
+  assert.match(webkit,/await expect\(briefFrame\)\.toHaveAttribute\("aria-checked","false"\)/);
+  assert.match(guided,/await expect\(kind\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
+  assert.match(guided,/GUIDED_KIND_DID_NOT_COMMIT/);
+  assert.match(exportFlow,/const montageStyle=page\.locator/);
+  assert.match(exportFlow,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/);
+  assert.match(exportFlow,/FOUR_DISTINCT_SOURCES_REQUIRED/);
+});

@@ -142,6 +142,18 @@ try {
   await concept.waitFor({state:'visible',timeout:20000});
   assert.equal(await page.locator('[data-video-montage-tab="concept"]').getAttribute('aria-pressed'),
     'true','MONTAGE_MUST_START_WITH_AUTO_CONCEPT');
+  // The previous Hypno/Style E2E explicitly checked that Style can be opened.
+  // Preserve that real visitor path from the new Concept default.
+  const montageStyle=page.locator('[data-video-montage-tab="effects"]');
+  await montageStyle.waitFor({state:'visible',timeout:20000});
+  await montageStyle.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-tab="effects"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-tab="concept"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   await concept.locator('[data-video-concept-approve]').click();
   await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="audio"]')
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});

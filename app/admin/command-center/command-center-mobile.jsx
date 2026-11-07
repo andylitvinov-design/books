@@ -6,6 +6,7 @@ import {suggestCommandTask,ownerTaskActions} from '@/lib/command-center/mobile-i
 import styles from './command-center-mobile.module.css';
 import CommandCenterVoiceButton from './command-center-voice-button';
 import CommandCenterBatch from './command-center-batch';
+import CommandCenterPrWatch from './command-center-pr-watch';
 
 const labels={
  ru:{home:'Главная',tasks:'Задачи',agents:'Агенты',projects:'Проекты',hello:'Мой брифинг',subtitle:'Проекты и агенты · фактический статус',
@@ -296,6 +297,9 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
       onOpen={id=>setSelected(id)}/>
     </section>:
    tab==='agents'?<section className={styles.section}><div className={styles.heading}><h1>{t.agents}</h1><span>{registry.length}</span></div>
+    <CommandCenterPrWatch lang={lang} tasks={tasks} watch={snapshot?.prWatch} busy={busy}
+      available={available} onSet={(taskId,enabled)=>send('watch_set',{taskId,enabled})}
+      onCheck={taskId=>send('watch_check',{taskId})}/>
     {snapshot?.brief?.missingProof>0&&<p className={styles.auditGap} role="status">⚠ {t.missingProofCount}: {snapshot.brief.missingProof}</p>}
     {registry.map(a=><div key={a.id} className={styles.agentCard}><span className={styles.agentIcon}>{a.id.includes('github')?'⌘':a.id.includes('codex')?'◇':'✧'}</span>
       <div><strong>{a.id}</strong><small>{a.role}</small><small>{a.status==='not_connected'?t.noAgents:a.status==='manual_only'?t.manual:enabled?t.activeAgent:t.pausedAgent}</small></div>
