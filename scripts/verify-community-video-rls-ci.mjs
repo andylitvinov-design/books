@@ -143,7 +143,7 @@ try {
  assert.equal(pub.rows[0].n,0,'no orphaned publication after erasure')
  assert.equal(media.rows[0].n,0,'private source erased with account')
  assert.equal(author.rows[0].n,0,'private author metadata erased with account')
- assert.equal(other.rows[0].n,1,'other owner's publication remains isolated')
+ assert.equal(other.rows[0].n,1,'other user publication remains isolated')
  console.log('OWNER_ERASURE_CASCADE_OK')
 } finally {await erase.end()}
 console.log('HH_COMMUNITY_VIDEO_PG17_TWO_ACCOUNTS_FORCE_RLS_PASS')
