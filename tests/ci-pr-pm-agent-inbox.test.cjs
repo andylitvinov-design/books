@@ -106,3 +106,49 @@ test('multipart text-only completion accepted but reasoning never exported',asyn
  assert.equal(out.ok,true);
  assert.equal(out.text,'Ответ.');
 });
+
+
+test('public technical source command requires real owner, validation and explicit public consent',()=>{
+ const task={task_id:'commander_public_source_20261107',target_base:'codex/bootstrap-books',
+  expected_base_sha:'a'.repeat(40),path:'components/example.js',title:'Fix verified UI behavior',
+  mode:'literal',find:'oldLabel',replace:'newLabel',public_technical_only:true};
+ const valid=inbox.command(cmd(101,'!pm source '+JSON.stringify(task)));
+ assert.equal(valid.kind,'source');
+ assert.equal(valid.task.path,'components/example.js');
+ assert.equal(inbox.command({...cmd(102,'!pm source '+JSON.stringify(task)),user:{login:'intruder',type:'User'}}),null);
+ assert.equal(inbox.command(cmd(103,'!pm source '+JSON.stringify({...task,public_technical_only:false}))),null);
+ assert.equal(inbox.command(cmd(104,'!pm source '+JSON.stringify({...task,path:'api/secrets.js'}))),null);
+ assert.equal(inbox.command(cmd(105,'!pm source '+JSON.stringify({...task,replace:'github_pat_mockSecret12345678901234567890'}))),null);
+});
+test('public source dispatch calls existing worker once with owner token, accepts HTTP 204 only',async()=>{
+ const task={task_id:'commander_public_source_20261107',target_base:'codex/bootstrap-books',
+  expected_base_sha:'a'.repeat(40),path:'components/example.js',title:'Fix verified UI behavior',
+  mode:'literal',find:'oldLabel',replace:'newLabel',public_technical_only:true};
+ const calls=[];
+ const gh={rest:{repos:{getBranch:async()=>({data:{commit:{sha:task.expected_base_sha}}})},
+  git:{getRef:async()=>{const e=Error('missing');e.status=404;throw e;}}}};
+ const out=await inbox.dispatchSource(gh,{task},{ownerToken:'test-placeholder-token',
+  fetcher:async(url,req)=>{calls.push({url,req});return {status:204};}});
+ assert.equal(out.dispatched,true);
+ assert.equal(calls.length,1);
+ assert.match(calls[0].url,/\/actions\/workflows\/hh-pr-repair-worker\.yml\/dispatches$/);
+ const data=JSON.parse(calls[0].req.body);
+ assert.equal(data.ref,'codex/bootstrap-books');
+ assert.deepEqual(JSON.parse(data.inputs.commander_source_task),task);
+ assert.match(inbox.resultBody({kind:'source',id:101,task},{dispatched:true},'https://example.test/run'),/NOT yet verified/);
+ assert.doesNotMatch(inbox.resultBody({kind:'source',id:101,task},{dispatched:true},'https://example.test/run'),/LIVE_VERIFIED/);
+});
+test('source request without owner token or exact current base refuses dispatch',async()=>{
+ const task={task_id:'commander_public_source_20261107',target_base:'codex/bootstrap-books',
+  expected_base_sha:'a'.repeat(40),path:'components/example.js',title:'Fix verified UI behavior',
+  mode:'literal',find:'oldLabel',replace:'newLabel',public_technical_only:true};
+ let sent=0;
+ const gh={rest:{repos:{getBranch:async()=>({data:{commit:{sha:'b'.repeat(40)}}})},
+  git:{getRef:async()=>{throw Error('should not reach getRef');}}}};
+ const fetcher=async()=>{sent++;return {status:204}};
+ const none=await inbox.dispatchSource(gh,{task},{ownerToken:'',fetcher});
+ assert.equal(none.reason,'OWNER_SOURCE_DISPATCH_TOKEN_NOT_CONFIGURED');
+ const stale=await inbox.dispatchSource(gh,{task},{ownerToken:'placeholder',fetcher});
+ assert.equal(stale.reason,'SOURCE_BASE_SHA_MOVED');
+ assert.equal(sent,0);
+});
