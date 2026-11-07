@@ -278,6 +278,9 @@ const classifierCases = [
   ['merge queue docs change', 'docs/start.md', null, 'edit', false, 'merge_group'],
   ['newline code filename', 'source\nfile.ts', 'docs/moved.md', 'rename', false],
   ['missing base', 'docs/start.md', null, 'edit', false, 'pull_request', true],
+  ['Reviewed CI telemetry README', 'README.PR-LOSS-TELEMETRY.md', null, 'edit', false, 'pull_request', false, true],
+  ['Unreviewed README variant remains full Core', 'README.CI-EXPERIMENT.md', null, 'edit', false],
+  ['CI README with payment runtime stays full Core', 'README.PR-LOSS-TELEMETRY.md', 'app/api/payments/route.js', 'mixed', false],
   ['CI workflow YAML edit', '.github/workflows/example.yml', null, 'edit', false, 'pull_request', false, true],
   ['CI workflow YAML deletion', '.github/workflows/example.yml', null, 'delete', false, 'pull_request', false, true],
   ['CI source aggregator edit', 'lib/ci/specialist-aggregate.mjs', null, 'edit', false, 'pull_request', false, true],
@@ -1670,4 +1673,13 @@ test('billing specialist avoids repeated global TypeScript with all dedicated pa
   assert.match(core,/node scripts\/ci-source-preflight\.mjs/);
   assert.match(core,/^  hh-merge-check:/m);
   assert.match(core,/^    needs: \[scope, hh-specialist\]$/m);
+});
+
+
+test('only the reviewed PR-loss README can enter the CI-only fast lane', () => {
+  const core=workflow('hh-pr-core-release.yml');
+  const scope=core.split('# CI-only allowlist is exact')[1]?.split('*) ci_only=false')[0]||'';
+  assert.ok(scope.includes('README.PR-LOSS-TELEMETRY.md|\\'), 'reviewed nonruntime report README can skip Next build');
+  assert.ok(!scope.includes('README.*'), 'unreviewed root README variants must remain strict');
+  assert.ok(core.includes("steps.diff.outputs.ci_only != 'true'"), 'full Next build remains for non-CI changes');
 });

@@ -274,6 +274,21 @@ export function formatSummary(report) {
   lines.push('','Lease claim = ownership, not proof an agent read the task. Repair declaration is not observed local editing. GitHub committed event is not independently verified push time. Queues include dependencies/concurrency, not proven runner shortages. Failed job/step is a location, not log-verified root cause. Unknown is n/a, never agent idle or zero.');
   lines.push('','BASE_ADVANCED is reported independently by the ancestry-proven CI readiness advisory and the strict trusted Specialist; this read-only cohort report does not infer it from a changed HEAD.');
   lines.push('',formatWaveDiagnostics(report));
+  lines.push('','### Each subsequent Core wave — trigger and evidence (not assumed root cause)');
+  lines.push('| PR | Previous → new run | HEAD | Gap min | Observed trigger | Actor (evidence level) | Why another wave? | Evidence |');
+  lines.push('| ---: | --- | --- | ---: | --- | --- | --- | --- |');
+  let waveRows=0;
+  for(const row of report.rows) for(const gap of row.core_waves?.gaps||[]) {
+    waveRows++;
+    const safe=s=>String(s??'unknown').replace(/[|\r\n]/g,' ');
+    const url=typeof gap.evidence_url==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/(?:actions\/runs\/\d+|commit\/[0-9a-f]{40})$/.test(gap.evidence_url)?gap.evidence_url:null;
+    lines.push('| #'+row.pr+' | '+gap.previous_run_id+' → '+gap.run_id+' | '+
+      gap.head_relation+' | '+fmt(gap.minutes)+' | '+safe(gap.trigger_event)+' | '+
+      safe(gap.trigger_actor)+' ('+safe(gap.trigger_confidence)+') | '+
+      safe(gap.reason_summary)+' | '+(url?'[GitHub]('+url+')':'unknown')+' |');
+  }
+  if(!waveRows)lines.push('| — | — | — | — | No subsequent waves in sampled PRs | — | — | — |');
+  lines.push('','The actor is the observed workflow trigger or commit author, not a proven owner of delay. Commit attribution does not establish why a commit was necessary; same-HEAD rechecks do not reveal their exact webhook action from the runs list. Unknown remains unknown.');
   lines.push('','### Stage coverage');
   for(const x of report.categories)lines.push('- '+labels[x.stage]+': '+
     fmt(x.minutes)+' PR-min, confirmed PRs='+x.pr_count+(x.low_n?' (n<5; descriptive)':''));
