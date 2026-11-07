@@ -256,8 +256,9 @@ test("free montage manifest always has a bounded, contiguous timeline and explic
 });
 test("four style choices visibly grade the SAME local Canvas frames in preview and recorded file",()=>{
   for(const style of ["warm","nature","dream","minimal"])
-    assert.ok(studio.includes('storyboard.styleId==="'+style+'"'),
+    assert.ok(studio.includes('styleId==="'+style+'"'),
       style+" must change actual video pixels, not only a paid-provider prompt");
+  assert.match(studio,/paintStudioVisualGrade\(ctx,montageStyleId\|\|storyboard\.styleId\)/);
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,0,aspect/);
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,frameTime/);
   assert.match(studio,/ctx\.createRadialGradient\(w\*\.53,h\*\.36/);
