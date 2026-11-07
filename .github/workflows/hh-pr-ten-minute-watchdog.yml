@@ -375,7 +375,15 @@ jobs:
             const pmNumber=String(context.payload.inputs?.pm_pr_number||'');
             const pmSha=String(context.payload.inputs?.pm_expected_sha||'');
             const manualTarget=pmNumber!==''?{prNumber:Number(pmNumber),expectedSha:pmSha}:null;
-            const report=await run({github,core,context,dryRun,manualTarget});
+            let reportResult,report;
+            if(manualTarget){
+              report=await run({github,core,context,dryRun,manualTarget});
+            }else{
+              // Preserve existing direct-refill contract and single writer.
+              const report=await run({github,core,context,dryRun});
+              reportResult=report;
+            }
+            if(!manualTarget)report=reportResult;
             core.info('HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
               candidates:report.candidates,dispatched:report.dispatchAccepted,
               blocked:report.blocked,reason:report.reason
