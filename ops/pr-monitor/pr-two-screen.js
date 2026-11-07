@@ -8,6 +8,9 @@
   if (typeof document === 'undefined' || window.__hhTwoScreensV1) return;
   window.__hhTwoScreensV1 = true;
   var ROOT_ID = 'hh-pr-two-screens';
+  // Explicit opt-in on the standalone PR page: restore the detailed stages
+  // as a slide after the existing central metrics, not a second top overview.
+  var STAGE_ONLY = Boolean(document.querySelector('script[data-pr-stage-only][src*="pr-two-screen.js"]'));
   var STAGES = [
     ['before_unknown','До первой сохранённой CI · неатрибутировано','Включает Draft, подготовку PR и пропущенные Core runs; это НЕ измерение задержки GitHub до первой CI'],
     ['workflow_wait','Workflow → jobs','Время создания jobs в сохранённых Core runs'],
@@ -426,9 +429,20 @@
     more.href='#quick-signal';two.append(more);
     secondFoot = make('p','hh2-meta','Детали раскрываются нажатием на этап или отдельный PR.');
     two.append(secondFoot);
-    root.append(one,two);
-    document.body.prepend(root);
-    document.body.classList.add('hh2-active');
+    if(STAGE_ONLY){
+      root.classList.add('hh2-stage-only');
+      root.append(two);
+      const main=document.querySelector('main.wrap')||document.querySelector('main');
+      const after=main?.querySelector('#diagnostics-mount')||main?.querySelector('.throughput');
+      if(after)after.insertAdjacentElement('afterend',root);
+      else if(main)main.append(root);
+      else document.body.append(root);
+      // The original queue/KPI screen stays in place. Only the stage slide is added.
+    }else{
+      root.append(one,two);
+      document.body.prepend(root);
+      document.body.classList.add('hh2-active');
+    }
     mounted=true;
   }
   // Missing measurements must never be rendered as 0.00 minutes. The legacy
@@ -529,13 +543,15 @@
   function chartAndMetrics() {
     if (!mounted) return;
     repairLegacyUnmeasuredZeros();
-    var graph = document.getElementById('hh-pr-trends');
-    if (graph && !graphSlot.contains(graph)) {
-      graphSlot.replaceChildren(graph);
-      graph.classList.add('hh2-original-chart');
+    if(!STAGE_ONLY){
+      var graph = document.getElementById('hh-pr-trends');
+      if (graph && !graphSlot.contains(graph)) {
+        graphSlot.replaceChildren(graph);
+        graph.classList.add('hh2-original-chart');
+      }
+      if (!graph && !graphSlot.firstElementChild) graphSlot.append(graphHint);
+      showQueue();
     }
-    if (!graph && !graphSlot.firstElementChild) graphSlot.append(graphHint);
-    showQueue();
     // Both screens read exactly the same created-and-merged PR cohort.
     if (baseline) {
       cells.avg.querySelector('strong').textContent=duration(baseline.mean);
@@ -792,9 +808,11 @@
   }
   function start() {
     if (mounted || !document.body) return;
-    build();chartAndMetrics();void readHistorical();void readCurrentCohort();
-    void readQueue();
-    document.getElementById('refresh')?.addEventListener('click',()=>void readQueue());
+    build();chartAndMetrics();if(!STAGE_ONLY)void readHistorical();void readCurrentCohort();
+    if(!STAGE_ONLY){
+      void readQueue();
+      document.getElementById('refresh')?.addEventListener('click',()=>void readQueue());
+    }
     observer=new MutationObserver(function (changes) {
       if (changes.some(function (m) { return !root.contains(m.target); }))
         schedule();
