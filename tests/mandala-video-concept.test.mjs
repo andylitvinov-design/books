@@ -109,3 +109,17 @@ test("macOS same-runner heap permits the existing real WebKit movie and voice ga
   assert.match(workflow,/node scripts\/verify-affirmation-voice-browser\.mjs/);
   assert.match(workflow,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
 });
+
+test("Ideas refinement commits one real WebKit summary activation in React",()=>{
+  const source=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
+  const start=source.indexOf("data-video-ideas-refinement open=");
+  const end=source.indexOf("{topicPanel}",start);
+  assert.ok(start>0&&end>start);
+  const disclosure=source.slice(start,end);
+  assert.match(source,/const \[ideaRefinementExpanded,setIdeaRefinementExpanded\]=useState\(false\)/);
+  assert.match(disclosure,/open=\{ideaRefinementExpanded\}/);
+  assert.match(disclosure,/aria-expanded=\{ideaRefinementExpanded\}/);
+  assert.match(disclosure,/event\.preventDefault\(\)/);
+  assert.match(disclosure,/setIdeaRefinementExpanded\(current=>!current\)/);
+  assert.doesNotMatch(disclosure,/onToggle=|node\.open=!node\.open|ideaRefinementOpenRef/);
+});

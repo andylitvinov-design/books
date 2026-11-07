@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback,useEffect,useMemo,useRef,useState} from "react";
+import {useEffect,useMemo,useRef,useState} from "react";
 import {createPortal} from "react-dom";
 import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
@@ -208,15 +208,10 @@ export function MandalaAutoVideoDirector({
  const [profileCategory,setProfileCategory]=useState<CanonicalCategoryId>("energy-confidence");
  const [profileFocus,setProfileFocus]=useState<keyof typeof popularTopicCopy.ru>("confidence");
  const [profileDetails,setProfileDetails]=useState("");
- // Let Safari's native <details> own its open attribute. React's controlled
- // "open={state}" can close it between summary default activation and onToggle.
- // Preserve the last genuine user state only when React remounts this portal.
- const ideaRefinementOpenRef=useRef(false);
- const ideaRefinementNodeRef=useRef<HTMLDetailsElement|null>(null);
- const bindIdeaRefinement=useCallback((node:HTMLDetailsElement|null)=>{
-   ideaRefinementNodeRef.current=node;
-   if(node && ideaRefinementOpenRef.current)node.open=true;
- },[]);
+ // A native Safari <details> toggle can race a React portal remount.
+ // Prevent its default action and let React own the open state after a single
+ // user click (including keyboard activation and VoiceOver).
+ const [ideaRefinementExpanded,setIdeaRefinementExpanded]=useState(false);
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
  const [promptClassification,setPromptClassification]=useState<ReturnType<typeof classifyMyTubeRequest>|null>(null);
@@ -1062,23 +1057,12 @@ export function MandalaAutoVideoDirector({
    {profileTarget?createPortal(profilePanel,profileTarget):profilePanel}
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
-   {ideaTarget?createPortal(<details ref={bindIdeaRefinement}
-     className={css.ideaRefinement} data-video-ideas-refinement
-     onToggle={event=>{
-       if(event.currentTarget===ideaRefinementNodeRef.current)
-         ideaRefinementOpenRef.current=event.currentTarget.open;
-     }}>
-     <summary onClick={event=>{
-       // WebKit can lose the native <details> default toggle when React
-       // reconciles this portal after a workspace change. Commit the actual
-       // user's click before Safari's deferred toggle and preserve it if the
-       // portal is remounted. Keyboard activation also dispatches click.
+   {ideaTarget?createPortal(<details className={css.ideaRefinement}
+     data-video-ideas-refinement open={ideaRefinementExpanded}>
+     <summary aria-expanded={ideaRefinementExpanded} onClick={event=>{
+       // One real pointer/keyboard activation, never two competing toggles.
        event.preventDefault();
-       const node=event.currentTarget.parentElement;
-       if(node instanceof HTMLDetailsElement){
-         node.open=!node.open;
-         ideaRefinementOpenRef.current=node.open;
-       }
+       setIdeaRefinementExpanded(current=>!current);
      }}>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
        locale==="es"?"Explorar tema, significado y guion (opcional)":
        "Refine topic, meaning and story (optional)"}</summary>
