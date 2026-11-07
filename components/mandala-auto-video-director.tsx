@@ -2,7 +2,7 @@
 
 import {useEffect,useMemo,useState} from "react";
 import {createPortal} from "react-dom";
-import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
+import {Check,Sparkles,Target,Play,ArrowRight,ChevronDown,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
 import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs";
@@ -1055,14 +1055,19 @@ export function MandalaAutoVideoDirector({
    {profileTarget?createPortal(profilePanel,profileTarget):profilePanel}
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
-   {ideaTarget?createPortal(<details className={css.ideaRefinement} data-video-ideas-refinement
-     data-refinement-expanded={ideaRefinementOpen?"true":"false"}
-      onToggle={event=>setIdeaRefinementOpen(event.currentTarget.open)}>
-     <summary>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
-       locale==="es"?"Explorar tema, significado y guion (opcional)":
-       "Refine topic, meaning and story (optional)"}</summary>
-     {topicPanel}
-   </details>,ideaTarget):null}
+   {ideaTarget?createPortal(<section className={css.ideaRefinement} data-video-ideas-refinement
+     data-refinement-expanded={ideaRefinementOpen?"true":"false"}>
+     <button type="button" className={css.ideaRefinementToggle} data-video-ideas-refinement-toggle
+       aria-expanded={ideaRefinementOpen} aria-controls="video-ideas-refinement-panel"
+       onClick={()=>setIdeaRefinementOpen(open=>!open)}>
+       <span>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
+         locale==="es"?"Explorar tema, significado y guion (opcional)":
+         "Refine topic, meaning and story (optional)"}</span>
+       <ChevronDown size={18} aria-hidden="true" className={css.ideaRefinementChevron}/>
+     </button>
+     <div id="video-ideas-refinement-panel" className={css.ideaRefinementPanel}
+       data-video-ideas-refinement-panel hidden={!ideaRefinementOpen}>{topicPanel}</div>
+   </section>,ideaTarget):null}
    {montageTarget?createPortal(montageStylePanel,montageTarget):null}
    {showProposal&&proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
    <div className={css.notice} data-mytube-category-storyboard

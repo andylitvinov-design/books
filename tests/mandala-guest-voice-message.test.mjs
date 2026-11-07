@@ -67,8 +67,8 @@ test("macOS WebKit follows Goal 1 → Goal 2 → Ideas → Montage with native c
  const goalNext=flow.indexOf("await goal2.locator('[data-video-goal-clarify-continue]').click()",goal);
  const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',goalNext);
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
- const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
- const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
+ const open=flow.indexOf('await refineButton.click()',refinement);
+ const verify=flow.indexOf('await expect(refineButton).toHaveAttribute("aria-expanded","true")',open);
  const montage=flow.indexOf("await montage.click()",verify);
  assert.ok(first>=0&&last>first&&click>=0&&goal>click&&goalNext>goal&&ideas>goalNext&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
    "native Goal1 → Goal2 → Ideas → Montage via real selectable controls");

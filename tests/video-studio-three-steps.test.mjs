@@ -18,17 +18,19 @@ test("Goal has real category/subcategory and separate optional topic and request
  const field=director.slice(director.indexOf("const requestField="),director.indexOf("const requestInput="));
  assert.doesNotMatch(field,/setSelectedSubcategoryId\(|setSelectedTopicId\(/);
 });
-test("Ideas refinement stays open after a real Safari summary tap and portal rerender",()=>{
+test("Ideas refinement uses a real accessible button with React-owned panel, not unstable Safari native details",()=>{
  assert.match(director,/const \[ideaRefinementOpen,setIdeaRefinementOpen\]=useState\(false\)/);
- assert.match(director,/data-video-ideas-refinement[\s\S]*?data-refinement-expanded=\{ideaRefinementOpen\?"true":"false"\}[\s\S]*?onToggle=\{event=>setIdeaRefinementOpen\(event\.currentTarget\.open\)\}/);
- assert.doesNotMatch(director,/open=\{ideaRefinementOpen\}/,"the browser owns native details expansion across React rerenders");
- assert.doesNotMatch(director,/onClick=\{event=>\{event\.preventDefault\(\);setIdeaRefinementOpen\(open=>!open\);\}\}/);
- assert.match(director,/createPortal\(<details[\s\S]*?data-video-ideas-refinement[\s\S]*?,ideaTarget\)/);
+ assert.match(director,/createPortal\(<section[\s\S]*?data-video-ideas-refinement[\s\S]*?,ideaTarget\)/);
+ assert.match(director,/data-video-ideas-refinement-toggle[\s\S]*?aria-expanded=\{ideaRefinementOpen\}[\s\S]*?aria-controls="video-ideas-refinement-panel"/);
+ assert.match(director,/onClick=\{\(\)=>setIdeaRefinementOpen\(open=>!open\)\}/);
+ assert.match(director,/data-video-ideas-refinement-panel hidden=\{!ideaRefinementOpen\}/);
+ assert.doesNotMatch(director,/onToggle=\{event=>setIdeaRefinementOpen/);
+ assert.doesNotMatch(director,/open=\{ideaRefinementOpen\}/);
 });
 test("Ideas owns meaning/scenarios and Montage owns motif",()=>{
  assert.match(studio,/data-video-director-idea-controls/);
  assert.match(director,/setIdeaTarget\(document\.querySelector<HTMLElement>\("\[data-video-director-idea-controls\]"\)\)/);
- assert.match(director,/createPortal\(<details[\s\S]*?data-video-ideas-refinement[\s\S]*?,ideaTarget\)/);
+ assert.match(director,/createPortal\(<section[\s\S]*?data-video-ideas-refinement[\s\S]*?,ideaTarget\)/);
  const ideaAt=director.indexOf("const topicPanel=");
  const idea=director.slice(ideaAt,director.indexOf("return <section className={css.root}",ideaAt));
  const montage=director.slice(director.indexOf("const montageStylePanel="),ideaAt);

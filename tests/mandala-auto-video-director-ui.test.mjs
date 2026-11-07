@@ -428,7 +428,8 @@ test("goal, topic and one free-text prompt precede the four scenario choices",()
  assert.match(director,/createPortal\(requestInput,requestTarget\)/);
  assert.match(director,/createPortal\(goalPanel,goalTarget\)/);
  assert.match(director,/createPortal\(quickTopicPanel,topicTarget\)/);
- assert.match(director,/createPortal\(<details[\s\S]*?,ideaTarget\)/);
+ assert.match(director,/createPortal\(<section[\s\S]*?data-video-ideas-refinement[\s\S]*?,ideaTarget\)/);
+ assert.match(director,/data-video-ideas-refinement-toggle[\s\S]*?aria-expanded=\{ideaRefinementOpen\}/);
  assert.match(director,/createPortal\(montageStylePanel,montageTarget\)/);
  assert.match(director,/data-auto-video-story-options/);
 });

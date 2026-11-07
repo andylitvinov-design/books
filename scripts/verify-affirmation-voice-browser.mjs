@@ -79,9 +79,12 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-video-ideas-goal-summary]')).toBeVisible();
     await expect(page.locator('[data-video-idea-select]')).toHaveCount(7);
     const refinement=page.locator('[data-video-ideas-refinement]');
-    await expect(refinement.locator(":scope > summary")).toBeVisible();
-    await refinement.locator(":scope > summary").click();
-    await expect(refinement).toHaveAttribute("open","");
+    const refineButton=refinement.locator('[data-video-ideas-refinement-toggle]');
+    await expect(refineButton).toBeVisible();
+    await expect(refineButton).toHaveAttribute("aria-expanded","false");
+    await refineButton.click();
+    await expect(refineButton).toHaveAttribute("aria-expanded","true");
+    await expect(refinement.locator('[data-video-ideas-refinement-panel]')).toBeVisible();
     await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
     const montage=page.locator('[data-video-quick-control="editor"]');
     await montage.click();
