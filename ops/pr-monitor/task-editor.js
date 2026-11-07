@@ -159,7 +159,7 @@
   finally{by('pr-search').disabled=false}
  }
  async function api(action,payload,method){
-  const url='/api/commander-drafts?action='+encodeURIComponent(action);
+  const url='/api/commander-drafts?action='+encodeURIComponent(action.startsWith('read&id=')?'read':action)+(action.startsWith('read&id=')?'&id='+encodeURIComponent(action.slice(8)):'');
   const opts={method:method||'GET',credentials:'same-origin',cache:'no-store',
    headers:{Accept:'application/json',...(payload?{'Content-Type':'application/json'}:{})}};
   if(payload)opts.body=JSON.stringify(payload);
