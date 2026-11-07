@@ -4670,6 +4670,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return true;
   };
 
+  // Strip only Hypno layers; the original Montage music and timeline stay intact.
+  const freshHypnoCreateRef=useRef<()=>boolean>(()=>false);
+  useLayoutEffect(()=>{freshHypnoCreateRef.current=startFromHero;});
+  async function generateWithoutHypnoEffects(){
+    if(recording||preparing||hypnoAudioBusy)return;
+    if(phrasePending||narrationInvalid){
+      setActiveWorkspace("phrases");
+      setNotice(locale==="ru"?"Сначала подтвердите или обновите озвученные фразы.":
+        locale==="es"?"Primero confirma o actualiza las frases narradas.":
+        "Confirm or refresh your spoken phrases before creating a video.");
+      return;
+    }
+    if(hypnoWhisperEnabled||hypnoBinauralEnabled){
+      await applyHypnoAudioEffects({whisper:false,binaural:false,beatHz:hypnoBeatHz});
+      if(previousHypnoAudioRef.current)return;
+    }
+    flushSync(()=>{
+      setHypnoLight(value=>({...value,enabled:false}));
+      setAffirmations(value=>({...value,enabled:false}));
+    });
+    window.requestAnimationFrame(()=>{freshHypnoCreateRef.current();});
+  }
+
   // This is a local, non-persistent preview. A click also unlocks muted
   // same-origin footage on iOS before React's paint effect starts.
   const openAffirmationPreview = () => {
@@ -5880,9 +5903,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         </details>
 
-        {activeWorkspace==="effects" ? <div className={videoStyles.hypnoIntroSlot}
-          data-hypno-intro-slot data-hypno-third-workspace-title/> : null}
-
         {/* One original Canvas/MediaRecorder stage; it is now visible after topic selection.
             The source-backed MP4 below is a MINI source example, never a second renderer. */}
         <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage].join(" ")}
@@ -5987,6 +6007,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <ChevronRight size={17} aria-hidden="true"/>
         </button>
       </aside>
+      {activeWorkspace==="effects" ? <aside className={videoStyles.hypnoStageTitle}
+        data-hypno-stage-intro aria-label={locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipnóticos":"Hypno effects"}>
+        <Sparkles size={23} aria-hidden="true"/>
+        <div>
+          <h3>{locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipnóticos":"Hypno effects"}</h3>
+          <p>{locale==="ru"?"Выберите мягкие дополнительные эффекты для видео.":
+            locale==="es"?"Elige capas suaves opcionales para tu vídeo.":
+            "Choose optional gentle layers for your video."}</p>
+        </div>
+      </aside> : null}
       {activeWorkspace==="editor" && montagePanel==="audio" ? (
         <aside className={videoStyles.montageAudioHero} data-video-audio-intro>
           <Music2 size={27} aria-hidden="true"/>
@@ -6414,8 +6444,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onOpenScenes={()=>openQuickDetailed("video-templates")}
             onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
             onRemovePhoto={()=>setBackgroundOnly(true)}
-            onPreview={openAffirmationPreview}
-            onCreate={startFromHero}
+            onCreate={startFromHero} onCreateWithoutEffects={generateWithoutHypnoEffects}
             onWavePreset={()=>{
               setHypnoLight({enabled:true,...recommendHypnoLight(theme,wish)});
               setAffirmations(current=>({...current,enabled:true,
@@ -6636,11 +6665,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   ?"Safari no reproduce este "+result.extension.toUpperCase()+" (error "+errorCode+"). Prueba otro formato."
                   :"Safari cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Try the alternative format.");
               }}/>
-            {playbackStatus==="ready"&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
+            {result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
               ?<div className={videoStyles.guestPreviewActions} data-video-guest-preview-actions>
                 <button type="button" data-video-guest-play onClick={()=>{
                   const video=resultVideoRef.current;
                   if(!video)return;
+                  // WebKit may defer loading until this explicit guest Play gesture.
+                  if(video.readyState<2)video.load();
                   void video.play().catch(()=>setNotice(locale==="ru"
                     ?"Нажмите ▶ в самом видео, чтобы начать просмотр.":
                     locale==="es"?"Pulsa ▶ en el reproductor de vídeo.":

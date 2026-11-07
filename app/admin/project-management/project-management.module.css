@@ -10,3 +10,19 @@
 .task{border-top:1px solid #304b5d;padding:15px 0}.taskTitle{display:flex;gap:10px;align-items:baseline}.taskTitle strong{line-height:1.3}.taskTitle span{color:#77c6c3}.task .muted{font-size:13px;margin:8px 0}.taskMeta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 9px}.taskMeta span{border-radius:20px;background:#21394b;color:#b8d0df;padding:5px 8px;font-size:12px}.taskMeta .error{color:#ffb4b4;background:#4a2529}.taskMeta .state{color:#bbdedc;background:#21433d}.prLink{margin:4px 7px 4px 0;display:inline-flex;font-size:12px;min-height:34px;align-items:center}.taskTools{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:12px 0}.prField{display:flex;flex-direction:column;gap:5px;flex:1 1 230px;min-width:0;font-size:12px}.taskTools button{flex:0 1 auto}.proof{margin-top:12px;padding:12px;border-radius:10px;background:#08252f;border:1px solid #2a5762;color:#cbeaf0;font-size:12px;overflow-wrap:anywhere}.proof p{margin:6px 0}
 @media(max-width:650px){.hero{padding:14px 14px 10px}.content{padding:0 14px}.composer{display:flex;flex-direction:column;padding:14px}.stats strong{font-size:20px}.toolbar{gap:8px}.toolbar h2{width:100%;flex-basis:100%}.page button:not(.epicHead){padding:10px 12px;font-size:13px}.taskTools button{flex:1 1 120px}.epicHead{padding:15px 13px}.epicBody{padding:12px}.progress{padding:0 13px 12px}.tabs{margin-top:16px}}
 @media(max-width:350px){.brand{font-size:11px}.brand span{font-size:9px}.stats{gap:6px}.stats>div{padding:10px 8px}.stats small{font-size:10px}.tabs{gap:6px}.tab{font-size:12px;padding:8px 5px}.taskTools{flex-direction:column;align-items:stretch}.prField{flex-basis:auto}}
+/* Shared owner-mobile Command Center visual contract. Existing PM actions remain unchanged. */
+.page{background:radial-gradient(ellipse 110% 230px at 65% 0%,rgba(116,68,163,.25),transparent 78%),#0f1323;color:#f9f8ff}
+.hero,.content{max-width:600px}
+.brand span{color:#d9c5f7;background:#302748}
+.tab{background:#1e2438!important;border-color:#514267;color:#d1c4e4!important}
+.tab.active{background:#694b9c!important;border-color:#aa81e4;color:#fff!important}
+.stats>div,.composer,.epic{background:#1b2031;border-color:rgba(204,182,241,.18)}
+.page button:not(.epicHead){background:#9861e6;color:#fff}
+.page button.secondary{background:#26243d;color:#eadcfd;border-color:#68578a}
+.page input,.page select,.page textarea{background:#151827;color:#f9f7ff;border-color:#655478}
+.option{background:#232139;border-color:#504567}
+.option.picked{background:#302847;border-color:#b28af3}
+.track::-webkit-progress-value{background:#9b70e6}
+.track::-moz-progress-bar{background:#9b70e6}
+.proof{background:#1a2335;border-color:#554c72;color:#e5e1f3}
+@media(max-width:350px){.page button:not(.epicHead){min-height:44px}}
