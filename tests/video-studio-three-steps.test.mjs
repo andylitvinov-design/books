@@ -89,6 +89,8 @@ test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the rea
     assert.match(file,/data-video-montage-effects/);
     assert.match(file,/data-video-montage-next="text"/);
     assert.match(file,/VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT/);
+    assert.match(file,/await page\.waitForFunction\(\(\)=>[\s\S]*?data-video-montage-tab="text"/,
+      "real WebKit must await a committed Text tab, not inspect pre-commit React state");
     assert.doesNotMatch(file,/await page\.locator\('\[data-video-montage-tab="text"\]'\)\.click\(\)/,
       "the protected browser must use the current visible Style -> Text Next CTA");
     assert.match(file,/data-video-timeline-add-video/);

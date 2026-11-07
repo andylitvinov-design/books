@@ -146,6 +146,11 @@ try {
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
   await styleNext.waitFor({state:'visible',timeout:20000});
   await styleNext.click();
+  // A real Safari pointer action can resolve before React commits its
+  // workspace state. Poll the actual DOM; do not simulate or force a tap.
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-tab="text"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
   const addVideo=page.locator('[data-video-timeline-add-video]');
