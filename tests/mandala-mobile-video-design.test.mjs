@@ -500,7 +500,9 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.ok(prompt>=0&&prompt<goal&&goal<topic&&topic<next,
     "approved wish and Match button precede goal, category, topic chips and the original next-stage action");
   assert.match(studio,/data-video-wish-above-goals/);
-  assert.match(studio,/data-video-goal-audience-selector/);
+  assert.match(studio,/data-video-director-audience-controls/);
+  assert.match(read("components/mandala-auto-video-director.tsx"),/data-auto-video-audience=\{mode\}/);
+  assert.doesNotMatch(studio,/data-video-goal-audience-option/);
   assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-auto-video-director\]\{display:none!important\}/);
   assert.match(studio,/data-video-director-topic-controls/);
   assert.match(studio,/Сформировать индивидуальную программу видеотерапии бесплатно/);
@@ -555,7 +557,9 @@ test("studio workspace buttons remain disabled until their real handlers hydrate
   const nav=studio.slice(studio.indexOf('<nav className={videoStyles.quickVideoNav}'),
     studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.quickVideoNav}')));
   assert.match(nav,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
-  assert.match(nav,/onClick=\{\(\)=>\{/);
+  assert.match(nav,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
+  assert.match(nav,/onPointerUp=\{\(\)=>\{if\(activeWorkspace!==item\.id\)activateQuickWorkspace\(item\.id\);\}\}/);
+  assert.match(studio,/const activateQuickWorkspace=[\s\S]{0,190}setActiveWorkspace\(id\)/);
 });
 
 test("director controls and All stories stay disabled until the studio hydrates",()=>{
