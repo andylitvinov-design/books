@@ -39,7 +39,7 @@ test("the same accessible segmented navigation is above both existing page surfa
   assert.match(finder, /<MarketplaceMasterFinder practitioners=/);
   assert.match(practice, /onClick=\{\(\) => void openAction\('create'\)\}/);
   assert.match(css, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(css, /min-height:\s*58px/);
+  assert.match(css, /min-height:\s*77px/);
   assert.match(css, /:focus-visible/);
   assert.match(css, /@media \(max-width: 360px\)/);
   assert.match(practiceBrowser, /data-legacy-practice-bottom-nav/);
