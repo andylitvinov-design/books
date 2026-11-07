@@ -11,6 +11,8 @@ import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
+import {MandalaVideoGoalClarification,DEFAULT_VIDEO_GOAL_PROFILE} from "./mandala-video-goal-clarification";
+import type {VideoGoalProfile} from "./mandala-video-goal-clarification";
 
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
@@ -1855,6 +1857,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
+  const [goalPage,setGoalPage] = useState<"first"|"clarify">("first");
+  const [goalProfile,setGoalProfile] = useState<VideoGoalProfile>(DEFAULT_VIDEO_GOAL_PROFILE);
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
@@ -4711,6 +4715,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // First mobile step is only the short goal, category and optional request.
   // The user then moves to Ideas; the actual scene catalogue is an optional
   // visible action from Montage, never a hidden first-screen dialog.
+  const continueToGoalClarify = () => {
+    setVideoScenarioOpen(false);
+    setGoalPage("clarify");
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"})));
+  };
   const continueToIdeas = () => {
     setVideoScenarioOpen(false);
     setActiveWorkspace("phrases");
@@ -5271,7 +5281,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // The only workspace tab rail stays in the same place above the ONE player
   // for every mode; portal relocation previously changed geometry and focus.
   return (
-    <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
+    <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} data-video-goal-page={goalPage} id="free-personal-video"
       data-hh-video-ihelp-open={videoIHelpOpen||undefined}
       data-mandala-free-video data-video-studio-mode={studioMode}
       data-video-advanced-open={showAdvancedVideo?"true":"false"}
@@ -5345,6 +5355,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <span className={videoStyles.quickNavCompact} aria-hidden="true">{mobileWorkspaceCopy[locale][item.id]}</span>
         </button>)}
       </nav>
+      <section className={videoStyles.goalClarifyStep} data-video-goal-clarify
+        hidden={activeWorkspace!=="video"||goalPage!=="clarify"}>
+        <MandalaVideoGoalClarification locale={locale} value={goalProfile} onChange={setGoalProfile}
+          disabled={!studioHydrated||recording||preparing}
+          onBack={()=>setGoalPage("first")} onContinue={continueToIdeas}/>
+      </section>
         
         <header className={videoStyles.quickHeader}>
           <div className={videoStyles.quickHeaderText}>
@@ -5436,10 +5452,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <button type="button" className={videoStyles.quickPromptContinue}
               data-video-continue-scenarios
               disabled={!studioHydrated||recording||preparing}
-              onClick={continueToIdeas}>
+              onClick={continueToGoalClarify}>
               <Heart size={18} aria-hidden="true"/>
-              <span>{locale==="ru"?"Далее к идеям":
-                locale==="es"?"Continuar a ideas":"Continue to ideas"}</span>
+              <span>{locale==="ru"?"Уточнить мою цель":
+                locale==="es"?"Aclarar mi objetivo":"Clarify my goal"}</span>
               <ArrowRight size={19} aria-hidden="true"/>
             </button>
           </div>
@@ -5902,7 +5918,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {/* Same approved Hypno editor. Request/phrases first; voice and sound stay optional. */}
         <div className={videoStyles.phraseEditorLead} data-video-phrase-editor-first>
-          <MandalaVideoIdeas locale={locale} theme={theme}
+          <MandalaVideoIdeas locale={locale} theme={theme} goalProfile={goalProfile}
+            onBackToGoal={()=>{
+              setGoalPage("clarify");setActiveWorkspace("video");
+              window.requestAnimationFrame(()=>document.getElementById("free-personal-video")?.scrollIntoView({behavior:"auto",block:"start"}));
+            }}
             active={activeWorkspace==="phrases"} disabled={recording||preparing}
             settings={affirmations}
             generating={recording||preparing} onChange={setAffirmations}

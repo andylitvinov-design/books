@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 import {MEANING_LINES,suggestMeaningPhrases} from "../lib/mandala/video-meaning-phrases.mjs";
 const data=JSON.parse(readFileSync(new URL("../data/video-catalog/meaning-emotion-ideas-v1.json",import.meta.url),"utf8"));
 const cmp=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
+const goal=readFileSync(new URL("../components/mandala-video-goal-clarification.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 test("eight exact canonical axes, all three languages, five safe unique phrases",()=>{
@@ -22,12 +23,15 @@ test("eight exact canonical axes, all three languages, five safe unique phrases"
     assert.notDeepEqual(ref,suggestMeaningPhrases(lang,...args));
  }
 });
-test("compact Ideas screen uses actual selectors, sliders and one working Montage action",()=>{
- for(const marker of ["data-video-ideas-current","data-video-ideas-desired","data-video-ideas-state-score",
-   "data-video-ideas-energy-score","data-video-meaning-axis","data-video-idea-phrase","data-video-ideas-create"])
+test("Goal 2 owns all selectors and sliders; Ideas keeps its real phrases and Montage action",()=>{
+ for(const marker of ["data-video-goal-mood","data-video-goal-scroll","data-video-goal-energy",
+  "data-video-goal-desired-level","data-video-goal-axis","data-video-goal-clarify-continue"])
+  assert.ok(goal.includes(marker),marker);
+ for(const marker of ["data-video-idea-phrase","data-video-ideas-create",
+  "data-video-ideas-goal-summary","data-video-ideas-edit-goal"])
   assert.ok(cmp.includes(marker),marker);
- assert.match(cmp,/listMeaningAxes\(locale\)/);
- assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
+ assert.match(goal,/listMeaningAxes\(locale\)/);
+ assert.doesNotMatch(goal+cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
  assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
 });

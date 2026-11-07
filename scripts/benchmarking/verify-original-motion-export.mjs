@@ -31,6 +31,7 @@ try {
   await page.locator('[data-video-studio-hydrated="true"]').waitFor({ timeout: 60000 });
   // Select real source footage through the visitor-visible three-stage route.
   await page.locator('[data-video-continue-scenarios]').click();
+  await page.locator('[data-video-goal-clarify-continue]').click();
   assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
     'true','GOALS_MUST_OPEN_IDEAS');
   await page.locator('[data-video-quick-control="editor"]').click();
