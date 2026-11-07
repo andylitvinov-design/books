@@ -17,8 +17,12 @@ const cases = [
   ["en", "imagery-therapy", 320],
   ["en", "imagery-therapy", 390],
   ["en", "imagery-therapy", 430],
+  ["ru", "imagery-therapy", 320],
   ["ru", "imagery-therapy", 390],
+  ["ru", "imagery-therapy", 430],
+  ["es", "imagery-therapy", 320],
   ["es", "imagery-therapy", 390],
+  ["es", "imagery-therapy", 430],
   ["en", "psychohomeopathy", 390],
   ["en", "systemic-constellations", 390],
   ["en", "hypnotherapy-course", 390],
@@ -101,10 +105,13 @@ for (const engine of [chromium, webkit]) {
         assert.equal(await consent.isChecked(),false,label+" consent unchecked by default");
         assert.ok(await form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]').count()<=1,
           label+" attribution is optional and separate");
-        // The current CRM-first capture uses an explicit messenger button, not
-        // a legacy form submit. Before consent it MUST NOT dispatch a POST.
-        assert.equal(await form.locator('button[type="submit"]').count(),0,
-          label+" no default form submission");
+        // The current CRM-first form offers a deliberate request-only submit
+        // alongside messenger choices. Neither may write before consent.
+        const requestOnly=form.locator('button[type="submit"][data-compact-request-only]');
+        assert.equal(await requestOnly.count(),1,label+" one explicit CRM request");
+        assert.ok(await requestOnly.isDisabled(),label+" contact and consent gate request");
+        await form.locator('input[name="contact"][required]').fill('synthetic@example.invalid');
+        assert.ok(await requestOnly.isDisabled(),label+" no CRM submit before consent");
         const action=form.locator('button[data-compact-channel="whatsapp"]');
         await action.waitFor({state:"visible"});
         let unexpectedWrites=0;
@@ -118,6 +125,10 @@ for (const engine of [chromium, webkit]) {
         assert.equal(await page.locator("[data-sitewide-capture]:visible").count(), 0,
           label + " no duplicate generic form");
         assert.deepEqual(errors, [], label + " unexpected page errors");
+        if (slug === "imagery-therapy" && width === 320 && locale === "en") {
+          await capture.scrollIntoViewIfNeeded();
+          await page.screenshot({ path: output + "/imagery-en-final-capture-320-" + engine.name() + ".png" });
+        }
         if (engine === webkit && slug === "imagery-therapy" && width === 390 && locale === "en") {
           await page.screenshot({ path: output + "/imagery-en-first-screen-webkit.png" });
           await capture.scrollIntoViewIfNeeded();
