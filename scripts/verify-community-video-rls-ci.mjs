@@ -83,7 +83,7 @@ const insertPublication=async (db,owner,video)=>db.query(`insert into app_privat
   audio_language,visibility,contains_synthetic_media,made_for_kids,metadata_hash,
   consent_policy_version,rights_confirmed_at,privacy_reviewed_at,youtube_consent_at)
  values($1,$2,repeat('a',64),10000,'landscape',20,'Synthetic fixture','',
-  'Synthetic creator','https://holistichouse.vercel.app/en/creators/'||$1::text,
+  'Synthetic creator','https://holistichouse.vercel.app/en/creators/synthetic-fixture',
   'en','link_only',false,'no',repeat('b',64),'hh-community-youtube-v2',now(),now(),now()) returning id`,
  [owner,video])
 
