@@ -1841,7 +1841,7 @@ function quickStyleFilmFor(theme:VideoTheme,index:number){
   const id=quickStyleSceneIds[theme]?.[index];
   const candidate=id?FREE_FILM_CATALOG_BY_ID.get(id):null;
   const trusted=candidate?verifiedCategorySource(candidate):null;
-  if(!trusted)return null;
+  if(!trusted||!candidate)return null;
   // The verification helper's narrow return type intentionally does not
   // include editorial theme; read it from the already-approved catalog entry.
   const film=firstPartyFilmFor(candidate.theme as VideoTheme,candidate.id);
