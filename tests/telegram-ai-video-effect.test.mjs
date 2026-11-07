@@ -97,8 +97,10 @@ test('secure Telegram queue uses approved account, real status, lease fencing an
  const render=root('../lib/app/telegram-ai-video-render.js');
  const cron=root('../app/api/internal/direct-message-push/route.js');
  const migration=root('../supabase/migrations/20261106082000_hh_ai_account_video_consent.sql');
- for(const pattern of [/aiVideoBotIdentityReady/,/timingSafeEqual/,/telegramPersonalVideoSendReady/])
+ for(const pattern of [/aiVideoBotIdentityReady/,/aiQueueClientBotIdentityReady/,/telegramPersonalVideoSendReady/])
   assert.match(security,pattern);
+ assert.match(root('../lib/app/telegram-bot-token-boundary.mjs'),/timingSafeEqual/);
+ assert.match(queue,/aiQueueClientBotIdentityReady\(env\)/);
  for(const pattern of [/currentAiVideoAccount/,/\/confirm/,/planTelegramAiVideo/,
   /video-progress:/,/beginVideoEffect/,/expiresAt/])assert.match(flow,pattern);
  for(const pattern of [/verifyAiVideoBoundAccount/,/lease_until>now\(\)/,
@@ -132,5 +134,5 @@ test('render budget gate is enforced inside queue worker regardless of endpoint'
  assert.match(worker,/consume\('video',approvedVideos,async job=>\{/);
  assert.doesNotMatch(worker,/consume\('video',videos,async job=>\{/);
  assert.match(bot,/telegramPersonalVideoSendReady\(env\)/);
- assert.match(bot,/timingSafeEqual/);
+ assert.match(root('../lib/app/telegram-bot-token-boundary.mjs'),/timingSafeEqual/);
 });
