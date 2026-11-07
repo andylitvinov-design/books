@@ -6,6 +6,7 @@ import {readCommandSnapshot,createObjective,createProject,createTask,
 import {sanitizeObjective,sanitizeProject,sanitizeTask,ccUuid} from '@/lib/command-center/contracts.mjs';
 import {executeOneCommandTask} from '@/lib/command-center/dispatcher.mjs';
 import {inspectCommandTaskDelivery} from '@/lib/command-center/release-proof.mjs';
+import {validateCommandBatchIds} from '@/lib/command-center/batch-selection.mjs';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -25,6 +26,7 @@ const keysFor={
   pause_all:['action','requestId'],resume_safe:['action','requestId'],
   task_pause:['action','requestId','taskId'],task_ready:['action','requestId','taskId'],
   task_cancel:['action','requestId','taskId'],run_now:['action','requestId'],
+  run_selected_safe:['action','requestId','taskIds'],
   inspect_delivery:['action','requestId','taskId']
 };
 export async function POST(request){
@@ -60,6 +62,20 @@ export async function POST(request){
       if(!task)return privateJson({error:'TASK_NOT_FOUND'},404);
       result=await inspectCommandTaskDelivery(task.source_ref);
       // A server-side readback never changes task state or claims functional LIVE.
+    }else if(data.action==='run_selected_safe'){
+      const ids=validateCommandBatchIds(data.taskIds);
+      if(!ids)return privateJson({error:'INVALID_TASK_SELECTION'},400);
+      if(process.env.VERCEL_ENV!=='production'||process.env.HH_CC_TICK_ENABLED!=='true')
+        return privateJson({error:'RUNTIME_NOT_APPROVED'},409);
+      const results=[];
+      for(const taskId of ids){
+        // Each selected task claims its own DB row + existing global quota
+        // under the same lock used by the existing 10-minute dispatcher.
+        const r=await executeOneCommandTask({config,transaction,taskId});
+        results.push({taskId,status:r.status,runId:r.runId||null,
+          worker:r.worker||null,live:false});
+      }
+      result={status:'batch_observed',requested:ids.length,results};
     }else if(data.action==='run_now'){
       if(process.env.VERCEL_ENV!=='production'||process.env.HH_CC_TICK_ENABLED!=='true')
         return privateJson({error:'RUNTIME_NOT_APPROVED'},409);

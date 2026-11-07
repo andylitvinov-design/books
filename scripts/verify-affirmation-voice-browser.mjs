@@ -78,8 +78,15 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
     const refinement=page.locator('[data-video-ideas-refinement]');
-    await expect(refinement.locator(":scope > summary")).toBeVisible();
-    await refinement.locator(":scope > summary").click();
+    const refineSummary=refinement.locator(":scope > summary");
+    await expect(refineSummary).toBeVisible();
+    // Prove genuine native mouse/touch activation, including persisted-open
+    // portal state from an earlier step. Never force-open with evaluate().
+    if(await refinement.getAttribute("open")!==null){
+      await refineSummary.click();
+      await expect(refinement).not.toHaveAttribute("open","");
+    }
+    await refineSummary.click();
     await expect(refinement).toHaveAttribute("open","");
     await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
     const montage=page.locator('[data-video-quick-control="editor"]');
