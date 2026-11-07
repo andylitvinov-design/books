@@ -324,8 +324,8 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
   assert.ok(ui.includes('setConsent(false)'));
   assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
   const speechChangeEffect=ui.slice(
-    ui.indexOf('    const textChanged=originRef.current.speechText!==speechText;'),
-    ui.indexOf('  },[speechText,voiceId,language]);'));
+    ui.indexOf('    const textChanged=previous.speechText!==speechText;'),
+    ui.indexOf('  },[speechText,voiceId,language,busy,mixing,locale]);'));
   assert.match(speechChangeEffect,/if\(voiceDataRef\.current\)onInvalidateRef\.current\?\.\(\)/,
     "changing the spoken phrase must detach its previous WAV");
   assert.doesNotMatch(speechChangeEffect,/voiceDataRef\.current&&!textChanged/,
@@ -512,4 +512,22 @@ test("headed WebKit narration uses a real short touch without duplicate provider
   assert.ok(browser.includes('window.__hhVoiceSubmitProbe.touches++'));
   assert.ok(browser.includes('assert.equal(affirmationRequests.length,1)'));
   assert.ok(browser.includes('pcm.stdout.some(value=>value!==0)'));
+});
+
+test("Safari voice lifecycle: identical inputs preserve pending WAV, changed ones revoke stale consent",()=>{
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  assert.match(voice,/useLayoutEffect\(\(\)=>\{\s*const previous=originRef\.current/);
+  assert.match(voice,/previous\.speechText===speechText && previous\.voiceId===voiceId/);
+  assert.match(voice,/previous\.language===language\)return/);
+  assert.match(voice,/\[speechText,voiceId,language,busy,mixing,locale\]/);
+  assert.match(voice,/setGenerationPhase\(interrupted\?"cancelled":"idle"\)/);
+  assert.match(voice,/if\(textChanged\)setConsent\(false\)/);
+  assert.match(voice,/controllerRef\.current\?\.abort\(\)/);
+  assert.match(voice,/onAttach\(\{file,speechFile,[\s\S]*?setGenerationPhase\("attached"\)/);
+  assert.match(voice,/data-video-affirmation-phase=\{generationPhase\}/);
+  assert.match(voice,/code==="AbortError"\?"cancelled":"failed"/);
+  assert.match(voice,/voiceRequestInFlight\.current=true/);
+  assert.match(browser,/assert\.equal\(affirmationRequests\.length,1\)/);
+  assert.match(browser,/toContainText\(expectedFileName\)/);
 });
