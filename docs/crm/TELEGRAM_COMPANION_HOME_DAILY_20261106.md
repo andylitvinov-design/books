@@ -69,3 +69,38 @@ actually ran, and physically inspect the iPhone chat's native Menu plus
 scheduled message is sent. Maximum five scheduled messages per morning remains
 an intentionally limited pilot; do not promise delivery to unlimited clients.
 No generative LLM or private subscription-material access is added here.
+
+## Immediate signed first-home bootstrap (release follow-up)
+
+The scheduled 09:00 America/Toronto command bootstrap is retained as a
+fallback, **but a client no longer needs to wait until tomorrow** after
+deployment. Once the existing signed CRM Telegram webhook has successfully
+committed a Companion reply to a genuine private-chat `/menu`, `/start`,
+`/home`, or supported short greeting, Next `after()` checks native Bot
+commands against the **same existing** verified CRM bot. A fixed global
+database rate bucket (maximum **one** manual bootstrap attempt per rolling
+hour across serverless instances) prevents each `/menu` from generating
+additional provider traffic. This operation is independent of newsletter
+and `/daily` opt-ins; it calls only the metadata API
+(`getMe` / `getWebhookInfo` / `getMyCommands` /
+`setMyCommands` / `getChatMenuButton` /
+`setChatMenuButton` when safe), never `sendMessage` or
+`setWebhook`. It does not change owner-scoped or group commands,
+or overwrite an existing Mini App menu.
+
+Privacy-preserving diagnostic markers:
+`HH_CRM_TG_COMMAND_MENU_READY` with `source: first_home` or
+`source: morning_cron` and number of changed scopes (no bot token,
+chat ID, private message or clinical data);
+`HH_CRM_TG_COMMAND_MENU_NOT_READY` with an allowlisted reason;
+`HH_CRM_TG_COMMAND_MENU_SETUP_FAILED` without any provider payload.
+No provider receipt means no confirmed Telegram live behaviour.
+
+**Live acceptance:** after exact protected PR merge + Vercel READY
+deployment, user sends `/menu` on the existing Holistic House bot,
+receives the 4×2 reply keyboard and checks the *native* Menu button.
+After this customer-initiated exchange, inspect the sanitized setup marker
+and same-bot readback. No bot API operation is triggered merely by
+opening an existing Telegram chat. The daily greeting still requires
+separate `/daily` consent and has the 09:00 Toronto,
+max-five-per-morning pilot bound.
