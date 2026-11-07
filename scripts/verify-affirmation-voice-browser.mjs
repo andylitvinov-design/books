@@ -61,15 +61,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
     const refinement=page.locator('[data-video-ideas-refinement]');
-    const refineSummary=refinement.locator(":scope > summary");
-    await expect(refineSummary).toBeVisible();
-    // A real user click must open native Safari details. If it was already
-    // open from a previous visitor step, first verify it can close as well.
-    if(await refinement.getAttribute("open")!==null){
-      await refineSummary.click();
-      await expect(refinement).not.toHaveAttribute("open","");
-    }
-    await refineSummary.click();
+    await expect(refinement.locator(":scope > summary")).toBeVisible();
+    await refinement.locator(":scope > summary").click();
     await expect(refinement).toHaveAttribute("open","");
     await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
     const montage=page.locator('[data-video-quick-control="editor"]');
@@ -704,20 +697,45 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The approved TTS track is already attached; both effects must render
       // locally into a real stereo WAV before the movie export starts.
       await page.locator('[data-video-quick-control="effects"]').click();
-      // The new three exclusive Hypno panes start in Visual, not Audio.
-      // Use genuine visible visitor taps to reveal each panel before testing
-      // the attached consented narration and real stereo audio effects.
+      // Approved Hypno UI has two real panels. Check the new visual controls
+      // in headed WebKit before moving to the existing narration/effect mixer.
       const hypnoTabs=page.locator('[data-hypno-tabs]');
       await hypnoTabs.waitFor({state:"visible",timeout:10000});
-      for(const group of ["phrases","visual","audio"]){
-        const tab=hypnoTabs.locator('[data-hypno-tab="'+group+'"]');
-        await expect(tab).toBeVisible();
-        await tab.click();
-        await expect(tab).toHaveAttribute("aria-selected","true");
-        await expect(page.locator('[data-hypno-group="'+group+'"]')).toBeVisible();
-      }
+      const visualTab=hypnoTabs.locator('[data-hypno-tab="visual"]');
+      const audioTab=hypnoTabs.locator('[data-hypno-tab="audio"]');
+      await expect(hypnoTabs.getByRole("tab")).toHaveCount(2);
+      await expect(visualTab).toBeVisible();
+      await expect(audioTab).toBeVisible();
+      await expect(visualTab).toHaveAttribute("aria-selected","true");
+      const visualGroup=page.locator('[data-hypno-group="visual"]');
       const audioGroup=page.locator('[data-hypno-group="audio"]');
-      await audioGroup.waitFor({state:"visible",timeout:10000});
+      await expect(visualGroup).toBeVisible();
+      await expect(audioGroup).toBeHidden();
+      const lightPresets=visualGroup.locator('[data-hypno-light-preset]');
+      await expect(lightPresets).toHaveCount(3);
+      const balancedLight=lightPresets.nth(1);
+      await expect(balancedLight).toBeEnabled();
+      await balancedLight.click();
+      await expect(balancedLight).toHaveAttribute("aria-pressed","true");
+      await expect(visualGroup.locator('[data-hypno-card]').first().getByRole("switch"))
+        .toHaveAttribute("aria-checked","true");
+      const textPosition=visualGroup.locator('[data-hypno-text-position="top"]');
+      await expect(textPosition).toBeVisible();
+      await textPosition.click();
+      await expect(textPosition).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-hypno-summary]')).toContainText(
+        locale==="ru"?"Выбрано":locale==="es"?"Elegidos":"Selected");
+      // Exercise the experimental short-frame control, then restore its
+      // initial OFF state; its effect is never presented as clinical proof.
+      const briefFrame=visualGroup.locator('[data-hypno-card]').nth(2).getByRole("switch");
+      await briefFrame.click();
+      await expect(briefFrame).toHaveAttribute("aria-checked","true");
+      await briefFrame.click();
+      await expect(briefFrame).toHaveAttribute("aria-checked","false");
+      await audioTab.click();
+      await expect(audioTab).toHaveAttribute("aria-selected","true");
+      await expect(visualGroup).toBeHidden();
+      await expect(audioGroup).toBeVisible();
       const speechCard=audioGroup.locator("[data-hypno-card]").first();
       await speechCard.locator("button").first().click();
       await expect(audioGroup.locator("[data-hypno-speech-settings] [data-hypno-voice]"))

@@ -4914,3 +4914,49 @@
  grid-auto-flow:row!important;grid-auto-columns:auto!important;
  overflow:visible!important;gap:6px!important;min-width:0!important
 }
+
+
+/* Owner-approved 07-Nov compact PRO: original player only, with a short cinematic cover. */
+@media(max-width:759px){
+  .studio[data-active-workspace="pro"] .quickBuilder{
+    min-width:0!important;padding-bottom:calc(var(--hh-unified-nav-height,90px) + env(safe-area-inset-bottom,0px) + 18px)!important
+  }
+  .studio[data-active-workspace="pro"] .quickBuilder>.previewStage{
+    display:grid!important;box-sizing:border-box!important;width:100%!important;
+    max-width:100%!important;min-width:0!important;grid-column:1/-1!important;
+    padding:0!important;margin:0!important;border:0!important;background:transparent!important
+  }
+  .studio[data-active-workspace="pro"] .previewStage>.heroWithRail{
+    display:block!important;box-sizing:border-box!important;width:100%!important;
+    max-width:100%!important;min-width:0!important;margin:0!important
+  }
+  .studio[data-active-workspace="pro"] .previewStage .heroRail{display:none!important}
+  .studio[data-active-workspace="pro"] .previewStage>.heroWithRail>.hero{
+    display:block!important;box-sizing:border-box!important;flex:none!important;
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    height:clamp(118px,36vw,164px)!important;max-height:164px!important;
+    min-height:0!important;aspect-ratio:auto!important;
+    margin:0!important;border-radius:19px!important
+  }
+  .studio[data-active-workspace="pro"] .previewStage .hero[data-hero-promo="true"] .heroPromo{
+    opacity:1!important;
+    background-image:linear-gradient(100deg,#122e271c,transparent 70%),
+      url("/images/holistic-house/pro-enhance-hero.webp")!important;
+    background-position:center 50%!important;background-size:cover!important
+  }
+  .studio[data-active-workspace="pro"] .previewStage .heroPromo::after{display:none!important}
+  .studio[data-active-workspace="pro"] .previewStage .hero[data-hero-promo="true"] .heroCanvas{
+    opacity:0!important
+  }
+  .studio[data-active-workspace="pro"] .previewStage .heroShade{
+    background:linear-gradient(0deg,#112b2e94,transparent 54%)!important
+  }
+  .studio[data-active-workspace="pro"] .quickBuilder>[data-video-pro-enhance]{
+    display:grid!important;order:20!important;min-width:0!important
+  }
+}
+@media(max-width:759px) and (max-height:740px){
+  .studio[data-active-workspace="pro"] .previewStage>.heroWithRail>.hero{
+    height:clamp(105px,32vw,142px)!important
+  }
+}

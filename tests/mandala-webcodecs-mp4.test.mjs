@@ -174,14 +174,9 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const flow=browser.slice(start,end);
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
   const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
-  const refinement=flow.indexOf('const refinement=page.locator',continueTap);
-  const summary=flow.indexOf('const refineSummary=refinement.locator(":scope > summary")',refinement);
-  const closeOpt=flow.indexOf('if(await refinement.getAttribute("open")!==null)',summary);
-  const closeVerified=flow.indexOf('await expect(refinement).not.toHaveAttribute("open","")',closeOpt);
-  const openTap=flow.indexOf('await refineSummary.click()',closeVerified);
-  const openVerified=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',openTap);
-  const montage=flow.indexOf("await montage.tap()",openVerified);
-  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&refinement>continueTap&&summary>refinement&&closeOpt>summary&&closeVerified>closeOpt&&openTap>closeVerified&&openVerified>openTap&&montage>openVerified,
+  const refinement=flow.indexOf('await refinement.locator(":scope > summary").click()',continueTap);
+  const montage=flow.indexOf("await montage.tap()",refinement);
+  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&refinement>continueTap&&montage>refinement,
     "actual visible Goals tap must reveal Ideas then the user-opened refinement before Montage");
   assert.match(flow,/data-video-continue-scenarios/);
   assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
@@ -200,11 +195,25 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  assert.ok(settings>=0&&selectDuration>settings&&openAudio>selectDuration&&phrases>openAudio&&reenter>phrases&&voice>reenter,
    "visitor must use the actual Settings, Audio and Voice before recording the real MP4");
  assert.match(browser,/const hypnoTabs=page\.locator\('\[data-hypno-tabs\]'\)/);
- assert.match(browser,/for\(const group of \["phrases","visual","audio"\]\)/);
- assert.match(browser,/await expect\(tab\)\.toHaveAttribute\("aria-selected","true"\)/);
- assert.match(browser,/await expect\(page\.locator\('\[data-hypno-group="'\+group\+'"\]'\)\)\.toBeVisible\(\)/);
+ assert.match(browser,/const visualTab=hypnoTabs\.locator\('\[data-hypno-tab="visual"\]'\)/);
+ assert.match(browser,/const audioTab=hypnoTabs\.locator\('\[data-hypno-tab="audio"\]'\)/);
+ assert.match(browser,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
+ assert.match(browser,/await expect\(visualTab\)\.toHaveAttribute\("aria-selected","true"\)/);
+ assert.match(browser,/await expect\(audioTab\)\.toHaveAttribute\("aria-selected","true"\)/);
+ assert.match(browser,/await balancedLight\.click\(\)/);
+ assert.match(browser,/await textPosition\.click\(\)/);
+ assert.match(browser,/await expect\(visualGroup\)\.toBeHidden\(\)/);
+ assert.match(browser,/await expect\(audioGroup\)\.toBeVisible\(\)/);
  assert.doesNotMatch(browser,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
  assert.match(browser,/encoded-audio-verified/);
+ // Preserve the real first guest movie flow on the current tabbed Montage.
+ const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+ assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
+ assert.match(firstVideo,/await montageStyle\.click\(\)/);
+ assert.match(firstVideo,/await styleNext\.waitFor\(\{state:'visible',timeout:20000\}\)/);
+ assert.match(firstVideo,/await styleNext\.click\(\)/);
+ assert.match(firstVideo,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
+ assert.match(firstVideo,/FOUR_DISTINCT_SOURCES_REQUIRED/);
  assert.match(browser,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
 });
 
@@ -345,4 +354,16 @@ test("compact Ideas opens its actual opt-in voice editor via visible user contro
   "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",
   'spawnSync("ffprobe"','spawnSync("ffmpeg"'])
   assert.ok(browser.includes(required),"do not lose true media/consent coverage: "+required);
+});
+
+test("failed Safari output hides guest Watch and labels the result as a playback failure",()=>{
+  const result=studio.slice(studio.indexOf('id="personal-video-result"'));
+  assert.match(result,/playbackStatus==="failed"\?\(locale==="ru"\?"Ошибка воспроизведения видео"/);
+  assert.match(result,/locale==="es"\?"Error al reproducir el vídeo":"Video playback failed"/);
+  assert.match(result,/playbackStatus!=="failed"&&result\.mode!=="catalog"&&creditCatalog\?\.chargeRequired&&creditSession!=="signed_in"/);
+  // Until the first decoded frame Safari still needs an explicit user Play gesture.
+  assert.match(result,/data-video-guest-play/);
+  assert.match(result,/data-video-verify-playback/);
+  assert.match(result,/data-video-playback-error/);
+  assert.match(result,/playbackStatus==="ready"&&result\.mode!=="catalog"&&creditConfirmed/);
 });

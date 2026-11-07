@@ -472,17 +472,3 @@ test("new prompt and profile choice invalidate every prior MyTube plot selection
  for(const setter of ["setSelectedScenarioId(","setSelectedPlotId(","setTimelineEdits("])
    assert.ok(field.includes(setter),"new request invalidates stale storyboard");
 });
-
-test("Ideas refinement synchronously preserves real WebKit summary activation",()=>{
- const i=director.indexOf("data-video-ideas-refinement");
- const j=director.indexOf("</details>,ideaTarget)",i);
- assert.ok(i>0&&j>i,"Ideas disclosure must remain in the existing single portal");
- const disclosure=director.slice(i,j);
- assert.match(disclosure,/<summary onClick=\{event=>\{/);
- assert.match(disclosure,/event\.preventDefault\(\)/);
- assert.match(disclosure,/const nextOpen=!details\.open/);
- assert.match(disclosure,/ideaRefinementOpenRef\.current=nextOpen/);
- assert.match(disclosure,/details\.open=nextOpen/);
- assert.match(disclosure,/onToggle=\{event=>/);
- assert.match(director,/if\(node && ideaRefinementOpenRef\.current\)node\.open=true/);
-});

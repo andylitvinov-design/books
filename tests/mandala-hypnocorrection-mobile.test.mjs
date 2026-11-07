@@ -73,21 +73,27 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   assert.match(studio,/openQuickDetailed\("video-hypnosis"\)/);
   assert.match(studio,/onOpenScenes=\{\(\)=>openQuickDetailed\("video-templates"\)\}/);
   assert.equal((studio.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw the real hypno overlay");
-  for(const name of ['"phrases"','"audio"','"visual"'])assert.ok(ui.includes(name));
+  for(const name of ['"audio"','"visual"'])assert.ok(ui.includes(name));
   assert.doesNotMatch(ui,/posters\.meditation/,"no stale lookup remains for the removed meditation group");
   for(const name of ["25-й кадр","Бинауральные ритмы","Импульс света",
     "Быстрая настройка с Wave","Создать личную медитацию"])assert.ok(ui.includes(name));
-  assert.match(css,/font-size:18px/);
+  assert.match(css,/font-size:clamp\(14px,3\.8vw,18px\)/);
   assert.match(css,/\.feature\{display:grid/);
   assert.doesNotMatch(ui,/fetch\(|getUserMedia\(|checkout|stripe|payPal/i);
 });
 
-test("06 Nov Hypno uses three exclusive effect tabs under the one actual player",()=>{
+test("07 Nov Hypno uses two exclusive effect tabs and live visual option chips",()=>{
   const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
   const videoCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
-  for(const id of ["phrases","visual","audio"])assert.match(ui,new RegExp('id:"'+id+'"'));
+  for(const id of ["visual","audio"])assert.match(ui,new RegExp('id:"'+id+'"'));
+  assert.doesNotMatch(ui,/id:"phrases",title:/,"phrases are now accessible within Visual");
+  assert.match(ui,/data-hypno-light-preset=\{index\}/);
+  assert.match(ui,/data-hypno-text-position=\{position\}/);
+  assert.match(ui,/data-hypno-summary/);
+  assert.match(ui,/onOpenPhraseEditor/);
+  assert.match(ui,/onLightChange\(\{\.\.\.light,enabled:true,opacity\}\)/);
   assert.match(ui,/useState<GroupId>\("visual"\)/);
   assert.match(ui,/data-hypno-tabs/);
   assert.match(ui,/role="tablist"/);

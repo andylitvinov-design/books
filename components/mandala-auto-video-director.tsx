@@ -208,8 +208,8 @@ export function MandalaAutoVideoDirector({
  const [profileCategory,setProfileCategory]=useState<CanonicalCategoryId>("energy-confidence");
  const [profileFocus,setProfileFocus]=useState<keyof typeof popularTopicCopy.ru>("confidence");
  const [profileDetails,setProfileDetails]=useState("");
- // Let Safari's native <details> own its open attribute. Capture user
- // activation synchronously: WebKit can remount the portal before onToggle.
+ // Let Safari's native <details> own its open attribute. React's controlled
+ // "open={state}" can close it between summary default activation and onToggle.
  // Preserve the last genuine user state only when React remounts this portal.
  const ideaRefinementOpenRef=useRef(false);
  const ideaRefinementNodeRef=useRef<HTMLDetailsElement|null>(null);
@@ -1069,14 +1069,16 @@ export function MandalaAutoVideoDirector({
          ideaRefinementOpenRef.current=event.currentTarget.open;
      }}>
      <summary onClick={event=>{
-       // A real tap/keyboard activation must persist BEFORE async onToggle.
-       // preventDefault avoids Safari toggling native state for a second time.
-       const details=event.currentTarget.parentElement as HTMLDetailsElement|null;
-       if(!details)return;
+       // WebKit can lose the native <details> default toggle when React
+       // reconciles this portal after a workspace change. Commit the actual
+       // user's click before Safari's deferred toggle and preserve it if the
+       // portal is remounted. Keyboard activation also dispatches click.
        event.preventDefault();
-       const nextOpen=!details.open;
-       ideaRefinementOpenRef.current=nextOpen;
-       details.open=nextOpen;
+       const node=event.currentTarget.parentElement;
+       if(node instanceof HTMLDetailsElement){
+         node.open=!node.open;
+         ideaRefinementOpenRef.current=node.open;
+       }
      }}>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
        locale==="es"?"Explorar tema, significado y guion (opcional)":
        "Refine topic, meaning and story (optional)"}</summary>
