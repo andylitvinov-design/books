@@ -20,11 +20,11 @@ type Props={
 };
 const COPY={
  ru:{
-  title:"Куда отправить видео?",device:"Скачать файл",telegram:"Telegram",
+  title:"Куда отправить видео?",device:"Скачать файл",telegram:"Telegram",savePrivate:"Сохранить в Мои видео",savedPrivate:"Видео проверено и сохранено в приватном каталоге.",openMyVideos:"Открыть Мои видео",refreshLogin:"Проверить вход",
   whatsapp:"WhatsApp",close:"Закрыть",hint:"Для WhatsApp и Telegram откроется меню телефона — выберите нужный мессенджер.",
   noShare:"Этот браузер не умеет передавать видео в приложения. Скачайте файл и отправьте его из Telegram или WhatsApp вручную.",
   guest:"Для автоматической доставки в Telegram войдите в Holistic House и привяжите бота.",
-  login:"Войти и подключить Telegram",connect:"Подключить Telegram-бота",
+  login:"Войти в Мой дом",connect:"Подключить Telegram-бота",
   bot:"Продолжить в Telegram",connected:"Telegram подключён",
   refresh:"Проверить подключение",direct:"Отправить готовое MP4 ботом",
   automatic:"Автоматически отправлять будущие ролики в мой Telegram",
@@ -38,15 +38,14 @@ const COPY={
   error:"Не удалось подтвердить отправку или сохранить настройки. Видео осталось на устройстве; проверьте кабинет и попробуйте позже.",
   cancelled:"Поделиться отменено.",
   privacy:"Файл загружается на сервер только после разрешения на доставку. Автоотправку можно отключить здесь в любое время.",
-  house:"Сохранить в My House",community:"На общий YouTube Holistic House",
-  houseSaved:"Готовый MP4 сохранён только в вашем приватном кабинете. YouTube не получал этот файл.",
+  community:"Опубликовать на YouTube Holistic House (после согласия)",
  },
  en:{
-  title:"Where should we send your video?",device:"Download file",telegram:"Telegram",
+  title:"Where should we send your video?",device:"Download file",telegram:"Telegram",savePrivate:"Save to My Videos",savedPrivate:"Video verified and saved in your private library.",openMyVideos:"Open My Videos",refreshLogin:"Check sign-in",
   whatsapp:"WhatsApp",close:"Close",hint:"Telegram and WhatsApp use your device's Share menu. Select the app there.",
   noShare:"File sharing is unavailable in this browser. Download the video, then share it manually from Telegram or WhatsApp.",
   guest:"Sign in to Holistic House and link your Telegram bot to enable automatic delivery.",
-  login:"Sign in and connect Telegram",connect:"Connect Telegram bot",
+  login:"Sign in to My House",connect:"Connect Telegram bot",
   bot:"Continue in Telegram",connected:"Telegram linked",
   refresh:"Check connection",direct:"Send finished MP4 via bot",
   automatic:"Automatically send future videos to my Telegram",
@@ -60,15 +59,14 @@ const COPY={
   error:"Could not verify delivery or save preferences. Your local video remains available; review your account before trying again.",
   cancelled:"Sharing cancelled.",
   privacy:"The video is uploaded only after you agree to delivery. You can disable automatic delivery here.",
-  house:"Save in My House",community:"Holistic House community YouTube",
-  houseSaved:"The final MP4 was saved only in your private cabinet. Nothing was sent to YouTube.",
+  community:"Publish to Holistic House YouTube (with separate consent)",
  },
  es:{
-  title:"¿Dónde enviar tu vídeo?",device:"Descargar archivo",telegram:"Telegram",
+  title:"¿Dónde enviar tu vídeo?",device:"Descargar archivo",telegram:"Telegram",savePrivate:"Guardar en Mis vídeos",savedPrivate:"Vídeo verificado y guardado en tu biblioteca privada.",openMyVideos:"Abrir Mis vídeos",refreshLogin:"Comprobar acceso",
   whatsapp:"WhatsApp",close:"Cerrar",hint:"Telegram y WhatsApp usan el menú Compartir del teléfono. Elige allí la aplicación.",
   noShare:"Este navegador no puede compartir archivos. Descarga el vídeo y envíalo desde Telegram o WhatsApp manualmente.",
   guest:"Inicia sesión en Holistic House y conecta el bot de Telegram para activar el envío automático.",
-  login:"Entrar y conectar Telegram",connect:"Conectar bot de Telegram",
+  login:"Entrar a Mi espacio",connect:"Conectar bot de Telegram",
   bot:"Continuar en Telegram",connected:"Telegram conectado",
   refresh:"Comprobar conexión",direct:"Enviar MP4 con el bot",
   automatic:"Enviar automáticamente los próximos vídeos a mi Telegram",
@@ -82,8 +80,7 @@ const COPY={
   error:"No se pudo verificar el envío o guardar la preferencia. El vídeo local sigue disponible; revisa tu cuenta antes de reintentarlo.",
   cancelled:"Compartir cancelado.",
   privacy:"El vídeo solo se sube cuando autorizas el envío. Puedes desactivar el envío automático aquí.",
-  house:"Guardar en Mi Casa",community:"YouTube comunitario de Holistic House",
-  houseSaved:"El MP4 terminado está solo en tu biblioteca privada. No se envió a YouTube.",
+  community:"Publicar en YouTube Holistic House (con autorización separada)",
  }
 } as const;
 const MAX_BYTES=12_000_000;
@@ -97,10 +94,11 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  const [state,setState]=useState<State|null>(null);
  const [session,setSession]=useState<"checking"|"signed_in"|"guest"|"unavailable">("checking");
  const [notice,setNotice]=useState("");
- const [busy,setBusy]=useState(false);
- const [botUrl,setBotUrl]=useState("");
+ const [savedId,setSavedId]=useState<string|null>(null);
  const [communityAssetId,setCommunityAssetId]=useState<string|null>(null);
  const [showCommunity,setShowCommunity]=useState(false);
+ const [busy,setBusy]=useState(false);
+ const [botUrl,setBotUrl]=useState("");
  const inFlight=useRef<Promise<string>|null>(null);
  const autoAttempted=useRef(false);
  // A new video may auto-send only if opt-in was already active when this result loaded.
@@ -135,6 +133,8 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   })();
   return()=>{active=false};
  },[]);
+ // A guest can finish OAuth in a separate tab without losing the video Blob.
+ useEffect(()=>{if(open)void refresh();},[open,refresh]);
  async function shareFromDevice(){
   try{
    // File construction and navigator.canShare may themselves throw in older
@@ -174,17 +174,22 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   void task.catch(()=>{if(inFlight.current===task)inFlight.current=null;});
   return task;
  }
-  async function saveToMyHouse(showEditor:boolean){
-   if(busy||!readyMp4)return;
-   setBusy(true);setNotice("");
-   try{
-    // Only an explicit tap may trigger private upload. This is NOT consent for YouTube.
-    const id=await privateUpload();
-    setCommunityAssetId(id);setShowCommunity(showEditor);
-    setNotice(t.houseSaved);
-   }catch{setNotice(t.error)}finally{setBusy(false)}
-  }
-  async function sendViaBot(automatic:boolean){
+ // Saving privately and requesting community publishing are separate choices.
+ // Opening the community editor is not consent to upload anything to YouTube.
+ async function saveToMyHouse(showEditor:boolean){
+  if(busy||session!=="signed_in"||!readyMp4)return;
+  setBusy(true);setNotice(t.wait);
+  try{
+   const id=await privateUpload();
+   setSavedId(id);
+   setCommunityAssetId(showEditor?id:null);
+   setShowCommunity(showEditor);
+   setNotice(t.savedPrivate);
+  }catch{setNotice(t.error);}
+  finally{setBusy(false);}
+ }
+ async function saveToLibrary(){return saveToMyHouse(false);}
+ async function sendViaBot(automatic:boolean){
   if(busy||!readyMp4)return;
   if(!automatic){
    // A manual send supersedes this result's pending automatic delivery.
@@ -249,27 +254,43 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
    <button type="button" onClick={onClose} className={css.close}>{t.close}</button>
   </div>
   <div className={css.choices}>
-   <a className={css.device} href={url} download={fileName} data-video-save-direct-choice>
-    <Download size={18} aria-hidden="true"/>{t.device}
-   </a>
-   <button type="button" onClick={()=>void shareFromDevice()} data-video-telegram-share>
-    <Send size={18} aria-hidden="true"/>{t.telegram}
+   {session==="signed_in"?<button type="button" className={css.savePrivate}
+     disabled={busy||!readyMp4} onClick={()=>void saveToLibrary()} data-video-save-to-library>
+     <CheckCircle2 size={18} aria-hidden="true"/>{t.savePrivate}
+   </button>:null}
+   {session==="signed_in"&&state?.cloudAvailable&&readyMp4?
+    <button type="button" className={css.savePrivate} disabled={busy}
+      data-video-community-youtube onClick={()=>void saveToMyHouse(true)}>
+      {t.community}
+    </button>:null}
+   {session==="signed_in"?<a className={css.device} href={url} download={fileName}
+     data-video-save-direct-choice><Download size={18} aria-hidden="true"/>{t.device}</a>:
+    <button type="button" className={css.device} disabled data-video-save-locked>
+     <Download size={18} aria-hidden="true"/>{t.device}
+    </button>}
+   <button type="button" onClick={()=>void shareFromDevice()}
+     disabled={busy||session!=="signed_in"} data-video-telegram-share>
+     <Send size={18} aria-hidden="true"/>{t.telegram}
    </button>
-   <button type="button" onClick={()=>void shareFromDevice()} data-video-whatsapp-share>
-    <MessageCircle size={18} aria-hidden="true"/>{t.whatsapp}
+   <button type="button" onClick={()=>void shareFromDevice()}
+     disabled={busy||session!=="signed_in"} data-video-whatsapp-share>
+     <MessageCircle size={18} aria-hidden="true"/>{t.whatsapp}
    </button>
   </div>
-  <p className={css.help}>{t.hint}</p>
-  {session==="signed_in"&&state?.cloudAvailable&&readyMp4?<div className={css.choices}>
-   <button type="button" disabled={busy} data-video-save-my-house
-    onClick={()=>void saveToMyHouse(false)}>{t.house}</button>
-   <button type="button" disabled={busy} data-video-community-youtube
-    onClick={()=>void saveToMyHouse(true)}>{t.community}</button>
-  </div>:null}
+  {savedId?<Link href={"/"+accountLocale+"/app/videos"} target="_blank"
+    rel="noopener noreferrer" prefetch={false} data-video-saved-library-link>
+    <CheckCircle2 size={17} aria-hidden="true"/>{t.openMyVideos}
+  </Link>:null}
   {communityAssetId&&showCommunity?<CommunityVideoPublishPanel
-   videoId={communityAssetId} locale={locale}/>:null}
+    videoId={communityAssetId} locale={locale}/>:null}
+  <p className={css.help}>{t.hint}</p>
   {session==="guest"?<p className={css.hint}>{t.guest}{" "}
-   <Link href={"/"+accountLocale+"/app/settings#hh-telegram-connect"} prefetch={false}>{t.login}</Link></p>:null}
+   <Link href={"/"+accountLocale+"/app/videos"} target="_blank" rel="noopener noreferrer"
+     prefetch={false}>{t.login}</Link></p>:null}
+  {session!=="signed_in"?<button type="button" data-video-delivery-refresh-login
+    className={css.secondary} disabled={busy} onClick={()=>void refresh()}>
+    <RefreshCw size={17} aria-hidden="true"/>{t.refreshLogin}
+  </button>:null}
   {session==="signed_in"&&state?.telegram.linkAvailable?
    <div className={css.bot}>
     {state.telegram.linked?<div className={css.linked}>
