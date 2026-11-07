@@ -20,7 +20,8 @@ export async function verifyProEnhanceVisual({BASE,chromium,webkit,expect}){
  ];
  const out="artifacts/hypno-compact";
  await mkdir(out,{recursive:true});
- for(const {engine,locale,width,height} of cases){
+ const engineName=process.env.HH_VOICE_E2E_ENGINE;
+ for(const {engine,locale,width,height} of cases.filter(row=>!engineName||row.engine.name()===engineName)){
   const browser=await engine.launch({headless:true});
   const context=await browser.newContext({viewport:{width,height},isMobile:true,
    hasTouch:true,reducedMotion:"reduce",serviceWorkers:"block"});
@@ -90,12 +91,12 @@ export async function verifyProEnhanceVisual({BASE,chromium,webkit,expect}){
    assert.ok(visible.b.height>=44,label+" full 44px CTA");
    assert.ok(visible.b.bottom<=visible.dockTop-2,label+" CTA above fixed dock");
    assert.ok(visible.unobscured,label+" CTA touch point unobscured");
+   await page.screenshot({path:out+"/pro-enhance-"+label+".png",fullPage:false});
    await panel.locator("[data-video-generate-pro]").click();
    await expect(panel.locator("[data-video-pro-unavailable]")).toBeVisible();
    assert.deepEqual(writes,[],label+" no paid or provider write");
    await panel.locator("[data-pro-upgrade-id='characters']").click();
    await expect(panel.locator("[data-video-pro-unavailable]")).toHaveCount(0);
-   await page.screenshot({path:out+"/pro-enhance-"+label+".png",fullPage:false});
    console.log("PRO visual PASS",label,"hero",Math.round(geometry.hero.width),
       "dock safe",Math.round(visible.dockTop-visible.b.bottom));
   }finally{await context.close();await browser.close();}
