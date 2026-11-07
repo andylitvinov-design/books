@@ -5,6 +5,7 @@ import styles from '@/app/admin/automations/automations.module.css';
 
 type Locale='ru'|'en'|'es';
 type Action='pause'|'resume'|'run_now';
+type TaskId='video-scout-hourly'|'video-classifier-batch'|'council-video-review-weekly';
 const translations={
   ru:{pause:'Приостановить',resume:'Включить почасовой поиск',run_now:'Проверить сейчас',
     working:'Выполняю действие…',done:'Команда проверена. Обновляю результаты.',
@@ -20,11 +21,18 @@ const translations={
     enabled:'Automatización activada',disabled:'Búsqueda pausada'},
 } as const;
 
-export default function AutomationControlActions({locale,enabled}:{locale:Locale;enabled:boolean}){
+export default function AutomationControlActions({locale,enabled,taskId='video-scout-hourly'}:
+  {locale:Locale;enabled:boolean;taskId?:TaskId}){
   const router=useRouter();
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
   const t=translations[locale];
+  const classifier=taskId==='video-classifier-batch';
+  const council=taskId==='council-video-review-weekly';
+  const enableLabel=council?(locale==='ru'?'Включить еженедельный Совет':
+    locale==='es'?'Activar Consejo semanal':'Enable weekly AI Council'):
+    classifier?(locale==='ru'?'Включить AI-классификацию':
+    locale==='es'?'Activar clasificación IA':'Enable AI classification'):t.resume;
   async function execute(action:Action){
     if(busy)return;
     setBusy(true);setMessage('');
@@ -32,7 +40,7 @@ export default function AutomationControlActions({locale,enabled}:{locale:Locale
       const response=await fetch('/api/admin/automations',{
         method:'POST',credentials:'same-origin',cache:'no-store',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({taskId:'video-scout-hourly',action,requestId:crypto.randomUUID()}),
+        body:JSON.stringify({taskId,action,requestId:crypto.randomUUID()}),
       });
       const payload=await response.json().catch(()=>null);
       if(!response.ok||!payload||payload.error||
@@ -47,12 +55,20 @@ export default function AutomationControlActions({locale,enabled}:{locale:Locale
     <div className={styles.actions}>
       <button className={styles.primary} type="button" disabled={busy}
         onClick={()=>execute(enabled?'pause':'resume')}>
-        {busy?t.working:enabled?t.pause:t.resume}
+        {busy?t.working:enabled?t.pause:enableLabel}
       </button>
       <button className={styles.secondary} type="button" disabled={busy||!enabled}
         onClick={()=>execute('run_now')}>{t.run_now}</button>
     </div>
-    <p className={styles.note}>{enabled?t.enabled:t.disabled}</p>
+    <p className={styles.note}>{council?
+      (locale==='ru'?'Предложения ждут решения владельца · ничего не выполняется автоматически':
+        locale==='es'?'Propuestas pendientes del propietario · sin ejecución automática':
+          'Owner approval required for every proposal · no automatic execution'):
+      classifier?
+      (locale==='ru'?'Только проверенные бесплатные модели · метаданные · без проверки прав':
+        locale==='es'?'Solo IA gratuita verificada · metadatos · revisión humana obligatoria':
+          'Verified free AI only · metadata · human rights review required'):
+      (enabled?t.enabled:t.disabled)}</p>
     <p className={styles.feedback} role="status" aria-live="polite">{message}</p>
   </div>;
 }

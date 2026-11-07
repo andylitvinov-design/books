@@ -628,3 +628,26 @@ test('P1 Markdown displays each repeat pair, actor, reason, evidence and reruns'
   assert.match(md,/@owner/);
   assert.match(md,/Повторные попытки внутри одного run/);
 });
+
+test('each repeat Core wave exposes safe trigger attribution without inventing root cause',()=>{
+  const before=run(901,at('10:01'),at('10:10'),{head_sha:old,
+    pull_requests:[{number:99,base:{ref:'codex/public-book-library'},head:{sha:old}}]});
+  const after=run(902,at('10:20'),at('10:30'),{triggering_actor:{login:'github-actions[bot]'}});
+  const timeline=[{event:'committed',sha:head,author:{name:'contributor'},
+    html_url:'https://github.com/andylitvinov-design/books/commit/'+head}];
+  const row=analyzeCoreWaveGaps(pr(),[before,after],{},timeline,{runHistoryComplete:true});
+  assert.equal(row.gaps[0].trigger_event,'head_changed');
+  assert.equal(row.gaps[0].trigger_actor,'contributor');
+  assert.equal(row.gaps[0].trigger_confidence,'commit_verified');
+  assert.equal(row.gaps[0].reason_confirmed,false);
+  assert.match(row.gaps[0].reason_summary,/motivation not verified/);
+  const repeat=run(903,at('10:40'),at('10:50'),{triggering_actor:{login:'github-actions[bot]'}});
+  const rows=analyzeCoreWaveGaps(pr(),[after,repeat],{},[],{runHistoryComplete:true});
+  assert.equal(rows.gaps[0].trigger_event,'same_head_pull_request_trigger');
+  assert.equal(rows.gaps[0].trigger_confidence,'trigger_actor_only');
+  assert.equal(rows.gaps[0].reason_confirmed,false);
+  const formatted=formatSummary({cohort:{created_utc_start:at('10:00'),created_utc_end:at('13:00'),inspected_prs:1},
+    sampled_prs:1,top3:[],rows:[{pr:99,core_waves:rows}],categories:[],partial:true});
+  assert.match(formatted,/Each subsequent Core wave/);
+  assert.match(formatted,/github-actions\[bot\]/);
+});

@@ -87,4 +87,8 @@ test("public microphone is authorized ONLY at existing live host and Studio rout
  assert.match(next,/microphone=\(\), geolocation=\(\)/);
  assert.match(next,/\/ru\/holistic-support\/mandala/);
  assert.match(next,/\/es\/holistic-support\/mandala/);
+ assert.match(next,/\/en\/app\/messages/);
+ assert.match(next,/\/ru\/app\/messages/);
+ assert.match(next,/\/es\/app\/messages/);
+ assert.match(next,/camera=\(\), microphone=\(self\), geolocation=\(\)/);
 });

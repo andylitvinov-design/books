@@ -68,6 +68,13 @@ async function verifyWorkspaceHydration(browser,locale){
     const montage=page.locator('[data-video-quick-control="editor"]');
     await montage.click();
     await expect(montage).toHaveAttribute("aria-pressed","true");
+    // The real Style selector moved to the Montage → Style tab, and is
+    // intentionally hidden while the initial Montage Settings panel is active.
+    const styleTab=page.locator('[data-video-montage-tab="effects"]');
+    await expect(styleTab).toBeVisible();
+    await styleTab.click();
+    await expect(styleTab).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-montage-effects]')).toBeVisible();
     await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeVisible();
   }finally{release();await context.close();}
 }
