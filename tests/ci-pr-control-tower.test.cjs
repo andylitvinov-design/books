@@ -1632,3 +1632,13 @@ test('owner PM exact-target handoff cannot skip the existing admission gates',as
  assert.equal(foreign.reason,'UNTRUSTED_OWNER_TARGET');
  assert.equal(blocked.calls.dispatched.length,0);
 });
+
+test('owner PM exact dispatch declares UUID and rejects mismatched inputs before worker access',()=>{
+ const workflow=require('node:fs').readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ assert.match(workflow,/^      pm_request_id:/m);
+ assert.match(workflow,/const pmRequestId=String/);
+ assert.match(workflow,/HH_PM_INVALID_TARGET_INPUT/);
+ assert.match(workflow,/inputs\.pm_request_id/);
+ assert.match(workflow,/let reportResult,report;/);
+ assert.match(workflow,/!dryRun && !manualTarget/);
+});
