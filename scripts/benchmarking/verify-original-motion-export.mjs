@@ -35,8 +35,24 @@ try {
   await page.locator('[data-video-continue-scenarios]').click();
   assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
     'true','GOALS_MUST_OPEN_IDEAS');
-  await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="settings"]').click();
+  const editor=page.locator('[data-video-quick-control="editor"]');
+  await editor.click();
+  // Use the same actual Montage entry flow proven by the physical voice test.
+  // The compact Settings control appears only after activating the visible
+  // Style stage; a hidden Settings click must never be force-clicked.
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  const selectedStyle=page.locator('[data-video-montage-style="3"]');
+  await selectedStyle.waitFor({state:'visible',timeout:20000});
+  if(engine==='webkit')await selectedStyle.tap();
+  else await selectedStyle.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-style="3"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  const settings=page.locator('[data-video-montage-tab="settings"]');
+  await settings.waitFor({state:'visible',timeout:20000});
+  await settings.click();
   const sourceFormat=page.locator('[data-video-montage-preference="format"]');
   await sourceFormat.waitFor({state:'visible',timeout:20000});
   await sourceFormat.selectOption('portrait');
@@ -120,7 +136,37 @@ try {
   }
   // The actual verified film moves to Ready; guests cannot use direct Save.
   // Reuse the first-party encoded Blob and prove the login gate instead.
-  const captured=await readRealGuestVideo(page,{timeout:150000});
+  let captured;
+  try{
+    captured=await readRealGuestVideo(page,{timeout: 150000});
+  }catch(error){
+    // Preserve fail-closed, bounded browser diagnostics after the migration
+    // from obsolete guest Files download to the real Ready-native Blob.
+    // Never log personal text, media, URLs, auth tokens, or uploaded files.
+    const state=await page.evaluate(()=>{
+      const result=document.querySelector('[data-video-result]');
+      const ready=document.querySelector('[data-video-ready]');
+      const original=document.querySelector('[data-mandala-video-preview]');
+      const clips=[...document.querySelectorAll('[data-free-film-source]')];
+      return {
+        resultMode:result?.getAttribute('data-video-result-mode')??null,
+        hasReady:Boolean(ready),readyView:ready?.getAttribute('data-ready-view')??null,
+        renderedVideo:original instanceof HTMLVideoElement?{
+          readyState:original.readyState,width:original.videoWidth,
+          height:original.videoHeight,errorCode:original.error?.code??null,
+          blobUrl:Boolean(original.currentSrc?.startsWith('blob:')),
+        }:null,
+        sourceCount:clips.length,
+        sourcesDecoded:clips.filter(v=>v.readyState>=2&&v.videoWidth>0&&!v.error).length,
+        legacyDownloadVisible:Boolean(document.querySelector('[data-mandala-video-download]')?.getClientRects().length),
+      };
+    }).catch(()=>({diagnosticUnavailable:true}));
+    console.error('HH_ORIGINAL_MOTION_EXPORT_DIAGNOSTICS '+JSON.stringify({
+      engine,state,safeWarnings:safeWarnings.slice(-5),
+      reason:String(error?.message||error).slice(0,140),
+    }));
+    throw error;
+  }
   movie=path.join(dir,'export.'+captured.extension);
   await writeFile(movie,captured.bytes);
   assert.ok((await stat(movie)).size > 100000);
