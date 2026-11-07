@@ -11,9 +11,13 @@ const time=s=>clock(s)===null?null:new Date(clock(s)).toISOString();
 const inside=(a,x,b)=>clock(a)!==null&&clock(x)!==null&&clock(b)!==null&&clock(a)<=clock(x)&&clock(x)<=clock(b);
 const mins=(a,b)=>clock(a)!==null&&clock(b)!==null&&clock(a)<=clock(b)?Math.round((clock(b)-clock(a))/600)/100:null;
 const positive=n=>Number.isSafeInteger(n)&&n>0;
+// GitHub job listing can include EVERY attempt of the same workflow run.
+// Never attribute an earlier failed attempt to the last run conclusion/HEAD.
+const sameAttempt=(run,job)=>positive(run?.run_attempt)&&
+  positive(job?.run_attempt)&&run.run_attempt===job.run_attempt;
 function validRun(r,pr,end){
  const l=Array.isArray(r?.pull_requests)&&r.pull_requests.length===1?r.pull_requests[0]:null;
- return positive(r?.id)&&r.event==='pull_request'&&r.name==='HH PR core release gate'&&
+ return positive(r?.id)&&positive(r.run_attempt)&&r.event==='pull_request'&&r.name==='HH PR core release gate'&&
    String(r.path||'').split('@')[0]===CORE&&
    r.repository?.full_name===REPO&&r.head_repository?.full_name===REPO&&
    l?.number===pr.number&&l.base?.ref==='codex/public-book-library'&&
@@ -52,7 +56,7 @@ function analyzeRepairCycles({pr,runs=[],jobs=[],comments=[],timeline=null,
    const r=linked[i],failedHead=r.pull_requests[0].head.sha;
    if(seen.has(failedHead)||r.status!=='completed'||!FAIL.has(r.conclusion))continue;
    const failedJobs=(Array.isArray(jobs)?jobs:[]).filter(j=>j?.run_id===r.id&&
-     positive(j.id)&&j.status==='completed'&&FAIL.has(j.conclusion)&&
+     positive(j.id)&&sameAttempt(r,j)&&j.status==='completed'&&FAIL.has(j.conclusion)&&
      inside(r.created_at,j.completed_at,end))
      .sort((a,b)=>clock(a.completed_at)-clock(b.completed_at)||a.id-b.id);
    if(!failedJobs.length)continue;
@@ -73,7 +77,7 @@ function analyzeRepairCycles({pr,runs=[],jobs=[],comments=[],timeline=null,
      .sort((a,b)=>clock(a.created_at)-clock(b.created_at))[0]:null;
    const committed=time(event?.created_at);
    const afterJobs=next?(Array.isArray(jobs)?jobs:[]).filter(j=>j?.run_id===next.id&&
-     positive(j.id)&&inside(next.created_at,j.created_at,end)):[];
+     positive(j.id)&&sameAttempt(next,j)&&inside(next.created_at,j.created_at,end)):[];
    const firstJob=afterJobs.filter(j=>time(j.created_at))
      .sort((a,b)=>clock(a.created_at)-clock(b.created_at)||a.id-b.id)[0]||null;
    const runner=afterJobs.filter(j=>inside(j.created_at,j.started_at,end))
