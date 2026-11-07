@@ -6,6 +6,7 @@ import {requireAdminRequest} from '@/lib/prescriptions/admin';
 import {getAppConfig} from '@/lib/app/config';
 import {transaction,closeDatabase} from '@/lib/app/database';
 import {readAutomationSnapshot} from '@/lib/automations/scout-db.mjs';
+import {readClassifierAnnotations} from '@/lib/automations/classifier-store.mjs';
 import AutomationControlActions from '@/components/automation-control-actions';
 import {uiLocaleCookie} from '@/lib/ui-locale';
 import styles from './automations.module.css';
@@ -73,7 +74,17 @@ export default async function AutomationsPage(){
       (db: unknown)=>readAutomationSnapshot(db),{server:true}) as DbSnapshot;
   }catch{ /* Unknown database state is not an empty/successful report. */ }
   finally{await closeDatabase();}
+  type AnnotationRow={candidate_id:string;title:string;summary:string;confidence:string;
+    model_id:string;goals:string[];review_required:boolean};
+  let annotations:AnnotationRow[]|null=null;
+  if(snapshot) {
+    try {annotations=await transaction(getAppConfig(),null,
+      (db: unknown)=>readClassifierAnnotations(db),{server:true}) as AnnotationRow[];}
+    catch { /* AI annotations remain unknown until actual private DB readback. */ }
+    finally {await closeDatabase();}
+  }
   const scout=snapshot?.tasks.find(task=>task.task_id==='video-scout-hourly');
+  const classifier=snapshot?.tasks.find(task=>task.task_id==='video-classifier-batch');
   return <main className={styles.page} data-hh-design="holistic-light" lang={locale}>
     <PrescriptionAdminHeader title={{en:copy.en.title,ru:copy.ru.title}}
       description={{en:copy.en.subtitle,ru:copy.ru.subtitle}}/>
@@ -94,6 +105,7 @@ export default async function AutomationsPage(){
             (task.enabled?t.enabled:t.paused):t.inactive}</span>
         </div>)}
         {scout&&<AutomationControlActions locale={locale} enabled={scout.enabled}/>}
+        {classifier&&<AutomationControlActions locale={locale} taskId="video-classifier-batch" enabled={classifier.enabled}/>}
         <p className={styles.note}>{t.model}</p>
       </section>
       <section className={styles.section}>
@@ -110,6 +122,17 @@ export default async function AutomationsPage(){
             <time dateTime={slot.slotUtc}>{stamp(slot.slotUtc,locale)}</time>
             <span>{slot.state}</span></div>)}</div>
         </details>
+      </section>
+      <section className={styles.section}>
+        <h2>{locale==='ru'?'AI-классификация · только предложения':
+          locale==='es'?'Clasificación IA · sugerencias':'AI classification · suggestions only'}</h2>
+        {annotations===null?<p className={styles.note}>{t.inactive}</p>:
+          annotations.length?<div className={styles.candidates}>{annotations.map(item=>
+            <article key={item.candidate_id} className={styles.candidate}>
+              <h3>{item.title}</h3><p>{item.summary}</p>
+              <small>{item.goals.join(', ')} · {item.confidence} · {item.model_id}</small>
+              <small>{t.rights}</small>
+            </article>)}</div>:<p className={styles.note}>{t.none}</p>}
       </section>
       <section className={styles.section}>
         <h2>{t.candidates}</h2>
