@@ -268,3 +268,87 @@ test('owner-only telegram route remains signed, idempotent, and never repoints e
  assert.match(service,/sendOwnerDocument/)
  assert.match(transport,/TELEGRAM_WEBHOOK_ALREADY_IN_USE/)
 })
+
+
+test('missing pinned Qwen automatically selects verified Recursive Flint without inventing a sixth provider',async()=>{
+ const alt='recursive/flint-v1.0:free'
+ const models=[...catalog.filter(m=>m.id!==COUNCIL_FOUR[0].id),{
+  id:alt,pricing:{prompt:'0',completion:'0',request:'0'},
+  architecture:{input_modalities:['text'],output_modalities:['text']}}]
+ const sent=[]
+ const fetcher=async(url,options={})=>{
+  const u=String(url)
+  if(u.endsWith('/key'))return ok({data:{key_id:'test-owner'}})
+  if(u.endsWith('/models'))return ok({data:models})
+  const body=JSON.parse(options.body)
+  sent.push(body)
+  assert.equal(body.provider.data_collection,'deny')
+  assert.equal(body.provider.allow_fallbacks,false)
+  assert.equal(body.provider.max_price.prompt,0)
+  const text=body.model===COUNCIL_CHAIR.id?JSON.stringify(synthesis):review
+  return ok({model:body.model,usage:{cost:0},
+   choices:[{finish_reason:'stop',message:{content:text}}]})
+ }
+ const run=await runOwnerCouncilFive(question,env,fetcher)
+ assert.equal(run.status,'complete')
+ assert.equal(run.count,4)
+ assert.equal(run.reviews.ux.model,alt)
+ assert.equal(run.synthesis.model,COUNCIL_CHAIR.id)
+ assert.equal(run.check.status,'adapted')
+ assert.equal(run.check.replacements[0].to,alt)
+ assert.equal(sent.length,5)
+ assert.equal(new Set(sent.map(x=>x.model.split('/')[0])).size,5)
+ const rendered=formatOwnerCouncilFive(question,run)
+ assert.match(rendered.markdown,/recursive\/flint-v1\.0:free/)
+ assert.match(rendered.short,/Проверенные бесплатные замены/)
+})
+test('only strict-zero-priced approved backups are eligible; missing pinned chair can use Gemma 26B',async()=>{
+ const alt='google/gemma-4-26b-a4b-it:free'
+ const extras=[{id:alt,pricing:{prompt:'0',completion:'0',request:'0'},
+  architecture:{input_modalities:['text'],output_modalities:['text']}}]
+ const models=[...catalog.filter(m=>m.id!==COUNCIL_CHAIR.id),...extras]
+ const sent=[]
+ const fetcher=async(url,options={})=>{
+  const u=String(url)
+  if(u.endsWith('/key'))return ok({data:{key_id:'test-owner'}})
+  if(u.endsWith('/models'))return ok({data:models})
+  const b=JSON.parse(options.body);sent.push(b.model)
+  return ok({model:b.model,usage:{cost:0},
+   choices:[{finish_reason:'stop',message:{content:b.model===alt?JSON.stringify(synthesis):review}}]})
+ }
+ const run=await runOwnerCouncilFive(question,env,fetcher)
+ assert.equal(run.status,'complete')
+ assert.equal(run.synthesis.model,alt)
+ assert.equal(sent.length,5)
+ assert.equal(sent[4],alt)
+ assert.equal(formatOwnerCouncilFive(question,run).sources.at(-1),alt)
+ const priced=models.map(m=>m.id===alt?{...m,pricing:{prompt:'0.02',completion:'0'}}:m)
+ const check=await inspectCouncilFive(env,async (url)=>{
+  return String(url).endsWith('/key')?ok({data:{key_id:'test'}}):ok({data:priced})
+ })
+ assert.equal(check.enough,false)
+ assert.deepEqual(check.missing,['chair'])
+})
+test('one unavailable or 429 free reviewer produces honest partial synthesis; no retry or paid routing',async()=>{
+ const calls=[],alt='recursive/flint-v1.0:free'
+ const models=[...catalog.filter(m=>m.id!==COUNCIL_FOUR[0].id),{
+  id:alt,pricing:{prompt:'0',completion:'0'}}]
+ const fetcher=async (url,options={})=>{
+  const u=String(url)
+  if(u.endsWith('/key'))return ok({data:{key_id:'synthetic'}})
+  if(u.endsWith('/models'))return ok({data:models})
+  const b=JSON.parse(options.body);calls.push(b.model)
+  if(b.model===COUNCIL_FOUR[3].id)return ok({},429)
+  return ok({model:b.model,usage:{cost:0},
+   choices:[{finish_reason:'stop',
+    message:{content:b.model===COUNCIL_CHAIR.id?JSON.stringify(synthesis):review}}]})
+ }
+ const run=await runOwnerCouncilFive(question,env,fetcher)
+ assert.equal(run.status,'partial')
+ assert.equal(run.count,3)
+ assert.equal(run.reviews.critic.reason,'HTTP 429')
+ assert.equal(run.synthesis.status,'ok')
+ assert.equal(calls.length,5)
+ assert.equal(calls.filter(x=>x===COUNCIL_FOUR[3].id).length,1)
+ assert.match(formatOwnerCouncilFive(question,run).markdown,/NO VERIFIED REPLY/)
+})
