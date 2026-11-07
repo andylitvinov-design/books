@@ -324,8 +324,8 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
   assert.ok(ui.includes('setConsent(false)'));
   assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
   const speechChangeEffect=ui.slice(
-    ui.indexOf('    const textChanged=originRef.current.speechText!==speechText;'),
-    ui.indexOf('  },[speechText,voiceId,language]);'));
+    ui.indexOf('    const textChanged=previous.speechText!==speechText;'),
+    ui.indexOf('  },[speechText,voiceId,language,busy,mixing,locale]);'));
   assert.match(speechChangeEffect,/if\(voiceDataRef\.current\)onInvalidateRef\.current\?\.\(\)/,
     "changing the spoken phrase must detach its previous WAV");
   assert.doesNotMatch(speechChangeEffect,/voiceDataRef\.current&&!textChanged/,
@@ -512,4 +512,45 @@ test("headed WebKit narration uses a real short touch without duplicate provider
   assert.ok(browser.includes('window.__hhVoiceSubmitProbe.touches++'));
   assert.ok(browser.includes('assert.equal(affirmationRequests.length,1)'));
   assert.ok(browser.includes('pcm.stdout.some(value=>value!==0)'));
+});
+
+test("Safari voice lifecycle: identical inputs preserve pending WAV, changed ones revoke stale consent",()=>{
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  assert.match(voice,/useLayoutEffect\(\(\)=>\{\s*const previous=originRef\.current/);
+  assert.match(voice,/previous\.speechText===speechText && previous\.voiceId===voiceId/);
+  assert.match(voice,/previous\.language===language\)return/);
+  assert.match(voice,/\[speechText,voiceId,language,busy,mixing,locale\]/);
+  assert.match(voice,/setGenerationPhase\(interrupted\?"cancelled":"idle"\)/);
+  assert.match(voice,/if\(textChanged\)setConsent\(false\)/);
+  assert.match(voice,/controllerRef\.current\?\.abort\(\)/);
+  assert.match(voice,/onAttach\(\{file,speechFile,[\s\S]*?setGenerationPhase\("attached"\)/);
+  assert.match(voice,/data-video-affirmation-phase=\{generationPhase\}/);
+  assert.match(voice,/code==="AbortError"\?"cancelled":"failed"/);
+  assert.match(voice,/voiceRequestInFlight\.current=true/);
+  assert.match(browser,/assert\.equal\(affirmationRequests\.length,1\)/);
+  assert.match(browser,/toContainText\(expectedFileName\)/);
+});
+
+test("WebKit voice E2E follows the current two-step Montage CTA before genuine MP4 export",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const guest=read("tests/mandala-guest-first-video-flow.test.mjs");
+  const flow=browser.slice(browser.indexOf('phase(engine,"hypno-audio-effects-rendered")'),
+    browser.indexOf('phase(engine,"download-control-ready")'));
+  assert.match(flow,/toHaveAttribute\("data-video-montage-next","text"\)/);
+  assert.match(flow,/toHaveAttribute\("data-video-montage-next","audio"\)/);
+  assert.match(flow,/toHaveAttribute\("aria-pressed","true"\)/);
+  assert.equal((flow.match(/await generate\.click\(\)/g)||[]).length,3,
+    "two navigation taps and exactly one real export tap");
+  assert.match(studio,/onClick=\{continueMontageOrGenerate\}/);
+  assert.match(studio,/setMontagePanel\(montagePanel==="effects"\?"text":"audio"\)/);
+  assert.match(browser,/page\.route\("\*\*\/api\/app\/video-credits\/\*\*"/);
+  assert.match(browser,/chargeRequired:false,ready:false,blocked:false/);
+  assert.match(browser,/assert\.ok\(mediaCreditFixtureReads>0/);
+  assert.match(browser,/assert\.deepEqual\(creditWrites,\[\]/);
+  assert.match(browser,/ffprobe/);
+  assert.match(browser,/pcm\.stdout\.some\(value=>value!==0\)/);
+  assert.match(guest,/data-video-guest-result-gate/);
+  assert.match(guest,/data-video-guest-signin/);
 });

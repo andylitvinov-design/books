@@ -230,6 +230,26 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         };
       });
       const page=await context.newPage();
+      // Scoped, synthetic media acceptance: cloud voice is already mocked above.
+      // Disable XP billing only INSIDE this isolated browser, not in production.
+      // Never fake an authenticated account or allow a real credit POST.
+      const creditWrites=[];
+      let mediaCreditFixtureReads=0;
+      await page.route("**/api/app/video-credits/**",async route=>{
+        const request=route.request(),path=new URL(request.url()).pathname;
+        if(request.method()==="GET"&&path==="/api/app/video-credits/catalog"){
+          mediaCreditFixtureReads++;
+          await route.fulfill({status:200,contentType:"application/json",
+            body:JSON.stringify({chargeRequired:false,ready:false,blocked:false,priceCredits:10})});
+          return;
+        }
+        if(request.method()==="POST"){
+          creditWrites.push(path);
+          await route.abort("blockedbyclient");
+          return;
+        }
+        return route.continue();
+      });
       const payloads=[];
       const errors=[];
       const requests=[];
@@ -643,10 +663,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="editor"]').click();
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
-      await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
-      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
+      await expect(generate).toBeEnabled({timeout:30000});
+      assert.equal(await generate.isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");
-      // One Create tap decodes the idle MP4 and exports the actual voice video.
+      // The current production Montage CTA is a real two-step wizard.
+      // First Continue opens Text; second Continue opens Audio. Only the
+      // third user action starts the recorder; never time a non-render click.
+      await expect(generate).toHaveAttribute("data-video-montage-next","text");
+      await generate.click();
+      await expect(generate).toHaveAttribute("data-video-montage-next","audio");
+      await generate.click();
+      await expect(page.locator('[data-video-montage-tab="audio"]')).toHaveAttribute("aria-pressed","true");
+      await expect(generate).not.toHaveAttribute("data-video-montage-next",/./);
+      await expect(generate).toBeEnabled();
+      // One final Create tap decodes the idle MP4 and exports actual voice video.
       if(engine==="chromium"||engine==="webkit") {
         const sourceVideo=page.locator("[data-mandala-master-mp4]");
         if(await sourceVideo.count()) {
@@ -738,6 +768,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
         const bytes=Buffer.concat(parts);
         assert.ok(bytes.length>10000,"real video must be recorded");
+        assert.ok(mediaCreditFixtureReads>0,"isolated media fixture must be used");
+        assert.deepEqual(creditWrites,[],"media-only WebKit QA must never attempt an XP credit transaction");
         const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type,channels",
           "-of","json","-"],{input:bytes,encoding:"utf8",timeout:15000});
         assert.equal(probe.status,0,"real video container must decode: "+probe.stderr);
