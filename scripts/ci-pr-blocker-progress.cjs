@@ -10,7 +10,7 @@ const PR_URL='https://github.com/andylitvinov-design/books/pull/';
 const RUN_URL='https://github.com/andylitvinov-design/books/actions/runs/';
 const PROCESS={
  MERGE_CONFLICT:':45 Conflict',
- CORE_REQUIRED_CHECK_FAILED:':05 Shared / Core',
+ CORE_REQUIRED_CHECK_FAILED:':10 Triage / verified source owner',
  SPECIALIST_PRODUCT_FAILURE:':35 Product / Browser',
  SPECIALIST_POLICY_HOLD:':30 Native / CI policy'
 };
@@ -61,7 +61,7 @@ function reconcileBlockerProgress({previous=null,watchdogSample=null,
  const inventory=prIndex(inventorySnapshot);
  const hasSample=Array.isArray(source);
  const observedSampleAt=hasSample?watchdogSample.checked_at:null;
- const stats={new_confirmed:0,same_head_stalled:0,head_changed_reverify:0,
+ const stats={new_confirmed:0,same_head_stalled:0,stalled_evidence_reviews:0,head_changed_reverify:0,
   not_reinspected:0,open_inventory_missing_unverified:0};
  const put=(row)=>{
   const id=key(row);if(seen.has(id)||cases.length>=MAX)return false;
@@ -75,6 +75,16 @@ function reconcileBlockerProgress({previous=null,watchdogSample=null,
   if(stage==='NEW_CONFIRMED')stats.new_confirmed++;
   else if(changed)stats.head_changed_reverify++;
   else stats.same_head_stalled++;
+  const oldCount=Number.isSafeInteger(old?.same_head_confirmed_observations)&&
+    old.same_head_confirmed_observations>=1&&old.same_head_confirmed_observations<=1000?
+    old.same_head_confirmed_observations:1;
+  const sampleAt=Date.parse(observedSampleAt||'');
+  const previousAt=Date.parse(old?.last_checked_at||'');
+  const freshSample=Number.isFinite(sampleAt)&&Number.isFinite(previousAt)&&sampleAt>previousAt;
+  // Independent current-HEAD observations, never proof of Worker fix attempts.
+  const observations=!old||changed?1:freshSample?Math.min(oldCount+1,1000):oldCount;
+  const needsReview=stage==='SAME_HEAD_STALLED'&&observations>=2;
+  if(needsReview)stats.stalled_evidence_reviews++;
   const assignees=pr?owner(pr):[];
   put({id:'HH-P0-'+input.root_code+'-PR'+input.pr_number+'-HEAD'+input.head_sha.slice(0,12),
     pr_number:input.pr_number,root_code:input.root_code,
@@ -89,10 +99,15 @@ function reconcileBlockerProgress({previous=null,watchdogSample=null,
     ci_head_sha:input.head_sha.toLowerCase(),ci_freshness:'CURRENT_SAMPLE',
     protected_merge_sha:null,production_deployment:null,functional_smoke:null,
     state:stage,previous_state:old?.state||null,
+    same_head_confirmed_observations:observations,
+    evidence_review_required:needsReview,
+    worker_attempts_verified:null,
     first_seen_at:changed||!old?observedAt:(old.first_seen_at||observedAt),
     last_checked_at:observedSampleAt||observedAt,
     last_verified_advance_at:old?.last_verified_advance_at||null,
-    next_action:stage==='SAME_HEAD_STALLED'?
+    next_action:needsReview?
+      'VERIFY_SIGNED_WORKER_NO_SOURCE_RECEIPTS_AND_HANDOFF_OR_DIFFERENT_FREE_ROOT':
+      stage==='SAME_HEAD_STALLED'?
       'VERIFY_APPLIED_FIX_AND_NEW_HEAD_CI_WITH_CURRENT_LEASE':
       'VERIFY_OWNER_FIX_AND_EXACT_HEAD_REQUIRED_CHECKS'});
  }
@@ -123,6 +138,12 @@ function reconcileBlockerProgress({previous=null,watchdogSample=null,
     first_seen_at:knownNewHead?observedAt:old.first_seen_at,
     protected_merge_sha:null,production_deployment:null,functional_smoke:null,
     previous_state:old.state,state:status,
+    same_head_confirmed_observations:knownNewHead?1:
+      Number.isSafeInteger(old.same_head_confirmed_observations)&&
+      old.same_head_confirmed_observations>=1?
+      Math.min(old.same_head_confirmed_observations,1000):1,
+    evidence_review_required:knownNewHead?false:old.evidence_review_required===true,
+    worker_attempts_verified:null,
     next_action:disappeared?'VERIFY_PR_CLOSE_VS_MERGE_AND_LIVE_PROOF':
       knownNewHead?'RECHECK_REQUIRED_CI_ON_NEW_HEAD':
       'REINSPECT_EXACT_HEAD_AND_OWNER_RECEIPTS'});
