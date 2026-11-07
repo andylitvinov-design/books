@@ -7,6 +7,7 @@ import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
 import MessengerSignIn from "@/components/app/messenger-sign-in";
+import { HolisticAgentMemoryPanel } from "@/components/holistic-agent-memory-panel";
 import {interpretSupportUtterance} from "@/lib/holistic-support/guide-dialogue.mjs";
 import {classifyVideoChatQuestion,answerVideoChatQuestion} from "@/lib/mandala/video-chat-dialogue-knowledge.mjs";
 import {
@@ -256,7 +257,23 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const [format,setFormat]=useState<""|"video"|"audio"|"test"|"course"|"service">("");
   const [useSavedTests,setUseSavedTests]=useState(false);
   const [useSavedHistory,setUseSavedHistory]=useState(false);
+  const [useAgentMemory,setUseAgentMemory]=useState(false);
   const [historyUsed,setHistoryUsed]=useState(false);
+  useEffect(()=>{
+    if(!authenticated || process.env.NEXT_PUBLIC_HH_AGENT_MEMORY_ENABLED!=="true"){
+      setUseAgentMemory(false);
+      return;
+    }
+    let active=true;
+    void fetch("/api/app/agent-memory",{credentials:"same-origin",cache:"no-store"})
+      .then(async response=>response.ok?response.json():null)
+      .then(data=>{
+        if(active)setUseAgentMemory(data?.consent===true &&
+          data?.useInDialogue===true && Array.isArray(data?.items) &&
+          data.items.length>0);
+      }).catch(()=>{if(active)setUseAgentMemory(false);});
+    return ()=>{active=false;};
+  },[authenticated]);
   const [evidenceUsed,setEvidenceUsed]=useState(false);
   const [dismissedIds,setDismissedIds]=useState<string[]>([]);
   const [completedIds,setCompletedIds]=useState<string[]>([]);
@@ -628,6 +645,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
           preferredFormat:format||null,
           usePrivateProfile:useSavedTests&&Boolean(axisRef),
           usePrivateHistory:useSavedHistory,
+          useAgentMemory:authenticated&&useAgentMemory,
           feedback:{dismissedIds,completedIds}}),
       });
       if(!response.ok)throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"MODE_UNAVAILABLE":"CHAT_UNAVAILABLE");
@@ -728,6 +746,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     data-page-help={pageHelp?"true":undefined} data-has-messages={messages.length>0||undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {!compact&&settings}
+    {authenticated&&<HolisticAgentMemoryPanel locale={locale}
+      onUse={items=>setUseAgentMemory(items.length>0)}/>}
     <EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact}/>
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;

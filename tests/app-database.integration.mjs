@@ -2359,3 +2359,10 @@ test('guest Bach v2 EN/RU lifecycle retains weighted themes and session isolatio
     await assert.rejects(() => guestRepo.getResult(outsider, result.id), /NOT_FOUND/)
   }
 })
+
+// Companion account-memory security acceptance is part of this EXISTING isolated
+// App R1 Postgres suite, not a new runner or unrelated media CI workflow.
+// Execute only after the other fixture tests, using fresh synthetic owners.
+test('Holistic Companion memory two-owner RLS, session, consent and erase', async () => {
+  await import('../scripts/verify-agent-memory-rls-ci.mjs')
+})

@@ -4302,6 +4302,31 @@
   }
 }
 
+/* Ideas starts compact, but explicit audio tap must reveal the ORIGINAL editor.
+   Keep the retired editor absent from the visible layout until its opt-in. */
+.studio[data-active-workspace="phrases"] .phraseAudioNext{
+  display:flex!important;align-items:center;justify-content:center;gap:8px;
+}
+/* The compact Ideas opt-in must remain an actual visible, keyboard/tap-accessible
+   button even when older generic Phrases selectors hide legacy audio. This
+   selector intentionally wins over the retired .phraseAudioNext rule. */
+.studio[data-active-workspace="phrases"] .quickBuilder
+  >[data-workspace-section="phrases"][data-video-quick-phrases]
+  >button[data-video-phrase-audio-shortcut]{
+  display:flex!important;visibility:visible!important;
+  opacity:1!important;min-height:44px!important;pointer-events:auto!important
+}
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"]{
+  display:block!important;min-width:0;max-width:100%;
+}
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"] .phraseMusicSection,
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"] .phraseAudioSettings{
+  display:block!important;
+}
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"] .phraseVoiceAction{
+  display:flex!important;
+}
+
 
 /* Compact owner-approved Montage Text on mobile, one existing Canvas editor. */
 .studio[data-active-workspace="editor"] [data-video-montage-text]{
@@ -4460,4 +4485,28 @@
  .studio[data-hh-video-ihelp-open="true"] .directorChatDetails>:global([data-video-director-chat][data-compose-active="true"]){
   position:relative!important;inset:auto!important;top:auto!important;left:auto!important;
   right:auto!important;z-index:auto!important;max-height:none;margin:0}
+}
+
+/* Style-specific story motif stays hidden in other Montage sub-tabs. */
+.studio [data-video-director-style-controls][hidden]{display:none!important}
+
+/* The compact Goal screen hides legacy advanced sections. A visitor-opened
+   iHelp Director is an explicit dialog and must override that screen-only
+   hiding rule without exposing the other advanced panels. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-video-scenario-open="false"][data-hh-video-ihelp-open="true"] .quickBuilder >
+ [data-video-director-chat-details][data-workspace-section="video"]{
+   display:flex!important;
+ }
+}
+
+/* Messenger Video validated handoff visibility.
+   The compact Goals screen hides unopened advanced panels, not the original
+   Director explicitly opened after a verified, one-use chat handoff.
+   Do not expose another video renderer or override the iHelp modal layout. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-video-scenario-open="false"]:not([data-hh-video-ihelp-open="true"]) .quickBuilder>
+   [data-video-director-chat-details][data-workspace-section="video"][open]{
+   display:grid!important;
+ }
 }

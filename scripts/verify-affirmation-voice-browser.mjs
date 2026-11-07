@@ -38,29 +38,37 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","false",{timeout:60000});
     await expect(tabs).toHaveCount(6);
     for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
-    // #3617 intentionally hides all story controls on the compact first
-    // screen. Verify they are not offered before hydration or the user's
-    // explicit Continue action, rather than clicking hidden content.
-    const continueToScenes=page.locator('[data-video-continue-scenarios]');
+    // Native first-screen navigation: only real visible clicks.
+    const continueToIdeas=page.locator('[data-video-continue-scenarios]');
     const allStories=page.locator('[data-auto-video-all-scenes]');
-    await expect(continueToScenes).toBeDisabled();
-    await expect(studio).toHaveAttribute("data-video-scenario-open","false");
+    await expect(continueToIdeas).toBeDisabled();
     await expect(allStories).toBeHidden();
     await expect.poll(()=>held,{timeout:10000,message:"the test must actually delay JavaScript"}).toBeGreaterThan(0);
     release();
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","true",{timeout:60000});
-    await expect(continueToScenes).toBeEnabled();
-    await continueToScenes.click();
-    await expect(studio).toHaveAttribute("data-video-scenario-open","true");
-    await expect(allStories).toBeVisible();
-    await expect(allStories).toBeEnabled();
-    await allStories.click();
-    await expect(studio).toHaveAttribute("data-video-advanced-open","true");
-    const phrases=page.locator('[data-video-quick-control="phrases"]');
-    await expect(phrases).toBeEnabled();
-    await phrases.click();
-    await expect(phrases).toHaveAttribute("aria-pressed","true");
+    // The separately validated Messenger handoff may open this existing
+    // compact Goals disclosure; the non-handoff UI remains closed/hidden.
+    const handoffPanel=page.locator('[data-video-director-chat-details][data-workspace-section="video"]');
+    await expect(handoffPanel).toBeHidden();
+    await handoffPanel.evaluate(element=>{element.open=true;});
+    await expect(handoffPanel).toBeVisible({timeout:15000});
+    await handoffPanel.evaluate(element=>{element.open=false;});
+    await expect(handoffPanel).toBeHidden();
+    await expect(continueToIdeas).toBeEnabled();
+    await continueToIdeas.click();
+    const ideas=page.locator('[data-video-quick-control="phrases"]');
+    await expect(ideas).toHaveAttribute("aria-pressed","true");
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
+    const refinement=page.locator('[data-video-ideas-refinement]');
+    await expect(refinement.locator(":scope > summary")).toBeVisible();
+    await refinement.locator(":scope > summary").click();
+    await expect(refinement).toHaveAttribute("open","");
+    await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
+    const montage=page.locator('[data-video-quick-control="editor"]');
+    await montage.click();
+    await expect(montage).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeVisible();
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
@@ -661,6 +669,27 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const output=page.locator("[data-mandala-video-download]");
         phase(engine,"waiting-for-export");
         try {
+          // An iPhone/WebKit MP4 can require a physical Play gesture before
+          // the native video element decodes its first frame. The export is NOT
+          // considered ready or downloadable before native playback succeeds.
+          let verificationTapped=false;
+          const verifyPlayback=page.locator("[data-video-verify-playback]");
+          await expect.poll(async()=>{
+            if(await output.isVisible())return true;
+            if(!verificationTapped&&await verifyPlayback.isVisible()){
+              try{
+                await verifyPlayback.click({timeout:2000});
+                verificationTapped=true;
+              }catch(error){
+                // Native MP4 may become playable between isVisible and click:
+                // React then unmounts this optional button. Require the real
+                // download control, never accept a status label or mock file.
+                if(await output.isVisible())return true;
+                if(await verifyPlayback.isVisible())throw error;
+              }
+            }
+            return await output.isVisible();
+          },{timeout:45000,intervals:[250,500,1000]}).toBe(true);
           await output.waitFor({state:"visible",timeout:45000});
         } catch (error) {
           phase(engine,"download-control-timed-out");
