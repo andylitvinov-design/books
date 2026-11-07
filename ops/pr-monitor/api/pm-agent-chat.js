@@ -184,6 +184,31 @@ async function decomposeTask(text){
  return {...answer,reply,reportType:'AI_TASK_PLAN_NOT_EXECUTION',taskSaved:false,agentStarted:false};
 }
 
+
+/* Three advisory viewpoints from ONE verified zero-price model, not Telegram Council. */
+const COUNCIL_SYSTEM=[
+ 'You are the Holistic House Agent Commander AI Council advisory view.',
+ 'You are ONE free AI model, not three independent agents. Give three labeled perspectives:',
+ '1) Продукт и польза, 2) Архитектура и практичная реализация, 3) QA, безопасность и риски.',
+ 'Then one concrete next action and 2-3 measurable acceptance criteria.',
+ 'Use Russian throughout. Ask no unnecessary clarifications when reasonable assumptions suffice.',
+ 'Never assert you checked GitHub, a PR, CI, existing software or LIVE unless explicit verified evidence is provided.',
+ 'Do not provide paid services, secret handling, personal client data, automatic commits or fake expert consensus.',
+ 'If information is missing, label it НЕ ПРОВЕРЕНО. Be concise and specific.'
+].join(' ');
+async function councilTask(text){
+ const catalog=await getModels();
+ if(catalog.error)return {error:catalog.error};
+ const model=catalog.models?.[0]?.id;
+ if(!model||!model.endsWith(':free'))return {error:'NO_VERIFIED_FREE_MODELS'};
+ const out=await openrouterReply({model,history:[]},'Задача владельца:\n'+text,[],
+  {systemPrompt:COUNCIL_SYSTEM,maxTokens:700});
+ if(out.error)return out;
+ if(!out.reply||out.reply.trim().length<55)return {error:'COUNCIL_ADVICE_TOO_SHORT'};
+ return {...out,reportType:'AI_COUNCIL_SINGLE_FREE_MODEL_NOT_EXECUTION',
+  councilType:'ONE_VERIFIED_FREE_MODEL_THREE_PERSPECTIVES',taskSaved:false,agentStarted:false};
+}
+
 module.exports=async function(req,res){
  res.setHeader('Cache-Control','private, no-store, max-age=0');
  res.setHeader('Vary','Cookie');
@@ -205,7 +230,7 @@ module.exports=async function(req,res){
   return json(res,400,{error:'UNKNOWN_ACTION'});
  }
  if(!correctOrigin(req))return json(res,403,{error:'CROSS_ORIGIN_DENIED'});
- if(action!=='chat'&&action!=='decompose')return json(res,400,{error:'UNKNOWN_ACTION'});
+ if(action!=='chat'&&action!=='decompose'&&action!=='council')return json(res,400,{error:'UNKNOWN_ACTION'});
  if(Number(req.headers['content-length']||0)>5000)return json(res,413,{error:'PAYLOAD_TOO_LARGE'});
  let body=req.body;
  if(typeof body==='string')try{body=JSON.parse(body)}catch{return json(res,400,{error:'INVALID_JSON'})}
@@ -217,6 +242,13 @@ module.exports=async function(req,res){
   const out=await decomposeTask(clamp(body.message,2500));
   return json(res,out.error?503:200,{...out,observedAt:new Date().toISOString()});
  }
+ if(action==='council'){
+  if(typeof body.message!=='string'||body.message.trim().length<8||body.message.length>2500)
+   return json(res,400,{error:'INVALID_TASK_DESCRIPTION'});
+  if(!apiKey())return json(res,503,{error:'OPENROUTER_NOT_CONNECTED'});
+  const answer=await councilTask(clamp(body.message,2500));
+  return json(res,answer.error?503:200,{...answer,observedAt:new Date().toISOString()});
+ }
  const message=clamp(body.message,MAX_INPUT),tasks=taskIds(body.tasks);
  if(message.length<2||message.length>MAX_INPUT||!Array.isArray(body.tasks)||body.tasks.length>8||tasks.length!==body.tasks.length)
   return json(res,400,{error:'INVALID_CHAT_INPUT'});
@@ -227,4 +259,4 @@ module.exports=async function(req,res){
  const result=await openrouterReply(body,message,tasks);
  return json(res,result.error?503:200,{...result,observedAt:new Date().toISOString()});
 };
-module.exports.__test={isOwner,correctOrigin,freePrice,freeCatalog,reporter,reportEntries,taskIds,offline,DECOMPOSE_SYSTEM};
+module.exports.__test={isOwner,correctOrigin,freePrice,freeCatalog,reporter,reportEntries,taskIds,offline,DECOMPOSE_SYSTEM,COUNCIL_SYSTEM};

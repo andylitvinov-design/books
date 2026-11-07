@@ -26,7 +26,11 @@
   const active=location.pathname===paths.tasks?'tasks':location.pathname===paths.agents?'agents':location.pathname===paths.projects?'projects':location.pathname===paths.monitor?'monitor':'home';
   [['home','Главная'],['tasks','Задачи'],['add','Создать'],['agents','Агенты'],['projects','Проекты']].forEach(([name,label])=>{
    const e=make(name==='add'?'button':'a');if(name==='add'){
-    e.type='button';e.setAttribute('aria-label','Создать задачу');e.append(make('span','hh-cc-add','+'));e.addEventListener('click',openTaskDraft);
+    e.type='button';e.setAttribute('aria-label','Создать задачу');e.append(make('span','hh-cc-add','+'));
+    e.title='Нажмите для новой задачи, удерживайте для голосовой';
+    e.setAttribute('aria-label','Создать задачу');
+    e.setAttribute('aria-description','Нажмите, чтобы написать задачу; удерживайте, чтобы продиктовать.');
+    wireHoldToTalk(e);
    }else{e.href=paths[name];e.innerHTML=svg(name);if(active===name)e.setAttribute('aria-current','page')}
    e.append(make('small',null,label));nav.append(e);
   });
@@ -34,10 +38,53 @@
   const bridge=make('script');bridge.id='hh-cc-transfer-loader';
   bridge.src='/commander-transfer.js?v=20261107-task-transfer-v1';document.head.append(bridge);
   const loader=make('script');loader.id='hh-cc-task-input-loader';
-  loader.src='/commander-task-input.js?v=20261107-voice-decompose-v1';
+  loader.src='/commander-task-input.js?v=20261107-press-to-talk-v1';
   loader.onerror=()=>{loader.dataset.failed='true'};
   loader.onload=()=>{loader.dataset.loaded='true'};
   document.head.append(loader);
+ }
+ function wireHoldToTalk(button){
+  const HOLD_DELAY=420;
+  let pointer=null,holdTimer=null,holding=false,ignoreClickUntil=0;
+  const clear=()=>{if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null}};
+  const idle=()=>{button.classList.remove('hh-cc-holding');button.setAttribute('aria-pressed','false')};
+  button.addEventListener('click',()=>{
+   if(Date.now()<ignoreClickUntil)return;
+   openTaskDraft();
+  });
+  button.addEventListener('contextmenu',e=>e.preventDefault());
+  button.addEventListener('pointerdown',e=>{
+   if(e.isPrimary===false||e.button!==0||pointer!==null||e.pointerType==='mouse')return;
+   pointer=e.pointerId;
+   try{button.setPointerCapture(e.pointerId)}catch{}
+   holdTimer=setTimeout(()=>{
+    if(pointer!==e.pointerId)return;
+    holding=true;ignoreClickUntil=Date.now()+800;
+    button.classList.add('hh-cc-holding');button.setAttribute('aria-pressed','true');
+    if(typeof window.HHBeginHoldVoiceTask==='function')window.HHBeginHoldVoiceTask();
+    else openTaskDraft();
+   },HOLD_DELAY);
+  });
+  button.addEventListener('pointerup',e=>{
+   if(pointer!==e.pointerId)return;
+   clear();pointer=null;
+   if(holding){
+    holding=false;ignoreClickUntil=Date.now()+800;idle();
+    if(typeof window.HHFinishHoldVoiceTask==='function')window.HHFinishHoldVoiceTask();
+   }
+  });
+  button.addEventListener('pointercancel',e=>{
+   if(pointer!==e.pointerId)return;
+   clear();pointer=null;
+   if(holding&&typeof window.HHCancelHoldVoiceTask==='function')window.HHCancelHoldVoiceTask();
+   holding=false;idle();ignoreClickUntil=Date.now()+800;
+  });
+  window.addEventListener('blur',()=>{
+   if(pointer===null)return;
+   clear();pointer=null;
+   if(holding&&typeof window.HHCancelHoldVoiceTask==='function')window.HHCancelHoldVoiceTask();
+   holding=false;idle();
+  });
  }
  function openTaskDraft(){
   if(typeof window.HHOpenTaskIntake==='function'){window.HHOpenTaskIntake();return}

@@ -137,18 +137,34 @@
  if(typeof module!=='undefined'&&module.exports)module.exports={buildTaskBrief};
  if(!global||!global.document)return;
  const doc=global.document, mk=(tag,klass,text)=>{const e=doc.createElement(tag);if(klass)e.className=klass;if(text!==undefined)e.textContent=text;return e};
- let dialog=null,recognition=null,voiceEpoch=0,analysisEpoch=0;
+ let dialog=null,recognition=null,voiceEpoch=0,analysisEpoch=0,voiceMode='manual',holdReleased=false,holdError='',holdTimeout=null;
  function stopVoice(){
-  voiceEpoch++;const old=recognition;recognition=null;if(old)try{old.abort()}catch{}
-  const btn=dialog?.querySelector('.hh-cc-mic');if(btn){btn.setAttribute('aria-pressed','false');btn.setAttribute('aria-label','Начать диктовку')}
+  voiceEpoch++;if(holdTimeout!==null){global.clearTimeout(holdTimeout);holdTimeout=null}
+  const old=recognition;recognition=null;if(old)try{old.abort()}catch{}
+  voiceMode='manual';holdReleased=false;
+  const btn=dialog?.querySelector('.hh-cc-mic');
+  if(btn){btn.setAttribute('aria-pressed','false');btn.setAttribute('aria-label','Начать диктовку')}
  }
  function close(){analysisEpoch++;stopVoice();if(dialog)dialog.hidden=true;doc.querySelector('#hh-cc-dock button[aria-label="Создать задачу"]')?.focus()}
- function startVoice(input,btn,status){
-  if(recognition){stopVoice();status.textContent='Диктовка остановлена. Текст можно редактировать.';return}
+ function showHoldReview(message){
+  if(!dialog||dialog.hidden)return;
+  stopVoice();
+  const sheet=dialog.querySelector('.hh-cc-sheet'),review=dialog.querySelector('.hh-cc-review');
+  const input=dialog.querySelector('#hh-cc-task-description'),transcript=review?.querySelector('.hh-cc-review-text');
+  if(!sheet||!review||!input||!transcript)return;
+  transcript.value=input.value;
+  for(const child of sheet.children)child.hidden=child!==review;
+  review.hidden=false;
+  review.querySelector('.hh-cc-review-status').textContent=message||
+   (transcript.value.trim()?'Речь распознана. Проверьте текст перед следующим действием.':
+    'Речь не распознана. Введите текст вручную или вернитесь к микрофону.');
+ }
+ function startVoice(input,btn,status,mode='manual'){
+  if(recognition){if(mode==='manual'){stopVoice();status.textContent='Диктовка остановлена. Текст можно редактировать.'}return false}
   const Speech=global.SpeechRecognition||global.webkitSpeechRecognition;
-  if(!Speech){input.focus();status.textContent='Этот браузер не поддерживает Web Speech. Используйте микрофон на клавиатуре iPhone или ручной ввод.';return}
-  let next;try{next=new Speech()}catch{input.focus();status.textContent='Микрофон недоступен. Используйте диктовку клавиатуры.';return}
-  const token=++voiceEpoch,base=input.value.trim();recognition=next;
+  if(!Speech){input.focus();status.textContent='Этот браузер не поддерживает Web Speech. Используйте микрофон на клавиатуре iPhone или ручной ввод.';return false}
+  let next;try{next=new Speech()}catch{input.focus();status.textContent='Микрофон недоступен. Используйте диктовку клавиатуры.';return false}
+  const token=++voiceEpoch,base=input.value.trim();recognition=next;voiceMode=mode;holdReleased=false;holdError='';
   next.lang=/^en/i.test(doc.documentElement.lang)?'en-US':/^es/i.test(doc.documentElement.lang)?'es-ES':'ru-RU';
   next.continuous=true;next.interimResults=true;
   next.onresult=e=>{
@@ -160,19 +176,52 @@
   };
   next.onerror=e=>{
    if(token!==voiceEpoch)return;
-   status.textContent=['not-allowed','service-not-allowed','audio-capture'].includes(e.error)?
-    'Доступ к микрофону запрещён. Разрешите его в браузере или используйте диктовку на клавиатуре.':
-    'Распознавание не удалось ('+String(e.error||'ошибка')+'). Попробуйте ещё раз или введите текст.';
-   stopVoice();
+   holdError=['not-allowed','service-not-allowed','audio-capture'].includes(e.error)?
+    'Доступ к микрофону запрещён. Разрешите его в браузере или используйте диктовку клавиатуры.':
+    'Распознавание не удалось ('+String(e.error||'ошибка')+'). Можно поправить текст вручную.';
+   status.textContent=holdError;stopVoice();
   };
   next.onend=()=>{
    if(token!==voiceEpoch)return;
    recognition=null;btn.setAttribute('aria-pressed','false');btn.setAttribute('aria-label','Начать диктовку');
-   if(status.textContent.startsWith('Слушаю'))status.textContent='Диктовка завершена. Проверьте текст.';
+   if(mode==='hold'){
+    if(holdReleased)showHoldReview(holdError);
+    else status.textContent='Распознавание приостановилось. Отпустите «Создать» для проверки текста.';
+   }else if(status.textContent.startsWith('Слушаю'))status.textContent='Диктовка завершена. Проверьте текст.';
   };
-  try{next.start();btn.setAttribute('aria-pressed','true');btn.setAttribute('aria-label','Остановить диктовку');
-   status.textContent='Слушаю… Нажмите микрофон повторно для остановки. Сайт не сохраняет аудиозапись.'}
-  catch{stopVoice();input.focus();status.textContent='Не удалось начать запись. Используйте голосовой ввод клавиатуры.'}
+  try{
+   next.start();btn.setAttribute('aria-pressed','true');btn.setAttribute('aria-label','Остановить диктовку');
+   status.textContent=mode==='hold'?'🔴 Слушаю, пока удерживаете «Создать». После отпускания появится текст. Аудио не сохраняется.':
+    'Слушаю… Нажмите микрофон повторно для остановки. Сайт не сохраняет аудиозапись.';
+   return true;
+  }catch{stopVoice();input.focus();status.textContent='Не удалось начать распознавание. Используйте голосовой ввод клавиатуры.';return false}
+ }
+ function beginHoldVoiceTask(){
+  if(recognition)stopVoice();
+  open({focus:false});
+  const input=dialog.querySelector('#hh-cc-task-description'),mic=dialog.querySelector('.hh-cc-mic');
+  const status=dialog.querySelector('.hh-cc-dictation-note');
+  input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));
+  const started=startVoice(input,mic,status,'hold');
+  if(!started)holdError=status.textContent;
+  return started;
+ }
+ function finishHoldVoiceTask(){
+  if(!dialog||dialog.hidden)return;
+  if(voiceMode!=='hold'||!recognition){showHoldReview(holdError);return}
+  holdReleased=true;
+  const current=recognition,token=voiceEpoch;
+  const status=dialog.querySelector('.hh-cc-dictation-note');
+  if(status)status.textContent='Завершаю распознавание…';
+  try{current.stop()}catch{showHoldReview('Запись завершена. Проверьте распознанный текст.');return}
+  if(!holdReleased||voiceMode!=='hold')return;
+  holdTimeout=global.setTimeout(()=>{
+   if(holdReleased&&token===voiceEpoch)showHoldReview('Проверьте распознанный текст; поздние ответы браузера не добавляются.');
+  },2000);
+ }
+ function cancelHoldVoiceTask(){
+  if(voiceMode==='hold')stopVoice();
+  if(dialog&&!dialog.hidden){analysisEpoch++;dialog.hidden=true}
  }
  async function analyze(input,output,area,status,button){
   const raw=input.value.trim();
@@ -198,7 +247,7 @@
   }catch(e){if(token===analysisEpoch&&!dialog.hidden)status.textContent='Локальный промпт сохранён. ИИ недоступен: '+String(e.message||e).slice(0,110)}
   finally{if(token===analysisEpoch){button.disabled=false;button.textContent='✦ Разобрать задачу'}}
  }
- function open(){
+ function open(options={}){
   if(!dialog){
    dialog=mk('div','hh-cc-dlg');dialog.id='hh-cc-task-draft';
    dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Новая задача');
@@ -237,7 +286,6 @@
    sendDraft.type='button';sendDraft.addEventListener('click',()=>{
     if(typeof global.HHCommanderTransfer?.begin!=='function'){
      dictation.textContent='Передача недоступна. Используйте копирование промпта.';return}
-    // Owner edits invalidate previously computed brief; never send stale steps or acceptance.
     if(!area.hidden&&area.dataset.sourceRaw!==input.value.trim()){
      dictation.textContent='Описание изменилось после разбора. Сначала нажмите «Разобрать задачу» ещё раз.';return;
     }
@@ -249,6 +297,51 @@
    owner.href='https://holistichouse.vercel.app/admin/command-center';owner.target='_blank';owner.rel='noopener noreferrer';sheet.append(owner);
    sheet.append(mk('p','hh-cc-privacy-note','Публичная форма не сохраняет и не запускает задачи. Передача только открывает защищённый редактор, где владелец проверяет текст и нажимает «Сохранить». Если браузер блокирует передачу, скопируйте промпт вручную.'));
    const done=mk('button','hh-cc-secondary','Закрыть');done.type='button';done.addEventListener('click',close);sheet.append(done);
+   const review=mk('section','hh-cc-review');review.hidden=true;
+   review.append(mk('h2',null,'🎙 Ваша голосовая задача'),
+    mk('p',null,'Текст распознан в браузере. При необходимости исправьте его перед разбором.'));
+   const reviewText=mk('textarea','hh-cc-review-text');reviewText.maxLength=2500;reviewText.rows=6;
+   reviewText.placeholder='Здесь появится расшифровка. Можно дописать задачу вручную.';
+   reviewText.setAttribute('aria-label','Распознанный текст голосовой задачи');review.append(reviewText);
+   const reviewStatus=mk('p','hh-cc-review-status','');reviewStatus.setAttribute('role','status');
+   reviewStatus.setAttribute('aria-live','polite');review.append(reviewStatus);
+   const choices=mk('div','hh-cc-review-choices');
+   const prompt=mk('button','hh-cc-review-prompt','✦ Сделать промпт');prompt.type='button';
+   const council=mk('button','hh-cc-review-council','✧ Спросить Совет ИИ');council.type='button';
+   choices.append(prompt,council);review.append(choices);
+   const counselResult=mk('section','hh-cc-council-result');counselResult.hidden=true;
+   counselResult.append(mk('h3',null,'Совет ИИ · рекомендации'));
+   const counselAnswer=mk('p','hh-cc-council-answer','');counselAnswer.setAttribute('role','status');
+   counselAnswer.setAttribute('aria-live','polite');counselResult.append(counselAnswer);
+   counselResult.append(mk('p',null,'Совет формируется одной проверенной бесплатной моделью с нескольких точек зрения. Это не Telegram Council и не подтверждение выполнения.'));review.append(counselResult);
+   review.append(mk('p','hh-cc-privacy-note','Аудиофайл не отправляется и не хранится. Для консультации ИИ требуется сессия владельца; текст отправляется только по вашему нажатию.'));
+   const back=mk('button','hh-cc-secondary','← Дополнить задачу');back.type='button';
+   back.addEventListener('click',()=>{input.value=reviewText.value;input.dispatchEvent(new Event('input',{bubbles:true}));open()});review.append(back);
+   const leave=mk('button','hh-cc-secondary','Закрыть');leave.type='button';leave.addEventListener('click',close);review.append(leave);
+   prompt.addEventListener('click',()=>{
+    const raw=reviewText.value.trim();
+    if(raw.length<8){reviewStatus.textContent='Введите не менее 8 символов для промпта.';reviewText.focus();return}
+    input.value=raw;input.dispatchEvent(new Event('input',{bubbles:true}));
+    open({focus:false});area.hidden=false;analyze(input,output,area,note,action);
+    area.scrollIntoView?.({block:'start',behavior:'smooth'});
+   });
+   council.addEventListener('click',async()=>{
+    const raw=reviewText.value.trim();
+    if(raw.length<8){reviewStatus.textContent='Сначала уточните текст задачи.';reviewText.focus();return}
+    const token=++analysisEpoch;counselResult.hidden=false;counselAnswer.textContent='Запрашиваю рекомендации у доступной бесплатной модели…';council.disabled=true;
+    try{
+     const r=await fetch('/api/pm-agent-chat?action=council',{method:'POST',credentials:'same-origin',cache:'no-store',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({message:raw})});
+     let response;try{response=await r.json()}catch{throw Error('Ответ сервера не распознан')}
+     if(!r.ok)throw Error(r.status===401?'Требуется вход кодом владельца в разделе «Задачи» → «Чат с AI-исполнителями».':String(response.error||'Совет ИИ недоступен'));
+     if(response.reportType!=='AI_COUNCIL_SINGLE_FREE_MODEL_NOT_EXECUTION'||typeof response.reply!=='string'||!response.reply.trim())throw Error('Подтверждённый совет не получен');
+     if(token===analysisEpoch&&!dialog.hidden&&!review.hidden&&reviewText.value.trim()===raw)
+      counselAnswer.textContent=response.reply.trim();
+    }catch(error){
+     if(token===analysisEpoch&&!dialog.hidden&&!review.hidden)counselAnswer.textContent='Совет не получен: '+String(error.message||error).slice(0,160);
+    }finally{if(token===analysisEpoch)council.disabled=false}
+   });
+   sheet.append(review);
    dialog.append(sheet);dialog.addEventListener('click',e=>{if(e.target===dialog)close()});
    dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close()}});
    doc.body.append(dialog);
@@ -257,7 +350,13 @@
     global.visualViewport.addEventListener('resize',fit);global.visualViewport.addEventListener('scroll',fit);fit();
    }
   }
-  dialog.hidden=false;dialog.querySelector('#hh-cc-task-description')?.focus();
+  dialog.hidden=false;
+  const sheet=dialog.querySelector('.hh-cc-sheet'),review=dialog.querySelector('.hh-cc-review');
+  for(const child of sheet.children)child.hidden=child===review||child.className==='hh-cc-task-result';
+  if(options.focus!==false)dialog.querySelector('#hh-cc-task-description')?.focus();
  }
  global.HHOpenTaskIntake=open;
+ global.HHBeginHoldVoiceTask=beginHoldVoiceTask;
+ global.HHFinishHoldVoiceTask=finishHoldVoiceTask;
+ global.HHCancelHoldVoiceTask=cancelHoldVoiceTask;
 })(typeof window==='undefined'?null:window);

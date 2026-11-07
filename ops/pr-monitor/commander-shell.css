@@ -45,6 +45,29 @@ body.hh-cc-shell #hh-project-management-nav{display:none!important}body.hh-cc-sh
 .hh-cc-sheet .hh-cc-task-plan{font-size:14px;line-height:1.5;min-height:210px;max-height:45dvh;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:355px){.hh-cc-sheet{padding-inline:12px;gap:10px}.hh-cc-sheet .hh-cc-task-plan{min-height:160px}.hh-cc-task-composer textarea{min-height:110px}}
 
+
+/* Hold-to-talk: the central dock button owns its pointer gesture; the other four tabs still scroll. */
+#hh-cc-dock button[aria-label="Создать задачу"]{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#hh-cc-dock button.hh-cc-holding .hh-cc-add{background:linear-gradient(130deg,#f178a5,#b23b8a);border-color:#ffd7ed;box-shadow:0 0 0 6px #c85a9344,0 0 26px #ff7ca999;transform:scale(1.05)}
+#hh-cc-dock button.hh-cc-holding .hh-cc-add::after{content:'●';position:absolute;font-size:9px;transform:translate(17px,-17px);color:#fff}
+#hh-cc-dock .hh-cc-add{position:relative;transition:background .14s,box-shadow .14s,transform .14s}
+#hh-cc-dock button.hh-cc-holding small{color:#ffd6eb}
+.hh-cc-sheet > [hidden],.hh-cc-review[hidden],.hh-cc-council-result[hidden]{display:none!important}
+.hh-cc-review{display:grid;gap:12px;min-width:0}
+.hh-cc-review h2{font-size:20px;line-height:1.2}
+.hh-cc-review .hh-cc-review-text{font-size:16px;line-height:1.55;min-height:160px;max-height:38dvh;box-sizing:border-box;resize:vertical}
+.hh-cc-review-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.hh-cc-review-choices button{min-width:0;min-height:60px;padding:10px 7px;line-height:1.35;white-space:normal}
+.hh-cc-review-choices .hh-cc-review-prompt{background:linear-gradient(110deg,#ad72ed,#8051d2)}
+.hh-cc-review-choices .hh-cc-review-council{background:linear-gradient(110deg,#60418b,#483968);border:1px solid #b89bd6}
+.hh-cc-sheet .hh-cc-review-status{color:#dcc9f6;font-size:12px}
+.hh-cc-council-result{display:grid;gap:8px;min-width:0;padding:12px;background:#191e31;border:1px solid #715b91;border-radius:13px}
+.hh-cc-council-result h3{font-size:15px;margin:0}
+.hh-cc-sheet .hh-cc-council-answer{font-size:14px;color:#f0e9ff;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:355px){.hh-cc-review-choices{grid-template-columns:1fr}.hh-cc-review .hh-cc-review-text{min-height:125px}}
+@media(prefers-reduced-motion:reduce){#hh-cc-dock .hh-cc-add{transition:none}}
+
+
 /* User-invoked draft transfer; no automatic public task writes. */
 .hh-cc-sheet .hh-cc-transfer{min-height:52px;border:1px solid #b9a0f2;background:linear-gradient(120deg,#9a61d8,#7343ae);font-weight:800}
 .hh-cc-sheet .hh-cc-transfer:focus-visible{outline:3px solid #fff;outline-offset:3px}
