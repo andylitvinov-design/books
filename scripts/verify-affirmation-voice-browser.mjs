@@ -418,6 +418,33 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(phrases.locator("[data-hypno-voice]")).toBeVisible();
       await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(1);
       await expect(phrases.locator('[data-video-affirmation-gender="male"]')).toBeVisible();
+      const compactVoicePanel=phrases.locator('[data-video-affirmation-voice][data-voice-layout="compact"]');
+      await expect(compactVoicePanel).toBeVisible();
+      await expect(compactVoicePanel.locator('[data-video-affirmation-phrase]')).toBeVisible();
+      await expect(compactVoicePanel.locator('[data-video-affirmation-selection-summary]')).toHaveCount(0);
+      await expect(compactVoicePanel.locator('[data-video-affirmation-voice-consent]')).toHaveCount(1);
+      for(const width of [320,354,390,430]){
+        phase(engine,"ideas-voice-compact-"+width);
+        await page.setViewportSize({width,height:840});
+        const shape=await compactVoicePanel.evaluate(panel=>{
+          const cards=[...panel.querySelectorAll('[data-video-affirmation-voice-card]')].filter(n=>n.getBoundingClientRect().width>0);
+          const genders=[...panel.querySelectorAll('[data-video-affirmation-gender]:not([hidden])')].map(n=>n.getBoundingClientRect());
+          return {tops:cards.map(n=>n.getBoundingClientRect().top),widths:cards.map(n=>n.getBoundingClientRect().width),
+            genders:genders.map(n=>n.top),
+            upload:panel.querySelector('[data-video-ideas-voice-actions]')?.getBoundingClientRect().bottom,
+            action:panel.querySelector('[data-video-generate-affirmation-audio]')?.getBoundingClientRect().top,
+            doc:document.documentElement.scrollWidth,screen:document.documentElement.clientWidth};
+        });
+        assert.equal(shape.widths.length,3,"3 voice cards "+width);
+        assert.ok(shape.widths.every(x=>x>=60),"readable cards "+width+" "+JSON.stringify(shape));
+        assert.ok(shape.tops.every(x=>Math.abs(x-shape.tops[0])<3),"one card row "+width);
+        assert.ok(shape.genders.length===2&&Math.abs(shape.genders[0]-shape.genders[1])<3,"two gender tabs "+width);
+        assert.ok(shape.upload<=shape.action+2,"upload and record before generation "+width);
+        assert.ok(shape.doc<=shape.screen+2,"no horizontal overflow "+width);
+        if(engine==="chromium"){mkdirSync("artifacts/hypno-compact",{recursive:true});
+          await page.screenshot({path:"artifacts/hypno-compact/ideas-voice-"+locale+"-"+width+".png",fullPage:true});}
+      }
+      await page.setViewportSize({width:390,height:840});
       await ideasModes.locator('[data-video-ideas-tab="text"]').click();
       await expect(phrases).toHaveAttribute("data-ideas-subtab","text");
       await expect(phrases.locator("[data-video-ideas-text-panel]")).toBeVisible();

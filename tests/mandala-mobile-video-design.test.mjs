@@ -565,7 +565,11 @@ test("studio workspace buttons remain disabled until their real handlers hydrate
 test("director controls and All stories stay disabled until the studio hydrates",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const director=read("components/mandala-auto-video-director.tsx");
-  const mount=studio.slice(studio.indexOf("<MandalaAutoVideoDirector"),studio.indexOf("<MandalaAutoVideoDirector")+900);
+  const mountStart=studio.indexOf("<MandalaAutoVideoDirector");
+  assert.ok(mountStart>=0,"director is mounted in Studio");
+  const mountEnd=studio.indexOf("/>",mountStart);
+  assert.ok(mountEnd>mountStart,"director JSX tag is closed");
+  const mount=studio.slice(mountStart,mountEnd+2);
   assert.match(mount,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
   assert.match(director,/data-auto-video-all-scenes disabled=\{disabled\} onClick=\{onShowAll\}/);
 });
