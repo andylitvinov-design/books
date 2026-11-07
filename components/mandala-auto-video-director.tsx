@@ -2,7 +2,7 @@
 
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {createPortal} from "react-dom";
-import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Moon,Star} from "lucide-react";
+import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,AudioLines,Leaf,Zap,Moon,Star} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
 import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs";
@@ -19,6 +19,7 @@ import {listMyTubeMeaningAxes,listMyTubeMeaningMotifs,listMyTubeMotifScenarios} 
 import {listMyTubeStyles,evaluateMyTubeMontageCreativeMatch} from "@/lib/mandala/mytube-creative-choices.mjs";
 import {getStateTransitionScenario} from "@/lib/mandala/state-transition/scenario-engine.mjs";
 
+import {MandalaRecipientAudioEntry,type RecipientAudioEntryProps} from "./mandala-recipient-audio-entry";
 import {StateTransitionSelector} from "./mandala-state-transition-selector";
 import {MandalaMeaningIdeaSelector,type ConfirmedMeaningHandoff} from "./mandala-meaning-idea-selector";
 import {allocateFreeFilmTimeline,allocateAdaptiveFilmTimeline,allocateVariableFilmTimeline,shiftAdaptiveFilmBoundary,shiftVariableFilmBoundary} from "@/lib/mandala/free-film-timeline.mjs";
@@ -53,6 +54,7 @@ type Props={
   scenes:readonly SceneMeta[];
   disabled:boolean;activePresetId:string|null;
   clipLabel:(id:string)=>string;
+  recipientAudio?:RecipientAudioEntryProps;
   audioAttached?:boolean;audioTrackLabel?:string;onOpenAudio?:()=>void;
   audioTrackId?:string|null;onPickAudio?:(id:string)=>void;
   onGoalChange:(value:string)=>void;
@@ -179,7 +181,7 @@ const themeLabels={
 
 export function MandalaAutoVideoDirector({
  locale,goal,theme,aspect,presets,scenes,disabled,activePresetId,clipLabel,
- audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,onGoalChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
+ recipientAudio,audioAttached=false,audioTrackLabel="",audioTrackId=null,onPickAudio,onOpenAudio,onGoalChange,onCategoryChange,onAspectChange,onContinue,goalContinueRef,onClarify,helpOpen=false,onShowAll,onInvalidate,onApply,onCreate,canCreate=false,rendering=false,createFeedback=""
 }:Props){
  const t=copy[locale];
  // A licensed four-shot sample is visible before any click; no recording begins automatically.
@@ -376,7 +378,7 @@ export function MandalaAutoVideoDirector({
  const meaningCaptionTooLong=Boolean(meaningCaption&&!lastCaptionTaken&&
    Array.from(meaningCaption).length>STAGE_CAPTION_LIMIT);
  const meaningCaptionUsed=Boolean(meaningCaption&&!lastCaptionTaken&&!meaningCaptionTooLong);
- const recipientCaptionSeeds=videoAudience==="others"&&recipientKindId
+ const recipientCaptionSeeds=videoAudience==="others"&&recipientKindId&&recipientKindId!=="audio-content"
    ?buildRecipientVideoCaptions({kindId:recipientKindId,occasionId:recipientOccasionId,
      wish:requestDraft,locale}):null;
  const stageCaptions=manualStageCaptions.map((caption,index)=>{
@@ -438,8 +440,22 @@ export function MandalaAutoVideoDirector({
  const prepareGoalForIdeas=():boolean=>{
    if(videoAudience!=="others")return true;
    if(!recipientKindId){
-     setRecipientContinueError(locale==="ru"?"Выберите подарок, поздравление или презентацию.":
+     setRecipientContinueError(locale==="ru"?"Выберите поздравление или подарок, презентацию либо контент по аудио.":
        locale==="es"?"Elige regalo, felicitación o presentación.":"Choose Gift, Greeting or Presentation first.");
+     return false;
+   }
+   if(recipientKindId==="audio-content"){
+     if(!recipientAudio?.transcript||!recipientAudio.visualPlan?.canExport||!recipientAudio.rightsGranted){
+       setRecipientContinueError(locale==="ru"?"Загрузите аудио, разрешите распознавание и подготовьте видеоряд.":
+         locale==="es"?"Sube audio y prepara las escenas antes de continuar.":
+           "Upload audio and prepare the verified storyboard first.");
+       return false;
+     }
+     const ready=recipientAudio.onPrepare();
+     setRecipientContinueError(ready?"":locale==="ru"?"Не удалось подготовить видеоряд. Проверьте аудио и права на видео.":
+       locale==="es"?"No se pudo preparar el vídeo. Revisa las fuentes y permisos.":
+         "Could not prepare the film. Review audio and footage rights.");
+     // onPrepare opens the actual Montage; prevent jumping to unrelated Ideas.
      return false;
    }
    if(!chosen||!physicalClipReady||plotLacksApprovedClips){
@@ -802,9 +818,9 @@ export function MandalaAutoVideoDirector({
    <input type="text" data-auto-video-input value={requestDraft}
      maxLength={160} disabled={disabled}
      placeholder={videoAudience==="others"
-       ?(locale==="ru"?"Кому и что вы хотите сказать?"
+       ?(recipientKindId==="audio-content"?(locale==="ru"?"Пожелания к видеоряду":locale==="es"?"Preferencias visuales":"Visual preferences"):(locale==="ru"?"Кому и что вы хотите сказать?"
          :locale==="es"?"¿Para quién es el vídeo y qué quieres decir?"
-         :"Who is it for, and what would you like to say?")
+         :"Who is it for, and what would you like to say?"))
        :t.placeholder}
      onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();designFromRequest();}}}
      onChange={event=>{
@@ -845,9 +861,9 @@ export function MandalaAutoVideoDirector({
     <span>{listRecipientVideoKinds(locale).find(item=>item.id===recipientKindId)?.label}
       {recipientOccasionId?" → "+(listRecipientVideoOccasions(recipientKindId,locale)
         .find(item=>item.id===recipientOccasionId)?.label||""):""}</span>
-   </>:<p>{locale==="ru"?"Выберите «Подарок», «Поздравление» или «Видеопрезентация» выше.":
+   </>:<p>{locale==="ru"?"Выберите «Поздравление или подарок», «Презентация» или «Контент» выше.":
      locale==="es"?"Elige Regalo, Felicitación o Videopresentación arriba.":
-     "Choose Gift, Greeting or Video presentation above."}</p>
+     "Choose Greeting or gift, Presentation or Audio-based content above."}</p>
    :promptClassification&&analyzedPath?<>
     <strong>{promptClassification.confidence==="low"?
       (locale==="ru"?"Предварительный вариант — проверьте":locale==="es"?"Propuesta preliminar — compruébala":"Provisional suggestion — please check"):
@@ -963,12 +979,13 @@ export function MandalaAutoVideoDirector({
      <div className={css.recipientKinds} role="group" aria-label={
        locale==="ru"?"Тип видео для других":locale==="es"?"Tipo de vídeo para otros":"Video for others category"}>
        {listRecipientVideoKinds(locale).map(item=>{
-         const Icon=item.id==="gift"?Heart:item.id==="greeting"?Sparkles:BriefcaseBusiness;
+         const Icon=item.id==="greeting-gift"?Heart:item.id==="presentation"?BriefcaseBusiness:AudioLines;
          return <button type="button" key={item.id}
            data-auto-video-recipient-kind={item.id} aria-pressed={recipientKindId===item.id}
            disabled={disabled} title={item.description}
            onClick={()=>chooseRecipientVideo(item.id)}>
            <Icon size={21} aria-hidden="true"/><strong>{item.label}</strong>
+            {item.requiresAudio?<small>{item.description}</small>:null}
          </button>;
        })}
      </div>
@@ -981,7 +998,10 @@ export function MandalaAutoVideoDirector({
            locale==="es"?"No hay clips verificados para este formato. Elige 9:16.":
            "No verified footage for this format. Select 9:16.")}
      </p>
-     {recipientKindId?<div className={css.recipientOccasions}>
+     {recipientKindId==="audio-content"?
+       recipientAudio?<MandalaRecipientAudioEntry locale={locale} disabled={disabled} audio={recipientAudio}/>
+         :<p role="alert">Audio-to-video is temporarily unavailable.</p>
+       :recipientKindId?<div className={css.recipientOccasions}>
        <p className={css.popularHeading}>{locale==="ru"?"Уточните назначение":
          locale==="es"?"Elige una ocasión":"Choose an occasion"}</p>
        <div className={css.recipientOptionChoices} role="group" aria-label={
@@ -996,9 +1016,9 @@ export function MandalaAutoVideoDirector({
          :locale==="es"?"Propondremos escenas simbólicas y textos que puedes editar durante el montaje."
          :"We'll suggest symbolic footage and editable video captions."}</p>
      </div>:<p className={css.recipientHint}>{locale==="ru"
-       ?"Выберите подарок, поздравление или видеопрезентацию."
-       :locale==="es"?"Elige regalo, felicitación o videopresentación."
-       :"Choose Gift, Greeting or Video presentation."}</p>}
+       ?"Выберите поздравление или подарок, презентацию либо контент по аудио."
+       :locale==="es"?"Elige felicitación o regalo, presentación o contenido de audio."
+       :"Choose Greeting or gift, Presentation or Audio-based content."}</p>}
    </div>}
    {videoAudience==="others"&&recipientContinueError?<p role="status" data-video-recipient-continue-error>{recipientContinueError}</p>:null}
  </div>;

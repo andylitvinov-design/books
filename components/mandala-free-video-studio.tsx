@@ -4513,6 +4513,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(sttAbortRef.current!==controller||
         uploadedAudioRef.current?.file!==entry.file)return;
       setVoiceTranscript(transcript);
+      // Source-bound preview: recognized words -> local visual signals ->
+      // licensed MP4 shots. No automatic export or provider request.
+      setVoiceVisualPlan(planAudioVisualStoryboard({
+        transcript,scenes:FREE_FILM_CATALOG,aspect,theme:"",locale
+      }));
       setNotice(locale==="ru"?"Расшифровка с временными метками готова. Проверьте текст перед монтажом.":
         locale==="es"?"Transcripción con tiempos lista. Revisa el texto.":"Timed transcript ready. Review it before editing.");
     }catch(error){
@@ -4531,10 +4536,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
     }
   }
-  function applyTranscriptVideo(providedTranscript?:TimedSpeechTranscript,automatic=false){
+  function applyTranscriptVideo(providedTranscript?:TimedSpeechTranscript,automatic=false):boolean{
     const entry=uploadedAudioRef.current;
     const transcript=providedTranscript??voiceTranscript;
-    if(!entry||!transcript||recording||preparing||!audioRights)return;
+    if(!entry||!transcript||recording||preparing||!audioRights)return false;
     const plan=planAudioVisualStoryboard({
       transcript,scenes:FREE_FILM_CATALOG,
       // For recorded speech do not bias every story toward the default
@@ -4549,7 +4554,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         (locale==="ru"?"Не найдено достаточно проверенных видео нужного формата и длительности. Попробуйте другую ориентацию.":
           locale==="es"?"No hay suficientes vídeos verificados de este formato. Cambia la orientación.":
             "Not enough approved footage for this aspect/duration. Try another orientation."));
-      return;
+      return false;
     }
     const preset=FREE_FILM_PRESETS.find(item=>item.theme===theme)||FREE_FILM_PRESETS[0];
     const accepted=applyAutoFilm(preset.id,
@@ -4558,7 +4563,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setSttError(locale==="ru"?"Монтаж не прошёл проверку видеоисточников. Выберите другой формат.":
         locale==="es"?"Las fuentes no pasaron la validación. Prueba otro formato.":
           "Footage validation failed. Try another format.");
-      return;
+      return false;
     }
     // Preserve original speech once, never loop a personal message.
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
@@ -4572,6 +4577,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setNotice(locale==="ru"?"Видеоряд автоматически синхронизирован с речью. Проверьте монтаж и нажмите «Создать видео».":
       locale==="es"?"Escenas sincronizadas automáticamente con la voz. Revisa y pulsa Crear vídeo.":
         "Footage automatically matched to your voice. Review the edit and choose Create video.");
+    return true;
   }
   // Same-tab Messenger transcription is applied ONCE, after the audio file,
   // rights and Studio hydration are committed. No Goal/category prompts.
@@ -6530,6 +6536,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section> : null}
         <MandalaAutoVideoDirector
           goalContinueRef={goalContinueRef}
+          recipientAudio={{
+            fileName:uploadedAudio?.file.name||null,
+            rightsGranted:audioRights,consentGranted:sttConsent,
+            busy:sttBusy,error:sttError,transcript:voiceTranscript,
+            visualPlan:voiceVisualPlan,clipLabel:freeFilmClipLabel,
+            onUpload:file=>{
+              // Local audio File: explicit STT consent is separate from upload.
+              if(file.size>4*1024*1024){
+                setSttError(locale==="ru"?"Для расшифровки выберите файл до 4 МБ.":
+                  locale==="es"?"Elige un archivo de hasta 4 MB.":
+                    "Choose a file up to 4 MB for transcription.");
+                return;
+              }
+              const selected=chooseAudioFile(file);
+              if(!selected)return;
+              setAttachedAudio({kind:"file",file:selected.file,id:selected.url,nonLoop:true});
+              setAudioAuto(false);setSoundVolume(100);
+            },
+            onRemove:()=>{clearUploadedAudio();setAttachedAudio(null);setMusic("none");},
+            onRightsChange:setAudioRights,onConsentChange:setSttConsent,
+            onAnalyze:()=>void transcribeVideoVoice(),
+            onPrepare:()=>applyTranscriptVideo(voiceTranscript??undefined,true)
+          }}
           locale={locale} goal={wish} theme={theme} aspect={aspect} presets={aspectFilmPresets}
           scenes={FREE_FILM_CATALOG}
           disabled={!studioHydrated||recording||preparing}
