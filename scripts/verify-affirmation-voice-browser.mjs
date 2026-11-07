@@ -7,6 +7,7 @@ import {spawnSync} from "node:child_process";
 import {mkdirSync} from "node:fs";
 import {chromium,webkit,expect} from "@playwright/test";
 import {verifyGuidedPractices} from "./verify-mandala-practices-browser.mjs";
+import {verifyProEnhanceVisual} from "./verify-pro-enhance-visual.mjs";
 
 const BASE=(process.env.HH_TEST_PUBLIC_ORIGIN||"http://127.0.0.1:3100").replace(/\/$/,"");
 function wav(seconds=3) {
@@ -898,3 +899,6 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
   }finally{phase(engine,"closing-browser");await withDeadline(browser.close(),10000,engine+" browser.close");phase(engine,"closed");}
 }
 clearTimeout(watchdog);
+
+// PRO owner-approved screenshot acceptance reuses this exact Chromium/WebKit job.
+await verifyProEnhanceVisual({BASE,chromium,webkit,expect});

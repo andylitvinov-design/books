@@ -5594,7 +5594,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <UserRound size={20} aria-hidden="true"/>
           </Link>
         </nav>
-        {creditCatalog?.chargeRequired?<p className={videoStyles.quickHint}
+        {creditCatalog?.chargeRequired&&(activeWorkspace!=="pro"||!creditCatalog.ready)?<p className={videoStyles.quickHint}
           data-video-credit-status role="status" aria-live="polite">
           {creditCatalog.ready
             ?creditSession==="guest"
