@@ -140,8 +140,16 @@ for (const engine of [chromium, webkit]) {
         const post=page.waitForRequest(req=>
           req.method()==="POST" && new URL(req.url()).pathname==="/api/service-enquiries",
           {timeout:10000});
+        // waitForRequest can fire before the async route interceptor records and
+        // aborts the synthetic POST on WebKit. Await the actual transport failure.
+        const abortedPost=page.waitForEvent("requestfailed",{
+          predicate:req=>req.method()==="POST" &&
+            new URL(req.url()).pathname==="/api/service-enquiries",
+          timeout:10000,
+        });
         await requestOnly.click();
-        const consentedRequest=await post;
+        const [consentedRequest,failedRequest]=await Promise.all([post,abortedPost]);
+        assert.ok(failedRequest.failure(),label+" synthetic POST was blocked, not delivered");
         const payload=consentedRequest.postDataJSON();
         assert.equal(payload.contactConsent,true,label+" recorded contact consent");
         assert.equal(payload.contact.email,"synthetic@example.invalid",label+" synthetic email only");
