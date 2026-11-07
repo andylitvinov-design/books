@@ -162,7 +162,7 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
  const tap=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
  const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
- const topic=flow.indexOf('data-auto-video-topic-panel',open);
+ const topic=flow.indexOf('data-video-meaning-axis',open);
  const montage=flow.indexOf('await montage.click()',topic);
  const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
  const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);

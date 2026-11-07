@@ -61,13 +61,14 @@ test("Narration does not loop and actual user gain is mastered into AAC",()=>{
   assert.match(helper,/offline\.startRendering\(\)/);
   assert.match(helper,/audioSource\.add\(audioBuffer\)/);
 });
-test("Real browser validation still requires downloaded video and non-silent audio",()=>{
+test("Real browser validation proves the genuine rendered guest preview and non-silent encoded audio",()=>{
   const script=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   for(const required of [
     'tracks.includes("video")','const audioTrack=streams.find(row=>row.codec_type==="audio")',
     'assert.ok(audioTrack',
     'Number(audioTrack.channels),2',
-    "pcm.stdout.some(value=>value!==0)","await output.waitFor(",
+    "pcm.stdout.some(value=>value!==0)","await preview.waitFor(",
+    "window.__hhGeneratedFilmBlobs","reader.readAsDataURL(blob)","ffprobe",
     "assert.equal(affirmationRequests.length,1)",
   ])assert.ok(script.includes(required),required);
 });
@@ -187,9 +188,11 @@ test("Safari deferred MP4 decoding requires a real user Play gesture, not a fals
   const e2e=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   assert.match(e2e,/await verifyPlayback\.click\(\{timeout:2000\}\)/,
     "WebKit acceptance performs a bounded real Play click, never a mock frame");
-  assert.match(e2e,/if\(await output\.isVisible\(\)\)return true;/,
-    "a playback-ready unmount must require the visible real download control");
+  assert.match(e2e,/video\.readyState>=2 && video\.videoWidth>0 && video\.videoHeight>0 && !video\.error/,
+    "WebKit must decode the generated result instead of requiring a protected guest download");
+  assert.match(e2e,/window\.__hhGeneratedFilmBlobs\?\.get/,
+    "the browser must verify the real locally recorded media Blob");
   assert.match(e2e,/if\(await verifyPlayback\.isVisible\(\)\)throw error;/,
     "a persistent non-clickable Play button remains a test failure");
-  assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+  assert.match(e2e,/await preview\.waitFor\(\{state:"visible",timeout:45000\}\)/);
 });
