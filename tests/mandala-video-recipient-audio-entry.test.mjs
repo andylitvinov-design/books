@@ -20,3 +20,16 @@ test("audio on Goal reuses consented STT, original speech, verified shot matcher
  assert.match(s,/audioStoryboardReady=\{audioPlanApplied&&Boolean\(voiceVisualPlan\?\.canExport\)\}/);
  assert.match(s,/setAttachedAudio\(\{kind:"file",file:entry.file,id:entry.url,nonLoop:true\}\)/);
 });
+
+test("rights revocation and switching away protect personal audio from recipients",()=>{
+ assert.match(s,/if\(!audioPlanApplied\|\|!voiceVisualPlan\?\.canExport\|\|!audioRights\)return/);
+ assert.match(s,/audioStoryboardReady=\{audioPlanApplied&&Boolean\(voiceVisualPlan\?\.canExport\)&&audioRights\}/);
+ assert.match(s,/onAudioSelectionChange=\{active=>\{/);
+ assert.match(s,/if\(!active&&recipientAudioSelected\)\{/);
+ assert.match(s,/setAttachedAudio\(current=>current\?\.kind==="file"\?null:current\)/);
+ const browser=r("../scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(browser,/data-auto-video-recipient-kind="audio_visual"/);
+ assert.match(browser,/data-video-recipient-audio-stt-consent/);
+ assert.match(browser,/data-video-recipient-audio-upload/);
+ assert.match(browser,/assert.equal\(outboundStt.length,0/);
+});

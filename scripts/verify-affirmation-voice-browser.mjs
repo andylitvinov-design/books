@@ -119,8 +119,45 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(recipientCatalog).toHaveAttribute("data-video-recipient-aspect","portrait");
     await expect(page.locator('[data-video-recipient-format-note]')).toContainText("9:16");
     await expect(page.locator('[data-video-goal-topic-chips]')).toHaveCount(0);
+    // Third approved recipient format: one on-page audio workflow and NO
+    // transcription upload until the user explicitly requests it.
+    const recipientFormats=page.locator('[data-auto-video-recipient-kind]');
+    await expect(recipientFormats).toHaveCount(3);
+    const audioFormat=page.locator('[data-auto-video-recipient-kind="audio_visual"]');
+    await audioFormat.click();
+    await expect(audioFormat).toHaveAttribute("aria-pressed","true");
+    const audioFlow=page.locator('[data-video-recipient-audio-panel]');
+    await expect(audioFlow).toBeVisible();
+    const transcribe=page.locator('[data-video-recipient-audio-transcribe]');
+    const nextAudio=page.locator('[data-video-recipient-audio-next]');
+    await expect(transcribe).toBeDisabled();
+    await expect(nextAudio).toBeDisabled();
+    await expect(page.locator('[data-video-recipient-audio-record]')).toBeVisible();
+    const outboundStt=[];
+    page.on("request",request=>{
+      if(request.method()==="POST"&&request.url().includes("/api/holistic-support/audio-storyboard"))
+        outboundStt.push(request.url());
+    });
+    await page.locator('[data-video-recipient-audio-upload]').setInputFiles({
+      name:"sample.wav",mimeType:"audio/wav",buffer:wav(2)
+    });
+    await expect(audioFlow).toContainText("sample.wav");
+    const rights=page.locator('[data-video-recipient-audio-rights]');
+    const sttConsent=page.locator('[data-video-recipient-audio-stt-consent]');
+    await expect(rights).not.toBeChecked();
+    await expect(sttConsent).not.toBeChecked();
+    await expect(transcribe).toBeDisabled();
+    await rights.check();
+    await sttConsent.check();
+    await expect(transcribe).toBeEnabled();
+    await expect(nextAudio).toBeDisabled();
+    await sttConsent.uncheck();
+    await expect(transcribe).toBeDisabled();
+    assert.equal(outboundStt.length,0,"no STT call without explicit action");
+    // Moving to a different recipient must discard this local private audio.
     const greeting=page.locator('[data-auto-video-recipient-kind="greeting"]');
     await greeting.click();
+    await expect(audioFlow).toBeHidden();
     await expect(greeting).toHaveAttribute("aria-pressed","true");
     const birthday=page.locator('[data-auto-video-recipient-occasion="birthday"]');
     await birthday.click();
