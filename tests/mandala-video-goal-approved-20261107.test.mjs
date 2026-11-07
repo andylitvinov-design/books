@@ -92,3 +92,16 @@ test("recipient intent uses real portrait footage with restorable self-video for
   assert.match(studio,/onAspectChange=\{next=>\{/);
   assert.match(studio,/setAspect\(next\);setCinematicPlan\(null\);setPreviewPlaying\(false\)/);
 });
+
+test("existing guided course accepts a real public deep link, not an obsolete seventh tab",()=>{
+  const guided=read("../scripts/verify-mandala-practices-browser.mjs");
+  const mobile=read("../scripts/verify-practices-mobile-browser.mjs");
+  assert.match(studio,/"guided-video-series":"practices"/);
+  assert.match(guided,/mandala#guided-video-series/);
+  assert.match(guided,/toHaveAttribute\("data-active-workspace","practices"\)/);
+  assert.match(guided,/toHaveCount\(6\)/);
+  assert.match(mobile,/data-video-studio-mode/);
+  assert.match(mobile,/data-guided-generate-meditation/);
+  assert.doesNotMatch(guided,/data-video-quick-control="practices"/);
+  assert.doesNotMatch(mobile,/data-video-quick-control="practices"/);
+});
