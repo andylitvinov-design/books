@@ -6,6 +6,7 @@ import {requireAdminRequest} from '@/lib/prescriptions/admin';
 import {getAppConfig} from '@/lib/app/config';
 import {transaction,closeDatabase} from '@/lib/app/database';
 import {readAutomationSnapshot} from '@/lib/automations/scout-db.mjs';
+import {summarizeTaskHealth} from '@/lib/automations/task-health.mjs';
 import {readClassifierAnnotations} from '@/lib/automations/classifier-store.mjs';
 import {readCouncilProposals} from '@/lib/automations/weekly-council-store.mjs';
 import {readCandidateEditorialReviewsForPage} from '@/lib/automations/candidate-editorial-review.mjs';
@@ -23,42 +24,47 @@ export const metadata={title:'AI Council · Automations — Holistic House',
   robots:{index:false,follow:false},referrer:'no-referrer'};
 type Locale='ru'|'en'|'es';
 type DbSnapshot={status:string;observedAt:string;tasks:Array<{
-  task_id:string;description:string;enabled:boolean;schedule_cron:string}>;
+  task_id:string;description:string;enabled:boolean;schedule_cron:string;updated_at:string}>;
   runs:Array<{run_id:string;slot_utc:string;state:string;
     candidates_inserted:number;duplicates:number;source_calls:number;error_code:string|null}>;
   candidates:Array<{candidate_id:string;source_page:string;title:string;
     creator:string;category:string;mime:string;review_state:string;rights_state:string}>;
   counts:{research_total:number;pending_review:number}|null;
+  lastRuns:Array<{task_id:string;slot_utc:string;state:string;
+    error_code:string|null;result_json:unknown}>;
   slots:Array<{slotUtc:string;state:string}>};
 const copy={
   ru:{title:'Центр автоматизаций',subtitle:'Совет мудрецов · проверенные задачи и реальные результаты',
     back:'К видеобиблиотеке',task:'Автоматизации',runs:'Последние запуски',candidates:'Найденные видео — кандидаты',
-    total:'Кандидатов в базе',pending:'Ожидают проверки',slots:'Часовых слотов за сутки',
+    total:'Кандидатов в базе',pending:'Ожидают проверки',slots:'Подтверждено за 24 часа',
     new:'Добавлено',duplicates:'Повторы',calls:'Запросы',model:'AI: 0 запросов для почасового поиска',
     rights:'Кандидаты не являются лицензированными MP4 и не доступны для генерации.',
     unavailable:'База автоматизаций ещё не доступна или миграция не применена. Статус и количество неизвестны.',
     paused:'Не активирована',enabled:'Работает по расписанию',inactive:'Не подключена',
     none:'В базе пока нет кандидатов',source:'Перейти к оригиналу',
     unknown:'Нет подтверждённых результатов',format:'Формат',schedule:'Расписание (UTC)',
+    lastRun:'Последний запуск',neverRun:'Пока не было запуска',error:'Причина',classified:'AI-теги',delivery:'Доставка',
     history:'История слотов',note:'Источник — Wikimedia Commons. Правовой и редакторский допуск выполняется отдельно.'},
   en:{title:'Automation Control Tower',subtitle:'AI Council · verified tasks and real results',
     back:'Video library',task:'Automations',runs:'Recent runs',candidates:'Discovered video candidates',
-    total:'Research candidates',pending:'Awaiting review',slots:'Hourly slots (24h)',
+    total:'Research candidates',pending:'Awaiting review',slots:'Verified hours (24h)',
     new:'Inserted',duplicates:'Duplicates',calls:'Calls',model:'AI: 0 calls for hourly search',
     rights:'Research candidates are not licensed MP4s and cannot be rendered.',
     unavailable:'Automation database unavailable or migration pending. Counts are unknown.',
     paused:'Not enabled',enabled:'Scheduled',inactive:'Not connected',
     none:'No candidates yet',source:'Open source',unknown:'No verified results',format:'Format',schedule:'Schedule (UTC)',
+    lastRun:'Latest run',neverRun:'No recorded run',error:'Reason',classified:'AI labels',delivery:'Delivery',
     history:'Slot history',note:'Source: Wikimedia Commons. Rights and editorial admission are separate.'},
   es:{title:'Centro de automatizaciones',subtitle:'Consejo de IA · tareas y resultados verificables',
     back:'Videoteca',task:'Automatizaciones',runs:'Ejecuciones recientes',candidates:'Vídeos candidatos',
-    total:'Candidatos',pending:'Pendientes de revisión',slots:'Horas (24h)',
+    total:'Candidatos',pending:'Pendientes de revisión',slots:'Horas verificadas (24h)',
     new:'Añadidos',duplicates:'Duplicados',calls:'Consultas',model:'IA: 0 consultas para búsqueda horaria',
     rights:'Los candidatos no son vídeos MP4 aprobados para el generador.',
     unavailable:'Base de datos de automatizaciones no disponible. Cifras desconocidas.',
     paused:'Desactivada',enabled:'Programada',inactive:'Sin conectar',
     none:'Aún no hay candidatos',source:'Abrir original',unknown:'No hay resultados verificados',
-    format:'Formato',schedule:'Horario (UTC)',history:'Historial horario',
+    format:'Formato',schedule:'Horario (UTC)',lastRun:'Última ejecución',neverRun:'Sin ejecuciones',
+    error:'Motivo',classified:'Etiquetas IA',delivery:'Entrega',history:'Historial horario',
     note:'Fuente: Wikimedia Commons. Los derechos y la revisión editorial son independientes.'},
 } as const;
 const stamp=(value:string,locale:Locale)=>{
@@ -67,6 +73,25 @@ const stamp=(value:string,locale:Locale)=>{
   catch{return '—'};
 };
 const safeNumber=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=0?value:'—';
+
+const taskHealthLabels={
+  ru:{paused:'Приостановлено',awaiting_first_slot:'Ждёт первого запуска',
+    due_soon:'Ожидает выполнения',running:'Выполняется',
+    verified:'Результат подтверждён',no_change:'Нет новых данных',
+    partial:'Частично выполнено',failed:'Ошибка',quota_paused:'Лимит бесплатного AI',
+    missed:'Слот пропущен',unknown:'Статус не подтверждён'},
+  en:{paused:'Paused',awaiting_first_slot:'Awaiting first run',
+    due_soon:'Run pending',running:'Running',
+    verified:'Verified result',no_change:'No new results',
+    partial:'Partially completed',failed:'Failed',quota_paused:'Free AI quota exceeded',
+    missed:'Missed scheduled slot',unknown:'Status unverified'},
+  es:{paused:'En pausa',awaiting_first_slot:'Pendiente de primera ejecución',
+    due_soon:'Ejecución pendiente',running:'En proceso',
+    verified:'Resultado verificado',no_change:'Sin novedades',
+    partial:'Parcialmente completado',failed:'Error',quota_paused:'Límite de IA gratuita',
+    missed:'Ejecución omitida',unknown:'Estado sin verificar'}
+} as const;
+
 const editorialLabel=(locale:Locale,state:string|null)=>{
   const key=state==='shortlisted_for_rights_review'?'shortlisted':
     state==='rejected'?'rejected':state==='needs_more_evidence'?'needs':'pending';
@@ -119,6 +144,8 @@ export default async function AutomationsPage({searchParams}:Props){
     finally{await closeDatabase();}
   }
   const reviewByCandidate=new Map((candidateReviews||[]).map(row=>[row.candidate_id,row.decision]));
+  const succeededSlots=snapshot?.slots.filter(slot=>
+    ['succeeded','no_change','partial'].includes(slot.state)).length;
   const candidateInfo=snapshot?.counts?
     candidatePageInfo(candidatePage,snapshot.counts.research_total):null;
   const scout=snapshot?.tasks.find(task=>task.task_id==='video-scout-hourly');
@@ -134,15 +161,30 @@ export default async function AutomationsPage({searchParams}:Props){
       <section className={styles.metrics} aria-label={t.task}>
         <div className={styles.metric}><strong>{snapshot?safeNumber(snapshot.counts?.research_total):'—'}</strong><span>{t.total}</span></div>
         <div className={styles.metric}><strong>{snapshot?safeNumber(snapshot.counts?.pending_review):'—'}</strong><span>{t.pending}</span></div>
-        <div className={styles.metric}><strong>{snapshot?'24':'—'}</strong><span>{t.slots}</span></div>
+        <div className={styles.metric}><strong>{snapshot?String(succeededSlots)+'/24':'—'}</strong><span>{t.slots}</span></div>
       </section>
       <section className={styles.section}>
         <h1>{t.task}</h1>
-        {(snapshot?.tasks||[]).map(task=><div key={task.task_id} className={styles.task}>
-          <div><h2>{task.task_id}</h2><p>{task.description}</p>
-            <small>{t.schedule}: {task.schedule_cron}</small></div>
-          <span className={styles.tag}>{task.enabled?t.enabled:t.paused}</span>
-        </div>)}
+        {(snapshot?.tasks||[]).map(task=>{
+          const lastRun=snapshot?.lastRuns.find(run=>run.task_id===task.task_id)||null;
+          const health=summarizeTaskHealth(task,lastRun,{now:new Date(snapshot?.observedAt||Date.now())});
+          const problem=['failed','quota_paused','missed'].includes(health.status);
+          const statusClass=problem?styles.tagProblem:
+            health.status==='verified'||health.status==='no_change'?styles.tagVerified:styles.tagAwaiting;
+          const healthLabel=taskHealthLabels[locale][health.status as keyof typeof taskHealthLabels.ru]||t.unknown;
+          return <div key={task.task_id} className={styles.task}>
+            <div><h2>{task.task_id}</h2><p>{task.description}</p>
+              <small>{t.schedule}: {task.schedule_cron}</small>
+              <small>{t.lastRun}: {health.lastSlot?stamp(health.lastSlot,locale):t.neverRun}
+                {health.lastStatus?' · '+health.lastStatus:''}</small>
+              {health.errorCode&&<small className={styles.taskError}>{t.error}: {health.errorCode}</small>}
+              {health.result?.classified!==null&&health.result?.classified!==undefined&&
+                <small>{t.classified}: {health.result.classified}</small>}
+              {health.result?.delivery&&<small>{t.delivery}: {health.result.delivery}</small>}
+            </div>
+            <span className={[styles.tag,statusClass].join(' ')}>{healthLabel}</span>
+          </div>;
+        })}
         {scout&&<AutomationControlActions locale={locale} enabled={scout.enabled}/>}
         {classifier&&<AutomationControlActions locale={locale} taskId="video-classifier-batch" enabled={classifier.enabled}/>}
         {weekly&&<AutomationControlActions locale={locale} taskId="council-video-review-weekly" enabled={weekly.enabled}/>}
