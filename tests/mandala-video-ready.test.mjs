@@ -33,8 +33,13 @@ test("Ritual uses existing no-provider safety selector in three languages",()=>{
     assert.equal(ordinary.steps.length,3);
     const urgent=selectResourcePractice({locale,theme:"energy",kind:"ritual",focus:{goal:"I want to die"}});
     assert.equal(urgent.status,"blocked");
+    const unsafeAnchor=selectResourcePractice({locale,theme:"energy",kind:"ritual",
+      focus:{goal:"calm and balance",details:["I want to die"]}});
+    assert.equal(unsafeAnchor.status,"blocked","the optional anchor must be screened");
   }
   assert.match(ready,/selectResourcePractice/);
+  assert.match(ready,/details:\[anchor,\.\.\.focus\.details\]/);
+  assert.match(ready,/focus\.details,anchor,wish/);
   assert.match(ready,/navigator\.clipboard\.writeText/);
   assert.match(ready,/onOpenCourse/);
 });

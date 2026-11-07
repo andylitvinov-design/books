@@ -32,7 +32,9 @@ export async function GET(request){
       try{
         const {ensureTelegramCompanionNativeMenu}=await import('@/lib/crm/messenger-provider')
         const status=await ensureTelegramCompanionNativeMenu(process.env)
-        if(!status.ready)console.error('HH_CRM_TG_COMMAND_MENU_NOT_READY',{reason:status.reason})
+        if(status.ready)console.info('HH_CRM_TG_COMMAND_MENU_READY',{
+          source:'morning_cron',changedScopes:status.changedScopes||0})
+        else console.error('HH_CRM_TG_COMMAND_MENU_NOT_READY',{reason:status.reason})
       }catch{console.error('HH_CRM_TG_COMMAND_MENU_SETUP_FAILED')}
     })
   }

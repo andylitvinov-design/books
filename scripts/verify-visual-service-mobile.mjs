@@ -37,6 +37,9 @@ for (const engine of [chromium, webkit]) {
       const page = await browser.newPage({
         viewport: { width, height }, hasTouch: true,
         deviceScaleFactor: 1, reducedMotion: "reduce",
+        // A PWA Service Worker bypasses Playwright route interception.
+        // Block it so all synthetic CRM POSTs stay in this test's mock.
+        serviceWorkers: "block",
       });
       const errors = [];
       page.on("pageerror", error => errors.push(error.message));
@@ -123,7 +126,7 @@ for (const engine of [chromium, webkit]) {
           resolveInterceptedPost=resolve;
           rejectInterceptedPost=reject;
         });
-        await page.route("**/api/service-enquiries",async route=>{
+        await page.context().route("**/api/service-enquiries",async route=>{
           // Real CRM is NEVER contacted by synthetic CI; every POST is
           // aborted before it can reach any server.
           if(route.request().method()==="POST"){
@@ -162,7 +165,7 @@ for (const engine of [chromium, webkit]) {
           interceptedPost,
           new Promise((_,reject)=>{
             acknowledgementTimeout=setTimeout(
-              ()=>reject(new Error(label+" synthetic POST interception timed out")),10000);
+              ()=>reject(new Error(label+" synthetic POST interception timed out (intercepted="+requests.length+")")),10000);
           }),
         ]);
         let consentedRequest, acknowledgedPayload;
