@@ -193,15 +193,35 @@ try {
     (document.querySelector('[data-first-video-prompt]')?.value?.length || 0) > 60,
     undefined, {timeout: 25000});
   assert.ok((await prompt.inputValue()).length > 60, 'PROMPT_NOT_PERSONALIZED');
-  // Separate the quick-format UI from the actual media export. A broken or
-  // occluded quick button must not prevent probing the real rendering path.
-  row.quickPortraitButtonCount = await first.locator('[data-first-video-quick-aspect="portrait"]').count();
-  await first.locator('[data-first-video-filters] > summary').click();
-  await first.locator('[data-first-video-aspect]').selectOption('portrait');
+  // Validate the REAL visible mobile aspect action. Safari can restore an
+  // already-open <details>; blindly clicking summary then hid its select.
+  const portrait=first.locator('[data-first-video-quick-aspect="portrait"]');
+  row.quickPortraitButtonCount=await portrait.count();
+  assert.equal(row.quickPortraitButtonCount,1,'MOBILE_ASPECT_CONTROL_MISSING');
+  await portrait.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-first-video-quick-aspect="portrait"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  // Advanced settings remain genuine native select interactions. Open the
+  // disclosure only if closed; never force-select a hidden/disabled field.
+  const filters=first.locator('[data-first-video-filters]');
+  const openFilters=async()=>{
+    if(!await filters.evaluate(element=>element.open))
+      await filters.locator(':scope > summary').click();
+    await page.waitForFunction(()=>{
+      const el=document.querySelector('[data-first-video-filters]');
+      return el instanceof HTMLDetailsElement && el.open &&
+        el.querySelector('fieldset')?.disabled===false;
+    },undefined,{timeout:15000});
+  };
+  await openFilters();
   assert.equal(await first.locator('[data-first-video-aspect]').inputValue(),
-    'portrait', 'PORTRAIT_NOT_SELECTED');
+    'portrait','PORTRAIT_NOT_SELECTED');
   await first.locator('[data-first-video-duration]').selectOption('20');
+  await openFilters();
   await first.locator('[data-first-video-music]').selectOption('meditation');
+  assert.equal(await first.locator('[data-first-video-music]').inputValue(),
+    'meditation','MEDITATION_MUSIC_NOT_SELECTED');
   assert.equal(await first.locator('[data-first-video-ai-consent]').isChecked(), false,
     'SYNTHETIC_LIVE_SMOKE_SHOULD_NOT_SEND_AI');
   let licensedSources=[];

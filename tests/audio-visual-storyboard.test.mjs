@@ -107,3 +107,16 @@ test("recipient audio shows STT failure at step 2 and preserves local manual pro
  assert.match(source,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,nonLoop:true\}\)/);
  assert.match(source,/if\(recipientAudioSelected\)window\.requestAnimationFrame/);
 });
+
+test("macOS WebKit export selects visible mobile format and retains real encoder checks",()=>{
+ const browser=readFileSync(new URL(
+  "../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+ assert.match(browser,/await portrait\.click\(\)/);
+ assert.match(browser,/data-first-video-quick-aspect="portrait"/);
+ assert.match(browser,/const openFilters=async/);
+ assert.match(browser,/selectOption\('meditation'\)/);
+ assert.match(browser,/readRealGuestVideo\(page/);
+ assert.match(browser,/ffprobe/);
+ assert.doesNotMatch(browser,/\.selectOption\('portrait'\)/);
+ assert.doesNotMatch(browser,/force:\s*true/);
+});

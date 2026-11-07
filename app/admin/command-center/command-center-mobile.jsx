@@ -311,7 +311,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
       onOpen={id=>setSelected(id)}/>
     </section>:
    tab==='agents'?<section className={styles.section}><div className={styles.heading}><h1>{t.agents}</h1><span>{registry.length}</span></div>
-    <div className={styles.panel}><h2>⏱ Cron Skills</h2><p className={styles.muted}>{lang==='ru'?'Библиотека из 29 навыков, расписания и проверенная история':lang==='es'?'Catálogo de 29 habilidades, horarios y ejecuciones':'29 skills, schedules and verified execution history'}</p><a className={styles.github} href="/admin/command-center/skills">{lang==='ru'?'Управлять навыками и расписанием':lang==='es'?'Gestionar habilidades y horarios':'Manage skills and schedules'} ↗</a></div>
+    <div className={styles.panel}><h2>⏱ {lang==='ru'?'Автоматизации · Cron Jobs':lang==='es'?'Automatizaciones · Cron Jobs':'Automations · Cron Jobs'}</h2><p className={styles.muted}>{lang==='ru'?'Читать и изменять инструкции, создавать задания с навыками и памятью агента':lang==='es'?'Ver, editar y crear tareas programadas con habilidades y memoria':'Read, edit and create scheduled tasks with skills and agent memory'}</p><a className={styles.github} href="/admin/command-center/automations">{lang==='ru'?'Открыть автоматизации':lang==='es'?'Abrir automatizaciones':'Open automations'} ↗</a></div>
     <CommandCenterPrWatch lang={lang} tasks={tasks} watch={snapshot?.prWatch} busy={busy}
       available={available} onSet={(taskId,enabled)=>send('watch_set',{taskId,enabled})}
       onCheck={taskId=>send('watch_check',{taskId})}/>
