@@ -2,6 +2,7 @@ import {ownerMaterialRequest} from '@/lib/clients/material-library-http';
 import {privateJson} from '@/lib/clients/delivery-http';
 import {transaction,consumeRate,closeDatabase} from '@/lib/app/database';
 import {readAutomationSnapshot,changeScoutTaskState} from '@/lib/automations/scout-db.mjs';
+import {parseCandidatePage} from '@/lib/automations/candidate-pagination.mjs';
 import {runHourlyVideoScout} from '@/lib/automations/scout-runner';
 import {SCOUT_TASK_ID} from '@/lib/automations/video-scout.mjs';
 import {CLASSIFIER_TASK_ID} from '@/lib/automations/free-classifier.mjs';
@@ -20,9 +21,13 @@ export const maxDuration=90;
 
 export async function GET(request){
   try{return await ownerMaterialRequest(request,async({config})=>{
-    if(new URL(request.url).search)return privateJson({error:'INVALID_QUERY'},400);
+    const query=new URL(request.url).searchParams;
+    if([...query.keys()].some(key=>key!=='page')||query.getAll('page').length>1)
+      return privateJson({error:'INVALID_QUERY'},400);
+    const candidatePage=parseCandidatePage(query.get('page'));
+    if(candidatePage===null)return privateJson({error:'INVALID_QUERY'},400);
     const snapshot=await transaction(config,null,
-      db=>readAutomationSnapshot(db),{server:true});
+      db=>readAutomationSnapshot(db,{candidatePage}),{server:true});
     return privateJson(snapshot);
   });}finally{await closeDatabase();}
 }
