@@ -362,6 +362,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
+      // The approved Ideas Text/Voice switch must use one shared narrator.
+      // The actual mode click cannot trigger any provider POST or local record.
+      const ideasModes=phrases.locator("[data-video-ideas-tabs]");
+      await expect(ideasModes).toBeVisible();
+      await expect(ideasModes.locator('[data-video-ideas-tab="text"]')).toHaveAttribute("aria-pressed","true");
+      await expect(phrases.locator("[data-video-ideas-text-panel]")).toBeVisible();
+      await ideasModes.locator('[data-video-ideas-tab="voice"]').click();
+      await expect(phrases).toHaveAttribute("data-ideas-subtab","voice");
+      await expect(phrases.locator("[data-hypno-voice]")).toBeVisible();
+      await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(1);
+      await expect(phrases.locator('[data-video-affirmation-gender="male"]')).toBeVisible();
+      await ideasModes.locator('[data-video-ideas-tab="text"]').click();
+      await expect(phrases).toHaveAttribute("data-ideas-subtab","text");
+      await expect(phrases.locator("[data-video-ideas-text-panel]")).toBeVisible();
       // Owner-approved Phrases: measure the actual DOM in three iPhone widths.
       // These checks fail on double-row tabs, a tall portrait player or overflow.
       for(const width of [320,390,430]){
@@ -399,18 +413,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // consented voice editor is an opt-in advanced section, not a missing
       // Phrases control or a forced hidden test-only shortcut.
       const advancedVoice=phrases.locator('[data-video-ideas-advanced-voice]');
-      // The 05 Nov compact Ideas deliberately hides the legacy editor at rest.
-      // Reveal the existing one-instance editor through the REAL 44px visitor
-      // button, never click a CSS-hidden summary or silently enable recording.
+      // Text mode deliberately collapses the advanced editor. The actual
+      // visitor taps Record a phrase to reveal it; this does not request mic access.
+      const recordEntry=phrases.locator('[data-video-ideas-record]');
       await expect(advancedVoice).toBeHidden();
-      const revealVoice=phrases.locator('[data-video-phrase-audio-shortcut]');
-      await expect(revealVoice).toBeVisible({timeout:15000});
-      await expect(revealVoice).toBeEnabled();
-      await revealVoice.click();
-      const expanded=phrases.locator('[data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]');
-      await expanded.waitFor({state:"visible",timeout:15000});
-      await advancedVoice.waitFor({state:"visible",timeout:15000});
+      await expect(recordEntry).toBeVisible();
+      await recordEntry.click();
+      await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
+      await expect(page.locator('[data-video-affirmation-gender="own"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await expect(page.locator('[data-video-own-voice-record]')).toBeVisible();
+      // Hypno's optional fine-tuning has its own native user disclosure.
+      // Open it visibly rather than forcing hidden select controls.
+      const intentDetails=phrases.locator('[data-hypno-idea-details]');
+      await expect(intentDetails.locator(":scope > summary")).toBeVisible();
+      if(await intentDetails.getAttribute("open")===null)
+        await intentDetails.locator(":scope > summary").click();
+      await expect(intentDetails).toHaveAttribute("open","");
       await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();

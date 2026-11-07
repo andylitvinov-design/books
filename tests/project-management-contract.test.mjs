@@ -15,7 +15,11 @@ test('mutations owner gated and same origin, no new scheduler or CI',()=>{
  assert.match(route,/CROSS_ORIGIN_DENIED/);
  assert.match(route,/consumeRate/);
  assert.match(route,/uuid\(data\.requestId\)/);
- assert.doesNotMatch(route,/workflow_dispatch|rerun_failed|create_pull_request|new cron/i);
+ assert.doesNotMatch(route,/rerun_failed|create_pull_request|new cron/i);
+ assert.match(route,/actions\/workflows\/.*?\/dispatches/);
+ assert.match(route,/reservePmExecution/);
+ assert.match(route,/HH_PM_GITHUB_ACTIONS_WRITE_TOKEN/);
+ assert.doesNotMatch(route,/hh-pr-repair-worker\.yml.*?\/dispatches/);
 });
 test('chosen plan uses existing tasks, milestones, DAG and no automation',()=>{
  assert.match(store,/INSERT INTO app_private\.cc_tasks/);
@@ -34,4 +38,25 @@ test('existing private backend has RLS policy and least-privilege grants for PM 
  }
  assert.doesNotMatch(permissions,/GRANT[^;]+TO\s+(?:PUBLIC|anon|authenticated)/i);
  assert.doesNotMatch(permissions,/GRANT\s+ALL|CREATE TRIGGER|cron\.schedule/i);
+});
+test('execution gateway reuses private event ledger, not public monitor or second worker',()=>{
+ const execution=f('lib/project-management/execution.mjs');
+ const migration=f('supabase/migrations/20261107183000_hh_pm_execution_gateway_v3.sql');
+ const client=f('app/admin/project-management/project-management-client.jsx');
+ const style=f('app/admin/project-management/project-management.module.css');
+ assert.match(execution,/executionAdmission/);
+ assert.match(execution,/buildChatgptHandoff/);
+ assert.match(execution,/pm_request_id/);
+ assert.match(store,/pg_advisory_xact_lock/);
+ assert.match(store,/DISPATCH_PENDING/);
+ assert.match(store,/EXECUTION_ALREADY_RESERVED_OR_ATTEMPTED/);
+ assert.match(migration,/ALTER TABLE app_private\.cc_pm_events/);
+ assert.doesNotMatch(migration,/CREATE TABLE|GRANT .*\b(?:anon|authenticated)\b|cron\.schedule/i);
+ for(const action of ['prepare_execution','launch_execution','retry_execution',
+   'cancel_future_attempts','prepare_chatgpt_handoff','execution_status'])
+  assert.ok(route.includes(action));
+ assert.match(client,/window\.confirm/);
+ assert.match(client,/ChatGPT Work/);
+ assert.match(style,/max-width:390px/);
+ assert.doesNotMatch(route,/HH_AUTOMERGE_TOKEN|OPENROUTER_FREE_API_KEY/);
 });

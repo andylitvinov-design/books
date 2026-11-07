@@ -1885,6 +1885,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
+  const [ideasSubtab,setIdeasSubtab] = useState<"text"|"voice">("text");
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
@@ -5315,6 +5316,35 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
              if(uploadedAudioRef.current?.file===file)clearUploadedAudio();
              setAttachedAudio(current=>current?.kind==="file"&&current.file===file?null:current);
            }}/>
+        <div className={videoStyles.ideasVoiceActions} data-video-ideas-voice-actions>
+          <label className={videoStyles.ideasVoiceUpload}>
+            <Paperclip size={19} aria-hidden="true"/>
+            {locale==="ru"?"Загрузить мой голос":locale==="es"?"Subir mi voz":"Upload my voice"}
+            <input type="file" data-video-ideas-own-upload
+              accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.webm"
+              disabled={recording||preparing}
+              onChange={event=>{
+                const file=event.currentTarget.files?.[0];
+                if(file&&chooseAudioFile(file))setPhraseAudioExpanded(true);
+                event.currentTarget.value="";
+              }}/>
+          </label>
+          <button type="button" data-video-ideas-record-voice disabled={recording||preparing}
+            onClick={()=>{
+              document.querySelector<HTMLButtonElement>('[data-video-affirmation-gender="own"]')?.click();
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+                document.querySelector<HTMLElement>("[data-video-own-voice-record]")
+                  ?.scrollIntoView({behavior:"smooth",block:"nearest"})));
+            }}>
+            <Mic size={19} aria-hidden="true"/>
+            {locale==="ru"?"Записать голос":locale==="es"?"Grabar mi voz":"Record a voice"}
+          </button>
+        </div>
+        {uploadedAudio?<p className={videoStyles.ideasVoiceUploadNotice} role="status">
+          {locale==="ru"?"Файл выбран. Подтвердите права и прикрепите дорожку ниже.":
+            locale==="es"?"Archivo elegido. Confirma los derechos y añade la pista abajo.":
+              "File selected. Confirm rights and attach the track below."}
+        </p>:null}
         {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
           {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
             locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
@@ -6300,7 +6330,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title}>
+      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab}>
+        <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
+          aria-label={locale==="ru"?"Идеи: текст или голос":locale==="es"?"Ideas: texto o voz":"Ideas: text or voice"}>
+          <button type="button" data-video-ideas-tab="text" aria-pressed={ideasSubtab==="text"}
+            onClick={()=>{setIdeasSubtab("text");setIdeasVoiceAdvancedOpen(false);}}>
+            <span className={videoStyles.ideasTabLetters} aria-hidden="true">Aa</span>
+            {locale==="ru"?"Текст":locale==="es"?"Texto":"Text"}
+          </button>
+          <button type="button" data-video-ideas-tab="voice" aria-pressed={ideasSubtab==="voice"}
+            onClick={()=>{setIdeasSubtab("voice");setIdeasVoiceAdvancedOpen(true);}}>
+            <Mic size={20} aria-hidden="true"/>
+            {locale==="ru"?"Голос":locale==="es"?"Voz":"Voice"}
+          </button>
+        </div>
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Мой запрос и тема":locale==="es"?"Mi intención y tema":"My request & topic"}</h3>
           <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
@@ -6313,6 +6356,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {/* Same approved Hypno editor. Request/phrases first; voice and sound stay optional. */}
         <div className={videoStyles.phraseEditorLead} data-video-phrase-editor-first>
+          <div id="video-ideas-text-panel" data-video-ideas-text-panel hidden={ideasSubtab!=="text"}>
           <MandalaVideoIdeas locale={locale} theme={theme}
             active={activeWorkspace==="phrases"} disabled={recording||preparing}
             settings={affirmations}
@@ -6329,9 +6373,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }));
             }}
             onCreate={goToMontageFromIdeas}/>
+          </div>
           {/* One persistent editor instance; collapsed by default in Ideas.
               Do not unmount it between workspaces or duplicate audio state. */}
-          <div data-video-legacy-phrase-editor data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}
+          <div id="video-ideas-voice-panel" data-video-legacy-phrase-editor data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}
             hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
             <details className={videoStyles.phraseAudioSettings}
               data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}
@@ -6857,7 +6902,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             const details=document.querySelector("[data-video-therapy-meditation-audio]");
             if(details instanceof HTMLDetailsElement){
               details.open=true;
-              details.scrollIntoView({behavior:"auto",block:"center"});
+              details.scrollIntoView({behavior:"instant",block:"center"});
             }
           });
         }}
