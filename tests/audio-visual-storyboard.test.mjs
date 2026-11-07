@@ -92,3 +92,18 @@ test("public microphone is authorized ONLY at existing live host and Studio rout
  assert.match(next,/\/es\/app\/messages/);
  assert.match(next,/camera=\(\), microphone=\(self\), geolocation=\(\)/);
 });
+
+test("recipient audio shows STT failure at step 2 and preserves local manual progress",()=>{
+ const recipient=source.slice(source.indexOf("const recipientAudioPanel="),
+   source.indexOf("const activateQuickWorkspace="));
+ assert.ok(recipient.includes("data-video-recipient-audio-transcribe"));
+ assert.ok(recipient.indexOf("data-video-recipient-audio-error")>
+   recipient.indexOf("data-video-recipient-audio-transcribe"));
+ assert.ok(recipient.indexOf("data-video-recipient-audio-error")<
+   recipient.indexOf("data-video-recipient-audio-plan"));
+ assert.equal(recipient.split("data-video-recipient-audio-error").length-1,1);
+ assert.match(recipient,/data-video-recipient-audio-manual/);
+ assert.match(source,/function goRecipientAudioToManualMontage\(\)/);
+ assert.match(source,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,nonLoop:true\}\)/);
+ assert.match(source,/if\(recipientAudioSelected\)window\.requestAnimationFrame/);
+});
