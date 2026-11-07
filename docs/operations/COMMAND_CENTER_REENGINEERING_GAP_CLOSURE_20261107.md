@@ -54,6 +54,18 @@
 - Любое неудачное/недоступное соединение = явный blocker, а не фиктивная успешность.
 - Новый сервис с оплатой не подключён; счета, токены и персональные данные не попадают в клиентский JSON.
 
+## 5а. Текущая доработка: доказательство source commit по подписанной цепочке
+
+Связка `pm_request_id → Watchdog run → RESERVE → CLAIMED → RUNNER_STARTED → PUBLISHED` строится из ограниченного чтения GitHub API **по явному запросу владельца**, без дополнительных cron и GitHub write-токенов.
+
+Проверка принимается только при совпадении PR, старого HEAD, owner UUID, номера Watchdog run, 32-символьного `task_key`, GitHub Actions bot App ID 15368 и worker run ID. Проверяется **полная** одна страница issue comments (≤100), а для нового source commit — текущий PR HEAD и независимый parent в GitHub commits API. Частичная история, неверная подпись, непроверенный parent и устаревший HEAD остаются `UNCONFIRMED`.
+
+Новые состояния: `SIGNED_RESERVATION_ONLY`, `WORKER_CLAIMED`, `RUNNER_CONFIRMED_NO_SOURCE`, `READ_ONLY_PREFLIGHT_NO_SOURCE`, `SOURCE_COMMIT_UNCONFIRMED`, `SOURCE_COMMIT_VERIFIED`. Ни одна из этих меток сама по себе не означает `FUNCTIONAL_LIVE`, а наличие GitHub runner само по себе не означает запуск AI-модели.
+
+Инцидент [Repair Worker run 42404038363](https://github.com/andylitvinov-design/books/actions/runs/42404038363): `claim` и `fix` завершились, но `code_fix`, `code_verify`, `publish` были пропущены; подписанное заключение `READ_ONLY_PREFLIGHT_NO_SOURCE`, `HH_CODE_AVAILABLE=false`, `new_sha=null`. Это не успешный кодовый ремонт и не основание бесконечно повторять workflow.
+
+Реальная автоматическая разработка по-прежнему требует владельческого разрешения `HH_PM_EXECUTION_ENABLED`, серверного Actions-write token с минимальными правами, проверенного бесплатного кодового исполнителя и допустимого RED PR. Нельзя копировать чужой секрет из Vercel в GitHub или добавлять новый платный ключ без разрешения владельца.
+
 ## 6. Точки входа
 - [Command Center](https://holistichouse.vercel.app/admin/command-center)
 - [Project Management](https://holistichouse.vercel.app/admin/project-management)
