@@ -33,12 +33,19 @@ export async function verifyGuidedPractices({browser,base,engine}){
         waitUntil:"domcontentloaded",timeout:70000,
       });
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
-      // The compact six-tab rail now has Ready instead of the old Practices
-      // tab. A visitor reaches the same guided course from the visible
-      // "8-practice course" shortcut in Goal. Exercise that REAL click.
-      const entry=page.locator('[data-video-practice-shortcut="course"]');
-      await entry.waitFor({state:"visible",timeout:25000});
-      await entry.click();
+      // The compact Goal screen intentionally hides the legacy shortcuts.
+      // Exercise the visible Ready → 8-practice course journey, not a hidden
+      // selector or direct React state change; preserve all downstream checks.
+      const ready=page.locator('[data-video-quick-control="ready"]');
+      await ready.waitFor({state:"visible",timeout:25000});
+      await ready.click();
+      await expect(ready).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      const journey=page.locator("[data-ready-journey]");
+      await journey.waitFor({state:"visible",timeout:15000});
+      await journey.click();
+      const createCourse=page.locator("[data-ready-create-course]");
+      await createCourse.waitFor({state:"visible",timeout:15000});
+      await createCourse.click();
       const studio=page.locator("[data-mandala-free-video]");
       await expect(studio).toHaveAttribute("data-active-workspace","practices",{timeout:15000});
       await expect(studio).toHaveAttribute("data-video-studio-mode","therapy",{timeout:15000});
