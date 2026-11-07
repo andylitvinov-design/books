@@ -48,6 +48,7 @@ jobs:
       claim_status: ${{ steps.select.outputs.claim_status }}
       claim_reason: ${{ steps.select.outputs.claim_reason }}
       code_available: ${{ steps.select.outputs.code_available }}
+      code_provider: ${{ steps.select.outputs.code_provider }}
       no_fix_finalized: ${{ steps.finalize_no_fix.outcome }}
       audit_only: ${{ steps.select.outputs.audit_only }}
       legacy_production_sha: ${{ steps.select.outputs.legacy_production_sha }}
@@ -78,6 +79,7 @@ jobs:
           HH_HAS_CODEX_TOKEN: 'false'
           # Only a separately provisioned free-tier OpenCode key can enable inference.
           HH_HAS_FREE_OPENCODE_TOKEN: ${{ secrets.HH_OPENCODE_FREE_API_KEY != '' }}
+          HH_HAS_OPENROUTER_FREE_TOKEN: ${{ secrets.HH_OPENROUTER_FREE_API_KEY != '' }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -138,7 +140,9 @@ jobs:
               }
             }
             core.setOutput('claim_reason',result.reason||'');
-            core.setOutput('code_available',process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'true':'false');
+            const provider=process.env.HH_HAS_OPENROUTER_FREE_TOKEN==='true'?'openrouter':process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'opencode':'none';
+            core.setOutput('code_provider',provider);
+            core.setOutput('code_available',provider==='none'?'false':'true');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
       # Fast terminal path: no untrusted source runs on this trusted runner.
@@ -503,6 +507,7 @@ jobs:
       - name: Install PR test dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Install exact free OpenCode CLI version outside PR worktree
+        if: needs.claim.outputs.code_provider == 'opencode'
         shell: bash
         run: |
           set -euo pipefail
@@ -513,7 +518,9 @@ jobs:
         shell: bash
         env:
           HH_OPENCODE_BIN: ${{ runner.temp }}/hh-opencode/node_modules/.bin/opencode
-          HH_OPENCODE_FREE_API_KEY: ${{ secrets.HH_OPENCODE_FREE_API_KEY }}
+          HH_OPENCODE_FREE_API_KEY: ${{ needs.claim.outputs.code_provider == 'opencode' && secrets.HH_OPENCODE_FREE_API_KEY || '' }}
+          HH_OPENROUTER_FREE_API_KEY: ${{ needs.claim.outputs.code_provider == 'openrouter' && secrets.HH_OPENROUTER_FREE_API_KEY || '' }}
+          HH_OPENROUTER_FREE_MODEL: liquid/lfm-3-1.7b:free
         run: |
           set -euo pipefail
           # Proposer runs OpenCode in an empty temporary cwd, with an empty
@@ -669,7 +676,7 @@ jobs:
               }
               const t=await call('POST',base+'/git/trees',{base_tree:treeSha,tree});
               const commit=await call('POST',base+'/git/commits',{
-                message:'fix(ci): '+(candidate.repair_kind==='free_ai'?'verified free GLM source repair':candidate.repair_kind==='codex'?'verified legacy code repair':'automated scoped ESLint repair')+' for PR #'+number,
+                message:'fix(ci): '+(candidate.repair_kind==='free_ai'?'verified free-model source repair':candidate.repair_kind==='codex'?'verified legacy code repair':'automated scoped ESLint repair')+' for PR #'+number,
                 tree:t.sha,parents:[expectedSha]});
               if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
               const still=await call('GET',base+ref);

@@ -338,27 +338,38 @@ async function propose(){
  const signals=collectDiagnostics(root,scope);
  const prompt=promptFor(scope,sources,signals);
  if(prompt.length>92000)throw Error('FREE_AI_PROMPT_TOO_LARGE');
+ const routerKey=process.env.HH_OPENROUTER_FREE_API_KEY||'';
+ const router=typeof routerKey==='string'&&routerKey.trim().length>0;
  const cli=process.env.HH_OPENCODE_BIN;
- if(!cli||!fs.existsSync(cli)||!fs.statSync(cli).isFile())
+ if(!router&&(!cli||!fs.existsSync(cli)||!fs.statSync(cli).isFile()))
    throw Error('FREE_AI_CLI_NOT_INSTALLED');
  const isolated=fs.mkdtempSync(path.join(os.tmpdir(),'hh-ci-free-repair-'));
- const env=isolatedEnvironment(isolated,process.env.HH_OPENCODE_FREE_API_KEY||'');
- if(!env.OPENCODE_API_KEY)throw Error('FREE_AI_FREE_OPENCODE_CREDENTIAL_NOT_CONFIGURED');
+ const env=isolatedEnvironment(isolated,router?'':process.env.HH_OPENCODE_FREE_API_KEY||'');
+ if(!router&&!env.OPENCODE_API_KEY)throw Error('FREE_AI_FREE_OPENCODE_CREDENTIAL_NOT_CONFIGURED');
  try{
-   const priceCheck=await verifyFreeModelPrice();
-   console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(priceCheck));
-   const acl=run(cli,['debug','agents'],{cwd:isolated,env,timeout:45000});
-   if(!acl.ok)throw Error('FREE_AI_AGENT_ACL_PROBE_FAILED');
-   validateAgentAcl(acl.stdout);
-   const response=run(cli,['run','--standalone','--model',MODEL,'--agent',
-     'hh-ci-free-repair','--format','json',prompt],
-     {cwd:isolated,env,timeout:170000});
-   if(!response.ok){
-     if(/(?:429|free.limit|quota|rate.limit)/i.test(response.output))
-       throw Error('FREE_AI_FREE_TIER_QUOTA_EXHAUSTED');
-     throw Error('FREE_AI_MODEL_UNAVAILABLE');
+   let reply,modelUsed=MODEL;
+   if(router){
+     const openrouter=require('./ci-pr-repair-openrouter-free.cjs');
+     modelUsed=openrouter.selectedModel(process.env.HH_OPENROUTER_FREE_MODEL||undefined);
+     reply=await openrouter.requestFreePatch({prompt,key:routerKey,model:modelUsed});
+     console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify({model:modelUsed,provider:'openrouter',zeroCost:true}));
+   }else{
+     const priceCheck=await verifyFreeModelPrice();
+     console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(priceCheck));
+     const acl=run(cli,['debug','agents'],{cwd:isolated,env,timeout:45000});
+     if(!acl.ok)throw Error('FREE_AI_AGENT_ACL_PROBE_FAILED');
+     validateAgentAcl(acl.stdout);
+     const response=run(cli,['run','--standalone','--model',MODEL,'--agent',
+       'hh-ci-free-repair','--format','json',prompt],
+       {cwd:isolated,env,timeout:170000});
+     if(!response.ok){
+       if(/(?:429|free.limit|quota|rate.limit)/i.test(response.output))
+         throw Error('FREE_AI_FREE_TIER_QUOTA_EXHAUSTED');
+       throw Error('FREE_AI_MODEL_UNAVAILABLE');
+     }
+     reply=extractTextEvents(response.stdout);
    }
-   const patch=validatePatch(extractTextEvents(response.stdout),scope);
+   const patch=validatePatch(reply,scope);
    const patchPath=path.join(isolated,'candidate.patch');
    fs.writeFileSync(patchPath,patch,{mode:0o600});
    const checked=run('git',['apply','--check','--whitespace=error',patchPath],
@@ -374,7 +385,7 @@ async function propose(){
      throw Error('FREE_AI_PATCH_CHANGED_UNAPPROVED_FILE');
    const diffCheck=run('git',['diff','--check'],{cwd:root,timeout:10000});
    if(!diffCheck.ok)throw Error('FREE_AI_DIFF_WHITESPACE_ERROR');
-   console.log('HH_FREE_AI_PATCH_PROPOSED '+JSON.stringify({model:MODEL,files:paths}));
+   console.log('HH_FREE_AI_PATCH_PROPOSED '+JSON.stringify({model:modelUsed,files:paths}));
    return paths;
  }finally{fs.rmSync(isolated,{recursive:true,force:true});}
 }

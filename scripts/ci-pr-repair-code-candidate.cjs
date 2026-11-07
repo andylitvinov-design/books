@@ -69,7 +69,7 @@ function validateCandidate(candidate,scope){
 function makePrompt(scope){
  const paths=scope.files.map(x=>'- '+x).join('\n');
  return [
-  'TASK: Propose a free GLM patch for the actual source-code error in PR HEAD '+scope.sha+'.',
+  'TASK: Propose a verified zero-price model patch for the actual source-code error in PR HEAD '+scope.sha+'.',
   'A verified Core/TypeScript source failure can reach you directly without ESLint autofix.',
   'The deterministic repair did not produce a verified source patch.',
   'You are an unprivileged coding worker in an isolated read-only GitHub token job.',
