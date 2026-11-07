@@ -151,3 +151,26 @@ test("guided course uses visible Ready journey, never hidden legacy tabs or bann
    "data-meditation-course-contact","data-meditation-course-submit"])
    assert.ok(actual.includes(feature),"retain substantive/private course acceptance: "+feature);
 });
+
+test("guided meditation choice commits before opening and omission on real WebKit",()=>{
+ const course=read("components/mandala-guided-course.tsx");
+ const browser=read("scripts/verify-mandala-practices-browser.mjs");
+ assert.match(course,/import \{ flushSync \} from "react-dom"/);
+ assert.match(course,/flushSync\(\(\)=>setMeditationChoice\("include"\)\)/);
+ assert.match(course,/flushSync\(\(\)=>setMeditationChoice\("omit"\)\)/);
+ const add=course.indexOf('flushSync(()=>setMeditationChoice("include"))');
+ const parentAdd=course.indexOf('onAddMeditation?.(firstScript)',add);
+ const omit=course.indexOf('flushSync(()=>setMeditationChoice("omit"))');
+ const parentOmit=course.indexOf('onOmitMeditation?.()',omit);
+ assert.ok(add>=0&&parentAdd>add&&omit>=0&&parentOmit>omit,
+   "include and omit state commit before parent native details mutations");
+ const tap=browser.indexOf('await include.click()');
+ const committed=browser.indexOf('await expect(include).toHaveAttribute("aria-pressed","true"',tap);
+ const skip=browser.indexOf('await skip.click()',committed);
+ const revoked=browser.indexOf('skip?.getAttribute("aria-pressed")==="true"',skip);
+ assert.ok(tap>=0&&committed>tap&&skip>committed&&revoked>skip,
+   "physical WebKit must verify inclusion, then real opt-out and parent revocation");
+ assert.match(browser,/audio\?\.open===false/);
+ assert.match(browser,/data-guided-eight-sessions/);
+ assert.doesNotMatch(browser,/click\(\{force:true\}\)/);
+});
