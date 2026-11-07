@@ -8,7 +8,7 @@ const repository='andylitvinov-design/books';
 const pr={number:99,created_at:at('10:00'),
   base:{ref:'codex/public-book-library'},head:{sha:B,ref:'feature/99'}};
 const run=(id,sha,atTime,conclusion,number=99)=>({
-  id,event:'pull_request',name:'HH PR core release gate',
+  id,run_attempt:1,event:'pull_request',name:'HH PR core release gate',
   path:'.github/workflows/hh-pr-core-release.yml',head_sha:sha,status:'completed',
   conclusion,created_at:at(atTime),repository:{full_name:repository},
   head_repository:{full_name:repository},
@@ -16,10 +16,10 @@ const run=(id,sha,atTime,conclusion,number=99)=>({
     head:{ref:'feature/99',sha}}]
 });
 const failed=run(800,A,'10:01','failure'),passed=run(801,B,'10:35','success');
-const jobs=[{id:8001,run_id:800,status:'completed',name:'core-lint-types-build',
+const jobs=[{id:8001,run_id:800,run_attempt:1,status:'completed',name:'core-lint-types-build',
   conclusion:'failure',completed_at:at('10:10'),
   steps:[{name:'TypeScript',conclusion:'failure'}]},
-  {id:8011,run_id:801,status:'completed',name:'core-lint-types-build',
+  {id:8011,run_id:801,run_attempt:1,status:'completed',name:'core-lint-types-build',
    conclusion:'success',created_at:at('10:36'),started_at:at('10:40'),
    completed_at:at('10:55')}];
 const comments=[
@@ -78,9 +78,34 @@ test('exact PR/head and complete failed-job identity are mandatory',()=>{
     /REPAIR_CYCLE_PR_UNVERIFIED/);
 });
 test('parallel next-head CI jobs are measured once by earliest actual start',()=>{
-  const extra={id:8012,run_id:801,status:'completed',name:'hh-specialist',
+  const extra={id:8012,run_id:801,run_attempt:1,status:'completed',name:'hh-specialist',
     conclusion:'success',created_at:at('10:36'),started_at:at('10:45'),
     completed_at:at('10:54')};
   const c=analyzeRepairCycles({...opts,jobs:[...jobs,extra]}).cycles[0];
   assert.equal(c.durations_minutes.job_created_to_runner,4);
+});
+
+test('later workflow attempts ignore failures and runner jobs from previous attempts',()=>{
+  const failedSecond={...failed,run_attempt:2};
+  const passedSecond={...passed,run_attempt:2};
+  const earlierFailure={...jobs[0],id:8999,run_attempt:1,completed_at:at('10:08')};
+  const earlierRunner={...jobs[1],id:8998,run_attempt:1,
+    created_at:at('10:35'),started_at:at('10:35')};
+  const currentFailure={...jobs[0],run_attempt:2};
+  const currentRunner={...jobs[1],run_attempt:2};
+  const c=analyzeRepairCycles({...opts,runs:[failedSecond,passedSecond],
+    jobs:[earlierFailure,currentFailure,earlierRunner,currentRunner]}).cycles[0];
+  assert.equal(c.failed_job.id,8001);
+  assert.equal(c.timestamps.ci_failed_at,at('10:10').replace('Z','.000Z'));
+  assert.equal(c.timestamps.first_job_created_at,at('10:36').replace('Z','.000Z'));
+  assert.equal(c.durations_minutes.failure_to_claim,6);
+  assert.equal(c.durations_minutes.job_created_to_runner,4);
+});
+test('unknown run/job attempt is not enough to infer repair cycle',()=>{
+  const missingRun={...failed,run_attempt:null};
+  assert.equal(analyzeRepairCycles({...opts,runs:[missingRun,passed]})
+    .observed_failed_heads,0);
+  const missingJob={...jobs[0],run_attempt:null};
+  assert.equal(analyzeRepairCycles({...opts,jobs:[missingJob,jobs[1]]})
+    .observed_failed_heads,0);
 });
