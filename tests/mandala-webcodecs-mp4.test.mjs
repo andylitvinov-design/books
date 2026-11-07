@@ -210,8 +210,14 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
  assert.match(firstVideo,/await montageStyle\.click\(\)/);
- assert.match(firstVideo,/await styleNext\.waitFor\(\{state:'visible',timeout:20000\}\)/);
- assert.match(firstVideo,/await styleNext\.click\(\)/);
+ assert.match(firstVideo,/await page\.locator\('\[data-video-montage-tab="concept"\]'\)\.click\(\)/,
+   "visitor returns from Style to the proposed Concept");
+ assert.match(firstVideo,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/,
+   "guest explicitly approves Concept before timeline editing");
+ assert.match(firstVideo,/const textTools=page\.locator\('\[data-video-concept-text-tools\]'\)/,
+   "original timeline is reachable through the Concept disclosure");
+ assert.match(firstVideo,/await addVideo\.click\(\)/,
+   "real source picker must remain accessible after Concept approval");
  assert.match(firstVideo,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
  assert.match(firstVideo,/FOUR_DISTINCT_SOURCES_REQUIRED/);
  assert.match(browser,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);

@@ -352,3 +352,62 @@ test('one unavailable or 429 free reviewer produces honest partial synthesis; no
  assert.equal(calls.filter(x=>x===COUNCIL_FOUR[3].id).length,1)
  assert.match(formatOwnerCouncilFive(question,run).markdown,/NO VERIFIED REPLY/)
 })
+
+test('live 2/4 with fifth 429 shows genuine independent excerpts in Telegram',()=>{
+ const run={status:'partial',check:{replacements:[]},count:2,
+  reviews:{
+   ux:{status:'error',model:COUNCIL_FOUR[0].id,reason:'truncated',text:''},
+   product:{status:'ok',model:COUNCIL_FOUR[1].id,text:review+' Позиция продукта: тестируйте заявки.'},
+   engineering:{status:'error',model:COUNCIL_FOUR[2].id,reason:'truncated',text:''},
+   critic:{status:'ok',model:COUNCIL_FOUR[3].id,text:review+' Критик: проверяйте гипотезы.'}},
+  synthesis:{status:'error',model:COUNCIL_CHAIR.id,reason:'HTTP 429'}}
+ const r=formatOwnerCouncilFive(question,run)
+ assert.equal(r.complete,false)
+ assert.deepEqual(r.sources,[COUNCIL_FOUR[1].id,COUNCIL_FOUR[3].id])
+ assert.match(r.short,/Реальные независимые заключения \(НЕ общий синтез\)/)
+ assert.match(r.short,/Позиция продукта/)
+ assert.match(r.short,/Критик: проверяйте/)
+ assert.match(r.short,/HTTP 429/)
+ assert.doesNotMatch(r.short,/🎯 Главный вывод/)
+ assert.ok(r.short.length<=3850)
+ assert.match(r.markdown,/NO VERIFIED SYNTHESIS: HTTP 429/)
+})
+test('no successful reviewers never invents independent opinions',()=>{
+ const run={status:'partial',check:{},count:0,
+  reviews:Object.fromEntries(COUNCIL_FOUR.map(r=>[r.slot,{status:'error',model:r.id,reason:'HTTP 429',text:''}])),
+  synthesis:{status:'unavailable',model:COUNCIL_CHAIR.id,reason:'NEED_TWO_REAL_RESPONSES'}}
+ const r=formatOwnerCouncilFive(question,run)
+ assert.equal(r.sources.length,0)
+ assert.doesNotMatch(r.short,/Реальные независимые заключения/)
+ assert.match(r.short,/Реальные ответы: 0\/4/)
+})
+test('accepted zero-cost fallback keeps the true model identity in every source',()=>{
+ const alt='recursive/flint-v1.0:free'
+ const reviews={ux:{status:'ok',model:alt,text:review},
+   product:{status:'ok',model:COUNCIL_FOUR[1].id,text:review}}
+ const r=formatOwnerCouncilFive(question,{status:'partial',count:2,check:{replacements:[{slot:'ux',to:alt}]},
+  reviews,synthesis:{status:'error',model:COUNCIL_CHAIR.id,reason:'HTTP 429'}})
+ assert.equal(r.sources[0],alt)
+ assert.ok(!r.sources.includes(COUNCIL_FOUR[0].id))
+ assert.match(r.short,/recursive\/flint-v1\.0:free/)
+ assert.match(chairPrompt(question,reviews),/recursive\/flint-v1\.0:free/)
+ assert.doesNotMatch(chairPrompt(question,reviews),/qwen\/qwen3\.8-27b:free/)
+})
+test('truncated response is distinguished without repeat inference or paid fallback',async()=>{
+ const calls=[],failed=COUNCIL_FOUR[0].id
+ const f=async(url,opts={})=>{
+  if(String(url).endsWith('/key'))return ok({data:{key_id:'fake'}})
+  if(String(url).endsWith('/models'))return ok({data:catalog})
+  const b=JSON.parse(opts.body);calls.push(b)
+  assert.equal(b.provider.allow_fallbacks,false)
+  assert.equal(b.provider.max_price.prompt,0)
+  return ok({model:b.model,usage:{cost:0},choices:[{finish_reason:b.model===failed?'length':'stop',
+   message:{content:b.model===COUNCIL_CHAIR.id?JSON.stringify(synthesis):review}}]})
+ }
+ const res=await runOwnerCouncilFive(question,env,f)
+ assert.equal(res.count,3)
+ assert.equal(res.reviews.ux.reason,'truncated')
+ assert.equal(res.synthesis.status,'ok')
+ assert.equal(calls.filter(x=>x.model===failed).length,1)
+ assert.match(reviewerPrompt(question,COUNCIL_FOUR[0]),/up to 250 words/)
+})
