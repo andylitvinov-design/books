@@ -139,6 +139,14 @@ try {
   assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
   const editorTab=page.locator('[data-video-quick-control="editor"]');
   await editorTab.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  // In the existing Montage editor, Settings may remain selected from an earlier
+  // visit. Select the user-visible Style tab rather than silently forcing state.
+  const montageStyle=page.locator('[data-video-montage-tab="effects"]');
+  await montageStyle.waitFor({state:'visible',timeout:20000});
+  await montageStyle.click();
   // Confirm that Safari actually committed the next workspace and its Style
   // panel. A stale Ideas scroll must not steal the user's tap; do not force
   // hidden controls or skip the real Style → Text action.
