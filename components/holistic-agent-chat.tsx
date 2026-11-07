@@ -22,6 +22,7 @@ import {
 import {stageVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
 import type {TimedSpeechTranscript} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import styles from "./holistic-agent-chat.module.css";
+import {useVoiceCompanion,VoiceCompanionControls} from "./voice-companion-controls";
 import dynamic from "next/dynamic";
 import EmotionalAvatar from "@/components/app/emotional-avatar";
 
@@ -257,6 +258,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
 }) {
   const t=copy[locale];
   const starter=messengerStarter[locale];
+  const voice=useVoiceCompanion(locale);
+  const voiceEnabled=process.env.NEXT_PUBLIC_HH_VOICE_COMPANION_WEB==="true";
   const [mode,setMode]=useState<Mode>("rules");
   const [agree,setAgree]=useState(false);
   const [axisRef,setAxisRef]=useState("");
@@ -304,6 +307,19 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const [showVideoSignIn,setShowVideoSignIn]=useState(false);
   const [needsPrivateSignIn,setNeedsPrivateSignIn]=useState(false);
   const [messages,setMessages]=useState<Message[]>([]);
+  // A spoken answer and its displayed message are the SAME canonical AI turn.
+  const lastSpeechTurn=useRef<Message|null>(null);
+  useEffect(()=>{
+    const latest=messages[messages.length-1]||null;
+    if(latest===lastSpeechTurn.current)return;
+    lastSpeechTurn.current=latest;
+    if(!voiceEnabled)return;
+    if(latest?.role==="user"){voice.stop();return;}
+    if(latest?.role==="assistant"){
+      voice.stop();
+      if(voice.autoRead||voice.conversing)voice.speak(latest.text);
+    }
+  },[messages,voiceEnabled,voice.autoRead,voice.conversing,voice.speak,voice.stop]);
   const [pageHelpLink,setPageHelpLink]=useState<{href:string;label:string}|null>(null);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
   // Ephemeral only: signed on the authenticated server, local for guests.
@@ -326,14 +342,14 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const followTail=useRef(true);
   const [newBelow,setNewBelow]=useState(false);
   const privateTranscript=usePrivateChatHistory({authenticated,onRestore:entries=>{
-    // The archive is restored only on explicit user action, never on login.
-    // Cancel an in-flight answer and any owned device speech before replacing state.
-    controller.current?.abort();voiceAbortRef.current?.abort();
-    window.dispatchEvent(new Event("hh:voice-companion-stop"));
+    // Explicit restore cancels both pending AI and device speech, and must not
+    // auto-read historical replies when the Voice Companion is on.
+    controller.current?.abort();voiceAbortRef.current?.abort();voice.stopDialogue();
     const previous:Message[]=entries.flatMap(item=>[
       {role:"user" as const,text:item.user},
       {role:"assistant" as const,text:item.assistant},
     ]).slice(-30);
+    lastSpeechTurn.current=previous[previous.length-1]||null;
     setMessages(previous);setDraft("");setChoices([]);setJudgmentView(null);
     judgmentClickLock.current=false;setVideoStep(null);setGuidedTrack(null);
     setContentStep(null);setContentVoice(false);setEntryOpen(false);
@@ -754,6 +770,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       setSource(used==="browser"?t.used:used==="owned"?t.backend:t.simple);
     } catch (error) {
       if(!abort.signal.aborted){
+        if(voice.conversing)voice.stopDialogue();
         const reason=error instanceof Error?error.message:"";
         if(reason==="SIGN_IN_REQUIRED"&&compact&&mode==="rules"){
           // Expired session: answer from public rules; private API stays protected.
@@ -782,7 +799,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
       <summary>{compact?(locale==="ru"?"Настройки":locale==="es"?"Ajustes":"Settings"):(locale==="ru"?"Режим ответа и конфиденциальность":locale==="es"?"Modo y privacidad":"Response mode and privacy")}</summary>
     <label className={styles.mode}>{t.mode}
-      <select value={mode} onChange={event=>{setMode(event.target.value as Mode);setStatus("");}}>
+      <select value={mode} onChange={event=>{voice.stopDialogue();setMode(event.target.value as Mode);setStatus("");}}>
         <option value="rules">{t.rules}</option>
         <option value="device">{t.device}</option>
         <option value="owned">{t.owned}</option>
@@ -830,7 +847,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     {authenticated&&<HolisticAgentMemoryPanel locale={locale}
       onUse={items=>setUseAgentMemory(items.length>0)}/>}
     {authenticated&&<SecureDialogueHistory history={privateTranscript} locale={locale}/>}
-    <EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact}/>
+    <EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale}
+      compact={compact} companionVoice={voiceEnabled?voice:undefined}/>
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
@@ -838,7 +856,13 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         if(atBottom)setNewBelow(false)}}>
       {compact&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
-      {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
+      {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>
+        {m.text}
+        {voiceEnabled&&m.role==="assistant"&&<button type="button" data-hh-voice-turn={index}
+          title={voice.t.play} aria-label={voice.t.play} disabled={!voice.playbackConsent||!voice.supported}
+          onClick={()=>voice.speak(m.text)} style={{marginInlineStart:8,minWidth:44,minHeight:44,
+            border:"1px solid #E9DFD1",borderRadius:12,background:"#FFFCF7",color:"#143D3A"}}>🔊</button>}
+      </p>)}
       {compact&&pageHelpLink&&<a className={styles.testLink} data-hh-ihelp-link href={pageHelpLink.href}>{pageHelpLink.label} · {t.option}</a>}
       {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
@@ -1050,6 +1074,15 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         </a>}
       </div>}
     </section>}
+    {voiceEnabled&&<VoiceCompanionControls voice={voice} locale={locale}
+      greeting={pageHelp?.greeting??starter.welcome}
+      latestReply={[...messages].reverse().find(item=>item.role==="assistant")?.text}
+      onTranscript={text=>setDraft(prev=>((prev?prev+" ":"")+text).slice(0,2000))}
+      onConversationTurn={text=>{
+        if(busy||mode==="owned"&&!agree){setDraft(text);voice.stopDialogue();return;}
+        if(requiresProtectedReply(text,locale))voice.stopDialogue();
+        setDraft(text);void sendTurn(text);
+      }}/>}
     <form onSubmit={submit} className={styles.form}>
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={contentStep==="brief"?160:2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
@@ -1067,9 +1100,9 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
               event.currentTarget.value="";
             }}/>
         </label>}
-        <button type="button" onClick={()=>{controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
-        {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
+        {busy&&<button type="button" onClick={()=>{voice.stopDialogue();controller.current?.abort();}}>{t.cancel}</button>}
       </div>
     </form>
     {compact&&!contentVoice&&<MessengerAudioVideo locale={locale}
