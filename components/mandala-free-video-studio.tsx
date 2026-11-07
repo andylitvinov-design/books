@@ -1352,6 +1352,50 @@ function paint(
   }
 }
 
+function paintStudioVisualGrade(ctx:CanvasRenderingContext2D,styleId:string|null):void{
+  if(!styleId)return;
+  // The visitor's visual-style filter changes actual local rendered frames,
+  // not merely the premium-provider storyboard text. All four looks use
+  // portable Canvas gradients, identical in preview and MediaRecorder.
+  const w=ctx.canvas.width,h=ctx.canvas.height;
+  ctx.save();
+  if(styleId==="warm"){
+    const grade=ctx.createLinearGradient(0,0,w,h);
+    grade.addColorStop(0,"rgba(246,181,80,.11)");
+    grade.addColorStop(1,"rgba(122,63,15,.08)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(styleId==="nature"){
+    const grade=ctx.createLinearGradient(0,h,0,0);
+    grade.addColorStop(0,"rgba(17,112,62,.18)");
+    grade.addColorStop(1,"rgba(135,209,170,.07)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(styleId==="dream"){
+    const grade=ctx.createRadialGradient(w*.53,h*.36,0,w*.53,h*.45,Math.max(w,h)*.76);
+    grade.addColorStop(0,"rgba(211,171,255,.17)");
+    grade.addColorStop(.65,"rgba(91,87,172,.14)");
+    grade.addColorStop(1,"rgba(27,29,67,.20)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(styleId==="minimal"){
+    ctx.fillStyle="rgba(224,221,202,.16)";
+    ctx.fillRect(0,0,w,h);
+    const grade=ctx.createLinearGradient(0,0,w,h);
+    grade.addColorStop(0,"rgba(252,245,220,.04)");
+    grade.addColorStop(1,"rgba(5,24,24,.14)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(styleId==="water"){
+    const grade=ctx.createLinearGradient(0,0,w,h);
+    grade.addColorStop(0,"rgba(36,164,191,.11)");
+    grade.addColorStop(1,"rgba(12,75,143,.17)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }else if(styleId==="light"){
+    const grade=ctx.createRadialGradient(w*.55,h*.35,0,w*.55,h*.42,Math.max(w,h)*.8);
+    grade.addColorStop(0,"rgba(255,244,181,.20)");
+    grade.addColorStop(1,"rgba(246,184,93,.08)");
+    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
+  }
+  ctx.restore();
+}
+
 // A genuine local multi-shot film, drawn by the existing Canvas recorder.
 // The client's picture and detailed request are never uploaded to a provider.
 function paintCinematicFrame(
@@ -1362,6 +1406,7 @@ function paintCinematicFrame(
   stockShotVideo:HTMLVideoElement|null = null,
   proceduralPlan:FreeVideoPlan|null = null,
   permittedLocalPortrait:HTMLImageElement|null = null,
+  montageStyleId:string|null = null,
 ) {
   if(proceduralPlan){paintFreeVideoFrame(ctx,proceduralPlan,time,permittedLocalPortrait);return;}
   const filmSecond=storyboard?cinematicPreviewSeconds(storyboard,time):time;
@@ -1370,6 +1415,7 @@ function paintCinematicFrame(
   if(!storyboard || !shot){
     paint(ctx,image,effect,time,aspect,moneyScene,caption,theme,otherScene,
       speed,brightness,realVideo);
+    paintStudioVisualGrade(ctx,montageStyleId);
     return;
   }
   const localTime=Math.max(0,filmSecond-shot.startSeconds);
@@ -1384,36 +1430,7 @@ function paintCinematicFrame(
   }else{
     paintShot();
   }
-  // The visitor's visual-style filter changes actual local rendered frames,
-  // not merely the premium-provider storyboard text. All four looks use
-  // portable Canvas gradients, identical in preview and MediaRecorder.
-  const w=ctx.canvas.width,h=ctx.canvas.height;
-  ctx.save();
-  if(storyboard.styleId==="warm"){
-    const grade=ctx.createLinearGradient(0,0,w,h);
-    grade.addColorStop(0,"rgba(246,181,80,.11)");
-    grade.addColorStop(1,"rgba(122,63,15,.08)");
-    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
-  }else if(storyboard.styleId==="nature"){
-    const grade=ctx.createLinearGradient(0,h,0,0);
-    grade.addColorStop(0,"rgba(17,112,62,.18)");
-    grade.addColorStop(1,"rgba(135,209,170,.07)");
-    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
-  }else if(storyboard.styleId==="dream"){
-    const grade=ctx.createRadialGradient(w*.53,h*.36,0,w*.53,h*.45,Math.max(w,h)*.76);
-    grade.addColorStop(0,"rgba(211,171,255,.17)");
-    grade.addColorStop(.65,"rgba(91,87,172,.14)");
-    grade.addColorStop(1,"rgba(27,29,67,.20)");
-    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
-  }else if(storyboard.styleId==="minimal"){
-    ctx.fillStyle="rgba(224,221,202,.16)";
-    ctx.fillRect(0,0,w,h);
-    const grade=ctx.createLinearGradient(0,0,w,h);
-    grade.addColorStop(0,"rgba(252,245,220,.04)");
-    grade.addColorStop(1,"rgba(5,24,24,.14)");
-    ctx.fillStyle=grade;ctx.fillRect(0,0,w,h);
-  }
-  ctx.restore();
+  paintStudioVisualGrade(ctx,montageStyleId||storyboard.styleId);
   // Non-destructive per-shot finishing: preview and encoded export use this Canvas.
   paintCreativeTimelineShot(ctx,storyboard.shots,storyboard.shots.indexOf(shot),localTime);
 }
@@ -1778,6 +1795,7 @@ const draftFormatPrices: Record<FormatPractice,Record<FormatQuality,number|null>
   course:{basic:19.90,smart:null,pro:39},
 };
 
+const quickStyleGradeIds = ["nature","warm","dream","minimal","water","light"] as const;
 const quickStylePosters = [
   "mountain-air","golden-harvest","desert-light","morning-dew","gentle-falls","solar-surge",
 ] as const;
@@ -1847,6 +1865,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const freeVideoSelected = practiceType==="video" && practiceLevels.video==="basic";
   const selectedDraftPrice=draftFormatPrices[practiceType][practiceLevels[practiceType]];
   const [quickStyleIndex,setQuickStyleIndex] = useState(0);
+  const [activeMontageStyleId,setActiveMontageStyleId] = useState<(typeof quickStyleGradeIds)[number]|null>(null);
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   // First screen shows the goal and request; film scenarios are the next mobile step.
   const [videoScenarioOpen,setVideoScenarioOpen] = useState(false);
@@ -2583,7 +2602,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds,shot.overlayText||"",
        shot.transitionIn||"soft",shot.colorLook||"original",shot.motion??null,
        shot.sourcePhasePercent??0,shot.sourceSpeed??1]),appliedStory,
-    creationMode,currentFreeVideoPlan?.seed,currentFreeVideoPlan?.family,currentFreeVideoPlan?.palette,
+    creationMode,activeMontageStyleId,currentFreeVideoPlan?.seed,currentFreeVideoPlan?.family,currentFreeVideoPlan?.palette,
     currentFreeVideoPlan?.motion,currentFreeVideoPlan?.variation,currentFreeVideoPlan?.reducedMotion,professionalMode]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
@@ -2998,7 +3017,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       // Never replace the last valid preview with an undecodeable substitute.
       if(!usingFreeFilmCompilation||scrubFrame){
         paintCinematicFrame(ctx,image,effect,previewSeekSeconds,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,scrubFrame,currentFreeVideoPlan,
-          creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null);
+          creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId);
         paintHypnoLightOverlay(ctx,previewSeekSeconds,hypnoLight);
         paintStoryMotifs(ctx,previewSeekSeconds,appliedStory);
         if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,previewSeekSeconds,affirmationLines,affirmations);
@@ -3022,7 +3041,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const stockFrame=freeFilmVideoAt(frameSecond,previewPlaying);
           if(!usingFreeFilmCompilation||stockFrame){
             paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
-        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null);
+        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId);
             paintStoryMotifs(ctx,frameSecond,appliedStory);
             paintHypnoLightOverlay(ctx,frameSecond,hypnoLight);
             if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,frameSecond,affirmationLines,affirmations);
@@ -3038,7 +3057,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, previewSeekSeconds,
     recording, speed, brightness, caption, affirmations, hypnoLight, locale, cinematicPlan,
     usingFreeFilmCompilation, freeFilmReady, appliedStory, timelineTextClips,stopMovieSound,duration,previewFrameRevision,
-    creationMode,currentFreeVideoPlan,backgroundOnly,photoConsent,photoUrl]);
+    creationMode,currentFreeVideoPlan,activeMontageStyleId,backgroundOnly,photoConsent,photoUrl]);
 
   async function videoCreditRequest(action:"hold"|"complete"|"release",body:Record<string,unknown>){
     return postVideoCreditAction(action,body);
@@ -3284,7 +3303,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const firstStockFrame=freeFilmVideoAt(0,false);
       if(usingFreeFilmCompilation&&!firstStockFrame)throw new Error("licensed_video_frame_unavailable");
       paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,firstStockFrame,currentFreeVideoPlan,
-        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null);
+        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId);
       paintStoryMotifs(ctx,0,appliedStory);
       paintHypnoLightOverlay(ctx,0,hypnoLight);
       if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
@@ -3349,7 +3368,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               if(usingFreeFilmCompilation&&!frame)return false;
               paintCinematicFrame(ctx,image,effect,time,aspect,moneyScene,caption,
                 theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,frame,currentFreeVideoPlan,
-                creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null);
+                creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId);
               paintStoryMotifs(ctx,time,appliedStory);
               paintHypnoLightOverlay(ctx,time,hypnoLight);
               if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,time,affirmationLines,affirmations);
@@ -3553,7 +3572,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }
           stockGapSince=0;
           paintCinematicFrame(ctx,image,effect,frameTime,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
-        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null);
+        creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId);
           paintStoryMotifs(ctx,frameTime,appliedStory);
           paintHypnoLightOverlay(ctx,frameTime,hypnoLight);
           if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,frameTime,affirmationLines,affirmations);
@@ -4461,18 +4480,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   const quickPickStyle = (index:number) => {
     if(recording||preparing)return;
-    startMovieSound(attachedAudio,soundVolume);
-    setCinematicPlan(null);setIntroPlaying(false);
+    const visualStyleId=quickStyleGradeIds[index];
+    if(!visualStyleId)return;
+    startMovieSound(attachedAudio,soundVolume,0);
+    setIntroPlaying(false);
+    // A visual style is a finishing layer, not a command to delete the
+    // four verified MP4 shots, edited captions, transitions or audio.
+    // If the procedural animation tab was used earlier, return to real
+    // catalog footage before resuming the SAME shared Canvas preview.
+    setCreationMode("catalog");setFreeVideoPlan(null);
+    setActiveMontageStyleId(visualStyleId);
+    setCinematicPlan(current=>current?{...current,styleId:visualStyleId}:null);
     setQuickStyleIndex(index);
+    setPreviewSeekSeconds(0);setPreviewPlayhead(0);
     setBrightness(index===1||index===5?"bright":"soft");
     setSpeed(index===2||index===5?"dynamic":"slow");
-    const sceneId = quickStyleSceneIds[theme][index];
-    if(!sceneId)return;
-    if(theme==="money")setMoneyScene(sceneId as MoneySceneId);
-    else setOtherScene(sceneId as LocalSceneId);
+    if(!cinematicPlan){
+      const sceneId=quickStyleSceneIds[theme][index];
+      if(!sceneId)return;
+      if(theme==="money")setMoneyScene(sceneId as MoneySceneId);
+      else setOtherScene(sceneId as LocalSceneId);
+    }
     setSuggestion("");
-    // A style tile is an explicit user gesture: start that same real central
-    // Canvas/MP4 preview immediately; never render or charge from this tap.
+    // Existing sources load only after this explicit user gesture. The
+    // native muted decoder retries on canplay for mobile WebKit.
     setPreviewPlaying(true);
   };
   // Keep the deep editor tabs usable on mobile WebKit during rapid clicks.
@@ -5520,6 +5551,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         data-hero-promo={creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording?"true":"false"}
          data-video-therapy-preview={studioMode==="therapy"?"true":"false"}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
+        data-video-preview-style={activeMontageStyleId||cinematicPlan?.styleId||"original"}
+        data-video-preview-clips={usingFreeFilmCompilation?freeFilmShots.length:activeFilm?1:0}
         aria-labelledby="video-hero-heading">
         <h2 id="video-hero-heading" className={videoStyles.srOnly}>{studioMode==="therapy"?layout.therapyHeading:layout.previewTitle}</h2>
         <div className={videoStyles.heroPromo} aria-hidden="true"
@@ -5682,13 +5715,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {activeFilm ? <video
                 key={activeFilm.src} ref={premiumVideoRef}
                 src={activeFilm.src} poster={activeFilm.poster}
-                muted playsInline loop preload="none"
+                muted playsInline loop autoPlay={previewPlaying&&!recording&&!preparing}
+                preload={previewPlaying||recording||preparing?"auto":"none"}
                 data-mandala-master-mp4={activeFilm.src}
                 onLoadedData={event=>{
                   if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)
                     setPremiumReady(true);
                 }}
-                onCanPlay={()=>setPremiumReady(true)}
+                onCanPlay={event=>{
+                  setPremiumReady(true);
+                  if(previewPlaying&&!recording&&!preparing){
+                    event.currentTarget.muted=true;
+                    void event.currentTarget.play().catch(()=>{
+                      if(aliveRef.current)setNotice(ui.videoUnavailable);
+                    });
+                  }
+                }}
                 onSeeked={()=>{if(!previewPlaying)setPreviewFrameRevision(v=>v+1);}}
                 onError={()=>{setPremiumReady(false);setNotice(ui.videoUnavailable);}}
                 aria-hidden="true"
