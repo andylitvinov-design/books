@@ -123,11 +123,35 @@
     return {groups:active,counts,overlaps:overlapSets.map(([title,ids])=>({
       title,ids:ids.filter(n=>seen.has(n))})).filter(x=>x.ids.length>1)};
   }
-  const api={build,slim,route,statusOf,curatedIndex,definitions,overlapSets};
+
+  function taskOverview(prs){
+    if(!Array.isArray(prs)||!prs.length)throw Error('TASK_HAS_NO_OPEN_PRS');
+    const counts={hold:0,manual:0,draft:0,open:0};
+    for(const p of prs){if(!(p.status in counts))throw Error('UNKNOWN_PR_STATUS');counts[p.status]++;}
+    const state=counts.hold?'hold':counts.manual?'repair':counts.draft?'working':'review';
+    const names={hold:'Блокировано',repair:'На доработке',working:'В разработке',review:'Ожидает проверки'};
+    return {state,label:names[state],total:prs.length,counts,liveConfirmed:false,
+      note:'Статус по открытым PR не означает завершения задачи'};
+  }
+  function reviewPrompt(task){
+    if(!task||typeof task.title!=='string'||!Array.isArray(task.prs)||!task.prs.length)throw Error('NO_REVIEWABLE_TASK');
+    return [
+      'НЕЗАВИСИМАЯ ПРОВЕРКА · Agent Commander',
+      'Задача: '+task.title,
+      'PR:',
+      ...task.prs.map(p=>'#'+p.number+' · '+p.title+' · https://github.com/'+REPO+'/pull/'+p.number),
+      'Сверить исходную задачу, текущие HEAD и diff каждого PR, совместимость и регрессии.',
+      'Проверить тесты, потребительский сценарий, мобильный UI, права, стоимость и безопасность.',
+      'Выдать отчёт с конкретными ошибками, ссылками, нужными тестами и ответственным PR.',
+      'Не закрывать, не мержить и не запускать код. МERGED ≠ LIVE. Если LIVE не проверен, писать LIVE_NOT_VERIFIED.'
+    ].join('\n');
+  }
+  const api={build,slim,route,statusOf,curatedIndex,definitions,overlapSets,taskOverview,reviewPrompt};
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(!env?.document||!env.fetch)return;
   const host=env.document.getElementById('hh-pr-task-tree');if(!host)return;
   let list=[],received=0,loading=false,filter='';
+  const taskReports=new Map();
   const el=(tag,cls,txt)=>{const node=env.document.createElement(tag);
     if(cls)node.className=cls;if(txt!==undefined)node.textContent=String(txt);return node;};
   const link=n=>{const a=el('a','hh-pt-link','#'+n);
@@ -144,6 +168,61 @@
   stamp.setAttribute('aria-live','polite');
   const output=el('div','hh-pt-output');
   host.replaceChildren(heading,description,controls,stamp,output);
+
+  async function auditTask(task,report,button){
+    if(button.disabled)return;
+    if(!env.HHPMProof?.evaluatePR){report.textContent='Нет валидатора exact-HEAD. Проверка недоступна.';return;}
+    const state={checked:0,pass:0,fail:0,pending:0,unknown:0,merged:0,errors:[],lines:[]};
+    button.disabled=true;button.textContent='Проверяю…';
+    report.textContent='Читаю текущие PR и HEAD без запуска CI…';
+    try{
+      for(const item of task.prs.slice(0,12)){
+        try{
+          const r=await env.fetch(BASE+'/pulls/'+item.number,{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
+          if(!r.ok)throw Error('PR HTTP '+r.status);
+          const p=await r.json();
+          if(p.number!==item.number||p.base?.repo?.full_name!==REPO)throw Error('IDENTITY_UNVERIFIED');
+          if(!/^[0-9a-f]{40}$/i.test(p.head?.sha||''))throw Error('HEAD_UNVERIFIED');
+          const flags=(p.labels||[]).map(x=>x.name);
+          const manual=p.draft||flags.some(n=>['hh:hold','hh:repair-manual',
+            'hh:conflict-repair-needed','hh:merge-stage:manual'].includes(n));
+          let checks=null;
+          if(p.state==='open'&&!manual){
+            const c=await env.fetch(BASE+'/commits/'+p.head.sha+'/check-runs?per_page=100',
+              {cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
+            if(!c.ok)throw Error('CHECKS HTTP '+c.status);
+            checks=await c.json();
+          }
+          const proof=env.HHPMProof.evaluatePR(p,checks,new Date().toISOString());
+          if(proof.pr==='unknown')throw Error('PROOF_INVALID');
+          state.checked++;state[proof.ci]++;
+          if(proof.pr==='merged')state.merged++;
+          state.lines.push('#'+item.number+': '+proof.label);
+        }catch(error){state.errors.push('#'+item.number+' · '+String(error.message||error).slice(0,70));}
+      }
+      const text=[
+        'Проверено '+state.checked+'/'+task.prs.length+' PR · MERGED '+state.merged+
+        ' · CI PASS '+state.pass+' / FAIL '+state.fail+' / PENDING '+state.pending+' / UNKNOWN '+state.unknown+'.',
+        'Функциональный LIVE не подтверждён; завершение задачи требует отдельной приёмки.',
+        ...state.lines,...state.errors.map(x=>'Не удалось проверить '+x)
+      ].join('\n');
+      taskReports.set(task.key,{text,at:Date.now()});report.textContent=text;
+    }finally{button.disabled=false;button.textContent='Проверить задачу';}
+  }
+  async function handoff(task,button,output){
+    const prompt=reviewPrompt(task);
+    try{
+      if(!env.navigator?.clipboard?.writeText)throw Error('COPY_UNSUPPORTED');
+      await env.navigator.clipboard.writeText(prompt);
+      button.textContent='ТЗ скопировано ✓';
+      output.textContent='Для запуска проверяющего агента откройте защищённый Commander.';
+    }catch{
+      const area=el('textarea','hh-pt-review-fallback');area.readOnly=true;area.value=prompt;
+      area.setAttribute('aria-label','ТЗ проверки для ручного копирования');
+      output.replaceChildren(area);area.focus();area.select();
+      button.textContent='ТЗ выделено';
+    }
+  }
   function draw(stale){
     const model=build(list);output.replaceChildren();
     const metrics=el('div','hh-pt-metrics');
@@ -171,6 +250,22 @@
         const child=el('details','hh-pt-task');child.open=!!needle||(i===0&&j===0);
         const ts=el('summary');ts.append(el('strong',null,task.title),el('span',null,matches.length+' PR'));
         child.append(ts);
+        const health=taskOverview(task.prs);
+        child.append(el('p','hh-pt-task-summary',health.label+' · '+health.total+' открытых PR'+
+          (health.counts.manual?' · доработка '+health.counts.manual:'')+
+          (health.counts.draft?' · Draft '+health.counts.draft:'')+
+          (health.counts.hold?' · HOLD '+health.counts.hold:'')+
+          ' · готовность LIVE не проверена'));
+        const controls=el('div','hh-pt-task-actions');
+        const verify=el('button','hh-pt-refresh','Проверить задачу');verify.type='button';
+        const agent=el('button','hh-pt-refresh hh-pt-handoff','ТЗ проверяющему агенту');agent.type='button';
+        const report=el('p','hh-pt-audit',taskReports.get(task.key)?.text||
+          'Проверка PR и точных HEAD пока не запускалась.');
+        report.setAttribute('aria-live','polite');
+        const agentReport=el('div','hh-pt-handoff-status');
+        verify.addEventListener('click',()=>auditTask(task,report,verify));
+        agent.addEventListener('click',()=>handoff(task,agent,agentReport));
+        controls.append(verify,agent);child.append(controls,report,agentReport);
         for(const p of matches){
           const r=el('div','hh-pt-pr'),head=el('div','hh-pt-pr-head');
           head.append(link(p.number),el('span','hh-pt-badge hh-pt-'+p.status,statusText[p.status]));
@@ -228,7 +323,7 @@
     if(cached){list=cached.rows;received=cached.at;draw(true);}
     loading=true;refresh.disabled=true;stamp.textContent='Проверяю полный список открытых PR в GitHub…';
     try{
-      const current=await fetchAll();list=current;received=Date.now();
+      const current=await fetchAll();list=current;received=Date.now();taskReports.clear();
       try{env.sessionStorage?.setItem(KEY,JSON.stringify({schema:'HH_PR_TASK_TREE_V1',at:received,rows:list}));}catch{}
       draw(false);
     }catch(error){

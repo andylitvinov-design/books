@@ -39,3 +39,11 @@
 #hh-pr-task-tree .hh-pt-pair{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:9px 12px;border-top:1px solid #ffffff15}
 #hh-pr-task-tree .hh-pt-pair span{font-size:12px;flex:1 1 180px}
 @media(max-width:390px){#hh-pr-task-tree{padding:11px}#hh-pr-task-tree.hh-pr-project-tree{margin:8px 11px 105px}#hh-pr-task-tree .hh-pt-refresh{padding:7px 8px;font-size:11px}#hh-pr-task-tree .hh-pt-metrics strong{font-size:18px}}
+
+
+#hh-pr-task-tree .hh-pt-task-summary{font-size:11px;color:#c9bedb;margin:0 12px 10px;line-height:1.5}
+#hh-pr-task-tree .hh-pt-task-actions{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 5px}
+#hh-pr-task-tree .hh-pt-task-actions .hh-pt-refresh{flex:1 1 130px;min-width:0;white-space:normal}
+#hh-pr-task-tree .hh-pt-task-actions .hh-pt-handoff{background:#373651;border-color:#72678d}
+#hh-pr-task-tree .hh-pt-audit,#hh-pr-task-tree .hh-pt-handoff-status{margin:6px 12px 9px;font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere;color:#c7c6dd;line-height:1.55}
+#hh-pr-task-tree .hh-pt-review-fallback{width:100%;height:120px;background:#171a2a;color:#f2eafa;border:1px solid #73648c;border-radius:9px;font:12px/1.4 monospace}

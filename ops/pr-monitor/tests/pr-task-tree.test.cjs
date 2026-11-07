@@ -52,3 +52,25 @@ test('HTML routes show the tree without adding write APIs or timers',()=>{
  assert.match(js,/state=open&per_page=100/);
  assert.match(js,/GITHUB_PAGINATION_INCOMPLETE/);
 });
+
+
+test('task-level aggregate is conservative, no implicit success',()=>{
+ const p=(number,status)=>({number,status,title:'PR'});
+ assert.equal(mod.taskOverview([p(1,'open')]).state,'review');
+ assert.equal(mod.taskOverview([p(1,'open'),p(2,'draft')]).state,'working');
+ assert.equal(mod.taskOverview([p(1,'manual'),p(2,'draft')]).state,'repair');
+ const o=mod.taskOverview([p(1,'hold'),p(2,'open')]);
+ assert.equal(o.state,'hold');assert.equal(o.liveConfirmed,false);
+ assert.throws(()=>mod.taskOverview([]),/TASK_HAS_NO_OPEN_PRS/);
+});
+test('review prompt contains exact PR links and distinguishes LIVE',()=>{
+ const prompt=mod.reviewPrompt({title:'Safari',prs:[{number:3836,title:'MP4'},{number:3833,title:'WebM'}]});
+ assert.match(prompt,/#3836/);assert.match(prompt,/#3833/);
+ assert.match(prompt,/LIVE_NOT_VERIFIED/);
+ const fs=require('node:fs'),path=require('node:path');
+ const js=fs.readFileSync(path.join(__dirname,'..','pr-task-tree.js'),'utf8');
+ const h=fs.readFileSync(path.join(__dirname,'..','projects.html'),'utf8');
+ assert.match(js,/HHPMProof.evaluatePR/);assert.match(js,/Проверить задачу/);
+ assert.match(js,/taskReports.clear/);assert.match(h,/project-management-proof.js/);
+ assert.doesNotMatch(js,/workflow_dispatch|setInterval|method:\s*['"]POST['"]/);
+});
