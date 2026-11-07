@@ -302,6 +302,8 @@ async function inspect(browserType,locale,width){
       const c=node=>node?getComputedStyle(node):null;
       return {background:c(root)?.backgroundImage||"",card:c(card)?.backgroundColor||"",
         border:c(card)?.borderTopColor||"",ink:c(picker)?.color||"",
+        pickerBackground:c(picker)?.backgroundColor||"",
+        pickerBorder:c(picker)?.borderTopColor||"",
         phrase:c(phrase)?.backgroundColor||"",
         selected:c(selected)?.backgroundImage||"",
         width:document.documentElement.scrollWidth,
@@ -316,6 +318,10 @@ async function inspect(browserType,locale,width){
       id+" neutral card border must not be sage green");
     assert.equal(palette.ink,"rgb(20, 43, 61)",
       id+" original voice picker has Studio ink");
+    assert.equal(palette.pickerBackground,"rgb(255, 252, 250)",
+      id+" the nested TTS picker must not inherit green sage gradient");
+    assert.equal(palette.pickerBorder,"rgb(234, 223, 217)",
+      id+" TTS picker neutral border is warm not green");
     assert.equal(palette.phrase,"rgb(255, 249, 245)",
       id+" phrase inset stays warm, not green");
     assert.match(palette.selected,/rgb\(8,\s*126,\s*97\)/,

@@ -126,7 +126,10 @@
    mounted inside Ideas → Voice. Keep the existing audio, rights, recorder,
    keyboard and generation flows. Other Voice/Hypno contexts are untouched. */
 :global([data-ideas-subtab="voice"]) .panel{
-  color:var(--hh-voice-ink,#142B3D)
+  color:var(--hh-voice-ink,#142B3D);
+  background:var(--hh-voice-card,#FFFCFA);
+  border-color:var(--hh-voice-border,#EADFD9);
+  box-shadow:none
 }
 :global([data-ideas-subtab="voice"]) .panel .heading h4,
 :global([data-ideas-subtab="voice"]) .panel .selectedPhrase p,
@@ -190,4 +193,16 @@
 }
 :global([data-ideas-subtab="voice"]) .panel :is(button,select,input):focus-visible{
   outline:3px solid #176E6E;outline-offset:2px
+}
+
+:global([data-ideas-subtab="voice"]) .panel .samplePlayer{
+  background:var(--hh-voice-card,#FFFCFA);
+  color:var(--hh-voice-ink,#142B3D);
+  border-color:var(--hh-voice-border,#EADFD9)
+}
+:global([data-ideas-subtab="voice"]) .panel .localTop>button:not([aria-pressed="true"]),
+:global([data-ideas-subtab="voice"]) .panel .localEmpty{
+  background:var(--hh-voice-field,#FFF9F5);
+  color:var(--hh-voice-forest,#14523F);
+  border-color:var(--hh-voice-border,#EADFD9)
 }
