@@ -55,7 +55,7 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit hydration follows visible Goals → Ideas → Montage without legacy clicks",()=>{
+test("macOS WebKit follows Goal 1 → Goal 2 → Ideas → Montage with native clicks",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const style=read("components/mandala-video-mobile.module.css");
@@ -63,18 +63,21 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
  const click=flow.indexOf("await continueToIdeas.click()");
- const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
+ const goal=flow.indexOf('data-video-goal-clarification',click);
+ const goalNext=flow.indexOf("await goal2.locator('[data-video-goal-clarify-continue]').click()",goal);
+ const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',goalNext);
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
  const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
  const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
  const montage=flow.indexOf("await montage.click()",verify);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
-   "one real visitor click reaches Ideas, native topic disclosure, then Montage");
+ assert.ok(first>=0&&last>first&&click>=0&&goal>click&&goalNext>goal&&ideas>goalNext&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
+   "native Goal1 → Goal2 → Ideas → Montage via real selectable controls");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/onClick=\{continueToIdeas\}/);
+ assert.match(studio,/onClick=\{openGoalClarification\}/);
+ assert.match(studio,/onContinue=\{continueToIdeas\}/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
 });
 

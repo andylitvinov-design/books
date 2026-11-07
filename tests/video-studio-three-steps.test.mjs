@@ -62,10 +62,11 @@ test("Three short prompts are labeled in EN/RU/ES",()=>{
 
 test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the real visible route",()=>{
   assert.match(studio,/const continueToIdeas = \(\) => \{[\s\S]*?setActiveWorkspace\("phrases"\)/);
-  assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{continueToIdeas\}/);
-  assert.match(studio,/if\(goalPage==="intro"\)\{[\s\S]*?setGoalPage\("clarify"\)/);
-  assert.match(studio,/data-video-goal-clarify-continue[\s\S]*?onClick=\{continueToIdeas\}/);
-  for(const text of ["Далее: уточним состояние","Continuar: cómo me siento","Continue: how I feel","Go to support phrases"])
+  assert.match(studio,/const openGoalClarification = \(\) => \{[\s\S]*?setGoalPage\("clarify"\)/);
+  assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{openGoalClarification\}/);
+  assert.match(studio,/data-video-goal-clarify[\s\S]*?<MandalaVideoGoalClarification/);
+  assert.match(studio,/onBack=\{\(\)=>setGoalPage\("first"\)\} onContinue=\{continueToIdeas\}/);
+  for(const text of ["Далее: уточнить состояние","Continuar: aclarar mi estado","Next: clarify how I feel"])
     assert.ok(studio.includes(text),text);
   assert.match(studio,/const openVideoScenarioStep = \(\) => \{[\s\S]*?setVideoScenarioOpen\(true\);[\s\S]*?setShowAdvancedVideo\(true\);[\s\S]*?setActiveWorkspace\("video"\)/);
   assert.match(studio,/onAddVideo=\{\(\)=>\{[\s\S]*?openVideoScenarioStep\(\);/);
@@ -88,26 +89,27 @@ test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the rea
   assert.match(motion,/ffprobe/);
 });
 
-
-test("owner-approved Goal 2/2 reuses the Ideas state, filters and two sliders without a second player",()=>{
- const ideas=read("components/mandala-video-ideas.tsx");
- const styles=read("components/mandala-video-ideas.module.css");
+test("illustrated Goal 2 matches current and desired choices plus axis and levels without new renderer",()=>{
+ const component=read("components/mandala-video-goal-clarification.tsx");
+ const art=read("components/mandala-video-goal-clarification.module.css");
  const mobile=read("components/mandala-video-mobile.module.css");
+ const ideas=read("components/mandala-video-ideas.tsx");
+ for(const token of ["data-video-goal-clarification","data-video-goal-scroll","data-video-goal-mood",
+   "data-video-goal-choice","data-video-goal-axis","data-video-goal-energy","data-video-goal-desired-level",
+   "data-video-goal-clarify-continue"])
+   assert.ok(component.includes(token),token);
+ assert.match(component,/listMeaningAxes\(locale\)/);
+ assert.match(component,/goalCurrentMeaningId/);
+ assert.match(component,/goalDesiredMeaningId/);
  assert.match(studio,/data-video-goal-page=\{goalPage\}/);
- assert.match(studio,/data-video-goal-refinement-host/);
- assert.match(studio,/clarify=\{activeWorkspace==="video"&&goalPage==="clarify"\}/);
- assert.match(ideas,/createPortal\(goalCards,clarifyHost\)/);
- assert.equal((ideas.match(/data-video-goal-current-options/g)||[]).length,1);
- assert.equal((ideas.match(/data-video-goal-desired-options/g)||[]).length,1);
- assert.match(ideas,/data-video-goal-mood=\{side\+"-"\+m\}/);
- assert.match(ideas,/data-video-ideas-energy-score/);
- assert.match(ideas,/data-video-ideas-state-score/);
- assert.match(ideas,/data-video-meaning-axis=\{axis.id\}/);
- assert.match(ideas,/data-video-ideas-phrases/);
+ assert.match(studio,/goalProfile=\{goalProfile\}/);
+ assert.match(ideas,/data-video-ideas-edit-goal/);
  assert.match(mobile,/data-video-goal-page="clarify"/);
- assert.match(styles,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
- assert.match(styles,/overflow-y:auto/);
- assert.match(styles,/reiki-approved-sunrise-v3.webp/);
+ assert.match(mobile,/data-video-director-chat-details\]\[open\]\{display:grid!important;/);
+ assert.match(art,/morning-dew\.jpg/);
+ assert.match(art,/wealth-sunrise\.jpg/);
+ assert.match(art,/mountain-air\.jpg/);
+ assert.equal((studio.match(/<MandalaVideoGoalClarification /g)||[]).length,1);
  assert.equal((studio.match(/<MandalaVideoIdeas /g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });

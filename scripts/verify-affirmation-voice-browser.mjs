@@ -56,29 +56,28 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(handoffPanel).toBeHidden();
     await expect(continueToIdeas).toBeEnabled();
     await continueToIdeas.click();
-    const clarify=page.locator('[data-video-goal-clarification]');
-    await expect(clarify).toBeVisible();
+    const goal2=page.locator('[data-video-goal-clarification]');
     await expect(studio).toHaveAttribute("data-video-goal-page","clarify");
+    await expect(goal2).toBeVisible();
     await expect(page.locator('[data-video-live-stage]')).toBeHidden();
-    const now=page.locator('[data-video-goal-current-options]');
-    const later=page.locator('[data-video-goal-desired-options]');
-    await expect(now).toBeVisible();
-    await expect(later).toBeVisible();
-    await page.locator('[data-video-goal-mood="current-happy"]').click();
-    await page.locator('[data-video-goal-current-choice="positive-2"]').click();
-    await expect(page.locator('[data-video-goal-current-choice="positive-2"]')).toHaveAttribute("aria-pressed","true");
-    await page.locator('[data-video-goal-mood="desired-happy"]').click();
-    await page.locator('[data-video-goal-desired-choice="hope"]').click();
-    await expect(page.locator('[data-video-goal-desired-choice="hope"]')).toHaveAttribute("aria-pressed","true");
-    await page.locator('[data-video-ideas-energy-score]').focus();
-    await page.locator('[data-video-ideas-energy-score]').press('ArrowRight');
-    await page.locator('[data-video-ideas-state-score]').focus();
-    await page.locator('[data-video-ideas-state-score]').press('ArrowRight');
-    await page.locator('[data-video-goal-clarify-continue]').click();
+    await expect(goal2.locator('[data-video-goal-scroll="current"] [data-video-goal-choice]')).toHaveCount(8);
+    await expect(goal2.locator('[data-video-goal-scroll="desired"] [data-video-goal-choice]')).toHaveCount(10);
+    await goal2.locator('[data-video-goal-mood="current-happy"]').click();
+    await goal2.locator('[data-video-goal-choice="current-curious"]').click();
+    await expect(goal2.locator('[data-video-goal-choice="current-curious"]')).toHaveAttribute("aria-pressed","true");
+    await goal2.locator('[data-video-goal-mood="desired-happy"]').click();
+    await goal2.locator('[data-video-goal-choice="desired-joyful"]').click();
+    await goal2.locator('[data-video-goal-energy]').focus();
+    await goal2.locator('[data-video-goal-energy]').press('ArrowRight');
+    await goal2.locator('[data-video-goal-desired-level]').focus();
+    await goal2.locator('[data-video-goal-desired-level]').press('ArrowRight');
+    await goal2.locator('[data-video-goal-clarify-continue]').click();
     const ideas=page.locator('[data-video-quick-control="phrases"]');
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
+    await expect(page.locator('[data-video-ideas-goal-summary]')).toBeVisible();
+    await expect(page.locator('[data-video-idea-select]')).toHaveCount(7);
     const refinement=page.locator('[data-video-ideas-refinement]');
     await expect(refinement.locator(":scope > summary")).toBeVisible();
     await refinement.locator(":scope > summary").click();
@@ -87,7 +86,27 @@ async function verifyWorkspaceHydration(browser,locale){
     const montage=page.locator('[data-video-quick-control="editor"]');
     await montage.click();
     await expect(montage).toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeVisible();
+    await expect(studio).toHaveAttribute("data-active-workspace","editor");
+    // Old MyTube dropdown is intentionally hidden; actual mobile Montage
+    // exposes six style cards. Verify one real tap, upper player and frames.
+    const styleTab=page.locator('[data-video-montage-tab="effects"]');
+    await expect(styleTab).toBeVisible();
+    await expect(styleTab).toHaveAttribute("aria-pressed","true");
+    const styles=page.locator("[data-video-montage-style]");
+    await expect(styles).toHaveCount(6);
+    const minimal=styles.nth(3);
+    await expect(minimal).toBeVisible();
+    const hero=page.locator("[data-video-mandala-hero]");
+    const master=page.locator("[data-mandala-master-mp4]");
+    await minimal.tap();
+    await expect(minimal).toHaveAttribute("aria-pressed","true");
+    await expect(hero).toHaveAttribute("data-video-preview-style","minimal");
+    await expect(hero).toHaveAttribute("data-preview-playing","true");
+    await expect(master).toHaveCount(1);
+    await expect.poll(()=>master.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
+    await expect.poll(()=>master.evaluate(video=>
+      video.readyState>=2&&video.videoWidth>0&&video.videoHeight>0&&!video.error),
+      {timeout:20000}).toBe(true);
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
@@ -292,6 +311,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Reproduce the owner's iPhone case before recording real voice.
+      const selectedStyle=page.locator('[data-video-montage-style="3"]');
+      const selectedMaster=page.locator("[data-mandala-master-mp4]");
+      await expect(selectedStyle).toBeVisible();
+      await expect(selectedMaster).toHaveAttribute("preload","none");
+      if(engine==="webkit")await selectedStyle.tap();
+      else await selectedStyle.click();
+      await expect(selectedStyle).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator("[data-video-mandala-hero]")).toHaveAttribute("data-video-preview-style","minimal");
+      await expect.poll(()=>selectedMaster.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
       // Modern Montage shows the voice and music controls only after choosing Audio.
       // Exercise the real visible tab instead of waiting for an unmounted drawer.
       // Current Montage has four compact tabs. Real duration is under Settings
@@ -471,6 +500,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Confirm the chosen recorded track survives the ACTUAL local MP4/WebM
         // export. Reading a selection badge or blob URL is not E2E evidence.
         await page.locator('[data-video-quick-control="editor"]').click();
+        // The original recorder's export button is available in the real
+        // Montage Audio step, never in the intentionally hidden Style footer.
+        const ownAudioStep=page.locator('[data-video-montage-tab="audio"]');
+        await ownAudioStep.click();
+        await expect(ownAudioStep).toHaveAttribute("aria-pressed","true");
         const ownCreate=page.locator("[data-video-quick-generate]");
         await expect(ownCreate).toBeEnabled({timeout:30000});
         await ownCreate.click();
@@ -660,6 +694,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
+      // The real mobile Montage Style stage intentionally hides the export
+      // button behind its visible "Next · Add text" step. To produce a voiced
+      // movie, choose the real Audio tab, not a hidden Style-step control.
+      const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
+      await expect(montageAudioTab).toBeVisible();
+      await montageAudioTab.click();
+      await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
       await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
@@ -669,8 +710,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(engine==="chromium"||engine==="webkit") {
         const sourceVideo=page.locator("[data-mandala-master-mp4]");
         if(await sourceVideo.count()) {
-          assert.equal(await sourceVideo.getAttribute("preload"),"none",
-            "the initial Video Studio must defer the 1 MB HD source");
+          assert.equal(await sourceVideo.getAttribute("preload"),"auto",
+            "the user's earlier Style tap must already prime the real MP4");
         }
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await expect(generate).toBeEnabled({timeout:30000});
@@ -684,6 +725,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
         await generate.click();
+        // The idle source remains preload=none until the user's actual Create
+        // gesture; Safari must then start a physical decode, never a CSS-only
+        // preview or an unverified download.
+        if(await sourceVideo.count()){
+          await expect.poll(()=>sourceVideo.evaluate(video=>video.preload),
+            {timeout:5000}).toBe("auto");
+        }
         phase(engine,"recording-started");
         const output=page.locator("[data-mandala-video-download]");
         phase(engine,"waiting-for-export");
@@ -722,7 +770,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               canClick:create instanceof HTMLButtonElement ? !create.disabled : null,
               source:video instanceof HTMLVideoElement ? {
                 readyState:video.readyState,width:video.videoWidth,height:video.videoHeight,
-                error:video.error?.code??null
+                error:video.error?.code??null,networkState:video.networkState,
+                preload:video.preload,sourceLoaded:Boolean(video.currentSrc)
               } : null,
               resultHidden:result instanceof HTMLElement ? result.hidden : null,
               progress:document.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,

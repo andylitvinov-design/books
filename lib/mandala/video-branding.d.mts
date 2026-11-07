@@ -11,6 +11,7 @@ export declare function resolveVideoExportVariant(input?: {
   professionalMode?: boolean
   capability?: VideoExportCapability | null
 }): VideoExportVariant
+export declare function canOfferOriginalVideoSource(professionalMode?:boolean): boolean
 export declare function videoBrandStampLayout(width:number,height:number): {
   x:number; y:number; width:number; height:number
   iconSize:number; fontSize:number; interiorPad:number

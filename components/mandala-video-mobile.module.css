@@ -4608,6 +4608,54 @@
  .studio .previewStage .heroRail button span{font-size:9px}
 }
 
+/* Compact approved PRO/Enhance page. Do not affect Goal, Montage or Hypno. */
+@media(max-width:759px){
+ .studio[data-active-workspace="pro"] .quickBuilder{
+   gap:5px!important;padding:0 3px 9px!important;min-width:0;
+ }
+ .studio[data-active-workspace="pro"] .workspaceHeading{
+   position:absolute!important;width:1px!important;height:1px!important;
+   overflow:hidden!important;clip-path:inset(50%)!important;
+   white-space:nowrap!important;margin:0!important;padding:0!important;
+ }
+ .studio[data-active-workspace="pro"] .quickBuilder>.previewStage{
+   display:grid!important;gap:0!important;padding:0!important;margin:0!important;
+   border:0!important;background:transparent!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStageHeading{display:none!important}
+ .studio[data-active-workspace="pro"] .previewStage>.heroWithRail{
+   width:100%!important;max-width:none!important;
+   grid-template-columns:minmax(0,1fr) 71px!important;gap:6px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .hero{
+   height:clamp(105px,18dvh,155px)!important;min-height:0!important;
+   max-height:155px!important;aspect-ratio:auto!important;
+   border-radius:16px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial{
+   left:9px!important;bottom:8px!important;max-width:69%!important;gap:2px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial h2{
+   font-size:clamp(13px,3.65vw,18px)!important;line-height:1.08!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial p{
+   font-size:clamp(9px,2.4vw,11px)!important;line-height:1.12!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEyebrow{display:none!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroPlay{
+   width:44px!important;height:44px!important;min-width:44px;min-height:44px;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroRail{display:grid!important;gap:4px!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button{padding:5px 3px!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button strong{font-size:10px}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button span{font-size:8px}
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="pro"] .previewStage .hero{
+   height:clamp(94px,15dvh,125px)!important
+ }
+}
+
 /* Messenger Video validated handoff visibility.
    The compact Goals screen hides unopened advanced panels, not the original
    Director explicitly opened after a verified, one-use chat handoff.
@@ -4619,36 +4667,170 @@
  }
 }
 
-/* Approved Goal 2/2: one page with three beautiful cards and the sole onward CTA.
-   Existing Goal 1/2, six top tabs, one renderer and all other workspaces remain intact. */
-.goalRefinement{display:grid;gap:12px;min-width:0;width:100%;max-width:900px;margin:0 auto;
-  padding:10px 0 20px;scroll-margin-top:12px}
-.goalRefinement[hidden]{display:none!important}
-.goalRefinementBack{justify-self:start;display:inline-flex;align-items:center;gap:6px;
-  min-height:44px;padding:7px 12px;border:1px solid #dce6d9;border-radius:14px;
-  background:#fffcf7;color:#1b624a;font:750 14px/1.2 Arial,Helvetica,sans-serif}
-.goalRefinementContinue{display:flex;align-items:center;justify-content:center;gap:11px;
-  min-height:56px;width:100%;padding:10px 16px;border:0;border-radius:99px;
-  background:linear-gradient(110deg,#078763,#006c53);color:#fff;
-  font:800 clamp(15px,4.2vw,19px)/1.2 Arial,Helvetica,sans-serif;
-  box-shadow:0 7px 19px #047d5c2c;cursor:pointer}
-.goalRefinementContinue span{flex:0 1 auto;text-align:center}
-.goalRefinementContinue:disabled{opacity:.5;cursor:not-allowed}
-.goalRefinementContinue:focus-visible,.goalRefinementBack:focus-visible{
-  outline:3px solid #176e6e;outline-offset:3px}
-.studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>
-  :not(.quickBrandBar):not(.quickVideoNav):not(.goalRefinement):not([data-video-director-chat-details][open]){
-  display:none!important
+
+/* Free first video: PRO shows the actual decoded local recording. Preserve
+   the native MediaRecorder/WebCodecs stage, non-PRO views and save policy. */
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  order:1!important;align-items:start;gap:10px;width:100%;min-width:0;
+  margin:0!important;padding:clamp(12px,3vw,20px);
+  border:1px solid #cfe5d8;border-radius:20px;background:#fffefa;
+  scroll-margin-top:14px;
 }
-.studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>.goalRefinement{
-  display:grid!important;order:5!important
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>*{
+  grid-column:1/-1!important;grid-row:auto!important;min-width:0;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>h3{
+  font:800 clamp(19px,4.6vw,25px)/1.2 Arial,Helvetica,sans-serif;
+  color:#174c3c;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>video{
+  display:block!important;width:100%!important;max-width:760px!important;
+  height:auto!important;max-height:min(65svh,600px)!important;
+  aspect-ratio:auto!important;object-fit:contain!important;
+  margin:0 auto!important;border-radius:14px;background:#142b27;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result] .resultActions{
+  display:flex!important;flex-wrap:wrap;gap:8px;grid-template-columns:none!important;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions{
+  display:grid;gap:9px;min-width:0;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions>button{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  width:100%;min-height:48px;padding:11px 15px;border:0;border-radius:13px;
+  background:#078767;color:#fff;font:800 16px/1.2 Arial,Helvetica,sans-serif;
+  cursor:pointer;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions>button:focus-visible{
+  outline:3px solid #be9a54;outline-offset:3px;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions p{
+  margin:0!important;color:#5a7466;font:500 13px/1.45 Arial,Helvetica,sans-serif;
 }
 @media(max-width:759px){
- .studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder{
-  gap:9px!important;padding-bottom:max(15px,env(safe-area-inset-bottom))}
- .studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>.goalRefinement{
-  padding:5px 0 18px!important
- }
- .goalRefinementContinue{min-height:54px}
+  .studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){
+    padding:12px!important;gap:10px!important;
+  }
+  .studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>video{
+    max-height:62svh!important;
+  }
 }
-@media(prefers-reduced-motion:reduce){.goalRefinementContinue{transition:none}}
+
+
+
+
+/* Ready workspace: six compact tabs, only the actual verified film, existing delivery. */
+.studio[data-active-workspace="ready"] .quickBuilder>.previewStage,
+.studio[data-active-workspace="ready"] .quickBuilder>.workspaceHeading,
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result],
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result-empty]{display:none!important}
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-ready]{display:grid!important;order:3;grid-column:1/-1;min-width:0}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){display:grid!important}
+.studio .quickVideoNav button[data-video-quick-control="ready"][aria-pressed="true"]{color:#fff!important;background:linear-gradient(135deg,#329c7b,#067a67)!important;border-color:#08745d!important;box-shadow:0 3px 14px #0875532b!important}
+.studio .quickVideoNav button[data-video-quick-control="ready"][aria-pressed="true"] svg{color:#fff!important}
+@media(max-width:759px){
+ .studio .quickVideoNav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px!important;margin:6px 0 0!important;padding:0!important}
+ .studio .quickVideoNav button{min-width:0!important;min-height:54px!important;padding:5px 2px!important;gap:4px!important;border-radius:11px!important;font:750 clamp(9px,2.8vw,11.5px)/1.13 Arial,Helvetica,sans-serif!important;letter-spacing:-.01em!important;box-shadow:0 2px 7px #213b2711!important}
+ .studio .quickVideoNav button svg{width:18px!important;height:18px!important;flex:none}
+ .studio .quickVideoNav button:first-child:not([aria-pressed="true"]){background:#fffdf7!important;border-color:#e9dfd1!important;color:#214c3c!important}
+ .studio[data-active-workspace="ready"] .quickBuilder>[data-video-ready]{grid-column:1/-1;order:3;padding:12px!important;margin:0!important}
+}
+@media(max-width:350px){
+ .studio .quickVideoNav{gap:3px!important}
+ .studio .quickVideoNav button{padding:5px 1px!important;font-size:9px!important}
+}
+
+/* Compact music picker: one viewport, three dropdowns, real explicit Select.
+   The existing sound dock stays mounted but is not duplicated visually. */
+.audioLibrarySearch{display:flex;align-items:center;gap:9px;border:1px solid #d7ddd3;border-radius:14px;background:#fffefa;padding:0 12px;min-height:45px}
+.audioLibrarySearch input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:15px;min-height:43px;color:#204b3c}
+.audioLibraryFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}
+.audioLibraryFilters label{display:grid;gap:3px;min-width:0;font-size:11px;font-weight:750;color:#49695b}
+.audioLibraryFilters select{width:100%;min-width:0;min-height:42px;padding:6px 4px;border:1px solid #d5ded2;border-radius:12px;background:#fffefa;color:#24513e;font-size:12px}
+.audioLibraryTrackList{display:grid;gap:6px}
+.audioLibraryTrack{display:grid;grid-template-columns:40px minmax(0,1fr) 37px 83px;align-items:center;gap:7px;padding:8px;border:1px solid #e1e7df;border-radius:15px;background:#fffefa;min-width:0}
+.audioLibraryTrack[data-selected=true]{border-color:#139777;background:#effaf2}
+.audioLibraryTrackPlay{display:grid;place-items:center;width:40px;height:43px;border:0;border-radius:50%;background:#dcf2df;color:#0d7055}
+.audioLibraryTrackInfo{display:grid;gap:3px;min-width:0}
+.audioLibraryTrackInfo strong{font-size:14px;line-height:1.2;color:#173e32;overflow-wrap:anywhere}
+.audioLibraryTrackInfo small{font-size:11px;color:#67776c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.audioLibraryFavorite{display:grid;place-items:center;min-height:44px;border:0;background:transparent;color:#6d8479}
+.audioLibraryTrackSelect{display:flex;align-items:center;justify-content:center;gap:3px;min-height:43px;min-width:0;padding:4px;border:1px solid #bdd3c4;border-radius:12px;background:#fffefa;color:#16674f;font-size:12px;font-weight:800}
+.audioLibraryTrackSelect[aria-pressed=true]{background:#078468;color:#fff;border-color:#078468}
+.audioLibraryMore{width:100%;min-height:42px;margin-top:8px;border:1px solid #d1e2d4;border-radius:12px;background:#edf7ef;color:#215e46;font-weight:750}
+.audioLibrarySourceActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.audioLibrarySourceActions label,.audioLibrarySourceActions button{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;border:1px solid #cbded0;border-radius:12px;background:#eef8f1;color:#245b46;font-size:12px;font-weight:750}
+.audioLibrarySourceActions label input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.audioLibraryRights{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:12px;color:#285644}
+.audioLibraryHiddenEngine{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;pointer-events:none!important}
+.audioLibraryHiddenEngine *{pointer-events:none!important}
+.montageAudioDialog{max-height:min(88dvh,790px)}
+.montageAudioDialogScroll{padding-top:8px}
+@media(max-width:359px){.audioLibraryTrack{grid-template-columns:36px minmax(0,1fr) 30px 67px;gap:4px;padding:6px}.audioLibraryTrackSelect{font-size:11px}.audioLibraryFilters{gap:4px}.audioLibraryFilters select{font-size:11px}}
+
+
+/* Ideas iPhone rising phrases repair — 07 Nov.
+   Real original 16:9 Canvas, not a second screen or a static mock. */
+@media(max-width:759px){
+ .studio[data-active-workspace="phrases"] .quickBuilder{gap:5px!important;min-width:0}
+ .studio[data-active-workspace="phrases"] .quickBuilder>.previewStage{
+   order:2!important;display:block!important;min-width:0;max-width:100%;
+   margin:0!important;padding:0!important;border:0!important;
+   box-shadow:none!important;background:transparent!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStageHeading{display:none!important}
+ .studio[data-active-workspace="phrases"] .previewStage>.heroWithRail{
+   display:flex!important;justify-content:center!important;align-items:center!important;
+   width:100%!important;min-width:0!important;max-width:100%!important;gap:0!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .hero{
+   flex:0 1 320px!important;width:min(100%,320px)!important;max-width:320px!important;
+   min-width:0!important;min-height:0!important;max-height:none!important;height:auto!important;
+   aspect-ratio:16/9!important;margin:0!important;border-radius:15px!important;overflow:hidden!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .heroRail,
+ .studio[data-active-workspace="phrases"] .previewStage .heroEditorial{display:none!important}
+ .studio[data-active-workspace="phrases"] .previewStage .hero .heroPromo{opacity:0!important}
+ .studio[data-active-workspace="phrases"] .previewStage .hero .heroCanvas{opacity:1!important;z-index:1!important}
+ .studio[data-active-workspace="phrases"] .previewStage .hero .heroShade{
+   z-index:2!important;background:linear-gradient(0deg,#0b241938,transparent 58%)!important;
+   pointer-events:none!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .heroPlay{
+   z-index:6!important;left:auto!important;right:7px!important;top:auto!important;bottom:7px!important;
+   width:41px!important;height:41px!important;min-width:41px!important;min-height:41px!important;
+   transform:none!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .heroDuration{
+   top:6px!important;right:6px!important;padding:4px 7px!important;font-size:10px!important
+ }
+ .studio[data-active-workspace="phrases"] .quickBuilder>[data-video-quick-phrases]{
+   display:block!important;order:3!important;margin:0!important;padding:0!important;
+   min-width:0!important;max-width:100%!important;border:0!important;box-shadow:none!important
+ }
+ .studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="false"]{
+   display:none!important
+ }
+ .studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{
+   display:block!important
+ }
+ .studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut]{display:none!important}
+}
+
+/* Goal 2/2: exactly one real Studio, no hero/player on this clarification
+   screen. Owner-approved image-backed cards have their own scroll panes. */
+.goalClarifyStep{display:grid;grid-column:1/-1;order:3;gap:10px;min-width:0;width:100%;
+ margin:0 auto;max-width:900px;scroll-margin-top:16px}
+.goalClarifyStep[hidden]{display:none!important}
+.studio[data-active-workspace="video"][data-video-goal-page="clarify"]
+ .quickBuilder>:not(.quickBrandBar):not(.quickVideoNav):not(.goalClarifyStep):not([data-video-director-chat-details]):not([data-video-ihelp-backdrop]){
+ display:none!important}
+.studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>.goalClarifyStep{display:grid!important}
+.studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>[data-video-director-chat-details]:not([open]){display:none!important}
+.studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>[data-video-director-chat-details][open]{display:grid!important}
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder{
+  gap:8px!important;padding:0 2px max(20px,env(safe-area-inset-bottom))!important}
+ .studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>.goalClarifyStep{padding:5px 0 16px!important}
+}

@@ -142,8 +142,8 @@ test("mobile six workspaces use short locale labels without changing full panel 
    const group=source.slice(start,next);
    for(const label of labels[language])assert.ok(group.includes('tab:"'+label+'"'),language+" "+label);
  }
- assert.match(studio,/aria-pressed=\{activeWorkspace===item.id\|\|\(!activeWorkspace&&item.id==="video"\)\}/,
-   "Video tab is selected on the initial one-screen mock");
+ assert.match(studio,/aria-pressed=\{activeWorkspace===item\.id\|\|\(activeWorkspace==="practices"&&item\.id==="ready"\)\|\|\(!activeWorkspace&&item\.id==="video"\)\}/,
+   "Ready highlights the retained course planner and Goal stays selected at entry");
 });
 
 test("desktop keeps six themes while iPhone uses four canonical MyTube goals",()=>{
@@ -157,14 +157,14 @@ test("desktop keeps six themes while iPhone uses four canonical MyTube goals",()
 });
 
 test("the selected real soundtrack is synchronized with the original central Canvas Play",()=>{
- assert.match(studio,/if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\)/,
+ assert.match(studio,/if\(activeWorkspace!=="phrases"&&!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\)/,
    "selected audio must begin from the same trusted Play tap on Safari");
  assert.match(studio,/if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}/,
    "pausing the video must pause its selected native audio");
  assert.match(studio,/function playQuickTrack\(choice:PresetId\)/,
    "retain the existing one user-gesture audio player");
- assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;[\s\S]*?if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\);\s*setPreviewPlaying\(true\)/,
-   "Play never starts audio during export");
+ assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;[\s\S]*?if\(activeWorkspace!=="phrases"&&!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\);\s*setPreviewPlaying\(true\)/,
+   "Play never starts audio during export; Ideas has an intentionally silent visual preview");
 });
 
 // Regression from #2900: four real preview cards must appear before the first click.
@@ -285,7 +285,7 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
 test("Montage and PRO retain one operational video/audio pipeline without duplicate controls",()=>{
   const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
   assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
-  assert.match(studio,/\{id:"practices",Icon:Leaf\},\{id:"pro",Icon:Zap\}/);
+  assert.match(studio,/\{id:"pro",Icon:Zap\},\{id:"ready",Icon:Check\}/);
   assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
   assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
   assert.match(studio,/data-video-basic-editor/);

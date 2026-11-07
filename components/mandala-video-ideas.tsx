@@ -1,242 +1,249 @@
 "use client";
+
 import {useEffect,useMemo,useRef,useState} from "react";
-import {createPortal} from "react-dom";
 import type {Dispatch,SetStateAction} from "react";
-import {ArrowDown,Check,Heart,Pencil,Play,Plus,RefreshCw,Sparkles} from "lucide-react";
-import {listMeaningAxes} from "@/lib/mandala/meaning-emotion/idea-engine.mjs";
-import {listCurrentEmotionClusters,listDesiredEmotionClusters} from "@/lib/mandala/meaning-emotion/emotional-vector-matrix.mjs";
+import {ArrowDown,Check,Heart,Mic,Pencil,Play,Plus,RefreshCw,Sparkles} from "lucide-react";
+import {goalCurrentMeaningId,goalDesiredMeaningId} from "./mandala-video-goal-clarification";
+import type {VideoGoalProfile} from "./mandala-video-goal-clarification";
 import {suggestMeaningPhrases} from "@/lib/mandala/video-meaning-phrases.mjs";
-import {linesForVideoAffirmations} from "@/lib/mandala/video-affirmations";
 import type {AffirmationSettings} from "@/lib/mandala/video-affirmations";
 import type {VideoLocale,VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-ideas.module.css";
-type Axis={id:string;label:string;description:string};
-type Cluster={id:string;label:string};
-type Props={locale:VideoLocale;theme:VideoTheme;active:boolean;clarify:boolean;disabled:boolean;settings:AffirmationSettings;
+
+type Props={
+ locale:VideoLocale;theme:VideoTheme;active:boolean;disabled:boolean;settings:AffirmationSettings;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
- onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void};
+ onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;
+ onRecord:()=>void;onResetPreview:()=>void;
+ goalProfile:VideoGoalProfile;onBackToGoal:()=>void;
+};
+
 const wording={
- ru:{title:"Моё состояние и желание",current:"Состояние сейчас",desired:"Желаемое состояние",energy:"Энергия сейчас",scale:"по 10-балльной шкале",want:"Что бы мне хотелось",hint:"Выберите одно или несколько направлений",phrases:"Ваши фразы",regenerate:"Новые варианты",clear:"Очистить",own:"Добавить свою фразу",edit:"Изменить фразу",save:"Сохранить фразу",preview:"Посмотреть фразу в видео",down:"Переместить вниз",create:"Сгенерировать видео",empty:"Выберите направление, чтобы получить фразы",privacy:"Фразы подбираются автоматически, без передачи ответов внешним сервисам."},
- en:{title:"My state and intention",current:"How I feel now",desired:"How I want to feel",energy:"Energy now",scale:"on a 0–10 scale",want:"What I would like",hint:"Choose one or more directions",phrases:"Your phrases",regenerate:"New options",clear:"Clear",own:"Write my own phrase",edit:"Edit phrase",save:"Save phrase",preview:"Preview phrase in video",down:"Move down",create:"Generate video",empty:"Choose a direction for phrases",privacy:"Phrases update automatically without sending your answers to providers."},
- es:{title:"Mi estado y deseo",current:"Cómo me siento ahora",desired:"Cómo quiero sentirme",energy:"Energía actual",scale:"en una escala de 0 a 10",want:"Qué me gustaría",hint:"Elige una o varias direcciones",phrases:"Tus frases",regenerate:"Nuevas opciones",clear:"Borrar",own:"Escribir mi propia frase",edit:"Editar frase",save:"Guardar frase",preview:"Ver frase en vídeo",down:"Mover abajo",create:"Generar vídeo",empty:"Elige una dirección para las frases",privacy:"Las frases cambian automáticamente sin enviar tus respuestas a proveedores."}
+ ru:{
+  size:"Размер фразы на экране",sizes:["Меньше","Обычно","Крупнее"],select:"Выберите свои фразы",
+  selected:"выбрано",pick:"Выберите минимум 5 фраз, которые вам откликаются.",
+  more:"Ещё фразы",moreHint:"Другие варианты",own:"Своя фраза",ownHint:"Написать текст",
+  record:"Записать голос",recordHint:"Свой голос",add:"Добавить",cancel:"Отмена",
+  placeholder:"Введите свою короткую фразу",edit:"Изменить фразу",save:"Сохранить",
+  play:"Показать фразы в видео",move:"Переместить ниже",choose:"Выбрать фразу",unchoose:"Убрать фразу",
+  clear:"Сбросить выбор",max:"В видео можно выбрать не более 10 фраз.",
+  full:"Сначала выберите как минимум 5 фраз.",next:"Перейти к монтажу",
+  refine:"Уточнить состояние и направления",title:"Моё состояние и желание",
+  current:"Состояние сейчас",desired:"Желаемое состояние",energy:"Энергия сейчас",
+  scale:"по 10-балльной шкале",want:"Что бы мне хотелось",
+  hint:"Выберите одно или несколько направлений",
+  privacy:"Фразы подбираются в браузере. Изменения можно внести позже.",
+ },
+ en:{
+  size:"Text size on screen",sizes:["Smaller","Standard","Larger"],select:"Select your phrases",
+  selected:"selected",pick:"Choose at least 5 phrases that resonate with you.",
+  more:"More phrases",moreHint:"New options",own:"Write a phrase",ownHint:"Your own words",
+  record:"Record a phrase",recordHint:"Use your voice",add:"Add phrase",cancel:"Cancel",
+  placeholder:"Write a short supportive phrase",edit:"Edit phrase",save:"Save",
+  play:"Preview phrases in video",move:"Move phrase down",choose:"Select phrase",unchoose:"Deselect phrase",
+  clear:"Clear selection",max:"Choose up to 10 phrases for your video.",
+  full:"Choose at least 5 phrases to continue.",next:"Continue to Montage",
+  refine:"Fine-tune my state and intention",title:"My state and intention",
+  current:"How I feel now",desired:"How I want to feel",energy:"Energy now",
+  scale:"on a 0–10 scale",want:"What I would like",
+  hint:"Choose one or more directions",
+  privacy:"Suggestions stay in your browser. You can change them later.",
+ },
+ es:{
+  size:"Tamaño de texto en pantalla",sizes:["Menor","Normal","Mayor"],select:"Elige tus frases",
+  selected:"elegidas",pick:"Elige al menos 5 frases que conecten contigo.",
+  more:"Más frases",moreHint:"Otras opciones",own:"Escribir frase",ownHint:"Con tus palabras",
+  record:"Grabar frase",recordHint:"Tu propia voz",add:"Añadir frase",cancel:"Cancelar",
+  placeholder:"Escribe una frase breve de apoyo",edit:"Editar frase",save:"Guardar",
+  play:"Ver frases en vídeo",move:"Mover frase abajo",choose:"Elegir frase",unchoose:"Quitar frase",
+  clear:"Borrar selección",max:"Puedes elegir hasta 10 frases para el vídeo.",
+  full:"Elige al menos 5 frases para continuar.",next:"Continuar al montaje",
+  refine:"Ajustar mi estado y mi intención",title:"Mi estado y deseo",
+  current:"Cómo me siento ahora",desired:"Cómo quiero sentirme",energy:"Energía actual",
+  scale:"en una escala de 0 a 10",want:"Qué me gustaría",
+  hint:"Elige una o varias direcciones",
+  privacy:"Las sugerencias permanecen en tu navegador. Puedes cambiarlas después.",
+ }
 } as const;
+
 const allFive=[0,1,2,3,4];
-export function MandalaVideoIdeas({locale,theme,active,clarify,disabled,settings,generating,
- onChange,onPendingChange,onPreview,onCreate}:Props){
+const scaleValues=["small","medium","large"] as const;
+const cleanPhrase=(text:string)=>Array.from(text.replace(/[<>]/g,"").replace(/\s+/g," ").trim()).slice(0,36).join("");
+
+export function MandalaVideoIdeas({locale,active,disabled,settings,generating,
+ onChange,onPendingChange,onPreview,onCreate,onRecord,onResetPreview,goalProfile,onBackToGoal}:Props){
  const t=wording[locale];
- const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
- const desiredOptions=useMemo<Cluster[]>(()=>listDesiredEmotionClusters(locale),[locale]);
- const axes=useMemo<Axis[]>(()=>listMeaningAxes(locale),[locale]);
- const [clarifyHost,setClarifyHost]=useState<HTMLElement|null>(null);
- useEffect(()=>setClarifyHost(document.querySelector<HTMLElement>("[data-video-goal-refinement-host]")),[]);
- const [currentMood,setCurrentMood]=useState<"sad"|"neutral"|"happy">("neutral");
- const [desiredMood,setDesiredMood]=useState<"sad"|"neutral"|"happy">("neutral");
- const [currentPicked,setCurrentPicked]=useState<string[]>(["fatigue"]);
- const [desiredPicked,setDesiredPicked]=useState<string[]>(["calm"]);
- const current=currentPicked[0]||"fatigue",desired=desiredPicked[0]||"calm";
- const [stateScore,setStateScore]=useState(6);
- const [energy,setEnergy]=useState(4);
- const [selectedAxes,setSelectedAxes]=useState<string[]>(["anchor"]);
+ const current=goalCurrentMeaningId(goalProfile.current[0]||"fatigue");
+ const desired=goalDesiredMeaningId(goalProfile.desired[0]||"calm");
+ const stateScore=goalProfile.desiredLevel;
+ const energy=goalProfile.energy;
+ const selectedAxes=goalProfile.axes;
  const [revision,setRevision]=useState(0);
+ const [options,setOptions]=useState<string[]>(()=>suggestMeaningPhrases(locale,selectedAxes,current,desired,stateScore,energy,0,7));
+ const [chosen,setChosen]=useState<number[]>(allFive);
  const [editing,setEditing]=useState<number|null>(null);
  const [draft,setDraft]=useState("");
- const [cleared,setCleared]=useState(false);
+ const [adding,setAdding]=useState(false);
+ const [moreClicks,setMoreClicks]=useState(0);
+ const [feedback,setFeedback]=useState("");
  const lastApplied=useRef("");
- const signature=JSON.stringify([locale,selectedAxes,currentPicked,desiredPicked,stateScore,energy,revision]);
+ const signature=JSON.stringify([locale,goalProfile,revision]);
  const suggested=useMemo(()=>{
-  const primary=suggestMeaningPhrases(locale,selectedAxes,current,desired,stateScore,energy,revision);
-  const extra=desiredPicked.slice(1,3).map(id=>suggestMeaningPhrases(locale,selectedAxes,current,id,stateScore,energy,revision)[2]);
-  return [...new Set([...primary.slice(0,2),...extra,...primary])].slice(0,5);
- },[locale,selectedAxes,current,desired,desiredPicked,stateScore,energy,revision]);
+  const from=goalProfile.current.length?goalProfile.current:["fatigue"];
+  const to=goalProfile.desired.length?goalProfile.desired:["calm"];
+  const axes=goalProfile.axes.length?goalProfile.axes:["meaning"];
+  const variants=Array.from({length:7},(_,i)=>suggestMeaningPhrases(
+   locale,axes,goalCurrentMeaningId(from[i%from.length]),
+   goalDesiredMeaningId(to[i%to.length]),goalProfile.desiredLevel,goalProfile.energy,revision+i,7));
+  return [...new Set(variants.flat().filter(v=>typeof v==="string"&&v.trim()&&Array.from(v).length<=36))].slice(0,7);
+ },[locale,goalProfile,revision]);
+
+ // A change in the optional Goal refinement refreshes only this editor.
+ // Merely returning from Montage must not erase edited or selected phrases.
  useEffect(()=>{
   if(!active||signature===lastApplied.current)return;
   lastApplied.current=signature;
-  onChange(old=>({...old,enabled:true,selected:allFive,custom:"",presetOverride:suggested,
-   visibility:old.visibility.length?old.visibility:["large"]}));
-  // Choosing a tab is not consent to silently approve a legacy pending draft.
-  setCleared(false);setEditing(null);
+  setOptions(suggested);setChosen(allFive);setMoreClicks(0);
+  setEditing(null);setAdding(false);setFeedback("");
+  onChange(old=>({...old,enabled:true,selected:allFive,custom:"",
+   presetOverride:suggested.slice(0,5),motion:"rise",visibility:old.visibility.length?old.visibility:["large"]}));
  },[active,signature,suggested,onChange]);
- const stored=linesForVideoAffirmations(locale,theme,settings);
- const lines=cleared?[]:settings.presetOverride?.length===5?stored:suggested;
- const save=(next:string[])=>{
-  const safe=next.slice(0,5).map(line=>Array.from(line.replace(/[<>]/g,"").trim()).slice(0,36).join(""));
-  if(safe.length!==5||safe.some(line=>!line))return false;
-  onChange(old=>({...old,enabled:true,selected:allFive,custom:"",presetOverride:safe}));
-  onPendingChange(false);setCleared(false);return true;
+
+ const selectedCount=chosen.length;
+ const textSizeIndex=Math.max(0,scaleValues.indexOf(settings.textScale??"medium"));
+ const apply=(candidates:string[],indices:number[])=>{
+  const safe=candidates.slice(0,14).map(cleanPhrase).filter(Boolean);
+  const fresh=[...new Set(indices)].filter(i=>Number.isInteger(i)&&i>=0&&i<safe.length).sort((a,b)=>a-b).slice(0,10);
+  const picked=fresh.map(i=>safe[i]);
+  // Preserve the existing five-line preset contract used by Hypno and narration.
+  // Extra selected Ideas lines occupy its already-supported local custom lines (max five).
+  const preset=[...picked,...suggested].slice(0,5);
+  onChange(old=>({...old,enabled:picked.length>0,
+   selected:allFive.slice(0,Math.min(5,picked.length)),
+   presetOverride:preset,custom:picked.slice(5,10).join("\n"),motion:"rise",
+   visibility:old.visibility.length?old.visibility:["large"]}));
+  onPendingChange(false);
+  setOptions(safe);setChosen(fresh);setFeedback("");
+ };
+ const toggle=(index:number)=>{
+  if(chosen.includes(index))apply(options,chosen.filter(i=>i!==index));
+  else if(chosen.length>=10)setFeedback(t.max);
+  else apply(options,[...chosen,index]);
  };
  const saveDraft=(index:number)=>{
-  if(!draft.trim())return;
-  const next=[...lines];next[index]=draft;
-  if(save(next))setEditing(null);
- };
- const toggleAxis=(id:string)=>{
-  onPendingChange(false);
-  setSelectedAxes(old=>old.includes(id)?(old.length===1?old:old.filter(x=>x!==id)):[...old,id]);
+  const value=cleanPhrase(draft);
+  if(!value)return;
+  const next=[...options];next[index]=value;
+  apply(next,chosen);setEditing(null);setDraft("");
  };
  const moveDown=(index:number)=>{
-  if(index>=lines.length-1)return;
-  const next=[...lines];[next[index],next[index+1]]=[next[index+1],next[index]];
-  save(next);
+  if(index>=options.length-1)return;
+  const next=[...options];[next[index],next[index+1]]=[next[index+1],next[index]];
+  apply(next,chosen.map(i=>i===index?index+1:i===index+1?index:i));
+  setEditing(null);
  };
- const moods=["sad","neutral","happy"] as const;
- const icons={sad:"😔",neutral:"😌",happy:"😊"} as const;
- const moodsText={
-  ru:{sad:"Грустно",neutral:"Спокойно",happy:"Радостно"},
-  en:{sad:"Sad",neutral:"Calm",happy:"Happy"},
-  es:{sad:"Triste",neutral:"En calma",happy:"Feliz"}
- } as const;
- const copy={
-  ru:{heading:"Давайте выберем цель для видео",sub:"Уточните, как вы себя чувствуете и что хотите поддержать.",
-   now:"Как я себя чувствую сейчас?",want:"Как я хочу себя чувствовать?",focus:"Что я хочу укрепить?",
-   energy:"Моя энергия сейчас",level:"Мой желаемый уровень",next:"Перейти к фразам поддержки",hint:"Выберите до трёх · прокрутите для других"},
-  en:{heading:"Choose a goal for your video",sub:"Explore how you feel and what you want to strengthen.",
-   now:"How do I feel now?",want:"How would I like to feel?",focus:"What would I like to strengthen?",
-   energy:"My energy level now",level:"My desired level",next:"Go to support phrases",hint:"Choose up to three · scroll for more"},
-  es:{heading:"Elige un objetivo para tu vídeo",sub:"Explora cómo te sientes y qué quieres fortalecer.",
-   now:"¿Cómo me siento ahora?",want:"¿Cómo quiero sentirme?",focus:"¿Qué quiero fortalecer?",
-   energy:"Mi energía actual",level:"Mi nivel deseado",next:"Ir a frases de apoyo",hint:"Elige hasta tres · desliza para ver más"}
- }[locale];
- const positiveNow={
-  ru:["Спокойно","С надеждой","С интересом","Энергично","В контакте","Уверенно","С благодарностью","Вдохновлённо"],
-  en:["Present","Hopeful","Curious","Energetic","Connected","Confident","Grateful","Inspired"],
-  es:["Presente","Esperanza","Curiosidad","Energía","Conexión","Confianza","Gratitud","Inspiración"]
- }[locale];
- const moodCurrentOrder={
-  sad:["sadness","fatigue","anxiety","helplessness","loneliness","shame","anger","confusion"],
-  neutral:["fatigue","anxiety","sadness","helplessness","confusion","anger","loneliness","shame"]
+ const addOwn=()=>{
+  const value=cleanPhrase(draft);
+  if(!value||options.length>=14)return;
+  const next=[...options,value];
+  apply(next,chosen.length<10?[...chosen,options.length]:chosen);
+  setDraft("");setAdding(false);
  };
- const moodDesiredOrder={
-  sad:["calm","self_acceptance","connection","vitality","hope","confidence","boundaries","clarity"],
-  neutral:["calm","self_acceptance","vitality","clarity","connection","hope","confidence","boundaries"],
-  happy:["hope","confidence","vitality","connection","boundaries","clarity","self_acceptance","calm"]
+ const moreOptions=()=>{
+  if(options.length>=14)return;
+  const sequence=[
+   ...suggestMeaningPhrases(locale,selectedAxes,current,desired,stateScore,energy,revision+moreClicks+1,7),
+   ...suggestMeaningPhrases(locale,["growth","connection"],current,desired,stateScore,energy,moreClicks,7),
+   ...suggestMeaningPhrases(locale,["meaning","dignity"],current,desired,stateScore,energy,moreClicks,7),
+  ];
+  const candidates=sequence.filter((line,i)=>!options.includes(line)&&sequence.indexOf(line)===i)
+   .slice(0,Math.min(3,14-options.length));
+  setMoreClicks(n=>n+1);
+  if(candidates.length)apply([...options,...candidates],chosen);
  };
- const nowWords={
-  ru:{sad:["Грусть","Измотанность","Тревога","Бессилие","Одиночество","Стыд","Раздражение","Растерянность"],
-   neutral:["Усталость","Напряжение","Грусть","Перегрузка","Неясность","Раздражение","Отдалённость","Самокритика"]},
-  en:{sad:["Sad","Drained","Anxious","Stuck","Lonely","Self-critical","Irritated","Lost"],
-   neutral:["Tired","Tense","Down","Overwhelmed","Uncertain","Restless","Distant","Self-doubting"]},
-  es:{sad:["Triste","Agotado/a","Ansioso/a","Bloqueado/a","Solo/a","Autocrítica","Irritado/a","Perdido/a"],
-   neutral:["Cansancio","Tensión","Desánimo","Agobio","Incertidumbre","Inquietud","Distancia","Dudas"]}
- };
- const wantWords={
-  ru:{sad:["Покой","Принятие","Близость","Силы","Надежда","Уверенность","Свобода","Ясность"],
-   neutral:["Спокойствие","Безопасность","Энергия","Равновесие","Контакт","Радость","Уверенность","Свобода"],
-   happy:["Радость","Уверенность","Вдохновение","Близость","Свобода","Ясность","Любовь к себе","Покой"]},
-  en:{sad:["Calm","Accepted","Connected","Rested","Hopeful","Confident","Free","Clear"],
-   neutral:["Calm","Safe","Energetic","Balanced","Connected","Joyful","Confident","Free"],
-   happy:["Joyful","Confident","Inspired","Connected","Free","Clear","Self-kindness","Peaceful"]},
-  es:{sad:["Calma","Aceptación","Conexión","Descanso","Esperanza","Confianza","Libertad","Claridad"],
-   neutral:["Calma","Seguridad","Energía","Equilibrio","Conexión","Alegría","Confianza","Libertad"],
-   happy:["Alegría","Confianza","Inspiración","Conexión","Libertad","Claridad","Autoestima","Paz"]}
- };
- const nowChoices=currentMood==="happy"?positiveNow.map((label,index)=>({id:"positive-"+index,label})):
-  moodCurrentOrder[currentMood].map((id,index)=>({
-   id,label:nowWords[locale][currentMood][index]||currentOptions.find(x=>x.id===id)?.label||id
-  }));
- const wantChoices=moodDesiredOrder[desiredMood].map((id,index)=>({
-  id,label:wantWords[locale][desiredMood][index]||desiredOptions.find(x=>x.id===id)?.label||id
- }));
- const choose=(id:string,setter:Dispatch<SetStateAction<string[]>>)=>{
-  setter(old=>old.includes(id)?(old.length===1?old:old.filter(v=>v!==id)):
-   [id,...old.filter(value=>value!==id)].slice(0,3));
-  onPendingChange(false);
- };
- const moodFilter=(side:"current"|"desired",value:typeof moods[number],change:(value:typeof moods[number])=>void)=>
-  <div className={css.moodFilter} role="group" aria-label={side==="current"?copy.now:copy.want}>
-   {moods.map(m=><button type="button" key={m} data-video-goal-mood={side+"-"+m}
-    disabled={disabled} aria-pressed={value===m} title={moodsText[locale][m]}
-    aria-label={moodsText[locale][m]} onClick={()=>change(m)}>
-    <span aria-hidden="true">{icons[m]}</span></button>)}
-  </div>;
- const goalCards=<div className={css.goalJourney} data-video-goal-journey>
-  <header className={css.goalIntro}><h2>{copy.heading}</h2><p>{copy.sub}</p></header>
-  <section className={[css.choiceCard,css.currentCard].join(" ")} data-video-ideas-state>
-   <div className={css.choiceHeader}><h3><Heart size={23} aria-hidden="true"/>{copy.now}</h3>
-    {moodFilter("current",currentMood,setCurrentMood)}</div>
-   <p className={css.choiceHint}>{copy.hint}</p>
-   <div className={css.choiceScroller} data-video-goal-current-options role="group" aria-label={copy.now} tabIndex={0}>
-    {nowChoices.map(option=><button key={option.id} type="button" className={css.choiceButton}
-     data-video-goal-current-choice={option.id} disabled={disabled}
-     aria-pressed={currentPicked.includes(option.id)} onClick={()=>choose(option.id,setCurrentPicked)}>
-     {currentPicked.includes(option.id)?<Check size={16} aria-hidden="true"/>:null}{option.label}
-    </button>)}
+
+
+ return <section className={css.ideas} data-video-ideas-compact aria-label={t.select} hidden={!active}>
+  <div className={css.sizeCard} data-video-ideas-size>
+   <div className={css.sizeTitle}>
+    <label htmlFor="video-ideas-text-size"><span className={css.sample} data-scale={scaleValues[textSizeIndex]}>Aa</span>{t.size}</label>
+    <output htmlFor="video-ideas-text-size">{t.sizes[textSizeIndex]}</output>
    </div>
-   <label className={css.levelLine} htmlFor="video-goal-energy"><strong>{copy.energy}</strong>
-    <input id="video-goal-energy" data-video-ideas-energy-score type="range" min={0} max={10} step={1}
-     value={energy} disabled={disabled} onChange={event=>{setEnergy(Number(event.currentTarget.value));onPendingChange(false)}}/>
-    <output htmlFor="video-goal-energy">{energy}/10</output></label>
-  </section>
-  <section className={[css.choiceCard,css.desiredCard].join(" ")} data-video-ideas-desired-state>
-   <div className={css.choiceHeader}><h3><Sparkles size={23} aria-hidden="true"/>{copy.want}</h3>
-    {moodFilter("desired",desiredMood,setDesiredMood)}</div>
-   <p className={css.choiceHint}>{copy.hint}</p>
-   <div className={css.choiceScroller} data-video-goal-desired-options role="group" aria-label={copy.want} tabIndex={0}>
-    {wantChoices.map(option=><button key={option.id} type="button" className={css.choiceButton}
-     data-video-goal-desired-choice={option.id} disabled={disabled}
-     aria-pressed={desiredPicked.includes(option.id)} onClick={()=>choose(option.id,setDesiredPicked)}>
-     {desiredPicked.includes(option.id)?<Check size={16} aria-hidden="true"/>:null}{option.label}
-    </button>)}
+   <input id="video-ideas-text-size" data-video-ideas-text-size type="range" min={0} max={2} step={1}
+    value={textSizeIndex} disabled={disabled}
+    onChange={event=>{onResetPreview();onChange(old=>({...old,textScale:scaleValues[Number(event.currentTarget.value)]}));}}/>
+   <div className={css.sizeHints} aria-hidden="true">{t.sizes.map(value=><span key={value}>{value}</span>)}</div>
+  </div>
+
+  <section className={css.phrases} data-video-ideas-phrases aria-labelledby="video-ideas-phrases-heading">
+   <div className={css.phraseHeader}>
+    <h3 id="video-ideas-phrases-heading"><Heart size={25} aria-hidden="true"/>{t.select}</h3>
+    <span className={css.count} data-video-ideas-selected-count>{selectedCount} / {options.length} {t.selected}</span>
    </div>
-   <label className={css.levelLine} htmlFor="video-goal-desired"><strong>{copy.level}</strong>
-    <input id="video-goal-desired" data-video-ideas-state-score type="range" min={0} max={10} step={1}
-     value={stateScore} disabled={disabled} onChange={event=>{setStateScore(Number(event.currentTarget.value));onPendingChange(false)}}/>
-    <output htmlFor="video-goal-desired">{stateScore}/10</output></label>
-  </section>
-  <section className={[css.choiceCard,css.directionCard].join(" ")} data-video-ideas-axes>
-   <h3 className={css.title}><Heart size={23} aria-hidden="true"/>{copy.focus}</h3>
-   <p className={css.subtitle}>{t.hint}</p>
-   <div className={css.axisGrid} role="group" aria-label={copy.focus}>
-    {axes.map(axis=><button key={axis.id} type="button" className={css.axisButton}
-     data-video-meaning-axis={axis.id} title={axis.description}
-     aria-pressed={selectedAxes.includes(axis.id)} disabled={disabled}
-     onClick={()=>toggleAxis(axis.id)}>{selectedAxes.includes(axis.id)?
-      <Check size={16} aria-hidden="true"/>:null}{axis.label}</button>)}
+   <p className={css.subtitle} id="ideas-choice-help">{t.pick}</p>
+   <ol className={css.phraseList} data-video-ideas-scroll aria-describedby="ideas-choice-help" tabIndex={0}>
+    {options.map((line,index)=><li key={index} data-video-idea-phrase={index} className={css.item}
+      data-selected={chosen.includes(index)}>
+     <button type="button" className={css.pick} data-video-idea-select={index}
+      aria-pressed={chosen.includes(index)} aria-label={(chosen.includes(index)?t.unchoose:t.choose)+": "+line}
+      disabled={disabled} onClick={()=>toggle(index)}>
+      {chosen.includes(index)?<Check size={19} strokeWidth={3} aria-hidden="true"/>:null}
+     </button>
+     {editing===index?<input data-video-idea-edit={index} className={css.editInput}
+       aria-label={t.edit} maxLength={36} value={draft} disabled={disabled}
+       onChange={event=>setDraft(event.currentTarget.value)}
+       onKeyDown={event=>{if(event.key==="Enter")saveDraft(index);if(event.key==="Escape")setEditing(null)}}/>:
+       <span className={css.phraseText}>{line}</span>}
+     <button type="button" className={css.play} data-video-idea-play={index}
+      disabled={disabled} aria-label={editing===index?t.move:t.play}
+      onClick={()=>editing===index?moveDown(index):onPreview()}>
+      {editing===index?<ArrowDown size={21} aria-hidden="true"/>:<Play size={20} aria-hidden="true"/>}
+     </button>
+     <button type="button" className={css.edit} data-video-idea-edit-button={index}
+      disabled={disabled} aria-label={editing===index?t.save:t.edit}
+      onClick={()=>editing===index?saveDraft(index):(setDraft(line),setEditing(index),setAdding(false))}>
+      {editing===index?<Check size={22} aria-hidden="true"/>:<Pencil size={20} aria-hidden="true"/>}
+     </button>
+    </li>)}
+   </ol>
+   {selectedCount<5?<p className={css.warning} data-video-ideas-minimum role="status">{t.full}</p>:null}
+   {feedback?<p className={css.warning} role="status">{feedback}</p>:null}
+
+   <div className={css.actions}>
+    <button type="button" data-video-ideas-regenerate disabled={disabled||options.length>=14}
+     onClick={moreOptions}><RefreshCw size={23} aria-hidden="true"/>
+     <span><strong>{t.more}</strong><small>{t.moreHint}</small></span></button>
+    <button type="button" data-video-ideas-own-phrase disabled={disabled||options.length>=14}
+     aria-expanded={adding} onClick={()=>{setAdding(v=>!v);setDraft("");setEditing(null)}}>
+     <Plus size={23} aria-hidden="true"/>
+     <span><strong>{t.own}</strong><small>{t.ownHint}</small></span></button>
+    <button type="button" data-video-ideas-record disabled={disabled}
+     onClick={onRecord}><Mic size={23} aria-hidden="true"/>
+     <span><strong>{t.record}</strong><small>{t.recordHint}</small></span></button>
    </div>
+   {adding?<form className={css.addForm} data-video-ideas-custom-form onSubmit={event=>{event.preventDefault();addOwn()}}>
+    <input aria-label={t.placeholder} placeholder={t.placeholder} value={draft} maxLength={36}
+     disabled={disabled} onChange={event=>setDraft(event.currentTarget.value)}/>
+    <button type="submit" disabled={disabled||!cleanPhrase(draft)}>{t.add}</button>
+    <button type="button" onClick={()=>{setAdding(false);setDraft("")}}>{t.cancel}</button>
+   </form>:null}
+   <button type="button" className={css.clear} data-video-ideas-clear disabled={disabled||!chosen.length}
+    onClick={()=>apply(options,[])}>{t.clear}</button>
   </section>
- </div>;
- return <>
-  {clarifyHost&&clarify?createPortal(goalCards,clarifyHost):null}
-  <section className={css.ideas} data-video-ideas-compact aria-label={t.want} hidden={!active}>
-   <section className={css.phrases} data-video-ideas-phrases aria-labelledby="video-ideas-phrases-heading">
-     <div className={css.phraseHeader}><h3 id="video-ideas-phrases-heading">
-         <Heart size={22} aria-hidden="true"/>{t.phrases} ({lines.length})</h3>
-       <div className={css.actions}>
-         <button type="button" data-video-ideas-regenerate disabled={disabled}
-           onClick={()=>setRevision(n=>n+1)}><RefreshCw size={15} aria-hidden="true"/>{t.regenerate}</button>
-         <button type="button" data-video-ideas-clear disabled={disabled} onClick={()=>{
-           setCleared(true);setEditing(null);
-           onChange(old=>({...old,enabled:false,selected:[],presetOverride:undefined,custom:""}));
-           onPendingChange(false);
-         }}>{t.clear}</button>
-       </div>
-     </div>
-     {lines.length===0?<p className={css.subtitle}>{t.empty}</p>:null}
-     <ol className={css.phraseList}>
-       {lines.map((line,index)=><li key={index} data-video-idea-phrase={index} className={css.item}>
-         <span className={css.number}>{index+1}</span>
-         {editing===index?<input data-video-idea-edit={index} aria-label={t.edit}
-           className={css.editInput} maxLength={36} value={draft} disabled={disabled}
-           onChange={event=>setDraft(event.currentTarget.value)}
-           onKeyDown={event=>{if(event.key==="Enter")saveDraft(index);if(event.key==="Escape")setEditing(null)}}/>:
-           <span className={css.text}>{line}</span>}
-         <button type="button" className={css.tool} disabled={disabled} aria-label={t.preview}
-           onClick={onPreview}><Play size={16} aria-hidden="true"/></button>
-         <button type="button" className={css.tool} disabled={disabled}
-           aria-label={editing===index?t.save:t.edit} onClick={()=>{
-             if(editing===index)saveDraft(index);else{setDraft(line);setEditing(index);}
-           }}>{editing===index?<Check size={17} aria-hidden="true"/>:<Pencil size={17} aria-hidden="true"/>}</button>
-         <button type="button" className={css.tool} disabled={disabled||index===lines.length-1||editing!==null}
-           aria-label={t.down} onClick={()=>moveDown(index)}><ArrowDown size={16} aria-hidden="true"/></button>
-       </li>)}
-     </ol>
-     {lines.length===5?<button type="button" data-video-ideas-own-phrase className={css.own}
-       disabled={disabled} onClick={()=>{setDraft(lines[4]);setEditing(4)}}>
-       <Plus size={18} aria-hidden="true"/>{t.own}</button>:null}
-   </section>
-   <button type="button" className={css.create} data-video-ideas-create disabled={disabled}
-     onClick={onCreate}><Play size={23} fill="currentColor" aria-hidden="true"/>
-      {generating?t.create+"…":t.create}<span aria-hidden="true">→</span>
-   </button>
-   <p className={css.privacy}>{t.privacy}</p>
- </section></>;
+
+  <div className={css.goalSummary} data-video-ideas-goal-summary>
+  <span>{locale==="ru"?"Цель уточнена · выберите установки":
+   locale==="es"?"Objetivo definido · elige las frases":"Goal clarified · choose your support phrases"}</span>
+  <button type="button" data-video-ideas-refine data-video-ideas-edit-goal disabled={disabled}
+   onClick={onBackToGoal}>{t.refine}</button>
+ </div>
+
+
+  <button type="button" className={css.create} data-video-ideas-create
+   disabled={disabled||selectedCount<5} onClick={onCreate}>
+   <Play size={23} fill="currentColor" aria-hidden="true"/>
+   {generating?t.next+"…":t.next}<span aria-hidden="true">→</span>
+  </button>
+  <p className={css.privacy}>{t.privacy}</p>
+ </section>;
 }
