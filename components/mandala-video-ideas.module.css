@@ -25,6 +25,7 @@
 .play{background:#fff;box-shadow:0 1px 5px #244c3d25}.edit{background:transparent}
 .play:disabled,.edit:disabled,.pick:disabled{opacity:.4}
 .warning{margin:0!important;color:#a16a1b;font-size:11px;font-weight:700}
+.saved{margin:0!important;color:#08745a;font-size:11px;font-weight:750}
 .actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .actions button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:43px;padding:5px;border:1px solid #dce7dd;border-radius:11px;background:#fffdf8;color:#08705a;text-align:center}
 .actions button:last-child{background:#fff4dc;border-color:#eedbb5;color:#91620c}

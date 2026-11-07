@@ -106,11 +106,11 @@ test("existing guided course accepts a real public deep link, not an obsolete se
   assert.doesNotMatch(mobile,/data-video-quick-control="practices"/);
 });
 
-test("WebKit Ideas optional disclosure uses one real controlled summary click",()=>{
-  assert.match(director,/open=\{ideaRefinementOpen\}/);
-  assert.match(director,/summary onClick=\{event=>\{event\.preventDefault\(\);setIdeaRefinementOpen\(open=>!open\);\}\}/);
-  assert.match(director,/aria-expanded=\{ideaRefinementOpen\}/);
-  assert.doesNotMatch(director,/onToggle=\{event=>setIdeaRefinementOpen/);
+test("WebKit Ideas optional disclosure preserves native Safari toggle across portal renders",()=>{
+  assert.match(director,/const bindIdeaRefinement=useCallback/);
+  assert.match(director,/ref=\{bindIdeaRefinement\}/);
+  assert.match(director,/ideaRefinementOpenRef\.current=event\.currentTarget\.open/);
+  assert.doesNotMatch(director,/open=\{ideaRefinementOpen\}/);
   const browser=read("../scripts/verify-affirmation-voice-browser.mjs");
   assert.match(browser,/refinement\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(browser,/expect\(refinement\)\.toHaveAttribute\("open",""\)/);

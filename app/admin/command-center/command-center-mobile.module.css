@@ -146,3 +146,24 @@
 .proofDetail{display:grid;gap:7px;margin-top:12px;border-top:1px solid var(--cc-edge);padding-top:12px;overflow-wrap:anywhere}
 .proofDetail p{margin:0;font-size:12px;line-height:1.5}
 .proofDetail small{font-size:11px;color:#a9b3cc;font-variant-numeric:tabular-nums}
+
+/* PR Workbench artifacts: read-only public file receipts, expandable on iPhone. */
+.prFiles{border:1px solid var(--cc-edge);border-radius:12px;background:rgba(255,255,255,.03);overflow:hidden}
+.prFiles summary{cursor:pointer;min-height:44px;padding:12px 13px;font-weight:720;font-size:13px;line-height:1.4}
+.prFiles summary:focus-visible{outline:3px solid #d3a9ff;outline-offset:-3px}
+.prFileRows{display:grid;gap:0;padding:0 12px 8px}
+.prFileRow{display:grid;gap:4px;min-width:0;border-top:1px solid var(--cc-edge);padding:9px 0}
+.prFileRow span{font-size:12px;line-height:1.45;overflow-wrap:anywhere;color:#f1effc}
+.prFileRow small{color:var(--cc-muted);font-size:11px;font-variant-numeric:tabular-nums}
+
+/* Owner-only gateway to the existing Project Management route. */
+.pmShortcut{display:flex;align-items:center;gap:12px;min-height:74px;padding:12px 13px;margin:0 0 13px;
+ border:1px solid rgba(185,143,245,.36);border-radius:15px;
+ background:linear-gradient(115deg,rgba(99,63,145,.39),rgba(38,31,64,.92));
+ color:#f4eaff!important;text-decoration:none!important}
+.pmSymbol{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:12px;
+ background:#4b3971;color:#e0c6ff;font-size:23px}
+.pmCopy{display:grid;gap:4px;flex:1;min-width:0}
+.pmCopy strong{font-size:14px;line-height:1.25}
+.pmCopy small{font-size:11px;line-height:1.35;color:#cbb8e4}
+.pmArrow{font-size:26px;color:#d7b3ff}
