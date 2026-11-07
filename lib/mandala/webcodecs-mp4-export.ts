@@ -152,7 +152,10 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
   }
   if(!shouldContinue())throw new Error("export_cancelled");
   const target=new BufferTarget();
-  const output=new Output({format:new Mp4OutputFormat(),target});
+  // Put the finalized track index before media data. Safari's native Blob
+  // decoder must discover codec metadata before accepting the MP4 source.
+  // BufferTarget already retains the full bounded local movie in memory.
+  const output=new Output({format:new Mp4OutputFormat({fastStart:"in-memory"}),target});
   const videoSource=new CanvasSource(canvas,{
     codec:"avc", quality:new Quality({bitrate:videoBitrate}),
     keyFrameInterval:2,

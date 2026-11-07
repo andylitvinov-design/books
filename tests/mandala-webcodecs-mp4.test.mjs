@@ -7,7 +7,7 @@ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",
 test("Safari MP4 uses browser-local WebCodecs rather than MediaRecorder",()=>{
   assert.match(helper,/new CanvasSource\(canvas,/);
   assert.match(helper,/new AudioBufferSource\(\{codec:"aac"/);
-  assert.match(helper,/new Mp4OutputFormat\(\)/);
+  assert.match(helper,/new Mp4OutputFormat\(\{fastStart:"in-memory"\}\)/);
   assert.match(helper,/await output\.finalize\(\)/);
   assert.match(studio,/const useWebCodecsMp4=/);
   assert.match(studio,/await import\("@\/lib\/mandala\/webcodecs-mp4-export"\)/);
@@ -192,4 +192,21 @@ test("Safari deferred MP4 decoding requires a real user Play gesture, not a fals
   assert.match(e2e,/if\(await verifyPlayback\.isVisible\(\)\)throw error;/,
     "a persistent non-clickable Play button remains a test failure");
   assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+});
+
+test("real Safari MEDIA_ERR_SRC_NOT_SUPPORTED gets exactly one on-device WebM recovery",async()=>{
+  const {shouldAutoRecoverSafariPlayback:recover}=await import("../lib/mandala/recording-codecs.mjs");
+  const params={safariWebKit:true,format:"mp4",errorCode:4,nativeWebm:true};
+  assert.equal(recover(params),true);
+  for(const invalid of [
+    {alreadyAttempted:true},{format:"webm"},{errorCode:3},
+    {errorCode:0},{nativeWebm:false},{safariWebKit:false},{catalog:true},
+  ])assert.equal(recover({...params,...invalid}),false,JSON.stringify(invalid));
+  assert.match(studio,/const autoWebmRetryForRef=useRef<string\|null>\(null\)/);
+  assert.match(studio,/autoWebmRetryForRef\.current=signature/);
+  assert.match(studio,/autoWebmRetryUrlRef\.current=result\.url/);
+  assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
+  assert.match(studio,/setPendingCompatibleRetry\(signature\)/);
+  assert.match(studio,/void createVideo\(true\)/);
+  assert.match(studio,/HH_SAFARI_FINAL_PLAYBACK:/);
 });
