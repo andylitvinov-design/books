@@ -354,13 +354,13 @@ try{
    "Create Content exposes four real formats before video planning");
  assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
    "no Google login at content-format choice");
- await contentKinds.locator('[data-hh-content-kind="video"]').click();
+ await chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind="video"]').click();
  const contentSources=chat.locator('[data-hh-content-step="source"] [data-hh-content-source]');
  await contentSources.first().waitFor({state:"visible",timeout:15000});
  assert.deepEqual(await contentSources.evaluateAll(nodes=>nodes.map(node=>
    node.getAttribute("data-hh-content-source"))),
    ["text","voice"],"video supports the two approved input methods");
- await contentSources.locator('[data-hh-content-source="text"]').click();
+ await chat.locator('[data-hh-content-step="source"] [data-hh-content-source="text"]').click();
  await chat.locator('[data-hh-content-step="brief"]').waitFor({state:"visible",timeout:15000});
  await chat.locator("textarea").fill("Хочу больше спокойствия и уверенности");
  await chat.locator('button[type="submit"]').click();
