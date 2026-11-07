@@ -7,6 +7,7 @@ import styles from './command-center-mobile.module.css';
 import CommandCenterVoiceButton from './command-center-voice-button';
 import CommandCenterBatch from './command-center-batch';
 import CommandCenterPrWatch from './command-center-pr-watch';
+import {attachCommanderDraftReceiver} from '@/lib/command-center/task-transfer-receiver.mjs';
 
 const labels={
  ru:{home:'Главная',tasks:'Задачи',agents:'Агенты',projects:'Проекты',hello:'Мой брифинг',subtitle:'Проекты и агенты · фактический статус',
@@ -89,6 +90,11 @@ const deliveryNextLabels={
  en:{inspect_again:'Repeat the evidence check',closed_without_merge:'PR was closed without merge',repair_checks:'Repair failed CI checks',wait_checks:'Wait for running CI',review_protected_merge:'Review protected PR merge',check_ci_evidence:'Verify CI evidence on current HEAD',check_functional_live:'Test the feature on LIVE',verify_deployment_identity:'Verify production deployment SHA',await_verified_deployment:'Check production deployment'},
  es:{inspect_again:'Repetir verificación',closed_without_merge:'PR cerrado sin integrar',repair_checks:'Corregir pruebas CI fallidas',wait_checks:'Esperar las pruebas CI',review_protected_merge:'Revisar integración protegida',check_ci_evidence:'Verificar CI del commit actual',check_functional_live:'Probar función en producción',verify_deployment_identity:'Verificar SHA del despliegue',await_verified_deployment:'Verificar despliegue de producción'}
 };
+const transferLabels={
+ ru:{notice:'Черновик получен с отдельного Agent Commander. Проверьте данные и сохраните задачу вручную.',heading:'Полный промпт для исполнителя',explain:'База задач хранит описание до 800 символов. Краткая версия ниже будет сохранена по вашему нажатию; полный промпт пока доступен только здесь для копирования.',copy:'Копировать полный промпт',copied:'Полный промпт скопирован.',failed:'Копирование недоступно — выделите текст вручную.'},
+ en:{notice:'Draft received from standalone Agent Commander. Review before saving.',heading:'Full executor prompt',explain:'Task storage currently limits descriptions to 800 characters. The short version below is saved only after your click; copy the full prompt here.',copy:'Copy full prompt',copied:'Full prompt copied.',failed:'Copy unavailable. Select text manually.'},
+ es:{notice:'Borrador recibido. Revísalo antes de guardarlo.',heading:'Prompt completo',explain:'La base admite descripciones de 800 caracteres. La versión corta solo se guarda al confirmar; copia el prompt completo aquí.',copy:'Copiar prompt completo',copied:'Prompt copiado.',failed:'No se pudo copiar. Selecciona el texto manualmente.'}
+};
 const blockedStates=new Set(['needs_spec','blocked_dependency','blocked_no_runner','blocked_external','blocked_approval','blocked_budget','dead_letter']);
 const runningStates=new Set(['running','awaiting_evidence','retry_wait','ready','planned']);
 const verifiedStates=new Set(['completed_verified','completed_live']);
@@ -118,6 +124,8 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  const [draft,setDraft]=useState(''),[details,setDetails]=useState(''),[source,setSource]=useState(''),[kind,setKind]=useState('code_change'),
    [project,setProject]=useState(''),[priority,setPriority]=useState('65'),[projectName,setProjectName]=useState(''),[projectSummary,setProjectSummary]=useState('');
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[confirmCancel,setConfirmCancel]=useState(null);
+ const [importedPrompt,setImportedPrompt]=useState('');
+ const transferText=transferLabels[lang]||transferLabels.ru;
  const [deliveryCheck,setDeliveryCheck]=useState(null);
  const enabled=Boolean(snapshot?.settings?.enabled&&envReady),available=Boolean(snapshot);
  const tasks=snapshot?.tasks||[],projects=snapshot?.projects||[],runs=snapshot?.runs||[],evidences=snapshot?.evidence||[],slots=snapshot?.slots||[];
@@ -132,6 +140,12 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
   const timer=setInterval(()=>{if(!document.hidden)refresh();},45000);
   return ()=>{document.removeEventListener('visibilitychange',onFocus);clearInterval(timer);};
  },[refresh]);
+ useEffect(()=>attachCommanderDraftReceiver(task=>{
+  // No source write: import only opens this existing owner-authenticated composer.
+  setDraft(task.title);setDetails(task.description);setImportedPrompt(task.fullPrompt);
+  setSource('');setKind('code_change');setProject('');setPriority('65');
+  setTab('tasks');setSelected(null);setComposer(true);setNotice(transferText.notice);
+ }),[transferText.notice]);
  useEffect(()=>{if(!composer&&!projectComposer)return;
   const previous=document.body.style.overflow;
   document.body.style.overflow='hidden';
@@ -161,7 +175,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
   if(title.length<6){setNotice(t.taskText);return;}
   const description=safe(details,800)||title+(title.length<10?' — '+t.details:'');
   const result=await send('create_task',{title,description,kind,projectId:project||null,sourceRef:safe(source)||null,priority:Number(priority)});
-  if(result){setComposer(false);setDraft('');setDetails('');setSource('');
+  if(result){setComposer(false);setDraft('');setDetails('');setSource('');setImportedPrompt('');
     setNotice(result.status==='already_exists'?t.alreadyExists:t.saved);
     setTab('tasks');setFilter('all');if(result.task?.id)setSelected(result.task.id);}
  };
@@ -362,6 +376,15 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
       <CommandCenterVoiceButton lang={lang} onTranscript={spoken=>setDraft(previous=>safe((previous?previous+' ':'')+spoken,140))}/>
       <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={800} value={details}
         onChange={e=>setDetails(e.target.value)} rows={2}/>
+      {importedPrompt&&<details className={styles.importedPrompt} open>
+       <summary>{transferText.heading}</summary><p>{transferText.explain}</p>
+       <textarea readOnly rows={8} aria-label={transferText.heading} value={importedPrompt}/>
+       <button type="button" className={styles.secondary} onClick={async()=>{
+        try{if(!navigator.clipboard?.writeText)throw Error('NO_CLIPBOARD');
+         await navigator.clipboard.writeText(importedPrompt);setNotice(transferText.copied)}
+        catch{setNotice(transferText.failed)}
+       }}>{transferText.copy}</button>
+      </details>}
       <div className={styles.formSplit}><div><label htmlFor="cc-project">{t.project}</label><select id="cc-project" value={project} onChange={e=>setProject(e.target.value)}>
        <option value="">{t.chooseProject}</option>{projects.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></div>
        <div><label htmlFor="cc-priority">{t.priority}</label><select id="cc-priority" value={priority} onChange={e=>setPriority(e.target.value)}>
