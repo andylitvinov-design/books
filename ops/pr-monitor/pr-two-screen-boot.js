@@ -39,8 +39,8 @@
     additions += '<link rel="stylesheet" href="/pr-attribution-ui.css?v=20261107-journey-v2">'+
       '<script src="/pr-attribution-ui.js?v=20261107-journey-v2" defer><\/script>';
     // HH_PM_NAV_V1: public monitor only links to the separate owner-authenticated page.
-    additions += '<link rel="stylesheet" href="/project-management-nav.css?v=20261107-pm-v1">'+
-      '<script src="/project-management-nav.js?v=20261107-pm-v1" defer><\/script>';
+    additions += '<link rel="stylesheet" href="/project-management-nav.css?v=20261107-cc-v1">'+
+      '<script src="/project-management-nav.js?v=20261107-cc-v1" defer><\/script>';
     // Disable only old layout reordering, preserving all sources and working APIs.
     html=html.replace(/<head>/i,'<head><script src="/pr-two-screen-pre.js"><\/script>');
     html=html.replace(/<\/head>/i,additions+'</head>');

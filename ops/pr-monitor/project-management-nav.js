@@ -1,21 +1,48 @@
 'use strict';
-/* HH_PR_MONITOR_PM_NAV_V1: same-origin read-only project dashboard; no private data. */
+/* Shared Commander chrome on every monitor page. No public write authority. */
 (function(){
- if(typeof document==='undefined'||window.__hhPrPmNavV1)return;
- window.__hhPrPmNavV1=true;
- var TARGET='/project-management-public.html';
+ if(typeof document==='undefined'||window.__HH_COMMANDER_SHELL_V1)return;
+ window.__HH_COMMANDER_SHELL_V1=true;
+ const paths={home:'/',tasks:'/project-management-public.html',agents:'/agents.html',projects:'/projects.html',monitor:'/pr-monitor.html'};
+ const glyphs={home:'<path d="m3 10 9-7 9 7v11H3z"/><path d="M9 21v-7h6v7"/>',tasks:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 12 3 3 5-6"/>',agents:'<rect x="5" y="7" width="14" height="13" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01M9 17h6"/>',projects:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>'};
+ const svg=name=>'<svg aria-hidden="true" viewBox="0 0 24 24">'+glyphs[name]+'</svg>';
+ function make(tag,cls,txt){const el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el}
  function mount(){
-  if(document.getElementById('hh-project-management-nav')||!document.body)return;
-  var nav=document.createElement('nav');nav.id='hh-project-management-nav';
-  nav.setAttribute('aria-label','Holistic House · управление');
-  var current=document.createElement('span');current.className='hh-pm-tab hh-pm-current';
-  current.textContent='PR Monitor';current.setAttribute('aria-current','page');
-  var target=document.createElement('a');target.className='hh-pm-tab hh-pm-link';
-  target.href=TARGET;target.textContent='Project Management';
-  target.rel='noopener noreferrer';
-  nav.append(current,target);document.body.append(nav);
-  document.body.classList.add('hh-pm-nav-ready');
+  if(!document.body||document.getElementById('hh-cc-dock'))return;
+  document.body.classList.remove('hh-pm-nav-ready');document.body.classList.add('hh-cc-shell');
+  const former=document.getElementById('hh-project-management-nav');if(former)former.remove();
+  const head=make('header');head.id='hh-cc-topbar';
+  head.append(make('span','hh-cc-logo','✺'));
+  const brand=make('a','hh-cc-brand');brand.href='/';brand.append(make('strong',null,'Holistic House'),make('small',null,'Command Center'));head.append(brand);
+  const refresh=make('button','hh-cc-iconbtn','⟳');refresh.type='button';refresh.title='Обновить страницу';refresh.setAttribute('aria-label','Обновить страницу');refresh.addEventListener('click',()=>location.reload());head.append(refresh);
+  const more=make('button','hh-cc-iconbtn','⋮');more.type='button';more.title='Разделы мониторинга';more.setAttribute('aria-label','Разделы мониторинга');more.setAttribute('aria-expanded','false');head.append(more);
+  const menu=make('div','hh-cc-menu');menu.hidden=true;
+  [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Защищённый Agent Commander','https://holistichouse.vercel.app/admin/command-center']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
+  head.append(menu);more.addEventListener('click',()=>{menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden))});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
+  document.addEventListener('click',e=>{if(!head.contains(e.target)){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
+  document.body.prepend(head);
+  const nav=make('nav');nav.id='hh-cc-dock';nav.setAttribute('aria-label','Agent Commander · основные разделы');
+  const active=location.pathname===paths.tasks?'tasks':location.pathname===paths.agents?'agents':location.pathname===paths.projects?'projects':location.pathname===paths.monitor?'monitor':'home';
+  [['home','Главная'],['tasks','Задачи'],['add','Создать'],['agents','Агенты'],['projects','Проекты']].forEach(([name,label])=>{
+   const e=make(name==='add'?'button':'a');if(name==='add'){
+    e.type='button';e.setAttribute('aria-label','Создать задачу');e.append(make('span','hh-cc-add','+'));e.addEventListener('click',openTaskDraft);
+   }else{e.href=paths[name];e.innerHTML=svg(name);if(active===name)e.setAttribute('aria-current','page')}
+   e.append(make('small',null,label));nav.append(e);
+  });
+  document.body.append(nav);
  }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});
- else mount();
+ function openTaskDraft(){
+  let dialog=document.getElementById('hh-cc-task-draft');
+  if(!dialog){
+   dialog=make('div','hh-cc-dlg');dialog.id='hh-cc-task-draft';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Новая задача');
+   const sheet=make('section','hh-cc-sheet');sheet.append(make('h2',null,'Новая задача'),make('p',null,'Публичный монитор не сохраняет и не запускает задания. Для реального создания используйте защищённый Agent Commander владельца.'));
+   const draft=make('textarea');draft.placeholder='Опишите задачу — текст можно скопировать';draft.setAttribute('aria-label','Текст новой задачи');sheet.append(draft);
+   const copy=make('button',null,'Копировать описание');copy.addEventListener('click',async()=>{if(!draft.value.trim())return;try{await navigator.clipboard.writeText(draft.value);copy.textContent='Скопировано ✓'}catch{draft.select();copy.textContent='Выделено — скопируйте вручную'}});sheet.append(copy);
+   const owner=make('a',null,'Открыть защищённый редактор');owner.href='https://holistichouse.vercel.app/admin/command-center';sheet.append(owner);
+   const close=make('button','hh-cc-secondary','Закрыть');close.type='button';close.addEventListener('click',()=>{dialog.hidden=true});sheet.append(close);dialog.append(sheet);dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.hidden=true});document.body.append(dialog);
+  }
+  dialog.hidden=false;dialog.querySelector('textarea')?.focus();
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
