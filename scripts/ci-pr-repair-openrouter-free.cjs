@@ -3,6 +3,8 @@
 // write capability is ever passed to this adapter. The caller independently
 // validates and applies the returned patch inside an unprivileged worktree.
 const BASE='https://openrouter.ai/api/v1';
+const CHAT_ENDPOINT='/api/v1/chat/completions';
+const CHAT_CATALOG=BASE+'/models?endpoints='+encodeURIComponent(CHAT_ENDPOINT);
 const DEFAULT_MODEL='liquid/lfm-3-1.7b:free';
 const MAX_REPLY=40000;
 function selectedModel(value=DEFAULT_MODEL){
@@ -28,7 +30,11 @@ function verifyZeroPrice(catalog,model){
       throw Error('FREE_AI_OPENROUTER_PRICE_UNKNOWN');
     if(Number(value)!==0)throw Error('FREE_AI_OPENROUTER_PRICE_NOT_ZERO');
   }
-  if(!Array.isArray(entry.endpoints)||!entry.endpoints.includes('/api/v1/chat/completions')||
+  // The models catalog may omit the optional endpoints field. The API's
+  // documented endpoints filter supplies the route guarantee in that case.
+  if((entry.endpoints!==undefined&&
+      (!Array.isArray(entry.endpoints)||!entry.endpoints.includes(CHAT_ENDPOINT)))||
+    !entry.architecture?.input_modalities?.includes('text')||
     !entry.architecture?.output_modalities?.includes('text'))
     throw Error('FREE_AI_OPENROUTER_NOT_TEXT_CHAT');
   return {model:id,zeroCost:true};
@@ -54,7 +60,7 @@ async function requestFreePatch({prompt,key,model=DEFAULT_MODEL,fetchImpl=global
   if(typeof fetchImpl!=='function')throw Error('FREE_AI_OPENROUTER_NETWORK_UNAVAILABLE');
   if(typeof prompt!=='string'||!prompt||prompt.length>92000)
     throw Error('FREE_AI_OPENROUTER_PROMPT_UNSAFE');
-  const catalog=await getJson(fetchImpl,BASE+'/models',
+  const catalog=await getJson(fetchImpl,CHAT_CATALOG,
     {method:'GET',headers:{Accept:'application/json'}},10000);
   verifyZeroPrice(catalog,selected);
   // Exactly ONE inference attempt: one pinned :free model, zero price cap,
@@ -78,4 +84,4 @@ async function requestFreePatch({prompt,key,model=DEFAULT_MODEL,fetchImpl=global
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
   return completion.choices[0].message.content;
 }
-module.exports={BASE,DEFAULT_MODEL,selectedModel,verifyZeroPrice,requestFreePatch};
+module.exports={BASE,CHAT_ENDPOINT,CHAT_CATALOG,DEFAULT_MODEL,selectedModel,verifyZeroPrice,requestFreePatch};
