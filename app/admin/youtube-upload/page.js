@@ -4,6 +4,7 @@ import {redirect} from 'next/navigation'
 import {PrescriptionAdminHeader} from '@/components/prescription-admin-header'
 import {YoutubePhoneUploader} from '@/components/youtube-phone-uploader'
 import AdminYoutubePublications from '@/components/admin-youtube-publications'
+import CommunityYoutubeAdmin from '@/components/community-youtube-admin'
 import HeygenEnYoutubePublisher from '@/components/heygen-en-youtube-publisher'
 import {requireAdminRequest} from '@/lib/prescriptions/admin'
 import {ownerVideoOauthConfigured} from '@/lib/practitioners/owner-telegram-video-oauth-config.mjs'
@@ -157,6 +158,7 @@ export default async function YoutubeUploadPage({searchParams}) {
       initialTitle={initialHeygenTitle}
       initialDescription={initialHeygenDescription}/>
     <AdminYoutubePublications locale={locale}/>
+    <CommunityYoutubeAdmin locale={locale}/>
     <YoutubePhoneUploader locale={locale} enabled={enabled} clientId={configuredClientId || ''}
       oauthSource={oauthSource} setupAvailable={setupAvailable} importTelegramCut={importTelegramCut}
       initialChannels={initialChannels} initialHistory={initialHistory} historyReady={historyReady}
