@@ -1,43 +1,58 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-test('Agent Studio uses the existing owner-only app and protected API',()=>{
- const page=read('app/admin/command-center/mobile/page.tsx');
- const client=read('app/admin/command-center/mobile/agent-studio.tsx');
- const core=read('app/api/admin/command-center/route.js');
- assert.match(page,/requireAdminRequest/);
+import {test} from 'node:test';
+
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const page=read('app/admin/command-center/page.tsx');
+const client=read('app/admin/command-center/command-center-mobile.jsx');
+const css=read('app/admin/command-center/command-center-mobile.module.css');
+const manifest=JSON.parse(read('public/command-center.webmanifest'));
+
+test('Command Center mobile stays owner-only and reads real database state',()=>{
+ assert.match(page,/requireAdminRequest\(\)/);
  assert.match(page,/redirect\('\/admin\/login'\)/);
- assert.match(page,/readCommandSnapshot/);
- assert.match(client,/\/api\/admin\/command-center/);
+ assert.match(page,/readCommandSnapshot\(db\)/);
+ assert.match(page,/initialSnapshot=\{snapshot\}/);
+ assert.match(client,/fetch\('\/api\/admin\/command-center'/);
  assert.match(client,/credentials:'same-origin'/);
- assert.match(client,/crypto\.randomUUID/);
- assert.match(core,/CROSS_ORIGIN_DENIED/);
- assert.doesNotMatch(client,/fetch\(['"]https?:/);
+ assert.match(client,/router\.refresh\(\)/);
 });
-test('only an exact allowlisted books PR or issue can become an executable audit',()=>{
- const ui=read('app/admin/command-center/mobile/agent-studio.tsx');
- assert.match(ui,/andylitvinov-design\\\/books/);
- assert.match(ui,/repo_issue_audit/);
- assert.match(ui,/product_spec/);
- assert.match(ui,/code_change/);
- assert.match(ui,/research/);
- assert.match(ui,/validLink\(source\.trim\(\)\)/);
-});
-test('Agent Studio is included in existing installed Holistic House app, not a second PWA',()=>{
- const manifest=JSON.parse(read('public/holistic-house-app.webmanifest'));
- const page=read('app/admin/command-center/mobile/page.tsx');
- const sw=read('public/sw.js');
- assert.equal(manifest.scope,'/');
+test('Mobile PWA contract and independent application entry',()=>{
+ assert.equal(manifest.id,'/admin/command-center');
+ assert.equal(manifest.start_url,'/admin/command-center');
  assert.equal(manifest.display,'standalone');
- assert.match(sw,/\/admin/);
- assert.doesNotMatch(page,/new ServiceWorker/);
+ assert.ok(manifest.scope.startsWith('/admin/'));
+ assert.match(page,/manifest:'\/command-center\.webmanifest'/);
+ assert.match(css,/safe-area-inset-bottom/);
+ assert.match(css,/max-width:340px/);
 });
-test('agent statuses are read from the actual registry, not a fabricated connection',()=>{
- const page=read('app/admin/command-center/mobile/page.tsx');
- const client=read('app/admin/command-center/mobile/agent-studio.tsx');
- assert.match(page,/CC_AGENT_REGISTRY/);
- assert.match(client,/available_when_enabled/);
- assert.match(client,/notConnected/);
- assert.match(client,/runtimeReady/);
+test('Mobile UI has five bottom destinations with one quick task action',()=>{
+ assert.match(client,/\['home',t\.home\]/);
+ assert.match(client,/\['tasks',t\.tasks\]/);
+ assert.match(client,/\['plus',t\.plus\]/);
+ assert.match(client,/\['agents',t\.agents\]/);
+ assert.match(client,/\['projects',t\.projects\]/);
+ assert.match(client,/send\('create_task'/);
+ assert.match(client,/send\('create_project'/);
+ assert.match(client,/task_ready/);
+});
+test('PR, testing and LIVE progress are never inferred from a merge',()=>{
+ assert.match(client,/const merged=Boolean\(observed\?\.merged\)/);
+ assert.match(client,/\{label:t\.tests,ok:false/);
+ assert.match(client,/\{label:t\.live,ok:selectedTask\?\.state==='completed_live'/);
+ assert.match(client,/t\.noLive/);
+ assert.match(client,/prMatched&&latestEvidence\?t\.prOpened:t\.prWaiting/);
+ assert.doesNotMatch(client,/markProductionLive|fakeAgentComplete|mockRuns/);
+});
+test('English, Russian and Spanish copy share the same real data',()=>{
+ assert.match(client,/const labels=\{/);
+ assert.match(client,/\sru:\{/);
+ assert.match(client,/\sen:\{/);
+ assert.match(client,/\ses:\{/);
+ assert.match(client,/const tasks=snapshot\?\.tasks\|\|\[\]/);
+ assert.match(client,/const \[snapshot,setSnapshot\]=useState\(initialSnapshot\)/);
+});
+test('Every required mobile class name is present',()=>{
+ const classes=[...new Set([...client.matchAll(/styles\.([A-Za-z][A-Za-z0-9]*)/g)].map(m=>m[1]))];
+ for(const name of classes)assert.match(css,new RegExp('\\.'+name+'(?=[,{.:\\s])'),name);
 });

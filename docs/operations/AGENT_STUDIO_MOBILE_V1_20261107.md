@@ -1,27 +1,17 @@
-# Holistic House Agent Studio — Mobile v1 · 2026-11-07
+# Holistic House Agent Studio · Mobile integration v1 (2026-11-07)
 
-Antigravity-inspired mobile workspace inside the EXISTING Holistic House PWA (scope /), not a clone of Google's proprietary UI, license, runtimes, or a new paid mobile app.
+This is the **single approved** owner-only mobile Command Center at `/admin/command-center`, **not** a parallel Antigravity clone or second PWA. The original PR #3800's alternative `/admin/command-center/mobile` UI was superseded by the separately merged owner-approved dark mobile Command Center; the repaired PR replaces that duplicate with an additive integration into the current canonical component.
 
-## Release scope
-- Owner-protected /admin/command-center/mobile, available from Command Center navigation.
-- Russian, English, Spanish; mobile 320–430px, larger desktop layout; single fixed bottom nav.
-- Four views: overview/task composer, tasks, agents/readiness, evidence/run history.
-- Voice dictation only when browser SpeechRecognition exists; iPhone keyboard dictation fallback. User gesture starts audio; no first-load permission popup.
-- Reuse /api/admin/command-center POST with owner auth, same-origin CSRF, rate limits, UUID requestId. No extra API keys, services or scheduled functions.
-- A GitHub PR/Issue URL is accepted only from andylitvinov-design/books, and auto execution is read-only metadata auditing. Code, research, spec tasks persist as needs_spec until an authorized worker exists.
-- Read existing app_private.cc_* via existing server transaction. Missing migration/DB is UNKNOWN, not zero. No client data is sent to an external AI.
-- Disabled agent names are explicitly NOT CONNECTED. verified GitHub metadata is not completed_live.
+## Features integrated
+- Four existing screens and the owner-approved five-destination navigation are preserved, with the separate installable `/command-center.webmanifest`.
+- Agent tab now shows latest recorded real runs, whitelisted GitHub source evidence and scheduler slot outcomes, with explicit LIVE-unknown semantics.
+- User can request a single immediate **read-only** GitHub audit from the existing protected `run_now` API when safely enabled.
+- Task totals read global DB `brief.total` instead of treating the 50-row UI limit as complete. No fabricated activity, agents or timings.
+- All controls respect current owner auth, private database, RLS, enable flag and bounded request limits; no new model API, worker, cron or runner.
 
-## Truthful limitations / next engineering stages
-1. Private threaded agent conversations: session/message schema, user permission and durable RLS.
-2. Real code agents: connect reviewed headless Codex/other providers using isolated ephemeral worktrees, quotas, tool allowlisting and an approval chain.
-3. Artifacts: structured plan/diff/screenshots/logs, independent reviewer and evidence provenance.
-4. Sandbox browser agent: Chromium/WebKit screenshot and functional verification of same route/auth state.
-5. Trusted CI/PR and Vercel serving SHA verifier; production acceptance must not be self-asserted.
-6. Scheduler: reuse existing five-minute wake and deduplicated ten-minute slots; stop/pause/reconcile and no unbounded retries.
-7. Voice and remote mobile sync: test actual Safari capabilities; optional consent-based push, no new costs before approval.
+## Not yet available
+- Automated code editing, headless Codex/Hermes/OpenClaw, isolated worktrees, independent Vercel LIVE verifier, Playwright private authenticated E2E, or Safari voice capture. These require real connection and acceptance evidence. The existing iPhone keyboard provides OS dictation without an unreviewed voice service.
+- Browser pixel parity cannot be claimed from source tests; verify real 320/354/390/430 Safari with owner auth.
 
-## Controlled launch
-Protected Ready PR -> existing Core/Specialist/Guard -> protected merge -> Vercel READY serving SHA -> reviewed existing SQL migration (if unapplied) -> HH_CC_TICK_ENABLED production flag and owner opt-in -> 2 real scheduler slots -> iPhone Safari authenticated task submission readback. Never claim LIVE from CI or UI code alone.
-
-Follow GLOBAL_PR_ONE_PUBLISH_V1 and books/docs/operations/CI_RELEASE_POLICY.md. Stage all files before PR; one atomic remote Git tree/commit/branch publication only. No new workflows, billing, remote polling or independent merge writer.
+## Release evidence needed
+Protected exact-head Core + Specialist + `hh-merge-check` -> native protected merge -> Vercel production READY/SHA readback -> canonical `/admin/command-center` login, task create, results render and safe audit -> private iPhone QA. Do not infer production from CI or PR merge. Policy: GLOBAL_PR_ONE_PUBLISH_V1.
