@@ -1298,8 +1298,11 @@ export function MandalaAutoVideoDirector({
    {audienceTarget?createPortal(audienceBar,audienceTarget):null}
    {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
    {ideaTarget?createPortal(<details className={css.ideaRefinement} data-video-ideas-refinement
-     open={ideaRefinementOpen} onToggle={event=>setIdeaRefinementOpen(event.currentTarget.open)}>
-     <summary>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
+     open={ideaRefinementOpen}>
+     {/* Native WebKit summary toggles can race portal rerenders. Commit the
+         keyboard/touch click to React state before the native DOM toggle. */}
+     <summary onClick={event=>{event.preventDefault();setIdeaRefinementOpen(open=>!open);}}
+       aria-expanded={ideaRefinementOpen}>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
        locale==="es"?"Explorar tema, significado y guion (opcional)":
        "Refine topic, meaning and story (optional)"}</summary>
      {topicPanel}
