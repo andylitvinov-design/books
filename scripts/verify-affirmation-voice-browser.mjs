@@ -119,7 +119,10 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(recipientCatalog).toHaveAttribute("data-video-recipient-aspect","portrait");
     await expect(page.locator('[data-video-recipient-format-note]')).toContainText("9:16");
     await expect(page.locator('[data-video-goal-topic-chips]')).toHaveCount(0);
-    const greeting=page.locator('[data-auto-video-recipient-kind="greeting"]');
+    // The recipient catalogue intentionally combines legacy Gift and Greeting.
+    // Keep the real mobile E2E selector aligned to the three visible choices.
+    await expect(page.locator("[data-auto-video-recipient-kind]")).toHaveCount(3);
+    const greeting=page.locator('[data-auto-video-recipient-kind="greeting-gift"]');
     await greeting.click();
     await expect(greeting).toHaveAttribute("aria-pressed","true");
     const birthday=page.locator('[data-auto-video-recipient-occasion="birthday"]');
