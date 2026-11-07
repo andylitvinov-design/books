@@ -33,7 +33,20 @@ export async function verifyGuidedPractices({browser,base,engine}){
         waitUntil:"domcontentloaded",timeout:70000,
       });
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
-      await page.locator('[data-video-quick-control="practices"]').click();
+      try{
+        await page.locator('[data-video-quick-control="practices"]').click();
+      }catch(error){
+        const snapshot=await page.evaluate(()=>({
+          path:location.pathname,
+          hydrated:document.querySelector("[data-video-studio-hydrated]")?.getAttribute("data-video-studio-hydrated")??null,
+          studio:!!document.querySelector("[data-mandala-free-video]"),
+          toolbar:!!document.querySelector("[data-video-quick-controls]"),
+          tabIds:[...document.querySelectorAll("[data-video-quick-control]")].map(el=>el.getAttribute("data-video-quick-control")),
+          appRoute:document.querySelector("[data-mandala-meditation-page]")?.getAttribute("data-mandala-mode")??null,
+        })).catch(()=>({browserSnapshotUnavailable:true}));
+        throw new Error("Guided Course tab missing after hydrated route: "+
+          JSON.stringify({locale,width,engine,...snapshot,pageErrors:pageErrors.slice(-3)}),{cause:error});
+      }
       const course=page.locator("[data-video-guided-course]");
       await course.waitFor({state:"visible",timeout:25000});
       assert.equal(await page.locator('[data-video-quick-control="practices"]').getAttribute("aria-pressed"),"true");
