@@ -68,7 +68,14 @@ async function verifyWorkspaceHydration(browser,locale){
     const montage=page.locator('[data-video-quick-control="editor"]');
     await montage.click();
     await expect(montage).toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeVisible();
+    // The approved Montage Style is six visible video-backed cards. Its old
+    // optional Director filter is intentionally hidden; don't force it open.
+    const styleCards=page.locator("[data-video-montage-style]");
+    await expect(page.locator('[data-video-montage-tab="effects"]')).toHaveAttribute("aria-pressed","true");
+    await expect(styleCards).toHaveCount(6);
+    await expect(styleCards.nth(1)).toBeVisible();
+    await styleCards.nth(1).click();
+    await expect(styleCards.nth(1)).toHaveAttribute("aria-pressed","true");
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
@@ -653,16 +660,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
+      // The Style screen now has its own visible green Next button. The old
+      // order bar is intentionally HIDDEN on Style, so never force-click it.
+      await expect(page.locator('[data-video-montage-tab="effects"]')).toHaveAttribute("aria-pressed","true");
+      const visibleStyleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+      await expect(visibleStyleNext).toBeVisible({timeout:30000});
+      await visibleStyleNext.click();
+      await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
-      // The approved Montage is a guided sequence. A Style click advances to
-      // Add text, then Audio; only the third visitor click starts the recorder.
-      // Exercise the ACTUAL visible transitions, never bypass or force-click
-      // the final protected video/audio export action.
-      await expect(page.locator('[data-video-montage-tab="effects"]')).toHaveAttribute("aria-pressed","true");
-      await expect(generate).toHaveAttribute("data-video-montage-next","text");
-      await generate.click();
-      await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
       await expect(generate).toHaveAttribute("data-video-montage-next","audio");
       await generate.click();
       await expect(page.locator('[data-video-montage-tab="audio"]')).toHaveAttribute("aria-pressed","true");
