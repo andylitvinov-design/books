@@ -87,9 +87,13 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   const finalCreate=source.slice(source.indexOf("data-video-quick-generate"),
     source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
   assert.match(finalCreate,/onClick=\{continueMontageOrGenerate\}/,
-    "Montage advances through Style, Text and Audio before creating");
-  assert.match(finalCreate,/montagePanel!=="effects"&&montagePanel!=="text"/,
-    "Style and Text stay navigable before the final export");
+    "Montage reuses the existing final Create handler after Style and Audio");
+  assert.match(finalCreate,/montagePanel!=="effects"/,
+    "Style remains a navigation step and cannot bypass licensed export checks");
+  assert.match(source,/if\(montagePanel==="concept"\)return/,
+    "the Concept stage uses explicit free approval rather than an export click");
+  assert.match(source,/data-video-montage-concept/,
+    "the original montage contains the new concept without duplicating its renderer");
   assert.match(finalCreate,/!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending/,
     "Final Create still requires approved footage, narration and phrases");
   assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,

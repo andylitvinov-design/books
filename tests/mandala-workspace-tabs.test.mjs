@@ -335,6 +335,8 @@ test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>
   assert.match(studio.slice(navAt,navAt+270),/quickNavTokenRef\.current\+\+/);
   const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
   assert.match(browser,/MONTAGE_TAB_MUST_ACTIVATE/);
-  assert.match(browser,/data-video-montage-effects/);
-  assert.match(browser,/VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT/);
+  assert.match(browser,/data-video-montage-tab="effects"/);
+  assert.match(browser,/MONTAGE_MUST_START_WITH_AUTO_CONCEPT/);
+  assert.match(browser,/GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION/);
+  assert.match(browser,/CONCEPT_TEXT_TOOLS_DID_NOT_OPEN/);
 });
