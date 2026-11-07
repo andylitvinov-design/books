@@ -6,23 +6,23 @@ const COPY = {
   en: {
     label: "Master: choose a section",
     find: "Find a Master",
-    findHint: "Masters & services",
+    findHint: "Explore practitioners & services",
     share: "I'm a Master",
-    shareHint: "Share services",
+    shareHint: "Share services & manage practice",
   },
   ru: {
     label: "Мастер: выберите раздел",
     find: "Найти мастера",
-    findHint: "Мастера и услуги",
+    findHint: "Выбирайте мастеров и услуги",
     share: "Я мастер",
-    shareHint: "Разместить услуги",
+    shareHint: "Услуги и кабинет практика",
   },
   es: {
     label: "Master: elige una sección",
     find: "Buscar un maestro",
-    findHint: "Maestros y servicios",
+    findHint: "Explora profesionales y servicios",
     share: "Soy maestro",
-    shareHint: "Compartir servicios",
+    shareHint: "Publica y gestiona servicios",
   },
 } as const;
 
