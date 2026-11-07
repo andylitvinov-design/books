@@ -115,13 +115,16 @@ test("WebKit Ideas optional disclosure preserves native Safari toggle across por
   assert.match(browser,/refinement\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(browser,/expect\(refinement\)\.toHaveAttribute\("open",""\)/);
 });
-test("macOS WebKit opens intentionally hidden Ideas advanced voice through its visible CTA",()=>{
+test("macOS WebKit uses real Ideas Text→Voice switch and own-voice opt-in",()=>{
  const browser=read("../scripts/verify-affirmation-voice-browser.mjs");
- assert.match(studio,/data-video-phrase-audio-shortcut/);
- assert.match(studio,/setIdeasVoiceAdvancedOpen\(true\)/);
+ assert.match(studio,/data-video-ideas-tabs/);
+ assert.match(studio,/setIdeasSubtab\("voice"\)/);
+ assert.match(studio,/data-video-ideas-record/);
+ assert.match(browser,/data-video-ideas-tab="voice"/);
+ assert.match(browser,/data-video-ideas-tab="text"/);
  assert.match(browser,/await expect\(advancedVoice\)\.toBeHidden\(\)/);
- assert.match(browser,/await advancedTrigger\.click\(\)/);
- assert.match(browser,/data-video-ideas-recording-open","true"/);
+ assert.match(browser,/await recordEntry\.click\(\)/);
  assert.match(browser,/await expect\(advancedVoice\)\.toBeVisible\(\)/);
- assert.doesNotMatch(browser,/advancedVoice\.waitFor\(\{state:"visible"/);
+ assert.match(browser,/data-hypno-idea-details/);
+ assert.doesNotMatch(browser,/advancedVoice\.click\(\{force:true\}\)/);
 });
