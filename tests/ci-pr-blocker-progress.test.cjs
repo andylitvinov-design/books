@@ -152,3 +152,34 @@ test('P0 monitor refuses forged current-head facts before issuing status',()=>{
   {...c(),pr_number:-1}]}};
  assert.throws(()=>buildMonitorSnapshot(report,context),/INVALID_MONITOR_BLOCKER_CASES/);
 });
+
+test('two distinct exact-HEAD observations require signed no-source evidence, not fake repair attribution',()=>{
+ const first=run(),second=run({prior:first,observedAt:LATER});
+ assert.equal(first.cases[0].same_head_confirmed_observations,1);
+ assert.equal(first.cases[0].evidence_review_required,false);
+ assert.equal(second.cases[0].same_head_confirmed_observations,2);
+ assert.equal(second.cases[0].evidence_review_required,true);
+ assert.equal(second.stalled_evidence_reviews,1);
+ assert.equal(second.cases[0].worker_attempts_verified,null);
+ assert.equal(second.cases[0].process_owner,':45 Conflict');
+ assert.equal(second.cases[0].next_action,
+  'VERIFY_SIGNED_WORKER_NO_SOURCE_RECEIPTS_AND_HANDOFF_OR_DIFFERENT_FREE_ROOT');
+});
+test('same signed sample cannot count twice and changed HEAD resets the evidence-review flag',()=>{
+ const old=run(),second=run({prior:old,observedAt:LATER});
+ const duplicate=run({prior:second,observedAt:LATER});
+ assert.equal(duplicate.cases[0].same_head_confirmed_observations,2);
+ const later='2026-11-04T21:40:00.000Z';
+ const changed=run({prior:second,head:NEW,observedAt:later,cas:[c(NEW)],inventory:[pr(NEW)]});
+ assert.equal(changed.cases[0].same_head_confirmed_observations,1);
+ assert.equal(changed.cases[0].evidence_review_required,false);
+ assert.equal(changed.stalled_evidence_reviews,0);
+ const unsampled=run({prior:second,observedAt:later,cas:[]});
+ assert.equal(unsampled.cases[0].same_head_confirmed_observations,2);
+ assert.equal(unsampled.stalled_evidence_reviews,0);
+ assert.equal(unsampled.cases[0].state,'NOT_REINSPECTED');
+});
+test('retired :05 lane is not shown as active Core repair owner',()=>{
+ const snap=run({cas:[{...c(),root_code:'CORE_REQUIRED_CHECK_FAILED'}]});
+ assert.equal(snap.cases[0].process_owner,':10 Triage / verified source owner');
+});
