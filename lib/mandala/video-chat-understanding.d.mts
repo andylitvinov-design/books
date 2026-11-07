@@ -1,6 +1,6 @@
 export const VIDEO_CHAT_EDIT_STEPS: readonly string[];
 export type VideoChatConversationStage =
-  "goal"|"category"|"topic"|"scenario"|"idea"|"phrase"|
+  "goal"|"category"|"subcategory"|"mytube-topic"|"topic"|"scenario"|"idea"|"phrase"|
   "mood"|"aspect"|"duration"|"music"|"phrases"|"review"|"ready"|"done";
 export type VideoChatConversationFilters={
   mood?:"slow"|"dynamic";aspect?:"portrait"|"landscape"|"square";
@@ -15,3 +15,6 @@ export type VideoChatConversationReply={
 };
 export function understandVideoChatReply(value:string,
   stage?:VideoChatConversationStage):VideoChatConversationReply;
+
+/** Explicit repair keeps only the final stated alternative, never approves media. */
+export function extractVideoChatCorrection(raw:string):{text:string;corrected:boolean};
