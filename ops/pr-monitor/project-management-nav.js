@@ -31,8 +31,24 @@
    e.append(make('small',null,label));nav.append(e);
   });
   document.body.append(nav);
+  const loader=make('script');loader.id='hh-cc-task-input-loader';
+  loader.src='/commander-task-input.js?v=20261107-voice-decompose-v1';
+  loader.onerror=()=>{loader.dataset.failed='true'};
+  loader.onload=()=>{loader.dataset.loaded='true'};
+  document.head.append(loader);
  }
  function openTaskDraft(){
+  if(typeof window.HHOpenTaskIntake==='function'){window.HHOpenTaskIntake();return}
+  const loader=document.getElementById('hh-cc-task-input-loader');
+  if(loader&&loader.dataset.failed!=='true'&&loader.dataset.loaded!=='true'){
+   loader.addEventListener('load',()=>{
+    if(typeof window.HHOpenTaskIntake==='function')window.HHOpenTaskIntake();
+    else openLegacyTaskDraft();
+   },{once:true});return;
+  }
+  openLegacyTaskDraft();
+ }
+ function openLegacyTaskDraft(){
   let dialog=document.getElementById('hh-cc-task-draft');
   if(!dialog){
    dialog=make('div','hh-cc-dlg');dialog.id='hh-cc-task-draft';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Новая задача');

@@ -18,3 +18,28 @@ The top menu links to protected owner Command Center for actual writing. **No Go
 The independent Vercel monitor is currently manually deployed, and the GitHub archive is incomplete relative to the already deployed source tree. NEVER use a partial deploy. Obtain complete prior deployment file manifest and include every existing unchanged asset by its verified SHA. Overlay only these source assets after protected control-plane PR merge; verify all API endpoints, old monitor routes, assets, mobile interactions at 320 / 390 / 430 and canonical URL. Keep the previous deployment ID for rollback. A control-branch merge does not itself deploy this manual Vercel project.
 
 GLOBAL_PR_ONE_PUBLISH_V1: source/tests/docs staged before the PR; one coherent source HEAD, exact-HEAD CI and independent LIVE checks. No new paid services, external worker, tokens, cron, release bypass or extra polling.
+
+
+## Task intake UX — voice and decomposition (7 November 2026)
+
+The purple «Создать» dock action on the independent PR Monitor opens a keyboard-aware mobile sheet. Two owner-requested additions:
+
+1. **🎙 Диктовать.** Uses in-browser Web Speech/SpeechRecognition when allowed by iPhone Safari or its host browser. Russian by default; English/Spanish honor the page language. Manual start and stop, no automatic submission, late-callback guard, denial/unsupported fallback to keyboard dictation. The site stores no audio. The browser/OS may use its own speech processing service. visualViewport helps keep the form scrollable with the software keyboard open.
+2. **✦ Разобрать задачу.** Immediately prepares a local and editable agent-ready brief with the original input, steps, observable acceptance criteria, supplied references and missing prerequisites. If an authenticated owner session exists and the existing free-only OpenRouter connector is available, this explicit click sends the text to the owner-only decompose action in the existing PM chat API. The backend checks the owner cookie and same-origin request, obtains a currently verified $0 model whose ID ends in :free, and requires zero prompt/completion prices. Free quota failure or missing credentials retains the local brief.
+
+Guest monitoring and local preparation do not require Google login. The pre-existing PR Monitor owner login is still required for the third-party AI call and is separate from Google. The public sheet **does not create task records, dispatch workflows, launch agents, merge PRs or claim LIVE**. Copy the editable brief to the protected Agent Commander editor opened in a separate tab. Do not label this as one-click execution until a trusted, auditable write endpoint exists.
+
+## Release and functional acceptance
+
+The independent Vercel project is manually deployed. Overlay all changed files and the new commander-task-input.js onto the complete prior READY deployment source manifest; never deploy a partial GitHub archive. Preserve every existing API, legacy chart and route. Run the focused Node source tests and physical iPhone Safari checks: permission, mic start/stop, transcript edit, keyboard fallback, small 320/390/430 px sheet, local and authenticated free AI fallback, copy, protected editor handoff. A merge or Vercel READY is not sufficient to assert the feature is functionally LIVE.
+
+
+## Updated owner requirement: processed task becomes a full executor prompt
+
+Owner clarified the goal after initial PR publication. The «Разобрать задачу» action must immediately generate an editable, copyable prompt whose FIRST FOUR sections are:
+1. **ЧТО НАДО ВЫПОЛНИТЬ** — concrete steps and deliverables from the original description
+2. **КАКОЙ РЕЗУЛЬТАТ СЧИТАЕТСЯ ХОРОШИМ** — observable success criteria and tests
+3. **ОРИЕНТИРЫ КАЧЕСТВА — КТО ДЕЛАЕТ ЭТО ХОРОШО** — relevant real-world named benchmarks, with public documentation URLs and a specific feature to learn, never copy protected IP
+4. **КОНТЕКСТ БИЗНЕСА И ПРОЕКТА — ЦЕЛИ И АДРЕСА** — public Holistic House mission, domains, GitHub repository, pertinent product area, working branches, workflow boundaries, no invented street addresses or secrets.
+
+The content adapts to Agent Commander / PR Monitor, Video Studio, or Holistic House core, and is available instantly without a model/API request. Unknowns remain explicit. The existing owner-authenticated OpenRouter Free call can append clearly labelled suggestions after the canonical four blocks, but cannot replace verified context, distort the owner request or overwrite manual edits. Generating a prompt never stores a task, schedules execution, changes PRs or claims LIVE. This is a correctness correction to the existing PR, not a separate product or new provider.
