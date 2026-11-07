@@ -2262,9 +2262,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(()=>{
     // Consume the anonymous local trial only once a real encoded Blob exists.
     // A failed preflight/export does not consume it.
-    if(result&&result.mode!=="catalog"&&guestRenderRef.current)
+    if(result&&result.mode!=="catalog"&&guestRenderRef.current&&playbackStatus==="ready")
       setGuestFirstVideoUsed(true);
-  },[result]);
+  },[result,playbackStatus]);
   const [deliveryChooserOpen,setDeliveryChooserOpen] = useState(false);
   const [exportUnavailable, setExportUnavailable] = useState(false);
   // Browser-only non-personal diagnostic; the user opts in to lower-res retry.
@@ -2763,12 +2763,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Reveal that pane before scrolling; a collapsed result is not delivery.
   useEffect(() => {
     if (!result) return;
+    if(result.mode!=="catalog"){
+      setActiveWorkspace("pro");
+      setStudioMode("pump");
+      setIntroPlaying(false);
+    }
     setQuickDetailedOpen(true);
     let nextFrame = 0;
     const firstFrame = window.requestAnimationFrame(() => {
       nextFrame = window.requestAnimationFrame(() => {
         document.getElementById("personal-video-result")?.scrollIntoView({
-          behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+          behavior:"auto",
           block:"start",
         });
       });
@@ -4658,10 +4663,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
   const createQuickVideo = () => {
     if(creditCatalog?.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed){
-      setNotice(locale==="ru"?"Первое видео уже создано. Войдите для просмотра, скачивания и следующих роликов.":
-        locale==="es"?"Tu primer vídeo está creado. Accede para verlo, descargarlo y crear más.":
-        "Your first video is created. Sign in to watch, download and make more.");
-      document.getElementById("personal-video-result")?.scrollIntoView({block:"start",behavior:"smooth"});
+      setNotice(locale==="ru"?"Первое видео готово в PRO. Для следующего ролика войдите в аккаунт.":
+        locale==="es"?"Tu primer vídeo está listo en PRO. Para crear otro, inicia sesión.":
+        "Your first video is ready in PRO. Sign in to create another video.");
+      setActiveWorkspace("pro");
+      document.getElementById("personal-video-result")?.scrollIntoView({block:"start",behavior:"auto"});
       return false;
     }
     if(photoPending){
@@ -5321,9 +5327,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-video-credit-status role="status" aria-live="polite">
           {creditCatalog.ready
             ?creditSession==="guest"
-              ?(locale==="ru"?"Первое видео бесплатно · вход только для просмотра и скачивания":
-                locale==="es"?"Primer vídeo gratis · entra solo para verlo y descargarlo":
-                "First video free · sign in only to watch and download")
+              ?(locale==="ru"?"Первое видео бесплатно · просмотр без входа":
+                locale==="es"?"Primer vídeo gratis · ver sin entrar":
+                "First video free · watch without sign-in")
               :(locale==="ru"?"1 ролик = 10 кредитов. Баланс: ":
                 locale==="es"?"1 vídeo = 10 créditos. Saldo: ":
                 "1 video = 10 credits. Balance: ")+(creditBalance===null?"—":creditBalance)
@@ -6213,37 +6219,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
         data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
-        <h3>{result&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
-          ?(locale==="ru"?"Видео создано":locale==="es"?"Vídeo creado":"Video created")
-          :playbackStatus==="ready"?(locale==="ru"?"Готовое видео":locale==="es"?"Vídeo listo":"Finished video")
+        <h3>{playbackStatus==="ready"?(locale==="ru"?"Готовое видео":locale==="es"?"Vídeo listo":"Finished video")
           :locale==="ru"?"Проверка видео":locale==="es"?"Verificación del vídeo":"Checking your video"}</h3>
-        {result&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"?
-          <div className={videoStyles.warning} role="status" data-video-guest-result-gate>
-            <p>{creditSession==="unavailable"
-              ?(locale==="ru"?"Не удалось проверить вход. Повторите проверку, не закрывая эту страницу.":
-                locale==="es"?"No se pudo verificar el acceso. Reinténtalo sin cerrar esta página.":
-                "Sign-in status could not be checked. Retry without closing this page.")
-              :(locale==="ru"?"Первое видео создано без регистрации. Войдите, чтобы посмотреть и скачать готовый файл.":
-                locale==="es"?"Tu primer vídeo se creó sin cuenta. Accede para verlo y descargarlo.":
-                "Your first video was created without sign-in. Sign in to watch and download it.")}</p>
-            <div className={videoStyles.resultActions}>
-              <Link href={(locale==="es"?"/en":"/"+locale)+"/app/portrait"}
-                prefetch={false} target="_blank" rel="noopener noreferrer"
-                className={videoStyles.download} data-video-guest-signin>
-                <UserRound size={18} aria-hidden="true"/>
-                {locale==="ru"?"Войти для просмотра и скачивания":
-                  locale==="es"?"Entrar para ver y descargar":"Sign in to watch & download"}
-              </Link>
-              <button type="button" className={videoStyles.audioDirectLink}
-                onClick={()=>void refreshCreditSession()} data-video-guest-check-session>
-                {locale==="ru"?"Я вошёл · проверить":locale==="es"?"Ya entré · comprobar":"I've signed in · check"}
-              </button>
-            </div>
-            <small>{locale==="ru"?"Сохраните эту вкладку открытой: видео пока хранится только здесь.":
-              locale==="es"?"Mantén esta pestaña abierta: el vídeo solo está aquí.":
-              "Keep this tab open: the video is stored only here."}</small>
-          </div>:null}
-        {result&&(!creditCatalog?.chargeRequired||creditSession==="signed_in"||result.mode==="catalog") ? (
+        {result ? (
           <>
             {result.mode==="catalog"?<p className={videoStyles.warning}
               data-video-catalog-fallback role="note">
@@ -6271,6 +6249,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   ?"Safari no reproduce este "+result.extension.toUpperCase()+" (error "+errorCode+"). Prueba otro formato."
                   :"Safari cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Try the alternative format.");
               }}/>
+            {playbackStatus==="ready"&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
+              ?<div className={videoStyles.guestPreviewActions} data-video-guest-preview-actions>
+                <button type="button" data-video-guest-play onClick={()=>{
+                  const video=resultVideoRef.current;
+                  if(!video)return;
+                  void video.play().catch(()=>setNotice(locale==="ru"
+                    ?"Нажмите ▶ в самом видео, чтобы начать просмотр.":
+                    locale==="es"?"Pulsa ▶ en el reproductor de vídeo.":
+                    "Tap ▶ in the video player to start playback."));
+                }}><Play size={19} fill="currentColor" aria-hidden="true"/>
+                  {locale==="ru"?"Смотреть видео":locale==="es"?"Ver vídeo":"Watch video"}
+                </button>
+                <p role="note" data-video-guest-save-hint>{locale==="ru"
+                  ?"Смотреть можно без входа. Для скачивания нужен «Мой дом». Видео пока хранится только здесь."
+                  :locale==="es"
+                  ?"Puedes verlo sin entrar. Para descargar, usa Mi espacio. El vídeo solo está aquí."
+                  :"Watch without sign-in. To download, use My House. The video stays in this tab."}</p>
+              </div>:null}
             {playbackStatus==="ready"&&result.mode!=="catalog"?<div className={videoStyles.resultMeta}>
               <strong>{wish.trim().slice(0,60)||(locale==="ru"?"Моё персональное видео":locale==="es"?"Mi vídeo personal":"My personal video")}</strong>
               <small>{result.extension.toUpperCase()} · {aspect==="portrait"?"9:16":aspect==="square"?"1:1":"16:9"} · {Math.max(1,Math.round(result.bytes/1024))} KB</small>
@@ -6372,7 +6368,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {locale==="ru"?"Понравилось видео? Ответьте и сравните 7 оценок":
                locale==="es"?"¿Te gustó? Evalúa los 7 cambios":"Did you like it? Compare seven ratings"}
             </a>:null}
-            {playbackStatus==="ready"&&(result.mode==="catalog"||creditConfirmed) ? <>
+            {playbackStatus==="ready"&&(result.mode==="catalog"||creditConfirmed)&&
+              (!creditCatalog?.chargeRequired||creditSession==="signed_in"||result.mode==="catalog") ? <>
             <div className={videoStyles.resultActions}>
               <a className={videoStyles.download} href={result.url}
                 download={"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
@@ -7437,9 +7434,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <small>{practiceCopy.names[practiceType]} · {practiceCopy.quality[practiceLevels[practiceType]]}
               {" · "}{creditCatalog?.chargeRequired&&freeVideoSelected
                 ?creditSession==="guest"
-                  ?(locale==="ru"?"Без входа для создания · вход для просмотра и скачивания":
-                    locale==="es"?"Crea sin entrar · accede para ver y descargar":
-                    "Create without sign-in · sign in to watch or download")
+                  ?(locale==="ru"?"Создать и смотреть без входа · скачать после входа":
+                    locale==="es"?"Crear y ver sin entrar · descargar tras acceder":
+                    "Create and watch without sign-in · download after sign-in")
                   :(locale==="ru"?"Списание только после готового видео":
                     locale==="es"?"Se cobra tras crear el vídeo":"Charged only after the video is ready")
                 :selectedDraftPrice===0?practiceCopy.noCredits:practiceCopy.draft}</small>
@@ -7475,9 +7472,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <p className={videoStyles.quickPrivacy} data-workspace-section="video"><Check size={16} aria-hidden="true"/>
           {creditCatalog?.chargeRequired
             ?creditSession==="guest"
-              ?(locale==="ru"?"Создание без регистрации · вход только для просмотра и скачивания":
-                locale==="es"?"Crear sin cuenta · acceder para ver y descargar":
-                "Create without account · sign in to watch and download")
+              ?(locale==="ru"?"Создать и смотреть без регистрации":
+                locale==="es"?"Crea y mira el vídeo sin entrar":
+                "Create and watch without sign-in")
               :(locale==="ru"?"Списание после проверки готового видео":
                 locale==="es"?"Cobro tras verificar el vídeo":
                 "Charged after finished video verification")
@@ -7924,9 +7921,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>
         {creditCatalog?.chargeRequired
           ?creditSession==="guest"
-            ?(locale==="ru"?"Первое видео создаётся бесплатно на устройстве; вход понадобится для просмотра и скачивания.":
-              locale==="es"?"El primer vídeo se crea gratis en tu dispositivo; accede para verlo y descargarlo.":
-              "The first video is generated free on your device; sign in to watch or download.")
+            ?(locale==="ru"?"Первое видео бесплатно. Просмотр без входа; скачивание через «Мой дом».":
+              locale==="es"?"Primer vídeo gratis. Míralo sin entrar; descarga desde Mi espacio.":
+              "First video free. Watch without sign-in; download through My House.")
             :(locale==="ru"?"Ваше видео создаётся на устройстве; после готовности списываются 10 XP.":
               locale==="es"?"Se crea en tu dispositivo; se descuentan 10 XP al terminar.":
               "Created on your device; 10 XP charged after the finished video is verified.")
