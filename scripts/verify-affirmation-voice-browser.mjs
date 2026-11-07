@@ -449,60 +449,56 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageSettingsTab).toHaveAttribute("aria-pressed","true");
       const durationSelect=page.locator('[data-video-montage-preference="duration"]');
       await durationSelect.waitFor({state:"visible",timeout:25000});
-      // The actual four-scene movie cannot be exported from a lone idle
-      // style preview: all physical originals are portrait, and every source
-      // must cover its non-looping stage. Select four approved masters through
-      // the SAME visible Montage → Text → Add video flow as the independent
-      // first-video/FFprobe acceptance, before creating the real voice WAV.
+      // Preserve the true portrait four-clip media/rights gate using today's
+      // Style | Audio | Concept | Settings and real Add-video UI.
       const aspectSelect=page.locator('[data-video-montage-preference="format"]');
       await aspectSelect.selectOption("portrait");
       await expect(aspectSelect).toHaveValue("portrait");
       await durationSelect.selectOption("20");
       await expect(durationSelect).toHaveValue("20");
-      const montageStyleTab=page.locator('[data-video-montage-tab="effects"]');
-      await montageStyleTab.click();
-      await expect(montageStyleTab).toHaveAttribute("aria-pressed","true");
-      const nextToText=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
-      await expect(nextToText).toBeVisible();
-      await nextToText.click();
-      await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
-      const addVerifiedSources=page.locator('[data-video-timeline-add-video]');
+      const conceptTab=page.locator('[data-video-montage-tab="concept"]');
+      await conceptTab.click();
+      await expect(conceptTab).toHaveAttribute("aria-pressed","true");
+      const conceptTools=page.locator('[data-video-concept-text-tools]');
+      await expect(conceptTools.locator(':scope > summary')).toBeVisible();
+      if(await conceptTools.getAttribute("open")===null)
+        await conceptTools.locator(':scope > summary').click();
+      await expect(conceptTools).toHaveAttribute("open","");
+      const addVerifiedSources=conceptTools.locator('[data-video-timeline-add-video]');
       await expect(addVerifiedSources).toBeVisible();
       await addVerifiedSources.click();
       await page.locator('[data-free-film-compilation-catalog]').waitFor({state:"visible"});
       const moreApproved=page.locator('[data-free-film-more]');
       if(await moreApproved.getAttribute("aria-expanded")!=="true")await moreApproved.click();
-      const firstPartyPreset=page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
+      const firstPartyPreset=page.locator('[data-free-film-preset="warm-pleasant-sun"]');
       await expect(firstPartyPreset).toBeVisible();
       await firstPartyPreset.click();
       await expect(firstPartyPreset).toHaveAttribute("aria-pressed","true",{timeout:10000});
-      // This is real licensed footage, not a catalog poster or a mocked
-      // result. Four distinct sources are a prerequisite for the MP4 test.
       const fourSources=page.locator('[data-free-film-source]');
       await expect(fourSources).toHaveCount(4);
       const masterIds=await fourSources.evaluateAll(nodes=>nodes.map(n=>n.dataset.freeFilmSource));
       assert.equal(new Set(masterIds).size,4,"FOUR_DISTINCT_SOURCE_MASTERS_REQUIRED");
       const sourcePaths=await fourSources.evaluateAll(nodes=>nodes.map(n=>n.getAttribute("src")));
-      // This approved preset is ORIGINAL abstract animation, not licensed filming.
-      // Compare exact first-party URLs and unique verified hashes to the actual
-      // physical manifest; do not waive the four-scene/rights/no-loop gate.
-      const approvedOriginals=JSON.parse(readFileSync(
-        new URL("../data/video-catalog/original-motion-scenes-v1.json",import.meta.url),
-        "utf8")).scenes.filter(scene=>
-        scene.status==="approved"&&scene.media==="original_motion_mp4");
-      const originalById=new Map(approvedOriginals.map(scene=>[scene.id,scene]));
-      const selectedSources=masterIds.map((id,index)=>{
-        const scene=originalById.get(id);
+      const approvedCatalog=JSON.parse(readFileSync(
+        new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url),"utf8")).scenes;
+      const byId=new Map(approvedCatalog.filter(scene=>
+        scene.status==="approved"&&scene.media==="licensed_mp4").map(scene=>[scene.id,scene]));
+      const verifiedSources=masterIds.map((id,index)=>{
+        const scene=byId.get(id);
         assert.ok(scene,"FOUR_SOURCES_MUST_BE_APPROVED_FIRST_PARTY_MP4 "+id);
         assert.equal(sourcePaths[index],scene.video,"SOURCE_NOT_IN_VERIFIED_MANIFEST "+id);
         assert.match(scene.video,/^\/videos\/holistic-house\/[a-z0-9_/-]+\.mp4$/,"SOURCE_NOT_FIRST_PARTY "+id);
-        assert.ok(scene.width>0&&scene.height>scene.width&&scene.durationSeconds>=5,
-          "PHYSICAL_PORTRAIT_NON_LOOPING_SCENE_REQUIRED "+id);
-        assert.match(scene.sha256||"",/^[a-f0-9]{64}$/i,"SOURCE_HASH_REQUIRED "+id);
+        assert.ok(scene.width>0&&scene.height>scene.width&&scene.allowedAspects.includes("portrait")&&
+          scene.technicalQuality?.decodedFrame===true,"PHYSICAL_PORTRAIT_DECODED_SCENE_REQUIRED "+id);
+        assert.match(scene.technicalQuality?.sha256||"",/^[a-f0-9]{64}$/i,"SOURCE_HASH_REQUIRED "+id);
+        assert.ok(scene.rightsReference?.licenseUrl&&scene.rightsReference?.sourcePage,
+          "SOURCE_RIGHTS_EVIDENCE_REQUIRED "+id);
         return scene;
       });
-      assert.equal(new Set(selectedSources.map(scene=>scene.sha256)).size,4,
-        "FOUR_DISTINCT_VERIFIED_ORIGINAL_MASTERS_REQUIRED");
+      assert.equal(new Set(verifiedSources.map(scene=>scene.technicalQuality.sha256)).size,4,
+        "FOUR_DISTINCT_VERIFIED_LICENSED_MASTERS_REQUIRED");
+      assert.equal(new Set(verifiedSources.map(scene=>scene.sourceOriginalGroupId)).size,4,
+        "FOUR_INDEPENDENT_ORIGINAL_FOOTAGE_MASTERS_REQUIRED");
       phase(engine,"four-approved-portrait-sources-selected");
       await page.locator('[data-video-quick-control="editor"]').click();
       const montageAudio=page.locator('[data-video-montage-tab="audio"]');

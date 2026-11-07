@@ -389,9 +389,9 @@ test("macOS voice export selects four physically verified portrait sources befor
   const narration=script.indexOf('const phrases=page.locator(',approved);
   assert.ok(start>0&&duration>start&&addVideo>duration&&preset>addVideo&&approved>preset&&narration>approved);
   for(const marker of [
-    '[data-video-montage-preference="format"]','[data-video-montage-next="text"]',
+    '[data-video-montage-preference="format"]','[data-video-montage-tab="concept"]',
     '[data-video-timeline-add-video]','[data-free-film-compilation-catalog]',
-    '[data-free-film-preset="motion-film-goal-achievement"]','[data-free-film-source]',
+    '[data-free-film-preset="warm-pleasant-sun"]','[data-free-film-source]',
     'FOUR_SOURCES_MUST_BE_APPROVED_FIRST_PARTY_MP4',
   ])assert.ok(script.includes(marker),marker);
   assert.match(script,/await firstPartyPreset.click\(\)/);

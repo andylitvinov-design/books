@@ -91,7 +91,7 @@ test("Goals, optional recipient audio, Concept and original media gates follow r
    assert.match(file,/data-video-timeline-add-video/);
    assert.doesNotMatch(file,/await (?:allStories|page\.locator\('\[data-auto-video-all-scenes\]'\))\.click\(\)/);
  }
- assert.match(voice,/FOUR_DISTINCT_VERIFIED_ORIGINAL_MASTERS_REQUIRED/);
+ assert.match(voice,/FOUR_DISTINCT_VERIFIED_LICENSED_MASTERS_REQUIRED/);
  assert.match(live,/ENCODED_VIDEO_STREAM_MISSING/);
  assert.match(live,/SELECTED_SOUNDTRACK_MISSING_FROM_EXPORT/);
  assert.match(motion,/ffprobe/);
