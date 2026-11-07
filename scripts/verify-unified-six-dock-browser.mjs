@@ -390,7 +390,17 @@ try{
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),3);
+ assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),4,
+   "Messenger rail now has AI, Orders, Clients and News");
+ const news=page.locator('[data-chat-top-tabs] button[aria-controls="hh-news-panel"]');
+ assert.equal(await news.count(),1,"News tab is visible and uniquely addressable");
+ await news.click();
+ await page.locator('[data-orders-clients-hub][data-section="news"]').waitFor({state:"visible",timeout:30000});
+ await page.locator("#hh-news-panel").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("#hh-ai-panel").isVisible(),false,
+   "the private News panel does not overlay the AI conversation");
+ await page.locator('[data-chat-top-tabs] button[aria-controls="hh-ai-panel"]').click();
+ await page.locator("#hh-ai-panel").waitFor({state:"visible",timeout:30000});
  const chat=page.locator("[data-hh-agent-preview]");
  await chat.waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-chat-menu-rail]").count(),0,
