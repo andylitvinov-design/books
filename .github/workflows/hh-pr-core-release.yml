@@ -165,6 +165,7 @@ jobs:
               case "$f" in
                   .github/workflows/*.yml|\
                   .github/workflows/*.yaml|\
+                  README.PR-LOSS-TELEMETRY.md|\
                   docs/operations/PR_FAST_LANE_20261029.md|\
                   lib/ci/production-base-impact.mjs|\
                   lib/ci/specialist-aggregate.mjs|\
