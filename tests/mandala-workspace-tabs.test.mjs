@@ -138,7 +138,7 @@ test("published informational YouTube no longer overlays the original Canvas her
   assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
   assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
   assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);
-  assert.match(studio,/if\(item\.id!=="practices"\)setIntroPlaying\(false\)/);
+  assert.match(studio,/setActiveWorkspace\(item\.id\);[\s\S]{0,140}setIntroPlaying\(false\);[\s\S]{0,90}setStudioMode\("pump"\)/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
