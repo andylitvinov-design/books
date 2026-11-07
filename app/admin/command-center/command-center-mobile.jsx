@@ -1,6 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {useRouter} from 'next/navigation';
+import {suggestCommandTask,ownerTaskActions} from '@/lib/command-center/mobile-intake.mjs';
 import styles from './command-center-mobile.module.css';
 import CommandCenterVoiceButton from './command-center-voice-button';
 
@@ -30,7 +31,7 @@ const labels={
    noMetrics:'Метрик пока нет',locked:'Войдите в админ-кабинет',admin:'Админка',
    healthy:'Доступны данные',unknown:'Статус неизвестен',newProject:'Новый проект',projectName:'Название проекта',
    projectSummary:'Для чего нужен проект?',createProject:'Создать проект',settings:'Управление автоматизацией',
-   viewAutomations:'Все автоматизации',details:'Подробности',activity:'Журнал агентов',runSafe:'Проверить очередь сейчас',scheduler:'Циклы проверок',nothingVerified:'Нет подтверждённых результатов',partial:'Показаны только последние задачи',inspectDelivery:'Проверить PR, CI и production',delivery:'Проверка выпуска',releaseServed:'Код подтверждён на production',releaseUnproven:'Нет независимого подтверждения кода на production',releaseCi:'Текущие CI-проверки',releaseUnknown:'Недостаточно данных',releasePass:'Успешно',releaseFail:'Ошибка',releasePending:'Ещё выполняются',releaseBrowser:'Функциональная проверка интерфейса ещё не выполнена'},
+   viewAutomations:'Все автоматизации',details:'Подробности',activity:'Журнал агентов',runSafe:'Проверить очередь сейчас',scheduler:'Циклы проверок',nothingVerified:'Нет подтверждённых результатов',partial:'Показаны только последние задачи',runEmpty:'Очередь пуста: ни один агент не запускался',runLimit:'Дневной лимит проверок исчерпан',runFailed:'Проверка не завершилась — смотрите журнал',pauseTask:'Приостановить задачу',cancelTask:'Отменить задачу',confirmCancel:'Подтвердить отмену',alreadyExists:'Такая проверка уже есть',suggestion:'GitHub-ссылка распознана. Проверка остаётся только для чтения',inspectDelivery:'Проверить PR, CI и production',delivery:'Проверка выпуска',releaseServed:'Код подтверждён на production',releaseUnproven:'Нет независимого подтверждения кода на production',releaseCi:'Текущие CI-проверки',releaseUnknown:'Недостаточно данных',releasePass:'Успешно',releaseFail:'Ошибка',releasePending:'Ещё выполняются',releaseBrowser:'Функциональная проверка интерфейса ещё не выполнена'},
  en:{home:'Home',tasks:'Tasks',agents:'Agents',projects:'Projects',hello:'My briefing',subtitle:'Projects and agents · verified status',
    newTask:'New task',today:'Top priorities',allTasks:'All tasks',working:'Working',blocked:'Blocked',
    verified:'Verified',topProjects:'Projects',noProjects:'Create a project to group tasks',
@@ -53,7 +54,7 @@ const labels={
    noMetrics:'No metrics yet',locked:'Admin login required',admin:'Admin',
    healthy:'Data available',unknown:'Unknown',newProject:'New project',projectName:'Project name',
    projectSummary:'What is the project for?',createProject:'Create project',settings:'Automation controls',
-   viewAutomations:'All automations',details:'Details',activity:'Agent activity',runSafe:'Check safe queue now',scheduler:'Scheduler cycles',nothingVerified:'No verified results yet',partial:'Showing only the latest tasks',inspectDelivery:'Check PR, CI and production',delivery:'Release verification',releaseServed:'Code confirmed on production',releaseUnproven:'No independent production-code evidence',releaseCi:'Current CI checks',releaseUnknown:'Not independently confirmed',releasePass:'Passed',releaseFail:'Failed',releasePending:'Still running',releaseBrowser:'Functional UI acceptance is still pending'},
+   viewAutomations:'All automations',details:'Details',activity:'Agent activity',runSafe:'Check safe queue now',scheduler:'Scheduler cycles',nothingVerified:'No verified results yet',partial:'Showing only the latest tasks',runEmpty:'No ready work: no agent was launched',runLimit:'Daily audit limit reached',runFailed:'Audit not completed — see execution history',pauseTask:'Pause task',cancelTask:'Cancel task',confirmCancel:'Confirm cancellation',alreadyExists:'This audit task already exists',suggestion:'GitHub URL recognized. The audit is read-only',inspectDelivery:'Check PR, CI and production',delivery:'Release verification',releaseServed:'Code confirmed on production',releaseUnproven:'No independent production-code evidence',releaseCi:'Current CI checks',releaseUnknown:'Not independently confirmed',releasePass:'Passed',releaseFail:'Failed',releasePending:'Still running',releaseBrowser:'Functional UI acceptance is still pending'},
  es:{home:'Inicio',tasks:'Tareas',agents:'Agentes',projects:'Proyectos',hello:'Mi informe',subtitle:'Proyectos y agentes · estado verificado',
    newTask:'Nueva tarea',today:'Prioridades',allTasks:'Todas las tareas',working:'En curso',blocked:'Bloqueadas',
    verified:'Verificadas',topProjects:'Proyectos',noProjects:'Crea un proyecto para organizar tareas',
@@ -78,7 +79,7 @@ const labels={
    actionFailed:'Cambio sin confirmar',noMetrics:'Sin métricas',locked:'Requiere login',
    admin:'Admin',healthy:'Datos disponibles',unknown:'Desconocido',newProject:'Nuevo proyecto',
    projectName:'Nombre',projectSummary:'Objetivo',createProject:'Crear proyecto',
-   settings:'Automatizaciones',viewAutomations:'Todas las automatizaciones',details:'Detalles',activity:'Actividad de agentes',runSafe:'Revisar cola segura ahora',scheduler:'Ciclos programados',nothingVerified:'Aún no hay resultados verificados',partial:'Solo se muestran las tareas recientes',inspectDelivery:'Verificar PR, CI y producción',delivery:'Verificación del lanzamiento',releaseServed:'Código confirmado en producción',releaseUnproven:'No hay prueba independiente de código en producción',releaseCi:'Verificaciones CI actuales',releaseUnknown:'No verificado',releasePass:'Correcto',releaseFail:'Error',releasePending:'En curso',releaseBrowser:'Falta la prueba funcional del sitio'}
+   settings:'Automatizaciones',viewAutomations:'Todas las automatizaciones',details:'Detalles',activity:'Actividad de agentes',runSafe:'Revisar cola segura ahora',scheduler:'Ciclos programados',nothingVerified:'Aún no hay resultados verificados',partial:'Solo se muestran las tareas recientes',runEmpty:'No hay tareas listas: ningún agente se inició',runLimit:'Límite diario de auditorías alcanzado',runFailed:'Auditoría sin completar: revisa el historial',pauseTask:'Pausar tarea',cancelTask:'Cancelar tarea',confirmCancel:'Confirmar cancelación',alreadyExists:'Esta auditoría ya existe',suggestion:'Enlace GitHub reconocido. La revisión es de solo lectura',inspectDelivery:'Verificar PR, CI y producción',delivery:'Verificación del lanzamiento',releaseServed:'Código confirmado en producción',releaseUnproven:'No hay prueba independiente de código en producción',releaseCi:'Verificaciones CI actuales',releaseUnknown:'No verificado',releasePass:'Correcto',releaseFail:'Error',releasePending:'En curso',releaseBrowser:'Falta la prueba funcional del sitio'}
 };
 const blockedStates=new Set(['needs_spec','blocked_dependency','blocked_no_runner','blocked_external','blocked_approval','blocked_budget','dead_letter']);
 const runningStates=new Set(['running','awaiting_evidence','retry_wait','ready','planned']);
@@ -108,7 +109,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  const [selected,setSelected]=useState(null),[composer,setComposer]=useState(false),[projectComposer,setProjectComposer]=useState(false);
  const [draft,setDraft]=useState(''),[details,setDetails]=useState(''),[source,setSource]=useState(''),[kind,setKind]=useState('code_change'),
    [project,setProject]=useState(''),[priority,setPriority]=useState('65'),[projectName,setProjectName]=useState(''),[projectSummary,setProjectSummary]=useState('');
- const [busy,setBusy]=useState(false),[notice,setNotice]=useState('');
+ const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[confirmCancel,setConfirmCancel]=useState(null);
  const [deliveryCheck,setDeliveryCheck]=useState(null);
  const enabled=Boolean(snapshot?.settings?.enabled&&envReady),available=Boolean(snapshot);
  const tasks=snapshot?.tasks||[],projects=snapshot?.projects||[],runs=snapshot?.runs||[],evidences=snapshot?.evidence||[],slots=snapshot?.slots||[];
@@ -137,7 +138,12 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
     credentials:'same-origin',cache:'no-store',body:JSON.stringify({action,requestId:crypto.randomUUID(),...extra})});
    const result=await res.json();
    if(!res.ok||result.error||['unconfirmed','stale_unconfirmed','transition_denied','not_found'].includes(result.status)){
-    setNotice(t.actionFailed+(result?.error?' · '+result.error:''));return null;
+    setNotice(t.actionFailed+(result?.error?' · '+result.error:result?.status?' · '+result.status:''));return null;
+   }
+   if(action==='run_now'&&result.status!=='completed_verified'){
+    setNotice(result.status==='no_ready_work'?t.runEmpty:
+      result.status==='budget_paused'?t.runLimit:t.runFailed);
+    await refresh();return null;
    }
    await refresh();router.refresh();return result;
   }catch{setNotice(t.actionFailed);return null;}
@@ -147,7 +153,9 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
   if(title.length<6){setNotice(t.taskText);return;}
   const description=safe(details,800)||title+(title.length<10?' — '+t.details:'');
   const result=await send('create_task',{title,description,kind,projectId:project||null,sourceRef:safe(source)||null,priority:Number(priority)});
-  if(result){setComposer(false);setDraft('');setDetails('');setSource('');setNotice(t.saved);setTab('tasks');setFilter('all');}
+  if(result){setComposer(false);setDraft('');setDetails('');setSource('');
+    setNotice(result.status==='already_exists'?t.alreadyExists:t.saved);
+    setTab('tasks');setFilter('all');if(result.task?.id)setSelected(result.task.id);}
  };
  const saveProject=async e=>{e.preventDefault();const result=await send('create_project',{title:safe(projectName,120),summary:safe(projectSummary,550)});
   if(result){setProjectComposer(false);setProjectName('');setProjectSummary('');setTab('projects');}
@@ -160,6 +168,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  };
  const selectedTask=tasks.find(v=>v.id===selected);
  const selectedProof=deliveryCheck?.id===selected?deliveryCheck.proof:null;
+ const taskActions=ownerTaskActions(selectedTask);
  const taskEvidence=evidences.filter(v=>v.task_id===selectedTask?.id);
  const latestEvidence=taskEvidence[0]||null;
  const observed=latestEvidence?.observed||null;
@@ -226,8 +235,18 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
      {selectedTask.source_ref&&<a className={styles.github} href={selectedTask.source_ref} target="_blank" rel="noopener noreferrer">GitHub ↗</a>}
      {taskEvidence.map(e=><a key={e.run_id} className={styles.github} target="_blank" rel="noopener noreferrer" href={e.source_url}>{t.evidence} · {date(e.created_at)} ↗</a>)}
     </div>
-    {selectedTask.auto_allowed&&['paused','retry_wait','dead_letter','blocked_external'].includes(selectedTask.state)&&
-      <button className={styles.primary} disabled={busy} type="button" onClick={async()=>{await send('task_ready',{taskId:selectedTask.id});}}>{t.retry}</button>}
+    <div className={styles.taskControls}>
+     {taskActions.resume&&<button className={styles.primary} disabled={busy} type="button"
+       onClick={()=>send('task_ready',{taskId:selectedTask.id})}>{t.retry}</button>}
+     {taskActions.pause&&<button className={styles.secondary} disabled={busy} type="button"
+       onClick={()=>send('task_pause',{taskId:selectedTask.id})}>{t.pauseTask}</button>}
+     {taskActions.cancel&&<button className={styles.secondary} disabled={busy} type="button"
+       onClick={async()=>{
+        if(confirmCancel!==selectedTask.id){setConfirmCancel(selectedTask.id);return;}
+        const response=await send('task_cancel',{taskId:selectedTask.id});
+        if(response){setSelected(null);setConfirmCancel(null);}
+       }}>{confirmCancel===selectedTask.id?t.confirmCancel:t.cancelTask}</button>}
+    </div>
     <p className={styles.disclaimer}>{t.noLive}</p>
    </section>:
    tab==='home'? <section className={styles.home}>
@@ -275,7 +294,8 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
      {!evidences.length&&<p className={styles.muted}>{t.nothingVerified}</p>}
      <h2>{t.scheduler}</h2>
      {slots.slice(0,4).map(slot=><div className={styles.event} key={slot.slot_utc}>
-      <span aria-hidden="true">↻</span><div><strong>{slot.state}</strong><small>{date(slot.slot_utc)} {slot.last_error||''}</small></div>
+      <span aria-hidden="true">↻</span><div><strong>{slot.last_error==='DAILY_LIMIT'?t.runLimit:slot.state==='no_change'?t.runEmpty:
+       slot.state==='succeeded'?t.verifiedMetadata:slot.state==='failed'?t.runFailed:slot.state}</strong><small>{date(slot.slot_utc)} {slot.last_error||''}</small></div>
      </div>)}
      {!slots.length&&<p className={styles.muted}>{t.notKnown}</p>}
      <p className={styles.disclaimer}>{t.noLive}</p>
@@ -297,9 +317,15 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
   {(composer||projectComposer)&&<div className={styles.sheetBackdrop} role="presentation">
    <section className={styles.sheet} role="dialog" aria-modal="true" aria-label={composer?t.newTask:t.newProject}>
     <div className={styles.sheetHeader}><h2>{composer?t.newTask:t.newProject}</h2><button type="button" aria-label={t.close} onClick={()=>{setComposer(false);setProjectComposer(false);}}>×</button></div>
+    {notice&&<p className={styles.sheetNotice} role="status">{notice}</p>}
     {composer?<form onSubmit={saveTask} className={styles.composer}>
       <label htmlFor="cc-idea">{t.taskText}</label><textarea id="cc-idea" autoFocus minLength={6} maxLength={140} required
-       placeholder={t.taskPlaceholder} value={draft} onChange={e=>setDraft(e.target.value)} rows={3}/>
+       placeholder={t.taskPlaceholder} value={draft} onChange={e=>{
+        const next=e.target.value;setDraft(next);
+        const suggestion=suggestCommandTask(next);
+        if(suggestion){setSource(suggestion.sourceRef);
+          if(suggestion.kind&&kind==='code_change')setKind(suggestion.kind);}
+       }} rows={3}/>
       <CommandCenterVoiceButton lang={lang} onTranscript={spoken=>setDraft(previous=>safe((previous?previous+' ':'')+spoken,140))}/>
       <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={800} value={details}
         onChange={e=>setDetails(e.target.value)} rows={2}/>
@@ -312,6 +338,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
        <option value="repo_pr_audit">{t.kindPr}</option><option value="repo_issue_audit">{t.kindIssue}</option></select>
       <label htmlFor="cc-source">{t.source}</label><input id="cc-source" type="url" value={source} onChange={e=>setSource(e.target.value)}
         placeholder="https://github.com/andylitvinov-design/books/pull/123" maxLength={180} required={kind==='repo_pr_audit'||kind==='repo_issue_audit'}/>
+      {source&&kind.startsWith('repo_')&&<p className={styles.muted}>{t.suggestion}</p>}
       <p className={styles.muted}>{kind==='code_change'?t.noRuntime:kind.startsWith('repo_')?t.readOnly:t.needsSetup}</p>
       <button className={styles.primary} type="submit" disabled={busy||!available||draft.trim().length<6}>{busy?t.saving:t.save}</button>
      </form>:
