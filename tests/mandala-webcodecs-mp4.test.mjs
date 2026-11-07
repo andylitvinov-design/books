@@ -267,15 +267,26 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
 
 test("compact Ideas opens its actual opt-in voice editor via visible user control",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
- const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()');
- const button=browser.indexOf('const revealVoice=phrases.locator',hidden);
- const visible=browser.indexOf('await expect(revealVoice).toBeVisible',button);
- const tap=browser.indexOf('await revealVoice.click()',visible);
+ // Verify the actual Text→Voice→Text switch and the visible Record button;
+ // no synthetic clicks on hidden details, or removal of media/consent assertions.
+ const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
+ const text=browser.indexOf('await expect(ideasModes.locator',modes);
+ const voice=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',text);
+ const back=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',voice);
+ const button=browser.indexOf('const recordEntry=phrases.locator',back);
+ const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',button);
+ const visible=browser.indexOf('await expect(recordEntry).toBeVisible',hidden);
+ const tap=browser.indexOf('await recordEntry.click()',visible);
  const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tap);
  const voiceOptions=browser.indexOf('await expect(advancedVoice.locator',opened);
- assert.ok(hidden>=0&&button>hidden&&visible>button&&tap>visible&&opened>tap&&voiceOptions>opened);
- assert.match(browser,/data-video-phrase-audio-shortcut/);
- assert.match(browser,/data-video-ideas-recording-open="true"/);
+ assert.ok(modes>=0&&text>modes&&voice>text&&back>voice&&button>back&&
+   hidden>button&&visible>hidden&&tap>visible&&opened>tap&&voiceOptions>opened,
+   "real Ideas subtab and Record UI must reveal the original voice editor");
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'),
+   "recording-open state must remain bound to the original shared editor");
+ assert.match(browser,/data-video-ideas-tabs/);
+ assert.match(browser,/data-video-ideas-record/);
  assert.doesNotMatch(browser,/await advancedVoice\.locator\(":scope > summary"\)\.click\(\)/);
  for(const required of ["data-video-affirmation-voice-preview","data-hypno-approve",
   "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",

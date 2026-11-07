@@ -23,13 +23,13 @@ test("eight exact canonical axes, all three languages, five safe unique phrases"
     assert.notDeepEqual(ref,suggestMeaningPhrases(lang,...args));
  }
 });
-test("Goal2 owns moods and levels; Ideas keeps the one saved phrase editor and Montage action",()=>{
- for(const mark of ["data-video-goal-scroll","data-video-goal-mood","data-video-goal-choice",
+test("Goal2 owns moods, levels and axes; Ideas retains saved 7-choice editor and Montage",()=>{
+ for(const marker of ["data-video-goal-scroll","data-video-goal-mood","data-video-goal-choice",
    "data-video-goal-energy","data-video-goal-desired-level","data-video-goal-axis",
-   "data-video-goal-clarify-continue"]) assert.ok(goal.includes(mark),mark);
- for(const mark of ["data-video-idea-phrase","data-video-ideas-create",
+   "data-video-goal-clarify-continue"])assert.ok(goal.includes(marker),marker);
+ for(const marker of ["data-video-idea-phrase","data-video-ideas-create",
    "data-video-ideas-size","data-video-ideas-record","data-video-ideas-edit-goal"])
-   assert.ok(cmp.includes(mark),mark);
+   assert.ok(cmp.includes(marker),marker);
  assert.match(goal,/listMeaningAxes\(locale\)/);
  assert.match(cmp,/goalProfile:VideoGoalProfile/);
  assert.match(cmp,/goalCurrentMeaningId/);
@@ -124,4 +124,28 @@ test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list
  assert.ok(css.includes('.heroRail,')&&css.includes('.heroEditorial{display:none!important}'));
  assert.ok(css.includes('.heroCanvas{opacity:1!important;z-index:1!important}'));
  assert.ok(css.includes('[data-video-phrase-audio-shortcut]{display:none!important}'));
+});
+
+const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
+test("Ideas Text and Voice have a shared, stateful single narration editor",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ assert.match(studio,/data-video-ideas-tabs role="group"/);
+ assert.match(studio,/data-video-ideas-tab="text" aria-pressed=\{ideasSubtab==="text"\}/);
+ assert.match(studio,/data-video-ideas-tab="voice" aria-pressed=\{ideasSubtab==="voice"\}/);
+ assert.match(studio,/data-video-ideas-text-panel hidden=\{ideasSubtab!=="text"\}/);
+ assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ assert.match(studio,/data-video-ideas-own-upload/);
+ assert.match(studio,/data-video-ideas-record-voice/);
+ assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
+});
+
+test("Ideas Voice subtab is visible on desktop and switches in the real voice browser",()=>{
+ const styles=read("components/mandala-video-mobile.module.css");
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(styles,/\[data-ideas-subtab="voice"\] \[data-video-legacy-phrase-editor\]\[data-video-ideas-recording-open="true"\]\{display:block!important\}/);
+ assert.match(browser,/const ideasModes=phrases\.locator/);
+ assert.match(browser,/data-ideas-subtab","voice"/);
+ assert.match(browser,/data-video-ideas-own-upload/);
+ assert.match(browser,/data-ideas-subtab","text"/);
 });

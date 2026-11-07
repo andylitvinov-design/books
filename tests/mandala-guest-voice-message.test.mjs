@@ -55,7 +55,7 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit follows visible Goal 1 → Goal 2 → Ideas → Montage with native controls",()=>{
+test("macOS WebKit follows Goal 1 → Goal 2 → Ideas → Montage with native clicks",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const style=read("components/mandala-video-mobile.module.css");
@@ -71,7 +71,7 @@ test("macOS WebKit follows visible Goal 1 → Goal 2 → Ideas → Montage with 
  const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
  const montage=flow.indexOf("await montage.tap()",verify);
  assert.ok(first>=0&&last>first&&click>=0&&goal>click&&goalNext>goal&&ideas>goalNext&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
-   "two genuine Goal CTA actions precede Ideas and native topic disclosure / Montage");
+   "native Goal 1 → Goal 2 → Ideas refinement → Montage, no fake shortcut");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
@@ -128,15 +128,20 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(studio.includes('{deepHypnoPane}'),"existing voice and approval controls are retained");
  // Retain real user initiation: Ideas hides this panel until a visible
  // audio/voice shortcut is clicked. A CSS-hidden summary is never clicked.
- const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()');
- const shortcut=browser.indexOf("const revealVoice=phrases.locator",hidden);
- const visible=browser.indexOf("await expect(revealVoice).toBeVisible",shortcut);
- const tapped=browser.indexOf("await revealVoice.click()",visible);
+ const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
+ const voiceTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',modes);
+ const textTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',voiceTab);
+ const recordEntry=browser.indexOf("const recordEntry=phrases.locator",textTab);
+ const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',recordEntry);
+ const visible=browser.indexOf("await expect(recordEntry).toBeVisible",hidden);
+ const tapped=browser.indexOf("await recordEntry.click()",visible);
  const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tapped);
- const options=browser.indexOf("await expect(advancedVoice.locator",opened);
- assert.ok(hidden>=0&&shortcut>hidden&&visible>shortcut&&tapped>visible&&
-  opened>tapped&&options>opened,
-  "WebKit must reveal the real existing voice editor through a visible user click");
+ const details=browser.indexOf('await intentDetails.locator(":scope > summary").click()',opened);
+ const options=browser.indexOf("await expect(advancedVoice.locator",details);
+ assert.ok(modes>=0&&voiceTab>modes&&textTab>voiceTab&&recordEntry>textTab&&
+   hidden>recordEntry&&visible>hidden&&tapped>visible&&opened>tapped&&details>opened&&options>details,
+   "WebKit must use real Ideas Text/Voice, Record click and Hypno summary");
+ assert.ok(browser.includes('data-video-ideas-own-upload'),"own audio upload remains available");
  assert.ok(!browser.includes('await advancedVoice.locator(":scope > summary").click()'),
   "hidden summary interaction is not an acceptable visitor path");
  assert.ok(browser.includes("await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible()"));
