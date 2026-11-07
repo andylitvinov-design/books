@@ -6,6 +6,7 @@
  */
 const {analyzePrTimeline}=require('../ci-pr-timeline-audit.cjs');
 const {summarizeCheckpoints}=require('../pr-checkpoint-evidence.cjs');
+const {analyzeRepairCycles}=require('../pr-repair-cycle-model.cjs');
 const OWNER='andylitvinov-design', REPO='books';
 const API=`https://api.github.com/repos/${OWNER}/${REPO}`;
 const CORE='hh-pr-core-release.yml';
@@ -218,6 +219,7 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  if(!Array.isArray(comments))throw makeError('PR_COMMENTS_UNVERIFIED',503);
  if(comments.length===100)partial=true;
  const events=extractStageReceipts(comments,number);
+ let prTimelineEvents=null;
  // A label proves the recorded conflict signal, never the time spent fixing it.
  // When near the read budget, skip the optional timeline instead of losing core data.
  if(used<15 && (remaining===null||remaining>=reserve)) {
@@ -225,6 +227,7 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
    const labelRows=await gh(`/issues/${number}/timeline?per_page=100`);
    if(Array.isArray(labelRows)){
     if(labelRows.length===100)partial=true;
+    else prTimelineEvents=labelRows;
     events.push(...extractConflictLabels(labelRows,number));
    }else partial=true;
   }catch{partial=true;}
@@ -232,6 +235,11 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  const filtered=checked.filter(r=>r.head_sha===r.pull_requests[0]?.head?.sha ||
    Array.isArray(r.verified_merge_parents));
  const timeline=analyzePrTimeline({pr,runs:filtered,jobs,events,now,runInventoryComplete});
+ // Supplementary steps: NEVER add their calendar spans to the exclusive PR
+ // wall-clock chart; owner/edit/push evidence remains unknown when absent.
+ const repairCycles=analyzeRepairCycles({pr,runs:filtered,jobs,comments,
+   timeline:prTimelineEvents,commentsComplete:comments.length<100,
+   runHistoryComplete:runInventoryComplete&&checked.length===toCollect.length});
  // Reuse the SAME previously fetched PR comment page: zero extra API calls.
  const live=verifiedLiveReceipt(comments,pr);
  if(live){
@@ -295,7 +303,7 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
   merge_to_live_ms:live?.merge_to_live_ms??null,
   created_to_live_ms:live?.created_to_live_ms??null,
   end_to_end_complete:!!live&&mergedAt!==null};
- return {...timeline,live_evidence:live,journey,source:{kind:'GITHUB_READ_ONLY_ON_DEMAND',reads:used,
+ return {...timeline,repair_cycles:repairCycles,live_evidence:live,journey,source:{kind:'GITHUB_READ_ONLY_ON_DEMAND',reads:used,
   exact_head_no_pr_ref_matches:headMatchFallbacks,
   history_partial:partial,remaining_api_quota:remaining,
   known_limitations:[

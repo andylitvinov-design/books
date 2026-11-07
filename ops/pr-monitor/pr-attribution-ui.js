@@ -55,6 +55,64 @@
   const result=elt('div','hh-pr-audit-result');panel.append(result);
   host.append(panel);
   let active=null;
+
+  // Supplementary evidence, never added again to the exclusive PR-clock bars.
+  function renderRepairCycles(report){
+    if(report?.schema!=='HH_PR_REPAIR_CYCLE_V1'||!Array.isArray(report.cycles))return;
+    const section=elt('details','hh-pr-audit-events hh-pr-audit-repair');
+    section.append(elt('summary',null,'Цепочка исправления · '+report.cycles.length+
+      ' подтверждённых ошибок Core CI'));
+    if(!report.cycles.length){
+      section.append(elt('p','hh-pr-audit-none',
+        'В просмотренной истории не найдено завершённых ошибкой Core jobs. Это не доказывает, что ошибок не было.'));
+    }
+    for(const row of report.cycles){
+      const wrap=elt('div','hh-pr-audit-interval');
+      const label='HEAD '+String(row.failed_head||'').slice(0,10);
+      wrap.append(elt('strong',null,label+' · '+(row.failed_job?.name||'Core job')+
+        (row.failed_job?.step?' / '+row.failed_job.step:'')));
+      const failure=link(row.failed_job?.url);
+      if(failure){const a=elt('a',null,' · Лог ошибки');a.href=failure;a.target='_blank';
+        a.rel='noopener noreferrer';wrap.append(a);}
+      const list=elt('ol','hh-pr-audit-event-list');
+      const t=row.timestamps||{},d=row.durations_minutes||{},refs=row.links||{};
+      for(const [title,at,span,url,info] of [
+        ['Ошибка CI',t.ci_failed_at,null,row.failed_job?.url,'Первый завершённый ошибкой job в проверенном Core run'],
+        ['Агент закреплён',t.owner_claimed_at,d.failure_to_claim,refs.claim,
+          row.owner_claimed?'Заявленный владелец: '+row.owner_claimed:'Событие назначения не подтверждено'],
+        ['Начало Repair заявлено',t.repair_declared_at,d.claim_to_repair,refs.repair,
+          'Это отметка о начале, не измеренное время редактирования'],
+        ['Новый HEAD',t.new_head_commit_event_at,d.repair_to_commit_event,refs.next_head,
+          row.next_head?'SHA '+row.next_head.slice(0,12)+' · событие committed ≠ точное время push':'Публикация не подтверждена'],
+        ['Новая CI создана',t.new_ci_created_at,d.commit_event_to_ci,refs.next_ci,
+          'Событие workflow GitHub, не время ожидания исполнителя'],
+        ['Создан первый CI job',t.first_job_created_at,d.ci_to_job_created,refs.next_ci,
+          'Создание job; не начало работы runner'],
+        ['Runner начал job',t.runner_started_at,d.job_created_to_runner,refs.next_ci,
+          'Ожидание может включать workflow needs и concurrency']
+      ]){
+        const item=elt('li');
+        const time=elt('time',null,fmtDate(at));if(at)time.dateTime=at;
+        const value=elt('span',null,title);
+        const href=link(url);
+        if(href){const a=elt('a',null,'Источник');a.href=href;a.target='_blank';
+          a.rel='noopener noreferrer';value.append(' · ',a);}
+        const duration=elt('strong',null,span==null?'—':fmtMin(span));
+        duration.title=info;item.append(time,value,duration);list.append(item);
+      }
+      wrap.append(list,elt('p','hh-pr-audit-foot',
+        'Время реального редактирования, получение задачи агентом и точное время push не установлены. '+
+        'Ошибка job — место сбоя, а не подтверждённая первопричина.'));
+      section.append(wrap);
+    }
+    section.append(elt('p','hh-pr-audit-foot',
+      'Данные только из существующего запроса к GitHub. Отсутствие времени отмечено «—», не нулём. '+
+      'История '+(report.cycles.some(c=>!c.evidence?.run_history_complete||
+        !c.evidence?.timeline_complete||!c.evidence?.comments_complete)?'частичная':'проверена для найденных событий')+
+      '. Интервалы нельзя прибавлять к уже показанному общему времени PR.'));
+    result.append(section);
+  }
+
   function render(data){
     result.replaceChildren();
     const line=elt('div','hh-pr-audit-summary');
@@ -105,6 +163,8 @@
        'Нет подтверждения ≠ ноль минут или неисправность. READY deployment измеряется отдельно от LIVE.'));
       result.append(rows);
     }
+
+    renderRepairCycles(data.repair_cycles);
 
     if(data.source?.history_partial){
       result.append(elt('p','hh-pr-audit-alert',

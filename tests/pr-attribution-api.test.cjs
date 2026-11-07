@@ -54,6 +54,11 @@ test('on-demand API returns real intervals, per-PR timeline, evidence links and 
  assert.equal(out.stage_totals_minutes.waiting_merge,15);
  assert.equal(out.stage_totals_minutes.unattributed,17);
  assert.equal(out.source.history_partial,false);
+ assert.equal(out.repair_cycles.schema,'HH_PR_REPAIR_CYCLE_V1');
+ assert.equal(out.repair_cycles.observed_failed_heads,1);
+ assert.equal(out.repair_cycles.cycles[0].failed_run_id,100);
+ assert.equal(out.repair_cycles.cycles[0].timestamps.owner_claimed_at,null);
+ assert.equal(out.repair_cycles.cycles[0].timestamps.local_edit_started_at,null);
  assert.equal(out.source.reads,6);
  assert(out.chronology.find(x=>x.kind==='repair_started')?.url.includes('issuecomment-123'));
  assert.equal(out.intervals.reduce((s,row)=>s+row.duration_ms,0),out.elapsed_ms);
