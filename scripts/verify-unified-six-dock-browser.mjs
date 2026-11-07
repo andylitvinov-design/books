@@ -297,7 +297,7 @@ async function inspect(browserType,locale,width){
       const root=document.querySelector('[data-mandala-mode="video"]');
       const card=document.querySelector('[data-ideas-subtab="voice"] [data-hypno-voice]');
       const picker=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-voice]');
-      const phrase=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-selection-summary]');
+      const phrase=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-phrase]');
       const selected=document.querySelector('[data-video-ideas-tab="voice"]');
       const c=node=>node?getComputedStyle(node):null;
       return {background:c(root)?.backgroundImage||"",card:c(card)?.backgroundColor||"",

@@ -129,9 +129,8 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // Visitor route: Goals → Ideas → Montage Text → Add video.
-  // Never force a hidden "All stories" button. Keep all subsequent real
-  // four-shot, duration, WAV, video/audio and FFprobe requirements unchanged.
+  // Visitor route: Goals → Ideas → Montage Concept → optional Style → approved Concept → original timeline.
+  // Use the real visitor actions; do not bypass hydration, rights, or editor.
   const continueToIdeas=page.locator('[data-video-continue-scenarios]');
   await continueToIdeas.waitFor({state:'visible',timeout:40000});
   await continueToIdeas.click();
@@ -142,14 +141,13 @@ try {
   await page.waitForFunction(()=>
     document.querySelector('[data-video-quick-control="editor"]')
       ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  // In the existing Montage editor, Settings may remain selected from an earlier
-  // visit. Select the user-visible Style tab rather than silently forcing state.
+  const concept=page.locator('[data-video-montage-concept]');
+  await concept.waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('[data-video-montage-tab="concept"]').getAttribute('aria-pressed'),
+    'true','MONTAGE_MUST_START_WITH_AUTO_CONCEPT');
   const montageStyle=page.locator('[data-video-montage-tab="effects"]');
   await montageStyle.waitFor({state:'visible',timeout:20000});
   await montageStyle.click();
-  // Confirm that Safari actually committed the next workspace and its Style
-  // panel. A stale Ideas scroll must not steal the user's tap; do not force
-  // hidden controls or skip the real Style → Text action.
   await page.waitForFunction(()=>{
     const studio=document.querySelector('[data-mandala-free-video]');
     const style=document.querySelector('[data-video-montage-tab="effects"]');
@@ -159,38 +157,20 @@ try {
       style?.getAttribute('aria-pressed')==='true';
   },undefined,{timeout:15000});
   assert.equal(await editorTab.getAttribute('aria-pressed'),'true','MONTAGE_TAB_MUST_ACTIVATE');
-  // The real Style panel owns the visible green Next CTA. Avoid clicking a
-  // second legacy/hideable Text tab before the visitor progresses naturally.
-  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
-  try {
-    await styleNext.waitFor({state:'visible',timeout:20000});
-  }catch(error){
-    // Only safe boolean / geometry evidence; never read the visitor's text,
-    // recipient details, uploaded audio, media, or unrelated DOM content.
-    const state=await page.evaluate(()=>{
-      const studio=document.querySelector('[data-mandala-free-video]');
-      const panel=document.querySelector('[data-video-basic-editor]');
-      const button=document.querySelector('[data-video-montage-effects] [data-video-montage-next="text"]');
-      const host=button?.closest('[data-video-montage-effects]');
-      const visible=el=>!!el && getComputedStyle(el).display!=='none' &&
-        getComputedStyle(el).visibility!=='hidden' && el.getBoundingClientRect().height>0;
-      return {workspace:studio?.getAttribute('data-active-workspace')||null,
-        montage:panel?.getAttribute('data-montage-panel')||null,
-        effectsVisible:visible(host),buttonVisible:visible(button),
-        activeStyle:document.querySelector('[data-video-montage-tab="effects"]')?.getAttribute('aria-pressed')||null,
-        activeEditor:document.querySelector('[data-video-quick-control="editor"]')?.getAttribute('aria-pressed')||null};
-    }).catch(()=>({browserStateUnavailable:true}));
-    console.error('WEBKIT_MONTAGE_STYLE_STATE',JSON.stringify(state));
-    throw error;
-  }
-  await styleNext.click();
-  // A real Safari pointer action can resolve before React commits its
-  // workspace state. Poll the actual DOM; do not simulate or force a tap.
+  await page.locator('[data-video-montage-tab="concept"]').click();
   await page.waitForFunction(()=>
-    document.querySelector('[data-video-montage-tab="text"]')
+    document.querySelector('[data-video-montage-tab="concept"]')
       ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
-    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
+  await concept.locator('[data-video-concept-approve]').click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-tab="audio"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
+    'true','GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION');
+  const textTools=page.locator('[data-video-concept-text-tools]');
+  await textTools.locator(':scope > summary').click();
+  await textTools.evaluate(node=>{if(!node.open)throw Error('CONCEPT_TEXT_TOOLS_DID_NOT_OPEN')});
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
   await addVideo.click();

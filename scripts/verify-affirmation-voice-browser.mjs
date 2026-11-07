@@ -62,6 +62,12 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
     const refinement=page.locator('[data-video-ideas-refinement]');
     await expect(refinement.locator(":scope > summary")).toBeVisible();
+    // The native details may already be open after the Ideas transition.
+    // Exercise a genuine close/open toggle instead of assuming initial state.
+    if(await refinement.evaluate(node=>node.open)){
+      await refinement.locator(":scope > summary").click();
+      await expect(refinement).not.toHaveAttribute("open","");
+    }
     await refinement.locator(":scope > summary").click();
     await expect(refinement).toHaveAttribute("open","");
     await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
@@ -83,10 +89,27 @@ async function verifyWorkspaceHydration(browser,locale){
       })).catch(()=>({diagnosticsUnavailable:true}));
       throw new Error("WEBKIT_MONTAGE_SINGLE_TAP_NOT_COMMITTED "+JSON.stringify(state),{cause:error});
     }
-    // Old MyTube dropdown is intentionally hidden; actual mobile Montage
-    // exposes six style cards. Verify one real tap, upper player and frames.
+    // Approved UI: one visible Concept proposal, optional registration
+    // overlay on Edit, guest approval, then six original Style cards.
+    const concept=page.locator("[data-video-montage-concept]");
+    await expect(concept).toBeVisible();
+    await expect(page.locator('[data-video-montage-tab="concept"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await expect(concept.locator("[data-video-concept-summary]")).toBeVisible();
+    await concept.locator("[data-video-concept-edit]").click();
+    await expect(page.locator("[data-video-concept-auth-overlay]")).toBeVisible();
+    await page.locator("[data-video-concept-auth-close]").click();
+    await expect(page.locator("[data-video-concept-auth-overlay]")).toHaveCount(0);
+    await concept.locator("[data-video-concept-approve]").click();
+    await expect(page.locator('[data-video-montage-tab="audio"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await page.locator('[data-video-montage-tab="concept"]').tap();
+    await expect(page.locator("[data-video-concept-auto]"))
+      .toHaveAttribute("data-concept-approved","true");
+    // Explicit Style selection remains a real tap, not a render bypass.
     const styleTab=page.locator('[data-video-montage-tab="effects"]');
     await expect(styleTab).toBeVisible();
+    await styleTab.tap();
     await expect(styleTab).toHaveAttribute("aria-pressed","true");
     const styles=page.locator("[data-video-montage-style]");
     await expect(styles).toHaveCount(6);
@@ -378,6 +401,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Montage opens the approved Concept panel by default. A real visitor
+      // taps Style before choosing the scenic film; no hidden/forced clicks.
+      const montageStyleTab=page.locator('[data-video-montage-tab="effects"]');
+      await expect(page.locator('[data-video-montage-tab="concept"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await expect(montageStyleTab).toBeVisible();
+      await montageStyleTab.click();
+      await expect(montageStyleTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
       // Reproduce the owner's iPhone case before recording real voice.
       const selectedStyle=page.locator('[data-video-montage-style="3"]');
       const selectedMaster=page.locator("[data-mandala-master-mp4]");
