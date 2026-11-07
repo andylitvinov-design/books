@@ -208,8 +208,8 @@ export function MandalaAutoVideoDirector({
  const [profileCategory,setProfileCategory]=useState<CanonicalCategoryId>("energy-confidence");
  const [profileFocus,setProfileFocus]=useState<keyof typeof popularTopicCopy.ru>("confidence");
  const [profileDetails,setProfileDetails]=useState("");
- // Let Safari's native <details> own its open attribute. React's controlled
- // "open={state}" can close it between summary default activation and onToggle.
+ // Let Safari's native <details> own its open attribute. Capture user
+ // activation synchronously: WebKit can remount the portal before onToggle.
  // Preserve the last genuine user state only when React remounts this portal.
  const ideaRefinementOpenRef=useRef(false);
  const ideaRefinementNodeRef=useRef<HTMLDetailsElement|null>(null);
@@ -1068,7 +1068,16 @@ export function MandalaAutoVideoDirector({
        if(event.currentTarget===ideaRefinementNodeRef.current)
          ideaRefinementOpenRef.current=event.currentTarget.open;
      }}>
-     <summary>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
+     <summary onClick={event=>{
+       // A real tap/keyboard activation must persist BEFORE async onToggle.
+       // preventDefault avoids Safari toggling native state for a second time.
+       const details=event.currentTarget.parentElement as HTMLDetailsElement|null;
+       if(!details)return;
+       event.preventDefault();
+       const nextOpen=!details.open;
+       ideaRefinementOpenRef.current=nextOpen;
+       details.open=nextOpen;
+     }}>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
        locale==="es"?"Explorar tema, significado y guion (opcional)":
        "Refine topic, meaning and story (optional)"}</summary>
      {topicPanel}

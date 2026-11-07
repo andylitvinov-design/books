@@ -65,10 +65,13 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  const click=flow.indexOf("await continueToIdeas.click()");
  const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
- const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
+ const summary=flow.indexOf('const refineSummary=refinement.locator(":scope > summary")',refinement);
+ const conditional=flow.indexOf('if(await refinement.getAttribute("open")!==null)',summary);
+ const closed=flow.indexOf('await expect(refinement).not.toHaveAttribute("open","")',conditional);
+ const open=flow.indexOf('await refineSummary.click()',closed);
  const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
  const montage=flow.indexOf("await montage.tap()",verify);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
+ assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&refinement>ideas&&summary>refinement&&conditional>summary&&closed>conditional&&open>closed&&verify>open&&montage>verify,
    "one real visitor click reaches Ideas, native topic disclosure, then Montage");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);

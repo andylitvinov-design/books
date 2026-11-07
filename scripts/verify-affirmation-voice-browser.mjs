@@ -61,8 +61,15 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
     const refinement=page.locator('[data-video-ideas-refinement]');
-    await expect(refinement.locator(":scope > summary")).toBeVisible();
-    await refinement.locator(":scope > summary").click();
+    const refineSummary=refinement.locator(":scope > summary");
+    await expect(refineSummary).toBeVisible();
+    // A real user click must open native Safari details. If it was already
+    // open from a previous visitor step, first verify it can close as well.
+    if(await refinement.getAttribute("open")!==null){
+      await refineSummary.click();
+      await expect(refinement).not.toHaveAttribute("open","");
+    }
+    await refineSummary.click();
     await expect(refinement).toHaveAttribute("open","");
     await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
     const montage=page.locator('[data-video-quick-control="editor"]');
