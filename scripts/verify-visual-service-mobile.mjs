@@ -116,12 +116,27 @@ for (const engine of [chromium, webkit]) {
         await action.waitFor({state:"visible"});
         const originalPageUrl=page.url();
         const requests=[];
-        await page.route("**/api/service-enquiries",route=>{
-          // Real CRM is NEVER contacted by synthetic CI; the in-memory
-          // transport fixture aborts every attempted POST before the server.
+        let resolveInterceptedPost, rejectInterceptedPost;
+        // The route handler itself is the authoritative proof that the
+        // synthetic POST was blocked; WebKit need not emit requestfailed.
+        const interceptedPost=new Promise((resolve,reject)=>{
+          resolveInterceptedPost=resolve;
+          rejectInterceptedPost=reject;
+        });
+        await page.route("**/api/service-enquiries",async route=>{
+          // Real CRM is NEVER contacted by synthetic CI; every POST is
+          // aborted before it can reach any server.
           if(route.request().method()==="POST"){
-            requests.push(route.request().postDataJSON());
-            return route.abort("blockedbyclient");
+            const interceptedBody=route.request().postDataJSON();
+            requests.push(interceptedBody);
+            try{
+              await route.abort("blockedbyclient");
+              resolveInterceptedPost(interceptedBody);
+            }catch(error){
+              rejectInterceptedPost(error);
+              throw error;
+            }
+            return;
           }
           return route.continue();
         });
@@ -140,17 +155,26 @@ for (const engine of [chromium, webkit]) {
         const post=page.waitForRequest(req=>
           req.method()==="POST" && new URL(req.url()).pathname==="/api/service-enquiries",
           {timeout:10000});
-        // waitForRequest can fire before the async route interceptor records and
-        // aborts the synthetic POST on WebKit. Await the actual transport failure.
-        const abortedPost=page.waitForEvent("requestfailed",{
-          predicate:req=>req.method()==="POST" &&
-            new URL(req.url()).pathname==="/api/service-enquiries",
-          timeout:10000,
-        });
-        await requestOnly.click();
-        const [consentedRequest,failedRequest]=await Promise.all([post,abortedPost]);
-        assert.ok(failedRequest.failure(),label+" synthetic POST was blocked, not delivered");
+        // waitForRequest precedes routing on WebKit. Await the awaited
+        // route.abort() completion itself, bounded without network writes.
+        let acknowledgementTimeout;
+        const abortAcknowledgement=Promise.race([
+          interceptedPost,
+          new Promise((_,reject)=>{
+            acknowledgementTimeout=setTimeout(
+              ()=>reject(new Error(label+" synthetic POST interception timed out")),10000);
+          }),
+        ]);
+        let consentedRequest, acknowledgedPayload;
+        try{
+          await requestOnly.click();
+          [consentedRequest,acknowledgedPayload]=await Promise.all([post,abortAcknowledgement]);
+        }finally{
+          clearTimeout(acknowledgementTimeout);
+        }
         const payload=consentedRequest.postDataJSON();
+        assert.deepEqual(acknowledgedPayload,payload,
+          label+" exactly the consented POST was aborted before network");
         assert.equal(payload.contactConsent,true,label+" recorded contact consent");
         assert.equal(payload.contact.email,"synthetic@example.invalid",label+" synthetic email only");
         assert.equal(requests.length,1,label+" exactly one synthetic request is intercepted");
