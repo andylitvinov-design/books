@@ -154,5 +154,5 @@ test("physical macOS WebKit reaches guided course through Ready without force or
  assert.match(browser,/await expect\(include\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
  assert.match(browser,/data-guided-eight-sessions/);
  assert.match(browser,/data-meditation-course-contact/);
- assert.match(browser,/assert\.deepEqual\(writes,\[\]\)/);
+ assert.match(browser,/assert\.deepEqual\(writes,\[\],/);
 });
