@@ -3767,12 +3767,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setDuration(packet.duration);
       // A voice-first handoff must not re-open the manual Goal questionnaire
       // after the async IndexedDB read. Hash routing may have already fired.
-      const voiceFirstEntry=window.location.hash==="#voice-studio";
+      const voiceFirstEntry=window.location.hash==="#video-audio";
       setStudioMode("pump");setActiveWorkspace(voiceFirstEntry?"editor":"video");
       if(voiceFirstEntry){
-        setMontagePanel("audio");setBasicPanelTab("voice");
-        setVoiceStudioActivated(true);setShowAdvancedVideo(true);
-        setQuickDetailedOpen(true);
+        setMontagePanel("audio");setBasicPanelTab("music");
+        setShowAdvancedVideo(true);
+        setQuickDetailedOpen(false);
         setDirectorChatOpen(false);setVideoScenarioOpen(false);
       }else{
         setDirectorChatOpen(true);setVideoScenarioOpen(true);

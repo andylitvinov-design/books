@@ -159,9 +159,9 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOp
       await stageMessengerAudio({...prepared,locale,goal,rights:true});
       // Same-tab navigation keeps the one-use session token and the private
       // IndexedDB File. The existing Video Studio alone renders/charges.
-      // Voice-first entry skips the manual Goal/category questionnaire.
-      // The separate Studio transcription flow asks permission before any provider use.
-      window.location.assign("/"+locale+"/holistic-support/mandala#voice-studio");
+      // The Audio montage panel owns the consented transcription controls.
+      // Do not open the unrelated text-to-speech voice narration tool.
+      window.location.assign("/"+locale+"/holistic-support/mandala#video-audio");
     }catch{
       if(mountedRef.current){setError(t.failure);setState("idle");}
     }

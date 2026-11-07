@@ -49,7 +49,7 @@ test("Messenger voice-to-video immediately reveals a single CTA and skips the go
  const ui=readFileSync(new URL("../components/app/messenger-audio-video.tsx",import.meta.url),"utf8");
  const css=readFileSync(new URL("../components/app/messenger-audio-video.module.css",import.meta.url),"utf8");
  assert.match(ui,/panel\.scrollTop=panel\.scrollHeight/);
- assert.match(ui,/#voice-studio/);
+ assert.match(ui,/#video-audio/);
  assert.match(ui,/stageMessengerAudio\(\{\.\.\.prepared,locale,goal,rights:true\}\)/);
  assert.doesNotMatch(ui,/setRights\(|setGoal\(|type="checkbox"|type="text"/);
  assert.match(css,/max-height:min\(46dvh,420px\)/);
@@ -59,8 +59,8 @@ test("Messenger voice-to-video immediately reveals a single CTA and skips the go
 
 test("async Messenger audio handoff does not override voice-first route with Goals",()=>{
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
- assert.match(studio,/const voiceFirstEntry=window\.location\.hash==="#voice-studio"/);
+ assert.match(studio,/const voiceFirstEntry=window\.location\.hash==="#video-audio"/);
  assert.match(studio,/setActiveWorkspace\(voiceFirstEntry\?"editor":"video"\)/);
- assert.match(studio,/setQuickDetailedOpen\(true\)/);
+ assert.match(studio,/setMontagePanel\("audio"\);setBasicPanelTab\("music"\)/);
  assert.match(studio,/setDirectorChatOpen\(false\);setVideoScenarioOpen\(false\)/);
 });
