@@ -68,7 +68,7 @@ export default async function CommandCenterPage(){
   const raw=(await cookies()).get(uiLocaleCookie)?.value;
   const lang:Lang=raw==='es'?'es':raw==='en'?'en':'ru';
   const c=copy[lang];let snapshot:Snap|null=null;
-  try{snapshot=await transaction(getAppConfig(),null,db=>readCommandSnapshot(db),{server:true}) as Snap;}
+  try{snapshot=await transaction(getAppConfig(),null,(db: unknown)=>readCommandSnapshot(db),{server:true}) as Snap;}
   catch{snapshot=null;}finally{await closeDatabase();}
   const envReady=process.env.VERCEL_ENV==='production'&&process.env.HH_CC_TICK_ENABLED==='true';
   const enabled=Boolean(snapshot?.settings?.enabled&&envReady);
