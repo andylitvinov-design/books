@@ -2212,6 +2212,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     chargeRequired:boolean;ready:boolean;blocked:boolean;priceCredits:number
   }|null>(null);
   const [creditBalance,setCreditBalance]=useState<number|null>(null);
+  const [creditSession,setCreditSession]=useState<"checking"|"guest"|"signed_in"|"unavailable">("checking");
+  const [guestFirstVideoUsed,setGuestFirstVideoUsed]=useState(false);
+  const guestRenderRef=useRef(false);
+  const creditSessionProbe=useRef(0);
+  const refreshCreditSession=useCallback(async()=>{
+    const epoch=++creditSessionProbe.current;
+    try{
+      const data=await fetchVideoCreditStatus();
+      if(epoch!==creditSessionProbe.current)return;
+      setCreditBalance(data.balanceCredits);
+      setCreditSession("signed_in");
+    }catch(error){
+      if(epoch!==creditSessionProbe.current)return;
+      setCreditBalance(null);
+      // 401 is explicit; an outage, timeout or 500 cannot bypass the XP ledger.
+      setCreditSession(error instanceof Error&&error.message==="SIGN_IN_REQUIRED"?"guest":"unavailable");
+    }
+  },[]);
   const [creditConfirmed,setCreditConfirmed]=useState(true);
   const [creditRetry,setCreditRetry]=useState(false);
   const creditOpRef=useRef<string|null>(null);
@@ -2226,14 +2244,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   },[]);
   useEffect(()=>{
     if(!creditCatalog?.ready)return;
-    let active=true;
-    void fetchVideoCreditStatus()
-      .then(data=>{if(active)setCreditBalance(data.balanceCredits);})
-      .catch(()=>{if(active)setCreditBalance(null);});
-    return()=>{active=false;};
-  },[creditCatalog?.ready]);
+    void refreshCreditSession();
+    // OAuth runs in a separate tab so the original on-device Blob survives.
+    const onFocus=()=>{void refreshCreditSession();};
+    const onVisible=()=>{if(document.visibilityState==="visible")void refreshCreditSession();};
+    window.addEventListener("focus",onFocus);
+    document.addEventListener("visibilitychange",onVisible);
+    return()=>{
+      creditSessionProbe.current++;
+      window.removeEventListener("focus",onFocus);
+      document.removeEventListener("visibilitychange",onVisible);
+    };
+  },[creditCatalog?.ready,refreshCreditSession]);
   const [musicWarning,setMusicWarning] = useState("");
   const [result, setResult] = useState<Result | null>(null);
+  useEffect(()=>{
+    // Consume the anonymous local trial only once a real encoded Blob exists.
+    // A failed preflight/export does not consume it.
+    if(result&&result.mode!=="catalog"&&guestRenderRef.current)
+      setGuestFirstVideoUsed(true);
+  },[result]);
   const [deliveryChooserOpen,setDeliveryChooserOpen] = useState(false);
   const [exportUnavailable, setExportUnavailable] = useState(false);
   // Browser-only non-personal diagnostic; the user opts in to lower-res retry.
@@ -2598,6 +2628,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     (!uploadedAudio || audioRights) && !audioNeedsAttachment &&
     !audioDurationInvalid && !micRecording && !preparing && !recording && !voiceGenerating && !narrationInvalid && !phrasePending && !photoPending &&
     creditCatalog!==null && (!creditCatalog.chargeRequired||creditCatalog.ready) &&
+    (!creditCatalog.chargeRequired||creditSession==="signed_in"||
+      (creditSession==="guest"&&!guestFirstVideoUsed)) &&
     !creditOpRef.current;
   const previewAudioUrl = samplePreviewId ? presetAudioUrl(samplePreviewId) : uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
@@ -3128,7 +3160,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }catch{/* Missing, expired or unavailable rights always keep the brand. */}
       finally{window.clearTimeout(timeout);}
     }
-    if(creditCatalog.chargeRequired){
+    const guestLocalRender=creditCatalog.chargeRequired&&creditSession==="guest"&&!guestFirstVideoUsed;
+    guestRenderRef.current=guestLocalRender;
+    if(guestLocalRender){setCreditConfirmed(true);setCreditRetry(false);}
+    // Registered exports retain the exact same account-scoped hold/complete
+    // ledger. The first anonymous render is strictly local, no server debit.
+    if(creditCatalog.chargeRequired&&!guestLocalRender){
       const operationId=crypto.randomUUID();
       try{
         const hold=await videoCreditRequest("hold",{operationId});
@@ -3147,13 +3184,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         // Idempotency UUID can release a hold even if the POST response was lost.
         void releaseCredit(operationId);
         const reason=error instanceof Error?error.message:"";
+        if(reason==="SIGN_IN_REQUIRED")void refreshCreditSession();
         setNotice(reason==="VIDEO_CREDITS_INSUFFICIENT"?
           (locale==="ru"?"Кредитов недостаточно. Следующее пополнение — в новом месяце.":
             locale==="es"?"Créditos insuficientes. Se renovarán el mes próximo.":
             "Insufficient credits. Monthly credits renew next month.")
           :reason==="SIGN_IN_REQUIRED"?
-          (locale==="ru"?"Для создания видео войдите в «Мой дом».":
-            locale==="es"?"Inicia sesión para crear vídeos.":"Sign in to create videos.")
+          (locale==="ru"?"Сессия завершилась. Повторите создание: первое видео доступно без входа.":
+            locale==="es"?"La sesión terminó. Inténtalo otra vez: el primer vídeo no requiere acceso.":
+            "Session expired. Retry: your first video does not require sign-in.")
           :(locale==="ru"?"Не удалось зарезервировать кредиты. Списаний нет.":
             locale==="es"?"No se pudieron reservar créditos. Sin cobro.":
             "Could not reserve credits. No charge occurred."));
@@ -3977,7 +4016,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
   }
   async function shareVideo(){
-    if(!result||result.mode==="catalog"||!creditConfirmed)return;
+    if(!result||result.mode==="catalog"||!creditConfirmed||
+      (creditCatalog?.chargeRequired&&creditSession!=="signed_in"))return;
     const file=new File([result.blob],"holistic-house-personal."+result.extension,{type:result.mime});
     if(typeof navigator.share!=="function" ||
       (typeof navigator.canShare==="function" && !navigator.canShare({files:[file]}))){
@@ -4616,6 +4656,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
 
   const createQuickVideo = () => {
+    if(creditCatalog?.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed){
+      setNotice(locale==="ru"?"Первое видео уже создано. Войдите для просмотра, скачивания и следующих роликов.":
+        locale==="es"?"Tu primer vídeo está creado. Accede para verlo, descargarlo y crear más.":
+        "Your first video is created. Sign in to watch, download and make more.");
+      document.getElementById("personal-video-result")?.scrollIntoView({block:"start",behavior:"smooth"});
+      return false;
+    }
     if(photoPending){
       setNotice(locale==="ru"?"Подготовка фото ещё не завершена.":locale==="es"?"La foto aún se está preparando.":"Photo preparation is still in progress.");
       return false;
@@ -4646,6 +4693,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
     // createVideo now decodes the master on the SAME trusted Create gesture.
     return startFromHero();
+  };
+
+  const continueMontageOrGenerate=()=>{
+    // The large Style CTA must advance through the real editing tabs; it is
+    // not an implicit export/auth request. Settings remains optional.
+    if(montagePanel==="effects"||montagePanel==="text"){
+      setMontagePanel(montagePanel==="effects"?"text":"audio");
+      setNotice("");
+      window.requestAnimationFrame(()=>
+        document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
+      return;
+    }
+    createQuickVideo();
   };
 
   // First mobile step is only the short goal, category and optional request.
@@ -5249,9 +5309,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {creditCatalog?.chargeRequired?<p className={videoStyles.quickHint}
           data-video-credit-status role="status" aria-live="polite">
           {creditCatalog.ready
-            ?(locale==="ru"?"1 ролик = 10 кредитов. Баланс: ":
-              locale==="es"?"1 vídeo = 10 créditos. Saldo: ":
-              "1 video = 10 credits. Balance: ")+(creditBalance===null?"—":creditBalance)
+            ?creditSession==="guest"
+              ?(locale==="ru"?"Первое видео бесплатно · вход только для просмотра и скачивания":
+                locale==="es"?"Primer vídeo gratis · entra solo para verlo y descargarlo":
+                "First video free · sign in only to watch and download")
+              :(locale==="ru"?"1 ролик = 10 кредитов. Баланс: ":
+                locale==="es"?"1 vídeo = 10 créditos. Saldo: ":
+                "1 video = 10 credits. Balance: ")+(creditBalance===null?"—":creditBalance)
             :(locale==="ru"?"Кредиты недоступны. Экспорт приостановлен.":
               locale==="es"?"Créditos no disponibles. Exportación pausada.":
               "Credits unavailable. Export paused.")}
@@ -6101,9 +6165,37 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.result} id="personal-video-result" data-video-result hidden={!result}
         data-video-result-mode={result?.mode==="catalog"?"catalog":"rendered"}
         data-video-recording-format={result?.mode==="catalog"?"catalog":result?.extension||"none"}>
-        <h3>{playbackStatus==="ready"?(locale==="ru"?"Готовое видео":locale==="es"?"Vídeo listo":"Finished video")
+        <h3>{result&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
+          ?(locale==="ru"?"Видео создано":locale==="es"?"Vídeo creado":"Video created")
+          :playbackStatus==="ready"?(locale==="ru"?"Готовое видео":locale==="es"?"Vídeo listo":"Finished video")
           :locale==="ru"?"Проверка видео":locale==="es"?"Verificación del vídeo":"Checking your video"}</h3>
-        {result ? (
+        {result&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"?
+          <div className={videoStyles.warning} role="status" data-video-guest-result-gate>
+            <p>{creditSession==="unavailable"
+              ?(locale==="ru"?"Не удалось проверить вход. Повторите проверку, не закрывая эту страницу.":
+                locale==="es"?"No se pudo verificar el acceso. Reinténtalo sin cerrar esta página.":
+                "Sign-in status could not be checked. Retry without closing this page.")
+              :(locale==="ru"?"Первое видео создано без регистрации. Войдите, чтобы посмотреть и скачать готовый файл.":
+                locale==="es"?"Tu primer vídeo se creó sin cuenta. Accede para verlo y descargarlo.":
+                "Your first video was created without sign-in. Sign in to watch and download it.")}</p>
+            <div className={videoStyles.resultActions}>
+              <Link href={(locale==="es"?"/en":"/"+locale)+"/app/portrait"}
+                prefetch={false} target="_blank" rel="noopener noreferrer"
+                className={videoStyles.download} data-video-guest-signin>
+                <UserRound size={18} aria-hidden="true"/>
+                {locale==="ru"?"Войти для просмотра и скачивания":
+                  locale==="es"?"Entrar para ver y descargar":"Sign in to watch & download"}
+              </Link>
+              <button type="button" className={videoStyles.audioDirectLink}
+                onClick={()=>void refreshCreditSession()} data-video-guest-check-session>
+                {locale==="ru"?"Я вошёл · проверить":locale==="es"?"Ya entré · comprobar":"I've signed in · check"}
+              </button>
+            </div>
+            <small>{locale==="ru"?"Сохраните эту вкладку открытой: видео пока хранится только здесь.":
+              locale==="es"?"Mantén esta pestaña abierta: el vídeo solo está aquí.":
+              "Keep this tab open: the video is stored only here."}</small>
+          </div>:null}
+        {result&&(!creditCatalog?.chargeRequired||creditSession==="signed_in"||result.mode==="catalog") ? (
           <>
             {result.mode==="catalog"?<p className={videoStyles.warning}
               data-video-catalog-fallback role="note">
@@ -7281,21 +7373,35 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
             <small>{practiceCopy.total}</small>
             <strong>{creditCatalog?.chargeRequired&&freeVideoSelected
-              ?creditCatalog.priceCredits+" XP"
+              ?creditSession==="guest"
+                ?(locale==="ru"?"Первое видео бесплатно":locale==="es"?"Primer vídeo gratis":"First video free")
+                :creditCatalog.priceCredits+" XP"
               :selectedDraftPrice===null?practiceCopy.noQuote:
                 selectedDraftPrice===0?practiceCopy.free:"$"+selectedDraftPrice.toFixed(2)}</strong>
             <small>{practiceCopy.names[practiceType]} · {practiceCopy.quality[practiceLevels[practiceType]]}
               {" · "}{creditCatalog?.chargeRequired&&freeVideoSelected
-                ?(locale==="ru"?"Списание только после готового видео":
-                  locale==="es"?"Se cobra tras crear el vídeo":"Charged only after the video is ready")
+                ?creditSession==="guest"
+                  ?(locale==="ru"?"Без входа для создания · вход для просмотра и скачивания":
+                    locale==="es"?"Crea sin entrar · accede para ver y descargar":
+                    "Create without sign-in · sign in to watch or download")
+                  :(locale==="ru"?"Списание только после готового видео":
+                    locale==="es"?"Se cobra tras crear el vídeo":"Charged only after the video is ready")
                 :selectedDraftPrice===0?practiceCopy.noCredits:practiceCopy.draft}</small>
           </div>
           <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-            disabled={recording||preparing||!freeVideoSelected||(usingFreeFilmCompilation&&!freeFilmSourcesListed)||voiceGenerating||narrationInvalid||phrasePending} onClick={createQuickVideo}>
+            data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":undefined}
+            disabled={recording||preparing||((montagePanel!=="effects"&&montagePanel!=="text")&&
+              (!freeVideoSelected||(usingFreeFilmCompilation&&!freeFilmSourcesListed)||voiceGenerating||narrationInvalid||phrasePending))}
+            onClick={continueMontageOrGenerate}>
             {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={22} fill="currentColor" aria-hidden="true"/>}
-            {recording||preparing?quick.creating:freeVideoSelected
-              ?(locale==="ru"?"Сгенерировать видео":locale==="es"?"Generar vídeo":"Generate video")+
-                (creditCatalog?.chargeRequired?" · "+creditCatalog.priceCredits+" XP":"")
+            {recording||preparing?quick.creating:
+              montagePanel==="effects"
+                ?(locale==="ru"?"Далее · Добавить текст":locale==="es"?"Siguiente · Añadir texto":"Next · Add text")
+              :montagePanel==="text"
+                ?(locale==="ru"?"Далее · Аудио":locale==="es"?"Siguiente · Audio":"Next · Audio")
+              :freeVideoSelected
+                ?(locale==="ru"?"Сгенерировать видео":locale==="es"?"Generar vídeo":"Generate video")+
+                  (creditCatalog?.chargeRequired&&creditSession==="signed_in"?" · "+creditCatalog.priceCredits+" XP":"")
               :practiceCopy.pending}<ArrowRight size={20} aria-hidden="true"/>
           </button>
           {phrasePending&&<p role="status" className={videoStyles.quickStatus} data-video-phrase-approval-required>
@@ -7312,9 +7418,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {notice?<p role="status" className={videoStyles.quickStatus} aria-live="polite">{notice}</p>:null}
         <p className={videoStyles.quickPrivacy} data-workspace-section="video"><Check size={16} aria-hidden="true"/>
           {creditCatalog?.chargeRequired
-            ?(locale==="ru"?"Списание после проверки готового видео":
-              locale==="es"?"Cobro tras verificar el vídeo":
-              "Charged after finished video verification")
+            ?creditSession==="guest"
+              ?(locale==="ru"?"Создание без регистрации · вход только для просмотра и скачивания":
+                locale==="es"?"Crear sin cuenta · acceder para ver y descargar":
+                "Create without account · sign in to watch and download")
+              :(locale==="ru"?"Списание после проверки готового видео":
+                locale==="es"?"Cobro tras verificar el vídeo":
+                "Charged after finished video verification")
             :quick.noAI}</p>
         <button type="button" className={videoStyles.quickTherapy}
           data-workspace-section="video" data-video-quick-therapy disabled={recording||preparing}
@@ -7724,7 +7834,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           disabled={!canGenerate} onClick={()=>void createVideo()}>
           <Play size={21} fill="currentColor" aria-hidden="true"/>
           {creditCatalog?.chargeRequired
-            ?(locale==="ru"?"Создать за ":locale==="es"?"Crear por ":"Create for ")+creditCatalog.priceCredits+" XP"
+            ?creditSession==="guest"
+              ?(locale==="ru"?"Первое видео бесплатно":locale==="es"?"Primer vídeo gratis":"First video free")
+              :(locale==="ru"?"Создать за ":locale==="es"?"Crear por ":"Create for ")+creditCatalog.priceCredits+" XP"
             :ui.create}
         </button>
       )}
@@ -7755,9 +7867,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       {musicWarning?<p role="status" className={videoStyles.warning}>{musicWarning}</p>:null}
       <p className={videoStyles.privacy}><Check size={15} aria-hidden="true"/>
         {creditCatalog?.chargeRequired
-          ?(locale==="ru"?"Ваше видео создаётся на устройстве; после готовности списываются 10 XP.":
-            locale==="es"?"Se crea en tu dispositivo; se descuentan 10 XP al terminar.":
-            "Created on your device; 10 XP charged after the finished video is verified.")
+          ?creditSession==="guest"
+            ?(locale==="ru"?"Первое видео создаётся бесплатно на устройстве; вход понадобится для просмотра и скачивания.":
+              locale==="es"?"El primer vídeo se crea gratis en tu dispositivo; accede para verlo y descargarlo.":
+              "The first video is generated free on your device; sign in to watch or download.")
+            :(locale==="ru"?"Ваше видео создаётся на устройстве; после готовности списываются 10 XP.":
+              locale==="es"?"Se crea en tu dispositivo; se descuentan 10 XP al terminar.":
+              "Created on your device; 10 XP charged after the finished video is verified.")
           :ui.noStorage}</p>
 
       </details>
