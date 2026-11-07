@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect,useMemo,useState} from "react";
+import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {createPortal} from "react-dom";
 import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
@@ -208,8 +208,15 @@ export function MandalaAutoVideoDirector({
  const [profileCategory,setProfileCategory]=useState<CanonicalCategoryId>("energy-confidence");
  const [profileFocus,setProfileFocus]=useState<keyof typeof popularTopicCopy.ru>("confidence");
  const [profileDetails,setProfileDetails]=useState("");
- // Keep the portal disclosure stable across WebKit summary taps and React rerenders.
- const [ideaRefinementOpen,setIdeaRefinementOpen]=useState(false);
+ // Let Safari's native <details> own its open attribute. React's controlled
+ // "open={state}" can close it between summary default activation and onToggle.
+ // Preserve the last genuine user state only when React remounts this portal.
+ const ideaRefinementOpenRef=useRef(false);
+ const ideaRefinementNodeRef=useRef<HTMLDetailsElement|null>(null);
+ const bindIdeaRefinement=useCallback((node:HTMLDetailsElement|null)=>{
+   ideaRefinementNodeRef.current=node;
+   if(node && ideaRefinementOpenRef.current)node.open=true;
+ },[]);
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
  const [promptClassification,setPromptClassification]=useState<ReturnType<typeof classifyMyTubeRequest>|null>(null);
@@ -1055,8 +1062,12 @@ export function MandalaAutoVideoDirector({
    {profileTarget?createPortal(profilePanel,profileTarget):profilePanel}
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
-   {ideaTarget?createPortal(<details className={css.ideaRefinement} data-video-ideas-refinement
-     open={ideaRefinementOpen} onToggle={event=>setIdeaRefinementOpen(event.currentTarget.open)}>
+   {ideaTarget?createPortal(<details ref={bindIdeaRefinement}
+     className={css.ideaRefinement} data-video-ideas-refinement
+     onToggle={event=>{
+       if(event.currentTarget===ideaRefinementNodeRef.current)
+         ideaRefinementOpenRef.current=event.currentTarget.open;
+     }}>
      <summary>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
        locale==="es"?"Explorar tema, significado y guion (opcional)":
        "Refine topic, meaning and story (optional)"}</summary>
