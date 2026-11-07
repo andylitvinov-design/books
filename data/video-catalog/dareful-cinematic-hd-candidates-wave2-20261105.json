@@ -1,0 +1,690 @@
+{
+  "schemaVersion": "hh-dareful-cinematic-wave2-v1",
+  "reviewedAt": "2026-11-05",
+  "sourceCount": 25,
+  "approvedForPublication": false,
+  "editorialStatus": "SOURCE_URL_LICENSE_VERIFIED__MOTION_AND_FRAME_QA_REQUIRED",
+  "creator": "Joel Holland",
+  "publisher": "Dareful",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "usage": "source discovery and private quality screening only; never a published MP4",
+  "requiresIndividualOwnerApproval": true,
+  "noPaidServices": true,
+  "sources": [
+    {
+      "id": "mountain-lake-sunrise-4k",
+      "sourcePage": "https://dareful.com/free-4k-time-lapse-nature-stock-video-mountain-lake-sunrise/",
+      "mediaUrl": "https://stream.mux.com/Ar6jtNNWtl01d02q4jc1j01FE8S1rHRE8A2NUU01BPAaAAk.m3u8",
+      "suggestedTheme": "goals",
+      "durationSeconds": 21,
+      "visualTags": [
+        "mountain",
+        "lake",
+        "sunrise",
+        "sky"
+      ],
+      "suggestedNames": {
+        "ru": "Горное озеро на рассвете",
+        "en": "Mountain lake sunrise",
+        "es": "Amanecer en un lago de montaña"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "river-forest-landscape",
+      "sourcePage": "https://dareful.com/river-forest-landscape/",
+      "mediaUrl": "https://stream.mux.com/P400fG7tFtAtHTC2rhNGHSziz02vJg5lhl79UgtNBg2SQ.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 41,
+      "visualTags": [
+        "river",
+        "forest",
+        "autumn",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "ru": "Осенняя река с высоты",
+        "en": "River forest landscape",
+        "es": "Río y bosque otoñal"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "tropical-forest-aerial",
+      "sourcePage": "https://dareful.com/tropical-forest-aerial/",
+      "mediaUrl": "https://stream.mux.com/I6xjwR01nS01MQLQ00jpA4NNLt72q9NsMIPuw00RrMWAaek.m3u8",
+      "suggestedTheme": "energy",
+      "durationSeconds": 8,
+      "visualTags": [
+        "tropical",
+        "forest",
+        "green",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "ru": "Тропический лес с высоты",
+        "en": "Tropical forest aerial",
+        "es": "Bosque tropical desde el aire"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "flower-dew-droplets",
+      "sourcePage": "https://dareful.com/flower-dew-droplets/",
+      "mediaUrl": "https://stream.mux.com/Ns5AGWn0102ZahkB01NlmOdn5ghyH6MTRQVSBkMULNXxj00.m3u8",
+      "suggestedTheme": "relationships",
+      "durationSeconds": 26,
+      "visualTags": [
+        "flower",
+        "dew",
+        "garden",
+        "rain"
+      ],
+      "suggestedNames": {
+        "ru": "Капли росы на цветах",
+        "en": "Flower dew droplets",
+        "es": "Rocío sobre flores"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "dusk-dawn-ocean",
+      "sourcePage": "https://dareful.com/dusk-dawn-ocean/",
+      "mediaUrl": "https://stream.mux.com/s8dILQUM0001zmnaJTiyT3LPmQLBdBnfvdq7IeFVK4KRc.m3u8",
+      "suggestedTheme": "relationships",
+      "durationSeconds": 23,
+      "visualTags": [
+        "ocean",
+        "sunrise",
+        "sky",
+        "calm"
+      ],
+      "suggestedNames": {
+        "ru": "Рассвет над океаном",
+        "en": "Dusk dawn ocean",
+        "es": "Amanecer sobre el océano"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "fall-autumn-landscape-2",
+      "sourcePage": "https://dareful.com/fall-autumn-landscape-2/",
+      "mediaUrl": "https://stream.mux.com/z39JycUcM01HlQ14CA00202AarCNwoI01mSjq3txEf00uE1E.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 8,
+      "visualTags": [
+        "autumn",
+        "forest",
+        "trees",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "ru": "Осенняя панорама",
+        "en": "Fall autumn landscape 2",
+        "es": "Panorama otoñal"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "ocean-beach-sunset",
+      "sourcePage": "https://dareful.com/ocean-beach-sunset/",
+      "mediaUrl": "https://stream.mux.com/rjxmzs02ALR4d02zeARj641Jp006nUu2Y01jM1ULXNSvI7c.m3u8",
+      "suggestedTheme": "relationships",
+      "durationSeconds": 99,
+      "visualTags": [
+        "ocean",
+        "sunset",
+        "clouds",
+        "horizon"
+      ],
+      "suggestedNames": {
+        "ru": "Закат над океаном",
+        "en": "Ocean beach sunset",
+        "es": "Atardecer sobre el océano"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "stream-water-nature",
+      "sourcePage": "https://dareful.com/stream-water-nature/",
+      "mediaUrl": "https://stream.mux.com/ozDl00TgxYGyXWXPs8ZpPyuRd02qgSUdPSQ45onebveHc.m3u8",
+      "suggestedTheme": "health",
+      "durationSeconds": 57,
+      "visualTags": [
+        "river",
+        "meadow",
+        "grass",
+        "green"
+      ],
+      "suggestedNames": {
+        "ru": "Река среди лугов",
+        "en": "Stream water nature",
+        "es": "Arroyo entre praderas"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "heavenly-sky-landscape",
+      "sourcePage": "https://dareful.com/heavenly-sky-landscape/",
+      "mediaUrl": "https://stream.mux.com/DU01OM02ron9wIoUOl5TZDZhClB88CGnthn01jSVkX00fNg.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 33,
+      "visualTags": [
+        "forest",
+        "snow",
+        "sky",
+        "sunrise"
+      ],
+      "suggestedNames": {
+        "ru": "Свет над зимним лесом",
+        "en": "Heavenly sky landscape",
+        "es": "Luz sobre el bosque invernal"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "milky-way-star-trails-4k",
+      "sourcePage": "https://dareful.com/free-4k-time-lapse-astro-stock-video-milky-way-star-trails/",
+      "mediaUrl": "https://stream.mux.com/zKOQSKE2XtT00wlePyvgKIi5B5X9BkYsQ027LVSkwgla00.m3u8",
+      "suggestedTheme": "energy",
+      "durationSeconds": 16,
+      "visualTags": [
+        "stars",
+        "galaxy",
+        "night",
+        "sky"
+      ],
+      "suggestedNames": {
+        "ru": "Звёздные следы",
+        "en": "Milky way star trails",
+        "es": "Estelas de la Vía Láctea"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "koolau-mountains-aerial",
+      "sourcePage": "https://dareful.com/koolau-mountains-aerial/",
+      "mediaUrl": "https://stream.mux.com/Ukq3iTE5dAkLMOdyIn7M700NbuTOEaStSVSdLbEGifbI.m3u8",
+      "suggestedTheme": "goals",
+      "durationSeconds": 8,
+      "visualTags": [
+        "mountain",
+        "aerial",
+        "green",
+        "ridge"
+      ],
+      "suggestedNames": {
+        "ru": "Зелёные горные хребты",
+        "en": "Koolau mountains aerial",
+        "es": "Crestas montañosas verdes"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "crashing-waves-sea",
+      "sourcePage": "https://dareful.com/crashing-waves-sea/",
+      "mediaUrl": "https://stream.mux.com/BPgqX6yjb6afu00TRS01l02u9Pqs4IDpfCJks3Zus45Tfo.m3u8",
+      "suggestedTheme": "health",
+      "durationSeconds": 36,
+      "visualTags": [
+        "ocean",
+        "waves",
+        "sand",
+        "water"
+      ],
+      "suggestedNames": {
+        "ru": "Морские волны на песке",
+        "en": "Crashing waves sea",
+        "es": "Olas rompiendo en la arena"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "green-grass-nature",
+      "sourcePage": "https://dareful.com/green-grass-nature/",
+      "mediaUrl": "https://stream.mux.com/R01u187IXasVEn01nMxVAbmNdgNBoljSuUTasYt2W02SgU.m3u8",
+      "suggestedTheme": "energy",
+      "durationSeconds": 17,
+      "visualTags": [
+        "grass",
+        "wind",
+        "garden",
+        "green"
+      ],
+      "suggestedNames": {
+        "ru": "Трава на ветру",
+        "en": "Green grass nature",
+        "es": "Hierba movida por el viento"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "autumn-mountain-landscape",
+      "sourcePage": "https://dareful.com/autumn-mountain-landscape/",
+      "mediaUrl": "https://stream.mux.com/79pdfFf3cfxQdDc7rWVOyKhdZePTQEcClq01OlY4YIEE.m3u8",
+      "suggestedTheme": "goals",
+      "durationSeconds": 60,
+      "visualTags": [
+        "forest",
+        "mountain",
+        "autumn",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "ru": "Осенние горы",
+        "en": "Autumn mountain landscape",
+        "es": "Montañas otoñales"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "coastal-aerial-ocean",
+      "sourcePage": "https://dareful.com/coastal-aerial-ocean/",
+      "mediaUrl": "https://stream.mux.com/aSJnqqLq1kHxhFSZsbNa1zdwBAMtNsguYfRbWO8joJk.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 38,
+      "visualTags": [
+        "coast",
+        "sea",
+        "sky",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "ru": "Побережье с высоты",
+        "en": "Coastal aerial ocean",
+        "es": "Costa desde el aire"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "rapid-water-waves",
+      "sourcePage": "https://dareful.com/rapid-water-waves/",
+      "mediaUrl": "https://stream.mux.com/X00GCEFffH9fnVHj3sritkPkbzoChH7QsynrEtNUySEs.m3u8",
+      "suggestedTheme": "energy",
+      "durationSeconds": 17,
+      "visualTags": [
+        "ocean",
+        "waves",
+        "boats",
+        "bridge"
+      ],
+      "suggestedNames": {
+        "ru": "Морской прибой с высоты",
+        "en": "Rapid water waves",
+        "es": "Oleaje desde el aire"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "trees-looking-up",
+      "sourcePage": "https://dareful.com/trees-looking-up/",
+      "mediaUrl": "https://stream.mux.com/1YUqOQUYXOAGSNh2zsBJzwG00TD00EOAL1eXiiCtlq2yE.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 16,
+      "visualTags": [
+        "forest",
+        "leaves",
+        "trees",
+        "autumn"
+      ],
+      "suggestedNames": {
+        "ru": "Взгляд сквозь кроны",
+        "en": "Trees looking up",
+        "es": "Mirada entre árboles"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "aspen-trees-autumn-4k",
+      "sourcePage": "https://dareful.com/free-4k-stock-video-of-autumn-fall-foliage-aspen-trees-stock-footage/",
+      "mediaUrl": "https://stream.mux.com/9hq1cGZz4p5jGuYSd4klNsRJkm00vkOg01DHDEeCoKJ9g.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 19,
+      "visualTags": [
+        "forest",
+        "autumn",
+        "aspen",
+        "trees"
+      ],
+      "suggestedNames": {
+        "ru": "Золотые осины",
+        "en": "Aspen trees autumn",
+        "es": "Álamos dorados en otoño"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "snow-pines-aerial-4k",
+      "sourcePage": "https://dareful.com/flying-over-snow-covered-pine-trees-4k-stock-video/",
+      "mediaUrl": "https://stream.mux.com/EXL6022rYrPKeeVcurpZjdH1V1u7Mr6z3jS6ULXkSrjo.m3u8",
+      "suggestedTheme": "health",
+      "durationSeconds": 19,
+      "visualTags": [
+        "forest",
+        "snow",
+        "pine",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "ru": "Снежные сосны с высоты",
+        "en": "Snow pines aerial",
+        "es": "Pinos nevados desde el aire"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "scenic-lake-view",
+      "sourcePage": "https://dareful.com/scenic-lake-view/",
+      "mediaUrl": "https://stream.mux.com/JaIkwNlD02fJNXK00NGjldch2LGs34ZH4ImT029F3CABnU.m3u8",
+      "suggestedTheme": "goals",
+      "durationSeconds": 16,
+      "visualTags": [
+        "lake",
+        "mountain",
+        "sky",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "ru": "Горное озеро",
+        "en": "Scenic lake view",
+        "es": "Lago de montaña"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "redwood-national-park-4k",
+      "sourcePage": "https://dareful.com/free-4k-stock-video-of-redwood-national-park-stock-footage/",
+      "mediaUrl": "https://stream.mux.com/BzXB9KmikK42KMVH7QJpAbx1jj5fDtXwNo02V1u45z3A.m3u8",
+      "suggestedTheme": "life",
+      "durationSeconds": 17,
+      "visualTags": [
+        "redwood",
+        "forest",
+        "trees",
+        "nature"
+      ],
+      "suggestedNames": {
+        "ru": "Величественные секвойи",
+        "en": "Redwood national park",
+        "es": "Bosque de secuoyas"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "evening-lake-landscape",
+      "sourcePage": "https://dareful.com/evening-lake-landscape/",
+      "mediaUrl": "https://stream.mux.com/Csdx00ScyFy5fLpEZIqFRx5W2M3aq01fzP46OMbayx4600.m3u8",
+      "suggestedTheme": "health",
+      "durationSeconds": 17,
+      "visualTags": [
+        "lake",
+        "dusk",
+        "sky",
+        "water"
+      ],
+      "suggestedNames": {
+        "ru": "Вечернее озеро",
+        "en": "Evening lake landscape",
+        "es": "Lago al atardecer"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "beach-sand-waves",
+      "sourcePage": "https://dareful.com/beach-sand-waves/",
+      "mediaUrl": "https://stream.mux.com/qox3SY8wEhZdJcisSY26rgBJh302OkRMH4fS7PTVNWYo.m3u8",
+      "suggestedTheme": "health",
+      "durationSeconds": 27,
+      "visualTags": [
+        "ocean",
+        "coast",
+        "sand",
+        "waves"
+      ],
+      "suggestedNames": {
+        "ru": "Волны на песке",
+        "en": "Beach sand waves",
+        "es": "Olas sobre la arena"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "flying-over-field",
+      "sourcePage": "https://dareful.com/flying-over-field/",
+      "mediaUrl": "https://stream.mux.com/WJsR2iTFl3IvigI00IdqLJbYQC2UjiD4IXC3got5ZIcs.m3u8",
+      "suggestedTheme": "energy",
+      "durationSeconds": 37,
+      "visualTags": [
+        "green",
+        "meadow",
+        "sky",
+        "aerial"
+      ],
+      "suggestedNames": {
+        "ru": "Полёт над зелёным полем",
+        "en": "Flying over field",
+        "es": "Vuelo sobre praderas verdes"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    },
+    {
+      "id": "beach-ocean-waves",
+      "sourcePage": "https://dareful.com/beach-ocean-waves/",
+      "mediaUrl": "https://stream.mux.com/e6pkN1MMVJkV002b2uvU9IVqU9VNvTahF42whSu8mlt8.m3u8",
+      "suggestedTheme": "health",
+      "durationSeconds": 25,
+      "visualTags": [
+        "beach",
+        "waves",
+        "ocean",
+        "calm"
+      ],
+      "suggestedNames": {
+        "ru": "Спокойные пляжные волны",
+        "en": "Beach ocean waves",
+        "es": "Olas tranquilas de playa"
+      },
+      "creator": "Joel Holland",
+      "publisher": "Dareful",
+      "licenseId": "cc_by_4_0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourcePageCheckedAt": "2026-11-05",
+      "visualReviewRequired": true,
+      "individualRightsReviewRequired": true,
+      "status": "source_metadata_verified_motion_quality_pending",
+      "approvedForPublication": false
+    }
+  ]
+}
