@@ -68,14 +68,27 @@ async function verifyWorkspaceHydration(browser,locale){
     const montage=page.locator('[data-video-quick-control="editor"]');
     await montage.click();
     await expect(montage).toHaveAttribute("aria-pressed","true");
-    // The approved Montage Style is six visible video-backed cards. Its old
-    // optional Director filter is intentionally hidden; don't force it open.
-    const styleCards=page.locator("[data-video-montage-style]");
-    await expect(page.locator('[data-video-montage-tab="effects"]')).toHaveAttribute("aria-pressed","true");
-    await expect(styleCards).toHaveCount(6);
-    await expect(styleCards.nth(1)).toBeVisible();
-    await styleCards.nth(1).click();
-    await expect(styleCards.nth(1)).toHaveAttribute("aria-pressed","true");
+    await expect(studio).toHaveAttribute("data-active-workspace","editor");
+    // Old MyTube dropdown is intentionally hidden; actual mobile Montage
+    // exposes six style cards. Verify one real tap, upper player and frames.
+    const styleTab=page.locator('[data-video-montage-tab="effects"]');
+    await expect(styleTab).toBeVisible();
+    await expect(styleTab).toHaveAttribute("aria-pressed","true");
+    const styles=page.locator("[data-video-montage-style]");
+    await expect(styles).toHaveCount(6);
+    const minimal=styles.nth(3);
+    await expect(minimal).toBeVisible();
+    const hero=page.locator("[data-video-mandala-hero]");
+    const master=page.locator("[data-mandala-master-mp4]");
+    await minimal.tap();
+    await expect(minimal).toHaveAttribute("aria-pressed","true");
+    await expect(hero).toHaveAttribute("data-video-preview-style","minimal");
+    await expect(hero).toHaveAttribute("data-preview-playing","true");
+    await expect(master).toHaveCount(1);
+    await expect.poll(()=>master.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
+    await expect.poll(()=>master.evaluate(video=>
+      video.readyState>=2&&video.videoWidth>0&&video.videoHeight>0&&!video.error),
+      {timeout:20000}).toBe(true);
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
@@ -280,6 +293,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Reproduce the owner's iPhone case before recording real voice.
+      const selectedStyle=page.locator('[data-video-montage-style="3"]');
+      const selectedMaster=page.locator("[data-mandala-master-mp4]");
+      await expect(selectedStyle).toBeVisible();
+      await expect(selectedMaster).toHaveAttribute("preload","none");
+      if(engine==="webkit")await selectedStyle.tap();
+      else await selectedStyle.click();
+      await expect(selectedStyle).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator("[data-video-mandala-hero]")).toHaveAttribute("data-video-preview-style","minimal");
+      await expect.poll(()=>selectedMaster.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
       // Modern Montage shows the voice and music controls only after choosing Audio.
       // Exercise the real visible tab instead of waiting for an unmounted drawer.
       // Current Montage has four compact tabs. Real duration is under Settings
@@ -660,28 +683,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
-      // The Style screen now has its own visible green Next button. The old
-      // order bar is intentionally HIDDEN on Style, so never force-click it.
-      await expect(page.locator('[data-video-montage-tab="effects"]')).toHaveAttribute("aria-pressed","true");
-      const visibleStyleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
-      await expect(visibleStyleNext).toBeVisible({timeout:30000});
-      await visibleStyleNext.click();
-      await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
+      // The real mobile Montage Style stage intentionally hides the export
+      // button behind its visible "Next · Add text" step. To produce a voiced
+      // movie, choose the real Audio tab, not a hidden Style-step control.
+      const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
+      await expect(montageAudioTab).toBeVisible();
+      await montageAudioTab.click();
+      await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
-      await expect(generate).toHaveAttribute("data-video-montage-next","audio");
-      await generate.click();
-      await expect(page.locator('[data-video-montage-tab="audio"]')).toHaveAttribute("aria-pressed","true");
-      await expect(generate).not.toHaveAttribute("data-video-montage-next",/.+/);
-      await expect(generate).toBeEnabled({timeout:30000});
-      assert.equal(await generate.isDisabled(),false,
-        "approved stereo WAV and licensed source must survive both Montage steps");
+      await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
+      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
+        "newly remixed WAV must automatically attach to local movie");
       // One Create tap decodes the idle MP4 and exports the actual voice video.
       if(engine==="chromium"||engine==="webkit") {
         const sourceVideo=page.locator("[data-mandala-master-mp4]");
         if(await sourceVideo.count()) {
-          assert.equal(await sourceVideo.getAttribute("preload"),"none",
-            "the initial Video Studio must defer the 1 MB HD source");
+          assert.equal(await sourceVideo.getAttribute("preload"),"auto",
+            "the user's earlier Style tap must already prime the real MP4");
         }
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await expect(generate).toBeEnabled({timeout:30000});
@@ -695,6 +714,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
         await generate.click();
+        // The idle source remains preload=none until the user's actual Create
+        // gesture; Safari must then start a physical decode, never a CSS-only
+        // preview or an unverified download.
+        if(await sourceVideo.count()){
+          await expect.poll(()=>sourceVideo.evaluate(video=>video.preload),
+            {timeout:5000}).toBe("auto");
+        }
         phase(engine,"recording-started");
         const output=page.locator("[data-mandala-video-download]");
         phase(engine,"waiting-for-export");
@@ -733,7 +759,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               canClick:create instanceof HTMLButtonElement ? !create.disabled : null,
               source:video instanceof HTMLVideoElement ? {
                 readyState:video.readyState,width:video.videoWidth,height:video.videoHeight,
-                error:video.error?.code??null
+                error:video.error?.code??null,networkState:video.networkState,
+                preload:video.preload,sourceLoaded:Boolean(video.currentSrc)
               } : null,
               resultHidden:result instanceof HTMLElement ? result.hidden : null,
               progress:document.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
