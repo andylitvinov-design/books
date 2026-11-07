@@ -2,17 +2,19 @@
 
 import {useEffect,useRef,useState} from "react";
 import {usePathname} from "next/navigation";
+import Link from "next/link";
 import {MessageCircleQuestion, X} from "lucide-react";
-import {HolisticAgentChat} from "@/components/holistic-agent-chat";
+import {HolisticAgentChat, type HolisticAgentQuickPrompt} from "@/components/holistic-agent-chat";
+import {IHelpTopics, IHelpWelcome} from "@/components/ihelp-welcome";
 import {pageHelpFromRoute} from "@/lib/ihelp/page-context.mjs";
 import type {IHelpPageContext} from "@/lib/ihelp/page-context.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import styles from "./sitewide-ihelp.module.css";
 
 const UI={
- ru:{open:"Открыть iHelp — помощник по странице",close:"Закрыть iHelp",title:"iHelp",subtitle:"ИИ-помощник по странице · не психотерапевт"},
- en:{open:"Open iHelp — page-aware guide",close:"Close iHelp",title:"iHelp",subtitle:"AI guide for this page · not a therapist"},
- es:{open:"Abrir iHelp — guía de la página",close:"Cerrar iHelp",title:"iHelp",subtitle:"Guía IA de esta página · no es terapeuta"},
+ ru:{open:"Открыть iHelp — помощник по странице",close:"Закрыть iHelp",title:"iHelp",subtitle:"ИИ-помощник, не человек и не психотерапевт",ai:"ИИ",orders:"Заказы",clients:"Клиенты"},
+ en:{open:"Open iHelp — page-aware guide",close:"Close iHelp",title:"iHelp",subtitle:"AI assistant, not a person or therapist",ai:"AI",orders:"Orders",clients:"Clients"},
+ es:{open:"Abrir iHelp — guía de la página",close:"Cerrar iHelp",title:"iHelp",subtitle:"Asistente IA, no una persona ni terapeuta",ai:"IA",orders:"Pedidos",clients:"Clientes"},
 } as const;
 
 function routeLocale(pathname:string):PublicLocale {
@@ -43,6 +45,7 @@ export function SitewideIHelp(){
  const [open,setOpen]=useState(false);
  const [nativeVideoOpen,setNativeVideoOpen]=useState(false);
  const [mounted,setMounted]=useState(false);
+ const [quickPrompt,setQuickPrompt]=useState<HolisticAgentQuickPrompt|undefined>(undefined);
  const [context,setContext]=useState<IHelpPageContext>(()=>pageHelpFromRoute({locale,pathname}));
  const launcher=useRef<HTMLButtonElement>(null);
  const dialog=useRef<HTMLElement>(null);
@@ -99,6 +102,12 @@ export function SitewideIHelp(){
    };
  },[open]);
 
+ function chooseTopic(prompt:string){
+   // An explicit chip fills the existing unsent composer; no network call or diagnosis.
+   setQuickPrompt(previous=>({revision:(previous?.revision??0)+1,text:prompt}));
+   window.requestAnimationFrame(()=>dialog.current?.querySelector<HTMLTextAreaElement>(
+     "[data-hh-agent-preview] textarea")?.focus({preventScroll:true}));
+ }
  function close(){
    setOpen(false);
    window.requestAnimationFrame(()=>launcher.current?.focus({preventScroll:true}));
@@ -156,9 +165,19 @@ export function SitewideIHelp(){
          <button type="button" ref={closeButton} className={styles.close} onClick={close}
            aria-label={t.close}><X size={21} aria-hidden="true"/></button>
        </header>
+       <IHelpWelcome locale={locale} section={context.section}/>
        <div className={styles.chat}>
-         <HolisticAgentChat locale={locale} compact pageHelp={context}/>
+         <HolisticAgentChat locale={locale} compact pageHelp={context} quickPrompt={quickPrompt}/>
        </div>
+       <IHelpTopics locale={locale} onSelect={chooseTopic}/>
+       <nav className={styles.bottomNav} aria-label={
+         locale==="ru"?"Разделы сообщений":locale==="es"?"Secciones de mensajes":"Message sections"}>
+         <span aria-current="page">{t.ai}</span>
+         <Link href={"/"+locale+"/app/messages?section=orders"} prefetch={false}
+           onClick={close}>{t.orders}</Link>
+         <Link href={"/"+locale+"/app/messages?section=clients"} prefetch={false}
+           onClick={close}>{t.clients}</Link>
+       </nav>
      </section>
    </div>}
  </>;
