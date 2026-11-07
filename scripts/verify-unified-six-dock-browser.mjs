@@ -342,6 +342,50 @@ try{
    const v=window.visualViewport;
    return Math.abs(el.getBoundingClientRect().bottom-(v?v.offsetTop+v.height:innerHeight))<=3;
  },null,{timeout:10000});
+ // Owner-approved iHelp first turn: browser geometry is checked on the real
+ // Video Studio route, not a static mock. No media render or external AI call.
+ await page.locator('[data-hh-ihelp-trigger]').click();
+ const iHelpDialog=page.locator('[data-video-director-chat-details][role="dialog"]');
+ await iHelpDialog.waitFor({state:'visible',timeout:30000});
+ const iHelpWelcome=iHelpDialog.locator('[data-video-chat-welcome]');
+ await iHelpWelcome.waitFor({state:'visible',timeout:30000});
+ for(const width of [320,390,430]){
+   await page.setViewportSize({width,height:844});
+   const geometry=await page.evaluate(()=>{
+     const root=document.querySelector('[data-video-director-chat]');
+     const thread=root?.querySelector('[class*="thread"]');
+     const welcome=root?.querySelector('[data-video-chat-welcome]');
+     const form=welcome?.querySelector('form[data-video-chat-composer]');
+     const nav=root?.querySelector('[data-video-chat-top-tabs]');
+     const hero=welcome?.querySelector('h2');
+     if(!root||!thread||!welcome||!form||!nav||!hero)return null;
+     const a=thread.getBoundingClientRect(),b=form.getBoundingClientRect(),
+       c=nav.getBoundingClientRect(),d=hero.getBoundingClientRect();
+     return {width:root.getBoundingClientRect().width,formCount:root.querySelectorAll('form[data-video-chat-composer]').length,
+       topicIds:[...welcome.querySelectorAll('[data-video-chat-welcome-goal]')].map(x=>x.getAttribute('data-video-chat-welcome-goal')),
+       formVisible:b.height>=43&&b.top>=a.top-2&&b.bottom<=a.bottom+3,
+       titleVisible:d.top>=a.top-3&&d.top<a.bottom-20,
+       navBottom:c.top>=a.bottom-3,
+       horizontalOverflow:root.scrollWidth-root.clientWidth};
+   });
+   assert.ok(geometry,'IHELP_MOBILE_GEOMETRY_NOT_READY_'+width);
+   assert.ok(geometry.width<=width+2,'IHELP_MOBILE_WINDOW_OVERFLOW_'+width);
+   assert.equal(geometry.formCount,1,'IHELP_ONE_REAL_COMPOSER_'+width);
+   assert.deepEqual(geometry.topicIds,['body','energy','love','business','stress'],
+     'IHELP_TOPIC_CHIPS_MUST_FOLLOW_REFERENCE_'+width);
+   assert.ok(geometry.formVisible,'IHELP_INPUT_MUST_BE_VISIBLE_ABOVE_DOCK_'+width);
+   assert.ok(geometry.titleVisible,'IHELP_HERO_MUST_START_IN_VIEW_'+width);
+   assert.ok(geometry.navBottom,'IHELP_TABS_MUST_FOLLOW_WELCOME_'+width);
+   assert.ok(geometry.horizontalOverflow<=2,'IHELP_OVERFLOW_'+width);
+ }
+ await page.setViewportSize({width:390,height:844});
+ await iHelpWelcome.locator('[data-video-chat-welcome-create]').click();
+ await iHelpDialog.locator('[data-chat-inline-choices]').waitFor({state:'visible',timeout:15000});
+ assert.equal(await iHelpDialog.locator('form[data-video-chat-composer]').count(),1,
+   'IHELP_COMPOSER_STAYS_SINGLE_AFTER_START');
+ await iHelpDialog.locator('[data-video-ihelp-header] button').click();
+ await iHelpDialog.waitFor({state:'hidden',timeout:15000});
+ results.push({journey:"Owner iHelp screenshot → visible composer and category chips at 320/390/430 → real Director choices",passed:true});
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
