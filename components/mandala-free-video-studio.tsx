@@ -20,6 +20,7 @@ import {consumeVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs"
 import {requestConsentedTimedTranscript} from "@/lib/mandala/consented-audio-stt";
 import type {TimedSpeechTranscript,AudioVisualPlan} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import { MandalaVideoDelivery } from "./mandala-video-delivery";
+import { MandalaVideoReady } from "./mandala-video-ready";
 import {appFetch} from "@/lib/app/client-fetch";
 import {paintVideoBrandStamp,resolveVideoExportVariant} from "@/lib/mandala/video-branding.mjs";
 import type {VideoExportVariant,VideoExportCapability} from "@/lib/mandala/video-branding.mjs";
@@ -111,7 +112,7 @@ type Quality = "hd" | "fullhd";
 type Result =
   | { url: string; extension: "mp4" | "webm"; bytes: number; blob: Blob; mime: string; brandVariant: VideoExportVariant; mode?: never }
   | { url: string; extension: "mp4"; bytes: 0; mime: "video/mp4"; mode: "catalog" };
-type StudioWorkspace = "video" | "phrases" | "effects" | "practices" | "pro" | "editor";
+type StudioWorkspace = "video" | "phrases" | "effects" | "practices" | "pro" | "editor" | "ready";
 type Speed = "slow" | "dynamic";
 type Brightness = "soft" | "bright";
 type CaptionMode = "none" | "theme" | "custom";
@@ -224,6 +225,7 @@ const workspaceCopy = {
   effects:{tab:"Гипноэффект",title:"Гипноэффекты",desc:"Мягкие визуальные и звуковые эффекты с честной пометкой экспериментальных функций."},
   practices:{tab:"Курс практик",title:"Курсы и практики",desc:"Выберите фокус, создайте медитацию, практику и личную программу из восьми сессий."},
   pro:{tab:"PRO",title:"PRO генерация",desc:"Персонажи, сюжеты, места и профессиональный режиссёрский бриф."},
+  ready:{tab:"Ready",title:"Видео готово",desc:"Просмотр, сохранение и развитие практики."},
   editor:{tab:"Монтаж",title:"Быстрая генерация",desc:"Видеостиль, фото, голос и музыка — основные настройки видео."}
  },
  en:{
@@ -232,6 +234,7 @@ const workspaceCopy = {
   effects:{tab:"Hypno effect",title:"Hypno effects",desc:"Optional gentle visual and sound effects, with experimental features labelled."},
   practices:{tab:"Practice course",title:"Courses & practices",desc:"Choose your focus, create a meditation and practice, then explore eight guided sessions."},
   pro:{tab:"PRO",title:"PRO generation",desc:"Characters, stories, locations and advanced direction."},
+  ready:{tab:"Ready",title:"Your video is ready",desc:"Preview, save and continue your practice."},
   editor:{tab:"Montage",title:"Quick generation",desc:"Video styles, photo, voice and music — the essential settings."}
  },
  es:{
@@ -240,6 +243,7 @@ const workspaceCopy = {
   effects:{tab:"Efecto hipno",title:"Efectos de hipnosis",desc:"Efectos suaves y opcionales claramente identificados."},
   practices:{tab:"Curso práctico",title:"Cursos y prácticas",desc:"Elige tu enfoque, crea una meditación y una práctica, y descubre ocho sesiones guiadas."},
   pro:{tab:"PRO",title:"Generación PRO",desc:"Personajes, historias, lugares y dirección avanzada."},
+  ready:{tab:"Ready",title:"Tu vídeo está listo",desc:"Mira, guarda y continúa tu práctica."},
   editor:{tab:"Montaje",title:"Generación rápida",desc:"Estilos de vídeo, foto, voz y música."}
  }
 } as const;
@@ -247,12 +251,12 @@ const workspaceCopy = {
 const workspaceTabs=[
  {id:"video",Icon:Film},{id:"phrases",Icon:Heart},
  {id:"editor",Icon:Scissors},{id:"effects",Icon:Sparkles},
- {id:"practices",Icon:Leaf},{id:"pro",Icon:Zap}
+ {id:"pro",Icon:Zap},{id:"ready",Icon:Check}
 ] as const;
 const mobileWorkspaceCopy={
- ru:{video:"Цель",editor:"Монтаж",phrases:"Идеи",effects:"Гипно",practices:"Курс",pro:"PRO"},
- en:{video:"Goal",editor:"Montage",phrases:"Ideas",effects:"Hypno",practices:"Course",pro:"PRO"},
- es:{video:"Objetivo",editor:"Montaje",phrases:"Ideas",effects:"Hipno",practices:"Curso",pro:"PRO"}
+ ru:{video:"Цель",editor:"Монтаж",phrases:"Идеи",effects:"Гипно",practices:"Курс",pro:"PRO",ready:"Ready"},
+ en:{video:"Goal",editor:"Montage",phrases:"Ideas",effects:"Hypno",practices:"Course",pro:"PRO",ready:"Ready"},
+ es:{video:"Objetivo",editor:"Montaje",phrases:"Ideas",effects:"Hipno",practices:"Curso",pro:"PRO",ready:"Ready"}
 } as const;
 
 const studioCopy = {
@@ -2339,6 +2343,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [webkitRecoveryReason,setWebkitRecoveryReason] = useState<string|null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const resultVideoRef=useRef<HTMLVideoElement>(null);
+  const shownReadyResultRef=useRef<string|null>(null);
+  useEffect(()=>{
+    // Only a native, decodable exported video opens Ready automatically.
+    if(!result||result.mode==="catalog"||playbackStatus!=="ready"||!creditConfirmed)return;
+    const player=resultVideoRef.current;
+    if(!player||player.error||player.readyState<2||player.videoWidth<1||player.videoHeight<1)return;
+    if(shownReadyResultRef.current===result.url)return;
+    shownReadyResultRef.current=result.url;
+    setStudioMode("pump");setActiveWorkspace("ready");
+    window.requestAnimationFrame(()=>document.getElementById("free-personal-video")
+      ?.scrollIntoView({block:"start",behavior:"auto"}));
+  },[result,playbackStatus,creditConfirmed]);
   const quickThemeAdvancedRef=useRef<HTMLDetailsElement>(null);
   const premiumVideoRef = useRef<HTMLVideoElement>(null);
   const [premiumReady, setPremiumReady] = useState(false);
@@ -5586,7 +5602,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         onKeyDownCapture={event=>{if(event.key==="Enter"||event.key===" ")quickNavTokenRef.current++;}}>
         {workspaceTabs.map(item=><button type="button" key={item.id}
           data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
-          aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
+          aria-pressed={activeWorkspace===item.id||(activeWorkspace==="practices"&&item.id==="ready")||(!activeWorkspace&&item.id==="video")}
           aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
           onClick={()=>{
             // A new workspace is explicit user intent: retire stale catalog jumps.
@@ -6105,6 +6121,44 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <h3>{workspaceCopy[locale][activeWorkspace].title}</h3>
         <p>{workspaceCopy[locale][activeWorkspace].desc}</p>
       </header> : <span id="video-workspace-panel" className={videoStyles.srOnly}/>}
+      
+      {activeWorkspace==="ready"?<MandalaVideoReady
+        locale={locale} theme={theme} wish={wish} focus={meditationFocus}
+        video={result&&result.mode!=="catalog"?{
+          url:result.url,extension:result.extension,bytes:result.bytes,duration
+        }:null}
+        verified={Boolean(result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed)}
+        checking={Boolean(result&&playbackStatus==="checking")}
+        signedIn={creditSession==="signed_in"}
+        loginUnavailable={creditSession==="unavailable"}
+        disabled={recording||preparing}
+        onRefreshLogin={()=>void refreshCreditSession()}
+        onBackToPro={()=>{setActiveWorkspace("pro");setStudioMode("pump");}}
+        onOpenDelivery={()=>{
+          setDeliveryChooserOpen(true);
+          window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+            document.querySelector("[data-video-messenger-delivery]")
+              ?.scrollIntoView({block:"nearest",behavior:"smooth"})));
+        }}
+        onOpenCourse={()=>{
+          setActiveWorkspace("practices");setStudioMode("therapy");
+          setTherapyJumpRequested(true);
+          window.requestAnimationFrame(()=>document.getElementById("guided-video-series")
+            ?.scrollIntoView({block:"start",behavior:"smooth"}));
+        }}
+        meditationEditor={<MandalaPersonalMeditation
+          locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
+          sound={attachedAudio?appliedAudioName:""}
+          audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
+            attachedAudio?.kind==="preset"?presetAudioUrl(attachedAudio.id):
+              attachedAudio?.kind==="presets"?presetAudioUrl(attachedAudio.ids[0]):null}
+          pace={speed} brightness={brightness}
+          affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
+          focus={meditationFocus} disabled={recording||preparing}
+          onNarrationReady={attachMeditationNarration}
+          onNarrationInvalidated={()=>setAttachedAudio(current=>
+            current?.kind==="file"&&current.nonLoop?null:current)}/>}
+        />:null}
       {studioMode==="pump" ?       <section className={videoStyles.therapyBanner} data-workspace-section="practices" data-video-therapy-banner>
         <div className={videoStyles.therapyBannerCopy}>
           <small>{layout.therapyBannerLabel}</small>
@@ -6659,12 +6713,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   :"Direct file download (if Share did not open)"}
               </a> : null}
             </div>
-            {result.mode!=="catalog" ? <MandalaVideoDelivery
-              key={result.url} locale={locale} open={deliveryChooserOpen}
-              onClose={()=>setDeliveryChooserOpen(false)}
-              blob={result.blob} url={result.url} extension={result.extension}
-              mime={result.mime} bytes={result.bytes} theme={theme}
-              aspect={aspect} duration={duration}/> : null}
             <aside className={videoStyles.postVideoSupport} data-video-post-generation-offers
               aria-labelledby="video-post-support-title">
               <h4 id="video-post-support-title">{postSupport.title}</h4>
@@ -6701,7 +6749,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </>
         ):<p>{ui.myVideosInfo}</p>}
       </section>
-      {!result?<section className={videoStyles.resultEmpty} data-video-result-empty aria-labelledby="video-result-empty-title">
+      
+      {result&&result.mode!=="catalog"&&playbackStatus==="ready"&&creditConfirmed?
+        <MandalaVideoDelivery key={result.url} locale={locale} open={deliveryChooserOpen}
+          onClose={()=>setDeliveryChooserOpen(false)}
+          blob={result.blob} url={result.url} extension={result.extension}
+          mime={result.mime} bytes={result.bytes} theme={theme}
+          aspect={aspect} duration={duration}/> : null}
+       {!result?<section className={videoStyles.resultEmpty} data-video-result-empty aria-labelledby="video-result-empty-title">
         <div className={videoStyles.resultEmptyHead}>
           <Film size={18} aria-hidden="true"/>
           <h3 id="video-result-empty-title">{locale==="ru"?"Готовое видео":
