@@ -258,3 +258,22 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
  assert.match(browser,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
  assert.doesNotMatch(browser,/force:true|setCreditSession\("signed_in"\)/);
 });
+
+
+test("compact Ideas opens its actual opt-in voice editor via visible user control",()=>{
+ const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()');
+ const button=browser.indexOf('const revealVoice=phrases.locator',hidden);
+ const visible=browser.indexOf('await expect(revealVoice).toBeVisible',button);
+ const tap=browser.indexOf('await revealVoice.click()',visible);
+ const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tap);
+ const voiceOptions=browser.indexOf('await expect(advancedVoice.locator',opened);
+ assert.ok(hidden>=0&&button>hidden&&visible>button&&tap>visible&&opened>tap&&voiceOptions>opened);
+ assert.match(browser,/data-video-phrase-audio-shortcut/);
+ assert.match(browser,/data-video-ideas-recording-open="true"/);
+ assert.doesNotMatch(browser,/await advancedVoice\.locator\(":scope > summary"\)\.click\(\)/);
+ for(const required of ["data-video-affirmation-voice-preview","data-hypno-approve",
+  "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",
+  'spawnSync("ffprobe"','spawnSync("ffmpeg"'])
+  assert.ok(browser.includes(required),"do not lose true media/consent coverage: "+required);
+});

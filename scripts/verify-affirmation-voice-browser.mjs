@@ -359,9 +359,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // consented voice editor is an opt-in advanced section, not a missing
       // Phrases control or a forced hidden test-only shortcut.
       const advancedVoice=phrases.locator('[data-video-ideas-advanced-voice]');
+      // The 05 Nov compact Ideas deliberately hides the legacy editor at rest.
+      // Reveal the existing one-instance editor through the REAL 44px visitor
+      // button, never click a CSS-hidden summary or silently enable recording.
+      await expect(advancedVoice).toBeHidden();
+      const revealVoice=phrases.locator('[data-video-phrase-audio-shortcut]');
+      await expect(revealVoice).toBeVisible({timeout:15000});
+      await expect(revealVoice).toBeEnabled();
+      await revealVoice.click();
+      const expanded=phrases.locator('[data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]');
+      await expanded.waitFor({state:"visible",timeout:15000});
       await advancedVoice.waitFor({state:"visible",timeout:15000});
-      await expect(advancedVoice).not.toHaveAttribute("open","");
-      await advancedVoice.locator(":scope > summary").click();
       await expect(advancedVoice).toHaveAttribute("open","");
       await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible();
       for(const name of ["tone","focus","length"])
