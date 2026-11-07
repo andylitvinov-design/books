@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {suggestCommandTask,ownerTaskActions} from '@/lib/command-center/mobile-intake.mjs';
 import styles from './command-center-mobile.module.css';
 import CommandCenterVoiceButton from './command-center-voice-button';
+import CommandCenterBatch from './command-center-batch';
 
 const labels={
  ru:{home:'Главная',tasks:'Задачи',agents:'Агенты',projects:'Проекты',hello:'Мой брифинг',subtitle:'Проекты и агенты · фактический статус',
@@ -289,7 +290,10 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
    tab==='tasks'?<section className={styles.section}><div className={styles.heading}><h1>{t.tasks}</h1><span>{snapshot?.partial?tasks.length+'+':snapshot?.brief?.total??tasks.length}</span></div>
      <div className={styles.filters}>{[['all',t.all],['active',t.active],['blocked',t.blocked]].map(([value,label])=>
        <button type="button" key={value} onClick={()=>setFilter(value)} className={filter===value?styles.selectedFilter:''}>{label}</button>)}</div>
-     {visibleTasks.map(taskCard)}{!visibleTasks.length&&<div className={styles.empty}>{t.noTasks}</div>}
+     <CommandCenterBatch key={filter} lang={lang} tasks={visibleTasks} projects={projects}
+      available={available} enabled={enabled} busy={busy}
+      onRun={taskIds=>send('run_selected_safe',{taskIds})}
+      onOpen={id=>setSelected(id)}/>
     </section>:
    tab==='agents'?<section className={styles.section}><div className={styles.heading}><h1>{t.agents}</h1><span>{registry.length}</span></div>
     {snapshot?.brief?.missingProof>0&&<p className={styles.auditGap} role="status">⚠ {t.missingProofCount}: {snapshot.brief.missingProof}</p>}
