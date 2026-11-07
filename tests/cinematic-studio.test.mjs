@@ -79,7 +79,7 @@ test("long-running cinematic preview loops actual scene times and synchronized a
   assert.equal(findCinematicShot(film.shots,cinematicPreviewSeconds(film,28))?.number,2);
   assert.match(studio,/const filmSecond=storyboard\?cinematicPreviewSeconds\(storyboard,time\):time/);
   assert.match(studio,/const frameSecond=cinematicPlan\?cinematicPreviewSeconds\(cinematicPlan,elapsed\):elapsed/);
-  assert.match(studio,/paintVideoAffirmations\(ctx,frameSecond,affirmationLines,affirmations\)/,
+  assert.match(studio,/paintVideoAffirmations\(ctx,frameSecond,affirmationLines,affirmations,duration\)/,
     "looping visual stage and timed affirmations must share one clock");
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,frameTime/,
     "final encoded video still uses the original bounded timeline");
@@ -89,7 +89,7 @@ test("long-running cinematic preview loops actual scene times and synchronized a
     "the selected stock shot advances on the very same export timeline");
   assert.match(studio,/if\(usingFreeFilmCompilation&&!stockFrame\)[\s\S]*?stockGapSince>500[\s\S]*?stopJob\(job,true\)/,
     "brief buffering keeps the real frame; a missing shot cancels rather than substituting procedural footage");
-  assert.match(studio,/paintVideoAffirmations\(ctx,frameTime,affirmationLines,affirmations\)/,
+  assert.match(studio,/paintVideoAffirmations\(ctx,frameTime,affirmationLines,affirmations,duration\)/,
     "encoded captions must use the same clock as the real video frame");
 });
 

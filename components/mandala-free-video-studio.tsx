@@ -5857,7 +5857,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
       <div className={videoStyles.heroWithRail} data-video-player-with-controls>
       <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero
-        data-hero-promo={activeWorkspace!=="phrases"&&creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording?"true":"false"}
+        data-hero-promo={creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording&&activeWorkspace!=="phrases"?"true":"false"}
          data-video-therapy-preview={studioMode==="therapy"?"true":"false"}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
         data-video-preview-style={activeMontageStyleId||cinematicPlan?.styleId||"original"}
@@ -6286,8 +6286,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onCreate={goToMontageFromIdeas}/>
           {/* One persistent editor instance; collapsed by default in Ideas.
               Do not unmount it between workspaces or duplicate audio state. */}
-          <div data-video-legacy-phrase-editor data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}
-            hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
+          <div data-video-legacy-phrase-editor
+            hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}
+            data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}>
             <details className={videoStyles.phraseAudioSettings}
               data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}
               onToggle={event=>setIdeasVoiceAdvancedOpen(event.currentTarget.open)}>

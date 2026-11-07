@@ -92,7 +92,7 @@ test("Ideas uses original Canvas to show the first selected line and rise throug
  assert.match(paint,/ctx\.fillText\(part,width\*0\.5,lineY,maxWidth\)/);
  assert.match(cmp,/motion:"rise"/);
  assert.match(cmp,/enabled:picked\.length>0/);
- assert.match(studio,/data-hero-promo=\{activeWorkspace!=="phrases"&&/);
+ assert.match(studio,/data-hero-promo=\{creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording&&activeWorkspace!=="phrases"/);
  assert.match(studio,/paintVideoAffirmations\(ctx,previewSeekSeconds,affirmationLines,affirmations,duration\)/);
  assert.equal((studio.match(/paintVideoAffirmations\(ctx,[^,]+,affirmationLines,affirmations,duration\)/g)||[]).length,5);
 });
