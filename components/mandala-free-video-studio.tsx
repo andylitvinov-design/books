@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { flushSync } from "react-dom";
-import { ArrowRight, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X, Save, FolderOpen, Type } from "lucide-react";
+import { ArrowRight, BarChart3, Camera, Check, ChevronDown, ChevronRight, ListVideo, RefreshCw, Coins, Download, Film, HandHeart, Headphones, Heart, HeartPulse, Leaf, Sprout, Music2, AudioLines, Clock3, Smile, Paperclip, Search, Mic, Pause, Play, Share2, Scissors, SlidersHorizontal, Sparkles, Target, TestTubeDiagonal, UserRound, Zap, X, Save, FolderOpen, Type, MessageCircleQuestion } from "lucide-react";
 import { moneyScenes } from "@/lib/mandala/money-flow-effects";
 import freeSceneTaxonomy from "@/data/video-catalog/scene-taxonomy.json";
 import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v1.json";
@@ -1906,6 +1906,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(()=>setStudioHydrated(true),[]);
   const [directorChatOpen,setDirectorChatOpen] = useState(false);
   const [videoIHelpOpen,setVideoIHelpOpen] = useState(false);
+  const [studioIntroOpen,setStudioIntroOpen] = useState(false);
   const videoIHelpCloseRef=useRef<HTMLButtonElement|null>(null);
   // Sitewide iHelp opens the SAME Director, without resetting Studio state,
   // previously selected clips, text, audio or video settings.
@@ -1925,7 +1926,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   function closeVideoIHelp(){
     setVideoIHelpOpen(false);
     window.requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>(
-      "[data-hh-ihelp-trigger]")?.focus({preventScroll:true}));
+      "[data-video-ihelp-header-trigger], [data-hh-ihelp-trigger]")?.focus({preventScroll:true}));
   }
   useEffect(()=>{
     window.dispatchEvent(new CustomEvent("hh:ihelp-video-director-state",
@@ -5318,6 +5319,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               locale==="es"?"Estudio de vídeo · Crear":
               "Video Studio · Create video"}</small>
           </span>
+          <button type="button" className={videoStyles.quickBrandIHelp}
+            data-video-ihelp-header-trigger data-hh-ihelp-trigger
+            aria-label={locale==="ru"?"Открыть iHelp — AI-видеорежиссёр":
+              locale==="es"?"Abrir iHelp — director de vídeo":"Open iHelp — AI video director"}
+            aria-haspopup="dialog" aria-controls="hh-ihelp-video-director-dialog"
+            disabled={!studioHydrated}
+            onClick={()=>window.dispatchEvent(new CustomEvent<{handled:boolean}>(
+              "hh:ihelp-open-video-director",{detail:{handled:false}}))}>
+            <MessageCircleQuestion size={18} aria-hidden="true"/><span>iHelp</span>
+          </button>
           <Link href={"/"+locale+"/holistic-support/mandala?mode=photo"} prefetch={false}
             className={videoStyles.quickBrandPhoto} data-video-open-photo-mandala
             aria-label={locale==="ru"?"Фотомандалы":locale==="es"?"Fotomandalas":"Photo mandalas"}>
@@ -5653,21 +5664,34 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
         </button>
       </section>
-      <aside className={videoStyles.heroRail} aria-label={locale==="ru"?"Видеопримеры":locale==="es"?"Ejemplos":"Video samples"}>
-        <button type="button" data-video-next-sample disabled={recording||preparing}
-          aria-label={locale==="ru"?"Следующий видеопример":locale==="es"?"Siguiente vídeo":"Next video"}
-          onClick={()=>quickPickStyle((quickStyleIndex+1)%quickStylePosters.length)}>
-          <ChevronRight size={22} aria-hidden="true"/>
+      <aside className={videoStyles.heroRail} data-video-intro-my-rail
+        aria-label={locale==="ru"?"Введение и мой ролик":locale==="es"?"Introducción y mi vídeo":"Intro and my video"}>
+        <button type="button" className={videoStyles.heroRailIntro} data-video-intro-info
+          aria-expanded={studioIntroOpen} aria-controls="video-studio-intro-guide"
+          onClick={()=>setStudioIntroOpen(open=>!open)}>
+          <Play size={19} aria-hidden="true"/><strong>Intro</strong>
+          <span>{locale==="ru"?"Как это работает":locale==="es"?"Cómo funciona":"How it works"}</span>
+          <ChevronRight size={17} aria-hidden="true"/>
         </button>
-        <button type="button" data-video-open-scenarios
-          aria-label={locale==="ru"?"Посмотреть четыре сценария":locale==="es"?"Ver cuatro historias":"See four stories"}
-          onClick={openVideoScenarioStep}>
-          <ListVideo size={20} aria-hidden="true"/>
-        </button>
-        <button type="button" data-video-another-sample disabled={recording||preparing}
-          aria-label={locale==="ru"?"Другой видеопример":locale==="es"?"Otro vídeo":"Another example"}
-          onClick={()=>quickPickStyle((quickStyleIndex+2)%quickStylePosters.length)}>
-          <RefreshCw size={20} aria-hidden="true"/>
+        <button type="button" className={videoStyles.heroRailMine} data-video-my-film
+          onClick={()=>{
+            setStudioIntroOpen(false);
+            if(result){
+              setActiveWorkspace("video");
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+                document.getElementById("personal-video-result")?.scrollIntoView({
+                  behavior:"smooth",block:"start"})));
+            }else{
+              setActiveWorkspace("editor");setMontagePanel("effects");
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+                document.querySelector("[data-video-montage-tools]")?.scrollIntoView({
+                  behavior:"smooth",block:"nearest"})));
+            }
+          }}>
+          <FolderOpen size={20} aria-hidden="true"/>
+          <strong>{locale==="ru"?"Мой ролик":locale==="es"?"Mi vídeo":"My video"}</strong>
+          <span>{locale==="ru"?"Ролик и черновик":locale==="es"?"Vídeo y borrador":"Video & draft"}</span>
+          <ChevronRight size={17} aria-hidden="true"/>
         </button>
       </aside>
       {activeWorkspace==="effects" ? <aside className={videoStyles.hypnoStageTitle}
@@ -5692,6 +5716,30 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </aside>
       ) : null}
       </div>
+      <section id="video-studio-intro-guide" className={videoStyles.studioIntroGuide}
+        hidden={!studioIntroOpen||(activeWorkspace!=="video"&&activeWorkspace!=="editor")}
+        data-video-intro-guide aria-label={locale==="ru"?"Как создать видео":locale==="es"?"Cómo crear un vídeo":"How to make a video"}>
+        <strong>{locale==="ru"?"Как создать своё видео":locale==="es"?"Cómo crear tu vídeo":"How to create your video"}</strong>
+        <p>{locale==="ru"?"1. Выберите цель. 2. Подберите слова и стиль. 3. Добавьте аудио и создайте ролик.":
+          locale==="es"?"1. Elige un objetivo. 2. Ajusta las palabras y el estilo. 3. Añade audio y crea el vídeo.":
+          "1. Choose a goal. 2. Pick words and style. 3. Add audio and create your video."}</p>
+        <div className={videoStyles.studioIntroSamples}>
+          <button type="button" data-video-next-sample disabled={recording||preparing}
+            onClick={()=>quickPickStyle((quickStyleIndex+1)%quickStylePosters.length)}>
+            <ChevronRight size={16} aria-hidden="true"/>
+            {locale==="ru"?"Другой видеопример":locale==="es"?"Otro ejemplo":"Another sample"}
+          </button>
+          <button type="button" data-video-open-scenarios onClick={openVideoScenarioStep}>
+            <ListVideo size={16} aria-hidden="true"/>
+            {locale==="ru"?"Посмотреть сценарии":locale==="es"?"Ver escenas":"See scenarios"}
+          </button>
+          <button type="button" data-video-another-sample disabled={recording||preparing}
+            onClick={()=>quickPickStyle((quickStyleIndex+2)%quickStylePosters.length)}>
+            <RefreshCw size={16} aria-hidden="true"/>
+            {locale==="ru"?"Ещё пример":locale==="es"?"Otro":"More"}
+          </button>
+        </div>
+      </section>
 
       {/* Show the introductory film separately; the Canvas stays usable. */}
       {(introVideoId||locale==="en") ? <section className={videoStyles.therapyIntroStandalone}
@@ -7035,6 +7083,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <button type="button" aria-pressed={brightness==="soft"} onClick={()=>setBrightness("soft")}>{ui.soft}</button>
               <button type="button" aria-pressed={brightness==="bright"} onClick={()=>setBrightness("bright")}>{ui.bright}</button>
             </fieldset>
+            <button type="button" className={videoStyles.montageStepNext}
+              data-video-montage-next="text" disabled={recording||preparing}
+              onClick={()=>setMontagePanel("text")}>
+              <Type size={19} aria-hidden="true"/>
+              <span>{locale==="ru"?"Далее · Добавить текст":
+                locale==="es"?"Siguiente · Añadir texto":"Next · Add text"}</span>
+              <ArrowRight size={20} aria-hidden="true"/>
+            </button>
           </div> : null}
           {montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact} data-video-montage-audio>
             <div className={videoStyles.montageAudioMode} role="group"

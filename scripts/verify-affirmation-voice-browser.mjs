@@ -655,9 +655,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="editor"]').click();
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
-      await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
-      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
-        "newly remixed WAV must automatically attach to local movie");
+      // The approved Montage is a guided sequence. A Style click advances to
+      // Add text, then Audio; only the third visitor click starts the recorder.
+      // Exercise the ACTUAL visible transitions, never bypass or force-click
+      // the final protected video/audio export action.
+      await expect(page.locator('[data-video-montage-tab="effects"]')).toHaveAttribute("aria-pressed","true");
+      await expect(generate).toHaveAttribute("data-video-montage-next","text");
+      await generate.click();
+      await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
+      await expect(generate).toHaveAttribute("data-video-montage-next","audio");
+      await generate.click();
+      await expect(page.locator('[data-video-montage-tab="audio"]')).toHaveAttribute("aria-pressed","true");
+      await expect(generate).not.toHaveAttribute("data-video-montage-next",/.+/);
+      await expect(generate).toBeEnabled({timeout:30000});
+      assert.equal(await generate.isDisabled(),false,
+        "approved stereo WAV and licensed source must survive both Montage steps");
       // One Create tap decodes the idle MP4 and exports the actual voice video.
       if(engine==="chromium"||engine==="webkit") {
         const sourceVideo=page.locator("[data-mandala-master-mp4]");
