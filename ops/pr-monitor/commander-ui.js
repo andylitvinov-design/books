@@ -28,6 +28,7 @@
   s.projects.forEach((p,i)=>{const tasks=allTasks(p),c=panel(p.title);c.append(el('p','hh-cc-muted',p.summary));row(c,'Открыть '+p.stages.length+' этапов и '+tasks.length+' подзадач',tasks.filter(t=>t.status==='blocked').length+' блокеров · '+tasks.filter(t=>t.prs.length).length+' задач с PR','/project-management-public.html',String(i+1))});footer(s);
  }
  function agents(s){hero('Агенты','Только наблюдаемые события и проверяемые действия');
+  const skillPanel=panel('🧩 Библиотека навыков','/skills.html','Открыть каталог ›');skillPanel.append(el('p','hh-cc-muted','30 SKILL.md: по подзадаче Commander подберёт подходящие инструкции, даст проверить и скачать пакет для исполнителя. Без запуска агента или платного API.'));
   const a=panel('♧ ChatGPT и автоматизации');a.append(el('p','hh-cc-muted','Реальная активность измеряется отдельным наблюдением, а не количеством чатов. Число активных сейчас неизвестно без свежего проверенного источника.'));
   const al=el('a','hh-cc-external','Смотреть счётчик GPT-агентов в PR Monitor ›');al.href='/pr-monitor.html';a.append(al);
   const b=panel('⚙ GitHub Watchdog и Repair Worker');b.append(el('p','hh-cc-muted','Проверка текущего PR и HEAD, разрешённый запуск только через существующий защищённый процесс. Подготовленная передача задачи ещё не коммит.'));
