@@ -177,7 +177,7 @@
  async function analyze(input,output,area,status,button){
   const raw=input.value.trim();
   if(raw.length<8){status.textContent='Опишите задачу хотя бы в нескольких словах.';input.focus();return}
-  const token=++analysisEpoch;area.hidden=false;const localBrief=buildTaskBrief(raw);output.value=localBrief;
+  const token=++analysisEpoch;area.hidden=false;area.dataset.sourceRaw=raw;const localBrief=buildTaskBrief(raw);output.value=localBrief;
   status.textContent='Готовый промпт сформирован: что сделать, хороший результат, ориентиры и контекст. Проверяю доступность ИИ владельца…';
   button.disabled=true;button.textContent='Разбираю…';
   try{
@@ -237,6 +237,10 @@
    sendDraft.type='button';sendDraft.addEventListener('click',()=>{
     if(typeof global.HHCommanderTransfer?.begin!=='function'){
      dictation.textContent='Передача недоступна. Используйте копирование промпта.';return}
+    // Owner edits invalidate previously computed brief; never send stale steps or acceptance.
+    if(!area.hidden&&area.dataset.sourceRaw!==input.value.trim()){
+     dictation.textContent='Описание изменилось после разбора. Сначала нажмите «Разобрать задачу» ещё раз.';return;
+    }
     global.HHCommanderTransfer.begin({
      raw:input.value,fullPrompt:area.hidden?'':output.value
     },dictation);

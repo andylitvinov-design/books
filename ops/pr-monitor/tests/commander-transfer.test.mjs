@@ -34,3 +34,10 @@ test('no task sent until one-time ready; sending never saves or launches',()=>{
  assert.match(read('commander-task-input.js'),/HHCommanderTransfer\.begin/);
  assert.doesNotMatch(read('commander-transfer.js'),/fetch\(|XMLHttpRequest|workflow_dispatch|localStorage|sessionStorage/);
 });
+
+test('source edit invalidates analyzed prompt until owner re-runs breakdown',()=>{
+ const ui=read('commander-task-input.js');
+ assert.match(ui,/area\.dataset\.sourceRaw=raw/);
+ assert.match(ui,/area\.dataset\.sourceRaw!==input\.value\.trim\(\)/);
+ assert.match(ui,/Описание изменилось после разбора/);
+});
