@@ -7,6 +7,7 @@
  let panel=null,body=null,loginForm=null,main=null,notice=null,agentSel=null,modelSel=null,
      editor=null,sendBtn=null,history=null,reportList=null,reportBtn=null,modeDesc=null;
  let catalog=null,connected=false,openrouterConnected=false,models=[],messages=[],reportCache=[];
+ const renderedGh=new Set();
  const mk=(tag,cls,text)=>{
   const e=document.createElement(tag);if(cls)e.className=cls;
   if(text!==undefined)e.textContent=String(text);return e;
@@ -28,7 +29,7 @@
   const who=mk('div','pm-chat-who',actor==='user'?'Вы':actor==='agent'?'AI-исполнитель':'Монитор GitHub');
   item.appendChild(who);item.appendChild(mk('p','pm-chat-text',text));
   if(meta)item.appendChild(mk('small','pm-chat-meta',meta));
-  if(linkUrl&&/^https:\/\/github\.com\/andylitvinov-design\/books\/issues\/(?:1419|3128)#issuecomment-\d+$/.test(linkUrl)){
+  if(linkUrl&&/^https:\/\/github\.com\/andylitvinov-design\/books\/issues\/(?:1419|3128|3890)#issuecomment-\d+$/.test(linkUrl)){
    const a=mk('a','pm-chat-report-link','Исходный отчёт');a.href=linkUrl;a.target='_blank';
    a.rel='noopener noreferrer';item.appendChild(a);
   }
@@ -62,7 +63,8 @@
   const mode=agentSel.value;
   modelSel.disabled=mode!=='openrouter'||!openrouterConnected;
   modeDesc.textContent=mode==='local'?'Работает сейчас, без внешнего API. Советы, а не изменение кода.':
-    mode==='openrouter'?'Внешний запрос только в модель :free с проверкой цены $0. Не отправляйте персональные данные.':
+    mode==='openrouter'?'Приватная модель требует отдельного серверного ключа Vercel. Бесплатная модель, без платного fallback.':
+    mode==='github'?'OpenRouter Free с уже подключённым GitHub-ключом. Вопрос будет ПУБЛИЧНЫМ; подтвердите комментарий на GitHub. Ответ появится в отчётах после существующего Watchdog.':
     'Выберите доступного исполнителя.';
  }
  async function readStatus(){
@@ -112,6 +114,28 @@
   e.preventDefault();if(!connected)return;
   const text=editor.value.trim();if(text.length<2||text.length>1200){msg('Сообщение должно содержать от 2 до 1200 символов.');return;}
   const mode=agentSel.value;if(mode==='openrouter'&&(!openrouterConnected||!modelSel.value)){msg('Выберите подключённую бесплатную модель OpenRouter.');return;}
+  if(mode==='github'){
+    if(!window.confirm('ВНИМАНИЕ: GitHub Agent Inbox #3890 — ПУБЛИЧНЫЙ технический канал. Сообщение будет видно всем после публикации на GitHub. Никаких персональных данных, паролей и API-ключей. Подготовить команду?')){
+      msg('Передача в публичный GitHub отменена. Приватный чат не изменён.');return;
+    }
+    const tasks=selectedTasks();
+    const prompt='!pm ask '+(tasks.length?'Задачи '+tasks.join(', ')+'. ':'')+text;
+    if(prompt.length>1200){msg('Слишком длинный публичный запрос: сократите текст или число задач.');return;}
+    const block=mk('div','pm-chat-line pm-chat-agent');
+    block.append(mk('p','pm-chat-text','КОМАНДА ПОДГОТОВЛЕНА — НЕ ОТПРАВЛЕНА В GITHUB'));
+    const input=mk('textarea','pm-chat-editor');input.value=prompt;input.readOnly=true;input.rows=4;
+    input.setAttribute('aria-label','Публичная команда для GitHub OpenRouter Free');
+    block.append(input);
+    const gh=mk('a','pm-chat-report-link','Открыть GitHub Agent Inbox #3890');
+    gh.href='https://github.com/andylitvinov-design/books/issues/3890#new_comment_field';
+    gh.target='_blank';gh.rel='noopener noreferrer';block.append(gh);
+    history.append(block);history.scrollTop=history.scrollHeight;
+    try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(prompt);}
+    catch(_){input.focus();input.select();}
+    editor.value='';
+    msg('Команда подготовлена. Вставьте её в комментарий GitHub и нажмите Comment. Это подтверждение владельца; до него AI НЕ запущен.');
+    return;
+  }
   const prior=messages.slice(-8).map(x=>({role:x.role==='user'?'user':'assistant',content:x.text.slice(0,800)}));
   sendBtn.disabled=true;editor.value='';
   addLine('user',text,at(new Date()));messages.push({role:'user',text,at:new Date().toISOString()});
@@ -135,7 +159,10 @@
     reportCache=d.reports;reportList.replaceChildren();
     if(!reportCache.length)reportList.appendChild(mk('p','pm-chat-hint','Подтверждённых отчётов в выбранных источниках нет.'));
     for(const r of reportCache){
-      if(!r.sourceVerified||!['ChatGPT Triage','GitHub Actions'].includes(r.agent))continue;
+      if(r.agent==='OpenRouter Free · GitHub Worker'&&!renderedGh.has(r.id)){
+        renderedGh.add(r.id);addLine('agent',r.body,'OpenRouter Free · GitHub Actions · источник подтверждён',r.url);
+      }
+      if(!r.sourceVerified||!['ChatGPT Triage','GitHub Actions','OpenRouter Free · GitHub Worker','GitHub Repair Gateway'].includes(r.agent))continue;
       const card=mk('article','pm-chat-report-card');
       const head=mk('div','pm-chat-report-head',r.agent+' · '+at(r.createdAt)+' · '+r.origin);
       const body=mk('p','pm-chat-report-text',r.body);card.append(head,body);
@@ -173,7 +200,7 @@
   const dialog=mk('div','pm-chat-dialog');
   const modeLabel=mk('label','pm-chat-field','Исполнитель');
   agentSel=mk('select','pm-chat-mode');
-  for(const [value,label]of [['local','Локальный PM Advisor · бесплатно'],['openrouter','OpenRouter Free · $0']]){
+  for(const [value,label]of [['local','Локальный PM Advisor · бесплатно'],['github','OpenRouter Free · GitHub secret (публичный канал)'],['openrouter','OpenRouter Free · отдельный ключ Vercel']]){
     const opt=mk('option',null,label);opt.value=value;agentSel.appendChild(opt);}
   agentSel.addEventListener('change',onModeChange);modeLabel.appendChild(agentSel);dialog.append(modeLabel);
   const modelLabel=mk('label','pm-chat-field','Модель OpenRouter');
@@ -187,7 +214,9 @@
   form.addEventListener('submit',sendMessage);dialog.append(form);
   dialog.append(btn('Скачать историю чата',transcript,'pm-btn pm-quiet'));
   dialog.append(mk('p','pm-chat-hint','История хранится только в открытой вкладке. Не вводите ключи или личные данные клиентов.'));
-  main.append(dialog);
+  const ghLink=mk('a','pm-chat-report-link','Открыть публичный GitHub Agent Inbox #3890');
+  ghLink.href='https://github.com/andylitvinov-design/books/issues/3890';ghLink.target='_blank';ghLink.rel='noopener noreferrer';
+  dialog.append(ghLink);main.append(dialog);
   const reports=mk('div','pm-chat-reports');reports.hidden=true;
   reportBtn=btn('Обновить отчёты GitHub',refreshReports,'pm-btn pm-quiet');reports.append(reportBtn);
   reportList=mk('div','pm-chat-report-list');reports.append(reportList);
