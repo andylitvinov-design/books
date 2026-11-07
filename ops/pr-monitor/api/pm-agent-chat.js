@@ -6,8 +6,8 @@
 const crypto=require('node:crypto');
 const REPO='andylitvinov-design/books', GH='https://api.github.com/repos/'+REPO;
 const OWNER_COOKIE='hh_seo_owner';
-const REPORT_ISSUES=[1419,3128];
-const MAX_REPORTS=24, MAX_INPUT=1200, FREE_MAX=18;
+const REPORT_ISSUES=[1419,3128,3890];
+const MAX_REPORTS=40, MAX_INPUT=1200, FREE_MAX=18;
 let cachedReports=null, reportsUntil=0, cachedModels=null, modelsUntil=0;
 const clamp=(text,n)=>String(text||'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,' ').trim().slice(0,n);
 const json=(res,code,data)=>{
@@ -83,8 +83,13 @@ function reportEntries(comments,issue){
  if(!Array.isArray(comments))return [];
  const out=[];
  for(const c of comments){
-  const agent=reporter(c);
+  let agent=reporter(c);
   if(!agent||typeof c.body!=='string'||!Number.isSafeInteger(c.id)||c.id<1)continue;
+  if(issue===3890){
+    const matched=/^<!-- HH_PM_INBOX_STATE_V1 comment=([1-9]\d*) status=([A-Z_]+) -->/.exec(c.body);
+    if(agent!=='GitHub Actions'||!matched||!['CLAIMED','REPLIED','BLOCKED','DISPATCH_ACCEPTED_UNCORRELATED'].includes(matched[2]))continue;
+    agent=matched[2]==='REPLIED'?'OpenRouter Free · GitHub Worker':'GitHub Repair Gateway';
+  }
   const url='https://github.com/'+REPO+'/issues/'+issue+'#issuecomment-'+c.id;
   const body=clamp(c.body.replace(/<!--[\s\S]*?-->/g,'').replace(/(?:ghp_|gho_|sk-)[A-Za-z0-9_-]{16,}/g,'[REDACTED]'),1600);
   if(!body||!/^\d{4}-\d{2}-\d{2}T/.test(c.created_at||''))continue;
@@ -105,7 +110,7 @@ async function reports(){
  }));
  const rows=answers.flat().sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)).slice(0,MAX_REPORTS);
  cachedReports=rows;reportsUntil=Date.now()+120000;
- return {reports:rows,observedAt:new Date().toISOString(),source:'github_bot_and_chatgpt_connector',cached:false};
+ return {reports:rows,observedAt:new Date().toISOString(),source:'github_actions_chatgpt_connector_and_pm_free_inbox',cached:false};
 }
 function offline(message,tasks){
  const q=message.toLowerCase(),scope=tasks.length?'Выбрано '+tasks.length+' задач: '+tasks.join(', ')+'. ':'Задачи не выбраны. ';
@@ -219,7 +224,8 @@ module.exports=async function(req,res){
  const action=new URL(req.url,'https://holistic-house-pr-monitor.vercel.app').searchParams.get('action')||'status';
  if(req.method==='GET'){
   if(action==='status')return json(res,200,{schema:'HH_PM_AGENT_CHAT_V1',authenticated:true,
-   modes:{local:true,openrouter:!!apiKey(),githubReports:true},
+   modes:{local:true,openrouter:!!apiKey(),githubReports:true,githubFreeRelay:true},
+   githubInboxUrl:'https://github.com/andylitvinov-design/books/issues/3890',
    storage:'CURRENT_BROWSER_SESSION_ONLY',githubCodeExecution:false,
    provider:'OPENROUTER_FREE_ONLY',observedAt:new Date().toISOString()});
   if(action==='models'){const value=await getModels();return json(res,value.error?503:200,value)}
