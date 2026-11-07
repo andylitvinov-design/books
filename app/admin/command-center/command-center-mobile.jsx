@@ -3,6 +3,7 @@ import {useCallback,useEffect,useMemo,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {suggestCommandTask,ownerTaskActions} from '@/lib/command-center/mobile-intake.mjs';
 import styles from './command-center-mobile.module.css';
+import CommandCenterVoiceButton from './command-center-voice-button';
 
 const labels={
  ru:{home:'Главная',tasks:'Задачи',agents:'Агенты',projects:'Проекты',hello:'Мой брифинг',subtitle:'Проекты и агенты · фактический статус',
@@ -30,7 +31,7 @@ const labels={
    noMetrics:'Метрик пока нет',locked:'Войдите в админ-кабинет',admin:'Админка',
    healthy:'Доступны данные',unknown:'Статус неизвестен',newProject:'Новый проект',projectName:'Название проекта',
    projectSummary:'Для чего нужен проект?',createProject:'Создать проект',settings:'Управление автоматизацией',
-   viewAutomations:'Все автоматизации',details:'Подробности',activity:'Журнал агентов',runSafe:'Проверить очередь сейчас',scheduler:'Циклы проверок',nothingVerified:'Нет подтверждённых результатов',partial:'Показаны только последние задачи',runEmpty:'Очередь пуста: ни один агент не запускался',runLimit:'Дневной лимит проверок исчерпан',runFailed:'Проверка не завершилась — смотрите журнал',pauseTask:'Приостановить задачу',cancelTask:'Отменить задачу',confirmCancel:'Подтвердить отмену',alreadyExists:'Такая проверка уже есть',suggestion:'GitHub-ссылка распознана. Проверка остаётся только для чтения'},
+   viewAutomations:'Все автоматизации',details:'Подробности',activity:'Журнал агентов',runSafe:'Проверить очередь сейчас',scheduler:'Циклы проверок',nothingVerified:'Нет подтверждённых результатов',partial:'Показаны только последние задачи',runEmpty:'Очередь пуста: ни один агент не запускался',runLimit:'Дневной лимит проверок исчерпан',runFailed:'Проверка не завершилась — смотрите журнал',pauseTask:'Приостановить задачу',cancelTask:'Отменить задачу',confirmCancel:'Подтвердить отмену',alreadyExists:'Такая проверка уже есть',suggestion:'GitHub-ссылка распознана. Проверка остаётся только для чтения',inspectDelivery:'Проверить PR, CI и production',delivery:'Проверка выпуска',releaseServed:'Код подтверждён на production',releaseUnproven:'Нет независимого подтверждения кода на production',releaseCi:'Текущие CI-проверки',releaseUnknown:'Недостаточно данных',releasePass:'Успешно',releaseFail:'Ошибка',releasePending:'Ещё выполняются',releaseBrowser:'Функциональная проверка интерфейса ещё не выполнена'},
  en:{home:'Home',tasks:'Tasks',agents:'Agents',projects:'Projects',hello:'My briefing',subtitle:'Projects and agents · verified status',
    newTask:'New task',today:'Top priorities',allTasks:'All tasks',working:'Working',blocked:'Blocked',
    verified:'Verified',topProjects:'Projects',noProjects:'Create a project to group tasks',
@@ -53,7 +54,7 @@ const labels={
    noMetrics:'No metrics yet',locked:'Admin login required',admin:'Admin',
    healthy:'Data available',unknown:'Unknown',newProject:'New project',projectName:'Project name',
    projectSummary:'What is the project for?',createProject:'Create project',settings:'Automation controls',
-   viewAutomations:'All automations',details:'Details',activity:'Agent activity',runSafe:'Check safe queue now',scheduler:'Scheduler cycles',nothingVerified:'No verified results yet',partial:'Showing only the latest tasks',runEmpty:'No ready work: no agent was launched',runLimit:'Daily audit limit reached',runFailed:'Audit not completed — see execution history',pauseTask:'Pause task',cancelTask:'Cancel task',confirmCancel:'Confirm cancellation',alreadyExists:'This audit task already exists',suggestion:'GitHub URL recognized. The audit is read-only'},
+   viewAutomations:'All automations',details:'Details',activity:'Agent activity',runSafe:'Check safe queue now',scheduler:'Scheduler cycles',nothingVerified:'No verified results yet',partial:'Showing only the latest tasks',runEmpty:'No ready work: no agent was launched',runLimit:'Daily audit limit reached',runFailed:'Audit not completed — see execution history',pauseTask:'Pause task',cancelTask:'Cancel task',confirmCancel:'Confirm cancellation',alreadyExists:'This audit task already exists',suggestion:'GitHub URL recognized. The audit is read-only',inspectDelivery:'Check PR, CI and production',delivery:'Release verification',releaseServed:'Code confirmed on production',releaseUnproven:'No independent production-code evidence',releaseCi:'Current CI checks',releaseUnknown:'Not independently confirmed',releasePass:'Passed',releaseFail:'Failed',releasePending:'Still running',releaseBrowser:'Functional UI acceptance is still pending'},
  es:{home:'Inicio',tasks:'Tareas',agents:'Agentes',projects:'Proyectos',hello:'Mi informe',subtitle:'Proyectos y agentes · estado verificado',
    newTask:'Nueva tarea',today:'Prioridades',allTasks:'Todas las tareas',working:'En curso',blocked:'Bloqueadas',
    verified:'Verificadas',topProjects:'Proyectos',noProjects:'Crea un proyecto para organizar tareas',
@@ -78,7 +79,7 @@ const labels={
    actionFailed:'Cambio sin confirmar',noMetrics:'Sin métricas',locked:'Requiere login',
    admin:'Admin',healthy:'Datos disponibles',unknown:'Desconocido',newProject:'Nuevo proyecto',
    projectName:'Nombre',projectSummary:'Objetivo',createProject:'Crear proyecto',
-   settings:'Automatizaciones',viewAutomations:'Todas las automatizaciones',details:'Detalles',activity:'Actividad de agentes',runSafe:'Revisar cola segura ahora',scheduler:'Ciclos programados',nothingVerified:'Aún no hay resultados verificados',partial:'Solo se muestran las tareas recientes',runEmpty:'No hay tareas listas: ningún agente se inició',runLimit:'Límite diario de auditorías alcanzado',runFailed:'Auditoría sin completar: revisa el historial',pauseTask:'Pausar tarea',cancelTask:'Cancelar tarea',confirmCancel:'Confirmar cancelación',alreadyExists:'Esta auditoría ya existe',suggestion:'Enlace GitHub reconocido. La revisión es de solo lectura'}
+   settings:'Automatizaciones',viewAutomations:'Todas las automatizaciones',details:'Detalles',activity:'Actividad de agentes',runSafe:'Revisar cola segura ahora',scheduler:'Ciclos programados',nothingVerified:'Aún no hay resultados verificados',partial:'Solo se muestran las tareas recientes',runEmpty:'No hay tareas listas: ningún agente se inició',runLimit:'Límite diario de auditorías alcanzado',runFailed:'Auditoría sin completar: revisa el historial',pauseTask:'Pausar tarea',cancelTask:'Cancelar tarea',confirmCancel:'Confirmar cancelación',alreadyExists:'Esta auditoría ya existe',suggestion:'Enlace GitHub reconocido. La revisión es de solo lectura',inspectDelivery:'Verificar PR, CI y producción',delivery:'Verificación del lanzamiento',releaseServed:'Código confirmado en producción',releaseUnproven:'No hay prueba independiente de código en producción',releaseCi:'Verificaciones CI actuales',releaseUnknown:'No verificado',releasePass:'Correcto',releaseFail:'Error',releasePending:'En curso',releaseBrowser:'Falta la prueba funcional del sitio'}
 };
 const blockedStates=new Set(['needs_spec','blocked_dependency','blocked_no_runner','blocked_external','blocked_approval','blocked_budget','dead_letter']);
 const runningStates=new Set(['running','awaiting_evidence','retry_wait','ready','planned']);
@@ -109,6 +110,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  const [draft,setDraft]=useState(''),[details,setDetails]=useState(''),[source,setSource]=useState(''),[kind,setKind]=useState('code_change'),
    [project,setProject]=useState(''),[priority,setPriority]=useState('65'),[projectName,setProjectName]=useState(''),[projectSummary,setProjectSummary]=useState('');
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[confirmCancel,setConfirmCancel]=useState(null);
+ const [deliveryCheck,setDeliveryCheck]=useState(null);
  const enabled=Boolean(snapshot?.settings?.enabled&&envReady),available=Boolean(snapshot);
  const tasks=snapshot?.tasks||[],projects=snapshot?.projects||[],runs=snapshot?.runs||[],evidences=snapshot?.evidence||[],slots=snapshot?.slots||[];
  const visibleTasks=useMemo(()=>[...tasks].filter(v=>filter==='all'||(filter==='active'?runningStates.has(v.state):blockedStates.has(v.state)))
@@ -158,19 +160,26 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  const saveProject=async e=>{e.preventDefault();const result=await send('create_project',{title:safe(projectName,120),summary:safe(projectSummary,550)});
   if(result){setProjectComposer(false);setProjectName('');setProjectSummary('');setTab('projects');}
  };
+ const inspectDelivery=async()=>{
+   if(!selected)return;
+   const id=selected;
+   const result=await send('inspect_delivery',{taskId:id});
+   if(result?.status==='observed'&&result.proof)setDeliveryCheck({id,proof:result.proof});
+ };
  const selectedTask=tasks.find(v=>v.id===selected);
+ const selectedProof=deliveryCheck?.id===selected?deliveryCheck.proof:null;
  const taskActions=ownerTaskActions(selectedTask);
  const taskEvidence=evidences.filter(v=>v.task_id===selectedTask?.id);
  const latestEvidence=taskEvidence[0]||null;
  const observed=latestEvidence?.observed||null;
  const prMatched=Boolean(selectedTask?.source_ref?.includes('/pull/'));
- const merged=Boolean(observed?.merged);
+ const merged=selectedProof?selectedProof.prState==='merged':Boolean(observed?.merged);
  const agentActive=Boolean(selectedTask?.state==='running');
  const phases=[
   {label:t.accepted,ok:Boolean(selectedTask),current:false},
   {label:t.executor,ok:agentActive||verifiedStates.has(selectedTask?.state),current:agentActive},
   {label:t.pr,ok:prMatched&&Boolean(latestEvidence),current:prMatched&&!latestEvidence},
-  {label:t.tests,ok:false,current:false},
+  {label:t.tests,ok:selectedProof?.ci==='passed',current:false},
   {label:t.live,ok:selectedTask?.state==='completed_live',current:false}
  ];
  const count=(fn)=>tasks.filter(fn).length;
@@ -199,6 +208,20 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
        <small>{p.label}</small></div>)}</div>
      <p className={styles.subline}>{merged?t.prMerged:prMatched&&latestEvidence?t.prOpened:t.prWaiting} · {t.noLive}</p>
     </div>
+    {prMatched&&<div className={styles.panel} aria-label={t.delivery}>
+     <h2>{t.delivery}</h2>
+     <button className={styles.secondary} type="button" disabled={!available||busy}
+       onClick={inspectDelivery}>{t.inspectDelivery}</button>
+     {selectedProof&&<div className={styles.proofDetail} role="status">
+      <p className={selectedProof.codeOnProduction?styles.good:styles.muted}>
+       {selectedProof.codeOnProduction?t.releaseServed:t.releaseUnproven}</p>
+      <p>{t.releaseCi}: {selectedProof.ci==='passed'?t.releasePass:selectedProof.ci==='failed'?t.releaseFail:selectedProof.ci==='pending'?t.releasePending:t.releaseUnknown}</p>
+      {selectedProof.servingSha&&<small>Production SHA: {selectedProof.servingSha.slice(0,12)}</small>}
+      {selectedProof.observedAt&&<small>{date(selectedProof.observedAt)}</small>}
+      <p className={styles.muted}>{t.releaseBrowser}</p>
+      <p className={styles.muted}>{t.noLive}</p>
+     </div>}
+    </div>}
     <div className={styles.panel}><h2>{t.executor}</h2><div className={styles.agentLine}>
        <span className={styles.agentIcon}>⌘</span><div><strong>{selectedTask.kind==='repo_pr_audit'||selectedTask.kind==='repo_issue_audit'?'GitHub Reader':'Codex'}</strong>
        <small>{selectedTask.auto_allowed?(enabled?t.readOnly:t.pausedAgent):t.noRuntime}</small></div>
@@ -303,6 +326,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
         if(suggestion){setSource(suggestion.sourceRef);
           if(suggestion.kind&&kind==='code_change')setKind(suggestion.kind);}
        }} rows={3}/>
+      <CommandCenterVoiceButton lang={lang} onTranscript={spoken=>setDraft(previous=>safe((previous?previous+' ':'')+spoken,140))}/>
       <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={800} value={details}
         onChange={e=>setDetails(e.target.value)} rows={2}/>
       <div className={styles.formSplit}><div><label htmlFor="cc-project">{t.project}</label><select id="cc-project" value={project} onChange={e=>setProject(e.target.value)}>
