@@ -43,7 +43,7 @@
    'Snapshot: '+(source?.asOf||'UNKNOWN'),
    'Executor selected: '+methods[mode.value],
    'Owner-selected tasks: '+tasks.length,
-   ...tasks.map(x=>'- '+x.key+' · '+x.project.title+' / '+x.stage.title+' / '+x.task.title+' · '+x.task.taskStatus+
+   ...tasks.map(x=>'- '+x.key+' · '+x.project.title+' / '+x.stage.title+' / '+x.task.title+' · '+(x.task.status||'UNKNOWN')+
     (x.task.prs?.length?' · PR '+x.task.prs.map(n=>'#'+n).join(', '):' · no linked PR')),
    '',
    'Read AGENTS.md, GLOBAL_PR_ONE_PUBLISH_V1 and docs/operations/CI_RELEASE_POLICY.md BEFORE edits.',
