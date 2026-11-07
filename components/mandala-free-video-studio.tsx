@@ -3395,7 +3395,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(!canOfferOriginalVideoSource(professionalMode)){
           // An untouched source MP4 is not the user's generated branded film.
           // Keep the existing project so the professional can retry on a
-          // supported browser without publishing an unmarked fallback.
+          // supported browser without exposing an unmarked fallback.
           setNotice(locale==="ru"
             ?"В режиме мастера исходная сцена не заменяет брендированный ролик. Повторите экспорт в Safari или Chrome."
             :locale==="es"
@@ -6711,10 +6711,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                locale==="es"?"¿Te gustó? Evalúa los 7 cambios":"Did you like it? Compare seven ratings"}
             </a>:null}
             {playbackStatus==="ready"&&(result.mode==="catalog"||creditConfirmed)&&
-              (result.mode!=="catalog"||canOfferOriginalVideoSource(professionalMode))&&
               (!creditCatalog?.chargeRequired||creditSession==="signed_in"||result.mode==="catalog") ? <>
             <div className={videoStyles.resultActions}>
-              <a className={videoStyles.download} href={result.url}
+              {(result.mode!=="catalog"||canOfferOriginalVideoSource(professionalMode))?<a className={videoStyles.download} href={result.url}
                 download={"holistic-house-"+(backgroundOnly?(theme==="money"?"money-background":theme+"-background"):"personal-mandala")+"."+result.extension}
                 onClick={event=>{
                   if(result.mode==="catalog")return;
@@ -6725,7 +6724,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 <Download size={18} aria-hidden="true"/>{ui.save}{result.mode==="catalog"
                   ?" · MP4 · "+(locale==="ru"?"оригинал":locale==="es"?"original":"original")
                   :" · "+result.extension.toUpperCase()+" · "+Math.max(1,Math.round(result.bytes/1024))+" KB"}
-              </a>
+              </a>:null}
               {result.mode!=="catalog" ? <button type="button" data-video-result-play
                 onClick={()=>{const player=resultVideoRef.current;
                   if(player){player.scrollIntoView({behavior:"smooth",block:"nearest"});
