@@ -76,6 +76,12 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
  assert.match(studio,/onClick=\{continueToIdeas\}/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
+ // Preserve physical tap acceptance on the updated Montage Style cards.
+ assert.ok(flow.includes('[data-video-montage-effects] [data-video-montage-style]'));
+ assert.ok(flow.includes('await expect(montageStyleTiles).toHaveCount(6)'));
+ assert.ok(flow.includes('await montageStyleTiles.nth(1).click()'));
+ assert.ok(flow.includes('await expect(montageStyleTiles.nth(1)).toHaveAttribute("aria-pressed","true")'));
+ assert.ok(flow.includes('toBeHidden()'),"legacy Director filter is not the active style picker");
 });
 
 test("macOS WebKit exercises explicit accessible adult consent and revocation",()=>{

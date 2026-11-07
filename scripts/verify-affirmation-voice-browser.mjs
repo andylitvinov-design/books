@@ -68,7 +68,17 @@ async function verifyWorkspaceHydration(browser,locale){
     const montage=page.locator('[data-video-quick-control="editor"]');
     await montage.click();
     await expect(montage).toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeVisible();
+    // After the approved Montage redesign the legacy Director filter is hidden.
+    // Validate the real Style tab's six visible cards with an actual WebKit click.
+    const montageStyleTab=page.locator('[data-video-montage-tab="effects"]');
+    await expect(montageStyleTab).toBeVisible();
+    await expect(montageStyleTab).toHaveAttribute("aria-pressed","true");
+    const montageStyleTiles=page.locator('[data-video-montage-effects] [data-video-montage-style]');
+    await expect(montageStyleTiles).toHaveCount(6);
+    await expect(montageStyleTiles.first()).toBeVisible();
+    await montageStyleTiles.nth(1).click();
+    await expect(montageStyleTiles.nth(1)).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeHidden();
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
