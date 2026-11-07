@@ -62,6 +62,7 @@ export default async function VideoLibraryCoveragePage({searchParams}:Props){
   <div className={styles.content}>
    <nav className={styles.links} aria-label={t.title}>
     <Link href="/admin/videos">{t.back}</Link>
+    <Link href="/admin/automations">{locale==='ru'?'Автоматизации':locale==='es'?'Automatizaciones':'Automations'}</Link>
     <Link href={"/api/admin/video-library/coverage?aspect="+aspect}>{t.json}</Link>
    </nav>
    <div className={styles.stats} aria-label={t.inventory}>

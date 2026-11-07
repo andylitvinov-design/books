@@ -174,7 +174,7 @@ test("Safari failed render offers only a source-backed unedited MP4 without pret
   assert.match(studio, /holistic-house-original-scene\.mp4/);
   assert.match(studio, /Это НЕ ваш готовый фильм/);
   assert.match(studio, /duration, format, photo, captions and music were not applied/);
-  assert.match(studio, /playbackStatus==="ready"&&\(result\.mode==="catalog"\|\|creditConfirmed\) \? <>/,
+  assert.match(studio, /playbackStatus==="ready"&&\(result\.mode==="catalog"\|\|creditConfirmed\)&&\s*\(!creditCatalog\?\.chargeRequired\|\|creditSession==="signed_in"\|\|result\.mode==="catalog"\) \? <>/,
     "generated files cannot be downloaded before native decode AND authenticated credit confirmation");
   // No user-generated blob is advertised as ready when native decoding fails.
   assert.match(studio, /playbackStatus==="failed"\?<div role="alert" data-video-playback-error>/);

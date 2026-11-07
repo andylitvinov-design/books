@@ -8,8 +8,10 @@ import {transaction,closeDatabase} from '@/lib/app/database';
 import {readAutomationSnapshot} from '@/lib/automations/scout-db.mjs';
 import {readClassifierAnnotations} from '@/lib/automations/classifier-store.mjs';
 import {readCouncilProposals} from '@/lib/automations/weekly-council-store.mjs';
+import {readCandidateEditorialReviews} from '@/lib/automations/candidate-editorial-review.mjs';
 import CouncilProposalActions from '@/components/council-proposal-actions';
 import AutomationControlActions from '@/components/automation-control-actions';
+import AutomationCandidateEditorialActions from '@/components/automation-candidate-editorial-actions';
 import {uiLocaleCookie} from '@/lib/ui-locale';
 import styles from './automations.module.css';
 
@@ -64,6 +66,16 @@ const stamp=(value:string,locale:Locale)=>{
   catch{return '—'};
 };
 const safeNumber=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=0?value:'—';
+const editorialLabel=(locale:Locale,state:string|null)=>{
+  const key=state==='shortlisted_for_rights_review'?'shortlisted':
+    state==='rejected'?'rejected':state==='needs_more_evidence'?'needs':'pending';
+  const labels={
+    ru:{shortlisted:'Отобрано для проверки прав',rejected:'Отклонено',needs:'Нужны дополнительные сведения',pending:'Ещё не рассмотрено'},
+    en:{shortlisted:'Shortlisted for rights review',rejected:'Rejected',needs:'More evidence needed',pending:'Not yet reviewed'},
+    es:{shortlisted:'Seleccionado para revisar derechos',rejected:'Rechazado',needs:'Faltan pruebas',pending:'Sin revisar'}
+  } as const;
+  return labels[locale][key];
+};
 
 export default async function AutomationsPage(){
   if(!await requireAdminRequest())redirect('/admin/login');
@@ -94,9 +106,19 @@ export default async function AutomationsPage(){
     catch { /* Weekly Council schema is not yet verified. */ }
     finally {await closeDatabase();}
   }
+  type EditorialRow={candidate_id:string;decision:string;reason:string;reviewed_at:string};
+  let candidateReviews:EditorialRow[]|null=null;
+  if(snapshot){
+    try{candidateReviews=await transaction(getAppConfig(),null,
+      (db:unknown)=>readCandidateEditorialReviews(db),{server:true}) as EditorialRow[];}
+    catch{ /* Do not claim the queue is empty when its private database is unavailable. */ }
+    finally{await closeDatabase();}
+  }
+  const reviewByCandidate=new Map((candidateReviews||[]).map(row=>[row.candidate_id,row.decision]));
   const scout=snapshot?.tasks.find(task=>task.task_id==='video-scout-hourly');
   const classifier=snapshot?.tasks.find(task=>task.task_id==='video-classifier-batch');
   const weekly=snapshot?.tasks.find(task=>task.task_id==='council-video-review-weekly');
+  const digest=snapshot?.tasks.find(task=>task.task_id==='video-scout-digest-daily');
   return <main className={styles.page} data-hh-design="holistic-light" lang={locale}>
     <PrescriptionAdminHeader title={{en:copy.en.title,ru:copy.ru.title}}
       description={{en:copy.en.subtitle,ru:copy.ru.subtitle}}/>
@@ -113,12 +135,12 @@ export default async function AutomationsPage(){
         {(snapshot?.tasks||[]).map(task=><div key={task.task_id} className={styles.task}>
           <div><h2>{task.task_id}</h2><p>{task.description}</p>
             <small>{t.schedule}: {task.schedule_cron}</small></div>
-          <span className={styles.tag}>{task.task_id==='video-scout-hourly'?
-            (task.enabled?t.enabled:t.paused):t.inactive}</span>
+          <span className={styles.tag}>{task.enabled?t.enabled:t.paused}</span>
         </div>)}
         {scout&&<AutomationControlActions locale={locale} enabled={scout.enabled}/>}
         {classifier&&<AutomationControlActions locale={locale} taskId="video-classifier-batch" enabled={classifier.enabled}/>}
         {weekly&&<AutomationControlActions locale={locale} taskId="council-video-review-weekly" enabled={weekly.enabled}/>}
+        {digest&&<AutomationControlActions locale={locale} taskId="video-scout-digest-daily" enabled={digest.enabled}/>}
         <p className={styles.note}>{t.model}</p>
       </section>
       <section className={styles.section}>
@@ -173,6 +195,17 @@ export default async function AutomationsPage(){
           <h3>{item.title}</h3><p>{item.creator||'Wikimedia Commons'}</p>
           <small>{item.category} · {item.mime} · {item.rights_state}</small>
           <a href={item.source_page} target="_blank" rel="noopener noreferrer nofollow">{t.source}</a>
+          {candidateReviews===null?
+            <small>{locale==='ru'?'Редакторская очередь недоступна':locale==='es'?'Revisión no disponible':'Editorial review unavailable'}</small>:
+            <>
+              <small>{editorialLabel(locale,reviewByCandidate.get(item.candidate_id)||null)}</small>
+              <AutomationCandidateEditorialActions candidateId={item.candidate_id}
+                locale={locale} currentDecision={reviewByCandidate.get(item.candidate_id)||null}/>
+              {reviewByCandidate.get(item.candidate_id)==='shortlisted_for_rights_review'&&
+                <a href={'/api/admin/automations/candidates/dossier?candidateId='+encodeURIComponent(item.candidate_id)}
+                   download={'commons-rights-'+item.candidate_id+'.json'}
+                   rel="nofollow">{locale==='ru'?'Пакет проверки прав':locale==='es'?'Informe de derechos':'Rights research dossier'}</a>}
+            </>}
         </article>)}</div>
         {!snapshot?.candidates.length&&<p className={styles.note}>{t.none}</p>}
         <p className={styles.note}>{t.note}</p>

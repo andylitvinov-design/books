@@ -152,7 +152,7 @@ test("all six voices can be selected and their real samples requested before phr
 });
 
 
-test("voice browser follows native Ideas and Montage on one visitor click; hidden legacy remains hidden",()=>{
+test("voice browser opens Ideas and applies six visible Montage styles with decoded playback",()=>{
  const start=source.indexOf("async function verifyWorkspaceHydration");
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
@@ -163,9 +163,13 @@ test("voice browser follows native Ideas and Montage on one visitor click; hidde
  const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
  const topic=flow.indexOf('data-auto-video-topic-panel',open);
  const montage=flow.indexOf('await montage.click()',topic);
- const style=flow.indexOf('data-video-director-style-controls',montage);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&style>montage,
-   "real visitor must open Ideas refinement and reach Montage without hidden selectors");
+ const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
+ const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);
+ const selected=flow.indexOf('await minimal.tap()',six);
+ const reflected=flow.indexOf('data-video-preview-style","minimal"',selected);
+ const decoded=flow.indexOf('video.readyState>=2&&video.videoWidth>0',reflected);
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
+   "real visitor must open Ideas refinement, select one of six visible Montage styles and decode an MP4");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
@@ -512,4 +516,15 @@ test("headed WebKit narration uses a real short touch without duplicate provider
   assert.ok(browser.includes('window.__hhVoiceSubmitProbe.touches++'));
   assert.ok(browser.includes('assert.equal(affirmationRequests.length,1)'));
   assert.ok(browser.includes('pcm.stdout.some(value=>value!==0)'));
+});
+
+test("voice export uses visible Audio-stage Generate, never the hidden Style-stage CTA",()=>{
+  const effects=source.indexOf('phase(engine,"hypno-audio-effects-rendered")');
+  const audio=source.indexOf('const montageAudioTab=page.locator',effects);
+  const click=source.indexOf('await montageAudioTab.click()',audio);
+  const pressed=source.indexOf('await expect(montageAudioTab).toHaveAttribute("aria-pressed","true")',click);
+  const generate=source.indexOf('const generate=page.locator("[data-video-quick-generate]")',pressed);
+  assert.ok(effects>=0&&audio>effects&&click>audio&&pressed>click&&generate>pressed,
+    "video with consented narration must use a real visible Audio-tab export button");
+  assert.doesNotMatch(source.slice(effects,generate),/click\(\{force:true\}\)/);
 });
