@@ -971,6 +971,51 @@ test('repair_started requires an actual trusted Actions fix-step timestamp',()=>
 });
 
 
+
+test('terminal Worker records signed patch verification on the current attempt without implying publication',async()=>{
+ const old=process.env.GITHUB_RUN_ATTEMPT;
+ process.env.GITHUB_RUN_ATTEMPT='2';
+ try{
+  const f=fixture();
+  const started=new Date(Date.now()-120000).toISOString();
+  const verified=new Date(Date.now()-30000).toISOString();
+  f.github.rest.actions={listJobsForWorkflowRun:async()=>({data:{jobs:[
+   {name:'fix',run_attempt:2,conclusion:'success',steps:[
+     {name:'Apply trusted TypeScript type-only import codemods',started_at:started},
+     {name:'Try targeted ESLint autofix and write bounded patch candidate',
+       started_at:started,completed_at:verified,conclusion:'success'}
+   ]},
+   {name:'fix',run_attempt:1,conclusion:'success',steps:[
+     {name:'Try targeted ESLint autofix and write bounded patch candidate',
+       started_at:started,completed_at:verified,conclusion:'success'}
+   ]}
+  ]}})};
+  const x=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+    number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+    claimResult:'success',strategy:'lint',fixResult:'success',candidateStatus:'ready',
+    publishResult:'skipped'});
+  assert.equal(x.source_published,false);
+  assert.match(f.log.commentBodies.at(-1),/"stage":"patch_verified"/);
+  assert.doesNotMatch(f.log.commentBodies.at(-1),/"stage":"source_published"/);
+  // A previous run_attempt's successful job does not prove the current one.
+  const oldOnly=fixture();
+  oldOnly.github.rest.actions={listJobsForWorkflowRun:async()=>({data:{jobs:[
+    {name:'fix',run_attempt:1,conclusion:'success',steps:[
+      {name:'Try targeted ESLint autofix and write bounded patch candidate',
+       started_at:started,completed_at:verified,conclusion:'success'}
+    ]}
+  ]}})};
+  await finalize({github:oldOnly.github,core:outcomeCore,context:outcomeContext,
+    number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+    claimResult:'success',strategy:'lint',fixResult:'success',candidateStatus:'ready',
+    publishResult:'skipped'});
+  assert.doesNotMatch(oldOnly.log.commentBodies.at(-1),/"stage":"patch_verified"/);
+ }finally{
+  if(old===undefined)delete process.env.GITHUB_RUN_ATTEMPT;
+  else process.env.GITHUB_RUN_ATTEMPT=old;
+ }
+});
+
 test('failed legacy cloud preflight stays FAILED and never publishes an unverified source commit',async()=>{
  const f=fixture();
  const r=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,

@@ -77,6 +77,30 @@ test('stage receipts require GitHub Actions bot/app, valid stage source, exact P
  assert.equal(api.extractStageReceipts([wrongSource],3390).length,0);
 });
 
+
+test('verified same-worker repair markers reconcile failed CI → next HEAD; no extra GitHub calls',async()=>{
+ const stageAt=(stage,minute,source,extra={})=>'<!-- HH_PR_STAGE_V1 '+JSON.stringify({
+   stage,pr_number:3390,head_sha:A,run_id:'9000',at:at(minute),source,task_key:T,...extra
+ })+' -->';
+ const signed={...comments[0],id:987,created_at:at(50),body:[
+   stageAt('claimed',31,'repair_worker_claim'),
+   stageAt('repair_started',33,'github_actions_fix_step'),
+   stageAt('patch_verified',40,'github_actions_patch_verification_step'),
+   stageAt('source_published',46,'verified_git_ref',{new_sha:B})
+ ].join('\n')};
+ const m=makeRequest({commentRows:[signed]});
+ const result=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100))});
+ const latency=result.repair_cycles.cycles[0].latency;
+ assert.equal(latency.status,'COMPLETE');
+ assert.equal(latency.total_minutes,29);
+ assert.deepEqual(latency.phases.map(x=>x.minutes),[6,2,7,6,8]);
+ assert.equal(latency.unattributed_minutes,0);
+ assert.equal(result.repair_cycles.latency_summary.fully_measured_cycles,1);
+ assert.equal(result.source.reads,6);
+ const forged={...signed,body:signed.body.replace('github_actions_patch_verification_step','repair_worker_claim')};
+ assert.equal(api.extractStageReceipts([forged],3390).filter(e=>e.stage==='patch_verified').length,0);
+});
+
 test('missing runs and jobs never fabricate queue, checks or repair; time is unknown',async()=>{
  const m=makeRequest({runRows:[],commentRows:[]});
  const out=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100))});

@@ -100,6 +100,42 @@
         const duration=elt('strong',null,span==null?'—':fmtMin(span));
         duration.title=info;item.append(time,value,duration);list.append(item);
       }
+      // Supplemental breakdown of the already accounted PR clock: NOT additive.
+      const latency=row.latency;
+      if(latency?.schema==='HH_PR_REPAIR_LATENCY_V2'&&latency.reconciled===true){
+        const section=elt('section','hh-pr-latency');
+        section.append(elt('h4',null,'Где задерживается исправление после красной CI'));
+        section.append(elt('p','hh-pr-audit-foot',
+          (latency.status==='IN_PROGRESS'?'Открытое ожидание с момента ошибки: ':
+           'Ошибка Core job → новая CI другого HEAD: ')+fmtMin(latency.total_minutes)+
+          ' · подтверждено '+fmtMin(latency.observed_minutes)+
+          ' · не измерено '+fmtMin(latency.unattributed_minutes)));
+        const rows=elt('div','hh-pr-latency-rows');
+        for(const phase of latency.phases||[]){
+          const line=elt('div','hh-pr-latency-row');
+          line.append(elt('span',null,phase.label),
+            elt('strong',null,phase.minutes===null?'Не измерено':fmtMin(phase.minutes)));
+          for(const url of phase.evidence_urls||[]){
+            const href=link(url);if(!href)continue;
+            const a=elt('a','hh-pr-latency-link','Источник GitHub');
+            a.href=href;a.target='_blank';a.rel='noopener noreferrer';line.append(a);
+          }
+          rows.append(line);
+        }
+        const unknown=elt('div','hh-pr-latency-row hh-pr-latency-unknown');
+        unknown.append(elt('span',null,'Время без проверенных меток'),
+          elt('strong',null,fmtMin(latency.unattributed_minutes)));
+        rows.append(unknown);
+        section.append(rows);
+        if(latency.status==='IN_PROGRESS'){
+          section.append(elt('p','hh-pr-audit-foot',latency.pending_age_minutes===null?
+            'Новый HEAD не подтверждён. Причина текущего ожидания неизвестна.':
+            'Патч проверен, но HEAD ещё не опубликован: прошло '+fmtMin(latency.pending_age_minutes)+
+              '. Это незавершённый интервал, не среднее по завершённым PR.'));
+        }
+        section.append(elt('p','hh-pr-audit-foot',latency.note));
+        wrap.append(section);
+      }
       wrap.append(list,elt('p','hh-pr-audit-foot',
         'Время реального редактирования, получение задачи агентом и точное время push не установлены. '+
         'Ошибка job — место сбоя, а не подтверждённая первопричина.'));

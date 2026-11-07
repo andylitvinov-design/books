@@ -726,7 +726,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     }else core.warning('HH_REPAIR_RETRY_PROOF_MISSING '+
       (claimed?'SOURCE_CLAIM_PRESENT':'RESERVATION_NOT_VERIFIED'));
   }
-  let failedStep=null,repairStartedAt=null;
+  let failedStep=null,repairStartedAt=null,patchVerifiedAt=null;
   // Proof is the actual fix-step start time from this trusted workflow run,
   // not dispatcher reservation, task claim, or later finalizer execution.
   if(Number.isSafeInteger(context.runId)&&
@@ -740,13 +740,34 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
           failed?.name||null;
       }
       if(claimStatus==='claimed'){
-        const fix=jobs.find(j=>j.name==='fix'&&Array.isArray(j.steps));
+        const runAttempt=Number(process.env.GITHUB_RUN_ATTEMPT||'0');
+        const fix=Number.isSafeInteger(runAttempt)&&runAttempt>0?jobs.find(j=>
+          j.name==='fix'&&j.run_attempt===runAttempt&&Array.isArray(j.steps)):null;
         const step=fix?.steps.find(x=>
           (x.name==='Apply trusted TypeScript type-only import codemods'||
            x.name==='Try targeted ESLint autofix and write bounded patch candidate')&&
           typeof x.started_at==='string'&&Number.isFinite(Date.parse(x.started_at)));
         if(step&&Date.parse(step.started_at)<=Date.now()+60000)
           repairStartedAt=new Date(step.started_at).toISOString();
+      // The already-fetched job page provides completion of successful fix
+      // verification. A worker claim or an AI proposal is not a ready patch.
+      // Attempts must match the current GitHub workflow execution exactly.
+      if(claimStatus==='claimed'){
+        const branch=candidateStatus==='ready'&&fixResult==='success'?'fix':
+          codeVerifyStatus==='ready'&&codeVerifyResult==='success'?'code_verify':null;
+        const phaseName=branch==='fix'?'Try targeted ESLint autofix and write bounded patch candidate':
+          'Independently verify exact SHA, direct tests, lint, TS and diff';
+        const verifiedJob=branch&&Number.isSafeInteger(runAttempt)&&runAttempt>0?jobs.find(j=>
+          j.name===branch&&j.run_attempt===runAttempt&&j.conclusion==='success'&&Array.isArray(j.steps)):null;
+        const verificationStep=verifiedJob?.steps.find(s=>s.name===phaseName&&
+          s.conclusion==='success'&&typeof s.completed_at==='string'&&
+          typeof s.started_at==='string'&&Date.parse(s.started_at)<=Date.parse(s.completed_at));
+        const finished=Date.parse(verificationStep?.completed_at||'');
+        if(Number.isFinite(finished)&&
+           (!repairStartedAt||finished>=Date.parse(repairStartedAt))&&
+           finished<=Date.now()+60000)
+          patchVerifiedAt=new Date(finished).toISOString();
+      }
       }
     }catch(error){core.info('HH_REPAIR_OUTCOME_JOB_DIAGNOSTICS_UNAVAILABLE '+error.message);}
   }
@@ -792,8 +813,14 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     stageLine({stage:'repair_started',pr_number:number,head_sha:expectedSha,
       run_id:context.runId,task_key:taskKey,at:repairStartedAt,
       source:'github_actions_fix_step'}):'';
+  const verifiedPatchStage=patchVerifiedAt&&claimStatus==='claimed'&&
+    Number.isSafeInteger(context.runId)&&context.runId>0?
+    stageLine({stage:'patch_verified',pr_number:number,head_sha:expectedSha,
+      run_id:context.runId,task_key:taskKey,at:patchVerifiedAt,
+      source:'github_actions_patch_verification_step'}):'';
   await github.rest.issues.createComment({owner,repo,issue_number:number,
-    body:marker+'\n'+commentBody(result)+(repairStage?'\n'+repairStage:'')});
+    body:marker+'\n'+commentBody(result)+(repairStage?'\n'+repairStage:'')+
+      (verifiedPatchStage?'\n'+verifiedPatchStage:'')});
   // No destructive operation, source overwrite, force push or CI bypass.
   // An attempted failed source fix needs a coding agent; retire its queue
   // label only when the original HEAD is still current and owner-verified.
