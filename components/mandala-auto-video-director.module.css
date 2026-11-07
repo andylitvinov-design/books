@@ -872,62 +872,24 @@
  .recipientKinds button strong{font-size:11px}
 }
 
-
-/* Audio-to-storyboard inside the real first Goal step, responsive to 320px. */
-.recipientAudioPanel{display:grid;gap:10px;min-width:0;padding:14px;border:1px solid #d6e8dc;
-  border-radius:15px;background:#fffefa;color:#234f3f}
-.recipientAudioHeading{display:flex;gap:10px;align-items:flex-start}
-.recipientAudioHeading>svg{flex:none;color:#09775a}
-.recipientAudioHeading strong{display:block;font:800 16px/1.27 Arial,Helvetica,sans-serif}
-.recipientAudioHeading p{margin:5px 0 0;color:#456859;font:500 13px/1.5 Arial,Helvetica,sans-serif}
-.recipientAudioUpload,.recipientAudioPrimary{display:flex;align-items:center;justify-content:center;
-  gap:9px;min-height:46px;padding:11px 13px;border:0;border-radius:12px;
-  background:#126e54;color:#fff;font:750 14px/1.25 Arial,Helvetica,sans-serif;cursor:pointer}
-.recipientAudioUpload{background:#eaf5ee;color:#17634b;border:1px dashed #75ad91}
-.recipientAudioFile{max-width:100%;font-size:12px}
-.recipientAudioSmall{font:500 12px/1.45 Arial,Helvetica,sans-serif;color:#657e70}
-.recipientAudioSelected{display:flex;align-items:center;gap:8px;min-width:0;padding:10px;
-  border:1px solid #d9e7dc;border-radius:10px;background:#f7faf6}
-.recipientAudioSelected strong{overflow-wrap:anywhere;min-width:0;flex:1;font:700 13px/1.3 Arial,Helvetica,sans-serif}
-.recipientAudioSelected button{display:grid;place-items:center;min-width:36px;min-height:36px;
-  border:0;border-radius:8px;background:#f3e7e7;color:#7c3d3d;cursor:pointer}
-.recipientAudioConsent{display:grid;gap:11px}
-.recipientAudioConsent label{display:flex;align-items:flex-start;gap:10px;
-  font:500 13px/1.48 Arial,Helvetica,sans-serif}
-.recipientAudioConsent input{flex:none;width:19px;height:19px;accent-color:#116e55}
-.recipientAudioPrimary:disabled{opacity:.52;cursor:not-allowed}
-.recipientAudioResult{display:grid;gap:9px;min-width:0;padding:12px;border:1px solid #d9e9dc;
-  border-radius:11px;background:#f4faf5}
-.recipientAudioResult>strong{display:flex;align-items:center;gap:7px;font:800 14px/1.3 Arial,Helvetica,sans-serif}
-.recipientAudioResult p{margin:0;overflow-wrap:anywhere;font:500 13px/1.5 Arial,Helvetica,sans-serif}
-.recipientAudioTranscript{max-height:128px;overflow:auto}
-.recipientAudioResult details{min-width:0;font-size:13px}
-.recipientAudioResult details summary{font-weight:750;cursor:pointer;padding:4px 0}
-.recipientAudioResult ol{margin:6px 0;padding-left:22px;max-height:220px;overflow-y:auto}
-.recipientAudioResult li{padding:4px 0;overflow-wrap:anywhere;font-size:12px;line-height:1.5}
-.recipientAudioWarning{margin:0;color:#99520a;font:650 12px/1.45 Arial,Helvetica,sans-serif}
-.recipientAudioPrimary:focus-visible,.recipientAudioFile:focus-visible,
-.recipientAudioSelected button:focus-visible{outline:3px solid #d5a85d;outline-offset:2px}
-.recipientKinds button small{font:600 11px/1.25 Arial,Helvetica,sans-serif;color:#436c5b}
-.recipientKinds button[aria-pressed="true"] small{color:#145b48}
-@media(max-width:350px){
- .recipientAudioPanel{padding:10px}
- .recipientAudioHeading strong{font-size:15px}
- .recipientAudioUpload,.recipientAudioPrimary{font-size:13px}
- .recipientKinds button small{font-size:10px}
-}
-
-/* Structured but compact and readable on short iPhone screens. */
-.recipientConceptFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:8px;margin:0;min-width:0}
-.recipientConceptFields>div{display:grid;align-content:start;gap:3px;
-  min-width:0;padding:8px 10px;border:1px solid #deebe2;border-radius:10px;background:#fff}
-.recipientConceptFields>div[data-video-recipient-audio-goal]{grid-column:1/-1}
-.recipientConceptFields dt{color:#657e70;font:700 11px/1.3 Arial,Helvetica,sans-serif}
-.recipientConceptFields dd{margin:0;overflow-wrap:anywhere;
-  color:#215440;font:700 13px/1.42 Arial,Helvetica,sans-serif}
-@media(max-width:350px){
-  .recipientConceptFields{gap:6px}
-  .recipientConceptFields>div{padding:7px}
-  .recipientConceptFields dd{font-size:12px}
-}
+/* Approved warm, photo-led “For others” Goal formats. */
+.recipientFormatTitle{font:850 clamp(17px,4.5vw,22px)/1.2 system-ui,sans-serif;margin:0;color:#143d3a}
+.recipientKinds button{position:relative;justify-content:flex-start;align-items:stretch;gap:0;
+  min-height:0;padding:5px;overflow:hidden;background:#fffcf7!important;border-radius:18px}
+.recipientKinds button[aria-pressed=true]{background:#e6f6f1!important;border:2px solid #07885f}
+.recipientKinds button .recipientFormatArt{display:block;width:100%;aspect-ratio:1.25;object-fit:cover;border-radius:13px}
+.recipientFormatBody{display:grid;grid-template-columns:19px 1fr;gap:4px;padding:9px 5px;align-content:start}
+.recipientFormatBody svg{height:18px!important;width:18px!important;color:#087a62}
+.recipientKinds button .recipientFormatBody strong{color:#143d3a;font:850 clamp(12px,3.3vw,15px)/1.18 system-ui,sans-serif}
+.recipientFormatBody small{grid-column:1/-1;font:500 clamp(11px,2.9vw,13px)/1.26 system-ui,sans-serif;color:#5d6a71}
+.recipientFormatSelected{position:absolute;top:8px;right:8px;display:grid;place-items:center;
+  width:26px;height:26px;border-radius:50%;background:#07885f;color:#fff}
+.recipientKinds button .recipientFormatSelected svg{color:#fff;width:16px!important;height:16px!important}
+.recipientPurposeSwitch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.recipientPurposeSwitch button{min-height:44px;border:1px solid #c0d8cc;border-radius:12px;
+  padding:9px;background:#fffcf7;color:#14523f;font:750 13px/1.2 system-ui,sans-serif}
+.recipientPurposeSwitch button[aria-pressed=true]{background:#e6f6f1;border:2px solid #07885f}
+.recipientPurposeSwitch button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:370px){.recipientKinds{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .recipientKinds button:last-child{grid-column:1/-1;display:grid;grid-template-columns:35% minmax(0,1fr)}
+  .recipientKinds button:last-child .recipientFormatArt{height:100%;min-height:95px;aspect-ratio:auto}}

@@ -1,58 +1,35 @@
-# Video Studio: For others → audio-to-video (2026-11-07)
+# Video Studio: canonical “For others” + audio concept enrichment
 
-## Product structure
+Date: 2026-11-07. Scope: #3880 integration with LIVE #3826 and #3879.
+Production owner: `codex/public-book-library`. No new services, payments or media rights.
 
-On the first Goal page, **For myself** retains the approved self-video taxonomy. **For others** now has exactly three goals:
-- **Greeting or gift** — one card with birthday, anniversary, celebration, gratitude, affection, friendship and support options.
-- **Presentation** — introduce a person, project, service or business.
-- **Content** — create licensed visual footage from a user-supplied audio recording.
+## Product structure / one renderer
 
-All three are localized for RU/EN/ES. Legacy `gift` and `greeting` identifiers continue to resolve to the combined category.
+The approved existing first Goal screen from #3879 stays authoritative:
+- **Greeting or gift**: illustrated card with a choice between greeting/gift, eight occasions and editable caption sets.
+- **Presentation**: illustrated card for introductions, services and projects.
+- **Video from audio**: illustrated card with an inline, three-step workflow.
 
-## Audio content dataflow
+Do not replace the source-approved picture cards, change their IDs (`greeting`, `presentation`, `audio_visual`) or introduce the competing draft `MandalaRecipientAudioEntry`. Do not remove the existing microphone recording, audio playback, consent gates, 9:16 source safeguards, single Montage or browser Canvas export. The original video-for-myself taxonomy remains unchanged.
 
-The visitor stays on the first Goal screen, selects Content, then chooses an audio file. The screen validates the 4MB upload limit and asks for audio rights confirmation plus separate **one-time external STT consent**. Only the explicit Transcribe button invokes the existing `requestConsentedTimedTranscript` client and `/api/holistic-support/audio-storyboard`. The existing Groq STT endpoint requires pre-confirmed free provider configuration, has shared rate limits and returns verified speech segments without storing the file or transcript.
+## Step 1. Voice source
 
-The original `planAudioVisualStoryboard` engine consumes the transcript and real timecodes, extracts local visual concepts from each spoken segment, scores licensed MP4 scenes and returns a source-bound chronological cut list. The page displays the source transcript, deduplicated visual keywords, scene identities/times and uncertain symbolic matches. It does not invent the transcript, narrate new claims or overlay generic greeting captions.
+The visitor uploads or records a local File, with 4 MB limit and audio-rights checkbox. No automatic provider call. iOS Files sometimes produces valid MP3/M4A/WAV/AAC/MP4/WebM with empty or generic MIME; the client normalizes ONLY these known extensions for multipart STT, retains the original bytes and filename, and rejects unknown extensions. All checks remain on the original protected STT bridge.
 
-The explicit **Prepare footage and open Montage** action reuses `applyTranscriptVideo`, `applyAutoFilm` and the existing browser renderer. The original voice File is attached as a **non-looping** track with volume 100. The main Goal Continue action for Content delegates to the same operation instead of taking the visitor to the unrelated Ideas pane.
+## Step 2. Consented transcript and preview
 
-## Boundaries and release gates
+A separate explicit one-time STT consent and Transcribe action calls the existing server endpoint (only when previously confirmed free-quota provider credentials are configured). The original File and timed transcript are not persisted to local/browser storage. On successful STT, the existing local `planAudioVisualStoryboard` generates a provisional source-bound clip plan. The newly added deterministic, locally executing `deriveAudioVideoConcept` derives an editable **suggestion** for literal speech goal, purpose, category, optional topic, style, symbolic image, pace, visual keywords and timed shot scenes. Low confidence stays unclassified. A clip tag is never evidence of literal footage or permission.
 
-- No automatic external request on selecting a file; no new paid provider, background generation or publishing.
-- STT fails closed when the configured free service is unavailable or audio is too large. At present the verified audio-to-video planner only handles up to approximately 59 seconds.
-- The planner requires distinct source-approved real clips of sufficient duration, with physically verified aspect ratio; no fabricated clips or unverified crop.
-- If no MP4 plan can be verified, show an error and preserve original transcript and audio to retry.
-- The separate parent PR #3826 establishes the recipient Goal interface. Merge #3826 before promoting this stacked PR to production `codex/public-book-library`.
-- Required checks: unit tests, TypeScript build, iOS/desktop WebKit Goal buttons and audio, exact-HEAD Core/Specialist/Guard CI, final production deployment and live audio smoke test with the free STT flag configured. Do **not** claim LIVE before all of these are actually verified.
+If verified scenes are missing, display the source text, editorial concept and an explicit warning; no phantom shots or export permission.
 
-## Audio-based editable concept — phase 2
+## Step 3. Apply footage and Montage
 
-After the consented STT request returns, `deriveAudioVideoConcept` receives only that in-memory
-timed transcript and the source-verified cut plan. It auto-fills a **proposal** for:
-`purpose`, literal `goal` excerpt from the user speech, `category`, optional
-classified `subcategory/topic`, editorial `style`, symbolic `motif`, narrative
-`pace`, identified `keywords`, aspect, duration and a timed four-phase shot plan.
-The existing 64-topic local taxonomy and reviewed creative choice dictionaries are reused.
-Weak topic classification is left unclassified rather than presented as certain.
-Symbol/style suggestions explicitly remain editorial; a clip tag is **not**
-proof of the actual physical object depicted in footage.
+The existing `Match footage` action still applies and validates licensed real MP4 clips. The existing `Continue to montage` remains unavailable until the source plan was really applied and rights are granted. Keep the original audio exactly once and non-looping, no generic congratulation captions, automatic rendering, publication or paid network requests. The concept proposal alone never enables export.
 
-iOS Files sometimes supplies a valid .m4a/.mp3/.wav/.aac/.webm with empty or generic
-MIME. The consented STT transport now normalizes the multipart MIME from a
-strict six-extension allowlist, preserving the same bytes and only after
-the visitor has granted explicit consent. Unknown extensions still fail closed.
+## Release evidence
 
-This is a **deterministic local concept engine**, not a paid remote LLM call.
-Optional provider-backed enhancements need separate consent, existing free-quota
-proof and full privacy review before activation.
-
-## Transcript-first fallback (no licensed shots yet)
-
-The editorial concept is computed as soon as a valid transcript exists, even
-when the rights/aspect/duration gate cannot yet produce enough real MP4 footage.
-In that case `canExport=false`, the timed shot list is empty, and the original
-source text, goal, topic, style, keyword and symbol proposals remain visible
-on the same Goal page with an explicit no-footage warning. No phantom scenes or
-enabled export buttons are created. Literal negations (e.g. "без леса",
-"without forest") are preserved in local visual-signal extraction.
+- Keep exact-head Core, focused Mandala tests, real macOS WebKit recorded audio/video, public services browser acceptance, specialist and protected merge gates.
+- Include negative coverage for empty speech, unverified footage, source negation, audio MIME and absence of implicit provider calls.
+- Reconcile production with a true two-parent merge retaining #3879's canonical implementation and #3885's editorial sun source data.
+- Verify protected merge and production Vercel READY deployment + canonical alias SHA before calling LIVE.
+- Personal audio with external STT may depend on production's pre-confirmed provider free-quota configuration; no automatic billing or simulated transcription.
