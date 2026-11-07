@@ -333,6 +333,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Montage opens the approved Concept panel by default. A real visitor
+      // taps Style before choosing the scenic film; no hidden/forced clicks.
+      const montageStyleTab=page.locator('[data-video-montage-tab="effects"]');
+      await expect(page.locator('[data-video-montage-tab="concept"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await expect(montageStyleTab).toBeVisible();
+      await montageStyleTab.click();
+      await expect(montageStyleTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
       // Reproduce the owner's iPhone case before recording real voice.
       const selectedStyle=page.locator('[data-video-montage-style="3"]');
       const selectedMaster=page.locator("[data-mandala-master-mp4]");

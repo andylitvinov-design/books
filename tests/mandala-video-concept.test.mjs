@@ -76,3 +76,15 @@ test("Montage still owns the original single editor and verifies guest approval 
   assert.match(css,/@media\(max-width:359px\)/);
   assert.match(css,/safe-area-inset-bottom/);
 });
+
+test("macOS WebKit must enter Style from default Concept before selecting media",()=>{
+  const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const start=source.indexOf('const editorTab=page.locator');
+  const end=source.indexOf('const selectedStyle=page.locator',start);
+  assert.ok(start>0&&end>start);
+  const route=source.slice(start,end);
+  assert.match(route,/\[data-video-montage-tab="concept"\]/);
+  assert.match(route,/await montageStyleTab\.click\(\)/);
+  assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
+  assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
+});
