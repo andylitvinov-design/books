@@ -343,9 +343,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             documentWidth:document.documentElement.scrollWidth,
             viewportWidth:document.documentElement.clientWidth};
         });
-        assert.equal(measured.tabs.length,6,"six workspace tabs: "+width);
+        assert.equal(measured.tabs.length,7,"seven independent workspace tabs: "+width);
         assert.ok(measured.tabs.every(t=>Math.abs(t.top-measured.tabs[0].top)<3),
-          "single row of six tabs: "+width+" "+JSON.stringify(measured));
+          "single row of seven tabs: "+width+" "+JSON.stringify(measured));
         assert.ok(measured.navBottom<=measured.stageTop+2,
           "tabs above video: "+width+" "+JSON.stringify(measured));
         assert.ok(Math.abs(measured.ratio-16/9)<.18,
