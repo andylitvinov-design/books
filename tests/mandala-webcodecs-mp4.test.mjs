@@ -7,7 +7,7 @@ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",
 test("Safari MP4 uses browser-local WebCodecs rather than MediaRecorder",()=>{
   assert.match(helper,/new CanvasSource\(canvas,/);
   assert.match(helper,/new AudioBufferSource\(\{codec:"aac"/);
-  assert.match(helper,/new Mp4OutputFormat\(\)/);
+  assert.match(helper,/new Mp4OutputFormat\(\{fastStart:"in-memory"\}\)/);
   assert.match(helper,/await output\.finalize\(\)/);
   assert.match(studio,/const useWebCodecsMp4=/);
   assert.match(studio,/await import\("@\/lib\/mandala\/webcodecs-mp4-export"\)/);
@@ -255,6 +255,54 @@ test("Safari deferred MP4 decoding requires a real user Play gesture, not a fals
   assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
 });
 
+test("Safari MP4 finalized bytes require real tracks and a decoded first frame",()=>{
+  for(const marker of [
+    "new Input({","new BlobSource(new Blob([bytes]",
+    "formats:[MP4]","await input.canRead()",
+    "input.getPrimaryVideoTrack()","track.getDurationFromMetadata()",
+    "input.getPrimaryAudioTrack()","track.canDecode()",
+    "new VideoSampleSink(track)","sink.getSample(await track.getFirstTimestamp())",
+    "frame.close()","input.dispose()","await output.getMimeType()",
+    "verifyDecodableMp4Export(bytes,{",
+  ])assert.ok(helper.includes(marker),marker);
+  assert.match(helper,/document.createElement\("video"\).canPlayType\(expected.mime\)/);
+  assert.match(helper,/video_output_codec_unsupported/);
+  assert.match(helper,/video_output_invalid_tracks/);
+  assert.match(helper,/video_output_decoder_failed/);
+  const verifyAt=helper.indexOf("await verifyDecodableMp4Export(bytes,{");
+  assert.ok(verifyAt>helper.indexOf("await output.finalize()"));
+  assert.ok(verifyAt<helper.indexOf("onProgress?.(100)"));
+});
+
+test("Safari failed encoded MP4 offers native WebM without lost credits",()=>{
+  assert.match(helper,/verifyDecodableMp4Export\(bytes,\{/);
+  assert.match(studio,/video_output_codec_unsupported/);
+  assert.match(studio,/video_output_invalid_tracks/);
+  assert.match(studio,/video_output_decoder_failed/);
+  assert.match(studio,/canRetryWebm/);
+  assert.match(studio,/data-video-webkit-webm-retry/);
+  assert.match(studio,/void createVideo\(true\)/);
+  assert.match(studio,/if\(playbackStatus==="failed"\)\{/);
+  assert.match(studio,/HH_SAFARI_FINAL_PLAYBACK:/);
+});
+
+test("real Safari MEDIA_ERR_SRC_NOT_SUPPORTED gets exactly one on-device WebM recovery",async()=>{
+  const {shouldAutoRecoverSafariPlayback:recover}=await import("../lib/mandala/recording-codecs.mjs");
+  const params={safariWebKit:true,format:"mp4",errorCode:4,nativeWebm:true};
+  assert.equal(recover(params),true);
+  for(const invalid of [
+    {alreadyAttempted:true},{format:"webm"},{errorCode:3},
+    {errorCode:0},{nativeWebm:false},{safariWebKit:false},{catalog:true},
+  ])assert.equal(recover({...params,...invalid}),false,JSON.stringify(invalid));
+  assert.match(studio,/const autoWebmRetryForRef=useRef<string\|null>\(null\)/);
+  assert.match(studio,/autoWebmRetryForRef\.current=signature/);
+  assert.match(studio,/autoWebmRetryUrlRef\.current=result\.url/);
+  assert.match(studio,/if\(held&&creditValidRef\.current\)await releaseCredit\(held\)/);
+  assert.match(studio,/setPendingCompatibleRetry\(signature\)/);
+  assert.match(studio,/void createVideo\(true\)/);
+  assert.match(studio,/HH_SAFARI_FINAL_PLAYBACK:/);
+});
+
 test("guest real encoded video must keep Save behind sign-in and preserve physical codec acceptance",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const guest=browser.indexOf('const guestPreview=page.locator("[data-video-guest-preview-actions]")');
@@ -313,6 +361,18 @@ test("compact Ideas opens its actual opt-in voice editor via visible user contro
   assert.ok(browser.includes(required),"do not lose true media/consent coverage: "+required);
 });
 
+test("failed Safari output hides guest Watch and labels the result as a playback failure",()=>{
+  const result=studio.slice(studio.indexOf('id="personal-video-result"'));
+  assert.match(result,/playbackStatus==="failed"\?\(locale==="ru"\?"Ошибка воспроизведения видео"/);
+  assert.match(result,/locale==="es"\?"Error al reproducir el vídeo":"Video playback failed"/);
+  assert.match(result,/playbackStatus!=="failed"&&result\.mode!=="catalog"&&creditCatalog\?\.chargeRequired&&creditSession!=="signed_in"/);
+  // Until the first decoded frame Safari still needs an explicit user Play gesture.
+  assert.match(result,/data-video-guest-play/);
+  assert.match(result,/data-video-verify-playback/);
+  assert.match(result,/data-video-playback-error/);
+  assert.match(result,/playbackStatus==="ready"&&result\.mode!=="catalog"&&creditConfirmed/);
+});
+
 test("macOS voice export selects four physically verified portrait sources before encoding",()=>{
   const script=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const start=script.indexOf('const aspectSelect=page.locator');
@@ -330,7 +390,7 @@ test("macOS voice export selects four physically verified portrait sources befor
   ])assert.ok(script.includes(marker),marker);
   assert.match(script,/await firstPartyPreset.click\(\)/);
   assert.match(script,/await expect\(fourSources\).toHaveCount\(4\)/);
-  assert.match(script,/phase\(engine,"four-licensed-portrait-sources-selected"\)/);
+  assert.match(script,/phase\(engine,"four-approved-portrait-sources-selected"\)/);
   assert.ok(studio.includes("verifiedSceneAspect(scene,aspect)"),"source eligibility is fail-closed");
   assert.ok(studio.includes("freeFilmSourcesListed"),"export requires physically verified masters");
 });

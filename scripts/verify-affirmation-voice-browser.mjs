@@ -403,7 +403,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         assert.ok(scene,"FOUR_SOURCES_MUST_BE_APPROVED_FIRST_PARTY_MP4 "+id);
         assert.equal(sourcePaths[index],scene.video,"SOURCE_NOT_IN_VERIFIED_MANIFEST "+id);
         assert.match(scene.video,/^\/videos\/holistic-house\/[a-z0-9_/-]+\.mp4$/,"SOURCE_NOT_FIRST_PARTY "+id);
-        assert.ok(scene.width>0&&scene.height>scene.width&&scene.duration>=5,
+        assert.ok(scene.width>0&&scene.height>scene.width&&scene.durationSeconds>=5,
           "PHYSICAL_PORTRAIT_NON_LOOPING_SCENE_REQUIRED "+id);
         assert.match(scene.sha256||"",/^[a-f0-9]{64}$/i,"SOURCE_HASH_REQUIRED "+id);
         return scene;

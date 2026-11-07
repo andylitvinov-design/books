@@ -465,6 +465,7 @@ test("WebKit release follows the real Montage Settings, Audio, and voice disclos
  assert.match(source,/const approvedOriginals=JSON\.parse\(readFileSync\(/);
  assert.match(source,/FOUR_DISTINCT_VERIFIED_ORIGINAL_MASTERS_REQUIRED/);
  assert.match(source,/SOURCE_NOT_IN_VERIFIED_MANIFEST/);
+ assert.match(source,/scene\.durationSeconds>=5/);
  assert.match(source,/await expect\(page\.locator\('\[data-video-montage-audio\]'\)\)\.toBeVisible\(\)/);
  assert.match(source,/const voicePanel=page\.locator\("\[data-video-voice-studio\]"\)/);
  assert.match(source,/voicePanel\.locator\(":scope > summary"\)\.click\(\)/);
