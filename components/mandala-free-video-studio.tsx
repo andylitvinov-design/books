@@ -15,6 +15,10 @@ import { MandalaVideoIdeas } from "./mandala-video-ideas";
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
 import { MandalaFreeVideoGenerator } from "./mandala-free-video-generator";
+import {planAudioVisualStoryboard} from "@/lib/mandala/audio-visual-storyboard.mjs";
+import {consumeVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
+import {requestConsentedTimedTranscript} from "@/lib/mandala/consented-audio-stt";
+import type {TimedSpeechTranscript,AudioVisualPlan} from "@/lib/mandala/audio-visual-storyboard.mjs";
 import { MandalaVideoDelivery } from "./mandala-video-delivery";
 import {appFetch} from "@/lib/app/client-fetch";
 import {paintVideoBrandStamp,resolveVideoExportVariant} from "@/lib/mandala/video-branding.mjs";
@@ -2147,6 +2151,46 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const uploadedAudioRef = useRef<{file:File;url:string}|null>(null);
   const [audioPlaybackError,setAudioPlaybackError] = useState(false);
   const [audioRights,setAudioRights] = useState(false);
+  // Temporary user-owned voice transcript: never place it in browser storage.
+  const [sttConsent,setSttConsent]=useState(false);
+  const [sttBusy,setSttBusy]=useState(false);
+  const [sttError,setSttError]=useState("");
+  const [voiceTranscript,setVoiceTranscript]=useState<TimedSpeechTranscript|null>(null);
+  const [voiceVisualPlan,setVoiceVisualPlan]=useState<AudioVisualPlan|null>(null);
+  const [pendingAutoVoice,setPendingAutoVoice]=useState<TimedSpeechTranscript|null>(null);
+  const sttAbortRef=useRef<AbortController|null>(null);
+  useEffect(()=>()=>sttAbortRef.current?.abort(),[]);
+  // Same-tab iHelp handoff is read once; the IndexedDB record is deleted.
+  useEffect(()=>{
+    if(!studioHydrated)return;
+    let active=true;
+    void consumeVoiceStudioHandoff().then(voice=>{
+      if(!active||!voice||uploadedAudioRef.current)return;
+      const entry=chooseAudioFile(voice.file);
+      if(!entry)return;
+      setVoiceTranscript(voice.transcript);
+      // The visitor already chose the expressly consented voice-to-video action.
+      // Keep the original voice non-looping and do not ask the Goal wizard again.
+      setAudioRights(true);
+      setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
+      setImportedAudioSeconds(voice.transcript.durationSeconds);
+      setSttError("");
+      setActiveWorkspace("editor");
+      setMontagePanel("audio");
+      setShowAdvancedVideo(true);
+      setVideoScenarioOpen(true);
+      setPendingAutoVoice(voice.transcript);
+      setNotice(locale==="ru"?"Расшифровка получена. Подбираем видеоряд по моментам речи…":
+        locale==="es"?"Transcripción recibida. Preparando escenas según el audio…":
+          "Transcript received. Matching licensed footage to your spoken moments…");
+      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+        const details=document.querySelector<HTMLDetailsElement>("[data-video-audio-details]");
+        if(details)details.open=true;
+        document.querySelector("[data-video-audio-storyboard]")?.scrollIntoView({block:"nearest",behavior:"smooth"});
+      }));
+    });
+    return()=>{active=false;};
+  },[studioHydrated]);
   const [audioWaveform,setAudioWaveform]=useState<readonly number[]|null>(null);
   const waveformFile=attachedAudio?.kind==="file"&&audioRights?attachedAudio.file:null;
   useEffect(()=>{
@@ -3754,6 +3798,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }catch{stopSoundPreview();setMusicWarning(ui.soundUnavailable);}
   }
   function clearUploadedAudio(){
+    sttAbortRef.current?.abort();sttAbortRef.current=null;
+    setSttBusy(false);setSttConsent(false);setSttError("");
+    setVoiceTranscript(null);setVoiceVisualPlan(null);
     stopSoundPreview();
     if(uploadedAudioRef.current)URL.revokeObjectURL(uploadedAudioRef.current.url);
     uploadedAudioRef.current=null;
@@ -4414,6 +4461,98 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return false;
     }
   };
+  async function transcribeVideoVoice(){
+    const entry=uploadedAudioRef.current;
+    if(!entry||recording||preparing||micRecording||sttBusy)return;
+    if(!sttConsent){
+      setSttError(locale==="ru"?"Сначала разрешите передать запись сервису распознавания.":
+        locale==="es"?"Autoriza primero enviar el audio al reconocimiento.":"Allow one-time transcription first.");
+      return;
+    }
+    if(entry.file.size>4*1024*1024){
+      setSttError(locale==="ru"?"Файл больше 4 МБ. Сожмите запись в M4A/MP3 и загрузите снова.":
+        locale==="es"?"El archivo supera 4 MB. Comprímelo a M4A/MP3.":"Audio exceeds 4 MB. Compress it to M4A/MP3.");
+      return;
+    }
+    sttAbortRef.current?.abort();
+    const controller=new AbortController();
+    sttAbortRef.current=controller;setSttBusy(true);setSttError("");
+    setVoiceTranscript(null);setVoiceVisualPlan(null);
+    try{
+      const transcript=await requestConsentedTimedTranscript(entry.file,locale,sttConsent,controller.signal);
+      if(sttAbortRef.current!==controller||
+        uploadedAudioRef.current?.file!==entry.file)return;
+      setVoiceTranscript(transcript);
+      setNotice(locale==="ru"?"Расшифровка с временными метками готова. Проверьте текст перед монтажом.":
+        locale==="es"?"Transcripción con tiempos lista. Revisa el texto.":"Timed transcript ready. Review it before editing.");
+    }catch(error){
+      if(controller.signal.aborted)return;
+      const code=error instanceof Error?error.message:"";
+      setSttError(code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"?
+        (locale==="ru"?"Бесплатное распознавание ещё не подключено. Запись осталась на устройстве.":
+          locale==="es"?"El reconocimiento gratuito no está conectado. Tu audio sigue en el dispositivo.":
+            "Free speech recognition is not configured. Your audio remains on this device.") :
+        (locale==="ru"?"Не удалось расшифровать запись с точными таймкодами. Проверьте сеть и формат аудио.":
+          locale==="es"?"No se pudo transcribir con tiempos verificados. Revisa la conexión y el formato.":
+            "Timed transcription failed. Check the connection and audio format."));
+    }finally{
+      if(sttAbortRef.current===controller){
+        sttAbortRef.current=null;setSttBusy(false);
+      }
+    }
+  }
+  function applyTranscriptVideo(providedTranscript?:TimedSpeechTranscript,automatic=false){
+    const entry=uploadedAudioRef.current;
+    const transcript=providedTranscript??voiceTranscript;
+    if(!entry||!transcript||recording||preparing||!audioRights)return;
+    const plan=planAudioVisualStoryboard({
+      transcript,scenes:FREE_FILM_CATALOG,
+      // For recorded speech do not bias every story toward the default
+      // Energy category. Real spoken concepts determine each scene.
+      aspect,theme:automatic?"":theme,locale
+    });
+    setVoiceVisualPlan(plan);
+    if(!plan.canExport||!plan.edit){
+      setSttError(plan.status==="AUDIO_LONGER_THAN_60_SECONDS"?
+        (locale==="ru"?"Запись длиннее 59 секунд. Для сохранения всей речи нужен более длинный видеоэкспорт; сократите аудиофайл.":
+          locale==="es"?"El audio supera 59 segundos. Acórtalo para este editor.":"Audio exceeds 59 seconds. Shorten it for this editor.") :
+        (locale==="ru"?"Не найдено достаточно проверенных видео нужного формата и длительности. Попробуйте другую ориентацию.":
+          locale==="es"?"No hay suficientes vídeos verificados de este formato. Cambia la orientación.":
+            "Not enough approved footage for this aspect/duration. Try another orientation."));
+      return;
+    }
+    const preset=FREE_FILM_PRESETS.find(item=>item.theme===theme)||FREE_FILM_PRESETS[0];
+    const accepted=applyAutoFilm(preset.id,
+      plan.durationSeconds as 10|15|20|30|60,plan.edit);
+    if(!accepted){
+      setSttError(locale==="ru"?"Монтаж не прошёл проверку видеоисточников. Выберите другой формат.":
+        locale==="es"?"Las fuentes no pasaron la validación. Prueba otro formato.":
+          "Footage validation failed. Try another format.");
+      return;
+    }
+    // Preserve original speech once, never loop a personal message.
+    setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
+    setAudioAuto(false);setSoundVolume(100);setMusic("none");
+    setWish(transcript.text.slice(0,800));setVideoScenarioOpen(true);
+    if(automatic){
+      setActiveWorkspace("editor");setMontagePanel("settings");
+      setShowAdvancedVideo(true);
+    }
+    setSttError("");
+    setNotice(locale==="ru"?"Видеоряд автоматически синхронизирован с речью. Проверьте монтаж и нажмите «Создать видео».":
+      locale==="es"?"Escenas sincronizadas automáticamente con la voz. Revisa y pulsa Crear vídeo.":
+        "Footage automatically matched to your voice. Review the edit and choose Create video.");
+  }
+  // Same-tab Messenger transcription is applied ONCE, after the audio file,
+  // rights and Studio hydration are committed. No Goal/category prompts.
+  useEffect(()=>{
+    if(!pendingAutoVoice||!uploadedAudio||!audioRights||!studioHydrated||
+      recording||preparing)return;
+    setPendingAutoVoice(null);
+    applyTranscriptVideo(pendingAutoVoice,true);
+  // The local handoff is a one-shot event, not a subscription to editor changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[pendingAutoVoice,uploadedAudio,audioRights,studioHydrated,recording,preparing]);
   const selectCategory=(next:VideoCategory)=>{
     resetEditorHistory();
     setCinematicPlan(null);setTimelineTextClips(null);setPreviewSeekSeconds(0);setPreviewPlayhead(0);setIntroPlaying(false);
@@ -4943,6 +5082,65 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <button type="button" onClick={clearUploadedAudio}
                 disabled={recording||preparing}>{ui.audioRemove}</button>
             </div> : null}
+            {uploadedAudio ? <div data-video-audio-storyboard
+              style={{display:"grid",gap:10,padding:"12px 0"}}>
+              <strong>{locale==="ru"?"Аудио → текст → визуальный сценарий":
+                locale==="es"?"Audio → texto → escenas":"Audio → transcript → visuals"}</strong>
+              <label className={videoStyles.audioRights}>
+                <input type="checkbox" data-video-audio-stt-consent checked={sttConsent}
+                  disabled={sttBusy||recording||preparing}
+                  onChange={event=>setSttConsent(event.currentTarget.checked)}/>
+                {locale==="ru"?"Разрешаю один раз отправить эту запись внешнему сервису распознавания; сайт не сохраняет аудио и текст.":
+                  locale==="es"?"Autorizo enviar este audio una vez al servicio externo de transcripción. El sitio no guarda el audio ni el texto.":
+                    "I consent to send this audio once to an external transcription service. This site does not store the audio or text."}
+              </label>
+              <button type="button" className={videoStyles.audioMicButton}
+                data-video-audio-transcribe
+                disabled={!studioHydrated||!sttConsent||sttBusy||recording||preparing||micRecording}
+                onClick={()=>void transcribeVideoVoice()}>
+                <AudioLines size={16} aria-hidden="true"/>
+                {sttBusy?(locale==="ru"?"Расшифровываем…":locale==="es"?"Transcribiendo…":"Transcribing…"):
+                  (locale==="ru"?"Расшифровать с таймкодами":
+                    locale==="es"?"Transcribir con tiempos":"Transcribe with timecodes")}
+              </button>
+              {sttError?<p role="alert" data-video-audio-stt-error>{sttError}</p>:null}
+              {voiceTranscript?<div data-video-audio-timed-transcript>
+                <p>{locale==="ru"?"Текст распознан по временны́м фрагментам":
+                  locale==="es"?"Texto y segmentos temporales verificados":"Timed text segments verified"}
+                  {" · "}{voiceTranscript.durationSeconds.toFixed(1)} s</p>
+                <details><summary>{locale==="ru"?"Посмотреть расшифровку":
+                  locale==="es"?"Ver transcripción":"Review transcript"}</summary>
+                  <ol>{voiceTranscript.segments.map((segment,index)=>
+                    <li key={index}><small>{segment.startSeconds.toFixed(1)}–
+                      {segment.endSeconds.toFixed(1)} s</small>{" "}{segment.text}</li>)}</ol>
+                </details>
+                <button type="button" className={videoStyles.audioMicButton}
+                  data-video-audio-visual-plan
+                  disabled={!audioRights||recording||preparing}
+                  onClick={()=>applyTranscriptVideo()}>
+                  <Film size={16} aria-hidden="true"/>
+                  {locale==="ru"?"Подобрать видеоряд по моментам речи":
+                    locale==="es"?"Elegir vídeos según la voz":"Match footage to speech moments"}
+                </button>
+                {!audioRights?<small>{ui.audioRightsHelp}</small>:null}
+              </div>:null}
+              {voiceVisualPlan?.canExport?<div data-video-audio-shot-plan>
+                <strong>{locale==="ru"?"Монтажный промпт по времени":
+                  locale==="es"?"Guion visual con tiempos":"Timed visual storyboard"}</strong>
+                <ol>{voiceVisualPlan.shots.map((shot,index)=>
+                  <li key={index}>
+                    <small>{shot.startSeconds}–{shot.endSeconds} s</small>{" "}
+                    {freeFilmClipLabel(shot.sceneId)}
+                    {shot.concepts.length?" · "+shot.concepts.join(", "):""}
+                    {shot.needsReview?" ⚠":""}
+                    {shot.spokenText?<small> · {shot.spokenText.slice(0,100)}</small>:null}
+                  </li>)}</ol>
+                {voiceVisualPlan.needsReview?<p role="status">{
+                  locale==="ru"?"Часть образов не найдена точно. Проверьте предложенные кадры.":
+                    locale==="es"?"Algunas imágenes son aproximadas. Revisa los clips.":
+                      "Some visuals are approximate. Review the suggested clips."}</p>:null}
+              </div>:null}
+            </div>:null}
           </div>
 
           <div className={videoStyles.audioPlayerDock} data-video-audio-dock>

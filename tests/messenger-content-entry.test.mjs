@@ -29,8 +29,11 @@ test("text / original-audio choices reuse existing real flows",()=>{
  assert.match(chat,/MessengerAudioVideo locale=\{locale\}/);
  assert.ok(voice.includes('open={autoOpen}'));
  assert.ok(voice.includes('await stageMessengerAudio('));
- assert.ok(voice.includes('checked=\{rights\}')||voice.includes('checked={rights}'));
- assert.ok(chat.includes('Расшифровка речи здесь пока недоступна'));
+ assert.ok(!voice.includes('checked={rights}'),"no duplicate rights checkbox in mobile audio card");
+ assert.ok(voice.includes('requestConsentedTimedTranscript('));
+ assert.ok(voice.includes('stageVoiceStudioHandoff('));
+ assert.ok(voice.includes('data-hh-audio-video-manual'));
+ assert.ok(chat.includes('По вашему отдельному разрешению речь будет расшифрована'));
 });
 test("validated Studio handoff accepts bounded brief without skipping canonical selection",()=>{
  for(const locale of ["ru","en","es"]){
