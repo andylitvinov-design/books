@@ -33,10 +33,27 @@ export async function verifyGuidedPractices({browser,base,engine}){
         waitUntil:"domcontentloaded",timeout:70000,
       });
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
-      await page.locator('[data-video-quick-control="practices"]').click();
+      // The approved six-tab Studio no longer has a top-level "practices" tab.
+      // Use the genuinely visible guest journey: Ready → 8 sessions → Create course.
+      // Keep the full local-meditation, consent, programme and privacy assertions below.
+      const readyTab=page.locator('[data-video-quick-control="ready"]');
+      await expect(readyTab).toBeVisible({timeout:25000});
+      await expect(readyTab).toBeEnabled();
+      await readyTab.click();
+      await expect(readyTab).toHaveAttribute("aria-pressed","true");
+      const ready=page.locator("[data-video-ready]");
+      await expect(ready).toBeVisible({timeout:25000});
+      const journey=ready.locator("[data-ready-journey]");
+      await expect(journey).toBeVisible();
+      await journey.click();
+      await expect(ready).toHaveAttribute("data-ready-view","journey");
+      await expect(ready.locator("[data-ready-eight-sessions]")).toBeVisible();
+      const enterCourse=ready.locator("[data-ready-create-course]");
+      await expect(enterCourse).toBeVisible();
+      await expect(enterCourse).toBeEnabled();
+      await enterCourse.click();
       const course=page.locator("[data-video-guided-course]");
       await course.waitFor({state:"visible",timeout:25000});
-      assert.equal(await page.locator('[data-video-quick-control="practices"]').getAttribute("aria-pressed"),"true");
       const generate=course.locator("[data-guided-generate-meditation]");
       assert.equal(await generate.isDisabled(),true,"state mode needs an explicit choice");
       assert.equal(await course.locator("[data-guided-focus-state]").count(),6,
@@ -65,7 +82,9 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await practice.locator("button").last().click();
       assert.notEqual(await practice.locator("h5").innerText(),titles[2],"refresh changes the method");
 
-      await result.locator("[data-guided-add-meditation]").click();
+      const include=result.locator("[data-guided-add-meditation]");
+      await include.click();
+      await expect(include).toHaveAttribute("aria-pressed","true",{timeout:15000});
       const voice=page.locator("[data-video-therapy-meditation-audio]");
       await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===true);
       await voice.locator("[data-meditation-script]").waitFor({state:"attached"});

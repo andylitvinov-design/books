@@ -135,3 +135,24 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(css.includes('[data-video-phrase-audio-shortcut]'),"audio shortcut remains visible");
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
 });
+
+test("physical macOS WebKit reaches guided course through Ready without force or missing legacy tab",()=>{
+ const browser=read("scripts/verify-mandala-practices-browser.mjs");
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const ready=read("components/mandala-video-ready.tsx");
+ const a=browser.indexOf("const readyTab=page.locator");
+ const b=browser.indexOf('const journey=ready.locator("[data-ready-journey]")',a);
+ const c=browser.indexOf('const enterCourse=ready.locator("[data-ready-create-course]")',b);
+ const d=browser.indexOf('await course.waitFor({state:"visible"',c);
+ assert.ok(a>=0&&b>a&&c>b&&d>c,
+  "visitor can click Ready → 8-session journey → actual Course without obsolete tab");
+ assert.doesNotMatch(browser,/data-video-quick-control="practices"|\.click\(\{force:true\}\)/);
+ assert.match(ready,/data-ready-journey/);
+ assert.match(ready,/data-ready-eight-sessions/);
+ assert.match(ready,/data-ready-create-course/);
+ assert.match(studio,/onOpenCourse=\{\(\)=>\{/);
+ assert.match(browser,/await expect\(include\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
+ assert.match(browser,/data-guided-eight-sessions/);
+ assert.match(browser,/data-meditation-course-contact/);
+ assert.match(browser,/assert\.deepEqual\(writes,\[\]\)/);
+});
