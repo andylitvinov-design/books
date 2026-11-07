@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 // Only clearly non-runtime documentation, GitHub Actions configuration and
 // dedicated CI implementation/tests qualify as safe-to-ignore changes.
 const NON_RUNTIME = [
+  /^AGENTS\.md$/,
   /^docs\/myspace\/[\w./-]+\.(?:md|mdx|txt)$/i,
   /^\.github\/workflows\/[\w.-]+\.ya?ml$/,
   // Exact, reviewed browser-only verifier. PR #3555 changed only this test
@@ -19,6 +20,26 @@ const NON_RUNTIME = [
   /^tests\/pr-(?:fast-lane|sweep-guard)\.test\.mjs$/,
   /^README(?:\.[\w.-]+)?\.md$/i,
 ];
+
+// One-time BASE-pinned opt-out: only the initial introduction of this
+// AGENTS.md documentation allowlist can skip the unrelated Vercel site build.
+// A future edit to this guard changes the parent Git blob and MUST rebuild.
+const AGENT_POLICY_BOOTSTRAP_PRIOR_GIT_BLOB='ef9652df948e2ae1d8e15c681d16d3166c4d964f';
+export function maySkipAgentPolicyBootstrap(paths, priorBlob) {
+  const allowed=new Set(['AGENTS.md','scripts/vercel-ignore-build.mjs','tests/ci-vercel-nonruntime.test.mjs']);
+  return Array.isArray(paths)&&paths.length>=2&&paths.length<=3&&
+    new Set(paths).size===paths.length&&paths.includes('AGENTS.md')&&
+    paths.includes('scripts/vercel-ignore-build.mjs')&&
+    paths.every(path=>allowed.has(path))&&
+    priorBlob===AGENT_POLICY_BOOTSTRAP_PRIOR_GIT_BLOB;
+}
+function readPreviousGuardBlob(git=execFileSync) {
+  try {
+    const value=git('git',['rev-parse','HEAD^:scripts/vercel-ignore-build.mjs'],
+      {encoding:'utf8',timeout:10000,maxBuffer:1000}).trim();
+    return /^[a-f0-9]{40}$/i.test(value)?value.toLowerCase():null;
+  } catch { return null; }
+}
 
 export function maySkipBuild(changedPaths) {
   return Array.isArray(changedPaths)
@@ -120,7 +141,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     ? await inspectGithubCompare(previous, current)
     : { paths: local, reason: "local-git-diff" };
   const changed = result.paths;
-  const safe = maySkipBuild(changed);
+  const safe = maySkipBuild(changed) || maySkipAgentPolicyBootstrap(changed, readPreviousGuardBlob());
   console.log("Vercel build guard decision: source=" + result.reason
     + "; fileCount=" + (Array.isArray(changed) ? changed.length : "unknown")
     + "; runtimeChange=" + (Array.isArray(changed) && !safe ? "yes" : "unknown-or-none"));

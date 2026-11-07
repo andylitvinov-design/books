@@ -4618,3 +4618,53 @@
    display:grid!important;
  }
 }
+
+
+/* Free first video: PRO shows the actual decoded local recording. Preserve
+   the native MediaRecorder/WebCodecs stage, non-PRO views and save policy. */
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  order:1!important;align-items:start;gap:10px;width:100%;min-width:0;
+  margin:0!important;padding:clamp(12px,3vw,20px);
+  border:1px solid #cfe5d8;border-radius:20px;background:#fffefa;
+  scroll-margin-top:14px;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>*{
+  grid-column:1/-1!important;grid-row:auto!important;min-width:0;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>h3{
+  font:800 clamp(19px,4.6vw,25px)/1.2 Arial,Helvetica,sans-serif;
+  color:#174c3c;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>video{
+  display:block!important;width:100%!important;max-width:760px!important;
+  height:auto!important;max-height:min(65svh,600px)!important;
+  aspect-ratio:auto!important;object-fit:contain!important;
+  margin:0 auto!important;border-radius:14px;background:#142b27;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result] .resultActions{
+  display:flex!important;flex-wrap:wrap;gap:8px;grid-template-columns:none!important;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions{
+  display:grid;gap:9px;min-width:0;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions>button{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  width:100%;min-height:48px;padding:11px 15px;border:0;border-radius:13px;
+  background:#078767;color:#fff;font:800 16px/1.2 Arial,Helvetica,sans-serif;
+  cursor:pointer;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions>button:focus-visible{
+  outline:3px solid #be9a54;outline-offset:3px;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions p{
+  margin:0!important;color:#5a7466;font:500 13px/1.45 Arial,Helvetica,sans-serif;
+}
+@media(max-width:759px){
+  .studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){
+    padding:12px!important;gap:10px!important;
+  }
+  .studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>video{
+    max-height:62svh!important;
+  }
+}
