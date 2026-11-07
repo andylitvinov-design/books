@@ -94,6 +94,11 @@ function stateLabel(state,t){
  if(state==='paused'||state==='canceled')return t.stopped;
  return state||t.notKnown;
 }
+/**
+ * Explicitly type the owner-provided registry: an unannotated [] default
+ * gets inferred as never[] by Next's TypeScript consumer.
+ * @param {{lang?: string, initialSnapshot?: any, registry?: readonly any[], envReady?: boolean}} props
+ */
 export default function CommandCenterMobile({lang='ru',initialSnapshot=null,registry=[],envReady=false}){
  const t=labels[lang]||labels.ru,router=useRouter();
  const [snapshot,setSnapshot]=useState(initialSnapshot);
