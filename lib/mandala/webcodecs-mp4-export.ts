@@ -183,6 +183,12 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     let decoderHoldMs=0;
     const maxFrameDecoderWaitMs=1400;
     const maxTotalDecoderWaitMs=4800;
+    // Safari's H.264 encoder can stall for more than one frame while still
+    // producing every original Canvas frame at EXACT presentation timestamps.
+    // A 750ms wall-clock cutoff misclassified valid 20s offline exports.
+    // Bound short encoder scheduling stalls to 3s, independently from the
+    // strict whole-export deadline and per-source decoder wait limits.
+    const maxEncoderPresentationLagMs=3000;
     for(let i=0;i<frames;i++){
       if(!shouldContinue())throw new Error("export_cancelled");
       const remaining=startedAt+decoderHoldMs+(i*1000/frameRate)-performance.now();
@@ -190,7 +196,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       // MP4 presentation timestamps remain exact even when a native decoder
       // briefly buffers at the original four-scene shot boundary.
       const time=i/frameRate;
-      if(performance.now()-startedAt > time*1000+decoderHoldMs+750)
+      if(performance.now()-startedAt > time*1000+decoderHoldMs+maxEncoderPresentationLagMs)
         throw new Error("video_encoder_timeline_drift");
       let decodedRealFrame=renderFrame(time);
       if(!decodedRealFrame){
