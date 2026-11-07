@@ -230,6 +230,61 @@
    output.setAttribute('aria-label','Редактируемый промпт для исполнителя');area.append(output);
    const note=mk('p','hh-cc-task-note','');note.setAttribute('role','status');note.setAttribute('aria-live','polite');area.append(note);
    sheet.append(area);
+   // Selected public Brain capsule can be appended to the existing editable prompt.
+   // This is reference data only: no agent execution, token, provider call or private task write.
+   const memoryRow=mk('div','hh-cc-memory-inline');
+   const memoryLabel=mk('label',null,'Память проекта из AI Projects Brain');
+   const memorySelect=mk('select','hh-cc-memory-project');memorySelect.id='hh-cc-memory-project';
+   memorySelect.setAttribute('aria-label','Выбрать папку проекта для контекста');
+   const emptyOption=mk('option',null,'Выберите проект (необязательно)');emptyOption.value='';
+   memorySelect.append(emptyOption);
+   const memoryButton=mk('button','hh-cc-secondary','📚 Добавить память к промпту');
+   memoryButton.type='button';memoryRow.append(memoryLabel,memorySelect,memoryButton);
+   sheet.append(memoryRow);
+   const memoryNotice=mk('p','hh-cc-privacy-note','Контекст читается только из публичного AI Projects Brain. Для выполнения задачи агент обязан самостоятельно проверить исходный GitHub код и статус LIVE.');
+   memoryNotice.setAttribute('role','status');memoryRow.append(memoryNotice);
+   const populateMemory=async()=>{
+    try{
+     const memory=global.HHCommanderMemory;
+     if(!memory){memoryNotice.textContent='Источник памяти пока не подключён. Откройте /memory.html.';return}
+     const catalog=await memory.list();
+     if(!memorySelect.isConnected)return;
+     const selected=global.HHCommanderMemorySelection||memorySelect.value;
+     for(const p of catalog.projects){
+      const option=mk('option',null,p.name+(p.hasFolder?'':' · папка не проверена'));option.value=p.id;memorySelect.append(option);
+     }
+     const suggestion=memory.suggest(input.value,catalog);
+     const wanted=[selected,suggestion].find(id=>id&&[...memorySelect.options].some(o=>o.value===id));
+     if(wanted)memorySelect.value=wanted;
+     memoryNotice.textContent='Найдено '+catalog.projects.length+' папок и записей. Выберите одну и нажмите «Добавить память». Реестр обновлён: '+(catalog.registryUpdated||'неизвестно')+'.';
+    }catch(e){memoryNotice.textContent='Память недоступна: '+String(e.message||e)+'. Задачу можно разобрать без неё.'}
+   };
+   memoryButton.addEventListener('click',async()=>{
+    const memory=global.HHCommanderMemory,projectKey=memorySelect.value,raw=input.value.trim();
+    if(!memory||!projectKey){memoryNotice.textContent='Сначала выберите проект из каталога.';return}
+    if(raw.length<8){memoryNotice.textContent='Сначала опишите задачу.';input.focus();return}
+    let before=area.hidden?buildTaskBrief(raw):output.value;
+    if(before.includes('9. ПАМЯТЬ ПРОЕКТА')||before.includes('4a. ПАМЯТЬ ПРОЕКТА')){
+     memoryNotice.textContent='Память уже добавлена. Для выбора другого проекта сформируйте промпт заново.';return}
+    const epoch=analysisEpoch,previous=output.value;
+    memoryButton.disabled=true;memoryNotice.textContent='Читаю паспорт, решения и проверки из AI Projects Brain…';
+    try{
+     const record=await memory.load(projectKey);
+     if(epoch!==analysisEpoch||input.value.trim()!==raw||output.value!==previous||dialog.hidden){
+      memoryNotice.textContent='Промпт или описание изменились. Повторите добавление памяти.';return}
+     const reference=memory.bundle(record,1900);
+     if(!reference||!record.documents.length){memoryNotice.textContent='Файлы проекта не получены. Откройте исходную папку в GitHub.';return}
+     const attachment='\n\n'+reference.replace(/^9\./,'4a.')+'\n';
+     const anchor=before.indexOf('\n5. ');
+     const available=Math.min(output.maxLength||8500,8500);
+     const merged=anchor>=0?before.slice(0,anchor)+attachment+before.slice(anchor):before+attachment;
+     if(merged.length>available){memoryNotice.textContent='Промпт слишком длинный. Скопируйте контекст в /memory.html и сократите текст вручную.';return}
+     output.value=merged;area.hidden=false;area.dataset.sourceRaw=raw;
+     memoryNotice.textContent='Память '+record.project.name+' добавлена со ссылками на '+record.documents.length+' файлов. Передача в кабинет остаётся ручной.';
+    }catch(e){memoryNotice.textContent='Контекст не добавлен: '+String(e.message||e)}
+    finally{memoryButton.disabled=false}
+   });
+   populateMemory();
    action.addEventListener('click',()=>analyze(input,output,area,note,action));
    input.addEventListener('input',()=>{analysisEpoch++;action.disabled=false;action.textContent='✦ Разобрать задачу';
     if(!area.hidden)note.textContent='Описание изменилось. Нажмите «Разобрать задачу», чтобы обновить промпт.'});
@@ -265,7 +320,10 @@
     global.visualViewport.addEventListener('resize',fit);global.visualViewport.addEventListener('scroll',fit);fit();
    }
   }
-  dialog.hidden=false;dialog.querySelector('#hh-cc-task-description')?.focus();
+  dialog.hidden=false;
+  const preferred=global.HHCommanderMemorySelection;
+  if(preferred&&dialog.querySelector('#hh-cc-memory-project option[value="'+preferred+'"]'))dialog.querySelector('#hh-cc-memory-project').value=preferred;
+  dialog.querySelector('#hh-cc-task-description')?.focus();
  }
  global.HHOpenTaskIntake=open;
 })(typeof window==='undefined'?null:window);

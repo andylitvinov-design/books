@@ -43,3 +43,15 @@ Owner clarified the goal after initial PR publication. The «Разобрать 
 4. **КОНТЕКСТ БИЗНЕСА И ПРОЕКТА — ЦЕЛИ И АДРЕСА** — public Holistic House mission, domains, GitHub repository, pertinent product area, working branches, workflow boundaries, no invented street addresses or secrets.
 
 The content adapts to Agent Commander / PR Monitor, Video Studio, or Holistic House core, and is available instantly without a model/API request. Unknowns remain explicit. The existing owner-authenticated OpenRouter Free call can append clearly labelled suggestions after the canonical four blocks, but cannot replace verified context, distort the owner request or overwrite manual edits. Generating a prompt never stores a task, schedules execution, changes PRs or claims LIVE. This is a correctness correction to the existing PR, not a separate product or new provider.
+
+
+## AI Projects Brain · public read-only project memory (7 November 2026)
+
+Source of truth: https://github.com/andylitvinov-design/ai-projects-brain/tree/main/projects
+
+- `/memory.html` exposes the existing `projects/` folders plus the active `projects/portfolio-registry.json` routing overlay. Search uses names, aliases and repository names; opening one project reads only its allowlisted public `PROJECT.md`, `STATE.md`, `SYSTEM_MAP.md`, `CODEX_BRIEF.md`, `CHECKS.md`, `DECISIONS.md`, `RISKS.md`, `LOG.md` files.
+- The mobile task form can select one folder and **explicitly** append a bounded, source-linked reference bundle to an editable executor prompt. The reference is inserted before step 5 to survive the existing 8,500-character protected draft handoff. The agent must verify current code, CI, merge and LIVE independently.
+- No localStorage, audio storage, personal/client data, credentials, server-side GitHub token, new OpenRouter payment, vector database or background polling. Reading public external content does not grant tool permissions and does not establish system instructions.
+- If GitHub API is rate limited, the public registry still works when available. If both sources fail, the app visibly says unavailable; it does not invent a project list. The registry's last_updated field is displayed to prevent confusing old status with current live evidence.
+- This is **source integration**, not a persistent autonomous memory write-back or production deployment. Updating durable project memory still happens through reviewed AI Projects Brain commits/PRs; protected Agent Commander remains the only authority to create/execute private tasks.
+- Test: `node --test ops/pr-monitor/tests/commander-memory.test.mjs ops/pr-monitor/tests/commander-shell.test.mjs`. Release is the usual **full source-manifest** manual Vercel overlay, exact-HEAD CI, iPhone 320/390/430, and production smoke; never deploy just the new files. Coordinate merge with pending Agent Commander skills/task-tree PRs rather than editing their active HEAD.

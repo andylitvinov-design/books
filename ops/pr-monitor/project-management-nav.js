@@ -18,12 +18,13 @@
   const more=make('button','hh-cc-iconbtn','⋮');more.type='button';more.title='Разделы мониторинга';more.setAttribute('aria-label','Разделы мониторинга');more.setAttribute('aria-expanded','false');head.append(more);
   const menu=make('div','hh-cc-menu');menu.hidden=true;
   [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Библиотека навыков','/skills.html'],['Защищённый Agent Commander','https://holistichouse.vercel.app/admin/command-center']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
+  const brainLink=make('a',null,'🧠 Память проектов · AI Projects Brain');brainLink.href='/memory.html';menu.append(brainLink);
   head.append(menu);more.addEventListener('click',()=>{menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden))});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
   document.addEventListener('click',e=>{if(!head.contains(e.target)){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
   document.body.prepend(head);
   const nav=make('nav');nav.id='hh-cc-dock';nav.setAttribute('aria-label','Agent Commander · основные разделы');
-  const active=location.pathname===paths.tasks?'tasks':location.pathname===paths.agents?'agents':location.pathname===paths.projects?'projects':location.pathname===paths.monitor?'monitor':'home';
+  const active=location.pathname==='/memory.html'?'projects':location.pathname===paths.tasks?'tasks':location.pathname===paths.agents?'agents':location.pathname===paths.projects?'projects':location.pathname===paths.monitor?'monitor':'home';
   [['home','Главная'],['tasks','Задачи'],['add','Создать'],['agents','Агенты'],['projects','Проекты']].forEach(([name,label])=>{
    const e=make(name==='add'?'button':'a');if(name==='add'){
     e.type='button';e.setAttribute('aria-label','Создать задачу');e.append(make('span','hh-cc-add','+'));e.addEventListener('click',openTaskDraft);
@@ -31,6 +32,8 @@
    e.append(make('small',null,label));nav.append(e);
   });
   document.body.append(nav);
+  const brainCss=make('link');brainCss.rel='stylesheet';brainCss.href='/commander-memory.css?v=20261107-brain-v1';document.head.append(brainCss);
+  const brainJs=make('script');brainJs.src='/commander-memory.js?v=20261107-brain-v1';brainJs.async=false;document.head.append(brainJs);
   const bridge=make('script');bridge.id='hh-cc-transfer-loader';
   bridge.src='/commander-transfer.js?v=20261107-task-transfer-v1';document.head.append(bridge);
   const skillCss=make('link');skillCss.rel='stylesheet';skillCss.href='/commander-skills.css?v=20261107-skills-v1';document.head.append(skillCss);
