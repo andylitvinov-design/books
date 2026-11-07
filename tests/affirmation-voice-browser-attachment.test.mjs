@@ -161,3 +161,21 @@ test("WebKit voice E2E exercises current two-tab Hypno, real visual modes and au
   assert.match(source,/await binauralSwitch\.click\(\)/);
   assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
 });
+
+test("Ideas refinement survives Safari touch and keyboard disclosure toggles",()=>{
+  const director=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
+  for(const marker of [
+    'data-video-ideas-refinement',
+    '<summary onClick={event=>{',
+    'event.preventDefault();',
+    'node.open=!node.open;',
+    'ideaRefinementOpenRef.current=node.open;',
+    'ref={bindIdeaRefinement}',
+    'ideaRefinementOpenRef.current=event.currentTarget.open;',
+  ])assert.ok(director.includes(marker),"preserve the real Ideas disclosure: "+marker);
+  for(const marker of [
+    'await refinement.locator(":scope > summary").click();',
+    'await expect(refinement).toHaveAttribute("open","");',
+    'await expect(page.locator(\'[data-auto-video-topic-panel]\')).toBeVisible();'
+  ])assert.ok(source.includes(marker),"retain real WebKit browser acceptance: "+marker);
+});
