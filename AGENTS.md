@@ -1,5 +1,11 @@
 # Holistic House: screenshot-driven UI work
 
+## Mandatory PR one-publish and single-writer preflight
+
+Before any source, branch or PR write, read [GLOBAL_PR_ONE_PUBLISH_V1](https://github.com/andylitvinov-design/ai-projects-brain/blob/main/systems/pr-one-publish-standard.md) and [CI_RELEASE_POLICY.md](docs/operations/CI_RELEASE_POLICY.md). This applies to every GPT chat, autonomous automation, repair worker and code-producing agent. Resolve the production base, open matching PRs, and the active GitHub PR ownership lease before making changes. One PR has exactly one active source writer. Stage and locally verify the coherent fix, then publish a single atomic source HEAD; do not make a sequence of remote file writes.
+
+Do not synchronize an otherwise valid PR with production solely because the base advanced. Freeze the published HEAD while exact-HEAD mandatory CI is queued or running. A new remote HEAD is justified only by a verified failing check, proven conflict, security/correctness repair or an explicitly required freshness gate, and only with the current PR lease. Do not use empty commits, cosmetic edits or reruns to wake CI. Let the existing `hh-merge-check` and protected native auto-merge complete successful Ready PRs. Never bypass security, Specialist, browser or review protection, and do not publish where incremental CI/Vercel cost cannot be bounded.
+
 When the owner provides a screenshot, reference image, Figma export, or mockup and asks to create, rebuild, redesign, or correct any page, **read and follow .agents/skills/visual-to-code-pro/SKILL.md before changing UI code**. Its FIRST gate is page identity: reference and actual must share the same route/query intent, role, auth state and dashboard/editor view type. A service editor screenshot is not a visually failed practitioner dashboard; fix wrong OAuth/automatic navigation before comparing pixels. Use its reference specification, preserve working APIs/auth/data, perform rendered screenshot comparison, and never call CSS/unit tests alone a visual match.
 
 The canonical website is https://holistichouse.vercel.app. The GitHub default branch codex/bootstrap-books is **not** automatically production. See the CI / PR / LIVE delivery policy below for production release verification.
