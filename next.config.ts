@@ -19,8 +19,15 @@ const practitionerRecordingSources = [
   "/admin/clients/:id/sessions/:path*",
 ];
 
-// Only the LIVE host can ask the user for microphone permission.
-const liveAudioHostSources = ["/en/live/host", "/ru/live/host", "/es/live/host"];
+// Only approved pages with an explicit Record button may ask for microphone.
+// The public Messenger needs the same narrowly scoped permission as Studio;
+// microphone remains denied across the rest of the site.
+const liveAudioHostSources = [
+  "/en/live/host", "/ru/live/host", "/es/live/host",
+  "/en/holistic-support/mandala", "/ru/holistic-support/mandala",
+  "/es/holistic-support/mandala",
+  "/en/app/messages", "/ru/app/messages", "/es/app/messages",
+];
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

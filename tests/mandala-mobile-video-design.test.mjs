@@ -318,9 +318,8 @@ test("mandala header settings oracle rejects missing-label regression", async ()
 test("one contextual therapy action keeps the single secure renderer and a visible three-column Support header", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
-  // JSX anchor only: a setup handler may reference this selector before the render.
   const top=[
-    "data-video-quick-builder","<nav className={videoStyles.quickVideoNav} data-video-quick-controls",
+    "data-video-quick-builder",'<nav className={videoStyles.quickVideoNav} data-video-quick-controls',
     'data-video-quick-section="1"',"data-video-live-stage",'id="video-hero"',
     "data-video-therapy-banner",'<section className={videoStyles.quickSection} data-workspace-section="video" data-video-quick-section="4"',
     "<section className={videoStyles.quickPhraseSection} data-workspace-section=\"phrases\" data-video-quick-phrases",
@@ -509,7 +508,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.equal((studio.match(/data-video-therapy-banner/g)||[]).length,1);
   const workspaceNav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),
     studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
-  for(const id of ["video","phrases","effects","practices","pro","editor"])
+  for(const id of ["video","phrases","effects","pro","ready","editor"])
     assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
   assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);

@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+// Include the multi-turn RU/EN/ES correction benchmark in the existing video CI lane.
+import "./dialogue-coherence-gold.test.mjs";
 import {understandVideoChatReply as understand} from "../lib/mandala/video-chat-understanding.mjs";
 import {
  initialVideoChatTree,chooseVideoChatTreeOption,

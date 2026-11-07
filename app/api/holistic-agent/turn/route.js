@@ -21,6 +21,7 @@ import { signJudgmentChoice, verifyJudgmentChoice } from "@/lib/holistic-support
 import { buildHolisticGuidedTurn } from "@/lib/holistic-support/holistic-guide-adapter.mjs";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import { generateOwnedOllama, validatedOllamaConfig } from "@/lib/holistic-support/owned-ollama.mjs";
+import { readMyAgentMemory } from "@/lib/holistic-support/agent-memory-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,13 +64,14 @@ function validatedAxes(value) {
 
 function inputOf(body) {
   onlyKeys(body,["locale","message","history","mode","ownedInferenceConsent","selectedGoal",
-    "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback",
+    "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback","useAgentMemory",
     "judgmentContext","judgmentChoice"]);
   if (!LOCALES.has(body.locale) || typeof body.message !== "string" ||
     !body.message.trim() || body.message.length > 3000 ||
     !MODES.has(body.mode) || typeof body.ownedInferenceConsent !== "boolean" ||
     (body.selectedGoal !== null && body.selectedGoal !== undefined &&
       !GOALS.has(body.selectedGoal)) ||
+    (body.useAgentMemory !== undefined && typeof body.useAgentMemory !== "boolean") ||
     (body.usePrivateProfile !== undefined && typeof body.usePrivateProfile !== "boolean") ||
     (body.usePrivateHistory !== undefined && typeof body.usePrivateHistory !== "boolean") ||
     (body.chosenAxes !== undefined && !validatedAxes(body.chosenAxes)) ||
@@ -146,9 +148,8 @@ export async function POST(request) {
         decision:{status:"clarify",message:fastRule.reply,question:null,suggestions:[]},
       },{headers:PRIVATE_HEADERS}));
     }
-    // A narrow, no-cost reasoning path. All verified owner, origin, rate and
-    // safety checks above stay authoritative. On abstain, the existing
-    // protected catalog + natural dialogue route continues untouched.
+    // Tentative, nonclinical decision assistance only after owner, rate
+    // and safety preflight. No profile read, storage, booking or inferred diagnosis.
     if (body.mode==="rules" && safety.status==="clear" && !recentUnsafe) {
       const context=body.judgmentContext
         ? verifyJudgmentChoice({config,actor,token:body.judgmentContext,history:body.history})
@@ -175,6 +176,25 @@ export async function POST(request) {
           browserModelAllowed:false,judgment:publicJudgment,
           decision:{status:"clarify",message:judgment.reply,question:null,suggestions:[]},
         },{headers:PRIVATE_HEADERS}));
+      }
+    }
+    // A client's boolean request is not consent or account proof. The server
+    // checks the signed-in account, durable consent and memory-use flag afresh.
+    // Unsafe turns must not read this optional personal context.
+    let approvedMemory=null;
+    if(body.useAgentMemory===true && safety.status==="clear" && !recentUnsafe &&
+       process.env.HH_AGENT_MEMORY_ENABLED==="true"){
+      try{
+        const saved=await readMyAgentMemory(config,actor);
+        if(saved.consent===true && saved.useInDialogue===true && Array.isArray(saved.items)){
+          const allowed=new Set(["preferred_name","response_length","avoid_format"]);
+          approvedMemory=Object.fromEntries(saved.items
+            .filter(row=>allowed.has(row.kind)&&typeof row.value==="string")
+            .map(row=>[row.kind,row.value]));
+        }
+      }catch{
+        // A memory outage must not stop the nonclinical chat or expose notes.
+        approvedMemory=null;
       }
     }
     const focus=resolveConversationFocus({message:body.message,locale:body.locale,
@@ -212,7 +232,8 @@ export async function POST(request) {
     // results with another medium. Public course introductions remain distinct
     // from nonplayable editor soundtracks and private practitioner recordings.
     const enabledFormats=body.preferredFormat ? [body.preferredFormat] :
-      ["video","test","course","service"];
+      ["video","test","course","service"].filter(kind=>
+        kind!==approvedMemory?.avoid_format);
     // Reuse only client-affirmed watched/mastered videos from the EXISTING
     // My Progress read model. This separate consent is opt-in per request and
     // the private database read never occurs on unsafe turns.
@@ -258,17 +279,35 @@ export async function POST(request) {
     const envelope=prepareNaturalDialogue({
       locale:body.locale,message:body.message,history:body.history,decision:spokenDecision,
       access:{authenticated:true,ownerScoped:true},
-      consent:{ownedInference:allowOwned,browserInference:false,agentMemory:false},
+      consent:{ownedInference:allowOwned,browserInference:false,
+        agentMemory:Boolean(approvedMemory)},
+      memory:approvedMemory?{
+        preferredName:approvedMemory.preferred_name||undefined,
+        preferredStyle:approvedMemory.response_length==="short"?"concise":
+          approvedMemory.response_length==="detailed"?"structured":"warm",
+      }:{},
       channel:allowOwned?"owned":"none",
     });
-    const generated=await finishNaturalDialogue(envelope,allowOwned?prompt=>
-      generateOwnedOllama(prompt,{
+    const generated=await finishNaturalDialogue(envelope,allowOwned?async prompt=>{
+      // A revocation or preference edit during catalogue work MUST invalidate
+      // the already prepared model prompt before any owned-model network call.
+      if(approvedMemory!==null){
+        const latest=await readMyAgentMemory(config,actor);
+        const current=new Map(Array.isArray(latest?.items)?
+          latest.items.map(row=>[row.kind,row.value]):[]);
+        const same=["preferred_name","response_length","avoid_format"]
+          .every(kind=>(current.get(kind)||null)===(approvedMemory[kind]||null));
+        if(latest?.consent!==true||latest?.useInDialogue!==true||!same)
+          throw Error("MEMORY_CONSENT_CHANGED");
+      }
+      return generateOwnedOllama(prompt,{
         endpoint:process.env.HH_AGENT_OLLAMA_ENDPOINT,
         model:process.env.HH_AGENT_OLLAMA_MODEL,
         bearerToken:process.env.HH_AGENT_OLLAMA_TOKEN,
         production:process.env.NODE_ENV==="production",
         signal:AbortSignal.timeout(16000),
-      }):undefined);
+      });
+    }:undefined);
     const suggestions=(Array.isArray(decision.suggestions)?decision.suggestions:[])
       .slice(0,3).map(({id,kind,href,title})=>({id,kind,href,title}));
     return auth.apply(NextResponse.json({

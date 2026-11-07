@@ -31,6 +31,7 @@ jobs:
       docs_only: ${{ steps.diff.outputs.docs_only }}
       ci_only: ${{ steps.diff.outputs.ci_only }}
       route: ${{ steps.fast.outputs.route }}
+      lint_failed: ${{ steps.changed_lint.outcome == 'failure' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -106,6 +107,8 @@ jobs:
           docs_only=false
           ci_only=false
           ci_touched=false
+          preflight_touched=false
+          repair_touched=false
           if [[ "$EVENT_NAME" == pull_request && -n "$BASE_SHA" ]]; then
             # pull_request checkout uses a synthetic merge commit. Production
             # may advance after the PR event base SHA was recorded. Compare
@@ -142,6 +145,17 @@ jobs:
                 .github/workflows/*|scripts/ci-*|scripts/vercel-scenario-music-cache.mjs|scripts/generate-soft-ocean-melody.mjs|lib/ci/*|tests/ci-*|tests/pr-fast-lane.test.mjs|tests/pr-sweep-guard.test.mjs|scripts/pr-sweep-guard.mjs|docs/operations/CI_RELEASE_POLICY.md|package.json|package-lock.json|next.config.ts|tsconfig.json)
                   ci_touched=true ;;
               esac
+              # Scope local CI contracts by their actual implementation.
+              # Cross-cutting fast-lane and Specialist policy suites still
+              # run for ANY CI workflow change (ci_touched).
+              case "$f" in
+                scripts/ci-source-preflight.mjs|tests/ci-source-preflight.test.mjs|scripts/vercel-scenario-music-cache.mjs|tests/ci-vercel-scenario-music-cache.test.mjs|scripts/generate-soft-ocean-melody.mjs|scripts/generate-scenario-melodies.mjs|.github/workflows/hh-pr-core-release.yml)
+                  preflight_touched=true ;;
+              esac
+              case "$f" in
+                scripts/ci-deterministic-eslint-repair.mjs|tests/ci-deterministic-eslint-repair.test.mjs|.github/workflows/hh-pr-core-release.yml|.github/workflows/hh-actionlint.yml)
+                  repair_touched=true ;;
+              esac
               case "$f" in
                 docs/*.md|README.md) ;;
                 *) docs_only=false ;;
@@ -151,6 +165,7 @@ jobs:
               case "$f" in
                   .github/workflows/*.yml|\
                   .github/workflows/*.yaml|\
+                  README.PR-LOSS-TELEMETRY.md|\
                   docs/operations/PR_FAST_LANE_20261029.md|\
                   lib/ci/production-base-impact.mjs|\
                   lib/ci/specialist-aggregate.mjs|\
@@ -201,8 +216,10 @@ jobs:
             echo "docs_only=$docs_only"
             echo "ci_only=$ci_only"
             echo "ci_touched=$ci_touched"
+            echo "preflight_touched=$preflight_touched"
+            echo "repair_touched=$repair_touched"
           } >> "$GITHUB_OUTPUT"
-          echo "Docs-only: $docs_only; CI-policy-only: $ci_only; CI-touched: $ci_touched" >> "$GITHUB_STEP_SUMMARY"
+          echo "Docs-only: $docs_only; CI-policy-only: $ci_only; CI-touched: $ci_touched; preflight-contracts: $preflight_touched; repair-contracts: $repair_touched" >> "$GITHUB_STEP_SUMMARY"
       - name: Route exact image and proven public JSX changes without Next build
         id: fast
         if: github.event_name == 'pull_request'
@@ -284,7 +301,7 @@ jobs:
             echo 'No Mandala media/voice changes; fast release contracts not applicable' >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Verify Source Preflight unit contracts
-        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.ci_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.preflight_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/ci-source-preflight.test.mjs tests/ci-vercel-scenario-music-cache.test.mjs
       - name: Source Preflight — syntax and TypeScript before costly Next build
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
@@ -326,12 +343,13 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.ci_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/pr-fast-lane.test.mjs
       - name: Verify deterministic ESLint repair worker contract
-        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.ci_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
+        if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.repair_touched == 'true' && steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         run: node --test tests/ci-deterministic-eslint-repair.test.mjs
       - name: Verify specialist ownership and Messenger isolation on CI-policy changes
         if: ${{ (github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT')) && (github.event_name != 'pull_request' || steps.diff.outputs.ci_touched == 'true') }}
-        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs
+        run: node --test tests/ci-workflow-globs.test.mjs tests/workflow-next-route-filters.test.mjs tests/ci-specialist-aggregate.test.mjs tests/ci-growth-course-core-reuse.test.mjs
       - name: Lint changed JS/TS sources on PR; full lint for manual/merge queue
+        id: changed_lint
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') }}
         shell: bash
         env:
@@ -520,7 +538,7 @@ jobs:
   hh-eslint-repair:
     name: hh-eslint-repair
     needs: [scope]
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && failure() && needs.scope.result == 'failure' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && failure() && needs.scope.result == 'failure' && needs.scope.outputs.lint_failed == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     concurrency:
@@ -536,7 +554,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 2
-          token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || github.token }}
+          token: ${{ secrets.HH_REPAIR_PUSH_TOKEN || secrets.HH_AUTOMERGE_TOKEN || github.token }}
           persist-credentials: true
       - uses: actions/setup-node@v4
         with:
@@ -546,7 +564,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
-          HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN }}
+          HH_REPAIR_PUSH_TOKEN: ${{ secrets.HH_REPAIR_PUSH_TOKEN || secrets.HH_AUTOMERGE_TOKEN }}
           HH_PR_NUMBER: ${{ github.event.pull_request.number }}
           HH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}

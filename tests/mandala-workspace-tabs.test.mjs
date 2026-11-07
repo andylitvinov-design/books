@@ -9,7 +9,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","editor","effects","practices","pro"]);
+ assert.deepEqual(ids,["video","phrases","editor","effects","pro","ready"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
@@ -23,7 +23,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
 test("top row uses local tab state rather than scrollIntoView or two anchors for settings",()=>{
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
  assert.match(nav,/setActiveWorkspace\(item\.id\)/);
- assert.match(nav,/aria-pressed=\{activeWorkspace===item\.id\|\|\(!activeWorkspace&&item\.id==="video"\)\}/);
+ assert.match(nav,/aria-pressed=\{activeWorkspace===item\.id\|\|\(activeWorkspace==="practices"&&item\.id==="ready"\)\|\|\(!activeWorkspace&&item\.id==="video"\)\}/);
  assert.match(nav,/aria-controls="video-workspace-panel"/);
  assert.doesNotMatch(nav,/scrollIntoView|openQuickDetailed|location\.hash|pushState/);
  assert.match(studio,/data-video-workspace-heading/);
@@ -138,7 +138,7 @@ test("published informational YouTube no longer overlays the original Canvas her
   assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
   assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
   assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);
-  assert.match(studio,/if\(item\.id!=="practices"\)setIntroPlaying\(false\)/);
+  assert.match(studio,/setActiveWorkspace\(item\.id\);[\s\S]{0,140}setIntroPlaying\(false\);[\s\S]{0,90}setStudioMode\("pump"\)/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
@@ -206,7 +206,7 @@ test("pending Phrases selection blocks the actual shared hero handler in every w
   }
 });
 
-test("compact Ideas uses existing renderer while hiding old phrase editor",()=>{
+test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  const start=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="phrases"');
  const end=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="effects"',start);
  assert.ok(start>0 && end>start);
@@ -216,7 +216,8 @@ test("compact Ideas uses existing renderer while hiding old phrase editor",()=>{
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
  assert.match(section,/<MandalaVideoIdeas/);
- assert.match(section,/data-video-legacy-phrase-editor hidden aria-hidden="true"/);
+ assert.match(section,/data-video-legacy-phrase-editor\s+hidden=\{activeWorkspace!=="phrases"\} aria-hidden=\{activeWorkspace!=="phrases"\}/);
+ assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);
@@ -285,4 +286,37 @@ test("all six workspaces use the same in-flow navigation and one real export",()
  const mobileCss=css.slice(css.lastIndexOf("/* 04 Nov owner visual recovery"));
  assert.match(mobileCss,/\.studio\[data-active-workspace\] \.quickVideoNav button/);
  assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);
+});
+
+
+test("guided meditation opt-out is reconciled after React commit without losing explicit reopen",()=>{
+  assert.match(studio,/const \[courseMeditationOmitted,setCourseMeditationOmitted\]=useState\(false\)/);
+  assert.match(studio,/useLayoutEffect\(\(\)=>\{\s*if\(!courseMeditationOmitted\)return;/);
+  assert.match(studio,/if\(details instanceof HTMLDetailsElement\)details\.open=false/);
+  assert.match(studio,/\},\[courseMeditationOmitted,courseMeditationDraft\]\)/);
+  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationOmitted\(false\)/);
+  assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationOmitted\(true\)/);
+});
+
+test("validated Messenger video handoff visibly opens the original Studio Director on compact Goals",()=>{
+ const director=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+ assert.match(director,/sessionStorage\.getItem\(MESSENGER_VIDEO_HANDOFF_KEY\)/);
+ assert.match(director,/decodeMessengerVideoHandoff\(packet,locale\)/);
+ assert.match(director,/nextVideoChatTreeStep\(incoming\)/);
+ assert.match(director,/if\(panel instanceof HTMLDetailsElement\)panel\.open=true/);
+ const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ assert.match(browser,/const handoffPanel=page\.locator/);
+ assert.match(browser,/await handoffPanel\.evaluate\(element=>\{element\.open=true;\}\)/);
+ assert.match(browser,/await expect\(handoffPanel\)\.toBeVisible/);
+
+ assert.match(studio,/data-video-director-chat-details data-workspace-section="video"/);
+ const handoffStart=css.lastIndexOf("/* Messenger Video validated handoff visibility.");
+ const nextSection=css.indexOf("/* Free first video:",handoffStart);
+ const rule=css.slice(handoffStart,nextSection>=0?nextSection:undefined);
+ assert.ok(rule.length>100,"Goals handoff visibility must survive compact-page CSS");
+ assert.match(rule,/data-video-scenario-open="false"\]:not\(\[data-hh-video-ihelp-open="true"\]\)/);
+ assert.match(rule,/\[data-video-director-chat-details\]\[data-workspace-section="video"\]\[open\]\s*\{\s*display:grid!important;/);
+ assert.doesNotMatch(rule,/display:none!important/,"the opened handoff must be visible");
+ assert.match(css,/\[data-workspace-section="video"\]:not\(\[data-video-topic-section\]\)\s*\{\s*display:none!important;/,
+   "unopened legacy Goals sections remain hidden");
 });

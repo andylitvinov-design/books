@@ -15,11 +15,12 @@ test("EN/RU homepage uses only the newly approved presentation and keeps withdra
   assert.match(home, /<PersonalTestimonials locale=\{locale\} variant="home"/);
   assert.match(home, /<HomePresentationVideoSection locale=\{locale\} \/>/);
   const presentation = read("components/home-presentation-video-section.tsx");
-  assert.match(presentation, /youtubeId: "G0Db6yOCMto"/);
+  assert.match(read("lib/crm/telegram-presentation.mjs"), /youtubeId: 'G0Db6yOCMto'/);
+  assert.match(presentation, /youtubeId: approvedTelegramPresentation\("ru"\)\?\.youtubeId \?\? ""/);
   assert.match(presentation, /data-video-slot="home-presentation"/);
   assert.match(presentation, /videoKey\("home-intro", "en"\)/);
   assert.match(presentation, /isApprovedEnglishPresentation/);
-  assert.match(presentation, /approvedEnglishYoutubeId: string = ""/);
+  assert.match(presentation, /approvedEnglishYoutubeId: string = approvedTelegramPresentation\("en"\)\?\.youtubeId \?\? ""/);
   assert.match(presentation, /if \(locale === "en" && !approvedEnglishYoutubeId\) return null/);
   assert.match(presentation, /video\.youtubeId === approvedEnglishYoutubeId/);
   assert.match(presentation, /video\?\.language === "en"/);
