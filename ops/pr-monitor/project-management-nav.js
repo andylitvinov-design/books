@@ -1,9 +1,9 @@
 'use strict';
-/* HH_PR_MONITOR_PM_NAV_V1: navigation only. No GitHub polling or private data. */
+/* HH_PR_MONITOR_PM_NAV_V1: same-origin read-only project dashboard; no private data. */
 (function(){
  if(typeof document==='undefined'||window.__hhPrPmNavV1)return;
  window.__hhPrPmNavV1=true;
- var TARGET='https://holistichouse.vercel.app/admin/project-management';
+ var TARGET='/project-management-public.html';
  function mount(){
   if(document.getElementById('hh-project-management-nav')||!document.body)return;
   var nav=document.createElement('nav');nav.id='hh-project-management-nav';
