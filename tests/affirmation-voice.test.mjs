@@ -163,9 +163,12 @@ test("voice browser follows native Ideas and Montage on one visitor click; hidde
  const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
  const topic=flow.indexOf('data-auto-video-topic-panel',open);
  const montage=flow.indexOf('await montage.click()',topic);
- const style=flow.indexOf('data-video-director-style-controls',montage);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&style>montage,
-   "real visitor must open Ideas refinement and reach Montage without hidden selectors");
+ const style=flow.indexOf('data-video-montage-style',montage);
+ const selectedStyle=flow.indexOf('await styleCards.nth(1).click()',style);
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&style>montage&&selectedStyle>style,
+   "real visitor must open Ideas and select a visible Montage style, not legacy hidden selectors");
+ assert.doesNotMatch(flow,/data-video-director-style-controls/,
+   "the retired hidden Director style filter must not be a browser prerequisite");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
