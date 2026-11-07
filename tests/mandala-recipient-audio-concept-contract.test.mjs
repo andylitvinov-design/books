@@ -18,6 +18,9 @@ test("audio-derived concept populates visible Goal, category, style, symbol, pac
   assert.match(panel,/data-video-recipient-audio-symbol/);
   assert.match(panel,/data-video-recipient-audio-pace/);
   assert.match(panel,/data-video-recipient-audio-keywords/);
+  assert.match(panel,/\{concept\?<div className=\{css\.recipientAudioResult\}/);
+  assert.match(panel,/plan&&plan\.canExport\?</);
+  assert.match(panel,/data-video-recipient-audio-no-footage/);
   assert.match(styles,/\.recipientConceptFields\{/);
   assert.match(studio,/deriveAudioVideoConcept\(\{/);
   assert.match(studio,/concept:voiceConcept/);

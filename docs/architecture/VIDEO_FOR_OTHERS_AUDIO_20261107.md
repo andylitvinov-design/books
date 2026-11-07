@@ -46,3 +46,13 @@ the visitor has granted explicit consent. Unknown extensions still fail closed.
 This is a **deterministic local concept engine**, not a paid remote LLM call.
 Optional provider-backed enhancements need separate consent, existing free-quota
 proof and full privacy review before activation.
+
+## Transcript-first fallback (no licensed shots yet)
+
+The editorial concept is computed as soon as a valid transcript exists, even
+when the rights/aspect/duration gate cannot yet produce enough real MP4 footage.
+In that case `canExport=false`, the timed shot list is empty, and the original
+source text, goal, topic, style, keyword and symbol proposals remain visible
+on the same Goal page with an explicit no-footage warning. No phantom scenes or
+enabled export buttons are created. Literal negations (e.g. "без леса",
+"without forest") are preserved in local visual-signal extraction.

@@ -9,9 +9,15 @@ const plan={canExport:true,durationSeconds:15,excludedMotifs:[],
     concepts:["sun","morning"],matchedConcepts:["sun"],spokenText:"Солнце восходит",needsReview:false},
   {sceneId:"original-path-2",startSeconds:6,endSeconds:15,
     concepts:["path","growth"],matchedConcepts:["path"],spokenText:"Новый путь",needsReview:false}]};
-test("do not claim concept from missing transcript, unverified footage, or empty text",()=>{
+test("audio concept stays usable without matching footage, but never authorizes export",()=>{
  assert.equal(deriveAudioVideoConcept(),null);
- assert.equal(deriveAudioVideoConcept({transcript,plan:{...plan,canExport:false}}),null);
+ const noVideo=deriveAudioVideoConcept({transcript,plan:{...plan,canExport:false,shots:[]}});
+ assert.ok(noVideo);
+ assert.equal(noVideo.canExport,false);
+ assert.equal(noVideo.stages.length,0);
+ assert.ok(noVideo.keywords.some(k=>k.id==="sun"));
+ assert.equal(noVideo.symbol?.sourceVerified,false);
+ assert.ok(deriveAudioVideoConcept({transcript})?.goal.text);
  assert.equal(deriveAudioVideoConcept({transcript:{...transcript,text:""},plan}),null);
 });
 test("every field is grounded and displayed across three locales without media claims",()=>{

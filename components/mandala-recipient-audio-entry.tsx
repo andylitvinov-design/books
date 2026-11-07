@@ -120,10 +120,10 @@ export function MandalaRecipientAudioEntry({locale,disabled,audio}:{
        </li>)}</ol>
      </details>
    </div>:null}
-   {plan?.canExport?<div className={css.recipientAudioResult}
-     data-video-recipient-audio-concept data-plan-status={plan.status}>
+   {concept?<div className={css.recipientAudioResult}
+     data-video-recipient-audio-concept data-plan-status={plan?.status||"TRANSCRIPT_ONLY"}>
      <strong><Film size={18} aria-hidden="true"/>{t.concept}</strong>
-     {concept?<dl className={css.recipientConceptFields} data-video-recipient-audio-fields>
+     <dl className={css.recipientConceptFields} data-video-recipient-audio-fields>
        <div data-video-recipient-audio-purpose><dt>{t.purpose}</dt><dd>{concept.purpose}</dd></div>
        <div data-video-recipient-audio-goal><dt>{t.goal}</dt><dd>{concept.goal.text}</dd></div>
        <div data-video-recipient-audio-category><dt>{t.category}</dt><dd>{concept.category}</dd></div>
@@ -133,24 +133,26 @@ export function MandalaRecipientAudioEntry({locale,disabled,audio}:{
          <dd>{concept.symbol?.label||"—"}</dd></div>
        <div data-video-recipient-audio-pace><dt>{t.pace}</dt>
          <dd>{concept.pace==="gentle"?t.paceSlow:concept.pace==="dynamic"?t.paceFast:t.paceEven}</dd></div>
-     </dl>:null}
+     </dl>
      {keywords.length?<p data-video-recipient-audio-keywords>
        <b>{t.keywords}:</b> {keywords.join(" · ")}</p>:null}
      <small className={css.recipientAudioSmall}>{t.suggestion}</small>
-     <p>{t.ready}</p>
-     <details open><summary>{t.scene} · {plan.shots.length}</summary>
-       <ol>{plan.shots.map((shot,index)=><li key={index}>
-         <b>{shot.startSeconds}–{shot.endSeconds} s</b> · {audio.clipLabel(shot.sceneId)}
-         {shot.concepts.length?" · "+shot.concepts.join(", "):""}
-         {shot.needsReview?" ⚠":""}
-       </li>)}</ol>
-     </details>
-     {plan.needsReview?<p className={css.recipientAudioWarning}>{t.review}</p>:null}
-     <button type="button" data-video-recipient-audio-prepare
-       className={css.recipientAudioPrimary} disabled={!canPrepare}
-       onClick={()=>audio.onPrepare()}><Film size={17} aria-hidden="true"/>{t.prepare}</button>
-   </div>:audio.transcript&&plan?<p role="status" className={css.recipientAudioWarning}
-     data-video-recipient-audio-no-footage>{t.planError} ({plan.status})</p>:null}
+     {plan&&plan.canExport?<>
+       <p>{t.ready}</p>
+       <details open><summary>{t.scene} · {plan.shots.length}</summary>
+         <ol>{plan.shots.map((shot,index)=><li key={index}>
+           <b>{shot.startSeconds}–{shot.endSeconds} s</b> · {audio.clipLabel(shot.sceneId)}
+           {shot.concepts.length?" · "+shot.concepts.join(", "):""}
+           {shot.needsReview?" ⚠":""}
+         </li>)}</ol>
+       </details>
+       {plan.needsReview?<p className={css.recipientAudioWarning}>{t.review}</p>:null}
+       <button type="button" data-video-recipient-audio-prepare
+         className={css.recipientAudioPrimary} disabled={!canPrepare}
+         onClick={()=>audio.onPrepare()}><Film size={17} aria-hidden="true"/>{t.prepare}</button>
+     </>:<p role="status" className={css.recipientAudioWarning}
+       data-video-recipient-audio-no-footage>{t.planError} {plan?.status?"("+plan.status+")":""}</p>}
+   </div>:null}
    <small className={css.recipientAudioSmall}>{t.privacy}</small>
  </section>;
 }
