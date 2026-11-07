@@ -1,6 +1,7 @@
 "use client";
 import {AudioLines,Check,Film,Mic2,Trash2,UploadCloud} from "lucide-react";
 import type {TimedSpeechTranscript,AudioVisualPlan} from "@/lib/mandala/audio-visual-storyboard.mjs";
+import type {AudioVideoConcept} from "@/lib/mandala/audio-concept-director.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-auto-video-director.module.css";
 
@@ -9,7 +10,7 @@ import css from "./mandala-auto-video-director.module.css";
 export type RecipientAudioEntryProps={
   fileName:string|null;rightsGranted:boolean;consentGranted:boolean;
   busy:boolean;error:string;transcript:TimedSpeechTranscript|null;
-  visualPlan:AudioVisualPlan|null;
+  visualPlan:AudioVisualPlan|null;concept:AudioVideoConcept|null;
   clipLabel:(sceneId:string)=>string;
   onUpload:(file:File)=>void;onRemove:()=>void;
   onRightsChange:(allowed:boolean)=>void;onConsentChange:(allowed:boolean)=>void;
@@ -24,7 +25,7 @@ const words={
   consent:"Разрешаю однократно передать запись внешнему сервису распознавания. Сайт не сохраняет запись и расшифровку.",
   analyze:"Расшифровать и подобрать видеоряд",busy:"Распознаём речь…",
   text:"Расшифрованный текст",segments:"Речь по времени",concept:"Концепция по ключевым словам",
-  keywords:"Смысловые образы",scene:"Монтажный план",ready:"Реальные проверенные видеосцены подобраны. Проверьте кадры перед созданием ролика.",
+  keywords:"Смысловые образы",purpose:"Назначение",goal:"Цель",category:"Категория",topic:"Тема",style:"Стиль",symbol:"Символ",pace:"Темп",paceSlow:"Мягкий",paceEven:"Ровный",paceFast:"Динамичный",suggestion:"Предложение на основе речи, не доказательство точного содержания кадра.",scene:"Монтажный план",ready:"Реальные проверенные видеосцены подобраны. Проверьте кадры перед созданием ролика.",
   planError:"Для записи не найдено достаточно подходящих проверенных кадров. Попробуйте другую короткую запись.",
   review:"Некоторые образы приблизительные, проверьте соответствие словам.",
   prepare:"Подготовить видеоряд и открыть монтаж",
@@ -38,7 +39,7 @@ const words={
   consent:"I agree to send this recording once to an external transcription service. The site does not store audio or text.",
   analyze:"Transcribe and match scenes",busy:"Transcribing…",
   text:"Transcript",segments:"Timed speech",concept:"Keyword-based visual concept",
-  keywords:"Visual concepts",scene:"Shot-by-shot storyboard",ready:"Licensed footage matched. Review before creating your video.",
+  keywords:"Visual concepts",purpose:"Purpose",goal:"Goal",category:"Category",topic:"Topic",style:"Style",symbol:"Symbol",pace:"Pace",paceSlow:"Gentle",paceEven:"Even",paceFast:"Dynamic",suggestion:"Suggested from the transcript; a scene tag does not guarantee an exact visual.",scene:"Shot-by-shot storyboard",ready:"Licensed footage matched. Review before creating your video.",
   planError:"Not enough verified footage matched this recording. Try another short clip.",
   review:"Some scenes are symbolic. Please check their meaning.",
   prepare:"Prepare footage and open Montage",
@@ -52,7 +53,7 @@ const words={
   consent:"Autorizo enviar este audio una vez al servicio externo de transcripción. El sitio no guarda audio ni texto.",
   analyze:"Transcribir y elegir escenas",busy:"Transcribiendo…",
   text:"Transcripción",segments:"Voz por tiempos",concept:"Concepto visual por palabras clave",
-  keywords:"Conceptos",scene:"Guion visual",ready:"Clips autorizados listos. Revísalos antes de crear el vídeo.",
+  keywords:"Conceptos",purpose:"Finalidad",goal:"Objetivo",category:"Categoría",topic:"Tema",style:"Estilo",symbol:"Símbolo",pace:"Ritmo",paceSlow:"Suave",paceEven:"Uniforme",paceFast:"Dinámico",suggestion:"Una sugerencia basada en la voz, no la confirmación de cada imagen.",scene:"Guion visual",ready:"Clips autorizados listos. Revísalos antes de crear el vídeo.",
   planError:"Faltan clips verificados para esta grabación. Prueba un audio más corto.",
   review:"Algunas escenas son simbólicas. Comprueba su significado.",
   prepare:"Preparar y abrir montaje",
@@ -64,7 +65,8 @@ export function MandalaRecipientAudioEntry({locale,disabled,audio}:{
 }){
  const t=words[locale];
  const plan=audio.visualPlan;
- const keywords=[...new Set(plan?.shots.flatMap(shot=>shot.concepts)||[])].slice(0,16);
+ const concept=audio.concept;
+ const keywords=concept?.keywords.map(k=>k.id)||[];
  const canAnalyze=Boolean(audio.fileName)&&audio.rightsGranted&&audio.consentGranted&&!audio.busy&&!disabled;
  const canPrepare=Boolean(audio.fileName)&&audio.rightsGranted&&audio.transcript!==null&&
    plan?.canExport===true&&!audio.busy&&!disabled;
@@ -121,7 +123,20 @@ export function MandalaRecipientAudioEntry({locale,disabled,audio}:{
    {plan?.canExport?<div className={css.recipientAudioResult}
      data-video-recipient-audio-concept data-plan-status={plan.status}>
      <strong><Film size={18} aria-hidden="true"/>{t.concept}</strong>
-     {keywords.length?<p><b>{t.keywords}:</b> {keywords.join(" · ")}</p>:null}
+     {concept?<dl className={css.recipientConceptFields} data-video-recipient-audio-fields>
+       <div data-video-recipient-audio-purpose><dt>{t.purpose}</dt><dd>{concept.purpose}</dd></div>
+       <div data-video-recipient-audio-goal><dt>{t.goal}</dt><dd>{concept.goal.text}</dd></div>
+       <div data-video-recipient-audio-category><dt>{t.category}</dt><dd>{concept.category}</dd></div>
+       {concept.topic?<div data-video-recipient-audio-topic><dt>{t.topic}</dt><dd>{concept.topic}</dd></div>:null}
+       <div data-video-recipient-audio-style><dt>{t.style}</dt><dd>{concept.style.label||"—"}</dd></div>
+       <div data-video-recipient-audio-symbol><dt>{t.symbol}</dt>
+         <dd>{concept.symbol?.label||"—"}</dd></div>
+       <div data-video-recipient-audio-pace><dt>{t.pace}</dt>
+         <dd>{concept.pace==="gentle"?t.paceSlow:concept.pace==="dynamic"?t.paceFast:t.paceEven}</dd></div>
+     </dl>:null}
+     {keywords.length?<p data-video-recipient-audio-keywords>
+       <b>{t.keywords}:</b> {keywords.join(" · ")}</p>:null}
+     <small className={css.recipientAudioSmall}>{t.suggestion}</small>
      <p>{t.ready}</p>
      <details open><summary>{t.scene} · {plan.shots.length}</summary>
        <ol>{plan.shots.map((shot,index)=><li key={index}>

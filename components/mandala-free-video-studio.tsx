@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { flushSync } from "react-dom";
@@ -16,6 +16,7 @@ import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
 import { MandalaFreeVideoGenerator } from "./mandala-free-video-generator";
 import {planAudioVisualStoryboard} from "@/lib/mandala/audio-visual-storyboard.mjs";
+import {deriveAudioVideoConcept} from "@/lib/mandala/audio-concept-director.mjs";
 import {consumeVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
 import {requestConsentedTimedTranscript} from "@/lib/mandala/consented-audio-stt";
 import type {TimedSpeechTranscript,AudioVisualPlan} from "@/lib/mandala/audio-visual-storyboard.mjs";
@@ -2165,6 +2166,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [sttError,setSttError]=useState("");
   const [voiceTranscript,setVoiceTranscript]=useState<TimedSpeechTranscript|null>(null);
   const [voiceVisualPlan,setVoiceVisualPlan]=useState<AudioVisualPlan|null>(null);
+  // One coherent editable editorial concept, derived only from consented speech
+  // and the already vetted chronological MP4 candidates.
+  const voiceConcept=useMemo(()=>deriveAudioVideoConcept({
+    transcript:voiceTranscript??undefined,plan:voiceVisualPlan??undefined,locale
+  }),[voiceTranscript,voiceVisualPlan,locale]);
   const [pendingAutoVoice,setPendingAutoVoice]=useState<TimedSpeechTranscript|null>(null);
   const sttAbortRef=useRef<AbortController|null>(null);
   useEffect(()=>()=>sttAbortRef.current?.abort(),[]);
@@ -6540,7 +6546,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             fileName:uploadedAudio?.file.name||null,
             rightsGranted:audioRights,consentGranted:sttConsent,
             busy:sttBusy,error:sttError,transcript:voiceTranscript,
-            visualPlan:voiceVisualPlan,clipLabel:freeFilmClipLabel,
+            visualPlan:voiceVisualPlan,concept:voiceConcept,clipLabel:freeFilmClipLabel,
             onUpload:file=>{
               // Local audio File: explicit STT consent is separate from upload.
               if(file.size>4*1024*1024){

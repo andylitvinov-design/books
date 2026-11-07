@@ -25,3 +25,24 @@ The explicit **Prepare footage and open Montage** action reuses `applyTranscript
 - If no MP4 plan can be verified, show an error and preserve original transcript and audio to retry.
 - The separate parent PR #3826 establishes the recipient Goal interface. Merge #3826 before promoting this stacked PR to production `codex/public-book-library`.
 - Required checks: unit tests, TypeScript build, iOS/desktop WebKit Goal buttons and audio, exact-HEAD Core/Specialist/Guard CI, final production deployment and live audio smoke test with the free STT flag configured. Do **not** claim LIVE before all of these are actually verified.
+
+## Audio-based editable concept — phase 2
+
+After the consented STT request returns, `deriveAudioVideoConcept` receives only that in-memory
+timed transcript and the source-verified cut plan. It auto-fills a **proposal** for:
+`purpose`, literal `goal` excerpt from the user speech, `category`, optional
+classified `subcategory/topic`, editorial `style`, symbolic `motif`, narrative
+`pace`, identified `keywords`, aspect, duration and a timed four-phase shot plan.
+The existing 64-topic local taxonomy and reviewed creative choice dictionaries are reused.
+Weak topic classification is left unclassified rather than presented as certain.
+Symbol/style suggestions explicitly remain editorial; a clip tag is **not**
+proof of the actual physical object depicted in footage.
+
+iOS Files sometimes supplies a valid .m4a/.mp3/.wav/.aac/.webm with empty or generic
+MIME. The consented STT transport now normalizes the multipart MIME from a
+strict six-extension allowlist, preserving the same bytes and only after
+the visitor has granted explicit consent. Unknown extensions still fail closed.
+
+This is a **deterministic local concept engine**, not a paid remote LLM call.
+Optional provider-backed enhancements need separate consent, existing free-quota
+proof and full privacy review before activation.
