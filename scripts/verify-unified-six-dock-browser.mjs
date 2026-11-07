@@ -86,8 +86,9 @@ async function inspect(browserType,locale,width){
     id+" selected direction is always directly visible");
   assert.equal(await refined.isVisible(),false,
     id+" deeper taxonomy must not push videos down by default");
-  assert.equal(await page.locator("[data-mytube-format-tabs] button").count(),3,
-    id+" three semantic learning shelves are visible");
+  assert.deepEqual(
+    await page.locator("[data-mytube-format-tabs] button").evaluateAll(els=>els.map(el=>el.dataset.mytubeFormatMode)),
+    ["all","shorts","courses","study"],id+" four functional editorial shelves are visible");
   const filterBounds=await moreFilters.boundingBox();
   assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
     id+" single slim accessible taxonomy bar");
@@ -142,11 +143,28 @@ async function inspect(browserType,locale,width){
     const button=document.querySelector("[data-mytube-category]");
     return !!button && Object.keys(button).some(key=>key.startsWith("__reactProps$"));
   },null,{timeout:15000});
+  const topicRail=page.locator("[data-mytube-subcategory-rail]");
+  assert.equal(await topicRail.isVisible(),true,id+" topic shortcuts remain visible above videos");
+  assert.equal(await topicRail.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])').count(),4,
+    id+" four genuine quick topics are visible before a category is selected");
+  const quickLanguage=page.locator("[data-mytube-quick-language]");
+  assert.equal(await quickLanguage.isVisible(),true,id+" language switcher visible");
+  for(const value of ["ru","en","es","all"]){
+    await quickLanguage.selectOption(value);
+    assert.equal(await quickLanguage.inputValue(),value,id+" quick language "+value);
+  }
+  const quickDuration=page.locator("[data-mytube-duration]");
+  assert.equal(await quickDuration.count(),1,id+" inline verified-duration switcher");
+  if(await quickDuration.isEnabled()){
+    await quickDuration.selectOption("under4");
+    assert.equal(await quickDuration.inputValue(),"under4",id+" duration filters verified source length");
+    await quickDuration.selectOption("all");
+  }
   if(browserType===webkit&&locale==="ru"&&width===390){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
-  for(const mode of ["shorts","study","all"]){
+  for(const mode of ["shorts","courses","study","all"]){
     const control=page.locator('[data-mytube-format-mode="'+mode+'"]');
     await control.click();
     assert.equal(await control.getAttribute("aria-pressed"),"true",id+" active "+mode);
@@ -159,8 +177,10 @@ async function inspect(browserType,locale,width){
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
     id+" one filter action reveals additional filters");
   await moreControls.waitFor({state:"visible",timeout:15000});
-  assert.ok(await moreControls.locator("select").count()>=2,
-    id+" language and sort controls are available after opening filters");
+  assert.ok(await moreControls.locator("select").count()>=1,
+    id+" sort and advanced selectors remain available after opening filters");
+  assert.equal(await quickLanguage.isVisible(),true,
+    id+" original-audio language remains available inline");
   // Subcategory controls are intentionally empty until a direction is chosen.
   assert.equal(await refined.isVisible(),false,
     id+" no empty subcategory panel when all directions are selected");
@@ -169,20 +189,25 @@ async function inspect(browserType,locale,width){
   await refined.waitFor({state:"visible",timeout:15000});
   await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
     ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
-  const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
+  const subcategories=topicRail.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
+  assert.equal(await refined.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])').count(),4,
+    id+" advanced and quick taxonomy share four genuine subcategories");
   await subcategories.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await subcategories.count(),4,id+" four unambiguous subcategories");
   await subcategories.first().click();
   await page.waitForFunction(()=>{
-    const first=document.querySelector('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
+    const first=document.querySelector('[data-mytube-subcategory-rail] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
     return first?.getAttribute("aria-pressed")==="true";
   },null,{timeout:15000});
   const topics=page.locator('[data-mytube-topics] [data-mytube-topic]:not([data-mytube-topic="all"])');
   await topics.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await topics.count(),4,id+" four distinct topics");
   await page.locator('[data-mytube-category="all"]').click();
-  await page.waitForFunction(()=>!document.querySelector('[data-mytube-subcategories]'),
-    null,{timeout:15000});
+  await page.waitForFunction(()=>{
+    const rail=document.querySelector("[data-mytube-subcategory-rail]");
+    return !!rail && rail.querySelector('[data-mytube-subcategory="all"]')?.getAttribute("aria-pressed")==="true" &&
+      !document.querySelector("#mytube-refine-controls [data-mytube-subcategories]");
+  },null,{timeout:15000});
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
     id+" closing filters restores the compact video-first layout");
