@@ -4740,3 +4740,31 @@
  .studio .quickVideoNav{gap:3px!important}
  .studio .quickVideoNav button{padding:5px 1px!important;font-size:9px!important}
 }
+
+/* Compact music picker: one viewport, three dropdowns, real explicit Select.
+   The existing sound dock stays mounted but is not duplicated visually. */
+.audioLibrarySearch{display:flex;align-items:center;gap:9px;border:1px solid #d7ddd3;border-radius:14px;background:#fffefa;padding:0 12px;min-height:45px}
+.audioLibrarySearch input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:15px;min-height:43px;color:#204b3c}
+.audioLibraryFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}
+.audioLibraryFilters label{display:grid;gap:3px;min-width:0;font-size:11px;font-weight:750;color:#49695b}
+.audioLibraryFilters select{width:100%;min-width:0;min-height:42px;padding:6px 4px;border:1px solid #d5ded2;border-radius:12px;background:#fffefa;color:#24513e;font-size:12px}
+.audioLibraryTrackList{display:grid;gap:6px}
+.audioLibraryTrack{display:grid;grid-template-columns:40px minmax(0,1fr) 37px 83px;align-items:center;gap:7px;padding:8px;border:1px solid #e1e7df;border-radius:15px;background:#fffefa;min-width:0}
+.audioLibraryTrack[data-selected=true]{border-color:#139777;background:#effaf2}
+.audioLibraryTrackPlay{display:grid;place-items:center;width:40px;height:43px;border:0;border-radius:50%;background:#dcf2df;color:#0d7055}
+.audioLibraryTrackInfo{display:grid;gap:3px;min-width:0}
+.audioLibraryTrackInfo strong{font-size:14px;line-height:1.2;color:#173e32;overflow-wrap:anywhere}
+.audioLibraryTrackInfo small{font-size:11px;color:#67776c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.audioLibraryFavorite{display:grid;place-items:center;min-height:44px;border:0;background:transparent;color:#6d8479}
+.audioLibraryTrackSelect{display:flex;align-items:center;justify-content:center;gap:3px;min-height:43px;min-width:0;padding:4px;border:1px solid #bdd3c4;border-radius:12px;background:#fffefa;color:#16674f;font-size:12px;font-weight:800}
+.audioLibraryTrackSelect[aria-pressed=true]{background:#078468;color:#fff;border-color:#078468}
+.audioLibraryMore{width:100%;min-height:42px;margin-top:8px;border:1px solid #d1e2d4;border-radius:12px;background:#edf7ef;color:#215e46;font-weight:750}
+.audioLibrarySourceActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.audioLibrarySourceActions label,.audioLibrarySourceActions button{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;border:1px solid #cbded0;border-radius:12px;background:#eef8f1;color:#245b46;font-size:12px;font-weight:750}
+.audioLibrarySourceActions label input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.audioLibraryRights{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:12px;color:#285644}
+.audioLibraryHiddenEngine{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;pointer-events:none!important}
+.audioLibraryHiddenEngine *{pointer-events:none!important}
+.montageAudioDialog{max-height:min(88dvh,790px)}
+.montageAudioDialogScroll{padding-top:8px}
+@media(max-width:359px){.audioLibraryTrack{grid-template-columns:36px minmax(0,1fr) 30px 67px;gap:4px;padding:6px}.audioLibraryTrackSelect{font-size:11px}.audioLibraryFilters{gap:4px}.audioLibraryFilters select{font-size:11px}}

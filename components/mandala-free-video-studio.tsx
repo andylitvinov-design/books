@@ -7496,9 +7496,90 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                     onClick={()=>closeAudioLibrary(true)}><X size={22} aria-hidden="true"/></button>
                 </header>
                 <div className={videoStyles.montageAudioDialogScroll}>
-              <div className={videoStyles.basicMusicPane} data-video-music-editor>
-                {deepAudioPane}
-              </div>
+                  <label className={videoStyles.audioLibrarySearch}>
+                    <Search size={18} aria-hidden="true"/>
+                    <input type="search" data-video-audio-library-search value={audioSearch}
+                      onChange={event=>{setAudioSearch(event.currentTarget.value);setShowAllAudio(false);}}
+                      placeholder={audioUi.search} aria-label={audioUi.search}/>
+                  </label>
+                  <div className={videoStyles.audioLibraryFilters}>
+                    <label>{locale==="ru"?"Тема":locale==="es"?"Tema":"Theme"}
+                      <select data-video-audio-library-theme value={audioThemeOverride||"all"}
+                        onChange={event=>{setAudioThemeOverride(event.currentTarget.value==="all"?null:event.currentTarget.value as VideoTheme);setAudioAuto(false);setShowAllAudio(false);}}>
+                        <option value="all">{locale==="ru"?"Все":locale==="es"?"Todas":"All"}</option>
+                        {(["relationships","money","energy","goals","health","life"] as VideoTheme[]).map(id=>
+                          <option key={id} value={id}>{ui.themes[id]}</option>)}
+                      </select>
+                    </label>
+                    <label>{audioUi.mood}
+                      <select data-video-audio-library-mood value={audioMood}
+                        onChange={event=>{setAudioMood(event.currentTarget.value);setShowAllAudio(false);}}>
+                        {Object.entries(audioUi.moods).map(([id,name])=><option key={id} value={id}>{name}</option>)}
+                      </select>
+                    </label>
+                    <label>{audioUi.pace}
+                      <select data-video-audio-library-pace value={audioPace}
+                        onChange={event=>{setAudioPace(event.currentTarget.value);setShowAllAudio(false);}}>
+                        {Object.entries(audioUi.paces).map(([id,name])=><option key={id} value={id}>{name}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                  <div className={videoStyles.audioLibraryTrackList} data-video-audio-library-tracks>
+                    {filteredAudio.slice(0,showAllAudio?filteredAudio.length:5).map(track=>{
+                      const selected=!uploadedAudio&&music===track.id;
+                      const playing=selected&&soundPreview;
+                      return <article key={track.id} className={videoStyles.audioLibraryTrack}
+                        data-video-audio-library-track={track.id} data-selected={selected}>
+                        <button type="button" className={videoStyles.audioLibraryTrackPlay}
+                          data-video-audio-library-play={track.id}
+                          aria-label={(playing?ui.soundStop:ui.soundPreview)+" — "+track.name[locale]}
+                          aria-pressed={playing} disabled={recording||preparing||micRecording}
+                          onClick={()=>playAudioTrack(track.id as Exclude<AmbientMusic,"none">)}>
+                          {playing?<Pause size={19} fill="currentColor"/>:<Play size={19} fill="currentColor"/>}
+                        </button>
+                        <div className={videoStyles.audioLibraryTrackInfo}>
+                          <strong>{track.name[locale]}</strong>
+                          <small>{track.detail[locale]}</small>
+                        </div>
+                        <button type="button" className={videoStyles.audioLibraryFavorite}
+                          aria-label={(audioFavorites.includes(track.id)?audioUi.unfavorite:audioUi.favorite)+" — "+track.name[locale]}
+                          aria-pressed={audioFavorites.includes(track.id)}
+                          onClick={()=>setAudioFavorites(list=>list.includes(track.id)?list.filter(id=>id!==track.id):[...list,track.id])}>
+                          <Heart size={18} fill={audioFavorites.includes(track.id)?"currentColor":"none"}/>
+                        </button>
+                        <button type="button" className={videoStyles.audioLibraryTrackSelect}
+                          data-video-audio-library-select={track.id}
+                          aria-pressed={selected}
+                          onClick={()=>{stopSoundPreview();setAudioAuto(false);chooseMusic(track.id as AmbientMusic);}}>
+                          {selected?<><Check size={16}/>{audioUi.picked}</>:audioUi.pick}
+                        </button>
+                      </article>;
+                    })}
+                    {filteredAudio.length===0?<p role="status">{audioUi.empty}</p>:null}
+                  </div>
+                  {filteredAudio.length>5?<button type="button" className={videoStyles.audioLibraryMore}
+                    data-video-audio-library-more onClick={()=>setShowAllAudio(v=>!v)}>
+                    {showAllAudio?audioUi.showLess:audioUi.showMore} · {filteredAudio.length}
+                  </button>:null}
+                  <div className={videoStyles.audioLibrarySourceActions}>
+                    <label>{ui.uploadAudio}
+                      <input type="file" data-video-audio-library-upload
+                        accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
+                        disabled={recording||preparing}
+                        onChange={event=>{chooseAudioFile(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
+                    </label>
+                    <button type="button" disabled={recording||preparing}
+                      data-video-audio-library-record onClick={()=>{if(micRecording)stopMicRecording();else void startMicRecording();}}>
+                      <Mic size={17}/>{micRecording?audioUi.stopVoice:audioUi.recordVoice}
+                    </button>
+                  </div>
+                  {uploadedAudio?<label className={videoStyles.audioLibraryRights}>
+                    <input type="checkbox" data-video-audio-library-rights checked={audioRights}
+                      onChange={event=>setAudioRights(event.currentTarget.checked)}/>
+                    {ui.audioRights}
+                  </label>:null}
+                  <div className={videoStyles.audioLibraryHiddenEngine} aria-hidden="true">
+                    {deepAudioPane}
           <details className={videoStyles.audioBedPanel} data-video-audio-bed-panel>
             <summary><Music2 size={17} aria-hidden="true"/>
               {locale==="ru"?"Голос + фоновая музыка":locale==="es"?
@@ -7552,7 +7633,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 :"The exported mix uses the selected levels; native iPhone preview volume may differ."}
             </p>
           </details>
-
+                  </div>
                 </div>
                 <footer className={videoStyles.montageAudioDialogFooter}>
                   <button type="button" data-video-audio-library-cancel
