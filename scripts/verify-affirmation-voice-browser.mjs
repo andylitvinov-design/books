@@ -78,16 +78,19 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
     const refinement=page.locator('[data-video-ideas-refinement]');
-    const refineSummary=refinement.locator(":scope > summary");
-    await expect(refineSummary).toBeVisible();
-    // Prove genuine native mouse/touch activation, including persisted-open
-    // portal state from an earlier step. Never force-open with evaluate().
-    if(await refinement.getAttribute("open")!==null){
-      await refineSummary.click();
-      await expect(refinement).not.toHaveAttribute("open","");
+    const refineToggle=refinement.locator("[data-video-ideas-refinement-toggle]");
+    const refinePanel=refinement.locator("[data-video-ideas-refinement-panel]");
+    await expect(refineToggle).toBeVisible();
+    // Real button clicks (no DOM evaluate/force) restore deterministic WebKit
+    // behavior across React portal remounts; check close and open semantics.
+    if(await refineToggle.getAttribute("aria-expanded")==="true"){
+      await refineToggle.click();
+      await expect(refineToggle).toHaveAttribute("aria-expanded","false");
     }
-    await refineSummary.click();
-    await expect(refinement).toHaveAttribute("open","");
+    await expect(refinePanel).toBeHidden();
+    await refineToggle.click();
+    await expect(refineToggle).toHaveAttribute("aria-expanded","true");
+    await expect(refinePanel).toBeVisible();
     await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
     const montage=page.locator('[data-video-quick-control="editor"]');
     await expect(montage).toBeVisible({timeout:15000});

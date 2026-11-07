@@ -2,7 +2,7 @@
 
 import {useCallback,useEffect,useMemo,useRef,useState} from "react";
 import {createPortal} from "react-dom";
-import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star} from "lucide-react";
+import {Check,Sparkles,Target,Play,ArrowRight,Sun,Heart,Sprout,BriefcaseBusiness,Leaf,Zap,Coins,Moon,Star,ChevronDown} from "lucide-react";
 import {AUTO_VIDEO_GOALS,recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {recommendMyTubeTopicStoryClips} from "@/lib/mandala/mytube-video-tagging.mjs";
 import {recommendMyTubePlotMontage} from "@/lib/mandala/mytube-plot-montage.mjs";
@@ -208,15 +208,10 @@ export function MandalaAutoVideoDirector({
  const [profileCategory,setProfileCategory]=useState<CanonicalCategoryId>("energy-confidence");
  const [profileFocus,setProfileFocus]=useState<keyof typeof popularTopicCopy.ru>("confidence");
  const [profileDetails,setProfileDetails]=useState("");
- // Let Safari's native <details> own its open attribute. React's controlled
- // "open={state}" can close it between summary default activation and onToggle.
- // Preserve the last genuine user state only when React remounts this portal.
- const ideaRefinementOpenRef=useRef(false);
- const ideaRefinementNodeRef=useRef<HTMLDetailsElement|null>(null);
- const bindIdeaRefinement=useCallback((node:HTMLDetailsElement|null)=>{
-   ideaRefinementNodeRef.current=node;
-   if(node && ideaRefinementOpenRef.current)node.open=true;
- },[]);
+ // Safari's native <details> can lose or reverse its open state when the
+ // Ideas portal remounts. A React-owned, accessible button commits the user's
+ // action synchronously. This same design passed historical real macOS WebKit.
+ const [ideaRefinementOpen,setIdeaRefinementOpen]=useState(false);
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
  const [promptClassification,setPromptClassification]=useState<ReturnType<typeof classifyMyTubeRequest>|null>(null);
@@ -1062,28 +1057,19 @@ export function MandalaAutoVideoDirector({
    {profileTarget?createPortal(profilePanel,profileTarget):profilePanel}
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
-   {ideaTarget?createPortal(<details ref={bindIdeaRefinement}
-     className={css.ideaRefinement} data-video-ideas-refinement
-     onToggle={event=>{
-       if(event.currentTarget===ideaRefinementNodeRef.current)
-         ideaRefinementOpenRef.current=event.currentTarget.open;
-     }}>
-     <summary onClick={event=>{
-       // WebKit can lose the native <details> default toggle when React
-       // reconciles this portal after a workspace change. Commit the actual
-       // user's click before Safari's deferred toggle and preserve it if the
-       // portal is remounted. Keyboard activation also dispatches click.
-       event.preventDefault();
-       const node=event.currentTarget.parentElement;
-       if(node instanceof HTMLDetailsElement){
-         node.open=!node.open;
-         ideaRefinementOpenRef.current=node.open;
-       }
-     }}>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
-       locale==="es"?"Explorar tema, significado y guion (opcional)":
-       "Refine topic, meaning and story (optional)"}</summary>
-     {topicPanel}
-   </details>,ideaTarget):null}
+   {ideaTarget?createPortal(<section className={css.ideaRefinement} data-video-ideas-refinement
+     data-refinement-expanded={ideaRefinementOpen?"true":"false"}>
+     <button type="button" className={css.ideaRefinementToggle} data-video-ideas-refinement-toggle
+       aria-expanded={ideaRefinementOpen} aria-controls="video-ideas-refinement-panel"
+       onClick={()=>setIdeaRefinementOpen(open=>!open)}>
+       <span>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
+         locale==="es"?"Explorar tema, significado y guion (opcional)":
+         "Refine topic, meaning and story (optional)"}</span>
+       <ChevronDown size={18} aria-hidden="true" className={css.ideaRefinementChevron}/>
+     </button>
+     <div id="video-ideas-refinement-panel" className={css.ideaRefinementPanel}
+       data-video-ideas-refinement-panel hidden={!ideaRefinementOpen}>{topicPanel}</div>
+   </section>,ideaTarget):null}
    {montageTarget?createPortal(montageStylePanel,montageTarget):null}
    {showProposal&&proposal?<div className={css.result} data-auto-video-proposal aria-live="polite">
    <div className={css.notice} data-mytube-category-storyboard

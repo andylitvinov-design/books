@@ -159,11 +159,11 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const click=flow.indexOf("await continueToIdeas.click()");
  const ideas=flow.indexOf('data-active-workspace","phrases"',click);
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
- const summary=flow.indexOf('const refineSummary=refinement.locator(":scope > summary")',refinement);
- const conditional=flow.indexOf('if(await refinement.getAttribute("open")!==null)',summary);
- const closed=flow.indexOf('await expect(refinement).not.toHaveAttribute("open","")',conditional);
- const tap=flow.indexOf('await refineSummary.click()',closed);
- const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
+ const toggle=flow.indexOf('const refineToggle=refinement.locator',refinement);
+ const conditional=flow.indexOf('if(await refineToggle.getAttribute("aria-expanded")==="true")',toggle);
+ const closed=flow.indexOf('await expect(refineToggle).toHaveAttribute("aria-expanded","false")',conditional);
+ const tap=flow.indexOf('await refineToggle.click()',closed);
+ const open=flow.indexOf('await expect(refineToggle).toHaveAttribute("aria-expanded","true")',tap);
  const topic=flow.indexOf('data-auto-video-topic-panel',open);
  const montage=flow.indexOf('await montage.tap()',topic);
  const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
@@ -171,7 +171,7 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const selected=flow.indexOf('await minimal.tap()',six);
  const reflected=flow.indexOf('data-video-preview-style","minimal"',selected);
  const decoded=flow.indexOf('video.readyState>=2&&video.videoWidth>0',reflected);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&summary>refinement&&conditional>summary&&closed>conditional&&tap>closed&&open>tap&&topic>open&&montage>topic&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&toggle>refinement&&conditional>toggle&&closed>conditional&&tap>closed&&open>tap&&topic>open&&montage>topic&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
    "real visitor must open Ideas refinement, select one of six visible Montage styles and decode an MP4");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);

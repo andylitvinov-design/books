@@ -175,13 +175,13 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   const hydrate=flow.indexOf('data-video-studio-hydrated","true"');
   const continueTap=flow.indexOf("await continueToIdeas.click()",hydrate);
   const refinement=flow.indexOf('const refinement=page.locator',continueTap);
-  const summary=flow.indexOf('const refineSummary=refinement.locator(":scope > summary")',refinement);
-  const closeOpt=flow.indexOf('if(await refinement.getAttribute("open")!==null)',summary);
-  const closeVerified=flow.indexOf('await expect(refinement).not.toHaveAttribute("open","")',closeOpt);
-  const openTap=flow.indexOf('await refineSummary.click()',closeVerified);
-  const openVerified=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',openTap);
+  const toggle=flow.indexOf('const refineToggle=refinement.locator',refinement);
+  const closeOpt=flow.indexOf('if(await refineToggle.getAttribute("aria-expanded")==="true")',toggle);
+  const closeVerified=flow.indexOf('await expect(refineToggle).toHaveAttribute("aria-expanded","false")',closeOpt);
+  const openTap=flow.indexOf('await refineToggle.click()',closeVerified);
+  const openVerified=flow.indexOf('await expect(refineToggle).toHaveAttribute("aria-expanded","true")',openTap);
   const montage=flow.indexOf("await montage.tap()",openVerified);
-  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&refinement>continueTap&&summary>refinement&&closeOpt>summary&&closeVerified>closeOpt&&openTap>closeVerified&&openVerified>openTap&&montage>openVerified,
+  assert.ok(start>=0&&end>start&&hydrate>=0&&continueTap>hydrate&&refinement>continueTap&&toggle>refinement&&closeOpt>toggle&&closeVerified>closeOpt&&openTap>closeVerified&&openVerified>openTap&&montage>openVerified,
     "actual visible Goals tap must reveal Ideas then the user-opened refinement before Montage");
   assert.match(flow,/data-video-continue-scenarios/);
   assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);

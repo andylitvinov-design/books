@@ -473,19 +473,16 @@ test("new prompt and profile choice invalidate every prior MyTube plot selection
    assert.ok(field.includes(setter),"new request invalidates stale storyboard");
 });
 
-test("Ideas refinement synchronously preserves real WebKit summary activation",()=>{
+test("Ideas refinement uses a real accessible button across Safari portal remounts",()=>{
  const i=director.indexOf("data-video-ideas-refinement");
- const j=director.indexOf("</details>,ideaTarget)",i);
- assert.ok(i>0&&j>i,"Ideas disclosure must remain in the existing single portal");
+ const j=director.indexOf("</section>,ideaTarget)",i);
+ assert.ok(i>0&&j>i,"refinement belongs to the existing Ideas portal");
  const disclosure=director.slice(i,j);
- assert.match(disclosure,/<summary onClick=\{event=>\{/);
- assert.match(disclosure,/event\.preventDefault\(\)/);
- // #3842 merged the same native click repair: preserve its production
- // HTMLDetailsElement guard and synchronous toggle rather than overwrite it.
- assert.match(disclosure,/const node=event\.currentTarget\.parentElement/);
- assert.match(disclosure,/if\(node instanceof HTMLDetailsElement\)/);
- assert.match(disclosure,/node\.open=!node\.open/);
- assert.match(disclosure,/ideaRefinementOpenRef\.current=node\.open/);
- assert.match(disclosure,/onToggle=\{event=>/);
- assert.match(director,/if\(node && ideaRefinementOpenRef\.current\)node\.open=true/);
+ assert.match(director,/const \[ideaRefinementOpen,setIdeaRefinementOpen\]=useState\(false\)/);
+ assert.match(disclosure,/data-refinement-expanded=\{ideaRefinementOpen\?"true":"false"\}/);
+ assert.match(disclosure,/data-video-ideas-refinement-toggle/);
+ assert.match(disclosure,/aria-expanded=\{ideaRefinementOpen\}/);
+ assert.match(disclosure,/onClick=\{\(\)=>setIdeaRefinementOpen\(open=>!open\)\}/);
+ assert.match(disclosure,/data-video-ideas-refinement-panel hidden=\{!ideaRefinementOpen\}/);
+ assert.doesNotMatch(disclosure,/<details|<summary/);
 });
