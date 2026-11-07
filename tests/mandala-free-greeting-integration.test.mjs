@@ -25,7 +25,10 @@ test('greeting uses the exact same preview and both export renderers',()=>{
   const actual=[...editor.matchAll(/paintFreeGreeting\(ctx,(previewSeekSeconds|elapsed|0|time|frameTime),duration,greetingCharacter,aspect,greetingSceneKey,theme\);/g)].map(x=>x[1]);
   assert.deepEqual(actual.sort(),['0','elapsed','frameTime','previewSeekSeconds','time'].sort());
   assert.match(editor,/greetingCharacter!=="none"\|\|/);
-  assert.match(editor,/appliedStory,greetingCharacter,/);
+  // Preserve the original affirmation export-signature contract while the
+  // extra selection still invalidates stale rendered video on every change.
+  assert.match(editor,/shot\.sourceSpeed\?\?1\]\),appliedStory,\s*creationMode/);
+  assert.match(editor,/currentFreeVideoPlan\?\.reducedMotion,professionalMode,greetingCharacter\]\)/);
   assert.match(editor,/freeFilmReady, appliedStory, greetingCharacter, greetingSceneKey,/);
   assert.match(editor,/const greetingSceneKey=cinematicPlan\?\.shots\.slice\(-1\)\[0\]/);
   assert.match(editor,/activeWorkspace==="ready"\?<MandalaVideoReady/);

@@ -1068,7 +1068,16 @@ export function MandalaAutoVideoDirector({
        if(event.currentTarget===ideaRefinementNodeRef.current)
          ideaRefinementOpenRef.current=event.currentTarget.open;
      }}>
-     <summary>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
+     <summary onClick={event=>{
+       // WebKit can remount a portal between the native disclosure toggle and
+       // onToggle. Commit the user's genuine click synchronously and keep the
+       // last state for the ref callback when this portal remounts.
+       event.preventDefault();
+       const details=event.currentTarget.parentElement;
+       if(!(details instanceof HTMLDetailsElement))return;
+       details.open=!details.open;
+       ideaRefinementOpenRef.current=details.open;
+     }}>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
        locale==="es"?"Explorar tema, significado y guion (opcional)":
        "Refine topic, meaning and story (optional)"}</summary>
      {topicPanel}
