@@ -97,6 +97,7 @@ export default async function AutomationsPage(){
   const scout=snapshot?.tasks.find(task=>task.task_id==='video-scout-hourly');
   const classifier=snapshot?.tasks.find(task=>task.task_id==='video-classifier-batch');
   const weekly=snapshot?.tasks.find(task=>task.task_id==='council-video-review-weekly');
+  const digest=snapshot?.tasks.find(task=>task.task_id==='video-scout-digest-daily');
   return <main className={styles.page} data-hh-design="holistic-light" lang={locale}>
     <PrescriptionAdminHeader title={{en:copy.en.title,ru:copy.ru.title}}
       description={{en:copy.en.subtitle,ru:copy.ru.subtitle}}/>
@@ -113,12 +114,12 @@ export default async function AutomationsPage(){
         {(snapshot?.tasks||[]).map(task=><div key={task.task_id} className={styles.task}>
           <div><h2>{task.task_id}</h2><p>{task.description}</p>
             <small>{t.schedule}: {task.schedule_cron}</small></div>
-          <span className={styles.tag}>{task.task_id==='video-scout-hourly'?
-            (task.enabled?t.enabled:t.paused):t.inactive}</span>
+          <span className={styles.tag}>{task.enabled?t.enabled:t.paused}</span>
         </div>)}
         {scout&&<AutomationControlActions locale={locale} enabled={scout.enabled}/>}
         {classifier&&<AutomationControlActions locale={locale} taskId="video-classifier-batch" enabled={classifier.enabled}/>}
         {weekly&&<AutomationControlActions locale={locale} taskId="council-video-review-weekly" enabled={weekly.enabled}/>}
+        {digest&&<AutomationControlActions locale={locale} taskId="video-scout-digest-daily" enabled={digest.enabled}/>}
         <p className={styles.note}>{t.model}</p>
       </section>
       <section className={styles.section}>
