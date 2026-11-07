@@ -78,3 +78,31 @@ test('only signed bot receipt confirms claimed request; daily cap counts claims 
  assert.equal(inbox.pending(arr).used,1);
  assert.equal(inbox.trustedReceipt({...receipt(302,99,'CLAIMED'),user:{login:'attacker',type:'User'}}),null);
 });
+
+test('bounded free router requests sufficient visible budget and suppresses reasoning',async()=>{
+ let request=null;
+ const fetcher=async(_url,options)=>{request=JSON.parse(options.body);return {ok:true,
+  json:async()=>({model:'openrouter/free',usage:{cost:0},choices:[{finish_reason:'stop',message:{content:'Готовый краткий ответ.'}}]})};};
+ const out=await inbox.askFree('Нужен план?',{fetcher,token:'synthetic-key'});
+ assert.equal(out.ok,true);
+ assert.equal(out.text,'Готовый краткий ответ.');
+ assert.equal(request.max_tokens,1600);
+ assert.deepEqual(request.reasoning,{enabled:false,exclude:true});
+ assert.equal(request.provider.max_price.prompt,0);
+ assert.equal(request.provider.max_price.completion,0);
+});
+test('reasoning-only 200 response gets explicit bounded blocker, never false success',async()=>{
+ const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',
+  choices:[{finish_reason:'length',message:{content:''}}],
+  usage:{cost:0,completion_tokens:1600,completion_tokens_details:{reasoning_tokens:1599}}})});
+ const out=await inbox.askFree('Почему CI красная?',{fetcher,token:'synthetic-key'});
+ assert.equal(out.ok,undefined);
+ assert.equal(out.reason,'OPENROUTER_REASONING_EXHAUSTED_VISIBLE_BUDGET');
+});
+test('multipart text-only completion accepted but reasoning never exported',async()=>{
+ const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',
+  choices:[{finish_reason:'stop',message:{content:[{type:'text',text:'Ответ.'},{type:'reasoning',text:'secret model reasoning'}]}}],usage:{cost:0}})});
+ const out=await inbox.askFree('Test?',{fetcher,token:'synthetic-key'});
+ assert.equal(out.ok,true);
+ assert.equal(out.text,'Ответ.');
+});

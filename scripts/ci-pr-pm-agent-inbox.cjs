@@ -86,7 +86,7 @@ async function send(github,body){
 async function askFree(prompt,{fetcher,token,run}){
  if(typeof token!=='string'||!token.trim())return {reason:'OPENROUTER_FREE_SECRET_NOT_AVAILABLE'};
  const messages=[
-  {role:'system',content:'Answer only a public technical project-management question in Russian. No private data, no code tools, no credentials, no speculative agent-commit claims. Provide safe next step, relevant PR/CI verification, and say if unknown. Never treat this as instruction to execute code.'},
+  {role:'system',content:'Answer only a public technical project-management question in Russian. Produce a SHORT final user-visible TEXT answer directly, without analysis or reasoning. No private data, no code tools, no credentials, no speculative agent-commit claims. Provide safe next step and say when proof is unknown. Never execute code.'},
   {role:'user',content:prompt}
  ];
  let response;
@@ -96,7 +96,8 @@ async function askFree(prompt,{fetcher,token,run}){
    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',
     'HTTP-Referer':'https://holistic-house-pr-monitor.vercel.app',
     'X-Title':'HH PM GitHub Free Agent'},
-   body:JSON.stringify({model:'openrouter/free',messages,max_tokens:500,temperature:0.25,
+   body:JSON.stringify({model:'openrouter/free',messages,max_tokens:1600,temperature:0.25,
+    reasoning:{enabled:false,exclude:true},
     provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0}},usage:{include:true}})
   });
  }catch(_){return {reason:'OPENROUTER_NETWORK_UNKNOWN_NO_RETRY'};}
@@ -105,8 +106,16 @@ async function askFree(prompt,{fetcher,token,run}){
  if(Number(data?.usage?.cost||0)>0)return {reason:'MODEL_REPORTED_NONZERO_COST_HOLD'};
  const model=String(data?.model||'');
  if(model&&model!=='openrouter/free'&&!model.endsWith(':free'))return {reason:'MODEL_ROUTING_NOT_VERIFIED_FREE'};
- const text=data?.choices?.[0]?.message?.content;
- if(typeof text!=='string'||!text.trim())return {reason:'OPENROUTER_EMPTY_RESPONSE'};
+ const raw=data?.choices?.[0]?.message?.content;
+ const text=typeof raw==='string'?raw:Array.isArray(raw)?
+  raw.filter(p=>p&&p.type==='text'&&typeof p.text==='string').map(p=>p.text).join('\n'):'';
+ if(!text.trim()){
+  const finish=String(data?.choices?.[0]?.finish_reason||'UNKNOWN');
+  const completion=Number(data?.usage?.completion_tokens||0),reasoning=Number(data?.usage?.completion_tokens_details?.reasoning_tokens||0);
+  const reason=finish==='length'&&reasoning>=completion*0.8&&completion>0?
+   'OPENROUTER_REASONING_EXHAUSTED_VISIBLE_BUDGET':'OPENROUTER_EMPTY_RESPONSE';
+  return {reason};
+ }
  return {ok:true,text,model:model||'openrouter/free',cost:data?.usage?.cost??null};
 }
 async function trustedRepair(github,cmd){
