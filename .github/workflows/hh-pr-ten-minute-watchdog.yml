@@ -387,9 +387,13 @@ jobs:
               /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(pmRequestId);
             if(!pmValid)throw Error('HH_PM_INVALID_TARGET_INPUT');
             const manualTarget=pmNumber!==''?{prNumber:Number(pmNumber),expectedSha:pmSha}:null;
+            const normalDispatch=async()=>{
+              const report=await run({github,core,context,dryRun});
+              return report;
+            };
             const report=manualTarget
               ?await run({github,core,context,dryRun,manualTarget})
-              :await run({github,core,context,dryRun});
+              :await normalDispatch();
             core.info('HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
               candidates:report.candidates,dispatched:report.dispatchAccepted,
               blocked:report.blocked,reason:report.reason
