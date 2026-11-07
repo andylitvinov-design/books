@@ -6,6 +6,7 @@ run-name: >-
   ${{ github.event_name == 'workflow_dispatch' &&
       (inputs.dry_run && 'HH watchdog / dry run' ||
        inputs.completion_wake && 'HH watchdog / completion wake' ||
+       inputs.pm_pr_number != '' && format('HH watchdog / PM #{0} / {1}', inputs.pm_pr_number, inputs.pm_request_id) ||
        inputs.direct_dispatch && 'HH watchdog / direct handoff' ||
        'HH watchdog / reconcile') ||
       'HH PR 10-minute watchdog' }}
@@ -76,6 +77,11 @@ on:
         default: ''
       pm_expected_sha:
         description: 'Exact PR source HEAD, not authority for a source write'
+        required: false
+        type: string
+        default: ''
+      pm_request_id:
+        description: 'Owner request UUID for workflow run correlation only'
         required: false
         type: string
         default: ''
@@ -374,6 +380,12 @@ jobs:
             const dryRun=String(context.payload.inputs?.dry_run ?? 'false')==='true';
             const pmNumber=String(context.payload.inputs?.pm_pr_number||'');
             const pmSha=String(context.payload.inputs?.pm_expected_sha||'');
+            const pmRequestId=String(context.payload.inputs?.pm_request_id||'');
+            const pmValid=pmNumber===''&&pmSha===''&&pmRequestId==='' ||
+              /^[1-9][0-9]{0,7}$/.test(pmNumber)&&
+              /^[a-f0-9]{40}$/i.test(pmSha)&&
+              /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(pmRequestId);
+            if(!pmValid)throw Error('HH_PM_INVALID_TARGET_INPUT');
             const manualTarget=pmNumber!==''?{prNumber:Number(pmNumber),expectedSha:pmSha}:null;
             let reportResult,report;
             if(manualTarget){
