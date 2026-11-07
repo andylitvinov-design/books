@@ -5609,8 +5609,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             quickNavTokenRef.current++;
             setActiveWorkspace(item.id);
             if(item.id==="editor")setMontagePanel("effects");
-            if(item.id!=="practices")setIntroPlaying(false);
-            setStudioMode(item.id==="practices"?"therapy":"pump");
+            setIntroPlaying(false);
+            setStudioMode("pump");
             setTherapyJumpRequested(false);
           }}><item.Icon size={18} aria-hidden="true"/>
           <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
@@ -6133,7 +6133,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         loginUnavailable={creditSession==="unavailable"}
         disabled={recording||preparing}
         onRefreshLogin={()=>void refreshCreditSession()}
-        onBackToPro={()=>{setActiveWorkspace("pro");setStudioMode("pump");}}
+        onReturnToPro={()=>{setActiveWorkspace("pro");setStudioMode("pump");}}
         onOpenDelivery={()=>{
           setDeliveryChooserOpen(true);
           window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>

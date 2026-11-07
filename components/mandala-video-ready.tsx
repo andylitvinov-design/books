@@ -135,7 +135,7 @@ export function MandalaVideoReady({
   const placeText=setting==="nature"?t.nature:setting==="desk"?t.desk:t.quiet;
   const actionText=action==="hand"?t.hand:action==="pause"?t.pause:t.observe;
   const ritualText=ritual.status==="ready"?[
-    ritual.title,ritual.topic,t.momentLabel+": "+momentText,t.settingLabel+": "+placeText,
+    ritual.title,t.ritual,t.momentLabel+": "+momentText,t.settingLabel+": "+placeText,
     t.actionLabel+": "+actionText,anchor.trim().slice(0,140),
     ...ritual.steps,ritual.transfer
   ].filter(Boolean).join("\n\n"):"";
@@ -243,7 +243,7 @@ export function MandalaVideoReady({
     {view==="ritual"?<>
       {back}
       <div className={css.title}><h2>{t.ritTitle}</h2><p>{t.ritHint}</p></div>
-      <p className={css.context}><Sparkles size={19} aria-hidden="true"/><strong>{t.intention}:</strong>{" "}{selectedGoal||ritual.topic}</p>
+      <p className={css.context}><Sparkles size={19} aria-hidden="true"/><strong>{t.intention}:</strong>{" "}{selectedGoal||t.ritual}</p>
       {ritual.status==="blocked"?<p className={css.note} role="alert">{ritual.message}</p>:<>
         <div className={css.ritualFields}>
           <label>{t.bestMoment}<select value={moment} onChange={event=>{setMoment(event.target.value);setRitualGenerated(false)}}>
