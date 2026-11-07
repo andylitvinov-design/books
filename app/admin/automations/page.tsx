@@ -129,7 +129,7 @@ export default async function AutomationsPage({searchParams}:Props){
     <PrescriptionAdminHeader title={{en:copy.en.title,ru:copy.ru.title}}
       description={{en:copy.en.subtitle,ru:copy.ru.subtitle}}/>
     <div className={styles.content}>
-      <nav className={styles.links}><Link href="/admin/video-library">{t.back}</Link></nav>
+      <nav className={styles.links}><Link href="/admin/command-center">Command Center · AI Agents</Link><Link href="/admin/video-library">{t.back}</Link></nav>
       {!snapshot&&<p className={styles.warning} role="status">{t.unavailable}</p>}
       <section className={styles.metrics} aria-label={t.task}>
         <div className={styles.metric}><strong>{snapshot?safeNumber(snapshot.counts?.research_total):'—'}</strong><span>{t.total}</span></div>
