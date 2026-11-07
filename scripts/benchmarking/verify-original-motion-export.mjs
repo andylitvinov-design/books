@@ -1,20 +1,22 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, rm, stat } from 'node:fs/promises';
+import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
 
-// Local, anonymous acceptance: exercise the actual UI and inspect its downloaded movie.
+// Local, anonymous acceptance: exercise actual UI and inspect the real test-owned movie Blob.
 const origin = 'http://127.0.0.1:3100';
 const engine = process.env.HH_ORIGINAL_MOTION_ENGINE || 'chromium';
 assert.ok(['chromium', 'webkit'].includes(engine));
 const { [engine]: browserType } = await import(pathToFileURL(process.env.HH_LIVE_VIDEO_PLAYWRIGHT).href);
 const ids = [1, 2, 3, 4].map(i => `motion-goals-money-goal-achievement-v${i}`);
 const dir = await mkdtemp(path.join(os.tmpdir(), 'hh-original-motion-'));
-const movie = path.join(dir, 'export.mp4');
+let movie = path.join(dir, 'export.mp4');
 const browser = await browserType.launch({ headless: engine !== 'webkit' });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, acceptDownloads: true, serviceWorkers: 'block' });
+await installGuestVideoBlobCapture(context);
 await context.route('**/*', route => {
   const request = route.request();
   return new URL(request.url()).origin === origin && ['GET', 'HEAD'].includes(request.method()) ? route.continue() : route.abort();
@@ -116,30 +118,11 @@ try {
     await attach.click();
     await generate.click();
   }
-  const save = page.locator('[data-mandala-video-download]');
-  try { await save.waitFor({ state: 'visible', timeout: 150000 }); }
-  catch (error) {
-    const state=await page.evaluate(()=>({
-      generateDisabled:document.querySelector('[data-video-quick-generate]')?.disabled??null,
-      progress:document.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')??null,
-      originalFallback:Boolean(document.querySelector('[data-video-original-fallback]')),
-      hasResult:Boolean(document.querySelector('[data-mandala-video-download]')),
-    }));
-    console.error('HH_ORIGINAL_MOTION_EXPORT_DIAGNOSTICS '+JSON.stringify({engine,state,safeWarnings}));
-    throw error;
-  }
-  // The production Save action opens a chooser; only Files starts a download.
-  // Retain the real exported MP4/audio FFprobe gate after this delivery handoff.
-  await save.click();
-  const delivery = page.locator('[data-video-messenger-delivery]');
-  await delivery.waitFor({state: 'visible', timeout: 10000});
-  await delivery.locator('[data-video-telegram-share]').waitFor({state: 'visible'});
-  await delivery.locator('[data-video-whatsapp-share]').waitFor({state: 'visible'});
-  const [download] = await Promise.all([
-    page.waitForEvent('download', {timeout: 30000}),
-    delivery.locator('[data-video-save-direct-choice]').click(),
-  ]);
-  await download.saveAs(movie);
+  // The actual verified film moves to Ready; guests cannot use direct Save.
+  // Reuse the first-party encoded Blob and prove the login gate instead.
+  const captured=await readRealGuestVideo(page,{timeout:150000});
+  movie=path.join(dir,'export.'+captured.extension);
+  await writeFile(movie,captured.bytes);
   assert.ok((await stat(movie)).size > 100000);
   assert.deepEqual(errors, []);
   const probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', movie], { encoding: 'utf8' }));

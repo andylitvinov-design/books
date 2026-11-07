@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * On-demand, unauthenticated first-party LIVE video export acceptance.
- * Real browser → actual Canvas/MediaRecorder or Safari WebCodecs → download → ffprobe,
+ * Real browser → actual Canvas/MediaRecorder or Safari WebCodecs → test-owned Blob → ffprobe,
  * decoded audio and moving pixels. Never uses personal media, an AI API or POST.
  * Chromium is the default; opt-in macOS WebKit runs in CI. Neither is a physical iPhone.
  */
@@ -10,6 +10,7 @@ import {spawnSync} from 'node:child_process';
 import {mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync} from 'node:fs';
 import {resolve, join} from 'node:path';
 import {tmpdir} from 'node:os';
+import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
 
 const LIVE_ORIGIN = 'https://holistichouse.vercel.app';
 const LOCAL_ORIGIN = 'http://127.0.0.1:3100';
@@ -84,11 +85,6 @@ function rmsPcm(mediaFile) {
   }
   return Math.sqrt(energy / samples);
 }
-async function downloadBytes(download) {
-  const chunks = [];
-  for await (const c of await download.createReadStream()) chunks.push(Buffer.from(c));
-  return Buffer.concat(chunks);
-}
 let browser;
 let page;
 let mediaDir;
@@ -104,6 +100,7 @@ try {
     locale: 'ru-RU', serviceWorkers: 'block', reducedMotion: 'reduce',
     storageState: {cookies: [], origins: []}, acceptDownloads: true,
   });
+  await installGuestVideoBlobCapture(context);
   await context.route('**/*', route => {
     const request = route.request();
     let firstParty = false;
@@ -209,24 +206,14 @@ try {
     return Boolean(button && !button.disabled);
   }, undefined, {timeout: 40000});
   await create.click({timeout: 15000});
-  const save = page.locator('[data-mandala-video-download]');
-  await save.waitFor({state: 'visible', timeout: 80000});
-  assert.equal(await page.locator('[data-video-result]').getAttribute('data-video-result-mode'),
-    'rendered', 'CATALOG_CLIP_IS_NOT_PERSONALIZED_OUTPUT');
-  // Primary Save opens the real Files / Telegram / WhatsApp delivery chooser.
-  // Wait for that user-visible state before requesting the genuine file download.
-  await save.click();
-  const delivery = page.locator('[data-video-messenger-delivery]');
-  await delivery.waitFor({state: 'visible', timeout: 10000});
-  await delivery.locator('[data-video-telegram-share]').waitFor({state: 'visible'});
-  await delivery.locator('[data-video-whatsapp-share]').waitFor({state: 'visible'});
-  const [download] = await Promise.all([
-    page.waitForEvent('download', {timeout: 25000}),
-    delivery.locator('[data-video-save-direct-choice]').click(),
-  ]);
-  const bytes = await downloadBytes(download);
+  // Guests watch the original encoded movie in Ready; protected Save is login-gated.
+  // Read the real test-owned Blob without fake sign-in, download or provider calls.
+  const captured=await readRealGuestVideo(page,{timeout:80000});
+  const bytes=captured.bytes;
+  row.anonymousSaveAuthGateVerified=captured.authGateVerified;
+  row.recordedBlobVerified=true;row.downloadedVideo=false;
   assert.ok(bytes.length > 20000, 'VIDEO_EXPORT_EMPTY');
-  const filename = download.suggestedFilename();
+  const filename = 'holistic-house-guest.'+captured.extension;
   assert.match(filename, /\.(mp4|webm)$/, 'INCORRECT_VIDEO_FILENAME');
   if (filename.endsWith('.webm')) {
     assert.deepEqual(bytes.subarray(0, 4), Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
@@ -246,7 +233,7 @@ try {
   const seconds = Number(probe.format?.duration || video.duration || 0);
   assert.ok(seconds >= 17 && seconds <= 26, 'WRONG_VIDEO_DURATION');
   const energy = rmsPcm(mediaFile);
-  Object.assign(row, {downloadedVideo: true, encodedBytes: bytes.length,
+  Object.assign(row, {recordedBlobVerified: true, encodedBytes: bytes.length,
     container: filename.endsWith('.webm') ? 'webm' : 'mp4',
     width: video.width, height: video.height, durationSeconds: Number(seconds.toFixed(2)),
     audioStreamPresent: true, decodedAudioRms: Number(energy.toFixed(4))});

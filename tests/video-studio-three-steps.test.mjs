@@ -101,6 +101,27 @@ test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the rea
   assert.match(motion,/ffprobe/);
 });
 
+test("anonymous video export checks the actual Ready player and secured original Blob",()=>{
+  const harness=read("scripts/benchmarking/real-guest-video-file.mjs");
+  const live=read("scripts/benchmarking/first-video-live-export.mjs");
+  const motion=read("scripts/benchmarking/verify-original-motion-export.mjs");
+  for(const requirement of ["data-video-ready","data-ready-download","data-ready-save-gate",
+    "data-ready-save-gate-signin","__hhTestRecordedVideoBlobs",
+    "REAL_GUEST_VIDEO_BLOB_MISSING","GUEST_DOWNLOAD_MUST_REQUIRE_LOGIN"])
+    assert.ok(harness.includes(requirement),"real guest video contract: "+requirement);
+  assert.match(harness,/video\.readyState>=2/);
+  for(const candidate of [live,motion]){
+    assert.match(candidate,/installGuestVideoBlobCapture\(context\)/);
+    assert.match(candidate,/readRealGuestVideo\(page/);
+    assert.doesNotMatch(candidate,/await save\.click\(\)/);
+  }
+  for(const evidence of ["ENCODED_VIDEO_STREAM_MISSING","EXPORTED_FRAMES_NOT_MOVING",
+    "LICENSED_SCENE_ORDER_MISMATCH"])
+    assert.ok(live.includes(evidence),"real four-scene export acceptance: "+evidence);
+  assert.ok(motion.includes("sceneCorrelations"));
+  assert.ok(motion.includes("exported audio is silent"));
+});
+
 test("legacy deep links reveal the real advanced video catalog on mobile",()=>{
  assert.match(studio,/if\(hash==="video-templates"\)\{[\s\S]*?setVideoScenarioOpen\(true\)/);
  assert.match(studio,/if\(anchor==="video-templates"\)\{[\s\S]*?setVideoScenarioOpen\(true\)/);
