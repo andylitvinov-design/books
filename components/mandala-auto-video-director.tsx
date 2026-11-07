@@ -1068,7 +1068,18 @@ export function MandalaAutoVideoDirector({
        if(event.currentTarget===ideaRefinementNodeRef.current)
          ideaRefinementOpenRef.current=event.currentTarget.open;
      }}>
-     <summary>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
+     <summary onClick={event=>{
+       // WebKit can lose the native <details> default toggle when React
+       // reconciles this portal after a workspace change. Commit the actual
+       // user's click before Safari's deferred toggle and preserve it if the
+       // portal is remounted. Keyboard activation also dispatches click.
+       event.preventDefault();
+       const node=event.currentTarget.parentElement;
+       if(node instanceof HTMLDetailsElement){
+         node.open=!node.open;
+         ideaRefinementOpenRef.current=node.open;
+       }
+     }}>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
        locale==="es"?"Explorar tema, significado y guion (opcional)":
        "Refine topic, meaning and story (optional)"}</summary>
      {topicPanel}
