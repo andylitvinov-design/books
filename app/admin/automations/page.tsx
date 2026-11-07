@@ -7,6 +7,8 @@ import {getAppConfig} from '@/lib/app/config';
 import {transaction,closeDatabase} from '@/lib/app/database';
 import {readAutomationSnapshot} from '@/lib/automations/scout-db.mjs';
 import {readClassifierAnnotations} from '@/lib/automations/classifier-store.mjs';
+import {readCouncilProposals} from '@/lib/automations/weekly-council-store.mjs';
+import CouncilProposalActions from '@/components/council-proposal-actions';
 import AutomationControlActions from '@/components/automation-control-actions';
 import {uiLocaleCookie} from '@/lib/ui-locale';
 import styles from './automations.module.css';
@@ -83,8 +85,18 @@ export default async function AutomationsPage(){
     catch { /* AI annotations remain unknown until actual private DB readback. */ }
     finally {await closeDatabase();}
   }
+  type ProposalRow={proposal_id:string;state:string;created_at:string;
+    proposal:{answer:string;actions:Array<{step:string;why:string;check:string}>;ownerApprovalRequired:boolean}};
+  let proposals:ProposalRow[]|null=null;
+  if(snapshot){
+    try {proposals=await transaction(getAppConfig(),null,
+      (db: unknown)=>readCouncilProposals(db),{server:true}) as ProposalRow[];}
+    catch { /* Weekly Council schema is not yet verified. */ }
+    finally {await closeDatabase();}
+  }
   const scout=snapshot?.tasks.find(task=>task.task_id==='video-scout-hourly');
   const classifier=snapshot?.tasks.find(task=>task.task_id==='video-classifier-batch');
+  const weekly=snapshot?.tasks.find(task=>task.task_id==='council-video-review-weekly');
   return <main className={styles.page} data-hh-design="holistic-light" lang={locale}>
     <PrescriptionAdminHeader title={{en:copy.en.title,ru:copy.ru.title}}
       description={{en:copy.en.subtitle,ru:copy.ru.subtitle}}/>
@@ -106,6 +118,7 @@ export default async function AutomationsPage(){
         </div>)}
         {scout&&<AutomationControlActions locale={locale} enabled={scout.enabled}/>}
         {classifier&&<AutomationControlActions locale={locale} taskId="video-classifier-batch" enabled={classifier.enabled}/>}
+        {weekly&&<AutomationControlActions locale={locale} taskId="council-video-review-weekly" enabled={weekly.enabled}/>}
         <p className={styles.note}>{t.model}</p>
       </section>
       <section className={styles.section}>
@@ -122,6 +135,25 @@ export default async function AutomationsPage(){
             <time dateTime={slot.slotUtc}>{stamp(slot.slotUtc,locale)}</time>
             <span>{slot.state}</span></div>)}</div>
         </details>
+      </section>
+      <section className={styles.section}>
+        <h2>{locale==='ru'?'Совет мудрецов · предложения':
+          locale==='es'?'Consejo de IA · propuestas':'AI Council · research proposals'}</h2>
+        <p className={styles.note}>{locale==='ru'?
+          'Каждое предложение требует решения владельца. Принятие не меняет расписание, бюджет и права на видео.':
+          locale==='es'? 'Aceptar una propuesta no ejecuta tareas ni aprueba licencias.':
+            'Acceptance records a planning decision; it does not run tasks or approve licenses.'}</p>
+        {proposals===null?<p className={styles.note}>{t.inactive}</p>:
+          proposals.length?<div className={styles.candidates}>{proposals.map(item=>
+            <article key={item.proposal_id} className={styles.candidate}>
+              <h3>{stamp(item.created_at,locale)} · {item.state}</h3>
+              <p>{item.proposal.answer}</p>
+              {(item.proposal.actions||[]).slice(0,3).map((action,i)=><div key={i}>
+                <strong>{action.step}</strong><p>{action.why}</p><small>{action.check}</small>
+              </div>)}
+              {item.state==='pending_owner_review'&&item.proposal.ownerApprovalRequired&&
+                <CouncilProposalActions proposalId={item.proposal_id} locale={locale}/>}
+            </article>)}</div>:<p className={styles.note}>{t.none}</p>}
       </section>
       <section className={styles.section}>
         <h2>{locale==='ru'?'AI-классификация · только предложения':
