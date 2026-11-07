@@ -344,7 +344,7 @@ try{
  },null,{timeout:10000});
  // Owner-approved iHelp first turn: browser geometry is checked on the real
  // Video Studio route, not a static mock. No media render or external AI call.
- await page.locator('[data-hh-ihelp-trigger]').click();
+ await page.locator('[data-video-ihelp-header-trigger]').click();
  const iHelpDialog=page.locator('[data-video-director-chat-details][role="dialog"]');
  await iHelpDialog.waitFor({state:'visible',timeout:30000});
  const iHelpWelcome=iHelpDialog.locator('[data-video-chat-welcome]');
@@ -377,6 +377,7 @@ try{
    assert.ok(geometry.titleVisible,'IHELP_HERO_MUST_START_IN_VIEW_'+width);
    assert.ok(geometry.navBottom,'IHELP_TABS_MUST_FOLLOW_WELCOME_'+width);
    assert.ok(geometry.horizontalOverflow<=2,'IHELP_OVERFLOW_'+width);
+   if(width===390)await page.screenshot({path:folder+'/ihelp-approved-welcome-390.png'});
  }
  await page.setViewportSize({width:390,height:844});
  await iHelpWelcome.locator('[data-video-chat-welcome-create]').click();

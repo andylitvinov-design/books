@@ -777,6 +777,17 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    if(accepted===false){addLine("assistant",t.blocked);return;}
    setCaptureObserved(false);setCaptureStarted(true);
  };
+  const chatNav=<nav className={css.chatTabs} aria-label={
+     locale==="ru"?"ИИ, заказы и клиенты":locale==="es"?"IA, pedidos y clientes":"AI, orders and clients"}
+     data-video-chat-top-tabs>
+     <span aria-current="page">{locale==="ru"?"ИИ":locale==="es"?"IA":"AI"}</span>
+     <Link href={"/"+locale+"/app/messages?section=orders"} prefetch={false}>
+       {locale==="ru"?"Заказы":locale==="es"?"Pedidos":"Orders"}
+     </Link>
+     <Link href={"/"+locale+"/app/messages?section=clients"} prefetch={false}>
+       {locale==="ru"?"Клиенты":locale==="es"?"Clientes":"Clients"}
+     </Link>
+   </nav>;
   const composer=<form className={css.composer} data-video-chat-composer onSubmit={(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();answer(input);}}>
      {showWelcome?<span className={css.composerSymbol} aria-hidden="true"><Leaf size={22}/></span>:<button className={css.composerTool} type="button" onClick={onPickPhoto} disabled={disabled} aria-label={t.photo} title={t.photo}><ImagePlus size={21}/></button>}
      <textarea ref={composerRef} rows={showWelcome?1:2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
@@ -792,17 +803,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
      <button type="button" className={css.iconButton} disabled={disabled||captureStarted} onClick={onOpenEditor} aria-label={t.editor} title={t.editor}><SlidersHorizontal size={20}/></button>
    </header>
-   <nav className={css.chatTabs} aria-label={
-     locale==="ru"?"ИИ, заказы и клиенты":locale==="es"?"IA, pedidos y clientes":"AI, orders and clients"}
-     data-video-chat-top-tabs>
-     <span aria-current="page">{locale==="ru"?"ИИ":locale==="es"?"IA":"AI"}</span>
-     <Link href={"/"+locale+"/app/messages?section=orders"} prefetch={false}>
-       {locale==="ru"?"Заказы":locale==="es"?"Pedidos":"Orders"}
-     </Link>
-     <Link href={"/"+locale+"/app/messages?section=clients"} prefetch={false}>
-       {locale==="ru"?"Клиенты":locale==="es"?"Clientes":"Clients"}
-     </Link>
-   </nav>
+   {!showWelcome&&chatNav}
    {pageHelp&&!showWelcome&&<details className={css.pageHelp} data-video-ihelp-context data-help-tab={pageHelp.section}>
      <summary>{w.how}</summary>
      <p>{pageHelp.greeting}</p>
@@ -1010,6 +1011,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        <button type="button" className={css.secondary} onClick={()=>{onInvalidate();setStep("review");}}>{t.edit}</button>
      </div>:null}
    </div>
+   {showWelcome&&chatNav}
    {!showWelcome&&composer}
    <label className={css.aiOptIn}>
      <input type="checkbox" checked={aiConsent} disabled={disabled}
