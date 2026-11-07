@@ -67,10 +67,13 @@ test("macOS WebKit follows Goal 1 → Goal 2 → Ideas → Montage with native c
  const goalNext=flow.indexOf("await goal2.locator('[data-video-goal-clarify-continue]').click()",goal);
  const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',goalNext);
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
- const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
+ const summary=flow.indexOf('const refineSummary=refinement.locator(":scope > summary")',refinement);
+ const conditional=flow.indexOf('if(await refinement.getAttribute("open")!==null)',summary);
+ const closed=flow.indexOf('await expect(refinement).not.toHaveAttribute("open","")',conditional);
+ const open=flow.indexOf('await refineSummary.click()',closed);
  const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
  const montage=flow.indexOf("await montage.tap()",verify);
- assert.ok(first>=0&&last>first&&click>=0&&goal>click&&goalNext>goal&&ideas>goalNext&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
+ assert.ok(first>=0&&last>first&&click>=0&&goal>click&&goalNext>goal&&ideas>goalNext&&refinement>ideas&&summary>refinement&&conditional>summary&&closed>conditional&&open>closed&&verify>open&&montage>verify,
    "native Goal 1 → Goal 2 → Ideas refinement → Montage, no fake shortcut");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
