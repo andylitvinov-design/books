@@ -51,6 +51,10 @@ jobs:
           ref: codex/bootstrap-books
           persist-credentials: false
       - name: Checkout protected production classifier
+        # An opened PR cannot yet have the successfully completed exact-HEAD Core.
+        # The event may record Ready but must not spend a second checkout or
+        # merge-validation API budget until Core's workflow_run completion.
+        if: ${{ github.event_name != 'pull_request_target' || github.event.action != 'opened' }}
         uses: actions/checkout@v4
         with:
           ref: codex/public-book-library
@@ -129,6 +133,16 @@ jobs:
                 log("READY_TIMESTAMP_RECEIPT_UNAVAILABLE #"+number+" "+
                   String(error.message||error).slice(0,120));
               }
+            }
+            // A newly opened Ready PR has just triggered exact-head Core.
+            // Record its authenticated Ready receipt above, then return before
+            // waiting for GitHub mergeability or enumerating Core runs. The
+            // successful Core workflow_run event separately evaluates protected
+            // release gates; scheduled reconciliation remains a fallback.
+            if (context.eventName === "pull_request_target" &&
+                context.payload.action === "opened") {
+              log("DEFER_OPENED_UNTIL_EXACT_HEAD_CORE_SUCCESS");
+              return;
             }
             // Mergeability may be temporarily unknown immediately after Core CI.
             // Recover inside the successful event, not in the next hourly Sweep.
