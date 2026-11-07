@@ -57,3 +57,22 @@ test("welcome is readable and safe, then yields to the existing conversation",()
  assert.match(browser,/CALM_WELCOME_CANONICAL_FIVE_GOALS/);
  assert.match(browser,/CALM_WELCOME_MUST_YIELD_TO_REAL_CHAT/);
 });
+
+test("Create and every subsequent step retain the same photographic iHelp shell",()=>{
+ assert.match(component,/data-chat-dialogue=\{!showWelcome\?"true":undefined\}/);
+ assert.match(component,/data-video-chat-dialogue-hero/);
+ assert.match(component,/className=\{\`\$\{css\.welcomeHero\} \$\{css\.dialogueHero\}\`\}/);
+ for(const value of ["Ваше видео — ваш сюжет","Your video, your story",
+   "Tu vídeo, tu historia","data-video-chat-advanced","{chatNav}",
+   "{!showWelcome&&composer}","setWelcomeDismissed(true)"])
+   assert.ok(component.includes(value),value);
+ assert.match(styles,/\.dialogueHero\{[^}]*min-height:160px/);
+ assert.match(styles,/\.window\[data-chat-dialogue="true"\] \.thread\{[^}]*overflow-x:hidden/);
+ assert.match(styles,/\.window\[data-chat-dialogue="true"\] \.composer\{/);
+ assert.match(styles,/\.window\[data-chat-dialogue="true"\] \.chatTabs\{/);
+ assert.match(component,/\{!showWelcome&&<button className=\{css\.composerMic\}/);
+ assert.match(component,/const \[aiConsent,setAiConsent\]=useState\(false\)/);
+ for(const marker of ["PHOTO_HERO_MUST_SURVIVE_CREATE","PHOTO_HERO_LOST_AT_STAGE_",
+   "ACTIVE_REPLY_COMPOSER_MUST_BE_VISIBLE","AI_ORDERS_CLIENTS_AFTER_COMPOSER"])
+   assert.ok(browser.includes(marker),marker);
+});
