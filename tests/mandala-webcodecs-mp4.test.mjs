@@ -19,7 +19,7 @@ test("Safari movie retains the real Canvas scene, story, hypno and stage caption
     "paintCinematicFrame(ctx,image,effect,time",
     "paintStoryMotifs(ctx,time,appliedStory)",
     "paintHypnoLightOverlay(ctx,time,hypnoLight)",
-    "paintVideoAffirmations(ctx,time,affirmationLines,affirmations)",
+    "paintVideoAffirmations(ctx,time,affirmationLines,affirmations,duration)",
     "paintStageCaptionOverlay(ctx,time,cinematicPlan,timelineTextClips)",
     "if(usingFreeFilmCompilation&&!frame)return false",
   ])assert.ok(studio.includes(marker),marker);
@@ -234,4 +234,27 @@ test("Safari deferred MP4 decoding requires a real user Play gesture, not a fals
   assert.match(e2e,/if\(await verifyPlayback\.isVisible\(\)\)throw error;/,
     "a persistent non-clickable Play button remains a test failure");
   assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+});
+
+test("guest real encoded video must keep Save behind sign-in and preserve physical codec acceptance",()=>{
+ const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ const guest=browser.indexOf('const guestPreview=page.locator("[data-video-guest-preview-actions]")');
+ const auth=browser.indexOf('await expect(output).toBeHidden()',guest);
+ const blob=browser.indexOf('const localMovie=await page.evaluate(async()=>',auth);
+ const parsed=browser.indexOf('bytes=Buffer.from(localMovie.base64,"base64")',blob);
+ const realProbe=browser.indexOf('const probe=spawnSync("ffprobe"',parsed);
+ const realAudio=browser.indexOf('const pcm=spawnSync("ffmpeg"',realProbe);
+ assert.ok(guest>=0&&auth>guest&&blob>auth&&parsed>blob&&realProbe>parsed&&realAudio>realProbe);
+ assert.match(browser,/data-video-guest-save-hint/);
+ assert.match(browser,/data-video-save-direct/);
+ assert.match(browser,/GUEST_REAL_VIDEO_PREVIEW_INVALID/);
+ assert.match(browser,/GUEST_REAL_VIDEO_BLOB_UNAVAILABLE/);
+ assert.match(browser,/video\.readyState<2/);
+ assert.match(browser,/video\.videoWidth===0/);
+ assert.match(browser,/!video\.currentSrc\.startsWith\("blob:"\)/);
+ assert.match(browser,/guest-real-encoded-mp4-auth-gate-verified/);
+ assert.match(browser,/await output\.click\(\)/);
+ assert.match(browser,/delivery\.locator\("\[data-video-save-direct-choice\]"\)\.click\(\)/);
+ assert.match(browser,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
+ assert.doesNotMatch(browser,/force:true|setCreditSession\("signed_in"\)/);
 });

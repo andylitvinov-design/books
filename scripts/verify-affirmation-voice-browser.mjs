@@ -728,6 +728,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
         phase(engine,"recording-started");
         const output=page.locator("[data-mandala-video-download]");
+        // Authenticated visitors can download; a first-time guest can watch a
+        // real encoded local film but MUST sign in before Save, share or upload.
+        const guestPreview=page.locator("[data-video-guest-preview-actions]");
         phase(engine,"waiting-for-export");
         try {
           // An iPhone/WebKit MP4 can require a physical Play gesture before
@@ -736,7 +739,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           let verificationTapped=false;
           const verifyPlayback=page.locator("[data-video-verify-playback]");
           await expect.poll(async()=>{
-            if(await output.isVisible())return true;
+            if(await output.isVisible()||await guestPreview.isVisible())return true;
             if(!verificationTapped&&await verifyPlayback.isVisible()){
               try{
                 await verifyPlayback.click({timeout:2000});
@@ -749,9 +752,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
                 if(await verifyPlayback.isVisible())throw error;
               }
             }
-            return await output.isVisible();
+            return await output.isVisible()||await guestPreview.isVisible();
           },{timeout:45000,intervals:[250,500,1000]}).toBe(true);
-          await output.waitFor({state:"visible",timeout:45000});
+          if(!await guestPreview.isVisible())
+            await output.waitFor({state:"visible",timeout:45000});
         } catch (error) {
           phase(engine,"download-control-timed-out");
           let uiState;
@@ -781,24 +785,65 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             JSON.stringify({...uiState,encoderFailureCodes:errors.filter(item=>
               item.startsWith("HH_WEBKIT_MP4_EXPORT_FAILURE:")).slice(-5)}),{cause:error});
         }
-        phase(engine,"download-control-ready");
-        // The main Save action now shows a delivery chooser, it no longer
-        // downloads directly. Verify that real production UX, then use the
-        // explicit device File path before checking encoded movie + audio.
-        await output.click();
-        const delivery=page.locator("[data-video-messenger-delivery]");
-        await expect(delivery).toBeVisible({timeout:10000});
-        await expect(delivery.locator("[data-video-telegram-share]")).toBeVisible();
-        await expect(delivery.locator("[data-video-whatsapp-share]")).toBeVisible();
-        phase(engine,"delivery-chooser-open");
-        const [download]=await Promise.all([
-          page.waitForEvent("download",{timeout:20000}),
-          delivery.locator("[data-video-save-direct-choice]").click(),
-        ]);
-        phase(engine,"download-started");
-        const parts=[];
-        for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
-        const bytes=Buffer.concat(parts);
+        let bytes;
+        if(await guestPreview.isVisible()){
+          // This is a synthetic test-owned in-memory Blob; exposing the normal
+          // Save/Telegram/YouTube controls to an anonymous visitor is forbidden.
+          await expect(page.locator("[data-video-result]"))
+            .toHaveAttribute("data-video-result-mode","rendered");
+          await expect(output).toBeHidden();
+          await expect(page.locator("[data-video-save-direct]")).toBeHidden();
+          await expect(page.locator("[data-video-guest-save-hint]")).toBeVisible();
+          const player=page.locator("[data-mandala-video-preview]");
+          await expect(player).toBeVisible();
+          await expect.poll(()=>player.evaluate(video=>
+            video instanceof HTMLVideoElement&&video.readyState>=2&&
+            video.videoWidth>0&&video.videoHeight>0),{timeout:15000}).toBe(true);
+          await guestPreview.locator("[data-video-guest-play]").click();
+          // Inspect the genuine locally rendered movie without invoking a
+          // privileged download, network upload or fake signed-in session.
+          const localMovie=await page.evaluate(async()=>{
+            const video=document.querySelector("[data-mandala-video-preview]");
+            if(!(video instanceof HTMLVideoElement)||!video.currentSrc.startsWith("blob:")||
+               video.readyState<2||video.videoWidth===0||video.videoHeight===0)
+              throw Error("GUEST_REAL_VIDEO_PREVIEW_INVALID");
+            const movie=await fetch(video.currentSrc);
+            if(!movie.ok)throw Error("GUEST_REAL_VIDEO_BLOB_UNAVAILABLE");
+            const blob=await movie.blob();
+            if(blob.size<10000||blob.size>16000000)
+              throw Error("GUEST_REAL_VIDEO_BYTES_INVALID");
+            const dataUrl=await new Promise((resolve,reject)=>{
+              const reader=new FileReader();
+              reader.onerror=()=>reject(Error("GUEST_REAL_VIDEO_BLOB_READ_FAILED"));
+              reader.onload=()=>resolve(reader.result);
+              reader.readAsDataURL(blob);
+            });
+            return {base64:String(dataUrl).split(",")[1],mime:blob.type,
+              width:video.videoWidth,height:video.videoHeight};
+          });
+          assert.ok(localMovie.base64?.length>15000);
+          assert.ok(localMovie.width>0&&localMovie.height>0);
+          bytes=Buffer.from(localMovie.base64,"base64");
+          phase(engine,"guest-real-encoded-mp4-auth-gate-verified");
+        }else{
+          phase(engine,"download-control-ready");
+          // Signed-in visitors open the actual Save chooser, then choose the
+          // physical file. This path remains required when authorized.
+          await output.click();
+          const delivery=page.locator("[data-video-messenger-delivery]");
+          await expect(delivery).toBeVisible({timeout:10000});
+          await expect(delivery.locator("[data-video-telegram-share]")).toBeVisible();
+          await expect(delivery.locator("[data-video-whatsapp-share]")).toBeVisible();
+          phase(engine,"delivery-chooser-open");
+          const [download]=await Promise.all([
+            page.waitForEvent("download",{timeout:20000}),
+            delivery.locator("[data-video-save-direct-choice]").click(),
+          ]);
+          phase(engine,"download-started");
+          const parts=[];
+          for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
+          bytes=Buffer.concat(parts);
+        }
         assert.ok(bytes.length>10000,"real video must be recorded");
         const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type,channels",
           "-of","json","-"],{input:bytes,encoding:"utf8",timeout:15000});

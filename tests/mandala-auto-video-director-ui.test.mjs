@@ -157,14 +157,14 @@ test("desktop keeps six themes while iPhone uses four canonical MyTube goals",()
 });
 
 test("the selected real soundtrack is synchronized with the original central Canvas Play",()=>{
- assert.match(studio,/if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\)/,
+ assert.match(studio,/if\(activeWorkspace!=="phrases"&&!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\)/,
    "selected audio must begin from the same trusted Play tap on Safari");
  assert.match(studio,/if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}/,
    "pausing the video must pause its selected native audio");
  assert.match(studio,/function playQuickTrack\(choice:PresetId\)/,
    "retain the existing one user-gesture audio player");
- assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;[\s\S]*?if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\);\s*setPreviewPlaying\(true\)/,
-   "Play never starts audio during export");
+ assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;[\s\S]*?if\(activeWorkspace!=="phrases"&&!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\);\s*setPreviewPlaying\(true\)/,
+   "Play never starts audio during export; Ideas has an intentionally silent visual preview");
 });
 
 // Regression from #2900: four real preview cards must appear before the first click.
