@@ -138,3 +138,35 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(css.includes('[data-video-phrase-audio-shortcut]'),"audio shortcut remains visible");
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
 });
+
+test("macOS WebKit reaches real Create through visible Style → Text → Audio and keeps MP4 + voice acceptance",()=>{
+ const flow=read("scripts/verify-affirmation-voice-browser.mjs");
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const css=read("components/mandala-video-mobile.module.css");
+ const start=flow.indexOf('phase(engine,"hypno-audio-effects-rendered")');
+ const finish=flow.indexOf('phase(engine,"start-media-recorder")',start);
+ assert.ok(start>0&&finish>start);
+ const journey=flow.slice(start,finish);
+ let last=-1;
+ for(const action of [
+   'await page.locator(\'[data-video-quick-control="editor"]\').click()',
+   'await expect(styleNext).toBeVisible',
+   'await styleNext.click()',
+   'await expect(page.locator(\'[data-video-montage-tab="text"]\'))',
+   'await expect(generate).toHaveAttribute("data-video-montage-next","audio")',
+   'await generate.click()',
+   'await expect(page.locator(\'[data-video-montage-tab="audio"]\'))',
+   'await expect(generate).toBeVisible',
+   'await expect(generate).toBeEnabled'
+ ]){
+   const at=journey.indexOf(action,last+1);
+   assert.ok(at>last,action+" follows the real visitor path");
+   last=at;
+ }
+ assert.match(studio,/data-video-montage-next=\{montagePanel==="effects"\?"text":montagePanel==="text"\?"audio":undefined\}/);
+ assert.match(studio,/const continueMontageOrGenerate=\(\)=>/);
+ assert.match(css,/\[data-montage-panel="effects"\] \[data-video-order-bar\]\{display:none!important\}/);
+ assert.doesNotMatch(journey,/\.click\(\{\s*force:\s*true/);
+ assert.ok(flow.includes('const output=page.locator("[data-mandala-video-download]")'));
+ assert.ok(flow.includes('await generate.click()'));
+});
