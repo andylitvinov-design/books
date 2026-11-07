@@ -13,7 +13,7 @@ export declare function uploadSignedPrivateVideoChunks(options: {
 export declare function savePrivateMp4(options: {
   file:Blob;
   details:{theme:string;sceneId:string;aspect:string;duration:number};
-  request:(path:string,body?:unknown,method?:string)=>Promise<any>;
+  request:(path:string,body?:unknown,method?:string)=>Promise<unknown>;
   sessionRef:{current:unknown};
   onProgress?:(done:number,total:number)=>void;
   fetchImpl?:typeof fetch;
