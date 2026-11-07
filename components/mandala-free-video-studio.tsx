@@ -2871,6 +2871,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
     video.muted=true;
     video.loop=true;
+    if(previewPlaying&&!recording&&!preparing&&video.readyState<2){
+      // A style tap can key in a NEW source element after its original
+      // gesture. Unlock that verified MP4 only for an active preview.
+      video.playsInline=true;
+      video.preload="auto";
+      if(video.networkState!==2)video.load();
+    }
     void video.play().catch(()=>{if(aliveRef.current)setNotice(ui.videoUnavailable);});
   },[activeFilm?.src,previewPlaying,recording,preparing,ui.videoUnavailable]);
 

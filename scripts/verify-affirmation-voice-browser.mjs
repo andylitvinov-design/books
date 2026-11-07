@@ -68,7 +68,27 @@ async function verifyWorkspaceHydration(browser,locale){
     const montage=page.locator('[data-video-quick-control="editor"]');
     await montage.click();
     await expect(montage).toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeVisible();
+    await expect(studio).toHaveAttribute("data-active-workspace","editor");
+    // Old MyTube dropdown is intentionally hidden; actual mobile Montage
+    // exposes six style cards. Verify one real tap, upper player and frames.
+    const styleTab=page.locator('[data-video-montage-tab="effects"]');
+    await expect(styleTab).toBeVisible();
+    await expect(styleTab).toHaveAttribute("aria-pressed","true");
+    const styles=page.locator("[data-video-montage-style]");
+    await expect(styles).toHaveCount(6);
+    const minimal=styles.nth(3);
+    await expect(minimal).toBeVisible();
+    const hero=page.locator("[data-video-mandala-hero]");
+    const master=page.locator("[data-mandala-master-mp4]");
+    await minimal.tap();
+    await expect(minimal).toHaveAttribute("aria-pressed","true");
+    await expect(hero).toHaveAttribute("data-video-preview-style","minimal");
+    await expect(hero).toHaveAttribute("data-preview-playing","true");
+    await expect(master).toHaveCount(1);
+    await expect.poll(()=>master.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
+    await expect.poll(()=>master.evaluate(video=>
+      video.readyState>=2&&video.videoWidth>0&&video.videoHeight>0&&!video.error),
+      {timeout:20000}).toBe(true);
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
@@ -273,6 +293,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Reproduce the owner's iPhone case before recording real voice.
+      const selectedStyle=page.locator('[data-video-montage-style="3"]');
+      const selectedMaster=page.locator("[data-mandala-master-mp4]");
+      await expect(selectedStyle).toBeVisible();
+      await expect(selectedMaster).toHaveAttribute("preload","none");
+      if(engine==="webkit")await selectedStyle.tap();
+      else await selectedStyle.click();
+      await expect(selectedStyle).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator("[data-video-mandala-hero]")).toHaveAttribute("data-video-preview-style","minimal");
+      await expect.poll(()=>selectedMaster.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
       // Modern Montage shows the voice and music controls only after choosing Audio.
       // Exercise the real visible tab instead of waiting for an unmounted drawer.
       // Current Montage has four compact tabs. Real duration is under Settings
@@ -650,8 +680,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(engine==="chromium"||engine==="webkit") {
         const sourceVideo=page.locator("[data-mandala-master-mp4]");
         if(await sourceVideo.count()) {
-          assert.equal(await sourceVideo.getAttribute("preload"),"none",
-            "the initial Video Studio must defer the 1 MB HD source");
+          assert.equal(await sourceVideo.getAttribute("preload"),"auto",
+            "the user's earlier Style tap must already prime the real MP4");
         }
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await expect(generate).toBeEnabled({timeout:30000});

@@ -116,3 +116,15 @@ test("Choosing a Montage style preserves the compiled film and paints the live a
   assert.match(studio,/creationMode,activeMontageStyleId,currentFreeVideoPlan/,
     "a style edit invalidates only the previous exported recording");
 });
+
+test("iPhone Style primes a newly mounted MP4 without fetching on first render",()=>{
+  assert.match(studio,/preload="none"/,"idle first paint must keep HD loading lazy");
+  assert.match(studio,/if\(previewPlaying&&!recording&&!preparing&&video\.readyState<2\)/);
+  assert.match(studio,/video\.preload="auto"/);
+  assert.match(studio,/if\(video\.networkState!==2\)video\.load\(\)/);
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.match(browser,/await minimal\.tap\(\)/);
+  assert.match(browser,/data-video-preview-style","minimal"/);
+  assert.match(browser,/video\.readyState>=2&&video\.videoWidth>0/);
+  assert.doesNotMatch(browser,/\[data-video-director-style-controls\] \[data-mytube-style-filter\]/);
+});
