@@ -334,3 +334,84 @@
  .window[data-chat-welcome="true"] .chatTabs{padding:4px 8px max(4px,env(safe-area-inset-bottom,0px))}
 }
 @media(prefers-reduced-motion:reduce){.welcome *{scroll-behavior:auto!important}}
+
+/* A single photo-led dialogue from Create through preview/export.
+   The hero stays outside the scrolling transcript so auto-scroll never hides it. */
+.window[data-chat-dialogue="true"]{background:#fffaf2}
+.window[data-chat-dialogue="true"] .heading{min-height:62px;padding:9px 13px}
+.window[data-chat-dialogue="true"] .titleGroup strong{font-size:19px}
+.window[data-chat-dialogue="true"] .titleGroup small{font-size:12px}
+.dialogueHero{flex:none;min-height:160px;padding:16px 18px 19px;
+ background-position:center 43%;border-radius:0 0 23px 23px}
+.dialogueTitle{max-width:60%;margin:0;color:#113f38;
+ font:850 clamp(25px,6.9vw,33px)/1.09 system-ui,-apple-system,sans-serif;
+ letter-spacing:-.035em;text-wrap:balance}
+.dialogueLead{max-width:59%;margin:10px 0 0;color:#394e4b;
+ font:550 clamp(13px,3.4vw,15px)/1.34 system-ui,-apple-system,sans-serif}
+.window[data-chat-dialogue="true"] .pageHelp{background:#fffaf2;border-color:#eadfd2}
+.window[data-chat-dialogue="true"] .pageHelp summary{min-height:34px;
+ color:#18725f;font-size:13px}
+.window[data-chat-dialogue="true"] .thread{min-height:0;padding:13px 12px 18px;
+ gap:11px;background:#fffaf2;overflow-x:hidden}
+.window[data-chat-dialogue="true"] .assistantTurn{width:100%}
+.window[data-chat-dialogue="true"] .assistant{max-width:100%;padding:12px 13px;
+ border-color:#deeadf;border-radius:18px;background:#f1f7f2;
+ color:#21483a;font:680 17px/1.42 system-ui,-apple-system,sans-serif}
+.window[data-chat-dialogue="true"] .user{background:#ecf6f0;
+ border-color:#d9ebdf;color:#275947;font-size:15px}
+.window[data-chat-dialogue="true"] .inlineAnswers{padding:11px;
+ border-color:#d2e8db;border-radius:19px;background:#fff;
+ box-shadow:0 4px 17px #335d4011}
+.window[data-chat-dialogue="true"] .inlineAnswers .choices{gap:9px}
+.window[data-chat-dialogue="true"] .inlineAnswers .choices button{
+ min-height:52px;padding:12px 13px;border-radius:16px;border-color:#c6dfd1;
+ background:#f0f9f4;color:#166953;font:750 15px/1.3 system-ui,-apple-system,sans-serif}
+.window[data-chat-dialogue="true"][data-chat-step="category"] .inlineAnswers .choices button:nth-child(2){
+ background:#faf0d9;border-color:#ebdeb8;color:#8b5b14}
+.window[data-chat-dialogue="true"][data-chat-step="category"] .inlineAnswers .choices button:nth-child(3){
+ background:#fbe9f1;border-color:#eed2df;color:#a14066}
+.window[data-chat-dialogue="true"][data-chat-step="category"] .inlineAnswers .choices button:nth-child(4){
+ background:#eaf3fb;border-color:#d4e4f1;color:#286b85}
+.window[data-chat-dialogue="true"] .composer{flex:none;min-width:0;min-height:63px;
+ margin:6px 11px 7px;padding:7px 9px;border:1px solid #cde4d9;
+ border-radius:22px;background:#fff;box-shadow:0 4px 16px #1e57421b}
+.window[data-chat-dialogue="true"] .composer textarea{min-height:42px;
+ padding:9px 4px;font-size:16px!important;color:#143d3a}
+.window[data-chat-dialogue="true"] .composerTool,.window[data-chat-dialogue="true"] .composerMic{
+ width:39px;height:39px;box-shadow:none}
+.window[data-chat-dialogue="true"] .send{width:43px;height:43px;
+ border-radius:50%;background:linear-gradient(135deg,#22b9a9,#07927c)}
+.chatAdvanced{flex:none;min-width:0;border-top:1px solid #eee5d8;
+ background:#fffaf2;color:#2d6b58}
+.chatAdvanced>summary{display:flex;align-items:center;justify-content:center;
+ min-height:33px;padding:6px 10px;font:690 12px/1.3 system-ui,sans-serif;
+ cursor:pointer;list-style-position:inside}
+.chatAdvanced[open]{max-height:175px;overflow:auto;overscroll-behavior:contain}
+.chatAdvanced .aiOptIn{padding:9px 13px;font-size:12px}
+.chatAdvanced .foot{padding:7px 13px 10px}
+.window[data-chat-dialogue="true"] .chatTabs{flex:none;display:grid;gap:8px;
+ padding:7px 11px max(8px,env(safe-area-inset-bottom,0px));
+ border-top:1px solid #e9dfd1;border-bottom:0;background:#fffaf2}
+.window[data-chat-dialogue="true"] .chatTabs> :is(a,span){min-height:44px;
+ border-radius:15px;background:#fff;color:#1e4b41;font-size:14px;
+ box-shadow:0 2px 7px #37533b0b}
+.window[data-chat-dialogue="true"] .chatTabs>[aria-current="page"]{
+ background:linear-gradient(130deg,#daf5e9,#f5fffa);border-color:#87ceb6;color:#077b65}
+@media(max-width:355px){
+ .dialogueHero{min-height:138px;padding:12px 13px 15px}
+ .dialogueTitle{max-width:64%;font-size:24px}
+ .dialogueLead{max-width:65%;font-size:12px;margin-top:7px}
+ .window[data-chat-dialogue="true"] .thread{padding:9px 8px 12px}
+ .window[data-chat-dialogue="true"] .inlineAnswers{padding:8px}
+ .window[data-chat-dialogue="true"] .inlineAnswers .choices button{font-size:14px;padding:10px}
+ .window[data-chat-dialogue="true"] .composer{margin:5px 7px 6px;gap:5px;padding:6px}
+ .window[data-chat-dialogue="true"] .composerTool,
+ .window[data-chat-dialogue="true"] .composerMic{width:36px;height:36px}
+}
+@media(max-width:700px) and (max-height:700px){
+ .dialogueHero{min-height:116px;padding:11px 15px 13px}
+ .dialogueTitle{font-size:24px}
+ .dialogueLead{margin-top:5px;font-size:12px;line-height:1.24}
+ .window[data-chat-dialogue="true"] .thread{padding-top:8px;padding-bottom:10px}
+ .window[data-chat-dialogue="true"] .inlineAnswers .choices button{min-height:46px}
+}
