@@ -135,3 +135,9 @@
 /* Existing approved dark mobile Command Center: bounded Agent Studio actions. */
 .commandStack{display:grid;gap:9px}
 .commandStack button{min-height:48px}
+
+
+/* Owner-invoked task controls, no hidden destructive action. */
+.taskControls{display:grid;gap:9px;margin:11px 0 8px}
+.sheetNotice{margin:0 0 12px;border-radius:11px;border:1px solid rgba(235,168,142,.45);
+ background:rgba(124,54,65,.27);padding:10px 12px;color:#ffe3da;font-size:13px;line-height:1.45}
