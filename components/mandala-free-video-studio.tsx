@@ -7587,7 +7587,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                       onChange={event=>setAudioRights(event.currentTarget.checked)}/>
                     {ui.audioRights}
                   </label>:null}
-                  <div className={videoStyles.audioLibraryHiddenEngine} aria-hidden="true">
+                </div>
+                <footer className={videoStyles.montageAudioDialogFooter}>
+                  <button type="button" data-video-audio-library-cancel
+                    onClick={()=>closeAudioLibrary(true)}>
+                    {locale==="ru"?"Отмена":locale==="es"?"Cancelar":"Cancel"}
+                  </button>
+                  <button type="button" data-video-audio-library-confirm
+                    disabled={recording||preparing||micRecording||audioDurationInvalid||
+                      (Boolean(uploadedAudio)&&!audioRights)}
+                    onClick={()=>{
+                      if(audioNeedsAttachment)attachSelectedAudio();
+                      closeAudioLibrary(false);
+                    }}><Check size={19} aria-hidden="true"/>
+                    {locale==="ru"?"Использовать эту музыку":locale==="es"?"Usar esta música":"Use this music"}
+                  </button>
+                </footer>
+              </section>
+            </div> : null}
+            {/* Keep the single native audio player mounted for compact Play even with the library closed. */}
+            <div className={videoStyles.audioLibraryHiddenEngine} aria-hidden="true">
                     {deepAudioPane}
           <details className={videoStyles.audioBedPanel} data-video-audio-bed-panel>
             <summary><Music2 size={17} aria-hidden="true"/>
@@ -7643,24 +7662,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </p>
           </details>
                   </div>
-                </div>
-                <footer className={videoStyles.montageAudioDialogFooter}>
-                  <button type="button" data-video-audio-library-cancel
-                    onClick={()=>closeAudioLibrary(true)}>
-                    {locale==="ru"?"Отмена":locale==="es"?"Cancelar":"Cancel"}
-                  </button>
-                  <button type="button" data-video-audio-library-confirm
-                    disabled={recording||preparing||micRecording||audioDurationInvalid||
-                      (Boolean(uploadedAudio)&&!audioRights)}
-                    onClick={()=>{
-                      if(audioNeedsAttachment)attachSelectedAudio();
-                      closeAudioLibrary(false);
-                    }}><Check size={19} aria-hidden="true"/>
-                    {locale==="ru"?"Использовать эту музыку":locale==="es"?"Usar esta música":"Use this music"}
-                  </button>
-                </footer>
-              </section>
-            </div> : null}
             {/* Preserve the existing consented RU/EN narration as a genuinely
                 user-invoked tool, not the removed duplicate Audio toolbar. */}
             <details id="voice-studio" className={[videoStyles.extraControls,videoStyles.basicVoicePane].join(" ")}
