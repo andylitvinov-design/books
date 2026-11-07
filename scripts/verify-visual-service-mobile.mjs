@@ -114,14 +114,41 @@ for (const engine of [chromium, webkit]) {
         assert.ok(await requestOnly.isDisabled(),label+" no CRM submit before consent");
         const action=form.locator('button[data-compact-channel="whatsapp"]');
         await action.waitFor({state:"visible"});
-        let unexpectedWrites=0;
+        const originalPageUrl=page.url();
+        const requests=[];
         await page.route("**/api/service-enquiries",route=>{
-          if(route.request().method()==="POST"){unexpectedWrites++;return route.abort("blockedbyclient");}
+          // Real CRM is NEVER contacted by synthetic CI; the in-memory
+          // transport fixture aborts every attempted POST before the server.
+          if(route.request().method()==="POST"){
+            requests.push(route.request().postDataJSON());
+            return route.abort("blockedbyclient");
+          }
           return route.continue();
         });
         await action.click();
-        await form.locator('[role="alert"]').waitFor({state:"visible",timeout:10000});
-        assert.equal(unexpectedWrites,0,label+" no CRM request without consent");
+        await page.waitForTimeout(200); // permit browser event processing without consent
+        assert.equal(requests.length,0,label+" no CRM request without consent");
+        assert.equal(await consent.isChecked(),false,label+" channel does not auto-consent");
+        assert.ok(await consent.isVisible(),label+" personal-reply consent stays visible");
+        assert.ok(await requestOnly.isDisabled(),label+" request-only button remains gated");
+        assert.equal(page.url(),originalPageUrl,label+" unconsented action stays on page");
+        // A valid synthetic opt-in must activate the real handler. Intercept
+        // the resulting POST rather than risking a real enquiry or trusting
+        // an error-message animation whose timing depends on hydration.
+        await consent.check();
+        assert.ok(await requestOnly.isEnabled(),label+" request activates after opt-in");
+        const post=page.waitForRequest(req=>
+          req.method()==="POST" && new URL(req.url()).pathname==="/api/service-enquiries",
+          {timeout:10000});
+        await requestOnly.click();
+        const consentedRequest=await post;
+        const payload=consentedRequest.postDataJSON();
+        assert.equal(payload.contactConsent,true,label+" recorded contact consent");
+        assert.equal(payload.contact.email,"synthetic@example.invalid",label+" synthetic email only");
+        assert.equal(requests.length,1,label+" exactly one synthetic request is intercepted");
+        assert.equal(await page.locator("[data-lead-saved]").count(),0,
+          label+" intercepted request cannot claim a saved CRM receipt");
+        assert.equal(page.url(),originalPageUrl,label+" no thank-you redirect without server receipt");
         assert.equal(await page.locator("[data-sitewide-capture]:visible").count(), 0,
           label + " no duplicate generic form");
         assert.deepEqual(errors, [], label + " unexpected page errors");
@@ -135,6 +162,7 @@ for (const engine of [chromium, webkit]) {
           await page.screenshot({ path: output + "/imagery-en-final-form-webkit.png" });
         }
         results.push({ label, screens: rows, horizontalOverflow: false, form: true, errors: [] });
+        console.log("PASS visual service route: "+label);
       } finally {
         await page.close();
       }
