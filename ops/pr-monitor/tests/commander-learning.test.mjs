@@ -7,10 +7,10 @@ const M=require('../commander-learning-model.cjs');
 const api=require('../api/commander-learning.js');
 const FENCE=String.fromCharCode(96).repeat(3);
 const old='a'.repeat(40),next='b'.repeat(40),time='2026-11-07T21:00:00Z';
-function receipt(pr=3852,run=1234){
+function receipt(pr=3852,run=1234,publishedHead=next){
  const r={schema:'HH_PR_TASK_V1',state:'PUBLISHED',source_published:true,
   verified_source_fix:true,reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
-  pr_number:pr,head_sha:old,new_sha:next,task_key:'f'.repeat(32),owner_run_id:String(run),
+  pr_number:pr,head_sha:old,new_sha:publishedHead,task_key:'f'.repeat(32),owner_run_id:String(run),
   created_at:time,run_url:'https://github.com/'+M.REPO+'/actions/runs/'+run,
   strategy:'lint',repair_kind:'lint'};
  return {user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
@@ -50,7 +50,7 @@ test('CI and parent proof are independent and exact-HEAD',()=>{
 test('two independent real cases produce review-only candidate; one never does',()=>{
  const first={...M.caseFromComment(receipt()),source_proof:'VERIFIED_COMMIT_PARENT',
   ci_proof:'EXACT_HEAD_CI_VERIFIED'};
- const second={...M.caseFromComment(receipt(3853,5678)),source_proof:'VERIFIED_COMMIT_PARENT',
+ const second={...M.caseFromComment(receipt(3853,5678,'c'.repeat(40))),source_proof:'VERIFIED_COMMIT_PARENT',
   ci_proof:'EXACT_HEAD_CI_VERIFIED'};
  assert.equal(M.candidateLessons([first]).length,0);
  assert.equal(M.candidateLessons([first,{...second,ci_proof:'NOT_VERIFIED'}]).length,0);
