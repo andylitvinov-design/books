@@ -16,6 +16,7 @@ function ownerCookie(secret){
 test('editor lives on the same domain and loads the original fixed dock',()=>{
  const html=src('task-editor.html'),nav=src('project-management-nav.js'),transfer=src('commander-transfer.js');
  assert.match(html,/task-editor\.js/);assert.match(html,/project-management-nav\.js/);
+ assert.match(html,/commander-shell\.css/);
  assert.match(nav,/\/task-editor\.html/);assert.match(transfer,/location\.assign\(PATH\)/);
  assert.doesNotMatch(html+transfer,/holistichouse\.vercel\.app\/admin/);
  for(const id of ['ac-login','ac-workspace','ac-source','ac-pr-search','ac-quality','ac-save-remote','ac-queue','ac-backup-save','ac-history'])
