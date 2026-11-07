@@ -6269,6 +6269,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             settings={affirmations}
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
+            onRecord={()=>{
+              // Reuse the one protected local voice recorder; no extra MediaRecorder.
+              setIdeasVoiceAdvancedOpen(true);
+              setPhraseAudioExpanded(true);
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+                document.querySelector<HTMLButtonElement>('[data-video-affirmation-gender="own"]')?.click();
+                document.querySelector<HTMLElement>('[data-video-own-voice-record]')?.scrollIntoView({behavior:"smooth",block:"center"});
+              }));
+            }}
             onCreate={goToMontageFromIdeas}/>
           {/* One persistent editor instance; collapsed by default in Ideas.
               Do not unmount it between workspaces or duplicate audio state. */}
