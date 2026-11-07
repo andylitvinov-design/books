@@ -68,7 +68,17 @@ async function verifyWorkspaceHydration(browser,locale){
     const montage=page.locator('[data-video-quick-control="editor"]');
     await montage.click();
     await expect(montage).toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeVisible();
+    // After the approved Montage redesign the legacy Director filter is hidden.
+    // Validate the real Style tab's six visible cards with an actual WebKit click.
+    const montageStyleTab=page.locator('[data-video-montage-tab="effects"]');
+    await expect(montageStyleTab).toBeVisible();
+    await expect(montageStyleTab).toHaveAttribute("aria-pressed","true");
+    const montageStyleTiles=page.locator('[data-video-montage-effects] [data-video-montage-style]');
+    await expect(montageStyleTiles).toHaveCount(6);
+    await expect(montageStyleTiles.first()).toBeVisible();
+    await montageStyleTiles.nth(1).click();
+    await expect(montageStyleTiles.nth(1)).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeHidden();
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
@@ -641,8 +651,23 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
+      // The approved Montage starts on Style. Its old order-bar Generate button
+      // is intentionally hidden in this panel: a visitor proceeds through the
+      // visible green Next to Text, and the real Next to Audio before Create.
+      // No forced clicks or shortcut around voice/video export acceptance.
+      const styleTabBeforeExport=page.locator('[data-video-montage-tab="effects"]');
+      await expect(styleTabBeforeExport).toHaveAttribute("aria-pressed","true");
+      const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+      await expect(styleNext).toBeVisible({timeout:30000});
+      await styleNext.click();
+      await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
+      await expect(generate).toHaveAttribute("data-video-montage-next","audio");
+      await generate.click();
+      await expect(page.locator('[data-video-montage-tab="audio"]')).toHaveAttribute("aria-pressed","true");
+      await expect(generate).toBeVisible({timeout:30000});
+      await expect(generate).not.toHaveAttribute("data-video-montage-next",/./);
       await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");

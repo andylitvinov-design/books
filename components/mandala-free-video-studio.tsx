@@ -1984,6 +1984,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [previewFrameRevision,setPreviewFrameRevision]=useState(0);
   // Verified Russian presentation belongs only on RU; never embed it as English audio.
   const [introPlaying,setIntroPlaying] = useState(false);
+  const [introDismissed,setIntroDismissed] = useState(false);
   const introVideoId = locale==="ru" ? "P9Wvo3gEY6U" : null;
   const [aspect, setAspect] = useState<Aspect>("landscape");
   const [quality, setQuality] = useState<Quality>("hd");
@@ -2903,6 +2904,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   useEffect(() => {setPreviewPlaying(false);},[theme,backgroundOnly]);
   // Changing the film goal or editor mode returns to the real local composer.
   useEffect(()=>setIntroPlaying(false),[theme,studioMode,locale]);
+  // Locale changes and editing revoke a presentation playback session.
+  useEffect(()=>{setIntroPlaying(false);setIntroDismissed(false);},[locale]);
+  useEffect(()=>{
+    if(activeWorkspace!=="video"){setIntroPlaying(false);setIntroDismissed(true);}
+  },[activeWorkspace]);
+  useEffect(()=>{
+    if(previewPlaying||videoScenarioOpen||result){setIntroPlaying(false);setIntroDismissed(true);}
+  },[previewPlaying,videoScenarioOpen,result]);
 
   // The canonical theme selector is collapsed on small Video screens,
   // expanded on desktop, and always visible in the third Effects workspace.
@@ -4722,6 +4731,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       })));
   };
   const openVideoScenarioStep = () => {
+    setIntroPlaying(false);setIntroDismissed(true);
     setVideoScenarioOpen(true);
     setShowAdvancedVideo(true);
     setFirstVideoAdvancedActivated(true);
@@ -5269,6 +5279,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }}/>
   );
 
+  // The verified RU presentation is the first-screen state of the ONE real
+  // 16:9 player, not a second renderer. English has no verified film.
+  const showIntroHero = (
+    (activeWorkspace==="video"&&(!videoScenarioOpen||introPlaying||studioIntroOpen)) ||
+    (activeWorkspace==="editor"&&introPlaying)
+  ) && !introDismissed && !previewPlaying && !recording && !preparing && !result &&
+    (Boolean(introVideoId)||locale==="en");
+
   // The only workspace tab rail stays in the same place above the ONE player
   // for every mode; portal relocation previously changed geometry and focus.
   return (
@@ -5605,7 +5623,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             aria-label={layout.previewTitle}/>
         </div>
         <div className={videoStyles.heroShade} aria-hidden="true"/>
-        <div className={videoStyles.heroEditorial} aria-hidden={previewPlaying||recording}>
+        <div className={videoStyles.heroEditorial} aria-hidden={previewPlaying||recording||showIntroHero}>
           <span className={videoStyles.heroEyebrow}><Film size={16} aria-hidden="true"/>
             {activeWorkspace==="phrases"?(locale==="ru"?"Идеи · предпросмотр":locale==="es"?"Ideas · vista previa":"Ideas · preview"):locale==="ru"?"Видеогенератор":locale==="es"?"Generador de vídeo":"Video creator"}
           </span>
@@ -5634,6 +5652,54 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         {attachedAudio ? <span className={videoStyles.quickSoundBadge} data-video-live-audio aria-live="polite">
           <Music2 size={13} aria-hidden="true"/>{appliedAudioName}
         </span> : null}
+        {showIntroHero ? <div className={videoStyles.therapyHero} data-video-therapy-info
+          data-intro-spoken-locale={introVideoId?"ru":undefined}>
+          {introVideoId ? (
+            introPlaying ? (
+              <div className={videoStyles.therapyHeroPlayback} data-video-therapy-intro="playing">
+                <iframe className={videoStyles.therapyHeroFrame}
+                  src={"https://www.youtube-nocookie.com/embed/"+introVideoId+"?autoplay=1&playsinline=1&rel=0"}
+                  title="Holistic House — о видеотерапии (русский)"
+                  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/>
+                <button type="button" className={videoStyles.therapyHeroClose}
+                  data-video-therapy-intro-close
+                  onClick={()=>{setIntroPlaying(false);setIntroDismissed(true);}}>
+                  Вернуться к моему видео
+                </button>
+                <a className={videoStyles.therapyHeroExternal}
+                  href={"https://www.youtube.com/watch?v="+introVideoId}
+                  data-video-therapy-youtube="ru" target="_blank"
+                  rel="noopener noreferrer">YouTube</a>
+              </div>
+            ) : (
+              <button type="button" className={videoStyles.therapyHeroLaunch}
+                data-video-therapy-intro="ready" disabled={recording||preparing}
+                aria-label="Смотреть презентацию о видеотерапии, 52 секунды"
+                onClick={()=>{
+                  stopMovieSound();premiumVideoRef.current?.pause();
+                  setPreviewPlaying(false);setIntroPlaying(true);
+                }}>
+                <span className={videoStyles.therapyHeroKicker}>HOLISTIC HOUSE</span>
+                <span className={videoStyles.therapyHeroPlayIcon}><Play size={22} fill="currentColor" aria-hidden="true"/></span>
+                <strong className={videoStyles.therapyHeroTitle}>О видеотерапии</strong>
+                <span className={videoStyles.therapyHeroCaption}>Презентация · 00:52</span>
+              </button>
+            )
+          ) : (
+            <div className={videoStyles.therapyHeroEnglish} data-video-therapy-intro="english-channel">
+              <span className={videoStyles.therapyHeroKicker}>HOLISTIC HOUSE</span>
+              <strong>What is video therapy?</strong>
+              <span>English film not yet linked</span>
+              <button type="button" data-video-therapy-editor
+                onClick={()=>{setIntroPlaying(false);setIntroDismissed(true);setStudioIntroOpen(false);}}>
+                Open my video editor
+              </button>
+              <a href="https://www.youtube.com/@aatapro/videos" data-video-therapy-youtube="en"
+                target="_blank" rel="noopener noreferrer">English YouTube channel</a>
+            </div>
+          )}
+        </div> : (
         <button className={videoStyles.heroPlay} type="button" data-mandala-money-preview
           data-video-preview-toggle aria-pressed={previewPlaying}
           aria-label={previewPlaying?supportUi.pausePreview:supportUi.quickPreview}
@@ -5643,12 +5709,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {previewPlaying?<Pause size={32} fill="currentColor" aria-hidden="true"/>:
             <Play size={32} fill="currentColor" aria-hidden="true"/>}
         </button>
+        )}
       </section>
       <aside className={videoStyles.heroRail} data-video-intro-my-rail
         aria-label={locale==="ru"?"Введение и мой ролик":locale==="es"?"Introducción y mi vídeo":"Intro and my video"}>
         <button type="button" className={videoStyles.heroRailIntro} data-video-intro-info
-          aria-expanded={studioIntroOpen} aria-controls="video-studio-intro-guide"
-          onClick={()=>setStudioIntroOpen(open=>!open)}>
+          aria-expanded={studioIntroOpen||Boolean(introVideoId&&introPlaying)}
+          aria-controls="video-studio-intro-guide video-hero"
+          onClick={()=>{
+            if(introVideoId){
+              if(introPlaying){setIntroPlaying(false);setIntroDismissed(true);}
+              else{
+                stopMovieSound();premiumVideoRef.current?.pause();
+                setPreviewPlaying(false);setIntroDismissed(false);setIntroPlaying(true);
+              }
+              setStudioIntroOpen(false);
+            }else if(locale==="en"){
+              setIntroPlaying(false);setIntroDismissed(false);setStudioIntroOpen(true);
+            }else setStudioIntroOpen(open=>!open);
+          }}>
           <Play size={19} aria-hidden="true"/><strong>Intro</strong>
           <span>{locale==="ru"?"Как это работает":locale==="es"?"Cómo funciona":"How it works"}</span>
           <ChevronRight size={17} aria-hidden="true"/>
@@ -5656,6 +5735,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <button type="button" className={videoStyles.heroRailMine} data-video-my-film
           onClick={()=>{
             setStudioIntroOpen(false);
+            setIntroPlaying(false);setIntroDismissed(true);
             if(result){
               setActiveWorkspace("video");
               window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
@@ -5711,65 +5791,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
       </section>
 
-      {/* Show the introductory film separately; the Canvas stays usable. */}
-      {(introVideoId||locale==="en") ? <section className={videoStyles.therapyIntroStandalone}
-        data-workspace-section="practices" data-video-therapy-info>
-        {introVideoId ? (
-          introPlaying ? (
-            <div className={videoStyles.therapyIntroOverlay} data-video-therapy-intro="playing"
-              data-intro-spoken-locale="ru">
-              <iframe
-                className={videoStyles.therapyIntroFrame}
-                src={`https://www.youtube-nocookie.com/embed/${introVideoId}?autoplay=1&playsinline=1&rel=0`}
-                title="Holistic House — о видеотерапии (русский)"
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowFullScreen referrerPolicy="strict-origin-when-cross-origin"
-              />
-              <button type="button" className={videoStyles.therapyIntroClose}
-                data-video-therapy-intro-close onClick={()=>setIntroPlaying(false)}>
-                Вернуться к своему видео
-              </button>
-              <a className={videoStyles.therapyIntroExternal}
-                href={`https://www.youtube.com/watch?v=${introVideoId}`}
-                data-video-therapy-youtube="ru"
-                target="_blank" rel="noopener noreferrer">
-                YouTube ↗
-              </a>
-            </div>
-          ) : (
-            <>
-              <button className={videoStyles.therapyIntroLaunch} type="button"
-                data-video-therapy-intro="ready" data-intro-spoken-locale="ru"
-                disabled={recording||preparing}
-                onClick={()=>{
-                  premiumVideoRef.current?.pause();
-                  setPreviewPlaying(false);
-                  setIntroPlaying(true);
-                }}>
-                <Play size={16} fill="currentColor" aria-hidden="true"/>
-                <span>О видеотерапии · 52 сек</span>
-              </button>
-              <a className={videoStyles.therapyIntroDirect}
-                href={`https://www.youtube.com/watch?v=${introVideoId}`}
-                data-video-therapy-youtube="ru" target="_blank"
-                rel="noopener noreferrer" aria-label="Смотреть видео о видеотерапии на русском YouTube">
-                YouTube ↗
-              </a>
-            </>
-          )
-        ) : locale==="en" ? (
-          <a className={videoStyles.therapyIntroLaunch}
-            href="https://www.youtube.com/@aatapro/videos"
-            data-video-therapy-intro="english-channel"
-            data-video-therapy-youtube="en"
-            target="_blank" rel="noopener noreferrer"
-            aria-label="Open English YouTube channel — video therapy presentation is not yet linked">
-            <Play size={16} fill="currentColor" aria-hidden="true"/>
-            <span><strong>English YouTube channel</strong>
-              <small>Video therapy film not yet linked</small></span>
-          </a>
-        ) : null}
-      </section> : null}
 
           <div className={videoStyles.previewMiniSource} data-video-mini-source>
             <div>
