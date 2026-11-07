@@ -240,6 +240,22 @@
          (r.wave_head_evidence?.new_head_count??'—')+' · ошибки: '+r.failures+
          ' · startup без jobs: '+(r.jobless_startup_runs||0)+
          ' · наблюдаемая история CI может не включать старые запуски.'),pr);
+       if(r.failures>0&&r.repeats>0){
+         const drill=el('button','hh-ci-repair-drill','Ожидание агента · Repair · публикация');
+         drill.type='button';
+         drill.disabled=!document.getElementById('hh-pr-audit-form');
+         drill.title=drill.disabled?'История этого PR доступна в разделе «Хронология PR»':
+           'Открыть подтверждённые интервалы исправления для PR #'+r.pr;
+         drill.addEventListener('click',()=>{
+           const form=document.getElementById('hh-pr-audit-form');
+           const field=form?.querySelector('input[type="number"]');
+           if(!form||!field)return;
+           field.value=String(r.pr);
+           form.requestSubmit();
+           form.scrollIntoView({behavior:'smooth',block:'start'});
+         });
+         detail.append(drill);
+       }
        row.append(detail);
        if(index<4)list.append(row);else moreList.append(row);
      }

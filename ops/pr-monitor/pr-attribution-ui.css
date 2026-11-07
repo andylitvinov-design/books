@@ -12,3 +12,17 @@
 .hh-pr-audit-repair .hh-pr-audit-event-list strong{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
 .hh-pr-audit-repair .hh-pr-audit-interval>a{margin-left:8px;font-size:.83rem}
 @media(max-width:720px){.hh-pr-audit-repair .hh-pr-audit-event-list li{grid-template-columns:1fr auto;gap:4px 10px}.hh-pr-audit-repair .hh-pr-audit-event-list li time{grid-column:1 / -1}.hh-pr-audit-repair .hh-pr-audit-event-list li span{overflow-wrap:anywhere}}
+
+/* Exact-HEAD repair latency drilldown; no alternate modal or horizontal scroll. */
+.hh-pr-latency{margin:12px 0 8px;padding:11px;border:1px solid #c0d3df;border-radius:12px;background:#eef5fa;color:#243746}
+.hh-pr-latency h4{margin:0 0 7px;font-size:14px}
+.hh-pr-latency .hh-pr-audit-foot{margin:5px 0 9px;font-size:12px}
+.hh-pr-latency-rows{display:grid;gap:0}
+.hh-pr-latency-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:center;padding:8px 0;border-top:1px solid #d1dfe8;min-width:0;font-size:13px}
+.hh-pr-latency-row span{overflow-wrap:anywhere}
+.hh-pr-latency-row strong{font-variant-numeric:tabular-nums;white-space:nowrap}
+.hh-pr-latency-link{grid-column:1/-1;font-size:12px;overflow-wrap:anywhere}
+.hh-pr-latency-unknown strong{color:#93620e}
+.hh-ci-repair-drill{display:inline-block;margin:9px 0 0;padding:8px 10px;border:1px solid #6a92b2;border-radius:9px;background:#173349;color:#e4f3ff;cursor:pointer;font:inherit}
+.hh-ci-repair-drill:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:370px){.hh-pr-latency{padding:9px}.hh-pr-latency-row{font-size:12px}}

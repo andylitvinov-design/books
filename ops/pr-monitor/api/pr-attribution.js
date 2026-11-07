@@ -7,6 +7,7 @@
 const {analyzePrTimeline}=require('../ci-pr-timeline-audit.cjs');
 const {summarizeCheckpoints}=require('../pr-checkpoint-evidence.cjs');
 const {analyzeRepairCycles}=require('../pr-repair-cycle-model.cjs');
+const {enrichRepairCycles}=require('../pr-repair-latency-breakdown.cjs');
 const {summarizeHeadStatus}=require('../pr-current-head-gate.cjs');
 const OWNER='andylitvinov-design', REPO='books';
 const API=`https://api.github.com/repos/${OWNER}/${REPO}`;
@@ -16,7 +17,7 @@ const SHA=/^[0-9a-f]{40}$/i, TASK=/^[0-9a-f]{32}$/i;
 const CACHE_MS=15*60*1000,cache=new Map(),pending=new Map();
 const STAGE_SOURCES=new Set(['pr_opened_ready','ready_event_observed','ready_for_review_readback',
   'trusted_core_failure','repair_worker_claim','ci_worker_claim',
-  'github_actions_fix_step','verified_git_ref']);
+  'github_actions_fix_step','github_actions_patch_verification_step','verified_git_ref']);
 const STAGE_ISO=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
 function makeError(code,status){const e=new Error(code);e.status=status;return e;}
 function parseUTC(v){if(typeof v!=='string')return null;const n=Date.parse(v);return Number.isFinite(n)?n:null;}
@@ -40,7 +41,7 @@ function extractConflictLabels(rows,number){
 }
 function extractStageReceipts(comments,number){
  const result=[];
- const validStages=new Set(['ready','triage','claimed','repair_started','source_published']);
+ const validStages=new Set(['ready','triage','claimed','repair_started','patch_verified','source_published']);
  for(const c of comments){
   if(!trustedComment(c)||typeof c.body!=='string'||c.body.length>150000)continue;
   const created=parseUTC(c.created_at);if(created===null)continue;
@@ -55,6 +56,7 @@ function extractStageReceipts(comments,number){
       (e.task_key!==undefined && !TASK.test(e.task_key)) ||
       (e.stage==='claimed' && !TASK.test(e.task_key||'')) ||
       (e.stage==='repair_started' && (e.source!=='github_actions_fix_step'||!TASK.test(e.task_key||''))) ||
+      (e.stage==='patch_verified' && (e.source!=='github_actions_patch_verification_step'||!TASK.test(e.task_key||''))) ||
       (e.stage==='source_published' && (e.source!=='verified_git_ref'||!TASK.test(e.task_key||'')||
        !SHA.test(e.new_sha||'')||e.new_sha.toLowerCase()===e.head_sha.toLowerCase())) ||
       (e.stage!=='source_published'&&e.new_sha!==undefined))continue;
@@ -238,9 +240,10 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  const timeline=analyzePrTimeline({pr,runs:filtered,jobs,events,now,runInventoryComplete});
  // Supplementary steps: NEVER add their calendar spans to the exclusive PR
  // wall-clock chart; owner/edit/push evidence remains unknown when absent.
- const repairCycles=analyzeRepairCycles({pr,runs:filtered,jobs,comments,
+ const repairCycles=enrichRepairCycles(analyzeRepairCycles({pr,runs:filtered,jobs,comments,
    timeline:prTimelineEvents,commentsComplete:comments.length<100,
-   runHistoryComplete:runInventoryComplete&&checked.length===toCollect.length});
+   runHistoryComplete:runInventoryComplete&&checked.length===toCollect.length}),events,
+   {observed_at:new Date(now).toISOString(),pr_open:pr.state==='open',current_head:pr.head?.sha});
  // Reuse the SAME previously fetched PR comment page: zero extra API calls.
  const live=verifiedLiveReceipt(comments,pr);
  const headProof=summarizeHeadStatus({pr,chronology:timeline.chronology,runs:filtered,historyPartial:partial,live});
