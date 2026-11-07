@@ -7,6 +7,7 @@
 const {analyzePrTimeline}=require('../ci-pr-timeline-audit.cjs');
 const {summarizeCheckpoints}=require('../pr-checkpoint-evidence.cjs');
 const {analyzeRepairCycles}=require('../pr-repair-cycle-model.cjs');
+const {summarizeHeadStatus}=require('../pr-current-head-gate.cjs');
 const OWNER='andylitvinov-design', REPO='books';
 const API=`https://api.github.com/repos/${OWNER}/${REPO}`;
 const CORE='hh-pr-core-release.yml';
@@ -242,6 +243,7 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
    runHistoryComplete:runInventoryComplete&&checked.length===toCollect.length});
  // Reuse the SAME previously fetched PR comment page: zero extra API calls.
  const live=verifiedLiveReceipt(comments,pr);
+ const headProof=summarizeHeadStatus({pr,chronology:timeline.chronology,runs:filtered,historyPartial:partial,live});
  if(live){
   timeline.chronology.push({kind:'live_verified',at:live.live_at,
    reason:'Production LIVE независимо подтверждён: '+live.proof_method,
@@ -275,8 +277,8 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
   eventCheckpoint('conflict_detected','Конфликт обнаружен','conflict_labeled'),
   eventCheckpoint('conflict_label_cleared','Метка конфликта снята','conflict_unlabeled'),
   eventCheckpoint('repeat_ci_queued','Повторная CI в очереди','repeat_ci_queued'),
-  concrete('merge_gate_green','Последний Merge Gate зелёный',latestEvent('ci_green')?.at,
-   latestEvent('ci_green')?.url,'ci_green'),
+  concrete('merge_gate_green','Последний Merge Gate зелёный',headProof.green_at,
+   headProof.green_url,'ci_green'),
   concrete('merged','Merge подтверждён',pr.merged_at,'https://github.com/'+OWNER+'/'+REPO+'/pull/'+number,'merged'),
   concrete('deployment_ready','Production deployment READY',null,null,'deploy_ready_unobserved'),
   concrete('live_verified','Production LIVE подтверждён',live?.live_at,live?.receipt_url,'live_verified')
@@ -292,6 +294,7 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  });
  
  const journey={checkpoints:checkpointEvidence.checkpoints,checkpoint_coverage:checkpointEvidence.coverage,created_at:pr.created_at,
+  current_head_sha:pr.head?.sha||null,green_exact_head:headProof.green_exact_head,stop_reason:headProof.stop_reason,
   first_observed_ci_at:timeline.chronology.find(e=>e.kind==='ci_queued')?.at||null,
   final_ci_green_at:[...timeline.chronology].reverse().find(e=>e.kind==='ci_green')?.at||null,
   merged_at:pr.merged_at||null,

@@ -2,13 +2,13 @@
 /* One user-requested, read-only GitHub census. No schedule, dispatch, mutation,
  * token on the client, Vercel build, or duplicate background poller.
  */
-const {summarize}=require('../ci-verified-model.cjs');
+const {summarize,selectRuns,prioritySample}=require('../ci-verified-model.cjs');
 const BASE='https://api.github.com/repos/andylitvinov-design/books';
 const STATES=['in_progress','queued','waiting','pending','requested'];
 const CACHE_MS=55_000;
 const CAP=process.env.GITHUB_TOKEN||process.env.GH_TOKEN?16:8;
 let cache=null,inFlight=null;
-function methodError(res,status,code){return res.status(status).json({schema:'HH_CI_VERIFIED_LOAD_V1',error:code});}
+function methodError(res,status,code){return res.status(status).json({schema:'HH_CI_VERIFIED_LOAD_V2',error:code});}
 async function census(now=Date.now(),request=fetch){
   let reads=0,remaining=null;
   const token=process.env.GITHUB_TOKEN||process.env.GH_TOKEN||'';
@@ -24,18 +24,20 @@ async function census(now=Date.now(),request=fetch){
     if(!response.ok)throw Error('GITHUB_UPSTREAM_'+response.status);
     return response.json();
   }
-  const statusPages=await Promise.all(STATES.map(s=>gh('/actions/runs?status='+s+'&per_page=100')));
-  const seen=new Map();
-  for(const page of statusPages)for(const run of page.workflow_runs||[])seen.set(run.id,run);
-  const runs=[...seen.values()].sort((a,b)=>b.id-a.id).slice(0,CAP);
+  const statusPages=await Promise.all(STATES.map(async s=>{
+    try{return await gh('/actions/runs?status='+s+'&per_page=100');}
+    catch{return {read_failed:true,status:s};}
+  }));
+  const selected=selectRuns(statusPages);
+  const runs=prioritySample(selected.runs,CAP);
   const jobPages={};
   await Promise.all(runs.map(async r=>{
     try{jobPages[r.id]=await gh('/actions/runs/'+r.id+'/jobs?per_page=100&filter=latest');}
     catch{jobPages[r.id]=null;}
   }));
   const [recent,scheduled]=await Promise.all([
-    gh('/actions/runs?per_page=100'),
-    gh('/actions/runs?event=schedule&per_page=100')]);
+    gh('/actions/runs?per_page=100').catch(()=>null),
+    gh('/actions/runs?event=schedule&per_page=100').catch(()=>null)]);
   return {...summarize({statusPages,jobPages,recent,scheduled},now,CAP),
     source:{kind:'BOUNDED_GITHUB_ACTIONS_READ_ONLY',reads,quota_remaining:remaining,
       note:'Latest workflow statuses reconciled against actual job state; no CI is dispatched.'}};
