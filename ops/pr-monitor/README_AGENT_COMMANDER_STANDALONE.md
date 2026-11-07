@@ -32,3 +32,14 @@ Guest monitoring and local preparation do not require Google login. The pre-exis
 ## Release and functional acceptance
 
 The independent Vercel project is manually deployed. Overlay all changed files and the new commander-task-input.js onto the complete prior READY deployment source manifest; never deploy a partial GitHub archive. Preserve every existing API, legacy chart and route. Run the focused Node source tests and physical iPhone Safari checks: permission, mic start/stop, transcript edit, keyboard fallback, small 320/390/430 px sheet, local and authenticated free AI fallback, copy, protected editor handoff. A merge or Vercel READY is not sufficient to assert the feature is functionally LIVE.
+
+
+## Updated owner requirement: processed task becomes a full executor prompt
+
+Owner clarified the goal after initial PR publication. The «Разобрать задачу» action must immediately generate an editable, copyable prompt whose FIRST FOUR sections are:
+1. **ЧТО НАДО ВЫПОЛНИТЬ** — concrete steps and deliverables from the original description
+2. **КАКОЙ РЕЗУЛЬТАТ СЧИТАЕТСЯ ХОРОШИМ** — observable success criteria and tests
+3. **ОРИЕНТИРЫ КАЧЕСТВА — КТО ДЕЛАЕТ ЭТО ХОРОШО** — relevant real-world named benchmarks, with public documentation URLs and a specific feature to learn, never copy protected IP
+4. **КОНТЕКСТ БИЗНЕСА И ПРОЕКТА — ЦЕЛИ И АДРЕСА** — public Holistic House mission, domains, GitHub repository, pertinent product area, working branches, workflow boundaries, no invented street addresses or secrets.
+
+The content adapts to Agent Commander / PR Monitor, Video Studio, or Holistic House core, and is available instantly without a model/API request. Unknowns remain explicit. The existing owner-authenticated OpenRouter Free call can append clearly labelled suggestions after the canonical four blocks, but cannot replace verified context, distort the owner request or overwrite manual edits. Generating a prompt never stores a task, schedules execution, changes PRs or claims LIVE. This is a correctness correction to the existing PR, not a separate product or new provider.

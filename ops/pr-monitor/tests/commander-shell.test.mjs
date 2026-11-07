@@ -91,3 +91,46 @@ test('AI task decomposition is owner-only, zero-price and does not save or start
  assert.equal(res.statusCode,401);assert.equal(res.body.error,'OWNER_SESSION_REQUIRED');
  assert.equal(headers['Cache-Control'],'private, no-store, max-age=0');
 });
+
+test('task processing yields all four mandatory prompt blocks with real public context and source benchmarks',()=>{
+ const {buildTaskBrief}=require('../commander-task-input.js');
+ const text='Добавить микрофон и разбор задачи в Agent Commander на iPhone Safari';
+ const prompt=buildTaskBrief(text);
+ for(const heading of ['1. ЧТО НАДО ВЫПОЛНИТЬ','2. КАКОЙ РЕЗУЛЬТАТ СЧИТАЕТСЯ ХОРОШИМ',
+  '3. ОРИЕНТИРЫ КАЧЕСТВА','4. КОНТЕКСТ БИЗНЕСА И ПРОЕКТА'])assert.ok(prompt.includes(heading),heading);
+ assert.match(prompt,/Linear/);
+ assert.match(prompt,/Apple Dictation/);
+ assert.match(prompt,/https:\/\/holistic-house-pr-monitor\.vercel\.app/);
+ assert.match(prompt,/https:\/\/holistichouse\.vercel\.app/);
+ assert.match(prompt,/https:\/\/github\.com\/andylitvinov-design\/books/);
+ assert.match(prompt,/Точный физический адрес.*не подтверждён/);
+ assert.ok(prompt.includes(text));
+ assert.ok(prompt.length<=8500);
+ assert.match(buildTaskBrief('Добавить монтаж видео в Video Studio'),/Canva Video Editor/);
+ assert.match(buildTaskBrief('Улучшить каталог услуг и тесты для клиентов'),/Notion AI/);
+});
+test('AI enhancement can only append suggestions after four trusted sections',()=>{
+ const client=src('commander-task-input.js'),api=src('api/pm-agent-chat.js');
+ assert.match(api,/const \{buildTaskBrief\}=require/);
+ assert.match(api,/base\+marker\+answer\.reply/);
+ assert.match(api,/8\. ДОПОЛНЕНИЯ ИИ/);
+ assert.match(api,/model\.endsWith\(':free'\)/);
+ assert.match(client,/output\.value!==localBrief/);
+ assert.match(client,/Копировать описание \/ промпт/);
+ assert.match(client,/Готовый промпт для исполнителя/);
+});
+
+test('executor prompt includes all separately requested actions, keeps product-specific context',()=>{
+ const {buildTaskBrief}=require('../commander-task-input.js');
+ const prompt=buildTaskBrief('Добавь диктовку и разбор задачи в Agent Commander');
+ assert.match(prompt,/Добавить кнопку микрофона/);
+ assert.match(prompt,/Преобразовать свободное описание в проверяемые подзадачи/);
+ assert.match(prompt,/holistic-house-pr-monitor\.vercel\.app/);
+ const video=buildTaskBrief('Реализуй задачу монтажа ролика в Video Studio');
+ assert.match(video,/Canva Video Editor/);
+ assert.doesNotMatch(video,/Проект: отдельный Agent Commander/);
+ const raw='Тесты каталога на Holistic House без изменения клиентского кабинета';
+ const normal=buildTaskBrief(raw);
+ assert.match(normal,/Проект: основной Holistic House/);
+ assert.ok(normal.includes(raw));
+});
