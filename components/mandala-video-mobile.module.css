@@ -5013,3 +5013,15 @@
 .studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceUploadNotice{
   color:var(--hh-voice-muted)
 }
+
+
+/* P0 WebKit RU320 computed-style repair, Ideas → Voice ONLY.
+   Earlier [data-hypno-voice] media-styled gradient has its own stacking rule;
+   require the approved solid neutral card, not transparent over sage/yellow.
+   Keep all other Hypno voice panels and the Canvas untouched. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-voice]{
+  background:#FFFCFA!important;
+  background-image:none!important;
+  border-color:var(--hh-voice-border,#EADFD9)!important;
+  box-shadow:var(--hh-voice-shadow,0 5px 18px rgb(66 42 31 / 7%))!important
+}
