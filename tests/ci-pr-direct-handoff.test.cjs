@@ -9,7 +9,8 @@ test('Control Tower cannot dispatch while Watchdog holds sole guarded writer',()
  assert.match(watchdog,/needs: reconcile/);
  assert.match(watchdog,/HH_WATCHDOG_DIRECT_HANDOFF/);
  assert.match(watchdog,/group: hh-control-tower-single-writer/);
- assert.match(watchdog,/const report=await run\(\{github,core,context,dryRun\}\)/);
+ assert.match(watchdog,/const report=await run\\(\\{github,core,context,dryRun,manualTarget\\}\\)/);
+ assert.match(watchdog,/pm_pr_number:/);
  assert.match(watchdog,/HH_DIRECT_HANDOFF_ENABLED: 'true'/);
  const direct=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
  assert.doesNotMatch(watchdog,/HH PR core release gate/);

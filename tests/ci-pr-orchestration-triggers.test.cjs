@@ -212,7 +212,8 @@ test('Worker completion refills Watchdog directly; Control Tower remains read-on
   assert.ok(watchdog.includes('relayCompletionWake'));
   assert.ok(watchdog.includes('worker_run_id:'));
   assert.ok(watchdog.includes('group: hh-control-tower-single-writer'));
-  assert.ok(watchdog.includes('const report=await run({github,core,context,dryRun})'));
+  assert.ok(watchdog.includes('const report=await run({github,core,context,dryRun,manualTarget})'));
+ assert.ok(watchdog.includes('pm_expected_sha:'));
   assert.ok(observer.includes('dryRun:true'));
   assert.ok(!observer.includes('createWorkflowDispatch('));
 });
