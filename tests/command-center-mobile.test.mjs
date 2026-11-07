@@ -41,6 +41,7 @@ test('PR, testing and LIVE progress are never inferred from a merge',()=>{
  assert.match(client,/\{label:t\.tests,ok:false/);
  assert.match(client,/\{label:t\.live,ok:selectedTask\?\.state==='completed_live'/);
  assert.match(client,/t\.noLive/);
+ assert.match(client,/prMatched&&latestEvidence\?t\.prOpened:t\.prWaiting/);
  assert.doesNotMatch(client,/markProductionLive|fakeAgentComplete|mockRuns/);
 });
 test('English, Russian and Spanish copy share the same real data',()=>{

@@ -31,7 +31,7 @@ export default async function CommandCenterPage(){
   return <CommandCenterMobile
     lang={lang}
     initialSnapshot={snapshot}
-    registry={CC_AGENT_REGISTRY}
+    registry={[...CC_AGENT_REGISTRY]}
     envReady={process.env.VERCEL_ENV==='production'&&process.env.HH_CC_TICK_ENABLED==='true'}
   />;
 }

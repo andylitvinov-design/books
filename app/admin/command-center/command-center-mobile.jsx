@@ -182,7 +182,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
      <div className={styles.pipeline}>{phases.map((p,i)=><div key={p.label} className={styles.phase}>
        <span className={p.ok?styles.phaseDone:p.current?styles.phaseCurrent:styles.phasePending}>{p.ok?'✓':i+1}</span>
        <small>{p.label}</small></div>)}</div>
-     <p className={styles.subline}>{merged?t.prMerged:prMatched?t.prOpened:t.prWaiting} · {t.noLive}</p>
+     <p className={styles.subline}>{merged?t.prMerged:prMatched&&latestEvidence?t.prOpened:t.prWaiting} · {t.noLive}</p>
     </div>
     <div className={styles.panel}><h2>{t.executor}</h2><div className={styles.agentLine}>
        <span className={styles.agentIcon}>⌘</span><div><strong>{selectedTask.kind==='repo_pr_audit'||selectedTask.kind==='repo_issue_audit'?'GitHub Reader':'Codex'}</strong>
