@@ -135,3 +135,8 @@
 /* Existing approved dark mobile Command Center: bounded Agent Studio actions. */
 .commandStack{display:grid;gap:9px}
 .commandStack button{min-height:48px}
+
+/* On-demand read-only production code proof, never a functional LIVE claim. */
+.proofDetail{display:grid;gap:7px;margin-top:12px;border-top:1px solid var(--cc-edge);padding-top:12px;overflow-wrap:anywhere}
+.proofDetail p{margin:0;font-size:12px;line-height:1.5}
+.proofDetail small{font-size:11px;color:#a9b3cc;font-variant-numeric:tabular-nums}

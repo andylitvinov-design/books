@@ -2,9 +2,10 @@ import {ownerMaterialRequest} from '@/lib/clients/material-library-http';
 import {privateJson} from '@/lib/clients/delivery-http';
 import {transaction,consumeRate,closeDatabase} from '@/lib/app/database';
 import {readCommandSnapshot,createObjective,createProject,createTask,
-  setCommandEnabled,changeTaskState} from '@/lib/command-center/store.mjs';
+  setCommandEnabled,changeTaskState,readCommandTaskForDelivery} from '@/lib/command-center/store.mjs';
 import {sanitizeObjective,sanitizeProject,sanitizeTask,ccUuid} from '@/lib/command-center/contracts.mjs';
 import {executeOneCommandTask} from '@/lib/command-center/dispatcher.mjs';
+import {inspectCommandTaskDelivery} from '@/lib/command-center/release-proof.mjs';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -23,7 +24,8 @@ const keysFor={
   create_task:['action','requestId','title','description','kind','priority','projectId','sourceRef'],
   pause_all:['action','requestId'],resume_safe:['action','requestId'],
   task_pause:['action','requestId','taskId'],task_ready:['action','requestId','taskId'],
-  task_cancel:['action','requestId','taskId'],run_now:['action','requestId']
+  task_cancel:['action','requestId','taskId'],run_now:['action','requestId'],
+  inspect_delivery:['action','requestId','taskId']
 };
 export async function POST(request){
   const requestOrigin=request.headers.get('origin');
@@ -52,6 +54,12 @@ export async function POST(request){
       if(enabled&&(process.env.VERCEL_ENV!=='production'||process.env.HH_CC_TICK_ENABLED!=='true'))
         return privateJson({error:'RUNTIME_NOT_APPROVED'},409);
       result=await transaction(config,null,db=>setCommandEnabled(db,enabled,data.requestId),{server:true});
+    }else if(data.action==='inspect_delivery'){
+      if(!ccUuid(data.taskId))return privateJson({error:'INVALID_TASK_ID'},400);
+      const task=await transaction(config,null,db=>readCommandTaskForDelivery(db,data.taskId),{server:true});
+      if(!task)return privateJson({error:'TASK_NOT_FOUND'},404);
+      result=await inspectCommandTaskDelivery(task.source_ref);
+      // A server-side readback never changes task state or claims functional LIVE.
     }else if(data.action==='run_now'){
       if(process.env.VERCEL_ENV!=='production'||process.env.HH_CC_TICK_ENABLED!=='true')
         return privateJson({error:'RUNTIME_NOT_APPROVED'},409);
