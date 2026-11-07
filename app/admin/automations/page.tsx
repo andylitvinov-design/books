@@ -6,7 +6,13 @@ import {requireAdminRequest} from '@/lib/prescriptions/admin';
 import {getAppConfig} from '@/lib/app/config';
 import {transaction,closeDatabase} from '@/lib/app/database';
 import {readAutomationSnapshot} from '@/lib/automations/scout-db.mjs';
+import {readClassifierAnnotations} from '@/lib/automations/classifier-store.mjs';
+import {readCouncilProposals} from '@/lib/automations/weekly-council-store.mjs';
+import {readCandidateEditorialReviewsForPage} from '@/lib/automations/candidate-editorial-review.mjs';
+import {parseCandidatePage,candidatePageInfo} from '@/lib/automations/candidate-pagination.mjs';
+import CouncilProposalActions from '@/components/council-proposal-actions';
 import AutomationControlActions from '@/components/automation-control-actions';
+import AutomationCandidateEditorialActions from '@/components/automation-candidate-editorial-actions';
 import {uiLocaleCookie} from '@/lib/ui-locale';
 import styles from './automations.module.css';
 
@@ -61,19 +67,64 @@ const stamp=(value:string,locale:Locale)=>{
   catch{return '—'};
 };
 const safeNumber=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=0?value:'—';
+const editorialLabel=(locale:Locale,state:string|null)=>{
+  const key=state==='shortlisted_for_rights_review'?'shortlisted':
+    state==='rejected'?'rejected':state==='needs_more_evidence'?'needs':'pending';
+  const labels={
+    ru:{shortlisted:'Отобрано для проверки прав',rejected:'Отклонено',needs:'Нужны дополнительные сведения',pending:'Ещё не рассмотрено'},
+    en:{shortlisted:'Shortlisted for rights review',rejected:'Rejected',needs:'More evidence needed',pending:'Not yet reviewed'},
+    es:{shortlisted:'Seleccionado para revisar derechos',rejected:'Rechazado',needs:'Faltan pruebas',pending:'Sin revisar'}
+  } as const;
+  return labels[locale][key];
+};
 
-export default async function AutomationsPage(){
+type Props={searchParams:Promise<{page?:string|string[]}>};
+export default async function AutomationsPage({searchParams}:Props){
   if(!await requireAdminRequest())redirect('/admin/login');
   const raw=(await cookies()).get(uiLocaleCookie)?.value;
   const locale:Locale=raw==='en'?'en':raw==='es'?'es':'ru';
   const t=copy[locale];
+  const candidatePage=parseCandidatePage((await searchParams)?.page)??1;
   let snapshot:DbSnapshot|null=null;
   try{
     snapshot=await transaction(getAppConfig(),null,
-      (db: unknown)=>readAutomationSnapshot(db),{server:true}) as DbSnapshot;
+      (db: unknown)=>readAutomationSnapshot(db,{candidatePage}),{server:true}) as DbSnapshot;
   }catch{ /* Unknown database state is not an empty/successful report. */ }
   finally{await closeDatabase();}
+  type AnnotationRow={candidate_id:string;title:string;summary:string;confidence:string;
+    model_id:string;goals:string[];review_required:boolean};
+  let annotations:AnnotationRow[]|null=null;
+  if(snapshot) {
+    try {annotations=await transaction(getAppConfig(),null,
+      (db: unknown)=>readClassifierAnnotations(db),{server:true}) as AnnotationRow[];}
+    catch { /* AI annotations remain unknown until actual private DB readback. */ }
+    finally {await closeDatabase();}
+  }
+  type ProposalRow={proposal_id:string;state:string;created_at:string;
+    proposal:{answer:string;actions:Array<{step:string;why:string;check:string}>;ownerApprovalRequired:boolean}};
+  let proposals:ProposalRow[]|null=null;
+  if(snapshot){
+    try {proposals=await transaction(getAppConfig(),null,
+      (db: unknown)=>readCouncilProposals(db),{server:true}) as ProposalRow[];}
+    catch { /* Weekly Council schema is not yet verified. */ }
+    finally {await closeDatabase();}
+  }
+  type EditorialRow={candidate_id:string;decision:string;reason:string;reviewed_at:string};
+  let candidateReviews:EditorialRow[]|null=null;
+  if(snapshot){
+    try{candidateReviews=await transaction(getAppConfig(),null,
+      (db:unknown)=>readCandidateEditorialReviewsForPage(db,
+        snapshot!.candidates.map(candidate=>candidate.candidate_id)),{server:true}) as EditorialRow[];}
+    catch{ /* Do not claim the queue is empty when its private database is unavailable. */ }
+    finally{await closeDatabase();}
+  }
+  const reviewByCandidate=new Map((candidateReviews||[]).map(row=>[row.candidate_id,row.decision]));
+  const candidateInfo=snapshot?.counts?
+    candidatePageInfo(candidatePage,snapshot.counts.research_total):null;
   const scout=snapshot?.tasks.find(task=>task.task_id==='video-scout-hourly');
+  const classifier=snapshot?.tasks.find(task=>task.task_id==='video-classifier-batch');
+  const weekly=snapshot?.tasks.find(task=>task.task_id==='council-video-review-weekly');
+  const digest=snapshot?.tasks.find(task=>task.task_id==='video-scout-digest-daily');
   return <main className={styles.page} data-hh-design="holistic-light" lang={locale}>
     <PrescriptionAdminHeader title={{en:copy.en.title,ru:copy.ru.title}}
       description={{en:copy.en.subtitle,ru:copy.ru.subtitle}}/>
@@ -90,10 +141,12 @@ export default async function AutomationsPage(){
         {(snapshot?.tasks||[]).map(task=><div key={task.task_id} className={styles.task}>
           <div><h2>{task.task_id}</h2><p>{task.description}</p>
             <small>{t.schedule}: {task.schedule_cron}</small></div>
-          <span className={styles.tag}>{task.task_id==='video-scout-hourly'?
-            (task.enabled?t.enabled:t.paused):t.inactive}</span>
+          <span className={styles.tag}>{task.enabled?t.enabled:t.paused}</span>
         </div>)}
         {scout&&<AutomationControlActions locale={locale} enabled={scout.enabled}/>}
+        {classifier&&<AutomationControlActions locale={locale} taskId="video-classifier-batch" enabled={classifier.enabled}/>}
+        {weekly&&<AutomationControlActions locale={locale} taskId="council-video-review-weekly" enabled={weekly.enabled}/>}
+        {digest&&<AutomationControlActions locale={locale} taskId="video-scout-digest-daily" enabled={digest.enabled}/>}
         <p className={styles.note}>{t.model}</p>
       </section>
       <section className={styles.section}>
@@ -112,14 +165,62 @@ export default async function AutomationsPage(){
         </details>
       </section>
       <section className={styles.section}>
+        <h2>{locale==='ru'?'Совет мудрецов · предложения':
+          locale==='es'?'Consejo de IA · propuestas':'AI Council · research proposals'}</h2>
+        <p className={styles.note}>{locale==='ru'?
+          'Каждое предложение требует решения владельца. Принятие не меняет расписание, бюджет и права на видео.':
+          locale==='es'? 'Aceptar una propuesta no ejecuta tareas ni aprueba licencias.':
+            'Acceptance records a planning decision; it does not run tasks or approve licenses.'}</p>
+        {proposals===null?<p className={styles.note}>{t.inactive}</p>:
+          proposals.length?<div className={styles.candidates}>{proposals.map(item=>
+            <article key={item.proposal_id} className={styles.candidate}>
+              <h3>{stamp(item.created_at,locale)} · {item.state}</h3>
+              <p>{item.proposal.answer}</p>
+              {(item.proposal.actions||[]).slice(0,3).map((action,i)=><div key={i}>
+                <strong>{action.step}</strong><p>{action.why}</p><small>{action.check}</small>
+              </div>)}
+              {item.state==='pending_owner_review'&&item.proposal.ownerApprovalRequired&&
+                <CouncilProposalActions proposalId={item.proposal_id} locale={locale}/>}
+            </article>)}</div>:<p className={styles.note}>{t.none}</p>}
+      </section>
+      <section className={styles.section}>
+        <h2>{locale==='ru'?'AI-классификация · только предложения':
+          locale==='es'?'Clasificación IA · sugerencias':'AI classification · suggestions only'}</h2>
+        {annotations===null?<p className={styles.note}>{t.inactive}</p>:
+          annotations.length?<div className={styles.candidates}>{annotations.map(item=>
+            <article key={item.candidate_id} className={styles.candidate}>
+              <h3>{item.title}</h3><p>{item.summary}</p>
+              <small>{item.goals.join(', ')} · {item.confidence} · {item.model_id}</small>
+              <small>{t.rights}</small>
+            </article>)}</div>:<p className={styles.note}>{t.none}</p>}
+      </section>
+      <section className={styles.section}>
         <h2>{t.candidates}</h2>
         <p className={styles.warning}>{t.rights}</p>
         <div className={styles.candidates}>{snapshot?.candidates.map(item=><article key={item.candidate_id} className={styles.candidate}>
           <h3>{item.title}</h3><p>{item.creator||'Wikimedia Commons'}</p>
           <small>{item.category} · {item.mime} · {item.rights_state}</small>
           <a href={item.source_page} target="_blank" rel="noopener noreferrer nofollow">{t.source}</a>
+          {candidateReviews===null?
+            <small>{locale==='ru'?'Редакторская очередь недоступна':locale==='es'?'Revisión no disponible':'Editorial review unavailable'}</small>:
+            <>
+              <small>{editorialLabel(locale,reviewByCandidate.get(item.candidate_id)||null)}</small>
+              <AutomationCandidateEditorialActions candidateId={item.candidate_id}
+                locale={locale} currentDecision={reviewByCandidate.get(item.candidate_id)||null}/>
+              {reviewByCandidate.get(item.candidate_id)==='shortlisted_for_rights_review'&&
+                <a href={'/api/admin/automations/candidates/dossier?candidateId='+encodeURIComponent(item.candidate_id)}
+                   download={'commons-rights-'+item.candidate_id+'.json'}
+                   rel="nofollow">{locale==='ru'?'Пакет проверки прав':locale==='es'?'Informe de derechos':'Rights research dossier'}</a>}
+            </>}
         </article>)}</div>
         {!snapshot?.candidates.length&&<p className={styles.note}>{t.none}</p>}
+        {candidateInfo&&<nav className={styles.links} aria-label={t.candidates}>
+          {candidateInfo.hasPrevious&&<Link href={'?page='+(candidatePage-1)}>
+            {locale==='ru'?'Предыдущие':locale==='es'?'Anteriores':'Previous'}</Link>}
+          <span>{locale==='ru'?'Страница':locale==='es'?'Página':'Page'} {candidatePage} / {candidateInfo.pages}</span>
+          {candidateInfo.hasNext&&<Link href={'?page='+(candidatePage+1)}>
+            {locale==='ru'?'Следующие':locale==='es'?'Siguientes':'Next'}</Link>}
+        </nav>}
         <p className={styles.note}>{t.note}</p>
       </section>
     </div>

@@ -61,3 +61,6 @@
  .header{padding:7px 12px}
  .chat{padding:7px}
 }
+
+/* One sitewide helper: on Studio use the in-header trigger instead of a floating duplicate. */
+:global(body:has([data-video-ihelp-header-trigger])) .launcher{display:none!important}

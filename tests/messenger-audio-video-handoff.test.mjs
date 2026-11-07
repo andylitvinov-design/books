@@ -44,3 +44,25 @@ test("AI Studio preserves the audio attachment on scenario confirmation",()=>{
  assert.match(studio,/importedAudioSeconds/);
  assert.match(studio,/!audioRights/);
 });
+
+test("voice-to-video mobile intake reveals the lower action and skips repeated goal and rights prompts",()=>{
+ const audio=readFileSync(new URL("../components/app/messenger-audio-video.tsx",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../components/app/messenger-audio-video.module.css",import.meta.url),"utf8");
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ const messenger=readFileSync(new URL("../components/holistic-agent-chat.tsx",import.meta.url),"utf8");
+ assert.doesNotMatch(audio,/type="checkbox"|\{t\.goal\}|\{t\.rights\}/);
+ assert.match(audio,/root\.scrollTo\(/);
+ assert.match(css,/max-height:min\(44dvh,390px\)/);
+ assert.match(css,/font:500 16px\/1\.4/); // iPhone Safari must not focus-zoom a 14px input.
+ assert.match(audio,/requestConsentedTimedTranscript\(/);
+ assert.match(audio,/stageVoiceStudioHandoff\(/);
+ assert.match(audio,/stageMessengerAudio\(/); // explicit manual/offline fallback preserved
+ assert.match(audio,/data-hh-audio-video-manual/);
+ assert.match(audio,/code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"/);
+ assert.match(studio,/setPendingAutoVoice\(voice\.transcript\)/);
+ assert.match(studio,/setAudioRights\(true\)/);
+ assert.match(studio,/applyTranscriptVideo\(pendingAutoVoice,true\)/);
+ assert.match(studio,/theme:automatic\?"":theme/);
+ assert.match(studio,/nonLoop:true/);
+ assert.match(messenger,/видеоряд автоматически подобран по смыслу/);
+});

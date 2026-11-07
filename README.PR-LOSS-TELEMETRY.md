@@ -131,3 +131,21 @@ reports runs with \`run_attempt > 1\` and the latest verified
 The report remains advisory, read-only, bounded and uses the **same existing
 production-push workflow/runner**. No new cron, paid API, scheduled poller,
 database, Vercel preview build, CI bypass or workflow rerun is introduced.
+
+
+## Per-wave cause visibility (6 November 2026)
+
+The existing P1 GitHub Actions job summary now contains **Each subsequent Core wave**:
+PR, previous/new run IDs, same/new HEAD, observed gap minutes, triggering
+event category, observed actor, evidence confidence, explanation and a GitHub
+run/commit link. The structured `HH_PR_LOSS_P1` JSON carries the same fields
+in `rows[].core_waves.gaps[]`.
+
+**Attribution guard:** a commit author is not necessarily the person who
+requested or caused the CI delay. A workflow triggering actor is not proof of
+why the workflow was requested. GitHub's bounded workflow-runs API does not
+prove the exact `pull_request` webhook action for same-HEAD repeats. The
+report therefore states the observed trigger category and leaves underlying
+root cause unconfirmed. Incomplete timeline or overlapping gaps remain
+unknown, not zero. No new polling, workflow, runner, Vercel deployment or
+paid provider is introduced.

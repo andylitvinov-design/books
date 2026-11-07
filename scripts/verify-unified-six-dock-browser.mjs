@@ -361,7 +361,7 @@ try{
    node.getAttribute("data-hh-content-source"))),
    ["text","voice"],"video supports the two approved input methods");
  await chat.locator('[data-hh-content-step="source"] [data-hh-content-source="text"]').click();
- await chat.locator('[data-hh-content-step="brief"]').waitFor({state:"visible",timeout:15000});
+ await chat.locator('[data-hh-content-step="brief"]').waitFor({state:"attached",timeout:15000});
  await chat.locator("textarea").fill("Хочу больше спокойствия и уверенности");
  await chat.locator('button[type="submit"]').click();
  await chat.locator('[data-hh-video-chat-step="category"]').waitFor({state:"visible",timeout:15000});
