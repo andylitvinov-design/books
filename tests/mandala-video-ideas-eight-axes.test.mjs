@@ -64,7 +64,7 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
   "data-video-ideas-record","data-video-ideas-minimum","data-video-ideas-refine"])
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/selectedCount<5/);
- assert.match(cmp,/onCreate=\\{goToMontageFromIdeas\\}/);
+ assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
  assert.match(cmp,/presetOverride:preset,custom:picked\.slice\(5,10\)\.join/);
  const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
