@@ -528,3 +528,14 @@ test("voice export uses visible Audio-stage Generate, never the hidden Style-sta
     "video with consented narration must use a real visible Audio-tab export button");
   assert.doesNotMatch(source.slice(effects,generate),/click\(\{force:true\}\)/);
 });
+
+test("guest WebKit verifies physical encoded Blob, not a login-protected download or original catalog MP4",()=>{
+ assert.match(source,/const preview=page\\.locator\\("\\[data-mandala-video-preview\\]"\\)/);
+ assert.match(source,/data-video-result-mode="rendered"/);
+ assert.match(source,/const encodedBase64=await preview\\.evaluate/);
+ assert.match(source,/url\\.startsWith\\("blob:"\\)/);
+ assert.match(source,/bytes=Buffer\\.from\\(encodedBase64,"base64"\\)/);
+ assert.match(source,/guest must not receive protected Save\\/Telegram actions/);
+ assert.match(source,/const audioTrack=streams\\.find/);
+ assert.match(source,/pcm\\.stdout\\.some\\(value=>value!==0\\)/);
+});

@@ -767,6 +767,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
         phase(engine,"recording-started");
         const output=page.locator("[data-mandala-video-download]");
+        const preview=page.locator("[data-mandala-video-preview]");
+        const rendered=page.locator('[data-video-result][data-video-result-mode="rendered"]');
         phase(engine,"waiting-for-export");
         try {
           // An iPhone/WebKit MP4 can require a physical Play gesture before
@@ -776,21 +778,32 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           const verifyPlayback=page.locator("[data-video-verify-playback]");
           await expect.poll(async()=>{
             if(await output.isVisible())return true;
+            // Guest first video is playable but Save/Download requires a
+            // signed-in My House. Validate the actual encoded result instead
+            // of waiting for an intentionally protected button.
+            if(await rendered.isVisible()&&await preview.isVisible()){
+              const decoded=await preview.evaluate(video=>
+                video instanceof HTMLVideoElement&&video.readyState>=2&&
+                video.videoWidth>0&&video.videoHeight>0&&!video.error);
+              if(decoded)return true;
+            }
             if(!verificationTapped&&await verifyPlayback.isVisible()){
               try{
                 await verifyPlayback.click({timeout:2000});
                 verificationTapped=true;
               }catch(error){
-                // Native MP4 may become playable between isVisible and click:
-                // React then unmounts this optional button. Require the real
-                // download control, never accept a status label or mock file.
                 if(await output.isVisible())return true;
                 if(await verifyPlayback.isVisible())throw error;
               }
             }
             return await output.isVisible();
           },{timeout:45000,intervals:[250,500,1000]}).toBe(true);
-          await output.waitFor({state:"visible",timeout:45000});
+          if(await output.isVisible()){
+            await output.waitFor({state:"visible",timeout:45000});
+          } else {
+            await rendered.waitFor({state:"visible",timeout:45000});
+            await preview.waitFor({state:"visible",timeout:45000});
+          }
         } catch (error) {
           phase(engine,"download-control-timed-out");
           let uiState;
@@ -821,23 +834,50 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               item.startsWith("HH_WEBKIT_MP4_EXPORT_FAILURE:")).slice(-5)}),{cause:error});
         }
         phase(engine,"download-control-ready");
-        // The main Save action now shows a delivery chooser, it no longer
-        // downloads directly. Verify that real production UX, then use the
-        // explicit device File path before checking encoded movie + audio.
-        await output.click();
-        const delivery=page.locator("[data-video-messenger-delivery]");
-        await expect(delivery).toBeVisible({timeout:10000});
-        await expect(delivery.locator("[data-video-telegram-share]")).toBeVisible();
-        await expect(delivery.locator("[data-video-whatsapp-share]")).toBeVisible();
-        phase(engine,"delivery-chooser-open");
-        const [download]=await Promise.all([
-          page.waitForEvent("download",{timeout:20000}),
-          delivery.locator("[data-video-save-direct-choice]").click(),
-        ]);
-        phase(engine,"download-started");
-        const parts=[];
-        for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
-        const bytes=Buffer.concat(parts);
+        // The actual finished locally encoded movie must be independently
+        // ffprobed in both guest and signed-in modes. A source-backed original
+        // catalog MP4 cannot satisfy the rendered-result requirement.
+        let bytes;
+        if(await output.isVisible()){
+          // Signed-in Save: require a real user-visible delivery chooser and
+          // download of the same encoded movie.
+          await output.click();
+          const delivery=page.locator("[data-video-messenger-delivery]");
+          await expect(delivery).toBeVisible({timeout:10000});
+          await expect(delivery.locator("[data-video-telegram-share]")).toBeVisible();
+          await expect(delivery.locator("[data-video-whatsapp-share]")).toBeVisible();
+          phase(engine,"delivery-chooser-open");
+          const [download]=await Promise.all([
+            page.waitForEvent("download",{timeout:20000}),
+            delivery.locator("[data-video-save-direct-choice]").click(),
+          ]);
+          phase(engine,"download-started");
+          const parts=[];
+          for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
+          bytes=Buffer.concat(parts);
+        } else {
+          // Guest Save and Telegram/YouTube upload remain protected, while
+          // the real browser-created result Blob is playable and testable.
+          await expect(rendered).toBeVisible();
+          assert.equal(await page.locator("[data-video-messenger-delivery]").count(),0,
+            "guest must not receive protected Save/Telegram actions");
+          const encodedBase64=await preview.evaluate(async video=>{
+            const url=video.currentSrc||video.src;
+            if(!url.startsWith("blob:"))throw new Error("Finished movie must be a local encoded Blob");
+            const response=await fetch(url,{cache:"no-store"});
+            if(!response.ok)throw new Error("Cannot read generated local movie Blob");
+            const blob=await response.blob();
+            if(blob.size<=10000)throw new Error("Generated Blob has no meaningful media bytes");
+            return await new Promise((resolve,reject)=>{
+              const reader=new FileReader();
+              reader.onload=()=>resolve(String(reader.result).split(",")[1]);
+              reader.onerror=()=>reject(reader.error||new Error("Generated movie Blob read failed"));
+              reader.readAsDataURL(blob);
+            });
+          });
+          bytes=Buffer.from(encodedBase64,"base64");
+          phase(engine,"guest-physical-encoded-blob-readback");
+        }
         assert.ok(bytes.length>10000,"real video must be recorded");
         const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type,channels",
           "-of","json","-"],{input:bytes,encoding:"utf8",timeout:15000});

@@ -5,6 +5,8 @@ import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-su
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
+import type { JudgmentPending, JudgmentChoiceId } from "@/lib/holistic-support/judgment-mind.mjs";
 import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
 import MessengerSignIn from "@/components/app/messenger-sign-in";
 import { HolisticAgentMemoryPanel } from "@/components/holistic-agent-memory-panel";
@@ -43,7 +45,9 @@ type MessengerVideoDraft = {
 };
 type AgentDecision = { status: string; message?: string; question?: {key:string;text:string}|null;
   suggestions?: {id:string;kind:string;title:string;href:string}[] };
-type AgentReply = { status:string;reply:string;modelUsed:boolean;source:string;
+type JudgmentView = {status:string;state:string;choices:{id:JudgmentChoiceId;label:string}[];
+  token?:string|null;pending?:JudgmentPending|null};
+type AgentReply = { judgment?:JudgmentView|null;status:string;reply:string;modelUsed:boolean;source:string;
   suggestions:{id:string;kind:string;title:string;href:string}[];decision:AgentDecision;
   browserModelAllowed:boolean; usedSavedTestEvidence?:boolean; usedSavedVideoHistory?:boolean };
 const copy = {
@@ -301,6 +305,9 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const [messages,setMessages]=useState<Message[]>([]);
   const [pageHelpLink,setPageHelpLink]=useState<{href:string;label:string}|null>(null);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
+  // Ephemeral only: signed on the authenticated server, local for guests.
+  const [judgmentView,setJudgmentView]=useState<JudgmentView|null>(null);
+  const judgmentClickLock=useRef(false);
   const [videoDraft,setVideoDraft]=useState<MessengerVideoDraft>(
     ()=>initialMessengerVideoDraft() as MessengerVideoDraft);
   const [videoStep,setVideoStep]=useState<string|null>(null);
@@ -344,7 +351,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     // New option groups/auth controls can mount after the message count settles.
     const frame=window.requestAnimationFrame(revealLatest);
     return ()=>window.cancelAnimationFrame(frame);
-  },[messages.length,status,choices.length,videoStep,videoDraft,contentStep,contentVoice,
+  },[messages.length,status,choices.length,judgmentView,videoStep,videoDraft,contentStep,contentVoice,
     videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen]);
   useEffect(()=>{
     if(!compact)return;
@@ -427,6 +434,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     setVideoPendingCategory(null);
     setVideoDraft(result.draft as MessengerVideoDraft);
     setVideoStep(result.step);
+    setJudgmentView(null);
     setDraft("");setStatus("");setSource("");setChoices([]);
     followTail.current=true;setNewBelow(false);
     setMessages(prev=>[...prev,
@@ -506,6 +514,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     if(action.track){setPageHelpLink(null);startGuided(action.track);return;}
     followTail.current=true;setNewBelow(false);
     setEntryOpen(false);setVideoStep(null);setGuidedTrack(null);
+    setJudgmentView(null);
     setStatus("");setSource("");setChoices([]);
     setNeedsPrivateSignIn(false);setShowVideoSignIn(false);
     setPageHelpLink(action.href?{href:action.href,label:action.label}:null);
@@ -524,6 +533,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     setGuideLink(kind==="hint"?"tests":null);
     setTestChatOpen(kind==="hint");
     setEntryOpen(false);setStatus("");setSource("");setChoices([]);
+    setJudgmentView(null);
     setDraft("");
     const intent=kind==="video"?starter.videoIntent:
       kind==="meditation"?starter.meditationIntent:starter.hintIntent;
@@ -591,11 +601,16 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       }
     }
   }
-  async function submit(event:FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const text=draft.trim().slice(0,2000);
-    if(!text||busy||mode==="owned"&&!agree)return;
+  async function sendTurn(rawText:string,judgmentChoice:JudgmentChoiceId|null=null) {
+    const text=rawText.trim().slice(0,2000);
+    if(!text||busy||mode==="owned"&&!agree||
+      (judgmentChoice!==null&&judgmentClickLock.current))return;
+    if(judgmentChoice!==null){
+      if(authenticated&&!judgmentView?.token)return;
+      judgmentClickLock.current=true;
+    }
     if(compact&&isCasualGreeting(text)){
+      setJudgmentView(null);judgmentClickLock.current=false;
       setContentStep(null);setContentVoice(false);setContentBrief("");
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);setDraft("");
       setMessages(prev=>[...prev,{role:"user" as const,text},
@@ -636,10 +651,16 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         {role:"assistant" as const,text:messengerVideoQuestion("category",locale)}].slice(-30));
       return;
     }
-    if(compact&&videoStep){
-      if(!requiresProtectedReply(text,locale)){answerVideo(text);return;}
-      // Urgent/human-review messages must not leave video options visible.
-      setVideoStep(null);setGuidedTrack(null);
+    if(compact&&videoStep&&judgmentChoice===null){
+      // Direct editor instructions remain editable; a user's newly stated
+      // personal difficulty can explicitly switch to supportive dialogue.
+      const supportSwitch=planJudgmentTurn({message:text,locale,
+        safety:{status:"clear"}}).state==="awaiting_choice";
+      if(!requiresProtectedReply(text,locale)&&!supportSwitch){
+        judgmentClickLock.current=false;answerVideo(text);return;
+      }
+      setJudgmentView(null);
+      setVideoStep(null);setGuidedTrack(null);setVideoPendingCategory(null);
     }
     setEntryOpen(false);setContentStep(null);
     // Keep every user turn intact for server safety preflight (UI max 2,000).
@@ -651,7 +672,14 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     if(compact&&!authenticated&&mode==="rules"){
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);
       setNeedsPrivateSignIn(false);setShowVideoSignIn(false);setEntryOpen(false);setDraft("");
-      const answer=requiresProtectedReply(text,locale)?starter.safety:guestAnswer(text,prior);
+      const candidate=planJudgmentTurn({message:text,locale,
+        safety:{status:"clear"},pending:judgmentView?.pending,choiceId:judgmentChoice});
+      const handled=candidate.status!=="abstain";
+      const answer=requiresProtectedReply(text,locale)?starter.safety:
+        handled?candidate.reply:guestAnswer(text,prior);
+      setJudgmentView(requiresProtectedReply(text,locale)?null:
+        handled?candidate as JudgmentView:null);
+      judgmentClickLock.current=false;
       setMessages(prev=>[...prev,{role:"user" as const,text},
         {role:"assistant" as const,text:answer}].slice(-30));
       return;
@@ -670,6 +698,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
           usePrivateProfile:useSavedTests&&Boolean(axisRef),
           usePrivateHistory:useSavedHistory,
           useAgentMemory:authenticated&&useAgentMemory,
+          judgmentContext:judgmentView?.token||null,
+          judgmentChoice,
           feedback:{dismissedIds,completedIds}}),
       });
       if(!response.ok)throw Error(response.status===401?"SIGN_IN_REQUIRED":response.status===503?"MODE_UNAVAILABLE":"CHAT_UNAVAILABLE");
@@ -700,6 +730,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       }
       if(abort.signal.aborted)return;
       setChoices(Array.isArray(data.suggestions)?data.suggestions:[]);
+      setJudgmentView(data.judgment&&Array.isArray(data.judgment.choices)?
+        data.judgment:null);
       setEvidenceUsed(data.usedSavedTestEvidence===true);
       setHistoryUsed(data.usedSavedVideoHistory===true);
       setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
@@ -709,7 +741,12 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         const reason=error instanceof Error?error.message:"";
         if(reason==="SIGN_IN_REQUIRED"&&compact&&mode==="rules"){
           // Expired session: answer from public rules; private API stays protected.
-          const answer=requiresProtectedReply(text,locale)?starter.safety:guestAnswer(text,prior);
+          const candidate=planJudgmentTurn({message:text,locale,
+            safety:{status:"clear"},pending:null});
+          const answer=requiresProtectedReply(text,locale)?starter.safety:
+            candidate.status!=="abstain"?candidate.reply:guestAnswer(text,prior);
+          setJudgmentView(!requiresProtectedReply(text,locale)&&candidate.status!=="abstain"?
+            candidate as JudgmentView:null);
           setMessages(prev=>[...prev,{role:"assistant" as const,text:answer}].slice(-30));
           setSource("");setStatus("");
         }else{
@@ -718,8 +755,12 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         }
       }
     } finally {
-      setBusy(false);controller.current=null;
+      setBusy(false);controller.current=null;judgmentClickLock.current=false;
     }
+  }
+  function submit(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void sendTurn(draft);
   }
   const settings = (
     <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
@@ -920,6 +961,17 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
             onClick={()=>answerVideo("выбери сам",videoCopy.auto)}>{videoCopy.auto}</button>}
         </div>}
       </div>}
+    {judgmentView!==null&&judgmentView.choices.length>0&&<div className={styles.judgmentChoices}
+      role="group" aria-label={locale==="ru"?"Варианты ответа":
+        locale==="es"?"Opciones de respuesta":"Reply options"} data-hh-judgment-choices>
+      {judgmentView?.choices.slice(0,2).map(choice=><button type="button"
+        key={choice.id} data-hh-judgment-choice={choice.id} disabled={busy}
+        onClick={()=>void sendTurn(choice.label,choice.id)}>{choice.label}</button>)}
+      <button type="button" data-hh-judgment-skip disabled={busy}
+        onClick={()=>void sendTurn(locale==="ru"?"Не сейчас":locale==="es"?"No quiero consejos":"Not now")}>
+        {locale==="ru"?"Другое / Пропустить":locale==="es"?"Otro / Omitir":"Other / Skip"}
+      </button>
+    </div>}
     {source&&<p className={styles.muted}>{t.source}: {source}</p>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
     {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
@@ -998,7 +1050,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
               event.currentTarget.value="";
             }}/>
         </label>}
-        <button type="button" onClick={()=>{controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
+        <button type="button" onClick={()=>{controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
         <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
         {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
       </div>

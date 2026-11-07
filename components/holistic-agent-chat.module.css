@@ -356,3 +356,23 @@
 /* Canonical four-goal selection before requesting a personal video brief. */
 .root[data-compact] .videoOptions button[aria-pressed="true"]{background:#e6f6f1;border-color:#067a67;box-shadow:inset 0 0 0 1px #067a67;color:#143d3a}
 .root[data-compact] .videoStudioLink:disabled{opacity:.5;cursor:not-allowed}
+
+
+/* Judgment Mind: compact, optional, never a floating prompt. */
+.judgmentChoices {
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 10px;
+}
+.judgmentChoices button {
+  min-height:44px;max-width:100%;padding:9px 12px;border:1px solid #b6d6c8;
+  border-radius:12px;background:#eff8f4;color:#194e40;
+  font:600 13px/1.35 system-ui,sans-serif;cursor:pointer;
+}
+.judgmentChoices button[data-hh-judgment-skip] {
+  color:#52685f;background:transparent;border-color:transparent;text-decoration:underline;
+}
+.judgmentChoices button:focus-visible {outline:3px solid #158967;outline-offset:2px}
+.judgmentChoices button:disabled {opacity:.55;cursor:not-allowed}
+.root[data-compact] .judgmentChoices {margin:6px 0;gap:6px}
+@media (max-width:354px) {
+  .judgmentChoices button{font-size:12px;padding:8px 10px}
+}
