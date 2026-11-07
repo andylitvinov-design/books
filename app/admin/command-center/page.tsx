@@ -79,7 +79,7 @@ export default async function CommandCenterPage(){
   return <main className={styles.page} lang={lang} data-hh-design="holistic-light">
     <PrescriptionAdminHeader title={{ru:copy.ru.title,en:copy.en.title}} description={{ru:copy.ru.sub,en:copy.en.sub}}/>
     <div className={styles.content}>
-      <nav className={styles.links} aria-label="Command Center"><Link href="/admin/automations">{c.back}</Link><Link href="/admin">Admin</Link></nav>
+      <nav className={styles.links} aria-label="Command Center"><Link href="/admin/command-center/mobile">Agent Studio · Mobile</Link><Link href="/admin/automations">{c.back}</Link><Link href="/admin">Admin</Link></nav>
       <header className={styles.hero}>
         <div><p className={styles.eyebrow}>HOLISTIC HOUSE · STRATEGY OS</p>
           <h1>{c.title}</h1><p>{c.sub}</p></div>
