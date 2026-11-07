@@ -75,7 +75,9 @@ test('standalone interface keeps instructions inside protected bridge and adds a
  assert.doesNotMatch(src,/localStorage|sessionStorage|Authorization: Bearer|supabaseKey|adminToken/);
  assert.match(shell,/project-management-nav-legacy\.js/);
  assert.match(shell,/automations\.html/);
- assert.match(shell,/repeat\(6,minmax\(0,1fr\)\)/);
+ assert.match(shell,/commander-automations-nav\\.css/);
+ const css=await readFile(new URL('../standalone/agent-commander/commander-automations-nav.css',import.meta.url),'utf8');
+ assert.match(css,/repeat\\(6,minmax\\(0,1fr\\)\\)/);
 });
 test('additive migration retains private FORCE RLS and disables arbitrary automation execution',async()=>{
  const sql=await readFile(new URL('../sql/hh-command-center-cron-automations-v2-20261107.sql',import.meta.url),'utf8');

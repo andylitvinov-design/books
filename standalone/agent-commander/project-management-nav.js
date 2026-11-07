@@ -21,9 +21,11 @@
   const text=link.querySelector('span:not(:has(svg))');if(text&&text.textContent?.trim()==='Агенты')text.textContent='Авто';
   if(location.pathname==='/automations.html'){link.classList.add('hh-cron-selected');link.setAttribute('aria-current','page');}
   if(a?.nextSibling)dock.insertBefore(link,a.nextSibling);else dock.appendChild(link);
-  const style=document.createElement('style');
-  style.textContent='#hh-cc-dock{grid-template-columns:repeat(6,minmax(0,1fr))!important;padding-left:5px!important;padding-right:5px!important}#hh-cc-dock>a{min-width:0!important;padding-left:1px!important;padding-right:1px!important}#hh-cc-dock a.hh-cron-selected{color:#d5adff!important}#hh-cc-dock a small{font-size:9px!important}@media(max-width:340px){#hh-cc-dock a small{font-size:8px!important}}';
-  document.head.appendChild(style);
+  if(!document.querySelector('link[data-hh-cron-nav]')){
+   const linkStyle=document.createElement('link');
+   linkStyle.rel='stylesheet';linkStyle.href='/commander-automations-nav.css?v=20261107-cron-v2';
+   linkStyle.dataset.hhCronNav='1';document.head.appendChild(linkStyle);
+  }
   return true;
  }
  const observer=new MutationObserver(()=>{if(add())observer.disconnect();});

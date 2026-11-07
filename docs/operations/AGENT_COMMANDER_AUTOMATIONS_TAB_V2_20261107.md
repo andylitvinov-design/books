@@ -24,7 +24,7 @@ One recognizable **Автоматизации** tab in standalone Agent Commande
 1. Existing source files remain staged locally/Git objects; one atomic remote HEAD publication; protected exact-head CI including tests.
 2. Additive SQL migration to actual Holistic House private database, verify FORCE RLS and no client grants.
 3. Verify owner GET/POST status after production deploy, smoke with owner session and verify 4 original jobs and one saved custom draft (if no live owner auth, mark not verified).
-4. Standalone deployment must include **every current source asset** from latest Vercel manifest including existing serverless API, charts, old monitor and skills library. Only four assets added/overridden: `automations.html`, `commander-automations.css`, `commander-automations.js`, `project-management-nav.js` with old nav renamed to `project-management-nav-legacy.js`. Do not deploy a partial file bundle.
+4. Standalone deployment must include **every current source asset** from latest Vercel manifest including existing serverless API, charts, old monitor and skills library. Only five assets added/overridden: `automations.html`, `commander-automations.css`, `commander-automations.js`, `project-management-nav.js` with old nav renamed to `project-management-nav-legacy.js`. Do not deploy a partial file bundle.
 5. After deployment ensure custom prompt remains disabled; verify Vercel aliases and physical mobile nav, guest cannot read job instructions.
 6. Current PR Controls retain their existing schedule/ownership and remain the single PR merge/CI path.
 
