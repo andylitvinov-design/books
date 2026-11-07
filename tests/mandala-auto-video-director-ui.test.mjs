@@ -480,9 +480,12 @@ test("Ideas refinement synchronously preserves real WebKit summary activation",(
  const disclosure=director.slice(i,j);
  assert.match(disclosure,/<summary onClick=\{event=>\{/);
  assert.match(disclosure,/event\.preventDefault\(\)/);
- assert.match(disclosure,/const nextOpen=!details\.open/);
- assert.match(disclosure,/ideaRefinementOpenRef\.current=nextOpen/);
- assert.match(disclosure,/details\.open=nextOpen/);
+ // #3842 merged the same native click repair: preserve its production
+ // HTMLDetailsElement guard and synchronous toggle rather than overwrite it.
+ assert.match(disclosure,/const node=event\.currentTarget\.parentElement/);
+ assert.match(disclosure,/if\(node instanceof HTMLDetailsElement\)/);
+ assert.match(disclosure,/node\.open=!node\.open/);
+ assert.match(disclosure,/ideaRefinementOpenRef\.current=node\.open/);
  assert.match(disclosure,/onToggle=\{event=>/);
  assert.match(director,/if\(node && ideaRefinementOpenRef\.current\)node\.open=true/);
 });

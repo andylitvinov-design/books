@@ -1,3 +1,4 @@
+import {setCommandPrWatch,checkCommandPrWatches} from '@/lib/command-center/pr-watch.mjs';
 import {ownerMaterialRequest} from '@/lib/clients/material-library-http';
 import {privateJson} from '@/lib/clients/delivery-http';
 import {transaction,consumeRate,closeDatabase} from '@/lib/app/database';
@@ -27,7 +28,9 @@ const keysFor={
   task_pause:['action','requestId','taskId'],task_ready:['action','requestId','taskId'],
   task_cancel:['action','requestId','taskId'],run_now:['action','requestId'],
   run_selected_safe:['action','requestId','taskIds'],
-  inspect_delivery:['action','requestId','taskId']
+  inspect_delivery:['action','requestId','taskId'],
+  watch_set:['action','requestId','taskId','enabled'],
+  watch_check:['action','requestId','taskId']
 };
 export async function POST(request){
   const requestOrigin=request.headers.get('origin');
@@ -76,6 +79,12 @@ export async function POST(request){
           worker:r.worker||null,live:false});
       }
       result={status:'batch_observed',requested:ids.length,results};
+    }else if(data.action==='watch_set'){
+      if(!ccUuid(data.taskId)||typeof data.enabled!=='boolean')return privateJson({error:'INVALID_WATCH_CONTROL'},400);
+      result=await transaction(config,null,db=>setCommandPrWatch(db,{taskId:data.taskId,enabled:data.enabled}),{server:true});
+    }else if(data.action==='watch_check'){
+      if(!ccUuid(data.taskId))return privateJson({error:'INVALID_TASK_ID'},400);
+      result=await checkCommandPrWatches({config,transaction,taskId:data.taskId,limit:1});
     }else if(data.action==='run_now'){
       if(process.env.VERCEL_ENV!=='production'||process.env.HH_CC_TICK_ENABLED!=='true')
         return privateJson({error:'RUNTIME_NOT_APPROVED'},409);
