@@ -44,6 +44,19 @@ Owner clarified the goal after initial PR publication. The «Разобрать 
 
 The content adapts to Agent Commander / PR Monitor, Video Studio, or Holistic House core, and is available instantly without a model/API request. Unknowns remain explicit. The existing owner-authenticated OpenRouter Free call can append clearly labelled suggestions after the canonical four blocks, but cannot replace verified context, distort the owner request or overwrite manual edits. Generating a prompt never stores a task, schedules execution, changes PRs or claims LIVE. This is a correctness correction to the existing PR, not a separate product or new provider.
 
+
+## Hold-to-talk on the central Create button (7 November 2026)
+
+- **Tap** the fixed «+ Создать» dock button: original task entry form and separate manually toggled dictation.
+- **Hold** for 420 ms with touch or pen: start the existing Web Speech recognition in Russian by default (EN/ES follow page language), show a pink recording state and do not open the keyboard. Pointer capture, cancel/blur cleanup and click suppression prevent duplicate task opening.
+- **Release**: SpeechRecognition.stop() allows final results (bounded 2 seconds), then a separate mobile review screen shows editable recognized text and two actions: **«Сделать промпт»** and **«Спросить Совет ИИ»**. Empty or denied transcripts remain editable rather than simulating success.
+- **Prompt** uses the existing approved four-block executor specification; owner-only free enhancement is optional. **Council** uses the existing owner-protected API, one currently verified zero-price OpenRouter :free model to give three explicitly labeled advisory perspectives. This is NOT independently executing experts or a connected Telegram Council.
+- The browser/OS may process microphone speech, but no audio file is saved by the public site or sent to our server. The text goes to AI only after a deliberate click, and only with owner authorization. Neither button persists tasks, starts agents or changes code.
+
+**Acceptance:** physical iPhone Safari at 320/390/430 px: tap vs hold, live state, release/final transcript, edited text → prompt, edited text → authenticated Council, microphone denial and unsupported Web Speech, pointercancel and blur, very short press, long speech, late callbacks, keyboard obstruction and reduced-motion mode. Speech permission after an iOS timer may be restricted; in this case display the manual mic/keyboard fallback, never pretend audio was recorded.
+
+**Release:** protected control-plane PR and exact-head CI, then standalone Vercel *full existing deployment manifest* overlay and real iPhone functional smoke. This monitor's GitHub archive is incomplete compared with its manually deployed source; source merge or Vercel READY alone is NOT functional LIVE. No additional paid provider, cron, polling or deployment shortcut.
+
 ## Same-origin protected task editor (7 November 2026)
 
 The old `/admin/command-center` handoff belonged to the separate Holistic House site. That hardcoded redirect is removed. On https://holistic-house-pr-monitor.vercel.app owners open `/task-editor.html` in the current tab. The existing owner password/session (`/api/seo-auth`, cookie `hh_seo_owner`) protects the editor and all server-side writes; no separate Google login.
