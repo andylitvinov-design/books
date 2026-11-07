@@ -15,6 +15,8 @@ export type AffirmationSettings = {
   textScale?: "small" | "medium" | "large";
   motion?: "rise";
   presetOverride?: string[];
+  // Session-local editor snapshot: keeps user edits when Ideas remounts.
+  ideasDraft?: { signature: string; options: string[]; chosen: number[] };
 };
 
 export const defaultAffirmations: AffirmationSettings = {

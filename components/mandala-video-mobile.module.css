@@ -4454,6 +4454,68 @@
 @media(min-width:760px){.montageAudioOverlay{align-items:center;padding:24px}.montageAudioDialog{border-radius:26px;max-height:86dvh}}
 @media(max-width:359px){.montageAudioDialogScroll{padding:4px 9px 12px}.montageAudioDialogFooter{padding-left:9px;padding-right:9px}.montageAudioDialogFooter button{font-size:12px}}
 
+
+/* Hypno follows Montage: the already-selected goal stays in Goal/Ideas,
+   and one existing shared video player precedes three Hypno effect tabs. */
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-quick-section="1"],
+.studio[data-active-workspace="effects"] .quickBuilder>.hypnoIntroSlot{display:none!important}
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel]{order:3!important}
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-result]{order:4!important}
+
+
+/* 06 Nov owner-approved Hypno hero: photo/player left, effect heading right.
+   Video preview is the original Canvas, not a second media element. */
+.hypnoStageTitle{display:none}
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .previewStageHeading{display:none!important}
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail{
+  display:flex!important;align-items:center;gap:10px!important
+ }
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail>.hero{
+  flex:0 0 58%!important;width:58%!important;max-width:58%!important;
+  min-width:0;aspect-ratio:16/9!important;border-radius:16px!important
+ }
+ .studio[data-active-workspace="effects"] .previewStage .heroRail{display:none!important}
+ .studio[data-active-workspace="effects"] .heroEditorial{display:none!important}
+ .studio[data-active-workspace="effects"] .previewStage .heroPlay{
+  left:50%!important;top:50%!important
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle{
+  display:flex;flex:1 1 0;align-items:flex-start;gap:6px;min-width:0;
+  padding:3px 0;color:#087b60
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle>svg{
+  flex:none;width:21px;height:21px;margin-top:1px
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle>div{min-width:0}
+ .studio[data-active-workspace="effects"] .hypnoStageTitle h3{
+  font:800 clamp(15px,4.5vw,22px)/1.09 Georgia,serif;color:#17334b;
+  overflow-wrap:anywhere
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle p{
+  margin:6px 0 0;color:#5d6a71;
+  font:500 clamp(10px,2.9vw,13px)/1.27 Arial,sans-serif;
+  overflow-wrap:anywhere
+ }
+ /* Title is in the hero for mobile; the Wave action remains in its real
+    child editor, immediately before the three tabs. */
+ .studio[data-active-workspace="effects"] [data-hypno-compact="true"] .heading{
+  display:none!important
+ }
+ .studio[data-active-workspace="effects"] [data-hypno-compact="true"] .intro{
+  justify-content:flex-end;margin-bottom:8px
+ }
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail{gap:6px!important}
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail>.hero{
+  flex-basis:55%!important;width:55%!important;max-width:55%!important
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle{gap:4px}
+ .studio[data-active-workspace="effects"] .hypnoStageTitle>svg{width:18px;height:18px}
+ .studio[data-active-workspace="effects"] .hypnoStageTitle h3{font-size:15px}
+}
+
 /* iHelp opens the ONE existing Director as an opt-in overlay. Its React state
    remains mounted across Video/Ideas/Effects/Montage tab switches. */
 .iHelpVideoBackdrop{position:fixed;inset:0;z-index:180;width:100vw;height:100dvh;
@@ -4816,4 +4878,39 @@
    display:block!important
  }
  .studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut]{display:none!important}
+}
+
+/* Approved Ideas Text/Voice segmented switch; shared preview, voice and single audio attachment. */
+.ideasSubtabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0;padding:4px;margin:5px 0 10px;border:1px solid #dfded3;border-radius:17px;background:#fffcf7;box-shadow:0 3px 11px #345f4a14}
+.ideasSubtabs button{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;min-height:51px;padding:8px;border:1px solid transparent;border-radius:13px;background:transparent;color:#195b4e;font:800 clamp(15px,4vw,19px)/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+.ideasSubtabs button[aria-pressed="true"]{border-color:#07856a;background:linear-gradient(120deg,#11a885,#007d63);color:#fff;box-shadow:0 2px 6px #147d6130}
+.ideasSubtabs button:focus-visible{outline:3px solid #d4ab61;outline-offset:2px}
+.ideasTabLetters{font:800 23px/1 Arial,Helvetica,sans-serif}
+.ideasTextPanel[hidden]{display:none!important}
+.ideasVoiceActions{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ideasVoiceUpload,.ideasVoiceActions>button{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:48px;padding:9px 6px;border:1px solid #b5d7c6;border-radius:14px;background:#fffcf7;color:#135547;font:750 clamp(12px,3.5vw,15px)/1.2 Arial,sans-serif;text-align:center;cursor:pointer}
+.ideasVoiceUpload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.ideasVoiceUpload:focus-within,.ideasVoiceActions>button:focus-visible{outline:3px solid #d4ab61;outline-offset:2px}
+.ideasVoiceUploadNotice{margin:4px 0!important;font-size:13px;color:#326d56}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"]>.quickSectionHeading{display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-ideas-advanced-voice]{margin:0;border:0;background:transparent}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-ideas-advanced-voice]>summary{display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-hypnosis-section]{padding:0;margin:0;border:0;box-shadow:none;background:transparent}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-hypnosis-section]>:not([data-hypno-overview]){display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-overview]{margin:0;padding:0;border:0;box-shadow:none;background:transparent}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-overview]>:not([data-hypno-voice]):not(#phrase-audio-settings){display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceSection{margin:0;padding:12px;border-radius:19px;border:1px solid #cbe4d8;background:#fffdf9}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceActions{display:grid;margin:10px 0}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceAction{display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-phrase-audio-shortcut]{display:none!important}
+@media(max-width:359px){.ideasSubtabs button{gap:5px;min-height:46px;font-size:15px}.ideasTabLetters{font-size:20px}.ideasVoiceUpload,.ideasVoiceActions>button{font-size:12px}}
+
+/* Voice stays visible on desktop and on mobile; Text mode retains its original collapsed editor. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{display:block!important}
+
+/* Inside Voice at 320px keep all three real voice profiles visible, not a hidden horizontal scroll. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-affirmation-voice-select] > div:nth-child(2) > div[role="group"]{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ grid-auto-flow:row!important;grid-auto-columns:auto!important;
+ overflow:visible!important;gap:6px!important;min-width:0!important
 }

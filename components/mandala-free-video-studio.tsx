@@ -1884,6 +1884,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
+  const [ideasSubtab,setIdeasSubtab] = useState<"text"|"voice">("text");
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
@@ -3548,6 +3549,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               "licensed_scene_frame_unavailable","narration_longer_than_video",
               "audio_master_incomplete","audio_decode_invalid",
               "video_output_size_invalid","video_output_not_mp4",
+              "video_output_codec_unsupported","video_output_invalid_tracks",
+              "video_output_decoder_failed",
               "unsupported_audio_count","invalid_audio_volume",
               "invalid_first_party_preset","first_party_audio_unavailable",
               "audio_size_invalid","invalid_audio_lane",
@@ -3559,8 +3562,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               "video_encoder_timeline_drift","video_encoder_too_slow",
               "webcodecs_h264_unsupported","unexpected_encoder_failure",
             ].includes(code);
-            if(canRetry)setWebkitRecoveryReason(code);
-            const hint=code==="video_encoder_timeline_drift"||code==="video_encoder_too_slow"
+            const decodedOutputFailed=[
+              "video_output_codec_unsupported","video_output_invalid_tracks",
+              "video_output_decoder_failed",
+            ].includes(code);
+            const canRetryWebm=decodedOutputFailed&&
+              recordingMimes(Boolean(attachedAudio),true).some(mime=>mime.startsWith("video/webm"));
+            if(canRetry||canRetryWebm)setWebkitRecoveryReason(code);
+            const hint=decodedOutputFailed
+              ?canRetryWebm
+                ?locale==="ru"?"Готовый MP4 не прошёл проверку декодирования. Повторите в WebM: сцены и звук сохранятся."
+                  :locale==="es"?"El MP4 no se pudo decodificar. Reintenta en WebM con escenas y audio."
+                  :"The MP4 could not be decoded. Retry in WebM; scenes and sound are preserved."
+                :locale==="ru"?"Это устройство не декодирует MP4 и не поддерживает альтернативную запись WebM."
+                  :locale==="es"?"Este dispositivo no puede reproducir MP4 ni grabar en WebM."
+                  :"This device cannot decode MP4 or record the alternate WebM format."
+              :code==="video_encoder_timeline_drift"||code==="video_encoder_too_slow"
               ? locale==="ru"?"Кодировщик Safari не успевает обрабатывать кадры."
                 :locale==="es"?"El codificador de Safari no alcanza a procesar los fotogramas."
                 :"Safari's encoder cannot keep up with the frames."
@@ -4692,6 +4709,29 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return true;
   };
 
+  // Strip only Hypno layers; the original Montage music and timeline stay intact.
+  const freshHypnoCreateRef=useRef<()=>boolean>(()=>false);
+  useLayoutEffect(()=>{freshHypnoCreateRef.current=startFromHero;});
+  async function generateWithoutHypnoEffects(){
+    if(recording||preparing||hypnoAudioBusy)return;
+    if(phrasePending||narrationInvalid){
+      setActiveWorkspace("phrases");
+      setNotice(locale==="ru"?"Сначала подтвердите или обновите озвученные фразы.":
+        locale==="es"?"Primero confirma o actualiza las frases narradas.":
+        "Confirm or refresh your spoken phrases before creating a video.");
+      return;
+    }
+    if(hypnoWhisperEnabled||hypnoBinauralEnabled){
+      await applyHypnoAudioEffects({whisper:false,binaural:false,beatHz:hypnoBeatHz});
+      if(previousHypnoAudioRef.current)return;
+    }
+    flushSync(()=>{
+      setHypnoLight(value=>({...value,enabled:false}));
+      setAffirmations(value=>({...value,enabled:false}));
+    });
+    window.requestAnimationFrame(()=>{freshHypnoCreateRef.current();});
+  }
+
   // This is a local, non-persistent preview. A click also unlocks muted
   // same-origin footage on iOS before React's paint effect starts.
   const openAffirmationPreview = () => {
@@ -5312,6 +5352,35 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
              if(uploadedAudioRef.current?.file===file)clearUploadedAudio();
              setAttachedAudio(current=>current?.kind==="file"&&current.file===file?null:current);
            }}/>
+        <div className={videoStyles.ideasVoiceActions} data-video-ideas-voice-actions>
+          <label className={videoStyles.ideasVoiceUpload}>
+            <Paperclip size={19} aria-hidden="true"/>
+            {locale==="ru"?"Загрузить мой голос":locale==="es"?"Subir mi voz":"Upload my voice"}
+            <input type="file" data-video-ideas-own-upload
+              accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.webm"
+              disabled={recording||preparing}
+              onChange={event=>{
+                const file=event.currentTarget.files?.[0];
+                if(file&&chooseAudioFile(file))setPhraseAudioExpanded(true);
+                event.currentTarget.value="";
+              }}/>
+          </label>
+          <button type="button" data-video-ideas-record-voice disabled={recording||preparing}
+            onClick={()=>{
+              document.querySelector<HTMLButtonElement>('[data-video-affirmation-gender="own"]')?.click();
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+                document.querySelector<HTMLElement>("[data-video-own-voice-record]")
+                  ?.scrollIntoView({behavior:"smooth",block:"nearest"})));
+            }}>
+            <Mic size={19} aria-hidden="true"/>
+            {locale==="ru"?"Записать голос":locale==="es"?"Grabar mi voz":"Record a voice"}
+          </button>
+        </div>
+        {uploadedAudio?<p className={videoStyles.ideasVoiceUploadNotice} role="status">
+          {locale==="ru"?"Файл выбран. Подтвердите права и прикрепите дорожку ниже.":
+            locale==="es"?"Archivo elegido. Confirma los derechos y añade la pista abajo.":
+              "File selected. Confirm rights and attach the track below."}
+        </p>:null}
         {narrationInvalid?<p className={videoStyles.quickStatus} role="status" data-video-narration-stale>
           {locale==="ru"?"Фразы или длительность изменились — создайте аудиодорожку заново.":
             locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
@@ -5873,9 +5942,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
         </details>
 
-        {activeWorkspace==="effects" ? <div className={videoStyles.hypnoIntroSlot}
-          data-hypno-intro-slot data-hypno-third-workspace-title/> : null}
-
         {/* One original Canvas/MediaRecorder stage; it is now visible after topic selection.
             The source-backed MP4 below is a MINI source example, never a second renderer. */}
         <section className={[videoStyles.quickSection,videoStyles.catalogShell,videoStyles.previewStage].join(" ")}
@@ -5980,6 +6046,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <ChevronRight size={17} aria-hidden="true"/>
         </button>
       </aside>
+      {activeWorkspace==="effects" ? <aside className={videoStyles.hypnoStageTitle}
+        data-hypno-stage-intro aria-label={locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipnóticos":"Hypno effects"}>
+        <Sparkles size={23} aria-hidden="true"/>
+        <div>
+          <h3>{locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipnóticos":"Hypno effects"}</h3>
+          <p>{locale==="ru"?"Выберите мягкие дополнительные эффекты для видео.":
+            locale==="es"?"Elige capas suaves opcionales para tu vídeo.":
+            "Choose optional gentle layers for your video."}</p>
+        </div>
+      </aside> : null}
       {activeWorkspace==="editor" && montagePanel==="audio" ? (
         <aside className={videoStyles.montageAudioHero} data-video-audio-intro>
           <Music2 size={27} aria-hidden="true"/>
@@ -6290,7 +6366,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title}>
+      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab}>
+        <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
+          aria-label={locale==="ru"?"Идеи: текст или голос":locale==="es"?"Ideas: texto o voz":"Ideas: text or voice"}>
+          <button type="button" data-video-ideas-tab="text" aria-pressed={ideasSubtab==="text"}
+            onClick={()=>{setIdeasSubtab("text");setIdeasVoiceAdvancedOpen(false);}}>
+            <span className={videoStyles.ideasTabLetters} aria-hidden="true">Aa</span>
+            {locale==="ru"?"Текст":locale==="es"?"Texto":"Text"}
+          </button>
+          <button type="button" data-video-ideas-tab="voice" aria-pressed={ideasSubtab==="voice"}
+            onClick={()=>{setIdeasSubtab("voice");setIdeasVoiceAdvancedOpen(true);}}>
+            <Mic size={20} aria-hidden="true"/>
+            {locale==="ru"?"Голос":locale==="es"?"Voz":"Voice"}
+          </button>
+        </div>
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Мой запрос и тема":locale==="es"?"Mi intención y tema":"My request & topic"}</h3>
           <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
@@ -6303,6 +6392,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         {/* Same approved Hypno editor. Request/phrases first; voice and sound stay optional. */}
         <div className={videoStyles.phraseEditorLead} data-video-phrase-editor-first>
+          <div id="video-ideas-text-panel" data-video-ideas-text-panel hidden={ideasSubtab!=="text"}>
           <MandalaVideoIdeas locale={locale} theme={theme}
             active={activeWorkspace==="phrases"} disabled={recording||preparing}
             settings={affirmations}
@@ -6319,9 +6409,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }));
             }}
             onCreate={goToMontageFromIdeas}/>
+          </div>
           {/* One persistent editor instance; collapsed by default in Ideas.
               Do not unmount it between workspaces or duplicate audio state. */}
-          <div data-video-legacy-phrase-editor data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}
+          <div id="video-ideas-voice-panel" data-video-legacy-phrase-editor data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}
             hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
             <details className={videoStyles.phraseAudioSettings}
               data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}
@@ -6392,8 +6483,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onOpenScenes={()=>openQuickDetailed("video-templates")}
             onPickPhoto={()=>{setBackgroundOnly(false);onPickPhoto();}}
             onRemovePhoto={()=>setBackgroundOnly(true)}
-            onPreview={openAffirmationPreview}
-            onCreate={startFromHero}
+            onCreate={startFromHero} onCreateWithoutEffects={generateWithoutHypnoEffects}
             onWavePreset={()=>{
               setHypnoLight({enabled:true,...recommendHypnoLight(theme,wish)});
               setAffirmations(current=>({...current,enabled:true,
@@ -6539,7 +6629,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </button>;
         })}
       </nav>
-      {exportUnavailable && webkitRecoveryReason && !recording && !preparing ? (
+      {exportUnavailable && webkitRecoveryReason?.startsWith("video_output_") &&
+       recordingMimes(Boolean(attachedAudio),true).some(mime=>mime.startsWith("video/webm")) &&
+       !recording && !preparing ? (
+        <button type="button" data-video-webkit-webm-retry
+          className={videoStyles.audioDirectLink}
+          onClick={()=>void createVideo(true)}>
+          {locale==="ru"?"Повторить видео в WebM · сохранить сцены и звук"
+            :locale==="es"?"Reintentar en WebM · conservar las escenas y el audio"
+            :"Retry video in WebM · keep scenes and sound"}
+        </button>
+      ):null}
+      {exportUnavailable && webkitRecoveryReason &&
+       !webkitRecoveryReason.startsWith("video_output_") && !recording && !preparing ? (
         <button type="button" data-video-webkit-safe-retry
           className={videoStyles.audioDirectLink}
           onClick={()=>void createVideo(false,false,true)}>
@@ -6634,11 +6736,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   ?"Safari no reproduce este "+result.extension.toUpperCase()+" (error "+errorCode+"). Prueba otro formato."
                   :"Safari cannot play this "+result.extension.toUpperCase()+" (error "+errorCode+"). Try the alternative format.");
               }}/>
-            {playbackStatus==="ready"&&result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
+            {result.mode!=="catalog"&&creditCatalog?.chargeRequired&&creditSession!=="signed_in"
               ?<div className={videoStyles.guestPreviewActions} data-video-guest-preview-actions>
                 <button type="button" data-video-guest-play onClick={()=>{
                   const video=resultVideoRef.current;
                   if(!video)return;
+                  // WebKit may defer loading until this explicit guest Play gesture.
+                  if(video.readyState<2)video.load();
                   void video.play().catch(()=>setNotice(locale==="ru"
                     ?"Нажмите ▶ в самом видео, чтобы начать просмотр.":
                     locale==="es"?"Pulsa ▶ en el reproductor de vídeo.":
