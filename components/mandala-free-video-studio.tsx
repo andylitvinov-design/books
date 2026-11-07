@@ -1878,6 +1878,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [quickDetailedOpen,setQuickDetailedOpen] = useState(false);
   // First screen shows the goal and request; film scenarios are the next mobile step.
   const [videoScenarioOpen,setVideoScenarioOpen] = useState(false);
+  const goalContinueRef=useRef<(()=>boolean)|null>(null);
   const [firstVideoAdvancedActivated,setFirstVideoAdvancedActivated] = useState(false);
   const [voiceStudioActivated,setVoiceStudioActivated] = useState(false);
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
@@ -3394,8 +3395,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
         if(!canOfferOriginalVideoSource(professionalMode)){
           // An untouched source MP4 is not the user's generated branded film.
-          // Keep the existing project so the professional can retry on a
-          // supported browser without exposing an unmarked fallback.
           setNotice(locale==="ru"
             ?"В режиме мастера исходная сцена не заменяет брендированный ролик. Повторите экспорт в Safari или Chrome."
             :locale==="es"
@@ -4429,7 +4428,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
   const applyAutoFilm=(presetId:string,seconds:10|15|20|30|60,
     edit?:FreeFilmCompilationEdit,
-    outputAspect:Aspect=aspect)=>{
+    outputAspect:Aspect=aspect,keepGoalFlow=false)=>{
     if(recording||preparing)return false;
     const preset=FREE_FILM_PRESETS.find(item=>item.id===presetId);
     if(!preset){setNotice(ui.videoUnavailable);return false;}
@@ -4462,7 +4461,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           ?"Montaje gratuito seleccionado. Pulsa Crear vídeo.":"Free film selected. Choose Create video.");
       // Confirm does not render or jump away from the next action.
       // After the React commit, scroll to the genuine local Create control.
-      window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+      if(!keepGoalFlow)window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
         document.querySelector("[data-auto-video-create]")?.scrollIntoView({
           behavior:"smooth",block:"nearest"
         })));
@@ -4931,6 +4930,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // The user then moves to Ideas; the actual scene catalogue is an optional
   // visible action from Montage, never a hidden first-screen dialog.
   const continueToIdeas = () => {
+    // Match the one real recipient kind to a verified video plan before Ideas.
+    // No export, billing or consent prompt can be triggered by this action.
+    if(goalContinueRef.current?.()===false)return;
     setVideoScenarioOpen(false);
     setActiveWorkspace("phrases");
     setStudioMode("pump");
@@ -5546,6 +5548,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         }}/>
   );
 
+  // One idempotent action for mouse, touch/pen and keyboard navigation.
+  const activateQuickWorkspace=(id:(typeof workspaceTabs)[number]["id"])=>{
+    quickNavTokenRef.current++;
+    setActiveWorkspace(id);
+    if(id==="editor")setMontagePanel("effects");
+    setIntroPlaying(false);
+    setStudioMode("pump");
+    setTherapyJumpRequested(false);
+  };
   // The only workspace tab rail stays in the same place above the ONE player
   // for every mode; portal relocation previously changed geometry and focus.
   return (
@@ -5620,15 +5631,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
           aria-pressed={activeWorkspace===item.id||(activeWorkspace==="practices"&&item.id==="ready")||(!activeWorkspace&&item.id==="video")}
           aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
-          onClick={()=>{
-            // A new workspace is explicit user intent: retire stale catalog jumps.
-            quickNavTokenRef.current++;
-            setActiveWorkspace(item.id);
-            if(item.id==="editor")setMontagePanel("effects");
-            setIntroPlaying(false);
-            setStudioMode("pump");
-            setTherapyJumpRequested(false);
-          }}><item.Icon size={18} aria-hidden="true"/>
+          // WebKit may drop click after an expanded Ideas details portal shifts
+          // during release; pointer-up commits the same real selected tab.
+          onPointerUp={()=>{if(activeWorkspace!==item.id)activateQuickWorkspace(item.id);}}
+          onClick={()=>activateQuickWorkspace(item.id)}><item.Icon size={18} aria-hidden="true"/>
           <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
           <span className={videoStyles.quickNavCompact} aria-hidden="true">{mobileWorkspaceCopy[locale][item.id]}</span>
         </button>)}
@@ -5677,7 +5683,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           aria-labelledby="quick-theme-title">
           <div className={videoStyles.quickSectionHeading}>
             <h3 id="quick-theme-title"><Target size={21} aria-hidden="true"/>{activeWorkspace==="effects"?(locale==="ru"?"1. Цель и состояние":locale==="es"?"1. Objetivo y estado":"1. Goal and state"):(locale==="ru"?"1. Выберите цель видео":locale==="es"?"1. Elige el objetivo del vídeo":"1. Choose your video goal")}</h3>
+            {/* The ONE real recipient-aware toggle lives in the existing Video Director. */}
+            <div data-video-director-audience-controls/>
             <Link href={"/"+locale+"/client/tests"} prefetch={false}>{quick.myGoals}<ArrowRight size={16} aria-hidden="true"/></Link>
+          </div>
+          <div  data-video-wish-above-goals>
+            <h4><Sparkles size={19} aria-hidden="true"/>{locale==="ru"?"Ваше пожелание (необязательно)":
+              locale==="es"?"Tu deseo (opcional)":"Your wish (optional)"}</h4>
+            <div className={videoStyles.quickRequestHost} data-video-request-prompt/>
           </div>
           <p className={videoStyles.quickStepHint}>{locale==="ru"
             ?"Напишите своими словами или подберите сценарий кнопками ниже."
@@ -5715,17 +5728,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
         <section className={videoStyles.quickSection} data-video-topic-section
           data-workspace-section="video" aria-label={
-            locale==="ru"?"2. Выберите тему":locale==="es"?"2. Elige el tema":"2. Choose your topic"}>
+            locale==="ru"?"3. Выберите тему":locale==="es"?"3. Elige el tema":"3. Choose your topic"}>
+          <div className={videoStyles.quickSectionHeading} data-video-goal-topic-title>
+            <h3><Sparkles size={21} aria-hidden="true"/>{locale==="ru"?"3. Выберите тему":
+              locale==="es"?"3. Elige el tema":"3. Choose a topic"}</h3>
+          </div>
           <div data-video-director-topic-controls className={videoStyles.quickTopicHost}/>
           <div className={videoStyles.quickPromptStep} data-video-request-after-topic>
-            <h4 className={videoStyles.quickPromptTitle}>{locale==="ru"?"3. Ваше желание (необязательно)":
-              locale==="es"?"3. Tu deseo (opcional)":"3. Your wish (optional)"}</h4>
-            <div className={videoStyles.quickRequestHost} data-video-request-prompt/>
             <button type="button" className={videoStyles.quickPromptContinue}
               data-video-continue-scenarios
               disabled={!studioHydrated||recording||preparing}
               onClick={continueToIdeas}>
-              <Heart size={18} aria-hidden="true"/>
+              <Film size={18} aria-hidden="true"/>
               <span>{locale==="ru"?"Далее к идеям":
                 locale==="es"?"Continuar a ideas":"Continue to ideas"}</span>
               <ArrowRight size={19} aria-hidden="true"/>
@@ -6434,6 +6448,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </details>
       </section> : null}
         <MandalaAutoVideoDirector
+          goalContinueRef={goalContinueRef}
           locale={locale} goal={wish} theme={theme} aspect={aspect} presets={aspectFilmPresets}
           scenes={FREE_FILM_CATALOG}
           disabled={!studioHydrated||recording||preparing}
@@ -6457,6 +6472,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }}
           onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
           onCategoryChange={next=>{setQuickStyleIndex(0);selectCategory(next);}}
+          onAspectChange={next=>{
+            if(next===aspect)return;
+            // Preserve the single edited player while switching to the only
+            // physically verified video geometry for recipient gifts.
+            setAspect(next);setCinematicPlan(null);setPreviewPlaying(false);
+          }}
           onInvalidate={()=>{setPreviewPlaying(false);setCinematicPlan(null);}}
           helpOpen={directorChatOpen}
           onClarify={()=>{
@@ -6487,7 +6508,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               behavior:"smooth",block:"start"
             }));
           }}
-          onApply={applyAutoFilm} onCreate={createQuickVideo}
+          onApply={(presetId,seconds,edit,options)=>
+            applyAutoFilm(presetId,seconds,edit,aspect,options?.keepGoalFlow)}
+          onCreate={createQuickVideo}
           canCreate={canStartSelectedFilm} rendering={recording||preparing}
           createFeedback={preparing||exportUnavailable?notice:""}/>
       <nav className={videoStyles.quickPracticeShortcuts} data-video-practice-shortcuts

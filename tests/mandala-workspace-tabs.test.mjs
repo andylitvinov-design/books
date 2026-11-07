@@ -22,7 +22,8 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
 });
 test("top row uses local tab state rather than scrollIntoView or two anchors for settings",()=>{
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
- assert.match(nav,/setActiveWorkspace\(item\.id\)/);
+ assert.match(nav,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
+ assert.match(nav,/onPointerUp=\{\(\)=>\{if\(activeWorkspace!==item\.id\)activateQuickWorkspace\(item\.id\);\}\}/);
  assert.match(nav,/aria-pressed=\{activeWorkspace===item\.id\|\|\(activeWorkspace==="practices"&&item\.id==="ready"\)\|\|\(!activeWorkspace&&item\.id==="video"\)\}/);
  assert.match(nav,/aria-controls="video-workspace-panel"/);
  assert.doesNotMatch(nav,/scrollIntoView|openQuickDetailed|location\.hash|pushState/);
@@ -138,7 +139,7 @@ test("published informational YouTube no longer overlays the original Canvas her
   assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
   assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
   assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);
-  assert.match(studio,/setActiveWorkspace\(item\.id\);[\s\S]{0,140}setIntroPlaying\(false\);[\s\S]{0,90}setStudioMode\("pump"\)/);
+  assert.match(studio,/const activateQuickWorkspace=[\s\S]{0,220}setActiveWorkspace\(id\);[\s\S]{0,130}setIntroPlaying\(false\);[\s\S]{0,90}setStudioMode\("pump"\)/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
@@ -188,7 +189,7 @@ test("final approved six tabs lead to exactly one real workspace each",()=>{
     'tab:"Курс практик"','tab:"Монтаж"','tab:"PRO"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
-  assert.match(studio,/setActiveWorkspace\(item.id\)/);
+  assert.match(studio,/setActiveWorkspace\(id\)/);
   assert.match(studio,/data-video-topic-section/);
   assert.match(studio,/data-video-director-goal-controls/);
   assert.match(studio,/data-video-director-topic-controls/);
