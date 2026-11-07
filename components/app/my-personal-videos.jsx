@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {appFetch} from '@/lib/app/client-fetch'
 import PersonalVideoMessengerPanel from './personal-video-messenger-panel'
 import SupportPhotoCabinet from '@/components/app/support-photo-cabinet'
+import CommunityVideoPublishPanel from '@/components/community-video-publish-panel'
 
 const COPY={
   en:{title:'My Videos',subtitle:'Your private saved videos, separate from the public video editor.',new:'Create free video',
@@ -166,6 +167,8 @@ export default function MyPersonalVideos({accountId,locale='en'}){
           </div>
           {play?.id===video.id&&<video src={play.url} controls playsInline preload="metadata" style={{width:'100%',marginTop:10}}/>}
           {download?.id===video.id&&<p><a href={download.url} target="_blank" rel="noopener noreferrer">{t.download} MP4</a></p>}
+          {video.status==='ready'&&<CommunityVideoPublishPanel videoId={video.id}
+           locale={locale} accountId={accountId}/>} 
         </article>)}
       </div>
     </>}
