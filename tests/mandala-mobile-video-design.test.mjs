@@ -534,7 +534,9 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
-  assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
+  assert.match(studio,/quickStyleFilmFor\\(theme,index\\)\\?\\.poster/);
+  assert.match(studio,/paintSelectedStyleShot\\(ctx,styleVideo\\)/,
+    "the style film is a real decoded Canvas source, not only a color grade");
   assert.match(css,/\.quickVideoNav\{display:grid/);
   assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
   assert.match(css,/\.quickMusicRail\{/);
