@@ -356,8 +356,44 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageSettingsTab).toHaveAttribute("aria-pressed","true");
       const durationSelect=page.locator('[data-video-montage-preference="duration"]');
       await durationSelect.waitFor({state:"visible",timeout:25000});
-      await durationSelect.selectOption("10");
-      await expect(durationSelect).toHaveValue("10");
+      // The actual four-scene movie cannot be exported from a lone idle
+      // style preview: all physical originals are portrait, and every source
+      // must cover its non-looping stage. Select four approved masters through
+      // the SAME visible Montage → Text → Add video flow as the independent
+      // first-video/FFprobe acceptance, before creating the real voice WAV.
+      const aspectSelect=page.locator('[data-video-montage-preference="format"]');
+      await aspectSelect.selectOption("portrait");
+      await expect(aspectSelect).toHaveValue("portrait");
+      await durationSelect.selectOption("20");
+      await expect(durationSelect).toHaveValue("20");
+      const montageStyleTab=page.locator('[data-video-montage-tab="effects"]');
+      await montageStyleTab.click();
+      await expect(montageStyleTab).toHaveAttribute("aria-pressed","true");
+      const nextToText=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+      await expect(nextToText).toBeVisible();
+      await nextToText.click();
+      await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
+      const addVerifiedSources=page.locator('[data-video-timeline-add-video]');
+      await expect(addVerifiedSources).toBeVisible();
+      await addVerifiedSources.click();
+      await page.locator('[data-free-film-compilation-catalog]').waitFor({state:"visible"});
+      const moreApproved=page.locator('[data-free-film-more]');
+      if(await moreApproved.getAttribute("aria-expanded")!=="true")await moreApproved.click();
+      const firstPartyPreset=page.locator('[data-free-film-preset="motion-film-goal-achievement"]');
+      await expect(firstPartyPreset).toBeVisible();
+      await firstPartyPreset.click();
+      await expect(firstPartyPreset).toHaveAttribute("aria-pressed","true",{timeout:10000});
+      // This is real licensed footage, not a catalog poster or a mocked
+      // result. Four distinct sources are a prerequisite for the MP4 test.
+      const fourSources=page.locator('[data-free-film-source]');
+      await expect(fourSources).toHaveCount(4);
+      const masterIds=await fourSources.evaluateAll(nodes=>nodes.map(n=>n.dataset.freeFilmSource));
+      assert.equal(new Set(masterIds).size,4,"FOUR_DISTINCT_SOURCE_MASTERS_REQUIRED");
+      const sourcePaths=await fourSources.evaluateAll(nodes=>nodes.map(n=>n.getAttribute("src")));
+      assert.ok(sourcePaths.every(src=>/^\/videos\/holistic-house\/[a-z0-9_/-]+\\.mp4$/.test(src||"")),
+        "FOUR_SOURCES_MUST_BE_APPROVED_FIRST_PARTY_MP4");
+      phase(engine,"four-licensed-portrait-sources-selected");
+      await page.locator('[data-video-quick-control="editor"]').click();
       const montageAudio=page.locator('[data-video-montage-tab="audio"]');
       await montageAudio.click();
       await expect(montageAudio).toHaveAttribute("aria-pressed","true");

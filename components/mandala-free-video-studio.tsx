@@ -34,7 +34,7 @@ import { MandalaAutoVideoDirector } from "./mandala-auto-video-director";
 import { MandalaProfessionalPromo } from "./mandala-professional-promo";
 import type { MandalaProfessionalSource } from "./mandala-meditation-client";
 import { availableStoryScene, storySelectionItems } from "@/lib/mandala/story-addon-catalog";
-import type { StorySelection } from "@/lib/mandala/story-addon-catalog";
+import type { StorySelection, StoryAddonKind } from "@/lib/mandala/story-addon-catalog";
 import type { CinematicStoryboard } from "./mandala-cinematic-director";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
 
@@ -1885,6 +1885,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [phraseCatalogActivated,setPhraseCatalogActivated] = useState(false);
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
+  const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
   const [goalPage,setGoalPage] = useState<"first"|"clarify">("first");
   const [goalProfile,setGoalProfile] = useState<VideoGoalProfile>(DEFAULT_VIDEO_GOAL_PROFILE);
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
@@ -7808,12 +7809,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </section>
 
         <MandalaProEnhance locale={locale} disabled={recording||preparing||micRecording}
-          onGenerateFree={createQuickVideo}>
+          onGenerateFree={createQuickVideo}
+          onChooseCatalog={setProCatalogKind}
+          onGoToMontage={panel=>{
+            goToMontageFromIdeas();
+            setMontagePanel(panel);
+            if(panel==="audio"){setBasicPanelTab("music");setShowAdvancedVideo(true);}
+          }}>
         <section className={videoStyles.quickSection} data-video-quick-personal data-workspace-section="pro" aria-labelledby="quick-personal-title">
           <div className={videoStyles.quickSectionHeading}>
             <h3 id="quick-personal-title"><Sparkles size={21} aria-hidden="true"/>{locale==="ru"?"Сюжеты и персонажи":locale==="es"?"Historias y personajes":"Stories & characters"}</h3>
           </div>
-          <MandalaStoriesCharacters locale={locale} theme={theme}
+          <MandalaStoriesCharacters locale={locale} theme={theme} requestedKind={proCatalogKind}
             disabled={recording||preparing||micRecording} applied={appliedStory}
             onApply={next=>{
               if(storySelectionItems(next).some(item=>item.capability!=="local"))return;

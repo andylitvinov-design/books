@@ -192,7 +192,7 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
 test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs and Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const settings=browser.indexOf('const montageSettingsTab=page.locator');
- const selectDuration=browser.indexOf('await durationSelect.selectOption("10")',settings);
+ const selectDuration=browser.indexOf('await durationSelect.selectOption("20")',settings);
  const openAudio=browser.indexOf('await montageAudio.click()',selectDuration);
  const phrases=browser.indexOf("const phrases=page.locator",openAudio);
  const reenter=browser.indexOf('await montageAudioAfterExport.click()',phrases);
@@ -311,4 +311,26 @@ test("compact Ideas opens its actual opt-in voice editor via visible user contro
   "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",
   'spawnSync("ffprobe"','spawnSync("ffmpeg"'])
   assert.ok(browser.includes(required),"do not lose true media/consent coverage: "+required);
+});
+
+test("macOS voice export selects four physically verified portrait sources before encoding",()=>{
+  const script=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  const start=script.indexOf('const aspectSelect=page.locator');
+  const duration=script.indexOf('await durationSelect.selectOption("20")',start);
+  const addVideo=script.indexOf("await addVerifiedSources.click()",duration);
+  const preset=script.indexOf("await firstPartyPreset.click()",addVideo);
+  const approved=script.indexOf("FOUR_DISTINCT_SOURCE_MASTERS_REQUIRED",preset);
+  const narration=script.indexOf('const phrases=page.locator(',approved);
+  assert.ok(start>0&&duration>start&&addVideo>duration&&preset>addVideo&&approved>preset&&narration>approved);
+  for(const marker of [
+    '[data-video-montage-preference="format"]','[data-video-montage-next="text"]',
+    '[data-video-timeline-add-video]','[data-free-film-compilation-catalog]',
+    '[data-free-film-preset="motion-film-goal-achievement"]','[data-free-film-source]',
+    'FOUR_SOURCES_MUST_BE_APPROVED_FIRST_PARTY_MP4',
+  ])assert.ok(script.includes(marker),marker);
+  assert.match(script,/await firstPartyPreset.click\(\)/);
+  assert.match(script,/await expect\(fourSources\).toHaveCount\(4\)/);
+  assert.match(script,/phase\(engine,"four-licensed-portrait-sources-selected"\)/);
+  assert.ok(studio.includes("verifiedSceneAspect(scene,aspect)"),"source eligibility is fail-closed");
+  assert.ok(studio.includes("freeFilmSourcesListed"),"export requires physically verified masters");
 });
