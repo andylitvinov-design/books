@@ -42,11 +42,77 @@ test("Ideas CTA advances to Montage Style with no renderer, no audio library and
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
  assert.match(studio,/onCreate=\{goToMontageFromIdeas\}\/>/);
- assert.match(cmp,/data-video-ideas-create disabled=\{disabled\}/);
+ assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
  assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,
   "quick music must only mount in Goal");
  assert.doesNotMatch(css,/\[data-active-workspace="phrases"\]\s*\.quickBuilder>\[data-video-quick-audio-choices\]/,
   "mobile styles must not force Music & Voice into Ideas");
  assert.match(studio,/montagePanel==="audio" \?/,"Montage keeps its real audio editor");
+});
+
+
+test("approved seven-choice Ideas mock retains five-minimum, real canvas text size and voice handoff",()=>{
+ for(const lang of ["ru","en","es"]){
+  const seven=suggestMeaningPhrases(lang,["anchor"],"fatigue","calm",4,6,0,7);
+  assert.equal(seven.length,7);
+  assert.equal(new Set(seven).size,7);
+  seven.forEach(value=>assert.ok(Array.from(value).length<=36));
+ }
+ for(const marker of ["data-video-ideas-size","data-video-ideas-text-size","data-video-idea-select",
+  "data-video-ideas-selected-count","data-video-ideas-regenerate","data-video-ideas-own-phrase",
+  "data-video-ideas-record","data-video-ideas-minimum","data-video-ideas-refine"])
+  assert.ok(cmp.includes(marker),marker);
+ assert.match(cmp,/selectedCount<5/);
+ assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
+ assert.match(cmp,/presetOverride:preset,custom:picked\.slice\(5,10\)\.join/);
+ const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
+ assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
+ assert.match(renderer,/const textScale = settings\.textScale === "small"/);
+ assert.match(studio,/onRecord=\{\(\)=>\{[\s\S]*?data-video-affirmation-gender="own"/);
+ assert.match(studio,/data-video-own-voice-record/);
+});
+
+
+test("Ideas rolling preview iPhone bug regression: first selected phrase is shown at the actual video size",()=>{
+ const render=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
+ assert.ok(render.includes('motion?: "rise"'),"render settings offer actual film motion");
+ assert.ok(render.includes('if (settings.motion === "rise")'),"only approved Ideas affects render mode");
+ assert.ok(render.includes('Math.max(1,totalSeconds)/lines.length'),"all lines get deterministic time slots");
+ assert.ok(render.includes('height*(0.75-0.48*progress)'),"each phrase moves slowly up the real screen");
+ assert.ok(render.includes('ctx.fillText(part,width*0.5,lineY,maxWidth)'),"real video Canvas draws text");
+ assert.ok(render.includes('textScale === "small"')&&render.includes('textScale === "large"'));
+ assert.ok(cmp.includes('onResetPreview();onChange(old=>'),"size slider refreshes the first actual phrase");
+ assert.ok(cmp.includes('motion:"rise"'),"Ideas enables rolling renderer");
+ assert.ok(studio.includes('paintVideoAffirmations(ctx,previewSeekSeconds,affirmationLines,affirmations,duration)'));
+ assert.equal((studio.match(/paintVideoAffirmations\(ctx,[^,]+,affirmationLines,affirmations,duration\)/g)||[]).length,5,
+   "live preview and all three export paths share the same renderer");
+});
+
+test("Ideas Play reuses film, not unstable speech synthesis; preserve real voice editor and Montage",()=>{
+ assert.ok(!cmp.includes("SpeechSynthesisUtterance")&&!cmp.includes("speechSynthesis."),
+   "Safari in-app browser cannot crash on speech synthesis");
+ assert.ok(cmp.includes('onClick={()=>editing===index?moveDown(index):onPreview()}'),
+   "list Play invokes the shared film viewer");
+ assert.ok(studio.includes('if(activeWorkspace==="phrases"||previewSeekSeconds>=duration)'),
+   "Play starts from the first selected phrase");
+ assert.ok(studio.includes('const playback=film.play()'),"video playback is guarded for Safari");
+ assert.ok(studio.includes('if(activeWorkspace!=="phrases")paintStageCaptionOverlay(ctx,previewSeekSeconds'),
+   "legacy caption is not drawn on top of Ideas text");
+ assert.ok(studio.includes('onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}'));
+ assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'));
+ assert.ok(studio.includes('onCreate={goToMontageFromIdeas}'),"CTA retains real Montage destination");
+});
+
+test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list fits the screen",()=>{
+ const local=readFileSync(new URL("../components/mandala-video-ideas.module.css",import.meta.url),"utf8");
+ for(const marker of ["data-video-ideas-scroll","data-video-ideas-size","data-video-ideas-create"])
+  assert.ok(cmp.includes(marker),marker);
+ assert.ok(cmp.includes('aria-describedby="ideas-choice-help"'));
+ assert.ok(local.includes('max-height:clamp(130px,29dvh,256px)'),"scroll limits list height");
+ assert.ok(local.includes('@media(max-height:750px) and (max-width:759px)'),"small iPhone height");
+ assert.ok(css.includes('Ideas iPhone rising phrases repair'),"last responsive override");
+ assert.ok(css.includes('.heroRail,')&&css.includes('.heroEditorial{display:none!important}'));
+ assert.ok(css.includes('.heroCanvas{opacity:1!important;z-index:1!important}'));
+ assert.ok(css.includes('[data-video-phrase-audio-shortcut]{display:none!important}'));
 });
