@@ -4,7 +4,7 @@
  */
 import assert from "node:assert/strict";
 import {spawnSync} from "node:child_process";
-import {mkdirSync} from "node:fs";
+import {mkdirSync,readFileSync} from "node:fs";
 import {chromium,webkit,expect} from "@playwright/test";
 import {verifyGuidedPractices} from "./verify-mandala-practices-browser.mjs";
 
@@ -390,9 +390,27 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const masterIds=await fourSources.evaluateAll(nodes=>nodes.map(n=>n.dataset.freeFilmSource));
       assert.equal(new Set(masterIds).size,4,"FOUR_DISTINCT_SOURCE_MASTERS_REQUIRED");
       const sourcePaths=await fourSources.evaluateAll(nodes=>nodes.map(n=>n.getAttribute("src")));
-      assert.ok(sourcePaths.every(src=>/^\/videos\/holistic-house\/[a-z0-9_/-]+\\.mp4$/.test(src||"")),
-        "FOUR_SOURCES_MUST_BE_APPROVED_FIRST_PARTY_MP4");
-      phase(engine,"four-licensed-portrait-sources-selected");
+      // This approved preset is ORIGINAL abstract animation, not licensed filming.
+      // Compare exact first-party URLs and unique verified hashes to the actual
+      // physical manifest; do not waive the four-scene/rights/no-loop gate.
+      const approvedOriginals=JSON.parse(readFileSync(
+        new URL("../data/video-catalog/original-motion-scenes-v1.json",import.meta.url),
+        "utf8")).scenes.filter(scene=>
+        scene.status==="approved"&&scene.media==="original_motion_mp4");
+      const originalById=new Map(approvedOriginals.map(scene=>[scene.id,scene]));
+      const selectedSources=masterIds.map((id,index)=>{
+        const scene=originalById.get(id);
+        assert.ok(scene,"FOUR_SOURCES_MUST_BE_APPROVED_FIRST_PARTY_MP4 "+id);
+        assert.equal(sourcePaths[index],scene.video,"SOURCE_NOT_IN_VERIFIED_MANIFEST "+id);
+        assert.match(scene.video,/^\/videos\/holistic-house\/[a-z0-9_/-]+\.mp4$/,"SOURCE_NOT_FIRST_PARTY "+id);
+        assert.ok(scene.width>0&&scene.height>scene.width&&scene.duration>=5,
+          "PHYSICAL_PORTRAIT_NON_LOOPING_SCENE_REQUIRED "+id);
+        assert.match(scene.sha256||"",/^[a-f0-9]{64}$/i,"SOURCE_HASH_REQUIRED "+id);
+        return scene;
+      });
+      assert.equal(new Set(selectedSources.map(scene=>scene.sha256)).size,4,
+        "FOUR_DISTINCT_VERIFIED_ORIGINAL_MASTERS_REQUIRED");
+      phase(engine,"four-approved-portrait-sources-selected");
       await page.locator('[data-video-quick-control="editor"]').click();
       const montageAudio=page.locator('[data-video-montage-tab="audio"]');
       await montageAudio.click();

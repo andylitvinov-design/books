@@ -461,7 +461,10 @@ test("post-export stale narration refusal reopens mounted Audio and consented Vo
 test("WebKit release follows the real Montage Settings, Audio, and voice disclosure",()=>{
  assert.match(source,/const montageSettingsTab=page\.locator\('\[data-video-montage-tab="settings"\]'\)/);
  assert.match(source,/const durationSelect=page\.locator\('\[data-video-montage-preference="duration"\]'\)/);
- assert.match(source,/await durationSelect\.selectOption\("10"\)/);
+ assert.match(source,/await durationSelect\.selectOption\("20"\)/);
+ assert.match(source,/const approvedOriginals=JSON\.parse\(readFileSync\(/);
+ assert.match(source,/FOUR_DISTINCT_VERIFIED_ORIGINAL_MASTERS_REQUIRED/);
+ assert.match(source,/SOURCE_NOT_IN_VERIFIED_MANIFEST/);
  assert.match(source,/await expect\(page\.locator\('\[data-video-montage-audio\]'\)\)\.toBeVisible\(\)/);
  assert.match(source,/const voicePanel=page\.locator\("\[data-video-voice-studio\]"\)/);
  assert.match(source,/voicePanel\.locator\(":scope > summary"\)\.click\(\)/);

@@ -374,7 +374,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
           if(suggestion.kind&&kind==='code_change')setKind(suggestion.kind);}
        }} rows={3}/>
       <CommandCenterVoiceButton lang={lang} onTranscript={spoken=>setDraft(previous=>safe((previous?previous+' ':'')+spoken,140))}/>
-      <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={800} value={details}
+      <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={2000} value={details}
         onChange={e=>setDetails(e.target.value)} rows={2}/>
       {importedPrompt&&<details className={styles.importedPrompt} open>
        <summary>{transferText.heading}</summary><p>{transferText.explain}</p>
