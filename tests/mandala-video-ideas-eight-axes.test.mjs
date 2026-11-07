@@ -72,3 +72,37 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
  assert.match(studio,/onRecord=\{\(\)=>\{[\s\S]*?data-video-affirmation-gender="own"/);
  assert.match(studio,/data-video-own-voice-record/);
 });
+
+
+test("Ideas client crash guard: film Play never invokes iOS SpeechSynthesis and resets at the first phrase",()=>{
+ assert.doesNotMatch(cmp,/SpeechSynthesisUtterance|speechSynthesis\./);
+ assert.match(cmp,/onClick=\{\(\)=>editing===index\?moveDown\(index\):onPreview\(\)\}/);
+ assert.match(cmp,/onResetPreview\(\);onChange\(old=>/);
+ assert.match(studio,/onResetPreview=\{\(\)=>\{setPreviewPlaying\(false\);setPreviewSeekSeconds\(0\);setPreviewPlayhead\(0\);\}\}/);
+ assert.match(studio,/if\(activeWorkspace==="phrases"\|\|previewSeekSeconds>=duration\)/);
+ assert.match(studio,/if\(activeWorkspace!=="phrases"&&!previewPlaying\)startMovieSound/);
+ assert.match(studio,/const playback=film\.play\(\)/);
+});
+test("Ideas uses original Canvas to show the first selected line and rise through the film",()=>{
+ const paint=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
+ assert.match(paint,/motion\?: "rise"/);
+ assert.match(paint,/if \(settings\.motion === "rise"\)/);
+ assert.match(paint,/Math\.max\(1,totalSeconds\)\/lines\.length/);
+ assert.match(paint,/const y=height\*\(0\.75-0\.48\*progress\)/);
+ assert.match(paint,/ctx\.fillText\(part,width\*0\.5,lineY,maxWidth\)/);
+ assert.match(cmp,/motion:"rise"/);
+ assert.match(cmp,/enabled:picked\.length>0/);
+ assert.match(studio,/data-hero-promo=\{activeWorkspace!=="phrases"&&/);
+ assert.match(studio,/paintVideoAffirmations\(ctx,previewSeekSeconds,affirmationLines,affirmations,duration\)/);
+ assert.equal((studio.match(/paintVideoAffirmations\(ctx,[^,]+,affirmationLines,affirmations,duration\)/g)||[]).length,5);
+});
+test("Ideas mobile screen uses compact accessible scroll, no overlapping Intro/My Video rail",()=>{
+ const local=readFileSync(new URL("../components/mandala-video-ideas.module.css",import.meta.url),"utf8");
+ for(const marker of ["data-video-ideas-scroll","data-video-ideas-size","data-video-ideas-create"])
+  assert.ok(cmp.includes(marker));
+ assert.match(local,/\.phraseList\{[^}]*max-height:clamp\([^}]*overflow-y:auto/);
+ assert.match(local,/@media\(max-height:750px\) and \(max-width:759px\)/);
+ assert.match(css,/data-active-workspace="phrases"[\s\S]*?\.previewStage \.heroRail,/);
+ assert.match(css,/data-active-workspace="phrases"[\s\S]*?\.previewStage \.hero \.heroCanvas\{opacity:1!important/);
+ assert.match(css,/data-active-workspace="phrases"[\s\S]*?\[data-video-phrase-audio-shortcut\]\{display:none!important/);
+});

@@ -16,7 +16,7 @@ type Props={
  locale:VideoLocale;theme:VideoTheme;active:boolean;disabled:boolean;settings:AffirmationSettings;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;
- onRecord:()=>void;
+ onRecord:()=>void;onResetPreview:()=>void;
 };
 
 const wording={
@@ -26,7 +26,7 @@ const wording={
   more:"Ещё фразы",moreHint:"Другие варианты",own:"Своя фраза",ownHint:"Написать текст",
   record:"Записать голос",recordHint:"Свой голос",add:"Добавить",cancel:"Отмена",
   placeholder:"Введите свою короткую фразу",edit:"Изменить фразу",save:"Сохранить",
-  play:"Прослушать фразу",move:"Переместить ниже",choose:"Выбрать фразу",unchoose:"Убрать фразу",
+  play:"Просмотреть фразы в видео",move:"Переместить ниже",choose:"Выбрать фразу",unchoose:"Убрать фразу",
   clear:"Сбросить выбор",max:"В видео можно выбрать не более 10 фраз.",
   full:"Сначала выберите как минимум 5 фраз.",next:"Перейти к монтажу",
   refine:"Уточнить состояние и направления",title:"Моё состояние и желание",
@@ -41,7 +41,7 @@ const wording={
   more:"More phrases",moreHint:"New options",own:"Write a phrase",ownHint:"Your own words",
   record:"Record a phrase",recordHint:"Use your voice",add:"Add phrase",cancel:"Cancel",
   placeholder:"Write a short supportive phrase",edit:"Edit phrase",save:"Save",
-  play:"Listen to phrase",move:"Move phrase down",choose:"Select phrase",unchoose:"Deselect phrase",
+  play:"Preview phrases in video",move:"Move phrase down",choose:"Select phrase",unchoose:"Deselect phrase",
   clear:"Clear selection",max:"Choose up to 10 phrases for your video.",
   full:"Choose at least 5 phrases to continue.",next:"Continue to Montage",
   refine:"Fine-tune my state and intention",title:"My state and intention",
@@ -56,7 +56,7 @@ const wording={
   more:"Más frases",moreHint:"Otras opciones",own:"Escribir frase",ownHint:"Con tus palabras",
   record:"Grabar frase",recordHint:"Tu propia voz",add:"Añadir frase",cancel:"Cancelar",
   placeholder:"Escribe una frase breve de apoyo",edit:"Editar frase",save:"Guardar",
-  play:"Escuchar frase",move:"Mover frase abajo",choose:"Elegir frase",unchoose:"Quitar frase",
+  play:"Ver frases en vídeo",move:"Mover frase abajo",choose:"Elegir frase",unchoose:"Quitar frase",
   clear:"Borrar selección",max:"Puedes elegir hasta 10 frases para el vídeo.",
   full:"Elige al menos 5 frases para continuar.",next:"Continuar al montaje",
   refine:"Ajustar mi estado y mi intención",title:"Mi estado y deseo",
@@ -72,7 +72,7 @@ const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=(text:string)=>Array.from(text.replace(/[<>]/g,"").replace(/\s+/g," ").trim()).slice(0,36).join("");
 
 export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generating,
- onChange,onPendingChange,onPreview,onCreate,onRecord}:Props){
+ onChange,onPendingChange,onPreview,onCreate,onRecord,onResetPreview}:Props){
  const t=wording[locale];
  const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
  const desiredOptions=useMemo<Cluster[]>(()=>listDesiredEmotionClusters(locale),[locale]);
@@ -89,7 +89,6 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
  const [draft,setDraft]=useState("");
  const [adding,setAdding]=useState(false);
  const [moreClicks,setMoreClicks]=useState(0);
- const [playing,setPlaying]=useState<number|null>(null);
  const [feedback,setFeedback]=useState("");
  const lastApplied=useRef("");
  const signature=JSON.stringify([locale,selectedAxes,current,desired,stateScore,energy,revision]);
@@ -104,9 +103,8 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
   setOptions(suggested);setChosen(allFive);setMoreClicks(0);
   setEditing(null);setAdding(false);setFeedback("");
   onChange(old=>({...old,enabled:true,selected:allFive,custom:"",
-   presetOverride:suggested.slice(0,5),visibility:old.visibility.length?old.visibility:["large"]}));
+   presetOverride:suggested.slice(0,5),motion:"rise",visibility:old.visibility.length?old.visibility:["large"]}));
  },[active,signature,suggested,onChange]);
- useEffect(()=>()=>{if(typeof window!=="undefined"&&"speechSynthesis" in window)window.speechSynthesis.cancel();},[]);
 
  const selectedCount=chosen.length;
  const textSizeIndex=Math.max(0,scaleValues.indexOf(settings.textScale??"medium"));
@@ -117,9 +115,9 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
   // Preserve the existing five-line preset contract used by Hypno and narration.
   // Extra selected Ideas lines occupy its already-supported local custom lines (max five).
   const preset=[...picked,...suggested].slice(0,5);
-  onChange(old=>({...old,enabled:picked.length>=5,
+  onChange(old=>({...old,enabled:picked.length>0,
    selected:allFive.slice(0,Math.min(5,picked.length)),
-   presetOverride:preset,custom:picked.slice(5,10).join("\n"),
+   presetOverride:preset,custom:picked.slice(5,10).join("\n"),motion:"rise",
    visibility:old.visibility.length?old.visibility:["large"]}));
   onPendingChange(false);
   setOptions(safe);setChosen(fresh);setFeedback("");
@@ -160,17 +158,6 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
   setMoreClicks(n=>n+1);
   if(candidates.length)apply([...options,...candidates],chosen);
  };
- const playLine=(line:string,index:number)=>{
-  if(typeof window==="undefined"||!("speechSynthesis" in window)||!("SpeechSynthesisUtterance" in window)){
-   onPreview();return;
-  }
-  const utterance=new SpeechSynthesisUtterance(line);
-  utterance.lang=locale==="ru"?"ru-RU":locale==="es"?"es-ES":"en-US";
-  utterance.rate=0.92;
-  utterance.onend=()=>setPlaying(null);
-  utterance.onerror=()=>setPlaying(null);
-  window.speechSynthesis.cancel();setPlaying(index);window.speechSynthesis.speak(utterance);
- };
  const toggleAxis=(id:string)=>{
   setSelectedAxes(old=>old.includes(id)?(old.length===1?old:old.filter(x=>x!==id)):[...old,id]);
   onPendingChange(false);
@@ -184,7 +171,7 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
    </div>
    <input id="video-ideas-text-size" data-video-ideas-text-size type="range" min={0} max={2} step={1}
     value={textSizeIndex} disabled={disabled}
-    onChange={event=>onChange(old=>({...old,textScale:scaleValues[Number(event.currentTarget.value)]}))}/>
+    onChange={event=>{onResetPreview();onChange(old=>({...old,textScale:scaleValues[Number(event.currentTarget.value)]}));}}/>
    <div className={css.sizeHints} aria-hidden="true">{t.sizes.map(value=><span key={value}>{value}</span>)}</div>
   </div>
 
@@ -193,8 +180,8 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
     <h3 id="video-ideas-phrases-heading"><Heart size={25} aria-hidden="true"/>{t.select}</h3>
     <span className={css.count} data-video-ideas-selected-count>{selectedCount} / {options.length} {t.selected}</span>
    </div>
-   <p className={css.subtitle}>{t.pick}</p>
-   <ol className={css.phraseList}>
+   <p className={css.subtitle} id="ideas-choice-help">{t.pick}</p>
+   <ol className={css.phraseList} data-video-ideas-scroll aria-describedby="ideas-choice-help" tabIndex={0}>
     {options.map((line,index)=><li key={index} data-video-idea-phrase={index} className={css.item}
       data-selected={chosen.includes(index)}>
      <button type="button" className={css.pick} data-video-idea-select={index}
@@ -209,8 +196,8 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
        <span className={css.phraseText}>{line}</span>}
      <button type="button" className={css.play} data-video-idea-play={index}
       disabled={disabled} aria-label={editing===index?t.move:t.play}
-      onClick={()=>editing===index?moveDown(index):playLine(line,index)}>
-      {editing===index?<ArrowDown size={21} aria-hidden="true"/>:<Play size={20} fill={playing===index?"currentColor":"none"} aria-hidden="true"/>}
+      onClick={()=>editing===index?moveDown(index):onPreview()}>
+      {editing===index?<ArrowDown size={21} aria-hidden="true"/>:<Play size={20} aria-hidden="true"/>}
      </button>
      <button type="button" className={css.edit} data-video-idea-edit-button={index}
       disabled={disabled} aria-label={editing===index?t.save:t.edit}

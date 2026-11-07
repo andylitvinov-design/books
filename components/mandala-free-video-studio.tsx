@@ -3128,8 +3128,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId);
         paintHypnoLightOverlay(ctx,previewSeekSeconds,hypnoLight);
         paintStoryMotifs(ctx,previewSeekSeconds,appliedStory);
-        if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,previewSeekSeconds,affirmationLines,affirmations);
-        paintStageCaptionOverlay(ctx,previewSeekSeconds,cinematicPlan,timelineTextClips);
+        if(activeWorkspace==="phrases"||!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,previewSeekSeconds,affirmationLines,affirmations,duration);
+        if(activeWorkspace!=="phrases")paintStageCaptionOverlay(ctx,previewSeekSeconds,cinematicPlan,timelineTextClips);
       }
       if (!previewPlaying) return;
       const previewCores=Number.isFinite(navigator.hardwareConcurrency)?navigator.hardwareConcurrency:4;
@@ -3152,8 +3152,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId);
             paintStoryMotifs(ctx,frameSecond,appliedStory);
             paintHypnoLightOverlay(ctx,frameSecond,hypnoLight);
-            if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,frameSecond,affirmationLines,affirmations);
-      paintStageCaptionOverlay(ctx,frameSecond,cinematicPlan,timelineTextClips);
+            if(activeWorkspace==="phrases"||!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,frameSecond,affirmationLines,affirmations,duration);
+      if(activeWorkspace!=="phrases")paintStageCaptionOverlay(ctx,frameSecond,cinematicPlan,timelineTextClips);
           }
           lastFrame = now;
         }
@@ -3421,7 +3421,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId);
       paintStoryMotifs(ctx,0,appliedStory);
       paintHypnoLightOverlay(ctx,0,hypnoLight);
-      if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,0,affirmationLines,affirmations);
+      if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,0,affirmationLines,affirmations,duration);
       paintStageCaptionOverlay(ctx,0,cinematicPlan,timelineTextClips);
        paintVideoBrandStamp(ctx,exportBrandVariant);
       // Device-aware capture targets smoother frames while keeping low-end
@@ -3486,7 +3486,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId);
               paintStoryMotifs(ctx,time,appliedStory);
               paintHypnoLightOverlay(ctx,time,hypnoLight);
-              if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,time,affirmationLines,affirmations);
+              if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,time,affirmationLines,affirmations,duration);
               paintStageCaptionOverlay(ctx,time,cinematicPlan,timelineTextClips);
               paintVideoBrandStamp(ctx,exportBrandVariant);
               return true;
@@ -3690,7 +3690,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId);
           paintStoryMotifs(ctx,frameTime,appliedStory);
           paintHypnoLightOverlay(ctx,frameTime,hypnoLight);
-          if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,frameTime,affirmationLines,affirmations);
+          if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,frameTime,affirmationLines,affirmations,duration);
       paintStageCaptionOverlay(ctx,frameTime,cinematicPlan,timelineTextClips);
           paintVideoBrandStamp(ctx,exportBrandVariant);
           lastFrame=now;
@@ -4661,15 +4661,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // same-origin footage on iOS before React's paint effect starts.
   const openAffirmationPreview = () => {
     if (recording || preparing) return;
-    if(previewSeekSeconds>=duration){setPreviewSeekSeconds(0);setPreviewPlayhead(0);}
-    if(!previewPlaying)startMovieSound(attachedAudio,soundVolume,previewSeekSeconds>=duration?0:previewSeekSeconds);
+    if(activeWorkspace==="phrases"||previewSeekSeconds>=duration){setPreviewSeekSeconds(0);setPreviewPlayhead(0);}
+    // Ideas is a silent visual phrase preview: iOS audio is only started from the Audio editor.
+    if(activeWorkspace!=="phrases"&&!previewPlaying)startMovieSound(attachedAudio,soundVolume,previewSeekSeconds>=duration?0:previewSeekSeconds);
     setPreviewPlaying(true);
     const film = premiumVideoRef.current;
     if (film && activeFilm) {
       film.muted = true;
-      void film.play().catch(() => {
-        if (aliveRef.current) setNotice(ui.videoUnavailable);
-      });
+      try {
+        const playback=film.play();
+        if(playback&&typeof playback.catch==="function")void playback.catch(()=>{
+          if(aliveRef.current)setNotice(ui.videoUnavailable);
+        });
+      } catch { if(aliveRef.current)setNotice(ui.videoUnavailable); }
     }
     document.getElementById("video-hero")?.scrollIntoView({
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
@@ -5853,7 +5857,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
       <div className={videoStyles.heroWithRail} data-video-player-with-controls>
       <section className={videoStyles.hero} id="video-hero" data-video-mandala-hero
-        data-hero-promo={creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording?"true":"false"}
+        data-hero-promo={activeWorkspace!=="phrases"&&creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording?"true":"false"}
          data-video-therapy-preview={studioMode==="therapy"?"true":"false"}
         data-video-theme-active={videoCategory} data-preview-playing={previewPlaying?"true":"false"}
         data-video-preview-style={activeMontageStyleId||cinematicPlan?.styleId||"original"}
@@ -5868,7 +5872,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             aria-label={layout.previewTitle}/>
         </div>
         <div className={videoStyles.heroShade} aria-hidden="true"/>
-        <div className={videoStyles.heroEditorial} aria-hidden={previewPlaying||recording}>
+        <div className={videoStyles.heroEditorial} aria-hidden={previewPlaying||recording||activeWorkspace==="phrases"}>
           <span className={videoStyles.heroEyebrow}><Film size={16} aria-hidden="true"/>
             {activeWorkspace==="phrases"?(locale==="ru"?"Идеи · предпросмотр":locale==="es"?"Ideas · vista previa":"Ideas · preview"):locale==="ru"?"Видеогенератор":locale==="es"?"Generador de vídeo":"Video creator"}
           </span>
@@ -6269,6 +6273,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             settings={affirmations}
             generating={recording||preparing} onChange={setAffirmations}
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
+            onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}
             onRecord={()=>{
               // Reuse the one protected local voice recorder; no extra MediaRecorder.
               setIdeasVoiceAdvancedOpen(true);
@@ -6281,7 +6286,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onCreate={goToMontageFromIdeas}/>
           {/* One persistent editor instance; collapsed by default in Ideas.
               Do not unmount it between workspaces or duplicate audio state. */}
-          <div data-video-legacy-phrase-editor
+          <div data-video-legacy-phrase-editor data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}
             hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
             <details className={videoStyles.phraseAudioSettings}
               data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}

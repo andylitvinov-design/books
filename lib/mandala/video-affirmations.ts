@@ -13,6 +13,7 @@ export type AffirmationSettings = {
   visibility: AffirmationVisibility[];
   position?: "top" | "center" | "bottom";
   textScale?: "small" | "medium" | "large";
+  motion?: "rise";
   presetOverride?: string[];
 };
 
@@ -200,6 +201,7 @@ export function paintVideoAffirmations(
   seconds: number,
   lines: readonly string[],
   settings: AffirmationSettings,
+  totalSeconds = 30,
 ): void {
   if (!settings.enabled || !lines.length || !settings.visibility.length) return;
   const width = ctx.canvas.width;
@@ -214,6 +216,43 @@ export function paintVideoAffirmations(
   const size = Math.min(width, height);
   const position = settings.position === "top" ? 0.35 : settings.position === "bottom" ? 0.76 : 0.6;
   const textScale = settings.textScale === "small" ? 0.78 : settings.textScale === "large" ? 1.22 : 1;
+  // The Ideas viewer and the exported Canvas use identical motion and text scale.
+  // One selected phrase rises slowly, followed by the next. No speech APIs,
+  // timers, network requests or second rendering surface are used here.
+  if (settings.motion === "rise") {
+    const phraseDuration=Math.max(1,Math.max(1,totalSeconds)/lines.length);
+    const slot=Math.min(lines.length-1,Math.floor(safeSeconds/phraseDuration));
+    const progress=Math.min(1,Math.max(0,(safeSeconds-slot*phraseDuration)/phraseDuration));
+    const phrase=lines[slot] ?? "";
+    const fontSize=Math.max(22,Math.round(size*0.086*textScale));
+    const maxWidth=width*0.79;
+    const opacity=Math.max(0,Math.min(1,progress*6+0.55,(1-progress)*5));
+    const y=height*(0.75-0.48*progress);
+    ctx.save();
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.font="700 "+fontSize+"px Arial, Helvetica, sans-serif";
+    const words=phrase.split(/\s+/).filter(Boolean);
+    const wrapped:string[]=[];
+    let current="";
+    for(const word of words){
+      const candidate=current?current+" "+word:word;
+      if(current&&ctx.measureText(candidate).width>maxWidth&&wrapped.length<2){
+        wrapped.push(current);current=word;
+      }else current=candidate;
+    }
+    if(current)wrapped.push(current);
+    const lineHeight=fontSize*1.13;
+    ctx.lineJoin="round";ctx.lineWidth=Math.max(4,fontSize*0.12);
+    ctx.strokeStyle="rgba(9,35,31,"+(opacity*0.85).toFixed(3)+")";
+    ctx.fillStyle="rgba(255,253,245,"+opacity.toFixed(3)+")";
+    wrapped.forEach((part,i)=>{
+      const lineY=y+(i-(wrapped.length-1)/2)*lineHeight;
+      ctx.strokeText(part,width*0.5,lineY,maxWidth);
+      ctx.fillText(part,width*0.5,lineY,maxWidth);
+    });
+    ctx.restore();
+    return;
+  }
   const fade = Math.max(0.22, Math.min(1, phase / 0.5, (period - phase) / 0.55));
 
   function write(phrase: string, y: number, fontSize: number, opacity: number, plate: boolean) {

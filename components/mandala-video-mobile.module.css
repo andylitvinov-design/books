@@ -4768,3 +4768,49 @@
 .montageAudioDialog{max-height:min(88dvh,790px)}
 .montageAudioDialogScroll{padding-top:8px}
 @media(max-width:359px){.audioLibraryTrack{grid-template-columns:36px minmax(0,1fr) 30px 67px;gap:4px;padding:6px}.audioLibraryTrackSelect{font-size:11px}.audioLibraryFilters{gap:4px}.audioLibraryFilters select{font-size:11px}}
+
+
+/* Ideas iPhone repair 07 Nov: original 16:9 Canvas is the REAL sizing/rolling preview.
+   Isolate from Goal/Montage/PRO, keep one accessible native player and one bottom dock. */
+@media(max-width:759px){
+ .studio[data-active-workspace="phrases"] .quickBuilder{gap:5px!important;min-width:0}
+ .studio[data-active-workspace="phrases"] .quickBuilder>.previewStage{
+   order:2!important;display:block!important;min-width:0;max-width:100%;
+   margin:0!important;padding:0!important;border:0!important;
+   box-shadow:none!important;background:transparent!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStageHeading{display:none!important}
+ .studio[data-active-workspace="phrases"] .previewStage>.heroWithRail{
+   display:flex!important;justify-content:center!important;align-items:center!important;
+   width:100%!important;min-width:0!important;max-width:100%!important;gap:0!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .hero{
+   flex:0 1 290px!important;width:min(100%,290px)!important;max-width:290px!important;
+   min-width:0!important;min-height:0!important;max-height:none!important;height:auto!important;
+   aspect-ratio:16/9!important;margin:0!important;border-radius:15px!important;overflow:hidden!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .heroRail,
+ .studio[data-active-workspace="phrases"] .previewStage .heroEditorial{display:none!important}
+ .studio[data-active-workspace="phrases"] .previewStage .hero .heroPromo{opacity:0!important}
+ .studio[data-active-workspace="phrases"] .previewStage .hero .heroCanvas{opacity:1!important;z-index:1!important}
+ .studio[data-active-workspace="phrases"] .previewStage .hero .heroShade{
+   z-index:2!important;background:linear-gradient(0deg,#0b241938,transparent 58%)!important;
+   pointer-events:none!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .heroPlay{
+   z-index:6!important;left:auto!important;right:7px!important;top:auto!important;bottom:7px!important;
+   width:41px!important;height:41px!important;min-width:41px!important;min-height:41px!important;
+   transform:none!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .heroDuration{
+   top:6px!important;right:6px!important;padding:4px 7px!important;font-size:10px!important
+ }
+ .studio[data-active-workspace="phrases"] .quickBuilder>[data-video-quick-phrases]{
+   display:block!important;order:3!important;margin:0!important;padding:0!important;
+   min-width:0!important;max-width:100%!important;border:0!important;box-shadow:none!important
+ }
+ .studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="false"]{
+   display:none!important
+ }
+ .studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut]{display:none!important}
+}

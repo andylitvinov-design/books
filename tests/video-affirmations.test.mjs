@@ -388,3 +388,31 @@ test("Wave/Gemini strategy appears before phrases, uses enum privacy and approve
    assert.ok(route.includes(label),label);
  assert.doesNotMatch(route,/body\.(?:problemNote|goalNote|testScores|profile|custom|medicalHistory)/);
 });
+
+
+test("Ideas film paints the first phrase immediately, rises upward and advances line by line",()=>{
+ const drawn=[];
+ const ctx={
+  canvas:{width:1280,height:720},
+  save(){},restore(){},measureText(str){return {width:str.length*24}},
+  strokeText(){},
+  fillText(phrase,x,y){drawn.push({phrase,x,y,font:this._font})},
+  set font(value){this._font=value},
+ };
+ const lines=["First sample phrase","Second sample phrase"];
+ const style={...defaultAffirmations,enabled:true,visibility:["large"],motion:"rise",textScale:"medium"};
+ paintVideoAffirmations(ctx,0,lines,style,10);
+ const first=drawn.pop();
+ paintVideoAffirmations(ctx,2,lines,style,10);
+ const up=drawn.pop();
+ paintVideoAffirmations(ctx,5,lines,style,10);
+ const second=drawn.pop();
+ paintVideoAffirmations(ctx,0,lines,{...style,textScale:"large"},10);
+ const large=drawn.pop();
+ assert.equal(first.phrase,lines[0]);
+ assert.equal(up.phrase,lines[0]);
+ assert.ok(up.y<first.y,"the real Canvas glyph must move upward with time");
+ assert.equal(second.phrase,lines[1],"next selected line must enter after its time slot");
+ assert.ok(Number(large.font.match(/(\d+)px/)[1])>Number(first.font.match(/(\d+)px/)[1]),
+  "the first visible phrase must grow on the real Canvas while dragging text size");
+});
