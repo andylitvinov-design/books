@@ -42,11 +42,33 @@ test("Ideas CTA advances to Montage Style with no renderer, no audio library and
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
  assert.match(studio,/onCreate=\{goToMontageFromIdeas\}\/>/);
- assert.match(cmp,/data-video-ideas-create disabled=\{disabled\}/);
+ assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
  assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,
   "quick music must only mount in Goal");
  assert.doesNotMatch(css,/\[data-active-workspace="phrases"\]\s*\.quickBuilder>\[data-video-quick-audio-choices\]/,
   "mobile styles must not force Music & Voice into Ideas");
  assert.match(studio,/montagePanel==="audio" \?/,"Montage keeps its real audio editor");
+});
+
+
+test("approved seven-choice Ideas mock retains five-minimum, real canvas text size and voice handoff",()=>{
+ for(const lang of ["ru","en","es"]){
+  const seven=suggestMeaningPhrases(lang,["anchor"],"fatigue","calm",4,6,0,7);
+  assert.equal(seven.length,7);
+  assert.equal(new Set(seven).size,7);
+  seven.forEach(value=>assert.ok(Array.from(value).length<=36));
+ }
+ for(const marker of ["data-video-ideas-size","data-video-ideas-text-size","data-video-idea-select",
+  "data-video-ideas-selected-count","data-video-ideas-regenerate","data-video-ideas-own-phrase",
+  "data-video-ideas-record","data-video-ideas-minimum","data-video-ideas-refine"])
+  assert.ok(cmp.includes(marker),marker);
+ assert.match(cmp,/selectedCount<5/);
+ assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
+ assert.match(cmp,/presetOverride:preset,custom:picked\.slice\(5,10\)\.join/);
+ const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
+ assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
+ assert.match(renderer,/const textScale = settings\.textScale === "small"/);
+ assert.match(studio,/onRecord=\{\(\)=>\{[\s\S]*?data-video-affirmation-gender="own"/);
+ assert.match(studio,/data-video-own-voice-record/);
 });
