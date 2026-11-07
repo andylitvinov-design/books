@@ -86,6 +86,11 @@ test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the rea
     assert.match(file,/data-video-continue-scenarios/);
   for(const file of [live,motion]){
     assert.match(file,/data-video-montage-tab="text"/);
+    assert.match(file,/data-video-montage-effects/);
+    assert.match(file,/data-video-montage-next="text"/);
+    assert.match(file,/VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT/);
+    assert.doesNotMatch(file,/await page\.locator\('\[data-video-montage-tab="text"\]'\)\.click\(\)/,
+      "the protected browser must use the current visible Style -> Text Next CTA");
     assert.match(file,/data-video-timeline-add-video/);
     assert.doesNotMatch(file,/await (?:allStories|page\.locator\('\[data-auto-video-all-scenes\]'\))\.click\(\)/);
   }

@@ -819,8 +819,14 @@ export function ContactChannelChooser({
             </details>
             </>}
             <label className={styles.consent}>
+              {/* Safari can deliver a genuine cart checkbox click before React's
+                  synthetic change settles. Read only the native clicked state. */}
               <input type="checkbox" required checked={consent} disabled={busy || !interactive || (cartContact && !cartFormHydrated)}
-                onChange={event => { setConsent(event.target.checked); operationId.current = null; }} />
+                onChange={event => { setConsent(event.target.checked); operationId.current = null; }}
+                onClick={cartContact ? event => {
+                  setConsent(event.currentTarget.checked);
+                  operationId.current = null;
+                } : undefined} />
               <span>{c.consent}</span>
             </label>
             <EnquiryAttributionChoice locale={locale} disabled={busy || !interactive} />
