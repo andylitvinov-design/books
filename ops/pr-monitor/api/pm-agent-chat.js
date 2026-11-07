@@ -6,8 +6,8 @@
 const crypto=require('node:crypto');
 const REPO='andylitvinov-design/books', GH='https://api.github.com/repos/'+REPO;
 const OWNER_COOKIE='hh_seo_owner';
-const REPORT_ISSUES=[1419,3128];
-const MAX_REPORTS=24, MAX_INPUT=1200, FREE_MAX=18;
+const REPORT_ISSUES=[1419,3128,3890];
+const MAX_REPORTS=40, MAX_INPUT=1200, FREE_MAX=18;
 let cachedReports=null, reportsUntil=0, cachedModels=null, modelsUntil=0;
 const clamp=(text,n)=>String(text||'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,' ').trim().slice(0,n);
 const json=(res,code,data)=>{
@@ -83,8 +83,13 @@ function reportEntries(comments,issue){
  if(!Array.isArray(comments))return [];
  const out=[];
  for(const c of comments){
-  const agent=reporter(c);
+  let agent=reporter(c);
   if(!agent||typeof c.body!=='string'||!Number.isSafeInteger(c.id)||c.id<1)continue;
+  if(issue===3890){
+    const matched=/^<!-- HH_PM_INBOX_STATE_V1 comment=([1-9]\d*) status=([A-Z_]+) -->/.exec(c.body);
+    if(agent!=='GitHub Actions'||!matched||!['CLAIMED','REPLIED','BLOCKED','DISPATCH_ACCEPTED_UNCORRELATED'].includes(matched[2]))continue;
+    agent=matched[2]==='REPLIED'?'OpenRouter Free · GitHub Worker':'GitHub Repair Gateway';
+  }
   const url='https://github.com/'+REPO+'/issues/'+issue+'#issuecomment-'+c.id;
   const body=clamp(c.body.replace(/<!--[\s\S]*?-->/g,'').replace(/(?:ghp_|gho_|sk-)[A-Za-z0-9_-]{16,}/g,'[REDACTED]'),1600);
   if(!body||!/^\d{4}-\d{2}-\d{2}T/.test(c.created_at||''))continue;
@@ -105,7 +110,7 @@ async function reports(){
  }));
  const rows=answers.flat().sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)).slice(0,MAX_REPORTS);
  cachedReports=rows;reportsUntil=Date.now()+120000;
- return {reports:rows,observedAt:new Date().toISOString(),source:'github_bot_and_chatgpt_connector',cached:false};
+ return {reports:rows,observedAt:new Date().toISOString(),source:'github_actions_chatgpt_connector_and_pm_free_inbox',cached:false};
 }
 function offline(message,tasks){
  const q=message.toLowerCase(),scope=tasks.length?'Выбрано '+tasks.length+' задач: '+tasks.join(', ')+'. ':'Задачи не выбраны. ';
@@ -184,6 +189,31 @@ async function decomposeTask(text){
  return {...answer,reply,reportType:'AI_TASK_PLAN_NOT_EXECUTION',taskSaved:false,agentStarted:false};
 }
 
+
+/* Three advisory viewpoints from ONE verified zero-price model, not Telegram Council. */
+const COUNCIL_SYSTEM=[
+ 'You are the Holistic House Agent Commander AI Council advisory view.',
+ 'You are ONE free AI model, not three independent agents. Give three labeled perspectives:',
+ '1) Продукт и польза, 2) Архитектура и практичная реализация, 3) QA, безопасность и риски.',
+ 'Then one concrete next action and 2-3 measurable acceptance criteria.',
+ 'Use Russian throughout. Ask no unnecessary clarifications when reasonable assumptions suffice.',
+ 'Never assert you checked GitHub, a PR, CI, existing software or LIVE unless explicit verified evidence is provided.',
+ 'Do not provide paid services, secret handling, personal client data, automatic commits or fake expert consensus.',
+ 'If information is missing, label it НЕ ПРОВЕРЕНО. Be concise and specific.'
+].join(' ');
+async function councilTask(text){
+ const catalog=await getModels();
+ if(catalog.error)return {error:catalog.error};
+ const model=catalog.models?.[0]?.id;
+ if(!model||!model.endsWith(':free'))return {error:'NO_VERIFIED_FREE_MODELS'};
+ const out=await openrouterReply({model,history:[]},'Задача владельца:\n'+text,[],
+  {systemPrompt:COUNCIL_SYSTEM,maxTokens:700});
+ if(out.error)return out;
+ if(!out.reply||out.reply.trim().length<55)return {error:'COUNCIL_ADVICE_TOO_SHORT'};
+ return {...out,reportType:'AI_COUNCIL_SINGLE_FREE_MODEL_NOT_EXECUTION',
+  councilType:'ONE_VERIFIED_FREE_MODEL_THREE_PERSPECTIVES',taskSaved:false,agentStarted:false};
+}
+
 module.exports=async function(req,res){
  res.setHeader('Cache-Control','private, no-store, max-age=0');
  res.setHeader('Vary','Cookie');
@@ -194,7 +224,8 @@ module.exports=async function(req,res){
  const action=new URL(req.url,'https://holistic-house-pr-monitor.vercel.app').searchParams.get('action')||'status';
  if(req.method==='GET'){
   if(action==='status')return json(res,200,{schema:'HH_PM_AGENT_CHAT_V1',authenticated:true,
-   modes:{local:true,openrouter:!!apiKey(),githubReports:true},
+   modes:{local:true,openrouter:!!apiKey(),githubReports:true,githubFreeRelay:true},
+   githubInboxUrl:'https://github.com/andylitvinov-design/books/issues/3890',
    storage:'CURRENT_BROWSER_SESSION_ONLY',githubCodeExecution:false,
    provider:'OPENROUTER_FREE_ONLY',observedAt:new Date().toISOString()});
   if(action==='models'){const value=await getModels();return json(res,value.error?503:200,value)}
@@ -205,7 +236,7 @@ module.exports=async function(req,res){
   return json(res,400,{error:'UNKNOWN_ACTION'});
  }
  if(!correctOrigin(req))return json(res,403,{error:'CROSS_ORIGIN_DENIED'});
- if(action!=='chat'&&action!=='decompose')return json(res,400,{error:'UNKNOWN_ACTION'});
+ if(action!=='chat'&&action!=='decompose'&&action!=='council')return json(res,400,{error:'UNKNOWN_ACTION'});
  if(Number(req.headers['content-length']||0)>5000)return json(res,413,{error:'PAYLOAD_TOO_LARGE'});
  let body=req.body;
  if(typeof body==='string')try{body=JSON.parse(body)}catch{return json(res,400,{error:'INVALID_JSON'})}
@@ -217,6 +248,13 @@ module.exports=async function(req,res){
   const out=await decomposeTask(clamp(body.message,2500));
   return json(res,out.error?503:200,{...out,observedAt:new Date().toISOString()});
  }
+ if(action==='council'){
+  if(typeof body.message!=='string'||body.message.trim().length<8||body.message.length>2500)
+   return json(res,400,{error:'INVALID_TASK_DESCRIPTION'});
+  if(!apiKey())return json(res,503,{error:'OPENROUTER_NOT_CONNECTED'});
+  const answer=await councilTask(clamp(body.message,2500));
+  return json(res,answer.error?503:200,{...answer,observedAt:new Date().toISOString()});
+ }
  const message=clamp(body.message,MAX_INPUT),tasks=taskIds(body.tasks);
  if(message.length<2||message.length>MAX_INPUT||!Array.isArray(body.tasks)||body.tasks.length>8||tasks.length!==body.tasks.length)
   return json(res,400,{error:'INVALID_CHAT_INPUT'});
@@ -227,4 +265,4 @@ module.exports=async function(req,res){
  const result=await openrouterReply(body,message,tasks);
  return json(res,result.error?503:200,{...result,observedAt:new Date().toISOString()});
 };
-module.exports.__test={isOwner,correctOrigin,freePrice,freeCatalog,reporter,reportEntries,taskIds,offline,DECOMPOSE_SYSTEM};
+module.exports.__test={isOwner,correctOrigin,freePrice,freeCatalog,reporter,reportEntries,taskIds,offline,DECOMPOSE_SYSTEM,COUNCIL_SYSTEM};

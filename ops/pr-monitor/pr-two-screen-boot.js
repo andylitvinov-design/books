@@ -41,9 +41,12 @@
     // HH_PM_NAV_V1: public monitor only links to the separate owner-authenticated page.
     additions += '<link rel="stylesheet" href="/project-management-nav.css?v=20261107-cc-v1">'+
       '<script src="/project-management-nav.js?v=20261107-cc-v1" defer><\/script>';
+    // A discoverable link on the existing PR Monitor, without changing the five-item dock.
+    additions += '<link rel="stylesheet" href="/commander-learning.css?v=20261107-learning-v1">';
     // Disable only old layout reordering, preserving all sources and working APIs.
     html=html.replace(/<head>/i,'<head><script src="/pr-two-screen-pre.js"><\/script>');
     html=html.replace(/<\/head>/i,additions+'</head>');
+    html=html.replace(/<\/header>/i,'</header><p class="hh-learning-monitor-entry"><a href="/learning.html">✦ Обучение агентов</a></p>');
     document.open();document.write(html);document.close();
   } catch(e) {
     if(fallback)fallback.textContent='Монитор не удалось загрузить: '+String(e.message||e)+'. Оригинальная версия: /legacy.html';

@@ -22,7 +22,8 @@ test('one five-action dock is loaded for public Commander and PM views',()=>{
 });
 test('public Commander never pretends to create or launch an executor',()=>{
  const nav=src('project-management-nav.js'),ui=src('commander-ui.js');
- assert.match(nav,/holistichouse\.vercel\.app\/admin\/command-center/);
+ assert.match(nav,/\/task-editor\.html/);
+ assert.doesNotMatch(nav,/holistichouse\.vercel\.app\/admin\/command-center/);
  assert.match(nav,/Публичный монитор не сохраняет и не запускает задания/);
  assert.doesNotMatch(nav+ui,/(supabase\.co|service_role|HH_PR_CRON_DISPATCH_TOKEN|POST['"]|workflow_dispatch)/i);
  assert.match(ui,/HH_PM_PUBLIC_V1/);

@@ -3,7 +3,7 @@
 (function(){
  const selected=new Map(),limit=8,github='https://github.com/andylitvinov-design/books';
  let source=null,panel=null,summary=null,mode=null,trigger=null,notes=null,result=null;
- const methods={work:'ChatGPT Work: ручная передача текста',issue:'GitHub Issue: задание, подтверждаемое в GitHub',repair:'GitHub Repair Worker: только один разрешённый RED PR'};
+ const methods={work:'ChatGPT Work: ручная передача текста',issue:'GitHub Issue: задание, подтверждаемое в GitHub',repair:'GitHub Repair Worker: только один разрешённый RED PR',free:'OpenRouter Free · технический совет через GitHub secret'};
  const mk=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=String(text);return el};
  const btn=(text,cb,cls='pm-btn')=>{const e=mk('button',cls,text);e.type='button';e.addEventListener('click',cb);return e};
  const link=(text,url)=>{const e=mk('a','pm-handoff-link',text);e.href=url;e.target='_blank';e.rel='noopener noreferrer';return e};
@@ -93,13 +93,31 @@
    !labels.has('hh:repair-needed')||['hh:repair-manual','hh:hold','hh:blocked','hh:worker-claimed'].some(x=>labels.has(x)))throw Error('Нет подтверждённого допуска: требуется текущий открытый PR с repair-needed без hold/manual.');
    const text=packet()+'\npm_pr_number: '+prNumber+'\npm_expected_sha: '+pr.head.sha+'\ndry_run: false\n\nPRELIMINARY only. Trusted Watchdog must verify signed failed Core, leases and quota independently.';
    render('Repair Worker · предварительная проверка',text);
-   result.append(link('Открыть GitHub Watchdog для ручного запуска',github+'/actions/workflows/hh-pr-ten-minute-watchdog.yml'));
+   const cmd='!pm repair '+prNumber+' '+pr.head.sha;
+   const publicArea=mk('textarea','pm-handoff-text');publicArea.rows=2;publicArea.readOnly=true;publicArea.value=cmd;
+   publicArea.setAttribute('aria-label','Публичная команда Repair для владельца');
+   result.append(mk('p','pm-handoff-warning','Альтернативный безопасный запуск: скопируйте техническую команду ниже, откройте публичный GitHub Agent Inbox #3890 и подтвердите её комментарий. Watchdog повторно проверит exact HEAD и signed Core.'),
+     publicArea,link('Открыть PM Agent Inbox #3890',github+'/issues/3890#new_comment_field'));
+   result.append(link('Или запустить существующий Watchdog вручную',github+'/actions/workflows/hh-pr-ten-minute-watchdog.yml'));
    result.append(mk('p','pm-handoff-warning','На GitHub выберите Run workflow и введите параметры. Эта страница НЕ отправляла workflow_dispatch, не создавала коммит и не проверяла LIVE.'));
    notice('Предварительные условия соблюдены. Подтверждение запуска — только GitHub Actions run ID.');
   }catch(e){resetResult();notice('Repair Worker заблокирован: '+String(e.message||e).slice(0,180))}
   finally{update()}
  }
- function send(){if(!selected.size)return;const v=mode.value;if(v==='work')doWork();else if(v==='issue')doIssue();else if(v==='repair')doRepair()}
+ function doFree(){
+  const tasks=[...selected.values()];
+  const targets=tasks.map(x=>x.key+' '+x.task.title.slice(0,70)).join('; ');
+  const cmd='!pm ask Составь один следующий безопасный шаг по выбранным техническим задачам: '+targets;
+  if(cmd.length>1200){notice('Пакет слишком большой для публичного запроса OpenRouter Free. Выберите меньше задач.');return;}
+  const text=packet();
+  render('OpenRouter Free · технический совет через GitHub',text);
+  const field=mk('textarea','pm-handoff-text');field.readOnly=true;field.rows=4;field.value=cmd;
+  field.setAttribute('aria-label','Публичная команда OpenRouter Free');
+  result.append(mk('p','pm-handoff-warning','Это ПУБЛИЧНЫЙ технический канал GitHub, не приватный чат. Скопируйте команду, отправьте её от имени владельца в Issue #3890. Подтверждение ответа появится в отчётах после действующего Watchdog; источник не является коммитом.'),
+    field,link('Открыть GitHub Agent Inbox #3890',github+'/issues/3890#new_comment_field'));
+  notice('Пакет подготовлен для бесплатной модели OpenRouter в GitHub. До публикации комментария исполнитель не запущен.');
+ }
+ function send(){if(!selected.size)return;const v=mode.value;if(v==='work')doWork();else if(v==='issue')doIssue();else if(v==='repair')doRepair();else if(v==='free')doFree()}
  function init(catalog){
   if(catalog?.schema!=='HH_PM_PUBLIC_V1')return;
   source=catalog;selected.clear();if(panel)panel.remove();

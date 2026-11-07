@@ -6,12 +6,14 @@
 <meta name="color-scheme" content="dark"><title>Project Management · PR Monitor · Holistic House</title>
 <link rel="stylesheet" href="/project-management-nav.css">
 <link rel="stylesheet" href="/project-management-public.css">
+<link rel="stylesheet" href="/pr-task-tree.css?v=20261107-v1">
 <link rel="stylesheet" href="/project-management-selection.css">
 <link rel="stylesheet" href="/pm-agent-chat.css">
 <script src="/project-management-proof.js" defer></script>
 <script src="/project-management-selection.js" defer></script>
 <script src="/pm-agent-chat.js" defer></script>
 <script src="/project-management-public.js" defer></script>
+<script src="/pr-task-tree.js?v=20261107-v1" defer></script>
 <script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
 </head>
 <body class="hh-pm-nav-ready pm-body">
@@ -22,9 +24,10 @@
 <main class="pm-page">
 <header class="pm-hero"><div class="pm-eyebrow">HOLISTIC HOUSE · PR CONTROL TOWER</div>
 <h1>Project Management</h1>
-<p>Два проекта разработки. От большой задачи до статуса каждой подзадачи, PR и выпуска.</p>
+<p>Дерево всех открытых PR по направлениям и задачам, затем системный реестр CI и агентов.</p>
 <p class="pm-public">Просмотр без Google-входа · только открытые рабочие статусы · без приватных заметок</p>
 </header>
+<section id="hh-pr-task-tree" aria-label="Дерево задач и открытых PR"><p role="status">Загрузка открытых PR…</p></section>
 <section class="pm-overview" aria-label="Общая сводка">
 <div><strong id="pm-projects">—</strong><small>Больших проекта</small></div><div><strong id="pm-total">—</strong><small>Подзадачи</small></div>
 <div><strong id="pm-done">—</strong><small>Подтверждено</small></div><div><strong id="pm-blocked">—</strong><small>Блокировано</small></div>

@@ -605,7 +605,11 @@ test('missing owner token and interrupted claim may not unlock a source reservat
 test('existing Repair Worker workflow carries reservation identity without source tokens',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.ok(wf.includes('reservation_run_id:'));
- assert.equal((wf.match(/ref: \$\{\{ github\.sha \}\}/g)||[]).length,6);
+ assert.equal((wf.match(/ref: \$\{\{ github\.sha \}\}/g)||[]).length,7);
+ assert.ok(wf.includes('  commander-source-task:'));
+ assert.ok(wf.includes("github.actor == 'andylitvinov-design'"));
+ assert.ok(wf.includes("inputs.commander_source_task != ''"));
+ assert.ok(wf.includes('node --test tests/ci-pr-commander-source-task.test.cjs'));
  assert.ok(!wf.includes('ref: codex/bootstrap-books'));
  const dispatcher=require('node:fs').readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
  assert.ok(dispatcher.includes("reservation_run_id:String(context.runId||'')"));
