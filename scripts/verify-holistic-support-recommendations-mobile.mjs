@@ -15,9 +15,11 @@ await mkdir(output, { recursive: true });
 const evidence = [];
 
 for (const engine of [chromium, webkit]) {
-  const browser = await engine.launch({ headless: true });
-  try {
-    for (const locale of ["en", "ru", "es"]) {
+  for (const locale of ["en", "ru", "es"]) {
+    // A fresh browser per locale bounds WebKit memory across 18 heavy mobile
+    // flows. Keep all three viewport checks and both real browser engines.
+    const browser = await engine.launch({ headless: true });
+    try {
       for (const width of [320, 390, 430]) {
         const label = engine.name() + ":" + locale + ":" + width;
         const page = await browser.newPage({
@@ -156,9 +158,47 @@ for (const engine of [chromium, webkit]) {
 
           // The independent talisman flow still opens an existing SKU and local
           // quotation dialog; a click is NOT a lead, charge or delivery.
-          await root.locator('[data-support-tool="talisman"]').click();
+          const talismanButton=root.locator('[data-support-tool="talisman"]');
+          // WebKit's scrolling dock can shift while the long recommendation
+          // panel settles. Test one real, unobstructed fingertip tap, never
+          // a synthetic state mutation or a second click to hide a defect.
+          await talismanButton.evaluate(el=>el.scrollIntoView({
+            behavior:"instant",block:"center",inline:"nearest"
+          }));
+          await page.waitForFunction(()=>{
+            const el=document.querySelector('[data-support-tool="talisman"]');
+            if(!el)return false;
+            const box=el.getBoundingClientRect();
+            const x=box.left+box.width/2,y=box.top+box.height/2;
+            const hit=document.elementFromPoint(x,y);
+            return box.width>0&&box.height>0&&(hit===el||el.contains(hit));
+          },null,{timeout:12000});
+          await talismanButton.tap();
           const viewer = root.locator("[data-support-talisman-viewer]");
-          await viewer.waitFor({ state: "visible" });
+          try {
+            // Both the real React selection and the actual renderer must
+            // appear. A missing viewer stays a hard browser failure.
+            await page.waitForFunction(()=>{
+              const button=document.querySelector('[data-support-tool="talisman"]');
+              const viewer=document.querySelector('[data-support-talisman-viewer]');
+              return button?.getAttribute('aria-pressed')==='true' &&
+                viewer!==null && viewer.getBoundingClientRect().width>0;
+            },null,{timeout:18000});
+            await viewer.waitFor({ state: "visible",timeout:12000 });
+          } catch(error) {
+            const diagnosis=await page.evaluate(()=>({
+              pressed:document.querySelector('[data-support-tool="talisman"]')?.getAttribute('aria-pressed'),
+              viewerCount:document.querySelectorAll('[data-support-talisman-viewer]').length,
+              noInline:!!document.querySelector('[data-support-goal-no-inline]'),
+              guide:!!document.querySelector('[data-support-inline-guide]'),
+              panel:!!document.querySelector('[data-support-talisman-experience]'),
+              url:location.pathname,
+            })).catch(()=>({browserUnavailable:true}));
+            console.error(JSON.stringify({phase:"talisman-real-tap",label,diagnosis,errors}));
+            await page.screenshot({path:output+"/talisman-failed-"+label.replaceAll(":","-")+".png",
+              fullPage:true}).catch(()=>{});
+            throw error;
+          }
           assert.equal(await viewer.locator("[data-support-talisman-thumb]").count(), 3,
             label + " three approved symbolic illustrations");
           const categories = viewer.locator("[data-support-talisman-category]");
@@ -266,8 +306,8 @@ for (const engine of [chromium, webkit]) {
             highestNeed:"money=1", railAboveHero:true, noAutoplay:true, quoteNotSubmitted:true });
         } finally { await page.close(); }
       }
-    }
-  } finally { await browser.close(); }
+    } finally { await browser.close(); }
+  }
 }
 await writeFile(output+"/summary.json",JSON.stringify({cases:evidence},null,2));
 console.log("Support lowest-rating / gallery / talisman browser checks: " + evidence.length + " passed");
