@@ -787,8 +787,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         try {
           // Guest video playback is free; Save may require sign-in/credits.
           let verificationTapped=false;
+          let returnedFromReady=false;
           const verifyPlayback=page.locator("[data-video-verify-playback]");
+          const readyTab=page.locator('[data-video-quick-control="ready"]');
+          const proTab=page.locator('[data-video-quick-control="pro"]');
           await expect.poll(async()=>{
+            // After a genuine successful export the studio transitions to Ready.
+            // Ready intentionally hides the original PRO result player; navigate
+            // back through the VISIBLE PRO tab to verify its encoded media.
+            // No login, download click, hidden elements or fake MediaRecorder.
+            if(!returnedFromReady && await readyTab.getAttribute("aria-pressed")==="true"
+              && await proTab.isVisible()){
+              await proTab.click();
+              await expect(proTab).toHaveAttribute("aria-pressed","true");
+              returnedFromReady=true;
+            }
             if(await preview.isVisible()){
               const decoded=await preview.evaluate(video=>
                 video.readyState>=2 && video.videoWidth>0 && video.videoHeight>0 && !video.error
@@ -810,7 +823,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
             const video=document.querySelector("[data-mandala-master-mp4]");
             const create=document.querySelector("[data-video-quick-generate]");
             const result=document.querySelector("[data-video-result]");
+            const player=document.querySelector("[data-mandala-video-preview]");
+            const readyPlayer=document.querySelector("[data-video-ready] video");
             return {
+              workspace:document.querySelector("[data-mandala-free-video]")?.getAttribute("data-active-workspace")??null,
+              resultPlayer:player instanceof HTMLVideoElement?{readyState:player.readyState,
+                width:player.videoWidth,height:player.videoHeight,error:player.error?.code??null,
+                src:Boolean(player.currentSrc||player.src)}:null,
+              readyPlayer:readyPlayer instanceof HTMLVideoElement?{readyState:readyPlayer.readyState,
+                width:readyPlayer.videoWidth,height:readyPlayer.videoHeight,error:readyPlayer.error?.code??null}:null,
               canClick:create instanceof HTMLButtonElement ? !create.disabled : null,
               source:video instanceof HTMLVideoElement ? {
                 readyState:video.readyState,width:video.videoWidth,height:video.videoHeight,
