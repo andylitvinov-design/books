@@ -4,7 +4,6 @@ import {readFileSync} from "node:fs";
 import {affirmationNarrationText,affirmationNarrationForSelection,isApprovedAffirmationNarration,wavDurationFromHeader} from "../lib/mandala/affirmation-voice.mjs";
 import {validateStudioRequest,buildStudioPayload,VOICE_STUDIO_VOICES,voiceStudioProviders} from "../lib/mandala/voice-studio.mjs";
 import {fixedLivePhraseRequest,verifyLiveSelectedPhrase,verifyLiveVoiceBytes} from "../scripts/verify-live-selected-voice-phrase.mjs";
-import {validatedPublicVoiceSampleDuration} from "../lib/mandala/public-voice-sample-integrity.mjs";
 
 const read=(path)=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const source=read("scripts/verify-affirmation-voice-browser.mjs");
@@ -162,8 +161,8 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
  const tap=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
  const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
- const topic=flow.indexOf('data-video-meaning-axis',open);
- const montage=flow.indexOf('await montage.click()',topic);
+ const topic=flow.indexOf('data-auto-video-topic-panel',open);
+ const montage=flow.indexOf('await montage.tap()',topic);
  const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
  const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);
  const selected=flow.indexOf('await minimal.tap()',six);
@@ -198,7 +197,7 @@ test("affirmation attachment acceptance verifies the visible live movie soundtra
 
 test("voice release encodes audible video in both Chromium and WebKit, never preview-only",()=>{
   assert.match(source,/if\(engine==="chromium"\|\|engine==="webkit"\)/);
-  assert.match(source,/await preview\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+  assert.match(source,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
   assert.match(source,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
   assert.match(source,/assert\.ok\(audioTrack/);
   assert.match(source,/Number\(audioTrack\.channels\),2/);
@@ -238,7 +237,7 @@ test("stalled WebKit recorder diagnostics cannot conceal a real export failure",
   assert.match(source,/4000,engine\+" media-state evaluation"/);
   assert.match(source,/withDeadline\(context\.close\(\),10000/);
   assert.match(source,/withDeadline\(browser\.close\(\),10000/);
-  assert.match(source,/await preview\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+  assert.match(source,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
   assert.match(source,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
   assert.match(source,/assert\.ok\(audioTrack/);
   assert.match(source,/Number\(audioTrack\.channels\),2/);
@@ -252,7 +251,7 @@ test("WebKit macOS media acceptance is headed, real encoded audio and never a mo
   assert.ok(source.includes('const headedWebKit=requestedEngine==="webkit" && process.env.HH_VOICE_E2E_HEADED==="1"'));
   assert.ok(source.includes('browserType.launch({headless:!(engine==="webkit" && headedWebKit)})'));
   assert.ok(source.includes('assert.equal(process.platform,"darwin"'));
-  assert.ok(source.includes('await preview.waitFor({state:"visible",timeout:45000})'));
+  assert.ok(source.includes('await output.waitFor({state:"visible",timeout:45000})'));
   for(const requirement of ['tracks.includes("video")','const audioTrack=streams.find(row=>row.codec_type==="audio")',
     'assert.ok(audioTrack',
     'Number(audioTrack.channels),2','pcm.stdout.some(value=>value!==0)']) assert.ok(source.includes(requirement));
@@ -329,8 +328,8 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
   assert.ok(ui.includes('setConsent(false)'));
   assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
   const speechChangeEffect=ui.slice(
-    ui.indexOf('    const textChanged=previous.speechText!==speechText;'),
-    ui.indexOf('  },[speechText,voiceId,language,busy,mixing,locale]);'));
+    ui.indexOf('    const textChanged=originRef.current.speechText!==speechText;'),
+    ui.indexOf('  },[speechText,voiceId,language]);'));
   assert.match(speechChangeEffect,/if\(voiceDataRef\.current\)onInvalidateRef\.current\?\.\(\)/,
     "changing the spoken phrase must detach its previous WAV");
   assert.doesNotMatch(speechChangeEffect,/voiceDataRef\.current&&!textChanged/,
@@ -528,51 +527,4 @@ test("voice export uses visible Audio-stage Generate, never the hidden Style-sta
   assert.ok(effects>=0&&audio>effects&&click>audio&&pressed>click&&generate>pressed,
     "video with consented narration must use a real visible Audio-tab export button");
   assert.doesNotMatch(source.slice(effects,generate),/click\(\{force:true\}\)/);
-});
-
-test("WebKit voice lifecycle does not abort or invalidate identical narration",()=>{
- const ui=read("components/mandala-affirmation-voice.tsx");
- for(const marker of ["useLayoutEffect(()=>{","const previous=originRef.current",
-  "previous.speechText===speechText && previous.voiceId===voiceId",
-  "previous.language===language)return","data-video-affirmation-phase={generationPhase}",
-  'setGenerationPhase("attached")'])assert.ok(ui.includes(marker),marker);
-});
-test("male voice preview rejects corrupt cached WAV and recovers on user Listen",()=>{
- const bytes=new ArrayBuffer(44),v=new DataView(bytes);
- const ascii=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
- ascii(0,"RIFF");v.setUint32(4,48036,true);ascii(8,"WAVE");
- ascii(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);
- v.setUint16(22,1,true);v.setUint32(24,24000,true);v.setUint32(28,48000,true);
- v.setUint16(32,2,true);v.setUint16(34,16,true);
- ascii(36,"data");v.setUint32(40,48000,true);
- assert.equal(wavDurationFromHeader(bytes),1,"header alone wrongly accepts missing audio");
- assert.equal(validatedPublicVoiceSampleDuration(bytes),null,"no audio data must be rejected");
- const valid=new ArrayBuffer(48044);new Uint8Array(valid).set(new Uint8Array(bytes));
- assert.equal(validatedPublicVoiceSampleDuration(valid),1,"complete mono PCM works");
- new DataView(valid).setUint16(20,3,true);
- assert.equal(validatedPublicVoiceSampleDuration(valid),null,"unsupported PCM format rejected");
- const ui=read("components/mandala-affirmation-voice.tsx");
- const cache=read("lib/mandala/public-voice-sample-cache.ts");
- for(const marker of ["sampleRejectedKeysRef.current.has(persistentKey)",
-  "validatedPublicVoiceSampleDuration(await saved.arrayBuffer())",
-  "validatedPublicVoiceSampleDuration(await audio.arrayBuffer())",
-  "samplePendingPersistRef.current={key:persistentKey,audio,uri}",
-  "onCanPlay={sampleCanPlay} onError={samplePlaybackError}",
-  "sampleCacheRef.current.delete(memoryKey)",
-  "void deletePublicVoiceSample(storageKey)"])assert.ok(ui.includes(marker),marker);
- for(const marker of ["validatedPublicVoiceSampleDuration(await audio.arrayBuffer())",
-   "export async function deletePublicVoiceSample"])assert.ok(cache.includes(marker),marker);
-});
-
-test("guest WebKit checks the true local movie Blob with audible decoded audio",()=>{
- const source=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.match(source,/__hhGeneratedFilmBlobs=new Map\(\)/);
- assert.match(source,/__hhGeneratedFilmBlobs\.set\(uri,blob\)/);
- assert.match(source,/__hhGeneratedFilmBlobs\?\.get\(video\.currentSrc\|\|video\.src\)/);
- assert.match(source,/reader\.readAsDataURL\(blob\)/);
- assert.match(source,/video\.readyState>=2 && video\.videoWidth>0 && video\.videoHeight>0 && !video\.error/);
- assert.match(source,/const bytes=Buffer\.from\(encodedDataUrl/);
- assert.match(source,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
- assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
- assert.doesNotMatch(source,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
 });

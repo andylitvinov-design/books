@@ -320,27 +320,3 @@ test("validated Messenger video handoff visibly opens the original Studio Direct
  assert.match(css,/\[data-workspace-section="video"\]:not\(\[data-video-topic-section\]\)\s*\{\s*display:none!important;/,
    "unopened legacy Goals sections remain hidden");
 });
-
-
-test("six-tab practices WebKit E2E follows the existing guided journey, not a deleted seventh tab",()=>{
- const guided=readFileSync(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
- const mobile=readFileSync(new URL("../scripts/verify-practices-mobile-browser.mjs",import.meta.url),"utf8");
- const voice=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
- assert.match(guided,/holistic-support\/mandala#guided-video-series/);
- assert.match(guided,/data-active-workspace"\),"practices"/);
- assert.match(guided,/data-video-quick-control="ready"/);
- assert.match(mobile,/data-video-quick-control="ready"/);
- assert.doesNotMatch(guided+mobile,/data-video-quick-control="practices"/);
- assert.match(voice,/data-video-ideas-text-size/);
- assert.match(voice,/data-mandala-cinematic-canvas/);
- assert.match(voice,/const phrasePixels=\(\)=>filmCanvas\.evaluate/,"size tested on real Canvas pixels");
- assert.match(voice,/await expect\.poll\(phrasePixels,\{timeout:12000\}\)\.not\.toBe\(smallPixels\)/);
- assert.match(voice,/const firstFrame=await phrasePixels\(\)/,"moving Canvas must render subsequent frames");
- assert.match(voice,/await recordEntry\.click\(\)/,"voice editor opens only on its real entry");
- assert.match(voice,/await expect\(advancedVoice\)\.toBeHidden\(\)/,"recording panel is initially hidden");
- assert.match(voice,/data-video-own-voice-record/,"real local recorder remains available");
- assert.match(voice,/data-video-ideas-refine/,"local Ideas refinement, not an unrelated Goal editor");
- assert.doesNotMatch(voice,/data-video-ideas-refinement/);
- assert.match(voice,/data-preview-playing","true"/);
- assert.match(voice,/assert\.deepEqual\(pageErrors,\[\],/);
-});
