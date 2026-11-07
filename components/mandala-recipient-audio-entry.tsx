@@ -19,7 +19,7 @@ const words={
  ru:{
   title:"Видеоряд по вашей аудиозаписи",
   subtitle:"Загрузите голос, медитацию или послание. Выделим смысловые образы и предложим настоящие видеосцены.",
-  upload:"Загрузить аудио",hint:"MP3, M4A, WAV, WebM, OGG или AAC · до 4 МБ · до 60 секунд.",
+  upload:"Загрузить аудио",hint:"MP3, M4A, WAV, WebM или AAC · до 4 МБ · до 59 секунд.",
   remove:"Убрать запись",rights:"Я имею право использовать эту аудиозапись в видео.",
   consent:"Разрешаю однократно передать запись внешнему сервису распознавания. Сайт не сохраняет запись и расшифровку.",
   analyze:"Расшифровать и подобрать видеоряд",busy:"Распознаём речь…",
@@ -33,7 +33,7 @@ const words={
  en:{
   title:"Footage for your audio",
   subtitle:"Upload a voice message, meditation or narration. We match licensed video clips to spoken meaning.",
-  upload:"Upload audio",hint:"MP3, M4A, WAV, WebM, OGG or AAC · up to 4 MB · up to 60 seconds.",
+  upload:"Upload audio",hint:"MP3, M4A, WAV, WebM or AAC · up to 4 MB · up to 59 seconds.",
   remove:"Remove audio",rights:"I have permission to use this audio in a video.",
   consent:"I agree to send this recording once to an external transcription service. The site does not store audio or text.",
   analyze:"Transcribe and match scenes",busy:"Transcribing…",
@@ -47,7 +47,7 @@ const words={
  es:{
   title:"Vídeo a partir de tu audio",
   subtitle:"Sube una voz, meditación o mensaje. Seleccionamos escenas autorizadas por sus significados.",
-  upload:"Subir audio",hint:"MP3, M4A, WAV, WebM, OGG o AAC · hasta 4 MB · hasta 60 segundos.",
+  upload:"Subir audio",hint:"MP3, M4A, WAV, WebM o AAC · hasta 4 MB · hasta 59 segundos.",
   remove:"Quitar audio",rights:"Tengo permiso para usar este audio en un vídeo.",
   consent:"Autorizo enviar este audio una vez al servicio externo de transcripción. El sitio no guarda audio ni texto.",
   analyze:"Transcribir y elegir escenas",busy:"Transcribiendo…",
@@ -79,7 +79,7 @@ export function MandalaRecipientAudioEntry({locale,disabled,audio}:{
    </label>
    <input id="video-recipient-audio-file" data-video-recipient-audio-upload
      className={css.recipientAudioFile} type="file"
-     accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,audio/ogg,.mp3,.m4a,.wav,.aac,.mp4,.webm,.ogg"
+     accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
      disabled={disabled||audio.busy}
      onChange={event=>{
        const file=event.currentTarget.files?.[0];
