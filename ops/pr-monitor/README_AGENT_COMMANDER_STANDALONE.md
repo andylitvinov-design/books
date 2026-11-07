@@ -72,3 +72,8 @@ The mobile editor reuses the existing fixed five-tab dock and contains task iden
 - Release preserves the full existing manually deployed source manifest including legacy monitor and all API files; never deploy only the GitHub subset. MERGED is not LIVE.
 
 Acceptance: tap «Передать в защищённый редактор» → same-origin route, same tab → owner login or valid existing session → source/prompt remain editable → live PR search, quality checks, draft options, truthful queue status. Guests get 401 on `/api/commander-drafts`. Validate 320/390/430px Safari and production alias.
+
+
+## Multi-chat workspace · 7 Nov 2026
+
+Same-site `/chats.html` supports separate owner-protected conversations by task/team, multiple executor assignments, associated PR, history and on-demand proof. Existing quick chat links to this workspace. Assignment and AI replies never certify a commit or LIVE. Server mode reuses only the verified PRIVATE GitHub task store; until configured, users may opt into a separately password-protected AES-GCM local vault and encrypted backup. No plaintext private content in the public books repository. Detailed architecture and release procedure: docs/operations/HH_AGENT_COMMANDER_MULTI_CHAT_V1_20261107.md.

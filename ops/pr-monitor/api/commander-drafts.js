@@ -154,3 +154,4 @@ module.exports=async function(req,res){
  }catch(e){return respond(res,503,{error:compact(e.message||'SERVER_ERROR',120)})}
 };
 module.exports.__test={owner,originOK,ready,clean,makeBody,unpack};
+module.exports.__private={owner,originOK,ready,github,assertPrivate};

@@ -17,13 +17,13 @@
   const refresh=make('button','hh-cc-iconbtn','⟳');refresh.type='button';refresh.title='Обновить страницу';refresh.setAttribute('aria-label','Обновить страницу');refresh.addEventListener('click',()=>location.reload());head.append(refresh);
   const more=make('button','hh-cc-iconbtn','⋮');more.type='button';more.title='Разделы мониторинга';more.setAttribute('aria-label','Разделы мониторинга');more.setAttribute('aria-expanded','false');head.append(more);
   const menu=make('div','hh-cc-menu');menu.hidden=true;
-  [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Библиотека навыков','/skills.html'],['Защищённый редактор задач','/task-editor.html']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
+  [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Рабочие чаты','/chats.html'],['Библиотека навыков','/skills.html'],['Защищённый редактор задач','/task-editor.html']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
   head.append(menu);more.addEventListener('click',()=>{menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden))});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
   document.addEventListener('click',e=>{if(!head.contains(e.target)){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
   document.body.prepend(head);
   const nav=make('nav');nav.id='hh-cc-dock';nav.setAttribute('aria-label','Agent Commander · основные разделы');
-  const active=(location.pathname===paths.tasks||location.pathname==='/task-editor.html')?'tasks':location.pathname===paths.agents?'agents':location.pathname===paths.projects?'projects':location.pathname===paths.monitor?'monitor':'home';
+  const active=(location.pathname===paths.tasks||location.pathname==='/task-editor.html')?'tasks':(location.pathname===paths.agents||location.pathname==='/chats.html')?'agents':location.pathname===paths.projects?'projects':location.pathname===paths.monitor?'monitor':'home';
   [['home','Главная'],['tasks','Задачи'],['add','Создать'],['agents','Агенты'],['projects','Проекты']].forEach(([name,label])=>{
    const e=make(name==='add'?'button':'a');if(name==='add'){
     e.type='button';e.setAttribute('aria-label','Создать задачу');e.append(make('span','hh-cc-add','+'));
