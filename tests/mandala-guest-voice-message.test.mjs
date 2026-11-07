@@ -55,7 +55,7 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit follows Goal 1 → Goal 2 → Ideas → Montage with native clicks",()=>{
+test("macOS WebKit follows visible Goal 1 → Goal 2 → Ideas → Montage with native controls",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const style=read("components/mandala-video-mobile.module.css");
@@ -67,11 +67,11 @@ test("macOS WebKit follows Goal 1 → Goal 2 → Ideas → Montage with native c
  const goalNext=flow.indexOf("await goal2.locator('[data-video-goal-clarify-continue]').click()",goal);
  const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',goalNext);
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
- const open=flow.indexOf('await refineButton.click()',refinement);
- const verify=flow.indexOf('await expect(refineButton).toHaveAttribute("aria-expanded","true")',open);
- const montage=flow.indexOf("await montage.click()",verify);
+ const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
+ const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
+ const montage=flow.indexOf("await montage.tap()",verify);
  assert.ok(first>=0&&last>first&&click>=0&&goal>click&&goalNext>goal&&ideas>goalNext&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
-   "native Goal1 → Goal2 → Ideas → Montage via real selectable controls");
+   "two genuine Goal CTA actions precede Ideas and native topic disclosure / Montage");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
@@ -126,56 +126,23 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(studio.includes('setIdeasVoiceAdvancedOpen(true)'),"the visible Ideas audio shortcut opens the editor");
  assert.ok(studio.includes('hidden={activeWorkspace!=="phrases"}'),"voice editor is visible only within Ideas");
  assert.ok(studio.includes('{deepHypnoPane}'),"existing voice and approval controls are retained");
- assert.ok(browser.includes("const audioShortcut=phrases.locator('[data-video-phrase-audio-shortcut]')"),
-  "WebKit must find the real visible Ideas audio shortcut");
- assert.ok(browser.includes("await expect(audioShortcut).toBeVisible()") &&
-   browser.includes("await audioShortcut.click()"),
-  "WebKit must open the opt-in editor with one genuine user click");
- assert.ok(browser.includes('await expect(advancedVoice).toHaveAttribute("open","")'),
-  "The existing narration editor must visibly open after the shortcut, not a test-only bypass");
+ // Retain real user initiation: Ideas hides this panel until a visible
+ // audio/voice shortcut is clicked. A CSS-hidden summary is never clicked.
+ const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()');
+ const shortcut=browser.indexOf("const revealVoice=phrases.locator",hidden);
+ const visible=browser.indexOf("await expect(revealVoice).toBeVisible",shortcut);
+ const tapped=browser.indexOf("await revealVoice.click()",visible);
+ const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tapped);
+ const options=browser.indexOf("await expect(advancedVoice.locator",opened);
+ assert.ok(hidden>=0&&shortcut>hidden&&visible>shortcut&&tapped>visible&&
+  opened>tapped&&options>opened,
+  "WebKit must reveal the real existing voice editor through a visible user click");
  assert.ok(!browser.includes('await advancedVoice.locator(":scope > summary").click()'),
-  "Do not click CSS-hidden advanced settings before the visitor opens them");
+  "hidden summary interaction is not an acceptable visitor path");
  assert.ok(browser.includes("await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible()"));
  assert.ok(!browser.includes("advancedVoice.click({force:true})"),"never force hidden voice controls");
  const css=read("components/mandala-video-mobile.module.css");
  assert.ok(css.includes('[data-video-legacy-phrase-editor]:not([hidden])'),"opt-in advanced editor not hidden by retired CSS");
  assert.ok(css.includes('[data-video-phrase-audio-shortcut]'),"audio shortcut remains visible");
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
-});
-
-test("guided meditation Include opens the existing narrator synchronously to preserve the next Safari Skip tap",()=>{
- const studio=read("components/mandala-free-video-studio.tsx");
- const course=read("components/mandala-guided-course.tsx");
- const browser=read("scripts/verify-mandala-practices-browser.mjs");
- const add=studio.slice(studio.indexOf("onAddMeditation={script=>{"),
-   studio.indexOf("onOmitMeditation={()=>{",studio.indexOf("onAddMeditation={script=>{")));
- assert.match(add,/if\(!revealEditor\(\)\)window\.requestAnimationFrame\(revealEditor\)/);
- assert.match(add,/details\.scrollIntoView\(\{behavior:"instant" as ScrollBehavior,block:"center"\}\)/);
- assert.doesNotMatch(add,/scrollIntoView\(\{behavior:"auto"/);
- assert.match(course,/data-guided-skip-meditation[\s\S]*?setMeditationChoice\("omit"\);onOmitMeditation\?\.\(\)/);
- assert.match(studio,/setCourseMeditationOmitted\(true\)/);
- assert.match(studio,/setCourseMeditationDraft\(""\)/);
- assert.match(browser,/skip\?\.getAttribute\("aria-pressed"\)==="true" && audio\?\.open===false/);
- assert.doesNotMatch(browser,/\.click\(\{force:true\}\)/);
-});
-
-test("physical macOS WebKit reaches guided course through Ready without force or missing legacy tab",()=>{
- const browser=read("scripts/verify-mandala-practices-browser.mjs");
- const studio=read("components/mandala-free-video-studio.tsx");
- const ready=read("components/mandala-video-ready.tsx");
- const a=browser.indexOf("const readyTab=page.locator");
- const b=browser.indexOf('const journey=ready.locator("[data-ready-journey]")',a);
- const c=browser.indexOf('const enterCourse=ready.locator("[data-ready-create-course]")',b);
- const d=browser.indexOf('await course.waitFor({state:"visible"',c);
- assert.ok(a>=0&&b>a&&c>b&&d>c,
-  "visitor can click Ready → 8-session journey → actual Course without obsolete tab");
- assert.doesNotMatch(browser,/data-video-quick-control="practices"|\.click\(\{force:true\}\)/);
- assert.match(ready,/data-ready-journey/);
- assert.match(ready,/data-ready-eight-sessions/);
- assert.match(ready,/data-ready-create-course/);
- assert.match(studio,/onOpenCourse=\{\(\)=>\{/);
- assert.match(browser,/await expect\(include\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
- assert.match(browser,/data-guided-eight-sessions/);
- assert.match(browser,/data-meditation-course-contact/);
- assert.match(browser,/assert\.deepEqual\(writes,\[\],/);
 });

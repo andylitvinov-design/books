@@ -4454,6 +4454,68 @@
 @media(min-width:760px){.montageAudioOverlay{align-items:center;padding:24px}.montageAudioDialog{border-radius:26px;max-height:86dvh}}
 @media(max-width:359px){.montageAudioDialogScroll{padding:4px 9px 12px}.montageAudioDialogFooter{padding-left:9px;padding-right:9px}.montageAudioDialogFooter button{font-size:12px}}
 
+
+/* Hypno follows Montage: the already-selected goal stays in Goal/Ideas,
+   and one existing shared video player precedes three Hypno effect tabs. */
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-quick-section="1"],
+.studio[data-active-workspace="effects"] .quickBuilder>.hypnoIntroSlot{display:none!important}
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel]{order:3!important}
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-result]{order:4!important}
+
+
+/* 06 Nov owner-approved Hypno hero: photo/player left, effect heading right.
+   Video preview is the original Canvas, not a second media element. */
+.hypnoStageTitle{display:none}
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .previewStageHeading{display:none!important}
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail{
+  display:flex!important;align-items:center;gap:10px!important
+ }
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail>.hero{
+  flex:0 0 58%!important;width:58%!important;max-width:58%!important;
+  min-width:0;aspect-ratio:16/9!important;border-radius:16px!important
+ }
+ .studio[data-active-workspace="effects"] .previewStage .heroRail{display:none!important}
+ .studio[data-active-workspace="effects"] .heroEditorial{display:none!important}
+ .studio[data-active-workspace="effects"] .previewStage .heroPlay{
+  left:50%!important;top:50%!important
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle{
+  display:flex;flex:1 1 0;align-items:flex-start;gap:6px;min-width:0;
+  padding:3px 0;color:#087b60
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle>svg{
+  flex:none;width:21px;height:21px;margin-top:1px
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle>div{min-width:0}
+ .studio[data-active-workspace="effects"] .hypnoStageTitle h3{
+  font:800 clamp(15px,4.5vw,22px)/1.09 Georgia,serif;color:#17334b;
+  overflow-wrap:anywhere
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle p{
+  margin:6px 0 0;color:#5d6a71;
+  font:500 clamp(10px,2.9vw,13px)/1.27 Arial,sans-serif;
+  overflow-wrap:anywhere
+ }
+ /* Title is in the hero for mobile; the Wave action remains in its real
+    child editor, immediately before the three tabs. */
+ .studio[data-active-workspace="effects"] [data-hypno-compact="true"] .heading{
+  display:none!important
+ }
+ .studio[data-active-workspace="effects"] [data-hypno-compact="true"] .intro{
+  justify-content:flex-end;margin-bottom:8px
+ }
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail{gap:6px!important}
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail>.hero{
+  flex-basis:55%!important;width:55%!important;max-width:55%!important
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle{gap:4px}
+ .studio[data-active-workspace="effects"] .hypnoStageTitle>svg{width:18px;height:18px}
+ .studio[data-active-workspace="effects"] .hypnoStageTitle h3{font-size:15px}
+}
+
 /* iHelp opens the ONE existing Director as an opt-in overlay. Its React state
    remains mounted across Video/Ideas/Effects/Montage tab switches. */
 .iHelpVideoBackdrop{position:fixed;inset:0;z-index:180;width:100vw;height:100dvh;
@@ -4818,6 +4880,7 @@
  .studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut]{display:none!important}
 }
 
+
 /* Goal 2/2: exactly one real Studio, no hero/player on this clarification
    screen. Owner-approved image-backed cards have their own scroll panes. */
 .goalClarifyStep{display:grid;grid-column:1/-1;order:3;gap:10px;min-width:0;width:100%;
@@ -4833,4 +4896,3 @@
  .studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder{
   gap:8px!important;padding:0 2px max(20px,env(safe-area-inset-bottom))!important}
  .studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>.goalClarifyStep{padding:5px 0 16px!important}
-}

@@ -25,6 +25,7 @@
 .play{background:#fff;box-shadow:0 1px 5px #244c3d25}.edit{background:transparent}
 .play:disabled,.edit:disabled,.pick:disabled{opacity:.4}
 .warning{margin:0!important;color:#a16a1b;font-size:11px;font-weight:700}
+.saved{margin:0!important;color:#08745a;font-size:11px;font-weight:750}
 .actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .actions button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:43px;padding:5px;border:1px solid #dce7dd;border-radius:11px;background:#fffdf8;color:#08705a;text-align:center}
 .actions button:last-child{background:#fff4dc;border-color:#eedbb5;color:#91620c}
@@ -68,8 +69,7 @@
 @media(min-width:760px){.phraseList{max-height:350px}.item{min-height:48px;padding:6px 9px}.phraseText{font-size:15px}.sizeCard{padding:12px 16px}.sizeTitle label{font-size:16px}.actions button{min-height:49px}.actions small{display:block;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.sample{transition:none}}
 
-/* Goal 2 owns all emotional questions. Ideas preserves the approved seven-line
-   text-size, film preview, voice/own-phrase editor and five-phrase minimum. */
+/* Goal2 owns the emotional questions; preserve the current Ideas saved editor. */
 .goalSummary{display:flex;align-items:center;justify-content:space-between;gap:9px;
  border:1px solid #e9dfd1;border-radius:15px;background:#fffcf7;padding:9px 12px;color:#245749;
  font:650 clamp(12px,3.1vw,14px)/1.35 system-ui,sans-serif;flex-wrap:wrap}

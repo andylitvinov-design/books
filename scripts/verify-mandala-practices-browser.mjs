@@ -33,9 +33,9 @@ export async function verifyGuidedPractices({browser,base,engine}){
         waitUntil:"domcontentloaded",timeout:70000,
       });
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
-      // The approved six-tab Studio no longer has a top-level "practices" tab.
-      // Use the genuinely visible guest journey: Ready → 8 sessions → Create course.
-      // Keep the full local-meditation, consent, programme and privacy assertions below.
+      // The six-tab mobile Studio keeps the old pump banner hidden on Goal.
+      // Use the actual visible journey route: Ready → 8-session course →
+      // Create my programme. Do not force-click CSS-hidden legacy controls.
       const readyTab=page.locator('[data-video-quick-control="ready"]');
       await expect(readyTab).toBeVisible({timeout:25000});
       await expect(readyTab).toBeEnabled();
@@ -82,15 +82,20 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await practice.locator("button").last().click();
       assert.notEqual(await practice.locator("h5").innerText(),titles[2],"refresh changes the method");
 
-      const include=result.locator("[data-guided-add-meditation]");
+      const include= result.locator("[data-guided-add-meditation]");
       await include.click();
+      // The included choice must really commit before the parent scrolls
+      // the expanded narration editor. This prevents a stale WebKit tap
+      // from silently losing the next opt-out action.
       await expect(include).toHaveAttribute("aria-pressed","true",{timeout:15000});
       const voice=page.locator("[data-video-therapy-meditation-audio]");
       await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===true);
       await voice.locator("[data-meditation-script]").waitFor({state:"attached"});
       const seeded=await voice.locator("[data-meditation-script]").inputValue();
       assert.equal(seeded.trim(),script.trim(),"approved original script reaches the existing narration editor");
-      await result.locator("[data-guided-skip-meditation]").click();
+      const skip= result.locator("[data-guided-skip-meditation]");
+      await expect(skip).toBeEnabled();
+      await skip.click();
       // WebKit may resolve the DOM click before React commits the reversible
       // omission. Wait for both verified effects, never a timed sleep.
       try{

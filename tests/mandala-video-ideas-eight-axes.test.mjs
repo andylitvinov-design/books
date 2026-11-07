@@ -23,17 +23,19 @@ test("eight exact canonical axes, all three languages, five safe unique phrases"
     assert.notDeepEqual(ref,suggestMeaningPhrases(lang,...args));
  }
 });
-test("Goal 2 owns emotion choices, mood filters, sliders and meaning axes; Ideas retains Montage action",()=>{
- for(const marker of ["data-video-goal-scroll","data-video-goal-mood","data-video-goal-choice",
+test("Goal2 owns moods and levels; Ideas keeps the one saved phrase editor and Montage action",()=>{
+ for(const mark of ["data-video-goal-scroll","data-video-goal-mood","data-video-goal-choice",
    "data-video-goal-energy","data-video-goal-desired-level","data-video-goal-axis",
-   "data-video-goal-clarify-continue"]) assert.ok(goal.includes(marker),marker);
- for(const marker of ["data-video-idea-phrase","data-video-ideas-create",
+   "data-video-goal-clarify-continue"]) assert.ok(goal.includes(mark),mark);
+ for(const mark of ["data-video-idea-phrase","data-video-ideas-create",
    "data-video-ideas-size","data-video-ideas-record","data-video-ideas-edit-goal"])
-   assert.ok(cmp.includes(marker),marker);
+   assert.ok(cmp.includes(mark),mark);
  assert.match(goal,/listMeaningAxes\(locale\)/);
  assert.match(cmp,/goalProfile:VideoGoalProfile/);
  assert.match(cmp,/goalCurrentMeaningId/);
  assert.match(cmp,/goalDesiredMeaningId/);
+ assert.match(cmp,/isIdeaEditorSnapshot\(remembered,signature\)/);
+ assert.match(cmp,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
  assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
@@ -72,7 +74,7 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/selectedCount<5/);
  assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
- assert.match(cmp,/presetOverride:preset,custom:picked\.slice\(5,10\)\.join/);
+ assert.match(cmp,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
  assert.match(renderer,/const textScale = settings\.textScale === "small"/);
