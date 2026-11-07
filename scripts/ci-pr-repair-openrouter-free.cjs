@@ -1,0 +1,81 @@
+'use strict';
+// Read-only, single-request free OpenRouter proposer. No GitHub token or source
+// write capability is ever passed to this adapter. The caller independently
+// validates and applies the returned patch inside an unprivileged worktree.
+const BASE='https://openrouter.ai/api/v1';
+const DEFAULT_MODEL='liquid/lfm-3-1.7b:free';
+const MAX_REPLY=40000;
+function selectedModel(value=DEFAULT_MODEL){
+  if(typeof value!=='string'||!/^[A-Za-z0-9][\w.-]*\/[A-Za-z0-9][\w.-]*:free$/.test(value))
+    throw Error('FREE_AI_OPENROUTER_MODEL_NOT_EXPLICIT_FREE');
+  return value;
+}
+function verifyZeroPrice(catalog,model){
+  const id=selectedModel(model);
+  if(!Array.isArray(catalog?.data))throw Error('FREE_AI_OPENROUTER_CATALOG_INVALID');
+  const rows=catalog.data.filter(row=>row?.id===id);
+  if(rows.length!==1)throw Error('FREE_AI_OPENROUTER_MODEL_NOT_IN_CATALOG');
+  const entry=rows[0],pricing=entry.pricing;
+  if(!pricing||typeof pricing!=='object'||Array.isArray(pricing)||
+    !Object.hasOwn(pricing,'prompt')||!Object.hasOwn(pricing,'completion'))
+    throw Error('FREE_AI_OPENROUTER_PRICE_UNKNOWN');
+  // Optional request, cache, image, reasoning or other billed units must
+  // also have an explicitly zero price. Unknown prices fail closed.
+  const fields=Object.entries(pricing);
+  for(const [,value] of fields){
+    if(!((typeof value==='number'||typeof value==='string')&&
+      String(value).trim()!==''&&Number.isFinite(Number(value))))
+      throw Error('FREE_AI_OPENROUTER_PRICE_UNKNOWN');
+    if(Number(value)!==0)throw Error('FREE_AI_OPENROUTER_PRICE_NOT_ZERO');
+  }
+  if(!Array.isArray(entry.endpoints)||!entry.endpoints.includes('/api/v1/chat/completions')||
+    !entry.architecture?.output_modalities?.includes('text'))
+    throw Error('FREE_AI_OPENROUTER_NOT_TEXT_CHAT');
+  return {model:id,zeroCost:true};
+}
+async function getJson(fetchImpl,url,options,timeoutMs){
+  let response;
+  try{response=await fetchImpl(url,{...options,signal:AbortSignal.timeout(timeoutMs)});}
+  catch{throw Error('FREE_AI_OPENROUTER_NETWORK_UNAVAILABLE');}
+  if(response?.status===429)throw Error('FREE_AI_FREE_TIER_QUOTA_EXHAUSTED');
+  if(!response?.ok)throw Error('FREE_AI_OPENROUTER_REQUEST_REJECTED');
+  let body;
+  try{
+    const raw=await response.text();
+    if(raw.length>8*1024*1024)throw Error('oversized');
+    body=JSON.parse(raw);
+  }catch{throw Error('FREE_AI_OPENROUTER_RESPONSE_INVALID');}
+  return body;
+}
+async function requestFreePatch({prompt,key,model=DEFAULT_MODEL,fetchImpl=global.fetch}={}){
+  const selected=selectedModel(model);
+  if(typeof key!=='string'||!key.trim())
+    throw Error('FREE_AI_OPENROUTER_KEY_NOT_CONFIGURED');
+  if(typeof fetchImpl!=='function')throw Error('FREE_AI_OPENROUTER_NETWORK_UNAVAILABLE');
+  if(typeof prompt!=='string'||!prompt||prompt.length>92000)
+    throw Error('FREE_AI_OPENROUTER_PROMPT_UNSAFE');
+  const catalog=await getJson(fetchImpl,BASE+'/models',
+    {method:'GET',headers:{Accept:'application/json'}},10000);
+  verifyZeroPrice(catalog,selected);
+  // Exactly ONE inference attempt: one pinned :free model, zero price cap,
+  // zero cross-model fallback, no tools, no file operations, no paid retries.
+  const completion=await getJson(fetchImpl,BASE+'/chat/completions',{
+    method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json',
+      Accept:'application/json'},
+    body:JSON.stringify({model:selected,messages:[{role:'user',content:prompt}],
+      max_tokens:5500,stream:false,
+      provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
+        data_collection:'deny'}})
+  },170000);
+  if(completion?.model!==selected)throw Error('FREE_AI_OPENROUTER_MODEL_MISMATCH');
+  const cost=completion?.usage?.cost;
+  if(cost!==undefined&&(cost===null||!Number.isFinite(Number(cost))||Number(cost)!==0))
+    throw Error('FREE_AI_OPENROUTER_BILLING_NONZERO');
+  if(completion?.choices?.length!==1||
+    typeof completion.choices[0]?.message?.content!=='string'||
+    !completion.choices[0].message.content.trim()||
+    completion.choices[0].message.content.length>MAX_REPLY)
+    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
+  return completion.choices[0].message.content;
+}
+module.exports={BASE,DEFAULT_MODEL,selectedModel,verifyZeroPrice,requestFreePatch};

@@ -69,7 +69,7 @@ function validateCandidate(candidate,scope){
 function makePrompt(scope){
  const paths=scope.files.map(x=>'- '+x).join('\n');
  return [
-  'TASK: Propose a free GLM patch for the actual source-code error in PR HEAD '+scope.sha+'.',
+  'TASK: Propose one verified zero-price model patch for the actual source-code error in PR HEAD '+scope.sha+'.',
   'A verified Core/TypeScript source failure can reach you directly without ESLint autofix.',
   'The deterministic repair did not produce a verified source patch.',
   'You are an unprivileged coding worker in an isolated read-only GitHub token job.',
@@ -114,8 +114,13 @@ function verify(){
    detail_code:'FREE_AI_PATCH_NOT_VERIFIED'};
  try{
   if(git('rev-parse','HEAD').trim()!==scope.sha)throw Error('FREE_AI_CHECKOUT_STALE');
-  const raw=JSON.parse(fs.readFileSync('hh-code-candidate/candidate-raw.json','utf8'));
-  const entries=validateCandidate(raw,scope);
+  const deterministic=process.env.REPAIR_FROM_DETERMINISTIC==='true';
+  const filename=deterministic?'candidate.json':'candidate-raw.json';
+  const raw=JSON.parse(fs.readFileSync('hh-code-candidate/'+filename,'utf8'));
+  if(deterministic&&raw.detail_code!=='VERIFIED_SOURCE_PATCH')
+    throw Error('FREE_AI_DETERMINISTIC_NOT_PREVERIFIED');
+  const entries=validateCandidate(deterministic?{...raw,repair_kind:'free_ai'}:raw,scope);
+  if(deterministic)output.repair_kind='lint';
   for(const f of entries){
    const abs=sourceFile(root,f.path);
    if(git('rev-parse','HEAD:'+f.path).trim()!==f.original_sha)
@@ -151,7 +156,7 @@ function verify(){
     throw Error('FREE_AI_CHECKS_CHANGED_CANDIDATE');
   }
   output.files=entries;
-  output.detail_code='VERIFIED_CODE_SOURCE_PATCH';
+  output.detail_code=deterministic?'VERIFIED_DETERMINISTIC_SOURCE_PATCH':'VERIFIED_CODE_SOURCE_PATCH';
  }catch(error){
   output.detail_code=String(error.message||'FREE_AI_VERIFY_FAILED').split('\n')[0].slice(0,120)
     .replace(/[^a-zA-Z0-9_:.-]/g,'_');

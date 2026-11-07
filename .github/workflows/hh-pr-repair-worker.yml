@@ -48,6 +48,7 @@ jobs:
       claim_status: ${{ steps.select.outputs.claim_status }}
       claim_reason: ${{ steps.select.outputs.claim_reason }}
       code_available: ${{ steps.select.outputs.code_available }}
+      code_provider: ${{ steps.select.outputs.code_provider }}
       no_fix_finalized: ${{ steps.finalize_no_fix.outcome }}
       audit_only: ${{ steps.select.outputs.audit_only }}
       legacy_production_sha: ${{ steps.select.outputs.legacy_production_sha }}
@@ -66,6 +67,7 @@ jobs:
           node --check scripts/ci-pr-repair-test-scope.cjs
           node --check scripts/ci-pr-repair-deterministic.cjs
           node --check scripts/ci-pr-repair-free-agent.cjs
+          node --check scripts/ci-pr-repair-openrouter-free.cjs
           node --check scripts/ci-pr-repair-code-candidate.cjs
           node --check scripts/ci-pr-manus-handoff.cjs
           node --check scripts/ci-pr-priority.cjs
@@ -78,6 +80,7 @@ jobs:
           HH_HAS_CODEX_TOKEN: 'false'
           # Only a separately provisioned free-tier OpenCode key can enable inference.
           HH_HAS_FREE_OPENCODE_TOKEN: ${{ secrets.HH_OPENCODE_FREE_API_KEY != '' }}
+          HH_HAS_OPENROUTER_FREE_TOKEN: ${{ secrets.HH_OPENROUTER_FREE_API_KEY != '' }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -138,7 +141,10 @@ jobs:
               }
             }
             core.setOutput('claim_reason',result.reason||'');
-            core.setOutput('code_available',process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'true':'false');
+            const provider=process.env.HH_HAS_OPENROUTER_FREE_TOKEN==='true'?'openrouter':
+              process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'opencode':'none';
+            core.setOutput('code_provider',provider);
+            core.setOutput('code_available',provider==='none'?'false':'true');
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun,log:core.warning}));
       # Fast terminal path: no untrusted source runs on this trusted runner.
@@ -503,6 +509,7 @@ jobs:
       - name: Install PR test dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Install exact free OpenCode CLI version outside PR worktree
+        if: needs.claim.outputs.code_provider == 'opencode'
         shell: bash
         run: |
           set -euo pipefail
@@ -513,7 +520,9 @@ jobs:
         shell: bash
         env:
           HH_OPENCODE_BIN: ${{ runner.temp }}/hh-opencode/node_modules/.bin/opencode
-          HH_OPENCODE_FREE_API_KEY: ${{ secrets.HH_OPENCODE_FREE_API_KEY }}
+          HH_OPENCODE_FREE_API_KEY: ${{ needs.claim.outputs.code_provider == 'opencode' && secrets.HH_OPENCODE_FREE_API_KEY || '' }}
+          HH_OPENROUTER_FREE_API_KEY: ${{ needs.claim.outputs.code_provider == 'openrouter' && secrets.HH_OPENROUTER_FREE_API_KEY || '' }}
+          HH_OPENROUTER_FREE_MODEL: liquid/lfm-3-1.7b:free
         run: |
           set -euo pipefail
           # Proposer runs OpenCode in an empty temporary cwd, with an empty
@@ -538,10 +547,12 @@ jobs:
   code_verify:
     needs: [claim,fix,code_fix]
     if: >-
+      always() &&
       needs.claim.result == 'success' &&
       needs.fix.result == 'success' &&
-      needs.code_fix.result == 'success' &&
-      needs.code_fix.outputs.candidate_status == 'proposed'
+      ((needs.fix.outputs.candidate_status == 'ready') ||
+       (needs.code_fix.result == 'success' &&
+        needs.code_fix.outputs.candidate_status == 'proposed'))
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     permissions:
@@ -572,10 +583,12 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - uses: actions/download-artifact@v4
         with:
-          name: hh-code-repair-raw
+          name: ${{ needs.fix.outputs.candidate_status == 'ready' && 'hh-repair-candidate' || 'hh-code-repair-raw' }}
           path: hh-code-candidate
       - id: verify
         name: Independently verify exact SHA, direct tests, lint, TS and diff
+        env:
+          REPAIR_FROM_DETERMINISTIC: ${{ needs.fix.outputs.candidate_status == 'ready' && 'true' || 'false' }}
         run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs verify
       - name: Upload ONLY independently verified candidate
         uses: actions/upload-artifact@v4
@@ -615,17 +628,13 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@v4
         id: download_candidate
-        if: >-
-          (needs.fix.result == 'success' && needs.fix.outputs.candidate_status == 'ready') ||
-          (needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready')
+        if: needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready'
         with:
-          name: ${{ needs.fix.outputs.candidate_status == 'ready' && 'hh-repair-candidate' || 'hh-code-repair-verified' }}
+          name: hh-code-repair-verified
           path: hh-candidate
       - name: Revalidate owner + SHA; publish one source commit with existing owner token
         id: publish_source
-        if: >-
-          (needs.fix.result == 'success' && needs.fix.outputs.candidate_status == 'ready') ||
-          (needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready')
+        if: needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready'
         uses: actions/github-script@v7
         env:
           HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
@@ -669,7 +678,7 @@ jobs:
               }
               const t=await call('POST',base+'/git/trees',{base_tree:treeSha,tree});
               const commit=await call('POST',base+'/git/commits',{
-                message:'fix(ci): '+(candidate.repair_kind==='free_ai'?'verified free GLM source repair':candidate.repair_kind==='codex'?'verified legacy code repair':'automated scoped ESLint repair')+' for PR #'+number,
+                message:'fix(ci): '+(candidate.repair_kind==='free_ai'?'verified free-model source repair':candidate.repair_kind==='codex'?'verified legacy code repair':'verified deterministic source repair')+' for PR #'+number,
                 tree:t.sha,parents:[expectedSha]});
               if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
               const still=await call('GET',base+ref);

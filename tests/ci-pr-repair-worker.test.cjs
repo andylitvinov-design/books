@@ -727,7 +727,8 @@ test('trusted code repair scope rejects unauthorized paths, duplicates and stale
 test('free model is activated only after deterministic failure and never sees write token',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.ok(wf.includes('code_available: ${{ steps.select.outputs.code_available }}'));
- assert.ok(wf.includes("core.setOutput('code_available',process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'true':'false')"));
+ assert.ok(wf.includes("const provider=process.env.HH_HAS_OPENROUTER_FREE_TOKEN==='true'?'openrouter':"));
+ assert.ok(wf.includes("core.setOutput('code_available',provider==='none'?'false':'true')"));
  const codeFix=wf.split('\n  code_fix:\n')[1].split('\n  code_verify:\n')[0];
  const codeVerify=wf.split('\n  code_verify:\n')[1].split('\n  publish:\n')[0];
  assert.match(codeFix,/needs\.fix\.outputs\.candidate_status == 'manual_required'/);
@@ -736,6 +737,10 @@ test('free model is activated only after deterministic failure and never sees wr
  assert.match(codeFix,/persist-credentials: false/);
  assert.match(codeVerify,/ci-pr-repair-code-candidate\.cjs verify/);
  assert.match(codeVerify,/candidate_status == 'proposed'/);
+ assert.match(codeVerify,/needs.fix.outputs.candidate_status == 'ready'/);
+ const trustedPublish=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
+ assert.match(trustedPublish,/name: hh-code-repair-verified/);
+ assert.doesNotMatch(trustedPublish,/name: \$\{\{ needs.fix.outputs.candidate_status/);
  assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
  const pub=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
  assert.match(pub,/HH_AUTOMERGE_TOKEN/);
@@ -861,9 +866,11 @@ test('direct Core failures reach deterministic checks and then free AI without p
  assert.match(fix,/continue-on-error: true/);
  assert.match(fix,/npx tsc --noEmit --incremental false/);
  assert.match(fix,/ci-pr-repair-test-scope\.cjs/);
- assert.ok(wf.includes("core.setOutput('code_available',process.env.HH_HAS_FREE_OPENCODE_TOKEN==='true'?'true':'false')"));
+ assert.ok(wf.includes("const provider=process.env.HH_HAS_OPENROUTER_FREE_TOKEN==='true'?'openrouter':"));
+ assert.ok(wf.includes("core.setOutput('code_available',provider==='none'?'false':'true')"));
  assert.ok(wf.includes("HH_HAS_FREE_OPENCODE_TOKEN: ${{ secrets.HH_OPENCODE_FREE_API_KEY != '' }}"));
- assert.ok(wf.includes('HH_OPENCODE_FREE_API_KEY: ${{ secrets.HH_OPENCODE_FREE_API_KEY }}'));
+ assert.ok(wf.includes("HH_OPENCODE_FREE_API_KEY: ${{ needs.claim.outputs.code_provider == 'opencode' && secrets.HH_OPENCODE_FREE_API_KEY || '' }}"));
+ assert.ok(wf.includes("HH_OPENROUTER_FREE_API_KEY: ${{ needs.claim.outputs.code_provider == 'openrouter' && secrets.HH_OPENROUTER_FREE_API_KEY || '' }}"));
  assert.match(require('node:fs').readFileSync('scripts/ci-pr-repair-free-agent.cjs','utf8'),/FREE_AI_FREE_OPENCODE_CREDENTIAL_NOT_CONFIGURED/);
  assert.match(wf,/  code_fix:\n[\s\S]*?ci-pr-repair-free-agent\.cjs/);
  assert.match(wf,/  code_verify:\n[\s\S]*?ci-pr-repair-code-candidate\.cjs verify/);
