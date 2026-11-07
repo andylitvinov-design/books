@@ -123,12 +123,19 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(studio.includes('setIdeasVoiceAdvancedOpen(true)'),"the visible Ideas audio shortcut opens the editor");
  assert.ok(studio.includes('hidden={activeWorkspace!=="phrases"}'),"voice editor is visible only within Ideas");
  assert.ok(studio.includes('{deepHypnoPane}'),"existing voice and approval controls are retained");
- assert.ok(browser.includes("await advancedVoice.locator(\":scope > summary\").click()"),
-  "Mac WebKit must open the real disclosure, not force hidden controls");
+ assert.ok(browser.includes("await expect(advancedVoice).toBeHidden()"),
+  "compact Ideas keeps voice editor hidden until the visitor opts in");
+ assert.ok(browser.includes("await recordEntry.click()"),
+  "Mac WebKit must open the existing voice editor through its real Record button");
+ assert.ok(browser.includes("await expect(advancedVoice).toBeVisible({timeout:15000})"),
+  "the consented editor must actually become visible on iPhone");
+ assert.ok(browser.includes("data-video-own-voice-record"),
+  "native device recording remains an independent permission-gated action");
  assert.ok(browser.includes("await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible()"));
  assert.ok(!browser.includes("advancedVoice.click({force:true})"),"never force hidden voice controls");
  const css=read("components/mandala-video-mobile.module.css");
  assert.ok(css.includes('[data-video-legacy-phrase-editor]:not([hidden])'),"opt-in advanced editor not hidden by retired CSS");
- assert.ok(css.includes('[data-video-phrase-audio-shortcut]'),"audio shortcut remains visible");
+ assert.ok(css.includes('[data-video-ideas-recording-open="true"]'),
+  "the original advanced recorder is visible only after explicit opt-in");
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
 });

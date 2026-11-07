@@ -161,14 +161,14 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
  const refinement=flow.indexOf('const refinement=page.locator',ideas);
  const tap=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
  const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
- const topic=flow.indexOf('data-auto-video-topic-panel',open);
- const montage=flow.indexOf('await montage.click()',topic);
+ const state=flow.indexOf("data-video-ideas-state",open);
+ const montage=flow.indexOf('await montage.click()',state);
  const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
  const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);
  const selected=flow.indexOf('await minimal.tap()',six);
  const reflected=flow.indexOf('data-video-preview-style","minimal"',selected);
  const decoded=flow.indexOf('video.readyState>=2&&video.videoWidth>0',reflected);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&state>open&&montage>state&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
    "real visitor must open Ideas refinement, select one of six visible Montage styles and decode an MP4");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
