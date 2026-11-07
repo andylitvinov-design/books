@@ -6,6 +6,7 @@ import {Download,Send,RefreshCw,MessageCircle,CheckCircle2} from "lucide-react";
 import {appFetch} from "@/lib/app/client-fetch";
 import type {PublicLocale} from "@/lib/public-locales";
 import css from "./mandala-video-delivery.module.css";
+import CommunityVideoPublishPanel from "./community-video-publish-panel";
 
 type State={
  cloudAvailable:boolean;
@@ -37,6 +38,7 @@ const COPY={
   error:"Не удалось подтвердить отправку или сохранить настройки. Видео осталось на устройстве; проверьте кабинет и попробуйте позже.",
   cancelled:"Поделиться отменено.",
   privacy:"Файл загружается на сервер только после разрешения на доставку. Автоотправку можно отключить здесь в любое время.",
+  community:"Опубликовать на YouTube Holistic House (после согласия)",
  },
  en:{
   title:"Where should we send your video?",device:"Download file",telegram:"Telegram",savePrivate:"Save to My Videos",savedPrivate:"Video verified and saved in your private library.",openMyVideos:"Open My Videos",refreshLogin:"Check sign-in",
@@ -57,6 +59,7 @@ const COPY={
   error:"Could not verify delivery or save preferences. Your local video remains available; review your account before trying again.",
   cancelled:"Sharing cancelled.",
   privacy:"The video is uploaded only after you agree to delivery. You can disable automatic delivery here.",
+  community:"Publish to Holistic House YouTube (with separate consent)",
  },
  es:{
   title:"¿Dónde enviar tu vídeo?",device:"Descargar archivo",telegram:"Telegram",savePrivate:"Guardar en Mis vídeos",savedPrivate:"Vídeo verificado y guardado en tu biblioteca privada.",openMyVideos:"Abrir Mis vídeos",refreshLogin:"Comprobar acceso",
@@ -77,6 +80,7 @@ const COPY={
   error:"No se pudo verificar el envío o guardar la preferencia. El vídeo local sigue disponible; revisa tu cuenta antes de reintentarlo.",
   cancelled:"Compartir cancelado.",
   privacy:"El vídeo solo se sube cuando autorizas el envío. Puedes desactivar el envío automático aquí.",
+  community:"Publicar en YouTube Holistic House (con autorización separada)",
  }
 } as const;
 const MAX_BYTES=12_000_000;
@@ -91,6 +95,8 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  const [session,setSession]=useState<"checking"|"signed_in"|"guest"|"unavailable">("checking");
  const [notice,setNotice]=useState("");
  const [savedId,setSavedId]=useState<string|null>(null);
+ const [communityAssetId,setCommunityAssetId]=useState<string|null>(null);
+ const [showCommunity,setShowCommunity]=useState(false);
  const [busy,setBusy]=useState(false);
  const [botUrl,setBotUrl]=useState("");
  const inFlight=useRef<Promise<string>|null>(null);
@@ -168,16 +174,21 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   void task.catch(()=>{if(inFlight.current===task)inFlight.current=null;});
   return task;
  }
- async function saveToLibrary(){
+ // Saving privately and requesting community publishing are separate choices.
+ // Opening the community editor is not consent to upload anything to YouTube.
+ async function saveToMyHouse(showEditor:boolean){
   if(busy||session!=="signed_in"||!readyMp4)return;
   setBusy(true);setNotice(t.wait);
   try{
    const id=await privateUpload();
    setSavedId(id);
+   setCommunityAssetId(showEditor?id:null);
+   setShowCommunity(showEditor);
    setNotice(t.savedPrivate);
   }catch{setNotice(t.error);}
   finally{setBusy(false);}
  }
+ async function saveToLibrary(){return saveToMyHouse(false);}
  async function sendViaBot(automatic:boolean){
   if(busy||!readyMp4)return;
   if(!automatic){
@@ -247,6 +258,11 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
      disabled={busy||!readyMp4} onClick={()=>void saveToLibrary()} data-video-save-to-library>
      <CheckCircle2 size={18} aria-hidden="true"/>{t.savePrivate}
    </button>:null}
+   {session==="signed_in"&&state?.cloudAvailable&&readyMp4?
+    <button type="button" className={css.savePrivate} disabled={busy}
+      data-video-community-youtube onClick={()=>void saveToMyHouse(true)}>
+      {t.community}
+    </button>:null}
    {session==="signed_in"?<a className={css.device} href={url} download={fileName}
      data-video-save-direct-choice><Download size={18} aria-hidden="true"/>{t.device}</a>:
     <button type="button" className={css.device} disabled data-video-save-locked>
@@ -265,6 +281,8 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
     rel="noopener noreferrer" prefetch={false} data-video-saved-library-link>
     <CheckCircle2 size={17} aria-hidden="true"/>{t.openMyVideos}
   </Link>:null}
+  {communityAssetId&&showCommunity?<CommunityVideoPublishPanel
+    videoId={communityAssetId} locale={locale}/>:null}
   <p className={css.help}>{t.hint}</p>
   {session==="guest"?<p className={css.hint}>{t.guest}{" "}
    <Link href={"/"+accountLocale+"/app/videos"} target="_blank" rel="noopener noreferrer"

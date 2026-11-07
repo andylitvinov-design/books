@@ -19,6 +19,7 @@ import { PractitionerServicesGrid } from "@/components/master-network-explorer";
 import { PractitionerReviews } from "@/components/practitioner-reviews";
 import PractitionerPresentationVideo from "@/components/practitioner-presentation-video";
 import PractitionerVideoGallery from "@/components/practitioner-video-gallery";
+import {listPublicCommunityVideos} from "@/lib/app/community-video-publishing";
 import MasterProfileActions from "./master-profile-actions";
 import { publicPresentationUrl } from "@/lib/practitioners/presentation-contract";
 import styles from "./profile.module.css";
@@ -172,8 +173,12 @@ export default async function MasterProfile({ params }: PageProps) {
           url: siteVideoWatchUrl(englishPsychotherapyLandingVideo.video),
         }])
     ) : [];
+  // Same owner-approved public projection as MyTube; never expose private drafts.
+  const communityRecordings = await listPublicCommunityVideos(config,{masterSlug:practitioner.slug})
+    .catch(()=>[]);
   const seenPublicVideos = new Set<string>();
-  const videos = [...(profile.videoMaterials || []), ...siteRecordings, ...approvedServiceVideos, ...originalVideos].filter(item => {
+  const videos = [...(profile.videoMaterials || []), ...siteRecordings, ...approvedServiceVideos, ...originalVideos,
+    ...communityRecordings.map(video=>({title:video.title,description:'',locale:video.locale as 'en'|'ru'|'es',url:video.url}))].filter(item => {
     if (seenPublicVideos.has(item.url)) return false;
     seenPublicVideos.add(item.url);
     return true;

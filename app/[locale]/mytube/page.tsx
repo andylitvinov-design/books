@@ -9,6 +9,9 @@ import {loadApprovedVideoDiscoveries} from "@/lib/video-discovery/approved-medit
 import {isPublicLocale} from "@/data/academy/catalog";
 import {metadataBaseFor} from "@/data/site-metadata";
 import styles from "./mytube.module.css";
+import {getAppConfig} from "@/lib/app/config";
+import {listPublicCommunityVideos} from "@/lib/app/community-video-publishing";
+import CommunityVideoGallery from "@/components/community-video-gallery";
 
 export const viewport:Viewport={themeColor:"#0f0f0f"};
 export const dynamic="force-dynamic";
@@ -35,6 +38,9 @@ export default async function MyTubePage({params}:Props){
     loadPublicLibraryFeed(locale),loadApprovedVideoDiscoveries(),
   ]);
   const publicVideos=buildPublicVideoDiscoveryItems(locale,videos,approvedMeditations);
+  const existingYoutubeIds=new Set(videos.map(v=>v.youtubeId));
+  const communityVideos=await listPublicCommunityVideos(getAppConfig()).catch(()=>[]);
+  const uniqueCommunity=communityVideos.filter(video=>!existingYoutubeIds.has(video.id));
   const copy=t[locale];
   return <main className={styles.page} lang={locale} data-mytube-page>
     <header className={styles.topbar}>
@@ -53,6 +59,7 @@ export default async function MyTubePage({params}:Props){
     </header>
     <div className={styles.content}>
       <p className={styles.subline}>{copy.subtitle}</p>
+      <CommunityVideoGallery locale={locale} videos={uniqueCommunity}/>
       <VideoDiscovery locale={locale} videos={publicVideos} variant="mytube"/>
       <p className={styles.footerNote}>{copy.note}</p>
     </div>
