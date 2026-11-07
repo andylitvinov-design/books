@@ -170,3 +170,30 @@ test("macOS WebKit reaches real Create through visible Style → Text → Audio 
  assert.ok(flow.includes('const output=page.locator("[data-mandala-video-download]")'));
  assert.ok(flow.includes('await generate.click()'));
 });
+
+test("macOS consent acceptance requires real meditation opt-out without WebKit RAF waits",()=>{
+ const browser=read("scripts/verify-practices-mobile-browser.mjs");
+ const guided=read("components/mandala-guided-course.tsx");
+ const stage=read("components/mandala-free-video-studio.tsx");
+ const begin=browser.indexOf('const skipButton=course.locator("[data-guided-skip-meditation]")');
+ const end=browser.indexOf('await programmeButton.click()',begin);
+ assert.ok(begin>0&&end>begin);
+ const flow=browser.slice(begin,end);
+ for(const step of [
+   "await skipButton.click();",
+   'await expect(skipButton).toHaveAttribute("aria-pressed","true"',
+   'await expect(audio).not.toHaveAttribute("open",""',
+   'node instanceof HTMLDetailsElement ? node.open : null',
+   ').toBe(false);',
+   'assert.equal(await audio.getAttribute("open"),null',
+   'assert.equal(await skipButton.getAttribute("aria-pressed"),"true")'
+ ])assert.ok(flow.includes(step),step);
+ assert.doesNotMatch(flow,/page\.waitForFunction|force:\s*true|\.evaluate\([^]*?\.open\s*=/,
+    "do not bypass the visitor action or trust suspended RAF polling");
+ assert.match(guided,/data-guided-skip-meditation[\s\S]*?setMeditationChoice\("omit"\);onOmitMeditation\?\.\(\)/);
+ assert.match(stage,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationOmitted\(true\)/);
+ assert.match(browser,/await consentLabel\.click\(\)/,
+    "the actual consent label must still receive a real click");
+ assert.match(browser,/await expect\(consentBox\)\.toBeChecked/);
+ assert.match(browser,/await expect\(send\)\.toBeEnabled/);
+});
