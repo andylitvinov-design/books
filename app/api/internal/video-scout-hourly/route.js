@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {cronAuthorized} from '@/lib/app/housekeeping-cron';
 import {closeDatabase} from '@/lib/app/database';
 import {runHourlyVideoScout} from '@/lib/automations/scout-runner';
+import {runFourHourlyClassification} from '@/lib/automations/classifier-runner';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -22,8 +23,16 @@ export async function GET(request){
     {status:400,headers:HEADERS});
   try{
     const result=await runHourlyVideoScout();
-    const status=result.status==='unconfirmed'?503:200;
-    return NextResponse.json(result,{status,headers:HEADERS});
+    // Optional distinct task: no inference unless BOTH the deployment feature
+    // flag and the private task gate are enabled. The L0 scout stays independent.
+    let enrichment={status:'disabled'};
+    if(process.env.HH_VIDEO_CLASSIFIER_ENABLED==='true'){
+      try{enrichment=await runFourHourlyClassification();}
+      catch{enrichment={status:'unconfirmed'};}
+    }
+    const status=result.status==='unconfirmed'||enrichment.status==='unconfirmed'?503:200;
+    return NextResponse.json({...result,classification:{status:enrichment.status}},
+      {status,headers:HEADERS});
   }catch{
     console.error('HH_VIDEO_SCOUT_CRON_UNAVAILABLE');
     return NextResponse.json({error:'SCOUT_UNAVAILABLE'},
