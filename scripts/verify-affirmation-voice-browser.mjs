@@ -75,7 +75,12 @@ async function verifyWorkspaceHydration(browser,locale){
     await styleTab.click();
     await expect(styleTab).toHaveAttribute("aria-pressed","true");
     await expect(page.locator('[data-video-montage-effects]')).toBeVisible();
-    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeVisible();
+    // The old Auto Director filter is intentionally hidden. Verify and
+    // exercise the actual visible Montage → Style selector used by visitors.
+    const styleChoice=page.locator('[data-video-montage-style="1"]');
+    await expect(styleChoice).toBeVisible();
+    await styleChoice.click();
+    await expect(styleChoice).toHaveAttribute("aria-pressed","true");
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
