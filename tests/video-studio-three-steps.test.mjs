@@ -63,7 +63,9 @@ test("Three short prompts are labeled in EN/RU/ES",()=>{
 test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the real visible route",()=>{
   assert.match(studio,/const continueToIdeas = \(\) => \{[\s\S]*?setActiveWorkspace\("phrases"\)/);
   assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{continueToIdeas\}/);
-  for(const text of ["Далее к идеям","Continuar a ideas","Continue to ideas"])
+  assert.match(studio,/if\(goalPage==="intro"\)\{[\s\S]*?setGoalPage\("clarify"\)/);
+  assert.match(studio,/data-video-goal-clarify-continue[\s\S]*?onClick=\{continueToIdeas\}/);
+  for(const text of ["Далее: уточним состояние","Continuar: cómo me siento","Continue: how I feel","Go to support phrases"])
     assert.ok(studio.includes(text),text);
   assert.match(studio,/const openVideoScenarioStep = \(\) => \{[\s\S]*?setVideoScenarioOpen\(true\);[\s\S]*?setShowAdvancedVideo\(true\);[\s\S]*?setActiveWorkspace\("video"\)/);
   assert.match(studio,/onAddVideo=\{\(\)=>\{[\s\S]*?openVideoScenarioStep\(\);/);
@@ -72,8 +74,10 @@ test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the rea
   const voice=read("scripts/verify-affirmation-voice-browser.mjs");
   const live=read("scripts/benchmarking/first-video-live-export.mjs");
   const motion=read("scripts/benchmarking/verify-original-motion-export.mjs");
-  for(const file of [voice,live,motion])
+  for(const file of [voice,live,motion]){
     assert.match(file,/data-video-continue-scenarios/);
+    assert.match(file,/data-video-goal-clarify-continue/);
+  }
   for(const file of [live,motion]){
     assert.match(file,/data-video-montage-tab="text"/);
     assert.match(file,/data-video-timeline-add-video/);
@@ -82,6 +86,30 @@ test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the rea
   assert.match(live,/ENCODED_VIDEO_STREAM_MISSING/);
   assert.match(live,/SELECTED_SOUNDTRACK_MISSING_FROM_EXPORT/);
   assert.match(motion,/ffprobe/);
+});
+
+
+test("owner-approved Goal 2/2 reuses the Ideas state, filters and two sliders without a second player",()=>{
+ const ideas=read("components/mandala-video-ideas.tsx");
+ const styles=read("components/mandala-video-ideas.module.css");
+ const mobile=read("components/mandala-video-mobile.module.css");
+ assert.match(studio,/data-video-goal-page=\{goalPage\}/);
+ assert.match(studio,/data-video-goal-refinement-host/);
+ assert.match(studio,/clarify=\{activeWorkspace==="video"&&goalPage==="clarify"\}/);
+ assert.match(ideas,/createPortal\(goalCards,clarifyHost\)/);
+ assert.equal((ideas.match(/data-video-goal-current-options/g)||[]).length,1);
+ assert.equal((ideas.match(/data-video-goal-desired-options/g)||[]).length,1);
+ assert.match(ideas,/data-video-goal-mood=\{side\+"-"\+m\}/);
+ assert.match(ideas,/data-video-ideas-energy-score/);
+ assert.match(ideas,/data-video-ideas-state-score/);
+ assert.match(ideas,/data-video-meaning-axis=\{axis.id\}/);
+ assert.match(ideas,/data-video-ideas-phrases/);
+ assert.match(mobile,/data-video-goal-page="clarify"/);
+ assert.match(styles,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(styles,/overflow-y:auto/);
+ assert.match(styles,/reiki-approved-sunrise-v3.webp/);
+ assert.equal((studio.match(/<MandalaVideoIdeas /g)||[]).length,1);
+ assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 
 test("legacy deep links reveal the real advanced video catalog on mobile",()=>{

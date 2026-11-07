@@ -256,6 +256,20 @@ const runEngine = async ([engine, browserType]) => {
         assert.equal(await initialStories.count(),4,"the four licensed choices stay mounted for step 2");
         await expect(initialStories.first()).toBeHidden();
         await continueButton.click();
+        await expect(quick.locator("[data-video-goal-journey]")).toBeVisible({timeout:20000});
+        await expect(quick.locator("[data-video-live-stage]")).toBeHidden();
+        // Goal's second page is genuinely interactive and retains its inputs
+        // when the visitor continues to Ideas and then opens Montage's stories.
+        await quick.locator('[data-video-goal-mood="current-happy"]').click();
+        await quick.locator('[data-video-goal-current-choice="positive-2"]').click();
+        await expect(quick.locator('[data-video-goal-current-choice="positive-2"]'))
+          .toHaveAttribute("aria-pressed","true");
+        await quick.locator('[data-video-goal-clarify-continue]').click();
+        await expect(quick.locator('[data-video-quick-control="phrases"]'))
+          .toHaveAttribute("aria-pressed","true");
+        await quick.locator('[data-video-quick-control="editor"]').click();
+        await quick.locator('[data-video-montage-tab="text"]').click();
+        await quick.locator('[data-video-timeline-add-video]').click();
         await expect(initialStories.first()).toBeVisible({timeout:20000});
         await expect(quick.locator("[data-auto-video-confirm]")).toBeVisible();
         await expect(quick.locator("[data-video-practice-shortcuts]")).toBeVisible();
