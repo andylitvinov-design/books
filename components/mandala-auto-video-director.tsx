@@ -208,8 +208,8 @@ export function MandalaAutoVideoDirector({
  const [profileCategory,setProfileCategory]=useState<CanonicalCategoryId>("energy-confidence");
  const [profileFocus,setProfileFocus]=useState<keyof typeof popularTopicCopy.ru>("confidence");
  const [profileDetails,setProfileDetails]=useState("");
- // Keep the portal disclosure stable across WebKit summary taps and React rerenders.
- const [ideaRefinementOpen,setIdeaRefinementOpen]=useState(false);
+ // Let the native disclosure own its open state: React-controlled open can
+ // revert WebKit summary taps while the Ideas panel moves through a portal.
  const [refineOpen,setRefineOpen]=useState(false);
  const [refineText,setRefineText]=useState("");
  const [promptClassification,setPromptClassification]=useState<ReturnType<typeof classifyMyTubeRequest>|null>(null);
@@ -1055,8 +1055,7 @@ export function MandalaAutoVideoDirector({
    {profileTarget?createPortal(profilePanel,profileTarget):profilePanel}
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
-   {ideaTarget?createPortal(<details className={css.ideaRefinement} data-video-ideas-refinement
-     open={ideaRefinementOpen} onToggle={event=>setIdeaRefinementOpen(event.currentTarget.open)}>
+   {ideaTarget?createPortal(<details className={css.ideaRefinement} data-video-ideas-refinement>
      <summary>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
        locale==="es"?"Explorar tema, significado y guion (opcional)":
        "Refine topic, meaning and story (optional)"}</summary>
