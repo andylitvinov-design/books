@@ -31,6 +31,12 @@ test("No customer upload, fake video or unbounded output",()=>{
   assert.match(helper,/MAX_BYTES=80\*1024\*1024/);
   assert.match(helper,/video_encoder_too_slow/);
   assert.match(helper,/video_encoder_timeline_drift/);
+  assert.match(helper,/const maxEncoderPresentationLagMs=3000/);
+  assert.match(helper,/time\*1000\+decoderHoldMs\+maxEncoderPresentationLagMs/);
+  assert.doesNotMatch(helper,/time\*1000\+decoderHoldMs\+750/,
+    "single Safari encoder stalls are not necessarily corrupted frame timestamps");
+  assert.match(helper,/seconds\+20\)\*1000\+decoderHoldMs/,
+    "whole-export deadline must still reject unbounded stalls");
   assert.match(studio,/frameRate:Math\.min\(safeWebkitRetry\?8:10,framesPerSecond\)/,
     "Safari must pace real 10-second H.264+AAC exports without skipping timed scenes");
   assert.match(helper,/const time=i\/frameRate/);
