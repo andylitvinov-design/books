@@ -143,3 +143,26 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(css.includes('[data-video-phrase-audio-shortcut]'),"audio shortcut remains visible");
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
 });
+
+test("Ideas refinement opens once on Safari without losing the native summary toggle to portal remount",()=>{
+ const src=read("components/mandala-auto-video-director.tsx");
+ const start=src.indexOf('{ideaTarget?createPortal(<details ref={bindIdeaRefinement}');
+ const end=src.indexOf("</details>,ideaTarget):null}",start);
+ assert.ok(start>=0&&end>start,"test the actual portaled Ideas disclosure");
+ const block=src.slice(start,end);
+ for(const code of [
+   "data-video-ideas-refinement",
+   "<summary onClick={event=>{",
+   "event.preventDefault();",
+   "const disclosure=event.currentTarget.parentElement;",
+   "if(!(disclosure instanceof HTMLDetailsElement))return;",
+   "const nextOpen=!disclosure.open;",
+   "ideaRefinementOpenRef.current=nextOpen;",
+   "disclosure.open=nextOpen;",
+   "onToggle={event=>{",
+ ])assert.ok(block.includes(code),"one real native click + retained open state: "+code);
+ assert.ok(src.includes("if(node && ideaRefinementOpenRef.current)node.open=true;"),
+   "a new portal node must restore the last explicit user state");
+ assert.doesNotMatch(block,/open=\{refineOpen\}/,
+   "do not reintroduce React controlled-details flicker on iPhone");
+});
