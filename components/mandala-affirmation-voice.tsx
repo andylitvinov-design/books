@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AudioLines, Check, Download, LoaderCircle, Play, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { VOICE_STUDIO_MODEL, VOICE_STUDIO_SAMPLE, VOICE_STUDIO_VOICES } from "@/lib/mandala/voice-studio.mjs";
@@ -143,6 +143,14 @@ export function MandalaAffirmationVoice({
   const onInvalidateRef=useRef(onInvalidate);
   onInvalidateRef.current=onInvalidate;
   const originRef=useRef({speechText,voiceId,language});
+  // Safari can defer the native <details> toggle until after React commits.
+  // Preserve a visitor's real open state across a voice card or locale rerender.
+  const voiceAdvancedOpenRef=useRef(false);
+  const voiceAdvancedNodeRef=useRef<HTMLDetailsElement|null>(null);
+  const bindVoiceAdvanced=useCallback((node:HTMLDetailsElement|null)=>{
+    voiceAdvancedNodeRef.current=node;
+    if(node)node.open=voiceAdvancedOpenRef.current;
+  },[]);
   useEffect(()=>onPreferencesChange({voiceId,language,bed}),[voiceId,language,bed,onPreferencesChange]);
   const onGeneratingRef=useRef(onGenerating);
   onGeneratingRef.current=onGenerating;
@@ -514,8 +522,21 @@ export function MandalaAffirmationVoice({
         disabled={disabled||busy} approvalPending={approvalPending} onAttach={onAttach} onDetach={onDetachLocal}/>
     </div>
     {voiceGender!=="own" ? <>
-    <details className={css.voiceAdvanced} data-video-affirmation-voice-advanced>
-      <summary>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
+    <details ref={bindVoiceAdvanced} className={css.voiceAdvanced} data-video-affirmation-voice-advanced
+      onToggle={event=>{
+        if(event.currentTarget===voiceAdvancedNodeRef.current)
+          voiceAdvancedOpenRef.current=event.currentTarget.open;
+      }}>
+      <summary onClick={event=>{
+        // Commit the genuine click (also dispatched for keyboard activation);
+        // do not force the browser test or show controls before a user gesture.
+        event.preventDefault();
+        const node=event.currentTarget.parentElement;
+        if(node instanceof HTMLDetailsElement){
+          node.open=!node.open;
+          voiceAdvancedOpenRef.current=node.open;
+        }
+      }}>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
     <div className={css.controls}>
       <label>{t.language}
         <select data-video-affirmation-language value={language} disabled={busy||disabled}

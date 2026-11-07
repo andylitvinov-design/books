@@ -663,7 +663,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         .filter({has:page.locator("[data-video-affirmation-bed]")});
       if(await voiceOptions.getAttribute("open")===null)
         await voiceOptions.locator(":scope > summary").click();
-      await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible();
+      // Verify that Safari committed native disclosure, not only the click.
+      await expect(voiceOptions).toHaveAttribute("open","",{timeout:15000});
+      await expect(page.locator("[data-video-affirmation-bed]")).toBeVisible({timeout:15000});
       await page.locator("[data-video-affirmation-bed]").selectOption("ocean");
       const narrationConsent=page.locator("[data-video-affirmation-voice-consent]");
       await narrationConsent.check();
