@@ -665,6 +665,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
         await generate.click();
+        // The idle source remains preload=none until the user's actual Create
+        // gesture; Safari must then start a physical decode, never a CSS-only
+        // preview or an unverified download.
+        if(await sourceVideo.count()){
+          await expect.poll(()=>sourceVideo.evaluate(video=>video.preload),
+            {timeout:5000}).toBe("auto");
+        }
         phase(engine,"recording-started");
         const output=page.locator("[data-mandala-video-download]");
         phase(engine,"waiting-for-export");
@@ -703,7 +710,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               canClick:create instanceof HTMLButtonElement ? !create.disabled : null,
               source:video instanceof HTMLVideoElement ? {
                 readyState:video.readyState,width:video.videoWidth,height:video.videoHeight,
-                error:video.error?.code??null
+                error:video.error?.code??null,networkState:video.networkState,
+                preload:video.preload,sourceLoaded:Boolean(video.currentSrc)
               } : null,
               resultHidden:result instanceof HTMLElement ? result.hidden : null,
               progress:document.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
