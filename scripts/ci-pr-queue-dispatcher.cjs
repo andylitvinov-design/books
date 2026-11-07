@@ -12,6 +12,16 @@ const WORKER_PATH={repair:'hh-pr-repair-worker.yml',legacy:'hh-pr-repair-worker.
  conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
 const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate']);
+function validOwnerRepairTarget(context,target){
+ return !!(target&&typeof target==='object'&&!Array.isArray(target)&&
+  context?.repo?.owner==='andylitvinov-design'&&context.repo.repo==='books'&&
+  context.eventName==='workflow_dispatch'&&
+  context.ref==='refs/heads/codex/bootstrap-books'&&
+  context.actor==='andylitvinov-design'&&
+  Number.isSafeInteger(target.prNumber)&&target.prNumber>0&&target.prNumber<=99999999&&
+  SHA.test(target.expectedSha||'')&&
+  Object.keys(target).every(key=>key==='prNumber'||key==='expectedSha'));
+}
 function verifiedSourceGreen(checks){
  if(!checks||!Array.isArray(checks.check_runs)||
     !Number.isSafeInteger(checks.total_count)||
@@ -272,7 +282,7 @@ function trustedWatchdogSample(evidence,productionCount){
  return sample;
 }
 
-async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null,inventorySnapshot=null,watchdogEvidence=null}){
+async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=snapshot,focusPrNumber=null,focusPrSnapshot=null,inventorySnapshot=null,watchdogEvidence=null,manualTarget=null}){
  const summary={schema:'HH_CONTROL_DISPATCH_V1',checkedAt:new Date(now).toISOString(),
   dryRun,discovered:0,production:0,actionable:0,candidates:0,
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
@@ -291,7 +301,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   ciWakeEscalated:0,ciWakePending:0,
   apiRequests:0,apiRemaining:null,cronState:'NOT_PROBED',
   eventFocused:focusPrNumber!==null,
-  inventoryScope:focusPrNumber!==null?'EVENT_SINGLE_PR':
+  inventoryScope:manualTarget!==null?'OWNER_PM_EXACT_PR':focusPrNumber!==null?'EVENT_SINGLE_PR':
    inventorySnapshot!==null?'WATCHDOG_SHARED_SNAPSHOT':'ALL_OPEN_PRS',reason:null};
  // An accepted dispatch is NOT execution: only a signed real-runner
  // receipt contributes to the separate confirmation count.
@@ -312,6 +322,12 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    .addHeading('HH Control Tower 2.0 — queue dispatch')
    .addCodeBlock(JSON.stringify(summary,null,2)).write();return summary;};
  if(!trustedContext(context)){summary.reason='UNTRUSTED_EVENT';return finish();}
+ if(manualTarget!==null&&!validOwnerRepairTarget(context,manualTarget)){
+  summary.reason='UNTRUSTED_OWNER_TARGET';return finish();
+ }
+ if(manualTarget!==null&&(focusPrNumber!==null||inventorySnapshot!==null)){
+  summary.reason='OWNER_TARGET_CONFLICTING_SOURCE';return finish();
+ }
  const conflictEvent=context.eventName==='pull_request_target';
  if(conflictEvent&&(focusPrNumber===null||!focusPrSnapshot)){
   summary.reason='CONFLICT_EVENT_REQUIRES_SNAPSHOT';return finish();
@@ -333,7 +349,17 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
  };
  let prs=[];
  try{
-  if(inventorySnapshot!==null){
+  if(manualTarget!==null){
+    const res=await limited('pm-owner-pr',()=>github.rest.pulls.get({
+      owner,repo,pull_number:manualTarget.prNumber
+    }));
+    const selected=res?.data;
+    if(!selected||selected.number!==manualTarget.prNumber||
+       selected.head?.sha?.toLowerCase()!==manualTarget.expectedSha.toLowerCase()||
+       !validPR(selected)||laneOf(selected)!=='repair')
+      throw Error('OWNER_TARGET_NOT_REPAIR_ELIGIBLE');
+    prs=[selected];
+   }else if(inventorySnapshot!==null){
    // Only the in-memory Watchdog runner passes this full-PR snapshot.
    // Untrusted PR events cannot reuse the scheduled inventory.
    if(!['schedule','workflow_dispatch','push'].includes(context.eventName)||
@@ -429,6 +455,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   }
   focusedPR=selected[0];
   summary.legacyCiRecovery={status:'SKIPPED_FOCUSED_EVENT'};
+ }else if(manualTarget!==null){
+  // Owner-selected Repair must never also run unrelated legacy CI recovery.
+  summary.legacyCiRecovery={status:'SKIPPED_OWNER_TARGET'};
  }else{
   try{
    summary.legacyCiRecovery=await reconcileLegacyCiDenial({
@@ -439,9 +468,11 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     reason:'RECOVERY_UNVERIFIED',detail:String(e.message||e).slice(0,120)};
   }
  }
- const candidates=focusedPR
-  ? (laneOf(focusedPR)?[taskFor(focusedPR,priorityFor(focusedPR,now))]:[])
-  : planCandidates(production,now);
+ const candidates=manualTarget!==null
+   ? [taskFor(production[0],priorityFor(production[0],now))]
+   : focusedPR
+     ? (laneOf(focusedPR)?[taskFor(focusedPR,priorityFor(focusedPR,now))]:[])
+     : planCandidates(production,now);
  // Source-write eligibility must remain separate from safe legacy preparation.
  // Legacy preparation is routable but NEVER authorizes source mutation.
  // Report both populations so the monitor does not reject a safe prep task.
@@ -511,8 +542,8 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   // A child based on this branch must not strand its parent. The trusted
   // executor receives this link, but never mutates or retargets the child.
   let children=prs,heads=prs;
-  if(focusPrNumber!==null){
-   // A single PR cannot prove whether its source branch is shared or
+  if(focusPrNumber!==null||manualTarget!==null){
+    // A single PR cannot prove whether its source branch is shared or
    // children depend on it: scoped reads preserve the existing safety gates.
    try{
     const byBase=await limited('event-children-by-base',()=>github.rest.pulls.list({
@@ -1057,6 +1088,6 @@ async function wakeDirectionWatcher({github,core,context,now=Date.now(),dryRun=f
  }
  log();return state;
 }
-module.exports={trustedContext,planCandidates,run,wakeDirectionWatcher,workerBusyOrCooling,
+module.exports={trustedContext,validOwnerRepairTarget,planCandidates,run,wakeDirectionWatcher,workerBusyOrCooling,
  DIRECTION_IDLE_MS,DIRECTION_WORKFLOW,verifiedSpecialistProductFailure,backlogLabelHints,
  signedCiWakeTiming};

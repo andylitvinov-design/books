@@ -69,6 +69,16 @@ on:
         required: false
         type: boolean
         default: false
+      pm_pr_number:
+        description: 'Approved owner PM target PR; revalidated by trusted dispatcher'
+        required: false
+        type: string
+        default: ''
+      pm_expected_sha:
+        description: 'Exact PR source HEAD, not authority for a source write'
+        required: false
+        type: string
+        default: ''
 permissions:
   contents: read
   actions: write
@@ -89,7 +99,8 @@ jobs:
       github.event_name != 'pull_request_target' &&
       !(github.event_name == 'workflow_dispatch' &&
         (github.event.inputs.completion_wake == 'true' ||
-         github.event.inputs.direct_dispatch == 'true'))
+         github.event.inputs.direct_dispatch == 'true' ||
+         github.event.inputs.pm_pr_number != ''))
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
@@ -312,8 +323,9 @@ jobs:
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
       ((github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.direct_dispatch == 'true' &&
-        github.event.inputs.completion_wake != 'true') ||
+        (github.event.inputs.direct_dispatch == 'true' ||
+          github.event.inputs.pm_pr_number != '') &&
+         github.event.inputs.completion_wake != 'true') ||
        (github.event_name == 'workflow_run' &&
         github.event.workflow_run.status == 'completed' &&
         github.event.workflow_run.repository.full_name == 'andylitvinov-design/books' &&
@@ -360,14 +372,17 @@ jobs:
             const {run}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-queue-dispatcher.cjs');
             const dryRun=String(context.payload.inputs?.dry_run ?? 'false')==='true';
-            const report=await run({github,core,context,dryRun});
+            const pmNumber=String(context.payload.inputs?.pm_pr_number||'');
+            const pmSha=String(context.payload.inputs?.pm_expected_sha||'');
+            const manualTarget=pmNumber!==''?{prNumber:Number(pmNumber),expectedSha:pmSha}:null;
+            const report=await run({github,core,context,dryRun,manualTarget});
             core.info('HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
               candidates:report.candidates,dispatched:report.dispatchAccepted,
               blocked:report.blocked,reason:report.reason
             }));
             // The monitor consumes the same schema as before, but now from
             // live direct handoff receipts, never a Control Tower observer.
-            if(!dryRun && report?.schema==='HH_CONTROL_DISPATCH_V1' &&
+            if(!dryRun && !manualTarget && report?.schema==='HH_CONTROL_DISPATCH_V1' &&
                report.reason!=='UNTRUSTED_EVENT' &&
                context.repo.owner==='andylitvinov-design' &&
                context.repo.repo==='books'){
