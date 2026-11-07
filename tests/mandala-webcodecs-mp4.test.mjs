@@ -267,14 +267,22 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
 
 test("compact Ideas opens its actual opt-in voice editor via visible user control",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
- const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()');
- const button=browser.indexOf('const revealVoice=phrases.locator',hidden);
- const visible=browser.indexOf('await expect(revealVoice).toBeVisible',button);
- const tap=browser.indexOf('await revealVoice.click()',visible);
+ // Explicit real Text→Voice→Text tab clicks, followed by the visible Record action.
+ const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
+ const text=browser.indexOf('await expect(ideasModes.locator',modes);
+ const voice=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',text);
+ const back=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',voice);
+ const button=browser.indexOf('const recordEntry=phrases.locator',back);
+ const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',button);
+ const visible=browser.indexOf('await expect(recordEntry).toBeVisible',hidden);
+ const tap=browser.indexOf('await recordEntry.click()',visible);
  const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tap);
  const voiceOptions=browser.indexOf('await expect(advancedVoice.locator',opened);
- assert.ok(hidden>=0&&button>hidden&&visible>button&&tap>visible&&opened>tap&&voiceOptions>opened);
- assert.match(browser,/data-video-phrase-audio-shortcut/);
+ assert.ok(modes>=0&&text>modes&&voice>text&&back>voice&&button>back&&
+   hidden>button&&visible>hidden&&tap>visible&&opened>tap&&voiceOptions>opened,
+   "real Ideas tabs and Record click must reveal the original consented voice editor");
+ assert.match(browser,/data-video-ideas-tabs/);
+ assert.match(browser,/data-video-ideas-record/);
  assert.match(browser,/data-video-ideas-recording-open="true"/);
  assert.doesNotMatch(browser,/await advancedVoice\.locator\(":scope > summary"\)\.click\(\)/);
  for(const required of ["data-video-affirmation-voice-preview","data-hypno-approve",
