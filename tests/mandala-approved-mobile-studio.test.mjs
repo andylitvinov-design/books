@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+// Reuse existing scoped release checks, no extra runner.
+import './mandala-video-guest-first.test.mjs';
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
@@ -82,8 +84,11 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
-  assert.match(source,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending\}/,
-    "Create requires the licensed source URLs AND approved phrases; decoding occurs on tap");
+  assert.match(source,/data-video-quick-generate data-video-continue-hypno/);
+  assert.match(source,/onClick=\{continueFromMontage\}/);
+  assert.match(source,/onCreate=\{startFromHero\}/);
+  assert.match(source,/const canGenerate = Boolean\(source\)[\s\S]*?!phrasePending[\s\S]*?canStartFirstGuestVideo\(/,
+    "final Create requires licensed video and approved phrases; decoding on tap");
   assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
     "Four local MP4s must prime on the trusted Create click");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
@@ -163,8 +168,10 @@ test("post-generation human handoff is optional, privacy-safe and uses existing 
   assert.equal((result.match(/data-video-upsell-action=/g)||[]).length,2);
   assert.match(result,/href=\{"\/"\+locale\+"\/services#consultation"\}/);
   assert.match(result,/href=\{"\/"\+locale\+"\/services\/remote-energy-support"\}/);
-  assert.equal((result.match(/target="_blank" rel="noopener noreferrer"/g)||[]).length,2,
-    "open optional orders separately so unsaved local video is not lost");
+  assert.equal((result.slice(offer).match(/target="_blank" rel="noopener noreferrer"/g)||[]).length,2,
+    "two optional service orders open in separate tabs");
+  assert.equal((result.slice(0,offer).match(/data-video-guest-sign-in/g)||[]).length,1,
+    "guest login separately preserves original video tab");
   for(const locale of ["ru","en","es"]){
     assert.match(source,new RegExp(locale+": \\{[\\s\\S]*?consultationAction:"));
   }

@@ -5309,7 +5309,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               :locale==="es"?"Primer vídeo gratis. Inicia sesión solo para verlo o descargarlo."
               :"First video is free. Sign in only to view or download.")
             :creditCatalog.ready
-            ?(locale==="ru"?"1 ролик = 10 кредитов. Баланс: "
+            ?(locale==="ru"?"1 ролик = 10 кредитов. Баланс: ":
               locale==="es"?"1 vídeo = 10 créditos. Saldo: ":
               "1 video = 10 credits. Balance: ")+(creditBalance===null?"—":creditBalance)
             :(locale==="ru"?"Кредиты недоступны. Экспорт приостановлен.":

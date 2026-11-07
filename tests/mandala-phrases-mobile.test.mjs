@@ -94,7 +94,9 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.doesNotMatch(compact,/<MandalaVideoAffirmations /);
  assert.match(compact,/onPendingChange\?\.\(hasPendingEdits\)/);
  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
- assert.match(studio,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending\}/);
+  assert.match(studio,/const canGenerate = Boolean\(source\)[\s\S]*?!phrasePending[\s\S]*?canStartFirstGuestVideo\(/);
+  assert.match(studio,/const startFromHero=\(\)=>\{[\s\S]*?if\(phrasePending\)\{[\s\S]*?setActiveWorkspace\("phrases"\);[\s\S]*?return false;/);
+  assert.match(studio,/onCreate=\{startFromHero\}/);
  assert.match(studio,/if\(phrasePending\)\{/);
  assert.match(compact,/if\(ideaPending&&!draft\)return/);
  assert.match(compact,/externalPhraseDraft!==null\?\[\]:settings\.selected/);

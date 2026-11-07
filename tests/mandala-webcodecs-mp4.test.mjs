@@ -170,10 +170,11 @@ test("native MP4 retry does not silently rerun Safari WebCodecs after failed Web
 
 
 test("Safari deferred MP4 decoding requires a real user Play gesture, not a false timeout failure",()=>{
-  const start=studio.indexOf('if (!result || playbackStatus !== "checking") return;');
-  const end=studio.indexOf('},[result,playbackStatus,locale]);',start);
+  const start=studio.indexOf('if (!result || playbackStatus !== "checking" || videoViewer!=="signed_in") return;');
+  const end=studio.indexOf('},[result,playbackStatus,locale,videoViewer]);',start);
   assert.ok(start>0&&end>start,"the bounded deferred-decoding check is retained");
   const timer=studio.slice(start,end);
+  assert.match(timer,/videoViewer!=="signed_in"/,"guests do not see playback prompts before login");
   assert.match(timer,/setNotice\(/,"20s only provides useful visitor guidance");
   assert.doesNotMatch(timer,/setPlaybackStatus\("failed"\)/,
     "a timer cannot pronounce a valid deferred iPhone video corrupt");
