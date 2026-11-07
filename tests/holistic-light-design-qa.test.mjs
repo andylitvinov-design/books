@@ -143,13 +143,13 @@ test('all Video Studio workspaces share one warm neutral contract without erasin
     'mandala-free-video-generator','mandala-cloud-voice-studio',
     'mandala-stories-characters'
   ]) {
-    const module = read('components/'+path+'.module.css');
-    assert.ok(module.includes('Design Bible §10.13'),path+' lacks scoped palette');
-    assert.ok(module.includes(':global([data-mandala-mode="video"])'),
+    const styleModule = read('components/'+path+'.module.css');
+    assert.ok(styleModule.includes('Design Bible §10.13'),path+' lacks scoped palette');
+    assert.ok(styleModule.includes(':global([data-mandala-mode="video"])'),
       path+' must not globally recolor unrelated component instances');
-    assert.ok(module.includes('var(--hh-studio-surface'),
+    assert.ok(styleModule.includes('var(--hh-studio-surface'),
       path+' does not consume semantic surface');
-    assert.ok(module.includes('var(--hh-studio-border'),
+    assert.ok(styleModule.includes('var(--hh-studio-border'),
       path+' does not consume semantic neutral stroke');
   }
   assert.ok(studio.includes('.quickThemeRail button[data-tone="relationships"]'),
