@@ -29,7 +29,7 @@ const labels={
    noMetrics:'Метрик пока нет',locked:'Войдите в админ-кабинет',admin:'Админка',
    healthy:'Доступны данные',unknown:'Статус неизвестен',newProject:'Новый проект',projectName:'Название проекта',
    projectSummary:'Для чего нужен проект?',createProject:'Создать проект',settings:'Управление автоматизацией',
-   viewAutomations:'Все автоматизации',details:'Подробности'},
+   viewAutomations:'Все автоматизации',details:'Подробности',activity:'Журнал агентов',runSafe:'Проверить очередь сейчас',scheduler:'Циклы проверок',nothingVerified:'Нет подтверждённых результатов',partial:'Показаны только последние задачи'},
  en:{home:'Home',tasks:'Tasks',agents:'Agents',projects:'Projects',hello:'My briefing',subtitle:'Projects and agents · verified status',
    newTask:'New task',today:'Top priorities',allTasks:'All tasks',working:'Working',blocked:'Blocked',
    verified:'Verified',topProjects:'Projects',noProjects:'Create a project to group tasks',
@@ -52,7 +52,7 @@ const labels={
    noMetrics:'No metrics yet',locked:'Admin login required',admin:'Admin',
    healthy:'Data available',unknown:'Unknown',newProject:'New project',projectName:'Project name',
    projectSummary:'What is the project for?',createProject:'Create project',settings:'Automation controls',
-   viewAutomations:'All automations',details:'Details'},
+   viewAutomations:'All automations',details:'Details',activity:'Agent activity',runSafe:'Check safe queue now',scheduler:'Scheduler cycles',nothingVerified:'No verified results yet',partial:'Showing only the latest tasks'},
  es:{home:'Inicio',tasks:'Tareas',agents:'Agentes',projects:'Proyectos',hello:'Mi informe',subtitle:'Proyectos y agentes · estado verificado',
    newTask:'Nueva tarea',today:'Prioridades',allTasks:'Todas las tareas',working:'En curso',blocked:'Bloqueadas',
    verified:'Verificadas',topProjects:'Proyectos',noProjects:'Crea un proyecto para organizar tareas',
@@ -77,12 +77,13 @@ const labels={
    actionFailed:'Cambio sin confirmar',noMetrics:'Sin métricas',locked:'Requiere login',
    admin:'Admin',healthy:'Datos disponibles',unknown:'Desconocido',newProject:'Nuevo proyecto',
    projectName:'Nombre',projectSummary:'Objetivo',createProject:'Crear proyecto',
-   settings:'Automatizaciones',viewAutomations:'Todas las automatizaciones',details:'Detalles'}
+   settings:'Automatizaciones',viewAutomations:'Todas las automatizaciones',details:'Detalles',activity:'Actividad de agentes',runSafe:'Revisar cola segura ahora',scheduler:'Ciclos programados',nothingVerified:'Aún no hay resultados verificados',partial:'Solo se muestran las tareas recientes'}
 };
 const blockedStates=new Set(['needs_spec','blocked_dependency','blocked_no_runner','blocked_external','blocked_approval','blocked_budget','dead_letter']);
 const runningStates=new Set(['running','awaiting_evidence','retry_wait','ready','planned']);
 const verifiedStates=new Set(['completed_verified','completed_live']);
 const safe=(value,max=180)=>typeof value==='string'?value.trim().slice(0,max):'';
+const isTrustedEvidenceUrl=value=>typeof value==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/(pull|issues)\/[1-9]\d{0,7}$/.test(value);
 const date=value=>{if(!value)return '—';try{return new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value));}catch{return '—';}};
 const glyph={home:'⌂',tasks:'☑',agents:'♧',projects:'▦'};
 function stateLabel(state,t){
@@ -108,7 +109,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
    [project,setProject]=useState(''),[priority,setPriority]=useState('65'),[projectName,setProjectName]=useState(''),[projectSummary,setProjectSummary]=useState('');
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState('');
  const enabled=Boolean(snapshot?.settings?.enabled&&envReady),available=Boolean(snapshot);
- const tasks=snapshot?.tasks||[],projects=snapshot?.projects||[],runs=snapshot?.runs||[],evidences=snapshot?.evidence||[];
+ const tasks=snapshot?.tasks||[],projects=snapshot?.projects||[],runs=snapshot?.runs||[],evidences=snapshot?.evidence||[],slots=snapshot?.slots||[];
  const visibleTasks=useMemo(()=>[...tasks].filter(v=>filter==='all'||(filter==='active'?runningStates.has(v.state):blockedStates.has(v.state)))
    .sort((a,b)=>(b.priority||0)-(a.priority||0)),[tasks,filter]);
  const refresh=useCallback(async()=>{
@@ -210,7 +211,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
      <div className={styles.hero}><p>✦ HOLISTIC HOUSE · STRATEGY OS</p><h1>{t.hello}</h1>
        <span>{t.subtitle}</span></div>
      <div className={styles.metrics}>
-      {[{n:projects.length,label:t.projects},{n:tasks.length,label:t.tasks},{n:count(v=>v.state==='running'),label:t.working},{n:count(v=>blockedStates.has(v.state)),label:t.blocked}]
+      {[{n:projects.length,label:t.projects},{n:snapshot?.brief?.total??tasks.length,label:t.tasks},{n:count(v=>v.state==='running'),label:t.working},{n:count(v=>blockedStates.has(v.state)),label:t.blocked}]
        .map((a,i)=><div key={a.label} className={styles.metric}><b>{available?a.n:'—'}</b><small>{a.label}</small></div>)}
      </div>
      <div className={styles.panel}><div className={styles.panelHead}><h2>⭐ {t.today}</h2><button onClick={()=>setTab('tasks')} type="button">›</button></div>
@@ -223,7 +224,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
      </div>
      <p className={styles.timestamp}>{t.lastSync}: {date(snapshot?.observedAt)}</p>
     </section>:
-   tab==='tasks'?<section className={styles.section}><div className={styles.heading}><h1>{t.tasks}</h1><span>{tasks.length}</span></div>
+   tab==='tasks'?<section className={styles.section}><div className={styles.heading}><h1>{t.tasks}</h1><span>{snapshot?.partial?tasks.length+'+':snapshot?.brief?.total??tasks.length}</span></div>
      <div className={styles.filters}>{[['all',t.all],['active',t.active],['blocked',t.blocked]].map(([value,label])=>
        <button type="button" key={value} onClick={()=>setFilter(value)} className={filter===value?styles.selectedFilter:''}>{label}</button>)}</div>
      {visibleTasks.map(taskCard)}{!visibleTasks.length&&<div className={styles.empty}>{t.noTasks}</div>}
@@ -233,9 +234,29 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
       <div><strong>{a.id}</strong><small>{a.role}</small><small>{a.status==='not_connected'?t.noAgents:a.status==='manual_only'?t.manual:enabled?t.activeAgent:t.pausedAgent}</small></div>
       <span className={a.status==='available_when_enabled'&&enabled?styles.greenDot:styles.greyDot}>●</span></div>)}
     <div className={styles.panel}><h2>{t.settings}</h2><p className={styles.muted}>{t.readOnly}</p>
-     <button type="button" className={styles.secondary} disabled={!available||busy||!envReady} onClick={()=>send(enabled?'pause_all':'resume_safe')}>
-      {enabled?t.pause:t.resume}</button>
+     <div className={styles.commandStack}>
+      <button type="button" className={styles.secondary} disabled={!available||busy||!envReady} onClick={()=>send(enabled?'pause_all':'resume_safe')}>
+       {enabled?t.pause:t.resume}</button>
+      <button type="button" className={styles.primary} disabled={!enabled||busy} onClick={()=>send('run_now')}>{t.runSafe}</button>
+     </div>
      <a className={styles.github} href="/admin/automations">{t.viewAutomations} ↗</a></div>
+    <div className={styles.panel} aria-label={t.activity}>
+     <h2>{t.activity}</h2>
+     {runs.slice(0,5).map(run=><div key={run.id} className={styles.event}>
+      <span aria-hidden="true">◷</span><div><strong>{run.worker_id} · {run.state}</strong><small>{date(run.started_at)} {run.error_code||''}</small></div>
+     </div>)}
+     {!runs.length&&<p className={styles.muted}>{t.noRuns}</p>}
+     <h2>{t.evidence}</h2>
+     {evidences.slice(0,5).map(e=>isTrustedEvidenceUrl(e.source_url)?
+      <a className={styles.github} key={e.run_id} href={e.source_url} target="_blank" rel="noopener noreferrer">{e.evidence_kind} · {date(e.created_at)} ↗</a>:null)}
+     {!evidences.length&&<p className={styles.muted}>{t.nothingVerified}</p>}
+     <h2>{t.scheduler}</h2>
+     {slots.slice(0,4).map(slot=><div className={styles.event} key={slot.slot_utc}>
+      <span aria-hidden="true">↻</span><div><strong>{slot.state}</strong><small>{date(slot.slot_utc)} {slot.last_error||''}</small></div>
+     </div>)}
+     {!slots.length&&<p className={styles.muted}>{t.notKnown}</p>}
+     <p className={styles.disclaimer}>{t.noLive}</p>
+    </div>
    </section>:
    <section className={styles.section}><div className={styles.heading}><h1>{t.projects}</h1><button type="button" className={styles.smallAdd} onClick={()=>setProjectComposer(true)}>＋</button></div>
      {projects.map(p=><div key={p.id} className={styles.projectCard}><div className={styles.projectSymbol}>▰</div>
