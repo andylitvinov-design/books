@@ -2137,6 +2137,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [sttError,setSttError]=useState("");
   const [voiceTranscript,setVoiceTranscript]=useState<TimedSpeechTranscript|null>(null);
   const [voiceVisualPlan,setVoiceVisualPlan]=useState<AudioVisualPlan|null>(null);
+  const [pendingAutoVoice,setPendingAutoVoice]=useState<TimedSpeechTranscript|null>(null);
   const sttAbortRef=useRef<AbortController|null>(null);
   useEffect(()=>()=>sttAbortRef.current?.abort(),[]);
   // Same-tab iHelp handoff is read once; the IndexedDB record is deleted.
@@ -2148,12 +2149,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const entry=chooseAudioFile(voice.file);
       if(!entry)return;
       setVoiceTranscript(voice.transcript);
+      // The visitor already chose the expressly consented voice-to-video action.
+      // Keep the original voice non-looping and do not ask the Goal wizard again.
+      setAudioRights(true);
+      setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
+      setImportedAudioSeconds(voice.transcript.durationSeconds);
       setSttError("");
-      setActiveWorkspace("video");
+      setActiveWorkspace("editor");
+      setMontagePanel("audio");
+      setShowAdvancedVideo(true);
       setVideoScenarioOpen(true);
-      setNotice(locale==="ru"?"Получена голосовая запись и расшифровка из чата. Подтвердите право на аудио и подберите видеоряд.":
-        locale==="es"?"Audio y transcripción recibidos. Confirma los derechos y elige escenas.":
-          "Voice and transcript received from chat. Confirm usage rights and choose footage.");
+      setPendingAutoVoice(voice.transcript);
+      setNotice(locale==="ru"?"Расшифровка получена. Подбираем видеоряд по моментам речи…":
+        locale==="es"?"Transcripción recibida. Preparando escenas según el audio…":
+          "Transcript received. Matching licensed footage to your spoken moments…");
       window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
         const details=document.querySelector<HTMLDetailsElement>("[data-video-audio-details]");
         if(details)details.open=true;
@@ -4418,12 +4427,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
     }
   }
-  function applyTranscriptVideo(){
+  function applyTranscriptVideo(providedTranscript?:TimedSpeechTranscript,automatic=false){
     const entry=uploadedAudioRef.current;
-    if(!entry||!voiceTranscript||recording||preparing||!audioRights)return;
+    const transcript=providedTranscript??voiceTranscript;
+    if(!entry||!transcript||recording||preparing||!audioRights)return;
     const plan=planAudioVisualStoryboard({
-      transcript:voiceTranscript,scenes:FREE_FILM_CATALOG,
-      aspect,theme,locale
+      transcript,scenes:FREE_FILM_CATALOG,
+      // For recorded speech do not bias every story toward the default
+      // Energy category. Real spoken concepts determine each scene.
+      aspect,theme:automatic?"":theme,locale
     });
     setVoiceVisualPlan(plan);
     if(!plan.canExport||!plan.edit){
@@ -4447,12 +4459,26 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // Preserve original speech once, never loop a personal message.
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
     setAudioAuto(false);setSoundVolume(100);setMusic("none");
-    setWish(voiceTranscript.text.slice(0,800));setVideoScenarioOpen(true);
+    setWish(transcript.text.slice(0,800));setVideoScenarioOpen(true);
+    if(automatic){
+      setActiveWorkspace("editor");setMontagePanel("settings");
+      setShowAdvancedVideo(true);
+    }
     setSttError("");
-    setNotice(locale==="ru"?"Видеоряд синхронизирован с речью. Просмотрите сцены и нажмите «Создать видео».":
-      locale==="es"?"Escenas sincronizadas. Revisa y pulsa Crear vídeo.":
-        "Speech-aligned scenes selected. Review them and choose Create video.");
+    setNotice(locale==="ru"?"Видеоряд автоматически синхронизирован с речью. Проверьте монтаж и нажмите «Создать видео».":
+      locale==="es"?"Escenas sincronizadas automáticamente con la voz. Revisa y pulsa Crear vídeo.":
+        "Footage automatically matched to your voice. Review the edit and choose Create video.");
   }
+  // Same-tab Messenger transcription is applied ONCE, after the audio file,
+  // rights and Studio hydration are committed. No Goal/category prompts.
+  useEffect(()=>{
+    if(!pendingAutoVoice||!uploadedAudio||!audioRights||!studioHydrated||
+      recording||preparing)return;
+    setPendingAutoVoice(null);
+    applyTranscriptVideo(pendingAutoVoice,true);
+  // The local handoff is a one-shot event, not a subscription to editor changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[pendingAutoVoice,uploadedAudio,audioRights,studioHydrated,recording,preparing]);
   const selectCategory=(next:VideoCategory)=>{
     resetEditorHistory();
     setCinematicPlan(null);setTimelineTextClips(null);setPreviewSeekSeconds(0);setPreviewPlayhead(0);setIntroPlaying(false);
@@ -4984,7 +5010,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 <button type="button" className={videoStyles.audioMicButton}
                   data-video-audio-visual-plan
                   disabled={!audioRights||recording||preparing}
-                  onClick={applyTranscriptVideo}>
+                  onClick={()=>applyTranscriptVideo()}>
                   <Film size={16} aria-hidden="true"/>
                   {locale==="ru"?"Подобрать видеоряд по моментам речи":
                     locale==="es"?"Elegir vídeos según la voz":"Match footage to speech moments"}
