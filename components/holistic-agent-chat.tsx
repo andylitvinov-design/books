@@ -258,8 +258,9 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
 }) {
   const t=copy[locale];
   const starter=messengerStarter[locale];
-  const voice=useVoiceCompanion(locale);
   const voiceEnabled=process.env.NEXT_PUBLIC_HH_VOICE_COMPANION_WEB==="true";
+  // No browser speech, device voice discovery or local preferences when OFF.
+  const voice=useVoiceCompanion(locale,voiceEnabled);
   const [mode,setMode]=useState<Mode>("rules");
   const [agree,setAgree]=useState(false);
   const [axisRef,setAxisRef]=useState("");

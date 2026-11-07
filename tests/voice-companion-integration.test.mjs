@@ -9,7 +9,7 @@ test('Web/iHelp/Client share one canonical assistant and Web Voice UI',()=>{
  const voice=source('components/voice-companion-controls.tsx');
  const client=source('components/app/messages-orders-clients.jsx');
  const workspace=source('components/app/messenger-ai-workspace.jsx');
- assert.match(chat,/useVoiceCompanion\(locale\)/);
+ assert.match(chat,/useVoiceCompanion\(locale,voiceEnabled\)/);
  assert.match(chat,/VoiceCompanionControls/);
  assert.match(chat,/data-hh-voice-turn/);
  assert.match(chat,/companionVoice=\{voiceEnabled\?voice:undefined\}/);
@@ -99,4 +99,18 @@ test('secure archive restore never auto-plays old assistant text or duplicates b
  assert.match(chat,/<SecureDialogueHistory history=\{privateTranscript\} locale=\{locale\}\/>/);
  assert.match(chat,/NEXT_PUBLIC_HH_VOICE_COMPANION_WEB==="true"/);
  assert.match(voice,/data-hh-voice-conversation/);
+});
+
+test('disabled Voice Companion never initializes browser audio, microphone detection or local preferences',()=>{
+ const chat=source('components/holistic-agent-chat.tsx');
+ const voice=source('components/voice-companion-controls.tsx');
+ assert.match(chat,/const voiceEnabled=process\.env\.NEXT_PUBLIC_HH_VOICE_COMPANION_WEB==="true";/);
+ assert.match(chat,/useVoiceCompanion\(locale,voiceEnabled\)/);
+ assert.match(voice,/export function useVoiceCompanion\(locale:PublicLocale,enabled=false\)/);
+ assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\)return;\s*mounted\.current=true;/);
+ assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\)return;\s*try\{\s*const value=JSON\.parse\(window\.localStorage/);
+ assert.match(voice,/useEffect\(\(\)=>\{\s*if\(!enabled\|\|!prefsLoaded\)return;/);
+ assert.match(voice,/const speak=useCallback\(\(text:string\)=>\{\s*if\(!enabled\)return;/);
+ assert.match(voice,/const dictate=useCallback\(\(onTranscript:.*\)=>\{\s*if\(!enabled\)return;/);
+ assert.match(voice,/const startDialogue=useCallback\(\(onTurn:.*\)=>\{\s*if\(!enabled\)return;/);
 });

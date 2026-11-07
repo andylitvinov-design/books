@@ -46,7 +46,7 @@ const COPY:Record<PublicLocale,VoiceCopy>={
     captured:"Texto reconocido. Revísalo y pulsa Enviar.",error:"La voz no está disponible. Usa el texto."},
 };
 
-export function useVoiceCompanion(locale:PublicLocale){
+export function useVoiceCompanion(locale:PublicLocale,enabled=false){
  const t=COPY[locale];
  const [supported,setSupported]=useState(false);
  const [recognitionSupported,setRecognitionSupported]=useState(false);
@@ -89,6 +89,7 @@ export function useVoiceCompanion(locale:PublicLocale){
   stopDialogue();setVoiceIdState(value);
  },[stopDialogue]);
  useEffect(()=>{
+  if(!enabled)return;
   mounted.current=true;
   const controller=createDeviceSpeech(()=>window);
   speaker.current=controller;
@@ -117,19 +118,20 @@ export function useVoiceCompanion(locale:PublicLocale){
    window.removeEventListener('pagehide',stopDialogue);
    window.removeEventListener('hh:voice-companion-stop',stopDialogue);
   };
- },[speechLocale,stopDialogue]);
+ },[enabled,speechLocale,stopDialogue]);
  useEffect(()=>{
+  if(!enabled)return;
   try{
    const value=JSON.parse(window.localStorage.getItem('hh-voice-companion-prefs-v1')||'{}') as {voiceId?:string;rate?:number};
    if(typeof value.voiceId==='string')setVoiceIdState(value.voiceId.slice(0,200));
    if(typeof value.rate==='number')setRate(normalizeSpeechRate(value.rate));
   }catch{}
   setPrefsLoaded(true);
- },[]);
+ },[enabled]);
  useEffect(()=>{
-  if(!prefsLoaded)return;
+  if(!enabled||!prefsLoaded)return;
   try{window.localStorage.setItem('hh-voice-companion-prefs-v1',JSON.stringify({voiceId,rate}));}catch{}
- },[voiceId,rate,prefsLoaded]);
+ },[enabled,voiceId,rate,prefsLoaded]);
  const setPlayback=useCallback((value:boolean)=>{
   if(!value){stopDialogue();setAutoRead(false);}setPlaybackConsent(value);setNotice('');
  },[stopDialogue]);
@@ -137,6 +139,7 @@ export function useVoiceCompanion(locale:PublicLocale){
   if(!value)stopDialogue();setSttConsent(value);setNotice('');
  },[stopDialogue]);
  const speak=useCallback((text:string)=>{
+  if(!enabled)return;
   if(chooseVoiceRoute({channel:'web',playbackConsent})!=='browser-speech'){
    setNotice(t.permission);return;
   }
@@ -181,8 +184,9 @@ export function useVoiceCompanion(locale:PublicLocale){
    }
   };
   playNext();
- },[speechLocale,playbackConsent,rate,stop,stopDialogue,supported,t,voiceId,voices]);
+ },[enabled,speechLocale,playbackConsent,rate,stop,stopDialogue,supported,t,voiceId,voices]);
  const dictate=useCallback((onTranscript:(text:string)=>void)=>{
+  if(!enabled)return;
   if(!sttConsent){setNotice(t.sttConsent);return;}
   const Ctor=(window as SpeechWindow).SpeechRecognition||(window as SpeechWindow).webkitSpeechRecognition;
   if(!Ctor){stopDialogue();setNotice(t.inputUnavailable);return;}
@@ -210,14 +214,15 @@ export function useVoiceCompanion(locale:PublicLocale){
    };
    instance.start();setRecording(true);
   }catch{stopDialogue();recognition.current=null;setRecording(false);setNotice(t.inputUnavailable);}
- },[speechLocale,sttConsent,stop,stopDialogue,t]);
+ },[enabled,speechLocale,sttConsent,stop,stopDialogue,t]);
  const startDialogue=useCallback((onTurn:(text:string)=>void)=>{
+  if(!enabled)return;
   if(!supported||!recognitionSupported||!playbackConsent||!sttConsent){
    setNotice(t.inputUnavailable);return;
   }
   dialogueActive.current=true;dialogueOnTurn.current=onTurn;setConversing(true);
   dictate(text=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);});
- },[dictate,playbackConsent,recognitionSupported,sttConsent,supported,t]);
+ },[enabled,dictate,playbackConsent,recognitionSupported,sttConsent,supported,t]);
  resumeDialogue.current=()=>{
   if(dialogueActive.current&&dialogueOnTurn.current){
    dictate(text=>{if(dialogueActive.current)dialogueOnTurn.current?.(text);});

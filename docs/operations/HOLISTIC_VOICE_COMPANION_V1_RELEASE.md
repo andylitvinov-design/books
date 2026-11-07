@@ -78,3 +78,6 @@ Voice QA and exact-head Core/Specialist/merge-check remain mandatory before
 a protected Web Voice release. Archive schema and privacy checks do NOT prove
 Safari speech-recognition or live browser audio works. Telegram private
 speech remains a distinct, not-yet-enabled provider/consent lane.
+
+## Disabled-state no-observation guard (2026-11-07)
+The Web Voice feature's explicit build flag defaults OFF. Its React hook now also skips browser SpeechSynthesis/Recognition discovery, event listener registration and localStorage read/write in the OFF state; public site visitors do not initialize a hidden Voice Companion or write its preferences. The existing Emotional Avatar's separate user-triggered fallback remains independent. No new service or provider is called. Enable only after approved physical device/browser QA and exact-HEAD protected release gate.
