@@ -8,7 +8,10 @@ import styles from './emotional-avatar.module.css';
 
 type ChatMessage = {role:'user'|'assistant';text:string};
 type Locale = 'ru'|'en'|'es';
-type AvatarProps = {messages:ChatMessage[];busy:boolean;status:string;locale:Locale;compact:boolean};
+type CompanionVoice = {supported:boolean;playbackConsent:boolean;speaking:boolean;
+  speak:(text:string)=>void;stop:()=>void};
+type AvatarProps = {messages:ChatMessage[];busy:boolean;status:string;locale:Locale;
+  compact:boolean;companionVoice?:CompanionVoice};
 const copy = {
   ru:{name:'Визуальный помощник',idle:'Я рядом',reacting:'Слушаю',thinking:'Готовлю ответ',speaking:'Озвучиваю',error:'Ответ недоступен',
     show:'Показать лицо',hide:'Скрыть лицо',expand:'Увеличить портрет',collapse:'Уменьшить портрет',listen:'Озвучить ответ',stop:'Остановить озвучку',
@@ -21,7 +24,10 @@ const copy = {
     unavailable:'La voz del dispositivo no está disponible. Puedes leer la respuesta.',otherAudio:'Ya se reproduce otro audio. Inténtalo al terminar.'},
 } as const;
 
-export default function EmotionalAvatar({messages,busy,status,locale,compact}:AvatarProps) {
+export default function EmotionalAvatar({messages,busy,status,locale,compact,companionVoice}:AvatarProps) {
+  // The Voice Companion is the sole speech controller when enabled. The
+  // original avatar adapter is kept only as the feature-flag-off fallback.
+  const externalSpeech=Boolean(companionVoice);
   const t=copy[locale]||copy.en;
   const faceId=useId();
   const shirtId=useId();
@@ -33,6 +39,7 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact}:Av
   const speech=useRef<SpeechController|null>(null);
   const turnId=useRef(0);
   const speechId=useRef(0);
+  const externalSpeechId=useRef(0);
   const lastMessage=useRef<ChatMessage|null>(null);
   const lastUser=useRef<ChatMessage|null>(null);
   const localeSeen=useRef(locale);
@@ -40,6 +47,7 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact}:Av
   const latestReply=latest?.role==='assistant'&&!busy?latest.text:'';
 
   useEffect(()=>{
+    if(externalSpeech)return;
     const controller=createDeviceSpeech(()=>window);
     speech.current=controller;
     setSpeechAvailable(controller.available());
@@ -50,7 +58,7 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact}:Av
     window.addEventListener('pagehide',stopPage);
     return()=>{document.removeEventListener('visibilitychange',stopHidden);
       window.removeEventListener('pagehide',stopPage);unwatch();controller.destroy();speech.current=null;};
-  },[]);
+  },[externalSpeech]);
 
   // One view of existing chat events: handles network replies AND batched local replies.
   useEffect(()=>{
@@ -64,7 +72,7 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact}:Av
     const candidate=current.role==='user'?current:messages[messages.length-2]?.role==='user'?messages[messages.length-2]:null;
     if(candidate&&candidate!==lastUser.current){
       lastUser.current=candidate;
-      speech.current?.stop();setVoiceNotice('');
+      speech.current?.stop();companionVoice?.stop();setVoiceNotice('');
       const visual=classifyAvatarEmotion(candidate.text,locale);
       dispatch({type:'TURN_START',turnId:++turnId.current,emotion:visual.emotion,intensity:visual.intensity});
     }
@@ -72,7 +80,19 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact}:Av
       speech.current?.stop();
       dispatch({type:'TURN_DONE',turnId:turnId.current});
     }
-  },[messages,locale]);
+  },[messages,locale,externalSpeech]);
+
+  useEffect(()=>{
+    if(!externalSpeech)return;
+    if(companionVoice?.speaking){
+      const id=Math.max(++speechId.current,state.speechId+1);
+      speechId.current=id;externalSpeechId.current=id;
+      dispatch({type:'SPEECH_START',turnId:turnId.current,speechId:id});
+    }else if(externalSpeechId.current){
+      dispatch({type:'SPEECH_END',turnId:turnId.current,speechId:externalSpeechId.current});
+      externalSpeechId.current=0;
+    }
+  },[externalSpeech,companionVoice?.speaking]);
 
   useEffect(()=>{
     if(busy)dispatch({type:'THINKING',turnId:turnId.current});
@@ -106,6 +126,11 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact}:Av
   },[compact]);
 
   function toggleVoice(){
+    if(companionVoice){
+      if(companionVoice.speaking)companionVoice.stop();
+      else if(companionVoice.playbackConsent&&latestReply)companionVoice.speak(latestReply);
+      return;
+    }
     if(state.speaking){speech.current?.stop();return;}
     if(!latestReply)return;
     const ownerTurn=turnId.current;
@@ -118,7 +143,9 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact}:Av
     });
     if(!result?.ok)setVoiceNotice(result?.reason==='busy'?t.otherAudio:t.unavailable);
   }
-  function hide(){speech.current?.stop();setExpanded(false);dispatch({type:'HIDE'});}
+  function hide(){speech.current?.stop();companionVoice?.stop();setExpanded(false);dispatch({type:'HIDE'});}
+  const canSpeak=companionVoice?companionVoice.supported&&companionVoice.playbackConsent:speechAvailable;
+  const actuallySpeaking=companionVoice?companionVoice.speaking:state.speaking;
   const phase=state.phase as AvatarState['phase'];
   const statusText=t[phase==='hidden'?'idle':phase];
   if(!state.visible)return <div className={styles.hidden} data-hh-emotional-avatar-hidden>
@@ -160,8 +187,8 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact}:Av
     <div className={styles.info}>
       <div className={styles.heading}><strong>{t.name}</strong><span aria-live="off">{statusText}</span></div>
       <div className={styles.controls}>
-        <button type="button" onClick={toggleVoice} disabled={!speechAvailable||!latestReply}
-          aria-pressed={state.speaking}>{state.speaking?t.stop:t.listen}</button>
+        <button type="button" onClick={toggleVoice} disabled={!canSpeak||!latestReply}
+          aria-pressed={actuallySpeaking}>{actuallySpeaking?t.stop:t.listen}</button>
         <button type="button" onClick={()=>{if(!compact||(window.visualViewport?.height||window.innerHeight)>760)setExpanded(value=>!value);}}
           aria-expanded={expanded} className={styles.expand}>
           {expanded?t.collapse:t.expand}</button>
