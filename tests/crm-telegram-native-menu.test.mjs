@@ -58,7 +58,7 @@ test('signed customer Home commands bootstrap native Menu immediately and only i
 });
 test('first Home reply may bootstrap native Menu once per hour without blocking message sends',()=>{
  const route=readFileSync(new URL('../app/api/app/crm/messenger/webhook/[provider]/route.js',import.meta.url),'utf8');
- assert.ok(route.includes('if(companion.text&&shouldBootstrapTelegramNativeMenu('));
+ assert.ok(route.includes('if(companion.text&&!event.callbackId&&shouldBootstrapTelegramNativeMenu('));
  assert.ok(route.includes("consumeRate(config,{op:'hh-crm-tg-native-menu-on-first-home'},1,3600)"));
  assert.ok(route.includes("HH_CRM_TG_COMMAND_MENU_READY"));
  assert.ok(route.includes("HH_CRM_TG_COMMAND_MENU_NOT_READY"));

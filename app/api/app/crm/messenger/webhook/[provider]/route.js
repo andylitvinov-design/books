@@ -71,7 +71,7 @@ export async function POST(request,{params}){
           // for callbacks, diagnostic deep links, media, STOP or owner video.
           // The signed webhook + committed Companion session are already
           // verified, and all Bot API calls run after the reply is committed.
-          if(companion.text&&shouldBootstrapTelegramNativeMenu(
+          if(companion.text&&!event.callbackId&&shouldBootstrapTelegramNativeMenu(
              event,process.env.HH_CRM_MSG_TELEGRAM_USERNAME)){
             after(async()=>{
               try{
