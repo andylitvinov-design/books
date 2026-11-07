@@ -193,3 +193,36 @@ test("Safari deferred MP4 decoding requires a real user Play gesture, not a fals
     "a persistent non-clickable Play button remains a test failure");
   assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
 });
+
+test("Safari MP4 finalized bytes require real tracks and a decoded first frame",()=>{
+  for(const marker of [
+    "new Input({","new BlobSource(new Blob([bytes]",
+    "formats:[MP4]","await input.canRead()",
+    "input.getPrimaryVideoTrack()","track.getDurationFromMetadata()",
+    "input.getPrimaryAudioTrack()","track.canDecode()",
+    "new VideoSampleSink(track)","sink.getSample(await track.getFirstTimestamp())",
+    "frame.close()","input.dispose()","await output.getMimeType()",
+    "verifyDecodableMp4Export(bytes,{",
+  ])assert.ok(helper.includes(marker),marker);
+  assert.match(helper,/document.createElement\("video"\).canPlayType\(expected.mime\)/);
+  assert.match(helper,/video_output_codec_unsupported/);
+  assert.match(helper,/video_output_invalid_tracks/);
+  assert.match(helper,/video_output_decoder_failed/);
+  const verifyAt=helper.indexOf("await verifyDecodableMp4Export(bytes,{");
+  assert.ok(verifyAt>helper.indexOf("await output.finalize()"));
+  assert.ok(verifyAt<helper.indexOf("onProgress?.(100)"));
+});
+
+test("Safari MP4 decode failure routes to real WebM instead of false ready or charge",()=>{
+  assert.match(studio,/HH_VIDEO_NATIVE_PLAYBACK_FAILURE:/);
+  assert.match(studio,/failedPlayerFormatRef.current=result.extension/);
+  assert.match(studio,/failedPlayerFormatRef.current==="mp4"/);
+  assert.match(studio,/void createVideo\(true\)/);
+  assert.match(studio,/failedPlayerFormatRef.current=null/);
+  assert.match(studio,/data-video-webkit-webm-retry/);
+  assert.match(studio,/video_output_decoder_failed/);
+  assert.match(studio,/canRetryWebm/);
+  assert.match(studio,/if\(playbackStatus==="failed"\)\{\s*void releaseCredit\(/);
+  assert.match(studio,/guestRenderRef.current&&playbackStatus==="ready"/);
+  assert.match(studio,/video\.videoWidth>0 && video\.videoHeight>0/);
+});

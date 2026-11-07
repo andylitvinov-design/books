@@ -2341,6 +2341,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [exportUnavailable, setExportUnavailable] = useState(false);
   // Browser-only non-personal diagnostic; the user opts in to lower-res retry.
   const [webkitRecoveryReason,setWebkitRecoveryReason] = useState<string|null>(null);
+  // Remember a *native Safari* playback rejection, not just MIME support.
+  const failedPlayerFormatRef=useRef<"mp4"|"webm"|null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const resultVideoRef=useRef<HTMLVideoElement>(null);
   const shownReadyResultRef=useRef<string|null>(null);
@@ -3198,6 +3200,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   async function createVideo(preferWebm = false, forceMp4ForRetry = false, safeWebkitRetry = false) {
     if (!canGenerate || !source || jobRef.current || webCodecJobRef.current || preparingRef.current) return;
+    // The next explicit Create must not repeat an MP4 Safari already rejected.
+    // Native WebM retry remains on the user's gesture with all source audio.
+    if(!preferWebm&&!forceMp4ForRetry&&!safeWebkitRetry&&
+      failedPlayerFormatRef.current==="mp4"&&
+      recordingMimes(Boolean(attachedAudio),true).some(mime=>mime.startsWith("video/webm"))){
+      void createVideo(true);
+      return;
+    }
     stopSoundPreview();
     stopMovieSound();
     const snapshot=source;
@@ -3525,6 +3535,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               "licensed_scene_frame_unavailable","narration_longer_than_video",
               "audio_master_incomplete","audio_decode_invalid",
               "video_output_size_invalid","video_output_not_mp4",
+              "video_output_codec_unsupported","video_output_invalid_tracks",
+              "video_output_decoder_failed",
               "unsupported_audio_count","invalid_audio_volume",
               "invalid_first_party_preset","first_party_audio_unavailable",
               "audio_size_invalid","invalid_audio_lane",
@@ -3536,8 +3548,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               "video_encoder_timeline_drift","video_encoder_too_slow",
               "webcodecs_h264_unsupported","unexpected_encoder_failure",
             ].includes(code);
-            if(canRetry)setWebkitRecoveryReason(code);
-            const hint=code==="video_encoder_timeline_drift"||code==="video_encoder_too_slow"
+            const decodedOutputFailed=[
+              "video_output_codec_unsupported","video_output_invalid_tracks",
+              "video_output_decoder_failed",
+            ].includes(code);
+            const canRetryWebm=decodedOutputFailed&&
+              recordingMimes(Boolean(attachedAudio),true).some(mime=>mime.startsWith("video/webm"));
+            if(canRetry||canRetryWebm)setWebkitRecoveryReason(code);
+            const hint=decodedOutputFailed
+              ?canRetryWebm
+                ?locale==="ru"?"Готовый MP4 не прошёл проверку декодирования. Повторите в WebM: сцены и звук сохранятся."
+                  :locale==="es"?"El MP4 no se pudo decodificar. Reintenta en WebM con escenas y audio."
+                  :"The MP4 could not be decoded. Retry in WebM; scenes and sound are preserved."
+                :locale==="ru"?"Это устройство не декодирует MP4 и не поддерживает альтернативную запись WebM."
+                  :locale==="es"?"Este dispositivo no puede reproducir MP4 ni grabar en WebM."
+                  :"This device cannot decode MP4 or record the alternate WebM format."
+              :code==="video_encoder_timeline_drift"||code==="video_encoder_too_slow"
               ? locale==="ru"?"Кодировщик Safari не успевает обрабатывать кадры."
                 :locale==="es"?"El codificador de Safari no alcanza a procesar los fotogramas."
                 :"Safari's encoder cannot keep up with the frames."
@@ -4118,6 +4144,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
   function confirmVideoPlayback(video:HTMLVideoElement){
     if(video.videoWidth>0 && video.videoHeight>0 && video.readyState>=2 && !video.error){
+      failedPlayerFormatRef.current=null;
       setPlaybackStatus("ready");
       if(result?.mode!=="catalog")setNotice(creditConfirmed?t.ready:
         (locale==="ru"?"Видео проверено. Подтверждаем списание кредитов…":
@@ -6516,7 +6543,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </button>;
         })}
       </nav>
-      {exportUnavailable && webkitRecoveryReason && !recording && !preparing ? (
+      {exportUnavailable && webkitRecoveryReason?.startsWith("video_output_") &&
+       !recording && !preparing ? (
+        <button type="button" data-video-webkit-webm-retry
+          className={videoStyles.audioDirectLink}
+          onClick={()=>void createVideo(true)}>
+          {locale==="ru"?"Повторить видео в WebM · сохранить сцены и звук"
+            :locale==="es"?"Reintentar en WebM · conservar las escenas y el audio"
+            :"Retry video in WebM · keep scenes and sound"}
+        </button>
+      ):null}
+      {exportUnavailable && webkitRecoveryReason &&
+       !webkitRecoveryReason.startsWith("video_output_") && !recording && !preparing ? (
         <button type="button" data-video-webkit-safe-retry
           className={videoStyles.audioDirectLink}
           onClick={()=>void createVideo(false,false,true)}>
@@ -6584,6 +6622,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               onPlaying={event=>confirmVideoPlayback(event.currentTarget)}
               onError={event=>{
                 const errorCode=event.currentTarget.error?.code||0;
+                // Diagnostic only; no private text, photos or audio.
+                console.warn("HH_VIDEO_NATIVE_PLAYBACK_FAILURE:"+result.extension+":"+errorCode);
+                failedPlayerFormatRef.current=result.extension;
                 setPlaybackStatus("failed");
                 setNotice(locale==="ru"
                   ?"Safari не воспроизводит этот "+result.extension.toUpperCase()+" (ошибка "+errorCode+"). Попробуйте другой формат ниже."
