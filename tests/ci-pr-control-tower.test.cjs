@@ -1609,3 +1609,26 @@ test('old manual PR remains read-only; source-repair takes precedence in hourly 
  assert.ok(planned.some(x=>x.lane==='legacy'));
  assert.equal(planned.filter(x=>x.lane==='legacy').length,1);
 });
+
+test('owner PM exact-target handoff cannot skip the existing admission gates',async()=>{
+ const {validOwnerRepairTarget}=require('../scripts/ci-pr-queue-dispatcher.cjs');
+ const owner={...context,actor:'andylitvinov-design'},target={prNumber:5,expectedSha:SHA};
+ assert.equal(validOwnerRepairTarget(owner,target),true);
+ for(const bad of [{...context,actor:'other'},{...context,eventName:'push'},
+                  {...context,ref:'refs/heads/codex/public-book-library'}])
+  assert.equal(validOwnerRepairTarget(bad,target),false);
+ for(const bad of [{...target,expectedSha:'bad'},{...target,prNumber:0},
+                   {...target,additional:'no'}])
+  assert.equal(validOwnerRepairTarget(owner,bad),false);
+ const blocked=fixture([pr(5,'repair',{labels:[{name:'hh:repair-needed'},
+                                              {name:'hh:repair-manual'}]})]);
+ const denied=await run({github:blocked.github,core:core(),context:owner,
+  manualTarget:target,capacityFn:blocked.capacityFn,now:NOW});
+ assert.match(denied.reason,/INVENTORY_UNVERIFIED/);
+ assert.equal(blocked.calls.reserved.length,0);
+ assert.equal(blocked.calls.dispatched.length,0);
+ const foreign=await run({github:blocked.github,core:core(),context,
+  manualTarget:target,capacityFn:blocked.capacityFn,now:NOW});
+ assert.equal(foreign.reason,'UNTRUSTED_OWNER_TARGET');
+ assert.equal(blocked.calls.dispatched.length,0);
+});
