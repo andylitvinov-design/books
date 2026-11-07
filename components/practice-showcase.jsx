@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './practice-showcase.module.css'
+import { MasterModeSwitch } from './master-mode-switch'
 
 const COPY = {
   ru: {
@@ -352,6 +353,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
 
   return <div className={styles.screen} data-practice-showcase data-practice-design="unified-20261028" data-auth-state={session}>
     <div className={styles.shell}>
+      <MasterModeSwitch locale={locale} active="share" />
       <header className={styles.header}>
         <div>
           <h1>{t.title}</h1>

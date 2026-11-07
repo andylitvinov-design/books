@@ -13,6 +13,7 @@ import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
 import { ArticleDirectory } from "@/components/practitioner-article-directory";
 import { MentorCommunitySwitch } from "@/components/mentor-community-switch";
 import { CommunityServiceHighlights } from "@/components/community-service-highlights";
+import { MasterModeSwitch } from "@/components/master-mode-switch";
 
 type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ view?: string | string[] }> };
 type PublishedCourseRow = {
@@ -109,6 +110,7 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
   return (
     <main className="services-shell services-shell--studio" lang={locale}>
       <PublicSiteHeader locale={locale} />
+      <MasterModeSwitch locale={locale} active="find" />
       <MentorCommunitySwitch locale={locale} initialView={requestedView === "articles" ? "articles" : "mentors"} hasArticles={articles.length > 0} hasServices={services.length > 0}
         mastersUnavailable={mastersResult.status === "rejected"}
         articlesUnavailable={articlesResult.status === "rejected"}
