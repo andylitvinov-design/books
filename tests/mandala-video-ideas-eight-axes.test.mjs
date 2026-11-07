@@ -116,3 +116,16 @@ test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list
  assert.ok(css.includes('.heroCanvas{opacity:1!important;z-index:1!important}'));
  assert.ok(css.includes('[data-video-phrase-audio-shortcut]{display:none!important}'));
 });
+
+test("Ideas Text and Voice have a shared, stateful single narration editor",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ assert.match(studio,/data-video-ideas-tabs role="group"/);
+ assert.match(studio,/data-video-ideas-tab="text" aria-pressed=\{ideasSubtab==="text"\}/);
+ assert.match(studio,/data-video-ideas-tab="voice" aria-pressed=\{ideasSubtab==="voice"\}/);
+ assert.match(studio,/data-video-ideas-text-panel hidden=\{ideasSubtab!=="text"\}/);
+ assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ assert.match(studio,/data-video-ideas-own-upload/);
+ assert.match(studio,/data-video-ideas-record-voice/);
+ assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
+});
