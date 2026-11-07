@@ -17,13 +17,13 @@
   const refresh=make('button','hh-cc-iconbtn','⟳');refresh.type='button';refresh.title='Обновить страницу';refresh.setAttribute('aria-label','Обновить страницу');refresh.addEventListener('click',()=>location.reload());head.append(refresh);
   const more=make('button','hh-cc-iconbtn','⋮');more.type='button';more.title='Разделы мониторинга';more.setAttribute('aria-label','Разделы мониторинга');more.setAttribute('aria-expanded','false');head.append(more);
   const menu=make('div','hh-cc-menu');menu.hidden=true;
-  [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Библиотека навыков','/skills.html'],['Защищённый Agent Commander','https://holistichouse.vercel.app/admin/command-center']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
+  [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Библиотека навыков','/skills.html'],['Защищённый редактор задач','/task-editor.html']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
   head.append(menu);more.addEventListener('click',()=>{menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden))});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
   document.addEventListener('click',e=>{if(!head.contains(e.target)){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
   document.body.prepend(head);
   const nav=make('nav');nav.id='hh-cc-dock';nav.setAttribute('aria-label','Agent Commander · основные разделы');
-  const active=location.pathname===paths.tasks?'tasks':location.pathname===paths.agents?'agents':location.pathname===paths.projects?'projects':location.pathname===paths.monitor?'monitor':'home';
+  const active=(location.pathname===paths.tasks||location.pathname==='/task-editor.html')?'tasks':location.pathname===paths.agents?'agents':location.pathname===paths.projects?'projects':location.pathname===paths.monitor?'monitor':'home';
   [['home','Главная'],['tasks','Задачи'],['add','Создать'],['agents','Агенты'],['projects','Проекты']].forEach(([name,label])=>{
    const e=make(name==='add'?'button':'a');if(name==='add'){
     e.type='button';e.setAttribute('aria-label','Создать задачу');e.append(make('span','hh-cc-add','+'));
@@ -36,7 +36,7 @@
   });
   document.body.append(nav);
   const bridge=make('script');bridge.id='hh-cc-transfer-loader';
-  bridge.src='/commander-transfer.js?v=20261107-task-transfer-v1';document.head.append(bridge);
+  bridge.src='/commander-transfer.js?v=20261107-same-origin-v2';document.head.append(bridge);
   const skillCss=make('link');skillCss.rel='stylesheet';skillCss.href='/commander-skills.css?v=20261107-skills-v1';document.head.append(skillCss);
   const skillJs=make('script');skillJs.src='/commander-skills.js?v=20261107-skills-v1';skillJs.async=false;document.head.append(skillJs);
   const loader=make('script');loader.id='hh-cc-task-input-loader';loader.async=false;
@@ -106,7 +106,7 @@
    const sheet=make('section','hh-cc-sheet');sheet.append(make('h2',null,'Новая задача'),make('p',null,'Публичный монитор не сохраняет и не запускает задания. Для реального создания используйте защищённый Agent Commander владельца.'));
    const draft=make('textarea');draft.placeholder='Опишите задачу — текст можно скопировать';draft.setAttribute('aria-label','Текст новой задачи');sheet.append(draft);
    const copy=make('button',null,'Копировать описание');copy.addEventListener('click',async()=>{if(!draft.value.trim())return;try{await navigator.clipboard.writeText(draft.value);copy.textContent='Скопировано ✓'}catch{draft.select();copy.textContent='Выделено — скопируйте вручную'}});sheet.append(copy);
-   const owner=make('a',null,'Открыть защищённый редактор');owner.href='https://holistichouse.vercel.app/admin/command-center';sheet.append(owner);
+   const owner=make('a',null,'Открыть защищённый редактор');owner.href='/task-editor.html';sheet.append(owner);
    const close=make('button','hh-cc-secondary','Закрыть');close.type='button';close.addEventListener('click',()=>{dialog.hidden=true});sheet.append(close);dialog.append(sheet);dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.hidden=true});document.body.append(dialog);
   }
   dialog.hidden=false;dialog.querySelector('textarea')?.focus();

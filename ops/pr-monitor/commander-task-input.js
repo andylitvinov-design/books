@@ -96,7 +96,7 @@
    '- Проект: отдельный Agent Commander / PR Monitor; мобильная постановка задач, назначение агентов и доказательное наблюдение за выполнением.',
    '- Главный адрес: https://holistic-house-pr-monitor.vercel.app',
    '- Реестр и подзадачи: https://holistic-house-pr-monitor.vercel.app/project-management-public.html',
-   '- Защищённый командный центр: https://holistichouse.vercel.app/admin/command-center',
+   '- Встроенный защищённый редактор: https://holistic-house-pr-monitor.vercel.app/task-editor.html',
    '- Цель: голосовая задача → качественный промпт → выбранный исполнитель → PR/CI → подтверждённый LIVE.',
    '- Ветки: codex/bootstrap-books — control plane, codex/public-book-library — сайт. Фактические SHA и статусы проверять на момент работы.',
    '- Публичный монитор не создаёт и не запускает задачи; изменения доступны только через права владельца.'
@@ -302,7 +302,7 @@
     },dictation);
    });sheet.append(sendDraft);
    const owner=mk('a',null,'Открыть защищённый редактор вручную');
-   owner.href='https://holistichouse.vercel.app/admin/command-center';owner.target='_blank';owner.rel='noopener noreferrer';sheet.append(owner);
+   owner.href='/task-editor.html';sheet.append(owner);
    sheet.append(mk('p','hh-cc-privacy-note','Публичная форма не сохраняет и не запускает задачи. Передача только открывает защищённый редактор, где владелец проверяет текст и нажимает «Сохранить». Если браузер блокирует передачу, скопируйте промпт вручную.'));
    const done=mk('button','hh-cc-secondary','Закрыть');done.type='button';done.addEventListener('click',close);sheet.append(done);
    const review=mk('section','hh-cc-review');review.hidden=true;
