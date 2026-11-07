@@ -61,6 +61,9 @@ test("Montage still owns the original single editor and verifies guest approval 
   assert.match(source,/MandalaMultiTrackTimeline/);
   assert.match(source,/setMontagePanel\("audio"\)/);
   assert.match(source,/onApprove=\{approved=>/);
+  assert.match(source,/approvedConcept=\{approvedVideoConcept\}/);
+  assert.match(source,/setApprovedVideoConcept\(approved\)/);
+  assert.match(concept,/approvedConcept\?\.signature===concept\.signature/);
   assert.doesNotMatch(source,/data-video-montage-tab="text"/);
   assert.match(concept,/data-video-concept-approve/);
   assert.match(concept,/data-video-concept-edit/);

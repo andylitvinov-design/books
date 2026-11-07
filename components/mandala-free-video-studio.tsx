@@ -11,7 +11,7 @@ import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
-import { MandalaVideoConcept } from "./mandala-video-concept";
+import { MandalaVideoConcept, type ApprovedVideoConcept } from "./mandala-video-concept";
 
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
@@ -1890,6 +1890,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"concept"|"audio">("concept");
+  const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
   const audioLibraryCloseRef=useRef<HTMLButtonElement>(null);
   const audioLibraryTriggerRef=useRef<HTMLButtonElement>(null);
@@ -7216,6 +7217,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div> : null}
           {montagePanel==="concept" ? <div className={videoStyles.montagePane} data-video-montage-concept>
           <MandalaVideoConcept locale={locale} goal={wish} theme={theme}
+            approvedConcept={approvedVideoConcept}
             styleIndex={quickStyleIndex} phrases={affirmationLines}
             signedIn={creditSession==="signed_in"}
             loginUnavailable={creditSession==="unavailable"}
@@ -7224,6 +7226,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onOpenGoal={()=>{setActiveWorkspace("video");}}
             onOpenStyle={()=>setMontagePanel("effects")}
             onApprove={approved=>{
+              setApprovedVideoConcept(approved);
               // Approval is local and free: only unedited storyboard overlays may change.
               // Existing manually edited text clips, voice, music and media are retained.
               if(!timelineTextClips?.length){

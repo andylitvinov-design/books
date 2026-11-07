@@ -22,7 +22,7 @@ export type ApprovedVideoConcept={
 };
 type Props={
   locale:PublicLocale;goal:string;theme:string;styleIndex:number;
-  phrases:string[];signedIn:boolean;loginUnavailable:boolean;disabled:boolean;
+  phrases:string[];approvedConcept:ApprovedVideoConcept|null; signedIn:boolean;loginUnavailable:boolean;disabled:boolean;
   onRefreshLogin:()=>void;onApprove:(concept:ApprovedVideoConcept)=>void;
   onOpenGoal:()=>void;onOpenStyle:()=>void;
 };
@@ -79,7 +79,7 @@ const COPY={
 const IconBadge=({icon:Icon,tone}:{icon:typeof Target;tone:string})=>
   <span className={css.rowIcon} data-tone={tone}><Icon size={19} aria-hidden="true"/></span>;
 
-export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,signedIn,
+export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,approvedConcept,signedIn,
   loginUnavailable,disabled,onRefreshLogin,onApprove,onOpenGoal,onOpenStyle}:Props){
   const t=COPY[locale]||COPY.en;
   const phraseSignature=phrases.join("\u001f");
@@ -90,9 +90,11 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,signed
   const [editing,setEditing]=useState(false);
   const [loginOpen,setLoginOpen]=useState(false);
   const [approvedSignature,setApprovedSignature]=useState<string|null>(null);
+  const [hasLocalEdits,setHasLocalEdits]=useState(false);
   const editButtonRef=useRef<HTMLButtonElement>(null);
   const modalRef=useRef<HTMLDivElement>(null);
-  const concept=(custom&&custom.signature===suggested.signature)?custom:suggested;
+  const concept=(custom&&custom.signature===suggested.signature)?custom:
+    (approvedConcept&&approvedConcept.signature===suggested.signature?approvedConcept:suggested);
   const taxonomy=getMyTubeTaxonomy();
   const categories=taxonomy.categories;
   const category=categories.find(c=>c.id===concept.categoryId)||categories[0];
@@ -104,7 +106,8 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,signed
   const scenario=listMyTubeScenarios(topic.id,locale).find(s=>s.id===concept.scenarioId);
   const styles=listMyTubeStyles(locale);
   const style=styles.find(s=>s.id===concept.styleId);
-  const approved=approvedSignature===concept.signature;
+  const approved=!hasLocalEdits&&(approvedSignature===concept.signature||
+    approvedConcept?.signature===concept.signature);
 
   useEffect(()=>{
     if(loginOpen&&signedIn){setLoginOpen(false);setEditing(true);}
@@ -118,11 +121,12 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,signed
 
   const change=(patch:Partial<ApprovedVideoConcept>)=>{
     const next=reviseVideoConcept(concept,patch,locale) as ApprovedVideoConcept;
-    setCustom(next);setApprovedSignature(null);
+    setCustom(next);setApprovedSignature(null);setHasLocalEdits(true);
   };
   const submit=()=>{
     if(!videoConceptIsValid(concept))return;
     setApprovedSignature(concept.signature);
+    setHasLocalEdits(false);
     setEditing(false);
     onApprove(concept);
   };
@@ -209,7 +213,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,signed
       </button>
       <button type="button" ref={editButtonRef} className={css.edit}
         data-video-concept-edit disabled={disabled} onClick={()=>{
-          if(editing){setEditing(false);return;}
+          if(editing){setEditing(false);setCustom(null);setHasLocalEdits(false);return;}
           if(signedIn)setEditing(true);else setLoginOpen(true);
         }}>
         <Pencil size={19}/><span>{editing?t.cancel:t.edit}
