@@ -159,7 +159,7 @@
        'Источник очереди: '+queueError+'. Повторить через штатную кнопку «Обновить».':
        'Только подтверждённые числа; неизвестное не равно 0.'));
   }
-  window.addEventListener('hh:ci-verified-updated',showQueue);
+  if(typeof window.addEventListener==='function')window.addEventListener('hh:ci-verified-updated',showQueue);
   async function readQueue() {
     try {
       if (originalQueue()?.slice(1,3).every(function(v){return /^\d+$/.test(v);})) {
