@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo,useState} from "react";
+import {useEffect,useMemo,useRef,useState} from "react";
 import type {ReactNode} from "react";
 import Link from "next/link";
 import {ArrowLeft,ArrowRight,BookOpen,CheckCircle2,Download,Flower2,FolderOpen,Headphones,LockKeyhole,Play,RefreshCw,Send,ShieldCheck,Sparkles,UserRound} from "lucide-react";
@@ -8,6 +8,7 @@ import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {GuidedMeditationFocus} from "./mandala-guided-course";
 import {selectResourcePractice} from "@/lib/mandala/resource-practice-selector.mjs";
+import {appFetch} from "@/lib/app/client-fetch";
 import css from "./mandala-video-ready.module.css";
 
 type VideoFile={url:string;extension:"mp4"|"webm";bytes:number;duration:number};
@@ -20,6 +21,7 @@ type Props={
 };
 const COPY={
   en:{
+    saveGateTitle:"Save your video free",saveGateLead:"Your video is ready. Sign in to save it in My Videos, download it or send it to Telegram.",saveGateTag:"YOUR VIDEO · YOUR CHOICE",saveGateBenefitSave:"Keep in My Videos",saveGateBenefitDownload:"Download to device",saveGateBenefitTelegram:"Send to Telegram",saveGateBenefitPractice:"Meditation or course",saveGateLogin:"Sign in to My House",saveGateTelegram:"Open Telegram · tap Start",saveGateTelegramConnect:"Get secure Telegram link",saveGateTelegramChecking:"Checking Telegram link…",saveGateTelegramUnavailable:"Telegram linking is unavailable. You can still use My House.",saveGateTelegramPending:"Tap Start in the Telegram chat, then return here.",saveGateTelegramLinked:"Telegram linked to your account.",saveGateTelegramVerify:"Check Telegram connection",saveGateContinue:"Continue saving",saveGateOr:"or",saveGateClose:"Close",saveGatePrivacy:"Free within available limits · Sent only with consent · Private by choice",saveGateSignInHint:"First sign in to My House. Open it in a new tab so your video stays here. Then check your sign-in.",saveGateTelegramHint:"Start connects the bot to your signed-in account. It does not send or save the video automatically.",saveGateRefresh:"Check sign-in",saveGateUnavailable:"Could not verify your account. The video stays on your device.",
     ready:"Your video is ready",preview:"Preview, save or continue your journey.",
     notReady:"Your video is not ready yet",createFirst:"Create and verify a video in PRO first.",
     verifying:"Checking playback on this device…",failed:"No playable exported video is available yet.",
@@ -50,6 +52,7 @@ const COPY={
     settingLabel:"Place",momentLabel:"Moment",actionLabel:"Action",
   },
   ru:{
+    saveGateTitle:"Сохраните видео бесплатно",saveGateLead:"Видео уже готово. Войдите, чтобы сохранить его в «Моих видео», скачать или отправить себе в Telegram.",saveGateTag:"ВАШЕ ВИДЕО · ВАШ ВЫБОР",saveGateBenefitSave:"В Мои видео",saveGateBenefitDownload:"Скачать на телефон",saveGateBenefitTelegram:"Отправить в Telegram",saveGateBenefitPractice:"Медитация или курс",saveGateLogin:"Войти в Мой дом",saveGateTelegram:"Открыть Telegram · нажать «Старт»",saveGateTelegramConnect:"Получить ссылку в Telegram",saveGateTelegramChecking:"Проверяем Telegram…",saveGateTelegramUnavailable:"Подключение Telegram недоступно. Сохранить видео можно через кабинет.",saveGateTelegramPending:"Нажмите «Старт» в Telegram и вернитесь на эту страницу.",saveGateTelegramLinked:"Telegram подключён к кабинету.",saveGateTelegramVerify:"Проверить Telegram",saveGateContinue:"Продолжить сохранение",saveGateOr:"или",saveGateClose:"Закрыть",saveGatePrivacy:"Бесплатно в рамках лимитов · Только с согласия · Приватно",saveGateSignInHint:"Сначала войдите в «Мой дом». Откроется новая вкладка, ваше видео останется здесь. Затем проверьте вход.",saveGateTelegramHint:"«Старт» привязывает бота к вашему кабинету, но не отправляет и не сохраняет видео автоматически.",saveGateRefresh:"Проверить вход",saveGateUnavailable:"Не удалось проверить вход. Видео осталось на вашем устройстве.",
     ready:"Ваше видео готово",preview:"Посмотрите, сохраните или продолжите практику.",
     notReady:"Видео пока не готово",createFirst:"Сначала создайте ролик в PRO и проверьте воспроизведение.",
     verifying:"Проверяем воспроизведение на устройстве…",failed:"Пока нет проверенного готового видео.",
@@ -80,6 +83,7 @@ const COPY={
     settingLabel:"Место",momentLabel:"Время",actionLabel:"Действие",
   },
   es:{
+    saveGateTitle:"Guarda tu vídeo gratis",saveGateLead:"Tu vídeo está listo. Inicia sesión para guardarlo en Mis vídeos, descargarlo o enviártelo por Telegram.",saveGateTag:"TU VÍDEO · TU ELECCIÓN",saveGateBenefitSave:"Mis vídeos",saveGateBenefitDownload:"Descarga al móvil",saveGateBenefitTelegram:"Enviar a Telegram",saveGateBenefitPractice:"Meditación o curso",saveGateLogin:"Entrar a Mi espacio",saveGateTelegram:"Abrir Telegram · pulsar Start",saveGateTelegramConnect:"Obtener enlace de Telegram",saveGateTelegramChecking:"Comprobando Telegram…",saveGateTelegramUnavailable:"No se puede conectar Telegram. Puedes guardar desde Mi espacio.",saveGateTelegramPending:"Pulsa Start en Telegram y vuelve a esta página.",saveGateTelegramLinked:"Telegram conectado a tu cuenta.",saveGateTelegramVerify:"Comprobar Telegram",saveGateContinue:"Continuar y guardar",saveGateOr:"o",saveGateClose:"Cerrar",saveGatePrivacy:"Gratis dentro de los límites · Solo con consentimiento · Privado",saveGateSignInHint:"Primero entra a Mi espacio. Se abrirá otra pestaña y el vídeo seguirá aquí. Después comprueba el acceso.",saveGateTelegramHint:"Start vincula el bot a tu cuenta, no guarda ni envía automáticamente el vídeo.",saveGateRefresh:"Comprobar acceso",saveGateUnavailable:"No se pudo comprobar la sesión. El vídeo sigue en tu dispositivo.",
     ready:"Tu vídeo está listo",preview:"Míralo, guárdalo o continúa tu camino.",
     notReady:"Tu vídeo todavía no está listo",createFirst:"Primero crea y verifica un vídeo en PRO.",
     verifying:"Verificando el vídeo en tu dispositivo…",failed:"Aún no hay un vídeo reproducible verificado.",
@@ -117,6 +121,46 @@ export function MandalaVideoReady({
 }:Props){
   const t=COPY[locale];
   const [view,setView]=useState<View>("home");
+  const [gateIntent,setGateIntent]=useState<"save"|"download"|"telegram"|"house">("save");
+  const gateRef=useRef<HTMLElement|null>(null);
+  const gateCloseRef=useRef<HTMLButtonElement|null>(null);
+  const gateLauncherRef=useRef<HTMLElement|null>(null);
+  const [telegramLink,setTelegramLink]=useState("");
+  const [telegramStatus,setTelegramStatus]=useState<"idle"|"loading"|"linked"|"unlinked"|"unavailable">("idle");
+  const [telegramError,setTelegramError]=useState("");
+  // This is an action-triggered dialog; never display it automatically on page load.
+  useEffect(()=>{
+    if(view!=="login")return;
+    const oldOverflow=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    gateCloseRef.current?.focus();
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==="Escape"){event.preventDefault();setView("home");return;}
+      if(event.key!=="Tab"||!gateRef.current)return;
+      const options=[...gateRef.current.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])'
+      )].filter(item=>item.getClientRects().length>0);
+      if(!options.length)return;
+      const first=options[0],last=options[options.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    };
+    window.addEventListener("keydown",onKey);
+    return()=>{window.removeEventListener("keydown",onKey);
+      document.body.style.overflow=oldOverflow;
+      gateLauncherRef.current?.focus({preventScroll:true});};
+  },[view]);
+  // Existing private endpoint verifies session + bot link server side. Start is NOT login.
+  useEffect(()=>{
+    if(view!=="login"||!signedIn)return;
+    let alive=true;
+    setTelegramStatus("loading");setTelegramLink("");setTelegramError("");
+    void appFetch("personal-videos/delivery").then((res:{telegram?:{linked?:boolean;linkAvailable?:boolean}})=>{
+      if(!alive)return;
+      setTelegramStatus(res.telegram?.linked?"linked":res.telegram?.linkAvailable?"unlinked":"unavailable");
+    }).catch(()=>{if(alive)setTelegramStatus("unavailable")});
+    return()=>{alive=false};
+  },[view,signedIn]);
   const [moment,setMoment]=useState("morning");
   const [setting,setSetting]=useState("quiet");
   const [action,setAction]=useState("observe");
@@ -129,8 +173,10 @@ export function MandalaVideoReady({
   const selectedGoal=(focus.goal||wish).trim().slice(0,100);
   const ritual=useMemo(()=>selectResourcePractice({
     locale,theme,kind:"ritual",revision,
-    focus:{difficulty:focus.difficulty,goal:focus.goal||wish,goals:focus.goals,details:focus.details}
-  }),[locale,theme,revision,focus.difficulty,focus.goal,focus.goals,focus.details,wish]);
+    focus:{difficulty:focus.difficulty,goal:focus.goal||wish,goals:focus.goals,
+      // The optional anchor is user text, so validate it before showing or copying a ritual.
+      details:[anchor,...focus.details]}
+  }),[locale,theme,revision,focus.difficulty,focus.goal,focus.goals,focus.details,anchor,wish]);
   const momentText=moment==="morning"?t.morning:moment==="evening"?t.evening:t.any;
   const placeText=setting==="nature"?t.nature:setting==="desk"?t.desk:t.quiet;
   const actionText=action==="hand"?t.hand:action==="pause"?t.pause:t.observe;
@@ -139,10 +185,37 @@ export function MandalaVideoReady({
     t.actionLabel+": "+actionText,anchor.trim().slice(0,140),
     ...ritual.steps,ritual.transfer
   ].filter(Boolean).join("\n\n"):"";
-  function chooseDelivery(){
+  function closeSaveGate(){setView("home");setTelegramLink("");setTelegramError("");}
+  function openDelivery(){closeSaveGate();onOpenDelivery();}
+  function chooseDelivery(intent:"save"|"download"|"telegram"|"house"="save"){
     if(!verified||!video||disabled)return;
-    if(!signedIn){setView("login");return;}
+    if(!signedIn||intent==="telegram"||intent==="house"){
+      gateLauncherRef.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
+      setGateIntent(intent);setView("login");return;
+    }
     onOpenDelivery();
+  }
+  async function requestTelegramLink(){
+    if(!signedIn||telegramStatus==="loading")return;
+    setTelegramStatus("loading");setTelegramError("");setTelegramLink("");
+    try{
+      const response=await appFetch("personal-videos/delivery",{
+        action:"connect",locale,consent:true
+      },"POST") as {linkUrl?:unknown};
+      const url=String(response.linkUrl||"");
+      // Only the bot challenge URL issued by our server may leave this page.
+      if(!/^https:\/\/t\.me\/[A-Za-z0-9_]+\?start=[A-Za-z0-9_-]{32}$/.test(url))
+        throw new Error("INVALID_TELEGRAM_LINK");
+      setTelegramLink(url);setTelegramStatus("unlinked");
+    }catch{setTelegramStatus("unavailable");setTelegramError(t.saveGateTelegramUnavailable);}
+  }
+  async function refreshTelegramLink(){
+    if(!signedIn)return;
+    setTelegramStatus("loading");setTelegramError("");
+    try{
+      const data=await appFetch("personal-videos/delivery") as {telegram?:{linked?:boolean;linkAvailable?:boolean}};
+      setTelegramStatus(data.telegram?.linked?"linked":data.telegram?.linkAvailable?"unlinked":"unavailable");
+    }catch{setTelegramStatus("unavailable");setTelegramError(t.saveGateTelegramUnavailable);}
   }
   function selectView(next:View){setView(next);setNotice("");}
   async function copyRitual(){
@@ -165,7 +238,7 @@ export function MandalaVideoReady({
   </div>;
   return <section className={css.root} data-video-ready data-ready-view={view}
     aria-label={view==="home"?t.ready:view==="login"?t.authTitle:view==="meditation"?t.medTitle:view==="ritual"?t.ritTitle:t.courseTitle}>
-    {view==="home"?<>
+    {(view==="home"||view==="login")?<>
       {header}
       <div className={css.title}>
         <h2>{verified&&video?t.ready:t.notReady}</h2>
@@ -175,15 +248,15 @@ export function MandalaVideoReady({
         <p className={css.signin}><LockKeyhole size={19} aria-hidden="true"/>
           {signedIn?t.preview:t.signIn}</p>
         <div className={css.actions} data-ready-save-choices>
-          <button type="button" onClick={chooseDelivery} disabled={disabled}
+          <button type="button" onClick={()=>chooseDelivery("save")} disabled={disabled}
             data-ready-save><FolderOpen size={23} aria-hidden="true"/><span>{t.save}</span></button>
-          <button type="button" onClick={chooseDelivery} disabled={disabled}
+          <button type="button" onClick={()=>chooseDelivery("download")} disabled={disabled}
             data-ready-download><Download size={23} aria-hidden="true"/><span>{t.download}</span></button>
-          <button type="button" onClick={chooseDelivery} disabled={disabled}
+          <button type="button" onClick={()=>chooseDelivery("telegram")} disabled={disabled}
             data-ready-telegram><Send size={23} aria-hidden="true"/><span>{t.telegram}</span></button>
           {signedIn?<Link href={myVideos} prefetch={false} target="_blank" rel="noopener noreferrer"
             data-ready-house><UserRound size={23} aria-hidden="true"/><span>{t.house}</span></Link>:
-          <button type="button" onClick={()=>selectView("login")} data-ready-house>
+          <button type="button" onClick={()=>chooseDelivery("house")} data-ready-house>
             <UserRound size={23} aria-hidden="true"/><span>{t.house}</span></button>}
         </div>
       </>:<button type="button" className={css.primary} disabled={disabled}
@@ -220,19 +293,70 @@ export function MandalaVideoReady({
         </button>
       </div>
     </>:null}
-    {view==="login"?<>
-      {back}{header}
-      <div className={css.title}><h2>{t.authTitle}</h2><p>{t.authHint}</p></div>
-      <Link className={css.primary} href={myVideos} target="_blank" rel="noopener noreferrer" prefetch={false}
-        data-ready-sign-in><UserRound size={21} aria-hidden="true"/>{t.authAction}<ArrowRight size={19}/></Link>
-      <button className={css.secondary} type="button" onClick={onRefreshLogin}
-        data-ready-refresh-login><RefreshCw size={18} aria-hidden="true"/>{t.authRefresh}</button>
-      {signedIn?<button className={css.primary} type="button" onClick={()=>{
-        setView("home");onOpenDelivery();
-      }}>{t.authBack}<ArrowRight size={19} aria-hidden="true"/></button>:null}
-      {loginUnavailable?<p role="alert" className={css.note}>{t.authFailure}</p>:null}
-      <p className={css.note}><ShieldCheck size={18} aria-hidden="true"/>{t.authPrivacy}</p>
-    </>:null}
+    {view==="login"?<div className={css.gateBackdrop} data-ready-save-gate-overlay
+      onMouseDown={event=>{if(event.target===event.currentTarget)closeSaveGate();}}>
+      <section ref={gateRef} className={css.gateDialog} role="dialog" aria-modal="true"
+        data-ready-save-intent={gateIntent}
+        aria-labelledby="ready-save-gate-title" aria-describedby="ready-save-gate-description"
+        data-ready-save-gate>
+        <button type="button" className={css.gateClose} ref={gateCloseRef}
+          onClick={closeSaveGate} aria-label={t.saveGateClose} data-ready-save-close>×</button>
+        <div className={css.gateTop}>
+          <div className={css.gatePortrait} aria-hidden="true"/>
+          <div className={css.gateBrand}><Flower2 size={29} aria-hidden="true"/>
+            <span><strong>Holistic House</strong><small>VIDEO STUDIO</small></span></div>
+          <small className={css.gateEyebrow}>{t.saveGateTag}</small>
+          <h2 id="ready-save-gate-title">{t.saveGateTitle}</h2>
+          <span className={css.gateUnderline} aria-hidden="true"/>
+        </div>
+        <p className={css.gateLead} id="ready-save-gate-description">{t.saveGateLead}</p>
+        <div className={css.gateBenefits}>
+          <div><FolderOpen size={21} aria-hidden="true"/><span>{t.saveGateBenefitSave}</span></div>
+          <div><Download size={21} aria-hidden="true"/><span>{t.saveGateBenefitDownload}</span></div>
+          <div><Send size={21} aria-hidden="true"/><span>{t.saveGateBenefitTelegram}</span></div>
+          <div><BookOpen size={21} aria-hidden="true"/><span>{t.saveGateBenefitPractice}</span></div>
+        </div>
+        {!signedIn?<>
+          <Link className={css.gatePrimary} href={myVideos} target="_blank"
+            rel="noopener noreferrer" prefetch={false} data-ready-save-gate-signin>
+            <UserRound size={22} aria-hidden="true"/><span>{t.saveGateLogin}</span><ArrowRight size={20} aria-hidden="true"/>
+          </Link>
+          <p className={css.gateInstruction}>{t.saveGateSignInHint}</p>
+          <button type="button" className={css.gateSecondary}
+            onClick={onRefreshLogin} data-ready-save-gate-refresh-login>
+            <RefreshCw size={18} aria-hidden="true"/>{t.saveGateRefresh}
+          </button>
+          {loginUnavailable?<p className={css.gateError} role="alert">{t.saveGateUnavailable}</p>:null}
+        </>:<>
+          {telegramStatus==="linked"?<p className={css.gateConnected} role="status">
+            <CheckCircle2 size={20} aria-hidden="true"/>{t.saveGateTelegramLinked}</p>:null}
+          {telegramLink?<a href={telegramLink} className={css.gatePrimary}
+              target="_blank" rel="noopener noreferrer" data-ready-save-gate-telegram-start>
+            <Send size={22} aria-hidden="true"/><span>{t.saveGateTelegram}</span><ArrowRight size={19} aria-hidden="true"/>
+          </a>:telegramStatus==="linked"?<button className={css.gatePrimary} type="button"
+              onClick={openDelivery} data-ready-save-gate-telegram-delivery>
+            <Send size={22} aria-hidden="true"/><span>{t.saveGateContinue}</span><ArrowRight size={19} aria-hidden="true"/>
+          </button>:<button className={css.gatePrimary} type="button"
+              onClick={()=>void requestTelegramLink()}
+              disabled={telegramStatus==="loading"}
+              data-ready-save-gate-connect>
+            <Send size={22} aria-hidden="true"/><span>{telegramStatus==="loading"?t.saveGateTelegramChecking:t.saveGateTelegramConnect}</span>
+            <ArrowRight size={19} aria-hidden="true"/>
+          </button>}
+          <p className={css.gateInstruction}>{telegramLink?t.saveGateTelegramPending:t.saveGateTelegramHint}</p>
+          {telegramStatus==="unavailable"||telegramError?<p role="status" className={css.gateError}>
+            {telegramError||t.saveGateTelegramUnavailable}</p>:null}
+          {telegramLink?<button type="button" className={css.gateSecondary}
+            onClick={()=>void refreshTelegramLink()} data-ready-save-gate-verify-telegram>
+            <RefreshCw size={18} aria-hidden="true"/>{t.saveGateTelegramVerify}</button>:null}
+          <div className={css.gateDivider}><span>{t.saveGateOr}</span></div>
+          <button type="button" className={css.gateSecondary} onClick={openDelivery}
+            data-ready-save-gate-continue><FolderOpen size={20} aria-hidden="true"/>
+            {t.saveGateContinue}</button>
+        </>}
+        <p className={css.gatePrivacy}><ShieldCheck size={18} aria-hidden="true"/>{t.saveGatePrivacy}</p>
+      </section>
+    </div>:null}
     {view==="meditation"?<>
       {back}
       <div className={css.title}><h2>{t.medTitle}</h2><p>{t.medHint}</p></div>

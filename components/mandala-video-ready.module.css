@@ -55,3 +55,81 @@
 @media(max-width:350px){.root{padding:9px;gap:10px}.journey>button{grid-template-columns:61px 17px minmax(0,1fr) 16px;gap:6px;padding:6px}.thumbnail{height:63px}.actions{gap:4px}.session{padding:8px 6px;gap:6px}.ritualFields{grid-template-columns:1fr}.ritualFields label:last-child{grid-column:auto}}
 @media(min-width:760px){.root{max-width:850px;margin-inline:auto}.journey{grid-template-columns:repeat(3,minmax(0,1fr))}.journey>button{grid-template-columns:1fr;align-content:start}.thumbnail{height:115px}.journey>button>svg:last-child{justify-self:end}.selectedVideo{max-height:420px}}
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Approved user-invoked Save / Telegram Start dialog: Warm & Alive, never auto-open. */
+.gateBackdrop{position:fixed;inset:0;z-index:2600;display:grid;place-items:center;min-width:0;
+ padding:max(10px,env(safe-area-inset-top)) max(9px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(9px,env(safe-area-inset-left));
+ background:rgba(13,36,30,.67);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.gateDialog{position:relative;isolation:isolate;display:grid;gap:12px;box-sizing:border-box;
+ width:min(100%,480px);max-width:480px;max-height:calc(100dvh - 22px);
+ overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+ padding:0 17px 17px;border:1px solid #f5e6d3;border-radius:27px;
+ background:linear-gradient(158deg,#fff9f2 0%,#fffdf8 58%,#fbf2e6 100%);
+ color:#143d3a;box-shadow:0 20px 80px rgba(4,27,23,.4)}
+.gateClose{position:sticky;top:10px;z-index:10;justify-self:end;margin-bottom:-44px;
+ display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid #e7decf;
+ border-radius:50%;background:#fff8e9eb;color:#194a3c;font:400 32px/1 Arial,sans-serif;cursor:pointer}
+.gateTop{position:relative;isolation:isolate;overflow:hidden;min-width:0;min-height:197px;
+ margin:0 -17px;padding:22px 20px 12px;
+ background:radial-gradient(ellipse at 81% 48%,#ffddb3a0,transparent 56%),
+ linear-gradient(110deg,#fffdf5 5%,#fff8eb 48%,#fce5ce 100%)}
+.gatePortrait{position:absolute;inset:0 0 0 auto;z-index:-1;width:58%;height:100%;
+ background-image:url('/images/holistic-house/ready-save-sunrise-portrait.jpg');
+ background-size:cover;background-position:57% center;opacity:.93;
+ -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 46%);
+ mask-image:linear-gradient(90deg,transparent 0%,#000 46%)}
+.gateBrand{display:flex;align-items:center;gap:8px;position:relative;margin-right:45px;
+ color:#2b684e}
+.gateBrand>svg{flex:none;width:30px;height:30px;color:#8d9e66}
+.gateBrand span{display:grid;gap:1px}
+.gateBrand strong{font:750 clamp(16px,4.5vw,22px)/1.12 Georgia,serif;color:#174236}
+.gateBrand small{font:750 9px/1.2 Arial,sans-serif;letter-spacing:.22em;color:#82996b}
+.gateEyebrow{display:block;margin-top:23px;font:800 9px/1.3 Arial,sans-serif;letter-spacing:.11em;color:#4d8b6a}
+.gateTop h2{position:relative;max-width:73%;margin:8px 0 0;
+ color:#153e36;font:800 clamp(26px,7vw,38px)/1.02 Georgia,serif;
+ letter-spacing:-.035em;text-wrap:balance;overflow-wrap:normal}
+.gateUnderline{display:block;width:105px;height:4px;margin-top:12px;border-radius:99px;
+ background:linear-gradient(90deg,#efbc45,#ffc674)}
+.gateLead{margin:0 1px;color:#4f6157;font:500 clamp(14px,3.85vw,16px)/1.43 Arial,sans-serif}
+.gateBenefits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.gateBenefits>div{display:flex;align-items:center;gap:8px;padding:8px 7px;
+ border:1px solid #e7e7d8;border-radius:13px;background:#fffef9;
+ color:#184c3d;font:750 12px/1.25 Arial,sans-serif;overflow-wrap:anywhere}
+.gateBenefits svg{flex:none;width:30px;height:30px;padding:6px;border-radius:50%;
+ background:#e8f4df;color:#13765a}
+.gatePrimary,.gateSecondary{display:flex;align-items:center;justify-content:center;gap:9px;
+ width:100%;min-height:56px;padding:11px;border-radius:16px;text-align:center;
+ text-decoration:none;font:800 clamp(14px,3.8vw,16px)/1.28 Arial,sans-serif;cursor:pointer}
+.gatePrimary{border:1px solid #10846a;background:linear-gradient(110deg,#2bc2a5,#098466);
+ color:white;box-shadow:0 7px 19px #137b6045}
+.gatePrimary>svg{flex:none}
+.gatePrimary>span{flex:1}
+.gatePrimary:disabled{opacity:.55;cursor:wait}
+.gateSecondary{border:1px solid #a8cfc2;background:#fffdfa;color:#1a6652;min-height:47px}
+.gateInstruction{margin:-4px 2px 0;color:#596d64;font:500 12px/1.4 Arial,sans-serif}
+.gateDivider{display:flex;align-items:center;gap:9px;color:#708176;
+ text-transform:lowercase;font:600 12px/1 Arial,sans-serif}
+.gateDivider:before,.gateDivider:after{content:"";flex:1;height:1px;background:#d9dfd2}
+.gateConnected{display:flex;align-items:center;gap:7px;margin:0;padding:9px;
+ border-radius:12px;background:#e8f6e9;color:#1d6b53;font:750 13px/1.4 Arial,sans-serif}
+.gateError{margin:0;padding:9px;border-radius:12px;background:#fff2e8;
+ color:#80442d;font:600 12px/1.4 Arial,sans-serif}
+.gatePrivacy{display:flex;align-items:flex-start;justify-content:center;gap:6px;
+ margin:2px 0 0;padding-top:9px;border-top:1px solid #eadfd1;
+ color:#66726c;font:500 11.5px/1.45 Arial,sans-serif;text-align:center}
+.gatePrivacy svg{flex:none;width:17px;height:17px;color:#18755d}
+.gateDialog :is(a,button):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+@media(max-width:370px){
+ .gateDialog{padding:0 12px 12px;gap:9px;border-radius:22px}
+ .gateTop{margin:0 -12px;padding:19px 15px 11px;min-height:182px}
+ .gateTop h2{font-size:clamp(25px,8vw,31px);max-width:78%}
+ .gateEyebrow{margin-top:17px}
+ .gateBenefits{gap:5px}
+ .gateBenefits>div{font-size:11.5px;padding:7px 5px;gap:5px}
+ .gateBenefits svg{width:28px;height:28px}
+ .gateLead{font-size:14px}
+ .gatePrimary{min-height:52px}
+}
+@media(max-height:680px){.gateDialog{gap:8px}.gateTop{min-height:165px}.gateEyebrow{margin-top:10px}.gateTop h2{font-size:clamp(25px,6vw,32px)}.gateBenefits>div{padding:5px}}
+@media(prefers-reduced-motion:reduce){.gateBackdrop *{animation:none!important;transition:none!important}}
