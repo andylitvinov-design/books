@@ -45,7 +45,21 @@ try {
   await sourceDuration.selectOption('20');
   assert.equal(await sourceDuration.inputValue(),'20',
     'four real source-backed 5-second scenes require 20s before selecting a preset');
-  await page.locator('[data-video-montage-tab="text"]').click();
+  // First restore the visible Style panel after selecting format/duration;
+  // then use the owner-approved green Next button, never a hidden Text tab.
+  const styleTab=page.locator('[data-video-montage-tab="effects"]');
+  await styleTab.waitFor({state:'visible',timeout:20000});
+  await styleTab.click();
+  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+  await styleNext.waitFor({state:'visible',timeout:20000});
+  await styleNext.click();
+  // A real Safari pointer action can resolve before React commits its
+  // workspace state. Poll the actual DOM; do not simulate or force a tap.
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-tab="text"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
+    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
   await addVideo.click();

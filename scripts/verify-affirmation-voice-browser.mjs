@@ -652,6 +652,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The approved TTS track is already attached; both effects must render
       // locally into a real stereo WAV before the movie export starts.
       await page.locator('[data-video-quick-control="effects"]').click();
+      // The new three exclusive Hypno panes start in Visual, not Audio.
+      // Use genuine visible visitor taps to reveal each panel before testing
+      // the attached consented narration and real stereo audio effects.
+      const hypnoTabs=page.locator('[data-hypno-tabs]');
+      await hypnoTabs.waitFor({state:"visible",timeout:10000});
+      for(const group of ["phrases","visual","audio"]){
+        const tab=hypnoTabs.locator('[data-hypno-tab="'+group+'"]');
+        await expect(tab).toBeVisible();
+        await tab.click();
+        await expect(tab).toHaveAttribute("aria-selected","true");
+        await expect(page.locator('[data-hypno-group="'+group+'"]')).toBeVisible();
+      }
       const audioGroup=page.locator('[data-hypno-group="audio"]');
       await audioGroup.waitFor({state:"visible",timeout:10000});
       const speechCard=audioGroup.locator("[data-hypno-card]").first();

@@ -141,7 +141,18 @@ try {
   const ideas=page.locator('[data-video-quick-control="phrases"]');
   assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
   await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="text"]').click();
+  // The real Style panel owns the visible green Next CTA. Avoid clicking a
+  // second legacy/hideable Text tab before the visitor progresses naturally.
+  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+  await styleNext.waitFor({state:'visible',timeout:20000});
+  await styleNext.click();
+  // A real Safari pointer action can resolve before React commits its
+  // workspace state. Poll the actual DOM; do not simulate or force a tap.
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-tab="text"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
+    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
   await addVideo.click();
