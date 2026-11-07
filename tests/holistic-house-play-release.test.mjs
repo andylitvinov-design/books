@@ -292,3 +292,53 @@ test('offline APK QA command validates actual file stream with safe tools and re
     assert.ok(!existsSync(badChecksum),'Incorrect APK bytes cannot produce a receipt')
   }finally{rmSync(root,{recursive:true,force:true})}
 })
+
+test('owner signing bootstrap enforces reviewer, exact production branch, no secret rotation',async()=>{
+  const {verifyProtectedFirstRelease,verifyOwnerExecution}=
+    await import('../scripts/bootstrap-hh-android-signing.mjs')
+  const valid={
+    environment:{name:'google-play-release',
+      deployment_branch_policy:{protected_branches:false,custom_branch_policies:true},
+      protection_rules:[{type:'required_reviewers',reviewers:[{type:'User',reviewer:{id:1}}]}]},
+    branches:{branch_policies:[{name:'codex/public-book-library'}]},
+    existingSecrets:{secrets:[]},existingVariables:{variables:[]},
+    registry:{schemaVersion:1,appId:'com.holistichouse.app',
+      android:{status:'not_released',ownerApproved:false}}
+  }
+  assert.equal(verifyProtectedFirstRelease(valid).firstTimeOnly,true)
+  assert.equal(verifyOwnerExecution({ci:false,isTTY:true}),true)
+  for(const [label,overrides] of [
+    ['no reviewer',{environment:{...valid.environment,protection_rules:[]}}],
+    ['unprotected branches',{environment:{...valid.environment,
+      deployment_branch_policy:{protected_branches:true,custom_branch_policies:false}}}],
+    ['wrong name',{environment:{...valid.environment,name:'production'}}],
+    ['wildcard',{branches:{branch_policies:[{name:'codex/*'}]}}],
+    ['second branch',{branches:{branch_policies:[
+      {name:'codex/public-book-library'},{name:'main'}]}}],
+    ['keystore already stored',{existingSecrets:{secrets:[{name:'HH_ANDROID_KEYSTORE_B64'}]}}],
+    ['password already stored',{existingSecrets:{secrets:[{name:'HH_ANDROID_KEY_PASSWORD'}]}}],
+    ['existing recipient',{existingVariables:{variables:[{name:'HH_APK_QA_AGE_RECIPIENT'}]}}],
+    ['existing certificate',{existingVariables:{variables:[{name:'HH_EXPECTED_WEBSITE_CERT_SHA256'}]}}],
+    ['no metadata',{existingSecrets:{}}],
+    ['wrong application',{registry:{...valid.registry,appId:'app.psialchemy.mobile'}}],
+    ['previous release',{registry:{...valid.registry,
+      android:{status:'released',ownerApproved:true}}}],
+  ])assert.throws(()=>verifyProtectedFirstRelease({...valid,...overrides}),
+    /HH_ANDROID_BOOTSTRAP_/,label)
+  assert.throws(()=>verifyOwnerExecution({ci:true,isTTY:true}),/HH_ANDROID_BOOTSTRAP_/)
+  assert.throws(()=>verifyOwnerExecution({ci:false,isTTY:false}),/HH_ANDROID_BOOTSTRAP_/)
+  const source=readSource('scripts/bootstrap-hh-android-signing.mjs')
+  assert.ok(source.includes("'-storepass:env','HH_STOREPASS'"))
+  assert.ok(source.includes("'-keypass:env','HH_KEYPASS'"))
+  assert.ok(source.includes("input:value"))
+  assert.ok(source.includes("age-keygen"))
+  assert.ok(source.includes("unlinkSync(credentials);unlinkSync(key)"))
+  assert.ok(source.includes("workflow','run','holistic-house-play-aab.yml"))
+  assert.ok(source.includes("process.env.GITHUB_ACTIONS"))
+  const noArgs=spawnSync(process.execPath,
+    [new URL('../scripts/bootstrap-hh-android-signing.mjs',import.meta.url).pathname],
+    {encoding:'utf8',timeout:5000})
+  assert.equal(noArgs.status,0,noArgs.stderr)
+  assert.match(noArgs.stdout,/Owner-only:/)
+  assert.ok(!source.includes("gh release create"))
+})
