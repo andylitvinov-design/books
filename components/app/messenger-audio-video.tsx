@@ -11,12 +11,10 @@ type Recording = {recorder:MediaRecorder;stream:MediaStream;timeout:ReturnType<t
 const copy = {
   ru: {
     title:"🎙 Аудиозапись → видеоролик",
-    explanation:"Загрузите запись или запишите голос. AI-режиссёр предложит видеоряд, а студия соберёт ролик с вашим звуком после проверки сценария.",
+    explanation:"Запишите голос или выберите файл — сразу перейдём в студию с вашей записью. После разрешённой расшифровки можно автоматически подобрать сцены.",
     upload:"Выбрать аудиозапись",record:"Записать голос",stop:"Завершить запись",
-    goal:"Тема или идея ролика (необязательно)",placeholder:"Например, медитация о спокойствии",
-    rights:"Подтверждаю, что имею право использовать эту запись в ролике.",
     create:"Продолжить создание видео",ready:"Запись готова",duration:"Видеоролик до",
-    privacy:"Запись остаётся в этом браузере. Она не отправляется в AI и удаляется из временной передачи после открытия студии.",
+    privacy:"Запись передаётся в студию только внутри браузера. Внешняя расшифровка требует отдельного согласия. Используйте собственную или разрешённую запись.",
     invalid:"Выберите MP3, M4A, WAV, AAC, WebM или аудиосообщение Telegram (OGG) до 15 МБ. Запись должна длиться не более 60 секунд.",
     unsupported:"Не удалось прочитать запись на этом устройстве. Для Telegram OGG попробуйте M4A или MP3.",
     microphone:"Нужен доступ к микрофону в защищённом браузере; можно выбрать готовую запись.",
@@ -25,12 +23,10 @@ const copy = {
   },
   en: {
     title:"🎙 Audio recording → video",
-    explanation:"Upload audio or record your voice. The AI director suggests footage; the Studio adds your sound after you review the story.",
+    explanation:"Record your voice or choose a file to open Studio directly with your audio. Available speech transcription can then suggest matching footage.",
     upload:"Choose an audio file",record:"Record my voice",stop:"Stop recording",
-    goal:"Video topic or idea (optional)",placeholder:"For example, a calming meditation",
-    rights:"I have permission to use this recording in my video.",
     create:"Continue creating video",ready:"Audio ready",duration:"Video length up to",
-    privacy:"Your audio stays in this browser. It is not sent to AI and is removed from temporary transfer when Studio opens.",
+    privacy:"Your audio transfers locally to Studio. Any external transcription requires separate consent. Use only your own or authorized recordings.",
     invalid:"Choose MP3, M4A, WAV, AAC, WebM or Telegram OGG audio, up to 15 MB and 60 seconds.",
     unsupported:"Could not decode this recording on your device. For Telegram OGG, try M4A or MP3.",
     microphone:"Microphone access is needed in a secure browser. You can upload a recording instead.",
@@ -39,12 +35,10 @@ const copy = {
   },
   es: {
     title:"🎙 Audio grabado → vídeo",
-    explanation:"Sube un audio o graba tu voz. El director IA sugiere escenas; el Estudio añade tu sonido tras revisar la historia.",
+    explanation:"Graba tu voz o elige un archivo y ve directamente al Estudio con el audio. La transcripción autorizada podrá proponer las escenas.",
     upload:"Elegir audio",record:"Grabar mi voz",stop:"Terminar grabación",
-    goal:"Tema o idea (opcional)",placeholder:"Por ejemplo, una meditación calmante",
-    rights:"Tengo permiso para utilizar esta grabación en mi vídeo.",
     create:"Continuar creando vídeo",ready:"Audio preparado",duration:"Duración máxima",
-    privacy:"El audio permanece en este navegador. No se envía a la IA y se borra de la transferencia al abrir el Estudio.",
+    privacy:"Tu audio pasa al Estudio en este navegador. La transcripción externa requiere consentimiento aparte. Usa solo grabaciones autorizadas.",
     invalid:"Elige MP3, M4A, WAV, AAC, WebM u OGG de Telegram, hasta 15 MB y 60 segundos.",
     unsupported:"No se pudo descodificar el audio en este dispositivo. Para OGG, prueba M4A o MP3.",
     microphone:"Necesitas permitir el micrófono en un navegador seguro. También puedes subir un audio.",
@@ -58,13 +52,14 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOp
 }) {
   const t = copy[locale];
   const [prepared,setPrepared] = useState<Prepared|null>(null);
-  const [goal,setGoal] = useState(initialGoal.slice(0,160));
-  const [rights,setRights] = useState(false);
+  // The conversational context may still provide a goal, but no second form is needed.
+  const goal=initialGoal.slice(0,160);
   const [state,setState] = useState<"idle"|"checking"|"sending">("idle");
   const [recording,setRecording] = useState(false);
   const [error,setError] = useState("");
   const [preview,setPreview] = useState("");
   const micRef = useRef<Recording|null>(null);
+  const panelRef = useRef<HTMLDetailsElement|null>(null);
   const mountedRef = useRef(true);
   const revision = useRef(0);
   useEffect(()=>{
@@ -88,14 +83,21 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOp
     setPreview(url);
     return ()=>{URL.revokeObjectURL(url);setPreview("");};
   },[prepared]);
+  // The mobile transcript is fixed-height. Reveal the final CTA after audio loads
+  // without scrolling the whole page beneath the pinned Messenger composer.
   useEffect(()=>{
-    if(!goal&&initialGoal)setGoal(initialGoal.slice(0,160));
-  },[initialGoal,goal]);
+    if(!prepared)return;
+    const frame=window.requestAnimationFrame(()=>{
+      const panel=panelRef.current;
+      if(panel&&panel.scrollHeight>panel.clientHeight)panel.scrollTop=panel.scrollHeight;
+    });
+    return()=>window.cancelAnimationFrame(frame);
+  },[prepared,preview]);
 
   async function chooseFile(file:File|undefined){
     if(!file||disabled)return;
     const current=++revision.current;
-    setState("checking");setError("");setPrepared(null);setRights(false);
+    setState("checking");setError("");setPrepared(null);
     try{
       const checked=await prepareMessengerAudio(file) as Prepared;
       if(mountedRef.current&&revision.current===current)setPrepared(checked);
@@ -149,18 +151,22 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOp
     }
   }
   async function continueToVideo(){
-    if(!prepared||!rights||state!=="idle"||disabled||recording)return;
+    if(!prepared||state!=="idle"||disabled||recording)return;
     setState("sending");setError("");
     try{
+      // Continuation is the affirmative user action; keep the existing rights
+      // validation at the local handoff boundary without a redundant checkbox.
       await stageMessengerAudio({...prepared,locale,goal,rights:true});
       // Same-tab navigation keeps the one-use session token and the private
       // IndexedDB File. The existing Video Studio alone renders/charges.
-      window.location.assign("/"+locale+"/holistic-support/mandala#video-director-chat");
+      // The Audio montage panel owns the consented transcription controls.
+      // Do not open the unrelated text-to-speech voice narration tool.
+      window.location.assign("/"+locale+"/holistic-support/mandala#video-audio");
     }catch{
       if(mountedRef.current){setError(t.failure);setState("idle");}
     }
   }
-  return <details open={autoOpen} className={css.root} data-hh-messenger-audio-video>
+  return <details ref={panelRef} open={autoOpen} className={css.root} data-hh-messenger-audio-video>
     <summary>{t.title}</summary>
     <div className={css.content}>
       <p>{t.explanation}</p>
@@ -185,13 +191,8 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOp
         <strong>{t.ready}: {prepared.file.name}</strong>
         <small>{Math.ceil(prepared.seconds)} s · {t.duration} {prepared.duration} s</small>
         {preview&&<audio controls preload="metadata" src={preview} aria-label={prepared.file.name}/>}
-        <label className={css.field}>{t.goal}
-          <input type="text" maxLength={160} value={goal} placeholder={t.placeholder}
-            onChange={event=>setGoal(event.currentTarget.value)}/></label>
-        <label className={css.consent}><input type="checkbox" checked={rights}
-          onChange={event=>setRights(event.currentTarget.checked)}/>{t.rights}</label>
         <button type="button" className={css.primary} data-hh-audio-video-continue
-          disabled={!rights||disabled||recording||state!=="idle"}
+          disabled={disabled||recording||state!=="idle"}
           onClick={()=>void continueToVideo()}>{state==="sending"?t.sending:t.create}</button>
       </div>}
       {error&&<p className={css.error} role="alert">{error}</p>}

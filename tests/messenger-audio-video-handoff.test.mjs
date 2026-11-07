@@ -44,3 +44,23 @@ test("AI Studio preserves the audio attachment on scenario confirmation",()=>{
  assert.match(studio,/importedAudioSeconds/);
  assert.match(studio,/!audioRights/);
 });
+
+test("Messenger voice-to-video immediately reveals a single CTA and skips the goal questionnaire",()=>{
+ const ui=readFileSync(new URL("../components/app/messenger-audio-video.tsx",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../components/app/messenger-audio-video.module.css",import.meta.url),"utf8");
+ assert.match(ui,/panel\.scrollTop=panel\.scrollHeight/);
+ assert.match(ui,/#video-audio/);
+ assert.match(ui,/stageMessengerAudio\(\{\.\.\.prepared,locale,goal,rights:true\}\)/);
+ assert.doesNotMatch(ui,/setRights\(|setGoal\(|type="checkbox"|type="text"/);
+ assert.match(css,/max-height:min\(46dvh,420px\)/);
+ assert.match(css,/overflow-y:auto/);
+ assert.match(css,/max-width:100%/);
+});
+
+test("async Messenger audio handoff does not override voice-first route with Goals",()=>{
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ assert.match(studio,/const voiceFirstEntry=window\.location\.hash==="#video-audio"/);
+ assert.match(studio,/setActiveWorkspace\(voiceFirstEntry\?"editor":"video"\)/);
+ assert.match(studio,/setMontagePanel\("audio"\);setBasicPanelTab\("music"\)/);
+ assert.match(studio,/setDirectorChatOpen\(false\);setVideoScenarioOpen\(false\)/);
+});

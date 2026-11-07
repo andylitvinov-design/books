@@ -3766,8 +3766,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
       setImportedAudioSeconds(packet.seconds);
       setDuration(packet.duration);
-      setStudioMode("pump");setActiveWorkspace("video");
-      setDirectorChatOpen(true);setVideoScenarioOpen(true);
+      // A voice-first handoff must not re-open the manual Goal questionnaire
+      // after the async IndexedDB read. Hash routing may have already fired.
+      const voiceFirstEntry=window.location.hash==="#video-audio";
+      setStudioMode("pump");setActiveWorkspace(voiceFirstEntry?"editor":"video");
+      if(voiceFirstEntry){
+        setMontagePanel("audio");setBasicPanelTab("music");
+        setShowAdvancedVideo(true);
+        setQuickDetailedOpen(false);
+        setDirectorChatOpen(false);setVideoScenarioOpen(false);
+      }else{
+        setDirectorChatOpen(true);setVideoScenarioOpen(true);
+      }
       if(packet.goal.trim())setWish(packet.goal.slice(0,160));
       setNotice(locale==="ru"
         ?"Аудиозапись добавлена без повторов. Проверьте сюжет и длительность перед созданием видео."
@@ -4547,7 +4557,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }
       if(hash==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");}
       if(hash==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
-      if(hash==="voice-studio"){setMontagePanel("audio");setBasicPanelTab("voice");setVoiceStudioActivated(true);}
+      if(hash==="voice-studio"){
+        setMontagePanel("audio");setBasicPanelTab("voice");
+        setVoiceStudioActivated(true);setQuickDetailedOpen(true);
+      }
       if(hash==="video-audio"||hash==="voice-studio"||hash==="video-templates")
         setShowAdvancedVideo(true);
       setStudioMode(tab==="practices"?"therapy":"pump");
