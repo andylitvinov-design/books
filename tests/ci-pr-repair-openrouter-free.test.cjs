@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const {DEFAULT_MODEL,selectedModel,verifyZeroPrice,requestFreePatch}=
   require('../scripts/ci-pr-repair-openrouter-free.cjs');
 const entry=(pricing={prompt:'0',completion:'0'})=>({id:DEFAULT_MODEL,pricing,
-  architecture:{output_modalities:['text']},endpoints:['/api/v1/chat/completions']});
+  architecture:{input_modalities:['text'],output_modalities:['text']}});
 const response=(body,status=200)=>({ok:status===200,status,
   text:async()=>JSON.stringify(body)});
 function mocked(catalog,completion){
@@ -27,6 +27,14 @@ test('model must use exact :free slug; catalog prices and output are verified',(
     assert.throws(()=>verifyZeroPrice({data:[entry(pricing)]},DEFAULT_MODEL));
   assert.throws(()=>verifyZeroPrice({data:[]},DEFAULT_MODEL),/MODEL_NOT_IN_CATALOG/);
   assert.throws(()=>verifyZeroPrice({data:[entry(),entry()]},DEFAULT_MODEL));
+  // Real OpenRouter catalog entries need not include endpoints; the GET
+  // request filters by chat/completions and the model remains text-only.
+  assert.deepEqual(verifyZeroPrice({data:[entry()]},DEFAULT_MODEL),
+    {model:DEFAULT_MODEL,zeroCost:true});
+  assert.throws(()=>verifyZeroPrice({data:[{...entry(),endpoints:['/api/v1/embeddings']}]},DEFAULT_MODEL),
+    /NOT_TEXT_CHAT/);
+  assert.throws(()=>verifyZeroPrice({data:[{...entry(),architecture:{input_modalities:['image'],output_modalities:['text']}}]},DEFAULT_MODEL),
+    /NOT_TEXT_CHAT/);
 });
 test('absent key causes no provider requests',async()=>{
   const {calls,fetchImpl}=mocked(response({data:[entry()]}),response({}));
@@ -40,7 +48,7 @@ test('only one $0 pinned inference, without fallbacks or write tools',async()=>{
   const text=await requestFreePatch({prompt:'safe public diagnostics',key:'test-key',fetchImpl});
   assert.equal(text,patch);
   assert.equal(calls.length,2);
-  assert.equal(calls[0].url,'https://openrouter.ai/api/v1/models');
+  assert.equal(calls[0].url,'https://openrouter.ai/api/v1/models?endpoints=%2Fapi%2Fv1%2Fchat%2Fcompletions');
   assert.equal(calls[0].headers.Authorization,undefined);
   const body=JSON.parse(calls[1].body);
   assert.deepEqual(body.provider,{allow_fallbacks:false,max_price:{prompt:0,completion:0},
