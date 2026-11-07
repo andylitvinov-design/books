@@ -4500,17 +4500,6 @@
  }
 }
 
-/* Messenger Video validated handoff visibility.
-   The compact Goals screen hides unopened advanced panels, not the original
-   Director explicitly opened after a verified, one-use chat handoff.
-   Do not expose another video renderer or override the iHelp modal layout. */
-@media(max-width:759px){
- .studio[data-active-workspace="video"][data-video-scenario-open="false"]:not([data-hh-video-ihelp-open="true"]) .quickBuilder>
-   [data-video-director-chat-details][data-workspace-section="video"][open]{
-   display:grid!important;
- }
-}
-
 /* Approved shared Hero rail, header iHelp and in-viewport Montage Style next action. */
 .quickBrandIHelp{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;min-width:68px;min-height:39px;padding:5px 8px;border:1px solid #aed4c4;border-radius:999px;background:#fffcf7;color:#08745d;font:800 13px/1.15 Arial,Helvetica,sans-serif;box-shadow:0 2px 8px #285b4420}
 .quickBrandIHelp:disabled{opacity:.55;cursor:not-allowed}
@@ -4617,4 +4606,15 @@
  .studio .previewStage .heroRail button{padding:5px 14px 5px 6px!important}
  .studio .previewStage .heroRail button strong{font-size:11px}
  .studio .previewStage .heroRail button span{font-size:9px}
+}
+
+/* Messenger Video validated handoff visibility.
+   The compact Goals screen hides unopened advanced panels, not the original
+   Director explicitly opened after a verified, one-use chat handoff.
+   Do not expose another video renderer or override the iHelp modal layout. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-video-scenario-open="false"]:not([data-hh-video-ihelp-open="true"]) .quickBuilder>
+   [data-video-director-chat-details][data-workspace-section="video"][open]{
+   display:grid!important;
+ }
 }
