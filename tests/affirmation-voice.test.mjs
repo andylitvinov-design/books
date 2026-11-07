@@ -531,3 +531,26 @@ test("Safari voice lifecycle: identical inputs preserve pending WAV, changed one
   assert.match(browser,/assert\.equal\(affirmationRequests\.length,1\)/);
   assert.match(browser,/toContainText\(expectedFileName\)/);
 });
+
+test("WebKit voice E2E follows the current two-step Montage CTA before genuine MP4 export",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const guest=read("tests/mandala-guest-first-video-flow.test.mjs");
+  const flow=browser.slice(browser.indexOf('phase(engine,"hypno-audio-effects-rendered")'),
+    browser.indexOf('phase(engine,"download-control-ready")'));
+  assert.match(flow,/toHaveAttribute\("data-video-montage-next","text"\)/);
+  assert.match(flow,/toHaveAttribute\("data-video-montage-next","audio"\)/);
+  assert.match(flow,/toHaveAttribute\("aria-pressed","true"\)/);
+  assert.equal((flow.match(/await generate\.click\(\)/g)||[]).length,3,
+    "two navigation taps and exactly one real export tap");
+  assert.match(studio,/onClick=\{continueMontageOrGenerate\}/);
+  assert.match(studio,/setMontagePanel\(montagePanel==="effects"\?"text":"audio"\)/);
+  assert.match(browser,/page\.route\("\*\*\/api\/app\/video-credits\/\*\*"/);
+  assert.match(browser,/chargeRequired:false,ready:false,blocked:false/);
+  assert.match(browser,/assert\.ok\(mediaCreditFixtureReads>0/);
+  assert.match(browser,/assert\.deepEqual\(creditWrites,\[\]/);
+  assert.match(browser,/ffprobe/);
+  assert.match(browser,/pcm\.stdout\.some\(value=>value!==0\)/);
+  assert.match(guest,/data-video-guest-result-gate/);
+  assert.match(guest,/data-video-guest-signin/);
+});
