@@ -6841,14 +6841,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const epoch=++meditationDisclosureEpochRef.current;
           setCourseMeditationOmitted(false);
           setCourseMeditationDraft(script);
-          window.requestAnimationFrame(()=>{
-            if(epoch!==meditationDisclosureEpochRef.current)return;
+          // The editor already exists in the guided-course workspace.
+          // Reveal it on the Include gesture and finish the scroll immediately.
+          // A deferred auto/smooth scroll can swallow the next native WebKit
+          // "Skip meditation" tap, leaving narration selected against intent.
+          const revealEditor=()=>{
+            if(epoch!==meditationDisclosureEpochRef.current)return true;
             const details=document.querySelector("[data-video-therapy-meditation-audio]");
-            if(details instanceof HTMLDetailsElement){
-              details.open=true;
-              details.scrollIntoView({behavior:"auto",block:"center"});
-            }
-          });
+            if(!(details instanceof HTMLDetailsElement))return false;
+            details.open=true;
+            details.scrollIntoView({behavior:"instant" as ScrollBehavior,block:"center"});
+            return true;
+          };
+          if(!revealEditor())window.requestAnimationFrame(revealEditor);
         }}
         onOmitMeditation={()=>{
           const epoch=++meditationDisclosureEpochRef.current;

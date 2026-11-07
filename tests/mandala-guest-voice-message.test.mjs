@@ -136,6 +136,22 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
 });
 
+test("guided meditation Include opens the existing narrator synchronously to preserve the next Safari Skip tap",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const course=read("components/mandala-guided-course.tsx");
+ const browser=read("scripts/verify-mandala-practices-browser.mjs");
+ const add=studio.slice(studio.indexOf("onAddMeditation={script=>{"),
+   studio.indexOf("onOmitMeditation={()=>{",studio.indexOf("onAddMeditation={script=>{")));
+ assert.match(add,/if\(!revealEditor\(\)\)window\.requestAnimationFrame\(revealEditor\)/);
+ assert.match(add,/details\.scrollIntoView\(\{behavior:"instant" as ScrollBehavior,block:"center"\}\)/);
+ assert.doesNotMatch(add,/scrollIntoView\(\{behavior:"auto"/);
+ assert.match(course,/data-guided-skip-meditation[\s\S]*?setMeditationChoice\("omit"\);onOmitMeditation\?\.\(\)/);
+ assert.match(studio,/setCourseMeditationOmitted\(true\)/);
+ assert.match(studio,/setCourseMeditationDraft\(""\)/);
+ assert.match(browser,/skip\?\.getAttribute\("aria-pressed"\)==="true" && audio\?\.open===false/);
+ assert.doesNotMatch(browser,/\.click\(\{force:true\}\)/);
+});
+
 test("physical macOS WebKit reaches guided course through Ready without force or missing legacy tab",()=>{
  const browser=read("scripts/verify-mandala-practices-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
