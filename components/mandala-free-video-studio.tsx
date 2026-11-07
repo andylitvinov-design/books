@@ -5679,7 +5679,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </div>
       {uploadedAudio?<div className={videoStyles.recipientAudioSelected}>
         <strong>{uploadedAudio.file.name}</strong><button type="button" disabled={sttBusy} onClick={clearUploadedAudio}>×</button>
-        <audio controls preload="metadata" src={uploadedAudio.url}/></div>:null}
+        <small>{locale==="ru"?"Запись готова. Прослушивание доступно в исходном аудиоредакторе.":
+          locale==="es"?"Audio listo. Puedes escucharlo en el editor de audio.":
+          "Audio ready. Listen to it in the original audio editor."}</small></div>:null}
       <label className={videoStyles.recipientAudioConsent}><input type="checkbox" checked={audioRights}
         data-video-recipient-audio-rights disabled={!uploadedAudio}
         onChange={e=>setAudioRights(e.currentTarget.checked)}/>
