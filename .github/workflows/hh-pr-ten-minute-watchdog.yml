@@ -6,6 +6,7 @@ run-name: >-
   ${{ github.event_name == 'workflow_dispatch' &&
       (inputs.dry_run && 'HH watchdog / dry run' ||
        inputs.completion_wake && 'HH watchdog / completion wake' ||
+       inputs.pm_pr_number != '' && format('HH watchdog / PM #{0} / {1}', inputs.pm_pr_number, inputs.pm_request_id) ||
        inputs.direct_dispatch && 'HH watchdog / direct handoff' ||
        'HH watchdog / reconcile') ||
       'HH PR 10-minute watchdog' }}
@@ -69,6 +70,21 @@ on:
         required: false
         type: boolean
         default: false
+      pm_pr_number:
+        description: 'Approved owner PM target PR; revalidated by trusted dispatcher'
+        required: false
+        type: string
+        default: ''
+      pm_expected_sha:
+        description: 'Exact PR source HEAD, not authority for a source write'
+        required: false
+        type: string
+        default: ''
+      pm_request_id:
+        description: 'Owner request UUID for workflow run correlation only'
+        required: false
+        type: string
+        default: ''
 permissions:
   contents: read
   actions: write
@@ -89,7 +105,8 @@ jobs:
       github.event_name != 'pull_request_target' &&
       !(github.event_name == 'workflow_dispatch' &&
         (github.event.inputs.completion_wake == 'true' ||
-         github.event.inputs.direct_dispatch == 'true'))
+         github.event.inputs.direct_dispatch == 'true' ||
+         github.event.inputs.pm_pr_number != ''))
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
@@ -312,8 +329,9 @@ jobs:
       github.repository == 'andylitvinov-design/books' &&
       github.ref == 'refs/heads/codex/bootstrap-books' &&
       ((github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.direct_dispatch == 'true' &&
-        github.event.inputs.completion_wake != 'true') ||
+        (github.event.inputs.direct_dispatch == 'true' ||
+          github.event.inputs.pm_pr_number != '') &&
+         github.event.inputs.completion_wake != 'true') ||
        (github.event_name == 'workflow_run' &&
         github.event.workflow_run.status == 'completed' &&
         github.event.workflow_run.repository.full_name == 'andylitvinov-design/books' &&
@@ -360,14 +378,23 @@ jobs:
             const {run}=require(process.env.GITHUB_WORKSPACE+
               '/scripts/ci-pr-queue-dispatcher.cjs');
             const dryRun=String(context.payload.inputs?.dry_run ?? 'false')==='true';
-            const report=await run({github,core,context,dryRun});
+            const pmNumber=String(context.payload.inputs?.pm_pr_number||'');
+            const pmSha=String(context.payload.inputs?.pm_expected_sha||'');
+            const pmRequestId=String(context.payload.inputs?.pm_request_id||'');
+            const pmValid=pmNumber===''&&pmSha===''&&pmRequestId==='' ||
+              /^[1-9][0-9]{0,7}$/.test(pmNumber)&&
+              /^[a-f0-9]{40}$/i.test(pmSha)&&
+              /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(pmRequestId);
+            if(!pmValid)throw Error('HH_PM_INVALID_TARGET_INPUT');
+            const manualTarget=pmNumber!==''?{prNumber:Number(pmNumber),expectedSha:pmSha}:null;
+            const report=await run({github,core,context,dryRun,manualTarget});
             core.info('HH_WATCHDOG_DIRECT_HANDOFF '+JSON.stringify({
               candidates:report.candidates,dispatched:report.dispatchAccepted,
               blocked:report.blocked,reason:report.reason
             }));
             // The monitor consumes the same schema as before, but now from
             // live direct handoff receipts, never a Control Tower observer.
-            if(!dryRun && report?.schema==='HH_CONTROL_DISPATCH_V1' &&
+            if(!dryRun && !manualTarget && report?.schema==='HH_CONTROL_DISPATCH_V1' &&
                report.reason!=='UNTRUSTED_EVENT' &&
                context.repo.owner==='andylitvinov-design' &&
                context.repo.repo==='books'){
