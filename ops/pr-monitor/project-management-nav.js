@@ -31,6 +31,8 @@
    e.append(make('small',null,label));nav.append(e);
   });
   document.body.append(nav);
+  const bridge=make('script');bridge.id='hh-cc-transfer-loader';
+  bridge.src='/commander-transfer.js?v=20261107-task-transfer-v1';document.head.append(bridge);
   const loader=make('script');loader.id='hh-cc-task-input-loader';
   loader.src='/commander-task-input.js?v=20261107-voice-decompose-v1';
   loader.onerror=()=>{loader.dataset.failed='true'};
