@@ -82,3 +82,29 @@ test('sunlit neutral canvas across public page families preserves opt-in accents
   assert.match(tokens, /--hh-light-primary-soft: #e6f6f1/);
   assert.match(tokens, /\[data-hh-design="warm-sunrise"\]/);
 });
+
+
+test('Ideas Voice warm-peach palette is scoped and meets readable emerald contrast', () => {
+  const read = name => readFileSync(new URL('../'+name, import.meta.url), 'utf8');
+  const panel = read('components/mandala-affirmation-voice.module.css');
+  const studio = read('components/mandala-video-mobile.module.css');
+  const page = read('components/mandala-meditation.module.css');
+  const bible = read('docs/design/HOLISTIC_LIGHT_DESIGN_BIBLE.md');
+  const runtime = read('components/mandala-free-video-studio.tsx');
+  assert.ok(bible.includes('10.12. Ideas → Voice'));
+  assert.match(page,/\.page\[data-mandala-mode="video"\]:has\(\[data-active-workspace="phrases"\] \[data-ideas-subtab="voice"\]\)/);
+  assert.match(page,/linear-gradient\(165deg,#FFF7F3 0%,#FFF4EC 55%,#FFF0E8 100%\)/);
+  assert.match(studio,/\.studio\[data-active-workspace="phrases"\] \[data-ideas-subtab="voice"\]\{/);
+  for (const value of ['#FFFCFA','#FFF9F5','#EADFD9','#142B3D','#14523F','#5D6A71','#087E61','#006B4B']) {
+    assert.ok(studio.includes(value), 'missing palette token '+value);
+  }
+  assert.match(panel,/:global\(\[data-ideas-subtab="voice"\]\) \.panel \.selectedPhrase/);
+  assert.match(panel,/:global\(\[data-ideas-subtab="voice"\]\) \.panel \.voiceCardSelect\[aria-pressed="true"\]/);
+  assert.match(panel,/:global\(\[data-ideas-subtab="voice"\]\) \.panel \.action/);
+  assert.ok(runtime.includes('data-ideas-subtab={ideasSubtab}'), 'same existing Voice pane, not a new fake editor');
+  assert.ok(runtime.includes('<MandalaAffirmationVoice locale={locale}'), 'retain real provider/voice state');
+  assert.ok(solidContrast('rgb(255, 255, 255)','rgb(8, 126, 97)') >= 4.5,
+    'white CTA text on deep emerald must meet WCAG AA');
+  assert.ok(solidContrast('rgb(255, 255, 255)','rgb(2, 160, 101)') < 4.5,
+    'do not use vivid mint green under regular-size white text');
+});

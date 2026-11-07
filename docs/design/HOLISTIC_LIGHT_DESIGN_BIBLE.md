@@ -327,3 +327,35 @@ Keep global Holistic Light canvas #FBF5E9, regular cards #FFFCF7 and soft panels
 - Check real buttons/actions and preserve existing video export, playback, privacy and authentication. Green build, CSS constants, HTTP 200 or an unmatched screenshot do not prove visual acceptance or production E2E. Keep the existing ≥85/100 design-acceptance threshold and all critical safety/accessibility blockers.
 
 **Status:** design specification only, **not** proof that local Video Studio surfaces have been restyled or verified LIVE. Extended owner-facing Russian analysis is chapter 16 of the same existing Google Docs Design Bible v1.3: https://docs.google.com/document/d/1zREpz2hpHA-dfilYgXS18TASkrw-D8mf_UXEFrfOvvU/edit
+
+
+### 10.12. Ideas → Voice: 7 November 2026 owner color-drift incident and lock
+
+**Page/state identity.** Both owner iPhone images show the public EN Video Studio, Ideas → Voice, at /en/holistic-support/mandala (workspace=phrases, data-ideas-subtab=voice). The FIRST is the approved warm reference; the SECOND is the live UI. They have different source-video frames, viewport/crop, wording and visible control density. This comparison establishes color roles, NOT pixel/layout identity. Do not replace a real Canvas, video or working voice control with a static mock.
+
+**Root causes confirmed in existing CSS, not inferred from JPEG alone:**
+1. The Video Mandala page CSS uses a yellow/olive canvas (#FFF8E9 → #FCFAF4 → #F5EDE0, plus mobile #FFF8ED), unlike the approved peach-ivory Studio surface. This is a neutral-temperature error, not a global brightness problem.
+2. The Ideas Voice parent in mandala-video-mobile.module.css inherits sage borders #CBE4D8 and #B5D7C6, neutral #DFDED3, and green-tinted shadows #345F4A14 rather than warm neutral cards.
+3. The original TTS picker in mandala-affirmation-voice.module.css has a SECOND independent old sage system: green panel #F5FAF6, border #C5DFD0, default controls #F5FDF8, muted green #5B7665 and mismatched active greens. Changing the outer card alone cannot recolor these nested CSS-module states.
+4. The dark turquoise real-video frame in the second screenshot is MEDIA, not the CSS canvas. Never force it to look like the first reference's sunrise via sepia, misleading stock media, overlays or fake images.
+5. Voice for your video (reference) vs Voice for phrases (current) and the amount of voice-choice/editor content on-screen are separate structural differences, not color mismatches. Preserve actual narration, local uploads/recordings, sample preview, consent, generation and attachment.
+
+**Locked local palette for visible Ideas → Voice ONLY:**
+
+| Semantic role | Approved value | Forbidden on neutral surfaces |
+| --- | --- | --- |
+| Canvas | linear-gradient(165deg,#FFF7F3 0%,#FFF4EC 55%,#FFF0E8 100%) | old olive/yellow background |
+| Main card / ordinary choice | #FFFCFA | #F5FAF6, #F3F8F3 sage wash |
+| Phrase/input/secondary inset | #FFF9F5 | greenish #F5FDF8 |
+| Neutral stroke / divider | #EADFD9 / #EEE6E0 | #CBE4D8, #C5DFD0, #B5D7C6 |
+| Neutral elevation | 0 5px 18px rgb(66 42 31 / 7%) | green-cast #345F4A14 |
+| Primary / forest / muted ink | #142B3D / #14523F / #5D6A71 | washed blue-gray and sage helper labels |
+| Selected voice card | #EAF5EC + border #087E61 + check | all cards selected green |
+| Active tab / main voice action | linear-gradient(120deg,#087E61,#006B4B), white text | arbitrary pale mint as primary CTA |
+| Small semantic accents | gold #FFF1D8, pink #FCEEF6, lavender #F1E8F8, blue #EAF2F8 | full-page green wash |
+
+**Contrast decision.** White on #07885F is approximately 4.47:1, marginally below 4.5:1 normal-text WCAG AA; white on vivid #02A065 ≈3.38:1. Keep vivid #02A065 for large nontext accents/selected icons. Use #087E61 (≈5.04:1 against white) or #006B4B for primary small white text and active controls. Selected borders/checkmarks must identify state even without color.
+
+**Code boundary.** Scope opt-in --hh-voice-* tokens to the existing Ideas Voice subtree in mandala-video-mobile.module.css, the real MandalaAffirmationVoice component styles, and the Video Mandala page CSS only while that workspace/subtab is active. Do not recolor Goal, Text, Montage, Hypno, PRO, photo mandala, My Course, Business or protected CRM. Preserve existing APIs, permissions, provider consent, safe areas, and the same seven-tab Holistic House dock.
+
+**Acceptance.** Guest EN/RU/ES Ideas → Voice on iPhone 320/354/390/430 px in actual Chromium/WebKit. Inspect computed page gradient, warm neutral voice card, border, selected voice controls, input, text contrast and horizontal overflow. Compare same View state and hero frame where possible; otherwise report color-only comparison and do not invent a screenshot match score. Keep Text ↔ Voice, female/male/own selections and real preview/generation/attachments functional. CI build is not proof of iPhone voice playback, external provider generation, or a final MP4. LIVE requires protected merge SHA, Vercel READY SHA/alias, and verified route behaviour.

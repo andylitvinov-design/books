@@ -275,6 +275,61 @@ async function inspect(browserType,locale,width){
       results.push({id:marker,pinned:true,route:path,authenticated:false});
     }
   }
+  // Owner-approved 07 Nov Ideas → Voice Warm Peach color QA. Same real
+  // public Studio/editor, never a painted mock or an extra test server.
+  if(browserType===webkit && (width===390 || (locale==="ru" && width===320))){
+    await page.goto(origin+"/"+locale+"/holistic-support/mandala",{
+      waitUntil:"domcontentloaded",timeout:75000,
+    });
+    const ideaButton=page.locator('[data-video-quick-control="phrases"]');
+    await ideaButton.waitFor({state:"visible",timeout:30000});
+    await page.waitForFunction(()=>{
+      const link=document.querySelector('[data-video-quick-control="phrases"]');
+      return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
+    },null,{timeout:20000});
+    await ideaButton.click();
+    const voiceButton=page.locator('[data-video-ideas-tab="voice"]');
+    await voiceButton.waitFor({state:"visible",timeout:30000});
+    await voiceButton.click();
+    const voice=page.locator('[data-ideas-subtab="voice"] [data-hypno-voice]');
+    await voice.waitFor({state:"visible",timeout:30000});
+    const palette=await page.evaluate(()=>{
+      const root=document.querySelector('[data-mandala-mode="video"]');
+      const card=document.querySelector('[data-ideas-subtab="voice"] [data-hypno-voice]');
+      const picker=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-voice]');
+      const phrase=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-selection-summary]');
+      const selected=document.querySelector('[data-video-ideas-tab="voice"]');
+      const c=node=>node?getComputedStyle(node):null;
+      return {background:c(root)?.backgroundImage||"",card:c(card)?.backgroundColor||"",
+        border:c(card)?.borderTopColor||"",ink:c(picker)?.color||"",
+        phrase:c(phrase)?.backgroundColor||"",
+        selected:c(selected)?.backgroundImage||"",
+        width:document.documentElement.scrollWidth,
+        viewport:window.innerWidth,
+        dockCount:document.querySelectorAll('[data-hh-unified-dock]').length};
+    });
+    assert.match(palette.background,/rgb\(255,\s*247,\s*243\)/,
+      id+" Voice page must use peach-ivory canvas");
+    assert.equal(palette.card,"rgb(255, 252, 250)",
+      id+" Voice neutral card must be warm near-white");
+    assert.equal(palette.border,"rgb(234, 223, 217)",
+      id+" neutral card border must not be sage green");
+    assert.equal(palette.ink,"rgb(20, 43, 61)",
+      id+" original voice picker has Studio ink");
+    assert.equal(palette.phrase,"rgb(255, 249, 245)",
+      id+" phrase inset stays warm, not green");
+    assert.match(palette.selected,/rgb\(8,\s*126,\s*97\)/,
+      id+" active Voice tab uses accessible emerald");
+    assert.ok(palette.width<=palette.viewport+2,
+      id+" Ideas Voice has no horizontal document overflow");
+    assert.equal(palette.dockCount,1,id+" one fixed Holistic House dock");
+    await voice.scrollIntoViewIfNeeded({timeout:15000});
+    await page.screenshot({
+      path:folder+"/ideas-voice-warm-peach-"+locale+"-"+width+"-webkit.png",
+      fullPage:false,animations:"disabled",
+    });
+    results.push({id:id+":ideas-voice-color",palette,passed:true});
+  }
   if(browserType===webkit && locale==="ru" && width===390){
     // Simulates navigator.standalone, not Safari View Controller on a phone.
     await page.addInitScript(()=>Object.defineProperty(navigator,"standalone",{

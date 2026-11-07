@@ -120,3 +120,74 @@
 .phrasePick{display:grid;gap:6px;min-width:0;margin:12px 0 7px;color:#285e4a;font:800 clamp(13px,3.6vw,15px)/1.35 system-ui,-apple-system,sans-serif}
 .phrasePick select{box-sizing:border-box;width:100%;min-height:49px;min-width:0;padding:10px 12px;border:1px solid #98ceb7;border-radius:12px;background:#fff;color:#205740;font:650 clamp(14px,3.7vw,16px)/1.4 system-ui,-apple-system,sans-serif;overflow:hidden;text-overflow:ellipsis}
 .phrasePick select:disabled{opacity:.55}
+
+
+/* Design Bible §10.12 — Studio Warm Peach when the ORIGINAL voice picker is
+   mounted inside Ideas → Voice. Keep the existing audio, rights, recorder,
+   keyboard and generation flows. Other Voice/Hypno contexts are untouched. */
+:global([data-ideas-subtab="voice"]) .panel{
+  color:var(--hh-voice-ink,#142B3D)
+}
+:global([data-ideas-subtab="voice"]) .panel .heading h4,
+:global([data-ideas-subtab="voice"]) .panel .selectedPhrase p,
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect{
+  color:var(--hh-voice-ink,#142B3D)
+}
+:global([data-ideas-subtab="voice"]) .panel .heading p,
+:global([data-ideas-subtab="voice"]) .panel .selectedPhrase small,
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect small,
+:global([data-ideas-subtab="voice"]) .panel .hint,
+:global([data-ideas-subtab="voice"]) .panel .sampleStatus,
+:global([data-ideas-subtab="voice"]) .panel .localHint{
+  color:var(--hh-voice-muted,#5D6A71)
+}
+:global([data-ideas-subtab="voice"]) .panel .selectedPhrase,
+:global([data-ideas-subtab="voice"]) .panel .transcriptDisclosure,
+:global([data-ideas-subtab="voice"]) .panel .voiceAdvanced,
+:global([data-ideas-subtab="voice"]) .panel .transcript,
+:global([data-ideas-subtab="voice"]) .panel .levels{
+  color:var(--hh-voice-ink,#142B3D);
+  background:var(--hh-voice-field,#FFF9F5);
+  border-color:var(--hh-voice-border,#EADFD9)
+}
+:global([data-ideas-subtab="voice"]) .panel .genderTabs button:not([aria-pressed="true"]),
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect:not([aria-pressed="true"]),
+:global([data-ideas-subtab="voice"]) .panel .sampleButton,
+:global([data-ideas-subtab="voice"]) .panel .deviceSampleButton,
+:global([data-ideas-subtab="voice"]) .panel .localItem,
+:global([data-ideas-subtab="voice"]) .panel .localActions button:not([aria-pressed="true"]){
+  background:var(--hh-voice-card,#FFFCFA);
+  border-color:var(--hh-voice-border,#EADFD9);
+  color:var(--hh-voice-forest,#14523F)
+}
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect:not([aria-pressed="true"]){
+  color:var(--hh-voice-ink,#142B3D)
+}
+:global([data-ideas-subtab="voice"]) .panel .genderTabs button[aria-pressed="true"]{
+  background:linear-gradient(120deg,var(--hh-voice-emerald,#087E61),var(--hh-voice-emerald-deep,#006B4B));
+  color:#FFFFFF;border-color:var(--hh-voice-emerald-deep,#006B4B)
+}
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect[aria-pressed="true"]{
+  background:var(--hh-voice-mint,#EAF5EC);
+  border-color:var(--hh-voice-emerald,#087E61);
+  color:var(--hh-voice-ink,#142B3D)
+}
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect[aria-pressed="true"] small{
+  color:var(--hh-voice-muted,#5D6A71)
+}
+:global([data-ideas-subtab="voice"]) .panel .phrasePick select,
+:global([data-ideas-subtab="voice"]) .panel .controls select,
+:global([data-ideas-subtab="voice"]) .panel .localActions button,
+:global([data-ideas-subtab="voice"]) .panel .result{
+  background:var(--hh-voice-card,#FFFCFA);
+  border-color:var(--hh-voice-border,#EADFD9);
+  color:var(--hh-voice-ink,#142B3D)
+}
+:global([data-ideas-subtab="voice"]) .panel .action{
+  color:#FFFFFF;
+  border-color:var(--hh-voice-emerald-deep,#006B4B);
+  background:linear-gradient(120deg,var(--hh-voice-emerald,#087E61),var(--hh-voice-emerald-deep,#006B4B))
+}
+:global([data-ideas-subtab="voice"]) .panel :is(button,select,input):focus-visible{
+  outline:3px solid #176E6E;outline-offset:2px
+}

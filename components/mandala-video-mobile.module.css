@@ -4960,3 +4960,56 @@
     height:clamp(105px,32vw,142px)!important
   }
 }
+
+
+/* Design Bible §10.12 (07 Nov): Ideas → Voice is Studio Warm Peach, not the
+   old gray/sage phrase-editor theme. This is deliberately scoped to the real
+   Ideas Voice state; Text, Goal, Montage, Hypno, PRO and shared video canvas
+   retain their own intentional palettes and functional state. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"]{
+  --hh-voice-ink:#142B3D;
+  --hh-voice-forest:#14523F;
+  --hh-voice-muted:#5D6A71;
+  --hh-voice-card:#FFFCFA;
+  --hh-voice-field:#FFF9F5;
+  --hh-voice-border:#EADFD9;
+  --hh-voice-divider:#EEE6E0;
+  --hh-voice-emerald:#087E61;
+  --hh-voice-emerald-deep:#006B4B;
+  --hh-voice-mint:#EAF5EC;
+  --hh-voice-shadow:0 5px 18px rgb(66 42 31 / 7%);
+  color:var(--hh-voice-ink)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasSubtabs{
+  background:var(--hh-voice-card);border-color:var(--hh-voice-border);
+  box-shadow:var(--hh-voice-shadow)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasSubtabs button:not([aria-pressed="true"]){
+  color:var(--hh-voice-forest);background:transparent
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasSubtabs button[aria-pressed="true"]{
+  color:#fff;border-color:var(--hh-voice-emerald-deep);
+  background:linear-gradient(120deg,var(--hh-voice-emerald),var(--hh-voice-emerald-deep));
+  box-shadow:0 4px 12px rgb(66 42 31 / 12%)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceSection{
+  border-color:var(--hh-voice-border);background:var(--hh-voice-card);
+  color:var(--hh-voice-ink);box-shadow:var(--hh-voice-shadow)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading>span{
+  color:var(--hh-voice-forest);background:linear-gradient(135deg,#FFF1D8,#FCEEF6)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading h3{
+  color:var(--hh-voice-ink)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading p{
+  color:var(--hh-voice-muted)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceUpload,
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceActions>button{
+  color:var(--hh-voice-forest);background:var(--hh-voice-card);
+  border-color:var(--hh-voice-border);box-shadow:var(--hh-voice-shadow)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceUploadNotice{
+  color:var(--hh-voice-muted)
+}
