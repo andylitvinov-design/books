@@ -173,8 +173,13 @@ test("post-generation human handoff is optional, privacy-safe and uses existing 
   assert.match(result,/href=\{"\/"\+locale\+"\/services\/remote-energy-support"\}/);
   assert.equal((result.slice(offer).match(/target="_blank" rel="noopener noreferrer"/g)||[]).length,2,
     "only the two optional service orders open separately");
-  assert.match(result.slice(0,offer),/data-video-guest-signin/,
-    "guest sign-in is separate from the optional services and preserves the in-memory video");
+  const preview=result.slice(0,offer);
+  assert.match(preview,/<video ref=\{resultVideoRef\}[^>]*controls playsInline preload="auto"/,
+    "a native decoded player is mounted without a guest sign-in wall");
+  assert.match(preview,/data-video-guest-play/);
+  assert.doesNotMatch(preview,/data-video-guest-signin|data-video-guest-check-session/);
+  assert.match(preview,/\(!creditCatalog\?\.chargeRequired\|\|creditSession==="signed_in"\|\|result\.mode==="catalog"\) \? <>/,
+    "Save, Share and delivery still require an authenticated account");
   for(const locale of ["ru","en","es"]){
     assert.match(source,new RegExp(locale+": \\{[\\s\\S]*?consultationAction:"));
   }
