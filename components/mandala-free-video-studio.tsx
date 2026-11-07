@@ -5715,8 +5715,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               {activeFilm ? <video
                 key={activeFilm.src} ref={premiumVideoRef}
                 src={activeFilm.src} poster={activeFilm.poster}
-                muted playsInline loop autoPlay={previewPlaying&&!recording&&!preparing}
-                preload={previewPlaying||recording||preparing?"auto":"none"}
+                muted playsInline loop preload="none"
+                autoPlay={previewPlaying&&!recording&&!preparing}
                 data-mandala-master-mp4={activeFilm.src}
                 onLoadedData={event=>{
                   if(event.currentTarget.readyState>=2 && event.currentTarget.videoWidth>0)

@@ -121,7 +121,7 @@ test("new generator feeds the SAME working Canvas/MediaRecorder as existing edit
   assert.match(s,/canvas\.captureStream\(framesPerSecond\)/);
   assert.match(s,/new MediaRecorder\(stream,recorderOptions\)/);
   assert.match(s,/stream\.addTrack\(musicSession\.track\)/);
-  assert.match(s,/creationMode,currentFreeVideoPlan\?\.seed/);
+  assert.match(s,/creationMode,activeMontageStyleId,currentFreeVideoPlan\?\.seed/);
   assert.match(s,/sourceRef\.current !== snapshotKey/);
   assert.match(ui,/data-free-video-variant/);
   assert.match(ui,/data-free-video-prompt/);
