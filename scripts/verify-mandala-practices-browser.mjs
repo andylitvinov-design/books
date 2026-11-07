@@ -33,10 +33,17 @@ export async function verifyGuidedPractices({browser,base,engine}){
         waitUntil:"domcontentloaded",timeout:70000,
       });
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
-      await page.locator('[data-video-quick-control="practices"]').click();
+      // The compact six-tab rail now has Ready instead of the old Practices
+      // tab. A visitor reaches the same guided course from the visible
+      // "8-practice course" shortcut in Goal. Exercise that REAL click.
+      const entry=page.locator('[data-video-practice-shortcut="course"]');
+      await entry.waitFor({state:"visible",timeout:25000});
+      await entry.click();
+      const studio=page.locator("[data-mandala-free-video]");
+      await expect(studio).toHaveAttribute("data-active-workspace","practices",{timeout:15000});
+      await expect(studio).toHaveAttribute("data-video-studio-mode","therapy",{timeout:15000});
       const course=page.locator("[data-video-guided-course]");
       await course.waitFor({state:"visible",timeout:25000});
-      assert.equal(await page.locator('[data-video-quick-control="practices"]').getAttribute("aria-pressed"),"true");
       const generate=course.locator("[data-guided-generate-meditation]");
       assert.equal(await generate.isDisabled(),true,"state mode needs an explicit choice");
       assert.equal(await course.locator("[data-guided-focus-state]").count(),6,
