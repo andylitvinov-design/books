@@ -29,14 +29,19 @@ export async function verifyGuidedPractices({browser,base,engine}){
         if(url.origin!==trustedOrigin)return route.abort();
         return route.continue();
       });
-      await page.goto(base+"/"+locale+"/holistic-support/mandala",{
+      await page.goto(base+"/"+locale+"/holistic-support/mandala#guided-video-series",{
         waitUntil:"domcontentloaded",timeout:70000,
       });
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
-      await page.locator('[data-video-quick-control="practices"]').click();
+      // Practices is now a deep-linked journey under the six-tab Studio;
+      // the obsolete seventh navigation button no longer exists.
       const course=page.locator("[data-video-guided-course]");
       await course.waitFor({state:"visible",timeout:25000});
-      assert.equal(await page.locator('[data-video-quick-control="practices"]').getAttribute("aria-pressed"),"true");
+      const studio=page.locator("[data-mandala-free-video]");
+      assert.equal(await studio.getAttribute("data-active-workspace"),"practices");
+      assert.equal(await studio.getAttribute("data-video-studio-mode"),"therapy");
+      assert.equal(await page.locator('[data-video-quick-control="ready"]').getAttribute("aria-pressed"),"true",
+        "the Ready tab remains the visible six-tab affordance for a deep-linked practice");
       const generate=course.locator("[data-guided-generate-meditation]");
       assert.equal(await generate.isDisabled(),true,"state mode needs an explicit choice");
       assert.equal(await course.locator("[data-guided-focus-state]").count(),6,

@@ -417,3 +417,38 @@ test('cheap Mandala UI source contracts fail before macOS WebKit without skippin
   assert.ok(mac.includes('node scripts/benchmarking/verify-original-motion-export.mjs'));
   assert.doesNotMatch(source,/continue-on-error:\s*true/);
 });
+
+test('benchmark scripts and standalone Video Studio UI do not allocate unrelated CI, while owner gates remain', () => {
+  const benchmark = workflow('hh-benchmark-program.yml');
+  const benchmarkTriggers = [...benchmark.matchAll(/^      - "scripts\/benchmarking\/plan\.mjs"$/gm)];
+  assert.equal(benchmarkTriggers.length, 2, 'offline benchmark plan remains covered for PR and production push');
+  assert.doesNotMatch(benchmark, /- "scripts\/benchmarking\/\*\*"/,
+    'unrelated video/media scripts must not launch a competitor benchmark runner');
+  for (const owner of [
+    'data/benchmarking/**','lib/benchmarking/**',
+    'tests/benchmark-reference-matrix.test.mjs'
+  ]) assert.ok(benchmark.includes('      - "' + owner + '"'), 'benchmark owner not covered: ' + owner);
+
+  const services = workflow('hh-public-services-production.yml');
+  const mandala = workflow('holistic-support-mandala.yml');
+  const pathsOnly = services.split(/^permissions:/m)[0];
+  const broadMandala = pathsOnly.indexOf("      - 'components/mandala-*'");
+  assert.ok(broadMandala > -1, 'public services retain conservative catch-all');
+  assert.ok(mandala.includes("      - 'components/mandala-*'"),
+    'mandatory separate Mandala browser/voice owner must retain matching paths');
+  for (const file of [
+    'components/mandala-pro-enhance.tsx',
+    'components/mandala-pro-enhance.module.css',
+    'components/mandala-video-ideas.tsx',
+    'components/mandala-video-ideas.module.css'
+  ]) {
+    const exclusion = pathsOnly.indexOf("      - '!" + file + "'");
+    assert.ok(exclusion > broadMandala, 'single-purpose video UI should not run service browser matrix: ' + file);
+  }
+  for (const sensitive of [
+    'app/api/payments/**', 'components/commerce/**',
+    'components/contact-channel-chooser*', 'app/**/services/**',
+    'app/api/service-enquiries/**'
+  ]) assert.ok(pathsOnly.includes("      - '" + sensitive + "'"),
+    'real public booking/checkout/service changes must keep E2E: ' + sensitive);
+});
