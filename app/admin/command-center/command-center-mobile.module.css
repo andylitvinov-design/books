@@ -155,3 +155,15 @@
 .prFileRow{display:grid;gap:4px;min-width:0;border-top:1px solid var(--cc-edge);padding:9px 0}
 .prFileRow span{font-size:12px;line-height:1.45;overflow-wrap:anywhere;color:#f1effc}
 .prFileRow small{color:var(--cc-muted);font-size:11px;font-variant-numeric:tabular-nums}
+
+/* Owner-only gateway to the existing Project Management route. */
+.pmShortcut{display:flex;align-items:center;gap:12px;min-height:74px;padding:12px 13px;margin:0 0 13px;
+ border:1px solid rgba(185,143,245,.36);border-radius:15px;
+ background:linear-gradient(115deg,rgba(99,63,145,.39),rgba(38,31,64,.92));
+ color:#f4eaff!important;text-decoration:none!important}
+.pmSymbol{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:12px;
+ background:#4b3971;color:#e0c6ff;font-size:23px}
+.pmCopy{display:grid;gap:4px;flex:1;min-width:0}
+.pmCopy strong{font-size:14px;line-height:1.25}
+.pmCopy small{font-size:11px;line-height:1.35;color:#cbb8e4}
+.pmArrow{font-size:26px;color:#d7b3ff}
