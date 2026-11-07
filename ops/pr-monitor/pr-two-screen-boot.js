@@ -29,6 +29,11 @@
     // A single read of the existing public activity snapshot; no additional polling.
     additions += '<link rel="stylesheet" href="/gpt-agent-counter.css?v=20261106-grid-v1">'+
       '<script src="/gpt-agent-counter.js?v=20261106-grid-v1" defer><\/script>';
+    // HH_CI_VERIFIED_LOAD_V1: one user-requested census; never launches workflows.
+    additions += '<link rel="stylesheet" href="/ci-verified-panel.css?v=20261107-truth-v1">'+
+      '<script src="/ci-verified-panel.js?v=20261107-truth-v1" defer><\/script>';
+    additions += '<link rel="stylesheet" href="/pr-lifecycle-ribbon.css?v=20261107-journey-v1">'+
+      '<script src="/pr-lifecycle-ribbon.js?v=20261107-journey-v1" defer><\/script>';
     // Disable only old layout reordering, preserving all sources and working APIs.
     html=html.replace(/<head>/i,'<head><script src="/pr-two-screen-pre.js"><\/script>');
     html=html.replace(/<\/head>/i,additions+'</head>');
