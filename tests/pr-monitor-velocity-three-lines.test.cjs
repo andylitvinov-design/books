@@ -98,3 +98,28 @@ test('last-wave UI keeps original three lines and shows only the separate bounde
  assert.throws(()=>ui.series(raw,{...more,buckets:more.buckets.map((b,i)=>i===0?
    {...b,last_head_wave_upper:{n:2,median_minutes:5}}:b)},1),/Некорректная выборка/);
 });
+
+test('aligned cached Merge reference is accepted for 24h and labeled stale',()=>{
+ const now=ms('2026-11-07T04:00:00Z');
+ assert.deepEqual(api.referenceInfo('2026-11-07T02:30:00Z',now),
+   {to:ms('2026-11-07T02:30:00Z'),age_minutes:90,stale:true});
+ assert.equal(api.referenceInfo('2026-11-07T03:30:00Z',now).stale,false);
+ assert.equal(api.referenceInfo('2026-11-06T04:00:00Z',now).stale,true);
+ for(const bad of ['not-a-date','2026-11-06T03:59:59Z','2026-11-07T04:01:01Z'])
+   assert.equal(api.referenceInfo(bad,now),null);
+});
+test('HTTP GET with 90-minute aligned asof returns six historical bins, not CI 400',async()=>{
+ const oldFetch=globalThis.fetch;
+ globalThis.fetch=async url=>({ok:true,status:200,json:async()=>url.includes('/issues/3419/comments')?[]:
+   {total_count:0,items:[],incomplete_results:false}});
+ const reply={setHeader(){},status(n){this.code=n;return this;},json(body){this.body=body;return this;}};
+ try{
+   const handler=require('../ops/pr-monitor/api/pr-merge-ci-head-trends.js');
+   await handler({method:'GET',query:{hours:'6',asof:new Date(Date.now()-90*60000).toISOString()}},reply);
+   assert.equal(reply.code,200);
+   assert.equal(reply.body.buckets.length,6);
+   assert.equal(reply.body.coverage.reference_stale,true);
+   assert.ok(reply.body.coverage.reference_age_minutes>=89);
+   assert.equal(reply.body.coverage.first_ci_sample,0);
+ }finally{globalThis.fetch=oldFetch;}
+});

@@ -12,6 +12,10 @@ const ARCHIVE_URL = `https://api.github.com/repos/${REPO}/issues/3419/comments?p
 const GH = 'https://api.github.com';
 const PERIODS = new Set([1, 6, 24, 72]);
 const HOUR = 3600000;
+// Merge snapshots can be cached >45m. Preserve alignment with the companion
+// stage source for a bounded historical view instead of HTTP 400.
+const MAX_REFERENCE_AGE_MS = 24 * HOUR;
+const FRESH_REFERENCE_AGE_MS = 45 * 60000;
 const CACHE_MS = 120000;
 const DEFAULT_FETCH_TIMEOUT = 9000;
 const USER_AGENT = 'HolisticHouse-PR-Monitor-ReadOnly';
@@ -26,6 +30,12 @@ function median(values) {
   return (sorted[Math.floor(mid)] + sorted[Math.ceil(mid)])/2;
 }
 function validMinutes(m) { return typeof m === 'number' && Number.isFinite(m) && m >= 0; }
+function referenceInfo(asof, now) {
+  const to = stamp(asof || new Date(now).toISOString());
+  if (to === null || to > now + 60000 || to < now - MAX_REFERENCE_AGE_MS) return null;
+  return {to, age_minutes:Math.max(0, Math.floor((now - to) / 60000)),
+    stale:now - to > FRESH_REFERENCE_AGE_MS};
+}
 function inRange(ts,from,to) { return ts !== null && ts >= from && ts < to; }
 
 // Search endpoint is used only to join real GitHub merged PR timestamps, rather
@@ -166,16 +176,20 @@ async function fetchSources(fetcher,now) {
 async function handler(req,res) {
   res.setHeader('Cache-Control','public, s-maxage=90, stale-while-revalidate=180');
   if (req.method!=='GET') {res.setHeader('Allow','GET');return res.status(405).json({error:'METHOD_NOT_ALLOWED'});}
-  const hours=Number(req.query?.hours||6),now=Date.now(),to=stamp(req.query?.asof||new Date(now).toISOString());
-  if (!PERIODS.has(hours) || to===null || to>now+60000 || to<now-45*60000) return res.status(400).json({error:'INVALID_PERIOD_OR_REFERENCE'});
+  const hours=Number(req.query?.hours||6),now=Date.now(),reference=referenceInfo(req.query?.asof,now);
+  if (!PERIODS.has(hours) || !reference) return res.status(400).json({error:'INVALID_PERIOD_OR_REFERENCE'});
+  const to=reference.to;
   const from=to-hours*HOUR;
   try {
     const fetcher=globalThis.fetch;
     const [{archive},merges] = await Promise.all([fetchSources(fetcher,now),fetchMerges(from,to,fetcher)]);
-    return res.status(200).json(buildBins({prs:merges.prs,ci:archive.runs,from,to,hours,completeMerges:merges.complete,completeArchive:archive.complete,archiveComments:archive.comments}));
+    const report=buildBins({prs:merges.prs,ci:archive.runs,from,to,hours,completeMerges:merges.complete,completeArchive:archive.complete,archiveComments:archive.comments});
+    report.coverage.reference_age_minutes=reference.age_minutes;
+    report.coverage.reference_stale=reference.stale;
+    return res.status(200).json(report);
   } catch(e) {
     return res.status(503).json({schema:'HH_PR_MERGE_CI_HEAD_TRENDS_V1',error:'EVIDENCE_UNAVAILABLE',details:String(e.message||e).slice(0,100)});
   }
 }
 module.exports=handler;
-module.exports._internals={median,validateMerge,parseShard,collectRuns,evidence,buildBins,mergedSearchUrl};
+module.exports._internals={median,validateMerge,parseShard,collectRuns,evidence,buildBins,mergedSearchUrl,referenceInfo};

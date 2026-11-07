@@ -68,7 +68,10 @@
     const headN=model.points.reduce((n,p)=>n+p.head_n,0);
     note.textContent='Временные линии: P50 по минутам (правая шкала), Merge/ч — левая. Первая CI: '+firstN+' PR с архивной записью. Новые HEAD: '+headN+' PR; пунктир показывает ВЕСЬ цикл от первой CI до CI на последнем отличающемся HEAD, не задержку одного ремонта. В карточках ниже — отдельно последняя наблюдаемая волна (тоже верхняя граница, не точный timestamp push). Выборка n<5 нестабильна. Отсутствующие события = «—», не 0.'+
       (model.coverage?.merged_complete===false?' Список слияний частичный.':'')+
-      (model.coverage?.archive_complete===false?' Архив CI частичный.':'');
+      (model.coverage?.archive_complete===false?' Архив CI частичный.':'')+
+      (model.coverage?.reference_stale===true?
+        ' Снимок Merge старше 45 мин ('+String(model.coverage.reference_age_minutes??'—')+
+        ' мин назад); линии отражают исторический срез, а не текущую очередь CI.':'');
   }
   function draw(model,svg){
     const old=svg.querySelector('[data-hh-three-lines]');if(old)old.remove();
@@ -136,7 +139,12 @@
       if(raw?.schema!=='HH_PR_STAGE_TIMELINE_V2'||!Number.isFinite(Date.parse(raw.generated_at||'')))throw Error('Нет полного источника merge');
       const u='/api/pr-merge-ci-head-trends?hours='+hours+'&asof='+encodeURIComponent(raw.generated_at);
       const resp=await env.fetch(u,{cache:'default',headers:{Accept:'application/json'}});
-      if(!resp.ok)throw Error('API CI '+resp.status);
+      if(!resp.ok){
+        const payload=await resp.json().catch(()=>null);
+        if(resp.status===400&&payload?.error==='INVALID_PERIOD_OR_REFERENCE')
+          throw Error('Исторический снимок Merge слишком старый или некорректный; обновите данные');
+        throw Error('API CI '+resp.status);
+      }
       const data=await resp.json();
       const model=series(raw,data,hours);
       if(serial!==sequence||svg!==plot?.querySelector('svg')||hours!==activeHours())return;
