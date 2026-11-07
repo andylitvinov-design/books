@@ -54,3 +54,14 @@ test('rejects outdated native skill version and stale procedures after catalog r
  assert.throws(()=>loader.checkSkillSync(skill,raw.replace('  version: "1.1.0"','  version: "0.0.0"')),/SKILL_VERSION_MISMATCH/);
  assert.throws(()=>loader.checkSkillSync(skill,raw.replace('2. '+skill.steps[1], '2. Устаревший этап')),/SKILL_PROCEDURE_DRIFT/);
 });
+test('legacy review-only skill frontmatter and Russian declined deploy terms are supported',()=>{
+ const all=loader.readCatalog();
+ for(const id of ['lint-autofix','typescript-deterministic','bounded-free-ai']){
+  const s=all.find(x=>x.id===id);
+  assert.equal(s.status,'review_only');
+  assert.equal(loader.getSkill(s).id,id);
+ }
+ const picked=loader.select('Проверить сайт после деплоя на live');
+ assert.ok(picked.some(s=>s.id==='live-verifier'));
+ assert.ok(picked.every(s=>s.status==='curated'));
+});

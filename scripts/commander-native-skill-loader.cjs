@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path');
 const ROOT=path.resolve(__dirname,'..'),HOME=path.join(ROOT,'.agents','skills');
 const CATALOG=path.join(ROOT,'ops','pr-monitor','skills-library.json');
 const REG=/^[a-z][a-z0-9-]{2,60}$/;
-const NAME_RE=/^---\r?\nname:\s*([a-z0-9-]+)\s*\r?\ndescription:\s*("[^\r\n]*"|[^\r\n]+)\r?\n/;
+const FRONT_MATTER_RE=/^---\r?\n([\s\S]{1,2000}?)\r?\n---\r?\n/;
 const repairNames=Object.freeze({'lint-autofix':'hh-repair-lint-autofix','typescript-deterministic':'hh-repair-typescript-deterministic','bounded-free-ai':'hh-repair-bounded-free-ai'});
 const clean=x=>String(x||'').toLowerCase().replace(/ё/g,'е').replace(/\s+/g,' ').trim();
 function readCatalog(){
@@ -17,7 +17,7 @@ function folderName(s){return repairNames[s.id]||'hh-'+s.id}
 function score(s,input){
  const text=clean(input);return s.keywords.reduce((sum,word)=>{
   const q=clean(word);if(!q)return sum;
-  const found=q.length<=3&&/^[a-z]+$/.test(q)?new RegExp('(^|[^a-z])'+q+'([^a-z]|$)','i').test(text):text.includes(q);
+  const found=q==='деплой'?text.includes('депло'):(q.length<=3&&/^[a-z]+$/.test(q)?new RegExp('(^|[^a-z])'+q+'([^a-z]|$)','i').test(text):text.includes(q));
   return sum+(found?1:0);
  },0);
 }
@@ -52,9 +52,11 @@ function getSkill(s){
  const info=fs.lstatSync(filename);
  if(!info.isFile()||info.isSymbolicLink()||info.size>12000)throw Error('SKILL_NOT_A_SAFE_FILE');
  const raw=fs.readFileSync(filename,'utf8');
- const front=raw.match(NAME_RE);
- if(!front||front[1]!==folder||!raw.includes('## Стоп-условия')&&!raw.includes('# Stop / no shortcuts'))throw Error('INVALID_NATIVE_SKILL '+folder);
- if(/\nallowed-tools:/i.test(raw.slice(0,1000)))throw Error('UNTRUSTED_TOOL_GRANT');
+ const front=raw.match(FRONT_MATTER_RE)?.[1]||'';
+ const names=[...front.matchAll(/^name:\s*([a-z][a-z0-9-]+)\s*$/gm)];
+ const descriptions=[...front.matchAll(/^description:\s*(\S.*)\s*$/gm)];
+ if(names.length!==1||names[0][1]!==folder||descriptions.length!==1||!raw.includes('## Стоп-условия')&&!raw.includes('# Stop / no shortcuts'))throw Error('INVALID_NATIVE_SKILL '+folder);
+ if(/^\s*allowed-tools:/mi.test(front))throw Error('UNTRUSTED_TOOL_GRANT');
  checkSkillSync(s,raw);
  return {id:s.id,name:folder,title:s.title,status:s.status,version:s.version,path:path.relative(ROOT,filename).replace(/\\/g,'/'),text:raw};
 }
