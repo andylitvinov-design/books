@@ -21,6 +21,7 @@
       throw Error('INVALID_PR_ATTRIBUTION');
     const cp=new Map(data.journey.checkpoints.map(x=>[x.key,x]));
     const incomplete=data.source?.history_partial===true,hasError=Number(data.failures||0)>0;
+    const exactHeadGreen=data.journey?.green_exact_head===true;
     const seen=phases.map(([key,label,from])=>{
       const v=cp.get(from),raw=v?.evidence==='GITHUB_VERIFIED_EVENT'&&ISO(v.at)!==null?v.at:null;
       const firstCI=cp.get('first_ci_queued')?.at;
@@ -29,7 +30,10 @@
       if(key==='fix'&&!hasError&&!incomplete){status='NOT_APPLICABLE';}
       let note=at?'Подтверждённое событие GitHub.':reasons[key];
       if(key==='fix'&&!hasError&&!incomplete)note='Ошибок в подтверждённой CI-истории не найдено; этап исправления не обязателен.';
-      if(key==='green'&&incomplete){status='HISTORY_PARTIAL';note='История CI неполная; нельзя считать прежний Green текущим exact-HEAD Green.';}
+      if(key==='green'&&(!exactHeadGreen||incomplete)){
+        status=incomplete?'HISTORY_PARTIAL':'UNKNOWN';
+        note='Последний обязательный Green на текущем HEAD не подтверждён; Green старого HEAD недопустим.';
+      }
       return {key,label,at:status==='VERIFIED'?at:null,url:status==='VERIFIED'?v.url:null,status,note,
         minutes_to_next:null,interval_end:null};
     });
@@ -47,7 +51,8 @@
     const merged=seen.find(x=>x.key==='merge');
     if(merged?.status==='VERIFIED'&&seen.find(x=>x.key==='live')?.status!=='VERIFIED')
       seen.find(x=>x.key==='live').note=reasons.live;
-    return {phases:seen,history_partial:incomplete,verified:seen.filter(x=>x.status==='VERIFIED').length};
+    return {phases:seen,history_partial:incomplete,verified:seen.filter(x=>x.status==='VERIFIED').length,
+      blocker:typeof data.journey?.stop_reason==='string'?data.journey.stop_reason:null};
   }
   function render(parent,data){
     let result;try{result=normalize(data);}catch{return;}
@@ -72,6 +77,7 @@
       list.append(item);
     }
     section.append(list);
+    if(result.blocker)section.append(make('p','hh-pr-lifecycle-warning','Причина остановки: '+result.blocker));
     if(result.history_partial)section.append(make('p','hh-pr-lifecycle-warning',
       'История частичная. Отсутствующее время и неподтверждённый текущий Green не равны нулю или успеху.'));
     const old=parent.querySelector('.hh-pr-lifecycle');if(old)old.remove();

@@ -46,3 +46,26 @@ test('schedule delayed even when workflow configured 10-min cron',()=>{
  const a=m.scheduleHealth({workflow_runs:[{...run(1,'HH PR 10-minute watchdog',122),event:'schedule'}]},now);
  assert.equal(a.status,'DELAYED');assert.equal(a.rows[0].age_minutes,122);
 });
+
+test('an old in-progress workflow with no jobs is stale, not running',()=>{
+ const x=m.evaluateRun(run(1,'HH PR core release gate',95),{total_count:0,jobs:[]},now);
+ assert.equal(x.stale,true);assert.equal(x.reason,'WORKFLOW_ACTIVE_WITHOUT_JOBS');
+});
+test('oldest stale runs get sampled even after fresh CI fanout',()=>{
+ const rows=Array.from({length:20},(_,i)=>run(20-i,'HH PR core release gate',i+1));
+ const chosen=m.prioritySample(rows,8);
+ assert.equal(chosen.length,8);assert.deepEqual(chosen.map(x=>x.id),[20,19,18,17,1,2,3,4]);
+});
+test('pull_request workflows without descriptive names are still CI, watcher is other',()=>{
+ assert.equal(m.type('HH Personal Coaching Session','pull_request'),'ci');
+ assert.equal(m.type('HH PR 10-minute watchdog','pull_request_target'),'other');
+ assert.equal(m.type('Home language switch first-click regression','push'),'ci');
+});
+test('one failed status lookup preserves partial counts',()=>{
+ const pages=['in_progress','queued','waiting','pending','requested'].map((s,i)=>
+   i===1?{read_failed:true}:({total_count:0,workflow_runs:[]}));
+ const result=m.summarize({statusPages:pages,jobPages:{},recent:null,scheduled:null},now);
+ assert.equal(result.coverage.complete,false);
+ assert.equal(result.coverage.observed_statuses,4);
+ assert.equal(result.trend.bins,null);
+});

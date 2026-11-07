@@ -5,7 +5,7 @@
 (function(){
   if(typeof document==='undefined')return;
   const API='/api/ci-verified-load';
-  const SCHEMA='HH_CI_VERIFIED_LOAD_V1',STALE_AFTER_MS=120000;
+  const SCHEMA='HH_CI_VERIFIED_LOAD_V2',STALE_AFTER_MS=120000;
   let host=null,info=null,chart=null,staleList=null,refresh=null,scheduled=null,lastRequest=0;
   const mk=(tag,cls,label)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(label!=null)x.textContent=String(label);return x;};
   const valid=n=>Number.isSafeInteger(n)&&n>=0;
@@ -13,6 +13,14 @@
     timeZone:'America/Toronto',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(t)):'—';};
   const safeUrl=u=>typeof u==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+$/.test(u)?u:null;
   const count=(n,complete)=>valid(n)?(complete?'':'≥')+n:'—';
+  function safeCiNumber(data,key){
+    // If no CI workflow was checked and some were present, even the lower bound
+    // 0 is not a useful load observation. Explicitly show unknown instead.
+    if(!data||!data.coverage||!data.ci)return '—';
+    if(!data.coverage.complete && data.coverage.checked_ci_runs===0 &&
+       data.coverage.known_ci_runs>0)return '—';
+    return count(data.ci[key],data.coverage.complete===true);
+  }
   function graph(payload){
     chart.replaceChildren();
     const x=payload.trend;
@@ -52,8 +60,8 @@
     const complete=data.coverage.complete===true;
     const stats=mk('div','hh-ci-v-stats');
     for(const [label,value,cls] of [
-      ['CI jobs выполняются',count(data.ci.running_jobs,complete),''],
-      ['CI jobs ожидают',count(data.ci.queued_jobs,complete),''],
+      ['CI jobs выполняются',safeCiNumber(data,'running_jobs'),''],
+      ['CI jobs ожидают',safeCiNumber(data,'queued_jobs'),''],
       ['Другая работа · jobs',count(data.other.running_jobs,complete),''],
       ['Stale CI',count(data.ci.stale_workflows,complete),data.ci.stale_workflows>0?'bad':'']]){
       const s=mk('div','hh-ci-v-stat '+cls);s.append(mk('span','',label),mk('strong','',value));stats.append(s);
@@ -91,6 +99,7 @@
       show(await response.json());
     }catch(error){
       window.__hhCiVerifiedSnapshot=null;
+      window.dispatchEvent(new Event('hh:ci-verified-updated'));
       info.textContent='Достоверная нагрузка CI недоступна: '+String(error.message||error).slice(0,90)+'. Неизвестно ≠ 0.';
     }finally{refresh.disabled=false;}
   }

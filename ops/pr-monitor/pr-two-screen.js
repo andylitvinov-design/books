@@ -129,12 +129,14 @@
     }
     var verified=window.__hhCiVerifiedSnapshot;
     var age=Date.now()-Date.parse(verified?.observed_at||'');
-    if(verified?.schema==='HH_CI_VERIFIED_LOAD_V1' && verified.coverage && verified.ci &&
+    if(verified?.schema==='HH_CI_VERIFIED_LOAD_V2' && verified.coverage && verified.ci &&
        Number.isFinite(age) && age>=0 && age<=120000){
       var complete=verified.coverage.complete===true;
       var val=function(n){return validCount(n)?(complete?'':'≥')+n:'—';};
-      cells.running.n.textContent=val(verified.ci.running_jobs);
-      cells.queued.n.textContent=val(verified.ci.queued_jobs);
+      var unmeasured=verified.coverage.checked_ci_runs===0 &&
+        verified.coverage.known_ci_runs>0&&!complete;
+      cells.running.n.textContent=unmeasured?'—':val(verified.ci.running_jobs);
+      cells.queued.n.textContent=unmeasured?'—':val(verified.ci.queued_jobs);
       cells.running.sub.textContent='Подтверждённые CI jobs · активных workflow: '+val(verified.ci.active_workflows);
       cells.queued.sub.textContent='Ожидающие CI jobs · Stale CI: '+val(verified.ci.stale_workflows);
       status.textContent='GitHub CI jobs, не workflow · проверено '+verified.coverage.checked_runs+
@@ -356,8 +358,8 @@
       box.append(n,sub); kpi.append(box);
       cells[key] = {n:n,sub:sub};
     }
-    ciCard('running','CI в работе','Workflows · данные GitHub');
-    ciCard('queued','CI в ожидании','Workflows · очередь GitHub');
+    ciCard('running','CI jobs в работе','Проверенные jobs · данные GitHub');
+    ciCard('queued','CI jobs в ожидании','Проверенные jobs · очередь GitHub');
     one.append(kpi);
     status = make('p','hh2-meta','Источники GitHub загружаются…'); one.append(status);
     var chart = make('div','hh2-chart');
