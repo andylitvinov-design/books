@@ -12,7 +12,7 @@ This is a **mobile-first, public/read-only navigation and briefing surface**, no
 - \`/pr-monitor.html\` — existing PR → Core → repair → merge monitoring with all prior charts
 - \`/legacy.html\` — original unchanged standalone PR page as fallback
 
-The top menu links to protected owner Command Center for actual writing. **No Google login is needed for public monitoring**, but creating a private task, authorizing a coding agent, dispatching GitHub Actions and editing owner notes still require existing owner authorization and server-only trusted credentials. Do not proxy private owner endpoints from the public site. The + action copies a draft and launches the protected editor; it **does not save or execute**.
+The top menu links to protected owner Command Center for actual writing. **No Google login is needed for public monitoring**, but creating a private task, authorizing a coding agent, dispatching GitHub Actions and editing owner notes still require existing owner authorization and server-only trusted credentials. Do not proxy private owner endpoints from the public site. The + action opens the **same-origin** `/task-editor.html` in the current tab. It transports a 10-minute ephemeral handoff envelope without URL params; nothing is auto-saved or executed.
 
 ## Release safety
 The independent Vercel monitor is currently manually deployed, and the GitHub archive is incomplete relative to the already deployed source tree. NEVER use a partial deploy. Obtain complete prior deployment file manifest and include every existing unchanged asset by its verified SHA. Overlay only these source assets after protected control-plane PR merge; verify all API endpoints, old monitor routes, assets, mobile interactions at 320 / 390 / 430 and canonical URL. Keep the previous deployment ID for rollback. A control-branch merge does not itself deploy this manual Vercel project.
@@ -43,3 +43,19 @@ Owner clarified the goal after initial PR publication. The «Разобрать 
 4. **КОНТЕКСТ БИЗНЕСА И ПРОЕКТА — ЦЕЛИ И АДРЕСА** — public Holistic House mission, domains, GitHub repository, pertinent product area, working branches, workflow boundaries, no invented street addresses or secrets.
 
 The content adapts to Agent Commander / PR Monitor, Video Studio, or Holistic House core, and is available instantly without a model/API request. Unknowns remain explicit. The existing owner-authenticated OpenRouter Free call can append clearly labelled suggestions after the canonical four blocks, but cannot replace verified context, distort the owner request or overwrite manual edits. Generating a prompt never stores a task, schedules execution, changes PRs or claims LIVE. This is a correctness correction to the existing PR, not a separate product or new provider.
+
+## Same-origin protected task editor (7 November 2026)
+
+The old `/admin/command-center` handoff belonged to the separate Holistic House site. That hardcoded redirect is removed. On https://holistic-house-pr-monitor.vercel.app owners open `/task-editor.html` in the current tab. The existing owner password/session (`/api/seo-auth`, cookie `hh_seo_owner`) protects the editor and all server-side writes; no separate Google login.
+
+The mobile editor reuses the existing fixed five-tab dock and contains task identity, verbatim source, understanding, PR search and selection, plan, editable prompt, quality checks, agent and mode choices, restrictions, save, handoff, history, PR status and evidence.
+
+- Handoff is ephemeral `sessionStorage` transport, consumed and deleted after owner authorization; it is not public task persistence.
+- Private server endpoint `/api/commander-drafts` checks the signed owner cookie, same-origin POST, request bounds, and verifies repository `private=true` and `permissions.push=true`. Requires BOTH protected Vercel variables `HH_PM_GITHUB_WRITE_TOKEN` and `HH_PM_TASKS_PRIVATE_REPO` referring to a private repo under `andylitvinov-design`. These are NOT configured by this PR; public GitHub issues must never store potentially private owner drafts.
+- Until a private destination exists, server save and queue are disabled with explicit messaging. A device-only AES-GCM/PBKDF2 encrypted recovery copy (210k rounds) uses a separate password and does not imply cross-device storage.
+- Queuing a private issue (`QUEUED_FOR_REVIEW`) is NOT launching an executor or dispatching Actions. A trusted worker integration must be verified before claiming RUNNING.
+- PR search reads GitHub live, includes Draft and bounded exhaustive pagination; inability to verify appears as an error, not verified zero. Linked PR state refresh only happens while page is open. No new background worker, cron or paid service.
+- User source edits invalidate the acceptance check until prompt regeneration; optional free AI supplements do not overwrite owner edits.
+- Release preserves the full existing manually deployed source manifest including legacy monitor and all API files; never deploy only the GitHub subset. MERGED is not LIVE.
+
+Acceptance: tap «Передать в защищённый редактор» → same-origin route, same tab → owner login or valid existing session → source/prompt remain editable → live PR search, quality checks, draft options, truthful queue status. Guests get 401 on `/api/commander-drafts`. Validate 320/390/430px Safari and production alias.
