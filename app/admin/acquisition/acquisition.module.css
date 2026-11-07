@@ -7,3 +7,10 @@
 .fields{display:grid;grid-template-columns:1fr 1fr 2fr;gap:14px;margin:20px 0 14px}.fields label,.linkResult label{display:grid;gap:8px;font-size:.85rem;font-weight:600;min-width:0}.fields input,.fields select,.linkResult textarea{border:1px solid #afc7bd;border-radius:9px;padding:11px;background:#fff;font:inherit;color:var(--ink);min-height:44px;width:100%;box-sizing:border-box}.linkResult textarea{font-size:.85rem;line-height:1.5;font-weight:400;resize:vertical;overflow-wrap:anywhere}.primary{cursor:pointer}.error{color:#9f2929;font-size:.9rem;line-height:1.5}.linkResults{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.linkResult{margin-top:22px;min-width:0}.linkResult .button{margin-top:10px}.bottomGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.bottomGrid .panel{margin-top:0;margin-bottom:0}
 @media(max-width:760px){.header,.toolbar{flex-direction:column}.metrics,.sources{grid-template-columns:repeat(2,minmax(0,1fr))}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}.campaignField{grid-column:1/-1}.stages,.bottomGrid,.linkResults{grid-template-columns:1fr}.bottomGrid{gap:14px}.sectionHeader{align-items:flex-start;flex-direction:column;gap:0}.panel{padding:20px}}
 @media(max-width:380px){.page{padding:18px 12px 48px}.panel{padding:16px;border-radius:16px}.metrics{gap:8px}.metrics article{padding:12px}.stages div{flex-direction:column;gap:5px}.sources{gap:8px}.sources article{padding:11px}.periods a{padding:10px;font-size:.8rem}.fields{grid-template-columns:1fr}.recommendation{padding:20px}.header h1{font-size:2rem}}
+
+.webColumns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:22px}
+.webColumns h3{font-size:1rem;margin:0 0 10px}
+.pageRanks{padding-left:20px;margin:0;display:grid;gap:6px}
+.pageRanks li{padding:9px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.pageRanks strong{float:right;margin-left:12px;font-variant-numeric:tabular-nums}
+@media(max-width:760px){.webColumns{grid-template-columns:1fr}}
