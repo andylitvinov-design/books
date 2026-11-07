@@ -43,3 +43,29 @@ test('previous published Alchemy, Dao and Maya books are not duplicated', () => 
   assert.equal(books.filter(b=>b.mediaSeries==='dao').length,10);
   assert.equal(books.filter(b=>b.mediaSeries==='maya').length,4);
 });
+
+test('published ancient manuals are traced into both locale and legacy book reader functions', () => {
+  // A green build can still produce HTTP 500 on Vercel if dynamically read
+  // manuscripts are missing from the server function filesystem (ENOENT).
+  const nextConfig = readFileSync(new URL('../next.config.ts', import.meta.url), 'utf8');
+  assert.match(nextConfig, /\.\.\.\["\/books\/\*", "\/\[locale\]\/books\/\*"\]\.map\(/,
+    'Keep both canonical and legacy book reader route globs');
+  let totalBytes = 0;
+  for (const id of restoredIds) {
+    const book = books.find(entry => entry.id === id);
+    const source = book.originalSourceFile;
+    assert.match(source, /^source-books\/book-[4-7]-[^/]+\/[a-z0-9_]+\.html$/);
+    const directory = source.slice(0, source.lastIndexOf('/'));
+    const glob = './' + directory + '/*.html';
+    assert.ok(nextConfig.includes(JSON.stringify(glob)),
+      'Vercel runtime trace missing ' + glob + ' for ' + id);
+    totalBytes += readFileSync(source).byteLength;
+  }
+  assert.ok(totalBytes > 100_000 && totalBytes < 1_000_000,
+    'Trace only the eight small public HTML manuals; no huge image/archive directories');
+  const verifier = readFileSync(new URL('../scripts/verify-maya-reader-release.mjs', import.meta.url), 'utf8');
+  assert.match(verifier, /export async function verifyAncientReaderBundles/);
+  assert.ok(verifier.includes('.next/server/app/[locale]/books/[bookId]/page.js.nft.json'), 'Check localized book reader trace');
+  assert.doesNotMatch(nextConfig, /"\.\/source-books\/\*\*\/\*"/,
+    'Never copy the entire source archive into every Vercel function');
+});

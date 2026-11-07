@@ -15,6 +15,8 @@ import {initialVideoChatTree,nextVideoChatTreeStep,videoChatTreeOptions,
 import {isGenericVideoRequest,parseVideoChatAction,mergeVideoChatPreferences,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
 import {understandVideoChatReply} from "@/lib/mandala/video-chat-understanding.mjs";
 import {classifyVideoChatQuestion,answerVideoChatQuestion} from "@/lib/mandala/video-chat-dialogue-knowledge.mjs";
+import {MESSENGER_VIDEO_HANDOFF_KEY,decodeMessengerVideoHandoff} from "@/lib/mandala/video-chat-messenger-flow.mjs";
+import {pageHelpFromRoute} from "@/lib/ihelp/page-context.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-director-chat.module.css";
@@ -33,6 +35,7 @@ type Preset={id:string;theme:VideoTheme;label:Record<PublicLocale,string>;clips:
 type Scene={id:string;theme:string;collection:string;status:string;media:string;video:string;poster?:string;rightsReference:{kind:string};label:Record<PublicLocale,string>;description:Record<PublicLocale,string>;categories:readonly string[];tags:readonly string[];motifs:readonly string[]};
 type Props={
  locale:PublicLocale;goal:string;theme:VideoTheme;
+ helpVisible?:boolean;helpTab?:string;
  presets:readonly Preset[];scenes:readonly Scene[];disabled:boolean;canCreate:boolean;
  renderOptions:{quality:"hd"|"fullhd";brightness:"soft"|"bright";volumePercent:number};
  rendering:boolean;renderProgress:number;resultReady:boolean;resultFailed:boolean;
@@ -96,8 +99,13 @@ const initial=(goal:string,locale:PublicLocale):Draft=>{
 
 export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disabled,canCreate,
  renderOptions,rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,onOpenDelivery,
- onOpenEditor,onPickPhoto,onOpenAudio,onInvalidate}:Props){
+ onOpenEditor,onPickPhoto,onOpenAudio,onInvalidate,helpVisible=false,helpTab="video"}:Props){
  const t=copy[locale];
+ // Context is a pure, public page/tab classification, not user test results.
+ // Changing tabs updates suggestions without resetting any video choices.
+ const pageHelp=useMemo(()=>helpVisible?pageHelpFromRoute({
+   locale,pathname:"/"+locale+"/holistic-support/mandala",activeTab:helpTab
+ }):null,[locale,helpTab,helpVisible]);
  const [draft,setDraft]=useState<Draft>(()=>initial(goal,locale));
  const [step,setStep]=useState<Step>(()=>nextVideoChatTreeStep(initial(goal,locale)) as Step);
  const [lines,setLines]=useState<ChatLine[]>(()=>[{id:0,role:"assistant",text:t.intro+"\n"+t[step]}]);
@@ -139,13 +147,43 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    setLines(existing=>[...existing.slice(-34),{id:++counter.current,role,text}]);
  };
  const question=(next:Step)=>next==="done"?t.done:next==="ready"?t.ready:t[next];
+ // Messenger collects validated choices but never renders or approves a plan.
+ // The handoff is consumed once, in the existing Studio/MediaRecorder controller.
+ useEffect(()=>{
+   let packet="";
+   try{
+     packet=window.sessionStorage.getItem(MESSENGER_VIDEO_HANDOFF_KEY)||"";
+     if(packet)window.sessionStorage.removeItem(MESSENGER_VIDEO_HANDOFF_KEY);
+   }catch{return;}
+   if(!packet)return;
+   const incoming=decodeMessengerVideoHandoff(packet,locale) as Draft|null;
+   if(!incoming)return;
+   const next=nextVideoChatTreeStep(incoming) as Step;
+   if(next!=="review")return;
+   setDraft(incoming);setStep(next);setInput("");
+   setLines([{id:++counter.current,role:"assistant",text:t.review}]);
+   approvedPlanKeyRef.current="";
+   setAlternative(0);setSymbolicAllowed(false);setAiConsent(false);
+   cutAbortRef.current?.abort();semanticAbortRef.current?.abort();
+   setAiCut(null);setAiCutState("idle");setSemanticStatus("idle");
+   onGoalChange(incoming.goal);onInvalidate();
+   const panel=windowRef.current?.closest("details");
+   if(panel instanceof HTMLDetailsElement)panel.open=true;
+   window.requestAnimationFrame(()=>windowRef.current?.scrollIntoView({
+     block:"start",behavior:"instant" as ScrollBehavior,
+   }));
+ // This is a one-shot user-directed navigation handoff, never a reactive sync.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[]);
  // The same client-local goal field is edited by the existing Studio controls.
  useEffect(()=>{
    if(goal.trim()===draft.goal.trim()||!goal.trim())return;
-   const next=initial(goal,locale);
+   // Editing the goal never erases already chosen categories, story, captions
+   // or output settings. Only the final scenario approval must be repeated.
+   const next={...draft,goal:goal.trim().slice(0,800)} as Draft;
    setDraft(next);
    const nextStep=nextVideoChatTreeStep(next) as Step;
-   setStep(nextStep);addLine("assistant",question(nextStep));
+   setStep(nextStep);addLine("assistant",t.promptChanged+" "+question(nextStep));
    approvedPlanKeyRef.current="";cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
    setSymbolicAllowed(false);setAlternative(0);
    semanticAbortRef.current?.abort();setSemanticStatus("idle");
@@ -729,6 +767,26 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        {locale==="ru"?"Клиенты":locale==="es"?"Clientes":"Clients"}
      </Link>
    </nav>
+   {pageHelp&&<section className={css.pageHelp} data-video-ihelp-context data-help-tab={pageHelp.section}>
+     <p>{pageHelp.greeting}</p>
+     <div role="group" aria-label={locale==="ru"?"Помощь по текущему шагу":
+       locale==="es"?"Ayuda en este paso":"Help with this step"}>
+       {pageHelp.actions.map(action=>action.href?
+         <Link key={action.id} href={action.href} prefetch={false} data-video-ihelp-choice={action.id}>
+           {action.label}</Link>:
+         <button key={action.id} type="button" data-video-ihelp-choice={action.id}
+           onClick={()=>{
+             // Explanation only: never reset the selected category, chosen
+             // scene list, music, phrases or the user-approved render.
+             addLine("user",action.prompt);
+             addLine("assistant",action.track==="video"?question(step):action.reply);
+           }}>{action.label}</button>)}
+       <button type="button" data-video-ihelp-free-question
+         onClick={()=>composerRef.current?.focus({preventScroll:true})}>
+         {locale==="ru"?"Задать другой вопрос":locale==="es"?"Hacer otra pregunta":"Ask another question"}
+       </button>
+     </div>
+   </section>}
    <div ref={threadRef} className={css.thread} role="log" aria-live="polite" aria-relevant="additions text">
      {lines.map(line=>line.role==="assistant"?<div key={line.id} className={css.assistantTurn}
          data-chat-assistant-turn={line.id}>

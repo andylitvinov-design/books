@@ -74,11 +74,25 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await result.locator("[data-guided-skip-meditation]").click();
       // WebKit may resolve the DOM click before React commits the reversible
       // omission. Wait for both verified effects, never a timed sleep.
-      await page.waitForFunction(()=>{
-        const skip=document.querySelector("[data-guided-skip-meditation]");
-        const audio=document.querySelector("[data-video-therapy-meditation-audio]");
-        return skip?.getAttribute("aria-pressed")==="true" && audio?.open===false;
-      },null,{timeout:15000});
+      try{
+        await page.waitForFunction(()=>{
+          const skip=document.querySelector("[data-guided-skip-meditation]");
+          const audio=document.querySelector("[data-video-therapy-meditation-audio]");
+          return skip?.getAttribute("aria-pressed")==="true" && audio?.open===false;
+        },null,{timeout:15000});
+      }catch(error){
+        // Evidence only: do not soften the real WebKit fail-closed acceptance.
+        // Read no narration, private goal, DOM input values or client content.
+        const state=await page.evaluate(()=>{
+          const skip=document.querySelector("[data-guided-skip-meditation]");
+          const audio=document.querySelector("[data-video-therapy-meditation-audio]");
+          return {skipPresent:!!skip,skipPressed:skip?.getAttribute("aria-pressed")??null,
+            audioPresent:!!audio,audioOpen:audio?.open??null,
+            coursePresent:!!document.querySelector("[data-video-guided-course]")};
+        }).catch(()=>({browserStateUnavailable:true}));
+        console.error("GUIDED_SKIP_WEBKIT_STATE",JSON.stringify({locale,engine,...state}));
+        throw error;
+      }
       assert.equal(await result.locator("[data-guided-skip-meditation]").getAttribute("aria-pressed"),"true");
       // Revoke the seeded narration completely before a visitor reopens the
       // existing details. A rapid re-open must not race React's seed cleanup.

@@ -127,7 +127,7 @@ test("center AI opens the existing Messenger agent; Video Director is a separate
  assert.match(privateMessages,/data-chat-top-tabs/);
  assert.match(privateMessages,/id="hh-ai-panel"/);
  const assistant=read("components/app/messenger-ai-workspace.jsx");
- assert.match(assistant,/holistic-support\/mandala#video-director-chat/);
+ assert.doesNotMatch(assistant,/holistic-support\/mandala#video-director-chat/);
  assert.match(assistant,/HolisticAgentChat/);
  assert.match(privateMessages,/role="tab"/);
 });
@@ -186,7 +186,8 @@ test("central AI navigates to the single Messenger, original video deep link rem
  const agent=read("components/app/messenger-ai-workspace.jsx");
  assert.match(dock,/data-hh-unified-dock/);
  assert.match(dock,/data-video-director-chat-details/);
- assert.match(agent,/holistic-support\/mandala#video-director-chat/);
+ assert.doesNotMatch(agent,/holistic-support\/mandala#video-director-chat/);
+ assert.match(agent,/HolisticAgentChat/);
  assert.doesNotMatch(dock,/onClick=\{id === "ai" \? \(\) =>/);
 });
 
@@ -235,19 +236,22 @@ test("MyTube stays dark with a swipeable direction rail and expandable deeper fi
  assert.match(css,/\.mytube \.mytubeCategoryRail\{/);
  assert.match(css,/overflow-x:auto/);
  assert.match(css,/\.mytube \.compactMoreButton\{/);
- assert.match(discovery,/data-mytube-duration-mode=\{mode\}/);
+ assert.match(discovery,/data-mytube-format-mode=\{mode\}/);
  assert.match(browser,/rail\.evaluate\(el=>el\.scrollLeft\)/);
  assert.match(browser,/refined\.isVisible\(\),false/);
 });
-test("Shorts / Study are exclusive and do not invent lengths for unverified videos",async()=>{
- const {matchesMyTubeDuration,MYTUBE_STUDY_MIN_SECONDS}=await import("../lib/video-discovery/mytube-duration.mjs");
- assert.equal(MYTUBE_STUDY_MIN_SECONDS,600);
- assert.equal(matchesMyTubeDuration(599,"shorts"),true);
- assert.equal(matchesMyTubeDuration(600,"shorts"),false);
- assert.equal(matchesMyTubeDuration(600,"study"),true);
- assert.equal(matchesMyTubeDuration(601,"study"),true);
- assert.equal(matchesMyTubeDuration(undefined,"all"),true);
- assert.equal(matchesMyTubeDuration(undefined,"shorts"),false);
- assert.equal(matchesMyTubeDuration(null,"study"),false);
+test("Shorts / Study are exclusive editorial shelves and unknown lengths remain available",async()=>{
+ const {classifyMyTubeFormat,matchesMyTubeFormat,myTubeFormatCounts}=await import("../lib/video-discovery/mytube-duration.mjs");
+ const cards=[
+  {sourceGroup:"site-introduction",title:"Introduction",durationVerifiedSeconds:null},
+  {sourceGroup:"tantra-reiki",title:"Tantra Reiki Practice",durationVerifiedSeconds:null},
+  {contentType:"course_lesson",title:"Course day 1",durationVerifiedSeconds:120},
+ ];
+ assert.deepEqual(cards.map(classifyMyTubeFormat),["shorts","study","study"]);
+ assert.deepEqual(myTubeFormatCounts(cards),{all:3,shorts:1,study:2});
+ assert.equal(matchesMyTubeFormat(cards[0],"shorts"),true);
+ assert.equal(matchesMyTubeFormat(cards[0],"study"),false);
+ assert.equal(matchesMyTubeFormat(cards[1],"study"),true);
+ assert.equal(matchesMyTubeFormat(cards[1],"all"),true);
 });
 

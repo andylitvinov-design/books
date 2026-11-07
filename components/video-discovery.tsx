@@ -8,11 +8,11 @@ import {LibraryFeed, type LibraryFeedItem} from "@/components/library-feed";
 import type {PublicLocale} from "@/lib/public-locales";
 import {listMyTubeCategories,listMyTubeSubcategories,listMyTubeTopics,listMyTubeScenarios,getMyTubeTopic} from "@/lib/mandala/mytube-content-taxonomy.mjs";
 import {listMyTubeScenarioMotifs,listMyTubeStyles,videoMatchesMyTubeVisualFilter} from "@/lib/mandala/mytube-creative-choices.mjs";
-import {matchesMyTubeDuration} from "@/lib/video-discovery/mytube-duration.mjs";
+import {matchesMyTubeFormat} from "@/lib/video-discovery/mytube-duration.mjs";
 import styles from "./video-discovery.module.css";
 
 type Order="for-you"|"series"|"newest";
-type MyTubeDuration="all"|"shorts"|"study";
+type MyTubeFormat="all"|"shorts"|"study";
 const STORAGE_KEY="hh-public-video-favorites-v1";
 const labels={
   ru:{
@@ -23,7 +23,7 @@ const labels={
     searchLabel:"Поиск видео",searchPlaceholder:"Поиск по названию, теме или автору…",
     sourceTitle:"Автор / источник",sourceAll:"Все источники",
     periodTitle:"Дата публикации",periodOptions:["За год","2020-е","2010-е","2000-е"],
-    durationTitle:"Длительность",durationOptions:["До 4 минут","4–20 минут","20–60 минут","Больше часа"],resetFilters:"Сбросить фильтры",durationAll:"Все",shortsHint:"меньше 10 минут",studyHint:"от 10 минут",durationUnknown:"В этом разделе пока нет видео с подтверждённой длительностью. Ролики без проверки времени доступны во вкладке «Все».",
+    durationTitle:"Длительность",durationOptions:["До 4 минут","4–20 минут","20–60 минут","Больше часа"],resetFilters:"Сбросить фильтры",durationAll:"Все",formatTitle:"Формат видео",shortFormat:"Краткие",studyFormat:"Обучение",shortsHint:"Короткие введения и анонсы",studyHint:"Уроки, занятия и практики",
     contentTitle:"Тип видео",directionTitle:"Направление",traditionTitle:"Традиция",
     types:["Мягкая медитация","Практика-подкачка","Объяснение","Урок курса"],
     directions:["Магическое","Храмовое","Психологическое","Рейки / энергия","Телесное"],
@@ -43,7 +43,7 @@ const labels={
     searchLabel:"Search videos",searchPlaceholder:"Search by title, topic or creator…",
     sourceTitle:"Creator / source",sourceAll:"All sources",
     periodTitle:"Upload date",periodOptions:["Past year","2020s","2010s","2000s"],
-    durationTitle:"Duration",durationOptions:["Under 4 minutes","4–20 minutes","20–60 minutes","Over 1 hour"],resetFilters:"Reset filters",durationAll:"All",shortsHint:"under 10 min",studyHint:"10 min or longer",durationUnknown:"No videos have a verified duration in this selection. Videos without reviewed timing remain in All.",
+    durationTitle:"Duration",durationOptions:["Under 4 minutes","4–20 minutes","20–60 minutes","Over 1 hour"],resetFilters:"Reset filters",durationAll:"All",formatTitle:"Video format",shortFormat:"Shorts",studyFormat:"Study",shortsHint:"Brief introductions and previews",studyHint:"Lessons, learning and guided practices",
     contentTitle:"Video type",directionTitle:"Approach",traditionTitle:"Tradition",
     types:["Soft meditation","Energy practice","Explanation","Course lesson"],
     directions:["Symbolic / magical","Temple practice","Psychological","Reiki / energy","Somatic"],
@@ -63,7 +63,7 @@ const labels={
     searchLabel:"Buscar vídeos",searchPlaceholder:"Buscar por título, tema o autor…",
     sourceTitle:"Autor / fuente",sourceAll:"Todas las fuentes",
     periodTitle:"Fecha de publicación",periodOptions:["Último año","Década de 2020","Década de 2010","Década de 2000"],
-    durationTitle:"Duración",durationOptions:["Menos de 4 minutos","4–20 minutos","20–60 minutos","Más de 1 hora"],resetFilters:"Restablecer filtros",durationAll:"Todos",shortsHint:"menos de 10 min",studyHint:"desde 10 min",durationUnknown:"No hay vídeos con duración verificada en esta selección. Los vídeos sin duración comprobada siguen disponibles en Todos.",
+    durationTitle:"Duración",durationOptions:["Menos de 4 minutos","4–20 minutos","20–60 minutos","Más de 1 hora"],resetFilters:"Restablecer filtros",durationAll:"Todos",formatTitle:"Formato de vídeo",shortFormat:"Breves",studyFormat:"Clases",shortsHint:"Introducciones y avances",studyHint:"Lecciones, formación y prácticas",
     contentTitle:"Tipo de vídeo",directionTitle:"Enfoque",traditionTitle:"Tradición",
     types:["Meditación suave","Práctica energética","Explicación","Lección de curso"],
     directions:["Simbólico / mágico","Práctica del templo","Psicológico","Reiki / energía","Somático"],
@@ -81,6 +81,12 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
   const t=labels[locale];
   const [area,setArea]=useState("all");
   const [goal,setGoal]=useState("all");
+  // Public guest-chat referrals can preselect only a reviewed category.
+  useEffect(()=>{
+    if(variant!=="mytube")return;
+    const requested=new URLSearchParams(window.location.search).get("goal");
+    if(requested&&VIDEO_GOALS.includes(requested))setGoal(requested);
+  },[variant]);
   const [contentType,setContentType]=useState("all");
   const [direction,setDirection]=useState("all");
   const [tradition,setTradition]=useState("all");
@@ -94,7 +100,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
   const [source,setSource]=useState("all");
   const [period,setPeriod]=useState("all");
   const [durationRange,setDurationRange]=useState("all");
-  const [durationMode,setDurationMode]=useState<MyTubeDuration>("all");
+  const [formatMode,setFormatMode]=useState<MyTubeFormat>("all");
   const [mytubeCategoryId,setMyTubeCategoryId]=useState("all");
   const [mytubeSubcategoryId,setMyTubeSubcategoryId]=useState("all");
   const [mytubeTopicId,setMyTubeTopicId]=useState("all");
@@ -145,9 +151,8 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     const needle=search.trim().toLocaleLowerCase(locale);
     const cutoff=Date.now()-365*24*60*60*1000;
     return videos.filter(item=>{
-      // All is truly all approved videos; Shorts and Study rely solely on
-      // verified duration metadata, never episode numbering or title guesses.
-      if(variant==="mytube"&&!matchesMyTubeDuration(item.durationVerifiedSeconds,durationMode))return false;
+      // Editorial format uses published video intent; unknown length is eligible.
+      if(variant==="mytube"&&!matchesMyTubeFormat(item,formatMode))return false;
       if(needle && ![item.title,item.description,item.sourceLabel||"",item.author||"",item.seriesTitle||""]
           .join(" ").toLocaleLowerCase(locale).includes(needle))return false;
       if(source!=="all" && (item.sourceLabel||item.author||"")!==source)return false;
@@ -237,7 +242,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       }
       return true;
     });
-  },[videos,search,source,period,durationRange,durationMode,variant,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId,mytubeMotifId,mytubeStyleId]);
+  },[videos,search,source,period,durationRange,formatMode,variant,locale,mytubeCategoryId,mytubeSubcategoryId,mytubeTopicId,mytubeScenarioId,mytubeMotifId,mytubeStyleId]);
   const ordered=useMemo(()=>{
     const matches=rankDiscoveryVideos(sourceVideos,{
       goal,area,contentType,direction,tradition,language,savedIds,hiddenIds,savedOnly,sort,
@@ -293,13 +298,13 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
           <ChevronDown size={15} aria-hidden="true"/>
         </button>
       </div>
-      <div className={styles.mytubeDurationTabs} data-mytube-duration-tabs role="group"
-        aria-label={t.durationTitle}>
+      <div className={styles.mytubeFormatTabs} data-mytube-format-tabs role="group"
+        aria-label={t.formatTitle}>
         {(["all","shorts","study"] as const).map(mode=><button type="button" key={mode}
-          data-mytube-duration-mode={mode} aria-pressed={durationMode===mode}
+          data-mytube-format-mode={mode} aria-pressed={formatMode===mode}
           title={mode==="shorts"?t.shortsHint:mode==="study"?t.studyHint:t.durationAll}
-          onClick={()=>{setDurationMode(mode);setDurationRange("all");}}>
-          {mode==="all"?t.durationAll:mode==="shorts"?"Shorts":"Study"}
+          onClick={()=>setFormatMode(mode)}>
+          {mode==="all"?t.durationAll:mode==="shorts"?t.shortFormat:t.studyFormat}
         </button>)}
       </div>
     </>}
@@ -442,7 +447,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
             </select>
           </label>}
           {variant==="mytube" && durationsAvailable && <label>{t.durationTitle}
-            <select data-mytube-duration value={durationRange} onChange={event=>{setDurationRange(event.target.value);setDurationMode("all");}}>
+            <select data-mytube-duration value={durationRange} onChange={event=>setDurationRange(event.target.value)}>
               <option value="all">{t.all}</option>
               {["under4","4to20","20to60","over60"].map((id,i)=>
                 <option key={id} value={id}>{t.durationOptions[i]}</option>)}
@@ -459,17 +464,17 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       {variant==="mytube" && <button type="button" className={styles.clearFilters}
         onClick={()=>{setArea("all");setGoal("all");setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");setContentType("all");setDirection("all");
           setTradition("all");setLanguage("all");setSource("all");setPeriod("all");
-          setDurationRange("all");setDurationMode("all");setSearch("");setSort("for-you");setSavedOnly(false);}}>
+          setDurationRange("all");setFormatMode("all");setSearch("");setSort("for-you");setSavedOnly(false);}}>
         <RotateCcw size={15} aria-hidden="true"/>{t.resetFilters}
       </button>}
       <p className={styles.note}>{t.note}</p>
       </div>
     </section>
     <div className={styles.results} aria-live="polite">
-      <span>{area!=="all"?t.areas[VIDEO_LIFE_AREAS.indexOf(area)]:index>0?t.result+": "+t.goals[index]:t.allResult}</span><span>{ordered.length}</span>
+      <span>{area!=="all"?t.areas[VIDEO_LIFE_AREAS.indexOf(area)]:index>0?t.result+": "+t.goals[index]:t.allResult}</span><span data-mytube-result-count={variant==="mytube"?"true":undefined}>{ordered.length}</span>
     </div>
     {ordered.length===0?<p className={styles.empty} data-mytube-empty={variant==="mytube"?"true":undefined}>
-      {variant==="mytube"&&durationMode!=="all"?t.durationUnknown:t.empty}</p>:
+      {t.empty}</p>:
       <LibraryFeed locale={locale} items={ordered} videosOnly preserveOrder
         videoLayout={variant==="mytube"?"mytube":"default"}
         mytubeFocus={variant==="mytube"?{

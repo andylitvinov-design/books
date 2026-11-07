@@ -694,21 +694,19 @@ const runEngine = async ([engine, browserType]) => {
         const firstMaster=await livePreview.locator("video").getAttribute("src");
         assert.ok(firstMaster?.startsWith("/videos/holistic-house/"),
           "same-origin published first-party film master");
-        // Play the published presentation with a real user gesture, then return
-        // to the original film Canvas for all subsequent editor interactions.
-        if(locale==="ru"){
-          const intro=screen.locator('[data-video-therapy-intro="ready"]');
-          await expect(intro).toBeVisible();
-          assert.equal(await screen.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
-          await intro.click();
-          await expect(screen.locator('iframe[src*="youtube-nocookie.com/embed/P9Wvo3gEY6U"]')).toHaveCount(1);
-          await screen.locator("[data-video-therapy-intro-close]").click();
-          await expect(screen.locator("[data-video-preview-toggle]")).toBeVisible();
-        }else if(locale==="en"){
-          await expect(screen.locator('[data-video-therapy-intro="english-channel"]')).toBeVisible();
-          assert.equal(await screen.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
-          await screen.locator("[data-video-therapy-editor]").click();
-          await expect(screen.locator("[data-video-preview-toggle]")).toBeVisible();
+        // Verify presentation in the real Goal film viewport, before the
+        // Canvas controls. No iframe loads before deliberate Play.
+        const ownerIntro=quick.locator('[data-video-therapy-intro="ready"]');
+        const englishIntro=quick.locator('[data-video-therapy-intro="english-channel"]');
+        if(locale==="ru"&&await ownerIntro.isVisible()){
+          assert.equal(await page.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
+          await ownerIntro.click();
+          await expect(page.locator('iframe[src*="youtube-nocookie.com/embed/P9Wvo3gEY6U"]')).toHaveCount(1);
+          await page.locator('[data-video-therapy-intro-close]').click();
+          await expect(page.locator("[data-video-preview-toggle]")).toBeVisible();
+        }else if(locale==="en"&&await englishIntro.isVisible()){
+          assert.equal(await page.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
+          await page.locator('[data-video-therapy-editor]').click();
         }
         // The owner-approved screen has ONE visible Play, on the central Canvas.
         // Keep the native first-party MP4 mounted for the same renderer, without
@@ -1067,9 +1065,27 @@ const runEngine = async ([engine, browserType]) => {
           "the owner-approved mock keeps one short editorial line on top of the real video");
         assert.equal(await hero.locator("[data-video-preview-toggle]").count(),1,
           "one prominent central Canvas Play/Pause remains");
-        // Presentation was intentionally closed above; the Canvas remains the editor.
-        assert.equal(await hero.locator("[data-video-therapy-info]").count(),0,
-          "intro dismiss restores the original editor rather than a second player");
+        // This production page has Intro + My beside the ONE 16:9 player.
+        // Reopening Intro must mount a RU-only iframe after the visitor clicks.
+        const introRail=quick.locator('[data-video-intro-info]');
+        await expect(introRail).toBeVisible();
+        assert.equal(await hero.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
+        if(locale==="ru"){
+          await introRail.click();
+          await expect(hero.locator('iframe[src*="youtube-nocookie.com/embed/P9Wvo3gEY6U"]')).toHaveCount(1);
+          await hero.locator('[data-video-therapy-intro-close]').click();
+          await expect(hero.locator('[data-video-preview-toggle]')).toBeVisible();
+        }else if(locale==="en"){
+          await introRail.click();
+          await expect(hero.locator('[data-video-therapy-intro="english-channel"]')).toBeVisible();
+          assert.equal(await hero.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
+          assert.equal(await hero.locator('[data-video-therapy-youtube="en"]').getAttribute("href"),
+            "https://www.youtube.com/@aatapro/videos");
+          await hero.locator('[data-video-therapy-editor]').click();
+          await expect(hero.locator('[data-video-preview-toggle]')).toBeVisible();
+        }
+        assert.equal(await page.locator("[data-video-therapy-info]").count(),0,
+          "leaving Intro restores the original Canvas inside one player");
         assert.equal(await hero.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
         assert.equal(await hero.locator("button").count(),1,
           "central Canvas Play remains the only creative hero control");

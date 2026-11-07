@@ -87,6 +87,24 @@ test('Current State v2 is seeded as a new immutable definition and retains encry
     desired_change: 'Synthetic desired change',
   })
 })
+test('My Practice bootstrap keeps verified account but excludes unrelated assessments', async () => {
+  const full = await repo.bootstrap(v2Actor)
+  assert.ok(full.results.length > 0, 'fixture has private result data')
+  const lite = await repo.bootstrap(v2Actor, { view: 'practice' })
+  assert.equal(lite.account.id, v2Actor.id)
+  assert.equal(lite.account.onboardingState, 'active')
+  assert.deepEqual(lite.results, [])
+  assert.deepEqual(lite.runs, [])
+  assert.deepEqual(lite.requests, [])
+  assert.deepEqual(lite.services, [])
+  assert.deepEqual(lite.savedReports, [])
+  assert.equal(lite.snapshot, null)
+  assert.deepEqual(Object.keys(lite).sort(), Object.keys(full).sort())
+  const another = await repo.bootstrap(b, { view: 'practice' })
+  assert.equal(another.account.id, b.id)
+  assert.deepEqual(another.results, [])
+})
+
 const start = (who = a, def = en) =>
   repo.startRun(who, {
     definitionKey: def.key,
@@ -2340,4 +2358,11 @@ test('guest Bach v2 EN/RU lifecycle retains weighted themes and session isolatio
     assert.deepEqual((await guestRepo.getResult(owner, result.id)).dimensions, result.dimensions)
     await assert.rejects(() => guestRepo.getResult(outsider, result.id), /NOT_FOUND/)
   }
+})
+
+// Companion account-memory security acceptance is part of this EXISTING isolated
+// App R1 Postgres suite, not a new runner or unrelated media CI workflow.
+// Execute only after the other fixture tests, using fresh synthetic owners.
+test('Holistic Companion memory two-owner RLS, session, consent and erase', async () => {
+  await import('../scripts/verify-agent-memory-rls-ci.mjs')
 })

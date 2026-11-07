@@ -246,7 +246,7 @@
  color:#0f0f0f;border-color:#f1f1f1}
 .mytube .mytubeCategoryRail button:focus-visible,
 .mytube .compactMoreButton:focus-visible,
-.mytube .mytubeDurationTabs button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.mytube .mytubeFormatTabs button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .mytube .compactMoreButton{flex:0 0 auto;display:inline-flex;align-items:center;
  justify-content:center;gap:5px;min-height:44px;max-width:148px;padding:7px 9px;
  border:1px solid #3e3e3e;border-radius:9px;background:#191919;color:#f1f1f1;
@@ -255,18 +255,25 @@
 .mytube .compactMoreButton svg:first-child{color:#ff0033}
 .mytube .compactMoreButton[aria-expanded=true]{border-color:#888;background:#303030}
 .mytube .compactMoreButton[aria-expanded=true] svg:last-child{transform:rotate(180deg)}
-.mytube .mytubeDurationTabs{display:flex;gap:6px;align-items:center;margin:0 0 10px;
- min-height:40px;flex-wrap:nowrap}
-.mytube .mytubeDurationTabs button{min-height:40px;min-width:67px;
- padding:7px 14px;border:1px solid #383838;border-radius:9px;
- background:#272727;color:#e8e8e8;font:700 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
-.mytube .mytubeDurationTabs button[aria-pressed=true]{border-color:#f1f1f1;background:#f1f1f1;color:#0f0f0f}
-.mytube .mytubeDurationTabs button:hover:not([aria-pressed=true]){background:#383838}
+.mytube .mytubeFormatTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:3px;max-width:420px;min-height:48px;margin:0 0 10px;padding:3px;
+ border:1px solid #303030;border-radius:14px;background:#181818}
+.mytube .mytubeFormatTabs button{min-width:0;min-height:44px;padding:9px 8px;
+ border:1px solid transparent;border-radius:11px;background:transparent;
+ color:#cfcfcf;font:750 14px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.mytube .mytubeFormatTabs button[aria-pressed=true]{border-color:#ededed;
+ background:#f1f1f1;color:#0f0f0f}
+.mytube .mytubeFormatTabs button:hover:not([aria-pressed=true]){background:#303030}
 @media(max-width:430px){
  .mytube .mytubeToolbar{gap:6px}
  .mytube .mytubeCategoryRail{gap:5px}
- .mytube .mytubeCategoryRail button{font-size:12px;padding:7px 10px}
- .mytube .compactMoreButton{max-width:107px;padding:7px 8px}
- .mytube .compactMoreButton span{max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
- .mytube .mytubeDurationTabs button{padding:7px 12px}
+ .mytube .mytubeCategoryRail button{font-size:12px;padding:7px 11px;border-radius:12px}
+ .mytube .compactMoreButton{max-width:110px;padding:7px 8px;border-radius:12px}
+ .mytube .compactMoreButton span{font-size:12px;white-space:nowrap}
+ .mytube .mytubeFormatTabs{width:100%}
+ .mytube .mytubeFormatTabs button{padding:9px 6px}
+}
+@media(max-width:350px){
+ .mytube .compactMoreButton{max-width:96px;gap:4px}
+ .mytube .compactMoreButton svg:last-child{display:none}
 }

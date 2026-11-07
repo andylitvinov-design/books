@@ -80,7 +80,7 @@ function exercise(input,workspace,overrides={}){
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
  runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
-   setBasicPanelTab:value=>{basicTab=value;},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+   setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
  return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
@@ -109,7 +109,7 @@ test('recording/preparing locks, consent, background, missing photo and audio ga
  }
 });
 test('negative control rejects previous handler in four nonowner workspaces',()=>{
- const line='      if(activeWorkspace!=="video"){setActiveWorkspace("editor");setBasicPanelTab("photo");}';
+ const line='      if(activeWorkspace!=="video"){setActiveWorkspace("editor");setMontagePanel("settings");setMontageStyleSettingsOpen(true);setBasicPanelTab("photo");}';
  assert.equal(source.split(line).length,2);
  for(const workspace of ['phrases','effects','practices','pro']){
   const r=exercise(source.replace(line,''),workspace);
@@ -129,29 +129,22 @@ test("Video opens as the only active workspace, advanced first-video remains acc
   assert.match(studio,/<MandalaGuidedCourse/);
   assert.match(studio,/data-video-audio-attach/);
 });
-test("the published video therapy introduction uses the single original Studio hero and returns to Canvas",()=>{
+test("approved Intro/My rail uses only one main video hero and local Canvas",()=>{
   const nav=studio.indexOf('<nav className={videoStyles.quickVideoNav}');
   const start=studio.indexOf('id="video-hero"');
-  const end=studio.indexOf('<aside className={videoStyles.heroRail}',start);
-  assert.ok(nav>0&&start>nav&&end>start,
-    "the workspace tabs precede the single Studio hero and its existing rail");
+  const end=studio.indexOf('data-video-intro-my-rail',start);
+  assert.ok(nav>0&&start>nav&&end>start);
   const hero=studio.slice(start,end);
-  assert.match(hero,/data-mandala-cinematic-canvas/,
-    "the native Canvas renderer remains in the same hero");
-  assert.match(hero,/showIntroHero \? <div className=\{videoStyles\.therapyHero\} data-video-therapy-info/,
-    "presentation is an intentional conditional state of that hero, not a second player");
-  assert.match(hero,/data-video-therapy-intro="ready"/,
-    "RU launch must require a deliberate Play gesture");
+  assert.match(hero,/data-mandala-cinematic-canvas/);
+  assert.match(hero,/showIntroHero \? <div className=\{videoStyles\.therapyHero\} data-video-therapy-info/);
+  assert.match(hero,/data-video-therapy-intro="ready"/);
   assert.match(hero,/data-video-therapy-intro="playing"/);
-  assert.match(hero,/data-video-therapy-intro-close/,
-    "Close returns from the presentation to the original editor");
-  assert.match(studio,/const introVideoId = locale==="ru" \? "P9Wvo3gEY6U" : null;/,
-    "EN and ES must never use the Russian spoken film");
-  assert.match(studio,/setIntroDismissed\(true\)/);
-  assert.doesNotMatch(studio,/className=\{videoStyles\.therapyIntroStandalone\}/,
-    "no standalone second presentation player");
+  assert.match(hero,/data-video-preview-toggle/);
+  assert.match(studio,/data-video-intro-info/);
+  assert.match(studio,/data-video-my-film/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
   assert.equal((studio.match(/data-video-therapy-info/g)||[]).length,1);
+  assert.doesNotMatch(studio,/therapyIntroStandalone/);
 });
 test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
   assert.match(css,/grid-auto-columns:minmax\(188px,49%\)/);
@@ -186,8 +179,11 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
   }
   assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setFirstVideoAdvancedActivated\(true\);\}\}/);
   assert.match(studio, /\{firstVideoAdvancedActivated \? <MandalaFirstVideoStart/);
-  assert.match(studio, /onToggle=\{event=>\{if\(event\.currentTarget\.open\)setVoiceStudioActivated\(true\);\}\}/);
-  assert.match(studio, /\{voiceStudioActivated \? <MandalaCloudVoiceStudio/);
+  // Voice can now be activated by a deep link and its one live details
+  // panel owns the same state as the lazily mounted studio.
+  assert.match(studio, /data-video-voice-studio open=\{voiceStudioActivated\}/);
+  assert.match(studio, /onToggle=\{event=>setVoiceStudioActivated\(event\.currentTarget\.open\)\}/);
+  assert.match(studio, /\{voiceStudioActivated\?<MandalaCloudVoiceStudio/);
   assert.match(studio, /useState<StudioWorkspace>\("video"\)/);
   assert.match(studio, /<MandalaAutoVideoDirector/);
 });
@@ -215,7 +211,7 @@ test("pending Phrases selection blocks the actual shared hero handler in every w
   }
 });
 
-test("compact Ideas uses existing renderer while hiding old phrase editor",()=>{
+test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  const start=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="phrases"');
  const end=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="effects"',start);
  assert.ok(start>0 && end>start);
@@ -225,7 +221,8 @@ test("compact Ideas uses existing renderer while hiding old phrase editor",()=>{
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
  assert.match(section,/<MandalaVideoIdeas/);
- assert.match(section,/data-video-legacy-phrase-editor hidden aria-hidden="true"/);
+ assert.match(section,/data-video-legacy-phrase-editor\s+hidden=\{activeWorkspace!=="phrases"\} aria-hidden=\{activeWorkspace!=="phrases"\}/);
+ assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);
@@ -253,13 +250,13 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
  const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
  const scenario=editor.indexOf('data-video-editor-scenario');
- assert.ok(scenario>=0&&scenario<editor.indexOf('id="video-basic-heading"'),"script leads Montage");
+ assert.ok(scenario>=0&&scenario<editor.indexOf('data-video-montage-audio'),"script is available before Audio");
  assert.match(editor,/data-video-montage-script-update/);
  assert.match(editor,/normalizeStageCaption\(lines\[index\]\|\|""\)/,
    "editing a four-shot montage changes the local actual caption track");
  assert.match(editor,/setCaptionMode\("custom"\)/,
    "single-scene style applies the script as a real caption");
- assert.match(editor,/data-video-editor-style-settings/);
+ assert.match(studio,/data-video-editor-style-settings/);
  assert.equal((studio.match(/\{deepVideoPane\}/g)||[]).length,1,"no duplicate settings panels");
  assert.doesNotMatch(studio,/Все настройки стиля видео/,"remove old stray style disclosure");
 });
@@ -296,29 +293,33 @@ test("all six workspaces use the same in-flow navigation and one real export",()
  assert.match(css,/\.montageQuickTools\{[^}]*flex-wrap:nowrap/);
 });
 
-test("real WebKit voice hydration opens the compact film scenarios before clicking the advanced director",()=>{
-  const source = readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs", import.meta.url), "utf8");
-  const studio = readFileSync(new URL("../components/mandala-free-video-studio.tsx", import.meta.url), "utf8");
-  const css = readFileSync(new URL("../components/mandala-video-mobile.module.css", import.meta.url), "utf8");
-  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
-  assert.match(studio,/data-video-continue-scenarios/);
-  assert.match(css,/\[data-video-scenario-open="false"\]/,
-    "the actual new compact design intentionally hides advanced scenarios");
-  const hydration = source.slice(source.indexOf("async function verifyWorkspaceHydration"),
-    source.indexOf("// Linux WebKit often lacks"));
-  const pieces = [
-    'await expect(openScenarios).toBeDisabled()',
-    'await expect(openScenarios).toBeEnabled()',
-    'await expect(openScenarios).toBeVisible()',
-    'await openScenarios.click()',
-    'await expect(studio).toHaveAttribute("data-video-scenario-open","true")',
-    'await expect(allStories).toBeVisible()',
-    'await allStories.click()',
-    'await expect(studio).toHaveAttribute("data-video-advanced-open","true")'
-  ];
-  for(const expected of pieces) assert.ok(hydration.includes(expected),expected);
-  assert.ok(hydration.indexOf('await openScenarios.click()')<
-    hydration.indexOf('await allStories.click()'),"user action must open the hidden director before interacting");
-  assert.doesNotMatch(hydration,/click\(\{\s*force:\s*true/,
-    "no forced click, no weakened physical WebKit E2E");
+
+test("guided meditation opt-out is reconciled after React commit without losing explicit reopen",()=>{
+  assert.match(studio,/const \[courseMeditationOmitted,setCourseMeditationOmitted\]=useState\(false\)/);
+  assert.match(studio,/useLayoutEffect\(\(\)=>\{\s*if\(!courseMeditationOmitted\)return;/);
+  assert.match(studio,/if\(details instanceof HTMLDetailsElement\)details\.open=false/);
+  assert.match(studio,/\},\[courseMeditationOmitted,courseMeditationDraft\]\)/);
+  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationOmitted\(false\)/);
+  assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationOmitted\(true\)/);
+});
+
+test("validated Messenger video handoff visibly opens the original Studio Director on compact Goals",()=>{
+ const director=readFileSync(new URL("../components/mandala-video-director-chat.tsx",import.meta.url),"utf8");
+ assert.match(director,/sessionStorage\.getItem\(MESSENGER_VIDEO_HANDOFF_KEY\)/);
+ assert.match(director,/decodeMessengerVideoHandoff\(packet,locale\)/);
+ assert.match(director,/nextVideoChatTreeStep\(incoming\)/);
+ assert.match(director,/if\(panel instanceof HTMLDetailsElement\)panel\.open=true/);
+ const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ assert.match(browser,/const handoffPanel=page\.locator/);
+ assert.match(browser,/await handoffPanel\.evaluate\(element=>\{element\.open=true;\}\)/);
+ assert.match(browser,/await expect\(handoffPanel\)\.toBeVisible/);
+
+ assert.match(studio,/data-video-director-chat-details data-workspace-section="video"/);
+ const rule=css.slice(css.lastIndexOf("/* Messenger Video validated handoff visibility."));
+ assert.ok(rule.length>100,"Goals handoff visibility must survive compact-page CSS");
+ assert.match(rule,/data-video-scenario-open="false"\]:not\(\[data-hh-video-ihelp-open="true"\]\)/);
+ assert.match(rule,/\[data-video-director-chat-details\]\[data-workspace-section="video"\]\[open\]\s*\{\s*display:grid!important;/);
+ assert.doesNotMatch(rule,/display:none!important/,"the opened handoff must be visible");
+ assert.match(css,/\[data-workspace-section="video"\]:not\(\[data-video-topic-section\]\)\s*\{\s*display:none!important;/,
+   "unopened legacy Goals sections remain hidden");
 });

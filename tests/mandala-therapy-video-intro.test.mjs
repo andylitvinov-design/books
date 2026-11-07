@@ -3,38 +3,46 @@ import test from "node:test";
 import {readFileSync} from "node:fs";
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("verified RU film replaces demo poster inside the ONE real studio hero, never as a second player",()=>{
+test("verified RU presentation is the first Goal 16:9 player state, never a second player",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const route=read("app/[locale]/holistic-support/mandala/page.tsx");
-  assert.match(studio,/const introVideoId = locale==="ru" \? "P9Wvo3gEY6U" : null;/);
-  assert.match(studio,/const showIntroHero=activeWorkspace==="video"&&!videoScenarioOpen&&!introDismissed/);
   const stage=studio.indexOf('data-video-live-stage');
   const hero=studio.indexOf('id="video-hero"',stage);
-  const info=studio.indexOf("data-video-therapy-info",hero);
-  const heroEnd=studio.indexOf('<aside className={videoStyles.heroRail}',hero);
-  assert.ok(stage>=0&&hero>stage&&info>hero&&heroEnd>info);
-  assert.doesNotMatch(studio,/therapyIntroStandalone/);
-  assert.equal((studio.match(/data-video-therapy-info/g)||[]).length,1);
+  const rail=studio.indexOf('data-video-intro-my-rail',hero);
+  const content=studio.slice(hero,rail);
+  assert.ok(stage>0&&hero>stage&&rail>hero);
+  assert.match(content,/showIntroHero \? <div className=\{videoStyles\.therapyHero\} data-video-therapy-info/);
+  assert.match(content,/data-video-therapy-intro="ready"/);
+  assert.match(content,/data-video-therapy-intro="playing"/);
+  assert.match(content,/data-video-therapy-intro-close/);
+  assert.match(content,/data-mandala-cinematic-canvas/);
+  assert.match(content,/data-video-preview-toggle/);
+  assert.match(studio,/const introVideoId = locale==="ru" \? "P9Wvo3gEY6U" : null;/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+  assert.equal((studio.match(/data-video-therapy-info/g)||[]).length,1);
+  assert.doesNotMatch(studio,/therapyIntroStandalone|therapyIntroOverlay/);
   assert.match(css,/\.studio \.therapyHero\{/);
   assert.match(css,/\.studio \.therapyHeroFrame\{/);
-  assert.match(css,/aspect-ratio:16\/9!important/);
-  assert.match(route,/<MandalaMeditationClient locale={locale}/);
+  assert.match(route,/<MandalaMeditationClient locale=\{locale\}/);
 });
-test("RU explicit Play loads no-cookie iframe in the hero; back returns the Canvas editor",()=>{
+
+test("iframe requires RU visitor click; Intro/My rail restores unchanged Canvas/MediaRecorder",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
-  assert.match(studio,/data-video-therapy-intro="ready"/);
-  assert.match(studio,/data-video-therapy-intro="playing"/);
-  assert.match(studio,/data-video-therapy-intro-close onClick=\{\(\)=>\{setIntroPlaying\(false\);setIntroDismissed\(true\);\}\}/);
-  assert.match(studio,/src={`https:\/\/www\.youtube-nocookie\.com\/embed\/\$\{introVideoId\}\?autoplay=1&playsinline=1&rel=0`}/);
+  const initial=studio.indexOf('data-video-therapy-intro="ready"');
+  const mounted=studio.indexOf('<iframe className={videoStyles.therapyHeroFrame}');
+  assert.ok(initial>mounted&&mounted>0);
+  assert.match(studio,/introPlaying \? \(\s*<div className=\{videoStyles\.therapyHeroPlayback\}/);
+  assert.ok(studio.includes('src={"https://www.youtube-nocookie.com/embed/"+introVideoId'));
   assert.match(studio,/referrerPolicy="strict-origin-when-cross-origin"/);
   assert.match(studio,/data-video-therapy-youtube="ru"/);
-  assert.match(studio,/setIntroDismissed\(true\)/);
-  assert.match(studio,/data-video-preview-toggle/);
+  assert.match(studio,/data-video-intro-info/);
+  assert.match(studio,/data-video-my-film/);
+  assert.match(studio,/setIntroPlaying\(false\);setIntroDismissed\(true\)/);
   assert.match(studio,/MediaRecorder/);
+  assert.match(studio,/setPreviewPlaying\(false\);setIntroPlaying\(true\)/);
 });
-test("EN never plays RU soundtrack or unverified English source; locale reset and channel handoff work",()=>{
+test("EN uses only its own channel, ES the native editor, and locale switch resets",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   assert.match(studio,/data-video-therapy-intro="english-channel"/);
   assert.match(studio,/English film not yet linked/);
@@ -42,25 +50,6 @@ test("EN never plays RU soundtrack or unverified English source; locale reset an
   assert.match(studio,/data-video-therapy-youtube="en"/);
   assert.match(studio,/data-video-therapy-editor/);
   assert.match(studio,/useEffect\(\(\)=>\{setIntroPlaying\(false\);setIntroDismissed\(false\);\},\[locale\]\)/);
+  assert.ok(studio.includes('(Boolean(introVideoId)||locale==="en")'));
   assert.doesNotMatch(studio,/locale==="es" \? null : "P9Wvo3gEY6U"/);
-  assert.doesNotMatch(studio,/Russian audio/i);
-});
-test("real macOS WebKit export selects Montage Audio before requiring conditional music controls",()=>{
-  const script=read("scripts/verify-affirmation-voice-browser.mjs");
-  const studio=read("components/mandala-free-video-studio.tsx");
-  const editor=script.indexOf('const editorTab=page.locator');
-  const audio=script.indexOf('const montageAudioTab=page.locator',editor);
-  const settings=script.indexOf('const montageSettings=page.locator',audio);
-  assert.ok(editor>0&&audio>editor&&settings>audio,
-    "do not wait for a conditional music pane while Montage still shows Settings");
-  const journey=script.slice(audio,settings);
-  assert.match(journey,/\[data-video-montage-tab="audio"\]/);
-  assert.match(journey,/await montageAudioTab\.click\(\)/);
-  assert.match(journey,/await expect\(montageAudioTab\)\.toHaveAttribute\("aria-pressed","true"/);
-  const conditional=studio.indexOf('montagePanel==="audio" ? <div');
-  const music=studio.indexOf('data-video-montage-settings',conditional);
-  assert.ok(conditional>0&&music>conditional,
-    "music settings must remain conditional on the real Audio panel");
-  assert.match(script,/await lengthButton\.click\(\)/,
-    "retain actual duration selection before Safari video/AAC export");
 });

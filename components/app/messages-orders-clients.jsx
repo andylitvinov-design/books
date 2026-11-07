@@ -98,6 +98,9 @@ export default function MessagesOrdersClients({locale='en',children}){
       requested==='orders'||searchParams.has('order')?'orders':'ai'
   })
   const [ordersData,setOrdersData]=useState(null)
+  // Keep AI authentication separate from potentially unavailable orders data.
+  const [aiIdentity,setAiIdentity]=useState({status:'checking',accountId:null})
+  const [identityCheck,setIdentityCheck]=useState(0)
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(true)
   const [signedOut,setSignedOut]=useState(false)
@@ -126,6 +129,23 @@ export default function MessagesOrdersClients({locale='en',children}){
     else if(requested==='orders')setSelectedId('')
   },[searchParams])
   const reload=useCallback(()=>setGeneration(v=>v+1),[])
+  const retryAiIdentity=useCallback(()=>setIdentityCheck(v=>v+1),[])
+  useEffect(()=>{
+    const controller=new AbortController()
+    setAiIdentity({status:'checking',accountId:null})
+    fetch('/api/app/session',{credentials:'same-origin',cache:'no-store',signal:controller.signal})
+      .then(async response=>{
+        if(response.status===401)return {status:'guest',accountId:null}
+        if(!response.ok)return {status:'unavailable',accountId:null}
+        const data=await response.json().catch(()=>null)
+        if(data?.authenticated!==true||typeof data.accountId!=='string')
+          return {status:'unavailable',accountId:null}
+        return {status:'authenticated',accountId:data.accountId}
+      })
+      .then(identity=>{if(!controller.signal.aborted)setAiIdentity(identity)})
+      .catch(()=>{if(!controller.signal.aborted)setAiIdentity({status:'unavailable',accountId:null})})
+    return()=>controller.abort()
+  },[identityCheck])
   useEffect(()=>{
     const controller=new AbortController()
     setLoading(true);setError('')
@@ -140,19 +160,18 @@ export default function MessagesOrdersClients({locale='en',children}){
       .finally(()=>{if(!controller.signal.aborted)setLoading(false)})
     return()=>controller.abort()
   },[generation,locale])
-  // A normal account bootstrap must not erase the AI draft in progress.
-  // Clear it only on a verified account switch or explicit sign-out.
+  // Orders failures are not logout; only a verified identity change can reset chat.
   useEffect(()=>{
-    const account=ordersData?.accountId
-    if(account){
+    if(aiIdentity.status==='authenticated'){
+      const account=aiIdentity.accountId
       if(aiAccountRef.current&&aiAccountRef.current!==account)
         setAiSession(value=>value+1)
       aiAccountRef.current=account
-    }else if(signedOut&&aiAccountRef.current){
+    }else if(aiIdentity.status==='guest'&&aiAccountRef.current){
       aiAccountRef.current=null
       setAiSession(value=>value+1)
     }
-  },[ordersData?.accountId,signedOut])
+  },[aiIdentity.status,aiIdentity.accountId])
   const orders=ordersData?.orders||[]
   const visible=useMemo(()=>{
     const term=search.trim().toLocaleLowerCase()
@@ -223,8 +242,11 @@ export default function MessagesOrdersClients({locale='en',children}){
       const active=document.activeElement
       const editing=Boolean(hub.querySelector('[data-hh-messenger-ai]')?.contains(active))&&
         Boolean(active?.matches?.('textarea,input:not([type="file"]),[contenteditable="true"]'))
-      const keyboard=editing&&(window.innerHeight-bottom>115||
-        (visual?.height||window.innerHeight)<window.innerHeight*0.75)
+      // Share iOS keyboard visibility with the unified dock and handle Safari animation.
+      const sharedKeyboard=document.querySelector('.hh-messages-page')?.dataset.hhMobileKeyboardOpen==='true'
+      const visualHeight=visual?.height||window.innerHeight
+      const keyboard=editing&&(sharedKeyboard||window.innerHeight-bottom>92||
+        visualHeight<window.innerHeight*0.83)
       hub.dataset.chatEditing=editing?'true':'false'
       hub.dataset.keyboardOpen=keyboard?'true':'false'
       const sharedDock=document.querySelector('[data-hh-unified-dock]')
@@ -232,7 +254,8 @@ export default function MessagesOrdersClients({locale='en',children}){
       const dock=[sharedDock,fallbackDock].find(el=>el&&getComputedStyle(el).display!=='none'&&
         el.getBoundingClientRect().height>0)
       const navTop=dock?.getBoundingClientRect().top
-      const limit=keyboard?bottom:Math.min(bottom,navTop&&navTop>top?navTop-5:bottom-88)
+      // Reserve space for a VISIBLE dock only: no phantom 88px gap below input.
+      const limit=keyboard?bottom:Math.min(bottom,navTop&&navTop>top?navTop-5:bottom)
       hub.style.setProperty('--hh-messenger-top',top+'px')
       hub.style.setProperty('--hh-messenger-height',Math.max(1,Math.floor(limit-top-4))+'px')
     }
@@ -333,7 +356,9 @@ export default function MessagesOrdersClients({locale='en',children}){
       </span>
     </header>
     <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
-      <MessengerAiWorkspace key={aiSession} locale={locale}/>
+      <MessengerAiWorkspace key={aiSession} locale={locale}
+          authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}
+          onAuthRetry={retryAiIdentity}/>
     </div>
     <div id="hh-orders-panel" role="tabpanel" className={styles.panel} hidden={section!=='orders'}>
       {listHelper}
