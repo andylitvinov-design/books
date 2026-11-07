@@ -554,10 +554,24 @@ export async function verify(api,ctx,files,options={}) {
   const queuedDeadline = start + queuedGrace;
   let state, fastDiagnostics=[];
   let incompleteSince = null;
+  // Only the single last running Specialist can use the shorter cadence;
+  // bound it to 90 seconds to conserve the shared GitHub read-only API.
+  let finalWaveSince = null;
   const recovered = new Map();
   const probeTimes = new Map();
   const refreshTimes = new Map();
+  // A sensitive exact-base PR can become stale while independent specialists
+  // wait on a GitHub runner. Recheck without scheduling/retrying any workflow.
+  // This bounds wasted polling after a protected production promotion.
+  const sensitiveFreshnessInterval = 90_000;
+  let nextSensitiveFreshnessCheck = start + sensitiveFreshnessInterval;
   for (;;) {
+    if (requireCurrentBase && now() >= nextSensitiveFreshnessCheck) {
+      // Fresh PR identity/HEAD and production ref; existing exception logic
+      // still admits only exhaustively verified, disjoint BASE advances.
+      await verifyCurrentBase(await api.pr(ctx.number));
+      nextSensitiveFreshnessCheck = now() + sensitiveFreshnessInterval;
+    }
     const indexed = await api.runs(ctx.head);
     // Cache only GitHub-returned evidence. A recovered pending workflow must
     // still finish successfully; refresh its immutable ID if the HEAD index lags.
@@ -683,10 +697,20 @@ export async function verify(api,ctx,files,options={}) {
     const nextDeadline = Math.min(deadline,
       state.missing.length ? missingStateDeadline : Infinity,
       notStarted.length ? queuedDeadline : Infinity);
-    // Poll a sole missing workflow quickly; a mixed pending/missing set
-    // uses the existing slower cadence to conserve GitHub API quota.
+    // When one real running job remains after siblings have passed,
+    // a bounded fast poll avoids a redundant 30-second post-green gap.
+    // Missing, queued, cancelled and multi-running dependencies keep
+    // the original low-API cadence; there is no synthetic success.
+    const finalRunning = state.missing.length === 0 &&
+      state.queued.length === 0 && state.running.length === 1 &&
+      state.pending.length === 1 && state.passed.length > 0;
+    if (!finalRunning) finalWaveSince = null;
+    else if (finalWaveSince === null) finalWaveSince = timestamp;
+    const finalFast = finalWaveSince !== null &&
+      timestamp - finalWaveSince < 90_000;
     const interval = state.missing.length && !state.pending.length
-      ? Math.min(pollMs, 10_000) : pollMs;
+      ? Math.min(pollMs, 10_000)
+      : finalFast ? Math.min(pollMs, 10_000) : pollMs;
     await sleep(Math.max(1, Math.min(interval, nextDeadline - timestamp)));
   }
   const executed=[];

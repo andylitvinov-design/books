@@ -61,16 +61,8 @@ test("approved phrases retain reusable audio but Apply transitions to Montage wi
   assert.match(phrases,/\{children\}[\s\S]*data-hypno-create-video/);
   assert.match(studio,/<MandalaHypnoCompact[\s\S]*?onCreate=\{startFromHero\}[\s\S]*?onApply=\{\(\)=>\{[\s\S]*?activeWorkspace==="phrases" \? hypnoVoiceEditor : null[\s\S]*?data-hypno-music[\s\S]*?<\/MandalaHypnoCompact>/);
   assert.match(phrases,/onClick=\{onApply\?\?onCreate\}/);
-  // The new compact Ideas screen intentionally hides the original Hypno
-  // voice/music editor until the visitor opens the advanced audio action.
-  // The original Approve/Apply flow remains mounted exactly ONCE and still
-  // never auto-renders or speaks unapproved phrases.
-  assert.match(studio,/const advancedPhraseEditorVisible=activeWorkspace==="phrases" && phraseAudioExpanded;/);
-  assert.match(studio,/data-video-advanced-phrase-editor=\{advancedPhraseEditorVisible\?"true":undefined\}/);
-  assert.match(studio,/data-video-legacy-phrase-editor=\{advancedPhraseEditorVisible\?undefined:"true"\}/);
-  assert.match(studio,/hidden=\{!advancedPhraseEditorVisible\}/);
-  assert.match(studio,/data-video-phrase-audio-shortcut aria-expanded=\{phraseAudioExpanded\}/);
-  assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \[data-video-legacy-phrase-editor\]\{display:none!important\}/);
+  assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseMusicSection/);
+  assert.match(studioCss,/data-active-workspace="phrases"\]\s*\.phraseAudioSettings/);
   assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
 });
 
@@ -102,7 +94,11 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.doesNotMatch(compact,/<MandalaVideoAffirmations /);
  assert.match(compact,/onPendingChange\?\.\(hasPendingEdits\)/);
  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
- assert.match(studio,/disabled=\{recording\|\|preparing\|\|!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending\}/);
+ const finalCreate=studio.slice(studio.indexOf("data-video-quick-generate"),
+   studio.indexOf("</button>",studio.indexOf("data-video-quick-generate")));
+ assert.match(finalCreate,/montagePanel!=="effects"&&montagePanel!=="text"/);
+ assert.match(finalCreate,/!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending/,
+   "unapproved phrase edits still block final export, not navigation");
  assert.match(studio,/if\(phrasePending\)\{/);
  assert.match(compact,/if\(ideaPending&&!draft\)return/);
  assert.match(compact,/externalPhraseDraft!==null\?\[\]:settings\.selected/);

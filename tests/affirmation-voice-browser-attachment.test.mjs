@@ -4,9 +4,24 @@ import test from "node:test";
 
 const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
 
-test("voice browser opens the real Montage music controls before using them",()=>{
-  assert.match(source,/data-video-quick-control="editor"/);
-  assert.match(source,/montageSettings\.waitFor\(\{state:"visible"[\s\S]*?montageSettings\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?musicTab\.click\(\)/);
+test("voice browser uses current Montage Settings duration and compact Audio tabs",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  for(const marker of [
+    'data-video-montage-preference="duration"',
+    'data-video-montage-audio',
+    'data-video-audio-mode="library"',
+    'data-video-voice-studio'
+  ])assert.ok(studio.includes(marker),"real current UI: "+marker);
+  for(const marker of [
+    'await montageSettingsTab.click()',
+    'await durationSelect.selectOption("10")',
+    'await expect(durationSelect).toHaveValue("10")',
+    'await montageAudio.click()',
+    'await expect(page.locator(\'[data-video-montage-audio]\')).toBeVisible()',
+    'await expect(page.locator(\'[data-video-audio-mode="library"]\')).toBeVisible()'
+  ])assert.ok(source.includes(marker),"real visitor control: "+marker);
+  assert.ok(!source.includes('data-video-montage-settings'));
+  assert.ok(!source.includes('data-video-basic-tab'));
 });
 
 test("voice browser selects the visible montage workspace before recording",()=>{
@@ -15,7 +30,7 @@ test("voice browser selects the visible montage workspace before recording",()=>
 
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
   const phrase=source.indexOf('[data-video-quick-control="phrases"]');
-  const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',phrase);
+  const generate=source.indexOf('await generateNarration.click()',phrase);
   const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav"',generate);
   const visible=source.indexOf('await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName)',expected);
   const remix=source.indexOf('phase(engine,"offline-remix-ready")',visible);
@@ -128,39 +143,4 @@ test("consent click diagnostics retain one genuine click and never capture conta
   assert.match(block,/trusted:event\.isTrusted/);
   assert.match(block,/elementFromPoint/);
   assert.doesNotMatch(block,/\.check\(|force:\s*true|\.value\b/);
-});
-
-test("the optional Ideas audio button mounts the authentic Hypno voice editor after a real WebKit click",()=>{
- const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
- const from=studio.indexOf("data-video-phrase-editor-first");
- const to=studio.indexOf('data-workspace-section="effects"',from);
- assert.ok(from>=0&&to>from);
- const ideas=studio.slice(from,to);
- assert.match(studio,/const advancedPhraseEditorVisible=activeWorkspace==="phrases" && phraseAudioExpanded;/);
- assert.match(ideas,/data-video-advanced-phrase-editor/);
- assert.match(ideas,/\{deepHypnoPane\}/);
- assert.match(ideas,/data-video-phrase-audio-shortcut aria-expanded=\{phraseAudioExpanded\}/);
- assert.match(source,/await advanced\.click\(\)/);
- assert.match(source,/await expect\(advanced\)\.toHaveAttribute\("aria-expanded","true"\)/);
- assert.match(source,/await expect\(phrases\.locator\("\[data-video-advanced-phrase-editor\]"\)\)\.toBeVisible\(\)/);
- assert.match(source,/await phrases\.locator\("\[data-hypno-select-tone\]"\)\.selectOption\("balanced"\)/);
- assert.match(source,/await page\.locator\("\[data-video-generate-affirmation-audio\]"\)\.click\(\)/);
- assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
-});
-
-test("Next native WebKit tap is not stolen by the preceding Continue scroll",()=>{
- const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
- const start=studio.indexOf("const openVideoScenarioStep = () => {");
- const stop=studio.indexOf("const deepAudioPane",start);
- assert.ok(start>0&&stop>start);
- const open=studio.slice(start,stop);
- assert.match(open,/const navigationToken=\+\+quickNavTokenRef\.current/);
- assert.match(open,/if\(navigationToken!==quickNavTokenRef\.current\)return/);
- assert.match(open,/behavior:"instant" as ScrollBehavior/);
- assert.doesNotMatch(open,/behavior:"smooth"/);
- const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
- assert.match(browser,/await continueScenario\.click\(\)/);
- assert.match(browser,/await allStories\.click\(\)/);
- assert.match(browser,/data-video-advanced-open","true",\{timeout:15000\}/);
- assert.doesNotMatch(browser,/force:\s*true/);
 });

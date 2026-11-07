@@ -1,0 +1,485 @@
+{
+  "schemaVersion": "hh-judgment-mind-fixtures-v1",
+  "cases": [
+    {
+      "kind": "recognition",
+      "locale": "ru",
+      "message": "Ничего не успеваю",
+      "expectedCode": "overload",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "ru",
+      "message": "Не могу начать",
+      "expectedCode": "starting",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "ru",
+      "message": "Мы поссорились",
+      "expectedCode": "conflict",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "ru",
+      "message": "Мне одиноко",
+      "expectedCode": "loneliness",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "ru",
+      "message": "Я себя критикую",
+      "expectedCode": "self_criticism",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "ru",
+      "message": "Не знаю, что делать",
+      "expectedCode": "uncertainty",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "ru",
+      "message": "Я устала",
+      "expectedCode": "fatigue",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "ru",
+      "message": "Мне тревожно",
+      "expectedCode": "stress",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "en",
+      "message": "I can't keep up",
+      "expectedCode": "overload",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "en",
+      "message": "I can't get started",
+      "expectedCode": "starting",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "en",
+      "message": "We argued",
+      "expectedCode": "conflict",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "en",
+      "message": "I feel lonely",
+      "expectedCode": "loneliness",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "en",
+      "message": "I keep blaming myself",
+      "expectedCode": "self_criticism",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "en",
+      "message": "I don't know what to do",
+      "expectedCode": "uncertainty",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "en",
+      "message": "I'm tired",
+      "expectedCode": "fatigue",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "en",
+      "message": "I'm stressed",
+      "expectedCode": "stress",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "es",
+      "message": "No me da tiempo",
+      "expectedCode": "overload",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "es",
+      "message": "Me cuesta empezar",
+      "expectedCode": "starting",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "es",
+      "message": "Nos peleamos",
+      "expectedCode": "conflict",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "es",
+      "message": "Me siento sola",
+      "expectedCode": "loneliness",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "es",
+      "message": "Me culpo por todo",
+      "expectedCode": "self_criticism",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "es",
+      "message": "No sé qué hacer",
+      "expectedCode": "uncertainty",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "es",
+      "message": "Estoy muy cansada",
+      "expectedCode": "fatigue",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "recognition",
+      "locale": "es",
+      "message": "Estoy estresado",
+      "expectedCode": "stress",
+      "expectedStatus": "handled",
+      "expectedState": "awaiting_choice"
+    },
+    {
+      "kind": "guard",
+      "locale": "ru",
+      "message": "Создай видео про одиночество",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "ru",
+      "message": "Где мой заказ?",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "ru",
+      "message": "Мне не одиноко",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "ru",
+      "message": "Я не устал",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "ru",
+      "message": "Стоп",
+      "expectedCode": null,
+      "expectedStatus": "handled",
+      "expectedState": "paused"
+    },
+    {
+      "kind": "guard",
+      "locale": "ru",
+      "message": "Боль в груди",
+      "expectedCode": null,
+      "expectedStatus": "handoff",
+      "expectedState": "safety_handoff"
+    },
+    {
+      "kind": "guard",
+      "locale": "en",
+      "message": "Create a video about stress",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "en",
+      "message": "Where is my order?",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "en",
+      "message": "I am not tired",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "en",
+      "message": "My friend feels lonely",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "en",
+      "message": "Don't suggest anything",
+      "expectedCode": null,
+      "expectedStatus": "handled",
+      "expectedState": "paused"
+    },
+    {
+      "kind": "guard",
+      "locale": "en",
+      "message": "Chest pain",
+      "expectedCode": null,
+      "expectedStatus": "handoff",
+      "expectedState": "safety_handoff"
+    },
+    {
+      "kind": "guard",
+      "locale": "es",
+      "message": "Crea video sobre la soledad",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "es",
+      "message": "No estoy cansada",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "es",
+      "message": "Mi amiga se siente sola",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "guard",
+      "locale": "es",
+      "message": "No quiero consejos",
+      "expectedCode": null,
+      "expectedStatus": "handled",
+      "expectedState": "paused"
+    },
+    {
+      "kind": "guard",
+      "locale": "es",
+      "message": "Dolor en el pecho",
+      "expectedCode": null,
+      "expectedStatus": "handoff",
+      "expectedState": "safety_handoff"
+    },
+    {
+      "kind": "guard",
+      "locale": "es",
+      "message": "No estoy estresado",
+      "expectedCode": null,
+      "expectedStatus": "abstain",
+      "expectedState": "abstained"
+    },
+    {
+      "kind": "choice",
+      "locale": "ru",
+      "message": "Ничего не успеваю",
+      "expectedCode": "overload",
+      "choiceId": "a",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "ru",
+      "message": "Ничего не успеваю",
+      "expectedCode": "overload",
+      "choiceId": "b",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "en",
+      "message": "I can't get started",
+      "expectedCode": "starting",
+      "choiceId": "a",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "en",
+      "message": "I can't get started",
+      "expectedCode": "starting",
+      "choiceId": "b",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "es",
+      "message": "Nos peleamos",
+      "expectedCode": "conflict",
+      "choiceId": "a",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "es",
+      "message": "Nos peleamos",
+      "expectedCode": "conflict",
+      "choiceId": "b",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "ru",
+      "message": "Мне одиноко",
+      "expectedCode": "loneliness",
+      "choiceId": "a",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "ru",
+      "message": "Мне одиноко",
+      "expectedCode": "loneliness",
+      "choiceId": "b",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "en",
+      "message": "I keep blaming myself",
+      "expectedCode": "self_criticism",
+      "choiceId": "a",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "en",
+      "message": "I keep blaming myself",
+      "expectedCode": "self_criticism",
+      "choiceId": "b",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "es",
+      "message": "No sé qué hacer",
+      "expectedCode": "uncertainty",
+      "choiceId": "a",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "es",
+      "message": "No sé qué hacer",
+      "expectedCode": "uncertainty",
+      "choiceId": "b",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "ru",
+      "message": "Я устала",
+      "expectedCode": "fatigue",
+      "choiceId": "a",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "ru",
+      "message": "Я устала",
+      "expectedCode": "fatigue",
+      "choiceId": "b",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "en",
+      "message": "I'm stressed",
+      "expectedCode": "stress",
+      "choiceId": "a",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    },
+    {
+      "kind": "choice",
+      "locale": "en",
+      "message": "I'm stressed",
+      "expectedCode": "stress",
+      "choiceId": "b",
+      "expectedStatus": "handled",
+      "expectedState": "step_offered"
+    }
+  ]
+}

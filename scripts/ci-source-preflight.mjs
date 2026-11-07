@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Syntax and TypeScript check before expensive Next production build.
+// Fast syntax preflight. A full TypeScript check may be owned by the same-run mandatory Next build.
 // Emits stable root fingerprints so one source defect is not counted as multiple CI failures.
 import { spawnSync, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -26,6 +26,28 @@ export function parsePaths(raw) {
 }
 export const syntaxCandidates = paths => paths.filter(p => JS_SYNTAX.test(p));
 export const impactsTypes = paths => paths.some(p => TS_IMPACT.test(p));
+// Next's mandatory production build typechecks the exact tested candidate.
+// CORE remains safe. FULL is eligible only for isolated reviewed editor files.
+// Auth, payment, consent, provider, config, CI and unknown inputs retain tsc.
+// All affected media/browser/security Specialists remain fully required.
+const FULL_MEDIA_EDITOR_ONLY=new Set([
+  'components/mandala-free-video-studio.tsx',
+  'components/mandala-auto-video-director.tsx',
+  'components/mandala-multitrack-timeline.tsx',
+  'components/mandala-video-mobile.module.css',
+  'components/mandala-auto-video-director.module.css',
+  'components/mandala-multitrack-timeline.module.css',
+]);
+export function mayDelegateTypesToNext(paths,{eventName,route,ciOnly,nextConfig}={}) {
+  const trustedRoute=route==='CORE'||(route==='FULL'&&
+    Array.isArray(paths)&&paths.every(path=>FULL_MEDIA_EDITOR_ONLY.has(path)));
+  if(eventName!=='pull_request'||!trustedRoute||ciOnly!=='false'||
+      !Array.isArray(paths)||!paths.length||!impactsTypes(paths)||
+      typeof nextConfig!=='string'||!nextConfig.includes('export default nextConfig;')||
+      /ignoreBuildErrors|ignoreDuringBuilds|\btypescript\s*:/.test(nextConfig)) return false;
+  const risky=/^(?:package(?:-lock)?\.json|next(?:-env\.d\.ts|\.config\.[^/]+)|(?:tsconfig|jsconfig)(?:\.[^/]*)?\.json|\.github\/|scripts\/ci-|lib\/ci\/|tests\/ci-|eslint\.config|postcss\.config|babel\.config|\.env|\.npmrc)/;
+  return paths.every(path=>typeof path==='string'&&!risky.test(path));
+}
 export function rootFingerprint(category, file, code, message) {
   const key = [category, String(file || ''), String(code || ''), String(message || '').trim().replace(/\s+/g, ' ')].join('\0');
   return createHash('sha256').update(key).digest('hex').slice(0, 20);
@@ -145,26 +167,35 @@ function checkTypes() {
   return [{category:'infrastructure.preflight',code:'TSC_EXECUTION',file:'tsconfig.json',message,
     root:rootFingerprint('infrastructure.preflight','tsconfig.json','TSC_EXECUTION',message)}];
 }
-export function formatReport(paths,findings,typechecked) {
+export function formatReport(paths,findings,typechecked,typecheckDelegated=false) {
   const roots=summarizeFindings(findings);
   return {schema:'hh.source-preflight.v1',status:findings.length?'failed':'passed',
     check:'source-preflight',changedFiles:paths.length,syntaxFiles:syntaxCandidates(paths).length,
-    typechecked,findingCount:findings.length,rootCount:roots.length,roots};
+    typechecked,typecheckDelegated,findingCount:findings.length,rootCount:roots.length,roots};
 }
 function main() {
   const args=process.argv.slice(2);
-  let base=null,fullTypes=false;
+  let base=null,fullTypes=false,deferTypesToNext=false;
   for(let i=0;i<args.length;i++) {
     if(args[i]==='--base'&&args[i+1]) base=args[++i];
     else if(args[i]==='--full-types') fullTypes=true;
+    else if(args[i]==='--defer-types-to-next') deferTypesToNext=true;
     else throw Error('INVALID_ARGUMENT: '+args[i]);
   }
   if(!base) throw Error('Supply --base <tested-base-sha-or-local-ref>');
+  if(fullTypes&&deferTypesToNext) throw Error('CONFLICTING_TYPECHECK_OWNERS');
   const paths=changedPaths(base);
   const findings=checkSyntax(paths);
-  const typechecked=fullTypes||impactsTypes(paths);
+  // Fail closed to standalone tsc when a trusted Next build cannot be proven.
+  let nextConfig='';
+  try{nextConfig=readFileSync('next.config.ts','utf8');}catch{/* no delegation */}
+  const typecheckDelegated=deferTypesToNext&&mayDelegateTypesToNext(paths,{
+    eventName:process.env.GITHUB_EVENT_NAME,route:process.env.HH_PREFLIGHT_ROUTE,
+    ciOnly:process.env.HH_PREFLIGHT_CI_ONLY,nextConfig,
+  });
+  const typechecked=fullTypes||(!typecheckDelegated&&impactsTypes(paths));
   if(!findings.length&&typechecked) findings.push(...checkTypes());
-  const report=formatReport(paths,findings,typechecked);
+  const report=formatReport(paths,findings,typechecked,typecheckDelegated);
   if(process.env.HH_PREFLIGHT_REPORT) {
     const file=resolve(process.env.HH_PREFLIGHT_REPORT);
     mkdirSync(dirname(file),{recursive:true});
@@ -172,7 +203,7 @@ function main() {
   }
   if(process.env.GITHUB_STEP_SUMMARY) {
     const lines=['### Source Preflight',
-      '- Changed files: '+report.changedFiles+'; syntax checked: '+report.syntaxFiles+'; TypeScript checked: '+typechecked,
+      '- Changed files: '+report.changedFiles+'; syntax checked: '+report.syntaxFiles+'; TypeScript: '+(typecheckDelegated?'deferred to mandatory Next build':typechecked?'preflight checked':'not applicable'),
       '- Errors: '+report.findingCount+'; distinct source roots: '+report.rootCount,
       ...report.roots.slice(0,10).map(r=>'- '+r.code+' '+r.file+' — '+r.message.replace(/[<>|]/g,' ').slice(0,180)+' (root '+r.root+')'),''];
     appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\n')+'\n');
@@ -184,7 +215,7 @@ function main() {
       console.error('['+r.root+'] '+r.category+' '+r.file+(r.line?':'+r.line:'')+' '+r.message);
     }
     process.exitCode=1;
-  } else console.log('SOURCE_PREFLIGHT_OK: '+paths.length+' changes; '+report.syntaxFiles+' syntax checks; TypeScript '+(typechecked?'passed':'not applicable'));
+  } else console.log('SOURCE_PREFLIGHT_OK: '+paths.length+' changes; '+report.syntaxFiles+' syntax checks; TypeScript '+(typecheckDelegated?'delegated to mandatory Next build':typechecked?'passed':'not applicable'));
 }
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])) {
   try{main();}catch(e){console.error('SOURCE_PREFLIGHT_UNAVAILABLE: '+e.message);process.exitCode=2;}

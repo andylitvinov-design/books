@@ -11,28 +11,37 @@ import {auditVideoSceneTags,deriveVideoSceneTags,
  physicalSceneAspect,sceneSupportsPhysicalAspect} from "../lib/mandala/video-source-tag-facets.mjs";
 import {validateMontageClips} from "../lib/mandala/video-montage-sources.mjs";
 
-test("all 732 approved MP4s have conservative multi-facet tags",()=>{
+test("all approved MP4s have conservative multi-facet tags",()=>{
  const topicsById=Object.fromEntries(ranking.scenes.map(x=>[x.sceneId,x.topics]));
  const audit=auditVideoSceneTags([...master.scenes,...original.scenes],{
   motifs:MYTUBE_VISUAL_MOTIFS,styles:MYTUBE_VISUAL_STYLES,topicsById,
  });
  assert.deepEqual(audit.missing,[]);
- assert.equal(audit.total,732);
- assert.equal(audit.tagged,732);
- assert.deepEqual(audit.sourceKinds,{licensed:48,procedural:684});
- assert.deepEqual(audit.aspectCounts,{portrait:732,landscape:0,square:0});
+ assert.equal(audit.total,master.scenes.length+original.scenes.length);
+ assert.equal(audit.tagged,master.scenes.length+original.scenes.length);
+ assert.deepEqual(audit.sourceKinds,{licensed:master.scenes.length,procedural:original.scenes.length});
+ assert.equal(Object.values(audit.aspectCounts).reduce((sum,n)=>sum+n,0),audit.total);
  assert.ok(audit.withStyleCandidates>0);
  assert.ok(audit.withMotifCandidates>0);
  assert.ok(audit.records.every(x=>x.subjectTags.length&&x.searchableTags.length&&x.productionStyle));
  assert.ok(audit.records.every(x=>x.evidence.doesNotGrantPublicationRights));
- assert.ok(audit.records.every(x=>x.physicalAspect==="portrait"));
+ assert.ok(audit.records.every(x=>["portrait","landscape","square"].includes(x.physicalAspect)));
 });
 test("all 44 legacy licensed MP4s are portrait despite absent allowedAspects",()=>{
  const geo=[...money.scenes,...film.scenes,...stock];
  assert.equal(geo.length,48);
  assert.equal(master.scenes.filter(x=>x.allowedAspects===undefined).length,44);
  const byId=new Map(geo.map(x=>[x.id,x]));
- for(const scene of master.scenes){
+ for(const scene of master.scenes.filter(x=>!byId.has(x.id))){
+  assert.ok(Number.isInteger(scene.width)&&Number.isInteger(scene.height)&&
+    scene.width>0&&scene.height>0,scene.id);
+  const expected=scene.width===scene.height?"square":scene.width>scene.height?"landscape":"portrait";
+  const other=expected==="portrait"?"landscape":"portrait";
+  assert.equal(physicalSceneAspect(scene),expected,scene.id);
+  assert.equal(sceneSupportsPhysicalAspect(scene,expected),true,scene.id);
+  assert.equal(sceneSupportsPhysicalAspect(scene,other),false,scene.id);
+ }
+ for(const scene of master.scenes.filter(x=>byId.has(x.id))){
   const physical=byId.get(scene.id);
   assert.ok(physical&&physical.width<physical.height,scene.id);
   assert.equal(physicalSceneAspect(scene),"portrait");

@@ -19,11 +19,11 @@ type Props={
 };
 const COPY={
  ru:{
-  title:"Куда отправить видео?",device:"Скачать файл",telegram:"Telegram",
+  title:"Куда отправить видео?",device:"Скачать файл",telegram:"Telegram",savePrivate:"Сохранить в Мои видео",savedPrivate:"Видео проверено и сохранено в приватном каталоге.",openMyVideos:"Открыть Мои видео",refreshLogin:"Проверить вход",
   whatsapp:"WhatsApp",close:"Закрыть",hint:"Для WhatsApp и Telegram откроется меню телефона — выберите нужный мессенджер.",
   noShare:"Этот браузер не умеет передавать видео в приложения. Скачайте файл и отправьте его из Telegram или WhatsApp вручную.",
   guest:"Для автоматической доставки в Telegram войдите в Holistic House и привяжите бота.",
-  login:"Войти и подключить Telegram",connect:"Подключить Telegram-бота",
+  login:"Войти в Мой дом",connect:"Подключить Telegram-бота",
   bot:"Продолжить в Telegram",connected:"Telegram подключён",
   refresh:"Проверить подключение",direct:"Отправить готовое MP4 ботом",
   automatic:"Автоматически отправлять будущие ролики в мой Telegram",
@@ -39,11 +39,11 @@ const COPY={
   privacy:"Файл загружается на сервер только после разрешения на доставку. Автоотправку можно отключить здесь в любое время.",
  },
  en:{
-  title:"Where should we send your video?",device:"Download file",telegram:"Telegram",
+  title:"Where should we send your video?",device:"Download file",telegram:"Telegram",savePrivate:"Save to My Videos",savedPrivate:"Video verified and saved in your private library.",openMyVideos:"Open My Videos",refreshLogin:"Check sign-in",
   whatsapp:"WhatsApp",close:"Close",hint:"Telegram and WhatsApp use your device's Share menu. Select the app there.",
   noShare:"File sharing is unavailable in this browser. Download the video, then share it manually from Telegram or WhatsApp.",
   guest:"Sign in to Holistic House and link your Telegram bot to enable automatic delivery.",
-  login:"Sign in and connect Telegram",connect:"Connect Telegram bot",
+  login:"Sign in to My House",connect:"Connect Telegram bot",
   bot:"Continue in Telegram",connected:"Telegram linked",
   refresh:"Check connection",direct:"Send finished MP4 via bot",
   automatic:"Automatically send future videos to my Telegram",
@@ -59,11 +59,11 @@ const COPY={
   privacy:"The video is uploaded only after you agree to delivery. You can disable automatic delivery here.",
  },
  es:{
-  title:"¿Dónde enviar tu vídeo?",device:"Descargar archivo",telegram:"Telegram",
+  title:"¿Dónde enviar tu vídeo?",device:"Descargar archivo",telegram:"Telegram",savePrivate:"Guardar en Mis vídeos",savedPrivate:"Vídeo verificado y guardado en tu biblioteca privada.",openMyVideos:"Abrir Mis vídeos",refreshLogin:"Comprobar acceso",
   whatsapp:"WhatsApp",close:"Cerrar",hint:"Telegram y WhatsApp usan el menú Compartir del teléfono. Elige allí la aplicación.",
   noShare:"Este navegador no puede compartir archivos. Descarga el vídeo y envíalo desde Telegram o WhatsApp manualmente.",
   guest:"Inicia sesión en Holistic House y conecta el bot de Telegram para activar el envío automático.",
-  login:"Entrar y conectar Telegram",connect:"Conectar bot de Telegram",
+  login:"Entrar a Mi espacio",connect:"Conectar bot de Telegram",
   bot:"Continuar en Telegram",connected:"Telegram conectado",
   refresh:"Comprobar conexión",direct:"Enviar MP4 con el bot",
   automatic:"Enviar automáticamente los próximos vídeos a mi Telegram",
@@ -90,10 +90,14 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  const [state,setState]=useState<State|null>(null);
  const [session,setSession]=useState<"checking"|"signed_in"|"guest"|"unavailable">("checking");
  const [notice,setNotice]=useState("");
+ const [savedId,setSavedId]=useState<string|null>(null);
  const [busy,setBusy]=useState(false);
  const [botUrl,setBotUrl]=useState("");
  const inFlight=useRef<Promise<string>|null>(null);
  const autoAttempted=useRef(false);
+ // A new video may auto-send only if opt-in was already active when this result loaded.
+ // Turning on delivery beside an existing video must not upload that file silently.
+ const automaticAtResultLoad=useRef(false);
  const readyMp4=extension==="mp4"&&mime==="video/mp4"&&bytes>=1024&&
   bytes<=MAX_BYTES&&VALID_DURATIONS.includes(duration);
  const fileName="holistic-house-personal."+extension;
@@ -116,18 +120,27 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
     if(active)setSession(errorCode(error)==="SIGN_IN_REQUIRED"?"guest":"unavailable");
     return null;
    }) as State|null;
-   if(active&&next){setState(next);setSession("signed_in");}
+   if(active&&next){
+    automaticAtResultLoad.current=next.telegram.automatic===true;
+    setState(next);setSession("signed_in");
+   }
   })();
   return()=>{active=false};
  },[]);
+ // A guest can finish OAuth in a separate tab without losing the video Blob.
+ useEffect(()=>{if(open)void refresh();},[open,refresh]);
  async function shareFromDevice(){
-  const file=new File([blob],fileName,{type:mime});
-  if(typeof navigator.share!=="function"||
-    (typeof navigator.canShare==="function"&&!navigator.canShare({files:[file]}))){
-   setNotice(t.noShare);return;
-  }
-  try{await navigator.share({files:[file],title:"Holistic House video"});setNotice("");}
-  catch(error){
+  try{
+   // File construction and navigator.canShare may themselves throw in older
+   // iPhone WebKit. Preserve the working direct-download fallback.
+   const file=new File([blob],fileName,{type:mime});
+   if(typeof navigator.share!=="function"||
+     (typeof navigator.canShare==="function"&&!navigator.canShare({files:[file]}))){
+    setNotice(t.noShare);return;
+   }
+   await navigator.share({files:[file],title:"Holistic House video"});
+   setNotice("");
+  }catch(error){
    setNotice(error instanceof DOMException&&error.name==="AbortError"?t.cancelled:t.noShare);
   }
  }
@@ -155,8 +168,23 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
   void task.catch(()=>{if(inFlight.current===task)inFlight.current=null;});
   return task;
  }
+ async function saveToLibrary(){
+  if(busy||session!=="signed_in"||!readyMp4)return;
+  setBusy(true);setNotice(t.wait);
+  try{
+   const id=await privateUpload();
+   setSavedId(id);
+   setNotice(t.savedPrivate);
+  }catch{setNotice(t.error);}
+  finally{setBusy(false);}
+ }
  async function sendViaBot(automatic:boolean){
   if(busy||!readyMp4)return;
+  if(!automatic){
+   // A manual send supersedes this result's pending automatic delivery.
+   automaticAtResultLoad.current=false;
+   autoAttempted.current=true;
+  }
   setBusy(true);setNotice(t.wait);
   try{
    const id=await privateUpload();
@@ -172,7 +200,7 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  useEffect(()=>{
   // Every newly rendered, verified video mounts a fresh instance (result URL
   // key in Studio). The user must previously opt in to this exact verified chat.
-  if(busy||!state?.telegram.automatic||!state.telegram.sendingAvailable||
+  if(busy||!automaticAtResultLoad.current||!state?.telegram.automatic||!state.telegram.sendingAvailable||
    !readyMp4||autoAttempted.current)return;
   autoAttempted.current=true;
   void sendViaBot(true);
@@ -195,6 +223,9 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
  }
  async function changeAutomatic(enabled:boolean){
   if(busy)return;
+  // A permission change applies to later renders, not the already completed MP4.
+  // Explicit 'Send via bot' remains available for this existing file.
+  automaticAtResultLoad.current=false;
   setBusy(true);setNotice("");
   try{
    const next=await appFetch("personal-videos/delivery",{
@@ -212,19 +243,36 @@ export function MandalaVideoDelivery({locale,open,onClose,blob,url,extension,mim
    <button type="button" onClick={onClose} className={css.close}>{t.close}</button>
   </div>
   <div className={css.choices}>
-   <a className={css.device} href={url} download={fileName} data-video-save-direct-choice>
-    <Download size={18} aria-hidden="true"/>{t.device}
-   </a>
-   <button type="button" onClick={()=>void shareFromDevice()} data-video-telegram-share>
-    <Send size={18} aria-hidden="true"/>{t.telegram}
+   {session==="signed_in"?<button type="button" className={css.savePrivate}
+     disabled={busy||!readyMp4} onClick={()=>void saveToLibrary()} data-video-save-to-library>
+     <CheckCircle2 size={18} aria-hidden="true"/>{t.savePrivate}
+   </button>:null}
+   {session==="signed_in"?<a className={css.device} href={url} download={fileName}
+     data-video-save-direct-choice><Download size={18} aria-hidden="true"/>{t.device}</a>:
+    <button type="button" className={css.device} disabled data-video-save-locked>
+     <Download size={18} aria-hidden="true"/>{t.device}
+    </button>}
+   <button type="button" onClick={()=>void shareFromDevice()}
+     disabled={busy||session!=="signed_in"} data-video-telegram-share>
+     <Send size={18} aria-hidden="true"/>{t.telegram}
    </button>
-   <button type="button" onClick={()=>void shareFromDevice()} data-video-whatsapp-share>
-    <MessageCircle size={18} aria-hidden="true"/>{t.whatsapp}
+   <button type="button" onClick={()=>void shareFromDevice()}
+     disabled={busy||session!=="signed_in"} data-video-whatsapp-share>
+     <MessageCircle size={18} aria-hidden="true"/>{t.whatsapp}
    </button>
   </div>
+  {savedId?<Link href={"/"+accountLocale+"/app/videos"} target="_blank"
+    rel="noopener noreferrer" prefetch={false} data-video-saved-library-link>
+    <CheckCircle2 size={17} aria-hidden="true"/>{t.openMyVideos}
+  </Link>:null}
   <p className={css.help}>{t.hint}</p>
   {session==="guest"?<p className={css.hint}>{t.guest}{" "}
-   <Link href={"/"+accountLocale+"/app/settings#hh-telegram-connect"} prefetch={false}>{t.login}</Link></p>:null}
+   <Link href={"/"+accountLocale+"/app/videos"} target="_blank" rel="noopener noreferrer"
+     prefetch={false}>{t.login}</Link></p>:null}
+  {session!=="signed_in"?<button type="button" data-video-delivery-refresh-login
+    className={css.secondary} disabled={busy} onClick={()=>void refresh()}>
+    <RefreshCw size={17} aria-hidden="true"/>{t.refreshLogin}
+  </button>:null}
   {session==="signed_in"&&state?.telegram.linkAvailable?
    <div className={css.bot}>
     {state.telegram.linked?<div className={css.linked}>

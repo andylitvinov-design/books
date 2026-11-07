@@ -10,5 +10,7 @@ const result=auditVideoSceneTags([...master.scenes,...original.scenes],{
 });
 const {records,...summary}=result;
 console.log(JSON.stringify(process.argv.includes("--details")?result:summary,null,2));
-if(result.missing.length||result.total!==732||result.tagged!==732||
- result.aspectCounts.portrait!==732)process.exitCode=1;
+const total=master.scenes.length+original.scenes.length;
+const geometries=Object.values(result.aspectCounts).reduce((sum,n)=>sum+n,0);
+if(result.missing.length||result.total!==total||result.tagged!==total||
+ geometries!==total)process.exitCode=1;

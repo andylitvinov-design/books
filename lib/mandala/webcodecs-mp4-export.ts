@@ -181,9 +181,7 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
     // but never replace it with a stale/fake shot or drop the chosen sound.
     // Bound BOTH per-frame and whole-export decoder waits.
     let decoderHoldMs=0;
-    // Native H.264 encoding can legitimately take longer than one frame period.
-    // Account for that work separately from genuine decoder stalls: never
-    // advance scene PTS, skip a frame or weaken the whole-export timeout.
+    // Preserve exact video PTS while allowing native hardware H.264 encode latency.
     let encoderHoldMs=0;
     const maxFrameDecoderWaitMs=1400;
     const maxTotalDecoderWaitMs=4800;
@@ -213,9 +211,8 @@ export async function encodeLocalWebCodecsMp4(options:BrowserMovieOptions):Promi
       }
       await videoSource.add(time,1/frameRate,
         {keyFrame:i%Math.max(1,Math.floor(frameRate*2))===0});
-      // The real source frame has been decoded and passed to H.264. Charging
-      // native encode latency to the wall-clock pacing budget avoids false
-      // timeline drift while preserving exact frame count and PTS.
+      // Native encoder work is separate from licensed-source decoder stalls.
+      // Never substitute stale frames or alter the encoded timestamp sequence.
       const workElapsedMs=performance.now()-frameWorkStartedAt;
       encoderHoldMs+=Math.max(0,
         workElapsedMs-(decoderHoldMs-decoderHoldBeforeFrame)-1000/frameRate);

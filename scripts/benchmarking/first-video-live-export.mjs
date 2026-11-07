@@ -132,12 +132,22 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // Compact Video hides its extended source editor until the visitor chooses
-  // "All stories". Exercise that REAL visible button, not a hidden DOM node
-  // or direct React state manipulation, before testing the actual export.
-  const allStories = page.locator('[data-auto-video-all-scenes]');
-  await allStories.waitFor({state:'visible',timeout:40000});
-  await allStories.click();
+  // Visitor route: Goals → Ideas → Montage Text → Add video.
+  // Never force a hidden "All stories" button. Keep all subsequent real
+  // four-shot, duration, WAV, video/audio and FFprobe requirements unchanged.
+  const continueToIdeas=page.locator('[data-video-continue-scenarios]');
+  await continueToIdeas.waitFor({state:'visible',timeout:40000});
+  await continueToIdeas.click();
+  const ideas=page.locator('[data-video-quick-control="phrases"]');
+  assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
+  await page.locator('[data-video-quick-control="editor"]').click();
+  await page.locator('[data-video-montage-tab="text"]').click();
+  const addVideo=page.locator('[data-video-timeline-add-video]');
+  await addVideo.waitFor({state:'visible',timeout:20000});
+  await addVideo.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-scenario-open')==='true',
+    undefined,{timeout:15000});
   await page.waitForFunction(() =>
     document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-advanced-open')==='true',
     undefined,{timeout:15000});

@@ -15,6 +15,8 @@ import {initialVideoChatTree,nextVideoChatTreeStep,videoChatTreeOptions,
 import {isGenericVideoRequest,parseVideoChatAction,mergeVideoChatPreferences,parseVideoChatIntent,parseVideoChatStepChoice,suggestVideoChatDefaults} from "@/lib/mandala/video-chat-intent.mjs";
 import {understandVideoChatReply} from "@/lib/mandala/video-chat-understanding.mjs";
 import {classifyVideoChatQuestion,answerVideoChatQuestion} from "@/lib/mandala/video-chat-dialogue-knowledge.mjs";
+import {MESSENGER_VIDEO_HANDOFF_KEY,decodeMessengerVideoHandoff} from "@/lib/mandala/video-chat-messenger-flow.mjs";
+import {pageHelpFromRoute} from "@/lib/ihelp/page-context.mjs";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-director-chat.module.css";
@@ -33,6 +35,7 @@ type Preset={id:string;theme:VideoTheme;label:Record<PublicLocale,string>;clips:
 type Scene={id:string;theme:string;collection:string;status:string;media:string;video:string;poster?:string;rightsReference:{kind:string};label:Record<PublicLocale,string>;description:Record<PublicLocale,string>;categories:readonly string[];tags:readonly string[];motifs:readonly string[]};
 type Props={
  locale:PublicLocale;goal:string;theme:VideoTheme;
+ helpVisible?:boolean;helpTab?:string;
  presets:readonly Preset[];scenes:readonly Scene[];disabled:boolean;canCreate:boolean;
  renderOptions:{quality:"hd"|"fullhd";brightness:"soft"|"bright";volumePercent:number};
  rendering:boolean;renderProgress:number;resultReady:boolean;resultFailed:boolean;
@@ -87,6 +90,24 @@ const copy={
   moodChoices:[["Suave","slow"],["Dinámico","dynamic"]],aspectChoices:[["Vertical 9:16","portrait"],["Horizontal 16:9","landscape"],["Cuadrado 1:1","square"]],
   musicChoices:[["Melodía suave","love"],["Meditación","meditation"],["Armonía","harmony"],["Sin música","none"]],phraseChoices:[["Sí, añadir","yes"],["No","no"]]},
 } as const;
+const welcomeCopy={
+  ru:{hello:"Привет!",headline:"Создадим ваше видео ✨",lead:"Ваша идея, текст или голос — начало красивого видео.",
+    create:"Создать своё видео",browse:"Готовые видео",ideas:"Помощь и идеи",actions:"Выберите действие",
+    goal:"Что для вас важно?",goalHint:"Выберите тему или расскажите о своей идее.",
+    ownWords:"Или расскажите своими словами…",how:"Как это работает?",
+    help:"Выберите цель или напишите о своей идее. Мы предложим доступные видеосцены; перед созданием вы проверите сценарий."},
+  en:{hello:"Hi!",headline:"Let's create your video ✨",lead:"Start with your idea, words or audio. We'll help shape the video.",
+    create:"Create my video",browse:"Ready-made videos",ideas:"Help & ideas",actions:"Choose what to do",
+    goal:"What's your goal?",goalHint:"Pick an area or tell me what matters to you.",
+    ownWords:"Or tell me in your own words…",how:"How it works?",
+    help:"Choose a goal or describe your idea. We'll suggest available footage; you'll review the story before creating a video."},
+  es:{hello:"¡Hola!",headline:"Creemos tu vídeo ✨",lead:"Empieza con tu idea, texto o audio. Te ayudamos a darle forma.",
+    create:"Crear mi vídeo",browse:"Vídeos listos",ideas:"Ayuda e ideas",actions:"Elige qué hacer",
+    goal:"¿Qué deseas conseguir?",goalHint:"Elige un tema o cuéntame lo que te importa.",
+    ownWords:"O cuéntamelo con tus palabras…",how:"¿Cómo funciona?",
+    help:"Elige un objetivo o describe tu idea. Propondremos escenas disponibles; revisarás la historia antes de crear el vídeo."},
+} as const;
+
 const initial=(goal:string,locale:PublicLocale):Draft=>{
  const parsed=parseVideoChatIntent(goal);
  return {...initialVideoChatTree(goal,locale),goal:parsed.text,mood:parsed.mood as Mood|null,
@@ -96,12 +117,21 @@ const initial=(goal:string,locale:PublicLocale):Draft=>{
 
 export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disabled,canCreate,
  renderOptions,rendering,renderProgress,resultReady,resultFailed,onGoalChange,onConfirm,onCreate,onOpenResult,onOpenDelivery,
- onOpenEditor,onPickPhoto,onOpenAudio,onInvalidate}:Props){
+ onOpenEditor,onPickPhoto,onOpenAudio,onInvalidate,helpVisible=false,helpTab="video"}:Props){
  const t=copy[locale];
+ const w=welcomeCopy[locale];
+ // Context is a pure, public page/tab classification, not user test results.
+ // Changing tabs updates suggestions without resetting any video choices.
+ const pageHelp=useMemo(()=>helpVisible?pageHelpFromRoute({
+   locale,pathname:"/"+locale+"/holistic-support/mandala",activeTab:helpTab
+ }):null,[locale,helpTab,helpVisible]);
  const [draft,setDraft]=useState<Draft>(()=>initial(goal,locale));
  const [step,setStep]=useState<Step>(()=>nextVideoChatTreeStep(initial(goal,locale)) as Step);
- const [lines,setLines]=useState<ChatLine[]>(()=>[{id:0,role:"assistant",text:t.intro+"\n"+t[step]}]);
+ const [lines,setLines]=useState<ChatLine[]>(()=>[{id:0,role:"assistant",text:t[step]}]);
  const [input,setInput]=useState("");
+ const [welcomeDismissed,setWelcomeDismissed]=useState(false);
+ const showWelcome=!welcomeDismissed&&step==="category"&&lines.length===1&&
+   !draft.goal.trim()&&!draft.categoryId;
  const [clientHydrated,setClientHydrated]=useState(false);
  const [symbolicAllowed,setSymbolicAllowed]=useState(false);
  const [aiConsent,setAiConsent]=useState(false);
@@ -139,13 +169,43 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    setLines(existing=>[...existing.slice(-34),{id:++counter.current,role,text}]);
  };
  const question=(next:Step)=>next==="done"?t.done:next==="ready"?t.ready:t[next];
+ // Messenger collects validated choices but never renders or approves a plan.
+ // The handoff is consumed once, in the existing Studio/MediaRecorder controller.
+ useEffect(()=>{
+   let packet="";
+   try{
+     packet=window.sessionStorage.getItem(MESSENGER_VIDEO_HANDOFF_KEY)||"";
+     if(packet)window.sessionStorage.removeItem(MESSENGER_VIDEO_HANDOFF_KEY);
+   }catch{return;}
+   if(!packet)return;
+   const incoming=decodeMessengerVideoHandoff(packet,locale) as Draft|null;
+   if(!incoming)return;
+   const next=nextVideoChatTreeStep(incoming) as Step;
+   if(next!=="review")return;
+   setDraft(incoming);setStep(next);setInput("");setWelcomeDismissed(true);
+   setLines([{id:++counter.current,role:"assistant",text:t.review}]);
+   approvedPlanKeyRef.current="";
+   setAlternative(0);setSymbolicAllowed(false);setAiConsent(false);
+   cutAbortRef.current?.abort();semanticAbortRef.current?.abort();
+   setAiCut(null);setAiCutState("idle");setSemanticStatus("idle");
+   onGoalChange(incoming.goal);onInvalidate();
+   const panel=windowRef.current?.closest("details");
+   if(panel instanceof HTMLDetailsElement)panel.open=true;
+   window.requestAnimationFrame(()=>windowRef.current?.scrollIntoView({
+     block:"start",behavior:"instant" as ScrollBehavior,
+   }));
+ // This is a one-shot user-directed navigation handoff, never a reactive sync.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[]);
  // The same client-local goal field is edited by the existing Studio controls.
  useEffect(()=>{
    if(goal.trim()===draft.goal.trim()||!goal.trim())return;
-   const next=initial(goal,locale);
+   // Editing the goal never erases already chosen categories, story, captions
+   // or output settings. Only the final scenario approval must be repeated.
+   const next={...draft,goal:goal.trim().slice(0,800)} as Draft;
    setDraft(next);
    const nextStep=nextVideoChatTreeStep(next) as Step;
-   setStep(nextStep);addLine("assistant",question(nextStep));
+   setStep(nextStep);addLine("assistant",t.promptChanged+" "+question(nextStep));
    approvedPlanKeyRef.current="";cutAbortRef.current?.abort();setAiCut(null);setAiCutState("idle");
    setSymbolicAllowed(false);setAlternative(0);
    semanticAbortRef.current?.abort();setSemanticStatus("idle");
@@ -180,8 +240,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  },[]);
  useEffect(()=>{
    const thread=threadRef.current;
-   if(thread)thread.scrollTop=thread.scrollHeight;
- },[lines,step,alternative]);
+   if(thread)thread.scrollTop=showWelcome?0:thread.scrollHeight;
+ },[lines,step,alternative,showWelcome]);
  // Explicit opt-in; the local deterministic guide remains available instantly.
  // The model may only phrase a question, never modify filters or render jobs.
  useEffect(()=>{
@@ -655,7 +715,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    setDraft(initial("",locale));onGoalChange("");setStep("category");setSymbolicAllowed(false);
    aiAskedKeyRef.current="";setAiStatus("idle");setAiConsent(false);
    setAlternative(0);setCaptureStarted(false);setCaptureObserved(false);
-   setLines([{id:++counter.current,role:"assistant",text:t.intro+"\n"+t.category}]);setInput("");
+   setLines([{id:++counter.current,role:"assistant",text:t.category}]);setInput("");setWelcomeDismissed(false);
  };
  const confirm=()=>{
    if(disabled||!executable||offerSymbolic||aiCutState==="loading")return;
@@ -712,7 +772,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    if(accepted===false){addLine("assistant",t.blocked);return;}
    setCaptureObserved(false);setCaptureStarted(true);
  };
-  return <section id="video-director-chat" ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} aria-labelledby="video-director-chat-heading">
+  return <section id="video-director-chat" ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} data-chat-welcome={showWelcome?"true":undefined} aria-labelledby="video-director-chat-heading">
    <header className={css.heading}>
      <span className={css.avatar} aria-hidden="true"><Sparkles size={20}/></span>
      <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
@@ -729,8 +789,62 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        {locale==="ru"?"Клиенты":locale==="es"?"Clientes":"Clients"}
      </Link>
    </nav>
+   {pageHelp&&!showWelcome&&<details className={css.pageHelp} data-video-ihelp-context data-help-tab={pageHelp.section}>
+     <summary>{w.how}</summary>
+     <p>{pageHelp.greeting}</p>
+     <div role="group" aria-label={locale==="ru"?"Помощь по текущему шагу":
+       locale==="es"?"Ayuda en este paso":"Help with this step"}>
+       {pageHelp.actions.map(action=>action.href?
+         <Link key={action.id} href={action.href} prefetch={false} data-video-ihelp-choice={action.id}>
+           {action.label}</Link>:
+         <button key={action.id} type="button" data-video-ihelp-choice={action.id}
+           onClick={()=>{
+             // Explanation only: never reset the selected category, chosen
+             // scene list, music, phrases or the user-approved render.
+             addLine("user",action.prompt);
+             addLine("assistant",action.track==="video"?question(step):action.reply);
+           }}>{action.label}</button>)}
+       <button type="button" data-video-ihelp-free-question
+         onClick={()=>composerRef.current?.focus({preventScroll:true})}>
+         {locale==="ru"?"Задать другой вопрос":locale==="es"?"Hacer otra pregunta":"Ask another question"}
+       </button>
+     </div>
+   </details>}
    <div ref={threadRef} className={css.thread} role="log" aria-live="polite" aria-relevant="additions text">
-     {lines.map(line=>line.role==="assistant"?<div key={line.id} className={css.assistantTurn}
+     {showWelcome?<div className={css.welcome} data-video-chat-welcome>
+       <div className={css.welcomeHero}>
+         <p className={css.welcomeEyebrow}>iHelp · {t.title}</p>
+         <h2 className={css.welcomeTitle}><span>{w.hello}</span>{w.headline}</h2>
+         <p className={css.welcomeLead}>{w.lead}</p>
+       </div>
+       <div className={css.welcomeActions} role="group" aria-label={w.actions}>
+         <button type="button" data-video-chat-welcome-create
+           disabled={disabled||captureStarted} onClick={()=>setWelcomeDismissed(true)}>
+           <Film size={27} aria-hidden="true"/><strong>{w.create}</strong><ArrowRight size={19} aria-hidden="true"/>
+         </button>
+         <Link href={"/"+locale+"/mytube"} prefetch={false} data-video-chat-welcome-browse>
+           <Film size={27} aria-hidden="true"/><strong>{w.browse}</strong><ArrowRight size={19} aria-hidden="true"/>
+         </Link>
+         <button type="button" data-video-chat-welcome-help
+           disabled={disabled||captureStarted} onClick={()=>{setWelcomeDismissed(true);answer("помоги");}}>
+           <Sparkles size={27} aria-hidden="true"/><strong>{w.ideas}</strong><ArrowRight size={19} aria-hidden="true"/>
+         </button>
+       </div>
+       <div className={css.welcomeGoals} data-video-chat-welcome-goals>
+         <h3>{w.goal}</h3><p>{w.goalHint}</p>
+         <div className={css.goalRail} role="group" aria-label={w.goal}>
+           {choices.map(([label,value])=><button key={value} type="button"
+             data-video-chat-tree-choice={value} data-video-chat-welcome-goal={value}
+             disabled={disabled||captureStarted}
+             onClick={()=>{setWelcomeDismissed(true);answer(value);}}>
+             <span className={css.goalArt} aria-hidden="true"/><strong>{label}</strong>
+           </button>)}
+         </div>
+       </div>
+       <details className={css.welcomeHelp} data-video-chat-welcome-how>
+         <summary>{w.how}</summary><p>{w.help}</p>
+       </details>
+     </div>:lines.map(line=>line.role==="assistant"?<div key={line.id} className={css.assistantTurn}
          data-chat-assistant-turn={line.id}>
        <div className={css.assistant}>{line.text}</div>
        {line.id===activeAssistantId?<div className={css.inlineAnswers} data-chat-active-answer-panel="true">
@@ -876,7 +990,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      <textarea ref={composerRef} rows={2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
        onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();answer(input);}}}
        maxLength={800} disabled={disabled}
-       autoComplete="off" aria-label={t.placeholder} placeholder={t.placeholder}/>
+       autoComplete="off" aria-label={t.placeholder} placeholder={showWelcome?w.ownWords:t.placeholder}/>
      <button className={css.send} type="submit" aria-label={t.send} disabled={disabled||!input.trim()}><Send size={19}/></button>
    </form>
    <label className={css.aiOptIn}>
