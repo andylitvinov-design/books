@@ -130,3 +130,13 @@ test("Ideas Text and Voice have a shared, stateful single narration editor",()=>
  assert.match(studio,/data-video-ideas-record-voice/);
  assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
 });
+
+test("Ideas Voice subtab is visible on desktop and switches in the real voice browser",()=>{
+ const styles=read("components/mandala-video-mobile.module.css");
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(styles,/\[data-ideas-subtab="voice"\] \[data-video-legacy-phrase-editor\]\[data-video-ideas-recording-open="true"\]\{display:block!important\}/);
+ assert.match(browser,/const ideasModes=phrases\.locator/);
+ assert.match(browser,/data-ideas-subtab","voice"/);
+ assert.match(browser,/data-video-ideas-own-upload/);
+ assert.match(browser,/data-ideas-subtab","text"/);
+});

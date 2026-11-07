@@ -4842,3 +4842,6 @@
 .studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceAction{display:none!important}
 .studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-phrase-audio-shortcut]{display:none!important}
 @media(max-width:359px){.ideasSubtabs button{gap:5px;min-height:46px;font-size:15px}.ideasTabLetters{font-size:20px}.ideasVoiceUpload,.ideasVoiceActions>button{font-size:12px}}
+
+/* Voice stays visible on desktop and on mobile; Text mode retains its original collapsed editor. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{display:block!important}

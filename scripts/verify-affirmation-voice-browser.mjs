@@ -322,6 +322,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
+      // Verify the owner's new tab in the actual browser, without provider or file creation.
+      const ideasModes=phrases.locator("[data-video-ideas-tabs]");
+      await expect(ideasModes).toBeVisible();
+      await expect(ideasModes.locator('[data-video-ideas-tab="text"]')).toHaveAttribute("aria-pressed","true");
+      await expect(phrases.locator("[data-video-ideas-text-panel]")).toBeVisible();
+      await ideasModes.locator('[data-video-ideas-tab="voice"]').click();
+      await expect(phrases).toHaveAttribute("data-ideas-subtab","voice");
+      await expect(phrases.locator("[data-hypno-voice]")).toBeVisible();
+      await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(1);
+      await expect(phrases.locator('[data-video-affirmation-gender="male"]')).toBeVisible();
+      await ideasModes.locator('[data-video-ideas-tab="text"]').click();
+      await expect(phrases).toHaveAttribute("data-ideas-subtab","text");
+      await expect(phrases.locator("[data-video-ideas-text-panel]")).toBeVisible();
       // Owner-approved Phrases: measure the actual DOM in three iPhone widths.
       // These checks fail on double-row tabs, a tall portrait player or overflow.
       for(const width of [320,390,430]){
