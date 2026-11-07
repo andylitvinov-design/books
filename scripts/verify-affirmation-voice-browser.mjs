@@ -70,8 +70,10 @@ async function verifyWorkspaceHydration(browser,locale){
     await page.locator('[data-video-goal-mood="desired-happy"]').click();
     await page.locator('[data-video-goal-desired-choice="hope"]').click();
     await expect(page.locator('[data-video-goal-desired-choice="hope"]')).toHaveAttribute("aria-pressed","true");
-    await page.locator('[data-video-ideas-energy-score]').fill('5');
-    await page.locator('[data-video-ideas-state-score]').fill('7');
+    await page.locator('[data-video-ideas-energy-score]').focus();
+    await page.locator('[data-video-ideas-energy-score]').press('ArrowRight');
+    await page.locator('[data-video-ideas-state-score]').focus();
+    await page.locator('[data-video-ideas-state-score]').press('ArrowRight');
     await page.locator('[data-video-goal-clarify-continue]').click();
     const ideas=page.locator('[data-video-quick-control="phrases"]');
     await expect(ideas).toHaveAttribute("aria-pressed","true");

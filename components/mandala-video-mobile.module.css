@@ -4637,7 +4637,7 @@
 .goalRefinementContinue:focus-visible,.goalRefinementBack:focus-visible{
   outline:3px solid #176e6e;outline-offset:3px}
 .studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>
-  :not(.quickBrandBar):not(.quickVideoNav):not(.goalRefinement){
+  :not(.quickBrandBar):not(.quickVideoNav):not(.goalRefinement):not([data-video-director-chat-details][open]){
   display:none!important
 }
 .studio[data-active-workspace="video"][data-video-goal-page="clarify"] .quickBuilder>.goalRefinement{
