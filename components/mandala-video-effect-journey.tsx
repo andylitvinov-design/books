@@ -84,7 +84,9 @@ export function MandalaVideoEffectJourney({locale,status,progress,videoStarted,v
   const renderedProgress=Math.max(0,Math.min(100,Math.round(Number.isFinite(progress)?progress:0)));
   return <section className={styles.root} id="video-effect-journey" data-video-effect-journey data-video-effect-status={status} aria-label={t.invitation}>
     {status==="preparing"||status==="rendering"||status==="verifying"?<div className={styles.render}>
-      <strong>{t.progress}</strong>
+      <strong>{status==="verifying"
+        ?(locale==="ru"?"Проверка готового видео":locale==="es"?"Comprobando el vídeo":"Checking your video")
+        :t.progress}</strong>
       <p role="status" aria-live="polite">{status==="preparing"?t.preparing:status==="rendering"?t.rendering:t.verifying}</p>
       {status!=="preparing"?<div className={styles.track} role="progressbar" aria-label={t.progress}
         aria-valuemin={0} aria-valuemax={100} aria-valuenow={renderedProgress}>
