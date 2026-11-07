@@ -178,10 +178,11 @@ test('server routes require private owner/cron auth and do not create a second m
     assert.equal(route.includes('workflow_dispatch'),false);
   }
 });
-test('mobile dashboard includes fallback for unavailable DB and 320px layout',async()=>{
+test('mobile dashboard includes fallback for unavailable DB and compact phone layout',async()=>{
   const page=await readFile(new URL('../app/admin/command-center/page.tsx',import.meta.url),'utf8');
-  const css=await readFile(new URL('../app/admin/command-center/command-center.module.css',import.meta.url),'utf8');
+  const ui=await readFile(new URL('../app/admin/command-center/command-center-mobile.jsx',import.meta.url),'utf8');
+  const css=await readFile(new URL('../app/admin/command-center/command-center-mobile.module.css',import.meta.url),'utf8');
   assert.ok(page.includes('requireAdminRequest'));assert.ok(page.includes('snapshot=null'));
-  assert.ok(page.includes('CC_AGENT_REGISTRY'));assert.ok(page.includes('partial'));
-  assert.ok(css.includes('@media(max-width:600px)'));assert.ok(css.includes('min-width:0'));
+  assert.ok(page.includes('CC_AGENT_REGISTRY'));assert.ok(ui.includes('snapshot?.partial'));
+  assert.ok(css.includes('@media(max-width:340px)'));assert.ok(css.includes('min-width:0'));
 });
