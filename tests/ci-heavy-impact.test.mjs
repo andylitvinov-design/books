@@ -237,6 +237,22 @@ test('Video Studio and Hypnocorrection release branches run real browser and mac
   assert.match(yaml, /ffprobe -version/);
 });
 
+test('Video Goal UI release branches execute actual macOS WebKit, not a skipped required Specialist job',()=>{
+  const yaml=read('holistic-support-mandala.yml');
+  const mac=yaml.split('\n  voice-webkit-macos:\n')[1]?.split('\n  #',1)[0]||'';
+  const condition=mac.split('\n    if: ')[1]?.split('\n',1)[0]||'';
+  assert.ok(condition.includes("startsWith(github.head_ref, 'codex/video-goal-')"),
+    'video goal feature branches must start the required macOS WebKit job');
+  assert.match(mac,/needs: \[webkit_preflight\]/,
+    'real browser can only run after the source-backed preflight');
+  assert.match(mac,/runs-on: macos-15/,
+    'real WebKit must not be replaced by a Linux-only mock');
+  assert.match(mac,/node scripts\/verify-affirmation-voice-browser\.mjs/,
+    'actual encoded audio/video and recipient Goal path remain mandatory');
+  assert.doesNotMatch(mac,/continue-on-error:\s*true|if:\s*always\(\)/,
+    'cannot hide a failed browser run');
+});
+
 test('Video browser: avoid all unrelated route edits while retaining actual video, services and public About routes', () => {
   const yaml = read('site-video-browser.yml');
   const trigger = parsePrTrigger(yaml, 'site-video-browser.yml');
