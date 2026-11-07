@@ -98,6 +98,7 @@ const MandalaCinematicDirector = dynamic(() => import("./mandala-cinematic-direc
 const MandalaVideoDirectorChat = dynamic(() => import("./mandala-video-director-chat").then(module => module.MandalaVideoDirectorChat));
 const MandalaFirstVideoStart = dynamic(() => import("./mandala-first-video-start").then(module => module.MandalaFirstVideoStart));
 const MandalaStoriesCharacters = dynamic(() => import("./mandala-stories-characters").then(module => module.MandalaStoriesCharacters));
+const MandalaProEnhance = dynamic(() => import("./mandala-pro-enhance").then(module => module.MandalaProEnhance));
 const MandalaPersonalMeditation = dynamic(() => import("./mandala-personal-meditation").then(module => module.MandalaPersonalMeditation));
 const MandalaCloudVoiceStudio = dynamic(() => import("./mandala-cloud-voice-studio").then(module => module.MandalaCloudVoiceStudio));
 const MandalaPhraseCatalog = dynamic(() => import("./mandala-phrase-catalog").then(module => module.MandalaPhraseCatalog));
@@ -5859,6 +5860,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ?(locale==="ru"?"Как работают фразы поддержки":locale==="es"?"Cómo funcionan las frases":"How support phrases work")
               :activeWorkspace==="video"
               ?(locale==="ru"?"Создайте своё видео":locale==="es"?"Crea tu propio vídeo":"Create your own video")
+              :activeWorkspace==="pro"
+              ?(locale==="ru"?"Улучшите своё видео":locale==="es"?"Mejora tu vídeo":"Enhance your video")
               :(locale==="ru"?"Создавайте видео для поддержки, баланса и развития":
                 locale==="es"?"Crea vídeos para tu bienestar y crecimiento":
                 "Create videos for balance, support and growth")}</h2>
@@ -5870,6 +5873,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ?(locale==="ru"?"Практика, медитация или вдохновляющий ролик с вашим смыслом":
                 locale==="es"?"Una práctica, meditación o vídeo inspirador con sentido":
                 "Practice, meditation or an inspiring film with your meaning")
+              :activeWorkspace==="pro"
+              ?(locale==="ru"?"Выберите улучшение или создайте видео бесплатно.":locale==="es"?"Elige una mejora o crea un vídeo gratis.":"Choose an upgrade or create a free video.")
               :(locale==="ru"?"Персональные видео, медитации и практики под ваш запрос.":
                 locale==="es"?"Vídeos, meditaciones y prácticas para tu objetivo.":
                 "Personal videos, meditations and practices for your goals.")}</p>
@@ -7532,6 +7537,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
         </section>
 
+        <MandalaProEnhance locale={locale} disabled={recording||preparing||micRecording}
+          onGenerateFree={createQuickVideo}>
         <section className={videoStyles.quickSection} data-video-quick-personal data-workspace-section="pro" aria-labelledby="quick-personal-title">
           <div className={videoStyles.quickSectionHeading}>
             <h3 id="quick-personal-title"><Sparkles size={21} aria-hidden="true"/>{locale==="ru"?"Сюжеты и персонажи":locale==="es"?"Historias y personajes":"Stories & characters"}</h3>
@@ -7633,6 +7640,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>
           </div>
         </details>
+        </MandalaProEnhance>
         {activeWorkspace==="practices" ? <section className={videoStyles.workspaceCourses} data-workspace-section="practices">
           <details className={videoStyles.therapyRelatedDetails}>
             <summary>{locale==="ru"?"Другие курсы и медитации":locale==="es"?"Otros cursos y meditaciones":"Other courses and meditations"}<ChevronDown size={19} aria-hidden="true"/></summary>
