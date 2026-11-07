@@ -45,6 +45,19 @@ test('private push dispatch remains manual, cron paths are unique and housekeepi
    assert.match(pushRoute,/VERCEL_ENV==='preview'/)
    assert.match(pushRoute,/status:401/)
    assert.match(pushRoute,/PRIVATE_HEADERS/)
+  }else if(cron.path==='/api/internal/video-scout-hourly'){
+   // Reviewed production-only Video Scout metadata run, introduced after the
+   // original no-hourly assertion. No general hourly exception is granted.
+   assert.equal(cron.schedule,'17 * * * *','Video Scout is the only exact hourly L0 exception')
+   const scoutRoute=readFileSync('app/api/internal/video-scout-hourly/route.js','utf8')
+   assert.match(scoutRoute,/process\.env\.VERCEL_ENV\s*!==\s*['"]production['"]/)
+   assert.match(scoutRoute,/cronAuthorized\(request,process\.env\)/)
+   assert.match(scoutRoute,/status:\s*401/)
+   assert.match(scoutRoute,/HH_VIDEO_CLASSIFIER_ENABLED\s*===\s*['"]true['"]/)
+   const scoutRunner=readFileSync('lib/automations/scout-runner.js','utf8')
+   assert.match(scoutRunner,/HH_VIDEO_SCOUT_ENABLED\s*===\s*['"]false['"]/)
+   const scoutDb=readFileSync('lib/automations/scout-db.mjs','utf8')
+   assert.match(scoutDb,/enabled=true/,'source task must still require DB opt-in')
   }else assert.ok(hours.size<24,'hourly Vercel Cron is not allowed')
  }
 })
