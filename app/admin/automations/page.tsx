@@ -201,6 +201,10 @@ export default async function AutomationsPage(){
               <small>{editorialLabel(locale,reviewByCandidate.get(item.candidate_id)||null)}</small>
               <AutomationCandidateEditorialActions candidateId={item.candidate_id}
                 locale={locale} currentDecision={reviewByCandidate.get(item.candidate_id)||null}/>
+              {reviewByCandidate.get(item.candidate_id)==='shortlisted_for_rights_review'&&
+                <a href={'/api/admin/automations/candidates/dossier?candidateId='+encodeURIComponent(item.candidate_id)}
+                   download={'commons-rights-'+item.candidate_id+'.json'}
+                   rel="nofollow">{locale==='ru'?'Пакет проверки прав':locale==='es'?'Informe de derechos':'Rights research dossier'}</a>}
             </>}
         </article>)}</div>
         {!snapshot?.candidates.length&&<p className={styles.note}>{t.none}</p>}
