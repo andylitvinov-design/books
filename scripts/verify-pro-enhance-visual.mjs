@@ -46,6 +46,7 @@ export async function verifyProEnhanceVisual({BASE,chromium,webkit,expect}){
    await page.locator('[data-video-quick-control="pro"]').click();
    const panel=page.locator("[data-video-pro-enhance]");
    await expect(panel).toBeVisible({timeout:20000});
+   await expect(page.locator('[data-video-quick-controls] [data-video-quick-control="practices"]')).toHaveCount(1);
    const cards=panel.locator("[data-pro-upgrade-id]");
    await expect(cards).toHaveCount(6);
    await expect(cards.first()).toHaveAttribute("aria-pressed","true");

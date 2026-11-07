@@ -4723,6 +4723,25 @@
  .studio[data-active-workspace="pro"] .quickBuilder{gap:3px!important}
 }
 
+
+/* Structural fix: Goal → Ideas → Montage → Hypno → Course → PRO → Ready.
+   Keep both owner-approved Course and Ready navigable at 320–430px. */
+@media(max-width:759px){
+ .studio[data-active-workspace] .quickVideoNav{
+   display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;
+   gap:3px!important;min-width:0!important;overflow:visible!important
+ }
+ .studio[data-active-workspace] .quickVideoNav button{
+   min-width:0!important;padding:3px 0!important;
+   font-size:clamp(8px,2.25vw,10.5px)!important;line-height:1.08!important
+ }
+}
+@media(min-width:760px){
+ .studio[data-active-workspace] .quickVideoNav{
+   grid-template-columns:repeat(7,minmax(0,1fr))!important
+ }
+}
+
 /* Messenger Video validated handoff visibility.
    The compact Goals screen hides unopened advanced panels, not the original
    Director explicitly opened after a verified, one-use chat handoff.

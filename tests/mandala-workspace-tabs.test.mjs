@@ -5,11 +5,11 @@ import {test} from "node:test";
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 
-test("exactly six real workspaces with all RU EN ES labels",()=>{
+test("exactly seven real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","editor","effects","pro","ready"]);
+ assert.deepEqual(ids,["video","phrases","editor","effects","practices","pro","ready"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
@@ -23,7 +23,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
 test("top row uses local tab state rather than scrollIntoView or two anchors for settings",()=>{
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
  assert.match(nav,/setActiveWorkspace\(item\.id\)/);
- assert.match(nav,/aria-pressed=\{activeWorkspace===item\.id\|\|\(activeWorkspace==="practices"&&item\.id==="ready"\)\|\|\(!activeWorkspace&&item\.id==="video"\)\}/);
+ assert.match(nav,/aria-pressed=\{activeWorkspace===item\.id\|\|\(!activeWorkspace&&item\.id==="video"\)\}/);
  assert.match(nav,/aria-controls="video-workspace-panel"/);
  assert.doesNotMatch(nav,/scrollIntoView|openQuickDetailed|location\.hash|pushState/);
  assert.match(studio,/data-video-workspace-heading/);
@@ -49,8 +49,8 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
    "the one advanced style settings panel now belongs to the second Montage workspace");
  assert.match(studio,/\{deepVideoPane\}/);
 });
-test("mobile has six compact navigation columns, without removing old player or protected audio",()=>{
- assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+test("mobile has seven compact navigation columns, without removing old player or protected audio",()=>{
+ assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
  assert.match(css,/quickVideoNav button\[aria-pressed="true"\]/);
  assert.match(css,/data-active-workspace="phrases"/);
  assert.match(css,/data-active-workspace="effects"/);
@@ -319,4 +319,15 @@ test("validated Messenger video handoff visibly opens the original Studio Direct
  assert.doesNotMatch(rule,/display:none!important/,"the opened handoff must be visible");
  assert.match(css,/\[data-workspace-section="video"\]:not\(\[data-video-topic-section\]\)\s*\{\s*display:none!important;/,
    "unopened legacy Goals sections remain hidden");
+});
+
+
+test("Course is a real independent top tab; Ready is not aliased to Course",()=>{
+ const tabs=studio.slice(studio.indexOf("const workspaceTabs=["),studio.indexOf("] as const;",studio.indexOf("const workspaceTabs=[")));
+ assert.match(tabs,/id:"practices",Icon:Leaf/);
+ assert.ok(tabs.indexOf('id:"practices"')<tabs.indexOf('id:"pro"'));
+ assert.ok(tabs.indexOf('id:"pro"')<tabs.indexOf('id:"ready"'));
+ assert.match(studio,/setStudioMode\(item\.id==="practices"\?"therapy":"pump"\)/);
+ assert.doesNotMatch(studio,/activeWorkspace==="practices"&&item\.id==="ready"/);
+ assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)!important/);
 });

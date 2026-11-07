@@ -39,8 +39,8 @@ async function verifyWorkspaceHydration(browser,locale){
     const studio=page.locator('[data-video-studio-hydrated]');
     const tabs=page.locator('[data-video-quick-controls] button');
     await expect(studio).toHaveAttribute("data-video-studio-hydrated","false",{timeout:60000});
-    await expect(tabs).toHaveCount(6);
-    for(let i=0;i<6;i++)await expect(tabs.nth(i)).toBeDisabled();
+    await expect(tabs).toHaveCount(7);
+    for(let i=0;i<7;i++)await expect(tabs.nth(i)).toBeDisabled();
     // Native first-screen navigation: only real visible clicks.
     const continueToIdeas=page.locator('[data-video-continue-scenarios]');
     const allStories=page.locator('[data-auto-video-all-scenes]');

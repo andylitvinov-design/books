@@ -247,11 +247,11 @@ const workspaceCopy = {
   editor:{tab:"Montaje",title:"Generación rápida",desc:"Estilos de vídeo, foto, voz y música."}
  }
 } as const;
-// One row, six real existing workspace destinations. No anchor-only navigation.
+// The Course stage remains independently available; Ready follows PRO.
 const workspaceTabs=[
  {id:"video",Icon:Film},{id:"phrases",Icon:Heart},
  {id:"editor",Icon:Scissors},{id:"effects",Icon:Sparkles},
- {id:"pro",Icon:Zap},{id:"ready",Icon:Check}
+ {id:"practices",Icon:Leaf},{id:"pro",Icon:Zap},{id:"ready",Icon:Check}
 ] as const;
 const mobileWorkspaceCopy={
  ru:{video:"Цель",editor:"Монтаж",phrases:"Идеи",effects:"Гипно",practices:"Курс",pro:"PRO",ready:"Ready"},
@@ -5618,7 +5618,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         onKeyDownCapture={event=>{if(event.key==="Enter"||event.key===" ")quickNavTokenRef.current++;}}>
         {workspaceTabs.map(item=><button type="button" key={item.id}
           data-video-quick-control={item.id} aria-label={workspaceCopy[locale][item.id].tab}
-          aria-pressed={activeWorkspace===item.id||(activeWorkspace==="practices"&&item.id==="ready")||(!activeWorkspace&&item.id==="video")}
+          aria-pressed={activeWorkspace===item.id||(!activeWorkspace&&item.id==="video")}
           aria-controls="video-workspace-panel" disabled={!studioHydrated||recording||preparing}
           onClick={()=>{
             // A new workspace is explicit user intent: retire stale catalog jumps.
@@ -5626,7 +5626,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             setActiveWorkspace(item.id);
             if(item.id==="editor")setMontagePanel("effects");
             setIntroPlaying(false);
-            setStudioMode("pump");
+            setStudioMode(item.id==="practices"?"therapy":"pump");
             setTherapyJumpRequested(false);
           }}><item.Icon size={18} aria-hidden="true"/>
           <span className={videoStyles.quickNavFull}>{workspaceCopy[locale][item.id].tab}</span>
