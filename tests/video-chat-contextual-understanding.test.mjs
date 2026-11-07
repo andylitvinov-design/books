@@ -154,8 +154,11 @@ test("inline answers and free text share the same state machine and renderer",()
    "function buttons must be in the active bot turn");
  assert.ok(chat.includes("{composer}")&&chat.includes("data-video-chat-composer"),
    "the welcome and dialogue must reuse one executable form");
- assert.ok(chat.includes("{showWelcome&&chatNav}")&&chat.includes("{!showWelcome&&chatNav}"),
-   "focus order follows visual order: bottom tabs on welcome, top tabs in conversation");
+ assert.ok(chat.includes("{chatNav}")&&!chat.includes("{showWelcome&&chatNav}")&&
+   !chat.includes("{!showWelcome&&chatNav}"),
+   "one bottom tab navigation shared by welcome and all conversation stages");
+ assert.ok(chat.indexOf("{chatNav}",composerAfterThread)>composerAfterThread,
+   "keyboard focus follows the visible reply composer before bottom navigation");
  for(const marker of ["line.id===activeAssistantId","data-chat-assistant-turn",
    "data-chat-choice-stage={step}","data-video-chat-skip-phrase",
    "data-video-chat-tree-choice","onClick={()=>answer(value)}",
