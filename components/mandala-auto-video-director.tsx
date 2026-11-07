@@ -1056,7 +1056,8 @@ export function MandalaAutoVideoDirector({
    {goalTarget?createPortal(goalPanel,goalTarget):goalPanel}
    {topicTarget?createPortal(quickTopicPanel,topicTarget):null}
    {ideaTarget?createPortal(<details className={css.ideaRefinement} data-video-ideas-refinement
-     open={ideaRefinementOpen} onToggle={event=>setIdeaRefinementOpen(event.currentTarget.open)}>
+     data-refinement-expanded={ideaRefinementOpen?"true":"false"}
+      onToggle={event=>setIdeaRefinementOpen(event.currentTarget.open)}>
      <summary>{locale==="ru"?"Уточнить тему, смысл и сценарий (по желанию)":
        locale==="es"?"Explorar tema, significado y guion (opcional)":
        "Refine topic, meaning and story (optional)"}</summary>
