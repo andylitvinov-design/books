@@ -46,3 +46,11 @@ test('reject blank, oversized, invalid tasks, do not auto-promote review-only',(
  assert.ok(!loader.select('ESLint lint autofix').some(s=>s.status==='review_only'));
  assert.match(fs.readFileSync(path.join(home,'README.md'),'utf8'),/no tool permissions|not.*grant|does \*\*not\*\*/i);
 });
+test('rejects outdated native skill version and stale procedures after catalog revision',()=>{
+ const skill=loader.readCatalog().find(s=>s.id==='task-architect');
+ const raw=fs.readFileSync(path.join(home,loader.folderName(skill),'SKILL.md'),'utf8');
+ assert.equal(skill.version,'1.1.0');
+ assert.equal(loader.checkSkillSync(skill,raw),true);
+ assert.throws(()=>loader.checkSkillSync(skill,raw.replace('  version: "1.1.0"','  version: "0.0.0"')),/SKILL_VERSION_MISMATCH/);
+ assert.throws(()=>loader.checkSkillSync(skill,raw.replace('2. '+skill.steps[1], '2. Устаревший этап')),/SKILL_PROCEDURE_DRIFT/);
+});

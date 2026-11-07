@@ -36,6 +36,14 @@ function select(task,options={}){
  push('context-assembler');push('independent-reviewer');
  return chosen.slice(0,count);
 }
+function checkSkillSync(s,raw){
+ if(s.status!=='curated')return true;
+ if(!raw.includes('\n  version: "'+s.version+'"\n'))throw Error('SKILL_VERSION_MISMATCH '+s.id);
+ for(let i=0;i<s.steps.length;i++){
+  if(!raw.includes('\n'+(i+1)+'. '+s.steps[i]+'\n'))throw Error('SKILL_PROCEDURE_DRIFT '+s.id+' step '+(i+1));
+ }
+ return true;
+}
 function getSkill(s){
  if(!s||!REG.test(s.id))throw Error('BAD_SKILL_ID');
  const folder=folderName(s);
@@ -47,6 +55,7 @@ function getSkill(s){
  const front=raw.match(NAME_RE);
  if(!front||front[1]!==folder||!raw.includes('## Стоп-условия')&&!raw.includes('# Stop / no shortcuts'))throw Error('INVALID_NATIVE_SKILL '+folder);
  if(/\nallowed-tools:/i.test(raw.slice(0,1000)))throw Error('UNTRUSTED_TOOL_GRANT');
+ checkSkillSync(s,raw);
  return {id:s.id,name:folder,title:s.title,status:s.status,version:s.version,path:path.relative(ROOT,filename).replace(/\\/g,'/'),text:raw};
 }
 function resolve(task,options={}){
@@ -65,4 +74,4 @@ if(require.main===module){
   }catch(e){process.stderr.write('Skill resolution stopped: '+String(e.message||e)+'\n');process.exitCode=1}
  }
 }
-module.exports={readCatalog,folderName,select,getSkill,resolve};
+module.exports={readCatalog,folderName,select,checkSkillSync,getSkill,resolve};
