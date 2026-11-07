@@ -183,7 +183,8 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
   assert.match(voice,/data-video-affirmation-bed/);
   assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
   assert.match(browser,/await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
-  assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\)/);
+  assert.match(browser,/await expect\(voiceOptions\)\.toHaveAttribute\("open","",\{timeout:15000\}\)/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\{timeout:15000\}\)/);
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
   assert.match(browser,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
   assert.match(browser,/assert\.ok\(audioTrack/);
