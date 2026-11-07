@@ -24,7 +24,8 @@ test('trusted PR only',()=>{
 });
 test('progress is evidence-based, no synthetic zero percent when empty',()=>{
  assert.deepEqual(projectProgress([]),{verified:0,total:0,ratio:null});
- assert.deepEqual(projectProgress([{state:'planned'},{state:'completed_verified'},{state:'running'}]),{verified:1,total:3,ratio:1/3});
+ assert.deepEqual(projectProgress([{state:'planned'},{state:'completed_verified',has_evidence:true},{state:'running'}]),{verified:1,total:3,ratio:1/3});
+ assert.deepEqual(projectProgress([{state:'completed_verified',has_evidence:false},{state:'planned'}]),{verified:0,total:2,ratio:0});
 });
 test('exact CI vs merge vs served code vs functional smoke are distinct',()=>{
  assert.equal(deliveryLabel(null).code,'UNKNOWN');
