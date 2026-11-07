@@ -33,10 +33,15 @@ export async function verifyGuidedPractices({browser,base,engine}){
         waitUntil:"domcontentloaded",timeout:70000,
       });
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
-      await page.locator('[data-video-quick-control="practices"]').click();
+      // The six-tab Video Studio intentionally has no old "practices" tab.
+      // Enter through the actual visitor-visible Courses banner instead.
+      const enterCourse=page.locator("[data-video-therapy-start]");
+      await expect(enterCourse).toBeVisible({timeout:25000});
+      await expect(enterCourse).toBeEnabled();
+      await enterCourse.click();
       const course=page.locator("[data-video-guided-course]");
       await course.waitFor({state:"visible",timeout:25000});
-      assert.equal(await page.locator('[data-video-quick-control="practices"]').getAttribute("aria-pressed"),"true");
+      await expect(page.locator("[data-video-therapy-banner]")).toHaveCount(0);
       const generate=course.locator("[data-guided-generate-meditation]");
       assert.equal(await generate.isDisabled(),true,"state mode needs an explicit choice");
       assert.equal(await course.locator("[data-guided-focus-state]").count(),6,

@@ -128,3 +128,19 @@ test("visitor-opened iHelp remains visible above the compact three-question Goal
  assert.match(studio,/window\.addEventListener\("hh:ihelp-open-video-director"/);
  assert.match(studio,/role=\{videoIHelpOpen\?"dialog":undefined\}/);
 });
+
+test("guided course uses the real visible banner, not retired seventh tab",()=>{
+ const actual=read("scripts/verify-mandala-practices-browser.mjs");
+ assert.match(studio,/data-video-therapy-start[\s\S]*?setActiveWorkspace\("practices"\);setStudioMode\("therapy"\)/);
+ const hydrated=actual.indexOf("data-video-studio-hydrated");
+ const button=actual.indexOf('const enterCourse=page.locator("[data-video-therapy-start]")');
+ const realTap=actual.indexOf("await enterCourse.click()",button);
+ const opened=actual.indexOf('course.waitFor({state:"visible"',realTap);
+ assert.ok(hydrated>=0&&button>hydrated&&realTap>button&&opened>realTap,
+   "real hydrated UI must reveal course only after a visitor-visible tap");
+ assert.doesNotMatch(actual,/data-video-quick-control="practices"/);
+ for(const feature of ["data-guided-focus-state","data-guided-generate-meditation",
+   "data-guided-eight-sessions","data-guided-open-personal-meditation",
+   "data-meditation-course-contact","data-meditation-course-submit"])
+   assert.ok(actual.includes(feature),"keep substantive/private course acceptance: "+feature);
+});

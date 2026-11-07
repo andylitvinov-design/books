@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {CRM_PRIVATE_COMMAND_SCOPE,telegramCompanionNativeCommands,
  mergeTelegramCompanionNativeCommands,telegramCompanionCommandsEqual,
- telegramCompanionCommandSetupReady} from '../lib/crm/telegram-companion-native-commands.mjs';
+ telegramCompanionCommandSetupReady,shouldBootstrapTelegramNativeMenu} from '../lib/crm/telegram-companion-native-commands.mjs';
 test('native menu is scoped to private chats and available in RU EN ES',()=>{
  assert.deepEqual(CRM_PRIVATE_COMMAND_SCOPE,{type:'all_private_chats'});
  for(const locale of ['ru','en','es']){
@@ -43,4 +43,28 @@ test('provider verifies exact signed webhook, preserves existing web app and nev
 test('existing 09:00 Toronto signed cron schedules metadata-only bootstrap',()=>{
  const cron=readFileSync(new URL('../app/api/internal/practice-telegram-digest/route.js',import.meta.url),'utf8');
  for(const marker of ['torontoReportDue','ensureTelegramCompanionNativeMenu','HH_CRM_TG_COMMAND_MENU_SETUP_FAILED','after(async()=>'])assert.ok(cron.includes(marker),marker);
+});
+
+test('signed customer Home commands bootstrap native Menu immediately and only intentionally',()=>{
+ const event=rawText=>({type:'incoming',rawText});
+ for(const raw of ['/menu','/start','/home','/menu@holistichouse_bot','Привет','hello','hola'])
+  assert.equal(shouldBootstrapTelegramNativeMenu(event(raw),'holistichouse_bot'),true,raw);
+ for(const raw of ['/start hhreview_ru','/stop','/daily','/ai_off','/menu@other_bot','/video','abc'])
+  assert.equal(shouldBootstrapTelegramNativeMenu(event(raw),'holistichouse_bot'),false,raw);
+ assert.equal(shouldBootstrapTelegramNativeMenu({type:'incoming',rawText:'/menu',callbackId:'callback'},'holistichouse_bot'),false);
+ assert.equal(shouldBootstrapTelegramNativeMenu({type:'incoming',rawText:'/menu',inlineAction:'home:home'},'holistichouse_bot'),false);
+ assert.equal(shouldBootstrapTelegramNativeMenu({type:'incoming',rawText:'/menu',photoFileId:'abc'},'holistichouse_bot'),false);
+ assert.equal(shouldBootstrapTelegramNativeMenu({type:'receipt',rawText:'/menu'},'holistichouse_bot'),false);
+});
+test('first Home reply may bootstrap native Menu once per hour without blocking message sends',()=>{
+ const route=readFileSync(new URL('../app/api/app/crm/messenger/webhook/[provider]/route.js',import.meta.url),'utf8');
+ assert.ok(route.includes('if(companion.text&&!event.callbackId&&shouldBootstrapTelegramNativeMenu('));
+ assert.ok(route.includes("consumeRate(config,{op:'hh-crm-tg-native-menu-on-first-home'},1,3600)"));
+ assert.ok(route.includes("HH_CRM_TG_COMMAND_MENU_READY"));
+ assert.ok(route.includes("HH_CRM_TG_COMMAND_MENU_NOT_READY"));
+ assert.ok(route.includes("HH_CRM_TG_COMMAND_MENU_SETUP_FAILED"));
+ assert.ok(route.includes('after(async()=>'));
+ // It must not mutate webhooks and must not interfere with existing customer /stop.
+ assert.ok(route.includes('const intake=companion.reviewRequested'));
+ assert.ok(route.includes('const video=await receiveOwnerTelegramVideoWebhook'));
 });
