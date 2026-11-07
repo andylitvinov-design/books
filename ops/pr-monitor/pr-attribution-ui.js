@@ -131,6 +131,7 @@
     const stamp=elt('p','hh-pr-audit-stamp',
       `${fmtDate(data.created_at)} — ${fmtDate(data.ended_at)} · ${data.state==='merged'?'Смёржен':data.state==='open'?'Открыт':'Закрыт без merge'}`);
     result.append(stamp);
+    if(window.HHPrLifecycle?.render)window.HHPrLifecycle.render(result,data);
     const live=data.live_evidence;
     const proof=elt('div','hh-pr-audit-alert',live?
       'LIVE подтверждён '+fmtDate(live.live_at)+' · Merge → LIVE: '+

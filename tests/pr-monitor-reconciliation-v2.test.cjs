@@ -41,8 +41,10 @@ test('monitor labels distinguish non-Draft, CI workflow count and stale Watchdog
  const watchdog=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/watchdog-control-tower.js'),'utf8');
  assert.match(queue,/Не Draft <b data-hhq="ready">/);
  assert.match(queue,/CI и merge могут быть заблокированы/);
- assert.match(source,/Workflows \(не PR\) · jobs выполняются/);
- assert.match(source,/Workflows \(не PR\) · jobs ожидают/);
+ assert.match(source,/Подтверждённые CI jobs · активных workflow:/);
+ assert.match(source,/Ожидающие CI jobs · Stale CI:/);
+ assert.match(source,/cells\.running\.n\.textContent='—'/);
+ assert.match(source,/cells\.queued\.n\.textContent='—'/);
  assert.match(watchdog,/info\.dataset\.stale/);
  assert.match(watchdog,/20/);
  const workflow=fs.readFileSync(path.join(__dirname,'../.github/workflows/hh-pr-watchdog-contract-ci.yml'),'utf8');

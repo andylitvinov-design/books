@@ -127,11 +127,27 @@
         return '≥'+String(queueFallback.queued);
       return '—';
     }
+    var verified=window.__hhCiVerifiedSnapshot;
+    var age=Date.now()-Date.parse(verified?.observed_at||'');
+    if(verified?.schema==='HH_CI_VERIFIED_LOAD_V1' && verified.coverage && verified.ci &&
+       Number.isFinite(age) && age>=0 && age<=120000){
+      var complete=verified.coverage.complete===true;
+      var val=function(n){return validCount(n)?(complete?'':'≥')+n:'—';};
+      cells.running.n.textContent=val(verified.ci.running_jobs);
+      cells.queued.n.textContent=val(verified.ci.queued_jobs);
+      cells.running.sub.textContent='Подтверждённые CI jobs · активных workflow: '+val(verified.ci.active_workflows);
+      cells.queued.sub.textContent='Ожидающие CI jobs · Stale CI: '+val(verified.ci.stale_workflows);
+      status.textContent='GitHub CI jobs, не workflow · проверено '+verified.coverage.checked_runs+
+        '/'+verified.coverage.listed_runs+' · '+(complete?'полный охват':'нижняя граница ≥')+
+        ' · Пропуски GitHub cron и другие работы ниже.';
+      return;
+    }
+    // No verified job-level census. Legacy workflow statuses are not live load.
     var running=one(2), queued=one(1);
-    cells.running.n.textContent=running;
-    cells.queued.n.textContent=queued;
-    cells.running.sub.textContent='Workflows (не PR) · jobs выполняются: '+one(4);
-    cells.queued.sub.textContent='Workflows (не PR) · jobs ожидают: '+one(3);
+    cells.running.n.textContent='—';
+    cells.queued.n.textContent='—';
+    cells.running.sub.textContent='Реальные jobs неизвестны · workflow status '+running;
+    cells.queued.sub.textContent='Реальные jobs неизвестны · workflow status '+queued;
     var sourceNote=queueFallback?
       'Основной API: '+(queueError||'нет полных данных')+
       '. Резерв: отфильтрованные CI workflows · '+(queueFallback.from_cache?'сохранённый':'новый')+
@@ -143,6 +159,7 @@
        'Источник очереди: '+queueError+'. Повторить через штатную кнопку «Обновить».':
        'Только подтверждённые числа; неизвестное не равно 0.'));
   }
+  if(typeof window.addEventListener==='function')window.addEventListener('hh:ci-verified-updated',showQueue);
   async function readQueue() {
     try {
       if (originalQueue()?.slice(1,3).every(function(v){return /^\d+$/.test(v);})) {
