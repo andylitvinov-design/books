@@ -2258,6 +2258,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     };
   },[creditCatalog?.ready,refreshCreditSession]);
   const [musicWarning,setMusicWarning] = useState("");
+  // Declare before the guest-first useEffect: TS/Next validates this
+  // hook state before it is referenced, even when effect runs later.
+  // A nonempty MediaRecorder blob does NOT prove Safari can decode it.
+  const [playbackStatus, setPlaybackStatus] = useState<"checking"|"ready"|"failed">("checking");
   const [result, setResult] = useState<Result | null>(null);
   useEffect(()=>{
     // Consume the anonymous local trial only once a real encoded Blob exists.
@@ -2269,8 +2273,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [exportUnavailable, setExportUnavailable] = useState(false);
   // Browser-only non-personal diagnostic; the user opts in to lower-res retry.
   const [webkitRecoveryReason,setWebkitRecoveryReason] = useState<string|null>(null);
-  // A nonempty MediaRecorder blob does NOT prove Safari can decode it.
-  const [playbackStatus, setPlaybackStatus] = useState<"checking"|"ready"|"failed">("checking");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const resultVideoRef=useRef<HTMLVideoElement>(null);
   const quickThemeAdvancedRef=useRef<HTMLDetailsElement>(null);
