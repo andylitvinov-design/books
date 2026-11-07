@@ -275,6 +275,112 @@ async function inspect(browserType,locale,width){
       results.push({id:marker,pinned:true,route:path,authenticated:false});
     }
   }
+  // Owner-approved 07 Nov Ideas → Voice Warm Peach color QA. Same real
+  // public Studio/editor, never a painted mock or an extra test server.
+  if(browserType===webkit && (width===390 || (locale==="ru" && width===320))){
+    await page.goto(origin+"/"+locale+"/holistic-support/mandala",{
+      waitUntil:"domcontentloaded",timeout:75000,
+    });
+    const ideaButton=page.locator('[data-video-quick-control="phrases"]');
+    await ideaButton.waitFor({state:"visible",timeout:30000});
+    await page.waitForFunction(()=>{
+      const link=document.querySelector('[data-video-quick-control="phrases"]');
+      return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
+    },null,{timeout:20000});
+    await ideaButton.click();
+    const voiceButton=page.locator('[data-video-ideas-tab="voice"]');
+    await voiceButton.waitFor({state:"visible",timeout:30000});
+    await voiceButton.click();
+    const voice=page.locator('[data-ideas-subtab="voice"] [data-hypno-voice]');
+    await voice.waitFor({state:"visible",timeout:30000});
+    const palette=await page.evaluate(()=>{
+      const root=document.querySelector('[data-mandala-mode="video"]');
+      const card=document.querySelector('[data-ideas-subtab="voice"] [data-hypno-voice]');
+      const picker=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-voice]');
+      const phrase=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-selection-summary]');
+      const selected=document.querySelector('[data-video-ideas-tab="voice"]');
+      const c=node=>node?getComputedStyle(node):null;
+      return {background:c(root)?.backgroundImage||"",card:c(card)?.backgroundColor||"",
+        border:c(card)?.borderTopColor||"",ink:c(picker)?.color||"",
+        pickerBackground:c(picker)?.backgroundColor||"",
+        pickerBorder:c(picker)?.borderTopColor||"",
+        phrase:c(phrase)?.backgroundColor||"",
+        selected:c(selected)?.backgroundImage||"",
+        width:document.documentElement.scrollWidth,
+        viewport:window.innerWidth,
+        dockCount:document.querySelectorAll('[data-hh-unified-dock]').length};
+    });
+    assert.match(palette.background,/rgb\(255,\s*247,\s*243\)/,
+      id+" Voice page must use peach-ivory canvas");
+    assert.equal(palette.card,"rgb(255, 252, 250)",
+      id+" Voice neutral card must be warm near-white");
+    assert.equal(palette.border,"rgb(234, 223, 217)",
+      id+" neutral card border must not be sage green");
+    assert.equal(palette.ink,"rgb(20, 43, 61)",
+      id+" original voice picker has Studio ink");
+    assert.equal(palette.pickerBackground,"rgb(255, 252, 250)",
+      id+" the nested TTS picker must not inherit green sage gradient");
+    assert.equal(palette.pickerBorder,"rgb(234, 223, 217)",
+      id+" TTS picker neutral border is warm not green");
+    assert.equal(palette.phrase,"rgb(255, 249, 245)",
+      id+" phrase inset stays warm, not green");
+    assert.match(palette.selected,/rgb\(8,\s*126,\s*97\)/,
+      id+" active Voice tab uses accessible emerald");
+    assert.ok(palette.width<=palette.viewport+2,
+      id+" Ideas Voice has no horizontal document overflow");
+    assert.equal(palette.dockCount,1,id+" one fixed Holistic House dock");
+    await voice.scrollIntoViewIfNeeded({timeout:15000});
+    await page.screenshot({
+      path:folder+"/ideas-voice-warm-peach-"+locale+"-"+width+"-webkit.png",
+      fullPage:false,animations:"disabled",
+    });
+    results.push({id:id+":ideas-voice-color",palette,passed:true});
+  }
+  // Design Bible §10.13: inspect the REAL six-workspace Studio DOM in one
+  // WebKit RU390 session without calling any TTS/video render provider.
+  if(browserType===webkit && locale==="ru" && width===390){
+    for(const tab of ["video","phrases","editor","effects","pro","ready"]){
+      const nav=page.locator('[data-video-quick-control="'+tab+'"]');
+      await nav.click({timeout:30000});
+      await page.waitForFunction(expected=>{
+        return document.querySelector('[data-active-workspace]')?.getAttribute("data-active-workspace")===expected;
+      },tab,{timeout:20000});
+      const palette=await page.evaluate(tab=>{
+        const root=document.querySelector('[data-mandala-mode="video"]');
+        const studio=document.querySelector('[data-active-workspace="'+tab+'"]');
+        const active=document.querySelector('[data-video-quick-control="'+tab+'"]');
+        const computed=studio?getComputedStyle(studio):null;
+        return {background:root?getComputedStyle(root).backgroundImage:"",
+          surface:computed?.getPropertyValue("--hh-studio-surface").trim()||"",
+          ink:computed?.getPropertyValue("--hh-studio-ink").trim()||"",
+          border:computed?.getPropertyValue("--hh-studio-border").trim()||"",
+          muted:computed?.getPropertyValue("--hh-studio-muted").trim()||"",
+          primary:computed?.getPropertyValue("--hh-studio-primary").trim()||"",
+          active:active?.getAttribute("aria-pressed"),
+          activeInk:active?getComputedStyle(active).color:"",
+          width:document.documentElement.scrollWidth, viewport:innerWidth,
+          dockCount:document.querySelectorAll("[data-hh-unified-dock]").length,
+        };
+      },tab);
+      assert.match(palette.background,/rgb\(255,\s*247,\s*243\)/,
+        id+" "+tab+" warm Studio canvas");
+      assert.deepEqual(
+        [palette.surface,palette.ink,palette.border,palette.muted,palette.primary],
+        ["#FFFCFA","#142B3D","#EADFD9","#5D6A71","#087E61"],
+        id+" "+tab+" inherits the SAME Design Bible palette");
+      assert.equal(palette.active,"true",id+" "+tab+" is the selected real workspace");
+      assert.equal(palette.activeInk,"rgb(255, 255, 255)",
+        id+" "+tab+" active control remains readable");
+      assert.ok(palette.width<=palette.viewport+2,id+" "+tab+" no document overflow");
+      assert.equal(palette.dockCount,1,id+" "+tab+" one fixed Holistic House dock");
+      await nav.scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path:folder+"/studio-palette-"+tab+"-ru-390-webkit.png",
+        fullPage:false,animations:"disabled",
+      });
+      results.push({id:id+":studio-"+tab,palette,passed:true});
+    }
+  }
   if(browserType===webkit && locale==="ru" && width===390){
     // Simulates navigator.standalone, not Safari View Controller on a phone.
     await page.addInitScript(()=>Object.defineProperty(navigator,"standalone",{

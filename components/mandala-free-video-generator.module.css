@@ -51,3 +51,31 @@
   .filters{grid-template-columns:minmax(0,1fr)}
   .controls button{flex:1 1 110px;padding:8px}}
 @media(prefers-reduced-motion:reduce){.options summary svg{transition:none}}
+
+/* Design Bible §10.13 — procedural animation composer is part of Goal.
+   Recolor UI chrome, not generated Canvas/image frames. */
+:global([data-mandala-mode="video"]) .root{
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) .heading h3{
+  color:var(--hh-studio-forest,#14523F)
+}
+:global([data-mandala-mode="video"]) .heading p{
+  color:var(--hh-studio-muted,#5D6A71)
+}
+:global([data-mandala-mode="video"]) :is(
+  .prompt textarea,.options,.filters select,
+  .family button:not([aria-pressed="true"])
+){
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .controls button:first-child{
+  background:var(--hh-studio-primary,#087E61);
+  border-color:var(--hh-studio-deep,#006B4B);
+  color:#FFFFFF
+}

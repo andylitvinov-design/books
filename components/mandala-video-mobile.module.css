@@ -1,6 +1,23 @@
 /* Mobile first Video Studio, art-directed to the approved Holistic House mock.
    The same local renderers are used for thumbnails, preview and exported clips. */
-.studio{--ink:#183d35;--green:#07936c;--cream:var(--hh-light-canvas);--edge:#e9e6db;
+.studio{
+  /* Studio Warm Peach: ONE semantic palette inherited by all seven real
+     Video Studio workspaces and nested original editors. */
+  --hh-studio-canvas:#FFF7F3;
+  --hh-studio-edge:#FFF0E8;
+  --hh-studio-surface:#FFFCFA;
+  --hh-studio-inset:#FFF9F5;
+  --hh-studio-border:#EADFD9;
+  --hh-studio-divider:#EEE6E0;
+  --hh-studio-shadow:0 5px 18px rgb(66 42 31 / 7%);
+  --hh-studio-ink:#142B3D;
+  --hh-studio-forest:#14523F;
+  --hh-studio-muted:#5D6A71;
+  --hh-studio-primary:#087E61;
+  --hh-studio-deep:#006B4B;
+  --hh-studio-selected:#EAF5EC;
+  --ink:var(--hh-studio-ink);--green:var(--hh-studio-primary);
+  --cream:var(--hh-studio-canvas);--edge:var(--hh-studio-border);
   color:var(--ink);font:500 14px/1.4 Arial,Helvetica,sans-serif;min-width:0;
   max-width:960px;margin:0 auto;padding:2px 0 76px}
 .studio *{box-sizing:border-box}
@@ -3552,10 +3569,10 @@
     color:#087b60!important;
   }
   .studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"] {
-    border-color:#0a8967!important;
-    background:linear-gradient(145deg,#27a782,#08795f)!important;
+    border-color:var(--hh-studio-deep,#006B4B)!important;
+    background:linear-gradient(120deg,var(--hh-studio-primary,#087E61),var(--hh-studio-deep,#006B4B))!important;
     color:#fff!important;
-    box-shadow:0 3px 9px #06775c2a!important;
+    box-shadow:0 5px 18px rgb(66 42 31 / 12%)!important;
   }
   .studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"] svg {
     color:#fff!important;
@@ -4996,3 +5013,185 @@
 @media(max-width:370px){.recipientAudioSteps{padding:9px}
  .recipientAudioStep{grid-template-columns:26px minmax(0,1fr);gap:7px}
  .recipientAudioActions{grid-template-columns:1fr}}
+
+/* Design Bible §10.12 (07 Nov): Ideas → Voice is Studio Warm Peach, not the
+   old gray/sage phrase-editor theme. This is deliberately scoped to the real
+   Ideas Voice state; Text, Goal, Montage, Hypno, PRO and shared video canvas
+   retain their own intentional palettes and functional state. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"]{
+  --hh-voice-ink:#142B3D;
+  --hh-voice-forest:#14523F;
+  --hh-voice-muted:#5D6A71;
+  --hh-voice-card:#FFFCFA;
+  --hh-voice-field:#FFF9F5;
+  --hh-voice-border:#EADFD9;
+  --hh-voice-divider:#EEE6E0;
+  --hh-voice-emerald:#087E61;
+  --hh-voice-emerald-deep:#006B4B;
+  --hh-voice-mint:#EAF5EC;
+  --hh-voice-shadow:0 5px 18px rgb(66 42 31 / 7%);
+  color:var(--hh-voice-ink)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasSubtabs{
+  background:var(--hh-voice-card);border-color:var(--hh-voice-border);
+  box-shadow:var(--hh-voice-shadow)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasSubtabs button:not([aria-pressed="true"]){
+  color:var(--hh-voice-forest);background:transparent
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasSubtabs button[aria-pressed="true"]{
+  color:#fff;border-color:var(--hh-voice-emerald-deep);
+  background:linear-gradient(120deg,var(--hh-voice-emerald),var(--hh-voice-emerald-deep));
+  box-shadow:0 4px 12px rgb(66 42 31 / 12%)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceSection{
+  border-color:var(--hh-voice-border);background:var(--hh-voice-card);
+  color:var(--hh-voice-ink);box-shadow:var(--hh-voice-shadow)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading>span{
+  color:var(--hh-voice-forest);background:linear-gradient(135deg,#FFF1D8,#FCEEF6)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading h3{
+  color:var(--hh-voice-ink)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading p{
+  color:var(--hh-voice-muted)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceUpload,
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceActions>button{
+  color:var(--hh-voice-forest);background:var(--hh-voice-card);
+  border-color:var(--hh-voice-border);box-shadow:var(--hh-voice-shadow)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceUploadNotice{
+  color:var(--hh-voice-muted)
+}
+
+
+/* P0 WebKit RU320 computed-style repair, Ideas → Voice ONLY.
+   Earlier [data-hypno-voice] media-styled gradient has its own stacking rule;
+   require the approved solid neutral card, not transparent over sage/yellow.
+   Keep all other Hypno voice panels and the Canvas untouched. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-voice]{
+  background:#FFFCFA!important;
+  background-image:none!important;
+  border-color:var(--hh-voice-border,#EADFD9)!important;
+  box-shadow:var(--hh-voice-shadow,0 5px 18px rgb(66 42 31 / 7%))!important
+}
+
+
+/* Real WebKit RU320 cascade proof: [data-video-affirmation-voice] is still
+   reset to transparent by an old stronger parent selector. The actual TTS
+   panel must be warm near-white with its own warm neutral border. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-affirmation-voice]{
+  background:#FFFCFA!important;
+  background-image:none!important;
+  border:1px solid #EADFD9!important;
+  color:#142B3D!important;
+  box-shadow:none!important
+}
+
+/* Design Bible §10.13 — ALL real Video Studio workspaces. Shared semantic
+   skin for ordinary surfaces ONLY. Selected category palettes, real footage,
+   media canvases, semantic warnings and PRO cinematic imagery remain intact.
+   This prevents Goal/Ideas/Montage/Hypno/PRO/Ready from drifting into sage. */
+.studio[data-active-workspace] .quickBuilder{
+  color:var(--hh-studio-ink);
+}
+.studio[data-active-workspace] :is(
+  .quickSection,.quickLegacy,.quickBenefits,.quickAudioItem,
+  .quickMontageGrid fieldset,.montagePane,.audioSection
+){
+  background:var(--hh-studio-surface);
+  border-color:var(--hh-studio-border);
+  box-shadow:var(--hh-studio-shadow)
+}
+.studio[data-active-workspace] :is(
+  .quickSectionHeading h3,.quickHeaderText h2,
+  .montagePane h3,.quickPromptTitle
+){
+  color:var(--hh-studio-forest)
+}
+.studio[data-active-workspace] :is(
+  .quickSectionHeading p,.quickHint,.quickPrivacy,.quickHeaderText p
+){
+  color:var(--hh-studio-muted)
+}
+.studio[data-active-workspace] :is(
+  .quickWish,.quickLegacy[open]>summary,
+  .quickMontageGrid button:not([aria-pressed="true"]),
+  .quickAudioFilters button:not([aria-pressed="true"])
+){
+  background:var(--hh-studio-inset);
+  border-color:var(--hh-studio-border);
+  color:var(--hh-studio-forest)
+}
+.studio[data-active-workspace] .quickVideoNav button:not([aria-pressed="true"]){
+  background:var(--hh-studio-surface);
+  border-color:var(--hh-studio-border);
+  color:var(--hh-studio-forest);
+  box-shadow:var(--hh-studio-shadow)
+}
+.studio[data-active-workspace] .quickVideoNav button:not([aria-pressed="true"]) svg{
+  color:var(--hh-studio-primary)
+}
+.studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"]{
+  background:linear-gradient(120deg,var(--hh-studio-primary),var(--hh-studio-deep));
+  border-color:var(--hh-studio-deep);
+  color:#FFFFFF;
+  box-shadow:0 5px 18px rgb(66 42 31 / 12%)
+}
+.studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"] svg{
+  color:#FFFFFF
+}
+.studio[data-active-workspace] :is(
+  .quickGenerate,.montageStepNext,.montageExport,
+  button[data-video-continue-scenarios]
+){
+  background:linear-gradient(120deg,var(--hh-studio-primary),var(--hh-studio-deep));
+  border-color:var(--hh-studio-deep);
+  color:#FFFFFF
+}
+.studio[data-active-workspace] :is(
+  .quickGenerate,.montageStepNext,.montageExport,
+  button[data-video-continue-scenarios]
+):focus-visible{
+  outline:3px solid #176E6E;outline-offset:2px
+}
+.studio[data-active-workspace] .quickLegacy[open]{
+  background:var(--hh-studio-surface);
+  border-color:var(--hh-studio-border)
+}
+
+/* Original Goal/Ideas auto-director root can have a stale olive background.
+   This data-selected real module is shared; keep its category and media cards. */
+.studio[data-active-workspace] [data-auto-video-director]{
+  background:var(--hh-studio-surface);
+  border-color:var(--hh-studio-border);
+  color:var(--hh-studio-ink);
+  box-shadow:var(--hh-studio-shadow)
+}
+
+/* Goal → recipient audio storyboard: original user-consented audio/STT and
+   existing selected state stay operational; only default neutral chrome is
+   normalized. Added after production recipient-mode source without replacing
+   or dropping its new API/style behavior. */
+.studio[data-active-workspace] .recipientAudioSteps{
+  background:var(--hh-studio-surface);
+  border-color:var(--hh-studio-border);
+  color:var(--hh-studio-ink);
+  box-shadow:var(--hh-studio-shadow)
+}
+.studio[data-active-workspace] .recipientAudioStep{
+  border-color:var(--hh-studio-divider)
+}
+.studio[data-active-workspace] :is(
+  .recipientAudioActions>label,.recipientAudioStep button
+){
+  background:var(--hh-studio-inset);
+  border-color:var(--hh-studio-border);
+  color:var(--hh-studio-forest)
+}
+.studio[data-active-workspace] .recipientAudioSteps .recipientAudioNext{
+  background:linear-gradient(120deg,var(--hh-studio-primary),var(--hh-studio-deep));
+  color:#FFFFFF
+}

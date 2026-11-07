@@ -104,3 +104,32 @@
   .rail,.tabs{scroll-behavior:auto}
   .card,.tab,.activeTab{transition:none}
 }
+
+/* Design Bible §10.13 — PRO/recipient character screen uses same neutral
+   Studio card palette. Purple character selections remain meaning-coded. */
+:global([data-mandala-mode="video"]) .panel{
+  --cream:var(--hh-studio-surface,#FFFCFA);
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) :is(
+  .myPanel,.card:not([aria-pressed="true"]),.honestNote
+){
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9)
+}
+:global([data-mandala-mode="video"]) .header h3{
+  color:var(--hh-studio-forest,#14523F)
+}
+:global([data-mandala-mode="video"]) .header p{
+  color:var(--hh-studio-muted,#5D6A71)
+}
+
+:global([data-mandala-mode="video"]) .activeTab{
+  background:linear-gradient(120deg,var(--hh-studio-primary,#087E61),
+    var(--hh-studio-deep,#006B4B));
+  border-color:var(--hh-studio-deep,#006B4B);
+  color:#FFFFFF
+}
