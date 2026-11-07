@@ -51,7 +51,7 @@ const replaceQueue=`    var verified=window.__hhCiVerifiedSnapshot;\n`+
 out['pr-two-screen.js']=once(out['pr-two-screen.js'],queueAnchor,replaceQueue,'pr-two-screen.js');
 out['pr-two-screen.js']=once(out['pr-two-screen.js'],
   '  async function readQueue() {',
-  "  window.addEventListener('hh:ci-verified-updated',showQueue);\n  async function readQueue() {",'pr-two-screen.js');
+  "  if(typeof window.addEventListener==='function')window.addEventListener('hh:ci-verified-updated',showQueue);\n  async function readQueue() {",'pr-two-screen.js');
 out['pr-attribution-ui.js']=once(out['pr-attribution-ui.js'],
   '    result.append(stamp);',
   "    result.append(stamp);\n    if(window.HHPrLifecycle?.render)window.HHPrLifecycle.render(result,data);",'pr-attribution-ui.js');
