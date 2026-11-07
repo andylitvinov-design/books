@@ -333,23 +333,23 @@
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-section="1"] .quickSectionHeading > a {
    display:none!important;
  }
- [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-goal-audience-selector] {
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-audience-switch] {
    display:flex!important;align-items:center;gap:3px!important;
    flex:0 0 auto;padding:3px;border:1px solid #e4ded0;
    border-radius:999px;background:#f8f5ed;
  }
- [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-goal-audience-selector] button {
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-audience-switch] button {
    display:inline-flex;align-items:center;justify-content:center;gap:4px;
    min-width:0;min-height:38px;padding:6px 9px;border:1px solid transparent;
    border-radius:999px;background:transparent;color:#163d35;cursor:pointer;
    font:750 clamp(11px,3vw,13px)/1.1 Arial,Helvetica,sans-serif;
    white-space:nowrap;
  }
- [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-goal-audience-selector] button[aria-pressed="true"] {
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-audience-switch] button[aria-pressed="true"] {
    background:#067a67;color:white;border-color:#067a67;
    box-shadow:0 2px 7px #0c6b5626;
  }
- [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-goal-audience-selector] button:disabled {opacity:.48;cursor:not-allowed}
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-audience-switch] button:disabled {opacity:.48;cursor:not-allowed}
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-wish-above-goals] {
    display:grid;gap:6px;min-width:0;
  }
@@ -447,8 +447,12 @@
    margin-top:4px!important;padding:11px!important;
  }
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-goal-topic-title] {display:flex!important}
- [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-optional-topic-field] {
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-optional-topic-field]:not([data-video-recipient-topic-summary]) {
    display:none!important;
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-recipient-topic-summary] {
+   display:grid!important;gap:4px;padding:8px 10px;border:1px solid #e9dfd1;
+   border-radius:13px;background:#fffaf2;color:#1b5142;font-size:14px;line-height:1.2;
  }
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-goal-topic-chips] {
    display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));
@@ -479,7 +483,7 @@
    font-size:clamp(16px,4.3vw,18px)!important;
  }
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] :is(
-   [data-video-goal-audience-selector] button,[data-video-request-design],
+   [data-video-audience-switch] button,[data-video-request-design],
    [data-video-goal-topic-chips] button,[data-auto-video-category],
    [data-mytube-subcategories] button,[data-video-continue-scenarios]
  ):focus-visible {outline:3px solid #176e6e!important;outline-offset:2px}
@@ -487,7 +491,7 @@
 @media(max-width:350px) {
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-controls] {gap:3px!important}
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-controls] button {font-size:10px!important;padding:4px 0!important}
- [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-goal-audience-selector] button {font-size:11px!important;padding:6px!important}
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-audience-switch] button {font-size:11px!important;padding:6px!important}
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] > [role="group"] > button {grid-template-columns:minmax(42px,35%) minmax(0,1fr)!important;gap:3px!important;padding:5px!important}
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-goal-art] {height:64px!important}
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] > [role="group"] > button strong {font-size:12px!important}
@@ -504,7 +508,44 @@
  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-section="1"] > div:first-child > a {
    display:none!important;
  }
- [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-goal-audience-selector] button {
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-audience-switch] button {
    min-height:44px!important;
+ }
+}
+
+/* Single source of truth: #3805 recipient-aware director controls,
+   portaled once into the approved Goal heading. No second local toggle. */
+@media(max-width:759px) {
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-director-audience-controls] {
+   display:flex;align-items:center;justify-content:flex-end;min-width:0;flex:0 1 auto;
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-audience-switch] {
+   display:flex!important;justify-content:flex-end!important;gap:0!important;
+   width:auto!important;min-width:0!important;margin:0!important;
+   border:0!important;background:transparent!important;
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-audience-switch]>span {
+   display:none!important;
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-audience-switch] [role="group"] {
+   display:flex!important;gap:3px!important;padding:3px;border:1px solid #e4ded0;
+   border-radius:999px!important;background:#f8f5ed!important;
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-audience] {
+   min-height:44px!important;padding:6px 9px!important;border-radius:999px!important;
+   font-size:clamp(11px,3vw,13px)!important;white-space:nowrap;
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-audience][aria-pressed="true"] {
+   background:#067a67!important;color:#fff!important;
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-recipient-catalog] {
+   display:grid!important;gap:9px;min-width:0!important;
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-recipient-kind] {
+   min-width:0!important;min-height:88px!important;font-size:14px!important;
+   border-radius:15px!important;
+ }
+ [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-recipient-occasion] {
+   min-height:44px!important;font-size:13px!important;
  }
 }

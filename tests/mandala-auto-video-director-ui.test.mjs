@@ -15,7 +15,9 @@ test("Auto Director reuses the one studio renderer and precedes the real result"
  assert.ok(studio.indexOf('data-video-quick-audio-choices') < studio.indexOf("<MandalaAutoVideoDirector"));
  assert.ok(studio.indexOf("<MandalaAutoVideoDirector") < studio.indexOf('id="personal-video-result"'));
  assert.ok(studio.includes("compileFreeFilmPreset(preset,locale,seconds"));
- assert.ok(studio.includes("onApply={applyAutoFilm}"));
+ assert.match(studio,/onApply=\{\(presetId,seconds,edit,options\)=>[\s\S]{0,190}applyAutoFilm\(presetId,seconds,edit,aspect,options\?\.keepGoalFlow\)/);
+ assert.match(studio,/goalContinueRef=\{goalContinueRef\}/);
+ assert.match(director,/goalContinueRef\.current=prepareGoalForIdeas/);
  assert.ok(studio.includes("setPracticeLevels(value=>({...value,video:\"basic\"}))"));
 });
 test("only one goal input, a visible proposal and a confirmation gate",()=>{
@@ -417,11 +419,16 @@ test("approved first screen keeps six tabs above a real 16:9 Canvas and one righ
  assert.match(mobile,/aspect-ratio:16\/9!important/);
 });
 
-test("goal, topic and one free-text prompt precede the four scenario choices",()=>{
+test("the approved single wish and match action precede goal cards, category, topic and scenario choices",()=>{
  const prompt=studio.indexOf("data-video-request-prompt");
  const goal=studio.indexOf("data-video-director-goal-controls");
  const topic=studio.indexOf("data-video-director-topic-controls");
- assert.ok(goal>=0&&goal<topic&&topic<prompt,"the owner-approved goal and topic precede the single text request");
+ const next=studio.indexOf("data-video-continue-scenarios");
+ assert.ok(prompt>=0&&prompt<goal&&goal<topic&&topic<next,"approved wish → goal → category/topic → Ideas order");
+ assert.match(studio,/data-video-wish-above-goals/);
+ assert.match(studio,/data-video-goal-audience-selector/);
+ assert.match(director,/data-video-goal-topic-chips/);
+ assert.match(director,/onClick=\{designFromRequest\}/);
  assert.match(studio,/data-video-continue-scenarios/);
  assert.match(studio,/setVideoScenarioOpen\(true\)/);
  assert.equal((director.match(/data-auto-video-input value=\{requestDraft\}/g)||[]).length,1);

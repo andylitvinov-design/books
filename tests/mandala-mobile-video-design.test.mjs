@@ -497,8 +497,10 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   const topic=studio.indexOf("data-video-director-topic-controls");
   const prompt=studio.indexOf("data-video-request-prompt");
   const next=studio.indexOf("data-video-continue-scenarios");
-  assert.ok(goal>=0&&goal<topic&&topic<prompt&&prompt<next,
-    "goal and topic precede the single free-text request and next-stage action");
+  assert.ok(prompt>=0&&prompt<goal&&goal<topic&&topic<next,
+    "approved wish and Match button precede goal, category, topic chips and the original next-stage action");
+  assert.match(studio,/data-video-wish-above-goals/);
+  assert.match(studio,/data-video-goal-audience-selector/);
   assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-auto-video-director\]\{display:none!important\}/);
   assert.match(studio,/data-video-director-topic-controls/);
   assert.match(studio,/Сформировать индивидуальную программу видеотерапии бесплатно/);
@@ -510,7 +512,9 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
     studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
   for(const id of ["video","phrases","effects","pro","ready","editor"])
     assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
-  assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
+  assert.match(workspaceNav,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
+  assert.match(workspaceNav,/onPointerUp=\{\(\)=>\{if\(activeWorkspace!==item\.id\)activateQuickWorkspace\(item\.id\);\}\}/);
+  assert.match(studio,/const activateQuickWorkspace=[\s\S]{0,190}setActiveWorkspace\(id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(studio,/\{deepHypnoPane\}/);

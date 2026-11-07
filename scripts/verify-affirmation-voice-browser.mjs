@@ -89,6 +89,34 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect.poll(()=>master.evaluate(video=>
       video.readyState>=2&&video.videoWidth>0&&video.videoHeight>0&&!video.error),
       {timeout:20000}).toBe(true);
+    // Actual route-matched recipient path: ONE header switch, working kind,
+    // real occasion and the original Goal→Ideas action. The ordinary visitor
+    // must not need a hidden storyboard Confirm to stage these four captions.
+    const goalTab=page.locator('[data-video-quick-control="video"]');
+    await goalTab.click();
+    await expect(goalTab).toHaveAttribute("aria-pressed","true");
+    const others=page.locator('[data-auto-video-audience="others"]');
+    await expect(page.locator('[data-auto-video-audience]')).toHaveCount(2);
+    await expect(page.locator('[data-video-goal-audience-option]')).toHaveCount(0);
+    await others.click();
+    await expect(others).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-recipient-catalog]')).toBeVisible();
+    await expect(page.locator('[data-video-goal-topic-chips]')).toHaveCount(0);
+    const greeting=page.locator('[data-auto-video-recipient-kind="greeting"]');
+    await greeting.click();
+    await expect(greeting).toHaveAttribute("aria-pressed","true");
+    const birthday=page.locator('[data-auto-video-recipient-occasion="birthday"]');
+    await birthday.click();
+    await expect(birthday).toHaveAttribute("aria-pressed","true");
+    await continueToIdeas.click();
+    await expect(ideas).toHaveAttribute("aria-pressed","true");
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
+    // These are the actual source-backed montage title inputs; source edits
+    // use the same data fed to compileFreeFilmPreset, not a fake screenshot.
+    const firstCaption=page.locator('[data-auto-video-stage-caption="0"]');
+    await expect(firstCaption).toHaveValue(locale==="ru"?"День рождения":"Birthday");
+    await expect(page.locator('[data-video-mandala-hero]')).toHaveAttribute(
+      "data-video-preview-clips",/^(4|5|6|7|8|9|10|11|12)$/);
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional

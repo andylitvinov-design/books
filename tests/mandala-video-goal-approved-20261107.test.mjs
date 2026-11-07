@@ -13,9 +13,12 @@ test("approved Goal screen orders wish and real match action BEFORE goal cards",
  assert.ok(studio.indexOf("data-video-wish-above-goals")<studio.indexOf("data-video-director-goal-controls"));
  assert.ok(studio.indexOf("data-video-director-goal-controls")<studio.indexOf("data-video-director-topic-controls"));
  assert.ok(studio.indexOf("data-video-director-topic-controls")<studio.indexOf("data-video-continue-scenarios"));
- assert.match(studio,/data-video-goal-audience-selector/);
- assert.match(studio,/aria-pressed=\{videoAudience===value\}/);
- assert.match(studio,/data-video-audience=\{videoAudience\}/);
+ assert.match(studio,/data-video-director-audience-controls/);
+ assert.doesNotMatch(studio,/data-video-goal-audience-selector/,"no disconnected second audience switch");
+ assert.match(director,/const audienceBar=/);
+ assert.match(director,/data-auto-video-audience=\{mode\}/);
+ assert.match(director,/aria-pressed=\{videoAudience===mode\}/);
+ assert.match(director,/createPortal\(audienceBar,audienceTarget\)/);
  assert.match(studio,/onClick=\{continueToIdeas\}/);
  assert.match(director,/data-video-request-design className=\{css\.designRequest\}/);
  assert.match(director,/onClick=\{designFromRequest\}/);
@@ -44,6 +47,17 @@ test("four illustrated goals and nine real topic chips are grounded in canonical
  assert.match(director,/data-video-optional-topic disabled=\{disabled\|\|!selectedSubcategoryId\}/);
  assert.match(director,/createPortal\(goalPanel,goalTarget\)/);
  assert.match(director,/createPortal\(quickTopicPanel,topicTarget\)/);
+ assert.match(director,/const quickTopicPanel=videoAudience==="others"/);
+ assert.match(director,/data-video-recipient-catalog/);
+ assert.match(director,/buildRecipientVideoCaptions\(/);
+ assert.match(studio,/if\(goalContinueRef\.current\?\.\(\)===false\)return/);
+ assert.match(director,/const prepareGoalForIdeas=\(\):boolean=>/);
+ assert.match(director,/onApply\(chosen\.id,length as 10\|15\|20\|30\|60/);
+ assert.match(director,/captionTexts:\[\.\.\.stageCaptions\]/);
+ assert.match(director,/recipientCaptionOverrides/);
+ assert.match(director,/Object\.prototype\.hasOwnProperty\.call\(recipientCaptionOverrides,index\)/);
+ assert.match(director,/keepGoalFlow:true/);
+ assert.match(director,/data-video-recipient-topic-summary/);
  for(const art of ["stress","love","energy","growth"]){
   const bytes=readFileSync(new URL("../public/images/video-goal-art/"+art+".webp",import.meta.url));
   assert.equal(bytes.toString("ascii",0,4),"RIFF");
