@@ -36,6 +36,8 @@ test('six light video-first tabs reuse existing protected modules', () => {
   assert.match(workspace, /<ProfileResultsArchive locale=\{locale\} results=\{data\.results \|\| \[\]\}/)
   assert.match(style, /grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/)
   assert.match(style, /min-height:62px/)
+  assert.match(style, /max-width:430px/)
+  assert.match(style, /\.hub \.heading\{flex-wrap:wrap/)
   assert.doesNotMatch(hub, /localStorage|sessionStorage|fetch\(|postMessage\(/i)
 })
 test('all saved test attempts remain account-scoped, without fictitious summary metrics', () => {

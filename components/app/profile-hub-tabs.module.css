@@ -55,3 +55,6 @@
 @media(max-width:360px){.hub .tabs{gap:4px}.hub .tab,.hub .current{font-size:10px}.hub .hero{padding:10px}.hub .heroFoot{flex-wrap:wrap}.hub .quickActions{gap:5px}}
 @media(min-width:768px){.hub .hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:16px;align-items:center}.hub .heroCopy{padding:10px}.hub .videoFrame{grid-row:span 2}.hub .quickActions a{flex-direction:row;min-height:54px}}
 @media(prefers-reduced-motion:reduce){.hub .current{box-shadow:none}}
+
+/* iPhone 320–430px: translated title wraps instead of displacing Settings. */
+@media(max-width:430px){.hub .heading{flex-wrap:wrap;gap:7px;align-items:flex-start}.hub .heading>div{min-width:0;flex:1 1 150px}.hub .heading h2{overflow-wrap:anywhere}.hub .settings{flex-shrink:0}}

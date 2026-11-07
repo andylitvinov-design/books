@@ -18,4 +18,4 @@ Private RLS/auth, real test results/retakes and personal reports are not copied 
 
 Visual comparison checklist: 320/354/390/430px mobile, browser Chromium+WebKit, same signed-in synthetic view and real clickable routes, same-view overlay; iPhone Safari private login must be verified separately. No fabricated 440 XP or health score. Until CI, protected merge, Vercel READY exact serving SHA and signed-in device E2E, status is source candidate only.
 
-GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=partial; post_open_head_updates=0; extra_waves=none; cost_new_spend=NO_NEW_SERVICES.
+GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=partial; post_open_head_updates=1 (verified IA reports contract repair); extra_waves=none; cost_new_spend=NO_NEW_SERVICES.
