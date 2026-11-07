@@ -809,6 +809,17 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     created_at:new Date().toISOString(),fix_result:fixResult||'unknown',
     publish_result:publishResult||'unknown',publish_status:publishStatus||'unknown',
     owner_run_id:runId,run_url:'https://github.com/'+fullRepo+'/actions/runs/'+runId};
+  // Learning is strictly advisory: only the already verified remote source
+  // commit earns a case. The SAME existing finalizer comment carries it.
+  // No additional GitHub write, provider call, CI run or source permission.
+  try {
+    const {buildPublishedCase}=require('./ci-pr-repair-learning.cjs');
+    const observed=buildPublishedCase(result);
+    if(observed)result.learning_case=observed;
+  }catch(error){
+    core?.warning?.('HH_REPAIR_LEARNING_UNAVAILABLE '+
+      String(error?.message||'unknown').slice(0,80));
+  }
   const repairStage=repairStartedAt&&claimStatus==='claimed'?
     stageLine({stage:'repair_started',pr_number:number,head_sha:expectedSha,
       run_id:context.runId,task_key:taskKey,at:repairStartedAt,
