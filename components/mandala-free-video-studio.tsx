@@ -1842,8 +1842,10 @@ function quickStyleFilmFor(theme:VideoTheme,index:number){
   const candidate=id?FREE_FILM_CATALOG_BY_ID.get(id):null;
   const trusted=candidate?verifiedCategorySource(candidate):null;
   if(!trusted)return null;
-  const film=firstPartyFilmFor(trusted.theme as VideoTheme,trusted.id);
-  return film?{...film,sceneId:trusted.id,theme:trusted.theme as VideoTheme}:null;
+  // The verification helper's narrow return type intentionally does not
+  // include editorial theme; read it from the already-approved catalog entry.
+  const film=firstPartyFilmFor(candidate.theme as VideoTheme,candidate.id);
+  return film?{...film,sceneId:candidate.id,theme:candidate.theme as VideoTheme}:null;
 }
 const quickThemeOrder: VideoTheme[] = ["energy","health","relationships","money","goals","life"];
 const effectsThemeOrder: VideoTheme[] = ["life","energy","relationships","goals","money","health"];
