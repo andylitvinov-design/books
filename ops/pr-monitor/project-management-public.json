@@ -1,7 +1,7 @@
 {
   "schema": "HH_PM_PUBLIC_V1",
-  "asOf": "2026-11-07T17:22:24.978Z",
-  "source": "owner-reviewed public task status snapshot; Github PR checked on demand",
+  "asOf": "2026-11-07T17:44:16.426Z",
+  "source": "owner-reviewed public task status snapshot; GitHub PR status verified on demand; LIVE requires independent receipt",
   "projects": [
     {
       "key": "ci-head",
@@ -59,8 +59,10 @@
             {
               "id": "M06",
               "title": "Безопасно обновить отдельный Vercel PR Monitor полным source-бандлом",
-              "status": "blocked",
-              "prs": []
+              "status": "verified",
+              "prs": [],
+              "evidence_url": "https://holistic-house-pr-monitor.vercel.app/",
+              "evidence_note": "Сохранено 118/118 предыдущих файлов при выпуске публичной вкладки; 4 файла добавлены, удалений нет"
             },
             {
               "id": "M07",

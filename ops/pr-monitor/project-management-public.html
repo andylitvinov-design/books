@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/project-management-nav.css">
 <link rel="stylesheet" href="/project-management-public.css">
 <link rel="stylesheet" href="/project-management-selection.css">
+<script src="/project-management-proof.js" defer></script>
 <script src="/project-management-selection.js" defer></script>
 <script src="/project-management-public.js" defer></script>
 </head>
@@ -22,10 +23,23 @@
 <p class="pm-public">Просмотр без Google-входа · только открытые рабочие статусы · без приватных заметок</p>
 </header>
 <section class="pm-overview" aria-label="Общая сводка">
-<div><strong>2</strong><small>Больших проекта</small></div><div><strong id="pm-total">—</strong><small>Подзадачи</small></div>
+<div><strong id="pm-projects">—</strong><small>Больших проекта</small></div><div><strong id="pm-total">—</strong><small>Подзадачи</small></div>
 <div><strong id="pm-done">—</strong><small>Подтверждено</small></div><div><strong id="pm-blocked">—</strong><small>Блокировано</small></div>
 </section>
 <p id="pm-info" role="status">Загружаю публичные данные…</p>
+<section class="pm-controls" aria-label="Поиск и фильтр подзадач">
+<label for="pm-query">Найти подзадачу
+<input id="pm-query" type="search" autocomplete="off" placeholder="Название, номер или PR" aria-controls="pm-root"></label>
+<label for="pm-status-filter">Показать статус
+<select id="pm-status-filter" aria-controls="pm-root">
+<option value="all">Все задачи</option>
+<option value="blocked">Блокировано</option>
+<option value="planned">Не начато</option>
+<option value="partial">Частично</option>
+<option value="verified">Подтверждено</option>
+</select></label>
+<p id="pm-matches" aria-live="polite">Сначала доступны все задачи.</p>
+</section>
 <section id="pm-root" aria-label="Проекты и подзадачи"></section>
 <footer class="pm-footer">Привязанный PR не означает Merge. Успешный GitHub CI или Vercel READY не означает функционально проверенный LIVE.
 Внутренние решения и изменение кода защищены отдельно.</footer>

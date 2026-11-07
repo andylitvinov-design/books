@@ -8,3 +8,13 @@
 .pm-btn{background:#4ab49f;color:#052825;font-weight:750;border:0;border-radius:11px;padding:9px 12px;font:inherit;font-size:12px;min-height:44px;cursor:pointer}.pm-btn:disabled{opacity:.55;cursor:not-allowed}.pm-check,.pm-quiet{background:#234359;color:#e9f7ff;border:1px solid #3e6781}.pm-project-head .pm-btn{flex:0 0 auto}.pm-footer{border-top:1px solid #365066;margin-top:22px;padding-top:16px;color:#9cb6c7;font-size:12px;line-height:1.6}.pm-error{color:#ffb6ba}
 button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #8df0db;outline-offset:3px}
 @media(max-width:470px){.pm-page{padding:10px 12px 50px}.pm-project{padding:12px}.pm-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.pm-stage-count{max-width:88px;text-align:right}.pm-project-head h2{font-size:17px}.pm-project-head .pm-btn{font-size:11px;padding:8px}.pm-hero{padding-top:5px}}
+
+/* Monitoring quality v2: owner-reviewed task states and explicit on-demand GitHub proof. */
+.pm-controls{border:1px solid #34576d;border-radius:14px;background:#122b3b;padding:12px;margin:12px 0 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pm-controls label{display:grid;gap:5px;min-width:0;color:#a9d4e4;font-size:12px;font-weight:650}
+.pm-controls input,.pm-controls select{min-width:0;min-height:44px;width:100%;padding:9px 11px;border:1px solid #527085;border-radius:10px;background:#091b2d;color:#f3faff;font:inherit;font-size:14px}
+#pm-matches{grid-column:1/-1;font-size:12px;color:#91dfc7;margin:0}
+.pm-task[hidden],.pm-stage[hidden],.pm-project[hidden]{display:none!important}
+.pm-evidence{display:inline-flex;align-items:center;min-height:44px;color:#9fe5c9;font-size:12px}
+.pm-evidence-note{flex:1 1 100%;color:#a9c8d7;font-size:11px}
+@media(max-width:470px){.pm-controls{grid-template-columns:1fr}.pm-controls label{width:100%}}
