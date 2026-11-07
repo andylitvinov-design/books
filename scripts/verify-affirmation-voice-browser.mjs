@@ -355,13 +355,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
       }
       await page.setViewportSize({width:390,height:840});
-      // Ideas offers a compact set of five phrases by default. The original
-      // consented voice editor is an opt-in advanced section, not a missing
-      // Phrases control or a forced hidden test-only shortcut.
+      // Compact Ideas intentionally hides advanced voice until a REAL user tap.
+      // Exercise its visible opt-in control, never force a hidden details open.
+      // The same approved voice/TTS/consent and MP4 assertions continue below.
       const advancedVoice=phrases.locator('[data-video-ideas-advanced-voice]');
+      await expect(advancedVoice).toBeHidden();
+      const openAdvancedVoice=phrases.locator('[data-video-phrase-audio-shortcut]');
+      await openAdvancedVoice.waitFor({state:"visible",timeout:15000});
+      await expect(openAdvancedVoice).toBeEnabled();
+      await openAdvancedVoice.click();
       await advancedVoice.waitFor({state:"visible",timeout:15000});
-      await expect(advancedVoice).not.toHaveAttribute("open","");
-      await advancedVoice.locator(":scope > summary").click();
       await expect(advancedVoice).toHaveAttribute("open","");
       await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible();
       for(const name of ["tone","focus","length"])
