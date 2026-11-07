@@ -19,7 +19,7 @@ const labels={
    current:'Текущий этап',iterations:'Итераций',history:'История выполнений',noRuns:'Пока нет запусков',notKnown:'Нет подтверждения',
    ready:'Готова к запуску',running:'Выполняется',needsSpec:'Нужен исполнитель',stopped:'Остановлена',
    verifiedMetadata:'Данные GitHub проверены',noRuntime:'Исполнитель для кода пока не подключён',
-   noLive:'LIVE ещё не подтверждён',prOpened:'PR открыт',prMerged:'PR смержен',prWaiting:'PR ещё не найден',
+   noLive:'LIVE ещё не подтверждён',needsEvidence:'Нет независимого подтверждения',missingProofCount:'Задачи без доказательств',prOpened:'PR открыт',prMerged:'PR смержен',prWaiting:'PR ещё не найден',
    status:'Статус',start:'Запустить безопасную проверку',pause:'Приостановить проверки',
    resume:'Включить проверки',disabled:'Запуск пока недоступен',readOnly:'Только проверка GitHub',
    unavailable:'Хранилище задач недоступно. Не удалось подтвердить изменения.',
@@ -43,7 +43,7 @@ const labels={
    needsSetup:'Needs setup',view:'Details',accepted:'Accepted',executor:'Agent',pr:'PR',tests:'Tests',live:'LIVE',
    current:'Current stage',iterations:'Iterations',history:'Execution history',noRuns:'No runs yet',notKnown:'Not verified',
    ready:'Ready',running:'In progress',needsSpec:'No executor',stopped:'Stopped',verifiedMetadata:'GitHub data verified',
-   noRuntime:'Coding runtime is not connected',noLive:'LIVE has not been verified',prOpened:'PR opened',
+   noRuntime:'Coding runtime is not connected',noLive:'LIVE has not been verified',needsEvidence:'No independent verification receipt',missingProofCount:'Tasks without evidence',prOpened:'PR opened',
    prMerged:'PR merged',prWaiting:'PR not linked',status:'Status',start:'Run safe check',pause:'Pause checks',
    resume:'Enable checks',disabled:'Execution unavailable',readOnly:'GitHub read-only',
    unavailable:'Task storage unavailable; changes could not be confirmed.',retry:'Retry permitted task',
@@ -68,7 +68,7 @@ const labels={
    current:'Estado',iterations:'Intentos',history:'Historial',noRuns:'Sin ejecuciones',
    notKnown:'Sin verificar',ready:'Lista',running:'En curso',needsSpec:'Sin ejecutor',
    stopped:'Detenida',verifiedMetadata:'Datos de GitHub verificados',
-   noRuntime:'No hay ejecutor de código',noLive:'LIVE sin verificar',
+   noRuntime:'No hay ejecutor de código',noLive:'LIVE sin verificar',needsEvidence:'Sin comprobante independiente',missingProofCount:'Tareas sin pruebas',
    prOpened:'PR abierto',prMerged:'PR integrado',prWaiting:'PR sin vincular',status:'Estado',
    start:'Ejecutar revisión segura',pause:'Pausar',resume:'Activar revisiones',disabled:'No disponible',
    readOnly:'GitHub de solo lectura',unavailable:'Almacenamiento no disponible.',
@@ -94,9 +94,9 @@ const safe=(value,max=180)=>typeof value==='string'?value.trim().slice(0,max):''
 const isTrustedEvidenceUrl=value=>typeof value==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/(pull|issues)\/[1-9]\d{0,7}$/.test(value);
 const date=value=>{if(!value)return '—';try{return new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value));}catch{return '—';}};
 const glyph={home:'⌂',tasks:'☑',agents:'♧',projects:'▦'};
-function stateLabel(state,t){
+function stateLabel(state,t,hasEvidence=false){
  if(state==='completed_live')return 'LIVE ✓';
- if(verifiedStates.has(state))return t.verifiedMetadata;
+ if(state==='completed_verified')return hasEvidence===true?t.verifiedMetadata:t.needsEvidence;
  if(state==='running')return t.running;
  if(state==='ready'||state==='retry_wait')return t.ready;
  if(blockedStates.has(state))return t.needsSpec;
@@ -181,9 +181,10 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  const prMatched=Boolean(selectedTask?.source_ref?.includes('/pull/'));
  const merged=selectedProof?selectedProof.prState==='merged':Boolean(observed?.merged);
  const agentActive=Boolean(selectedTask?.state==='running');
+ const verifiedTask=selectedTask?.state==='completed_verified'&&selectedTask?.has_evidence===true;
  const phases=[
   {label:t.accepted,ok:Boolean(selectedTask),current:false},
-  {label:t.executor,ok:agentActive||verifiedStates.has(selectedTask?.state),current:agentActive},
+  {label:t.executor,ok:agentActive||verifiedTask,current:agentActive},
   {label:t.pr,ok:prMatched&&Boolean(latestEvidence),current:prMatched&&!latestEvidence},
   {label:t.tests,ok:selectedProof?.ci==='passed',current:false},
   {label:t.live,ok:selectedTask?.state==='completed_live',current:false}
@@ -191,8 +192,8 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
  const count=(fn)=>tasks.filter(fn).length;
  const taskCard=(v,i)=> <button key={v.id} type="button" className={styles.taskCard} onClick={()=>setSelected(v.id)}>
   <span className={styles.rank}>{i+1}</span><span className={styles.taskCopy}><strong>{v.title}</strong>
-  <small>{projects.find(p=>p.id===v.project_id)?.title||t.chooseProject} · {stateLabel(v.state,t)} {v.attempt_count>0?'· '+v.attempt_count+'×':''}</small></span>
-  <span className={blockedStates.has(v.state)?styles.bad:verifiedStates.has(v.state)?styles.good:styles.purple} aria-hidden="true">●</span>
+  <small>{projects.find(p=>p.id===v.project_id)?.title||t.chooseProject} · {stateLabel(v.state,t,v.has_evidence)} {v.attempt_count>0?'· '+v.attempt_count+'×':''}</small></span>
+  <span className={blockedStates.has(v.state)?styles.bad:verifiedStates.has(v.state)&&v.has_evidence===true?styles.good:styles.purple} aria-hidden="true">●</span>
   </button>;
  const tabs=[['home',t.home],['tasks',t.tasks],['plus',t.plus],['agents',t.agents],['projects',t.projects]];
  return <div className={styles.app} lang={lang} data-hh-command-center-mobile>
@@ -204,7 +205,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
   <main className={styles.main}>
    {selectedTask? <section className={styles.detail}>
     <button type="button" className={styles.back} onClick={()=>setSelected(null)}>‹ {t.tasks}</button>
-    <p className={styles.overline}>{t.status} · {stateLabel(selectedTask.state,t)}</p>
+    <p className={styles.overline}>{t.status} · {stateLabel(selectedTask.state,t,selectedTask.has_evidence)}</p>
     <h1>{selectedTask.title}</h1><p className={styles.summary}>{selectedTask.description}</p>
     <div className={styles.chips}><span>{projects.find(p=>p.id===selectedTask.project_id)?.title||t.chooseProject}</span>
      <span>P{selectedTask.priority}</span><span>{selectedTask.kind}</span></div>
@@ -291,6 +292,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
      {visibleTasks.map(taskCard)}{!visibleTasks.length&&<div className={styles.empty}>{t.noTasks}</div>}
     </section>:
    tab==='agents'?<section className={styles.section}><div className={styles.heading}><h1>{t.agents}</h1><span>{registry.length}</span></div>
+    {snapshot?.brief?.missingProof>0&&<p className={styles.auditGap} role="status">⚠ {t.missingProofCount}: {snapshot.brief.missingProof}</p>}
     {registry.map(a=><div key={a.id} className={styles.agentCard}><span className={styles.agentIcon}>{a.id.includes('github')?'⌘':a.id.includes('codex')?'◇':'✧'}</span>
       <div><strong>{a.id}</strong><small>{a.role}</small><small>{a.status==='not_connected'?t.noAgents:a.status==='manual_only'?t.manual:enabled?t.activeAgent:t.pausedAgent}</small></div>
       <span className={a.status==='available_when_enabled'&&enabled?styles.greenDot:styles.greyDot}>●</span></div>)}

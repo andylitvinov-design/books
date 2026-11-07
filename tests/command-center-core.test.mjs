@@ -53,7 +53,7 @@ test('priority and executive reporting use measured values and never invent unkn
   const empty=buildExecutiveBrief();assert.equal(empty.unknown,true);assert.equal(empty.total,0);
   const active=buildExecutiveBrief({observedAt:'2026-11-07T00:00:00Z',tasks:[
     {id:'1',title:'A',state:'ready',priority:50},{id:'2',title:'B',state:'blocked_external',priority:90},
-    {id:'3',title:'C',state:'completed_verified',priority:100}
+    {id:'3',title:'C',state:'completed_verified',has_evidence:true,priority:100}
   ]});
   assert.equal(active.unknown,false);assert.equal(active.verified,1);assert.equal(active.blocked,1);
   assert.equal(active.focus[0].title,'B');
