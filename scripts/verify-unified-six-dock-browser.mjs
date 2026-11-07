@@ -343,6 +343,28 @@ try{
      && root.querySelectorAll('[role="log"] p').length>=count+2;
  },before,{timeout:10000});
  assert.equal(await starters.count(),0,"introduction gives way to the live transcript");
+ // The current Create Content entry deliberately asks format -> source -> short
+ // personal idea BEFORE the canonical video goal tree. Earlier browser QA
+ // expected the retired one-tap goal branch and timed out without testing it.
+ const contentKinds=chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind]');
+ await contentKinds.first().waitFor({state:"visible",timeout:15000});
+ assert.deepEqual(await contentKinds.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-content-kind"))),
+   ["video","audio","meditation","message"],
+   "Create Content exposes four real formats before video planning");
+ assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
+   "no Google login at content-format choice");
+ await contentKinds.locator('[data-hh-content-kind="video"]').click();
+ const contentSources=chat.locator('[data-hh-content-step="source"] [data-hh-content-source]');
+ await contentSources.first().waitFor({state:"visible",timeout:15000});
+ assert.deepEqual(await contentSources.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-content-source"))),
+   ["text","voice"],"video supports the two approved input methods");
+ await contentSources.locator('[data-hh-content-source="text"]').click();
+ await chat.locator('[data-hh-content-step="brief"]').waitFor({state:"visible",timeout:15000});
+ await chat.locator("textarea").fill("Хочу больше спокойствия и уверенности");
+ await chat.locator('button[type="submit"]').click();
+ await chat.locator('[data-hh-video-chat-step="category"]').waitFor({state:"visible",timeout:15000});
  // Personal-video creation has the exact MyTube four-goal hierarchy, no
  // unrelated ready-made-video CTA and no Google wall before the brief.
  const videoGoals=chat.locator("[data-hh-video-chat-options] [data-hh-video-chat-choice]");
