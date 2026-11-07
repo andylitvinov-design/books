@@ -139,7 +139,7 @@ function timezone() {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' }
 }
 
-/** @param {{ locale?: 'en'|'ru'|'es', onAdvance?: (() => void)|null, onClose?: (() => void)|null }} props */
+/** @param {{ locale?: 'en'|'ru'|'es', onAdvance?: (() => void)|null, onClose?: (() => void)|null, incomingTurn?: { seq: number, text: string }|null, suggestedKey?: string }} props */
 export default function MessengerTestJourney({ locale = 'en', onAdvance = null, onClose = null, incomingTurn = null, suggestedKey = '' }) {
   const t = COPY[locale] || COPY.en
   const extra = EXTRA[locale] || EXTRA.en
