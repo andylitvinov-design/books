@@ -130,6 +130,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  const [lines,setLines]=useState<ChatLine[]>(()=>[{id:0,role:"assistant",text:t[step]}]);
  const [input,setInput]=useState("");
  const [welcomeDismissed,setWelcomeDismissed]=useState(false);
+ const showWelcome=!welcomeDismissed&&step==="category"&&lines.length===1&&
+   !draft.goal.trim()&&!draft.categoryId;
  const [clientHydrated,setClientHydrated]=useState(false);
  const [symbolicAllowed,setSymbolicAllowed]=useState(false);
  const [aiConsent,setAiConsent]=useState(false);
@@ -238,8 +240,8 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
  },[]);
  useEffect(()=>{
    const thread=threadRef.current;
-   if(thread)thread.scrollTop=thread.scrollHeight;
- },[lines,step,alternative]);
+   if(thread)thread.scrollTop=showWelcome?0:thread.scrollHeight;
+ },[lines,step,alternative,showWelcome]);
  // Explicit opt-in; the local deterministic guide remains available instantly.
  // The model may only phrase a question, never modify filters or render jobs.
  useEffect(()=>{
@@ -378,8 +380,6 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    [[t.back,"назад"],[step==="phrase"?t.skipPhrase:t.skip,"пропусти"],
      [t.quickAuto,"выбери сам"]];
  const activeAssistantId=lines.reduce((id,line)=>line.role==="assistant"?line.id:id,-1);
- const showWelcome=!welcomeDismissed&&step==="category"&&lines.length===1&&
-   !draft.goal.trim()&&!draft.categoryId;
  const suggestSemantic=(utterance:string,requestedStep:Step,base:Draft):boolean=>{
    if(!aiConsent||disabled||captureStarted||utterance.length>480||
       !VIDEO_CHAT_TREE_STEPS.includes(requestedStep)||requestedStep==="phrase"||

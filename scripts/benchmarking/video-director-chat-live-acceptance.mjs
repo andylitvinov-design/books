@@ -189,6 +189,12 @@ try{
       }
       const hero=await chat.locator('[data-video-chat-welcome] h2').boundingBox();
       assert.ok(hero&&hero.width<=sizes[locale]+2,'CALM_WELCOME_HERO_OVERFLOW');
+      const logViewport=chat.locator('[role="log"]');
+      const scrollTop=await logViewport.evaluate(element=>element.scrollTop);
+      assert.ok(scrollTop<=2,'CALM_WELCOME_MUST_START_AT_TOP');
+      const logRect=await logViewport.boundingBox();
+      assert.ok(logRect&&hero&&hero.y>=logRect.y-2&&hero.y<logRect.y+logRect.height-24,
+        'CALM_WELCOME_GREETING_MUST_BE_IN_VIEWPORT');
       await chat.locator('[data-video-chat-welcome-create]').click();
       await chat.locator('[data-chat-inline-choices]').waitFor({state:'visible',timeout:10000});
       assert.equal(await chat.locator('[data-video-chat-welcome]').count(),0,

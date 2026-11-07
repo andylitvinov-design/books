@@ -36,6 +36,9 @@ test("welcome is readable and safe, then yields to the existing conversation",()
  assert.match(component,/const \[aiConsent,setAiConsent\]=useState\(false\)/);
  assert.match(component,/setWelcomeDismissed\(false\)/);
  assert.match(component,/setWelcomeDismissed\(true\);answer\("помоги"\)/);
+ assert.match(component,/thread\.scrollTop=showWelcome\?0:thread\.scrollHeight/);
+ assert.match(browser,/CALM_WELCOME_MUST_START_AT_TOP/);
+ assert.match(browser,/CALM_WELCOME_GREETING_MUST_BE_IN_VIEWPORT/);
  assert.match(browser,/CALM_WELCOME_CANONICAL_FIVE_GOALS/);
  assert.match(browser,/CALM_WELCOME_MUST_YIELD_TO_REAL_CHAT/);
 });
