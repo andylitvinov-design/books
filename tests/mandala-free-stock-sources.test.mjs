@@ -8,6 +8,7 @@ const now=new Date("2026-10-30T12:00:00Z");
 const clip=(i,p="mixkit")=>({provider:p,file:"video-"+i+".mp4",author:"Owner "+i,
  clipTitle:"Landscape "+i,sourcePage:p==="free_nature_stock"
    ? "https://freenaturestock.com/video/red-sunset/"
+   : p==="wikimedia_commons" ? "https://commons.wikimedia.org/wiki/File:Quiet_River.webm"
    : STOCK_POLICIES[p].sourcePath
      ? STOCK_POLICIES[p].license
      : "https://"+STOCK_POLICIES[p].host+"/nature/"+i,

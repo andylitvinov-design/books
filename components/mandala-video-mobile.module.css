@@ -4670,6 +4670,54 @@
  .studio .previewStage .heroRail button span{font-size:9px}
 }
 
+/* Compact approved PRO/Enhance page. Do not affect Goal, Montage or Hypno. */
+@media(max-width:759px){
+ .studio[data-active-workspace="pro"] .quickBuilder{
+   gap:5px!important;padding:0 3px 9px!important;min-width:0;
+ }
+ .studio[data-active-workspace="pro"] .workspaceHeading{
+   position:absolute!important;width:1px!important;height:1px!important;
+   overflow:hidden!important;clip-path:inset(50%)!important;
+   white-space:nowrap!important;margin:0!important;padding:0!important;
+ }
+ .studio[data-active-workspace="pro"] .quickBuilder>.previewStage{
+   display:grid!important;gap:0!important;padding:0!important;margin:0!important;
+   border:0!important;background:transparent!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStageHeading{display:none!important}
+ .studio[data-active-workspace="pro"] .previewStage>.heroWithRail{
+   width:100%!important;max-width:none!important;
+   grid-template-columns:minmax(0,1fr) 71px!important;gap:6px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .hero{
+   height:clamp(105px,18dvh,155px)!important;min-height:0!important;
+   max-height:155px!important;aspect-ratio:auto!important;
+   border-radius:16px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial{
+   left:9px!important;bottom:8px!important;max-width:69%!important;gap:2px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial h2{
+   font-size:clamp(13px,3.65vw,18px)!important;line-height:1.08!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial p{
+   font-size:clamp(9px,2.4vw,11px)!important;line-height:1.12!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEyebrow{display:none!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroPlay{
+   width:44px!important;height:44px!important;min-width:44px;min-height:44px;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroRail{display:grid!important;gap:4px!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button{padding:5px 3px!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button strong{font-size:10px}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button span{font-size:8px}
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="pro"] .previewStage .hero{
+   height:clamp(94px,15dvh,125px)!important
+ }
+}
+
 /* Messenger Video validated handoff visibility.
    The compact Goals screen hides unopened advanced panels, not the original
    Director explicitly opened after a verified, one-use chat handoff.
@@ -4730,3 +4778,5 @@
     max-height:62svh!important;
   }
 }
+
+
