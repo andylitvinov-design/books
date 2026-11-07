@@ -1,0 +1,41 @@
+/* Read-only Agent Commander PR task tree: mobile-first, compatible with fixed dock. */
+#hh-pr-task-tree{--pt-line:#655477;--pt-text:#f0eafa;color:var(--pt-text);font:14px/1.48 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:linear-gradient(145deg,#27213a,#171d2e);border:1px solid #73608470;border-radius:17px;padding:15px;margin:16px 0 22px;box-shadow:0 8px 24px #07071330}
+#hh-pr-task-tree.hh-pr-project-tree{max-width:560px;margin:8px auto 110px;padding:16px}
+#hh-pr-task-tree *{box-sizing:border-box}
+#hh-pr-task-tree .hh-pt-head>div{font-size:10px;letter-spacing:.1em;color:#d5aefa;font-weight:750}
+#hh-pr-task-tree h2{font-size:20px;line-height:1.25;margin:6px 0 8px;letter-spacing:-.02em;color:#fff}
+#hh-pr-task-tree .hh-pt-help{font-size:12px;line-height:1.5;color:#c0bbd2;margin:9px 0 12px}
+#hh-pr-task-tree .hh-pt-controls{display:flex;gap:8px;align-items:center;margin:13px 0}
+#hh-pr-task-tree .hh-pt-controls input{width:100%;min-width:0;flex:1;min-height:44px;padding:10px 11px;border:1px solid #62587b;border-radius:11px;background:#16192b;color:#fff;font:inherit;font-size:13px}
+#hh-pr-task-tree .hh-pt-refresh{flex:0 0 auto;min-height:44px;padding:8px 11px;border:1px solid #8b6ebe;background:#62448c;color:#fff;border-radius:11px;font:inherit;font-weight:700;font-size:12px;cursor:pointer}
+#hh-pr-task-tree .hh-pt-refresh:disabled{opacity:.6}
+#hh-pr-task-tree :is(button,input,summary,a):focus-visible{outline:2px solid #c6a0ff;outline-offset:3px}
+#hh-pr-task-tree .hh-pt-stamp{font-size:11px;color:#bdb5cf;margin:10px 0}
+#hh-pr-task-tree .hh-pt-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#hh-pr-task-tree .hh-pt-metrics>span{padding:9px 5px;border-radius:10px;background:#36304b;border:1px solid #80739730;text-align:center;min-width:0}
+#hh-pr-task-tree .hh-pt-metrics strong{display:block;font-variant-numeric:tabular-nums;color:white;font-size:20px}
+#hh-pr-task-tree .hh-pt-metrics small{display:block;color:#cbc6d9;font-size:10px;line-height:1.2}
+#hh-pr-task-tree details{border:1px solid var(--pt-line);border-radius:13px;margin-top:9px;overflow:hidden;background:#242439}
+#hh-pr-task-tree details.hh-pt-task{margin:8px 9px;background:#1b2032;border-color:#4f4c65}
+#hh-pr-task-tree summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;min-height:49px;cursor:pointer;list-style:none}
+#hh-pr-task-tree summary::-webkit-details-marker{display:none}
+#hh-pr-task-tree summary strong{font-size:13px;min-width:0;line-height:1.3}
+#hh-pr-task-tree summary strong:before{content:'+';margin-right:8px;color:#d9bcff}
+#hh-pr-task-tree details[open]>summary strong:before{content:'−'}
+#hh-pr-task-tree summary span{white-space:nowrap;color:#c3b6d5;font-size:11px}
+#hh-pr-task-tree .hh-pt-direction>summary{background:#342f4c}
+#hh-pr-task-tree .hh-pt-pr{padding:10px 12px;border-top:1px solid #ffffff16}
+#hh-pr-task-tree .hh-pt-pr-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#hh-pr-task-tree .hh-pt-link{font-size:12px;color:#b7dbff;text-decoration:underline;text-underline-offset:3px;font-weight:700}
+#hh-pr-task-tree .hh-pt-pr p{font-size:12px;color:#eeeaf6;margin:6px 0;line-height:1.38;overflow-wrap:anywhere}
+#hh-pr-task-tree .hh-pt-pr small{font-size:10px;color:#aaa9c3}
+#hh-pr-task-tree .hh-pt-badge{border-radius:8px;background:#4b3d64;padding:3px 7px;font-size:10px;color:#eee7f4}
+#hh-pr-task-tree .hh-pt-hold{background:#6e3136}
+#hh-pr-task-tree .hh-pt-draft{background:#4c455b}
+#hh-pr-task-tree .hh-pt-manual{background:#61502c}
+#hh-pr-task-tree .hh-pt-open{background:#23493d}
+#hh-pr-task-tree .hh-pt-overlaps{background:#292338;margin-top:15px}
+#hh-pr-task-tree .hh-pt-overlaps>.hh-pt-help{padding:0 12px}
+#hh-pr-task-tree .hh-pt-pair{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:9px 12px;border-top:1px solid #ffffff15}
+#hh-pr-task-tree .hh-pt-pair span{font-size:12px;flex:1 1 180px}
+@media(max-width:390px){#hh-pr-task-tree{padding:11px}#hh-pr-task-tree.hh-pr-project-tree{margin:8px 11px 105px}#hh-pr-task-tree .hh-pt-refresh{padding:7px 8px;font-size:11px}#hh-pr-task-tree .hh-pt-metrics strong{font-size:18px}}
