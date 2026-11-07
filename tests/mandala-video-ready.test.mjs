@@ -6,6 +6,7 @@ import {selectResourcePractice} from "../lib/mandala/resource-practice-selector.
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const ready=readFileSync(new URL("../components/mandala-video-ready.tsx",import.meta.url),"utf8");
 const delivery=readFileSync(new URL("../components/mandala-video-delivery.tsx",import.meta.url),"utf8");
+const uploader=readFileSync(new URL("../lib/mandala/signed-private-video-upload.mjs",import.meta.url),"utf8");
 
 test("Ready is the sixth existing editor tab, never a seventh or a parallel renderer",()=>{
   assert.match(studio,/type StudioWorkspace =[^;]*"ready"/);
@@ -24,8 +25,10 @@ test("Video must be verified; guests get login before save, and existing signed 
   assert.match(ready,/data-video-ready/);
   assert.match(delivery,/data-video-save-to-library/);
   assert.match(delivery,/await privateUpload\(\)/);
-  assert.match(delivery,/uploadToSignedUrl/);
-  assert.match(delivery,/appFetch\("personal-videos\/"\+created.id,undefined,"POST"\)/);
+  assert.match(delivery,/savePrivateMp4/);
+  assert.match(uploader,/uploadToSignedUrl/);
+  assert.match(uploader,/uploadSignedPrivateVideoChunks/);
+  assert.match(uploader,/request\("personal-videos\/"\+session.created.id,undefined,"POST"\)/);
 });
 test("Ritual uses existing no-provider safety selector in three languages",()=>{
   for(const locale of ["en","ru","es"]){
