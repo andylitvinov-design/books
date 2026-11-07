@@ -137,22 +137,52 @@ try {
   await continueToIdeas.click();
   const ideas=page.locator('[data-video-quick-control="phrases"]');
   assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
-  await page.locator('[data-video-quick-control="editor"]').click();
+  const editorTab=page.locator('[data-video-quick-control="editor"]');
+  await editorTab.click();
   await page.waitForFunction(()=>
     document.querySelector('[data-video-quick-control="editor"]')
       ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  // Montage can retain Settings from a previous step. Explicitly select
-  // the visitor-visible Style tab before its genuine green Next button.
+  // In the existing Montage editor, Settings may remain selected from an earlier
+  // visit. Select the user-visible Style tab rather than silently forcing state.
   const montageStyle=page.locator('[data-video-montage-tab="effects"]');
   await montageStyle.waitFor({state:'visible',timeout:20000});
   await montageStyle.click();
-  await page.waitForFunction(()=>
-    document.querySelector('[data-video-montage-tab="effects"]')
-      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  // Confirm that Safari actually committed the next workspace and its Style
+  // panel. A stale Ideas scroll must not steal the user's tap; do not force
+  // hidden controls or skip the real Style → Text action.
+  await page.waitForFunction(()=>{
+    const studio=document.querySelector('[data-mandala-free-video]');
+    const style=document.querySelector('[data-video-montage-tab="effects"]');
+    const panel=document.querySelector('[data-video-basic-editor]');
+    return studio?.getAttribute('data-active-workspace')==='editor' &&
+      panel?.getAttribute('data-montage-panel')==='effects' &&
+      style?.getAttribute('aria-pressed')==='true';
+  },undefined,{timeout:15000});
+  assert.equal(await editorTab.getAttribute('aria-pressed'),'true','MONTAGE_TAB_MUST_ACTIVATE');
   // The real Style panel owns the visible green Next CTA. Avoid clicking a
   // second legacy/hideable Text tab before the visitor progresses naturally.
   const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
-  await styleNext.waitFor({state:'visible',timeout:20000});
+  try {
+    await styleNext.waitFor({state:'visible',timeout:20000});
+  }catch(error){
+    // Only safe boolean / geometry evidence; never read the visitor's text,
+    // recipient details, uploaded audio, media, or unrelated DOM content.
+    const state=await page.evaluate(()=>{
+      const studio=document.querySelector('[data-mandala-free-video]');
+      const panel=document.querySelector('[data-video-basic-editor]');
+      const button=document.querySelector('[data-video-montage-effects] [data-video-montage-next="text"]');
+      const host=button?.closest('[data-video-montage-effects]');
+      const visible=el=>!!el && getComputedStyle(el).display!=='none' &&
+        getComputedStyle(el).visibility!=='hidden' && el.getBoundingClientRect().height>0;
+      return {workspace:studio?.getAttribute('data-active-workspace')||null,
+        montage:panel?.getAttribute('data-montage-panel')||null,
+        effectsVisible:visible(host),buttonVisible:visible(button),
+        activeStyle:document.querySelector('[data-video-montage-tab="effects"]')?.getAttribute('aria-pressed')||null,
+        activeEditor:document.querySelector('[data-video-quick-control="editor"]')?.getAttribute('aria-pressed')||null};
+    }).catch(()=>({browserStateUnavailable:true}));
+    console.error('WEBKIT_MONTAGE_STYLE_STATE',JSON.stringify(state));
+    throw error;
+  }
   await styleNext.click();
   // A real Safari pointer action can resolve before React commits its
   // workspace state. Poll the actual DOM; do not simulate or force a tap.

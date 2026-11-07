@@ -175,11 +175,16 @@ test("real WebKit voice acceptance expands the approved transcript before compar
 test("real WebKit voice acceptance expands advanced sound options before selecting a verified music bed",()=>{
   const browser=read("scripts/verify-affirmation-voice-browser.mjs");
   const voice=read("components/mandala-affirmation-voice.tsx");
-  assert.match(voice,/<details className=\{css\.voiceAdvanced\} data-video-affirmation-voice-advanced>/);
+  assert.match(voice,/<details ref=\{bindVoiceAdvanced\} className=\{css\.voiceAdvanced\} data-video-affirmation-voice-advanced/);
+  assert.match(voice,/const bindVoiceAdvanced=useCallback/);
+  assert.match(voice,/voiceAdvancedNodeRef\.current=node/);
+  assert.match(voice,/summary onClick=\{event=>\{/);
+  assert.match(voice,/event\.preventDefault\(\)/);
   assert.match(voice,/data-video-affirmation-bed/);
   assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
   assert.match(browser,/await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
-  assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\)/);
+  assert.match(browser,/await expect\(voiceOptions\)\.toHaveAttribute\("open","",\{timeout:15000\}\)/);
+  assert.match(browser,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible\(\{timeout:15000\}\)/);
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
   assert.match(browser,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
   assert.match(browser,/assert\.ok\(audioTrack/);
