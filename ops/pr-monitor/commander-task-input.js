@@ -233,9 +233,17 @@
      await navigator.clipboard.writeText(content);copy.textContent='Скопировано ✓'}
     catch{field.focus();field.select();copy.textContent='Текст выделен — скопируйте вручную'}
    });sheet.append(copy);
-   const owner=mk('a',null,'Открыть защищённый редактор');
+   const sendDraft=mk('button','hh-cc-transfer','Передать в защищённый редактор');
+   sendDraft.type='button';sendDraft.addEventListener('click',()=>{
+    if(typeof global.HHCommanderTransfer?.begin!=='function'){
+     dictation.textContent='Передача недоступна. Используйте копирование промпта.';return}
+    global.HHCommanderTransfer.begin({
+     raw:input.value,fullPrompt:area.hidden?'':output.value
+    },dictation);
+   });sheet.append(sendDraft);
+   const owner=mk('a',null,'Открыть защищённый редактор вручную');
    owner.href='https://holistichouse.vercel.app/admin/command-center';owner.target='_blank';owner.rel='noopener noreferrer';sheet.append(owner);
-   sheet.append(mk('p','hh-cc-privacy-note','Публичная форма не сохраняет и не запускает задачи. Скопируйте ТЗ и подтвердите создание в защищённом Agent Commander.'));
+   sheet.append(mk('p','hh-cc-privacy-note','Публичная форма не сохраняет и не запускает задачи. Передача только открывает защищённый редактор, где владелец проверяет текст и нажимает «Сохранить». Если браузер блокирует передачу, скопируйте промпт вручную.'));
    const done=mk('button','hh-cc-secondary','Закрыть');done.type='button';done.addEventListener('click',close);sheet.append(done);
    dialog.append(sheet);dialog.addEventListener('click',e=>{if(e.target===dialog)close()});
    dialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close()}});

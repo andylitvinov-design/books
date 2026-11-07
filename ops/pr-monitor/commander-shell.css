@@ -44,3 +44,7 @@ body.hh-cc-shell #hh-project-management-nav{display:none!important}body.hh-cc-sh
 .hh-cc-task-result h3{font-size:14px;margin:0}
 .hh-cc-sheet .hh-cc-task-plan{font-size:14px;line-height:1.5;min-height:210px;max-height:45dvh;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:355px){.hh-cc-sheet{padding-inline:12px;gap:10px}.hh-cc-sheet .hh-cc-task-plan{min-height:160px}.hh-cc-task-composer textarea{min-height:110px}}
+
+/* User-invoked draft transfer; no automatic public task writes. */
+.hh-cc-sheet .hh-cc-transfer{min-height:52px;border:1px solid #b9a0f2;background:linear-gradient(120deg,#9a61d8,#7343ae);font-weight:800}
+.hh-cc-sheet .hh-cc-transfer:focus-visible{outline:3px solid #fff;outline-offset:3px}
