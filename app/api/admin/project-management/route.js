@@ -7,7 +7,7 @@ import {readProjectManagement,createEpic,proposeEpicOptions,selectEpicOption,
  reservePmExecution,settlePmExecution,cancelPmFutureAttempts} from '@/lib/project-management/store.mjs';
 import {inspectCommandTaskDelivery} from '@/lib/command-center/release-proof.mjs';
 import {REPO,CONTROL,WATCHDOG,SHA,executionAdmission,buildChatgptHandoff,
- dispatchPayload} from '@/lib/project-management/execution.mjs';
+ dispatchPayload,observePmWatchdogRun} from '@/lib/project-management/execution.mjs';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -124,18 +124,17 @@ export async function POST(request){
     try{
      const runs=await githubRead('actions/workflows/'+WATCHDOG+
       '/runs?event=workflow_dispatch&per_page=30');
-     const matches=(runs.workflow_runs||[]).filter(x=>x.event==='workflow_dispatch'&&
-      x.head_branch===CONTROL&&String(x.display_title||'').includes(last.result.requestId));
+     const title=`HH watchdog / PM #${last.result.prNumber} / ${last.result.requestId}`;
+     const matches=Array.isArray(runs.workflow_runs)&&runs.workflow_runs.length<=30?
+      runs.workflow_runs.filter(x=>x.event==='workflow_dispatch'&&
+       x.head_branch===CONTROL&&x.display_title===title):[];
      if(matches.length===1){
       const workflow=matches[0];
       let jobs=null;
       try{jobs=await githubRead('actions/runs/'+workflow.id+'/jobs?per_page=100');}
-      catch{/* Missing job proof never becomes RUNNER_STARTED. */}
-      const started=(jobs?.jobs||[]).some(x=>x.name==='direct-handoff'&&
-       x.started_at&&Number.isFinite(Date.parse(x.started_at)));
-      run={id:workflow.id,url:workflow.html_url,status:workflow.status,
-       conclusion:workflow.conclusion,createdAt:workflow.created_at,
-       runnerStarted:started,stage:started?'RUNNER_STARTED':'DISPATCH_ACCEPTED'};
+      catch{/* Missing Watchdog job proof never becomes a code worker claim. */}
+      run=observePmWatchdogRun({workflow,jobs,
+       prNumber:last.result.prNumber,requestId:last.result.requestId});
      }
     }catch{/* Unknown run history is not proof of no execution. */}
    }
