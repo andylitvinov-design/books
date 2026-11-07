@@ -200,6 +200,14 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  assert.match(browser,/await expect\(page\.locator\('\[data-hypno-group="'\+group\+'"\]'\)\)\.toBeVisible\(\)/);
  assert.doesNotMatch(browser,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
  assert.match(browser,/encoded-audio-verified/);
+ // Preserve the real first guest movie flow on the current tabbed Montage.
+ const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+ assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
+ assert.match(firstVideo,/await montageStyle\.click\(\)/);
+ assert.match(firstVideo,/await styleNext\.waitFor\(\{state:'visible',timeout:20000\}\)/);
+ assert.match(firstVideo,/await styleNext\.click\(\)/);
+ assert.match(firstVideo,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
+ assert.match(firstVideo,/FOUR_DISTINCT_SOURCES_REQUIRED/);
  assert.match(browser,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
 });
 
