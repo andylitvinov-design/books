@@ -144,3 +144,20 @@ test("consent click diagnostics retain one genuine click and never capture conta
   assert.match(block,/elementFromPoint/);
   assert.doesNotMatch(block,/\.check\(|force:\s*true|\.value\b/);
 });
+
+
+test("WebKit voice E2E exercises current two-tab Hypno, real visual modes and audio mixer",()=>{
+  assert.match(source,/const visualTab=hypnoTabs\.locator\('\[data-hypno-tab="visual"\]'\)/);
+  assert.match(source,/const audioTab=hypnoTabs\.locator\('\[data-hypno-tab="audio"\]'\)/);
+  assert.match(source,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
+  assert.doesNotMatch(source,/data-hypno-tab="phrases"/,"removed third tab must never gate real movie export");
+  assert.match(source,/await balancedLight\.click\(\)/);
+  assert.match(source,/await expect\(balancedLight\)\.toHaveAttribute\("aria-pressed","true"\)/);
+  assert.match(source,/await textPosition\.click\(\)/);
+  assert.match(source,/await expect\(textPosition\)\.toHaveAttribute\("aria-pressed","true"\)/);
+  assert.match(source,/await expect\(visualGroup\)\.toBeHidden\(\)/);
+  assert.match(source,/await expect\(audioGroup\)\.toBeVisible\(\)/);
+  assert.match(source,/await whisperSwitch\.click\(\)/);
+  assert.match(source,/await binauralSwitch\.click\(\)/);
+  assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
+});
