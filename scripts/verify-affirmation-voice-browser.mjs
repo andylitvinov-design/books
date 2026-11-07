@@ -32,6 +32,8 @@ async function verifyWorkspaceHydration(browser,locale){
       return route.continue();
     });
     const page=await context.newPage();
+    const pageErrors=[];
+    page.on("pageerror",error=>pageErrors.push(error.message));
     await page.goto(BASE+"/"+locale+"/holistic-support/mandala",{waitUntil:"commit",timeout:90000});
     const studio=page.locator('[data-video-studio-hydrated]');
     const tabs=page.locator('[data-video-quick-controls] button');
@@ -60,6 +62,26 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
+    // Owner's real iPhone regression: the size control must expose the original
+    // Canvas (not its promo poster), and Play must use that same preview.
+    await expect(page.locator('[data-video-idea-phrase]')).toHaveCount(7);
+    const textSize=page.locator('[data-video-ideas-text-size]');
+    const filmCanvas=page.locator('[data-mandala-cinematic-canvas]');
+    await expect(textSize).toBeVisible();
+    await expect(filmCanvas).toBeVisible();
+    await expect.poll(()=>filmCanvas.evaluate(canvas=>
+      getComputedStyle(canvas.parentElement).opacity)).toBe("1");
+    const filmPlay=page.locator('[data-video-preview-toggle]');
+    await textSize.focus();
+    await textSize.press("Home");
+    await expect(textSize).toHaveValue("0");
+    await textSize.press("End");
+    await expect(textSize).toHaveValue("2");
+    await filmPlay.click();
+    await expect(page.locator("[data-video-mandala-hero]")).toHaveAttribute("data-preview-playing","true");
+    await filmPlay.click();
+    await expect(page.locator("[data-video-mandala-hero]")).toHaveAttribute("data-preview-playing","false");
+    assert.deepEqual(pageErrors,[],"Ideas must not throw a client-side exception");
     const refinement=page.locator('[data-video-ideas-refinement]');
     await expect(refinement.locator(":scope > summary")).toBeVisible();
     await refinement.locator(":scope > summary").click();
