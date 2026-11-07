@@ -15,7 +15,9 @@ test('mutations owner gated and same origin, no new scheduler or CI',()=>{
  assert.match(route,/CROSS_ORIGIN_DENIED/);
  assert.match(route,/consumeRate/);
  assert.match(route,/uuid\(data\.requestId\)/);
- assert.doesNotMatch(route,/workflow_dispatch|rerun_failed|create_pull_request|new cron/i);
+ assert.doesNotMatch(route,/rerun_failed|create_pull_request|new cron/i);
+ assert.match(route,/dispatchTrustedRepair/);
+ assert.match(route,/claimExecutionLaunch/);
 });
 test('chosen plan uses existing tasks, milestones, DAG and no automation',()=>{
  assert.match(store,/INSERT INTO app_private\.cc_tasks/);
@@ -34,4 +36,22 @@ test('existing private backend has RLS policy and least-privilege grants for PM 
  }
  assert.doesNotMatch(permissions,/GRANT[^;]+TO\s+(?:PUBLIC|anon|authenticated)/i);
  assert.doesNotMatch(permissions,/GRANT\s+ALL|CREATE TRIGGER|cron\.schedule/i);
+});
+test('Execution Gateway is owner-only and does not bypass signed worker reservation',()=>{
+ const gateway=f('lib/project-management/execution-gateway.mjs');
+ const execStore=f('lib/project-management/execution-store.mjs');
+ const panel=f('app/admin/project-management/execution-panel.jsx');
+ const migration=f('supabase/migrations/20261107180000_hh_pm_execution_gateway_v3.sql');
+ assert.match(gateway,/hh-pr-ten-minute-watchdog.yml/);
+ assert.match(gateway,/pm_expected_sha/);
+ assert.doesNotMatch(gateway,/hh-pr-repair-worker.yml|HH_AUTOMERGE_TOKEN|paid_fallback/);
+ assert.match(execStore,/pg_advisory_xact_lock/);
+ assert.match(execStore,/state='DISPATCHING'/);
+ assert.match(execStore,/ONE_EXECUTION_PER_PR_HEAD/);
+ assert.match(panel,/window.confirm\(t.confirm\)/);
+ assert.match(panel,/chatgpt_work/);
+ assert.match(migration,/UNIQUE\(pr_number,expected_sha\)/);
+ assert.match(migration,/FORCE ROW LEVEL SECURITY/g);
+ assert.doesNotMatch(migration,/GRANT[^;]+TO\s+(?:PUBLIC|anon|authenticated)\s*;/i);
+ assert.doesNotMatch(migration,/CREATE (?:TRIGGER|EXTENSION)|cron\.schedule|pg_net/);
 });

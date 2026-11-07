@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {useCallback,useState} from 'react';
 import {deliveryLabel,projectProgress} from '@/lib/project-management/plans.mjs';
 import ProjectReports from './project-reports';
+import ExecutionPanel from './execution-panel';
 import styles from './project-management.module.css';
 const words={
  ru:{title:'Управление проектами',subtitle:'От большой задачи до проверенного результата',monitor:'PR Monitor',center:'Command Center',projects:'Проекты',new:'Новая большая задача',create:'Создать задачу',problem:'Какая проблема?',result:'Ожидаемый результат',priority:'Приоритет',name:'Название задачи',selectProject:'Выберите проект',noProjects:'Проектов пока нет. Сначала создайте проект в Command Center.',none:'Нет больших задач',noBackend:'Приватная база недоступна или миграция ещё не применена. Данные неизвестны.',choose:'Открыть',plans:'Варианты решения',propose:'Предложить 3 плана',engine:'Бесплатные шаблонные предложения, без вызова платного AI',approve:'Утвердить этот план',selected:'Выбранный план',steps:'Работы',noPR:'PR не привязан',link:'Привязать PR',inspect:'Проверить PR / CI / LIVE',next:'Следующий шаг',refresh:'Обновить',save:'Сохранить',cancel:'Отмена',loading:'Выполняется…',error:'Не удалось подтвердить действие',done:'Изменения сохранены',pr:'Ссылка на GitHub PR',confirmed:'Подтверждённые',unknown:'Пока не измерен',coverage:'Частичный охват',noLive:'LIVE не подтверждён: нужна независимая функциональная проверка',manual:'PR привязан владельцем, статус GitHub проверяется отдельно'},
@@ -114,6 +115,7 @@ export default function ProjectManagementClient({lang='ru',initialSnapshot=null}
          {proof&&<div className={styles.proof}><small>GitHub · {safeTime(proof.observedAt)} · HEAD {proof.headSha?.slice(0,9)||'—'}</small>
            <p>PR: {proof.prState} · CI: {proof.ci} · Merge: {proof.mergedSha?.slice(0,9)||'—'} · production: {proof.codeOnProduction?'yes':'unverified'}</p>
            <p>{proof.functionalAccepted?status?.label:t.noLive}</p></div>}
+          <ExecutionPanel task={task} linkedPRs={existing} initialExecutions={(snap.executions||[]).filter(e=>e.task_id===task.id)} lang={lang}/>
         </div>;
        })}
       </div>}
