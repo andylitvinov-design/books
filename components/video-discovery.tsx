@@ -1,6 +1,6 @@
 "use client";
 
-import {Bookmark, ChevronDown, RotateCcw, Search, SlidersHorizontal, Sparkles} from "lucide-react";
+import {Bookmark, Clock3, Globe2, RotateCcw, Search, SlidersHorizontal, Sparkles} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
 import {rankDiscoveryVideos, VIDEO_GOALS} from "@/lib/video-discovery/ranker.mjs";
 import {VIDEO_LIFE_AREAS,VIDEO_CONTENT_TYPES,VIDEO_DIRECTIONS,VIDEO_TRADITIONS,lifeAreasForIntent} from "@/lib/video-discovery/taxonomy.mjs";
@@ -12,14 +12,14 @@ import {matchesMyTubeFormat} from "@/lib/video-discovery/mytube-duration.mjs";
 import styles from "./video-discovery.module.css";
 
 type Order="for-you"|"series"|"newest";
-type MyTubeFormat="all"|"shorts"|"study";
+type MyTubeFormat="all"|"shorts"|"courses"|"study";
 const STORAGE_KEY="hh-public-video-favorites-v1";
 const labels={
   ru:{
     title:"Видео для вашего развития",lead:"Выберите цель — мы подберём видео из проверенных публичных материалов, а не рекламной ленты.",
     goals:["Для меня","Спокойствие","Энергия","Отношения","Работа","Смысл","Практики"],
     areas:["Бизнес и деньги","Отношения","Энергия и здоровье","Развитие и смыслы"],
-    areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",refine:"Фильтры",collapse:"Скрыть фильтры",mytubeCategoryTitle:"Выберите направление",mytubeSubcategoryTitle:"Уточните потребность",mytubeTopicTitle:"Выберите конкретную тему",mytubeScenarioTitle:"Подходящий сценарий (предварительно)",mytubeAllScenarios:"Все сценарии",mytubeAny:"Все направления",mytubeAllSubcategories:"Все подкатегории",mytubeAllTopics:"Все темы",
+    areaTitle:"Сфера жизни",focusTitle:"Что хотите развить?",all:"Любой вариант",advanced:"Дополнительные фильтры",refine:"Фильтры",collapse:"Скрыть фильтры",mytubeCategoryTitle:"Выберите направление",mytubeSubcategoryTitle:"Уточните потребность",mytubeTopicTitle:"Выберите конкретную тему",mytubeScenarioTitle:"Подходящий сценарий (предварительно)",mytubeAllScenarios:"Все сценарии",mytubeAny:"Все направления",mytubeAllSubcategories:"Все подкатегории",mytubeAllTopics:"Все темы",mytubeCategoryShort:"Категория",mytubeTopicShort:"Тема",mytubeCourses:"Курсы",
     searchLabel:"Поиск видео",searchPlaceholder:"Поиск по названию, теме или автору…",
     sourceTitle:"Автор / источник",sourceAll:"Все источники",
     periodTitle:"Дата публикации",periodOptions:["За год","2020-е","2010-е","2000-е"],
@@ -39,7 +39,7 @@ const labels={
     title:"Videos for your growth",lead:"Choose a goal to discover reviewed public videos, not an advertising-driven feed.",
     goals:["For you","Calm","Energy","Relationships","Work","Meaning","Practices"],
     areas:["Business & Money","Relationships","Energy & Health","Personal Growth"],
-    areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",refine:"Filters",collapse:"Hide filters",mytubeCategoryTitle:"Choose a direction",mytubeSubcategoryTitle:"Choose a need",mytubeTopicTitle:"Choose a specific topic",mytubeScenarioTitle:"Suggested story approach (provisional)",mytubeAllScenarios:"All scenarios",mytubeAny:"All directions",mytubeAllSubcategories:"All subcategories",mytubeAllTopics:"All topics",
+    areaTitle:"Life area",focusTitle:"What would you like to develop?",all:"Any",advanced:"More filters",refine:"Filters",collapse:"Hide filters",mytubeCategoryTitle:"Choose a direction",mytubeSubcategoryTitle:"Choose a need",mytubeTopicTitle:"Choose a specific topic",mytubeScenarioTitle:"Suggested story approach (provisional)",mytubeAllScenarios:"All scenarios",mytubeAny:"All directions",mytubeAllSubcategories:"All subcategories",mytubeAllTopics:"All topics",mytubeCategoryShort:"Category",mytubeTopicShort:"Topic",mytubeCourses:"Courses",
     searchLabel:"Search videos",searchPlaceholder:"Search by title, topic or creator…",
     sourceTitle:"Creator / source",sourceAll:"All sources",
     periodTitle:"Upload date",periodOptions:["Past year","2020s","2010s","2000s"],
@@ -59,7 +59,7 @@ const labels={
     title:"Vídeos para tu crecimiento",lead:"Elige un objetivo para descubrir vídeos públicos revisados, no una lista impulsada por anuncios.",
     goals:["Para mí","Calma","Energía","Relaciones","Trabajo","Sentido","Prácticas"],
     areas:["Negocios y dinero","Relaciones","Energía y salud","Crecimiento personal"],
-    areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",refine:"Filtros",collapse:"Ocultar filtros",mytubeCategoryTitle:"Elige un área",mytubeSubcategoryTitle:"Elige una necesidad",mytubeTopicTitle:"Elige un tema concreto",mytubeScenarioTitle:"Enfoque narrativo sugerido (provisional)",mytubeAllScenarios:"Todos los guiones",mytubeAny:"Todas las áreas",mytubeAllSubcategories:"Todas las subcategorías",mytubeAllTopics:"Todos los temas",
+    areaTitle:"Área de vida",focusTitle:"¿Qué quieres desarrollar?",all:"Cualquiera",advanced:"Más filtros",refine:"Filtros",collapse:"Ocultar filtros",mytubeCategoryTitle:"Elige un área",mytubeSubcategoryTitle:"Elige una necesidad",mytubeTopicTitle:"Elige un tema concreto",mytubeScenarioTitle:"Enfoque narrativo sugerido (provisional)",mytubeAllScenarios:"Todos los guiones",mytubeAny:"Todas las áreas",mytubeAllSubcategories:"Todas las subcategorías",mytubeAllTopics:"Todos los temas",mytubeCategoryShort:"Categoría",mytubeTopicShort:"Tema",mytubeCourses:"Cursos",
     searchLabel:"Buscar vídeos",searchPlaceholder:"Buscar por título, tema o autor…",
     sourceTitle:"Autor / fuente",sourceAll:"Todas las fuentes",
     periodTitle:"Fecha de publicación",periodOptions:["Último año","Década de 2020","Década de 2010","Década de 2000"],
@@ -120,6 +120,14 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     style.id,videos.filter(video=>video.mytubeVisualTagEvidence==="explicit_human_review"&&
       video.mytubeStyleIds?.includes(style.id)).length]));
   const activeMyTubeSubcategory=mytubeCategoryId!=="all"&&mytubeSubcategoryId!=="all"?mytubeSubcategories.find(item=>item.id===mytubeSubcategoryId):null;
+  // Show real editorial subcategories even before a direction is selected.
+  // Each shortcut selects its parent direction; no synthetic taxonomy tags.
+  const preferredSubcategoryIds=["money-abundance","finding-love","vital-energy","stress-burnout"];
+  const mytubeQuickSubcategories=mytubeCategoryId==="all"
+    ?mytubeCategories.flatMap((category,i)=>listMyTubeSubcategories(category.id,locale)
+      .filter(item=>item.id===preferredSubcategoryIds[i])
+      .map(item=>({...item,categoryId:category.id})))
+    :mytubeSubcategories.map(item=>({...item,categoryId:mytubeCategoryId}));
   useEffect(()=>{
     try{
       const value:unknown=JSON.parse(window.localStorage.getItem(STORAGE_KEY)||"[]");
@@ -281,30 +289,65 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     </label>}
     {variant==="mytube"&&<>
       <div className={styles.mytubeToolbar} data-mytube-toolbar>
-        <div className={styles.mytubeCategoryRail} data-mytube-category-rail
-          data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
-          <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
-            onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{t.mytubeAny}</button>
-          {mytubeCategories.map(item=><button type="button" key={item.id}
-            data-mytube-category={item.id} aria-pressed={mytubeCategoryId===item.id}
-            onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
+        <div className={styles.mytubeFacetRow} data-mytube-category-row>
+          <span className={styles.mytubeFacetLabel}>{t.mytubeCategoryShort}</span>
+          <div className={styles.mytubeCategoryRail} data-mytube-category-rail
+            data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
+            <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
+              onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{t.durationAll}</button>
+            {mytubeCategories.map(item=><button type="button" key={item.id}
+              data-mytube-category={item.id} aria-pressed={mytubeCategoryId===item.id}
+              onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
+          </div>
         </div>
-        <button type="button" data-mytube-filter-toggle className={styles.compactMoreButton}
-          aria-label={t.advanced+" · "+activeMyTubePath}
-          aria-expanded={filtersOpen} aria-controls="mytube-refine-controls mytube-more-controls"
-          onClick={()=>setFiltersOpen(open=>!open)}>
-          <SlidersHorizontal size={17} aria-hidden="true"/>
-          <span>{t.refine}</span>
-          <ChevronDown size={15} aria-hidden="true"/>
-        </button>
+        <div className={styles.mytubeFacetRow} data-mytube-subcategory-row>
+          <span className={styles.mytubeFacetLabel}>{t.mytubeTopicShort}</span>
+          <div className={styles.mytubeSubcategoryRail} data-mytube-subcategory-rail
+            data-mytube-subcategories role="group" aria-label={t.mytubeSubcategoryTitle}>
+            <button type="button" data-mytube-subcategory="all" aria-pressed={mytubeSubcategoryId==="all"}
+              onClick={()=>{setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{t.durationAll}</button>
+            {mytubeQuickSubcategories.map(item=><button type="button" key={item.id}
+              data-mytube-subcategory={item.id} aria-pressed={mytubeSubcategoryId===item.id}
+              title={item.chooseWhen}
+              onClick={()=>{setMyTubeCategoryId(item.categoryId);setMyTubeSubcategoryId(item.id);setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
+          </div>
+        </div>
+        <div className={styles.mytubeQuickControls} data-mytube-quick-controls>
+          <button type="button" data-mytube-filter-toggle className={styles.compactMoreButton}
+            aria-label={t.advanced+" · "+activeMyTubePath}
+            aria-expanded={filtersOpen} aria-controls="mytube-refine-controls mytube-more-controls"
+            onClick={()=>setFiltersOpen(value=>!value)}>
+            <SlidersHorizontal size={16} aria-hidden="true"/><span>{t.refine}</span>
+          </button>
+          <label className={styles.mytubeQuickSelect} data-mytube-language-control>
+            <Globe2 size={17} aria-hidden="true"/>
+            <span className={styles.visuallyHidden}>{t.original}</span>
+            <select data-mytube-quick-language aria-label={t.original} value={language}
+              onChange={event=>setLanguage(event.target.value)}>
+              <option value="all">{t.durationAll}</option>
+              <option value="en">EN</option><option value="ru">RU</option><option value="es">ES</option>
+            </select>
+          </label>
+          <label className={styles.mytubeQuickSelect} data-mytube-length-control>
+            <Clock3 size={17} aria-hidden="true"/>
+            <span className={styles.visuallyHidden}>{t.durationTitle}</span>
+            <select data-mytube-duration aria-label={t.durationTitle} value={durationRange}
+              disabled={!durationsAvailable} title={!durationsAvailable?t.durationTitle:undefined}
+              onChange={event=>setDurationRange(event.target.value)}>
+              <option value="all">{t.durationAll}</option>
+              {["under4","4to20","20to60","over60"].map((id,i)=>
+                <option key={id} value={id}>{t.durationOptions[i]}</option>)}
+            </select>
+          </label>
+        </div>
       </div>
       <div className={styles.mytubeFormatTabs} data-mytube-format-tabs role="group"
         aria-label={t.formatTitle}>
-        {(["all","shorts","study"] as const).map(mode=><button type="button" key={mode}
+        {(["all","shorts","courses","study"] as const).map(mode=><button type="button" key={mode}
           data-mytube-format-mode={mode} aria-pressed={formatMode===mode}
-          title={mode==="shorts"?t.shortsHint:mode==="study"?t.studyHint:t.durationAll}
+          title={mode==="shorts"?t.shortsHint:mode==="courses"?t.mytubeCourses:mode==="study"?t.studyHint:t.durationAll}
           onClick={()=>setFormatMode(mode)}>
-          {mode==="all"?t.durationAll:mode==="shorts"?t.shortFormat:t.studyFormat}
+          {mode==="all"?t.durationAll:mode==="shorts"?t.shortFormat:mode==="courses"?t.mytubeCourses:t.studyFormat}
         </button>)}
       </div>
     </>}
@@ -392,12 +435,12 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
       <div className={styles.moreControls} id={variant==="mytube"?"mytube-more-controls":undefined}
         hidden={variant==="mytube"&&!filtersOpen}>
       <div className={styles.controls}>
-        <label>{t.original}
+        {variant!=="mytube"&&<label>{t.original}
           <select value={language} onChange={event=>setLanguage(event.target.value)}>
             <option value="all">{t.allAudio}</option><option value="ru">Русский</option>
             <option value="en">English</option><option value="es">Español</option>
           </select>
-        </label>
+        </label>}
         <label>{t.order}
           <select value={sort} onChange={event=>setSort(event.target.value as Order)}>
             <option value="for-you">{t.forYou}</option>
@@ -446,7 +489,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
                 <option key={id} value={id}>{t.periodOptions[i]}</option>)}
             </select>
           </label>}
-          {variant==="mytube" && durationsAvailable && <label>{t.durationTitle}
+          {variant!=="mytube" && durationsAvailable && <label>{t.durationTitle}
             <select data-mytube-duration value={durationRange} onChange={event=>setDurationRange(event.target.value)}>
               <option value="all">{t.all}</option>
               {["under4","4to20","20to60","over60"].map((id,i)=>

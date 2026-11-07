@@ -145,7 +145,8 @@ test('CSP class is identical on Spanish app routes in server and client',()=>{
 test('owner-approved Messenger restores truthful compact empty Orders art and copy',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const css=source('components/app/messages-orders-clients.module.css')
- assert.match(ui,/const listHelper=section!=='ai'&&!detailMode&&!loading&&!error&&Boolean\(ordersData\)/)
+ assert.match(ui,/const listHelper=section!=='ai'&&section!=='news'&&!detailMode&&!loading&&!error&&Boolean\(ordersData\)/)
+ assert.match(ui,/<div id="hh-news-panel"[^>]*hidden=\{section!=='news'\}/)
  assert.match(ui,/data-messenger-list-helper/)
  assert.match(ui,/<div id="hh-orders-panel"[^>]*>\s*\{listHelper\}/)
  assert.match(ui,/<div id="hh-clients-panel"[^>]*>\s*\{listHelper\}/)

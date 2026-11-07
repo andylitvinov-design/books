@@ -258,7 +258,7 @@ test("preview-first mobile flow preserves local rendering and the user's photo p
   assert.match(studio,/studioMode==="therapy"/);
   // A selected four-shot cinematic timeline must display its actual first frame,
   // never the single-shot promotional poster above the shared preview.
-  assert.match(studio,/data-hero-promo=\{creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/);
+  assert.match(studio,/data-hero-promo=\{activeWorkspace!=="phrases"&&creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/);
   assert.match(studio,/const activeFilm = creationMode==="generated" \|\| cinematicPlan \? null : activeMoneyFilm \|\| activeThemedFilm/);
   assert.match(css,/\.hero\[data-hero-promo="true"\] \.heroCanvas\{opacity:0\}/);
   assert.match(css,/\.heroPromo::after/);
@@ -508,7 +508,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.equal((studio.match(/data-video-therapy-banner/g)||[]).length,1);
   const workspaceNav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),
     studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
-  for(const id of ["video","phrases","effects","practices","pro","editor"])
+  for(const id of ["video","phrases","effects","pro","ready","editor"])
     assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
   assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);

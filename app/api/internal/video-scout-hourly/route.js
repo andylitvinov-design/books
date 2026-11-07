@@ -3,6 +3,8 @@ import {cronAuthorized} from '@/lib/app/housekeeping-cron';
 import {closeDatabase} from '@/lib/app/database';
 import {runHourlyVideoScout} from '@/lib/automations/scout-runner';
 import {runFourHourlyClassification} from '@/lib/automations/classifier-runner';
+import {runWeeklyCouncilPlanner} from '@/lib/automations/weekly-council-runner';
+import {runDailyVideoDigest} from '@/lib/automations/daily-video-digest-runner';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -30,8 +32,20 @@ export async function GET(request){
       try{enrichment=await runFourHourlyClassification();}
       catch{enrichment={status:'unconfirmed'};}
     }
-    const status=result.status==='unconfirmed'||enrichment.status==='unconfirmed'?503:200;
-    return NextResponse.json({...result,classification:{status:enrichment.status}},
+    let council={status:'disabled'};
+    if(process.env.HH_AUTOMATION_COUNCIL_ENABLED==='true'){
+      try{council=await runWeeklyCouncilPlanner();}
+      catch{council={status:'unconfirmed'};}
+    }
+    let dailyDigest={status:'disabled'};
+    if(process.env.HH_VIDEO_SCOUT_DIGEST_ENABLED==='true'){
+      try{dailyDigest=await runDailyVideoDigest();}
+      catch{dailyDigest={status:'unconfirmed'};}
+    }
+    const status=[result.status,enrichment.status,council.status,dailyDigest.status]
+      .includes('unconfirmed')?503:200;
+    return NextResponse.json({...result,classification:{status:enrichment.status},
+      weeklyCouncil:{status:council.status},dailyDigest:{status:dailyDigest.status}},
       {status,headers:HEADERS});
   }catch{
     console.error('HH_VIDEO_SCOUT_CRON_UNAVAILABLE');

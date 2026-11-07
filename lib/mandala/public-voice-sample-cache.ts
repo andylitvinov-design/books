@@ -3,6 +3,7 @@
  * Never store client/approved narration or health information here.
  * Cache is private to this browser and has no server, billing or tracking dependency.
  */
+import {validatedPublicVoiceSampleDuration} from "./public-voice-sample-integrity.mjs";
 const DATABASE = "hh-public-voice-demos-v1";
 const STORE = "fixed-samples";
 const EXPIRES_MS = 14 * 86400_000;
@@ -58,8 +59,9 @@ async function openPublicSamples():Promise<IDBDatabase|null>{
 export async function loadPublicVoiceSample(key:string):Promise<Blob|null>{
   const db=await openPublicSamples();
   if(!db)return null;
+  let audio:Blob|null=null;
   try{
-    return await new Promise<Blob|null>(resolve=>{
+    audio=await new Promise<Blob|null>(resolve=>{
       try{
         const request=db.transaction(STORE,"readonly").objectStore(STORE).get(key);
         request.onsuccess=()=>resolve(isFreshPublicVoiceSample(request.result,key)
@@ -68,12 +70,21 @@ export async function loadPublicVoiceSample(key:string):Promise<Blob|null>{
       }catch{resolve(null);}
     });
   }finally{db.close();}
+  if(!audio)return null;
+  try{
+    if(validatedPublicVoiceSampleDuration(await audio.arrayBuffer())!==null)return audio;
+  }catch{/* Corrupt cached WAV. */}
+  await deletePublicVoiceSample(key);
+  return null;
 }
 
 export async function storePublicVoiceSample(key:string,audio:Blob):Promise<void>{
   // Caller must ensure the provider was Gemini and WAV header/duration verified.
   if(!(audio instanceof Blob) || audio.size<44 || audio.size>MAX_SAMPLE_BYTES ||
     !/^(?:audio\/wav|audio\/x-wav)(?:;|$)/i.test(audio.type))return;
+  try{
+    if(validatedPublicVoiceSampleDuration(await audio.arrayBuffer())===null)return;
+  }catch{return;}
   const db=await openPublicSamples();
   if(!db)return; // Safari private mode / quota denial must not break playback.
   try{
@@ -94,6 +105,23 @@ export async function storePublicVoiceSample(key:string,audio:Blob):Promise<void
         transaction.oncomplete=()=>resolve();
         transaction.onerror=()=>resolve();
         transaction.onabort=()=>resolve();
+      }catch{resolve();}
+    });
+  }finally{db.close();}
+}
+
+/** Evict this single public fixed voice; never clear user or other voice data. */
+export async function deletePublicVoiceSample(key:string):Promise<void>{
+  const db=await openPublicSamples();
+  if(!db)return;
+  try{
+    await new Promise<void>(resolve=>{
+      try{
+        const tx=db.transaction(STORE,"readwrite");
+        tx.objectStore(STORE).delete(key);
+        tx.oncomplete=()=>resolve();
+        tx.onerror=()=>resolve();
+        tx.onabort=()=>resolve();
       }catch{resolve();}
     });
   }finally{db.close();}

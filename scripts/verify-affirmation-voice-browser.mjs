@@ -68,7 +68,27 @@ async function verifyWorkspaceHydration(browser,locale){
     const montage=page.locator('[data-video-quick-control="editor"]');
     await montage.click();
     await expect(montage).toHaveAttribute("aria-pressed","true");
-    await expect(page.locator('[data-video-director-style-controls] [data-mytube-style-filter]')).toBeVisible();
+    await expect(studio).toHaveAttribute("data-active-workspace","editor");
+    // Old MyTube dropdown is intentionally hidden; actual mobile Montage
+    // exposes six style cards. Verify one real tap, upper player and frames.
+    const styleTab=page.locator('[data-video-montage-tab="effects"]');
+    await expect(styleTab).toBeVisible();
+    await expect(styleTab).toHaveAttribute("aria-pressed","true");
+    const styles=page.locator("[data-video-montage-style]");
+    await expect(styles).toHaveCount(6);
+    const minimal=styles.nth(3);
+    await expect(minimal).toBeVisible();
+    const hero=page.locator("[data-video-mandala-hero]");
+    const master=page.locator("[data-mandala-master-mp4]");
+    await minimal.tap();
+    await expect(minimal).toHaveAttribute("aria-pressed","true");
+    await expect(hero).toHaveAttribute("data-video-preview-style","minimal");
+    await expect(hero).toHaveAttribute("data-preview-playing","true");
+    await expect(master).toHaveCount(1);
+    await expect.poll(()=>master.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
+    await expect.poll(()=>master.evaluate(video=>
+      video.readyState>=2&&video.videoWidth>0&&video.videoHeight>0&&!video.error),
+      {timeout:20000}).toBe(true);
   }finally{release();await context.close();}
 }
 // Real guest route browser acceptance: the fragment carries only optional
@@ -230,24 +250,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         };
       });
       const page=await context.newPage();
-      // Scoped, synthetic media acceptance: cloud voice is already mocked above.
-      // Disable XP billing only INSIDE this isolated browser, not in production.
-      // Never fake an authenticated account or allow a real credit POST.
+      // Isolate real WebKit video acceptance from XP billing and credit POSTs.
       const creditWrites=[];
-      let mediaCreditFixtureReads=0;
       await page.route("**/api/app/video-credits/**",async route=>{
-        const request=route.request(),path=new URL(request.url()).pathname;
-        if(request.method()==="GET"&&path==="/api/app/video-credits/catalog"){
-          mediaCreditFixtureReads++;
+        const req=route.request(),path=new URL(req.url()).pathname;
+        if(req.method()==="GET"&&path==="/api/app/video-credits/catalog"){
           await route.fulfill({status:200,contentType:"application/json",
             body:JSON.stringify({chargeRequired:false,ready:false,blocked:false,priceCredits:10})});
           return;
         }
-        if(request.method()==="POST"){
-          creditWrites.push(path);
-          await route.abort("blockedbyclient");
-          return;
-        }
+        if(req.method()==="POST"){creditWrites.push(path);await route.abort("blockedbyclient");return;}
         return route.continue();
       });
       const payloads=[];
@@ -293,6 +305,16 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Reproduce the owner's iPhone case before recording real voice.
+      const selectedStyle=page.locator('[data-video-montage-style="3"]');
+      const selectedMaster=page.locator("[data-mandala-master-mp4]");
+      await expect(selectedStyle).toBeVisible();
+      await expect(selectedMaster).toHaveAttribute("preload","none");
+      if(engine==="webkit")await selectedStyle.tap();
+      else await selectedStyle.click();
+      await expect(selectedStyle).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator("[data-video-mandala-hero]")).toHaveAttribute("data-video-preview-style","minimal");
+      await expect.poll(()=>selectedMaster.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
       // Modern Montage shows the voice and music controls only after choosing Audio.
       // Exercise the real visible tab instead of waiting for an unmounted drawer.
       // Current Montage has four compact tabs. Real duration is under Settings
@@ -472,6 +494,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Confirm the chosen recorded track survives the ACTUAL local MP4/WebM
         // export. Reading a selection badge or blob URL is not E2E evidence.
         await page.locator('[data-video-quick-control="editor"]').click();
+        // The original recorder's export button is available in the real
+        // Montage Audio step, never in the intentionally hidden Style footer.
+        const ownAudioStep=page.locator('[data-video-montage-tab="audio"]');
+        await ownAudioStep.click();
+        await expect(ownAudioStep).toHaveAttribute("aria-pressed","true");
         const ownCreate=page.locator("[data-video-quick-generate]");
         await expect(ownCreate).toBeEnabled({timeout:30000});
         await ownCreate.click();
@@ -661,27 +688,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
+      // The real mobile Montage Style stage intentionally hides the export
+      // button behind its visible "Next · Add text" step. To produce a voiced
+      // movie, choose the real Audio tab, not a hidden Style-step control.
+      const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
+      await expect(montageAudioTab).toBeVisible();
+      await montageAudioTab.click();
+      await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
-      await expect(generate).toBeEnabled({timeout:30000});
-      assert.equal(await generate.isDisabled(),false,
+      await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
+      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");
-      // The current production Montage CTA is a real two-step wizard.
-      // First Continue opens Text; second Continue opens Audio. Only the
-      // third user action starts the recorder; never time a non-render click.
-      await expect(generate).toHaveAttribute("data-video-montage-next","text");
-      await generate.click();
-      await expect(generate).toHaveAttribute("data-video-montage-next","audio");
-      await generate.click();
-      await expect(page.locator('[data-video-montage-tab="audio"]')).toHaveAttribute("aria-pressed","true");
-      await expect(generate).not.toHaveAttribute("data-video-montage-next",/./);
-      await expect(generate).toBeEnabled();
-      // One final Create tap decodes the idle MP4 and exports actual voice video.
+      // One Create tap decodes the idle MP4 and exports the actual voice video.
       if(engine==="chromium"||engine==="webkit") {
         const sourceVideo=page.locator("[data-mandala-master-mp4]");
         if(await sourceVideo.count()) {
-          assert.equal(await sourceVideo.getAttribute("preload"),"none",
-            "the initial Video Studio must defer the 1 MB HD source");
+          assert.equal(await sourceVideo.getAttribute("preload"),"auto",
+            "the user's earlier Style tap must already prime the real MP4");
         }
         // Real locally encoded file: not a mere blob preview or a silent fake.
         await expect(generate).toBeEnabled({timeout:30000});
@@ -695,6 +719,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         console.log("VOICE_E2E_MEDIA_CAPABILITIES "+engine+" "+JSON.stringify(mediaCapabilities));
         phase(engine,"start-media-recorder");
         await generate.click();
+        // The idle source remains preload=none until the user's actual Create
+        // gesture; Safari must then start a physical decode, never a CSS-only
+        // preview or an unverified download.
+        if(await sourceVideo.count()){
+          await expect.poll(()=>sourceVideo.evaluate(video=>video.preload),
+            {timeout:5000}).toBe("auto");
+        }
         phase(engine,"recording-started");
         const output=page.locator("[data-mandala-video-download]");
         phase(engine,"waiting-for-export");
@@ -733,7 +764,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               canClick:create instanceof HTMLButtonElement ? !create.disabled : null,
               source:video instanceof HTMLVideoElement ? {
                 readyState:video.readyState,width:video.videoWidth,height:video.videoHeight,
-                error:video.error?.code??null
+                error:video.error?.code??null,networkState:video.networkState,
+                preload:video.preload,sourceLoaded:Boolean(video.currentSrc)
               } : null,
               resultHidden:result instanceof HTMLElement ? result.hidden : null,
               progress:document.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")??null,
@@ -768,8 +800,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
         const bytes=Buffer.concat(parts);
         assert.ok(bytes.length>10000,"real video must be recorded");
-        assert.ok(mediaCreditFixtureReads>0,"isolated media fixture must be used");
-        assert.deepEqual(creditWrites,[],"media-only WebKit QA must never attempt an XP credit transaction");
+        assert.deepEqual(creditWrites,[],"WebKit media QA must not make XP credit POSTs");
         const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type,channels",
           "-of","json","-"],{input:bytes,encoding:"utf8",timeout:15000});
         assert.equal(probe.status,0,"real video container must decode: "+probe.stderr);

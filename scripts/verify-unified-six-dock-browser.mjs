@@ -86,8 +86,9 @@ async function inspect(browserType,locale,width){
     id+" selected direction is always directly visible");
   assert.equal(await refined.isVisible(),false,
     id+" deeper taxonomy must not push videos down by default");
-  assert.equal(await page.locator("[data-mytube-format-tabs] button").count(),3,
-    id+" three semantic learning shelves are visible");
+  assert.deepEqual(
+    await page.locator("[data-mytube-format-tabs] button").evaluateAll(els=>els.map(el=>el.dataset.mytubeFormatMode)),
+    ["all","shorts","courses","study"],id+" four functional editorial shelves are visible");
   const filterBounds=await moreFilters.boundingBox();
   assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
     id+" single slim accessible taxonomy bar");
@@ -142,11 +143,28 @@ async function inspect(browserType,locale,width){
     const button=document.querySelector("[data-mytube-category]");
     return !!button && Object.keys(button).some(key=>key.startsWith("__reactProps$"));
   },null,{timeout:15000});
+  const topicRail=page.locator("[data-mytube-subcategory-rail]");
+  assert.equal(await topicRail.isVisible(),true,id+" topic shortcuts remain visible above videos");
+  assert.equal(await topicRail.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])').count(),4,
+    id+" four genuine quick topics are visible before a category is selected");
+  const quickLanguage=page.locator("[data-mytube-quick-language]");
+  assert.equal(await quickLanguage.isVisible(),true,id+" language switcher visible");
+  for(const value of ["ru","en","es","all"]){
+    await quickLanguage.selectOption(value);
+    assert.equal(await quickLanguage.inputValue(),value,id+" quick language "+value);
+  }
+  const quickDuration=page.locator("[data-mytube-duration]");
+  assert.equal(await quickDuration.count(),1,id+" inline verified-duration switcher");
+  if(await quickDuration.isEnabled()){
+    await quickDuration.selectOption("under4");
+    assert.equal(await quickDuration.inputValue(),"under4",id+" duration filters verified source length");
+    await quickDuration.selectOption("all");
+  }
   if(browserType===webkit&&locale==="ru"&&width===390){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
-  for(const mode of ["shorts","study","all"]){
+  for(const mode of ["shorts","courses","study","all"]){
     const control=page.locator('[data-mytube-format-mode="'+mode+'"]');
     await control.click();
     assert.equal(await control.getAttribute("aria-pressed"),"true",id+" active "+mode);
@@ -159,8 +177,10 @@ async function inspect(browserType,locale,width){
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
     id+" one filter action reveals additional filters");
   await moreControls.waitFor({state:"visible",timeout:15000});
-  assert.ok(await moreControls.locator("select").count()>=2,
-    id+" language and sort controls are available after opening filters");
+  assert.ok(await moreControls.locator("select").count()>=1,
+    id+" sort and advanced selectors remain available after opening filters");
+  assert.equal(await quickLanguage.isVisible(),true,
+    id+" original-audio language remains available inline");
   // Subcategory controls are intentionally empty until a direction is chosen.
   assert.equal(await refined.isVisible(),false,
     id+" no empty subcategory panel when all directions are selected");
@@ -169,20 +189,25 @@ async function inspect(browserType,locale,width){
   await refined.waitFor({state:"visible",timeout:15000});
   await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
     ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
-  const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
+  const subcategories=topicRail.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
+  assert.equal(await refined.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])').count(),4,
+    id+" advanced and quick taxonomy share four genuine subcategories");
   await subcategories.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await subcategories.count(),4,id+" four unambiguous subcategories");
   await subcategories.first().click();
   await page.waitForFunction(()=>{
-    const first=document.querySelector('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
+    const first=document.querySelector('[data-mytube-subcategory-rail] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
     return first?.getAttribute("aria-pressed")==="true";
   },null,{timeout:15000});
   const topics=page.locator('[data-mytube-topics] [data-mytube-topic]:not([data-mytube-topic="all"])');
   await topics.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await topics.count(),4,id+" four distinct topics");
   await page.locator('[data-mytube-category="all"]').click();
-  await page.waitForFunction(()=>!document.querySelector('[data-mytube-subcategories]'),
-    null,{timeout:15000});
+  await page.waitForFunction(()=>{
+    const rail=document.querySelector("[data-mytube-subcategory-rail]");
+    return !!rail && rail.querySelector('[data-mytube-subcategory="all"]')?.getAttribute("aria-pressed")==="true" &&
+      !document.querySelector("#mytube-refine-controls [data-mytube-subcategories]");
+  },null,{timeout:15000});
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
     id+" closing filters restores the compact video-first layout");
@@ -320,7 +345,17 @@ try{
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),3);
+ assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),4,
+   "Messenger rail now has AI, Orders, Clients and News");
+ const news=page.locator('[data-chat-top-tabs] button[aria-controls="hh-news-panel"]');
+ assert.equal(await news.count(),1,"News tab is visible and uniquely addressable");
+ await news.click();
+ await page.locator('[data-orders-clients-hub][data-section="news"]').waitFor({state:"visible",timeout:30000});
+ await page.locator("#hh-news-panel").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("#hh-ai-panel").isVisible(),false,
+   "the private News panel does not overlay the AI conversation");
+ await page.locator('[data-chat-top-tabs] button[aria-controls="hh-ai-panel"]').click();
+ await page.locator("#hh-ai-panel").waitFor({state:"visible",timeout:30000});
  const chat=page.locator("[data-hh-agent-preview]");
  await chat.waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-chat-menu-rail]").count(),0,
@@ -343,6 +378,28 @@ try{
      && root.querySelectorAll('[role="log"] p').length>=count+2;
  },before,{timeout:10000});
  assert.equal(await starters.count(),0,"introduction gives way to the live transcript");
+ // The current Create Content entry deliberately asks format -> source -> short
+ // personal idea BEFORE the canonical video goal tree. Earlier browser QA
+ // expected the retired one-tap goal branch and timed out without testing it.
+ const contentKinds=chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind]');
+ await contentKinds.first().waitFor({state:"visible",timeout:15000});
+ assert.deepEqual(await contentKinds.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-content-kind"))),
+   ["video","audio","meditation","message"],
+   "Create Content exposes four real formats before video planning");
+ assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
+   "no Google login at content-format choice");
+ await chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind="video"]').click();
+ const contentSources=chat.locator('[data-hh-content-step="source"] [data-hh-content-source]');
+ await contentSources.first().waitFor({state:"visible",timeout:15000});
+ assert.deepEqual(await contentSources.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-content-source"))),
+   ["text","voice"],"video supports the two approved input methods");
+ await chat.locator('[data-hh-content-step="source"] [data-hh-content-source="text"]').click();
+ await chat.locator('[data-hh-content-step="brief"]').waitFor({state:"attached",timeout:15000});
+ await chat.locator("textarea").fill("Хочу больше спокойствия и уверенности");
+ await chat.locator('button[type="submit"]').click();
+ await chat.locator('[data-hh-video-chat-step="category"]').waitFor({state:"visible",timeout:15000});
  // Personal-video creation has the exact MyTube four-goal hierarchy, no
  // unrelated ready-made-video CTA and no Google wall before the brief.
  const videoGoals=chat.locator("[data-hh-video-chat-options] [data-hh-video-chat-choice]");

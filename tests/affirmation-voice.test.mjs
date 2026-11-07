@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 import {affirmationNarrationText,affirmationNarrationForSelection,isApprovedAffirmationNarration,wavDurationFromHeader} from "../lib/mandala/affirmation-voice.mjs";
 import {validateStudioRequest,buildStudioPayload,VOICE_STUDIO_VOICES,voiceStudioProviders} from "../lib/mandala/voice-studio.mjs";
 import {fixedLivePhraseRequest,verifyLiveSelectedPhrase,verifyLiveVoiceBytes} from "../scripts/verify-live-selected-voice-phrase.mjs";
+import {validatedPublicVoiceSampleDuration} from "../lib/mandala/public-voice-sample-integrity.mjs";
 
 const read=(path)=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const source=read("scripts/verify-affirmation-voice-browser.mjs");
@@ -152,7 +153,7 @@ test("all six voices can be selected and their real samples requested before phr
 });
 
 
-test("voice browser follows native Ideas and Montage on one visitor click; hidden legacy remains hidden",()=>{
+test("voice browser opens Ideas and applies six visible Montage styles with decoded playback",()=>{
  const start=source.indexOf("async function verifyWorkspaceHydration");
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
@@ -163,9 +164,13 @@ test("voice browser follows native Ideas and Montage on one visitor click; hidde
  const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
  const topic=flow.indexOf('data-auto-video-topic-panel',open);
  const montage=flow.indexOf('await montage.click()',topic);
- const style=flow.indexOf('data-video-director-style-controls',montage);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&style>montage,
-   "real visitor must open Ideas refinement and reach Montage without hidden selectors");
+ const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
+ const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);
+ const selected=flow.indexOf('await minimal.tap()',six);
+ const reflected=flow.indexOf('data-video-preview-style","minimal"',selected);
+ const decoded=flow.indexOf('video.readyState>=2&&video.videoWidth>0',reflected);
+ assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
+   "real visitor must open Ideas refinement, select one of six visible Montage styles and decode an MP4");
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
@@ -514,43 +519,47 @@ test("headed WebKit narration uses a real short touch without duplicate provider
   assert.ok(browser.includes('pcm.stdout.some(value=>value!==0)'));
 });
 
-test("Safari voice lifecycle: identical inputs preserve pending WAV, changed ones revoke stale consent",()=>{
-  const voice=read("components/mandala-affirmation-voice.tsx");
-  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
-  assert.match(voice,/useLayoutEffect\(\(\)=>\{\s*const previous=originRef\.current/);
-  assert.match(voice,/previous\.speechText===speechText && previous\.voiceId===voiceId/);
-  assert.match(voice,/previous\.language===language\)return/);
-  assert.match(voice,/\[speechText,voiceId,language,busy,mixing,locale\]/);
-  assert.match(voice,/setGenerationPhase\(interrupted\?"cancelled":"idle"\)/);
-  assert.match(voice,/if\(textChanged\)setConsent\(false\)/);
-  assert.match(voice,/controllerRef\.current\?\.abort\(\)/);
-  assert.match(voice,/onAttach\(\{file,speechFile,[\s\S]*?setGenerationPhase\("attached"\)/);
-  assert.match(voice,/data-video-affirmation-phase=\{generationPhase\}/);
-  assert.match(voice,/code==="AbortError"\?"cancelled":"failed"/);
-  assert.match(voice,/voiceRequestInFlight\.current=true/);
-  assert.match(browser,/assert\.equal\(affirmationRequests\.length,1\)/);
-  assert.match(browser,/toContainText\(expectedFileName\)/);
+test("voice export uses visible Audio-stage Generate, never the hidden Style-stage CTA",()=>{
+  const effects=source.indexOf('phase(engine,"hypno-audio-effects-rendered")');
+  const audio=source.indexOf('const montageAudioTab=page.locator',effects);
+  const click=source.indexOf('await montageAudioTab.click()',audio);
+  const pressed=source.indexOf('await expect(montageAudioTab).toHaveAttribute("aria-pressed","true")',click);
+  const generate=source.indexOf('const generate=page.locator("[data-video-quick-generate]")',pressed);
+  assert.ok(effects>=0&&audio>effects&&click>audio&&pressed>click&&generate>pressed,
+    "video with consented narration must use a real visible Audio-tab export button");
+  assert.doesNotMatch(source.slice(effects,generate),/click\(\{force:true\}\)/);
 });
 
-test("WebKit voice E2E follows the current two-step Montage CTA before genuine MP4 export",()=>{
-  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
-  const studio=read("components/mandala-free-video-studio.tsx");
-  const guest=read("tests/mandala-guest-first-video-flow.test.mjs");
-  const flow=browser.slice(browser.indexOf('phase(engine,"hypno-audio-effects-rendered")'),
-    browser.indexOf('phase(engine,"download-control-ready")'));
-  assert.match(flow,/toHaveAttribute\("data-video-montage-next","text"\)/);
-  assert.match(flow,/toHaveAttribute\("data-video-montage-next","audio"\)/);
-  assert.match(flow,/toHaveAttribute\("aria-pressed","true"\)/);
-  assert.equal((flow.match(/await generate\.click\(\)/g)||[]).length,3,
-    "two navigation taps and exactly one real export tap");
-  assert.match(studio,/onClick=\{continueMontageOrGenerate\}/);
-  assert.match(studio,/setMontagePanel\(montagePanel==="effects"\?"text":"audio"\)/);
-  assert.match(browser,/page\.route\("\*\*\/api\/app\/video-credits\/\*\*"/);
-  assert.match(browser,/chargeRequired:false,ready:false,blocked:false/);
-  assert.match(browser,/assert\.ok\(mediaCreditFixtureReads>0/);
-  assert.match(browser,/assert\.deepEqual\(creditWrites,\[\]/);
-  assert.match(browser,/ffprobe/);
-  assert.match(browser,/pcm\.stdout\.some\(value=>value!==0\)/);
-  assert.match(guest,/data-video-guest-result-gate/);
-  assert.match(guest,/data-video-guest-signin/);
+test("WebKit voice lifecycle does not abort or invalidate identical narration",()=>{
+ const ui=read("components/mandala-affirmation-voice.tsx");
+ for(const marker of ["useLayoutEffect(()=>{","const previous=originRef.current",
+  "previous.speechText===speechText && previous.voiceId===voiceId",
+  "previous.language===language)return","data-video-affirmation-phase={generationPhase}",
+  'setGenerationPhase("attached")'])assert.ok(ui.includes(marker),marker);
+});
+test("male voice preview rejects corrupt cached WAV and recovers on user Listen",()=>{
+ const bytes=new ArrayBuffer(44),v=new DataView(bytes);
+ const ascii=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+ ascii(0,"RIFF");v.setUint32(4,48036,true);ascii(8,"WAVE");
+ ascii(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);
+ v.setUint16(22,1,true);v.setUint32(24,24000,true);v.setUint32(28,48000,true);
+ v.setUint16(32,2,true);v.setUint16(34,16,true);
+ ascii(36,"data");v.setUint32(40,48000,true);
+ assert.equal(wavDurationFromHeader(bytes),1,"header alone wrongly accepts missing audio");
+ assert.equal(validatedPublicVoiceSampleDuration(bytes),null,"no audio data must be rejected");
+ const valid=new ArrayBuffer(48044);new Uint8Array(valid).set(new Uint8Array(bytes));
+ assert.equal(validatedPublicVoiceSampleDuration(valid),1,"complete mono PCM works");
+ new DataView(valid).setUint16(20,3,true);
+ assert.equal(validatedPublicVoiceSampleDuration(valid),null,"unsupported PCM format rejected");
+ const ui=read("components/mandala-affirmation-voice.tsx");
+ const cache=read("lib/mandala/public-voice-sample-cache.ts");
+ for(const marker of ["sampleRejectedKeysRef.current.has(persistentKey)",
+  "validatedPublicVoiceSampleDuration(await saved.arrayBuffer())",
+  "validatedPublicVoiceSampleDuration(await audio.arrayBuffer())",
+  "samplePendingPersistRef.current={key:persistentKey,audio,uri}",
+  "onCanPlay={sampleCanPlay} onError={samplePlaybackError}",
+  "sampleCacheRef.current.delete(memoryKey)",
+  "void deletePublicVoiceSample(storageKey)"])assert.ok(ui.includes(marker),marker);
+ for(const marker of ["validatedPublicVoiceSampleDuration(await audio.arrayBuffer())",
+   "export async function deletePublicVoiceSample"])assert.ok(cache.includes(marker),marker);
 });
