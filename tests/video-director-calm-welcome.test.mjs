@@ -15,28 +15,43 @@ test("calm iHelp first screen reuses canonical Video Director and five localized
  }
  assert.match(component,/data-video-chat-welcome/);
  assert.match(component,/data-video-chat-welcome-goals/);
- assert.match(component,/choices\.map\(\(\[label,value\]\)=>/);
+ assert.match(component,/welcomeChoices\.map\(\(\[label,value\]\)=>/);
  assert.match(component,/data-video-chat-welcome-goal=\{value\}/);
  assert.match(component,/onClick=\{\(\)=>\{setWelcomeDismissed\(true\);answer\(value\);\}\}/);
  assert.match(component,/data-video-chat-tree-choice=\{value\}/);
  assert.match(component,/showWelcome\?<div className=\{css\.welcome\}/);
+ assert.match(component,/WELCOME_TOPIC_ORDER=\["body","energy","love","business","stress"\]/);
  assert.match(component,/\:lines\.map\(line=>line\.role===/);
  assert.ok(component.includes('href={"/"+locale+"/mytube"}'));
 });
 test("welcome is readable and safe, then yields to the existing conversation",()=>{
  for(const value of ["Привет!","Let's create your video","Creemos tu vídeo",
-   "Or tell me in your own words","data-video-chat-welcome-create",
+   "Your goal or idea…","data-video-chat-welcome-create",
    "data-video-chat-welcome-help","data-video-chat-welcome-how",
    "data-chat-welcome={showWelcome?","aria-label={t.placeholder}"])
    assert.ok(component.includes(value),value);
  assert.match(styles,/\.welcomeTitle\{[^}]*font:850 clamp\(29px/);
  assert.match(styles,/\.goalRail\{[^}]*overflow-x:auto/);
- assert.match(styles,/@media\(max-width:370px\)/);
+ assert.match(styles,/@media\(max-width:355px\)/);
  assert.match(styles,/\.window\[data-chat-welcome="true"\] \.aiOptIn\{display:none\}/);
  assert.match(component,/const \[aiConsent,setAiConsent\]=useState\(false\)/);
  assert.match(component,/setWelcomeDismissed\(false\)/);
  assert.match(component,/setWelcomeDismissed\(true\);answer\("помоги"\)/);
+ assert.ok(component.includes("data-video-chat-composer"));
+ assert.ok(component.includes("{showWelcome&&<button className={css.composerMic}"));
+ assert.ok(component.includes("{!showWelcome&&composer}"));
+ assert.ok(component.includes("data-welcome-action-media=\"create\""));
+ assert.ok(component.includes("data-welcome-action-media=\"ideas\""));
+ assert.ok(component.includes("data-welcome-action-media=\"ask\""));
  assert.match(component,/thread\.scrollTop=showWelcome\?0:thread\.scrollHeight/);
+ assert.match(styles,/\.welcomeHero\{[\s\S]*?url\("\/images\/holistic-house\/reiki-approved-sunrise-v3\.webp"\)/);
+ assert.ok(styles.includes('.actionMedia[data-welcome-action-media="create"]'));
+ assert.ok(styles.includes('.actionMedia[data-welcome-action-media="ideas"]'));
+ assert.ok(styles.includes('.actionMedia[data-welcome-action-media="ask"]'));
+ assert.ok(styles.includes('.window[data-chat-welcome="true"] .chatTabs{order:2'));
+ assert.ok(styles.includes('.window[data-chat-welcome="true"] .composer{display:flex'));
+ assert.ok(component.includes('rows={showWelcome?1:2}'));
+ assert.ok(component.includes('w.topicNames[value as keyof typeof w.topicNames]'));
  assert.match(browser,/CALM_WELCOME_MUST_START_AT_TOP/);
  assert.match(browser,/CALM_WELCOME_GREETING_MUST_BE_IN_VIEWPORT/);
  assert.match(browser,/CALM_WELCOME_CANONICAL_FIVE_GOALS/);

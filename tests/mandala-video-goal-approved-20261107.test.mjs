@@ -115,3 +115,13 @@ test("WebKit Ideas optional disclosure uses one real controlled summary click",(
   assert.match(browser,/refinement\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(browser,/expect\(refinement\)\.toHaveAttribute\("open",""\)/);
 });
+test("macOS WebKit opens intentionally hidden Ideas advanced voice through its visible CTA",()=>{
+ const browser=read("../scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(studio,/data-video-phrase-audio-shortcut/);
+ assert.match(studio,/setIdeasVoiceAdvancedOpen\(true\)/);
+ assert.match(browser,/await expect\(advancedVoice\)\.toBeHidden\(\)/);
+ assert.match(browser,/await advancedTrigger\.click\(\)/);
+ assert.match(browser,/data-video-ideas-recording-open","true"/);
+ assert.match(browser,/await expect\(advancedVoice\)\.toBeVisible\(\)/);
+ assert.doesNotMatch(browser,/advancedVoice\.waitFor\(\{state:"visible"/);
+});
