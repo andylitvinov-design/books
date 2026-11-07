@@ -4,6 +4,7 @@ import {useCallback,useEffect,useRef,useState} from "react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {createDeviceSpeech,type SpeechController} from "@/lib/assistant-avatar/device-speech";
 import {browserSpeechLanguage,speechSegments,chooseVoiceRoute} from "@/lib/voice-companion/browser-voice.mjs";
+import {normalizeDeviceVoiceId,normalizeSpeechRate,publicPreviewText} from "@/lib/voice-companion/voice-catalog.mjs";
 
 type RecognitionResult={results:ArrayLike<ArrayLike<{transcript:string}>>};
 type VoiceRecognition={lang:string;continuous:boolean;interimResults:boolean;
@@ -53,7 +54,8 @@ export function useVoiceCompanion(locale:PublicLocale){
  const [playbackConsent,setPlaybackConsent]=useState(false);
  const [sttConsent,setSttConsent]=useState(false);
  const [autoRead,setAutoRead]=useState(false);
- const [voiceId,setVoiceId]=useState('');
+ const [voiceId,setVoiceIdState]=useState('');
+ const [prefsLoaded,setPrefsLoaded]=useState(false);
  const [rate,setRate]=useState(1);
  const [speechLocale,setSpeechLocale]=useState<PublicLocale>(locale);
  const [speaking,setSpeaking]=useState(false);
@@ -72,6 +74,9 @@ export function useVoiceCompanion(locale:PublicLocale){
   recognition.current?.abort();recognition.current=null;
   if(mounted.current){setSpeaking(false);setRecording(false)}
  },[]);
+ const setVoiceId=useCallback((value:string)=>{
+  stop();setVoiceIdState(value);
+ },[stop]);
  useEffect(()=>{
   mounted.current=true;
   const controller=createDeviceSpeech(()=>window);
@@ -90,11 +95,6 @@ export function useVoiceCompanion(locale:PublicLocale){
     (window as SpeechWindow).webkitSpeechRecognition));
   const unwatch=controller.watchVoices(list=>
     setVoices(list.filter(v=>v.lang.toLowerCase().startsWith(speechLocale))));
-  try{
-   const value=JSON.parse(window.localStorage.getItem('hh-voice-companion-prefs-v1')||'{}') as {voiceId?:string;rate?:number};
-   if(typeof value.voiceId==='string')setVoiceId(value.voiceId.slice(0,200));
-   if(typeof value.rate==='number'&&value.rate>=0.75&&value.rate<=1.25)setRate(value.rate);
-  }catch{}
   const hide=()=>{if(document.hidden)stop();};
   document.addEventListener('visibilitychange',hide);
   window.addEventListener('pagehide',stop);
@@ -108,8 +108,17 @@ export function useVoiceCompanion(locale:PublicLocale){
   };
  },[speechLocale,stop]);
  useEffect(()=>{
+  try{
+   const value=JSON.parse(window.localStorage.getItem('hh-voice-companion-prefs-v1')||'{}') as {voiceId?:string;rate?:number};
+   if(typeof value.voiceId==='string')setVoiceIdState(value.voiceId.slice(0,200));
+   if(typeof value.rate==='number')setRate(normalizeSpeechRate(value.rate));
+  }catch{}
+  setPrefsLoaded(true);
+ },[]);
+ useEffect(()=>{
+  if(!prefsLoaded)return;
   try{window.localStorage.setItem('hh-voice-companion-prefs-v1',JSON.stringify({voiceId,rate}));}catch{}
- },[voiceId,rate]);
+ },[voiceId,rate,prefsLoaded]);
  const setPlayback=useCallback((value:boolean)=>{
   if(!value){stop();setAutoRead(false);}setPlaybackConsent(value);setNotice('');
  },[stop]);
@@ -139,11 +148,11 @@ export function useVoiceCompanion(locale:PublicLocale){
      setSpeaking(false);
      if(reason!=='cancelled')setNotice(t.error);
     },
-   },{rate,voiceURI:voiceId});
+   },{rate:normalizeSpeechRate(rate),voiceURI:normalizeDeviceVoiceId(voiceId,voices,speechLocale)});
    if(!result?.ok){setSpeaking(false);setNotice(t.error);}
   };
   playNext();
- },[speechLocale,playbackConsent,rate,stop,supported,t,voiceId]);
+ },[speechLocale,playbackConsent,rate,stop,supported,t,voiceId,voices]);
  const dictate=useCallback((onTranscript:(text:string)=>void)=>{
   if(!sttConsent){setNotice(t.sttConsent);return;}
   const Ctor=(window as SpeechWindow).SpeechRecognition||(window as SpeechWindow).webkitSpeechRecognition;
@@ -177,7 +186,19 @@ export function VoiceCompanionControls({voice,locale,greeting,latestReply,onTran
   {!voice.playbackConsent&&<label style={{fontSize:13}} data-hh-voice-first-consent>
    <input type="checkbox" checked={voice.playbackConsent} onChange={e=>voice.setPlayback(e.target.checked)}/> {t.playConsent}
   </label>}
-  <div role="group" aria-label={t.settings} style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+  <div role="group" aria-label={t.settings} style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
+   <label style={{display:'inline-flex',gap:6,alignItems:'center',fontSize:14}}>{t.voice}
+    <select data-hh-voice-selector aria-label={t.voice} style={{minHeight:44,maxWidth:'min(58vw,220px)'}}
+     value={normalizeDeviceVoiceId(voice.voiceId,voice.voices,voice.speechLocale)}
+     onChange={e=>voice.setVoiceId(e.target.value)}>
+     <option value="">{t.none}</option>
+     {voice.voices.map(item=><option value={item.voiceURI} key={item.voiceURI}>{item.name} · {item.lang}</option>)}
+    </select>
+   </label>
+   <button type="button" data-hh-voice-preview style={controlStyle}
+    disabled={!voice.supported||!voice.playbackConsent}
+    onClick={()=>voice.speak(publicPreviewText(voice.speechLocale))}>
+    {locale==='ru'?'Послушать голос':locale==='es'?'Probar voz':'Preview voice'}</button>
    <button type="button" data-hh-voice-welcome style={controlStyle} disabled={!voice.supported||!voice.playbackConsent}
     onClick={()=>voice.speak(greeting)}>{t.welcome}</button>
    <button type="button" data-hh-voice-repeat style={controlStyle} disabled={!voice.supported||!voice.playbackConsent||!latestReply}
@@ -197,12 +218,13 @@ export function VoiceCompanionControls({voice,locale,greeting,latestReply,onTran
     <label>{t.language} <select value={voice.speechLocale} onChange={e=>{voice.stop();voice.setSpeechLocale(e.target.value as PublicLocale);voice.setVoiceId('');}}>
      <option value="ru">Русский</option><option value="en">English</option><option value="es">Español</option>
     </select></label>
-    <label>{t.voice} <select value={voice.voiceId} onChange={e=>voice.setVoiceId(e.target.value)}>
-     <option value="">{t.none}</option>{voice.voices.map(item=><option value={item.voiceURI} key={item.voiceURI}>{item.name}</option>)}
-    </select></label>
     <label>{t.rate} <select value={String(voice.rate)} onChange={e=>voice.setRate(Number(e.target.value))}>
      {[0.75,0.85,1,1.1,1.25].map(speed=><option value={speed} key={speed}>{speed}×</option>)}
     </select></label>
+    <small>{locale==='ru'?'Фирменные голоса София, Майя, Алиса, Марк, Александр и Леон сейчас доступны для озвучки видео, но не для приватного диалога.':locale==='es'?'Las seis voces de Studio solo están disponibles para vídeo, no para conversaciones privadas.':'The six named Studio voices are for videos, not private chat replies.'}
+      {' '}<a href={'/'+locale+'/holistic-support/mandala#voice-studio'}>
+      {locale==='ru'?'Открыть голоса Studio':locale==='es'?'Voces de Studio':'Studio voices'}</a>
+    </small>
    </div>
   </details>
   {voice.notice&&<small role="status">{voice.notice}</small>}

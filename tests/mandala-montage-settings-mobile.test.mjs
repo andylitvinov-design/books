@@ -77,3 +77,54 @@ test("Montage iPhone retains the compact header, real six selectors and on-scree
   assert.match(css,/\[data-video-order-bar\] \.quickGenerate\{\s*min-height:50px!important/);
   assert.match(studio,/data-video-montage-auto-sound/);
 });
+
+test("Original motion WebKit export uses physical Audio and Settings controls, no retired tabs",()=>{
+ const motion=readFileSync(new URL("../scripts/benchmarking/verify-original-motion-export.mjs",import.meta.url),"utf8");
+ assert.match(motion,/data-video-montage-tab="settings"/);
+ assert.match(motion,/data-video-montage-preference="duration"/);
+ assert.match(motion,/await duration\.selectOption\('20'\)/);
+ assert.match(motion,/data-video-montage-tab="audio"/);
+ assert.match(motion,/data-video-audio-compact-attach/);
+ assert.match(motion,/await generate\.click\(\)/);
+ assert.match(motion,/ffprobe|ffmpeg/);
+ assert.doesNotMatch(motion,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
+});
+
+test("Choosing a Montage style preserves the compiled film and paints the live and exported player",()=>{
+  const start=studio.indexOf("const quickPickStyle = (index:number) => {");
+  const end=studio.indexOf("// Keep the deep editor tabs usable",start);
+  assert.ok(start>0&&end>start,"real Montage click handler exists");
+  const handler=studio.slice(start,end);
+  assert.doesNotMatch(handler,/setCinematicPlan\(null\)/,"style must not discard approved source clips");
+  assert.match(handler,/setCinematicPlan\(current=>current\?\{\.\.\.current,styleId:visualStyleId\}:null\)/);
+  assert.match(handler,/setCreationMode\("catalog"\);setFreeVideoPlan\(null\)/,
+    "return from procedural animation to film footage");
+  assert.match(handler,/setPreviewSeekSeconds\(0\);setPreviewPlayhead\(0\)/);
+  assert.match(handler,/setPreviewPlaying\(true\)/);
+  for(const style of ["nature","warm","dream","minimal","water","light"])
+    assert.ok(studio.includes('styleId==="'+style+'"'),"visible filter "+style);
+  assert.match(studio,/paintStudioVisualGrade\(ctx,montageStyleId\)/,
+    "style works for a single physical MP4 too");
+  assert.match(studio,/paintStudioVisualGrade\(ctx,montageStyleId\|\|storyboard.styleId\)/,
+    "style applies across all the licensed shots");
+  assert.match(studio,/data-video-preview-style=\{activeMontageStyleId/);
+  assert.match(studio,/data-video-preview-clips=\{usingFreeFilmCompilation/);
+  assert.match(studio,/autoPlay=\{previewPlaying&&!recording&&!preparing\}/);
+  assert.match(studio,/onCanPlay=\{event=>\{\s*setPremiumReady\(true\);[\s\S]*?event.currentTarget.play\(\)/);
+  assert.equal((studio.match(/\?image:null,activeMontageStyleId\);/g)||[]).length,5,
+    "still preview, animation preview and both MP4 export encoders use the same style");
+  assert.match(studio,/creationMode,activeMontageStyleId,currentFreeVideoPlan/,
+    "a style edit invalidates only the previous exported recording");
+});
+
+test("iPhone Style primes a newly mounted MP4 without fetching on first render",()=>{
+  assert.match(studio,/preload="none"/,"idle first paint must keep HD loading lazy");
+  assert.match(studio,/if\(previewPlaying&&!recording&&!preparing&&video\.readyState<2\)/);
+  assert.match(studio,/video\.preload="auto"/);
+  assert.match(studio,/if\(video\.networkState!==2\)video\.load\(\)/);
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.match(browser,/await minimal\.tap\(\)/);
+  assert.match(browser,/data-video-preview-style","minimal"/);
+  assert.match(browser,/video\.readyState>=2&&video\.videoWidth>0/);
+  assert.doesNotMatch(browser,/\[data-video-director-style-controls\] \[data-mytube-style-filter\]/);
+});

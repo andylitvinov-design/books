@@ -55,25 +55,27 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit hydration follows the actual compact video scenario entry",()=>{
+test("macOS WebKit hydration follows visible Goals → Ideas → Montage without legacy clicks",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const style=read("components/mandala-video-mobile.module.css");
- for(const expected of [
-  "data-video-continue-scenarios",
-  'toHaveAttribute("data-video-scenario-open","false")',
-  'toHaveAttribute("data-video-scenario-open","true")',
-  "await continueToScenes.click()",
-  "await expect(allStories).toBeVisible()",
-  "await allStories.click()",
-  'toHaveAttribute("data-video-advanced-open","true")',
- ]){
-  assert.ok(browser.includes(expected),expected);
- }
+ const first=browser.indexOf("async function verifyWorkspaceHydration");
+ const last=browser.indexOf("// Real guest route browser acceptance",first);
+ const flow=browser.slice(first,last);
+ const click=flow.indexOf("await continueToIdeas.click()");
+ const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
+ const refinement=flow.indexOf('const refinement=page.locator',ideas);
+ const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
+ const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
+ const montage=flow.indexOf("await montage.click()",verify);
+ assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
+   "one real visitor click reaches Ideas, native topic disclosure, then Montage");
+ assert.match(flow,/data-video-continue-scenarios/);
+ assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
+ assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/onClick=\{openVideoScenarioStep\}/);
+ assert.match(studio,/onClick=\{continueToIdeas\}/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
- assert.ok(!browser.includes("allStories.click({force:true})"),"hidden scenario controls cannot be clicked forcefully");
 });
 
 test("macOS WebKit exercises explicit accessible adult consent and revocation",()=>{

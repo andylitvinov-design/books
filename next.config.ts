@@ -19,13 +19,15 @@ const practitionerRecordingSources = [
   "/admin/clients/:id/sessions/:path*",
 ];
 
-// Only the LIVE host can ask the user for microphone permission.
-const liveAudioHostSources = ["/en/live/host", "/ru/live/host", "/es/live/host"];
-
-// Voice Companion dictation needs a real microphone only on the explicit
-// AI Messenger page. iHelp on other pages remains text/voice-output-only;
-// do not weaken the sitewide mic denial or open camera access.
-const messengerMicrophoneSources = ["/ru/app/messages", "/en/app/messages", "/es/app/messages"];
+// Only approved pages with an explicit Record button may ask for microphone.
+// The public Messenger needs the same narrowly scoped permission as Studio;
+// microphone remains denied across the rest of the site.
+const liveAudioHostSources = [
+  "/en/live/host", "/ru/live/host", "/es/live/host",
+  "/en/holistic-support/mandala", "/ru/holistic-support/mandala",
+  "/es/holistic-support/mandala",
+  "/en/app/messages", "/ru/app/messages", "/es/app/messages",
+];
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -102,12 +104,6 @@ const nextConfig: NextConfig = {
         ],
       })),
       ...liveAudioHostSources.map((source) => ({
-        source,
-        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
-      })),
-      // Same-origin microphone access is available only on the real Messenger
-      // routes and only after explicit browser + Companion STT permission.
-      ...messengerMicrophoneSources.map((source) => ({
         source,
         headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
       })),

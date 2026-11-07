@@ -299,6 +299,8 @@ test('IA and Mandala browsers allocate expensive runners only after cheap exact-
     'preflight must execute on every Ready Mandala PR; a new skipped job cannot be waived by the old BASE specialist contract');
   assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/video-')"),
     'macOS WebKit must retain original video release guard');
+  assert.ok(macosGuard?.includes("startsWith(github.head_ref, 'feat/voice-timed-storyboard-')"),
+    'the consented voice storyboard must run existing macOS WebKit MP4/AAC release acceptance');
   assert.match(mandala, /^  voice-webkit-macos:\n    if: .+\n    needs: \[webkit_preflight\]\n    runs-on: macos-15/m);
   for (const source of [ia, mandala]) {
     assert.match(source, /node scripts\/ci-pr-readiness\.mjs/);
@@ -311,15 +313,27 @@ test('IA and Mandala browsers allocate expensive runners only after cheap exact-
 test('Core runs CI policy regressions only when relevant CI or manifest files change',()=>{
   const source=workflow('hh-pr-core-release.yml');
   assert.match(source,/ci_touched=false/);
+  assert.match(source,/preflight_touched=false/);
+  assert.match(source,/repair_touched=false/);
   assert.match(source,/scripts\/ci-\*/);
-  assert.match(source,/echo "ci_touched=\$ci_touched"/); 
+  assert.match(source,/echo "ci_touched=\$ci_touched"/);
+  assert.match(source,/echo "preflight_touched=\$preflight_touched"/);
+  assert.match(source,/echo "repair_touched=\$repair_touched"/); 
   assert.match(source,/\} >> "\$GITHUB_OUTPUT"/);
-  for(const name of ['Verify Source Preflight unit contracts','Assert fast-lane workflow contracts',
-    'Verify deterministic ESLint repair worker contract']){
+  for(const [name,signal] of [
+    ['Verify Source Preflight unit contracts','preflight_touched'],
+    ['Assert fast-lane workflow contracts','ci_touched'],
+    ['Verify deterministic ESLint repair worker contract','repair_touched']]){
     const clause=source.split('      - name: '+name+'\n')[1]?.split('\n')[0] || '';
-    assert.match(clause,/steps\.diff\.outputs\.ci_touched == 'true'/,
-      'CI-only contracts must run on mixed application+CI changes: '+name);
+    assert.ok(clause.includes("steps.diff.outputs."+signal+" == 'true'"),
+      'Related CI contracts must run on mixed application+CI changes: '+name);
   }
+  // Security/release policy continues through the broad CI-touched lane.
+  assert.match(source,/steps\.diff\.outputs\.ci_touched == 'true'/);
+  for(const required of ['.github/workflows/hh-pr-core-release.yml',
+    '.github/workflows/hh-actionlint.yml','scripts/ci-source-preflight.mjs',
+    'scripts/ci-deterministic-eslint-repair.mjs'])
+    assert.ok(source.includes(required),'Relevant CI contract owner lost: '+required);
   assert.match(source,/node scripts\/ci-source-preflight\.mjs/);
   assert.match(source,/run: npm run build/);
   assert.match(source,/^  hh-specialist:/m);

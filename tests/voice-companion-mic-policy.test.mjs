@@ -2,13 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-
-test('mic stays denied globally and is allowed only on existing Messenger documents',()=>{
+test('mic stays denied globally and only approved pages have a same-origin exception',()=>{
  const config=read('next.config.ts');
  assert.match(config,/microphone=\(\), geolocation=\(\)/);
- assert.match(config,/const messengerMicrophoneSources = \["\/ru\/app\/messages", "\/en\/app\/messages", "\/es\/app\/messages"\]/);
- assert.match(config,/\.\.\.messengerMicrophoneSources\.map\(\(source\) => \(\{/);
- assert.doesNotMatch(config,/messengerMicrophoneSources\s*=\s*\[[^\]]*:\s*path\*/);
+ assert.match(config,/microphone=\(self\), geolocation=\(\)/);
+ assert.match(config,/const (?:liveAudioHostSources|messengerMicrophoneSources)\s*=/);
+ for(const locale of ['ru','en','es'])assert.ok(config.includes('"/'+locale+'/app/messages"'));
  const controls=read('components/voice-companion-controls.tsx');
  assert.match(controls,/micPolicy\.allowsFeature\('microphone'\)/);
  assert.match(controls,/setRecognitionSupported\(microphoneAllowed&&Boolean/);
