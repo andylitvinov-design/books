@@ -81,4 +81,6 @@ test('page uses same-site owner GET and prevents public write',()=>{
  assert.match(read('commander-learning.js'),/\/api\/commander-learning/);
  assert.doesNotMatch(read('commander-learning.js'),/workflow_dispatch|service_role|method:\s*['"]POST/);
  assert.match(read('skills.html'),/learning\.html/);
+ assert.match(read('pr-two-screen-boot.js'),/hh-learning-monitor-entry/);
+ assert.match(read('pr-two-screen-boot.js'),/learning\.html/);
 });

@@ -20,3 +20,8 @@
 .hh-learning-links a{color:#d1b6ff;font-size:.9rem;text-decoration:underline}
 @media(min-width:760px){#hh-learning{max-width:880px}.hh-learning-pane{padding:20px}.hh-learning-metrics{gap:14px}}
 @media(max-width:345px){.hh-learning-pane{padding:11px}.hh-learning-metric{padding:10px 5px}.hh-learning-metric span{font-size:.7rem}}
+
+/* Secondary link on the original monitor; never changes its five-tab navigation. */
+.hh-learning-monitor-entry{margin:8px 0 14px;padding:0 1px;font-size:.87rem;line-height:1.4}
+.hh-learning-monitor-entry a{display:inline-flex;align-items:center;min-height:36px;padding:7px 13px;border:1px solid rgba(170,150,232,.42);border-radius:999px;background:rgba(93,71,146,.16);color:#decfff;text-decoration:none;font-weight:650}
+.hh-learning-monitor-entry a:focus-visible{outline:2px solid #eee0ff;outline-offset:3px}
