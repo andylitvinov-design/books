@@ -28,3 +28,35 @@ is stored without signed-in account consent. Does not change AI decisions.
 
 GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=partial;
 post_open_head_updates=0; extra_waves=none; cost_new_spend=NO_NEW_SERVICES.
+
+
+## Interface integration release (staged separately from the backend foundation)
+
+- The existing HolisticAgentChat mounts the archived transcript UI in the
+  authenticated Messenger, rather than adding a second AI bot.
+- The client sees a closed-by-default "Text conversation history" control;
+  no storage is implied by sign-in or voice/STT consent. It must explicitly
+  opt in, after which confirmed server AI turn pairs alone are saved.
+- The archive can be viewed without changing the current conversation, and
+  can be restored through a separate explicit "Continue" action.
+- The browser never caches the transcript in localStorage/sessionStorage.
+  Last 30 stored pairs remain account-bound; the active chat window is bounded
+  to its prior 30 visible turn messages for mobile performance.
+- Hard-server kill switch disables **new opt-ins/writes** but GET, explicit
+  opt-out and DELETE remain owner-authenticated, to preserve erasure rights.
+  A client-visible feature flag may remain enabled for access to the delete
+  control after server stop, but must not initiate background saving.
+- No unreviewed cloud TTS, raw audio upload, new paid AI, payment event, cron
+  or webhook.
+
+To activate after protected merge:
+1. Apply reviewed private migration and check FORCE RLS/role grants.
+2. Real two-account test: one person's transcript must never appear for the
+   other; verify explicit opt-in, one typed turn, one voice-originated turn
+   (when Web Voice is separately released), reload+resume, refusal of a write
+   without consent, revocation while write is in flight, account switch,
+   deletion/retention, and the server kill switch.
+3. Only then use Vercel to enable HH_AGENT_CHAT_HISTORY_ENABLED and
+   NEXT_PUBLIC_HH_AGENT_CHAT_HISTORY_ENABLED for production. Verify exact
+   READY source ancestry and canonical mobile interaction; rollout is not
+   complete merely because this code is merged.
