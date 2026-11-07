@@ -38,3 +38,38 @@ test('Course presets retain private saves, concurrency and curricula',()=>{
   assert.ok(s.includes("group: hh-course-presets-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"));
   assert.ok(s.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}"));
 });
+
+test('P2 scoped specialists defer redundant compilation only to required production Core',()=>{
+  const required = [
+    ['hh-personal-coaching-session.yml',['TypeScript noEmit','Build production Next.js'],
+      ['tests/personal-coaching-session.test.mjs','tests/coaching-intelligence-state.test.mjs','Scoped eslint']],
+    ['hh-language-agent.yml',['TypeScript check'],
+      ['tests/holistic-language-agent.test.mjs','tests/holistic-reiki-audio-language-agent.test.mjs','Targeted ESLint']],
+  ];
+  for(const [file,steps,contracts] of required){
+    const source=read(file);
+    for(const name of steps) assert.ok(source.includes('- name: '+name+'\n        '+gate+'\n'),
+      file+': the duplicated production PR type/build step must be scoped: '+name);
+    for(const contract of contracts) assert.ok(source.includes(contract),
+      file+': original domain/security/browser contract lost: '+contract);
+    assert.doesNotMatch(source,/continue-on-error:\s*true/,file+' must fail closed');
+  }
+  // Both source-scope optimizations rely on Core's mandatory real build.
+  assert.match(core,/^  hh-merge-check:/m);
+  assert.match(core,/run: npm run build/);
+  assert.match(core,/needs: \[scope, hh-specialist\]/);
+  assert.ok(core.includes('tests/ci-growth-course-core-reuse.test.mjs'));
+});
+
+test('P2 leaves real Visual Services QA untouched and mandatory on UI changes',()=>{
+  const visual=read('hh-visual-service-landings.yml');
+  for(const contract of [
+    "      - 'components/personal-service-landing.tsx'",
+    '- name: Typecheck changed pages in full project context',
+    'run: npx --no-install tsc --noEmit',
+    'npm run build > artifacts/visual-service-mobile/build.log',
+    'playwright install --with-deps chromium webkit',
+    'node scripts/verify-visual-service-mobile.mjs',
+  ]) assert.ok(visual.includes(contract),'Visual Services acceptance must remain: '+contract);
+  assert.doesNotMatch(visual,/continue-on-error:\s*true/);
+});

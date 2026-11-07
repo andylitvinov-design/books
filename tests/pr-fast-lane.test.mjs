@@ -282,6 +282,9 @@ const classifierCases = [
   ['CI workflow YAML deletion', '.github/workflows/example.yml', null, 'delete', false, 'pull_request', false, true],
   ['CI source aggregator edit', 'lib/ci/specialist-aggregate.mjs', null, 'edit', false, 'pull_request', false, true],
   ['CI policy test edit', 'tests/pr-fast-lane.test.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['Core CI workflow edit', '.github/workflows/hh-pr-core-release.yml', null, 'edit', false, 'pull_request', false, true],
+  ['Source Preflight contract edit', 'scripts/ci-source-preflight.mjs', null, 'edit', false, 'pull_request', false, true],
+  ['ESLint repair contract edit', 'scripts/ci-deterministic-eslint-repair.mjs', null, 'edit', false, 'pull_request', false, true],
   ['CI workflow validation test edit', 'tests/ci-workflow-globs.test.mjs', null, 'edit', false, 'pull_request', false, true],
   ['CI YAML plus runtime code', '.github/workflows/example.yml', 'app/api/payments/route.js', 'mixed', false],
   ['CI YAML rename to runtime file', '.github/workflows/example.yml', 'components/example.tsx', 'rename', false],
@@ -351,12 +354,17 @@ for (const [name, from, to, operation, expected, event = 'pull_request', missing
           'workflow-to-doc rename',
           'CI workflow YAML edit', 'CI workflow YAML deletion',
           'CI source aggregator edit', 'CI policy test edit',
+          'Core CI workflow edit', 'Source Preflight contract edit', 'ESLint repair contract edit',
           'CI workflow validation test edit', 'CI YAML plus runtime code',
           'CI YAML rename to runtime file', 'dependency lockfile edit',
         ]).has(name);
+        const expectedPreflightTouched = new Set(['Core CI workflow edit', 'Source Preflight contract edit']).has(name);
+        const expectedRepairTouched = new Set(['Core CI workflow edit', 'ESLint repair contract edit']).has(name);
         assert.deepEqual(readFileSync(join(dir, 'output'), 'utf8').trim().split('\n'),
           [`docs_only=${expected}`,`ci_only=${expectedCiOnly}`,
-            `ci_touched=${expectedCiTouched}`]);
+            `ci_touched=${expectedCiTouched}`,
+            `preflight_touched=${expectedPreflightTouched}`,
+            `repair_touched=${expectedRepairTouched}`]);
       }
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -412,7 +420,8 @@ test('PR fast lane ignores unrelated production commits in verified merge checko
         GITHUB_OUTPUT:output,GITHUB_STEP_SUMMARY:summary});
     assert.equal(checked.status,0,checked.stderr);
     assert.deepEqual(readFileSync(output,'utf8').trim().split('\n'),
-      ['docs_only=false','ci_only=true','ci_touched=true']);
+      ['docs_only=false','ci_only=true','ci_touched=true',
+        'preflight_touched=false','repair_touched=false']);
     assert.deepEqual(readFileSync(join(dir,'changed.z'),'utf8').split('\0').filter(Boolean),
       ['.github/workflows/example.yml']);
     const bad=run('bash',['--noprofile','--norc','-c',script],
