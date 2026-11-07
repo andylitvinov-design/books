@@ -209,7 +209,7 @@ test('actual JSX cannot replace unavailable or empty measurements with zero', as
   for (const readDaily of [async () => [], async () => { throw Error('PRIVATE_RAW_CONNECTION_ERROR') }]) {
     const report = await load({ readDaily })
     const html = await renderedPage({ report })
-    assert.equal((html.match(/<strong>Not measured<\/strong>/g) || []).length, 4)
+    assert.equal((html.match(/<strong>Not measured<\/strong>/g) || []).length, 7) // 3 public-web + 4 service counters
     assert.ok(!html.includes('PRIVATE_RAW_CONNECTION_ERROR'))
     assert.ok(!html.includes('<strong>0</strong>'))
   }
