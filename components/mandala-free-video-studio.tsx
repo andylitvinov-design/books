@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { flushSync } from "react-dom";
@@ -16,6 +16,7 @@ import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
 import { paintHypnoLightOverlay, recommendHypnoLight } from "@/lib/mandala/hypno-visual-overlay.mjs";
 import { MandalaFreeVideoGenerator } from "./mandala-free-video-generator";
 import {planAudioVisualStoryboard} from "@/lib/mandala/audio-visual-storyboard.mjs";
+import {deriveAudioVideoConcept} from "@/lib/mandala/audio-concept-director.mjs";
 import {consumeVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
 import {requestConsentedTimedTranscript} from "@/lib/mandala/consented-audio-stt";
 import type {TimedSpeechTranscript,AudioVisualPlan} from "@/lib/mandala/audio-visual-storyboard.mjs";
@@ -2165,6 +2166,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [sttError,setSttError]=useState("");
   const [voiceTranscript,setVoiceTranscript]=useState<TimedSpeechTranscript|null>(null);
   const [voiceVisualPlan,setVoiceVisualPlan]=useState<AudioVisualPlan|null>(null);
+  // The speech-derived proposal is local, provisional and never grants export.
+  const voiceConcept=useMemo(()=>deriveAudioVideoConcept({
+    transcript:voiceTranscript??undefined,plan:voiceVisualPlan??undefined,locale
+  }),[voiceTranscript,voiceVisualPlan,locale]);
   const [audioPlanApplied,setAudioPlanApplied]=useState(false);
   const [recipientAudioSelected,setRecipientAudioSelected]=useState(false);
   const [pendingAutoVoice,setPendingAutoVoice]=useState<TimedSpeechTranscript|null>(null);
@@ -4554,6 +4559,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if(sttAbortRef.current!==controller||
         uploadedAudioRef.current?.file!==entry.file)return;
       setVoiceTranscript(transcript);
+      // A source-bound PREVIEW only; the existing consented "Match footage"
+      // button still validates and applies the real montage explicitly.
+      setVoiceVisualPlan(planAudioVisualStoryboard({
+        transcript,scenes:FREE_FILM_CATALOG,aspect,theme:"",locale
+      }));
       setNotice(locale==="ru"?"Расшифровка с временными метками готова. Проверьте текст перед монтажом.":
         locale==="es"?"Transcripción con tiempos lista. Revisa el texto.":"Timed transcript ready. Review it before editing.");
     }catch(error){
@@ -5720,6 +5730,50 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <button type="button" data-video-recipient-audio-plan
         disabled={!voiceTranscript||!audioRights||sttBusy||recording||preparing} onClick={()=>applyTranscriptVideo()}>
         <Film size={17}/>{locale==="ru"?"Подобрать видеоряд":locale==="es"?"Elegir escenas":"Match footage"}</button>
+      {voiceConcept?<div className={videoStyles.recipientAudioConcept}
+        data-video-recipient-audio-concept-preview data-plan-status={voiceVisualPlan?.status||"TRANSCRIPT_ONLY"}>
+        <strong>{locale==="ru"?"Концепт по смыслу речи":locale==="es"?"Concepto a partir de la voz":"Concept from your speech"}</strong>
+        <dl className={videoStyles.recipientAudioFields} data-video-recipient-audio-fields>
+          <div data-video-recipient-audio-goal><dt>{locale==="ru"?"Цель":locale==="es"?"Objetivo":"Goal"}</dt>
+            <dd>{voiceConcept.goal.text}</dd></div>
+          <div data-video-recipient-audio-purpose><dt>{locale==="ru"?"Назначение":locale==="es"?"Finalidad":"Purpose"}</dt>
+            <dd>{voiceConcept.purpose}</dd></div>
+          <div data-video-recipient-audio-category><dt>{locale==="ru"?"Категория":locale==="es"?"Categoría":"Category"}</dt>
+            <dd>{voiceConcept.category}</dd></div>
+          {voiceConcept.topic?<div data-video-recipient-audio-topic>
+            <dt>{locale==="ru"?"Тема":locale==="es"?"Tema":"Topic"}</dt>
+            <dd>{voiceConcept.topic}</dd></div>:null}
+          <div data-video-recipient-audio-style><dt>{locale==="ru"?"Стиль":locale==="es"?"Estilo":"Style"}</dt>
+            <dd>{voiceConcept.style.label||"—"}</dd></div>
+          <div data-video-recipient-audio-symbol><dt>{locale==="ru"?"Символ":locale==="es"?"Símbolo":"Symbol"}</dt>
+            <dd>{voiceConcept.symbol?.label||"—"}</dd></div>
+          <div data-video-recipient-audio-pace><dt>{locale==="ru"?"Темп":locale==="es"?"Ritmo":"Pace"}</dt>
+            <dd>{voiceConcept.pace==="gentle"
+              ?(locale==="ru"?"Мягкий":locale==="es"?"Suave":"Gentle")
+              :voiceConcept.pace==="dynamic"
+              ?(locale==="ru"?"Динамичный":locale==="es"?"Dinámico":"Dynamic")
+              :(locale==="ru"?"Ровный":locale==="es"?"Uniforme":"Steady")}</dd></div>
+        </dl>
+        {voiceConcept.keywords.length?<div className={videoStyles.recipientAudioKeywords}
+          data-video-recipient-audio-keywords>
+          {voiceConcept.keywords.slice(0,8).map(word=><span key={word.id}>{word.id}</span>)}
+        </div>:null}
+        {voiceVisualPlan?.canExport?<details data-video-recipient-audio-preview>
+          <summary>{locale==="ru"?"Предварительные кадры":locale==="es"?"Escenas propuestas":"Proposed scenes"} · {voiceVisualPlan.shots.length}</summary>
+          <ol>{voiceVisualPlan.shots.map((shot,i)=><li key={i}>
+            {shot.startSeconds}–{shot.endSeconds} s · {shot.visualLabel}{shot.needsReview?" ⚠":""}
+          </li>)}</ol>
+        </details>:<p role="status" data-video-recipient-audio-no-footage>
+          {locale==="ru"?"Подходящие подтверждённые кадры пока не найдены; текст и концепт сохранены для просмотра.":
+            locale==="es"?"Aún no hay clips autorizados suficientes; revisa el texto y concepto.":
+            "Not enough verified footage yet; review the transcript and concept."}
+        </p>}
+        <small data-video-recipient-audio-proposal>
+          {locale==="ru"?"Предложение по ключевым словам, не подтверждение буквального содержания кадра. Проверьте результат перед монтажом.":
+            locale==="es"?"Sugerencia por palabras; no demuestra que las imágenes sean literales. Revísala antes del montaje.":
+            "Keyword-based suggestion, not proof of literal scene content. Review before editing."}
+        </small>
+      </div>:null}
       {voiceVisualPlan?.canExport&&audioPlanApplied?<div className={videoStyles.recipientAudioConcept}
         data-video-recipient-audio-concept><strong>{locale==="ru"?"Ваш концепт":locale==="es"?"Tu concepto":"Your concept"}</strong>
         <div className={videoStyles.recipientAudioKeywords}>
