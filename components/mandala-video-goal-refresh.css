@@ -1,0 +1,286 @@
+/*
+ * Holistic House — readable mobile Goal workspace (2026-11-07).
+ * Source: owner iPhone screenshot, /ru/holistic-support/mandala, guest,
+ * Goal 1/2. Scoped to this route and active Goal only.
+ * Do not override Ideas, Montage, Hypno, PRO, Ready, photo mode or exports.
+ * Retains the single native Canvas/video player and all controls.
+ */
+@media (max-width:759px) {
+  /* Six steps remain real buttons. Swipe the rail instead of shrinking
+     important labels to 9px on a 320–390px iPhone. */
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-controls] {
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    grid-template-columns:none!important;
+    gap:8px!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    padding:3px 2px 10px!important;
+    margin:5px 0 8px!important;
+    scroll-padding-inline:2px;
+    scroll-snap-type:x proximity;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-controls]::-webkit-scrollbar {display:none}
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-controls] button {
+    display:flex!important;
+    flex:0 0 90px!important;
+    width:90px!important;
+    min-width:90px!important;
+    min-height:58px!important;
+    max-height:none!important;
+    padding:7px 5px!important;
+    gap:4px!important;
+    scroll-snap-align:start;
+    border:1px solid #e9dfd1!important;
+    border-radius:14px!important;
+    background:#fffcf7;
+    color:#143d3a;
+    font:750 13px/1.16 Arial,Helvetica,sans-serif!important;
+    letter-spacing:0!important;
+    white-space:normal!important;
+    box-shadow:0 2px 8px rgba(40,54,43,.06)!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-controls] button svg {
+    width:21px!important;
+    height:21px!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-controls] button[aria-pressed="true"] {
+    background:#087f69!important;
+    border-color:#087f69!important;
+    color:#fff!important;
+    box-shadow:0 3px 10px rgba(6,122,103,.2)!important;
+  }
+
+  /* Preserve the real video/playback, but give the goal a clear priority. */
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-player-with-controls] {
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 104px!important;
+    align-items:stretch!important;
+    gap:9px!important;
+    width:100%!important;
+    max-width:none!important;
+    margin:1px 0 4px!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-mandala-hero] {
+    min-width:0!important;
+    width:100%!important;
+    aspect-ratio:16/9!important;
+    border-radius:19px!important;
+    border-color:#dfdfd2!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-mandala-hero] > div[aria-hidden] h2 {
+    font-size:clamp(16px,4.2vw,20px)!important;
+    line-height:1.12!important;
+    text-wrap:balance;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-mandala-hero] > div[aria-hidden] p {
+    display:none!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-intro-my-rail] {
+    display:grid!important;
+    min-width:0!important;
+    grid-template-rows:repeat(2,minmax(0,1fr));
+    gap:7px!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-intro-my-rail] button {
+    min-height:48px!important;
+    padding:7px 16px 7px 10px!important;
+    border-radius:16px!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-intro-my-rail] button strong {
+    font-size:13px!important;
+    line-height:1.15!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-intro-my-rail] button span {
+    font-size:11px!important;
+    line-height:1.14!important;
+  }
+
+  /* Large two-column pastel choices: not four unreadable 52px tiles. */
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-section="1"],
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-topic-section] {
+    box-sizing:border-box;
+    min-width:0;
+    margin:5px 0 0!important;
+    padding:16px 14px!important;
+    gap:12px!important;
+    border:1px solid #e9dfd1!important;
+    border-radius:22px!important;
+    background:#fffcf7!important;
+    box-shadow:0 3px 12px rgba(68,53,34,.05)!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-section="1"] h3 {
+    margin:0;
+    font-size:clamp(19px,5.2vw,23px)!important;
+    line-height:1.18!important;
+    color:#143d3a!important;
+    letter-spacing:-.01em;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] > [role="group"] {
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:12px!important;
+    width:100%!important;
+    min-width:0!important;
+    padding:4px 0 0!important;
+    overflow:visible!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] > [role="group"] > button {
+    box-sizing:border-box;
+    display:flex!important;
+    flex:initial!important;
+    flex-basis:auto!important;
+    flex-direction:column!important;
+    justify-content:center!important;
+    align-items:center!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    min-height:118px!important;
+    height:auto!important;
+    padding:12px 8px!important;
+    gap:8px!important;
+    border-radius:18px!important;
+    border-width:1px!important;
+    box-shadow:0 2px 7px rgba(36,46,36,.04);
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] > [role="group"] > button > span:first-child {
+    width:36px!important;
+    height:36px!important;
+    flex:none;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] > [role="group"] > button > span:first-child svg {
+    width:27px!important;
+    height:27px!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] > [role="group"] > button strong {
+    font-size:clamp(14px,3.95vw,16px)!important;
+    line-height:1.18!important;
+    font-weight:800!important;
+    overflow-wrap:break-word;
+    white-space:normal!important;
+    text-wrap:balance;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] > [role="group"] > button[aria-pressed="true"] {
+    border:2px solid #087f69!important;
+    box-shadow:0 0 0 2px rgba(8,127,105,.12),0 5px 16px rgba(8,127,105,.1)!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-subcategories] {
+    min-width:0;
+    gap:8px!important;
+    margin:8px 0 0!important;
+    padding:10px 0 0!important;
+    border-top:1px solid #ede6db;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-mytube-subcategories] {
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    min-width:0;
+    max-width:100%;
+    gap:8px!important;
+    overflow-x:auto!important;
+    padding:3px 1px 8px!important;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-mytube-subcategories]::-webkit-scrollbar {display:none}
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-mytube-subcategories] button {
+    flex:0 0 auto!important;
+    max-width:205px!important;
+    min-height:46px!important;
+    padding:9px 13px!important;
+    border-radius:13px!important;
+    font-size:14px!important;
+    line-height:1.2!important;
+    white-space:normal!important;
+  }
+
+  /* A generous optional wish and a single obvious next action. */
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-topic-panel] > div:first-child h3 {
+    font-size:18px!important;
+    line-height:1.2!important;
+    color:#143d3a!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-topic-panel] > div:first-child > button {
+    min-height:44px!important;
+    max-width:42%!important;
+    font-size:12px!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-request-after-topic] {
+    display:grid;
+    gap:10px!important;
+    padding-top:12px!important;
+    border-color:#ede6db!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-request-after-topic] h4 {
+    margin:0;
+    font-size:17px!important;
+    line-height:1.25!important;
+    color:#143d3a!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-input] {
+    display:block;
+    box-sizing:border-box;
+    min-height:54px!important;
+    height:54px!important;
+    min-width:0!important;
+    width:100%!important;
+    padding:12px 14px!important;
+    border-radius:15px!important;
+    background:#fff!important;
+    color:#143d3a!important;
+    font-size:16px!important;
+    line-height:1.25!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-input]::placeholder {
+    color:#657a73!important;
+    opacity:1;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-continue-scenarios] {
+    box-sizing:border-box;
+    width:100%!important;
+    min-height:56px!important;
+    padding:12px 14px!important;
+    margin:0!important;
+    border-radius:16px!important;
+    background:linear-gradient(110deg,#067a67,#099b77)!important;
+    color:#fff!important;
+    font-size:16px!important;
+    line-height:1.2!important;
+    box-shadow:0 5px 15px rgba(6,122,103,.15)!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] :is(
+    [data-video-quick-controls] button,
+    [data-auto-video-goal-panel] button,
+    [data-mytube-subcategories] button,
+    [data-video-continue-scenarios],
+    [data-auto-video-input]
+  ):focus-visible {
+    outline:3px solid #176e6e!important;
+    outline-offset:3px!important;
+  }
+}
+@media (max-width:350px) {
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-player-with-controls] {
+    grid-template-columns:minmax(0,1fr) 90px!important;
+    gap:6px!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-controls] button {
+    flex-basis:86px!important;
+    min-width:86px!important;
+    width:86px!important;
+  }
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-auto-video-goal-panel] > [role="group"] {
+    gap:9px!important;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  [data-mandala-meditation-page][data-mandala-mode="video"] [data-active-workspace="video"] [data-video-quick-controls] {
+    scroll-snap-type:none;
+  }
+}
