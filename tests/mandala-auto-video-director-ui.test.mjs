@@ -117,8 +117,8 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(css,/data-active-workspace="phrases"/);
  assert.match(css,/\[data-auto-video-director\]\{order:5/);
  assert.match(css,/\[data-video-result\]/);
- assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,
-   "six workspaces fit into one mobile row");
+ assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)!important/,
+   "seven distinct tabs fit in one mobile row");
  assert.match(autoCss,/\.storyChoices\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(autoCss,/\.shots\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  const approved=taxonomy.scenes.filter(scene=>scene.status==="approved");
@@ -127,7 +127,7 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
    scene.poster.endsWith(".jpg") && scene.video.endsWith(".mp4")));
 });
 
-test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
+test("seven distinct workspaces keep short locale labels and full titles",()=>{
  const labels={
   ru:["Цель","Идеи","Гипноэффект","Курс практик","Монтаж","PRO"],
   en:["Goal","Ideas","Hypno effect","Practice course","Montage","PRO"],
@@ -142,8 +142,8 @@ test("mobile six workspaces use short locale labels without changing full panel 
    const group=source.slice(start,next);
    for(const label of labels[language])assert.ok(group.includes('tab:"'+label+'"'),language+" "+label);
  }
- assert.match(studio,/aria-pressed=\{activeWorkspace===item\.id\|\|\(activeWorkspace==="practices"&&item\.id==="ready"\)\|\|\(!activeWorkspace&&item\.id==="video"\)\}/,
-   "Ready highlights the retained course planner and Goal stays selected at entry");
+ assert.match(studio,/aria-pressed=\{activeWorkspace===item\.id\|\|\(!activeWorkspace&&item\.id==="video"\)\}/,
+   "Only one active workspace: Course and Ready are independent, with Goal default");
 });
 
 test("desktop keeps six themes while iPhone uses four canonical MyTube goals",()=>{

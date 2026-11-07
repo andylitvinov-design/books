@@ -4742,6 +4742,27 @@
  }
 }
 
+
+/* PRO hero must occupy the full original media column, not inherit the old
+   71px Intro/My video rail or the earlier generic flex-child width:auto rule.
+   Preserve the ONE original Canvas and playable visual source. */
+@media(max-width:759px){
+ .studio[data-active-workspace="pro"] .quickBuilder>.previewStage{
+   box-sizing:border-box!important;width:100%!important;max-width:100%!important;
+   min-width:0!important;justify-self:stretch!important;grid-column:1/-1!important
+ }
+ .studio[data-active-workspace="pro"] .previewStage>.heroWithRail{
+   box-sizing:border-box!important;display:block!important;width:100%!important;
+   max-width:100%!important;min-width:0!important;margin:0!important
+ }
+ .studio[data-active-workspace="pro"] .previewStage>.heroWithRail>.hero{
+   box-sizing:border-box!important;display:block!important;flex:none!important;
+   width:100%!important;max-width:100%!important;min-width:0!important;
+   margin:0!important
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroRail{display:none!important}
+}
+
 /* Messenger Video validated handoff visibility.
    The compact Goals screen hides unopened advanced panels, not the original
    Director explicitly opened after a verified, one-use chat handoff.

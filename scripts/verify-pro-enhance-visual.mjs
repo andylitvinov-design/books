@@ -67,13 +67,15 @@ export async function verifyProEnhanceVisual({BASE,chromium,webkit,expect}){
       .sort((x,y)=>y.getBoundingClientRect().width-x.getBoundingClientRect().width)[0];
     return {viewport:innerWidth,scroll:document.documentElement.scrollWidth,
       hero:rect(hero),railDisplay:getComputedStyle(rail).display,
+      stage:rect(get("[data-video-live-stage]")),
+      withRail:rect(get("[data-video-player-with-controls]")),
       a:rect(a),b:rect(b),dock:dock?rect(dock):null,
       image:getComputedStyle(get('[data-pro-artwork="cinema"] [aria-hidden="true"]')).backgroundImage,
       poster:getComputedStyle(get("[data-video-mandala-hero] [class*='heroPromo']")).backgroundImage};
    });
    assert.ok(geometry.scroll<=geometry.viewport+1,label+" no horizontal overflow");
    assert.equal(geometry.railDisplay,"none",label+" single full-width hero");
-   assert.ok(geometry.hero.width>width*.82,label+" full-width hero");
+   assert.ok(geometry.hero.width>width*.82,label+" full-width hero geometry: "+JSON.stringify({viewport:geometry.viewport,hero:geometry.hero,stage:geometry.stage,withRail:geometry.withRail}));
    assert.ok(geometry.image.includes("pro-enhance-gallery.webp"),label+" approved art");
    assert.ok(geometry.poster.includes("pro-enhance-hero.webp"),label+" approved hero");
    const free=panel.locator("[data-video-generate-without-ai]");
