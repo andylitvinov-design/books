@@ -172,3 +172,111 @@
  .panel[data-voice-layout="compact"] .voiceCardSelect small{font-size:10px}
  .panel[data-voice-layout="compact"] .sampleButton{right:5px;bottom:5px}
 }
+
+
+/* Design Bible §10.12 — Studio Warm Peach when the ORIGINAL voice picker is
+   mounted inside Ideas → Voice. Keep the existing audio, rights, recorder,
+   keyboard and generation flows. Other Voice/Hypno contexts are untouched. */
+:global([data-ideas-subtab="voice"]) .panel{
+  color:var(--hh-voice-ink,#142B3D);
+  background:var(--hh-voice-card,#FFFCFA);
+  border-color:var(--hh-voice-border,#EADFD9);
+  box-shadow:none
+}
+:global([data-ideas-subtab="voice"]) .panel .heading h4,
+:global([data-ideas-subtab="voice"]) .panel .selectedPhrase p,
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect{
+  color:var(--hh-voice-ink,#142B3D)
+}
+:global([data-ideas-subtab="voice"]) .panel .heading p,
+:global([data-ideas-subtab="voice"]) .panel .selectedPhrase small,
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect small,
+:global([data-ideas-subtab="voice"]) .panel .hint,
+:global([data-ideas-subtab="voice"]) .panel .sampleStatus,
+:global([data-ideas-subtab="voice"]) .panel .localHint{
+  color:var(--hh-voice-muted,#5D6A71)
+}
+:global([data-ideas-subtab="voice"]) .panel .selectedPhrase,
+:global([data-ideas-subtab="voice"]) .panel .transcriptDisclosure,
+:global([data-ideas-subtab="voice"]) .panel .voiceAdvanced,
+:global([data-ideas-subtab="voice"]) .panel .transcript,
+:global([data-ideas-subtab="voice"]) .panel .levels{
+  color:var(--hh-voice-ink,#142B3D);
+  background:var(--hh-voice-field,#FFF9F5);
+  border-color:var(--hh-voice-border,#EADFD9)
+}
+:global([data-ideas-subtab="voice"]) .panel .genderTabs button:not([aria-pressed="true"]),
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect:not([aria-pressed="true"]),
+:global([data-ideas-subtab="voice"]) .panel .sampleButton,
+:global([data-ideas-subtab="voice"]) .panel .deviceSampleButton,
+:global([data-ideas-subtab="voice"]) .panel .localItem,
+:global([data-ideas-subtab="voice"]) .panel .localActions button:not([aria-pressed="true"]){
+  background:var(--hh-voice-card,#FFFCFA);
+  border-color:var(--hh-voice-border,#EADFD9);
+  color:var(--hh-voice-forest,#14523F)
+}
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect:not([aria-pressed="true"]){
+  color:var(--hh-voice-ink,#142B3D)
+}
+:global([data-ideas-subtab="voice"]) .panel .genderTabs button[aria-pressed="true"]{
+  background:linear-gradient(120deg,var(--hh-voice-emerald,#087E61),var(--hh-voice-emerald-deep,#006B4B));
+  color:#FFFFFF;border-color:var(--hh-voice-emerald-deep,#006B4B)
+}
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect[aria-pressed="true"]{
+  background:var(--hh-voice-mint,#EAF5EC);
+  border-color:var(--hh-voice-emerald,#087E61);
+  color:var(--hh-voice-ink,#142B3D)
+}
+:global([data-ideas-subtab="voice"]) .panel .voiceCardSelect[aria-pressed="true"] small{
+  color:var(--hh-voice-muted,#5D6A71)
+}
+:global([data-ideas-subtab="voice"]) .panel .phrasePick select,
+:global([data-ideas-subtab="voice"]) .panel .controls select,
+:global([data-ideas-subtab="voice"]) .panel .localActions button,
+:global([data-ideas-subtab="voice"]) .panel .result{
+  background:var(--hh-voice-card,#FFFCFA);
+  border-color:var(--hh-voice-border,#EADFD9);
+  color:var(--hh-voice-ink,#142B3D)
+}
+:global([data-ideas-subtab="voice"]) .panel .action{
+  color:#FFFFFF;
+  border-color:var(--hh-voice-emerald-deep,#006B4B);
+  background:linear-gradient(120deg,var(--hh-voice-emerald,#087E61),var(--hh-voice-emerald-deep,#006B4B))
+}
+:global([data-ideas-subtab="voice"]) .panel :is(button,select,input):focus-visible{
+  outline:3px solid #176E6E;outline-offset:2px
+}
+
+:global([data-ideas-subtab="voice"]) .panel .samplePlayer{
+  background:var(--hh-voice-card,#FFFCFA);
+  color:var(--hh-voice-ink,#142B3D);
+  border-color:var(--hh-voice-border,#EADFD9)
+}
+:global([data-ideas-subtab="voice"]) .panel .localTop>button:not([aria-pressed="true"]),
+:global([data-ideas-subtab="voice"]) .panel .localEmpty{
+  background:var(--hh-voice-field,#FFF9F5);
+  color:var(--hh-voice-forest,#14523F);
+  border-color:var(--hh-voice-border,#EADFD9)
+}
+
+
+/* Design Bible §10.13: directly style the REAL mounted TTS panel itself.
+   The editor may be composed in a nested/portaled Voice screen, so relying
+   only on a [data-ideas-subtab] ancestor can leave backgroundColor transparent
+   beneath an inherited sage gradient in iPhone WebKit. */
+.panel[data-video-affirmation-voice]{
+  background:var(--hh-studio-surface,#FFFCFA);
+  background-image:none;
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+
+/* Studio Warm Peach: the compact voice layout intentionally omits the old
+   selectedPhrase summary. Test and color the actually visible phrase SELECT.
+   Restrict this override to Ideas > Voice; retain other audio contexts. */
+:global([data-ideas-subtab="voice"]) .panel[data-voice-layout="compact"] .phrasePick select{
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}

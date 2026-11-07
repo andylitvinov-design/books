@@ -92,3 +92,36 @@
  .cardText strong{font-size:18px}.cardText small{font-size:14px}
  .addRail button{flex-basis:120px}
 }
+
+/* Design Bible §10.13: PRO enhancement UI uses the original film thumbnails
+   and meaningful gold/pastel motifs; only default cards and actions normalize. */
+:global([data-mandala-mode="video"]) .panel{
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .section,
+:global([data-mandala-mode="video"]) .top button:not([aria-pressed="true"]),
+:global([data-mandala-mode="video"]) .card:not([aria-pressed="true"]){
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) .headingText h3,
+:global([data-mandala-mode="video"]) .cardText strong{
+  color:var(--hh-studio-forest,#14523F)
+}
+:global([data-mandala-mode="video"]) .headingText p,
+:global([data-mandala-mode="video"]) .cardText small{
+  color:var(--hh-studio-muted,#5D6A71)
+}
+:global([data-mandala-mode="video"]) .card[aria-pressed="true"]{
+  background:var(--hh-studio-selected,#EAF5EC);
+  border-color:var(--hh-studio-primary,#087E61)
+}
+:global([data-mandala-mode="video"]) .top button[aria-pressed="true"],
+:global([data-mandala-mode="video"]) .continueButton{
+  background:linear-gradient(120deg,var(--hh-studio-primary,#087E61),
+    var(--hh-studio-deep,#006B4B));
+  border-color:var(--hh-studio-deep,#006B4B);
+  color:#FFFFFF
+}

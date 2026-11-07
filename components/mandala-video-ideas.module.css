@@ -68,3 +68,32 @@
 @media(max-height:750px) and (max-width:759px){.phraseList{max-height:clamp(115px,23dvh,178px)}.sizeCard{padding:6px 9px 4px}.item{min-height:38px}.create{min-height:43px}.refine summary{min-height:31px}.privacy{display:none}}
 @media(min-width:760px){.phraseList{max-height:350px}.item{min-height:48px;padding:6px 9px}.phraseText{font-size:15px}.sizeCard{padding:12px 16px}.sizeTitle label{font-size:16px}.actions button{min-height:49px}.actions small{display:block;font-size:11px}}
 @media(prefers-reduced-motion:reduce){.sample{transition:none}}
+
+/* Design Bible §10.13: original Ideas/Text editor, neutral surfaces only.
+   Preserve selected phrase mint and the warm-gold custom-phrase button. */
+:global([data-mandala-mode="video"]) .ideas{
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .sizeCard,
+:global([data-mandala-mode="video"]) .refine,
+:global([data-mandala-mode="video"]) .sliderField,
+:global([data-mandala-mode="video"]) .addForm{
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .item:not([data-selected="true"]),
+:global([data-mandala-mode="video"]) .actions button:not(:last-child),
+:global([data-mandala-mode="video"]) .selectField select,
+:global([data-mandala-mode="video"]) .addForm input{
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .subtitle,
+:global([data-mandala-mode="video"]) .sizeHints{
+  color:var(--hh-studio-muted,#5D6A71)
+}
+:global([data-mandala-mode="video"]) .phraseHeader h3{
+  color:var(--hh-studio-forest,#14523F)
+}

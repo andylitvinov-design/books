@@ -162,3 +162,34 @@
 .contextQuestion [data-video-option-tier="premium"]{display:inline-flex;align-items:center;justify-content:center;gap:4px;border-color:#e3d1ac;background:#fff9ec}
 .contextQuestion [data-video-option-tier="premium"][aria-pressed="true"]{border-color:#b58f48;background:#fff0ca}
 .contextQuestion [data-video-option-tier="free"]{border-color:#cee0cc}
+
+/* Design Bible §10.13 — original cinematic storyboard panel.
+   Never alter individual shot thumbnails, selected motifs or safety states. */
+:global([data-mandala-mode="video"]) .root{
+  --cin-ink:var(--hh-studio-ink,#142B3D);
+  --cin-green:var(--hh-studio-primary,#087E61);
+  --cin-edge:var(--hh-studio-border,#EADFD9);
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) :is(
+  .fields,.options fieldset,.shots li,
+  .chips button:not([aria-pressed="true"]),
+  .sheetChoices button:not([aria-pressed="true"])
+){
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .heading h3{
+  color:var(--hh-studio-forest,#14523F)
+}
+:global([data-mandala-mode="video"]) .heading small{
+  color:var(--hh-studio-muted,#5D6A71)
+}
+:global([data-mandala-mode="video"]) .root .primary{
+  background:var(--hh-studio-primary,#087E61);
+  border-color:var(--hh-studio-deep,#006B4B);
+  color:#FFFFFF
+}
