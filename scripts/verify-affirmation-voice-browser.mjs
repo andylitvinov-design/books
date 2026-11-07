@@ -671,6 +671,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
+      // The real mobile Montage Style stage intentionally hides the export
+      // button behind its visible "Next · Add text" step. To produce a voiced
+      // movie, choose the real Audio tab, not a hidden Style-step control.
+      const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
+      await expect(montageAudioTab).toBeVisible();
+      await montageAudioTab.click();
+      await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
       await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
