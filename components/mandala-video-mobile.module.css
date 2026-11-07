@@ -4510,3 +4510,12 @@
    display:grid!important;
  }
 }
+
+/* Guest-first video: keep verified output in this tab while login opens separately. */
+.guestVideoUnlock{grid-column:1/-1;display:grid;gap:12px;padding:16px;border:1px solid #cfe5dc;border-radius:16px;background:#f0faf4;color:#174638;min-width:0}
+.guestVideoUnlock>strong{font:800 clamp(18px,4.4vw,23px)/1.25 Arial,sans-serif;color:#155542}
+.guestVideoUnlock>p{font:500 14px/1.5 system-ui,sans-serif;color:#385a4e;margin:0}
+.guestVideoActions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:9px}
+.guestVideoActions>a,.guestVideoActions>button{display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px 12px;border-radius:12px;border:1px solid #118668;background:#078768;color:#fff;text-decoration:none;text-align:center;font:750 14px/1.3 system-ui,sans-serif;cursor:pointer}
+.guestVideoActions>button{background:#fff;color:#16644c}
+.guestVideoActions>a:focus-visible,.guestVideoActions>button:focus-visible{outline:3px solid #c48b47;outline-offset:3px}
