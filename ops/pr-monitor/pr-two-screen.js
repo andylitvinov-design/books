@@ -10,7 +10,7 @@
   var ROOT_ID = 'hh-pr-two-screens';
   // Explicit opt-in on the standalone PR page: restore the detailed stages
   // as a slide after the existing central metrics, not a second top overview.
-  var STAGE_ONLY = Boolean(document.querySelector('script[data-pr-stage-only][src*="pr-two-screen.js"]'));
+  var STAGE_ONLY = Boolean(document.currentScript?.hasAttribute?.("data-pr-stage-only"));
   var STAGES = [
     ['before_unknown','До первой сохранённой CI · неатрибутировано','Включает Draft, подготовку PR и пропущенные Core runs; это НЕ измерение задержки GitHub до первой CI'],
     ['workflow_wait','Workflow → jobs','Время создания jobs в сохранённых Core runs'],
