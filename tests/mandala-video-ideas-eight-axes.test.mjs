@@ -117,6 +117,7 @@ test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list
  assert.ok(css.includes('[data-video-phrase-audio-shortcut]{display:none!important}'));
 });
 
+const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("Ideas Text and Voice have a shared, stateful single narration editor",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
  assert.match(studio,/data-video-ideas-tabs role="group"/);

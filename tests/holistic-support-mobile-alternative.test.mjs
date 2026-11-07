@@ -115,7 +115,7 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   // Legacy ?tab=chats still opens protected client conversations, while
   // new direct Messenger visits intentionally open the owner-approved AI tab.
   assert.ok(orders.includes("requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':"));
-  assert.ok(orders.includes("requested==='orders'||q.has('order')?'orders':'ai'"));
+  assert.ok(orders.includes("requested==='orders'||q.has('order')?'orders':requested==='news'?'news':'ai'"));
   assert.match(inbox, /VALID_TABS=new Set\(\['chats','requests'\]\)/);
   assert.match(page, /<MessagesOrdersClients locale=\{locale\}>\s*<MessagesHub locale=\{locale\} embedded\/>\s*<\/MessagesOrdersClients>/);
   assert.match(inbox, /<MessagesSimpleInbox/);

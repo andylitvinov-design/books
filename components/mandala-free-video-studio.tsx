@@ -6297,8 +6297,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases
-        data-ideas-subtab={ideasSubtab} aria-label={workspaceCopy[locale].phrases.title}>
+      <section className={videoStyles.quickPhraseSection} data-ideas-subtab={ideasSubtab} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title}>
         <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
           aria-label={locale==="ru"?"Идеи: текст или голос":locale==="es"?"Ideas: texto o voz":"Ideas: text or voice"}>
           <button type="button" data-video-ideas-tab="text" aria-pressed={ideasSubtab==="text"}
