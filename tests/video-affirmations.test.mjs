@@ -89,7 +89,7 @@ test("existing video preview and export use identical overlays; frame mode reque
   // when visual grade or shot selection changes, without dropping affirmation state.
   // A changed approved music bed invalidates an exported voice/music film too.
   assert.match(studio,/caption,affirmations,hypnoLight,\s*attachedAudio\?\.kind==="file"\?musicBed:null,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
-  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\s*,\s*shot\.transitionIn\|\|"soft",shot\.colorLook\|\|"original",shot\.motion\?\?null,\s*shot\.sourcePhasePercent\?\?0,shot\.sourceSpeed\?\?1\]\),appliedStory,\s*creationMode,currentFreeVideoPlan\?\.seed/,
+  assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\s*,\s*shot\.transitionIn\|\|"soft",shot\.colorLook\|\|"original",shot\.motion\?\?null,\s*shot\.sourcePhasePercent\?\?0,shot\.sourceSpeed\?\?1\]\),appliedStory,\s*creationMode,activeMontageStyleId,currentFreeVideoPlan\?\.seed/,
     "changing a shot boundary must invalidate old recorded output as well as the source ID");
   assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw affirmations");
   assert.match(studio,/affirmations\.enabled && affirmations\.visibility\.includes\("frame"\)/);
@@ -217,7 +217,7 @@ test("HD master fetch starts from Play/Create, never from a background effect",(
   assert.match(studio,/if\(!\(await masterPreparation\)\)[\s\S]*?setExportUnavailable\(true\)/,
     "failed decoding must block export, not fabricate a downloadable file");
   assert.match(studio,/onLoadedData=\{event=>\{[\s\S]*event\.currentTarget\.readyState>=2 && event\.currentTarget\.videoWidth>0/);
-  assert.match(studio,/onCanPlay=\{\(\)=>setPremiumReady\(true\)\}/);
+  assert.match(studio,/onCanPlay=\{event=>\{\s*setPremiumReady\(true\);[\s\S]*?event.currentTarget.play\(\)/);
   assert.match(studio,/master\.readyState < 2\)throw new Error\("HD MP4 scene not loaded"\)/);
 });
 
