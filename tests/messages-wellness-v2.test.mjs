@@ -208,7 +208,7 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
 })
 
 
-test('owner Messenger keeps a clear welcome and two big chat choices, not five mini-cards',()=>{
+test('owner Messenger preserves one private chat while topic hints prepare an unsent draft',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const ai=source('components/app/messenger-ai-workspace.jsx')
  const css=source('components/app/messenger-ai-workspace.module.css')
@@ -222,7 +222,13 @@ test('owner Messenger keeps a clear welcome and two big chat choices, not five m
  for(const id of ['video','meditation'])assert.ok(chat.includes('data-hh-ai-start="'+id+'"'))
  assert.ok(chat.includes('startGuided(kind:'))
  assert.ok(chat.includes('isCasualGreeting(text)'))
- assert.doesNotMatch(ai,/data-chat-menu-rail|setQuickPrompt\(/)
+ // This widget has one chat instance. Shared iHelp topic chips populate its draft,
+ // but must not create a second conversation/menu rail or auto-send.
+ assert.doesNotMatch(ai,/data-chat-menu-rail/)
+ assert.equal((ai.match(/<HolisticAgentChat\b/g)||[]).length,1)
+ assert.match(ai,/<HolisticAgentChat locale=\{locale\} compact quickPrompt=\{quickPrompt\}/)
+ assert.match(ai,/<IHelpTopics locale=\{locale\} onSelect=\{prompt=>setQuickPrompt\(/)
+ assert.match(ai,/previous=>\(\{revision:\(previous\?\.revision\|\|0\)\+1,text:prompt\}\)/)
  assert.match(chat,/method:"POST",credentials:"same-origin"/)
  assert.ok(mobile.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) [data-hh-unified-dock]'))
  assert.match(ui,/data-free-order-offers/)
