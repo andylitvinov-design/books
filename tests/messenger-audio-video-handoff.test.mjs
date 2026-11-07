@@ -56,3 +56,11 @@ test("Messenger voice-to-video immediately reveals a single CTA and skips the go
  assert.match(css,/overflow-y:auto/);
  assert.match(css,/max-width:100%/);
 });
+
+test("async Messenger audio handoff does not override voice-first route with Goals",()=>{
+ const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+ assert.match(studio,/const voiceFirstEntry=window\.location\.hash==="#voice-studio"/);
+ assert.match(studio,/setActiveWorkspace\(voiceFirstEntry\?"editor":"video"\)/);
+ assert.match(studio,/setQuickDetailedOpen\(true\)/);
+ assert.match(studio,/setDirectorChatOpen\(false\);setVideoScenarioOpen\(false\)/);
+});
