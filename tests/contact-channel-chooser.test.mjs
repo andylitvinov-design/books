@@ -123,6 +123,25 @@ test("cart form is inert until real hydration, with phone and explicit consent s
   assert.match(qa, /syntheticEnquiries\[0\]\.contactConsent, true/);
 });
 
+test("WebKit cart consent fallback uses only a real checked click, never implicit consent", () => {
+  const ui = read("components/contact-channel-chooser.tsx");
+  const cart = ui.slice(ui.indexOf('data-contact-hydrated={cartContact ? String(cartFormHydrated)'));
+  assert.ok(cart.length > 0, "cart-only contact form must exist");
+  assert.match(cart, /onClick=\{cartContact \? event => \{[\s\S]*?setConsent\(event\.currentTarget\.checked\)/,
+    "only a native cart checkbox click may reconcile Safari consent");
+  assert.match(cart, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/,
+    "keep normal React change semantics");
+  assert.match(cart, /disabled=\{busy \|\| googleBusy \|\| !interactive \|\| \(cartContact && !cartFormHydrated\) \|\|[\s\S]*?!consent\}/,
+    "submission must still require explicit consent");
+  assert.doesNotMatch(cart, /onClick=\{cartContact \? event => \{\s*setConsent\(true\)/,
+    "never manufacture consent from a generic click");
+  const qa = read("scripts/verify-storefront-shop-browser.mjs");
+  assert.match(qa, /await requiredConsent\.click\(\)/,
+    "real WebKit acceptance must still exercise an actual visitor click");
+  assert.match(qa, /checkbox\.checked === true/);
+  assert.match(qa, /submit\.disabled === false/);
+});
+
 test("optional name disclosure uses one native user click, reset only on changed offer, and never changes consent", () => {
   const src = read("components/contact-channel-chooser.tsx");
   assert.match(src, /<details key=\{resetSignature\} className=\{styles\.optionalName\}>/);
