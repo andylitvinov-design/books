@@ -27,3 +27,20 @@ body.hh-cc-shell.pm-body .pm-page{max-width:560px;padding:0 15px 30px}body.hh-cc
 body.hh-cc-shell #hh-project-management-nav{display:none!important}body.hh-cc-shell .hh2-first{scroll-margin-top:20px}
 @media(min-width:561px){body.hh-cc-shell{background-color:#0b0e1c!important}}
 @media(max-width:355px){#hh-cc-topbar{padding-inline:11px}.hh-cc-page-main{padding-inline:11px}.hh-cc-hero{padding-inline:14px}.hh-cc-metrics{gap:5px}.hh-cc-metric{padding:8px 5px}.hh-cc-metric b{font-size:21px}#hh-cc-dock{padding-inline:4px}#hh-cc-dock small{font-size:9px}}
+
+/* Task intake · iPhone-friendly dictation, editable agent brief and visual keyboard viewport. */
+.hh-cc-dlg{overscroll-behavior:contain}
+.hh-cc-sheet{max-height:calc(100% - 8px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;align-content:start}
+.hh-cc-task-composer{position:relative;min-width:0}
+.hh-cc-task-composer textarea{width:100%;min-height:128px;padding:14px 64px 14px 14px;font-size:16px;line-height:1.47;box-sizing:border-box}
+.hh-cc-task-composer .hh-cc-mic{position:absolute;right:9px;top:9px;width:46px;min-height:46px;padding:0;border:1px solid #ad91d5;border-radius:13px;background:#413354;color:#fff;display:grid;place-items:center;font-size:23px;touch-action:manipulation}
+.hh-cc-task-composer .hh-cc-mic[aria-pressed="true"]{background:#a14b83;border-color:#f7afd9;box-shadow:0 0 0 3px #b968a755}
+.hh-cc-sheet .hh-cc-dictation-note,.hh-cc-sheet .hh-cc-task-note{font-size:12px;color:#d3c5e9;line-height:1.45}
+.hh-cc-sheet .hh-cc-privacy-note{font-size:11px;line-height:1.46;color:#aeb1c9}
+.hh-cc-sheet .hh-cc-analyze{background:linear-gradient(110deg,#9861db,#7553c9);font-weight:800;font-size:15px;min-height:52px}
+.hh-cc-sheet button:disabled{opacity:.68;cursor:progress}
+.hh-cc-task-result{min-width:0;display:grid;gap:8px;padding:12px;border:1px solid #a68acc79;border-radius:13px;background:#1a1d30}
+.hh-cc-task-result[hidden]{display:none}
+.hh-cc-task-result h3{font-size:14px;margin:0}
+.hh-cc-sheet .hh-cc-task-plan{font-size:14px;line-height:1.5;min-height:210px;max-height:45dvh;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:355px){.hh-cc-sheet{padding-inline:12px;gap:10px}.hh-cc-sheet .hh-cc-task-plan{min-height:160px}.hh-cc-task-composer textarea{min-height:110px}}
