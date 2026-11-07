@@ -177,10 +177,18 @@
  async function analyze(input,output,area,status,button){
   const raw=input.value.trim();
   if(raw.length<8){status.textContent='Опишите задачу хотя бы в нескольких словах.';input.focus();return}
-  const token=++analysisEpoch;area.hidden=false;area.dataset.sourceRaw=raw;const localBrief=buildTaskBrief(raw);output.value=localBrief;
+  const token=++analysisEpoch;area.hidden=false;area.dataset.sourceRaw=raw;const baseBrief=buildTaskBrief(raw);let localBrief=baseBrief;output.value=localBrief;
   status.textContent='Готовый промпт сформирован: что сделать, хороший результат, ориентиры и контекст. Проверяю доступность ИИ владельца…';
   button.disabled=true;button.textContent='Разбираю…';
   try{
+   if(global.HHCommanderSkills?.augment){
+    try{
+     const bundle=await global.HHCommanderSkills.augment(raw,baseBrief);
+     if(token!==analysisEpoch||dialog.hidden||input.value.trim()!==raw)return;
+     if(output.value===baseBrief){localBrief=bundle.text;output.value=localBrief;
+      status.textContent='Автоматически подобраны '+bundle.selected.map(s=>s.title).join(', ')+'. Проверяю доступность ИИ владельца…';}
+    }catch(e){status.textContent='Основной промпт сохранён. Каталог навыков временно недоступен: '+String(e.message||e).slice(0,80)}
+   }
    const auth=await fetch('/api/pm-agent-chat?action=status',{credentials:'same-origin',cache:'no-store'});
    if(!auth.ok){status.textContent='Локальный промпт готов. Для расширенного ИИ-разбора войдите кодом владельца PR Monitor (без Google).';return}
    const data=await auth.json();
@@ -194,7 +202,7 @@
     throw Error(String(plan.error||'нет содержательного ответа бесплатной модели').slice(0,110));
    if(token!==analysisEpoch||dialog.hidden||input.value.trim()!==raw)return;
    if(output.value!==localBrief){status.textContent='ИИ-разбор получен, но ваши правки локального промпта сохранены. Повторите разбор только при необходимости.';return}
-   output.value=plan.reply.trim();status.textContent='ИИ-разбор бесплатной моделью готов. Проверьте содержание и подтвердите задачу в защищённом редакторе.';
+   output.value=(plan.reply.trim()+localBrief.slice(baseBrief.length)).slice(0,14800);status.textContent='ИИ-разбор бесплатной моделью готов. Проверьте содержание и подтвердите задачу в защищённом редакторе.';
   }catch(e){if(token===analysisEpoch&&!dialog.hidden)status.textContent='Локальный промпт сохранён. ИИ недоступен: '+String(e.message||e).slice(0,110)}
   finally{if(token===analysisEpoch){button.disabled=false;button.textContent='✦ Разобрать задачу'}}
  }
@@ -218,7 +226,7 @@
    sheet.append(mk('p','hh-cc-privacy-note','При активной сессии владельца текст по нажатию отправляется проверенной бесплатной модели OpenRouter (:free). Без неё разбор локальный. Не вводите личные данные клиентов.'));
    const area=mk('section','hh-cc-task-result');area.hidden=true;
    area.append(mk('h3',null,'Готовый промпт для исполнителя'));
-   const output=mk('textarea','hh-cc-task-plan');output.rows=9;output.maxLength=8500;
+   const output=mk('textarea','hh-cc-task-plan');output.rows=9;output.maxLength=15000;
    output.setAttribute('aria-label','Редактируемый промпт для исполнителя');area.append(output);
    const note=mk('p','hh-cc-task-note','');note.setAttribute('role','status');note.setAttribute('aria-live','polite');area.append(note);
    sheet.append(area);
