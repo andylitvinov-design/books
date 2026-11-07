@@ -22,7 +22,7 @@ import type {TimedSpeechTranscript,AudioVisualPlan} from "@/lib/mandala/audio-vi
 import { MandalaVideoDelivery } from "./mandala-video-delivery";
 import { MandalaVideoReady } from "./mandala-video-ready";
 import {appFetch} from "@/lib/app/client-fetch";
-import {paintVideoBrandStamp,resolveVideoExportVariant} from "@/lib/mandala/video-branding.mjs";
+import {paintVideoBrandStamp,resolveVideoExportVariant,canOfferOriginalVideoSource} from "@/lib/mandala/video-branding.mjs";
 import type {VideoExportVariant,VideoExportCapability} from "@/lib/mandala/video-branding.mjs";
 import { MandalaVideoEffectJourney } from "./mandala-video-effect-journey";
 import { paintFreeVideoFrame } from "@/lib/mandala/free-video-renderer";
@@ -2387,7 +2387,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const originalFallbackCandidate=creationMode==="generated"?null:cinematicPlan?.shots[0]
     ? firstPartyFilmFor(cinematicPlan.shots[0].theme,cinematicPlan.shots[0].sceneId)?.src
     : activeFilm?.src;
-  const originalFallbackMp4=originalFallbackCandidate &&
+  const originalFallbackMp4=canOfferOriginalVideoSource(professionalMode) && originalFallbackCandidate &&
     /^\/videos\/holistic-house\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\.mp4$/.test(originalFallbackCandidate)
     ? originalFallbackCandidate : null;
   const freeFilmPoster=usingFreeFilmCompilation&&freeFilmShots[0]
@@ -3392,6 +3392,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           return;
         }
         if(sourceRef.current!==snapshotKey||!aliveRef.current)return;
+        if(!canOfferOriginalVideoSource(professionalMode)){
+          // An untouched source MP4 is not the user's generated branded film.
+          // Keep the existing project so the professional can retry on a
+          // supported browser without publishing an unmarked fallback.
+          setNotice(locale==="ru"
+            ?"В режиме мастера исходная сцена не заменяет брендированный ролик. Повторите экспорт в Safari или Chrome."
+            :locale==="es"
+            ?"En el modo profesional no se descarga la escena original sin marca. Reintenta en Safari o Chrome."
+            :"Professional videos cannot use unbranded original footage as the export. Retry in Safari or Chrome.");
+          setExportUnavailable(true);
+          return;
+        }
         // No programmatic network access in the private local video editor.
         // A same-origin approved static MP4 is served by the ordinary anchor
         // and native video player; no JS upload/fetch, paid call or hidden mix.
@@ -6513,6 +6525,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             :"Retry in lighter mode · 540p / 8 fps (all scenes and audio retained)"}
         </button>
       ):null}
+      {professionalMode ? <p className={videoStyles.quickHint}
+        data-video-professional-branding-note role="note">
+        {locale==="ru"
+          ?"FREE: на готовом видео мастера будет знак Holistic House. Без знака — только при подтверждённом доступе к чистому экспорту."
+          :locale==="es"
+          ?"FREE: el vídeo profesional tendrá la marca Holistic House. Sin marca solo con acceso verificado."
+          :"FREE professional exports include the Holistic House mark. Clean exports require verified access."}
+      </p> : null}
       {professionalMode ? <MandalaProfessionalPromo
         locale={locale} presets={aspectFilmPresets} scenes={FREE_FILM_CATALOG}
         publicOffer={professionalSource?.publicOffer ?? null}
@@ -6691,6 +6711,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                locale==="es"?"¿Te gustó? Evalúa los 7 cambios":"Did you like it? Compare seven ratings"}
             </a>:null}
             {playbackStatus==="ready"&&(result.mode==="catalog"||creditConfirmed)&&
+              (result.mode!=="catalog"||canOfferOriginalVideoSource(professionalMode))&&
               (!creditCatalog?.chargeRequired||creditSession==="signed_in"||result.mode==="catalog") ? <>
             <div className={videoStyles.resultActions}>
               <a className={videoStyles.download} href={result.url}
