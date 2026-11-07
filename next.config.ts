@@ -19,8 +19,15 @@ const practitionerRecordingSources = [
   "/admin/clients/:id/sessions/:path*",
 ];
 
-// Only the LIVE host can ask the user for microphone permission.
-const liveAudioHostSources = ["/en/live/host", "/ru/live/host", "/es/live/host"];
+// Only approved pages with an explicit Record button may ask for microphone.
+// The public Messenger needs the same narrowly scoped permission as Studio;
+// microphone remains denied across the rest of the site.
+const liveAudioHostSources = [
+  "/en/live/host", "/ru/live/host", "/es/live/host",
+  "/en/holistic-support/mandala", "/ru/holistic-support/mandala",
+  "/es/holistic-support/mandala",
+  "/en/app/messages", "/ru/app/messages", "/es/app/messages",
+];
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -148,11 +155,7 @@ const nextConfig: NextConfig = {
     // Owner-private Dot /audio → /video uses its existing signed webhook.
     // The same pinned FFmpeg binary must be available in this function too.
     "/api/app/notification-channels/telegram/webhook": ["./node_modules/ffmpeg-static/ffmpeg"],
-    // Opt-in three-lane AI recovery worker can render one licensed MP4.
     "/api/internal/telegram-ai-work": ["./node_modules/ffmpeg-static/ffmpeg"],
-    // The existing five-minute direct-message-push recovery cron also runs
-    // one approved AI MP4 render. Trace the same pinned binary here too.
-    "/api/internal/direct-message-push": ["./node_modules/ffmpeg-static/ffmpeg"],
     "/api/holistic-support/talismans": [
       "./node_modules/@img/sharp-linux-x64/**/*",
       "./node_modules/@img/sharp-libvips-linux-x64/**/*",
@@ -187,6 +190,12 @@ const nextConfig: NextConfig = {
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
       "./source-books/book-3-maya-tradition/outputs/*.html",
+      // Restore only the 8 small, published tradition HTML manuals to reader
+      // functions. Exclude raw archives and photographs to protect function size.
+      "./source-books/book-4-egyptian-tradition/*.html",
+      "./source-books/book-5-greek-mysteries/*.html",
+      "./source-books/book-6-roman-tradition/*.html",
+      "./source-books/book-7-zoroastrian-mithra/*.html",
     ]] as const).reduce<Record<string, string[]>>((all, [route, files]) => {
       all[route] = [...files]; return all;
     }, {}),

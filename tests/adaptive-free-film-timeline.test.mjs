@@ -1,9 +1,10 @@
+import {autoFillApprovedFilm} from "../lib/mandala/auto-fill-approved-film.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
   FREE_FILM_DURATIONS,FREE_FILM_STAGE_WEIGHTS,FREE_FILM_MIN_STAGE_SECONDS,
-  allocateFreeFilmTimeline,allocateAdaptiveFilmTimeline,
+  allocateFreeFilmTimeline,allocateAdaptiveFilmTimeline,allocateSourceBoundedFilmTimeline,
   shiftAdaptiveFilmBoundary,retimeAdaptiveFilmPlan,
 } from "../lib/mandala/free-film-timeline.mjs";
 
@@ -75,8 +76,8 @@ test("real studio consumes edited storyboard and invalidates stale exported vide
   assert.match(ui,/shiftAdaptiveFilmBoundary/);
   assert.match(ui,/durationSecondsByStage:stageDurations/);
   assert.match(studio,/compileFreeFilmPreset\(preset,locale,seconds,outputAspect,edit\)/);
-  assert.match(studio,/allocateAdaptiveFilmTimeline\(/);
-  assert.match(studio,/allocateAdaptiveFilmTimeline\(seconds,ids\)/);
+  assert.match(studio,/allocateSourceBoundedFilmTimeline\(/);
+  assert.match(studio,/allocateSourceBoundedFilmTimeline\(seconds,ids,/);
   assert.match(studio,/allocateVariableFilmTimeline\(seconds,ids\)/);
   assert.match(studio,/verified\.durationSeconds>=timeline\[index\]\.durationSeconds/);
   assert.match(studio,/shot\.sceneId,shot\.startSeconds,shot\.durationSeconds/);
@@ -111,7 +112,7 @@ test("all format controls call the same plan-preserving reframe handler",()=>{
   assert.match(studio,/verifiedSceneAspect\(verified,nextAspect\)/);
   assert.match(studio,/reframeCinematicPlan\(plan,nextAspect\)/);
   for(const [selector,handler] of [
-    ["data-video-aspect={format}","changeVideoAspect(format)"],
+    ["data-video-montage-preference=\"format\"","changeVideoAspect(event.currentTarget.value as Aspect)"],
     ["data-video-quick-aspect={value}","changeVideoAspect(value)"],
     ["data-video-advanced-aspect","changeVideoAspect(event.currentTarget.value as Aspect)"],
   ]){
@@ -129,7 +130,7 @@ test("approved real catalogue replacement excludes wrong origins and unknown URL
     await import("../lib/mandala/video-montage-sources.mjs");
   const realCatalogue=JSON.parse(readFileSync(
     new URL("../data/video-catalog/scene-taxonomy.json",import.meta.url),"utf8")).scenes;
-  assert.equal(realCatalogue.length,48,"only physical licensed MP4 assets, including four screened portrait edits");
+  assert.equal(realCatalogue.length,56,"48 existing physical MP4 scenes plus eight verified sunlight variants");
   assert.ok(realCatalogue.every(isApprovedMontageScene),
     "all published first-party / approved CC-BY masters have stable URLs and provenance");
   const firstFour=realCatalogue.slice(0,4);
@@ -181,4 +182,92 @@ test("optional replacement picker reaches the original recorder with safe valida
   assert.match(studio,/throw Error\("invalid_free_film_replacement"\)/);
   assert.match(studio,/firstPartyFilmFor\(shotTheme,sceneId\)/);
   assert.match(studio,/providerPrompt:""/);
+});
+
+/** Auto Video Director's no-loop source expansion: exercised by existing Mandala CI. */
+const makeAutoSource=(id,change={})=>({id,theme:"money",durationSeconds:5,
+  certified:true,masterKey:"hash:"+id,origins:[],group:null,media:"licensed_mp4",
+  tags:["money","gold"],motifs:["sun","gold"],sourceId:"money-mindset",...change});
+const AUTO_FILM_SEEDS=Array.from({length:4},(_,i)=>makeAutoSource("seed-"+i));
+const AUTO_FILM_EXTRAS=Array.from({length:12},(_,i)=>makeAutoSource("extra-"+i,
+  {media:"original_motion_mp4"}));
+const fillPreset=(durationSeconds,options={})=>autoFillApprovedFilm({
+  initialIds:AUTO_FILM_SEEDS.map(s=>s.id),
+  scenes:[...AUTO_FILM_SEEDS,...AUTO_FILM_EXTRAS],
+  theme:"money",durationSeconds,...options
+});
+test("Free 20s can use four equal 5s originals instead of illegally looping unequal 4-shot weights",()=>{
+  const r=fillPreset(20,{legacyStageSeconds:[3,5,7,5]});
+  assert.equal(r.ok,true);assert.equal(r.addedCount,0);
+  assert.equal(r.usedVariableTiming,true);
+});
+test("Free 30s uses six certified masters and preserves four scene-act anchors",()=>{
+  const r=fillPreset(30,{legacyStageSeconds:[5,7,10,8]});
+  assert.equal(r.ok,true);assert.equal(r.clipIds.length,6);
+  assert.deepEqual([r.clipIds[0],r.clipIds[2],r.clipIds[4],r.clipIds[5]],
+    AUTO_FILM_SEEDS.map(s=>s.id));
+});
+test("Free 60s uses twelve distinct five-second masters in the four approved acts",()=>{
+  const r=fillPreset(60,{legacyStageSeconds:[10,14,20,16]});
+  assert.equal(r.ok,true);assert.equal(r.clipIds.length,12);
+  assert.deepEqual([0,3,6,9].map(i=>r.clipIds[i]),AUTO_FILM_SEEDS.map(s=>s.id));
+  assert.equal(new Set(r.clipIds).size,12);
+});
+test("Free Auto Director does not invent rights, groups, media or subject match",()=>{
+  assert.equal(fillPreset(60,{scenes:[...AUTO_FILM_SEEDS,
+    ...AUTO_FILM_EXTRAS.map(s=>({...s,certified:false}))]}).ok,false);
+  assert.equal(fillPreset(60,{scenes:[...AUTO_FILM_SEEDS,
+    ...AUTO_FILM_EXTRAS.map(s=>({...s,masterKey:AUTO_FILM_SEEDS[0].masterKey}))]}).ok,false);
+  assert.equal(fillPreset(60,{scenes:[...AUTO_FILM_SEEDS,
+    ...AUTO_FILM_EXTRAS.map(s=>({...s,theme:"relationships"}))]}).ok,false);
+});
+test("Studio presents an explicit 9:16 choice instead of lying about 16:9 footage",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(studio,/autoFillApprovedFilm\(/);
+  assert.match(studio,/data-video-portrait-retry/);
+  assert.match(studio,/!edit&&clipIds\.length===4/);
+  assert.match(studio,/!scene\|\|!isSafeMontageScene\(source\)\|\|!verifiedSceneAspect\(scene,aspect\)/);
+});
+
+test("20s original motion uses four real 5s masters without stretching a 7s adaptive peak",()=>{
+  const originals=["motion-goals-money-goal-achievement-v1",
+    "motion-goals-money-goal-achievement-v2",
+    "motion-goals-money-goal-achievement-v3",
+    "motion-goals-money-goal-achievement-v4"];
+  assert.deepEqual(allocateAdaptiveFilmTimeline(20,originals)
+    .map(s=>s.durationSeconds),[3,5,7,5],
+    "the prior adaptive third cut exceeds a physical 5s source");
+  const safe=allocateSourceBoundedFilmTimeline(20,originals,[5,5,5,5]);
+  assert.deepEqual(safe.map(s=>s.durationSeconds),[5,5,5,5]);
+  assert.deepEqual(safe.map(s=>s.sceneId),originals,
+    "no duplicate, fabricated or substituted master clips");
+  assert.deepEqual(safe.map(s=>s.startSeconds),[0,5,10,15]);
+  assert.ok(safe.every((shot,i)=>shot.durationSeconds<=5));
+  assert.ok(Object.isFrozen(safe),"the source-backed timeline remains immutable");
+  assert.deepEqual(allocateSourceBoundedFilmTimeline(20,originals,[5,5,7,5])
+    .map(s=>s.durationSeconds),[3,5,7,5],
+    "adaptive cinematic timing stays unchanged when masters support it");
+  assert.deepEqual(allocateSourceBoundedFilmTimeline(20,originals,[5,5,5,5],[5,5,5,5])
+    .map(s=>s.durationSeconds),[5,5,5,5],
+    "a visitor-approved manual 5-second schedule is retained");
+  for(const [seconds,sources,manual] of [
+    [30,[5,5,5,5],null], [20,[5,5,5,5],[3,5,7,5]],
+    [20,[5,5,0,5],null], [20,[5,5,NaN,5],null],
+  ])assert.throws(()=>allocateSourceBoundedFilmTimeline(seconds,originals,sources,manual),
+    /UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE/);
+});
+test("original-motion studio selection and retiming both honor actual source duration",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  assert.match(studio,/const verified=clipIds\.map\(id=>verifiedCategorySource/);
+  assert.match(studio,/allocateSourceBoundedFilmTimeline\(durationSeconds,\[\.\.\.clipIds\]/);
+  assert.match(studio,/verified\.map\(scene=>scene\?\.durationSeconds\?\?NaN\)/);
+  assert.match(studio,/allocateSourceBoundedFilmTimeline\(seconds,ids,/);
+  assert.match(studio,/verifiedSources\.map\(scene=>scene\?\.durationSeconds\?\?NaN\)/);
+  // The source guard now normalizes Error.message before offering a verified
+  // portrait fallback; never allow a failed physical source to be rendered.
+  assert.match(studio,/reason==="UNVERIFIED_FOOTAGE_ASPECT_DURATION_OR_REUSE"/);
+  assert.match(studio,/formatUnavailable=outputAspect!=="portrait"&&/);
+  assert.match(studio,/setPortraitRetry\(\{presetId,seconds,edit\}\)/);
+  assert.match(studio,/validateMontageClips\(\[\.\.\.clipIds\],FREE_FILM_CATALOG/);
+  assert.match(studio,/verifiedSceneAspect\(scene,aspect\)/);
 });

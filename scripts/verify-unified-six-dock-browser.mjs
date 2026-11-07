@@ -343,6 +343,59 @@ try{
      && root.querySelectorAll('[role="log"] p').length>=count+2;
  },before,{timeout:10000});
  assert.equal(await starters.count(),0,"introduction gives way to the live transcript");
+ // The current Create Content entry deliberately asks format -> source -> short
+ // personal idea BEFORE the canonical video goal tree. Earlier browser QA
+ // expected the retired one-tap goal branch and timed out without testing it.
+ const contentKinds=chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind]');
+ await contentKinds.first().waitFor({state:"visible",timeout:15000});
+ assert.deepEqual(await contentKinds.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-content-kind"))),
+   ["video","audio","meditation","message"],
+   "Create Content exposes four real formats before video planning");
+ assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
+   "no Google login at content-format choice");
+ await chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind="video"]').click();
+ const contentSources=chat.locator('[data-hh-content-step="source"] [data-hh-content-source]');
+ await contentSources.first().waitFor({state:"visible",timeout:15000});
+ assert.deepEqual(await contentSources.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-content-source"))),
+   ["text","voice"],"video supports the two approved input methods");
+ await chat.locator('[data-hh-content-step="source"] [data-hh-content-source="text"]').click();
+ await chat.locator('[data-hh-content-step="brief"]').waitFor({state:"attached",timeout:15000});
+ await chat.locator("textarea").fill("Хочу больше спокойствия и уверенности");
+ await chat.locator('button[type="submit"]').click();
+ await chat.locator('[data-hh-video-chat-step="category"]').waitFor({state:"visible",timeout:15000});
+ // Personal-video creation has the exact MyTube four-goal hierarchy, no
+ // unrelated ready-made-video CTA and no Google wall before the brief.
+ const videoGoals=chat.locator("[data-hh-video-chat-options] [data-hh-video-chat-choice]");
+ await videoGoals.first().waitFor({state:"visible"});
+ assert.deepEqual(await videoGoals.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-video-chat-choice"))),
+   ["goals-money","love-relationships","energy-confidence","stress-anxiety"]);
+ assert.equal(await chat.locator("[data-hh-guest-ready-videos]").count(),0,
+   "personal video branch must not offer ready-made videos");
+ assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
+   "guest prepares the personal video without premature Google login");
+ const personal=chat.locator("[data-hh-personal-video-request]");
+ assert.equal(await personal.isDisabled(),true,"pick a video goal before continuing");
+ await videoGoals.nth(1).click();
+ assert.equal(await personal.isEnabled(),true,"selected video goal enables personal brief");
+ await personal.click();
+ await chat.locator('[data-hh-video-chat-step="subcategory"]').waitFor({state:"visible"});
+ const subcategoryChoices=chat.locator('[data-hh-video-chat-step="subcategory"] [data-hh-video-chat-choice]');
+ assert.equal(await subcategoryChoices.count(),4,"chosen category owns four exclusive subcategories");
+ await subcategoryChoices.first().click();
+ await chat.locator('[data-hh-video-chat-step="mytube-topic"]').waitFor({state:"visible"});
+ const canonicalTopics=chat.locator('[data-hh-video-chat-step="mytube-topic"] [data-hh-video-chat-choice]');
+ assert.equal(await canonicalTopics.count(),4,"chosen subcategory owns four exact canonical topics");
+ await canonicalTopics.first().click();
+ await chat.locator('[data-hh-video-chat-step="topic"]').waitFor({state:"visible"});
+ await page.waitForFunction(()=>{
+   const el=document.querySelector('[data-hh-agent-preview] [role="log"]');
+   return !!el&&el.scrollHeight-el.scrollTop-el.clientHeight<12;
+ },null,{timeout:10000});
+ assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
+   "no login before the creative questionnaire");
  const agentComposer=chat.locator("textarea");
  await agentComposer.waitFor({state:"visible"});
  assert.equal((await agentComposer.inputValue()).trim(),"",

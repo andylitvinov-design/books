@@ -135,3 +135,61 @@ test("Safari repair branches must reach real macOS WebKit video/audio acceptance
   assert.match(job,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
   assert.match(job,/node scripts\/verify-affirmation-voice-browser\.mjs/);
 });
+
+// iPhone regression: the previous alternate-WebM button regenerated MP4
+// because the Safari WebCodecs branch ignored createVideo(true).
+test("explicit Safari WebM retry uses a different recorder, preserves sound",async()=>{
+  const {selectWebCodecsForRecording,orderRecordingMimes}=await import("../lib/mandala/recording-codecs.mjs");
+  assert.equal(selectWebCodecsForRecording({hasWebCodecs:true,safariWebKit:true}),true);
+  assert.equal(selectWebCodecsForRecording({hasWebCodecs:true,safariWebKit:true,preferWebm:true}),false);
+  assert.equal(selectWebCodecsForRecording({hasWebCodecs:true,safariWebKit:true,
+    procedural:true,proceduralRoute:"webcodecs",preferWebm:true}),false);
+  assert.equal(selectWebCodecsForRecording({hasWebCodecs:true,procedural:true,
+    proceduralRoute:"webcodecs"}),true);
+  assert.equal(selectWebCodecsForRecording({hasWebCodecs:false,safariWebKit:true}),false);
+  const formats=orderRecordingMimes({mp4:["video/mp4"],
+    webm:['video/webm;codecs="vp8,opus"',"video/webm"],preferWebm:true,
+    userAgent:"Mozilla/5.0 (iPhone) AppleWebKit/605.1.15"});
+  assert.deepEqual(formats,['video/webm;codecs="vp8,opus"',"video/webm"]);
+  assert.ok(studio.includes("const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording({"));
+  assert.ok(studio.includes("hasWebCodecs,safariWebKit,procedural,proceduralRoute,preferWebm"));
+  assert.ok(studio.includes('const mimeTypes = preferWebm\n        ? recordingMimes(Boolean(musicSession),true).filter(mime=>mime.startsWith("video/webm"))'));
+  assert.ok(studio.includes("if (musicSession) stream.addTrack(musicSession.track);"));
+  assert.ok(studio.includes("onClick={()=>void createVideo(true)}"));
+  assert.ok(studio.includes('const extension=isWebm?"webm":"mp4"'));
+  assert.ok(studio.includes('if(!isMp4&&!isWebm){'));
+  assert.ok(studio.includes('playbackStatus==="ready"&&result.mode!=="catalog"'));
+});
+
+test("native MP4 retry does not silently rerun Safari WebCodecs after failed WebM",()=>{
+  assert.match(studio,/const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording\(\{/);
+  assert.match(studio,/result\.extension==="webm"[\s\S]*?createVideo\(false,true\)/);
+  assert.match(studio,/recordingMimes\(Boolean\(musicSession\), preferWebm, forceMp4ForRetry\)/);
+  assert.match(studio,/const mimeTypes = preferWebm[\s\S]*?recordingMimes\(Boolean\(musicSession\),true\)\.filter/);
+});
+
+
+test("Safari deferred MP4 decoding requires a real user Play gesture, not a false timeout failure",()=>{
+  const start=studio.indexOf('if (!result || playbackStatus !== "checking") return;');
+  const end=studio.indexOf('},[result,playbackStatus,locale]);',start);
+  assert.ok(start>0&&end>start,"the bounded deferred-decoding check is retained");
+  const timer=studio.slice(start,end);
+  assert.match(timer,/setNotice\(/,"20s only provides useful visitor guidance");
+  assert.doesNotMatch(timer,/setPlaybackStatus\("failed"\)/,
+    "a timer cannot pronounce a valid deferred iPhone video corrupt");
+  assert.match(studio,/data-video-verify-playback/);
+  assert.match(studio,/player\.play\(\)\.then\(\(\)=>confirmVideoPlayback\(player\)\)/);
+  assert.match(studio,/video\.videoWidth>0 && video\.videoHeight>0/);
+  assert.match(studio,/onError=\{event=>\{[\s\S]*?setPlaybackStatus\("failed"\)/,
+    "genuine native media decoding errors must still be rejected");
+  assert.match(studio,/playbackStatus==="ready"&&\(result\.mode==="catalog"\|\|creditConfirmed\)/,
+    "a finished download remains gated by real playback and confirmed video credits");
+  const e2e=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  assert.match(e2e,/await verifyPlayback\.click\(\{timeout:2000\}\)/,
+    "WebKit acceptance performs a bounded real Play click, never a mock frame");
+  assert.match(e2e,/if\(await output\.isVisible\(\)\)return true;/,
+    "a playback-ready unmount must require the visible real download control");
+  assert.match(e2e,/if\(await verifyPlayback\.isVisible\(\)\)throw error;/,
+    "a persistent non-clickable Play button remains a test failure");
+  assert.match(e2e,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+});

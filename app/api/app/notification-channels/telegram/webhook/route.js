@@ -104,8 +104,8 @@ export async function POST(request){
         return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
       }
     }
-    // Subscriber /tests /voice /ai callbacks, unconsented /start and direct
-    // practitioner replies remain the pre-existing canonical paths.
+    // Client AI is independent of owner/CRM and never steals an unconsented
+    // verification /start, global /stop or ordinary practitioner Reply.
     const subscriber=await receiveSubscriberAiTelegramUpdate(config,update)
     if(subscriber.queued||subscriber.callbackId)after(async()=>{
       try{
@@ -113,17 +113,17 @@ export async function POST(request){
         await drainSubscriberAiOutbox(config)
       }catch{console.error('HH_SUBSCRIBER_AI_DELIVERY_FAILED')}
     })
-    // Global /stop always revokes BOTH client account/subscriber and video
-    // queue consent, regardless of whether the subscriber handler consumed it.
+    // Global /stop must revoke both the optional video queue and existing
+    // client/subscriber chat; never consume it exclusively.
     if(videoIngress?.stop&&receiveVideoAi)await receiveVideoAi(config,videoIngress)
     if(!subscriber.handled){
       const customer=await receiveClientTelegramWebhook(config,update)
-      if(customer.relayMessageId){
-        const id=customer.relayMessageId
-        after(async()=>{await Promise.allSettled([
-          dispatchPractitionerMessagePush(config,id),
-          dispatchClientTelegramNotification(config,id),
-        ])})
+    if(customer.relayMessageId){
+      const id=customer.relayMessageId
+      after(async()=>{await Promise.allSettled([
+        dispatchPractitionerMessagePush(config,id),
+        dispatchClientTelegramNotification(config,id),
+      ])})
       }
     }
   }

@@ -53,6 +53,17 @@ export async function GET(request) {
               await reconcileOwnerYoutubePublications(config)
             }catch{console.error('HH_OWNER_PUBLICATIONS_RECONCILE_FAILED')}
           }
+          // Existing daily CRON_SECRET maintenance doubles as a no-cost
+          // retention and pending-reply safety net (not near-real-time recovery).
+          if(process.env.HH_SUBSCRIBER_AI_SCHEMA_READY==='true'){
+            try{
+              const {pruneSubscriberAiState,drainSubscriberAiOutbox}=await import(
+                '@/lib/app/subscriber-ai-telegram')
+              await pruneSubscriberAiState(config)
+              if(process.env.HH_SUBSCRIBER_AI_ENABLED==='true')
+                await drainSubscriberAiOutbox(config,process.env,{limit:3})
+            }catch{console.error('HH_SUBSCRIBER_AI_HOUSEKEEPING_FAILED')}
+          }
           // Existing authorized daily housekeeping also recovers queued text /
           // delivery when an after() execution ended unexpectedly. No new cron.
           if(process.env.HH_AI_TELEGRAM_QUEUE_ENABLED==='true'){
@@ -65,6 +76,14 @@ export async function GET(request) {
               await pruneTelegramAiTemporaryVideos(config)
             }catch{console.error('HH_AI_QUEUE_HOUSEKEEPING_FAILED')}
           }
+          // Always prune private AI render orphans, even after a feature
+          // rollback/STOP. This is the EXISTING CRON_SECRET daily task,
+          // not a new scheduled invocation or an unbounded bucket scan.
+          try{
+            const {pruneTelegramAiOrphanUploads}=
+              await import('@/lib/app/telegram-ai-worker')
+            await pruneTelegramAiOrphanUploads(config)
+          }catch{console.error('HH_AI_VIDEO_PRIVATE_ORPHAN_CLEANUP_FAILED')}
           return result
         } catch (error) {
           await recordAppHousekeepingFailure(config).catch(() => {})

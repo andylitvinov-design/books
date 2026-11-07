@@ -1,0 +1,76 @@
+.panel{display:grid;gap:7px;min-width:0;margin:0;padding:10px;
+  background:#fffaf3;border:1px solid #e9dfd1;border-radius:19px;color:#173d33}
+.heading{display:flex;align-items:center;gap:7px;margin:0;
+  font:800 clamp(17px,4.6vw,22px)/1.17 Arial,Helvetica,sans-serif;color:#18363c}
+.heading svg{color:#c58a15;flex:none}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;min-width:0}
+.card{display:grid;gap:4px;min-width:0;padding:4px;
+  border:1px solid #e8ded2;border-radius:13px;background:#fffcf7;color:#163c37;
+  text-align:center;cursor:pointer;box-shadow:0 2px 5px #513b1d0b}
+.card[aria-pressed="true"]{border:2px solid #087b64;padding:3px;background:#effaf4;
+  box-shadow:0 0 0 1px #087b641c}
+.card:focus-visible,.actions button:focus-visible,.advanced summary:focus-visible{
+  outline:3px solid #176e6e;outline-offset:2px}
+.card:disabled,.actions button:disabled{opacity:.55;cursor:not-allowed}
+.poster{position:relative;display:block;min-width:0;overflow:hidden;
+  height:clamp(48px,8.1dvh,75px);border-radius:9px;background:#f5ecdc}
+.poster img{display:block;width:100%;height:100%;object-fit:cover}
+.tick{position:absolute;top:3px;right:3px;display:grid;place-items:center;
+  width:22px;height:22px;border-radius:50%;background:#07866b;color:white;
+  box-shadow:0 1px 6px #07382c55}
+.cardTitle{display:flex;align-items:center;justify-content:center;gap:3px;min-height:28px;
+  font:750 clamp(10.5px,2.85vw,13px)/1.12 Arial,Helvetica,sans-serif}
+.cardTitle svg{flex:none;width:16px;height:16px;color:#08735a}
+.cardTitle span{min-width:0;overflow-wrap:anywhere}
+.selection{display:flex;align-items:center;gap:8px;min-width:0;
+  border:1px solid #cbded1;border-radius:13px;background:#fffefa;padding:6px}
+.selectionImage{flex:none;display:block;overflow:hidden;width:48px;height:42px;
+  border-radius:9px;background:#eaf7ed}
+.selectionImage img{display:block;width:100%;height:100%;object-fit:cover}
+.selectionText{display:grid;gap:2px;min-width:0}
+.selectionText strong{font:750 clamp(11px,3.05vw,14px)/1.17 Arial,Helvetica,sans-serif;
+  color:#163744;overflow-wrap:anywhere}
+.selectionText small{font:500 clamp(10px,2.6vw,12px)/1.15 Arial,Helvetica,sans-serif;
+  color:#5a6766}
+.advanced{min-width:0;border-bottom:1px solid #eee3d6}
+.advanced summary{display:flex;align-items:center;gap:6px;min-height:30px;
+  padding:3px 4px;cursor:pointer;color:#356657;font:700 12px/1.2 Arial,Helvetica,sans-serif}
+.advanced summary svg:last-child{margin-left:auto}
+.advanced[open] summary svg:last-child{transform:rotate(180deg)}
+.legacy{display:grid;gap:8px;padding:8px 0}
+.estimate{margin:0;color:#65736a;font:600 10px/1.25 Arial,Helvetica,sans-serif}
+.pending{margin:0;padding:8px;border:1px solid #e9cfaa;border-radius:9px;
+  background:#fff6e5;color:#68491c;font:650 12px/1.35 Arial,Helvetica,sans-serif}
+.actions{display:grid;gap:7px}
+.actions button{display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;min-height:47px;padding:9px 11px;border-radius:13px;
+  text-align:center;cursor:pointer;font:800 clamp(12px,3.4vw,15px)/1.14 Arial,Helvetica,sans-serif}
+.actions button svg{flex:none}
+.primary{border:1px solid #087b64;background:linear-gradient(110deg,#12a780,#087460);
+  color:#fff;box-shadow:0 3px 9px #166c5629}
+.secondary{border:1px solid #cfcac1;background:#fffcf7;color:#193c42}
+@media(max-width:355px){
+  .panel{gap:5px;padding:7px}
+  .grid{gap:4px}
+  .card{padding:3px;border-radius:10px}
+  .card[aria-pressed="true"]{padding:2px}
+  .poster{height:45px}
+  .cardTitle{gap:2px;min-height:30px;font-size:10px}
+  .cardTitle svg{width:14px;height:14px}
+  .selectionImage{width:42px;height:39px}
+  .actions button{min-height:44px;padding:8px 6px}
+}
+@media(max-width:759px) and (max-height:740px){
+  .poster{height:44px}
+  .panel{gap:5px;padding:7px}
+  .selectionImage{height:35px}
+  .actions button{min-height:44px}
+}
+@media(min-width:760px){
+  .panel{max-width:950px;margin-inline:auto;gap:12px;padding:18px}
+  .grid{gap:12px}
+  .poster{height:clamp(100px,12vw,140px)}
+  .cardTitle{font-size:15px;min-height:36px}
+  .selectionImage{width:70px;height:52px}
+  .actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

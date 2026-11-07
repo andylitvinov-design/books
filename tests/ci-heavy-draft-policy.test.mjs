@@ -359,8 +359,17 @@ test('Ideas & Coaching PR validates source contracts while manual acceptance own
   const tsGate='        if: '+dollar+"{{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}";
   assert.ok(source.includes('      - name: TypeScript noEmit\n'+tsGate+'\n        run: npx --no-install tsc --noEmit'),
     'Manual/other branch typecheck stays, production PR relies on core');
+  // The focused job runs discovery in an existing multi-file node --test
+  // command. Require real execution, not an obsolete single-file invocation.
+  assert.ok(source.split('\n').some(line=>line.includes('node --test ') &&
+    line.includes('tests/public-coaching-discovery.test.mjs')),
+    'public discovery must remain a real executed specialist source test');
+  // Core runs the same contract in the mandatory package prebuild; retain
+  // both real gates while rejecting the stale literal command formatting.
+  const prebuild=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')).scripts.prebuild;
+  assert.ok(prebuild.includes('node --test tests/public-coaching-discovery.test.mjs'),
+    'mandatory Core Next build must still execute public coaching discovery');
   for(const preserved of [
-    'node --test tests/public-coaching-discovery.test.mjs',
     '- name: Next.js production build (manual full acceptance only)\n        if: github.event_name != \'pull_request\'\n        run: npm run build',
     'playwright install --with-deps chromium webkit',
     'node scripts/verify-coaching-lounge-mobile.mjs',
@@ -537,7 +546,7 @@ test('Draft staging keeps full IA security, SEO source-build and production moni
 
 // Existing Guard job exercises the new preflight's fail-closed decision table.
 // The preflight adds no standalone CI workflow, job, or required check.
-import { assessPrReadiness } from '../scripts/ci-pr-readiness.mjs';
+import { assessPrReadiness, readExactBaseAncestry } from '../scripts/ci-pr-readiness.mjs';
 
 const earlyRepo = 'andylitvinov-design/books';
 const earlyEvent = {
@@ -561,6 +570,53 @@ test('early readiness accepts current mergeable HEAD without deadlocking pending
   // A newer production base alone does not require rerunning all old CI suites.
   const advanced = { ...earlyLive, base: { ...earlyLive.base, sha: 'c'.repeat(40) }, mergeable_state: 'behind' };
   assert.equal(assessPrReadiness(earlyEvent, advanced, earlyRepo).ready, true);
+});
+
+test('real REST Compare requires a full ordered SHA lineage without head_commit',async()=>{
+  const base='b'.repeat(40),head='c'.repeat(40),parent='d'.repeat(40);
+  const valid={status:'ahead',behind_by:0,ahead_by:2,total_commits:2,
+    base_commit:{sha:base},merge_base_commit:{sha:base},
+    commits:[{sha:parent},{sha:head}]};
+  const mocked=data=>async(url,options)=>{
+    assert.ok(url.includes('/compare/'));
+    assert.ok(url.includes('per_page=100'));
+    assert.equal(options.headers.authorization,'Bearer test-token');
+    return {ok:true,json:async()=>data};
+  };
+  const live={base:{sha:base},head:{sha:head}};
+  const accepted=await readExactBaseAncestry(earlyRepo,live,'test-token',mocked(valid));
+  assert.deepEqual(accepted,{status:'ahead',base_sha:base,head_sha:head,merge_base_sha:base});
+  for(const wrong of [
+    {...valid,status:'diverged'},
+    {...valid,behind_by:1},
+    {...valid,ahead_by:3},
+    {...valid,total_commits:3},
+    {...valid,commits:[{sha:head}]},
+    {...valid,commits:[{sha:parent},{sha:parent}]},
+    {...valid,base_commit:{sha:'e'.repeat(40)}},
+    {...valid,merge_base_commit:{sha:'e'.repeat(40)}},
+    {...valid,commits:[],head_commit:{sha:head}},
+  ])assert.equal(await readExactBaseAncestry(earlyRepo,live,'test-token',mocked(wrong)),null);
+  assert.equal(await readExactBaseAncestry(earlyRepo,live,'test-token',
+    async()=>({ok:false})),null);
+  assert.equal(await readExactBaseAncestry(earlyRepo,{base:{sha:base},head:{sha:base}},
+    'test-token',async()=>{throw Error('MUST_NOT_FETCH_IDENTICAL_BASE');}),null);
+});
+
+test('BASE_ADVANCED is a separate ancestry-proven advisory, never a security bypass',()=>{
+  const moved={...earlyLive,base:{...earlyLive.base,sha:'c'.repeat(40)}};
+  const proof={status:'ahead',base_sha:earlyEvent.pull_request.base.sha,
+    head_sha:moved.base.sha,merge_base_sha:earlyEvent.pull_request.base.sha};
+  assert.equal(assessPrReadiness(earlyEvent,moved,earlyRepo).diagnostic_signal,'BASE_CHANGED_UNVERIFIED');
+  assert.equal(assessPrReadiness(earlyEvent,moved,earlyRepo,null,proof).diagnostic_signal,'BASE_ADVANCED');
+  for(const invalid of [
+    {...proof,status:'diverged'},
+    {...proof,base_sha:'d'.repeat(40)},
+    {...proof,head_sha:'d'.repeat(40)},
+    {...proof,merge_base_sha:'d'.repeat(40)},
+  ])assert.equal(assessPrReadiness(earlyEvent,moved,earlyRepo,null,invalid).diagnostic_signal,'BASE_CHANGED_UNVERIFIED');
+  assert.equal(assessPrReadiness(earlyEvent,{...moved,mergeable:false},earlyRepo,null,proof).ready,false);
+  assert.equal(assessPrReadiness(earlyEvent,earlyLive,earlyRepo,null,proof).diagnostic_signal,null);
 });
 
 test('stale dirty mergeability is overridden only by an exact fast-forward Compare proof', () => {

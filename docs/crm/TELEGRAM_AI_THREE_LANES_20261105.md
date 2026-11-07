@@ -26,3 +26,62 @@ One **existing verified CRM Telegram bot** receives all opt-in AI client convers
 - This is a practical **first end-to-end pipeline**, not a claim of unlimited capacity, real-time rendering or full generative AI. The chat uses conservative Holistic Guide responses; it should later be routed to the project's approved Holistic Intelligence / Video Director scenario-planning pipeline when model consent, safety and quota controls are in place. A predictable initial film uses 4 licensed scenes, not every semantic axis, motif, or advanced edit.
 - The app's existing private video bucket has limited capacity; queues should be paused rather than silently filling it. Large-scale delivery should use a **separate approved private R2 bucket** (not the public video vault) with encryption, deletion lifecycle, no hidden fees and new consent as needed.
 - Crash recovery without a new scheduler uses the existing daily housekeeping and explicitly authenticated worker endpoint; daily recovery is not near-real-time. Faster, measured throughput later requires an approved no-surprise-cost persistent worker or appropriately scoped scheduler.
+
+
+## Client Telegram Audio → voiced MP4 (prepared 2026-11-07; NOT LIVE)
+
+This is **not** the owner-only Dot /audio → /video flow and does not reuse
+the verified owner's private channel or claims. Only the existing signed
+**client** Telegram webhook may route these events.
+
+1. A client who has completed the verified Telegram /start link, enabled
+   automatic private-video delivery in My House, and granted the separate
+   AI-video conversation permission may type `/hhvideo <topic>` and send or
+   forward a voice recording; after those permissions are in place, a
+   forwarded audio can also initiate the request, followed by the topic.
+   Unlinked/no-opt-in media is NOT downloaded, stored, or repurposed.
+2. The signed client parser accepts only 1–60 s, ≤3 MB OGG/Opus, MP3,
+   M4A/AAC, or WAV with bounded Telegram metadata and an exact private sender.
+   For text it still rejects forwarded messages. Direct /voice remains
+   owned by the existing subscriber AI unless a video session is active;
+   owner /audio /video, ordinary /ai /tests, CRM diagnostics and /stop remain
+   untouched.
+3. Before typed `/hhvideo_confirm`, only the encrypted one-use Telegram file
+   **metadata** (never bytes) may be held in the consenting private thread
+   and expires after 15 minutes. The owner is told that confirming certifies
+   rights to the recording/voice and authorizes temporary download from
+   Telegram, server-side FFmpeg montage, private MP4 retention and sending to
+   the verified linked chat. A forwarded recording does **not** establish
+   original-speaker authorization by itself.
+4. On confirmation, the worker rechecks account link, purpose-specific
+   versioned opt-in, job lease and bot identity BEFORE getFile; the Telegram
+   path and downloaded bytes are independently bounded, path/codec checked,
+   and temporarily stored only in a private per-job directory.
+5. The **existing** 4-licensed-shot FFmpeg pipeline uses one original
+   soundtrack input, H264 + AAC MP4, length 10/15/20/30/60 seconds based on
+   actual non-truncated audio duration. The MP4 is decoded and checked for
+   an AAC stream and timing; it is limited to 12 MB and private
+   `personal-videos/<account>/<job>/master.mp4` storage. The temporary
+   original audio is always deleted in `finally`, including failed renders.
+   Without audio, an explicitly text-only plan creates an honestly silent 20s
+   film, not a claim that a voice recording was embedded.
+6. This release does not listen to, analyze, or transcribe speech to pick
+   the scene. Clips are selected from the **typed goal**. The consented
+   speech-to-timed-shot Groq branch remains separately disabled until genuine
+   free-quota authorization; no private audio sent to third-party STT.
+7. Existing unique video dispatch, UNKNOWN provider outcome, STOP/relink
+   revocation, encrypted retention, five-row orphan cleanup and daily
+   CRON_SECRET housekeeping are preserved. No new runner, bot, bucket or
+   paid endpoint is created.
+
+**Source checks completed in preparation:** eight focused audio/security
+contracts PASS, ten private-master/source checks, and a physical FFmpeg
+synthetic test produced 20.00 s 360×640 H264 + AAC MP4 with nonzero
+decoded volume. These are not proof that a real Telegram user received a
+video. Production lacks the four private AI tables and no opted-in automatic
+recipient existed in the last authorized read-only check; no migrations
+or flags have been changed. Draft/zero-extra-cost/physical iPhone plus
+PostgreSQL multi-account RLS and actual provider acceptance remain STOP
+conditions. Do not merge or label Telegram Audio→Video LIVE until these
+gates are actually satisfied.
+

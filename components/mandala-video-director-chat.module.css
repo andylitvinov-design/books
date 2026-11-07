@@ -174,3 +174,96 @@
 .chatTabs> :is(a,span){display:flex;align-items:center;justify-content:center;min-width:0;min-height:44px;padding:7px 6px;border:1px solid #dae5dc;border-radius:12px;background:#fff;color:#466957;font:760 13px/1.2 system-ui,sans-serif;text-decoration:none}
 .chatTabs>[aria-current="page"]{background:#dcf3e7;border-color:#a8d6bd;color:#087257}
 .chatTabs a:focus-visible{outline:3px solid #188968;outline-offset:2px}
+
+/* Sitewide iHelp context does not replace or reset the actual scene Director. */
+.pageHelp{display:flex;flex-direction:column;gap:5px;flex:none;max-height:154px;
+ overflow-y:auto;padding:8px 12px;border-bottom:1px solid #e9dfd1;background:#fffaf1}
+.pageHelp p{margin:0;color:#35584a;font:500 12px/1.35 system-ui,sans-serif}
+.pageHelp>div{display:flex;flex-wrap:wrap;gap:4px}
+.pageHelp :is(button,a){display:inline-flex;align-items:center;text-align:left;flex:1 1 auto;
+ min-height:36px;border:0;border-radius:10px;padding:7px 10px;background:#f0f6ed;
+ color:#165b4b;text-decoration:none;font:650 12px/1.35 system-ui,sans-serif;cursor:pointer}
+.pageHelp :is(button,a):hover{background:#e3f0e6}
+.pageHelp :is(button,a):focus-visible{outline:3px solid #176e6e;outline-offset:1px}
+@media(max-width:390px){
+ .pageHelp{max-height:137px;padding:6px 8px}
+ .pageHelp :is(button,a){min-height:36px;padding:6px 7px;font-size:11px}
+}
+
+
+/* Calm owner-approved iHelp welcome. Existing Director state, renderer, approvals and
+   guest input stay unchanged; only the zero-turn presentation is different. */
+.window[data-chat-welcome="true"] .thread{padding:0;gap:0;background:#fffcf7}
+.welcome{display:flex;flex-direction:column;min-width:0;gap:0;padding:0 0 20px;color:#143d3a}
+.welcomeHero{position:relative;display:flex;flex-direction:column;align-items:flex-start;
+ justify-content:center;min-height:206px;padding:25px 22px 30px;isolation:isolate;
+ background-image:linear-gradient(90deg,rgba(255,249,239,.98) 0%,rgba(255,249,239,.89) 49%,rgba(255,246,229,.20) 100%),
+ url("/images/holistic-house/reiki-approved-sunrise-v3.webp");
+ background-size:cover;background-position:center 45%;border-radius:0 0 24px 24px}
+.welcomeEyebrow{margin:0 0 10px;color:#246d63;font:750 13px/1.25 system-ui,sans-serif}
+.welcomeTitle{display:flex;flex-direction:column;max-width:300px;margin:0;
+ color:#123f38;font:850 clamp(29px,6.7vw,36px)/1.08 system-ui,sans-serif;letter-spacing:-.045em}
+.welcomeTitle span{font-size:1.13em;margin-bottom:1px}
+.welcomeLead{max-width:285px;margin:12px 0 0;color:#4d5d59;font:500 16px/1.42 system-ui,sans-serif}
+.welcomeActions{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:9px;margin:-13px 14px 23px;isolation:isolate}
+.welcomeActions>:is(button,a){display:flex;flex-direction:column;align-items:center;
+ justify-content:space-between;gap:6px;min-width:0;min-height:126px;padding:14px 7px 10px;
+ border:1px solid #e9dfd1;border-radius:21px;background:#fffefb;color:#16473d;
+ text-decoration:none;text-align:center;cursor:pointer;box-shadow:0 6px 18px #334c3520}
+.welcomeActions strong{font:780 15px/1.23 system-ui,sans-serif;overflow-wrap:break-word}
+.welcomeActions>:first-child{background:linear-gradient(135deg,#30b4a4,#087d79);border-color:#309d95;color:white}
+.welcomeActions>:nth-child(2){background:linear-gradient(150deg,#fffdf9,#f1eafe);border-color:#e8dff0}
+.welcomeActions>:nth-child(3){background:linear-gradient(150deg,#fffdf5,#fff0d7);border-color:#f3e2c4}
+.welcomeActions>:nth-child(2)>svg:first-child{color:#7060bd}
+.welcomeActions>:nth-child(3)>svg:first-child{color:#c3872e}
+.welcomeActions>:is(button,a)>svg:last-child{width:20px;height:20px;border-radius:50%;
+ background:#ffffffd1;color:#126d61;padding:4px;box-sizing:content-box}
+.welcomeGoals{margin:0 0 8px;padding:0 15px}
+.welcomeGoals h3{margin:0 0 5px;color:#123f38;font:800 25px/1.16 system-ui,sans-serif;letter-spacing:-.025em}
+.welcomeGoals>p{margin:0 0 13px;color:#5d6a71;font:500 15px/1.4 system-ui,sans-serif}
+.goalRail{display:flex;gap:10px;min-width:0;padding:3px 2px 12px;overflow-x:auto;overscroll-behavior-inline:contain;
+ scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:#d2d9cf transparent}
+.goalRail button{display:flex;flex:0 0 130px;flex-direction:column;align-items:stretch;
+ min-width:0;min-height:137px;padding:0;overflow:hidden;scroll-snap-align:start;
+ border:1px solid #e4e6d8;border-radius:20px;background:#fffdf5;color:#174638;
+ box-shadow:0 3px 12px #4d674110;cursor:pointer;text-align:center}
+.goalRail .goalArt{display:block;width:100%;height:84px;flex:none;
+ background-size:cover;background-position:center}
+.goalRail strong{display:grid;place-items:center;flex:1;padding:10px 6px;
+ font:800 16px/1.22 system-ui,sans-serif;overflow-wrap:anywhere}
+.goalRail button[data-video-chat-welcome-goal="body"] .goalArt{background-image:linear-gradient(140deg,#b6e6a420,#e7f6be35),url("/images/holistic-house/reiki-practitioner-sunrise.webp")}
+.goalRail button[data-video-chat-welcome-goal="business"] .goalArt{background-image:linear-gradient(140deg,#ffca8e33,#8dc1d933),url("/images/holistic-house/course-focus-mountain-boy.webp")}
+.goalRail button[data-video-chat-welcome-goal="energy"] .goalArt{background-image:linear-gradient(140deg,#fff8c744,#eacb7a20),url("/images/holistic-house/reiki-approved-sunrise-v3.webp")}
+.goalRail button[data-video-chat-welcome-goal="love"] .goalArt{background:radial-gradient(circle at 52% 38%,#ffc3d8 0 18%,transparent 44%),linear-gradient(150deg,#f5d6e8,#e7dbff)}
+.goalRail button[data-video-chat-welcome-goal="stress"] .goalArt{background:#eaf2ed url("/images/holistic-house/messenger-zen-stones.svg") center/cover no-repeat}
+.welcomeHelp{align-self:center;max-width:calc(100% - 32px);margin:8px 15px 0;color:#155b4e}
+.welcomeHelp summary{display:flex;align-items:center;justify-content:center;min-height:44px;
+ padding:8px 19px;border-radius:999px;background:#e8f5ef;cursor:pointer;
+ font:750 15px/1.3 system-ui,sans-serif}
+.welcomeHelp p{margin:10px 0 0;padding:0 9px;color:#4d655e;font:500 15px/1.45 system-ui,sans-serif}
+.window[data-chat-welcome="true"] .composer{margin:2px 12px 9px;padding:7px 9px;min-height:64px;
+ border:1px solid #cde1d6;border-radius:22px;background:#fff;box-shadow:0 4px 15px #143d3a16}
+.window[data-chat-welcome="true"] .composer textarea{min-height:44px;max-height:110px;font-size:16px!important}
+.window[data-chat-welcome="true"] .foot,.window[data-chat-welcome="true"] .aiOptIn{display:none}
+.window[data-chat-welcome="true"] .chatTabs{padding:6px 11px;background:#fffaf3}
+.window[data-chat-welcome="true"] .chatTabs> :is(a,span){min-height:44px;font-size:14px}
+.pageHelp{display:block;max-height:none;padding:0;border-bottom:1px solid #e9dfd1;background:#fffaf3}
+.pageHelp[open]{max-height:166px;overflow-y:auto;padding-bottom:10px}
+.pageHelp summary{display:flex;align-items:center;min-height:39px;padding:6px 15px;
+ color:#176d5c;font:700 14px/1.2 system-ui,sans-serif;cursor:pointer}
+.pageHelp p{font-size:14px;line-height:1.4;padding:4px 13px}
+.pageHelp>div{gap:7px;padding:7px 12px}
+.pageHelp :is(button,a){min-height:44px;font-size:14px}
+.welcome :is(button,a,summary):focus-visible,.pageHelp summary:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:370px){
+ .welcomeHero{min-height:195px;padding:22px 17px 28px}
+ .welcomeActions{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin: -12px 10px 19px}
+ .welcomeActions>:first-child{grid-column:1 / -1;min-height:74px;flex-direction:row;padding:12px 16px}
+ .welcomeActions>:first-child strong{flex:1;text-align:left;font-size:17px}
+ .welcomeActions>:nth-child(n+2){min-height:104px}
+ .welcomeGoals{padding:0 12px}
+ .welcomeTitle{font-size:29px}
+ .goalRail button{flex-basis:126px}
+}
+@media(prefers-reduced-motion:reduce){.welcome *{scroll-behavior:auto!important}}

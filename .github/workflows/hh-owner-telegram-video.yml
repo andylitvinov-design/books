@@ -97,7 +97,10 @@ concurrency:
 
 jobs:
   owner-video:
-    runs-on: ubuntu-latest
+    # Ubuntu-latest migrated to Ubuntu 26.04 (Nov 2026): the FFprobe apt
+    # prerequisite hung through the entire 25-minute job limit on #3606.
+    # Keep the standard, free GitHub-hosted 24.04 runner and ALL real media QA.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4

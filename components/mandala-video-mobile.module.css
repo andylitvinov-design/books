@@ -4301,3 +4301,442 @@
     display:none!important
   }
 }
+
+/* Ideas starts compact, but explicit audio tap must reveal the ORIGINAL editor.
+   Keep the retired editor absent from the visible layout until its opt-in. */
+.studio[data-active-workspace="phrases"] .phraseAudioNext{
+  display:flex!important;align-items:center;justify-content:center;gap:8px;
+}
+/* The compact Ideas opt-in must remain an actual visible, keyboard/tap-accessible
+   button even when older generic Phrases selectors hide legacy audio. This
+   selector intentionally wins over the retired .phraseAudioNext rule. */
+.studio[data-active-workspace="phrases"] .quickBuilder
+  >[data-workspace-section="phrases"][data-video-quick-phrases]
+  >button[data-video-phrase-audio-shortcut]{
+  display:flex!important;visibility:visible!important;
+  opacity:1!important;min-height:44px!important;pointer-events:auto!important
+}
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"]{
+  display:block!important;min-width:0;max-width:100%;
+}
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"] .phraseMusicSection,
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"] .phraseAudioSettings{
+  display:block!important;
+}
+.studio[data-active-workspace="phrases"] [data-video-advanced-phrase-editor="true"] .phraseVoiceAction{
+  display:flex!important;
+}
+
+
+/* Compact owner-approved Montage Text on mobile, one existing Canvas editor. */
+.studio[data-active-workspace="editor"] [data-video-montage-text]{
+  padding:9px!important;gap:7px!important;border-radius:18px;
+  background:var(--hh-light-surface,#fffcf7);
+}
+.studio[data-active-workspace="editor"] [data-video-montage-text] .montageScenario{
+  display:block;min-width:0;padding:0 8px!important;margin:0!important;
+  border-radius:11px;border:1px solid #d4e5db;background:#f9fcf9;
+}
+.studio[data-active-workspace="editor"] [data-video-montage-text] .montageScenario>summary,
+.studio[data-active-workspace="editor"] .montageAdvancedTools>summary{
+  display:flex;align-items:center;min-height:44px;padding:8px 5px;
+  font-size:12px;font-weight:750;color:#226f58;cursor:pointer
+}
+.studio[data-active-workspace="editor"] .montageScenarioBody{display:grid;gap:6px;padding:5px 0 9px}
+.studio[data-active-workspace="editor"] .montageScenarioBody textarea{min-height:72px}
+.studio[data-active-workspace="editor"] .montageAdvancedTools{
+  padding:0 9px;border:1px solid #e2e8dc;border-radius:11px;background:#fbfcf8
+}
+.studio[data-active-workspace="editor"] .montageAdvancedTools .editorDraftTools{
+  margin:4px 0 7px;gap:6px
+}
+.studio[data-active-workspace="editor"] .montageAdvancedTools .editorDraftTools button{min-height:44px}
+.studio[data-active-workspace="editor"] [data-video-montage-text] [data-video-multitrack-timeline]{
+  margin:0;padding:7px;border:1px solid #cbe4d6;border-radius:13px;background:#fffdf8
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="editor"] [data-video-montage-text]{padding:5px!important}
+}
+
+
+/* 06 Nov owner-approved Montage Audio: one compact primary screen, original
+   catalogue/rights/player and exporter remain mounted only under disclosure. */
+.montageAudioHero{display:none}
+.montageAudioCompact{display:grid;gap:11px;min-width:0;width:100%;padding:12px;border:1px solid #e7e0d3;border-radius:20px;background:#fffcf7;box-shadow:0 5px 16px #3b493013}
+.montageAudioMode{display:grid;grid-template-columns:1fr 1fr;gap:5px;min-width:0;padding:4px;background:#f6f3eb;border:1px solid #e5dfd4;border-radius:15px}
+.montageAudioMode button{display:flex;justify-content:center;align-items:center;gap:6px;min-width:0;min-height:45px;border:0;border-radius:12px;padding:8px 5px;background:transparent;color:#244b40;font-size:clamp(10px,2.9vw,14px);font-weight:750}
+.montageAudioMode button[aria-pressed=true]{background:#078568;color:#fff;box-shadow:0 3px 9px #156b5725}
+.montageAudioFilters{display:flex;align-items:center;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:2px 0 5px;min-width:0}
+.montageAudioFilters button{flex:0 0 auto;min-height:43px;border:1px solid #e2dfd4;border-radius:24px;background:#fffefa;color:#284d41;font-size:12.5px;padding:9px 13px}
+.montageAudioFilters button[aria-pressed=true]{background:#d7f1df;border-color:#b2dfc8;color:#075944;font-weight:800}
+.montageAudioSelected{display:grid;grid-template-columns:56px 42px minmax(0,1fr) 40px;align-items:center;gap:8px;min-width:0;border:1.5px solid #0e9a78;border-radius:17px;background:#fcfffb;padding:9px;box-shadow:0 3px 12px #1a694b11}
+.montageAudioCover{width:56px;height:56px;border-radius:11px;overflow:hidden}
+.montageAudioCover img{display:block;width:100%;height:100%;object-fit:cover}
+.montageAudioPlay{display:grid;place-items:center;width:42px;height:42px;min-height:42px;border:0;border-radius:50%;color:#126b4e;background:#d7f2df}
+.montageAudioSelectedText{display:grid;gap:3px;min-width:0}
+.montageAudioSelectedText strong{font-size:clamp(12px,3.6vw,17px);line-height:1.18;color:#143e32;overflow-wrap:anywhere}
+.montageAudioSelectedText small{font-size:11px;color:#64796d}
+.montageAudioSelectedText>span{font-size:10.5px;line-height:1.3;color:#158060;overflow-wrap:anywhere}
+.montageAudioFavorite{display:grid;place-items:center;min-width:40px;min-height:44px;border:0;background:transparent;color:#759186}
+.montageAudioVolume{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;min-width:0}
+.montageAudioVolume label{display:flex;align-items:center;gap:6px;color:#234f41;font-size:12px;font-weight:700;white-space:nowrap}
+.montageAudioVolume input{min-width:0;width:100%;accent-color:#078568;min-height:40px}
+.montageAudioVolume button{min-height:44px;padding:8px 11px;border:1px solid #d4ded3;border-radius:12px;background:#fffefa;font-size:12px;color:#234f41}
+.montageAudioActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}
+.montageAudioActions button{display:flex;justify-content:center;align-items:center;gap:6px;min-width:0;min-height:44px;padding:8px;border:1px solid #cfdfd3;border-radius:13px;background:#fffdf9;color:#184b3c;font-weight:750;font-size:12px}
+.montageAudioActions button:last-child:not(:disabled){border-color:#078568;background:#e6f6f0}
+.montageAudioActions button:disabled{opacity:.52}
+.montageAudioLibrary{min-width:0;border-top:1px solid #e9e1d7;padding-top:7px}
+.montageAudioLibrary>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:750;color:#275d4b;font-size:12px}
+.montageAudioLibrary:not([open])>summary{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);min-height:0;padding:0}
+.montageAudioLibrary .audioSection{margin:0}
+.montageAudioWarning{font-size:12px;color:#9a4d3b}
+@media(max-width:759px){
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .previewStage>.heroWithRail{display:flex!important;gap:9px;align-items:center}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .previewStage .heroWithRail>.hero{flex:0 0 58%;width:58%!important;max-width:58%;aspect-ratio:16/9!important;min-height:0!important;border-radius:16px}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .previewStage .heroRail{display:none!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .montageAudioHero{display:flex;flex:1;min-width:0;gap:6px;align-items:flex-start;color:#0b7758}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .montageAudioHero>svg{width:20px;height:20px;flex:none}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .montageAudioHero h3{font-size:clamp(19px,5vw,25px);color:#173e33;line-height:1.1}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .montageAudioHero p{margin-top:6px;color:#65726b;font-size:clamp(11px,2.7vw,13px);line-height:1.32}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .heroEditorial{display:none!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .previewStage .heroPlay{left:50%!important;top:50%!important;width:44px!important;height:44px!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .quickBuilder>.workspaceHeading{display:none!important}
+ .studio[data-active-workspace="editor"] .quickBuilder>[data-video-basic-editor]{order:3!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .quickBuilder>[data-video-basic-editor]{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="audio"] .montageQuickTools{margin-bottom:7px}
+}
+@media(max-width:359px){
+ .montageAudioSelected{grid-template-columns:42px 38px minmax(0,1fr) 38px;gap:5px;padding:7px}
+ .montageAudioCover{width:42px;height:48px}
+ .montageAudioPlay{width:38px;height:44px}
+ .montageAudioVolume{gap:6px}
+ .montageAudioVolume label{font-size:11px}
+ .montageAudioVolume button{padding:7px;font-size:11px}
+ .montageAudioMode button{font-size:10.5px}
+}
+
+/* Native iOS file picker is a real direct tap, not a delayed .click() on a
+   file input hidden inside a collapsed details element. */
+.montageAudioMode .montageAudioNativeUpload{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:45px;padding:8px 5px;border-radius:12px;background:transparent;color:#244b40;font-size:clamp(10px,2.9vw,14px);font-weight:750;cursor:pointer}
+.montageAudioMode .montageAudioNativeUpload[data-selected=true]{background:#078568;color:#fff}
+.montageAudioNativeUpload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.montageAudioNativeUpload input:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+
+/* Optional Ideas audio/voice editor: keep the approved compact screen at rest.
+   The original 05 Nov CSS hard-hides the legacy editor and all phrase-audio
+   details. Only a user-visible, explicitly expanded advanced section may
+   restore them; no hidden media or consent controls are silently activated. */
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor]:not([hidden]){
+  display:block!important;min-width:0;margin-top:12px
+}
+.studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor]:not([hidden]) .phraseAudioSettings{
+  display:block!important
+}
+.studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut]{
+  display:flex!important;min-height:44px
+}
+
+/* Music Library: accessible, scrollable mobile bottom sheet, not inline
+   accordion. Keep native playback, explicit attach and rights in one source. */
+.montageAudioOverlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-end;justify-content:center;background:rgba(17,29,25,.52);padding:0}
+.montageAudioDialog{display:flex;flex-direction:column;min-width:0;width:min(100%,740px);max-height:min(91dvh,900px);overflow:hidden;border-radius:26px 26px 0 0;background:#fffcf7;box-shadow:0 -15px 45px #162c2833;color:#173d32}
+.montageAudioDialogHandle{flex:none;width:46px;height:5px;border-radius:5px;background:#c7c8c2;margin:10px auto 3px}
+.montageAudioDialogHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 17px 7px}
+.montageAudioDialogHeader h3{display:flex;align-items:center;gap:10px;font-size:clamp(19px,5vw,25px);color:#163e32}
+.montageAudioDialogHeader button{display:grid;place-items:center;flex:none;width:44px;height:44px;border:0;border-radius:50%;background:#f1eee7;color:#274a3c}
+.montageAudioDialogScroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:6px 15px 15px}
+.montageAudioDialogScroll .audioSection{border:0!important;background:transparent!important;box-shadow:none!important;margin:0!important;padding:0!important}
+.montageAudioDialogFooter{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.75fr);gap:9px;flex:none;padding:12px 15px max(15px,env(safe-area-inset-bottom));background:#fffcf7;border-top:1px solid #e9e3d9}
+.montageAudioDialogFooter button{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:49px;border:1px solid #cfd8ce;border-radius:16px;background:#fffefa;color:#245444;font-size:14px;font-weight:800}
+.montageAudioDialogFooter button:last-child{background:#087e61;border-color:#087e61;color:#fff}
+.montageAudioDialogFooter button:disabled{opacity:.5}
+@media(min-width:760px){.montageAudioOverlay{align-items:center;padding:24px}.montageAudioDialog{border-radius:26px;max-height:86dvh}}
+@media(max-width:359px){.montageAudioDialogScroll{padding:4px 9px 12px}.montageAudioDialogFooter{padding-left:9px;padding-right:9px}.montageAudioDialogFooter button{font-size:12px}}
+
+/* iHelp opens the ONE existing Director as an opt-in overlay. Its React state
+   remains mounted across Video/Ideas/Effects/Montage tab switches. */
+.iHelpVideoBackdrop{position:fixed;inset:0;z-index:180;width:100vw;height:100dvh;
+ border:0;padding:0;background:rgba(18,43,37,.48);cursor:pointer}
+.iHelpVideoBar{display:flex;align-items:center;gap:9px;flex:none;min-height:55px;
+ padding:6px 12px;border-bottom:1px solid #e9dfd1;background:#f5ecdc;color:#143d3a}
+.iHelpVideoBar strong{font:800 17px/1.3 system-ui,sans-serif}
+.iHelpVideoBar span{font:550 12px/1.4 system-ui,sans-serif;color:#5d6a71;flex:1}
+.iHelpVideoBar button{display:grid;place-items:center;flex:none;width:44px;height:44px;
+ border:1px solid #d5dfd8;background:#fffcf7;color:#143d3a;border-radius:13px;cursor:pointer}
+.iHelpVideoBar button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.studio[data-hh-video-ihelp-open="true"] .quickBuilder .directorChatDetails{
+ position:fixed!important;display:flex!important;flex-direction:column;box-sizing:border-box;
+ z-index:190;top:max(72px,calc(env(safe-area-inset-top,0px) + 56px));
+ right:max(12px,env(safe-area-inset-right,0px));left:auto;bottom:auto;
+ width:min(460px,calc(100vw - 24px));height:min(730px,calc(100dvh - 92px));
+ min-height:0;max-width:none;margin:0;overflow:hidden;
+ border:1px solid #e9dfd1;border-radius:21px;background:#fffcf7;
+ box-shadow:0 18px 56px rgba(13,40,32,.26)}
+.studio[data-hh-video-ihelp-open="true"] .directorChatDetails>summary{display:none}
+.studio[data-hh-video-ihelp-open="true"] .directorChatDetails>:global([data-video-director-chat]){
+ display:flex;flex:1 1 auto;min-height:0;max-height:none;height:100%;width:100%;
+ margin:0;overflow:hidden;border:0;border-radius:0;box-shadow:none}
+@media(max-width:760px){
+ .studio[data-hh-video-ihelp-open="true"] .quickBuilder .directorChatDetails{
+  inset:0;top:0;right:0;left:0;bottom:0;width:100vw;height:100dvh;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  border:0;border-radius:0}
+ .studio[data-hh-video-ihelp-open="true"] .directorChatDetails>:global([data-video-director-chat][data-compose-active="true"]){
+  position:relative!important;inset:auto!important;top:auto!important;left:auto!important;
+  right:auto!important;z-index:auto!important;max-height:none;margin:0}
+}
+
+/* Style-specific story motif stays hidden in other Montage sub-tabs. */
+.studio [data-video-director-style-controls][hidden]{display:none!important}
+
+/* The compact Goal screen hides legacy advanced sections. A visitor-opened
+   iHelp Director is an explicit dialog and must override that screen-only
+   hiding rule without exposing the other advanced panels. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-video-scenario-open="false"][data-hh-video-ihelp-open="true"] .quickBuilder >
+ [data-video-director-chat-details][data-workspace-section="video"]{
+   display:flex!important;
+ }
+}
+
+/* Approved shared Hero rail, header iHelp and in-viewport Montage Style next action. */
+.quickBrandIHelp{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;min-width:68px;min-height:39px;padding:5px 8px;border:1px solid #aed4c4;border-radius:999px;background:#fffcf7;color:#08745d;font:800 13px/1.15 Arial,Helvetica,sans-serif;box-shadow:0 2px 8px #285b4420}
+.quickBrandIHelp:disabled{opacity:.55;cursor:not-allowed}
+.quickBrandIHelp svg{flex:none}
+.heroRailIntro{color:#135442;background:#f6fff8}
+.studioIntroGuide{display:grid;gap:7px;min-width:0;margin-top:7px;padding:12px 13px;border:1px solid #cde2d6;border-radius:15px;background:var(--hh-light-surface,#fffcf7);color:#194e3d}
+.studioIntroGuide[hidden]{display:none!important}
+.studioIntroGuide strong{font-size:16px}
+.studioIntroGuide p{font-size:13px;line-height:1.4}
+.studioIntroSamples{display:flex;flex-wrap:wrap;gap:6px}
+.studioIntroSamples button{display:flex;align-items:center;gap:5px;min-height:44px;padding:7px;border:1px solid #d3e1d7;border-radius:10px;background:#f4fbf6;color:#145c48;font:700 12px/1.2 Arial,Helvetica,sans-serif}
+.studioIntroSamples button:disabled{opacity:.5}
+.montageStepNext{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;width:100%;min-height:52px;padding:10px 13px;margin:2px 0 0;border:1px solid #087b64;border-radius:14px;background:linear-gradient(110deg,#099f78,#067a67);color:#fff;font:800 16px/1.2 Arial,Helvetica,sans-serif;box-shadow:0 3px 11px #12735c24}
+.montageStepNext span{flex:1;min-width:0;text-align:center}
+.montageStepNext:disabled{opacity:.5}
+.montageStepNext:focus-visible,.quickBrandIHelp:focus-visible,.studioIntroSamples button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:759px){
+ .studio[data-active-workspace] .quickBrandIdentity{flex:1 1 0;min-width:0}
+ .studio[data-active-workspace] .quickBrandIdentity strong,
+ .studio[data-active-workspace] .quickBrandIdentity small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .studio[data-active-workspace] .quickBrandIHelp{min-width:61px!important;min-height:39px!important;padding:5px 7px;font-size:12px}
+ .studio[data-active-workspace="video"] .previewStage>.heroWithRail,
+ .studio[data-active-workspace="editor"] .previewStage>.heroWithRail{
+   display:grid!important;grid-template-columns:minmax(0,1fr) clamp(92px,28vw,120px);
+   align-items:stretch;gap:8px;width:100%!important;max-width:none!important;margin:0!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroWithRail>.hero,
+ .studio[data-active-workspace="editor"] .previewStage .heroWithRail>.hero{
+   display:block!important;box-sizing:border-box!important;flex:none!important;width:100%!important;
+   max-width:none!important;aspect-ratio:16/9!important;min-height:0!important;
+   max-height:none!important;border-radius:17px!important;margin:0!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroRail,
+ .studio[data-active-workspace="editor"] .previewStage .heroRail{
+   display:grid!important;grid-template-rows:repeat(2,minmax(0,1fr));gap:7px;
+   width:100%!important;min-width:0!important;flex:none!important;
+   justify-items:stretch;align-items:stretch;padding:0!important;
+   border-radius:0;background:transparent!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroRail button,
+ .studio[data-active-workspace="editor"] .previewStage .heroRail button{
+   position:relative;display:flex!important;align-items:flex-start;flex-direction:column;
+   justify-content:center;gap:1px;min-width:0!important;width:100%!important;
+   min-height:0!important;height:auto!important;flex:auto!important;
+   padding:7px 18px 7px 9px!important;border:1px solid #c9dfd1!important;
+   border-radius:15px!important;background:#f6fff8;color:#135442;text-align:left;
+   box-shadow:0 2px 8px #2f624119
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroRail .heroRailMine,
+ .studio[data-active-workspace="editor"] .previewStage .heroRail .heroRailMine{
+   border-color:#067a67!important;background:linear-gradient(140deg,#12a47e,#067a67)!important;color:#fff!important
+ }
+ .studio .previewStage .heroRail button>svg:first-child{width:17px;height:17px;flex:none}
+ .studio .previewStage .heroRail button>svg:last-child{
+   position:absolute;right:4px;top:50%;transform:translateY(-50%);width:14px;height:14px
+ }
+ .studio .previewStage .heroRail button strong{
+   font:800 clamp(12px,3.2vw,15px)/1.05 Arial,Helvetica,sans-serif;white-space:normal;overflow-wrap:anywhere
+ }
+ .studio .previewStage .heroRail button span{
+   font:600 clamp(9px,2.45vw,11px)/1.13 Arial,Helvetica,sans-serif;overflow-wrap:anywhere
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroPlay,
+ .studio[data-active-workspace="editor"] .previewStage .heroPlay{
+   left:50%!important;top:50%!important;width:46px!important;height:46px!important;
+   min-width:44px!important;min-height:44px!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroEditorial{
+   left:8px!important;bottom:8px!important;max-width:60%!important
+ }
+ .studio[data-active-workspace="video"] .previewStage .heroEditorial h2{font-size:clamp(14px,3.8vw,17px)!important}
+ .studio[data-active-workspace="video"] .previewStage .heroEditorial p{font-size:clamp(9px,2.4vw,10px)!important}
+ .studio[data-active-workspace="editor"] .montageAudioHero{display:none!important}
+ .studio[data-active-workspace="editor"] .previewStage .heroRail{display:grid!important}
+ .studio[data-active-workspace="editor"] .previewStage>.heroWithRail{width:100%!important;max-width:none!important}
+ .studio[data-active-workspace="editor"] [data-video-director-style-controls]{display:none!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] [data-video-order-bar]{display:none!important}
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montagePane{
+   gap:7px;padding:10px!important;border-radius:17px
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectsGrid{
+   grid-template-columns:repeat(3,minmax(0,1fr));gap:6px
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectsGrid button{
+   gap:3px;padding:4px!important;border-radius:12px;font-size:clamp(10px,2.85vw,12px)
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectsGrid img{
+   display:block;height:clamp(42px,6.2dvh,55px);width:100%;aspect-ratio:auto;object-fit:cover;border-radius:9px
+ }
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectBrightness{gap:6px}
+ .studio[data-active-workspace="editor"][data-montage-panel="effects"] .montageEffectBrightness button{
+   min-height:40px;padding:6px 10px;font-size:13px
+ }
+ .studio[data-active-workspace="editor"] .quickBuilder>.previewStage,
+ .studio[data-active-workspace="video"] .quickBuilder>.previewStage{padding:0!important}
+}
+@media(max-width:359px){
+ .studio[data-active-workspace] .quickBrandIHelp{min-width:37px!important;width:37px;padding:5px!important}
+ .quickBrandIHelp span{display:none}
+ .studio[data-active-workspace="video"] .previewStage>.heroWithRail,
+ .studio[data-active-workspace="editor"] .previewStage>.heroWithRail{
+   grid-template-columns:minmax(0,1fr) 88px!important;gap:5px!important
+ }
+ .studio .previewStage .heroRail button{padding:5px 14px 5px 6px!important}
+ .studio .previewStage .heroRail button strong{font-size:11px}
+ .studio .previewStage .heroRail button span{font-size:9px}
+}
+
+/* Compact approved PRO/Enhance page. Do not affect Goal, Montage or Hypno. */
+@media(max-width:759px){
+ .studio[data-active-workspace="pro"] .quickBuilder{
+   gap:5px!important;padding:0 3px 9px!important;min-width:0;
+ }
+ .studio[data-active-workspace="pro"] .workspaceHeading{
+   position:absolute!important;width:1px!important;height:1px!important;
+   overflow:hidden!important;clip-path:inset(50%)!important;
+   white-space:nowrap!important;margin:0!important;padding:0!important;
+ }
+ .studio[data-active-workspace="pro"] .quickBuilder>.previewStage{
+   display:grid!important;gap:0!important;padding:0!important;margin:0!important;
+   border:0!important;background:transparent!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStageHeading{display:none!important}
+ .studio[data-active-workspace="pro"] .previewStage>.heroWithRail{
+   width:100%!important;max-width:none!important;
+   grid-template-columns:minmax(0,1fr) 71px!important;gap:6px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .hero{
+   height:clamp(105px,18dvh,155px)!important;min-height:0!important;
+   max-height:155px!important;aspect-ratio:auto!important;
+   border-radius:16px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial{
+   left:9px!important;bottom:8px!important;max-width:69%!important;gap:2px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial h2{
+   font-size:clamp(13px,3.65vw,18px)!important;line-height:1.08!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial p{
+   font-size:clamp(9px,2.4vw,11px)!important;line-height:1.12!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEyebrow{display:none!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroPlay{
+   width:44px!important;height:44px!important;min-width:44px;min-height:44px;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroRail{display:grid!important;gap:4px!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button{padding:5px 3px!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button strong{font-size:10px}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button span{font-size:8px}
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="pro"] .previewStage .hero{
+   height:clamp(94px,15dvh,125px)!important
+ }
+}
+
+/* Messenger Video validated handoff visibility.
+   The compact Goals screen hides unopened advanced panels, not the original
+   Director explicitly opened after a verified, one-use chat handoff.
+   Do not expose another video renderer or override the iHelp modal layout. */
+@media(max-width:759px){
+ .studio[data-active-workspace="video"][data-video-scenario-open="false"]:not([data-hh-video-ihelp-open="true"]) .quickBuilder>
+   [data-video-director-chat-details][data-workspace-section="video"][open]{
+   display:grid!important;
+ }
+}
+
+
+/* Free first video: PRO shows the actual decoded local recording. Preserve
+   the native MediaRecorder/WebCodecs stage, non-PRO views and save policy. */
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  order:1!important;align-items:start;gap:10px;width:100%;min-width:0;
+  margin:0!important;padding:clamp(12px,3vw,20px);
+  border:1px solid #cfe5d8;border-radius:20px;background:#fffefa;
+  scroll-margin-top:14px;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>*{
+  grid-column:1/-1!important;grid-row:auto!important;min-width:0;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>h3{
+  font:800 clamp(19px,4.6vw,25px)/1.2 Arial,Helvetica,sans-serif;
+  color:#174c3c;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>video{
+  display:block!important;width:100%!important;max-width:760px!important;
+  height:auto!important;max-height:min(65svh,600px)!important;
+  aspect-ratio:auto!important;object-fit:contain!important;
+  margin:0 auto!important;border-radius:14px;background:#142b27;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result] .resultActions{
+  display:flex!important;flex-wrap:wrap;gap:8px;grid-template-columns:none!important;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions{
+  display:grid;gap:9px;min-width:0;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions>button{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  width:100%;min-height:48px;padding:11px 15px;border:0;border-radius:13px;
+  background:#078767;color:#fff;font:800 16px/1.2 Arial,Helvetica,sans-serif;
+  cursor:pointer;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions>button:focus-visible{
+  outline:3px solid #be9a54;outline-offset:3px;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions p{
+  margin:0!important;color:#5a7466;font:500 13px/1.45 Arial,Helvetica,sans-serif;
+}
+@media(max-width:759px){
+  .studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){
+    padding:12px!important;gap:10px!important;
+  }
+  .studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>video{
+    max-height:62svh!important;
+  }
+}
+
+
+
+
+/* Ready workspace: six compact tabs, only the actual verified film, existing delivery. */
+.studio[data-active-workspace="ready"] .quickBuilder>.previewStage,
+.studio[data-active-workspace="ready"] .quickBuilder>.workspaceHeading,
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result],
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result-empty]{display:none!important}
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-ready]{display:grid!important;order:3;grid-column:1/-1;min-width:0}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){display:grid!important}
+.studio .quickVideoNav button[data-video-quick-control="ready"][aria-pressed="true"]{color:#fff!important;background:linear-gradient(135deg,#329c7b,#067a67)!important;border-color:#08745d!important;box-shadow:0 3px 14px #0875532b!important}
+.studio .quickVideoNav button[data-video-quick-control="ready"][aria-pressed="true"] svg{color:#fff!important}
+@media(max-width:759px){
+ .studio .quickVideoNav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px!important;margin:6px 0 0!important;padding:0!important}
+ .studio .quickVideoNav button{min-width:0!important;min-height:54px!important;padding:5px 2px!important;gap:4px!important;border-radius:11px!important;font:750 clamp(9px,2.8vw,11.5px)/1.13 Arial,Helvetica,sans-serif!important;letter-spacing:-.01em!important;box-shadow:0 2px 7px #213b2711!important}
+ .studio .quickVideoNav button svg{width:18px!important;height:18px!important;flex:none}
+ .studio .quickVideoNav button:first-child:not([aria-pressed="true"]){background:#fffdf7!important;border-color:#e9dfd1!important;color:#214c3c!important}
+ .studio[data-active-workspace="ready"] .quickBuilder>[data-video-ready]{grid-column:1/-1;order:3;padding:12px!important;margin:0!important}
+}
+@media(max-width:350px){
+ .studio .quickVideoNav{gap:3px!important}
+ .studio .quickVideoNav button{padding:5px 1px!important;font-size:9px!important}
+}
