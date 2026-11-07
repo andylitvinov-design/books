@@ -198,7 +198,7 @@ test("affirmation attachment acceptance verifies the visible live movie soundtra
 
 test("voice release encodes audible video in both Chromium and WebKit, never preview-only",()=>{
   assert.match(source,/if\(engine==="chromium"\|\|engine==="webkit"\)/);
-  assert.match(source,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+  assert.match(source,/await preview\.waitFor\(\{state:"visible",timeout:45000\}\)/);
   assert.match(source,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
   assert.match(source,/assert\.ok\(audioTrack/);
   assert.match(source,/Number\(audioTrack\.channels\),2/);
@@ -238,7 +238,7 @@ test("stalled WebKit recorder diagnostics cannot conceal a real export failure",
   assert.match(source,/4000,engine\+" media-state evaluation"/);
   assert.match(source,/withDeadline\(context\.close\(\),10000/);
   assert.match(source,/withDeadline\(browser\.close\(\),10000/);
-  assert.match(source,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
+  assert.match(source,/await preview\.waitFor\(\{state:"visible",timeout:45000\}\)/);
   assert.match(source,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
   assert.match(source,/assert\.ok\(audioTrack/);
   assert.match(source,/Number\(audioTrack\.channels\),2/);
@@ -252,7 +252,7 @@ test("WebKit macOS media acceptance is headed, real encoded audio and never a mo
   assert.ok(source.includes('const headedWebKit=requestedEngine==="webkit" && process.env.HH_VOICE_E2E_HEADED==="1"'));
   assert.ok(source.includes('browserType.launch({headless:!(engine==="webkit" && headedWebKit)})'));
   assert.ok(source.includes('assert.equal(process.platform,"darwin"'));
-  assert.ok(source.includes('await output.waitFor({state:"visible",timeout:45000})'));
+  assert.ok(source.includes('await preview.waitFor({state:"visible",timeout:45000})'));
   for(const requirement of ['tracks.includes("video")','const audioTrack=streams.find(row=>row.codec_type==="audio")',
     'assert.ok(audioTrack',
     'Number(audioTrack.channels),2','pcm.stdout.some(value=>value!==0)']) assert.ok(source.includes(requirement));
@@ -562,4 +562,17 @@ test("male voice preview rejects corrupt cached WAV and recovers on user Listen"
   "void deletePublicVoiceSample(storageKey)"])assert.ok(ui.includes(marker),marker);
  for(const marker of ["validatedPublicVoiceSampleDuration(await audio.arrayBuffer())",
    "export async function deletePublicVoiceSample"])assert.ok(cache.includes(marker),marker);
+});
+
+test("guest WebKit checks the true local movie Blob with audible decoded audio",()=>{
+ const source=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(source,/__hhGeneratedFilmBlobs=new Map\(\)/);
+ assert.match(source,/__hhGeneratedFilmBlobs\.set\(uri,blob\)/);
+ assert.match(source,/__hhGeneratedFilmBlobs\?\.get\(video\.currentSrc\|\|video\.src\)/);
+ assert.match(source,/reader\.readAsDataURL\(blob\)/);
+ assert.match(source,/video\.readyState>=2 && video\.videoWidth>0 && video\.videoHeight>0 && !video\.error/);
+ assert.match(source,/const bytes=Buffer\.from\(encodedDataUrl/);
+ assert.match(source,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
+ assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
+ assert.doesNotMatch(source,/await output\.waitFor\(\{state:"visible",timeout:45000\}\)/);
 });

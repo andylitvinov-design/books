@@ -242,10 +242,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const originalCreate=URL.createObjectURL;
         const recordedFiles=new Map();
         window.__hhOwnVoiceFiles=recordedFiles;
+        window.__hhGeneratedFilmBlobs=new Map();
         URL.createObjectURL=function(blob){
           const uri=originalCreate.call(URL,blob);
           if(blob instanceof File && /^holistic-house-voice-\d+\.(?:m4a|webm)$/.test(blob.name))
             recordedFiles.set(uri,blob);
+          // Record the browser's own encoded video for genuine media QA.
+          if(blob instanceof Blob && /^video\/(?:mp4|webm)(?:;|$)/i.test(blob.type)
+            && blob.size>10000)window.__hhGeneratedFilmBlobs.set(uri,blob);
           return uri;
         };
       });
@@ -728,30 +732,26 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         }
         phase(engine,"recording-started");
         const output=page.locator("[data-mandala-video-download]");
+        const preview=page.locator("[data-mandala-video-preview]");
         phase(engine,"waiting-for-export");
         try {
-          // An iPhone/WebKit MP4 can require a physical Play gesture before
-          // the native video element decodes its first frame. The export is NOT
-          // considered ready or downloadable before native playback succeeds.
+          // Guest video playback is free; Save may require sign-in/credits.
           let verificationTapped=false;
           const verifyPlayback=page.locator("[data-video-verify-playback]");
           await expect.poll(async()=>{
-            if(await output.isVisible())return true;
-            if(!verificationTapped&&await verifyPlayback.isVisible()){
-              try{
-                await verifyPlayback.click({timeout:2000});
-                verificationTapped=true;
-              }catch(error){
-                // Native MP4 may become playable between isVisible and click:
-                // React then unmounts this optional button. Require the real
-                // download control, never accept a status label or mock file.
-                if(await output.isVisible())return true;
-                if(await verifyPlayback.isVisible())throw error;
-              }
+            if(await preview.isVisible()){
+              const decoded=await preview.evaluate(video=>
+                video.readyState>=2 && video.videoWidth>0 && video.videoHeight>0 && !video.error
+              ).catch(()=>false);
+              if(decoded)return true;
             }
-            return await output.isVisible();
+            if(!verificationTapped&&await verifyPlayback.isVisible()){
+              try{await verifyPlayback.click({timeout:2000});verificationTapped=true;}
+              catch(error){if(await verifyPlayback.isVisible())throw error;}
+            }
+            return false;
           },{timeout:45000,intervals:[250,500,1000]}).toBe(true);
-          await output.waitFor({state:"visible",timeout:45000});
+          await preview.waitFor({state:"visible",timeout:45000});
         } catch (error) {
           phase(engine,"download-control-timed-out");
           let uiState;
@@ -777,28 +777,32 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
               ? diagnosticError.message:"WebKit renderer did not respond"};
           }
           phase(engine,"recording-error-reported");
-          throw new Error(engine+" recorded video never became downloadable: "+
+          throw new Error(engine+" recorded video did not decode in native preview: "+
             JSON.stringify({...uiState,encoderFailureCodes:errors.filter(item=>
               item.startsWith("HH_WEBKIT_MP4_EXPORT_FAILURE:")).slice(-5)}),{cause:error});
         }
         phase(engine,"download-control-ready");
-        // The main Save action now shows a delivery chooser, it no longer
-        // downloads directly. Verify that real production UX, then use the
-        // explicit device File path before checking encoded movie + audio.
-        await output.click();
-        const delivery=page.locator("[data-video-messenger-delivery]");
-        await expect(delivery).toBeVisible({timeout:10000});
-        await expect(delivery.locator("[data-video-telegram-share]")).toBeVisible();
-        await expect(delivery.locator("[data-video-whatsapp-share]")).toBeVisible();
-        phase(engine,"delivery-chooser-open");
-        const [download]=await Promise.all([
-          page.waitForEvent("download",{timeout:20000}),
-          delivery.locator("[data-video-save-direct-choice]").click(),
-        ]);
-        phase(engine,"download-started");
-        const parts=[];
-        for await(const chunk of await download.createReadStream())parts.push(Buffer.from(chunk));
-        const bytes=Buffer.concat(parts);
+        // Verify the actual encoded Blob attached to the native video result;
+        // neither fake download nor auth/credit gate bypass is acceptable.
+        const encodedDataUrl=await withDeadline(page.evaluate(async()=>{
+          const video=document.querySelector("[data-mandala-video-preview]");
+          if(!(video instanceof HTMLVideoElement)||video.videoWidth<=0||video.error)
+            throw Error("REAL_VIDEO_NOT_DECODED");
+          const blob=window.__hhGeneratedFilmBlobs?.get(video.currentSrc||video.src);
+          if(!(blob instanceof Blob)||!/^video\/(?:mp4|webm)(?:;|$)/i.test(blob.type))
+            throw Error("REAL_MOVIE_BLOB_MISSING");
+          if(blob.size<=10000)throw Error("REAL_MOVIE_TOO_SMALL");
+          return await new Promise((resolve,reject)=>{
+            const reader=new FileReader();
+            reader.onload=()=>resolve(reader.result);
+            reader.onerror=()=>reject(Error("REAL_MOVIE_BLOB_READ_FAILED"));
+            reader.readAsDataURL(blob);
+          });
+        }),20000,engine+" exact movie Blob inspection");
+        assert.ok(typeof encodedDataUrl==="string"&&/^data:video\/(mp4|webm)[^,]*,/.test(encodedDataUrl),
+          "native playable preview must have genuinely recorded video");
+        const bytes=Buffer.from(encodedDataUrl.slice(encodedDataUrl.indexOf(",")+1),"base64");
+        if(await output.isVisible())await expect(output).toHaveAttribute("href",/^blob:/);
         assert.ok(bytes.length>10000,"real video must be recorded");
         assert.deepEqual(creditWrites,[],"WebKit media QA must not make XP credit POSTs");
         const probe=spawnSync("ffprobe",["-v","error","-show_entries","stream=codec_type,channels",

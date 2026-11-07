@@ -49,7 +49,8 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         assert.equal(await studio.getAttribute("data-active-workspace"),"practices",
           "deep link must activate the existing Practices workspace");
         assert.equal(await studio.getAttribute("data-video-studio-mode"),"therapy");
-        assert.equal(await page.locator('[data-video-quick-control="practices"]').getAttribute("aria-pressed"),"true");
+        assert.equal(await page.locator('[data-video-quick-control="ready"]').getAttribute("aria-pressed"),"true",
+          "Ready tab represents the six-tab Studio's deep-linked practices journey");
         const primary=course.locator("[data-guided-generate-meditation]");
         const programmeButton=course.locator("[data-guided-create-plan]");
         assert.equal(await primary.isDisabled(),true,"require an explicit focus");
