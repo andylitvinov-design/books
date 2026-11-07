@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const base=new URL('../',import.meta.url);
 const file=p=>readFileSync(new URL(p,base),'utf8');
-const data=JSON.parse(file('ops/pr-monitor/project-management-public.json'));
-const js=file('ops/pr-monitor/project-management-public.js'),html=file('ops/pr-monitor/project-management-public.html'),nav=file('ops/pr-monitor/project-management-nav.js');
+const data=JSON.parse(file('project-management-public.json'));
+const js=file('project-management-public.js'),html=file('project-management-public.html'),nav=file('project-management-nav.js');
 test('exactly two public concepts and 63 stable subtasks',()=>{
  assert.equal(data.schema,'HH_PM_PUBLIC_V1');
  assert.equal(data.projects.length,2);assert.deepEqual(data.projects.map(p=>p.stages.reduce((n,s)=>n+s.tasks.length,0)),[39,24]);
@@ -15,7 +15,7 @@ test('exactly two public concepts and 63 stable subtasks',()=>{
  }
 });
 test('no private identifiers or cross-origin login in public asset',()=>{
- const raw=file('ops/pr-monitor/project-management-public.json');
+ const raw=file('project-management-public.json');
  assert.doesNotMatch(raw,/cc_pm_|owner_id|selected_option|auth_token|secret|user_id|access_token|email|acceptance|description/);
  assert.match(nav,/project-management-public\.html/);
  assert.doesNotMatch(nav,/holistichouse\.vercel\.app\/admin/);
