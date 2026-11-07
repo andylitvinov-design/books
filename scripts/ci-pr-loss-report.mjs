@@ -280,7 +280,7 @@ export function formatSummary(report) {
   let waveRows=0;
   for(const row of report.rows) for(const gap of row.core_waves?.gaps||[]) {
     waveRows++;
-    const safe=s=>String(s??'unknown').replace(/\\|/g,'/').replace(/[\\r\\n]/g,' ');
+    const safe=s=>String(s??'unknown').replace(/[|\r\n]/g,' ');
     const url=typeof gap.evidence_url==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/(?:actions\/runs\/\d+|commit\/[0-9a-f]{40})$/.test(gap.evidence_url)?gap.evidence_url:null;
     lines.push('| #'+row.pr+' | '+gap.previous_run_id+' → '+gap.run_id+' | '+
       gap.head_relation+' | '+fmt(gap.minutes)+' | '+safe(gap.trigger_event)+' | '+

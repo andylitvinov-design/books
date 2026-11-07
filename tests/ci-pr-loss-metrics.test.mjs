@@ -649,5 +649,5 @@ test('each repeat Core wave exposes safe trigger attribution without inventing r
   const formatted=formatSummary({cohort:{created_utc_start:at('10:00'),created_utc_end:at('13:00'),inspected_prs:1},
     sampled_prs:1,top3:[],rows:[{pr:99,core_waves:rows}],categories:[],partial:true});
   assert.match(formatted,/Each subsequent Core wave/);
-  assert.match(formatted,/github-actions\\[bot\\]/);
+  assert.match(formatted,/github-actions\[bot\]/);
 });
