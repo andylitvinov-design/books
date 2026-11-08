@@ -34,7 +34,7 @@ test('Holistic House app has its own branded install manifest, without renaming 
     assert.equal(manifest.name,'Holistic House')
     assert.equal(manifest.lang,locale)
     assert.equal(manifest.id,'/en/app','locales must not create duplicate installations')
-    assert.equal(manifest.start_url,'/'+locale+'/app/messages')
+    assert.equal(manifest.start_url,'/'+locale,'PWA opens public locale Home before private Messages')
     assert.ok(manifest.icons.some(icon=>icon.src==='/holistic-house-icon/192'))
     assert.ok(manifest.icons.some(icon=>icon.src==='/holistic-house-icon/512' && icon.purpose==='maskable'))
     assert.ok(manifest.icons.some(icon=>icon.src==='/icons/holistic-house-teal.svg'))
