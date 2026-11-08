@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
+import {ArrowUpRight, Check, Mic, Paperclip, Plus, Send, X} from "lucide-react";
 import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -53,6 +53,24 @@ type JudgmentView = {status:string;state:string;choices:{id:JudgmentChoiceId;lab
 type AgentReply = { judgment?:JudgmentView|null;status:string;reply:string;modelUsed:boolean;source:string;
   suggestions:{id:string;kind:string;title:string;href:string}[];decision:AgentDecision;
   browserModelAllowed:boolean; usedSavedTestEvidence?:boolean; usedSavedVideoHistory?:boolean };
+// Artwork is drawn only from public site assets; suggestion URLs remain verified.
+function verifiedOptionArtwork(item:AgentReply["suggestions"][number]):string {
+  const title=item.title.toLowerCase();
+  if(/yggdrasil|иггдрасил|árbol de la vida/i.test(title))
+    return "/images/holistic-house/ideas-pine-sharp.avif";
+  if(/kundalini|кундалини/i.test(title))
+    return "/images/holistic-house/reiki-practitioner-sunrise.webp";
+  if(/tantra|тантра/i.test(title))
+    return "/images/holistic-house/tantra-reiki-yin-yang-cover.svg";
+  if(item.kind==="test")return "/images/holistic-house/assessment-lotus.svg";
+  if(item.kind==="service")return "/images/holistic-house/support-mock-portrait.webp";
+  if(item.kind==="video")return "/images/holistic-house/course-focus-mountain-boy.webp";
+  if(item.kind==="course")return "/images/holistic-house/course-journey-landscape.svg";
+  if(item.kind==="audio"||/meditat|медитац|meditaci|sleep|сон/i.test(title))
+    return "/images/holistic-house/hero-olive-incense.webp";
+  return "/images/holistic-house/messenger-zen-stones.svg";
+}
+
 const copy = {
   ru:{ title:"Разговор с AI-проводником",disclosure:"Я — AI-проводник Holistic House, не человек и не психотерапевт.",
     intro:"Опишите запрос свободно. По вашему согласию можно учесть проверенные результаты выбранной темы без передачи баллов нейросети.",
@@ -367,8 +385,18 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         return;
       }
       if(followTail.current){
-        // Scroll only the internal transcript, never the iPhone page or dock.
-        thread.scrollTop=thread.scrollHeight;
+        // Keep the latest question and its reply visible when options arrive.
+        // Only the internal transcript scrolls, never the document or dock.
+        if(messengerView&&messages.length){
+          const turns=thread.querySelectorAll<HTMLElement>('[data-hh-chat-user-turn="true"]');
+          const lastQuestion=turns[turns.length-1];
+          if(lastQuestion){
+            const top=lastQuestion.getBoundingClientRect().top-
+              thread.getBoundingClientRect().top+thread.scrollTop-6;
+            thread.scrollTop=Math.min(Math.max(0,top),
+              Math.max(0,thread.scrollHeight-thread.clientHeight));
+          }else thread.scrollTop=thread.scrollHeight;
+        }else thread.scrollTop=thread.scrollHeight;
         setNewBelow(false);
       }else if(messages.length)setNewBelow(true);
     };
@@ -851,6 +879,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     </label>}
     </details>
   );
+  const visibleChoices=choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id));
   return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
     data-video-auth-status={compact?(authenticated?"authenticated":authStatus):undefined}
     data-page-help={pageHelp?"true":undefined} data-has-messages={messages.length>0||undefined}
@@ -864,8 +893,14 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
-        followTail.current=atBottom;
-        if(atBottom)setNewBelow(false)}}>
+        const turns=messengerView?el.querySelectorAll<HTMLElement>('[data-hh-chat-user-turn="true"]'):null;
+        const latest=turns&&turns.length?turns[turns.length-1]:null;
+        const anchorTop=latest?latest.getBoundingClientRect().top-
+          el.getBoundingClientRect().top+el.scrollTop-6:null;
+        const anchored=anchorTop!==null&&Math.abs(el.scrollTop-
+          Math.min(Math.max(0,anchorTop),Math.max(0,el.scrollHeight-el.clientHeight)))<40;
+        followTail.current=atBottom||anchored;
+        if(followTail.current)setNewBelow(false)}}>
       {compact&&messengerView&&!messages.length&&<MessengerAiLanding
         locale={locale} onCreateVideo={startContent}
         onPractice={()=>startGuided("meditation")}
@@ -878,7 +913,8 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
             width={37} height={37} loading="lazy" alt="" className={styles.messagePortrait}/>
           <p className={styles.assistant}>{m.text}</p>
         </div>:
-        <p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
+        <p key={index} data-hh-chat-user-turn={messengerView&&m.role==="user"?"true":undefined}
+          className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
       {compact&&pageHelpLink&&<a className={styles.testLink} data-hh-ihelp-link href={pageHelpLink.href}>{pageHelpLink.label} · {t.option}</a>}
       {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
@@ -1029,19 +1065,44 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         {locale==="ru"?"Другое / Пропустить":locale==="es"?"Otro / Omitir":"Other / Skip"}
       </button>
     </div>}
-    {source&&<p className={styles.muted}>{t.source}: {source}</p>}
+    {source&&(!messengerView||!visibleChoices.length)&&
+      <p className={styles.muted}>{t.source}: {source}</p>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
     {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
-    {choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id)).length>0&&
-      <div className={styles.choices}><h2>{t.suggestions}</h2>
-        {choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id)).map(x=>
-          <div className={styles.offer} key={x.id}>
-            <a href={x.href} rel="noreferrer">{x.title} · {t.option}</a>
-            <div className={styles.feedbackActions}>
-              <button type="button" onClick={()=>setDismissedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.hide}</button>
-              <button type="button" onClick={()=>setCompletedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.tried}</button>
+    {visibleChoices.length>0&&
+      <div className={styles.choices} data-hh-verified-options>
+        <div className={styles.optionHeading}>
+          <h2>{t.suggestions}</h2>
+          {messengerView&&source&&<small className={styles.optionSource}>{t.source}: {source}</small>}
+        </div>
+        {visibleChoices.map(x=>
+          <article className={styles.offer} key={x.id} data-hh-verified-option>
+            {messengerView&&<img src={verifiedOptionArtwork(x)} className={styles.offerImage}
+              width={76} height={76} loading="lazy" alt=""/>}
+            <div className={styles.offerContent}>
+              {messengerView&&<small className={styles.offerKind}>
+                {t.kinds[x.kind as keyof typeof t.kinds]||x.kind}
+              </small>}
+              <a className={styles.offerTitle} href={x.href} rel="noreferrer"
+                title={x.title}>{x.title}</a>
+              {messengerView?<div className={styles.feedbackActions}>
+                <a className={styles.offerOpen} href={x.href} rel="noreferrer">
+                  {t.option}<ArrowUpRight size={15} aria-hidden="true"/>
+                </a>
+                <button type="button" title={t.tried} aria-label={t.tried}
+                  onClick={()=>setCompletedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>
+                  <Check size={16} aria-hidden="true"/>
+                </button>
+                <button type="button" title={t.hide} aria-label={t.hide}
+                  onClick={()=>setDismissedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>
+                  <X size={16} aria-hidden="true"/>
+                </button>
+              </div>:<div className={styles.feedbackActions}>
+                <button type="button" onClick={()=>setDismissedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.hide}</button>
+                <button type="button" onClick={()=>setCompletedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.tried}</button>
+              </div>}
             </div>
-          </div>)}
+          </article>)}
         <small className={styles.muted}>{t.localFeedback}</small>
       </div>}
     {status&&<p role="alert" className={styles.assistant}>{status}</p>}
