@@ -566,6 +566,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await phrases.locator('[data-video-ideas-open-montage-text]').click();
       await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-montage-text]')).toBeVisible();
+      const montageIdeas=page.locator('[data-video-montage-text] [data-video-ideas-compact]');
+      await expect(montageIdeas).toBeVisible();
+      const montageCountLabel=montageIdeas.locator('[data-video-ideas-selected-count]');
+      await expect(montageCountLabel).toBeVisible();
+      const initialMontageCount=Number(((await montageCountLabel.innerText()).match(/^\s*(\d+)/)||[])[1]||0);
+      assert.ok(initialMontageCount>=5,"Montage Text starts with at least five selected phrases");
+      const firstIdea=montageIdeas.locator('[data-video-idea-select="0"]');
+      await expect(firstIdea).toHaveAttribute("aria-pressed","true");
+      // The real text editor owns phrase choice: deselecting the first phrase
+      // drops below the minimum; restoring it returns the editor to a valid state.
+      await firstIdea.click();
+      await expect(firstIdea).toHaveAttribute("aria-pressed","false");
+      await expect(montageCountLabel).toContainText(String(initialMontageCount-1)+" /");
+      await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toBeVisible();
+      await firstIdea.click();
+      await expect(firstIdea).toHaveAttribute("aria-pressed","true");
+      await expect(montageCountLabel).toContainText(String(initialMontageCount)+" /");
+      await expect(montageIdeas.locator("[data-video-ideas-minimum]")).toHaveCount(0);
       const recordEntry=page.locator('[data-video-montage-text] [data-video-ideas-record]');
       await expect(recordEntry).toBeVisible();
       await recordEntry.click();
@@ -587,35 +605,23 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
       // Voice mode intentionally hides the separate personal-intention editor;
-      // that content belongs to the Personalization sub-tab, not this voice-only
-      // panel. Keep the privacy boundary and verify only visible voice controls.
+      // that content belongs to Personalization and phrase editing belongs to
+      // Montage → Text. Keep this voice-only panel focused on approved speech.
       const intentDetails=phrases.locator('[data-hypno-idea-details]');
       await expect(intentDetails).toBeHidden();
       await expect(phrases.locator('[data-video-ideas-personalization-panel]')).toBeVisible();
-      await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible();
-      for(const name of ["tone","focus","length"])
-        await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
-      await phrases.locator("[data-hypno-select-tone]").selectOption("balanced");
-      await phrases.locator("[data-hypno-select-focus]").selectOption("confidence");
-      await phrases.locator("[data-hypno-select-length]").selectOption("short");
-
-
-      // The current Phrases workspace uses the canonical Hypno phrase cards,
-      // not the retired data-video-quick-affirmation buttons.
-      const readyPhrases=phrases.locator('[data-hypno-ready]');
-      await readyPhrases.click();
-      await expect(readyPhrases).toHaveAttribute("aria-pressed","true");
-      const chosenPhrase=phrases.locator('[data-hypno-phrase="0"]');
-      await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
-      // Exercise the real visitor's individual phrase selection twice and
-      // ensure the approved text is actually restored before TTS submission.
-      await chosenPhrase.click();
-      await expect(chosenPhrase).toHaveAttribute("aria-pressed","false");
-      await chosenPhrase.click();
-      await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
-      // Reproduction of the phone screenshot: unsaved phrase edits block
-      // narration generation, NOT male/female selection or voice previews.
-      await expect(page.locator("[data-hypno-pending]")).toBeVisible();
+      await expect(phrases.locator('[data-ideas-subtab="voice"] [data-hypno-select-tone]')).toBeHidden();
+      const voicePhraseSelect=compactVoicePanel.locator("[data-video-affirmation-phrase]");
+      await expect(voicePhraseSelect).toBeVisible();
+      assert.ok(await voicePhraseSelect.locator("option").count()>=3,
+        "compact voice exposes approved phrase choices and All");
+      await voicePhraseSelect.selectOption("1");
+      await expect(voicePhraseSelect).toHaveValue("1");
+      await voicePhraseSelect.selectOption("all");
+      await expect(voicePhraseSelect).toHaveValue("all");
+      await expect(compactVoicePanel.locator('[data-video-affirmation-transcript-review]')).toHaveCount(1);
+      await expect(page.locator("[data-hypno-pending]")).toHaveCount(0);
+      await expect(page.locator("[data-video-voice-approval-required]")).toHaveCount(0);
       await voiceModeButton.click();
       const chooserPending=page.locator("[data-video-affirmation-voice-select]");
       await expect(chooserPending.locator('[data-video-affirmation-gender="male"]')).toBeEnabled();
@@ -656,40 +662,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         .toContainText(locale==="ru"?"Не удалось прослушать":"Could not load");
       rejectSofiaSample=false;
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
-      // Approved phrase edits are intentionally Text-only in this three-tab
-      // design; return to that visible panel to approve pending changes.
+      // The live editor commits phrase selection in Montage → Text. Voice has
+      // no second Hypno approval control; keep this separate from TTS consent.
       await personalTab.click();
       await expect(advancedVoice).toHaveAttribute("open","");
       await expect(advancedText).toBeVisible();
-      await advancedText.click();
-      await expect(page.locator("[data-hypno-approve]")).toBeVisible();
-      // WebKit can return from a click before React commits the visitor's
-      // approved phrases. Wait for actual approved, selected transcript state,
-      // not just the already-mounted voice panel. Keep consent and WAV proof.
-      const approvalButton=page.locator("[data-hypno-approve]");
-      await expect(approvalButton).toBeEnabled();
-      // A real iPhone touch is the authority for WebKit, while Chromium uses
-      // the normal click. Capture the actual DOM click without private text.
-      await page.evaluate(()=>{
-        window.__hhApproveClickCount=0;
-        document.querySelector("[data-hypno-approve]")?.addEventListener("click",()=>{
-          window.__hhApproveClickCount++;
-        });
-      });
-      if(engine==="webkit")await approvalButton.tap();
-      else await approvalButton.click();
-      try{
-        await expect(page.locator("[data-hypno-pending]")).toHaveCount(0,{timeout:15000});
-      }catch(error){
-        const pending=await page.locator("[data-hypno-pending]")
-          .getAttribute("data-hypno-pending-reasons").catch(()=>null);
-        const clicks=await page.evaluate(()=>window.__hhApproveClickCount??0);
-        const checked=await page.locator("[data-hypno-overview-enable]").isChecked();
-        throw new Error(engine+" APPROVED_PHRASES_STILL_PENDING "+JSON.stringify({
-          reasons:pending,clicks,checked
-        }),{cause:error});
-      }
-      await expect(page.locator("[data-hypno-overview-enable]")).toBeChecked({timeout:15000});
+      await expect(intentDetails).toBeHidden();
+      await expect(page.locator("[data-hypno-approve]")).toBeHidden();
+      await expect(page.locator("[data-hypno-pending]")).toHaveCount(0);
+      await expect(page.locator("[data-video-voice-approval-required]")).toHaveCount(0);
       await voiceModeButton.click();
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       // Record two independent browser-local tracks using the real
