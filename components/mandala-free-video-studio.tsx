@@ -5163,6 +5163,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       });
     }));
   };
+  // Generate only on this explicit click. Recipient-specific footage is
+  // applied first; React commits it before we use the real local encoder.
+  // A current callback keeps that encoder inside the trusted iOS gesture.
+  const freshGoalCreateRef=useRef<()=>boolean>(()=>false);
+  useLayoutEffect(()=>{freshGoalCreateRef.current=createQuickVideo;});
+  const generateFromGoal=()=>{
+    if(!studioHydrated||recording||preparing)return false;
+    let goalValid=true;
+    flushSync(()=>{goalValid=goalContinueRef.current?.()!==false;});
+    if(!goalValid)return false;
+    return freshGoalCreateRef.current();
+  };
+
   const openVideoScenarioStep = () => {
     setIntroPlaying(false);setIntroDismissed(true);
     setVideoScenarioOpen(true);
@@ -6158,14 +6171,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div data-video-director-topic-controls className={videoStyles.quickTopicHost}/>
           <div className={videoStyles.stageActionPair} data-video-stage-actions="goal" data-video-request-after-topic>
             <button type="button" className={videoStyles.quickGenerate} data-video-stage-generate="goal"
-              disabled={!studioHydrated||recording||preparing} onClick={createQuickVideo}>
+              disabled={!studioHydrated||recording||preparing} onClick={generateFromGoal}>
               <Play size={20} fill="currentColor" aria-hidden="true"/>
-              {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
+              {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate video"}
+              {creditCatalog?.chargeRequired && creditCatalog.ready ?
+                <small>{creditSession==="guest"&&!guestFirstVideoUsed
+                  ?locale==="ru"?"Первое бесплатно":locale==="es"?"Primero gratis":"First free"
+                  :creditCatalog.priceCredits+" "+(locale==="ru"?"кредитов":locale==="es"?"créditos":"credits")}</small>
+                :null}
             </button>
             <button type="button" className={videoStyles.stageAddButton} data-video-continue-scenarios
               disabled={!studioHydrated||recording||preparing} onClick={continueToIdeas}>
               <Sparkles size={19} aria-hidden="true"/>
-              {locale==="ru"?"Добавить эффекты":locale==="es"?"Añadir efectos":"Add Effects"}
+              {locale==="ru"?"Перейти к персонализации":
+                locale==="es"?"Continuar a personalización":"Proceed to personalization"}
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             {notice?<p className={videoStyles.quickStatus} role="status" aria-live="polite" data-video-stage-status>{notice}</p>:null}
