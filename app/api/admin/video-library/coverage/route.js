@@ -1,6 +1,7 @@
 import {ownerMaterialRequest} from '@/lib/clients/material-library-http'
 import {privateJson} from '@/lib/clients/delivery-http'
 import {auditVideoSiteCoverage} from '@/lib/video-library/coverage.mjs'
+import {getOwnerVaultRegistrySnapshot} from '@/lib/video-library/registry-health-server.js'
 
 /**
  * Existing owner-authenticated admin surface. No live R2/DB queries or remote
@@ -19,6 +20,7 @@ export async function GET(request){
     if(!['portrait','landscape','square'].includes(aspect))
       return privateJson({error:'BAD_COVERAGE_ASPECT'},400)
     const report=auditVideoSiteCoverage({aspect})
-    return privateJson(report)
+    const liveVaultRegistry=await getOwnerVaultRegistrySnapshot()
+    return privateJson({...report,liveVaultRegistry})
   })
 }

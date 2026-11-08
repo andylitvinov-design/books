@@ -4,9 +4,24 @@ import test from "node:test";
 
 const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
 
-test("voice browser opens the real Montage music controls before using them",()=>{
-  assert.match(source,/data-video-quick-control="editor"/);
-  assert.match(source,/montageSettings\.waitFor\(\{state:"visible"[\s\S]*?montageSettings\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?musicTab\.click\(\)/);
+test("voice browser uses current Montage Settings duration and compact Audio tabs",()=>{
+  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
+  for(const marker of [
+    'data-video-montage-preference="duration"',
+    'data-video-montage-audio',
+    'data-video-audio-mode="library"',
+    'data-video-voice-studio'
+  ])assert.ok(studio.includes(marker),"real current UI: "+marker);
+  for(const marker of [
+    'await montageSettingsTab.click()',
+    'await durationSelect.selectOption("10")',
+    'await expect(durationSelect).toHaveValue("10")',
+    'await montageAudio.click()',
+    'await expect(page.locator(\'[data-video-montage-audio]\')).toBeVisible()',
+    'await expect(page.locator(\'[data-video-audio-mode="library"]\')).toBeVisible()'
+  ])assert.ok(source.includes(marker),"real visitor control: "+marker);
+  assert.ok(!source.includes('data-video-montage-settings'));
+  assert.ok(!source.includes('data-video-basic-tab'));
 });
 
 test("voice browser selects the visible montage workspace before recording",()=>{
@@ -15,7 +30,7 @@ test("voice browser selects the visible montage workspace before recording",()=>
 
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
   const phrase=source.indexOf('[data-video-quick-control="phrases"]');
-  const generate=source.indexOf('await page.locator("[data-video-generate-affirmation-audio]").click()',phrase);
+  const generate=source.indexOf('await generateNarration.click()',phrase);
   const expected=source.indexOf('const expectedFileName="holistic-house-affirmations-"+locale+"-leon.wav"',generate);
   const visible=source.indexOf('await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName)',expected);
   const remix=source.indexOf('phase(engine,"offline-remix-ready")',visible);
@@ -128,4 +143,54 @@ test("consent click diagnostics retain one genuine click and never capture conta
   assert.match(block,/trusted:event\.isTrusted/);
   assert.match(block,/elementFromPoint/);
   assert.doesNotMatch(block,/\.check\(|force:\s*true|\.value\b/);
+});
+
+
+test("WebKit voice E2E exercises current two-tab Hypno, real visual modes and audio mixer",()=>{
+  assert.match(source,/const visualTab=hypnoTabs\.locator\('\[data-hypno-tab="visual"\]'\)/);
+  assert.match(source,/const audioTab=hypnoTabs\.locator\('\[data-hypno-tab="audio"\]'\)/);
+  assert.match(source,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
+  assert.doesNotMatch(source,/data-hypno-tab="phrases"/,"removed third tab must never gate real movie export");
+  assert.match(source,/await balancedLight\.click\(\)/);
+  assert.match(source,/await expect\(balancedLight\)\.toHaveAttribute\("aria-pressed","true"\)/);
+  assert.match(source,/await textPosition\.click\(\)/);
+  assert.match(source,/await expect\(textPosition\)\.toHaveAttribute\("aria-pressed","true"\)/);
+  assert.match(source,/await expect\(visualGroup\)\.toBeHidden\(\)/);
+  assert.match(source,/await expect\(audioGroup\)\.toBeVisible\(\)/);
+  assert.match(source,/await whisperSwitch\.click\(\)/);
+  assert.match(source,/await binauralSwitch\.click\(\)/);
+  assert.match(source,/pcm\.stdout\.some\(value=>value!==0\)/);
+});
+
+test("Ideas refinement survives Safari touch and keyboard disclosure toggles",()=>{
+  const director=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
+  for(const marker of [
+    'data-video-ideas-refinement',
+    '<summary onClick={event=>{',
+    'event.preventDefault();',
+    'node.open=!node.open;',
+    'ideaRefinementOpenRef.current=node.open;',
+    'ref={bindIdeaRefinement}',
+    'ideaRefinementOpenRef.current=event.currentTarget.open;',
+  ])assert.ok(director.includes(marker),"preserve the real Ideas disclosure: "+marker);
+  for(const marker of [
+    'await refinement.locator(":scope > summary").click();',
+    'await expect(refinement).toHaveAttribute("open","");',
+    'await expect(page.locator(\'[data-auto-video-topic-panel]\')).toBeVisible();'
+  ])assert.ok(source.includes(marker),"retain real WebKit browser acceptance: "+marker);
+});
+
+test("macOS WebKit voice options persist actual user disclosure across rerenders",()=>{
+  const voice=readFileSync(new URL("../components/mandala-affirmation-voice.tsx",import.meta.url),"utf8");
+  for(const marker of [
+    "ref={bindVoiceAdvanced}",
+    "voiceAdvancedOpenRef=useRef(false)",
+    "node.open=voiceAdvancedOpenRef.current",
+    "event.preventDefault();",
+    "node.open=!node.open;",
+    "voiceAdvancedOpenRef.current=node.open",
+    "data-video-affirmation-bed"
+  ])assert.ok(voice.includes(marker),"voice options controlled by real user click: "+marker);
+  assert.match(source,/await expect\(voiceOptions\)\.toHaveAttribute\("open","",\{timeout:15000\}\)/);
+  assert.match(source,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible/);
 });

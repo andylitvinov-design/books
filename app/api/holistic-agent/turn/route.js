@@ -16,10 +16,13 @@ import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offe
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
+import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
+import { signJudgmentChoice, verifyJudgmentChoice } from "@/lib/holistic-support/judgment-token.mjs";
 import { buildHolisticGuidedTurn } from "@/lib/holistic-support/holistic-guide-adapter.mjs";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import { generateOwnedOllama, validatedOllamaConfig } from "@/lib/holistic-support/owned-ollama.mjs";
 import { verifiedClientMemoryReply } from "@/lib/app/client-memory-dialogue-bridge.js";
+import { readMyAgentMemory } from "@/lib/holistic-support/agent-memory-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,18 +65,26 @@ function validatedAxes(value) {
 
 function inputOf(body) {
   onlyKeys(body,["locale","message","history","mode","ownedInferenceConsent","selectedGoal",
-    "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback"]);
+    "chosenAxes","usePrivateProfile","usePrivateHistory","preferredFormat","feedback","useAgentMemory",
+    "judgmentContext","judgmentChoice"]);
   if (!LOCALES.has(body.locale) || typeof body.message !== "string" ||
     !body.message.trim() || body.message.length > 3000 ||
     !MODES.has(body.mode) || typeof body.ownedInferenceConsent !== "boolean" ||
     (body.selectedGoal !== null && body.selectedGoal !== undefined &&
       !GOALS.has(body.selectedGoal)) ||
+    (body.useAgentMemory !== undefined && typeof body.useAgentMemory !== "boolean") ||
     (body.usePrivateProfile !== undefined && typeof body.usePrivateProfile !== "boolean") ||
     (body.usePrivateHistory !== undefined && typeof body.usePrivateHistory !== "boolean") ||
     (body.chosenAxes !== undefined && !validatedAxes(body.chosenAxes)) ||
     (body.preferredFormat !== undefined && body.preferredFormat !== null &&
       !GUIDE_FORMATS.has(body.preferredFormat)) ||
-    (body.feedback !== undefined && !validFeedback(body.feedback)))
+    (body.feedback !== undefined && !validFeedback(body.feedback)) ||
+    (body.judgmentContext !== undefined && body.judgmentContext !== null &&
+      (typeof body.judgmentContext !== "string" || body.judgmentContext.length > 1600 ||
+        !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(body.judgmentContext))) ||
+    (body.judgmentChoice !== undefined && body.judgmentChoice !== null &&
+      (!["a","b","helpful","not_helpful"].includes(body.judgmentChoice) ||
+        !body.judgmentContext)))
     throw new AppError("INVALID_AGENT_INPUT",400);
   if (!Array.isArray(body.history) || body.history.length > 6 ||
     body.history.some(row => !row || !["user","assistant"].includes(row.role) ||
@@ -84,6 +95,9 @@ function inputOf(body) {
 }
 function preflight(text,locale) {
   // Preliminary conservative lexical gate only, NOT a clinical risk diagnosis.
+  // Acute medical/violence cues strengthen escalation; absence is not clearance.
+  if(/(?:боль в груди|не могу дышать|трудно дышать|меня бьют|физическое насилие|chest pain|can(?:not|t) breathe|trouble breathing|domestic violence|dolor en el pecho|no puedo respirar|violencia domestica)/iu.test(text))
+    return {status:"human_review"};
   // This pilot is non-clinical and remains feature-flagged until evaluated.
   if (/(?:не хочу (?:больше )?жить(?:[.!?]|$)|i do not want to live(?:[.!?]|$)|i dont want to live(?:[.!?]|$)|ya no quiero vivir(?:[.!?]|$))/iu.test(text))
     return {status:"urgent"};
@@ -126,7 +140,8 @@ export async function POST(request) {
     const fastRule=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe
       ? ruleConversationReply({message:body.message,locale:body.locale,history:body.history})
       : null;
-    // Verified owner, explicit opt-in, no external provider or automatic save.
+    // Personal-memory recall is allowed only for a verified actor, safe local rules
+    // and current explicit consent. This never auto-saves a user's chat content.
     const memoryReply=body.mode==="rules" && body.usePrivateProfile===true &&
       safety.status==="clear" && !recentUnsafe &&
       process.env.HH_CLIENT_MEMORY_ENABLED==="true"
@@ -141,6 +156,55 @@ export async function POST(request) {
         browserModelAllowed:false,
         decision:{status:"clarify",message:fastRule.reply,question:null,suggestions:[]},
       },{headers:PRIVATE_HEADERS}));
+    }
+    // Tentative, nonclinical decision assistance only after owner, rate
+    // and safety preflight. No profile read, storage, booking or inferred diagnosis.
+    if (body.mode==="rules" && safety.status==="clear" && !recentUnsafe) {
+      const context=body.judgmentContext
+        ? verifyJudgmentChoice({config,actor,token:body.judgmentContext,history:body.history})
+        : null;
+      if(body.judgmentContext && !context)throw new AppError("INVALID_JUDGMENT_CONTEXT",400);
+      const judgment=planJudgmentTurn({
+        message:body.message,locale:body.locale,safety,
+        pending:context?.pending||null,choiceId:body.judgmentChoice||null,
+      });
+      if(judgment.status!=="abstain") {
+        const signed=judgment.pending ? signJudgmentChoice({
+          config,actor,pending:judgment.pending,reply:judgment.reply,
+          revision:(context?.conversationRevision||0)+1,
+        }) : null;
+        const publicJudgment={...judgment,pending:null,
+          token:signed?.token||null,
+          turnId:signed?.turnId||null,
+          conversationRevision:signed?.conversationRevision||null};
+        return auth.apply(NextResponse.json({
+          status:judgment.status==="handoff"?"safety_handoff":"clarify",
+          reply:judgment.reply,modelUsed:false,source:"judgment-rules",
+          memorySaved:false,userAuthorized:true,suggestions:[],
+          usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+          browserModelAllowed:false,judgment:publicJudgment,
+          decision:{status:"clarify",message:judgment.reply,question:null,suggestions:[]},
+        },{headers:PRIVATE_HEADERS}));
+      }
+    }
+    // A client's boolean request is not consent or account proof. The server
+    // checks the signed-in account, durable consent and memory-use flag afresh.
+    // Unsafe turns must not read this optional personal context.
+    let approvedMemory=null;
+    if(body.useAgentMemory===true && safety.status==="clear" && !recentUnsafe &&
+       process.env.HH_AGENT_MEMORY_ENABLED==="true"){
+      try{
+        const saved=await readMyAgentMemory(config,actor);
+        if(saved.consent===true && saved.useInDialogue===true && Array.isArray(saved.items)){
+          const allowed=new Set(["preferred_name","response_length","avoid_format"]);
+          approvedMemory=Object.fromEntries(saved.items
+            .filter(row=>allowed.has(row.kind)&&typeof row.value==="string")
+            .map(row=>[row.kind,row.value]));
+        }
+      }catch{
+        // A memory outage must not stop the nonclinical chat or expose notes.
+        approvedMemory=null;
+      }
     }
     const focus=resolveConversationFocus({message:body.message,locale:body.locale,
       history:body.history,selectedGoal:body.selectedGoal});
@@ -177,7 +241,8 @@ export async function POST(request) {
     // results with another medium. Public course introductions remain distinct
     // from nonplayable editor soundtracks and private practitioner recordings.
     const enabledFormats=body.preferredFormat ? [body.preferredFormat] :
-      ["video","test","course","service"];
+      ["video","test","course","service"].filter(kind=>
+        kind!==approvedMemory?.avoid_format);
     // Reuse only client-affirmed watched/mastered videos from the EXISTING
     // My Progress read model. This separate consent is opt-in per request and
     // the private database read never occurs on unsafe turns.
@@ -223,17 +288,35 @@ export async function POST(request) {
     const envelope=prepareNaturalDialogue({
       locale:body.locale,message:body.message,history:body.history,decision:spokenDecision,
       access:{authenticated:true,ownerScoped:true},
-      consent:{ownedInference:allowOwned,browserInference:false,agentMemory:false},
+      consent:{ownedInference:allowOwned,browserInference:false,
+        agentMemory:Boolean(approvedMemory)},
+      memory:approvedMemory?{
+        preferredName:approvedMemory.preferred_name||undefined,
+        preferredStyle:approvedMemory.response_length==="short"?"concise":
+          approvedMemory.response_length==="detailed"?"structured":"warm",
+      }:{},
       channel:allowOwned?"owned":"none",
     });
-    const generated=await finishNaturalDialogue(envelope,allowOwned?prompt=>
-      generateOwnedOllama(prompt,{
+    const generated=await finishNaturalDialogue(envelope,allowOwned?async prompt=>{
+      // A revocation or preference edit during catalogue work MUST invalidate
+      // the already prepared model prompt before any owned-model network call.
+      if(approvedMemory!==null){
+        const latest=await readMyAgentMemory(config,actor);
+        const current=new Map(Array.isArray(latest?.items)?
+          latest.items.map(row=>[row.kind,row.value]):[]);
+        const same=["preferred_name","response_length","avoid_format"]
+          .every(kind=>(current.get(kind)||null)===(approvedMemory[kind]||null));
+        if(latest?.consent!==true||latest?.useInDialogue!==true||!same)
+          throw Error("MEMORY_CONSENT_CHANGED");
+      }
+      return generateOwnedOllama(prompt,{
         endpoint:process.env.HH_AGENT_OLLAMA_ENDPOINT,
         model:process.env.HH_AGENT_OLLAMA_MODEL,
         bearerToken:process.env.HH_AGENT_OLLAMA_TOKEN,
         production:process.env.NODE_ENV==="production",
         signal:AbortSignal.timeout(16000),
-      }):undefined);
+      });
+    }:undefined);
     const suggestions=(Array.isArray(decision.suggestions)?decision.suggestions:[])
       .slice(0,3).map(({id,kind,href,title})=>({id,kind,href,title}));
     return auth.apply(NextResponse.json({

@@ -1,0 +1,27 @@
+{
+  "name": "Holistic House · Command Center",
+  "short_name": "HH Tasks",
+  "description": "Private owner dashboard for projects, tasks, agents and verified delivery",
+  "lang": "ru",
+  "id": "/admin/command-center",
+  "start_url": "/admin/command-center",
+  "scope": "/admin/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1323",
+  "theme_color": "#151a2d",
+  "icons": [
+    {
+      "src": "/holistic-house-icon/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/holistic-house-icon/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
