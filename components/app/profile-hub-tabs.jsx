@@ -78,7 +78,7 @@ const STUDIO_COPY = {
 const VIDEO = '/videos/holistic-house/film-collection-v3/sun-autumn-hills.mp4'
 const POSTER = '/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg'
 
-export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null }) {
+export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null, publicEntry = false }) {
   const selected = COPY[locale] ? locale : 'en'
   const t = STUDIO_COPY[selected]
   // Existing protected Cabinet uses EN fallback for ES; do not introduce a new account.
@@ -92,6 +92,13 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
     courses: root + '/course?view=courses',
     reports: root + '/portrait?space=reports',
   }
+  // Public entry tabs stay within the guest experience unless private results are requested.
+  const entryPaths = publicEntry ? { ...paths,
+    tests: '#profile-free-tests',
+    state: '/' + selected + '/client?startTests=state',
+    path: '/' + selected + '/personality-profiles',
+    courses: '/' + selected + '/academy',
+  } : paths
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
@@ -101,7 +108,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
       </Link>
     </header>
     <nav className={styles.tabs} aria-label={COPY[selected].navigation}>
-      {TABS.map(({ id, icon: Icon }) => <Link key={id} href={paths[id]} prefetch={false}
+      {TABS.map(({ id, icon: Icon }) => <Link key={id} href={entryPaths[id]} prefetch={false}
         data-profile-tab={id} aria-current={current === id ? 'page' : undefined}
         className={current === id ? styles.current : styles.tab}>
         <Icon size={20} strokeWidth={1.9} aria-hidden="true" /><span>{t.tabs[id]}</span>
@@ -127,7 +134,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         <p className={styles.srOnly}>{t.privacy}</p>
       </div>
     </>}
-    {current !== 'today' && current !== 'create' && <div className={styles.sectionIntro}>
+    {current !== 'today' && current !== 'create' && !publicEntry && <div className={styles.sectionIntro}>
       <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
     </div>}
     {current === 'create' && <p className={styles.hint}>{COPY[selected].creationHint}</p>}
