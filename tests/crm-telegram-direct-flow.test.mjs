@@ -7,8 +7,11 @@ import {telegramDirectChatReady,telegramDirectChatStartLocale,
 import {validateMessageText} from '../lib/crm/messenger-policy.js'
 const hook=readFileSync(new URL('../lib/crm/messenger-webhook.js',import.meta.url),'utf8')
 const start=hook.indexOf('export async function processTelegramDiagnostic(')
-assert.ok(start>0)
-const source=hook.slice(start).replace(/^export /,'')
+const end=hook.indexOf('export async function processWhatsAppDiagnostic(',start)
+// Extract the Telegram production function only; unrelated signed WhatsApp
+// handlers are separately exercised by CRM tests and may use module exports.
+assert.ok(start>0&&end>start)
+const source=hook.slice(start,end).replace(/^export /,'')
 const env={
  VERCEL_ENV:'production',HH_CRM_TG_DIRECT_CHAT_ENABLED:'true',
  HH_CRM_TG_DIAGNOSTIC_PUBLIC_ENABLED:'true',HH_CRM_TG_DIAGNOSTIC_ENABLED:'true',

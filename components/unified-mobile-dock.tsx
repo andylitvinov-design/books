@@ -14,9 +14,9 @@ const icons = {
   practice: Leaf, master: BriefcaseBusiness, profile: UserRound, analysis: Sparkles,
 } as const;
 const labels = {
-  ru: { mytube: "MyTube", video: "Видео", ai: "ИИ/Чат", practice: "Практика", master: "Мастер", profile: "Профиль", analysis: "Разбор" },
-  en: { mytube: "MyTube", video: "Video", ai: "AI/Chat", practice: "Practice", master: "Master", profile: "Profile", analysis: "Analysis" },
-  es: { mytube: "MyTube", video: "Vídeo", ai: "IA/Chat", practice: "Práctica", master: "Master", profile: "Perfil", analysis: "Análisis" },
+  ru: { mytube: "MyTube", video: "MyVideo", ai: "ИИ/Чат", practice: "Обучение", master: "Услуги", profile: "Профиль", analysis: "Подсказки" },
+  en: { mytube: "MyTube", video: "MyVideo", ai: "AI/Chat", practice: "Study", master: "Services", profile: "Profile", analysis: "Hints" },
+  es: { mytube: "MyTube", video: "MyVideo", ai: "IA/Chat", practice: "Estudiar", master: "Servicios", profile: "Perfil", analysis: "Pistas" },
 } as const;
 
 /** Exactly one screenshot-1 inspired fixed dock on app journeys, for guests and accounts.
@@ -141,7 +141,7 @@ export function UnifiedMobileDock({ initialLocale = "en" }: { initialLocale?: Pu
       const Icon = icons[id];
       const label = labels[locale][id];
       const ariaLabel = id === "analysis"
-        ? (locale === "ru" ? "Бесплатный экспресс-разбор" : locale === "es" ? "Revisión personal exprés gratuita" : "Free personal express review")
+        ? `${label}: ${locale === "ru" ? "Бесплатный экспресс-разбор" : locale === "es" ? "Revisión personal exprés gratuita" : "Free personal express review"}`
         : label;
       return <Link href={href} key={id} prefetch={false}
         className={styles.item} data-unified-dock-item={id}

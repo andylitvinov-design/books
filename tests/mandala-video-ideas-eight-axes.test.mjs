@@ -22,29 +22,30 @@ test("eight exact canonical axes, all three languages, five safe unique phrases"
     assert.notDeepEqual(ref,suggestMeaningPhrases(lang,...args));
  }
 });
-test("compact Ideas screen uses actual selectors, sliders and one working Montage action",()=>{
+test("one phrase editor supplies Montage Text with selected and manually edited lines",()=>{
  for(const marker of ["data-video-ideas-current","data-video-ideas-desired","data-video-ideas-state-score",
    "data-video-ideas-energy-score","data-video-meaning-axis","data-video-idea-phrase","data-video-ideas-create"])
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/listMeaningAxes\(locale\)/);
  assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("visual"\);setPreviewPlaying\(false\);\}\}/);
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
 });
 
-test("Ideas CTA advances to Montage auto Concept with no renderer, no audio library and no source gate",()=>{
+test("Ideas shortcut opens the single Montage Text editor without renderer or paid request",()=>{
  const start=studio.indexOf("const goToMontageFromIdeas = () => {");
  const end=studio.indexOf("const createQuickVideo = () => {",start);
  assert.ok(start>0&&end>start,"Ideas navigation handler");
  const action=studio.slice(start,end);
  assert.match(action,/setActiveWorkspace\("editor"\)/);
- assert.match(action,/setMontagePanel\("concept"\)/);
+ assert.match(action,/setMontagePanel\("text"\)/);
   assert.match(studio,/data-video-montage-concept/);
   assert.match(studio,/data-video-concept-text-tools/);
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
- assert.ok(studio.includes('onCreate={goToMontageFromIdeas} onGenerate={createQuickVideo} status={notice}/>'),
-  "Ideas keeps its Montage navigation and gets a separate guarded Create action");
+ assert.ok(studio.includes('data-video-ideas-open-montage-text') && studio.includes('onGenerate={createQuickVideo} status={notice}/>'),
+  'Ideas links to Montage Text and the same phrase editor has one guarded Create action');
  assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
  assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,
@@ -67,7 +68,8 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
   "data-video-ideas-record","data-video-ideas-minimum","data-video-ideas-refine"])
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/selectedCount<5/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("visual"\);setPreviewPlaying\(false\);\}\}/);
  assert.match(cmp,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
@@ -104,7 +106,7 @@ test("Ideas Play reuses film, not unstable speech synthesis; preserve real voice
    "legacy caption is not drawn on top of Ideas text");
  assert.ok(studio.includes('onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}'));
  assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'));
- assert.ok(studio.includes('onCreate={goToMontageFromIdeas}'),"CTA retains real Montage destination");
+ assert.ok(studio.includes('data-video-ideas-open-montage-text'), 'Ideas retains an explicit working Montage destination');
 });
 
 test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list fits the screen",()=>{
