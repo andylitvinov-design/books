@@ -1,5 +1,7 @@
 "use client";
 import {useState} from "react";
+import {useRouter} from "next/navigation";
+import {createVideoCartSelection,VIDEO_CART_STORAGE_KEY,SERVICE_CART_UPDATED_EVENT} from "@/lib/commerce/cart";
 import type {ReactNode} from "react";
 import {ArrowRight, Camera, Check, ChevronDown, Clapperboard, Film, Sparkles, UsersRound} from "lucide-react";
 import type {StoryAddonKind} from "@/lib/mandala/story-addon-catalog";
@@ -22,7 +24,8 @@ const copy={
   wishLabel:"Ваши пожелания",wishPlaceholder:"Например: первые 5 секунд — рассвет у моря, затем встреча двух людей, мягкий свет, спокойный финал…",
   proTools:"Дополнительные режиссёрские настройки",privacy:"Текст остаётся в редакторе. Он не отправляется платному AI-сервису автоматически.",
   freeCreate:"Создать видео бесплатно",extraCreate:"Создать видео за €3",proCreate:"Создать видео за €5",
-  unavailable:"Платная генерация и оплата пока не подключены. Кнопка не списывает деньги и не создаёт заказ.",
+  unavailable:"В корзине можно выбрать PayPal.Me. Перевод подтверждается вручную; видео не создаётся автоматически.",
+  cartAdd:"В корзину",
   creditsInfo:"* Первый ролик для гостя бесплатно; следующие могут стоить кредиты согласно балансу.",
   preview:"Посмотреть монтаж"
  },
@@ -39,7 +42,8 @@ const copy={
   wishLabel:"Your directions",wishPlaceholder:"For example: first 5 seconds — seaside sunrise, then two people meet, soft golden light and a peaceful ending…",
   proTools:"Advanced director settings",privacy:"Your brief stays in the editor. It is not automatically sent to a paid AI service.",
   freeCreate:"Create video for free",extraCreate:"Create video for €3",proCreate:"Create video for €5",
-  unavailable:"Paid rendering and checkout are not enabled yet. No payment or order is initiated.",
+  unavailable:"PayPal.Me is available in the cart. Payments require manual verification; video rendering is not automatic.",
+  cartAdd:"Add to cart",
   creditsInfo:"* The first guest video is free; additional exports may use your existing credit balance.",
   preview:"Preview montage"
  },
@@ -56,7 +60,8 @@ const copy={
   wishLabel:"Tus indicaciones",wishPlaceholder:"Por ejemplo: primero un amanecer junto al mar, después dos personas se encuentran, luz suave y un final tranquilo…",
   proTools:"Opciones avanzadas del director",privacy:"El texto permanece en el editor. No se envía automáticamente a un proveedor de IA de pago.",
   freeCreate:"Crear vídeo gratis",extraCreate:"Crear vídeo por €3",proCreate:"Crear vídeo por €5",
-  unavailable:"La generación de pago y el cobro aún no están habilitados. No se realiza ningún cargo ni pedido.",
+  unavailable:"Puedes usar PayPal.Me desde el carrito. El pago se verifica manualmente y el vídeo no se genera automáticamente.",
+  cartAdd:"Añadir al carrito",
   creditsInfo:"* El primer vídeo de invitado es gratis; los siguientes pueden usar créditos.",
   preview:"Vista previa del montaje"
  }
@@ -82,12 +87,22 @@ export function MandalaProEnhance({
  locale,disabled,onGenerateFree,onPickPhoto,photoSelected,photoPending,proWish,
  onProWishChange,freeButtonLabel,onChooseCatalog,standardEditor,proTools,children
 }:Props){
+ const router=useRouter();
  const [tier,setTier]=useState<Tier>("standard");
  const [charactersOpen,setCharactersOpen]=useState(false);
  const t=copy[locale];
  const chooseTier=(next:Tier)=>{
    setTier(next);
    if(next==="extra"){onChooseCatalog("character");setCharactersOpen(true);}
+ };
+ const addToCart=()=>{
+   const id=tier==="extra"?"video-extra":tier==="pro"?"video-pro":null;
+   if(!id||disabled)return;
+   const selected=createVideoCartSelection(id,proWish);
+   if(!selected)return;
+   try{window.sessionStorage.setItem(VIDEO_CART_STORAGE_KEY,JSON.stringify(selected));
+     window.dispatchEvent(new Event(SERVICE_CART_UPDATED_EVENT));}catch{}
+   router.push("/"+locale+"/cart?video="+id);
  };
  const heading=tier==="standard"?t.standardTitle:tier==="extra"?t.extraTitle:t.proTitle;
  const description=tier==="standard"?t.standardDesc:tier==="extra"?t.extraDesc:t.proDesc;
@@ -152,10 +167,10 @@ export function MandalaProEnhance({
    <div className={styles.actions} data-video-pro-actions>
      <button type="button" className={styles.createButton} data-video-pro-create={tier}
        data-video-generate-without-ai={tier==="standard"?"true":undefined}
-       disabled={disabled||tier!=="standard"} onClick={onGenerateFree}>
+       disabled={disabled} onClick={()=>{if(tier==="standard")onGenerateFree();else addToCart();}}>
        <Film size={20} aria-hidden="true"/>
        <span>{tier==="standard"?(freeButtonLabel||t.freeCreate):
-         tier==="extra"?t.extraCreate:t.proCreate}</span>
+         t.cartAdd+" · "+t.prices[tier]}</span>
        {tier==="standard"?<ArrowRight size={19} aria-hidden="true"/>:null}
      </button>
    </div>
