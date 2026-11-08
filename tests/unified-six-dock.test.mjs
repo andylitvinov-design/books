@@ -98,17 +98,18 @@ test("one screenshot-1 style seven-button dock and protected old docks removed v
  assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
  assert.match(css,/position:fixed/);
  assert.match(css,/safe-area-inset-bottom/);
- // Keep the iPhone dock anchored to the viewport; Safari's native bottom
- // controls must never cause an extra JS-computed vertical offset.
- assert.match(css,/translate3d\(-50%,0,0\)/);
+ // Center fixed UI without a translated compositing layer on iPhone Safari.
+ assert.match(css,/left:0;right:0;margin-inline:auto/);
+ assert.doesNotMatch(css,/translate3d/);
  assert.match(css,/position:fixed;z-index:58;bottom:0;/);
  assert.doesNotMatch(css,/--hh-unified-viewport-inset|100vh\s*-\s*100dvh|bottom:max\(/);
  assert.ok(dock.includes('const visualOffsetTop = viewport?.offsetTop ?? 0'));
  assert.match(dock,/visualKeyboardOpen\(/);
+ assert.match(dock,/visualDockBottomOffset\(/);
  assert.doesNotMatch(dock,/visualDockBottomCorrection\(|mobileVisualBottomGap\(|--hh-unified-viewport-inset/);
  assert.doesNotMatch(hide,/--hh-unified-viewport-inset/);
- assert.doesNotMatch(dock,/addEventListener\("scroll", update/);
- assert.doesNotMatch(dock,/removeEventListener\("scroll", update/);
+ assert.match(dock,/viewport\?\.addEventListener\("scroll", update/);
+ assert.match(dock,/viewport\?\.removeEventListener\("scroll", update/);
  assert.match(dock,/hideForKeyboard/);
  assert.match(css,/min-height:52px/);
  for(const former of ["data-support-mobile-bottom-nav","data-mandala-support-bottom-nav",
