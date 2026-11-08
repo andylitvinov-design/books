@@ -181,7 +181,11 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
   assert.match(voice,/const bindVoiceAdvanced=useCallback/);
   assert.match(voice,/voiceAdvancedNodeRef\.current=node/);
   assert.match(voice,/summary onClick=\{event=>\{/);
-  assert.match(voice,/event\.preventDefault\(\)/);
+  assert.match(voice,/voiceAdvancedOpenRef\.current=!node\.open/);
+  assert.doesNotMatch(voice,/event\.preventDefault\(\)/,
+    "allow native WebKit summary to perform one disclosure toggle");
+  assert.doesNotMatch(voice,/node\.open\s*=\s*!node\.open/,
+    "do not manually toggle the native disclosure twice");
   assert.match(voice,/data-video-affirmation-bed/);
   assert.match(browser,/const voiceOptions=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
   assert.match(browser,/await voiceOptions\.locator\(":scope > summary"\)\.click\(\)/);
