@@ -76,11 +76,13 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
  assert.match(studio,/onClick=\{continueToIdeas\}/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
- // Preserve physical tap acceptance on the updated Montage Style cards.
- assert.ok(flow.includes('[data-video-montage-effects] [data-video-montage-style]'));
- assert.ok(flow.includes('await expect(montageStyleTiles).toHaveCount(6)'));
- assert.ok(flow.includes('await montageStyleTiles.nth(1).click()'));
- assert.ok(flow.includes('await expect(montageStyleTiles.nth(1)).toHaveAttribute("aria-pressed","true")'));
+ // The live Style controls are direct buttons, not the removed legacy wrapper.
+ assert.ok(flow.includes('const styleTab=page.locator(\'[data-video-montage-tab="effects"]\')'));
+ assert.ok(flow.includes('await styleTab.tap()'));
+ assert.ok(flow.includes('const styles=page.locator("[data-video-montage-style]")'));
+ assert.ok(flow.includes('await expect(styles).toHaveCount(6)'));
+ assert.ok(flow.includes('await minimal.tap()'));
+ assert.ok(flow.includes('await expect(minimal).toHaveAttribute("aria-pressed","true")'));
  assert.ok(flow.includes('toBeHidden()'),"legacy Director filter is not the active style picker");
 });
 
@@ -155,7 +157,7 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
 });
 
-test("macOS WebKit reaches real Create through visible Style → Text → Audio and keeps MP4 + voice acceptance",()=>{
+test("macOS WebKit reaches real Create through visible Style → Audio and keeps MP4 + voice acceptance",()=>{
  const flow=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const css=read("components/mandala-video-mobile.module.css");
@@ -166,20 +168,24 @@ test("macOS WebKit reaches real Create through visible Style → Text → Audio 
  let last=-1;
  for(const action of [
    'await page.locator(\'[data-video-quick-control="editor"]\').click()',
-   'await expect(styleNext).toBeVisible',
-   'await styleNext.click()',
-   'await expect(page.locator(\'[data-video-montage-tab="text"]\'))',
-   'await expect(generate).toHaveAttribute("data-video-montage-next","audio")',
-   'await generate.click()',
-   'await expect(page.locator(\'[data-video-montage-tab="audio"]\'))',
+   'const creationStyleTab=page.locator(\'[data-video-montage-tab="effects"]\')',
+   'await expect(creationStyleTab).toBeVisible',
+   'await creationStyleTab.click()',
+   'await expect(creationStyleTab).toHaveAttribute("aria-pressed","true")',
+   'const montageAudioTab=page.locator(\'[data-video-montage-tab="audio"]\')',
+   'await montageAudioTab.click()',
+   'await expect(montageAudioTab).toHaveAttribute("aria-pressed","true")',
+   'const generate=page.locator("[data-video-quick-generate]")',
    'await expect(generate).toBeVisible',
    'await expect(generate).toBeEnabled'
+
  ]){
    const at=journey.indexOf(action,last+1);
    assert.ok(at>last,action+" follows the real visitor path");
    last=at;
  }
- assert.match(studio,/data-video-montage-next=\{montagePanel==="effects"\?"text":montagePanel==="text"\?"audio":undefined\}/);
+ assert.match(studio,/data-video-montage-next=\{montagePanel==="effects"\?"audio":"hypno"\}/);
+ assert.match(studio,/data-video-quick-generate[\s\S]*?onClick=\{createQuickVideo\}/);
  assert.match(studio,/const continueMontageOrGenerate=\(\)=>/);
  assert.match(css,/\[data-montage-panel="effects"\] \[data-video-order-bar\]\{display:none!important\}/);
  assert.doesNotMatch(journey,/\.click\(\{\s*force:\s*true/);
@@ -206,7 +212,7 @@ test("macOS consent acceptance requires real meditation opt-out without WebKit R
  ])assert.ok(flow.includes(step),step);
  assert.doesNotMatch(flow,/page\.waitForFunction|force:\s*true|\.evaluate\([^]*?\.open\s*=/,
     "do not bypass the visitor action or trust suspended RAF polling");
- assert.match(guided,/data-guided-skip-meditation[\s\S]*?setMeditationChoice\("omit"\);onOmitMeditation\?\.\(\)/);
+ assert.match(guided,/data-guided-skip-meditation[\s\S]*?flushSync\(\(\)=>setMeditationChoice\("omit"\)\);[\s\S]*?onOmitMeditation\?\.\(\)/);
  assert.match(stage,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationOmitted\(true\)/);
  assert.match(browser,/await consentLabel\.click\(\)/,
     "the actual consent label must still receive a real click");
