@@ -934,16 +934,22 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
-      // The real mobile Montage Style stage intentionally hides the export
-      // button behind its visible "Next · Add text" step. To produce a voiced
-      // movie, choose the real Audio tab, not a hidden Style-step control.
+      // #3933 introduced TWO explicit actions: Generate Video exports on tap;
+      // Add Effects navigates. Never tap Generate merely to advance a tab.
+      // Exercise the visible Style and Audio controls, then create exactly once
+      // below at phase(start-media-recorder).
+      const creationStyleTab=page.locator('[data-video-montage-tab="effects"]');
+      await expect(creationStyleTab).toBeVisible();
+      await creationStyleTab.click();
+      await expect(creationStyleTab).toHaveAttribute("aria-pressed","true");
       const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
       await expect(montageAudioTab).toBeVisible();
       await montageAudioTab.click();
       await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
-      await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
+      await expect(generate).not.toHaveAttribute("data-video-montage-next",/./);
+      await expect(generate).toBeEnabled({timeout:30000});
       assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");
       // One Create tap decodes the idle MP4 and exports the actual voice video.
