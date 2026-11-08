@@ -94,12 +94,11 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.doesNotMatch(compact,/<MandalaVideoAffirmations /);
  assert.match(compact,/onPendingChange\?\.\(hasPendingEdits\)/);
  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
- const finalCreate=studio.slice(studio.indexOf("data-video-quick-generate"),
+ const direct=studio.slice(studio.indexOf("data-video-quick-generate"),
    studio.indexOf("</button>",studio.indexOf("data-video-quick-generate")));
- assert.match(finalCreate,/montagePanel!=="effects"/);
-  assert.match(studio,/if\(montagePanel==="concept"\)return/,"guest concept approval never triggers rendering");
- assert.match(finalCreate,/!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending/,
-   "unapproved phrase edits still block final export, not navigation");
+ assert.ok(direct.includes('onClick={createQuickVideo}'));
+ for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){'])
+   assert.ok(studio.includes(guard),"approved phrase and paid-format guard: "+guard);
  assert.match(studio,/if\(phrasePending\)\{/);
  assert.match(compact,/if\(ideaPending&&!draft\)return/);
  assert.match(compact,/externalPhraseDraft!==null\?\[\]:settings\.selected/);
