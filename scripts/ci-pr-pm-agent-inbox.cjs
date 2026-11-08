@@ -5,13 +5,13 @@
  * Never runs PR source code, never exposes OpenRouter secret, never claims a commit.
  */
 const OWNER='andylitvinov-design', REPO='books', ISSUE=3890;
-const MAX_DAILY=12, MAX_BODY=1200, MAX_HISTORY=300, MAX_AGE=24*3600*1000;
+const MAX_DAILY=12, MAX_BODY=1200, MAX_SOURCE_COMMAND=2800, MAX_HISTORY=300, MAX_AGE=24*3600*1000;
 const MARKER='HH_PM_INBOX_STATE_V1', SHA=/^[0-9a-f]{40}$/i;
 const PREFIX='https://github.com/'+OWNER+'/'+REPO;
 const trim=(s,n=MAX_BODY)=>String(s||'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,' ').trim().slice(0,n);
 const nowMs=t=>Date.parse(t||'');
 function ownerComment(c){
- return c?.user?.login===OWNER && c.user?.type==='User' &&
+ return c?.user?.login===OWNER && c.user?.id===274943885 && c.user?.type==='User' &&
    Number.isSafeInteger(c.id)&&c.id>0 && typeof c.body==='string' &&
    Number.isFinite(nowMs(c.created_at));
 }
@@ -29,6 +29,20 @@ function command(c){
    const prompt=trim(body.slice('!pm ask '.length));
    if(prompt.length<5||prompt.length>MAX_BODY)return null;
    return {id:c.id,kind:'ask',text:prompt,createdAt:c.created_at};
+ }
+ if(body.startsWith('!pm source ')){
+   const raw=body.slice('!pm source '.length).trim();
+   if(raw.length<120||raw.length>MAX_SOURCE_COMMAND)return null;
+   if(/(?:github_pat_|ghp_|sk-[A-Za-z0-9_-]{18,}|-----BEGIN [^-]*PRIVATE KEY|authorization\s*:\s*bearer|api[_-]?key\s*[:=])/i.test(raw))return null;
+   try {
+     const task=require('./ci-pr-commander-source-task.cjs').parseTask(raw);
+     if(task.public_technical_only!==true)return null;
+     const expected=task.mode==='literal'?
+      ['task_id','target_base','expected_base_sha','path','title','mode','find','replace','public_technical_only']:
+      ['task_id','target_base','expected_base_sha','path','title','mode','instruction','public_technical_only'];
+     if(Object.keys(task).sort().join(',')!==expected.sort().join(','))return null;
+     return {id:c.id,kind:'source',task,createdAt:c.created_at};
+   }catch(_){return null;}
  }
  const m=/^!pm repair\s+#?(\d{1,8})\s+([a-f0-9]{40})\s*$/i.exec(body);
  if(m && Number(m[1])>0)return {id:c.id,kind:'repair',pr:Number(m[1]),sha:m[2].toLowerCase(),createdAt:c.created_at};
@@ -52,10 +66,14 @@ const resultBody=(cmd,result,run)=>{
  const state=result.ok?'REPLIED':result.dispatched?'DISPATCH_ACCEPTED_UNCORRELATED':'BLOCKED';
  const head='<!-- '+MARKER+' comment='+cmd.id+' status='+state+' -->\n';
  const summary=result.ok?'**OpenRouter Free · ответ на технический вопрос**':
-   result.dispatched?'**Watchdog dispatch accepted; Repair Worker not yet verified**':'**Agent request blocked**';
+   result.dispatched?(cmd.kind==='source'?'**Source Worker dispatch accepted; source commit NOT yet verified**':
+    '**Watchdog dispatch accepted; Repair Worker not yet verified**'):'**Agent request blocked**';
  const text=result.ok?trim(result.text,2300):result.dispatched?
-   'Request accepted by GitHub Actions for PR #'+cmd.pr+' exact HEAD '+cmd.sha+
-   '. This is NOT runner start, patch, commit, CI green, merge, or LIVE.':
+   (cmd.kind==='source'?
+    'Existing owner Source Worker workflow_dispatch accepted for public technical task '+cmd.task.task_id+
+    '. No source SHA, draft PR, CI, merge or LIVE is yet verified. Check the linked Actions workflow.':
+    'Request accepted by GitHub Actions for PR #'+cmd.pr+' exact HEAD '+cmd.sha+
+    '. This is NOT runner start, patch, commit, CI green, merge, or LIVE.'):
    'Reason: '+trim(result.reason||'UNKNOWN',140);
  return head+summary+'\n\n'+text+'\n\n'+
   'Source: '+PREFIX+'/issues/'+ISSUE+'#issuecomment-'+cmd.id+
@@ -154,7 +172,34 @@ async function dispatchRepair(github,cmd){
  }catch(_){return {reason:'DISPATCH_AMBIGUOUS_NO_RETRY'};}
  return {dispatched:true,reason:'DISPATCH_ACCEPTED_UNCORRELATED'};
 }
-async function run({github,core,context,fetcher=fetch,token=undefined}={}){
+async function dispatchSource(github,cmd,{ownerToken,fetcher=fetch}={}){
+ const task=cmd?.task;
+ if(!task||task.public_technical_only!==true)return {reason:'PUBLIC_TECHNICAL_APPROVAL_MISSING'};
+ if(typeof ownerToken!=='string'||!ownerToken.trim())return {reason:'OWNER_SOURCE_DISPATCH_TOKEN_NOT_CONFIGURED'};
+ try{
+   const branch=(await github.rest.repos.getBranch({owner:OWNER,repo:REPO,branch:task.target_base})).data;
+   if(branch?.commit?.sha!==task.expected_base_sha)return {reason:'SOURCE_BASE_SHA_MOVED'};
+   const {branchName}=require('./ci-pr-commander-source-task.cjs');
+   try{
+     await github.rest.git.getRef({owner:OWNER,repo:REPO,ref:'heads/'+branchName(task)});
+     return {reason:'SOURCE_TASK_BRANCH_ALREADY_EXISTS'};
+   }catch(e){if(e?.status!==404)return {reason:'SOURCE_TASK_BRANCH_UNVERIFIED'};}
+ }catch(_){return {reason:'SOURCE_PREFLIGHT_GITHUB_UNAVAILABLE'};}
+ const endpoint='https://api.github.com/repos/'+OWNER+'/'+REPO+
+  '/actions/workflows/hh-pr-repair-worker.yml/dispatches';
+ try{
+   const response=await fetcher(endpoint,{method:'POST',redirect:'error',cache:'no-store',
+    signal:AbortSignal.timeout(15000),headers:{
+     Authorization:'Bearer '+ownerToken,Accept:'application/vnd.github+json',
+     'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'},
+    body:JSON.stringify({ref:'codex/bootstrap-books',inputs:{
+     commander_source_task:JSON.stringify(task)}})});
+   if(response?.status!==204)return {reason:'OWNER_SOURCE_DISPATCH_HTTP_'+String(response?.status||'UNKNOWN')};
+   return {dispatched:true,reason:'SOURCE_WORKFLOW_DISPATCH_ACCEPTED_NOT_PROOF'};
+ }catch(_){return {reason:'SOURCE_DISPATCH_AMBIGUOUS_NO_RETRY'};}
+}
+async function run({github,core,context,fetcher=fetch,token=undefined,
+ ownerToken=undefined,ownerFetcher=fetch}={}){
  if(context?.repo?.owner!==OWNER||context?.repo?.repo!==REPO||
   context?.ref!=='refs/heads/codex/bootstrap-books'||
   !['schedule','workflow_dispatch'].includes(context.eventName)||
@@ -166,7 +211,7 @@ async function run({github,core,context,fetcher=fetch,token=undefined}={}){
  const pick=pending(snapshot.comments);
  if(pick.status!=='OK'||!pick.next)return {status:pick.status==='OK'?'NO_PENDING':pick.status};
  const cmd=pick.next;
- const cap=cmd.kind==='repair'?6:MAX_DAILY;
+ const cap=cmd.kind==='source'?3:cmd.kind==='repair'?6:MAX_DAILY;
  if(pick.used>=cap)return {status:'INBOX_DAILY_CAP_HOLD',kind:cmd.kind,commandId:cmd.id};
  // Serialize by existing Watchdog job concurrency. Commit a durable claim
  // BEFORE any model/API call. Never retry ambiguous remote requests.
@@ -174,7 +219,8 @@ async function run({github,core,context,fetcher=fetch,token=undefined}={}){
  catch(_){return {status:'CLAIM_UNAVAILABLE_NO_DISPATCH'};}
  let outcome;
  try{outcome=cmd.kind==='ask'?
-  await askFree(cmd.text,{fetcher,token,run:runUrl}):
+  await askFree(cmd.text,{fetcher,token,run:runUrl}):cmd.kind==='source'?
+  await dispatchSource(github,cmd,{ownerToken,fetcher:ownerFetcher}):
   await dispatchRepair(github,cmd);
  }catch(_){outcome={reason:'INBOX_EXECUTION_UNAVAILABLE_NO_RETRY'};}
  try{await send(github,resultBody(cmd,outcome,runUrl));}
@@ -185,4 +231,4 @@ async function run({github,core,context,fetcher=fetch,token=undefined}={}){
  }));
  return {status:outcome.ok?'AI_REPLIED':outcome.dispatched?'DISPATCH_ACCEPTED_UNCORRELATED':'BLOCKED',kind:cmd.kind,commandId:cmd.id};
 }
-module.exports={run,ownerComment,trustedReceipt,command,pending,resultBody,askFree};
+module.exports={run,ownerComment,trustedReceipt,command,pending,resultBody,askFree,dispatchSource};

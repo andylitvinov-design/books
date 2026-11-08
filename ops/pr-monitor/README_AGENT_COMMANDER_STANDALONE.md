@@ -74,6 +74,17 @@ The mobile editor reuses the existing fixed five-tab dock and contains task iden
 Acceptance: tap «Передать в защищённый редактор» → same-origin route, same tab → owner login or valid existing session → source/prompt remain editable → live PR search, quality checks, draft options, truthful queue status. Guests get 401 on `/api/commander-drafts`. Validate 320/390/430px Safari and production alias.
 
 
-## Multi-chat workspace · 7 Nov 2026
+## AI Projects Brain · public read-only project memory (7 November 2026)
 
-Same-site `/chats.html` supports separate owner-protected conversations by task/team, multiple executor assignments, associated PR, history and on-demand proof. Existing quick chat links to this workspace. Assignment and AI replies never certify a commit or LIVE. Server mode reuses only the verified PRIVATE GitHub task store; until configured, users may opt into a separately password-protected AES-GCM local vault and encrypted backup. No plaintext private content in the public books repository. Detailed architecture and release procedure: docs/operations/HH_AGENT_COMMANDER_MULTI_CHAT_V1_20261107.md.
+Source of truth: https://github.com/andylitvinov-design/ai-projects-brain/tree/main/projects
+
+- `/memory.html` exposes the existing `projects/` folders plus the active `projects/portfolio-registry.json` routing overlay. Search uses names, aliases and repository names; opening one project reads only its allowlisted public `PROJECT.md`, `STATE.md`, `SYSTEM_MAP.md`, `CODEX_BRIEF.md`, `CHECKS.md`, `DECISIONS.md`, `RISKS.md`, `LOG.md` files.
+- The mobile task form can select one folder and **explicitly** append a bounded, source-linked reference bundle to an editable executor prompt. The reference is inserted before step 5 to survive the existing 8,500-character protected draft handoff. The agent must verify current code, CI, merge and LIVE independently.
+- No localStorage, audio storage, personal/client data, credentials, server-side GitHub token, new OpenRouter payment, vector database or background polling. Reading public external content does not grant tool permissions and does not establish system instructions.
+- If GitHub API is rate limited, the public registry still works when available. If both sources fail, the app visibly says unavailable; it does not invent a project list. The registry's last_updated field is displayed to prevent confusing old status with current live evidence.
+- This is **source integration**, not a persistent autonomous memory write-back or production deployment. Updating durable project memory still happens through reviewed AI Projects Brain commits/PRs; protected Agent Commander remains the only authority to create/execute private tasks.
+- Test: `node --test ops/pr-monitor/tests/commander-memory.test.mjs ops/pr-monitor/tests/commander-shell.test.mjs`. Release is the usual **full source-manifest** manual Vercel overlay, exact-HEAD CI, iPhone 320/390/430, and production smoke; never deploy just the new files. Coordinate merge with pending Agent Commander skills/task-tree PRs rather than editing their active HEAD.
+
+## Protected task-bound executor chats · 8 November 2026
+
+A saved owner task opens `/chats.html?task=<uuid>` only after its private GitHub Issue save succeeds; the private chats API re-validates task provenance and creates/reuses one task-ID-bound chat. Shared top navigation links to Skills, Brain Memory and Chats. Private storage is mandatory for cross-device task linking. A local encrypted chat vault is device-only, not a backend queue. Assigned executor and advisory AI are **not** proof of execution, source commit, CI green, Merge or functional LIVE. The existing per-task worker receipt lineage remains an independent gate; never forge a reply from general #1419/#3128 reports.

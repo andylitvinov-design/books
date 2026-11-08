@@ -3,7 +3,9 @@
  * One issue per chat, append-only comment events. No public chat storage,
  * no agent dispatch, no paid provider and no self-certified LIVE state.
  */
-const core=require('./commander-drafts.js').__private;
+const drafts=require('./commander-drafts.js');
+const core=drafts.__private;
+const unpackTask=drafts.__test.unpack;
 const {reporter}=require('./pm-agent-chat.js').__test;
 const MARK='HH_COMMANDER_THREAD_V1', EVENT='HH_COMMANDER_EVENT_V1';
 const PUBLIC='https://api.github.com/repos/andylitvinov-design/books';
@@ -28,6 +30,7 @@ function normalize(value,previous){
  const description=clean(value.description,1000);
  if(String(value.description||'').length>1000)throw Error('DESCRIPTION_TOO_LONG');
  return {schema:MARK,id,title,project:value.project,description,
+  taskId:previous?.taskId||null,taskIssueNumber:previous?.taskIssueNumber||null,
   tasks:[...new Set(value.tasks)],executors:[...new Set(value.executors)],prs:[...new Set(value.prs)],
   status:value.status,revision:(previous?.revision||0)+1,
   createdAt:previous?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString(),
@@ -75,6 +78,24 @@ async function existing(id){
  if(found)return found.issueNumber;
  if(results.incomplete)throw Error('CHAT_INDEX_INCOMPLETE_HOLD');
  return null;
+}
+async function savedPrivateTask(taskId){
+ const marker='HH_COMMANDER_TASK_V1:'+taskId;
+ for(let page=1;page<=5;page++){
+  const found=await core.github('GET','/issues?state=all&per_page=100&page='+page+'&sort=updated');
+  if(!Array.isArray(found))throw Error('TASK_INDEX_UNAVAILABLE');
+  const matches=found.filter(x=>!x.pull_request&&String(x.body||'').includes(marker));
+  if(matches.length>1)throw Error('DUPLICATE_TASK_ID_HOLD');
+  if(matches.length===1){
+   const issue=await core.github('GET','/issues/'+matches[0].number);
+   if(issue.pull_request)throw Error('TASK_SOURCE_INVALID');
+   const record=unpackTask(issue);
+   if(!record||record.taskId!==taskId)throw Error('TASK_SOURCE_MISMATCH');
+   return {record,issueNumber:issue.number};
+  }
+  if(found.length<100)throw Error('TASK_NOT_SAVED');
+ }
+ throw Error('TASK_INDEX_INCOMPLETE_HOLD');
 }
 async function events(issueNumber){
  const rows=[];let truncated=false;
@@ -156,6 +177,30 @@ module.exports=async function(req,res){
    const n=number(u.searchParams.get('issue'));if(!n)return respond(res,400,{error:'INVALID_ISSUE'});
    const item=await verifiedIssue(n),hist=await events(n);
    return respond(res,200,{chat:{...unpack(item),issueNumber:n,githubUpdatedAt:item.updated_at},...hist});
+  }
+  if(req.method==='POST'&&action==='from_task'){
+   const taskId=String(body.taskId||'');
+   if(!uuid(taskId))return respond(res,400,{error:'INVALID_TASK_ID'});
+   const task=await savedPrivateTask(taskId);
+   const prior=await existing(taskId);
+   if(prior){
+    const item=await verifiedIssue(prior),chat=unpack(item);
+    if(chat.taskId!==taskId||chat.taskIssueNumber!==task.issueNumber)
+     throw Error('TASK_CHAT_COLLISION_HOLD');
+    return respond(res,200,{issueNumber:prior,created:false,chat,agentStarted:false});
+   }
+   const record=task.record;
+   const chat=normalize({
+    id:taskId,title:String(record.title||'').slice(0,110),
+    project:PROJECTS.has(record.project)?record.project:'other',
+    description:String(record.summary||record.source||'').slice(0,1000),
+    tasks:[],prs:(record.relatedPr||[]).filter(n=>Number.isSafeInteger(n)&&n>0&&n<100000).slice(0,15),
+    executors:[record.executor==='repair-worker'?'repair-worker':'manual'],status:'assigned'
+   });
+   chat.taskId=taskId;chat.taskIssueNumber=task.issueNumber;
+   chat.executionState='AWAITING_EXECUTOR_NOT_DISPATCHED';
+   const saved=await core.github('POST','/issues',{title:'[AC CHAT] '+chat.title,body:pack(chat)});
+   return respond(res,201,{issueNumber:saved.number,created:true,chat,agentStarted:false});
   }
   if(req.method==='POST'&&action==='create'){
    const chat=normalize(body.chat);

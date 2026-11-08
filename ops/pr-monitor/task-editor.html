@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/task-editor.css?v=20261107-1">
 <script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
 <script src="/task-editor.js?v=20261107-1" defer></script>
+<script src="/commander-source-bridge.js?v=20261107-v1" defer></script>
 </head><body class="hh-cc-shell">
 <main class="ac-editor" id="ac-editor">
   <header class="ac-heading">
@@ -85,8 +86,44 @@
       <h2>10. Сохранение и передача</h2>
       <p id="ac-remote-status" class="ac-note" role="status">Проверяю подключение защищённого хранилища…</p>
       <button type="button" id="ac-save-remote" class="ac-primary">Сохранить задачу владельца</button>
+      <button type="button" id="ac-open-task-chat" class="ac-secondary" disabled>Открыть чат этой задачи</button>
       <button type="button" id="ac-queue" class="ac-primary ac-send">Передать Agent Commander</button>
       <p class="ac-hint">Передача в очередь не равна запуску агента. Код, PR, CI, Merge и LIVE подтверждаются отдельно.</p>
+      <details id="ac-source-workflow" class="ac-backup">
+        <summary>Настоящий GitHub commit: публичная техническая задача</summary>
+        <p class="ac-hint" id="ac-source-mode-note">Используется существующий GitHub Watchdog и Repair Worker. Приватные тексты сюда не отправляйте.</p>
+        <p class="ac-hint">GitHub Issue #3890 — <strong>публичный</strong>. Эта функция не передаёт ваш закрытый черновик автоматически, не создаёт коммит без вашего подтверждения на GitHub и не обходит защищённые проверки.</p>
+        <label for="ac-source-base">Целевая ветка</label>
+        <select id="ac-source-base"><option value="codex/bootstrap-books">Agent Commander / control</option><option value="codex/public-book-library">Holistic House / product</option></select>
+        <label for="ac-source-path">Один существующий файл исходного кода</label>
+        <input id="ac-source-path" placeholder="components/existing-component.js" maxlength="230" autocomplete="off" spellcheck="false">
+        <label for="ac-source-code-mode">Способ исправления</label>
+        <select id="ac-source-code-mode"><option value="literal">Точный поиск и замена · без AI</option><option value="free_ai">Бесплатный AI · одна проверяемая правка</option></select>
+        <div id="ac-source-literal">
+          <label for="ac-source-find">Найти — точный уникальный фрагмент</label>
+          <textarea id="ac-source-find" maxlength="7000" rows="3" spellcheck="false"></textarea>
+          <label for="ac-source-replace">Заменить на</label>
+          <textarea id="ac-source-replace" maxlength="7000" rows="3" spellcheck="false"></textarea>
+        </div>
+        <div id="ac-source-ai" hidden>
+          <label for="ac-source-instruction">Техническая инструкция без личных данных</label>
+          <textarea id="ac-source-instruction" maxlength="3500" rows="4" placeholder="Исправить конкретное поведение в указанном файле…"></textarea>
+        </div>
+        <label class="ac-checkrow"><input id="ac-source-approve" type="checkbox"> Я проверил текст: здесь только технические сведения, их можно опубликовать в открытом GitHub</label>
+        <button type="button" id="ac-source-prepare" class="ac-secondary">Подготовить команду и проверить SHA</button>
+        <p id="ac-source-status" class="ac-note" role="status">Запуск ещё не подготовлен.</p>
+        <label for="ac-source-command">Команда для комментария GitHub</label>
+        <textarea id="ac-source-command" rows="6" readonly spellcheck="false" aria-label="Техническая команда для существующего GitHub Watchdog"></textarea>
+        <div class="ac-inline">
+          <button type="button" id="ac-source-copy" class="ac-secondary" disabled>Скопировать команду</button>
+          <a id="ac-source-issue-link" class="ac-secondary" href="https://github.com/andylitvinov-design/books/issues/3890" target="_blank" rel="noopener noreferrer">Открыть GitHub Inbox</a>
+          <a id="ac-source-workflow-link" class="ac-secondary" href="https://github.com/andylitvinov-design/books/actions/workflows/hh-pr-repair-worker.yml" target="_blank" rel="noopener noreferrer">GitHub Actions</a>
+        </div>
+        <p class="ac-hint">После публикации комментария существующий Watchdog автоматически проверит команду при очередном запуске. Статус CLAIMED/ BLOCKED/ DISPATCH_ACCEPTED не является доказательством изменения исходного файла.</p>
+        <button type="button" id="ac-source-check" class="ac-secondary" disabled>Проверить созданный PR</button>
+        <p id="ac-source-proof" class="ac-note">Подтверждённого PR ещё нет.</p>
+        <a id="ac-source-pr-link" href="#" hidden target="_blank" rel="noopener noreferrer">Открыть подтверждённый PR</a>
+      </details>
       <details class="ac-backup"><summary>Зашифрованная резервная копия на этом устройстве</summary>
         <p class="ac-hint">Без сервера: зашифровано AES-GCM с вашим отдельным кодом. Недоступно на других устройствах и не запускает задачи.</p>
         <label for="ac-backup-key">Код шифрования (не менее 8 символов)</label>

@@ -77,3 +77,17 @@ test('mobile same-site UI, encrypted local vault and source-verified reports',()
  assert.match(source('project-management-public.html'),/Рабочие чаты/);
  assert.match(source('pm-agent-chat.js'),/Открыть рабочие чаты/);
 });
+test('saved private task has a distinct canonical chat and no imaginary worker reply',()=>{
+ const api=source('api/commander-chats.js'),front=source('commander-chats.js'),editor=source('task-editor.js');
+ assert.match(api,/action==='from_task'/);
+ assert.match(api,/savedPrivateTask/);
+ assert.match(api,/TASK_CHAT_COLLISION_HOLD/);
+ assert.match(api,/taskIssueNumber/);
+ assert.match(api,/agentStarted:false/);
+ assert.match(front,/openRequestedTask/);
+ assert.match(front,/AWAITING|Ожидается подтверждённый ответ/);
+ assert.match(editor,/open-task-chat/);
+ assert.match(source('task-editor.html'),/id="ac-open-task-chat"/);
+ assert.match(source('project-management-nav.js'),/\/chats\.html/);
+ assert.match(source('project-management-nav.js'),/\/memory\.html/);
+});

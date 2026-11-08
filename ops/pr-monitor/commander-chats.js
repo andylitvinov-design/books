@@ -141,6 +141,8 @@
  function renderThread(){
   el('thread-title').textContent=thread.title;
   el('thread-updated').textContent=time(thread.updatedAt)+' · '+(remote?'приватное серверное хранилище':'зашифровано на устройстве');
+  el('executor-state').textContent=(thread.taskId?'Чат привязан к защищённой задаче. ':'')+
+   'Ожидается подтверждённый ответ исполнителя; назначение и консультация AI не запускают код и не доказывают LIVE.';
   for(const field of ['title','project','description','status'])el(field).value=thread[field]||'';
   el('tasks').value=(thread.tasks||[]).join(', ');el('prs').value=(thread.prs||[]).join(', ');
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
@@ -303,6 +305,22 @@
   try{await win.navigator.clipboard.writeText(lines.join('\n'));info('Задание скопировано. Отправьте его исполнителю для запуска.')}
   catch{info('Автоматическое копирование заблокировано браузером.')}
  }
+ async function openRequestedTask(){
+  const requested=new URLSearchParams(win.location.search).get('task');
+  if(!requested)return;
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requested))
+   return info('Некорректный идентификатор задачи.');
+  if(!remote)return info('Связать чат с сохранённой задачей можно только в защищённом серверном хранилище. Локальный архив — отдельная копия.');
+  try{
+   const result=await request(SERVER+'?action=from_task','POST',{taskId:requested});
+   const chat={...result.chat,issueNumber:result.issueNumber};
+   const ix=chats.findIndex(c=>c.id===chat.id);
+   if(ix>=0)chats[ix]=chat;else chats.unshift(chat);
+   await openChat(chat);
+   win.history?.replaceState?.(null,'','/chats.html');
+   info('Открыт один чат сохранённой задачи. Исполнитель ещё не запущен.');
+  }catch(err){info('Не удалось связать задачу с чатом: '+String(err.message||err))}
+ }
  async function listRemote(){
   const r=await request(SERVER+'?action=list');chats=r.chats||[];
   renderList();if(r.incomplete)info('Индекс серверных чатов неполон: лимит GitHub API.');
@@ -321,7 +339,7 @@
   el('model').replaceChildren();
   for(const m of models){const o=make('option',null,m.name+' · '+m.id);o.value=m.id;el('model').append(o)}
   el('mode').querySelector('option[value=openrouter]').disabled=!aiReady;
-  if(remote){try{await listRemote();info('Рабочие чаты загружены.')}catch(e){
+  if(remote){try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}catch(e){
    remote=false;chats=[];show('board',false);show('vault',true);show('export',true);show('import-label',true);
    el('storage-label').textContent='Серверное хранилище недоступно. Только локальный зашифрованный режим.';
    info('Приватная синхронизация недоступна: '+String(e.message||e)+'. Создайте/откройте локальное хранилище.');
