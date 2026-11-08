@@ -920,11 +920,11 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
-      {compact&&messengerView&&!messages.length&&<MessengerAiLanding
+      {compact&&messengerView&&!pageHelp&&!messages.length&&<MessengerAiLanding
         locale={locale} onCreateVideo={startContent}
         onPractice={()=>startGuided("meditation")}
         onAsk={()=>composerRef.current?.focus({preventScroll:true})}/>}
-      {compact&&!messengerView&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
+      {compact&&(!messengerView||pageHelp)&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=>messengerView&&m.role==="assistant"?
         <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
@@ -1152,7 +1152,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
           <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
           <div className={styles.composerMenu}>{voiceAttachment}{resetControl}</div>
         </details>:voiceAttachment}
-        {messengerView&&<button type="button" className={styles.recorderToggle}
+        {messengerView&&!pageHelp&&<button type="button" className={styles.recorderToggle}
           onClick={()=>setRecorderOpen(value=>!value)} aria-pressed={recorderOpen}
           aria-label={locale==="ru"?"Записать голос для видео":locale==="es"?"Grabar audio para vídeo":"Record audio for video"}
           title={locale==="ru"?"Записать голос для видео":locale==="es"?"Grabar audio para vídeo":"Record audio for video"}>
