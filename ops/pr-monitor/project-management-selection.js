@@ -4,6 +4,9 @@
  const selected=new Map(),limit=8,github='https://github.com/andylitvinov-design/books';
  let source=null,panel=null,summary=null,mode=null,trigger=null,notes=null,result=null;
  const methods={work:'ChatGPT Work: ручная передача текста',issue:'GitHub Issue: задание, подтверждаемое в GitHub',repair:'GitHub Repair Worker: только один разрешённый RED PR',free:'OpenRouter Free · технический совет через GitHub secret'};
+ const modelLoader=document.createElement('script');
+ modelLoader.src='/task-model-picker.js?v=20261107-v1';modelLoader.async=true;
+ document.head.appendChild(modelLoader);
  const mk=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=String(text);return el};
  const btn=(text,cb,cls='pm-btn')=>{const e=mk('button',cls,text);e.type='button';e.addEventListener('click',cb);return e};
  const link=(text,url)=>{const e=mk('a','pm-handoff-link',text);e.href=url;e.target='_blank';e.rel='noopener noreferrer';return e};
@@ -45,12 +48,19 @@
    'Owner-selected tasks: '+tasks.length,
    ...tasks.map(x=>'- '+x.key+' · '+x.project.title+' / '+x.stage.title+' / '+x.task.title+' · '+(x.task.status||'UNKNOWN')+
     (x.task.prs?.length?' · PR '+x.task.prs.map(n=>'#'+n).join(', '):' · no linked PR')),
+   ...tasks.flatMap(x=>{
+    const own=window.HHPM_TASK_MODELS?.get(x.key);
+    const linked=(x.task.prs||[]).map(pr=>({pr,model:window.HHPM_TASK_MODELS?.get('pr:'+pr)})).filter(v=>v.model);
+    return [...(own?['Preferred OpenRouter for '+x.key+': '+own.id+' (device-only, revalidate at execution)']:[]),
+      ...linked.map(v=>'Preferred OpenRouter for PR #'+v.pr+': '+v.model.id+' (device-only, revalidate at execution)')];
+   }),
    '',
    'Read AGENTS.md, GLOBAL_PR_ONE_PUBLISH_V1 and docs/operations/CI_RELEASE_POLICY.md BEFORE edits.',
    'Verify current issue, PR, exact HEAD, lease, actual acceptance and duplicate root. Reuse existing PR.',
    'Do not make no-op edits or change protected branches. One coherent commit; full Core, Specialist and hh-merge-check.',
    'Separate source commit, CI green, protected merge, Vercel READY and functional LIVE proof.',
    'ZERO NEW PAID SERVICES; no extra model, runner, cron, token or bypass. Stop on unknown or manual hold.',
+   'Model preference does not select or switch a running agent. Validate free catalog and record actual model/run evidence on executor side.',
    'Execution is NOT started by creating this handoff.',
    'https://github.com/andylitvinov-design/ai-projects-brain/blob/main/systems/pr-one-publish-standard.md'
   ].join('\n');
