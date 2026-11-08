@@ -349,6 +349,8 @@ export default function AppWorkspace({ locale, path = [] }) {
         locale,
         ...(providerChoice === 'telegram' ? { provider: 'telegram' } : {}),
         ...(providerChoice === 'telegram' && page === 'portrait' ? { continueTo: 'cabinet' } : {}),
+        // Private result intent survives Google/Telegram OAuth; never return it to the public test shell.
+        ...(page === 'portrait' && searchParams.get('space') === 'reports' ? { continueTo: 'reports' } : {}),
         ...(page === 'practice'
           ? native
             ? { continueTo: 'my-practice', ...(proIntent ? { profi: proIntent } : {}) }
