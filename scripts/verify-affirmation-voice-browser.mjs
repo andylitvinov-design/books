@@ -516,9 +516,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(phrases.locator("[data-video-own-voice-record]")).toBeVisible();
       await expect(phrases.locator("[data-video-generate-affirmation-audio]")).toHaveCount(0);
       await expect(phrases.locator('[data-video-affirmation-voice-card="maya"]')).toBeHidden();
-      await personalTab.click();
+      // Change back to the standard voice while its controls are visible,
+      // then return to Personalization for the phrase and idea review.
       await voiceModeButton.click();
       await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
+      await personalTab.click();
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-video-ideas-personalization-panel]")).toBeVisible();
       // Owner-approved Phrases: measure the actual DOM in three iPhone widths.
