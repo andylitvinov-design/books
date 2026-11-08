@@ -40,6 +40,7 @@ const measure = async page => page.evaluate(() => {
   const quickButtons = [...root.querySelectorAll('[class*="quickGrid"] > button')]
   const offerButtons = [...root.querySelectorAll('[class*="offerRail"] > button')]
   const bottomNav = root.querySelector('[data-legacy-practice-bottom-nav]')
+  const networkHeader = root.querySelector('[data-master-network-heading]')
   const modeSwitch = root.querySelector('[data-master-mode-switch]')
   const hero = el('hero')
   return {
@@ -47,7 +48,8 @@ const measure = async page => page.evaluate(() => {
     state:root.dataset.authState,
     viewport:document.documentElement.clientWidth,
     documentWidth:document.documentElement.scrollWidth,
-    header:rect(root.querySelector('header')),
+    header:rect(root.querySelector('[data-practice-workspace-heading]')),
+    networkHeader:rect(networkHeader),
     modeSwitch:rect(modeSwitch),
     identity:rect(el('identity')),
     grid:rect(el('quickGrid')),
@@ -100,13 +102,16 @@ for (const browserType of [chromium, webkit]) {
           await page.waitForFunction(() => [...document.querySelectorAll('[data-practice-showcase] img')].every(
             img => img.complete && img.naturalWidth > 0),null,{timeout:20000})
           await page.waitForTimeout(250)
+          const network = root.locator('[data-master-network-heading]')
+          assert.equal(await network.locator('h1').innerText(),
+            {en:'Master Network',ru:'Сеть мастеров',es:'Red de maestros'}[locale])
           const modes = root.locator('[data-master-mode-switch]')
           assert.equal(await modes.locator('a').count(),2,label+' two real master destinations')
           assert.equal(await modes.locator('[data-master-mode="find"]').getAttribute('href'),
             '/'+locale+'/masters',label+' public finder link')
           assert.equal(await modes.locator('[data-master-mode="share"]').getAttribute('aria-current'),
             'page',label+' practice tab selected')
-          assert.equal(await root.locator('header h1').innerText(),title[locale],label+' exact original dashboard')
+          assert.equal(await root.locator('[data-practice-workspace-heading] h1').innerText(),title[locale],label+' exact original dashboard')
           assert.equal(await root.locator('[class*="quickGrid"] > button').count(),6,label+' original six creation actions')
           assert.equal(await root.locator('[class*="offerRail"] > button').count(),6,label+' six miniature covers')
           assert.equal(await root.locator('nav button').count(),5,label+' five original bottom tabs')
@@ -121,13 +126,15 @@ for (const browserType of [chromium, webkit]) {
                 headerY:g.header.y,identityY:g.identity.y,gridY:g.grid.y,
                 heroY:g.hero.y,offersY:g.offers.y,
               })[landmark]
-              const addedSwitcherHeight = (g.modeSwitch?.height || 0) + 14
+              const addedSwitcherHeight = (g.modeSwitch?.height || 0) + (g.networkHeader?.height || 0) + 29
               assert.ok(Math.abs(metric-addedSwitcherHeight-setting.value)<=setting.tolerance,
                 label+' reference screenshot landmark '+landmark+' expected '+setting.value+
                 '±'+setting.tolerance+' CSS px; actual '+metric)
             }
           }
           assert.ok(g.documentWidth <= g.viewport+3,label+' unexpected horizontal overflow: '+JSON.stringify(g))
+          assert.ok(g.networkHeader && g.networkHeader.bottom<=g.modeSwitch.y+1,
+            label+' Master Network title must precede the switch')
           assert.ok(g.modeSwitch && g.modeSwitch.height>=58 && g.modeSwitch.bottom<=g.header.y+1,
             label+' two-mode switch must precede the unchanged dashboard header')
           for (const key of ['header','identity','grid','hero','offers','nav'])

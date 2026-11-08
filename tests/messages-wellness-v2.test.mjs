@@ -148,8 +148,12 @@ test('owner-approved Messenger restores truthful compact empty Orders art and co
  assert.match(ui,/const listHelper=section!=='ai'&&section!=='news'&&!detailMode&&!loading&&!error&&Boolean\(ordersData\)/)
  assert.match(ui,/<div id="hh-news-panel"[^>]*hidden=\{section!=='news'\}/)
  assert.match(ui,/data-messenger-list-helper/)
- assert.match(ui,/<div id="hh-orders-panel"[^>]*>\s*\{listHelper\}/)
- assert.match(ui,/<div id="hh-clients-panel"[^>]*>\s*\{listHelper\}/)
+ assert.match(ui,/<div id="hh-orders-panel"[^>]*>/)
+ assert.match(ui,/<div id="hh-clients-panel"[^>]*>/)
+ assert.match(ui,/const guestAccess=aiIdentity.status==='guest'/)
+ assert.match(ui,/<MessengerGuestGate locale=\{locale\} section="orders"\/>/)
+ assert.match(ui,/<MessengerGuestGate locale=\{locale\} section="clients"\/>/)
+ assert.equal((ui.match(/\{listHelper\}/g)||[]).length,2) // Both signed-in list helpers remain
  assert.match(ui,/className=\{styles.emptyHint\} role="status"/)
  assert.match(ui,/t.emptyHelp/)
  assert.match(ui,/freeConsultation:'Получить бесплатный письменный разбор'/)
@@ -208,7 +212,7 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
 })
 
 
-test('owner Messenger keeps a clear welcome and two big chat choices, not five mini-cards',()=>{
+test('owner Messenger preserves one private chat while topic hints prepare an unsent draft',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const ai=source('components/app/messenger-ai-workspace.jsx')
  const css=source('components/app/messenger-ai-workspace.module.css')
@@ -222,7 +226,13 @@ test('owner Messenger keeps a clear welcome and two big chat choices, not five m
  for(const id of ['video','meditation'])assert.ok(chat.includes('data-hh-ai-start="'+id+'"'))
  assert.ok(chat.includes('startGuided(kind:'))
  assert.ok(chat.includes('isCasualGreeting(text)'))
- assert.doesNotMatch(ai,/data-chat-menu-rail|setQuickPrompt\(/)
+ // This widget has one chat instance. Shared iHelp topic chips populate its draft,
+ // but must not create a second conversation/menu rail or auto-send.
+ assert.doesNotMatch(ai,/data-chat-menu-rail/)
+ assert.equal((ai.match(/<HolisticAgentChat\b/g)||[]).length,1)
+ assert.match(ai,/<HolisticAgentChat locale=\{locale\} compact quickPrompt=\{quickPrompt\}/)
+ assert.match(ai,/<IHelpTopics locale=\{locale\} onSelect=\{prompt=>setQuickPrompt\(/)
+ assert.match(ai,/previous=>\(\{revision:\(previous\?\.revision\|\|0\)\+1,text:prompt\}\)/)
  assert.match(chat,/method:"POST",credentials:"same-origin"/)
  assert.ok(mobile.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) [data-hh-unified-dock]'))
  assert.match(ui,/data-free-order-offers/)
