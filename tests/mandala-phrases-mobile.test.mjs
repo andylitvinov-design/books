@@ -209,8 +209,9 @@ test("Safari fine-tuning uses one accessible button and a stable hidden region",
   ])assert.ok(phrases.includes(part),part);
   assert.ok(!phrases.includes("<details className={css.ideaDisclosure}"));
   assert.ok(css.includes(".overview .ideaDisclosure>.card[hidden]{display:none!important}"));
-  assert.ok(browser.includes("await expect(ideaToggle).toHaveAttribute(\"aria-expanded\",\"true\")"));
-  assert.ok(browser.includes("await expect(intentDetails.locator('[data-hypno-request]')).toBeVisible()"));
+  assert.ok(browser.includes("await expect(intentDetails).toBeHidden()"),
+    "personal-intent editor is kept in the Personalization tab, outside voice-only mode");
+  assert.ok(browser.includes("await expect(phrases.locator('[data-video-ideas-personalization-panel]')).toBeVisible()"));
 });
 
 test("choosing Ready discards stale idea and approval clears Wave drafts",()=>{
@@ -220,8 +221,10 @@ test("choosing Ready discards stale idea and approval clears Wave drafts",()=>{
  for(const status of ['draft','ready','custom','external','idea','safety'])
    assert.ok(phrases.includes('?"'+status+'":null'),status);
  assert.match(browser,/if\(engine==="webkit"\)await approvalButton\.tap\(\)/);
- assert.ok(browser.includes("APPROVED_PHRASES_STILL_PENDING"));
- assert.ok(browser.includes('data-hypno-pending-reasons'));
+ assert.ok(browser.includes('await expect(page.locator("[data-hypno-pending]")).toHaveCount(0)'),
+   "the approved phrase flow finishes with no pending edits");
+ assert.ok(browser.includes("data-video-affirmation-phrase"));
+ assert.ok(browser.includes("data-video-affirmation-transcript-review"));
 });
 
 test("five-phrase limit requires a real removal before the visitor adds another",()=>{
