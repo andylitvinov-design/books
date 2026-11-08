@@ -1,0 +1,26 @@
+/* Standalone Agent Commander / public Brain memory view; preserves the five-tab dock. */
+.hh-cc-memory-main{display:grid;gap:13px}
+.hh-memory-card{display:grid;gap:11px}
+.hh-memory-card label{font-weight:650;font-size:13px;color:#e4d6fa}
+.hh-memory-card input,.hh-memory-card textarea{width:100%;min-width:0;background:#101527;color:#f8f6ff;border:1px solid #76668d;border-radius:12px;padding:13px;font-size:15px;line-height:1.45}
+.hh-memory-card textarea{resize:vertical;min-height:120px;max-height:330px}
+.hh-memory-card input:focus-visible,.hh-memory-card textarea:focus-visible{outline:3px solid #cfaaff;outline-offset:2px}
+.hh-memory-card p{font-size:12px;line-height:1.5;color:#bcb6d2}
+.hh-memory-list{display:grid;gap:8px;max-height:52dvh;overflow-y:auto}
+.hh-memory-project{display:grid;gap:3px;text-align:left;background:#29283f;border:1px solid #595070;border-radius:13px;color:#fff;padding:12px 14px;min-height:59px;cursor:pointer}
+.hh-memory-project[aria-pressed="true"]{border-color:#c5a7ff;background:#45345f}
+.hh-memory-project strong{font-size:14px;font-weight:700}
+.hh-memory-project small{color:#c2bdd4;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.hh-memory-docs{display:grid;gap:8px}
+.hh-memory-docs details{background:#171b2d;border:1px solid #615875;border-radius:11px;overflow:hidden}
+.hh-memory-docs summary{padding:12px;font-size:14px;font-weight:700;cursor:pointer}
+.hh-memory-docs pre{margin:0;padding:12px;border-top:1px solid #544d65;white-space:pre-wrap;overflow-wrap:anywhere;max-height:310px;overflow:auto;color:#e6deed;font-family:inherit;font-size:12px;line-height:1.55}
+.hh-memory-docs a,.hh-memory-footnote a{color:#dfbeff}
+.hh-memory-docs .hh-memory-source{padding:0 12px 10px;font-size:12px;display:block;overflow-wrap:anywhere}
+.hh-memory-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.hh-memory-actions button{min-height:48px;border-radius:12px;background:#7750ad;color:#fff;border:1px solid #ac85db;font-size:13px;font-weight:750;padding:10px}
+.hh-memory-actions button:first-child{background:#2d2f49}
+.hh-cc-memory-main [hidden]{display:none!important}
+.hh-memory-footnote{padding:0 15px 15px}
+.hh-cc-sheet select.hh-cc-memory-project{width:100%;background:#20243c;color:#f9f6ff;border:1px solid #8c76ab;border-radius:11px;padding:11px;font-size:14px;min-height:46px}
+@media(max-width:360px){.hh-memory-actions{grid-template-columns:1fr}.hh-memory-card{padding-inline:12px}}
