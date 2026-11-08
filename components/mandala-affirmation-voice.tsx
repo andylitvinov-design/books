@@ -589,14 +589,13 @@ export function MandalaAffirmationVoice({
           voiceAdvancedOpenRef.current=event.currentTarget.open;
       }}>
       <summary onClick={event=>{
-        // Commit the genuine click (also dispatched for keyboard activation);
-        // do not force the browser test or show controls before a user gesture.
-        event.preventDefault();
+        // Native summary toggling must be the *only* DOM toggle. WebKit may
+        // commit its default action after React's event handler; toggling
+        // node.open here as well can immediately close a genuine user tap.
+        // Save the intended next state early for a concurrent React remount.
         const node=event.currentTarget.parentElement;
-        if(node instanceof HTMLDetailsElement){
-          node.open=!node.open;
-          voiceAdvancedOpenRef.current=node.open;
-        }
+        if(node instanceof HTMLDetailsElement)
+          voiceAdvancedOpenRef.current=!node.open;
       }}>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
     {compact?deviceSampleControl:null}
     <div className={css.controls}>

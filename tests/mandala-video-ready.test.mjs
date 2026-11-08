@@ -211,3 +211,18 @@ test("Free uses the original generator; paid Ready tiers reuse the fixed-SKU man
   assert.deepEqual(createVideoCartSelection("video-pro"),{id:"video-pro",brief:""});
   assert.equal(createVideoCartSelection("video-unknown"),null);
 });
+
+test("WebKit voice advanced settings use native one-tap disclosure without a double toggle",()=>{
+  const voice=readFileSync(new URL("../components/mandala-affirmation-voice.tsx",import.meta.url),"utf8");
+  const begin=voice.indexOf("data-video-affirmation-voice-advanced");
+  const end=voice.indexOf("{compact?deviceSampleControl:null}",begin);
+  assert.ok(begin>0&&end>begin,"real advanced disclosure remains reachable");
+  const disclosure=voice.slice(begin,end);
+  assert.match(disclosure,/<summary onClick=\{event=>\{/);
+  assert.match(disclosure,/voiceAdvancedOpenRef\.current=!node\.open/);
+  assert.doesNotMatch(disclosure,/event\.preventDefault\(\)/,
+    "native summary default must not be blocked");
+  assert.doesNotMatch(disclosure,/node\.open\s*=\s*!node\.open/,
+    "a synchronous manual toggle can be reversed by WebKit's native click");
+  assert.match(disclosure,/onToggle=\{event=>\{/);
+});
