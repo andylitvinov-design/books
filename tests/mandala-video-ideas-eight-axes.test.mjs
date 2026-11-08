@@ -145,7 +145,7 @@ test("WebKit keeps two Ideas tabs and real opt-in voice while four Montage tabs 
  const styles=read("components/mandala-video-mobile.module.css");
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  assert.match(styles,/\.studio\[data-active-workspace="phrases"\] \.ideasSubtabs\{/);
- assert.match(styles,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
+ assert.match(styles,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(browser,/const ideasModes=phrases\.locator/);
  assert.match(browser,/data-video-ideas-tab="personalization"/);
  assert.match(browser,/data-video-ideas-tab="concept"/);
