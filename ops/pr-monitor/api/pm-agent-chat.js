@@ -1,7 +1,8 @@
 'use strict';
 /* HH PM Agent Chat: owner-only, no paid fallback, no source-writing capability.
  * Read-only trusted GitHub reports plus bounded OpenRouter :free conversation.
- * No new cron, secret exposure, anonymous POST or persistent server history.
+ * No new cron, secret exposure or anonymous POST. The client persists chat events separately
+ * through the owner-verified Supabase private-store API; this endpoint has no transcript store.
  */
 const crypto=require('node:crypto');
 const REPO='andylitvinov-design/books', GH='https://api.github.com/repos/'+REPO;

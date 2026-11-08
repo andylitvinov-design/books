@@ -1,6 +1,6 @@
 'use strict';
 /* HH_COMMANDER_THREADS_V1: authenticated multi-chat workspace.
- * Durable storage: verified private GitHub issues; fallback: AES-GCM vault
+ * Durable storage: owner-verified Supabase private tables; fallback: AES-GCM vault
  * on this device. Assignment and AI answers are NOT agent execution.
  */
 (function(win,doc){
