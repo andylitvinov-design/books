@@ -1,7 +1,7 @@
 .root{width:100%;max-width:100%;min-width:0;overflow-x:hidden;border:1px solid #bdded3;border-radius:12px;background:#f5fbf8;color:#20473d;box-sizing:border-box;flex:none;margin:7px 0}
 .root>summary{min-height:46px;display:flex;align-items:center;padding:11px 13px;cursor:pointer;font:750 14px/1.35 system-ui,sans-serif;list-style-position:inside}
 .root>summary:focus-visible{outline:3px solid #147f6c;outline-offset:2px}
-.content{display:grid;gap:11px;min-width:0;padding:0 11px 12px}
+.content{display:grid;gap:11px;min-width:0;max-width:100%;padding:0 11px 12px;box-sizing:border-box}
 .content p{margin:0;font:500 13px/1.48 system-ui,sans-serif}
 .tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .tools :is(button,.upload){min-height:46px;min-width:0;border:1px solid #a5cfc3;border-radius:11px;background:#fff;color:#1c5749;font:700 12px/1.35 system-ui,sans-serif;text-align:center;cursor:pointer;padding:10px 8px;box-sizing:border-box;overflow-wrap:anywhere}
@@ -10,7 +10,7 @@
 .upload:focus-within{outline:3px solid #147f6c;outline-offset:2px}
 .tools button:focus-visible,.primary:focus-visible{outline:3px solid #147f6c;outline-offset:2px}
 .tools button:disabled,.primary:disabled{opacity:.52;cursor:not-allowed}
-.ready{display:grid;gap:9px;min-width:0;padding:10px;border:1px solid #d5e7dc;border-radius:11px;background:white}
+.ready{display:grid;gap:9px;min-width:0;max-width:100%;box-sizing:border-box;padding:10px;border:1px solid #d5e7dc;border-radius:11px;background:white}
 .ready strong,.ready small{overflow-wrap:anywhere}
 .ready strong{font:700 13px/1.4 system-ui,sans-serif}
 .ready small,.privacy{font:500 11px/1.45 system-ui,sans-serif;color:#586f66}
@@ -31,8 +31,8 @@
    action immediately above the pinned composer, not above the conversation. */
 @media(max-width:760px){
  :global(.hh-messages-page) :global([data-hh-agent-preview][data-compact="true"]) > .root{
-  order:3;flex:none;max-height:min(44dvh,390px);overflow-y:auto;
-  overscroll-behavior:contain;scroll-padding-block-end:14px;
-  width:100%;max-width:100%;min-width:0;margin:2px 0;border-radius:11px
+  order:3;flex:none;max-height:min(46dvh,420px);overflow-y:auto;
+  overscroll-behavior-y:contain;scroll-padding-bottom:12px;
+  margin:2px 0;border-radius:11px
  }
 }
