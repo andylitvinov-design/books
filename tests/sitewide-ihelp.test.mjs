@@ -116,3 +116,21 @@ test("finishing video exits iHelp overlay to the one real MP4 result and editor"
  assert.match(studio,/onOpenEditor=\{\(\)=>\{\s*setVideoIHelpOpen\(false\);openQuickDetailed\("video-settings"\)/);
  assert.match(studio,/onOpenAudio=\{\(\)=>\{\s*setVideoIHelpOpen\(false\);openQuickDetailed\("video-audio"\)/);
 });
+
+test("sitewide iHelp reuses compact mobile composer, with keyboard-safe transcript on every route",()=>{
+ const trigger=readFileSync(new URL("../components/sitewide-ihelp.tsx",import.meta.url),"utf8");
+ const chat=readFileSync(new URL("../components/holistic-agent-chat.tsx",import.meta.url),"utf8");
+ const styles=readFileSync(new URL("../components/sitewide-ihelp.module.css",import.meta.url),"utf8");
+ assert.match(trigger,/<HolisticAgentChat[^>]*\bcompact messengerView pageHelp=\{context\}/);
+ assert.match(chat,/compact&&messengerView&&!pageHelp&&!messages\.length&&<MessengerAiLanding/);
+ assert.match(chat,/compact&&\(!messengerView\|\|pageHelp\)&&<p className=\{styles\.assistant\} data-hh-ai-welcome>/);
+ assert.match(chat,/messengerView&&!pageHelp&&<button type="button" className=\{styles\.recorderToggle\}/);
+ assert.match(chat,/compact&&!contentVoice&&\(!messengerView\|\|recorderOpen\)&&<MessengerAudioVideo/);
+ assert.match(trigger,/visualViewport/);
+ assert.match(trigger,/data-hh-mobile-keyboard-open/);
+ assert.match(styles,/>form\{[\s\S]*?display:flex;align-items:center/);
+ assert.match(styles,/>form textarea\{[\s\S]*?height:44px;min-height:44px/);
+ assert.match(styles,/\[data-hh-agent-preview\]\[data-page-help\]>form>div/);
+ assert.match(styles,/\.panel\[data-hh-mobile-keyboard-open\] \.bottomNav\{display:none\}/);
+ assert.doesNotMatch(styles,/>form \.actions/);
+});

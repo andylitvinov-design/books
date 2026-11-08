@@ -297,7 +297,10 @@ test('release re-audit follows the real private Profile and public builder acros
   const guest = read('components/app/cabinet-guest-overview.jsx');
   const builder = read('components/personality-profiles-builder.tsx');
   assert.ok(navigation.includes("profile: 'app/portrait'"), 'Profile dock uses the existing private Cabinet');
-  assert.ok(hub.includes("create: '/' + selected + '/personality-profiles'"), 'Private Profile has a real public Create tab');
+  assert.ok(hub.includes("{ id: 'today', icon: House }") &&
+    hub.includes("{ id: 'tests', icon: ClipboardList }") &&
+    hub.includes("tests: root + '/tests'"),
+    'Private My Space preserves its shipped six-tab navigation');
   assert.ok(guest.includes('data-cabinet-guest-overview'), 'Anonymous Profile must remain guest-only');
   assert.ok(builder.includes('data-profile-direct-tests'), 'Builder preserves a real protected tests link');
   const start = source.indexOf('// The unified Profile dock now opens the PRIVATE Cabinet first.');
@@ -310,7 +313,10 @@ test('release re-audit follows the real private Profile and public builder acros
     "window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document'",
     "locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible()",
     "locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0)",
-    "locator('[data-profile-hub-tabs] [data-profile-tab=\"create\"]').click()",
+    "locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')).toHaveAttribute('aria-current', 'page')",
+    "locator('[data-profile-hub-tabs] [data-profile-tab=\"tests\"]')).toHaveAttribute('href', '/en/app/tests')",
+    "locator('[data-profile-hub-tabs] [data-profile-tab=\"create\"]')).toHaveCount(0)",
+    "cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' })",
     "toHaveURL(origin + '/en/personality-profiles')",
     "toHaveAttribute('data-csp-class', 'public-video')",
     "window.__cspDocumentProbe), undefined, 'Private Profile to public builder must load a new document'",

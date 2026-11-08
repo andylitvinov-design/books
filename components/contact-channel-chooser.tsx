@@ -509,7 +509,11 @@ export function ContactChannelChooser({
     preparedWhatsApp = draftUrl.toString();
   }
 
-  if (websiteMessengerOnlyUi()) return <MandatoryMessengerActions locale={locale} whatsappUrl={referredWhatsappUrl} label={label || c.order} collapsed={compactPhone || compactTrigger} id={id} className={className}/>;
+  if (websiteMessengerOnlyUi()) return <div data-contact-channel-chooser
+    data-session-booking-flow={bookingSku?"":undefined} data-booking-sku={bookingSku||undefined}>
+    <MandatoryMessengerActions locale={locale} whatsappUrl={referredWhatsappUrl}
+      label={label||c.order} collapsed={compactPhone||compactTrigger} id={id} className={className}/>
+  </div>;
   if (compactPhone && bookingSku) {
     const paidReady = bookingConfirmed && Boolean(saved && bookingStartsAt);
     const sessionText = bookingSku === "express-consultation-30"

@@ -227,7 +227,25 @@ export function CompactLeadCapture({
     }
   }
 
-  if (websiteMessengerOnlyUi()) return <MandatoryMessengerActions locale={locale} id={id} label={title} collapsed={variant !== "inline"} whatsappUrl={whatsappEnquiryUrl({locale,service:serviceTitle,request:"Please contact me about this service.",option:formatOptions?.length && selectedFormat ? selectedFormat : undefined,pagePath:sourcePath || pathname || "/" + locale + "/services"})}/>;
+  if (websiteMessengerOnlyUi()) return <section id={id}
+    className={[styles.section,variant==="inline"?styles.inline:"",variant==="diagnosis"?styles.diagnosis:""].filter(Boolean).join(" ")}
+    data-service-lead-capture data-messenger-only-intake
+    data-inline-offer-form={variant==="inline"?"":undefined}
+    data-compact-last-slide={variant==="inline"?undefined:""} lang={locale} aria-label={title}>
+    <div className={styles.intro}><h2>{title}</h2><p>{lead}</p></div>
+    {variant!=="diagnosis" && formatOptions?.length ? <label className={styles.field}>
+      <span>{formatLabel||t.preference}</span>
+      <select data-messenger-offer-format required value={selectedFormat}
+        onChange={event=>{setInternalFormat(event.target.value);onFormatChange?.(event.target.value);}}>
+        {formatOptions.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    </label>:null}
+    <MandatoryMessengerActions locale={locale} label={title} collapsed={variant!=="inline"}
+      whatsappUrl={whatsappEnquiryUrl({locale,service:serviceTitle,request:"Please contact me about this service.",
+        option:formatOptions?.length&&selectedFormat?selectedFormat:undefined,
+        pagePath:sourcePath||pathname||"/"+locale+"/services"})}/>
+    {disclaimer?<p className={styles.disclaimer}>{disclaimer}</p>:null}
+  </section>;
   return (
     <section id={id} className={[styles.section, variant === "inline" ? styles.inline : "", variant === "diagnosis" ? styles.diagnosis : ""].filter(Boolean).join(" ")}
       data-compact-last-slide={variant === "inline" ? undefined : ""}

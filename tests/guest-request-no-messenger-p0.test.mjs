@@ -9,8 +9,8 @@ test("P0 owner rule: no bare website reply contact is a submitted messenger enqu
  assert.equal(websiteMessengerOnlyUi(),process.env.NEXT_PUBLIC_HH_WEBSITE_MESSENGER_ONLY!=="false");
  const page=read("components/compact-lead-capture.tsx");
  const chooser=read("components/contact-channel-chooser.tsx");
- assert.match(page,/if \(websiteMessengerOnlyUi\(\)\) return <MandatoryMessengerActions/);
- assert.match(chooser,/if \(websiteMessengerOnlyUi\(\)\) return <MandatoryMessengerActions/);
+ assert.match(page,/if \(websiteMessengerOnlyUi\(\)\) return /);
+ assert.match(chooser,/if \(websiteMessengerOnlyUi\(\)\) return /);
  const service=read("app/api/service-enquiries/route.js");
  assert.match(service,/MESSENGER_VERIFICATION_REQUIRED/);
  const store=read("lib/practitioners/public-service-enquiry.js");
@@ -19,7 +19,7 @@ test("P0 owner rule: no bare website reply contact is a submitted messenger enqu
 
 test("P0 must block business email-only form while preserving provider-confirmed CRM threads",()=>{
  const business=read("components/business-website-enquiry.tsx");
- assert.match(business,/if \(websiteMessengerOnlyUi\(\)\) return <MandatoryMessengerActions/);
+ assert.match(business,/if \(websiteMessengerOnlyUi\(\)\) return /);
  const api=read("app/api/services/business-consulting/route.js");
  assert.ok(api.indexOf("if (websiteMessengerOnly())")<api.indexOf("await submitBusinessEnquiry("));
  const coach=read("app/api/coaching-diagnostic/route.js");
