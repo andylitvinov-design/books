@@ -25,7 +25,8 @@ test("Ideas has exactly two real substages and the same single Concept generator
   assert.match(studio,/setApprovedVideoConcept\(approved\)/);
   assert.match(studio,/setActiveWorkspace\("editor"\);setMontagePanel\("effects"\)/);
   assert.match(studio,/onGenerate=\{createQuickVideo\}/);
-  assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
+  assert.match(studio,/onClick=\{goToMontageFromIdeas\}/);
+  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
 });
 
 test("Personalization recovers the approved three-question photo cards for RU EN ES",()=>{
@@ -69,8 +70,9 @@ test("Preserve one voice recorder, optional effects and compact mobile layout",(
   assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
   assert.match(studio,/data-video-ideas-advanced-voice/);
   assert.match(studio,/data-video-phrase-audio-shortcut hidden=\{ideasSubtab!=="personalization"\}/);
-  assert.match(studio,/onGoToMontage=\{panel=>\{\s*setActiveWorkspace\("editor"\);setMontagePanel\(panel\)/);
-  assert.match(mobile,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
+  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+  assert.match(studio,/data-video-ideas-voice-mode="my-voice"/);
+  assert.match(mobile,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
   assert.match(mobile,/@media\(max-width:359px\)/);
   assert.match(mobile,/\.ideasConceptPane\[hidden\]/);
   for(const marker of ['data-video-ideas-tab="personalization"',

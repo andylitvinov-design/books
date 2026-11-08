@@ -210,8 +210,8 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
  assert.match(firstVideo,/await montageStyle\.click\(\)/);
- assert.match(firstVideo,/await page\.locator\('\[data-video-montage-tab="concept"\]'\)\.click\(\)/,
-   "visitor returns from Style to the proposed Concept");
+ assert.match(firstVideo,/await page\.locator\('\[data-video-montage-open-concept\]'\)\.click\(\)/,
+   "visitor can review the preserved Concept through a real Settings shortcut");
  assert.match(firstVideo,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/,
    "guest explicitly approves Concept before timeline editing");
  assert.match(firstVideo,/const textTools=page\.locator\('\[data-video-concept-text-tools\]'\)/,
@@ -333,31 +333,31 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
 });
 
 
-test("Ideas Personalization and Concept preserve real voice opt-in and WebKit audio acceptance",()=>{
+test("WebKit traverses Ideas Personalization and Concept before consented Voice/My Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
  const concept=browser.indexOf('await conceptTab.click()',personal);
  const back=browser.indexOf('await personalTab.click()',concept);
- const visibleButton=browser.indexOf('await advancedText.click()',back);
- const opened=browser.indexOf('await expect(voiceDisclosure).toHaveAttribute("open","")',visibleButton);
+ const opened=browser.indexOf('await advancedText.click()',back);
  const voice=browser.indexOf('await voiceModeButton.click()',opened);
- const own=browser.indexOf('await myVoiceModeButton.click()',voice);
- const selector=browser.indexOf('const phraseSelector=page.locator',own);
- const transcript=browser.indexOf('const transcriptDisclosure=page.locator',selector);
- const consent=browser.indexOf('await narrationConsent.check()',transcript);
+ const my=browser.indexOf('await myVoiceModeButton.click()',voice);
+ const record=browser.indexOf('const recordEntry=page.locator',my);
+ const tap=browser.indexOf('await recordEntry.click()',record);
+ const phrase=browser.indexOf('const phraseSelector=page.locator',tap);
+ const consent=browser.indexOf('await narrationConsent.check()',phrase);
  assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
-   visibleButton>back&&opened>visibleButton&&voice>opened&&own>voice&&
-   selector>own&&transcript>selector&&consent>transcript,
-   "WebKit must take visible Personalization/Concept and voice modes before consented TTS");
+   opened>back&&voice>opened&&my>voice&&record>my&&tap>record&&
+   phrase>tap&&consent>phrase,"real WebKit route must use visible controls before TTS consent");
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
- assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'));
+ assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.match(studio,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
  assert.match(studio,/data-video-ideas-voice-mode="my-voice"/);
  assert.doesNotMatch(browser,/await advancedVoice\.locator\(":scope > summary"\)\.click\(\)/);
  for(const required of ["data-video-affirmation-voice-preview","data-hypno-approve",
-   "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",
-   'spawnSync("ffprobe"','spawnSync("ffmpeg"'])
-   assert.ok(browser.includes(required),"preserve real encoded video/audio proof: "+required);
+  "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",
+  'spawnSync("ffprobe"','spawnSync("ffmpeg"'])
+  assert.ok(browser.includes(required),"do not lose real media, rights and consent proof: "+required);
 });
 
 test("failed Safari output hides guest Watch and labels the result as a playback failure",()=>{

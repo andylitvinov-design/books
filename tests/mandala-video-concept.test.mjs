@@ -49,16 +49,16 @@ test("Concept never claims video exists; unsupported IDs are rejected",()=>{
   assert.equal(videoConceptIsValid({...p,scenarioId:"invented"}),false);
   assert.equal(videoConceptIsValid({...p,motifId:"invented"}),false);
 });
-test("Ideas Concept owns the original single editor; Montage retains Settings and media",()=>{
+test("Ideas Concept owns the single editor and Montage retains its real timeline and guest gate",()=>{
   const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const concept=readFileSync(new URL("../components/mandala-video-concept.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-video-concept.module.css",import.meta.url),"utf8");
   assert.match(source,/data-video-ideas-concept-panel/);
-  assert.equal((source.match(/<MandalaVideoConcept /g)||[]).length,1);
   assert.doesNotMatch(source,/data-video-montage-concept/);
-  assert.match(source,/\{id:"effects",Icon:Sparkles\},\{id:"audio",Icon:Music2\}/);
-  assert.doesNotMatch(source,/\{id:"concept",Icon:Brain\}/);
-  assert.match(source,/data-video-ideas-tab="concept"/);
+  assert.equal((source.match(/<MandalaVideoConcept /g)||[]).length,1);
+  assert.match(source,/\{id:"effects",Icon:Sparkles\},\{id:"text",Icon:Type\}/);
+  assert.match(source,/\{id:"visual",Icon:Zap\},\{id:"settings",Icon:SlidersHorizontal\}/);
+  assert.match(source,/data-video-montage-open-concept/);
   assert.match(source,/data-video-concept-text-tools/);
   assert.match(source,/data-video-montage-text/);
   assert.match(source,/MandalaMultiTrackTimeline/);
@@ -67,7 +67,7 @@ test("Ideas Concept owns the original single editor; Montage retains Settings an
   assert.match(source,/approvedConcept=\{approvedVideoConcept\}/);
   assert.match(source,/setApprovedVideoConcept\(approved\)/);
   assert.match(concept,/approvedConcept\?\.signature===concept\.signature/);
-  assert.doesNotMatch(source,/data-video-montage-tab="text"/);
+  assert.match(source,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
   assert.match(concept,/data-video-concept-approve/);
   assert.match(concept,/data-video-concept-edit/);
   assert.match(concept,/if\(signedIn\)setEditing\(true\);else setLoginOpen\(true\)/);
@@ -80,15 +80,15 @@ test("Ideas Concept owns the original single editor; Montage retains Settings an
   assert.match(css,/safe-area-inset-bottom/);
 });
 
-test("macOS WebKit begins with Montage Style and independently reviews Ideas Concept",()=>{
+test("macOS WebKit opens Style by default and still allows reviewed Concept",()=>{
   const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const start=source.indexOf('const editorTab=page.locator');
   const end=source.indexOf('const selectedStyle=page.locator',start);
   assert.ok(start>0&&end>start);
   const route=source.slice(start,end);
   assert.match(route,/\[data-video-montage-tab="effects"\]/);
-  assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
-  assert.match(route,/\[data-video-montage-tab="concept"\]'.*toHaveCount\(0\)/);
+  assert.match(source,/\[data-video-ideas-concept-panel\]/);
+  assert.match(route,/await montageStyleTab\.click\(\)/);
   assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
 });

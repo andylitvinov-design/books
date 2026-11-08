@@ -436,7 +436,7 @@ test("real WebKit selects Settings duration, then Audio and real voice before re
  const duration=browser.indexOf("const durationSelect=page.locator",settings);
  const audio=browser.indexOf("const montageAudio=page.locator",duration);
  const click=browser.indexOf("await montageAudio.click()",audio);
- const selected=browser.indexOf('await expect(montageAudio).toHaveAttribute("aria-pressed","true")',click);
+ const selected=browser.indexOf("await expect(page.locator('[data-video-montage-audio]')).toBeVisible()",click);
  assert.ok(entry>=0&&settings>entry&&duration>settings&&audio>duration&&click>audio&&selected>click,
    "actual visitor must set duration in Settings then open Audio");
  assert.ok(studio.includes("data-video-montage-tab={item.id}"));
@@ -449,7 +449,7 @@ test("post-export stale narration refusal reopens mounted Audio and consented Vo
  const start=source.indexOf("removed spoken phrase must block stale WAV reuse or detach it");
  const audio=source.indexOf("const montageAudioAfterExport=page.locator",start);
  const tap=source.indexOf("await montageAudioAfterExport.click()",audio);
- const selected=source.indexOf('await expect(montageAudioAfterExport).toHaveAttribute("aria-pressed","true")',tap);
+ const selected=source.indexOf("await expect(page.locator('[data-video-montage-audio]')).toBeVisible()",tap);
  const disabled=source.indexOf("const stillHasOldVoice=",selected);
  const voice=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")',disabled);
  const expand=source.indexOf('await voicePanel.locator(":scope > summary").click()',voice);
@@ -525,9 +525,20 @@ test("voice export uses visible Audio-stage Generate, never the hidden Style-sta
   const effects=source.indexOf('phase(engine,"hypno-audio-effects-rendered")');
   const audio=source.indexOf('const montageAudioTab=page.locator',effects);
   const click=source.indexOf('await montageAudioTab.click()',audio);
-  const pressed=source.indexOf('await expect(montageAudioTab).toHaveAttribute("aria-pressed","true")',click);
+  const pressed=source.indexOf("await expect(page.locator('[data-video-montage-audio]')).toBeVisible()",click);
   const generate=source.indexOf('const generate=page.locator("[data-video-quick-generate]")',pressed);
   assert.ok(effects>=0&&audio>effects&&click>audio&&pressed>click&&generate>pressed,
     "video with consented narration must use a real visible Audio-tab export button");
   assert.doesNotMatch(source.slice(effects,generate),/click\(\{force:true\}\)/);
+});
+
+test("WebKit cached voice replay invokes one native play() per real tap, never a second TTS request",()=>{
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  assert.ok(voice.includes('const lastAutoPlayedSampleUrlRef=useRef("")'));
+  assert.match(voice,/lastAutoPlayedSampleUrlRef\.current=sampleUrl;\s*try\{player\.currentTime=0;await player\.play\(\)/);
+  assert.match(voice,/if\(!sampleUrl\|\|lastAutoPlayedSampleUrlRef\.current===sampleUrl\)return/);
+  assert.match(voice,/lastAutoPlayedSampleUrlRef\.current=sampleUrl;\s*void sampleAudioRef\.current\?\.play\(\)/);
+  assert.match(browser,/await expect\.poll\(\(\)=>page\.evaluate\(\(\)=>window\.__hhPreviewReplayCount\)\)\.toBe\(1\)/);
+  assert.match(browser,/replay must not spend a second free TTS request/);
 });

@@ -113,15 +113,24 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
  // Preserve the canonical Goal classifier. Explicit local Personalization
  // answers refine its suggestions without losing Love/relationship relevance.
  const profileKey=JSON.stringify(profile??null);
- const profileCustomized=Boolean(profile&&profileKey!==JSON.stringify(DEFAULT_VIDEO_GOAL_PROFILE));
+ const hasCurrentChoice=Boolean(profile&&
+  JSON.stringify(profile.current)!==JSON.stringify(DEFAULT_VIDEO_GOAL_PROFILE.current));
+ const hasDesiredChoice=Boolean(profile&&
+  JSON.stringify(profile.desired)!==JSON.stringify(DEFAULT_VIDEO_GOAL_PROFILE.desired));
+ const hasAxesChoice=Boolean(profile&&
+  JSON.stringify(profile.axes)!==JSON.stringify(DEFAULT_VIDEO_GOAL_PROFILE.axes));
  const profileCurrent=profile?.current?.length?profile.current.map(goalCurrentMeaningId):[current];
  const profileDesired=profile?.desired?.length?profile.desired.map(goalDesiredMeaningId):[desiredForGoal];
- const axesForSuggestions=profileCustomized
-  ?[...new Set([...goalContext.axisIds,...(profile?.axes??[])])].slice(0,3):axesForGoal;
- const currentForSuggestions=profileCustomized?profileCurrent:[current];
- const desiredForSuggestions=profileCustomized?profileDesired:[desiredForGoal];
- const strengthForSuggestions=profileCustomized?profile!.desiredLevel:stateScore;
- const energyForSuggestions=profileCustomized?profile!.energy:energy;
+ // The user's chosen axes take priority; changing only an energy slider must
+ // not silently replace the Goal's Love/relationship axis with default "meaning".
+ const axesForSuggestions=hasAxesChoice
+  ?[...new Set([...(profile?.axes??[]),...goalContext.axisIds])].slice(0,3):axesForGoal;
+ const currentForSuggestions=hasCurrentChoice?profileCurrent:[current];
+ const desiredForSuggestions=hasDesiredChoice?profileDesired:[desiredForGoal];
+ const strengthForSuggestions=profile&&profile.desiredLevel!==DEFAULT_VIDEO_GOAL_PROFILE.desiredLevel
+  ?profile.desiredLevel:stateScore;
+ const energyForSuggestions=profile&&profile.energy!==DEFAULT_VIDEO_GOAL_PROFILE.energy
+  ?profile.energy:energy;
  const signature=JSON.stringify([goalContext.key,axesForSuggestions,currentForSuggestions,
   desiredForSuggestions,strengthForSuggestions,energyForSuggestions,revision,profileKey]);
  const suggested=useMemo(()=>{

@@ -6,7 +6,8 @@ import Image from "next/image";
 import { ContactChannelChooser } from "@/components/contact-channel-chooser";
 import { ArrowRight, Check, CreditCard, MessageCircle, ShoppingBasket, Trash2 } from "lucide-react";
 import { formatServiceAmount, publicServiceCatalog, type ServiceLocale } from "@/lib/commerce/catalog";
-import { restoreServiceCart, SERVICE_CART_STORAGE_KEY, SERVICE_CART_UPDATED_EVENT } from "@/lib/commerce/cart";
+import { restoreServiceCart, restoreVideoCart, videoCartProduct, SERVICE_CART_STORAGE_KEY, VIDEO_CART_STORAGE_KEY, SERVICE_CART_UPDATED_EVENT } from "@/lib/commerce/cart";
+import { VideoCartPayment } from "@/components/commerce/video-cart-payment";
 import { buildPersonalPayPalCartUrl } from "@/lib/commerce/paypal-personal";
 import { buildZenTransferInquiry } from "@/lib/commerce/zen-transfer-inquiry";
 import { buildSquarePaymentForServices, formatSquareCadAmount, normalizeSquareCheckoutRedirect } from "@/lib/commerce/square-payment-links";
@@ -112,6 +113,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
   const products = publicServiceCatalog(locale);
   const [selected, setSelected] = useState<string[]>([]);
   const [restored, setRestored] = useState(false);
+  const [videoCartCount, setVideoCartCount] = useState(0);
   const [orderOpen, setOrderOpen] = useState(false);
   const [orderReceipt, setOrderReceipt] = useState<{ cartKey: string; referenceCode: string } | null>(null);
   const [method, setMethod] = useState<Method>(squareApiEnabled || Object.keys(squareLinks).length ? "square" : paypalEnabled || verifiedPayPalEnabled || Object.keys(hostedPayPalLinks).length ? "paypal" : Object.keys(stripeLinks).length ? "stripe" : "interac");
@@ -162,6 +164,26 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
       });
     }
   }, [squareApiEnabled]);
+
+  useEffect(() => {
+    const syncVideo = () => {
+      let selected = null;
+      try { selected = restoreVideoCart(window.sessionStorage.getItem(VIDEO_CART_STORAGE_KEY)); }
+      catch { /* The fixed video tier also survives through the validated URL query. */ }
+      if (!selected) {
+        const fromUrl = new URLSearchParams(window.location.search).get("video");
+        if (videoCartProduct(fromUrl)) selected = { id: fromUrl, brief: "" };
+      }
+      setVideoCartCount(selected ? 1 : 0);
+    };
+    syncVideo();
+    window.addEventListener(SERVICE_CART_UPDATED_EVENT, syncVideo);
+    window.addEventListener("pageshow", syncVideo);
+    return () => {
+      window.removeEventListener(SERVICE_CART_UPDATED_EVENT, syncVideo);
+      window.removeEventListener("pageshow", syncVideo);
+    };
+  }, []);
 
   const chosen = products.filter(product => selected.includes(product.id));
   const cartKey = chosen.map(product => product.id).join(",");
@@ -297,10 +319,11 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
     <div className={styles.heading}>
       <div><p className={styles.eyebrow}><ShoppingBasket size={16} aria-hidden="true" /> HOLISTIC HOUSE</p>
         <h1>{t.title}</h1><p>{t.subtitle}</p></div>
-      <span className={styles.count} aria-live="polite">{chosen.length}</span>
+      <span className={styles.count} aria-live="polite">{chosen.length + videoCartCount}</span>
     </div>
+    <VideoCartPayment locale={locale} paypalEnabled={paypalEnabled} />
     {!restored ? <div className={styles.loading} aria-live="polite">…</div> :
-      !chosen.length ? <div className={styles.empty} data-cart-empty>
+      !chosen.length && !videoCartCount ? <div className={styles.empty} data-cart-empty>
         <p role="status">{t.empty}</p><span className={styles.emptyHint}>{t.emptyHint}</span>
         <div className={styles.suggestions} aria-label={t.choose}>
           {products.map(product => <article key={product.id} className={styles.suggestion}>
@@ -315,7 +338,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
           </article>)}
         </div>
         <Link className={styles.shopMore} href={"/" + locale + "/shop"}>{t.choose}<ArrowRight size={17} aria-hidden="true" /></Link>
-      </div> :
+      </div> : chosen.length ?
       <>
         <ul className={styles.lines} aria-label={t.title}>
           {chosen.map(product => <li key={product.id} className={styles.serviceCard}>
@@ -446,7 +469,7 @@ export function PersonalCart({ locale, paypalEnabled, wiseEnabled, squareLinks, 
           {(activeMethod === "paypal" || activeMethod === "stripe" || activeMethod === "wise" || activeMethod === "interac" || (activeMethod === "square" && Boolean(squarePayment) && !squareApiEnabled)) && <a className={styles.receipt} href={receiptUrl} target="_blank" rel="noopener noreferrer">{t.afterPay}</a>}
         </div>}
 
-      </>}
+      </> : null}
     <Link href={`/${locale}/services/free-situation-review`} className={styles.free}>{t.free} <ArrowRight size={16} aria-hidden="true" /></Link>
   </section>;
 }
