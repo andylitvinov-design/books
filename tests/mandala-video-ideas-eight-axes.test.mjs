@@ -72,7 +72,7 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
  const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
  assert.match(renderer,/const textScale = settings\.textScale === "small"/);
- assert.match(studio,/onRecord=\{\(\)=>\{[\s\S]*?data-video-affirmation-gender="own"/);
+ assert.match(studio,/onRecord=\{\(\)=>\{[\s\S]*?setIdeasSubtab\("my-voice"\)/);
  assert.match(studio,/data-video-own-voice-record/);
 });
 
@@ -121,7 +121,7 @@ test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list
 });
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
-test("Ideas Text and Voice have a shared, stateful single narration editor",()=>{
+test("Ideas Text, Voice and My Voice share one stateful audio editor and real recorder",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
  assert.match(studio,/data-video-ideas-tabs role="group"/);
  assert.match(studio,/data-video-ideas-tab="text" aria-pressed=\{ideasSubtab==="text"\}/);
@@ -130,7 +130,9 @@ test("Ideas Text and Voice have a shared, stateful single narration editor",()=>
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
  assert.match(studio,/data-video-ideas-own-upload/);
- assert.match(studio,/data-video-ideas-record-voice/);
+ assert.match(studio,/data-video-ideas-tab="my-voice"/);
+ const recorder=read("components/mandala-local-voice-tracks.tsx");
+ assert.match(recorder,/data-video-ideas-record-voice/);
  assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
 });
 

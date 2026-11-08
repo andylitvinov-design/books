@@ -104,7 +104,7 @@ export async function POST(request,{params}){
           if(companion.text){
             try{await sendTelegramCompanionMessage({
               to:companion.to,text:companion.text,
-              markup:companion.markup,locale:companion.locale,
+              markup:companion.markup,locale:companion.locale,photo:companion.photo===true,
               presentation:companion.presentationFirstStart===true})
             }catch(error){
               const evidence=telegramPromptFailureEvidence(event.eventId,error,
