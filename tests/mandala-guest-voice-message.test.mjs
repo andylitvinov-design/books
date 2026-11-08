@@ -127,17 +127,38 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  // audio/voice shortcut is clicked. A CSS-hidden summary is never clicked.
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const voiceTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',modes);
- const textTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',voiceTab);
+ const myVoiceTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="my-voice"]\').click()',voiceTab);
+ const textTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',myVoiceTab);
  const recordEntry=browser.indexOf("const recordEntry=phrases.locator",textTab);
  const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',recordEntry);
  const visible=browser.indexOf("await expect(recordEntry).toBeVisible",hidden);
  const tapped=browser.indexOf("await recordEntry.click()",visible);
  const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tapped);
- const details=browser.indexOf('await intentDetails.locator(":scope > summary").click()',opened);
- const options=browser.indexOf("await expect(advancedVoice.locator",details);
- assert.ok(modes>=0&&voiceTab>modes&&textTab>voiceTab&&recordEntry>textTab&&
-   hidden>recordEntry&&visible>hidden&&tapped>visible&&opened>tapped&&details>opened&&options>details,
-   "WebKit must use real Ideas Text/Voice, Record click and Hypno summary");
+ const ownMode=browser.indexOf('await expect(phrases).toHaveAttribute("data-ideas-active-tab","my-voice"',opened);
+ const returnText=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',ownMode);
+ const advancedText=browser.indexOf("const advancedText=phrases.locator",returnText);
+ const textOpened=browser.indexOf("await advancedText.click()",advancedText);
+ const ideaToggle=browser.indexOf("const ideaToggle=intentDetails.locator('[data-hypno-idea-toggle]')",textOpened);
+ const ideaClick=browser.indexOf("await ideaToggle.click()",ideaToggle);
+ const ideaExpanded=browser.indexOf('await expect(ideaToggle).toHaveAttribute("aria-expanded","true")',ideaClick);
+ const options=browser.indexOf("await expect(advancedVoice.locator",ideaExpanded);
+ assert.ok(modes>=0&&voiceTab>modes&&myVoiceTab>voiceTab&&textTab>myVoiceTab&&
+   recordEntry>textTab&&hidden>recordEntry&&visible>hidden&&tapped>visible&&
+   opened>tapped&&ownMode>opened&&returnText>ownMode&&advancedText>returnText&&
+   textOpened>advancedText&&ideaToggle>textOpened&&ideaClick>ideaToggle&&
+   ideaExpanded>ideaClick&&options>ideaExpanded,
+   "WebKit must visit Text, Voice and My Voice, then open the real Text disclosure by user taps");
+ const hypno=read("components/mandala-hypno-compact.tsx");
+ assert.ok(hypno.includes('data-hypno-idea-toggle')&&hypno.includes('aria-expanded={ideaDisclosureOpen}'),
+   "the fine-tuning control must remain a real accessible disclosure button");
+ assert.ok(hypno.includes('useEffect(()=>{if(autoExpandIdea)setIdeaDisclosureOpen(true);},[autoExpandIdea])'),
+   "the Text Advanced user action must restore the fine-tuning panel after Safari remount");
+ assert.ok(studio.includes('autoExpandIdea={activeWorkspace==="phrases"&&ideasSubtab==="text"&&ideasVoiceAdvancedOpen}'),
+   "only Text's explicit Advanced action auto-opens fine-tuning; Voice and My Voice stay compact");
+ assert.ok(!studio.includes('document.querySelector<HTMLDetailsElement>("[data-hypno-idea-details]")'),
+   "Personalize must not write to a removed native details control");
+ assert.ok(!studio.includes('document.querySelector<HTMLButtonElement>("[data-hypno-suggest-tests]")?.click()'),
+   "opening settings must not synthesize a hidden click or fetch private tests");
  assert.ok(browser.includes('data-video-ideas-own-upload'),"own audio upload remains available");
  assert.ok(!browser.includes('await advancedVoice.locator(":scope > summary").click()'),
   "hidden summary interaction is not an acceptable visitor path");

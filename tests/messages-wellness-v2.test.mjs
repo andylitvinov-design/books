@@ -212,7 +212,7 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
 })
 
 
-test('owner Messenger preserves one private chat while topic hints prepare an unsent draft',()=>{
+test('owner Messenger preserves one private chat and six explicit quick actions',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const ai=source('components/app/messenger-ai-workspace.jsx')
  const css=source('components/app/messenger-ai-workspace.module.css')
@@ -226,13 +226,28 @@ test('owner Messenger preserves one private chat while topic hints prepare an un
  for(const id of ['video','meditation'])assert.ok(chat.includes('data-hh-ai-start="'+id+'"'))
  assert.ok(chat.includes('startGuided(kind:'))
  assert.ok(chat.includes('isCasualGreeting(text)'))
- // This widget has one chat instance. Shared iHelp topic chips populate its draft,
- // but must not create a second conversation/menu rail or auto-send.
+ // One original protected chat. The approved six-action landing opens only
+ // on a user gesture; its old IHelpTopics rail and automatic prompt transfer
+ // were retired. Auth/consent, one composer and local draft remain intact.
  assert.doesNotMatch(ai,/data-chat-menu-rail/)
  assert.equal((ai.match(/<HolisticAgentChat\b/g)||[]).length,1)
- assert.match(ai,/<HolisticAgentChat locale=\{locale\} compact quickPrompt=\{quickPrompt\}/)
- assert.match(ai,/<IHelpTopics locale=\{locale\} onSelect=\{prompt=>setQuickPrompt\(/)
- assert.match(ai,/previous=>\(\{revision:\(previous\?\.revision\|\|0\)\+1,text:prompt\}\)/)
+ assert.match(ai,/<HolisticAgentChat locale=\{locale\} compact messengerView/)
+ assert.match(ai,/authenticated=\{authenticated\} authStatus=\{authStatus\}/)
+ assert.match(ai,/onAuthRetry=\{onAuthRetry\}/)
+ assert.doesNotMatch(ai,/<IHelpTopics\b|quickPrompt=\{/)
+ assert.match(chat,/compact&&messengerView&&!messages\.length&&<MessengerAiLanding/)
+ assert.match(chat,/onCreateVideo=\{startContent\}/)
+ assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/)
+ assert.match(chat,/onAsk=\{\(\)=>composerRef\.current\?\.focus\(\{preventScroll:true\}\)\}/)
+ assert.match(chat,/if\(!quickPrompt\)return;\s*setDraft\(quickPrompt\.text\.slice\(0,2000\)\)/)
+ const landing=source('components/app/messenger-ai-landing.tsx')
+ assert.match(landing,/const ACTIONS=\[/)
+ for(const id of ['test','video','practice','session','course','ask'])
+   assert.ok(landing.includes('{id:"'+id+'"'),id)
+ assert.equal((landing.match(/\{id:"(?:test|video|practice|session|course|ask)"/g)||[]).length,6)
+ assert.match(landing,/data-hh-ai-choice=\{item\.id\}/)
+ assert.match(landing,/onClick=\{item\.id==="video"\?onCreateVideo:/)
+ assert.match(landing,/data-hh-ai-intro-play onClick=\{\(\)=>setPlaying\(true\)\}/)
  assert.match(chat,/method:"POST",credentials:"same-origin"/)
  assert.ok(mobile.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) [data-hh-unified-dock]'))
  assert.match(ui,/data-free-order-offers/)

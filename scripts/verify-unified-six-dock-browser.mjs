@@ -513,24 +513,27 @@ try{
  await chat.waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-chat-menu-rail]").count(),0,
    "obsolete five-button rail must not consume transcript space");
- await chat.locator("[data-hh-ai-welcome]").waitFor({state:"visible"});
+ await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
  const log=chat.locator('[role="log"]');
- const starters=chat.locator('[data-hh-ai-start]');
- assert.equal(await starters.count(),4,"real video, meditation, test and master start actions");
- for(const id of ["video","meditation","hint","master"]){
-   const item=chat.locator('[data-hh-ai-start="'+id+'"]');
-   await item.waitFor({state:"visible"});
+ const starters=chat.locator('[data-hh-ai-quick-actions] [data-hh-ai-choice]');
+ const six=["test","video","practice","session","course","ask"];
+ assert.deepEqual(await starters.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hh-ai-choice"))),
+   six,"single iChat landing displays exactly six real actions");
+ assert.equal(await chat.locator("iframe").count(),0,"approved introduction video needs a deliberate Play click");
+ for(const id of six){
+   const item=chat.locator('[data-hh-ai-choice="'+id+'"]');
+   await item.waitFor({state:"visible",timeout:15000});
    const rect=await item.boundingBox();
-   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible start button");
+   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible action");
  }
  const before=await log.locator("p").count();
- await chat.locator('[data-hh-ai-start="video"]').click();
+ await chat.locator('[data-hh-ai-choice="video"]').click();
  await page.waitForFunction(count=>{
-   const root=document.querySelector("[data-hh-agent-preview]");
+   const root=document.querySelector('[data-hh-agent-preview]');
    return root?.getAttribute("data-has-messages")==="true"
-     && root.querySelectorAll('[role="log"] p').length>=count+2;
+     &&root.querySelectorAll('[role="log"] p').length>=count+2;
  },before,{timeout:10000});
- assert.equal(await starters.count(),0,"introduction gives way to the live transcript");
+ assert.equal(await starters.count(),0,"landing yields to the original one chat transcript");
  // The current Create Content entry deliberately asks format -> source -> short
  // personal idea BEFORE the canonical video goal tree. Earlier browser QA
  // expected the retired one-tap goal branch and timed out without testing it.
@@ -594,23 +597,28 @@ try{
    .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
- // Test every starter against its real route or visible live message.
+ // Check the six approved iChat actions through actual user clicks, never mocked routes.
  await chat.getByRole("button",{name:"Новый разговор"}).click();
- await chat.locator('[data-hh-ai-start="meditation"]').click();
+ await chat.locator('[data-hh-ai-choice="practice"]').waitFor({state:"visible"});
+ await chat.locator('[data-hh-ai-choice="practice"]').click();
  await chat.getByText(/сколько минут у вас есть/).waitFor({state:"visible"});
  await chat.getByRole("button",{name:"Новый разговор"}).click();
- await chat.locator('[data-hh-ai-start="hint"]').click();
- const testLink=chat.locator("[data-hh-ai-tests-link]");
- await testLink.waitFor({state:"visible"});
- assert.equal(await testLink.getAttribute("href"),"/ru/tests");
- await testLink.click();
+ await chat.locator('[data-hh-ai-choice="ask"]').click();
+ assert.equal(await chat.locator("textarea").evaluate(node=>document.activeElement===node),
+   true,"Ask focuses the existing unsent composer without auto-submission");
+ await chat.locator('[data-hh-ai-choice="test"]').click();
  await page.waitForURL(/\/ru\/tests\/?$/,{timeout:45000});
  await page.locator('[data-free-entry-landing="tests"]').waitFor({state:"visible",timeout:30000});
  await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
- await chat.locator('[data-hh-ai-start="master"]').waitFor({state:"visible",timeout:30000});
- await chat.locator('[data-hh-ai-start="master"]').click();
- await page.waitForURL(/\/ru\/services\/free-situation-review\/?$/,{timeout:45000});
- await page.locator('[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-choice="session"]').waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-choice="session"]').click();
+ await page.waitForURL(/\/ru\/services\/?$/,{timeout:45000});
+ await page.locator("h1").first().waitFor({state:"visible",timeout:30000});
+ await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+ await chat.locator('[data-hh-ai-choice="course"]').waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-choice="course"]').click();
+ await page.waitForURL(/\/ru\/academy\/?$/,{timeout:45000});
+ await page.locator("h1").first().waitFor({state:"visible",timeout:30000});
  await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
@@ -624,7 +632,7 @@ try{
  assert.equal(await page.locator("[data-support-practice-tabs] > *").count(),3);
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
- results.push({journey:"MyTube → Video → live AI transcript and four active starters → private Orders/Clients → Practice",passed:true});
+ results.push({journey:"MyTube → Video → six real iChat choices → one protected transcript → private Orders/Clients → Practice",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
  // with one seventh link to the REAL free express-review page.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
