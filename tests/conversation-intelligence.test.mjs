@@ -11,6 +11,8 @@ test("corrections prioritize the corrected topic",()=>{
  assert.match(ru.replyFallback,/работа и деньги/);
  const en=understandConversationTurn({message:"Actually, I meant my relationship",locale:"en"});
  assert.equal(en.act,"correction"); assert.equal(en.topic,"relationships");
+ const shortEnglish=understandConversationTurn({message:"Not love, but work",locale:"en"});
+ assert.equal(shortEnglish.act,"correction"); assert.equal(shortEnglish.topic,"work_money");
  const es=understandConversationTurn({message:"No me refiero al trabajo, sino a mi relación",locale:"es"});
  assert.equal(es.act,"correction"); assert.equal(es.topic,"relationships");
 });
