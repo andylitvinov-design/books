@@ -256,7 +256,8 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const widget=enquiry.locator('[data-messenger-only-contact]');
           await widget.waitFor({state:"visible",timeout:15000});
           const details=widget.locator('details');
-          if(await details.count())await details.locator(':scope > summary').click();
+          if(await details.count()&&await details.getAttribute('open')===null)
+            await details.locator(':scope > summary').click();
           const wa=widget.locator('a[data-messenger-only-channel="whatsapp"]');
           const tg=widget.locator('a[data-messenger-only-channel="telegram"]');
           await wa.waitFor({state:"visible",timeout:10000});

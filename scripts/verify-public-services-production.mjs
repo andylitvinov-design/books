@@ -575,14 +575,16 @@ try {
           if (kind === "alchemy") {
             const form = main.locator('[data-alchemy-lead-form="single"]');
             await form.scrollIntoViewIfNeeded();
-            await visible(form.locator('[data-contact-order]'));
+            await assertMessengerOnlyCapture(form,expect,
+              {locale,label:"alchemy "+locale+" personalised request"});
+            assert.equal(await form.locator('form,input[type="email"],input[type="tel"]').count(),0,
+              "Alchemy cannot accept unverified website-only contact");
             // Two editorial choices plus the separate international phone country selector.
             // Check semantic controls instead of a fragile global select count.
             await expect(form.locator('select[id$="-format"]')).toHaveCount(1);
             await expect(form.locator('select[id$="-topic"]')).toHaveCount(1);
-            const countryCode = form.locator('[data-phone-country-input] select');
-            await expect(countryCode).toHaveCount(1);
-            await expect(countryCode).toHaveAttribute("aria-label", locale === "ru" ? "Код страны" : "Country calling code");
+            assert.equal(await form.locator('[data-phone-country-input]').count(),0,
+              "No phone-only capture while verified messenger identity is mandatory");
             const reviewStack = main.locator('[data-alchemy-review-stack]');
             const positions = await reviewStack.locator('[data-testimonial-video-id]').evaluateAll(nodes =>
               nodes.map(node => {

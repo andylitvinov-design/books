@@ -62,7 +62,8 @@ for (const engine of [chromium,webkit]) {
         const messenger=final.locator('[data-messenger-only-contact]');
         assert.equal(await messenger.count(),1,label+" one messenger-only final capture");
         const details=messenger.locator('details');
-        if(await details.count()) await details.locator(':scope > summary').click();
+        if(await details.count()&&await details.getAttribute('open')===null)
+          await details.locator(':scope > summary').click();
         const whatsapp=messenger.locator('a[data-messenger-only-channel="whatsapp"]');
         const telegram=messenger.locator('a[data-messenger-only-channel="telegram"]');
         await whatsapp.waitFor({state:"visible",timeout:15000});

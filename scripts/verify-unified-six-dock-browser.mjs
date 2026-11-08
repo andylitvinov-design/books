@@ -10,7 +10,12 @@ if(!["localhost","127.0.0.1"].includes(url.hostname)||
 const folder="artifacts/unified-six-dock";
 mkdirSync(folder,{recursive:true});
 const results=[];
-const ids=["mytube","video","ai","practice","master","profile","analysis"];
+const ids=["mytube","video","master","ai","analysis","practice","profile"];
+const labels={
+  en:["MyTube","MyVideo","Services","AI/Chat","Hints","Study","Profile"],
+  ru:["MyTube","MyVideo","Услуги","ИИ/Чат","Подсказки","Обучение","Профиль"],
+  es:["MyTube","MyVideo","Servicios","IA/Chat","Pistas","Estudiar","Perfil"],
+};
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
 // every user-reported route: guest public Studio/Practice/Master, public MyTube,
@@ -94,6 +99,8 @@ async function inspect(browserType,locale,width){
     id+" single slim accessible taxonomy bar");
   const links=dock.locator("[data-unified-dock-item]");
   assert.deepEqual(await links.evaluateAll(els=>els.map(el=>el.dataset.unifiedDockItem)),ids,id);
+  assert.deepEqual((await links.locator("span").allTextContents()).map(label=>label.trim()),
+    labels[locale],id+" approved localized labels");
   const bounds=await links.evaluateAll(els=>els.map(el=>{
    const r=el.getBoundingClientRect();return {left:r.left,right:r.right,height:r.height};
   }));
@@ -511,31 +518,34 @@ try{
  await chat.waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-chat-menu-rail]").count(),0,
    "obsolete five-button rail must not consume transcript space");
- // Messenger AI now starts on its official six-action photographic landing.
- // No unsolicited transcript or offscreen legacy four-button prompt.
- const landing=chat.locator('[data-hh-ai-landing]');
- await landing.waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
  const log=chat.locator('[role="log"]');
- const choices=landing.locator('[data-hh-ai-choice]');
- assert.deepEqual(await choices.evaluateAll(nodes=>nodes.map(el=>
-   el.getAttribute('data-hh-ai-choice'))),
-   ['test','video','practice','session','course','ask'],
-   'Six distinct customer choices on the current messenger landing');
- for(const id of ['video','practice','test','session','course','ask']){
-   const item=landing.locator('[data-hh-ai-choice="'+id+'"]');
+ const starters=chat.locator('[data-hh-ai-quick-actions] [data-hh-ai-choice]');
+ const six=["test","video","practice","session","course","ask"];
+ assert.deepEqual(await starters.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hh-ai-choice"))),
+   six,"single iChat landing displays exactly six real actions");
+ assert.equal(await chat.locator("iframe").count(),0,"approved introduction video needs a deliberate Play click");
+ for(const id of six){
+   const item=chat.locator('[data-hh-ai-choice="'+id+'"]');
    await item.waitFor({state:"visible",timeout:15000});
    const rect=await item.boundingBox();
-   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+' accessible first tap');
+   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible action");
  }
- const before=await log.locator('p').count();
- await landing.locator('[data-hh-ai-choice="video"]').click();
+ // The welcome card has its own paragraph, but it is removed when the
+ // conversation starts. Count actual DIRECT turns, never the landing copy.
+ const before=await log.evaluate(node=>[...node.children].filter(child=>
+   child.matches('p,[data-hh-ai-assistant-message]')).length);
+ await chat.locator('[data-hh-ai-choice="video"]').click();
  await page.waitForFunction(count=>{
    const root=document.querySelector('[data-hh-agent-preview]');
-   return root?.getAttribute('data-has-messages')==='true'
-     && root.querySelectorAll('[role="log"] p').length>=count+2;
+   const transcript=root?.querySelector('[role="log"]');
+   const turns=[...(transcript?.children||[])].filter(child=>
+     child.matches('p,[data-hh-ai-assistant-message]'));
+   return root?.getAttribute("data-has-messages")==="true"
+     && turns.length>=count+2
+     && turns.some(child=>child.matches('[data-hh-ai-assistant-message]'));
  },before,{timeout:10000});
- assert.equal(await landing.count(),0,
-   'Six-action welcome gives way to a real client/assistant transcript');
+ assert.equal(await starters.count(),0,"landing yields to the original one chat transcript");
  // The current Create Content entry deliberately asks format -> source -> short
  // personal idea BEFORE the canonical video goal tree. Earlier browser QA
  // expected the retired one-tap goal branch and timed out without testing it.
@@ -599,20 +609,24 @@ try{
    .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
- // Return to the NEW landing for each original client action. A short
- // fresh-message reset cannot invent a CRM contact or background send.
- const resetAiConversation=async()=>{
-   const more=chat.locator('[data-hh-ai-more]');
-   await more.waitFor({state:"visible",timeout:10000});
-   if(await more.getAttribute('open')===null)
-     await more.locator(':scope > summary').click();
-   await more.getByRole('button',{name:"Новый разговор"}).click();
-   await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
+ // Check the six approved iChat actions through actual user clicks, never mocked routes.
+ const resetViaMore=async()=>{
+   // The current compact Messenger keeps New conversation inside the actual
+   // + (More actions) menu; do not test a button hidden under closed details.
+   const more=chat.locator('details[data-hh-ai-more]');
+   await more.locator('summary').click();
+   await more.getByRole('button',{name:'Новый разговор'}).click();
+   if(await more.evaluate(node=>node.open))
+     await more.locator('summary').click();
  };
- await resetAiConversation();
+ await resetViaMore();
+ await chat.locator('[data-hh-ai-choice="practice"]').waitFor({state:"visible"});
  await chat.locator('[data-hh-ai-choice="practice"]').click();
  await chat.getByText(/сколько минут у вас есть/).waitFor({state:"visible"});
- await resetAiConversation();
+ await resetViaMore();
+ await chat.locator('[data-hh-ai-choice="ask"]').click();
+ assert.equal(await chat.locator("textarea").evaluate(node=>document.activeElement===node),
+   true,"Ask focuses the existing unsent composer without auto-submission");
  await chat.locator('[data-hh-ai-choice="test"]').click();
  await page.waitForURL(/\/ru\/tests\/?$/,{timeout:45000});
  await page.locator('[data-free-entry-landing="tests"]').waitFor({state:"visible",timeout:30000});
@@ -620,7 +634,12 @@ try{
  await chat.locator('[data-hh-ai-choice="session"]').waitFor({state:"visible",timeout:30000});
  await chat.locator('[data-hh-ai-choice="session"]').click();
  await page.waitForURL(/\/ru\/services\/?$/,{timeout:45000});
- await page.locator('main').first().waitFor({state:"visible",timeout:30000});
+ await page.locator("h1").first().waitFor({state:"visible",timeout:30000});
+ await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+ await chat.locator('[data-hh-ai-choice="course"]').waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-choice="course"]').click();
+ await page.waitForURL(/\/ru\/academy\/?$/,{timeout:45000});
+ await page.locator("h1").first().waitFor({state:"visible",timeout:30000});
  await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
@@ -634,7 +653,7 @@ try{
  assert.equal(await page.locator("[data-support-practice-tabs] > *").count(),3);
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
- results.push({journey:"MyTube → six-action AI landing → Video transcript → Orders/Clients → Practice",passed:true});
+ results.push({journey:"MyTube → Video → six real iChat choices → one protected transcript → private Orders/Clients → Practice",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
  // with one seventh link to the REAL free express-review page.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});

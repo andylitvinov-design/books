@@ -52,6 +52,10 @@ const run = async (locale, width) => {
       captured.ratingReads.push({kind, count:keys.length});
       return json({ratings:Object.fromEntries(keys.map(key => [key,{count:0,average:0,mine:null}]))});
     }
+    // The public messenger card checks signed bot availability using one
+    // read-only first-party GET. Never allow provider sends or CRM writes.
+    if (url.pathname === "/api/public/telegram-diagnostic" && method==="GET")
+      return json({available:false,directAvailable:false});
     if (url.pathname === "/api/public/talisman-checkout" && method==="GET")
       return json(priced ? fixed : {available:false,reason:"PRICE_NOT_APPROVED"});
     if (url.pathname === "/api/app/auth/contact-profile" && method==="GET")

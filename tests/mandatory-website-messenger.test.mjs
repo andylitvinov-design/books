@@ -14,8 +14,11 @@ test("messenger-only default and explicit emergency rollback",()=>{
 });
 test("website-only intake UI shows Telegram and WhatsApp with honest Send disclosure",()=>{
  const ui=read("components/mandatory-messenger-actions.tsx");
- for(const s of ["WhatsApp","Telegram","data-messenger-only-contact","Нажмите «Отправить»","Press Send inside the messenger","directAvailable"])assert.ok(ui.includes(s),s);
+ for(const s of ["WhatsApp","Telegram","data-messenger-only-contact","Нажмите «Отправить»","Press Send inside the messenger","resolveTelegramFirstEntry","data-hh-messenger-art"])assert.ok(ui.includes(s),s);
  assert.doesNotMatch(ui,/mailto:|\/api\/service-enquiries|type="email"/);
+ assert.match(ui,/bot\.kind==="review"\?t\.review:t\.bot/);
+ assert.match(ui,/setBot\(null\)/);
+ assert.match(ui,/data-telegram-route=\{bot\?\.kind\|\|"manual"\}/);
  for(const p of ["components/contact-channel-chooser.tsx","components/compact-lead-capture.tsx","components/business-website-enquiry.tsx","components/meditation-course-enquiry.tsx"]) {
    assert.match(read(p),/if \(websiteMessengerOnlyUi\(\)\) return /,p);
    assert.match(read(p),/MandatoryMessengerActions/,p);
