@@ -150,6 +150,6 @@ test("Ideas Personalization and Concept retain a single opt-in Voice/My Voice We
  assert.match(browser,/spawnSync\("ffprobe"/);
  assert.doesNotMatch(browser,/advancedVoice\.click\(\{force:true\}\)/);
  const css=read("components/mandala-video-mobile.module.css");
- assert.match(css,/data-video-legacy-phrase-editor\]\[data-video-ideas-recording-open="true"\]:not\(\[hidden\]\)/);
+ assert.ok(css.includes('[data-ideas-subtab="voice"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{display:block!important}'), "the voice editor is exposed only inside its selected Voice/My Voice submode");
  assert.match(css,/data-video-phrase-audio-shortcut\]:not\(\[hidden\]\)/);
 });
