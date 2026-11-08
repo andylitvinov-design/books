@@ -176,7 +176,7 @@ test("voice browser opens Ideas and applies six visible Montage styles with deco
 });
 
 test("voice browser selects the visible montage workspace before recording",()=>{
-  assert.match(source,/phase\(engine,"offline-remix-ready"\)[\s\S]*?data-video-quick-control="editor"[\s\S]*?expect\(generate\)\.toBeVisible/);
+  assert.match(source,/phase\(engine,"offline-remix-ready"\)[\s\S]*?data-video-quick-control="phrases"[\s\S]*?expect\(generate\)\.toBeVisible/);
 });
 
 test("affirmation attachment acceptance verifies the visible live movie soundtrack",()=>{
@@ -215,7 +215,7 @@ test("disclosure acceptance retains provider privacy, real exported audio and st
     'Number(audioTrack.channels),2',
     'pcm.stdout.some(value=>value!==0)',
     '[data-video-narration-stale]',
-    'await expect(page.locator("[data-video-quick-generate]")).toBeDisabled()',
+    'await expect(page.locator("[data-video-ideas-create]")).toBeDisabled()',
   ])assert.ok(source.includes(assertion),assertion);
 });
 
@@ -439,7 +439,7 @@ test("real WebKit selects Settings duration, then Audio and real voice before re
  assert.ok(studio.includes("data-video-montage-tab={item.id}"));
  assert.ok(studio.includes('montagePanel==="audio" ?'));
  assert.ok(browser.includes('data-video-voice-studio'));
- assert.ok(browser.includes('data-video-quick-generate'));
+ assert.ok(browser.includes('data-video-ideas-create'));
 });
 
 test("post-export stale narration refusal reopens mounted Audio and consented Voice",()=>{
@@ -518,13 +518,14 @@ test("headed WebKit narration uses a real short touch without duplicate provider
   assert.ok(browser.includes('pcm.stdout.some(value=>value!==0)'));
 });
 
-test("voice export uses visible Audio-stage Generate, never the hidden Style-stage CTA",()=>{
+test("consented voice is exported only from Ideas Create, not Montage",()=>{
   const effects=source.indexOf('phase(engine,"hypno-audio-effects-rendered")');
   const audio=source.indexOf('const montageAudioTab=page.locator',effects);
-  const click=source.indexOf('await montageAudioTab.click()',audio);
-  const pressed=source.indexOf('await expect(montageAudioTab).toHaveAttribute("aria-pressed","true")',click);
-  const generate=source.indexOf('const generate=page.locator("[data-video-quick-generate]")',pressed);
-  assert.ok(effects>=0&&audio>effects&&click>audio&&pressed>click&&generate>pressed,
-    "video with consented narration must use a real visible Audio-tab export button");
+  const clicked=source.indexOf('await montageAudioTab.click()',audio);
+  const pressed=source.indexOf('await expect(montageAudioTab).toHaveAttribute("aria-pressed","true")',clicked);
+  const ideas=source.indexOf('await page.locator(\'[data-video-quick-control="phrases"]\').click()',pressed);
+  const generate=source.indexOf('const generate=page.locator("[data-video-ideas-create]")',ideas);
+  assert.ok(effects>=0&&audio>effects&&clicked>audio&&pressed>clicked&&ideas>pressed&&generate>ideas);
   assert.doesNotMatch(source.slice(effects,generate),/click\(\{force:true\}\)/);
+  assert.match(read("components/mandala-free-video-studio.tsx"),/data-video-montage-next=\{montagePanel==="effects"\?"audio":"ideas"\}/);
 });

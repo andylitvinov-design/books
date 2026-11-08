@@ -56,7 +56,13 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(handoffPanel).toBeHidden();
     await expect(continueToIdeas).toBeEnabled();
     await continueToIdeas.click();
+    const editorAfterGoal=page.locator('[data-video-quick-control="editor"]');
+    await expect(editorAfterGoal).toHaveAttribute("aria-pressed","true");
+    await expect(studio).toHaveAttribute("data-active-workspace","editor");
+    await expect(page.locator('[data-video-montage-tab="effects"]'))
+      .toHaveAttribute("aria-pressed","true");
     const ideas=page.locator('[data-video-quick-control="phrases"]');
+    await ideas.click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
@@ -89,8 +95,11 @@ async function verifyWorkspaceHydration(browser,locale){
       })).catch(()=>({diagnosticsUnavailable:true}));
       throw new Error("WEBKIT_MONTAGE_SINGLE_TAP_NOT_COMMITTED "+JSON.stringify(state),{cause:error});
     }
-    // Approved UI: one visible Concept proposal, optional registration
-    // overlay on Edit, guest approval, then six original Style cards.
+    // New default: Style is visible first. The optional existing Concept
+    // editor still supports guest approval, without requesting a render.
+    const initialStyle=page.locator('[data-video-montage-tab="effects"]');
+    await expect(initialStyle).toHaveAttribute("aria-pressed","true");
+    await page.locator('[data-video-montage-tab="concept"]').click();
     const concept=page.locator("[data-video-montage-concept]");
     await expect(concept).toBeVisible();
     await expect(page.locator('[data-video-montage-tab="concept"]'))
@@ -186,8 +195,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await birthday.click();
     await expect(birthday).toHaveAttribute("aria-pressed","true");
     await continueToIdeas.click();
-    await expect(ideas).toHaveAttribute("aria-pressed","true");
-    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
+    await expect(editorAfterGoal).toHaveAttribute("aria-pressed","true");
+    await expect(studio).toHaveAttribute("data-active-workspace","editor");
     // These are the actual source-backed montage title inputs; source edits
     // use the same data fed to compileFreeFilmPreset, not a fake screenshot.
     const firstCaption=page.locator('[data-auto-video-stage-caption="0"]');
@@ -401,11 +410,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const editorTab=page.locator('[data-video-quick-control="editor"]');
       await editorTab.click();
       await expect(editorTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
-      // Montage opens the approved Concept panel by default. A real visitor
-      // taps Style before choosing the scenic film; no hidden/forced clicks.
+      // Montage now opens Style directly before Music and Ideas.
       const montageStyleTab=page.locator('[data-video-montage-tab="effects"]');
-      await expect(page.locator('[data-video-montage-tab="concept"]'))
-        .toHaveAttribute("aria-pressed","true",{timeout:15000});
       await expect(montageStyleTab).toBeVisible();
       await montageStyleTab.click();
       await expect(montageStyleTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
@@ -653,12 +659,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Confirm the chosen recorded track survives the ACTUAL local MP4/WebM
         // export. Reading a selection badge or blob URL is not E2E evidence.
         await page.locator('[data-video-quick-control="editor"]').click();
-        // The original recorder's export button is available in the real
-        // Montage Audio step, never in the intentionally hidden Style footer.
+        // Montage is selection only; the third-step Ideas CTA exports both
+        // recorded voice and independent background music from the same tap.
         const ownAudioStep=page.locator('[data-video-montage-tab="audio"]');
         await ownAudioStep.click();
         await expect(ownAudioStep).toHaveAttribute("aria-pressed","true");
-        const ownCreate=page.locator("[data-video-quick-generate]");
+        await page.locator('[data-video-quick-control="phrases"]').click();
+        const ownCreate=page.locator("[data-video-ideas-create]");
         await expect(ownCreate).toBeEnabled({timeout:30000});
         await ownCreate.click();
         const ownDownload=page.locator("[data-mandala-video-download]");
@@ -886,17 +893,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       phase(engine,"hypno-audio-effects-rendered");
       await page.locator('[data-video-quick-control="video"]').click();
       await page.locator('[data-video-quick-control="editor"]').click();
-      // The real mobile Montage Style stage intentionally hides the export
-      // button behind its visible "Next · Add text" step. To produce a voiced
-      // movie, choose the real Audio tab, not a hidden Style-step control.
+      // Montage selects style and soundtrack; Ideas has the actual Create
+      // action after approved text/voice, and Hypno remains optional.
       const montageAudioTab=page.locator('[data-video-montage-tab="audio"]');
       await expect(montageAudioTab).toBeVisible();
       await montageAudioTab.click();
       await expect(montageAudioTab).toHaveAttribute("aria-pressed","true");
-      const generate=page.locator("[data-video-quick-generate]");
+      await page.locator('[data-video-quick-control="phrases"]').click();
+      const generate=page.locator("[data-video-ideas-create]");
       await expect(generate).toBeVisible({timeout:30000});
-      await expect(page.locator("[data-video-quick-generate]")).toBeEnabled({timeout:30000});
-      assert.equal(await page.locator("[data-video-quick-generate]").isDisabled(),false,
+      await expect(generate).toBeEnabled({timeout:30000});
+      assert.equal(await generate.isDisabled(),false,
         "newly remixed WAV must automatically attach to local movie");
       // One Create tap decodes the idle MP4 and exports the actual voice video.
       if(engine==="chromium"||engine==="webkit") {
@@ -963,7 +970,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           try {
             uiState=await withDeadline(page.evaluate(()=>{
             const video=document.querySelector("[data-mandala-master-mp4]");
-            const create=document.querySelector("[data-video-quick-generate]");
+            const create=document.querySelector("[data-video-ideas-create]");
             const result=document.querySelector("[data-video-result]");
             return {
               canClick:create instanceof HTMLButtonElement ? !create.disabled : null,
@@ -1164,7 +1171,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const soundtrackLabels=await page.locator("[data-video-live-audio]").allTextContents();
       const stillHasOldVoice=soundtrackLabels.some(label=>
         label.includes("holistic-house-hypno-audio.wav")||label.includes(expectedFileName));
-      if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
+      if(stillHasOldVoice){
+        await page.locator('[data-video-quick-control="phrases"]').click();
+        await expect(page.locator("[data-video-ideas-create]")).toBeDisabled();
+        await page.locator('[data-video-quick-control="editor"]').click();
+        await montageAudioAfterExport.click();
+      }
       const voicePanel=page.locator("[data-video-voice-studio]");
       await voicePanel.waitFor({state:"visible",timeout:25000});
       if(await voicePanel.getAttribute("open")===null)

@@ -5231,3 +5231,26 @@
   width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}
 .heroCanvas .heroSelectedStyleDecoder{position:absolute!important;left:0;top:0;
   width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+
+/* Goal → Montage → Ideas: two accessible choices after approved text + voice.
+   A soundtrack is mixed separately with the voice at final local MP4 export. */
+.ideasFinalActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+  min-width:0;margin:12px 0 2px;padding:0 1px}
+.ideasFinalActions button{display:flex;align-items:center;justify-content:center;gap:7px;
+  min-width:0;min-height:54px;padding:11px 9px;border-radius:15px;border:1px solid #d5ded4;
+  font-weight:750;font-size:clamp(13px,3.5vw,16px);line-height:1.25;font-family:inherit;cursor:pointer;text-align:center;
+  overflow-wrap:anywhere;touch-action:manipulation}
+.ideasFinalActions .ideasCreateVideo{color:#fff;background:#067a67;border-color:#067a67;
+  box-shadow:0 5px 13px #067a672b}
+.ideasFinalActions .ideasAddEffects{color:#143d3a;background:#fffcf7;border-color:#b7cfc5}
+.ideasFinalActions button:disabled{cursor:not-allowed;opacity:.55}
+.ideasFinalActions button:focus-visible,.voiceBackgroundSlider input:focus-visible{
+  outline:3px solid #176e6e;outline-offset:3px}
+.voiceBackgroundSlider{display:grid;gap:7px;min-width:0;margin:10px 0;padding:13px 14px;
+  border:1px solid #e9dfd1;border-radius:18px;background:#fffcf7;color:#143d3a}
+.voiceBackgroundSlider strong{font-size:15px}
+.voiceBackgroundSlider small{font-size:13px;color:#526b64;overflow-wrap:anywhere}
+.voiceBackgroundSlider label{display:grid;gap:7px;font-weight:650;font-size:14px}
+.voiceBackgroundSlider input{display:block;width:100%;min-height:35px;accent-color:#067a67}
+@media(max-width:359px){.ideasFinalActions{grid-template-columns:minmax(0,1fr)}
+ .ideasFinalActions button{min-height:48px;padding:8px 9px;font-size:15px}}

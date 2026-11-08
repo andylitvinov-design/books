@@ -9,7 +9,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
  const tabBlock=studio.match(/const workspaceTabs=\[([\s\S]*?)\] as const;/)?.[1];
  assert.ok(tabBlock,"workspace registry");
  const ids=[...tabBlock.matchAll(/id:"([a-z]+)"/g)].map(m=>m[1]);
- assert.deepEqual(ids,["video","phrases","editor","effects","pro","ready"]);
+ assert.deepEqual(ids,["video","editor","phrases","effects","pro","ready"]);
  for(const locale of ["ru","en","es"]){
    assert.match(studio,new RegExp(locale+":[\\s\\S]*?video:\\{tab:"));
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
@@ -238,7 +238,7 @@ test("hydrated Studio gates the first local MP4 test before its first real user 
 
 test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>{
  const tabs=studio.slice(studio.indexOf("const workspaceTabs=["),studio.indexOf("] as const;",studio.indexOf("const workspaceTabs=[")));
- assert.ok(tabs.indexOf('id:"phrases"')<tabs.indexOf('id:"editor"'),"Ideas is second, Montage third");
+ assert.ok(tabs.indexOf('id:"editor"')<tabs.indexOf('id:"phrases"'),"Montage is second, Ideas third");
  const nav=studio.slice(studio.indexOf("<nav className={videoStyles.quickVideoNav}"),studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
  assert.match(nav,/quickNavCompact/,"iPhone labels are genuinely short");
  assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
@@ -322,10 +322,10 @@ test("validated Messenger video handoff visibly opens the original Studio Direct
    "unopened legacy Goals sections remain hidden");
 });
 
-test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>{
-  const at=studio.indexOf("const continueToIdeas = () => {");
+test("Goal → Montage cancels stale scroll on a genuine quick-tab action",()=>{
+  const at=studio.indexOf("const continueToMontage = () => {");
   const until=studio.indexOf("  const openVideoScenarioStep",at);
-  assert.ok(at>=0&&until>at,"one real Continue to Ideas handler");
+  assert.ok(at>=0&&until>at,"one real Continue to Montage handler");
   const handler=studio.slice(at,until);
   assert.match(handler,/navigationToken=\+\+quickNavTokenRef\.current/);
   assert.match(handler,/if\(navigationToken!==quickNavTokenRef\.current\)return/);
@@ -336,7 +336,7 @@ test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>
   const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
   assert.match(browser,/MONTAGE_TAB_MUST_ACTIVATE/);
   assert.match(browser,/data-video-montage-tab="effects"/);
-  assert.match(browser,/MONTAGE_MUST_START_WITH_AUTO_CONCEPT/);
+  assert.match(browser,/MONTAGE_MUST_START_WITH_STYLE/);
   assert.match(browser,/GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION/);
   assert.match(browser,/CONCEPT_TEXT_TOOLS_DID_NOT_OPEN/);
 });

@@ -167,7 +167,7 @@ test("explicit Safari WebM retry uses a different recorder, preserves sound",asy
   assert.ok(studio.includes('playbackStatus==="ready"&&result.mode!=="catalog"'));
 });
 
-test("hydration progresses Goals → Ideas through a real tap without hidden legacy clicks",()=>{
+test("hydration progresses Goal → Montage → Ideas without hidden legacy clicks",()=>{
   const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const start=browser.indexOf("async function verifyWorkspaceHydration");
   const end=browser.indexOf("// Real guest route browser acceptance",start);
@@ -209,7 +209,8 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  // Preserve the real first guest movie flow on the current tabbed Montage.
  const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
- assert.match(firstVideo,/await montageStyle\.click\(\)/);
+ assert.match(firstVideo,/assert\.equal\(await montageStyle\.getAttribute\('aria-pressed'\),'true','MONTAGE_MUST_START_WITH_STYLE'\)/,
+  "default Montage Style requires no redundant tap");
  assert.match(firstVideo,/await page\.locator\('\[data-video-montage-tab="concept"\]'\)\.click\(\)/,
    "visitor returns from Style to the proposed Concept");
  assert.match(firstVideo,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/,

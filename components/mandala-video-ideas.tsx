@@ -17,6 +17,7 @@ type Props={
  locale:VideoLocale;theme:VideoTheme;active:boolean;disabled:boolean;settings:AffirmationSettings;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;
+ hideCreateAction?:boolean;
  onRecord:()=>void;onResetPreview:()=>void;
 };
 
@@ -76,7 +77,7 @@ const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
 export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generating,
- onChange,onPendingChange,onPreview,onCreate,onRecord,onResetPreview}:Props){
+ onChange,onPendingChange,onPreview,onCreate,onRecord,onResetPreview,hideCreateAction=false}:Props){
  const t=wording[locale];
  const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
  const desiredOptions=useMemo<Cluster[]>(()=>listDesiredEmotionClusters(locale),[locale]);
@@ -285,11 +286,11 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
    </div>
   </details>
 
-  <button type="button" className={css.create} data-video-ideas-create
+  {!hideCreateAction?<button type="button" className={css.create} data-video-ideas-create
    disabled={disabled||selectedCount<5} onClick={onCreate}>
    <Play size={23} fill="currentColor" aria-hidden="true"/>
    {generating?t.next+"…":t.next}<span aria-hidden="true">→</span>
-  </button>
+  </button>:null}
   <p className={css.privacy}>{t.privacy}</p>
  </section>;
 }

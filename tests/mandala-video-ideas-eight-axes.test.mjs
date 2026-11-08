@@ -22,37 +22,34 @@ test("eight exact canonical axes, all three languages, five safe unique phrases"
     assert.notDeepEqual(ref,suggestMeaningPhrases(lang,...args));
  }
 });
-test("compact Ideas screen uses actual selectors, sliders and one working Montage action",()=>{
+test("compact Ideas screen preserves selectors, sliders and shared renderer",()=>{
  for(const marker of ["data-video-ideas-current","data-video-ideas-desired","data-video-ideas-state-score",
    "data-video-ideas-energy-score","data-video-meaning-axis","data-video-idea-phrase","data-video-ideas-create"])
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/listMeaningAxes\(locale\)/);
  assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
- assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
+ assert.match(studio,/onCreate=\{createQuickVideo\} hideCreateAction/);
+ assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
 });
 
-test("Ideas CTA advances to Montage auto Concept with no renderer, no audio library and no source gate",()=>{
- const start=studio.indexOf("const goToMontageFromIdeas = () => {");
- const end=studio.indexOf("const createQuickVideo = () => {",start);
- assert.ok(start>0&&end>start,"Ideas navigation handler");
- const action=studio.slice(start,end);
- assert.match(action,/setActiveWorkspace\("editor"\)/);
- assert.match(action,/setMontagePanel\("concept"\)/);
-  assert.match(studio,/data-video-montage-concept/);
-  assert.match(studio,/data-video-concept-text-tools/);
- assert.match(action,/scrollIntoView/);
- assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}\/>/);
- assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
- assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
- assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,
-  "quick music must only mount in Goal");
- assert.doesNotMatch(css,/\[data-active-workspace="phrases"\]\s*\.quickBuilder>\[data-video-quick-audio-choices\]/,
-  "mobile styles must not force Music & Voice into Ideas");
- assert.match(studio,/montagePanel==="audio" \?/,"Montage keeps its real audio editor");
+test("Goal → Montage → Ideas, with direct Create and optional Hypno",()=>{
+ const tabs=studio.slice(studio.indexOf("const workspaceTabs=["),studio.indexOf("] as const;",studio.indexOf("const workspaceTabs=[")));
+ assert.ok(tabs.indexOf('id:"editor"')<tabs.indexOf('id:"phrases"'));
+ const nav=studio.slice(studio.indexOf("const continueMontageOrGenerate=()=>{"),
+   studio.indexOf("const continueToMontage = () => {"));
+ assert.match(nav,/setMontagePanel\("audio"\)/);
+ assert.match(nav,/goToIdeasFromMontage\(\)/);
+ assert.doesNotMatch(nav,/createQuickVideo\(|startFromHero\(/);
+ const ideas=studio.slice(studio.indexOf('data-video-quick-phrases aria-label='),
+   studio.indexOf('data-video-effects-panel aria-label='));
+ assert.match(ideas,/onCreate=\{createQuickVideo\} hideCreateAction\/>/);
+ assert.match(ideas,/data-video-ideas-final-actions/);
+ assert.match(ideas,/data-video-ideas-create[\s\S]*?onClick=\{createQuickVideo\}/);
+ assert.match(ideas,/data-video-ideas-add-effects[\s\S]*?activateQuickWorkspace\("effects"\)/);
+ assert.match(ideas,/data-video-voice-background-volume/);
+ assert.match(cmp,/!hideCreateAction\?<button/);
+ assert.match(css,/\.ideasFinalActions\{display:grid/);
 });
-
 
 test("approved seven-choice Ideas mock retains five-minimum, real canvas text size and voice handoff",()=>{
  for(const lang of ["ru","en","es"]){
@@ -66,7 +63,7 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
   "data-video-ideas-record","data-video-ideas-minimum","data-video-ideas-refine"])
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/selectedCount<5/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
+ assert.match(studio,/onCreate=\{createQuickVideo\} hideCreateAction/);
  assert.match(cmp,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
@@ -103,7 +100,7 @@ test("Ideas Play reuses film, not unstable speech synthesis; preserve real voice
    "legacy caption is not drawn on top of Ideas text");
  assert.ok(studio.includes('onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}'));
  assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'));
- assert.ok(studio.includes('onCreate={goToMontageFromIdeas}'),"CTA retains real Montage destination");
+ assert.ok(studio.includes('onCreate={createQuickVideo} hideCreateAction'),"old nested CTA is hidden; Ideas has shared Create");
 });
 
 test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list fits the screen",()=>{

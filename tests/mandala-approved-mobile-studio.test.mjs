@@ -88,14 +88,18 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
     source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
   assert.match(finalCreate,/onClick=\{continueMontageOrGenerate\}/,
     "Montage reuses the existing final Create handler after Style and Audio");
-  assert.match(finalCreate,/montagePanel!=="effects"/,
-    "Style remains a navigation step and cannot bypass licensed export checks");
-  assert.match(source,/if\(montagePanel==="concept"\)return/,
-    "the Concept stage uses explicit free approval rather than an export click");
+  assert.match(finalCreate,/data-video-montage-next=\{montagePanel==="effects"\?"audio":"ideas"\}/,
+    "both Montage buttons only navigate to the next preparation step");
+  assert.doesNotMatch(finalCreate,/createQuickVideo\(|startFromHero\(/,
+    "optional Concept and Montage must never trigger render or credits");
   assert.match(source,/data-video-montage-concept/,
     "the original montage contains the new concept without duplicating its renderer");
-  assert.match(finalCreate,/!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending/,
-    "Final Create still requires approved footage, narration and phrases");
+  assert.match(source,/data-video-ideas-create[\s\S]*?onClick=\{createQuickVideo\}/,
+    "final Create belongs to Ideas, not Montage");
+  assert.match(source,/const createQuickVideo = \(\) => \{[\s\S]*?if\(narrationInvalid\)/,
+    "the actual export still checks narration freshness");
+  assert.match(source,/if\(audioNeedsAttachment\)\{[\s\S]*?setNotice\(audioUi\.needsAttach\)/,
+    "unattached audio cannot be silently rendered");
   assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
     "Four local MP4s must prime on the trusted Create click");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);

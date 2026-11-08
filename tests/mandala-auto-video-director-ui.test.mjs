@@ -286,7 +286,7 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
 
 test("Montage and PRO retain one operational video/audio pipeline without duplicate controls",()=>{
   const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
-  assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
+  assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"editor",Icon:Scissors\},\s*\{id:"phrases",Icon:Heart\}/);
   assert.match(studio,/\{id:"pro",Icon:Zap\},\{id:"ready",Icon:Check\}/);
   assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
   assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);

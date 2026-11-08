@@ -741,3 +741,127 @@ export async function startLayeredVideoAudio(
     return null;
   }
 }
+
+
+/**
+ * Mix an approved spoken voice file over the separately selected soundtrack.
+ * The background remains its own lane (local music File or 1–3 first-party
+ * presets); the MediaRecorder receives exactly one mixed audio track.
+ * No uploaded media, external API, or additional provider cost.
+ */
+export async function startVoiceOverBackgroundAudio(
+  voiceFile:File,
+  background:File|Exclude<AmbientMusic,"none">|readonly Exclude<AmbientMusic,"none">[],
+  masterVolume=100,
+  backgroundVolume=30,
+  options:{seconds:number;startSeconds?:number;deferStart?:boolean}={seconds:30},
+):Promise<AmbientSession|null>{
+  const beds:(File|Exclude<AmbientMusic,"none">)[]=Array.isArray(background)
+    ?[...background]:[background as File|Exclude<AmbientMusic,"none">];
+  if(typeof window==="undefined"||!isSupportedLocalAudio(voiceFile)||
+     beds.length<1||beds.length>3||
+     beds.some(b=>typeof b==="string"
+       ?!/^[a-z0-9-]+$/.test(b)
+       :!(b instanceof File)||!isSupportedLocalAudio(b))||
+     !Number.isFinite(options.seconds)||options.seconds<3||options.seconds>60||
+     !Number.isFinite(options.startSeconds??0)||(options.startSeconds??0)<0||
+     (options.startSeconds??0)>=options.seconds||
+     !Number.isFinite(masterVolume)||masterVolume<0||masterVolume>100||
+     !Number.isFinite(backgroundVolume)||backgroundVolume<0||backgroundVolume>60)return null;
+  const AudioCtor=window.AudioContext||
+    (window as typeof window&{webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
+  if(!AudioCtor)return null;
+  const restore=acquirePlaybackSession();
+  let context:AudioContext;
+  try{context=new AudioCtor();}catch{restore();return null;}
+  const nodes:AudioBufferSourceNode[]=[];
+  const gains:GainNode[]=[];
+  let destination:MediaStreamAudioDestinationNode|null=null;
+  try{
+    // Resume synchronously in the trusted Create gesture, before reading bytes.
+    const resumed=context.resume();
+    const buffers=await Promise.all([voiceFile,...beds].map(async source=>{
+      if(typeof source!=="string")return source.arrayBuffer();
+      const response=await fetch(presetAudioUrl(source),{credentials:"same-origin",cache:"force-cache"});
+      if(!response.ok)throw Error("background_audio_unavailable");
+      return response.arrayBuffer();
+    }));
+    const decoded=await Promise.all(buffers.map(bytes=>context.decodeAudioData(bytes)));
+    await resumed;
+    if(context.state!=="running")await context.resume();
+    if(context.state!=="running"||decoded.some(buffer=>!buffer.length||buffer.duration>180))
+      throw Error("audio_decode_invalid");
+    const offset=options.startSeconds??0;
+    if(decoded[0].duration>options.seconds-offset+.10)
+      throw Error("narration_longer_than_video");
+    const mixDestination=context.createMediaStreamDestination();
+    destination=mixDestination;
+    const track=mixDestination.stream.getAudioTracks()[0];
+    if(!track)throw Error("mixed_audio_track_unavailable");
+    decoded.forEach((buffer,index)=>{
+      const node=context.createBufferSource();
+      node.buffer=buffer;node.loop=index!==0;
+      const gain=context.createGain();gain.gain.value=0;
+      node.connect(gain);gain.connect(mixDestination);
+      nodes.push(node);gains.push(gain);
+    });
+    let closed=false,started=false,faded=false,lastVolume=masterVolume;
+    const levels=(volume:number)=>{
+      const master=volume/100/Math.sqrt(1+0.3*beds.length);
+      return [master,...beds.map(()=>master*(backgroundVolume/100)/Math.sqrt(beds.length))];
+    };
+    const begin=()=>{
+      if(closed||started)return;started=true;
+      const now=context.currentTime,finish=now+options.seconds;
+      levels(lastVolume).forEach((level,index)=>{
+        const beginAt=now+(index===0?offset:0);
+        const available=Math.max(0,finish-beginAt);
+        const inSeconds=Math.min(index===0?.035:1,available);
+        const outSeconds=Math.min(index===0?.1:1,available);
+        const gain=gains[index].gain;
+        gain.setValueAtTime(0,now);
+        gain.setValueAtTime(0,beginAt);
+        gain.linearRampToValueAtTime(level,beginAt+inSeconds);
+        gain.setValueAtTime(level,Math.max(beginAt+inSeconds,finish-outSeconds));
+        gain.linearRampToValueAtTime(0,finish);
+        nodes[index].start(beginAt);
+      });
+    };
+    if(!options.deferStart)begin();
+    return {
+      track,begin,
+      setVolume(value:number){
+        if(closed||faded||!Number.isFinite(value)||value<0||value>100)return;
+        lastVolume=value;
+        const now=context.currentTime;
+        levels(value).forEach((level,index)=>{
+          gains[index].gain.cancelScheduledValues(now);
+          gains[index].gain.setTargetAtTime(level,now,.05);
+        });
+      },
+      fadeOut(){
+        if(closed||faded)return;faded=true;
+        const now=context.currentTime;
+        gains.forEach(gain=>{
+          gain.gain.cancelScheduledValues(now);
+          gain.gain.setValueAtTime(gain.gain.value,now);
+          gain.gain.linearRampToValueAtTime(0,now+.7);
+        });
+      },
+      close(){
+        if(closed)return;closed=true;
+        nodes.forEach(node=>{try{node.stop();}catch{}node.disconnect();});
+        gains.forEach(gain=>gain.disconnect());
+        track.stop();void context.close().catch(()=>{});
+        restore();
+      },
+    };
+  }catch{
+    nodes.forEach(node=>{try{node.stop();}catch{}node.disconnect();});
+    gains.forEach(gain=>gain.disconnect());
+    destination?.stream.getTracks().forEach(track=>track.stop());
+    void context.close().catch(()=>{});
+    restore();
+    return null;
+  }
+}

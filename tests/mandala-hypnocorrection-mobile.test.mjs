@@ -247,7 +247,9 @@ test("Effects allow silent export only for an unattached automatic music suggest
  const ui=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
  assert.match(ui,/hypnoUnattachedAutoSuggestion=activeWorkspace==="effects"/);
  assert.match(ui,/audioAuto && !uploadedAudio && attachedAudio===null/);
- assert.match(ui,/audioNeedsAttachment=selectedAudioKey!==attachedAudioKey &&\s*!hypnoUnattachedAutoSuggestion/);
+ assert.match(ui,/const audioNeedsAttachment=\(voiceLayerSelected/);
+ assert.match(ui,/selectedAudioKey!==backgroundAttachedKey/);
+ assert.match(ui,/selectedAudioKey!==attachedAudioKey\) && !hypnoUnattachedAutoSuggestion/);
  assert.match(ui,/if\(uploadedAudio && !audioRights\)/,
    "uploaded audio keeps its independent rights gate");
 });

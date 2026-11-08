@@ -79,7 +79,9 @@ test("the six-voice chooser appears once below approved phrases and soundtrack c
  assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
  assert.match(studio,/if\(activeWorkspace!=="phrases"\)\{setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\);\}/,
    "music preview returns to the shared real audio editor without replacing approved TTS");
- assert.match(studio,/if\(attachedAudio\?\.kind==="file"&&attachedAudio\.narration\)\{/);
+ assert.match(studio,/const keepVoice=attachedAudio\?\.kind==="file"&&Boolean\(attachedAudio\.narration\|\|attachedAudio\.nonLoop\)/);
+ assert.match(studio,/if\(keepVoice\)\{[\s\S]*?setVoiceBackgroundTrack\(attached\)/,
+   "changing the soundtrack updates a separate music lane, never spoken WAV");
  assert.ok(phrases.indexOf('data-hypno-phrases')<phrases.indexOf('{children}'));
  assert.match(phrases,/setReadyDraft\(\{selected,resetPreset:readyDraft\?\.resetPreset\?\?false\}\)/);
  assert.match(phrases,/setCustomDraft\(custom\)/);
@@ -94,12 +96,14 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.doesNotMatch(compact,/<MandalaVideoAffirmations /);
  assert.match(compact,/onPendingChange\?\.\(hasPendingEdits\)/);
  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
- const finalCreate=studio.slice(studio.indexOf("data-video-quick-generate"),
-   studio.indexOf("</button>",studio.indexOf("data-video-quick-generate")));
- assert.match(finalCreate,/montagePanel!=="effects"/);
-  assert.match(studio,/if\(montagePanel==="concept"\)return/,"guest concept approval never triggers rendering");
- assert.match(finalCreate,/!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending/,
-   "unapproved phrase edits still block final export, not navigation");
+ const finalCreate=studio.slice(studio.indexOf("data-video-ideas-create"),
+   studio.indexOf("</button>",studio.indexOf("data-video-ideas-create")));
+ assert.match(finalCreate,/disabled=\{recording\|\|preparing\|\|phrasePending\|\|voiceGenerating\|\|narrationInvalid\}/);
+ assert.match(finalCreate,/onClick=\{createQuickVideo\}/);
+ assert.match(studio,/const createQuickVideo = \(\) => \{[\s\S]*?if\(phrasePending\)\{[\s\S]*?if\(narrationInvalid\)\{/,
+   "unapproved phrases and stale voice still block real final export");
+ const montage=studio.slice(studio.indexOf("const continueMontageOrGenerate=()=>{"),studio.indexOf("const continueToMontage = () => {"));
+ assert.doesNotMatch(montage,/createQuickVideo\(\)|startFromHero\(\)/,"Montage never starts rendering");
  assert.match(studio,/if\(phrasePending\)\{/);
  assert.match(compact,/if\(ideaPending&&!draft\)return/);
  assert.match(compact,/externalPhraseDraft!==null\?\[\]:settings\.selected/);

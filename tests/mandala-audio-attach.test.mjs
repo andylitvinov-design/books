@@ -41,7 +41,9 @@ test("choice is preview; only attached voice plus explicitly selected original m
   assert.match(studio,/type AttachedAudio = \{kind:"preset"/);
   assert.match(studio,/const selectedAudioKey=uploadedAudio/);
   assert.match(studio,/const attachedAudioKey=attachedAudio===null/);
-  assert.match(studio,/const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey/);
+  assert.match(studio,/const audioNeedsAttachment=\(voiceLayerSelected/);
+  assert.match(studio,/selectedAudioKey!==backgroundAttachedKey/);
+  assert.match(studio,/selectedAudioKey!==attachedAudioKey/);
   assert.match(studio,/attachedAudioKey,attachedAudio\?soundVolume:0,[\s\S]*?audioStartSeconds,timelineTextClips,caption/);
   assert.match(studio,/!audioNeedsAttachment &&/);
   assert.match(studio,/job\.musicSession\?\.begin\?\.\(\)/,
@@ -56,7 +58,8 @@ test("choice is preview; only attached voice plus explicitly selected original m
   assert.match(studio,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/musicBed\.id!=="none"\s*\?await startLayeredVideoAudio\(/);
-  assert.match(studio,/const activeBed=attached\.kind==="file"&&audioRights&&musicBed\.id!=="none"/);
+  assert.match(studio,/const independentBed=attached\.kind==="file"&&\(attached\.narration\|\|attached\.nonLoop\)/);
+  assert.match(studio,/bedUrls=independentBed\?/);
   assert.match(studio,/musicSession = attachedAudio\?\.kind==="file"/);
   assert.match(studio,/if\(musicBed\.id!=="none"\)files\.push\(/);
   assert.match(studio,/startLayeredVideoAudio\(\s*attachedAudio\.file,musicBed\.id,soundVolume,musicBed\.volumePercent/);
@@ -99,13 +102,16 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
     "Sound is attached","Дорожка прикреплена","Audio adjunto"]){
     assert.ok(studio.includes(phrase),phrase);
   }
-  // Permit only two safe same-origin music GETs (existing gallery mixer and
-  // the explicitly selected original bed). Never allow arbitrary network IO.
+  // Permit only three explicit same-origin preset music GETs (gallery,
+  // original layered bed, and narration + selected backing soundtrack).
+  // Never allow arbitrary endpoints or upload personal phrase/voice bytes.
   const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
   const originalBedWav=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
   assert.equal((source.match(firstPartyWav)||[]).length,1,"one verified gallery music GET");
   assert.equal((source.match(originalBedWav)||[]).length,1,"one verified optional original-music GET");
-  assert.doesNotMatch((studio+source).replace(firstPartyWav,"").replace(originalBedWav,""),
+  const voiceBackdrop=/fetch\(presetAudioUrl\(source\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
+  assert.equal((source.match(voiceBackdrop)||[]).length,1,"one authorized background GET in local narration mixer");
+  assert.doesNotMatch((studio+source).replace(firstPartyWav,"").replace(originalBedWav,"").replace(voiceBackdrop,""),
     /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
 });
 
@@ -181,15 +187,18 @@ test("quick music checkboxes attach at most three unique first-party melodies wh
   const transpiled=ts.transpileModule(handler.getText(ast),{
     fileName:"mandala.tsx",compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}
   }).outputText;
-  let attached=null,selected="none",mutations=0,played=0;
+  let attached=null,background=null,selected="none",mutations=0,played=0;
   const invoke=choice=>{
-    const attachedPresetIds=attached?.kind==="presets"?attached.ids:
-      attached?.kind==="preset"?[attached.id]:[];
+    const choiceTrack=attached?.kind==="file"&&attached.narration?background:attached;
+    const attachedPresetIds=choiceTrack?.kind==="presets"?choiceTrack.ids:
+      choiceTrack?.kind==="preset"?[choiceTrack.id]:[];
     runInNewContext(transpiled+";toggleQuickMusic(choice)",{
       choice,attachedAudio:attached,locale:"en",attachedPresetIds,recording:false,preparing:false,micRecording:false,
       clearUploadedAudio:()=>{},setSamplePreviewId:()=>{},setAudioAuto:()=>{},
       setMusic:id=>{selected=id;},setAttachedAudio:next=>{attached=next;mutations++;},
-      setMusicWarning:()=>{},previewPlaying:false,startMovieSound:()=>{played++;}
+      setMusicWarning:()=>{},setVoiceBackgroundTrack:value=>{background=value;},
+      setAudioRights:()=>{},stopMovieSound:()=>{},
+      previewPlaying:false,startMovieSound:()=>{played++;}
     },{timeout:1000});
   };
   invoke("warm-morning");
@@ -209,7 +218,9 @@ test("quick music checkboxes attach at most three unique first-party melodies wh
   invoke("warm-morning");
   assert.equal(attached.kind,"file");
   assert.equal(attached.narration,true);
-  assert.equal(mutations,5,"no audio mutation when narration is attached");
+  assert.equal(mutations,5,"narration remains attached and is never replaced");
+  assert.equal(background.kind,"preset");
+  assert.equal(background.id,"warm-morning","the music selector updates the second track");
 });
 
 test("local music mixer reads at most three static site-owned WAVs and emits one export audio track",async()=>{
