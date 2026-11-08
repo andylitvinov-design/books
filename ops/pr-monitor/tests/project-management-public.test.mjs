@@ -64,3 +64,22 @@ test('exact-HEAD PR and gate evidence are separate from functional LIVE',async()
  assert.equal(evaluatePR(pr,{total_count:101,check_runs:[]}).reason,'PARTIAL_CHECKRUN_COVERAGE');
  assert.equal(evaluatePR({...pr,head:{sha:'bad'}},null).pr,'unknown');
 });
+
+test('initial mobile view opens the first task stage before secondary GitHub inventory',()=>{
+ assert.ok(html.indexOf('id="pm-root"')<html.indexOf('id="hh-pr-task-tree"'));
+ assert.match(html,/<details class="pm-filter-panel">/);
+ assert.match(html,/<details class="pm-live-panel">/);
+ assert.match(html,/<h1>Задачи и PR<\/h1>/);
+ assert.match(js,/projectCard\(p,i===0\)/);
+ assert.match(js,/details\.open=!!first/);
+ assert.match(js,/inspectStage\(root\.querySelector\('\.pm-stage\[open\]'\)\)/);
+});
+test('inline PR indicators are evidence-bound and task selection triggers bounded readback',()=>{
+ assert.match(js,/pm-pr-inline/);assert.match(js,/pm-pr-pill/);
+ assert.match(js,/badge\.dataset\.prNumber=String\(p\)/);
+ assert.match(js,/HHPMProof\?\.evaluatePR/);
+ assert.match(js,/pm-pr-unknown/);
+ assert.match(js,/checking = new Map\(\)/);
+ assert.match(js,/if\(seen\.size>6\)break/);
+ assert.doesNotMatch(js,/setInterval\(|workflow_dispatch|service_role|Authorization:/i);
+});

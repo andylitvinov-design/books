@@ -5,6 +5,7 @@
   const root = document.getElementById('pm-root');
   const info = document.getElementById('pm-info');
   const inspected = new Map();
+  const checking = new Map();
   let current = null;
   const L = {verified:'Подтверждено',partial:'Частично',planned:'Не начато',blocked:'Блокировано'};
   const status = s => Object.prototype.hasOwnProperty.call(L,s)?s:'planned';
@@ -63,61 +64,100 @@
     save(task?.id||stage?.key||project.key,lines);
   }
   const displays = new Map();
+  const prLabels={merged:'MERGED',open:'OPEN',draft:'DRAFT',closed_unmerged:'CLOSED'};
+  const ciLabels={pass:'CI ✓',fail:'CI FAILED',pending:'CI ожидает',unknown:'CI ?'};
+  function renderPR(n,saved,node){
+    if(node.classList.contains('pm-pr-pill')){
+      node.className='pm-pr-pill pm-pr-'+saved.proof.pr+' pm-ci-'+saved.proof.ci;
+      node.textContent='#'+n+' · '+(prLabels[saved.proof.pr]||'UNKNOWN')+' · '+(ciLabels[saved.proof.ci]||'CI ?');
+      node.title=saved.label+' · проверено '+new Date(saved.observed).toLocaleString('ru-RU');
+    }else node.textContent=saved.label+' · '+new Date(saved.observed).toLocaleString('ru-RU');
+  }
   function registerPR(n,output){
     if(!displays.has(n))displays.set(n,new Set());
     displays.get(n).add(output);
-    const old=inspected.get(n);
-    if(old)output.textContent=old.label+' · '+new Date(old.observed).toLocaleString('ru-RU');
+    const old=inspected.get(n);if(old)renderPR(n,old,output);
   }
-  function displayPR(n,saved){
-    for(const element of displays.get(n)||[]){
-      element.textContent=saved.label+' · '+new Date(saved.observed).toLocaleString('ru-RU');
-    }
-  }
-  async function checkPR(n,output,trigger){
-    trigger.disabled=true;output.textContent='Проверяю GitHub…';
-    try{
-      let saved=inspected.get(n);
-      if(!saved||Date.now()-saved.time>180000){
-        const req=await fetch(HOST+'/pulls/'+n,{
-          headers:{Accept:'application/vnd.github+json'},cache:'no-store'});
-        if(!req.ok)throw Error('GitHub PR '+req.status);
-        const pr=await req.json();
-        let checks=null;
-        try{
-          if(pr?.head?.sha&&/^[0-9a-f]{40}$/i.test(pr.head.sha)){
-            const response=await fetch(HOST+'/commits/'+pr.head.sha+'/check-runs?per_page=100',{
-              headers:{Accept:'application/vnd.github+json'},cache:'no-store'});
-            if(response.ok)checks=await response.json();
-          }
-        }catch(_){/* GitHub CI errors remain UNKNOWN, never assumed green. */}
-        const observed=new Date().toISOString();
-        const proof=window.HHPMProof?.evaluatePR?.(pr,checks,observed);
-        if(!proof||proof.pr==='unknown')throw Error('PR_IDENTITY_UNVERIFIED');
-        saved={label:proof.label,observed,time:Date.now(),proof};
-        inspected.set(n,saved);
+  function displayPR(n,saved){for(const node of displays.get(n)||[])renderPR(n,saved,node);}
+  function checkPR(n,output,trigger){
+    if(checking.has(n))return checking.get(n);
+    const promise=(async()=>{
+      if(trigger)trigger.disabled=true;
+      for(const node of displays.get(n)||[output]){
+        node.textContent=node.classList.contains('pm-pr-pill')?'#'+n+' · проверяю PR…':'Проверяю GitHub…';
       }
-      displayPR(n,saved);
-    }catch(e){
-      const message='Проверка недоступна: '+String(e.message||e).slice(0,85)+'. Источник — PR в GitHub.';
-      for(const node of displays.get(n)||[output])node.textContent=message;
-    }finally{trigger.disabled=false;}
+      try{
+        let saved=inspected.get(n);
+        if(!saved||Date.now()-saved.time>180000){
+          const req=await fetch(HOST+'/pulls/'+n,{headers:{Accept:'application/vnd.github+json'},cache:'no-store'});
+          if(!req.ok)throw Error('GitHub PR '+req.status);
+          const pr=await req.json();
+          let checks=null;
+          try{
+            if(pr?.head?.sha&&/^[0-9a-f]{40}$/i.test(pr.head.sha)){
+              const response=await fetch(HOST+'/commits/'+pr.head.sha+'/check-runs?per_page=100',{
+                headers:{Accept:'application/vnd.github+json'},cache:'no-store'});
+              if(response.ok)checks=await response.json();
+            }
+          }catch(_){/* Missing CI evidence must stay UNKNOWN. */}
+          const observed=new Date().toISOString();
+          const proof=window.HHPMProof?.evaluatePR?.(pr,checks,observed);
+          if(!proof||proof.pr==='unknown'||pr.number!==n)throw Error('PR_IDENTITY_UNVERIFIED');
+          saved={label:proof.label,observed,time:Date.now(),proof};
+          inspected.set(n,saved);
+        }
+        displayPR(n,saved);
+      }catch(e){
+        const message='Проверка недоступна: '+String(e.message||e).slice(0,85)+'. Источник — PR в GitHub.';
+        for(const node of displays.get(n)||[output]){
+          if(node.classList.contains('pm-pr-pill')){
+            node.className='pm-pr-pill pm-pr-unknown';
+            node.textContent='#'+n+' · статус недоступен';node.title=message;
+          }else node.textContent=message;
+        }
+      }finally{if(trigger)trigger.disabled=false;}
+    })();
+    checking.set(n,promise);void promise.finally(()=>checking.delete(n));
+    return promise;
+  }
+  function inspectStage(stage){
+    if(!stage||!stage.open)return;
+    const seen=new Set();
+    for(const node of stage.querySelectorAll('.pm-pr-pill')){
+      const n=Number(node.dataset.prNumber);
+      if(!Number.isSafeInteger(n)||seen.has(n))continue;
+      seen.add(n);
+      if(seen.size>6)break; // bounded on-demand GitHub calls; tap another task to inspect its PRs
+      void checkPR(n,node,null);
+    }
   }
   function taskCard(task,project,stage){
     const card=el('div','pm-task'),head=el('div','pm-task-head');
     card.dataset.pmStatus=status(task.status);
     card.dataset.pmSearch=(task.id+' '+task.title+' '+stage.title+' '+task.prs.map(p=>'#'+p).join(' ')).toLocaleLowerCase('ru-RU');
-    const title=el('strong',null,task.id+' · '+task.title);
-    head.appendChild(title);head.appendChild(el('span','pm-status pm-'+status(task.status),L[status(task.status)]));
-    card.appendChild(head);
+    head.appendChild(el('strong',null,task.id+' · '+task.title));
+    head.appendChild(el('span','pm-status pm-'+status(task.status),L[status(task.status)]));
+    const inline=el('div','pm-pr-inline');
+    if(!task.prs.length)inline.appendChild(el('span','pm-dim','PR не привязан'));
+    for(const p of task.prs){
+      const badge=el('a','pm-pr-pill pm-pr-unknown','#'+p+' · статус PR…');
+      badge.href='https://github.com/andylitvinov-design/books/pull/'+p;
+      badge.target='_blank';badge.rel='noopener noreferrer';
+      badge.dataset.prNumber=String(p);
+      registerPR(p,badge);inline.appendChild(badge);
+    }
+    head.appendChild(inline);card.appendChild(head);
     window.HHPM_ASSIGN?.attach(card,task,stage,project);
     const actions=el('div','pm-task-actions');
-    if(!task.prs.length)actions.appendChild(el('small','pm-dim','PR не создан или не привязан'));
     for(const p of task.prs){
-      const link=el('a','pm-pr','PR #'+p);link.href='https://github.com/andylitvinov-design/books/pull/'+p;link.target='_blank';link.rel='noopener noreferrer';
+      const link=el('a','pm-pr','PR #'+p);
+      link.href='https://github.com/andylitvinov-design/books/pull/'+p;
+      link.target='_blank';link.rel='noopener noreferrer';
       const out=el('small','pm-pr-result','Статус GitHub ещё не проверен');
       out.setAttribute('aria-live','polite');registerPR(p,out);
-      actions.appendChild(link);actions.appendChild(button('Проверить PR',event=>checkPR(p,out,event.currentTarget),'pm-btn pm-check'));actions.appendChild(out);
+      actions.appendChild(link);
+      actions.appendChild(button('Обновить PR',event=>checkPR(p,out,event.currentTarget),'pm-btn pm-check'));
+      actions.appendChild(out);
     }
     if(task.evidence_url&&/^https:\/\/(?:holistic-house-pr-monitor\.vercel\.app\/|github\.com\/andylitvinov-design\/books\/)/.test(task.evidence_url)){
       const proofLink=el('a','pm-evidence','Доказательство выполнения');
@@ -126,29 +166,41 @@
       if(task.evidence_note)actions.appendChild(el('small','pm-evidence-note',task.evidence_note));
     }
     actions.appendChild(button('Отчёт задачи',()=>exportScope(project,stage,task),'pm-btn pm-quiet'));
-    card.appendChild(actions);return card;
+    const more=el('details','pm-task-more');
+    more.append(el('summary',null,'PR, CI и действия'),actions);
+    card.appendChild(more);
+    const inspect=()=>{for(const p of task.prs)void checkPR(p,null,null);};
+    card.addEventListener('click',e=>{
+      if(!e.target.closest('a,button,label,input,summary'))inspect();
+    });
+    card.addEventListener('change',e=>{
+      if(e.target.matches('input[type="checkbox"]'))inspect();
+    });
+    more.addEventListener('toggle',()=>{if(more.open)inspect();});
+    return card;
   }
-  function stageCard(stage,project){
+  function stageCard(stage,project,first){
     const details=el('details','pm-stage'),summary=el('summary');
-    const row=count(stage.tasks);
+    const row=count(stage.tasks);details.open=!!first;
     summary.appendChild(el('strong',null,stage.title));
-    summary.appendChild(el('span','pm-stage-count',row.verified+' / '+row.total+' подтверждено'));
-    details.appendChild(summary);details.appendChild(badges(row,row.total));
+    summary.appendChild(el('span','pm-stage-count',row.verified+' / '+row.total+' готово · '+row.withPR+' с PR'));
+    details.appendChild(summary);
     const content=el('div','pm-stage-tasks');
-    content.appendChild(button('Скачать отчёт этапа',()=>exportScope(project,stage),'pm-btn pm-quiet'));
     for(const t of stage.tasks)content.appendChild(taskCard(t,project,stage));
-    details.appendChild(content);return details;
+    content.appendChild(button('Скачать отчёт этапа',()=>exportScope(project,stage),'pm-btn pm-quiet'));
+    details.appendChild(content);
+    details.addEventListener('toggle',()=>inspectStage(details));
+    return details;
   }
-  function projectCard(project){
+  function projectCard(project,first){
     const card=el('article','pm-project'),row=project.stages.flatMap(x=>x.tasks),stats=count(row);
     const head=el('div','pm-project-head');
     head.appendChild(el('h2',null,project.title));
     head.appendChild(button('Скачать отчёт',()=>exportScope(project),'pm-btn'));
     card.appendChild(head);
     card.appendChild(el('p','pm-description',project.summary));
-    card.appendChild(el('p','pm-summary',project.stages.length+' этапов · '+stats.total+' подзадач · '+stats.verified+' подтверждено'));
-    card.appendChild(badges(stats,stats.total));
-    for(const s of project.stages)card.appendChild(stageCard(s,project));
+    card.appendChild(el('p','pm-summary',project.stages.length+' этапов · '+stats.total+' подзадач · '+stats.verified+' подтверждено · '+stats.blocked+' блокировано'));
+    project.stages.forEach((s,i)=>card.appendChild(stageCard(s,project,first&&i===0)));
     return card;
   }
   function valid(c){
@@ -219,8 +271,9 @@
       const stale=Number.isFinite(age)&&age>86400000;
       info.textContent=(stale?'Внимание: публичный снимок старше суток. ':'')+
         'Статусы задач на '+new Date(data.asOf).toLocaleString('ru-RU')+
-        ' · PR проверяются по нажатию · Merge ≠ LIVE';
-      for(const p of data.projects)root.appendChild(projectCard(p));
+        ' · Статус PR проверяется при открытии этапа · Merge ≠ LIVE';
+      data.projects.forEach((p,i)=>root.appendChild(projectCard(p,i===0)));
+      inspectStage(root.querySelector('.pm-stage[open]'));
       document.getElementById('pm-query')?.addEventListener('input',applyFilters);
       document.getElementById('pm-status-filter')?.addEventListener('change',applyFilters);
       applyFilters();

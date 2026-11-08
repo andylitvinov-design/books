@@ -10,7 +10,7 @@ const CLIENT='12345678901-testclient.apps.googleusercontent.com';
 const env={...process.env};
 const restore=()=>{for(const key of ['HH_PM_GOOGLE_CLIENT_ID','SEO_SESSION_SECRET','HH_PM_GOOGLE_OWNER_EMAIL_HASH']){
  if(env[key]===undefined)delete process.env[key];else process.env[key]=env[key];}};
-const res=()=>({statusCode:200,headers:{},setHeader(k,v){this.headers[k]=v},end(s){this.body=JSON.parse(s)}});
+const res=()=>({statusCode:200,headers:{},setHeader(k,v){this.headers[k]=v},end(s){this.body=s?JSON.parse(s):null}});
 const b64=obj=>Buffer.from(JSON.stringify(obj)).toString('base64url');
 function sign(privateKey,kid,claims){
  const input=b64({alg:'RS256',kid,typ:'JWT'})+'.'+b64(claims);
@@ -39,7 +39,7 @@ test('nonce-bound, signature-verified owner Google ID token issues existing owne
    email_verified:true,nonce:get.body.nonce,iat:now,exp:now+2500};
   const req={method:'POST',headers:{host:'holistic-house-pr-monitor.vercel.app',
    origin:'https://holistic-house-pr-monitor.vercel.app','content-type':'application/json',
-   cookie:get.headers['Set-Cookie'].split(';')[0]},body:{credential:sign(privateKey,kid,claims)}};
+   cookie:(Array.isArray(get.headers['Set-Cookie'])?get.headers['Set-Cookie'][0]:get.headers['Set-Cookie']).split(';')[0]},body:{credential:sign(privateKey,kid,claims)}};
   const ok=res();await handler(req,ok);
   assert.equal(ok.statusCode,200);assert.equal(ok.body.authenticated,true);
   const session=ok.headers['Set-Cookie'][0];
@@ -66,8 +66,52 @@ test('owner-only pages retain existing authorization gate and provide Google fir
  assert.match(pm,/HHGoogleOwnerSSO/);assert.match(js,/HHGoogleOwnerSSO/);
  assert.match(js,/indexedDB/);assert.match(js,/deviceMode/);
  assert.match(auth,/accounts\.google\.com\/gsi\/client/);
- assert.match(auth,/auto_select:true/);
+ assert.match(auth,/auto_select:!isiOS/);
  assert.doesNotMatch(auth,/localStorage|sessionStorage|window\.open/);
  assert.match(source('api/commander-chats.js'),/core\.owner\(req\)/);
  assert.match(source('api/commander-drafts.js'),/if\(!owner\(req\)\)/);
+});
+
+test('Google iPhone redirect uses nonce, double-submit CSRF and path allowlist',async()=>{
+ const old=global.fetch;
+ const {publicKey,privateKey}=crypto.generateKeyPairSync('rsa',{modulusLength:2048});
+ const kid='redirect-fixture',jwk=publicKey.export({format:'jwk'});
+ process.env.HH_PM_GOOGLE_CLIENT_ID=CLIENT;
+ process.env.SEO_SESSION_SECRET='a-test-signing-secret-over-32-characters';
+ process.env.HH_PM_GOOGLE_OWNER_EMAIL_HASH=crypto.createHash('sha256').update('owner@example.com').digest('hex');
+ global.fetch=async()=>({ok:true,text:async()=>JSON.stringify({keys:[{...jwk,kid,alg:'RS256',use:'sig'}]})});
+ try{
+  assert.equal(verify.safeReturn('https://evil.example'),'/chats.html');
+  assert.equal(verify.safeReturn('/task-editor.html'),'/task-editor.html');
+  const get=res();await handler({method:'GET',url:'/api/google-owner-auth?return=/task-editor.html',headers:{host:'holistic-house-pr-monitor.vercel.app'}},get);
+  assert.equal(get.statusCode,200);
+  const now=Math.floor(Date.now()/1000),nonce=get.body.nonce;
+  const claims={iss:'https://accounts.google.com',aud:CLIENT,sub:'123456789012345678901',email:'owner@example.com',
+   email_verified:true,nonce,iat:now,exp:now+2500};
+  const cookies=get.headers['Set-Cookie'].map(v=>v.split(';')[0]).join('; ')+'; g_csrf_token=csrf-123';
+  const req={method:'POST',url:'/api/google-owner-auth',headers:{host:'holistic-house-pr-monitor.vercel.app',
+   origin:'https://accounts.google.com','content-type':'application/x-www-form-urlencoded',cookie:cookies},
+   body:{credential:sign(privateKey,kid,claims),g_csrf_token:'csrf-123'}};
+  const ok=res();await handler(req,ok);
+  assert.equal(ok.statusCode,303);assert.equal(ok.headers.Location,'/task-editor.html');
+  assert.ok(ok.headers['Set-Cookie'][0].includes('hh_seo_owner='));
+  const denied=res();await handler({...req,body:{...req.body,g_csrf_token:'bad'}},denied);
+  assert.equal(denied.statusCode,403);
+  const attacker=res();await handler({...req,headers:{...req.headers,origin:'https://attacker.example'}},attacker);
+  assert.equal(attacker.statusCode,403);
+ }finally{global.fetch=old;restore();}
+});
+
+test('CSP allows narrowly scoped official Google Identity Services resources',()=>{
+ const cfg=JSON.parse(source('vercel.json'));
+ const headers=cfg.headers[0].headers;
+ const csp=headers.find(x=>x.key==='Content-Security-Policy').value;
+ for(const item of [`script-src 'self' https://accounts.google.com/gsi/client`,
+  `frame-src https://accounts.google.com/gsi/`,
+  `style-src 'self' https://accounts.google.com/gsi/style`,
+  `connect-src 'self' https://api.github.com https://accounts.google.com/gsi/`,
+  `default-src 'none'`,`frame-ancestors 'none'`]) assert.ok(csp.includes(item),item);
+ assert.doesNotMatch(csp,/unsafe-inline|unsafe-eval|https:\/\/\*/);
+ assert.match(source('owner-google-signin.js'),/ux_mode:'redirect'/);
+ assert.match(source('owner-google-signin.js'),/login_uri/);
 });

@@ -16,7 +16,7 @@
   if(sdkPromise)return sdkPromise;
   sdkPromise=new Promise((resolve,reject)=>{
    const script=doc.createElement('script');script.src='https://accounts.google.com/gsi/client';
-   script.async=true;script.defer=true;script.referrerPolicy='no-referrer';
+   script.async=true;script.defer=true;script.referrerPolicy='strict-origin-when-cross-origin';
    const timer=win.setTimeout(()=>reject(Error('GOOGLE_SIGN_IN_UNAVAILABLE')),12000);
    script.onload=()=>{win.clearTimeout(timer);win.google?.accounts?.id?resolve():reject(Error('GOOGLE_SIGN_IN_UNAVAILABLE'))};
    script.onerror=()=>{win.clearTimeout(timer);reject(Error('GOOGLE_SIGN_IN_UNAVAILABLE'))};
@@ -31,15 +31,18 @@
   const status=s=>{message(slot,s);if(typeof onStatus==='function')onStatus(s)};
   status('Проверяю вход через Google…');
   try{
-   const resp=await win.fetch(ENDPOINT,{credentials:'same-origin',cache:'no-store',redirect:'error',headers:{Accept:'application/json'}});
+   const resp=await win.fetch(ENDPOINT+'?return='+encodeURIComponent(win.location.pathname),{credentials:'same-origin',cache:'no-store',redirect:'error',headers:{Accept:'application/json'}});
    if(!resp.ok)throw Error(resp.status===503?'GOOGLE_SSO_NOT_CONFIGURED':'GOOGLE_SSO_UNAVAILABLE');
    const config=await resp.json();
    if(!/^[A-Za-z0-9_-]{32}$/.test(config.nonce||'')||typeof config.clientId!=='string')throw Error('GOOGLE_SSO_UNAVAILABLE');
    await sdk();
    const button=doc.createElement('div');button.className='hh-sso-button';slot.prepend(button);
    let busy=false;
+   const isiOS=/iPad|iPhone|iPod/i.test(win.navigator?.userAgent||'')||
+     (win.navigator?.platform==='MacIntel'&&win.navigator?.maxTouchPoints>1);
    win.google.accounts.id.initialize({
-    client_id:config.clientId,nonce:config.nonce,auto_select:true,itp_support:true,
+    client_id:config.clientId,nonce:config.nonce,auto_select:!isiOS,itp_support:true,
+    ...(isiOS?{ux_mode:'redirect',login_uri:win.location.origin+ENDPOINT}:{}),
     callback:async result=>{
      if(busy||!result?.credential)return;
      busy=true;status('Подтверждаю аккаунт владельца…');

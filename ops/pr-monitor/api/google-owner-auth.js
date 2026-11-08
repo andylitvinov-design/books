@@ -8,7 +8,9 @@ const crypto=require('node:crypto');
 const CLIENT='HH_PM_GOOGLE_CLIENT_ID';
 const OWNER_EMAIL_HASH='21e4f271e694b4a15ba466421033f55877ffafd5ff9b50b88c93903a64f7990b';
 const CERTS='https://www.googleapis.com/oauth2/v3/certs';
-const SESSION='hh_seo_owner',CHALLENGE='hh_pm_google_nonce',LIFETIME=14*86400;
+const SESSION='hh_seo_owner',CHALLENGE='hh_pm_google_nonce',RETURN='hh_pm_google_return',LIFETIME=14*86400;
+const SAFE_RETURN=new Set(['/chats.html','/task-editor.html','/project-management-public.html']);
+const safeReturn=s=>SAFE_RETURN.has(s)?s:'/chats.html';
 const respond=(res,code,body)=>{res.statusCode=code;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify(body))};
 function envReady(){
  return /^\d{8,}-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(process.env[CLIENT]||'')&&
@@ -26,6 +28,8 @@ function originOK(req){
    req.headers?.['sec-fetch-site']!=='cross-site';
  }catch{return false}
 }
+const safeSame=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length&&a.length>0&&
+ crypto.timingSafeEqual(Buffer.from(a),Buffer.from(b));
 const ownHash=email=>crypto.createHash('sha256').update(String(email||'').trim().toLowerCase()).digest('hex');
 function ownerMatch(email){
  const a=Buffer.from(ownHash(email),'hex'),b=Buffer.from(process.env.HH_PM_GOOGLE_OWNER_EMAIL_HASH||OWNER_EMAIL_HASH,'hex');
@@ -84,25 +88,47 @@ module.exports=async function(req,res){
  if(!envReady())return respond(res,503,{error:'GOOGLE_SSO_NOT_CONFIGURED'});
  if(req.method==='GET'){
   const nonce=crypto.randomBytes(24).toString('base64url');
-  res.setHeader('Set-Cookie',CHALLENGE+'='+nonce+'; Max-Age=600; Path=/api/google-owner-auth; Secure; HttpOnly; SameSite=Lax');
+  const u=new URL(req.url||'/api/google-owner-auth','https://holistic-house-pr-monitor.vercel.app');
+  const target=safeReturn(u.searchParams.get('return'));
+  // Google iOS Redirect UX submits a cross-site form POST; challenge cookies must
+  // survive that top-level redirect. Server still enforces nonce, CSRF and signature.
+  const common='; Max-Age=600; Path=/api/google-owner-auth; Secure; HttpOnly; SameSite=None';
+  res.setHeader('Set-Cookie',[CHALLENGE+'='+nonce+common,RETURN+'='+encodeURIComponent(target)+common]);
   return respond(res,200,{clientId:process.env[CLIENT],nonce,mode:'GOOGLE_VERIFIED_OWNER'});
  }
- if(!originOK(req))return respond(res,403,{error:'CROSS_ORIGIN_DENIED'});
- if(req.headers?.['content-type']?.split(';')[0]?.trim()!=='application/json'||
-  Number(req.headers?.['content-length']||0)>8000)return respond(res,415,{error:'INVALID_CONTENT_TYPE_OR_SIZE'});
+ const kind=String(req.headers?.['content-type']||'').split(';')[0].trim().toLowerCase();
+ const redirected=kind==='application/x-www-form-urlencoded';
+ if(kind!=='application/json'&&!redirected)return respond(res,415,{error:'INVALID_CONTENT_TYPE'});
+ if(Number(req.headers?.['content-length']||0)>8000)return respond(res,413,{error:'PAYLOAD_TOO_LARGE'});
+ if(!redirected&&!originOK(req))return respond(res,403,{error:'CROSS_ORIGIN_DENIED'});
+ if(redirected&&req.headers?.origin){
+  const host=String(req.headers.host||'').toLowerCase(),o=req.headers.origin;
+  if(o!=='https://accounts.google.com'&&o!=='https://'+host)
+   return respond(res,403,{error:'CROSS_ORIGIN_DENIED'});
+ }
  let body=req.body;
- if(typeof body==='string')try{body=JSON.parse(body)}catch{return respond(res,400,{error:'INVALID_JSON'})}
+ if(redirected){
+  if(typeof body==='string'){const data=new URLSearchParams(body);
+   body=Object.fromEntries(data);}
+  if(!body||typeof body!=='object'||Array.isArray(body)||
+   !safeSame(String(body.g_csrf_token||''),cookie(req,'g_csrf_token'))||
+   String(body.g_csrf_token||'').length>150)return respond(res,403,{error:'GOOGLE_CSRF_DENIED'});
+ }else if(typeof body==='string')try{body=JSON.parse(body)}catch{return respond(res,400,{error:'INVALID_JSON'})}
  if(!body||typeof body!=='object'||Array.isArray(body)||JSON.stringify(body).length>8000)
   return respond(res,400,{error:'INVALID_BODY'});
  const nonce=cookie(req,CHALLENGE);
  if(!/^[A-Za-z0-9_-]{32}$/.test(nonce))return respond(res,401,{error:'GOOGLE_CHALLENGE_REQUIRED'});
  try{
   await verifyGoogleToken(body.credential,nonce);
-  res.setHeader('Set-Cookie',[ownerSession(),CHALLENGE+'=; Max-Age=0; Path=/api/google-owner-auth; Secure; HttpOnly; SameSite=Lax']);
+  res.setHeader('Set-Cookie',[ownerSession(),
+   CHALLENGE+'=; Max-Age=0; Path=/api/google-owner-auth; Secure; HttpOnly; SameSite=None',
+   RETURN+'=; Max-Age=0; Path=/api/google-owner-auth; Secure; HttpOnly; SameSite=None']);
+  if(redirected){res.statusCode=303;res.setHeader('Location',safeReturn(decodeURIComponent(cookie(req,RETURN))));
+   return res.end('');}
   return respond(res,200,{authenticated:true,role:'owner',session:'EXISTING_HH_SEO_OWNER'});
  }catch(e){
   return respond(res,e.message==='GOOGLE_KEYS_UNAVAILABLE'?503:401,
    {error:e.message==='GOOGLE_KEYS_UNAVAILABLE'?'GOOGLE_VERIFICATION_UNAVAILABLE':'GOOGLE_OWNER_NOT_VERIFIED'});
  }
 };
-module.exports.__test={envReady,ownerMatch,originOK,parseJwt,verifyGoogleToken,ownerSession};
+module.exports.__test={envReady,ownerMatch,originOK,parseJwt,verifyGoogleToken,ownerSession,safeReturn};
