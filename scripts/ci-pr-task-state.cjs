@@ -147,7 +147,7 @@ function externalOwnerLeaseStatus(comments,headSha,now){
   // without a head_sha, or abbreviate the new commit SHA. A past completed
   // release for *other* heads must not poison every future PR revision.
   // An abbreviated prefix matching THIS head stays unverified, never free.
-  const released=/^released(?:_|$)/.test(String(doc.state||''))||
+  const released=/^release(?:d)?(?:_|$)/.test(String(doc.state||''))||
    (!doc.state&&/^release(?:_|$)/.test(String(doc.last_action||'')));
   // Historical owner/Codex releases may use previous_head + new_head instead
    // of old_head + new_head. A complete, unrelated RELEASED pair is not
@@ -211,7 +211,7 @@ function externalOwnerLeaseStatus(comments,headSha,now){
    }else{
     holders.set(key,{legacy:false});
    }
-  }else if(/^released(?:_|$)/.test(state)||
+  }else if(/^release(?:d)?(?:_|$)/.test(state)||
       /^release(?:_|$)/.test(String(doc.last_action||''))){
    // An unverified release (missing author/owner/id or from another
    // account) cannot cancel another active writer's protection.
