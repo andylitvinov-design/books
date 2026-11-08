@@ -24,5 +24,6 @@ test('owner-only APIs use the private edge store and do not claim executor dispa
  assert.match(chats,/commander_from_task/);assert.match(chats,/callStore/);
  assert.match(drafts,/commander_queue_task/);assert.match(drafts,/SUPABASE_PRIVATE/);
  assert.match(helper,/Authorization:'Bearer '\+token/);
- assert.match(ui,/AWAITING|Не запущен|НЕ ЗАПУЩЕН/);
+ assert.match(ui,/Assignment and AI answers are NOT agent execution/);
+ assert.match(chats,/agentStarted:false/);
 });

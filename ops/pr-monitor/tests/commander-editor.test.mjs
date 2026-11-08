@@ -20,7 +20,7 @@ test('editor lives on the same domain and retains the original fixed mobile dock
 test('guest requests cannot read or save private tasks',async()=>{
  for(const method of ['GET','POST']){
   const res=response();
-  await api({method,url:'/api/commander-drafts?action=status',
+  await api({method,url:method==='GET'?'/api/commander-drafts?action=status':'/api/commander-drafts?action=save',
    headers:{host:'holistic-house-pr-monitor.vercel.app',...(method==='POST'?{origin:'https://holistic-house-pr-monitor.vercel.app','sec-fetch-site':'same-origin'}:{})},body:{record:{}}},res);
   assert.equal(res.statusCode,401);assert.equal(res.body.error,'OWNER_SESSION_REQUIRED');
   assert.match(res.headers['Cache-Control'],/no-store/);
