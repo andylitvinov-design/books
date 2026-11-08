@@ -2,7 +2,7 @@
 import {cloneElement,isValidElement,useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,RefreshCw,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles,Newspaper} from 'lucide-react'
+import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,History,SquarePen,ShoppingBag,Leaf,Search,SlidersHorizontal,UsersRound,ChevronRight,Sparkles,Newspaper} from 'lucide-react'
 import PracticeRequestConversation from './practice-request-conversation'
 import MessengerAiWorkspace from './messenger-ai-workspace'
 import MessagesDailyBriefing from './messages-daily-briefing'
@@ -349,18 +349,22 @@ export default function MessagesOrdersClients({locale:routeLocale='en',children}
         <span><strong>{locale==='ru'?'Новости':locale==='es'?'Noticias':'News'}</strong></span>
       </button>
     </div>
-    <header className={styles.head}>
-      <div><h1>{locale==='ru'?'Мессенджер':locale==='es'?'Mensajero':'Messenger'}</h1><p>{t.subtitle}</p></div>
-      <span className={styles.headerActions}>
-        <Link prefetch={false} className={styles.notificationSettings}
-          href={'/'+(locale==='es'?'en':locale)+'/app/settings#hh-phone-notifications'}
-          aria-label={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}
-          title={locale==='ru'?'Уведомления':locale==='es'?'Notificaciones':'Notifications'}>
-          <Bell size={17} aria-hidden="true"/>
-        </Link>
-        <button type="button" onClick={reload} className={styles.refresh}
-          aria-label={t.retry} title={t.retry}>
-          <RefreshCw size={19} aria-hidden="true"/>
+    <header className={styles.head} data-hh-ai-assistant-header>
+      <div><h1>{locale==='ru'?'ИИ-ассистент':locale==='es'?'Asistente IA':'AI Assistant'}</h1>
+        <p>{locale==='ru'?'Спросить · Исследовать · Учиться · Создавать':
+          locale==='es'?'Preguntar · Explorar · Aprender · Crear':'Ask · Explore · Learn · Create'}</p></div>
+      <span className={styles.headerActions} data-hh-ai-assistant-actions>
+        <button type="button" className={styles.notificationSettings}
+          onClick={()=>{chooseSection('ai');window.dispatchEvent(new Event('hh:messenger-open-history'));}}
+          aria-label={locale==='ru'?'История диалогов':locale==='es'?'Historial de conversaciones':'Conversation history'}
+          title={locale==='ru'?'История':locale==='es'?'Historial':'History'}>
+          <History size={19} aria-hidden="true"/>
+        </button>
+        <button type="button" className={styles.refresh}
+          onClick={()=>{chooseSection('ai');window.dispatchEvent(new Event('hh:messenger-new-chat'));}}
+          aria-label={locale==='ru'?'Новый диалог':locale==='es'?'Nuevo chat':'New chat'}
+          title={locale==='ru'?'Новый диалог':locale==='es'?'Nuevo chat':'New chat'}>
+          <SquarePen size={19} aria-hidden="true"/>
         </button>
       </span>
     </header>

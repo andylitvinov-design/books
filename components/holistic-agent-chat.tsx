@@ -830,6 +830,22 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     void sendTurn(draft);
   }
   function resetConversation(){controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
+  useEffect(()=>{
+    const startNewConversation=()=>resetConversation();
+    const openConversationHistory=()=>{
+      const history=document.querySelector<HTMLDetailsElement>("[data-hh-secure-chat-history]");
+      if(history){history.open=true;history.scrollIntoView({behavior:"smooth",block:"start"});return;}
+      setStatus(locale==="ru"?"История пока недоступна для этого аккаунта.":
+        locale==="es"?"El historial todavía no está disponible para esta cuenta.":
+          "Conversation history is not available for this account yet.");
+    };
+    window.addEventListener("hh:messenger-new-chat",startNewConversation);
+    window.addEventListener("hh:messenger-open-history",openConversationHistory);
+    return()=>{
+      window.removeEventListener("hh:messenger-new-chat",startNewConversation);
+      window.removeEventListener("hh:messenger-open-history",openConversationHistory);
+    };
+  },[locale,authenticated]);
 
   const voiceAttachment=compact?<label className={styles.mode} data-hh-voice-message-upload
     style={{display:"inline-flex",alignItems:"center",cursor:"pointer",fontSize:13}}>

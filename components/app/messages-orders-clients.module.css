@@ -313,7 +313,7 @@
 .headerActions{display:flex;gap:7px;align-items:center;justify-content:flex-end;flex:none}
 .notificationSettings{display:grid;place-items:center;width:44px;height:44px;
  border:1px solid #e7dfd5;background:#fffefa;color:#1a816c;text-decoration:none;
- border-radius:50%;box-shadow:0 3px 10px #5845330a}
+ border-radius:50%;box-shadow:0 3px 10px #5845330a;cursor:pointer}
 .notificationSettings:focus-visible{outline:3px solid #208468;outline-offset:3px}
 
 /* Approved phone layout: the order chat is a bounded panel above the mobile dock. */
