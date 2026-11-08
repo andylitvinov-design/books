@@ -740,42 +740,38 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(payloads.length,beforeOwnRequests,"local voice cannot leak to a TTS provider");
       await ideasModes.locator('[data-video-ideas-tab="voice"]').click();
       await expect(ownPanel).toBeHidden();
-      // New visit-level markers are available for stable scope checking;
-      // retain existing production WebKit-safe transcript open/review logic.
-      assert.equal(await page.locator("[data-video-affirmation-transcript-review]").count(),1);
-      assert.equal(await page.locator("[data-video-affirmation-voice-advanced]").count(),1);
-
-      const speech=page.locator("[data-video-affirmation-spoken-text]");
-      await expect.poll(async()=> (await speech.textContent())?.trim().length||0,
-        {timeout:15000,message:"approved selected affirmations must reach voice text"})
-        .toBeGreaterThan(5);
-      assert.equal(await page.locator("[data-video-generate-affirmation-audio]").isDisabled(),true);
+      // Compact Voice deliberately omits the old permanent selectedPhrase
+      // summary. Its approved phrase is always visible in the native selector;
+      // the full transcript is an opt-in disclosure ONLY for "All phrases".
+      await expect(page.locator("[data-video-affirmation-transcript-review]")).toHaveCount(0);
+      await expect(page.locator("[data-video-affirmation-selection-summary]")).toHaveCount(0);
+      await expect(page.locator("[data-video-affirmation-voice-advanced]")).toHaveCount(1);
+      await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
       const phraseSelector=page.locator("[data-video-affirmation-phrase]");
       await phraseSelector.waitFor({state:"visible"});
       assert.ok((await phraseSelector.locator("option").count())>=3,
         "the visitor can choose one of their approved phrases or all");
       await phraseSelector.selectOption("1");
       await expect(phraseSelector).toHaveValue("1");
-      const transcriptDisclosure=page.locator("[data-video-affirmation-voice] details")
-        .filter({has:speech});
-      if(await transcriptDisclosure.getAttribute("open")===null)
-        await transcriptDisclosure.locator(":scope > summary").click();
-      await expect(speech).toBeVisible();
       const approved=(await phraseSelector.locator('option[value="1"]').innerText())
         .replace(/^2\.\s*/,"").trim();
       const expectedSpeech=/[.!?…]$/u.test(approved)?approved:approved+".";
-      await expect(speech).toHaveText(expectedSpeech);
-      const selectedSummary=page.locator("[data-video-affirmation-selected-phrase]");
-      await expect(selectedSummary).toHaveText(expectedSpeech);
+      assert.ok(expectedSpeech.length>5&&expectedSpeech.length<=45,
+        "one visible approved phrase fits the free narrator");
       await phraseSelector.selectOption("all");
       await expect(phraseSelector).toHaveValue("all");
-      await expect.poll(async()=>((await selectedSummary.textContent())||"").trim().length).toBeGreaterThan(expectedSpeech.length);
-      assert.equal(((await selectedSummary.textContent())||"").trim(),((await speech.textContent())||"").trim(),
-        "the visible summary must match the full approved text actually sent");
+      const transcriptDisclosure=page.locator("[data-video-affirmation-transcript-review]");
+      await expect(transcriptDisclosure).toHaveCount(1);
+      await transcriptDisclosure.locator(":scope > summary").click();
+      const speech=transcriptDisclosure.locator("[data-video-affirmation-spoken-text]");
+      await expect(speech).toBeVisible();
+      const allTranscript=((await speech.textContent())||"").trim();
+      assert.ok(allTranscript.length>expectedSpeech.length&&allTranscript.includes(expectedSpeech),
+        "the optional review contains the exact selected phrase plus approved alternatives");
       await phraseSelector.selectOption("1");
-      await expect(selectedSummary).toHaveText(expectedSpeech);
-      const transcript=((await speech.textContent())||"").trim();
-      assert.ok(transcript.length>5&&transcript.length<=45,"only one approved phrase is spoken");
+      await expect(phraseSelector).toHaveValue("1");
+      await expect(transcriptDisclosure).toHaveCount(0);
+      const transcript=expectedSpeech;
       const chooser=page.locator("[data-video-affirmation-voice-select]");
       assert.equal(await chooser.locator("[data-video-affirmation-voice-card]").count(),3);
       await chooser.locator('[data-video-affirmation-gender="male"]').click();
