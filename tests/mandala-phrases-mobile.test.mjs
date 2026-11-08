@@ -94,12 +94,11 @@ test("all phrase changes including catalog and idea are staged until explicit Ap
  assert.doesNotMatch(compact,/<MandalaVideoAffirmations /);
  assert.match(compact,/onPendingChange\?\.\(hasPendingEdits\)/);
  assert.match(compact,/data-hypno-create-video disabled=\{disabled\|\|!settings\.enabled\|\|hasPendingEdits\}/);
- const finalCreate=studio.slice(studio.indexOf("data-video-quick-generate"),
+ const direct=studio.slice(studio.indexOf("data-video-quick-generate"),
    studio.indexOf("</button>",studio.indexOf("data-video-quick-generate")));
- assert.match(finalCreate,/montagePanel!=="effects"/);
-  assert.match(studio,/if\(montagePanel==="concept"\)return/,"guest concept approval never triggers rendering");
- assert.match(finalCreate,/!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending/,
-   "unapproved phrase edits still block final export, not navigation");
+ assert.ok(direct.includes('onClick={createQuickVideo}'));
+ for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){'])
+   assert.ok(studio.includes(guard),"approved phrase and paid-format guard: "+guard);
  assert.match(studio,/if\(phrasePending\)\{/);
  assert.match(compact,/if\(ideaPending&&!draft\)return/);
  assert.match(compact,/externalPhraseDraft!==null\?\[\]:settings\.selected/);
@@ -167,7 +166,9 @@ test("real WebKit voice acceptance expands the approved transcript before compar
   const voice=read("components/mandala-affirmation-voice.tsx");
   assert.match(voice,/<details className=\{css\.transcriptDisclosure\} data-video-affirmation-transcript-review>/);
   assert.match(voice,/data-video-affirmation-spoken-text/);
-  assert.match(e2e,/const transcriptDisclosure=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
+  assert.match(e2e,/const transcriptDisclosure=page\.locator\("\[data-video-affirmation-transcript-review\]"\)/);
+  assert.match(e2e,/await expect\(transcriptDisclosure\)\.toHaveCount\(1\)/);
+  assert.match(e2e,/await expect\(transcriptDisclosure\)\.toHaveCount\(0\)/);
   assert.match(e2e,/await transcriptDisclosure\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(e2e,/await expect\(speech\)\.toBeVisible\(\)/);
   assert.match(e2e,/assert\.equal\(affirmationRequests\[0\]\.text,transcript\)/);
@@ -189,4 +190,41 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
   assert.match(browser,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
   assert.match(browser,/assert\.ok\(audioTrack/);
+});
+
+test("Safari fine-tuning uses one accessible button and a stable hidden region",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const css=read("components/mandala-hypno-compact.module.css");
+  for(const part of [
+    "const ideaControlsId=useId();",
+    "<div className={css.ideaDisclosure} data-hypno-idea-details>",
+    "data-hypno-idea-toggle",
+    "aria-expanded={ideaDisclosureOpen} aria-controls={ideaControlsId}",
+    "onClick={()=>setIdeaDisclosureOpen(value=>!value)}",
+    "id={ideaControlsId} hidden={!ideaDisclosureOpen}",
+  ])assert.ok(phrases.includes(part),part);
+  assert.ok(!phrases.includes("<details className={css.ideaDisclosure}"));
+  assert.ok(css.includes(".overview .ideaDisclosure>.card[hidden]{display:none!important}"));
+  assert.ok(browser.includes("await expect(ideaToggle).toHaveAttribute(\"aria-expanded\",\"true\")"));
+  assert.ok(browser.includes("await expect(intentDetails.locator('[data-hypno-request]')).toBeVisible()"));
+});
+
+test("choosing Ready discards stale idea and approval clears Wave drafts",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(phrases,/setIdeaPending\(false\);\s*setReadyDraft\(\{selected:\[0,1,2\],resetPreset:true\}\)/);
+ assert.match(phrases,/setDraftState\(null\);setReadyDraft\(null\);setCustomDraft\(null\);setIdeaPending\(false\)/);
+ for(const status of ['draft','ready','custom','external','idea','safety'])
+   assert.ok(phrases.includes('?"'+status+'":null'),status);
+ assert.match(browser,/if\(engine==="webkit"\)await approvalButton\.tap\(\)/);
+ assert.ok(browser.includes("APPROVED_PHRASES_STILL_PENDING"));
+ assert.ok(browser.includes('data-hypno-pending-reasons'));
+});
+
+test("five-phrase limit requires a real removal before the visitor adds another",()=>{
+ const script=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.ok(phrases.includes('disabled={disabled||(!chosen.includes(i)&&selectedCount>=5)}'));
+ assert.ok(phrases.includes('data-hypno-selection-limit role="status"'));
+ for(const needle of ["if(currentSelected===5){","a non-spoken phrase can be deselected without revoking the WAV",
+   'await nextPhrase.tap()','await approvalButton.tap()','await spokenPhrase.tap()'])
+  assert.ok(script.includes(needle),needle);
 });

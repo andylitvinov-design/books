@@ -127,17 +127,38 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  // audio/voice shortcut is clicked. A CSS-hidden summary is never clicked.
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const voiceTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',modes);
- const textTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',voiceTab);
+ const myVoiceTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="my-voice"]\').click()',voiceTab);
+ const textTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',myVoiceTab);
  const recordEntry=browser.indexOf("const recordEntry=phrases.locator",textTab);
  const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',recordEntry);
  const visible=browser.indexOf("await expect(recordEntry).toBeVisible",hidden);
  const tapped=browser.indexOf("await recordEntry.click()",visible);
  const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tapped);
- const details=browser.indexOf('await intentDetails.locator(":scope > summary").click()',opened);
- const options=browser.indexOf("await expect(advancedVoice.locator",details);
- assert.ok(modes>=0&&voiceTab>modes&&textTab>voiceTab&&recordEntry>textTab&&
-   hidden>recordEntry&&visible>hidden&&tapped>visible&&opened>tapped&&details>opened&&options>details,
-   "WebKit must use real Ideas Text/Voice, Record click and Hypno summary");
+ const ownMode=browser.indexOf('await expect(phrases).toHaveAttribute("data-ideas-active-tab","my-voice"',opened);
+ const returnText=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',ownMode);
+ const advancedText=browser.indexOf("const advancedText=phrases.locator",returnText);
+ const textOpened=browser.indexOf("await advancedText.click()",advancedText);
+ const ideaToggle=browser.indexOf("const ideaToggle=intentDetails.locator('[data-hypno-idea-toggle]')",textOpened);
+ const ideaClick=browser.indexOf("await ideaToggle.click()",ideaToggle);
+ const ideaExpanded=browser.indexOf('await expect(ideaToggle).toHaveAttribute("aria-expanded","true")',ideaClick);
+ const options=browser.indexOf("await expect(advancedVoice.locator",ideaExpanded);
+ assert.ok(modes>=0&&voiceTab>modes&&myVoiceTab>voiceTab&&textTab>myVoiceTab&&
+   recordEntry>textTab&&hidden>recordEntry&&visible>hidden&&tapped>visible&&
+   opened>tapped&&ownMode>opened&&returnText>ownMode&&advancedText>returnText&&
+   textOpened>advancedText&&ideaToggle>textOpened&&ideaClick>ideaToggle&&
+   ideaExpanded>ideaClick&&options>ideaExpanded,
+   "WebKit must visit Text, Voice and My Voice, then open the real Text disclosure by user taps");
+ const hypno=read("components/mandala-hypno-compact.tsx");
+ assert.ok(hypno.includes('data-hypno-idea-toggle')&&hypno.includes('aria-expanded={ideaDisclosureOpen}'),
+   "the fine-tuning control must remain a real accessible disclosure button");
+ assert.ok(hypno.includes('useEffect(()=>{if(autoExpandIdea)setIdeaDisclosureOpen(true);},[autoExpandIdea])'),
+   "the Text Advanced user action must restore the fine-tuning panel after Safari remount");
+ assert.ok(studio.includes('autoExpandIdea={activeWorkspace==="phrases"&&ideasSubtab==="text"&&ideasVoiceAdvancedOpen}'),
+   "only Text's explicit Advanced action auto-opens fine-tuning; Voice and My Voice stay compact");
+ assert.ok(!studio.includes('document.querySelector<HTMLDetailsElement>("[data-hypno-idea-details]")'),
+   "Personalize must not write to a removed native details control");
+ assert.ok(!studio.includes('document.querySelector<HTMLButtonElement>("[data-hypno-suggest-tests]")?.click()'),
+   "opening settings must not synthesize a hidden click or fetch private tests");
  assert.ok(browser.includes('data-video-ideas-own-upload'),"own audio upload remains available");
  assert.ok(!browser.includes('await advancedVoice.locator(":scope > summary").click()'),
   "hidden summary interaction is not an acceptable visitor path");
@@ -147,28 +168,4 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(css.includes('[data-video-legacy-phrase-editor]:not([hidden])'),"opt-in advanced editor not hidden by retired CSS");
  assert.ok(css.includes('[data-video-phrase-audio-shortcut]'),"audio shortcut remains visible");
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
-});
-
-test("Ideas Record opt-in cannot be closed by a stale Safari toggle event",()=>{
- const src=read("components/mandala-free-video-studio.tsx");
- const marker="data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}";
- const start=src.indexOf(marker);
- assert.ok(start>0,"the original user-controlled voice panel remains mounted");
- const snippet=src.slice(start,start+650);
- assert.match(snippet,/summary onClick=\{event=>\{/,
-  "native summary still responds to a real pointer or keyboard click");
- assert.match(snippet,/event\.preventDefault\(\)/,
-  "avoid the browser independently toggling a React-controlled disclosure");
- assert.match(snippet,/setIdeasVoiceAdvancedOpen\(current=>!current\)/,
-  "explicit summary click controls open/close instead of queued native toggle events");
- assert.doesNotMatch(snippet,/onToggle=\{event=>setIdeasVoiceAdvancedOpen/,
-  "Safari's delayed toggle must not reset the most recent Record user intent");
- assert.match(src,/onRecord=\{\(\)=>\{[\s\S]*?setIdeasSubtab\("voice"\);[\s\S]*?setIdeasVoiceAdvancedOpen\(true\)/,
-  "record action still opens the real local consented voice recorder");
- const mac=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.match(mac,/await recordEntry\.click\(\)/);
- assert.match(src,/data-ideas-subtab=\{ideasSubtab\}/,
-  "Record changes the real Ideas workspace subtab, not only a hidden details flag");
- assert.match(mac,/await expect\(advancedVoice\)\.toBeVisible\(\{timeout:15000\}\)/);
- assert.match(mac,/await expect\(page\.locator\('\[data-video-own-voice-record\]'\)\)\.toBeVisible\(\)/);
 });

@@ -64,3 +64,14 @@
  .root[data-phase="speaking"] .mouthSpeaking{animation:none!important}
  .brows,.browLeft,.browRight,.mouthNeutral,.mouthSmile,.mouthConcern,.mouthSpeaking{transition:none!important}
 }
+
+
+/* Same existing speech synthesis controller, exposed as ONE small button
+   beside Send in iChat. No second audio engine or portrait overlay. */
+.iconOnly{flex:none;box-sizing:border-box;display:grid;place-items:center;
+ width:40px;height:44px;min-width:40px;min-height:44px;padding:5px;
+ border:1px solid #e5eee7;border-radius:15px;background:#fff;color:#176b5d;
+ cursor:pointer}
+.iconOnly:disabled{opacity:.42;cursor:not-allowed}
+.iconOnly:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:355px){.iconOnly{width:36px;min-width:36px}}

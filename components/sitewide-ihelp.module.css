@@ -180,3 +180,14 @@
  border-color:#88ceb5;color:#067a67}
 .bottomNav a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
 :global(body:has([data-video-ihelp-header-trigger])) .launcher{display:none!important}
+
+
+/* Profile / Video Studio mobile: never cover the six top tabs or scenic player. */
+@media(max-width:600px){
+  :global(body:has([data-profile-hub-tabs])) .launcher{
+    top:auto;right:max(12px,env(safe-area-inset-right,0px));
+    bottom:calc(86px + env(safe-area-inset-bottom,0px));
+    width:44px;min-width:44px;height:44px;min-height:44px;padding:0;
+  }
+  :global(body:has([data-profile-hub-tabs])) .launcher span{display:none}
+}

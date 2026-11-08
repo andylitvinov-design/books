@@ -93,3 +93,108 @@ test("Save gate matches approved warm mobile design and all three locales",()=>{
   assert.match(css,/@media\(max-width:370px\)/);
   assert.match(ready,/data-ready-save-intent=\{gateIntent\}/);
 });
+
+
+test("all three Ready offers expand inline, generate scripts without navigation or paid rendering",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  assert.match(ready,/const \[activeOffer,setActiveOffer\]=useState<Offer\|null>\(null\)/);
+  assert.match(ready,/data-ready-offer-panel data-ready-offer=\{activeOffer\}/);
+  assert.match(ready,/id="ready-inline-offer"/);
+  for(const offer of ["meditation","ritual","journey"]){
+    assert.match(ready,new RegExp('onClick=\\{\\(\\)=>selectOffer\\("'+offer+'"\\)\\}'));
+    assert.match(ready,new RegExp('aria-expanded=\\{activeOffer==="'+offer+'"\\}'));
+    assert.doesNotMatch(ready,new RegExp('selectView\\("'+offer+'"\\)'));
+  }
+  assert.match(ready,/data-ready-generate-text/);
+  assert.match(ready,/onClick=\{generateOffer\}/);
+  assert.match(ready,/generatedOffer===activeOffer/);
+  assert.match(ready,/buildPersonalMeditationScript\(/);
+  assert.match(ready,/buildPersonalImageryCourse\(/);
+  assert.match(ready,/selectResourcePractice\(/);
+  assert.match(ready,/data-ready-meditation-text/);
+  assert.match(ready,/data-ready-ritual-result/);
+  assert.match(ready,/data-ready-eight-sessions/);
+  assert.match(ready,/courseTexts\.map\(/);
+  assert.match(ready,/ritual\.status==="blocked"\?/);
+  assert.match(ready,/meditationEditor/);
+  assert.match(ready,/data-ready-save-choices/);
+  assert.match(ready,/data-ready-save-gate-overlay/);
+  assert.doesNotMatch(ready,/onClick=\{onOpenCourse\} data-ready-journey/);
+  assert.match(css,/\.offerPanel\{display:grid/);
+  assert.match(css,/\.journey>button\[aria-expanded="true"\]/);
+  assert.match(css,/scroll-margin-bottom:calc\(82px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(css,/white-space:pre-wrap/);
+  for(const loc of ["en","ru","es"]){
+    const start=ready.indexOf("  "+loc+":{",ready.indexOf("const COPY={"));
+    const end=loc==="en"?ready.indexOf("  ru:{",start):loc==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
+    const lang=ready.slice(start,end);
+    for(const label of ["generateText","copyText","medText","sessionText"])
+      assert.ok(lang.includes(label+":"),loc+" has "+label);
+  }
+});
+
+test("the three reused local writers return goal-aware texts for EN, RU and ES",async()=>{
+  const [{buildPersonalMeditationScript},{buildPersonalImageryCourse}]=await Promise.all([
+    import("../lib/mandala/personal-meditation-script.mjs"),
+    import("../lib/mandala/personal-guided-course.mjs"),
+  ]);
+  for(const locale of ["en","ru","es"]){
+    const focus={difficulty:"stress in the evening",goal:"feel connected",goals:["relationships"],details:[]};
+    const meditation=buildPersonalMeditationScript({locale,theme:"relationships",wish:"connection",focus,length:5});
+    assert.ok(meditation.length>350,locale+" has a real meditation script");
+    assert.ok(meditation.includes("feel connected"),locale+" preserves explicit personal goal");
+    const course=buildPersonalImageryCourse({locale,theme:"relationships",goals:focus.goals,
+      keyDifficulty:focus.difficulty,keyGoal:focus.goal,detailGoals:focus.details});
+    assert.equal(course.sessionCount,8);
+    assert.equal(course.sessions.length,8);
+    assert.ok(course.sessions.every(s=>s.script.length>70));
+    assert.ok(course.sessions[0].script.includes("feel connected"));
+    const ritual=selectResourcePractice({locale,theme:"relationships",kind:"ritual",focus});
+    assert.equal(ritual.status,"ready");
+    assert.equal(ritual.steps.length,3);
+    const blocked=selectResourcePractice({locale,theme:"relationships",kind:"ritual",focus:{goal:"I want to die"}});
+    assert.equal(blocked.status,"blocked");
+  }
+});
+
+
+test("Ready offers exactly three compact selectable video formats above existing ideas",()=>{
+  const css=readFileSync(new URL("../components/mandala-video-ready.module.css",import.meta.url),"utf8");
+  assert.match(ready,/type VideoTier="basic"\|"photo"\|"character"/);
+  assert.match(ready,/data-ready-video-tiers/);
+  assert.match(ready,/role="radiogroup"/);
+  assert.match(ready,/type="radio" name="ready-video-tier"/);
+  assert.match(ready,/data-ready-video-tier=\{tier.id\}/);
+  assert.match(ready,/checked=\{videoTier===tier.id\}/);
+  assert.match(ready,/setVideoTier\(tier.id\);setVideoGenerationNotice\(""\)/);
+  assert.match(ready,/price:"€3"/);
+  assert.match(ready,/price:"€5"/);
+  assert.match(ready,/onClick=\{generateSelectedVideo\} data-ready-generate/);
+  assert.ok(ready.indexOf("data-ready-video-tiers")<ready.indexOf("data-ready-meditation"));
+  assert.match(ready,/data-ready-meditation/);
+  assert.match(ready,/data-ready-ritual/);
+  assert.match(ready,/data-ready-journey/);
+  assert.match(css,/\.tierList\{display:grid;gap:7px\}/);
+  assert.match(css,/\.tierOption\{/);
+  assert.match(css,/@media\(max-width:350px\)/);
+  for(const locale of ["en","ru","es"]){
+    const start=ready.indexOf("  "+locale+":{",ready.indexOf("const COPY={"));
+    const end=locale==="en"?ready.indexOf("  ru:{",start):
+      locale==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
+    for(const key of ["videoChooseTitle","videoBasic","videoPhoto","videoCharacter",
+      "videoFree","videoPaidHold","videoFreeHold","videoGenerate","videoIdeas"])
+      assert.ok(ready.slice(start,end).includes(key+":"),locale+" "+key);
+  }
+});
+
+test("Free uses existing local generator; paid tiers cannot create unverified charges",()=>{
+  assert.match(ready,/if\(videoTier!=="basic"\)/);
+  assert.match(ready,/setVideoGenerationNotice\(t.videoPaidHold/);
+  assert.match(ready,/if\(!basicFreeAvailable\)/);
+  assert.match(ready,/onGenerateBasicVideo\(\)/);
+  assert.doesNotMatch(ready,/fetch\(.*pay|fetch\(.*billing|window\.location\s*=/);
+  assert.match(studio,/basicFreeAvailable=\{Boolean\(creditCatalog/);
+  assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
+  assert.match(studio,/if\(!freeVideoSelected\)\{/);
+  assert.match(studio,/return createQuickVideo\(\)/);
+});
