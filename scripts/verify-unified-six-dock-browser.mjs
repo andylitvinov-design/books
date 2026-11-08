@@ -508,24 +508,46 @@ try{
  await chat.waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-chat-menu-rail]").count(),0,
    "obsolete five-button rail must not consume transcript space");
- await chat.locator("[data-hh-ai-welcome]").waitFor({state:"visible"});
+ // Messenger now has its own six-card landing, not the retired iHelp
+ // four-button welcome used by the page-specific assistant.
+ const landing=chat.locator('[data-hh-ai-landing]');
+ await landing.waitFor({state:"visible",timeout:30000});
+ await landing.locator('[data-hh-ai-landing-question]').waitFor({state:"visible"});
+ assert.equal(await chat.locator('[data-hh-ai-welcome]').count(),0,
+   "Messenger landing replaces the old page-iHelp welcome");
  const log=chat.locator('[role="log"]');
- const starters=chat.locator('[data-hh-ai-start]');
- assert.equal(await starters.count(),4,"real video, meditation, test and master start actions");
- for(const id of ["video","meditation","hint","master"]){
-   const item=chat.locator('[data-hh-ai-start="'+id+'"]');
+ const starters=chat.locator('[data-hh-ai-quick-actions] [data-hh-ai-choice]');
+ assert.deepEqual(await starters.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-ai-choice"))),
+   ["test","video","practice","session","course","ask"],
+   "current Messenger landing exposes all six real paths");
+ for(const id of ["test","video","practice","session","course","ask"]){
+   const item=chat.locator('[data-hh-ai-choice="'+id+'"]');
    await item.waitFor({state:"visible"});
    const rect=await item.boundingBox();
-   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible start button");
+   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible Messenger entry");
  }
- const before=await log.locator("p").count();
- await chat.locator('[data-hh-ai-start="video"]').click();
+ assert.equal(await chat.locator('[data-hh-ai-choice="test"]').getAttribute("href"),
+   "/ru/tests","Tests entry remains a real route");
+ assert.equal(await chat.locator('[data-hh-ai-choice="session"]').getAttribute("href"),
+   "/ru/services","Session entry remains a real service route");
+ assert.equal(await chat.locator('[data-hh-ai-choice="course"]').getAttribute("href"),
+   "/ru/academy","Course entry remains a real link");
+ assert.equal(await chat.locator('iframe[src*="youtube-nocookie.com"]').count(),0,
+   "presentation video is click-to-play, never autoplay");
+ await chat.locator('[data-hh-ai-choice="ask"]').click();
+ assert.equal(await chat.locator("textarea").evaluate(el=>document.activeElement===el),
+   true,"Ask a question focuses the existing composer");
+ // Count conversation turns, not paragraph markup inside the landing hero.
+ const turns='[data-hh-chat-turn="user"],[data-hh-ai-assistant-message]';
+ const before=await log.locator(turns).count();
+ await chat.locator('[data-hh-ai-choice="video"]').click();
  await page.waitForFunction(count=>{
    const root=document.querySelector("[data-hh-agent-preview]");
    return root?.getAttribute("data-has-messages")==="true"
-     && root.querySelectorAll('[role="log"] p').length>=count+2;
+     && root.querySelectorAll('[role="log"] [data-hh-chat-turn="user"],[role="log"] [data-hh-ai-assistant-message]').length>=count+2;
  },before,{timeout:10000});
- assert.equal(await starters.count(),0,"introduction gives way to the live transcript");
+ assert.equal(await starters.count(),0,"landing gives way to the real content dialogue");
  // The current Create Content entry deliberately asks format -> source -> short
  // personal idea BEFORE the canonical video goal tree. Earlier browser QA
  // expected the retired one-tap goal branch and timed out without testing it.
@@ -589,23 +611,21 @@ try{
    .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
- // Test every starter against its real route or visible live message.
+ // Exercise the current landing paths rather than legacy page-iHelp buttons.
  await chat.getByRole("button",{name:"Новый разговор"}).click();
- await chat.locator('[data-hh-ai-start="meditation"]').click();
+ await chat.locator('[data-hh-ai-choice="practice"]').waitFor({state:"visible"});
+ await chat.locator('[data-hh-ai-choice="practice"]').click();
  await chat.getByText(/сколько минут у вас есть/).waitFor({state:"visible"});
  await chat.getByRole("button",{name:"Новый разговор"}).click();
- await chat.locator('[data-hh-ai-start="hint"]').click();
- const testLink=chat.locator("[data-hh-ai-tests-link]");
- await testLink.waitFor({state:"visible"});
- assert.equal(await testLink.getAttribute("href"),"/ru/tests");
- await testLink.click();
+ await chat.locator('[data-hh-ai-choice="test"]').waitFor({state:"visible"});
+ await chat.locator('[data-hh-ai-choice="test"]').click();
  await page.waitForURL(/\/ru\/tests\/?$/,{timeout:45000});
  await page.locator('[data-free-entry-landing="tests"]').waitFor({state:"visible",timeout:30000});
  await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
- await chat.locator('[data-hh-ai-start="master"]').waitFor({state:"visible",timeout:30000});
- await chat.locator('[data-hh-ai-start="master"]').click();
- await page.waitForURL(/\/ru\/services\/free-situation-review\/?$/,{timeout:45000});
- await page.locator('[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-choice="session"]').waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-choice="session"]').click();
+ await page.waitForURL(/\/ru\/services\/?$/,{timeout:45000});
+ await page.locator('main.services-shell').waitFor({state:"visible",timeout:30000});
  await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
