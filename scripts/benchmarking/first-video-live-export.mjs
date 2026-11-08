@@ -129,7 +129,7 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // Visitor route: Goals → Ideas → Montage Concept → optional Style → approved Concept → original timeline.
+  // Visitor route: Goals → Ideas → Montage Style → Settings deep Concept → verified timeline.
   // Use the real visitor actions; do not bypass hydration, rights, or editor.
   const continueToIdeas=page.locator('[data-video-continue-scenarios]');
   await continueToIdeas.waitFor({state:'visible',timeout:40000});
@@ -141,10 +141,8 @@ try {
   await page.waitForFunction(()=>
     document.querySelector('[data-video-quick-control="editor"]')
       ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  const concept=page.locator('[data-video-montage-concept]');
-  await concept.waitFor({state:'visible',timeout:20000});
-  assert.equal(await page.locator('[data-video-montage-tab="concept"]').getAttribute('aria-pressed'),
-    'true','MONTAGE_MUST_START_WITH_AUTO_CONCEPT');
+  assert.equal(await page.locator('[data-video-montage-tab="effects"]').getAttribute('aria-pressed'),
+    'true','MONTAGE_MUST_START_WITH_STYLE');
   const montageStyle=page.locator('[data-video-montage-tab="effects"]');
   await montageStyle.waitFor({state:'visible',timeout:20000});
   await montageStyle.click();
@@ -157,15 +155,22 @@ try {
       style?.getAttribute('aria-pressed')==='true';
   },undefined,{timeout:15000});
   assert.equal(await editorTab.getAttribute('aria-pressed'),'true','MONTAGE_TAB_MUST_ACTIVATE');
-  await page.locator('[data-video-montage-tab="concept"]').click();
-  await page.waitForFunction(()=>
-    document.querySelector('[data-video-montage-tab="concept"]')
-      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  // Only a physical Next action advances the real Style → Text stage.
+  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+  await styleNext.waitFor({state:'visible',timeout:15000});
+  await styleNext.click();
+  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="text"]')
+    ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
+    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
+  await page.locator('[data-video-montage-tab="settings"]').click();
+  await page.locator('[data-video-montage-open-concept]').click();
+  const concept=page.locator('[data-video-montage-concept]');
+  await concept.waitFor({state:'visible',timeout:15000});
   await concept.locator('[data-video-concept-approve]').click();
-  await page.waitForFunction(()=>
-    document.querySelector('[data-video-montage-tab="audio"]')
-      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
-  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.locator('[data-video-montage-audio]').waitFor({state:'visible',timeout:15000});
+  await page.locator('[data-video-montage-tab="settings"]').click();
+  await page.locator('[data-video-montage-open-concept]').click();
   assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
     'true','GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION');
   const textTools=page.locator('[data-video-concept-text-tools]');
