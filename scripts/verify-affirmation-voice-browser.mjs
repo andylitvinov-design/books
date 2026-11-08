@@ -475,7 +475,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await voiceModeButton.click();
       await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator("[data-hypno-voice]")).toBeVisible();
-      await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(1);
+      // Own-file upload belongs only to the explicit My Voice mode, not standard Voice.
+      await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(0);
       await expect(phrases.locator('[data-video-affirmation-gender="male"]')).toBeVisible();
       const compactVoicePanel=phrases.locator('[data-video-affirmation-voice][data-voice-layout="compact"]');
       await expect(compactVoicePanel).toBeVisible();
