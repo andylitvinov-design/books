@@ -3,16 +3,20 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import type {ReactNode} from "react";
 import Link from "next/link";
-import {ArrowLeft,ArrowRight,BookOpen,CheckCircle2,Download,Flower2,FolderOpen,Headphones,LockKeyhole,Play,RefreshCw,Send,ShieldCheck,Sparkles,UserRound} from "lucide-react";
+import {ArrowRight,BookOpen,CheckCircle2,Download,Flower2,FolderOpen,Headphones,LockKeyhole,Play,RefreshCw,Send,ShieldCheck,Sparkles,UserRound} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import type {GuidedMeditationFocus} from "./mandala-guided-course";
 import {selectResourcePractice} from "@/lib/mandala/resource-practice-selector.mjs";
+import {buildPersonalMeditationScript} from "@/lib/mandala/personal-meditation-script.mjs";
+import {buildPersonalImageryCourse} from "@/lib/mandala/personal-guided-course.mjs";
 import {appFetch} from "@/lib/app/client-fetch";
 import css from "./mandala-video-ready.module.css";
 
 type VideoFile={url:string;extension:"mp4"|"webm";bytes:number;duration:number};
-type View="home"|"login"|"meditation"|"ritual"|"journey";
+type View="home"|"login";
+type Offer="meditation"|"ritual"|"journey";
+type CourseText={number:number;title:string;motif:string;script:string};
 type Props={
   locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;
   video:VideoFile|null;verified:boolean;checking:boolean;signedIn:boolean;
@@ -30,7 +34,7 @@ const COPY={
     meditation:"Personal meditation",meditationHint:"Turn your video into a gentle guided practice.",
     ritual:"Personal ritual",ritualHint:"Build a simple symbolic practice for your intention.",
     journey:"8-session journey",journeyHint:"Develop your goal through eight connected steps.",
-    choose:"Create",back:"Back to Ready",backPro:"Generate a video in PRO",
+    choose:"Create",generateText:"Generate",textReady:"Your texts are ready below.",customize:"Adjust ritual details (optional)",editMeditation:"Customize narration and meditation",medText:"Your meditation text",sessionText:"Your session texts",backPro:"Generate a video in PRO",
     authTitle:"Save your video",authHint:"Open your existing Holistic House account in a new tab. Return here so your locally generated video is not lost.",
     authAction:"Sign in to My House",authBack:"Continue to save and share",authRefresh:"Check sign-in",
     authPrivacy:"Your video is private and remains on this device until you explicitly choose to upload it.",
@@ -43,10 +47,10 @@ const COPY={
     observe:"Notice three objects",hand:"Rest a hand on a stable surface",pause:"Take a short pause",
     phrasePlaceholder:"For example: I can choose my pace",generateRitual:"Create personal ritual",
     ritualResult:"Your ritual",structure:"Prepare · Practise · Integrate",
-    copy:"Copy ritual text",copied:"Ritual copied to clipboard.",copyError:"Copy unavailable. Select the text instead.",
+    copy:"Copy ritual text",copied:"Ritual copied to clipboard.",copyText:"Copy text",copiedText:"Text copied.",copyError:"Copy unavailable. Select the text instead.",
     another:"Try another gentle variation",ritualPrivacy:"This is a local reflective text, not a recorded video, clinical treatment or scheduled reminder.",
     courseTitle:"Create your 8-session journey",courseHint:"Your chosen focus is used by our existing course planner.",
-    openPlanner:"Create my 8-session programme",courseNote:"This prepares eight scripts and scene previews, not eight paid or automatically rendered videos.",
+    openPlanner:"Open advanced course planner",courseNote:"This prepares eight scripts and scene previews, not eight paid or automatically rendered videos.",
     themes:["Explore","Support","Flexibility","Resources","Boundaries","Steps","Choice","Integration"],
     themesHints:["Name your starting point","Find accessible support","Allow new options","Notice your resources","Choose your boundaries","Try one small step","Make your own choice","Reflect and integrate"],
     settingLabel:"Place",momentLabel:"Moment",actionLabel:"Action",
@@ -61,7 +65,7 @@ const COPY={
     meditation:"Личная медитация",meditationHint:"Превратите видео в бережную практику с сопровождением.",
     ritual:"Личный ритуал",ritualHint:"Создайте небольшую символическую практику под вашу цель.",
     journey:"Курс из 8 занятий",journeyHint:"Восемь связанных шагов для развития вашей темы.",
-    choose:"Создать",back:"Назад к Ready",backPro:"Создать видео в PRO",
+    choose:"Создать",generateText:"Сгенерировать",textReady:"Тексты готовы — они ниже.",customize:"Настроить ритуал (необязательно)",editMeditation:"Настроить медитацию и озвучку",medText:"Текст медитации",sessionText:"Тексты занятий",backPro:"Создать видео в PRO",
     authTitle:"Сохранение видео",authHint:"Откройте существующий кабинет Holistic House в новой вкладке. Вернитесь сюда, чтобы локальное видео не потерялось.",
     authAction:"Войти в Мой дом",authBack:"Продолжить сохранение",authRefresh:"Проверить вход",
     authPrivacy:"Видео остаётся на устройстве, пока вы сами не разрешите приватную загрузку.",
@@ -74,10 +78,10 @@ const COPY={
     observe:"Замечать три предмета",hand:"Коснуться устойчивой поверхности",pause:"Сделать паузу",
     phrasePlaceholder:"Например: Я могу выбрать свой темп",generateRitual:"Создать личный ритуал",
     ritualResult:"Ваш ритуал",structure:"Подготовка · Практика · Закрепление",
-    copy:"Скопировать ритуал",copied:"Текст ритуала скопирован.",copyError:"Не удалось скопировать. Выделите текст вручную.",
+    copy:"Скопировать ритуал",copied:"Текст ритуала скопирован.",copyText:"Скопировать текст",copiedText:"Текст скопирован.",copyError:"Не удалось скопировать. Выделите текст вручную.",
     another:"Другой бережный вариант",ritualPrivacy:"Это локальный текст практики, а не готовый видеофайл, лечение или установленное напоминание.",
     courseTitle:"Создать курс из 8 занятий",courseHint:"Выбранная цель используется в существующем конструкторе курса.",
-    openPlanner:"Составить мою программу из 8 занятий",courseNote:"Формируются сценарии и превью, а не восемь автоматически созданных или оплаченных видео.",
+    openPlanner:"Открыть расширенный редактор курса",courseNote:"Формируются сценарии и превью, а не восемь автоматически созданных или оплаченных видео.",
     themes:["Исследование","Поддержка","Гибкость","Ресурсы","Границы","Шаги","Выбор","Интеграция"],
     themesHints:["Уточнить исходную точку","Найти доступную поддержку","Рассмотреть варианты","Заметить свои опоры","Выбрать границы","Сделать небольшой шаг","Принять своё решение","Осмыслить результат"],
     settingLabel:"Место",momentLabel:"Время",actionLabel:"Действие",
@@ -92,7 +96,7 @@ const COPY={
     meditation:"Meditación personal",meditationHint:"Convierte el vídeo en una práctica guiada y suave.",
     ritual:"Ritual personal",ritualHint:"Crea una pequeña práctica simbólica para tu intención.",
     journey:"Curso de 8 sesiones",journeyHint:"Ocho pasos conectados para trabajar tu objetivo.",
-    choose:"Crear",back:"Volver a Ready",backPro:"Crear vídeo en PRO",
+    choose:"Crear",generateText:"Generar",textReady:"Tus textos están listos debajo.",customize:"Ajustar el ritual (opcional)",editMeditation:"Personalizar meditación y voz",medText:"Texto de meditación",sessionText:"Textos de las sesiones",backPro:"Crear vídeo en PRO",
     authTitle:"Guarda tu vídeo",authHint:"Abre tu cuenta existente de Holistic House en otra pestaña. Vuelve aquí para no perder el vídeo local.",
     authAction:"Iniciar sesión en Mi espacio",authBack:"Continuar y guardar",authRefresh:"Comprobar sesión",
     authPrivacy:"El vídeo queda en tu dispositivo hasta que autorices expresamente la carga privada.",
@@ -105,10 +109,10 @@ const COPY={
     observe:"Observar tres objetos",hand:"Apoyar una mano en una superficie",pause:"Hacer una pausa breve",
     phrasePlaceholder:"Por ejemplo: Puedo elegir mi ritmo",generateRitual:"Crear ritual personal",
     ritualResult:"Tu ritual",structure:"Preparar · Practicar · Integrar",
-    copy:"Copiar texto",copied:"Texto del ritual copiado.",copyError:"No se pudo copiar. Selecciona el texto.",
+    copy:"Copiar texto",copied:"Texto del ritual copiado.",copyText:"Copiar texto",copiedText:"Texto copiado.",copyError:"No se pudo copiar. Selecciona el texto.",
     another:"Otra variante suave",ritualPrivacy:"Es un texto local, no un vídeo grabado, tratamiento clínico ni recordatorio programado.",
     courseTitle:"Crea tu programa de 8 sesiones",courseHint:"Usaremos tu objetivo en el planificador de cursos existente.",
-    openPlanner:"Crear mi programa de 8 sesiones",courseNote:"Son guiones y vistas previas, no ocho vídeos renderizados ni pagados automáticamente.",
+    openPlanner:"Abrir el editor avanzado del curso",courseNote:"Son guiones y vistas previas, no ocho vídeos renderizados ni pagados automáticamente.",
     themes:["Explorar","Apoyo","Flexibilidad","Recursos","Límites","Pasos","Elección","Integración"],
     themesHints:["Clarifica tu punto de partida","Encuentra apoyo","Considera opciones","Identifica recursos","Elige tus límites","Da un pequeño paso","Elige con libertad","Reflexiona e integra"],
     settingLabel:"Lugar",momentLabel:"Momento",actionLabel:"Acción",
@@ -121,6 +125,13 @@ export function MandalaVideoReady({
 }:Props){
   const t=COPY[locale];
   const [view,setView]=useState<View>("home");
+  // Three continuation offers expand within Ready; the login dialog is independent.
+  const [activeOffer,setActiveOffer]=useState<Offer|null>(null);
+  const [generatedOffer,setGeneratedOffer]=useState<Offer|null>(null);
+  const [meditationScript,setMeditationScript]=useState("");
+  const [courseTexts,setCourseTexts]=useState<CourseText[]>([]);
+  const [meditationAdvancedOpen,setMeditationAdvancedOpen]=useState(false);
+  const offerRef=useRef<HTMLElement|null>(null);
   const [gateIntent,setGateIntent]=useState<"save"|"download"|"telegram"|"house">("save");
   const gateRef=useRef<HTMLElement|null>(null);
   const gateCloseRef=useRef<HTMLButtonElement|null>(null);
@@ -217,14 +228,45 @@ export function MandalaVideoReady({
       setTelegramStatus(data.telegram?.linked?"linked":data.telegram?.linkAvailable?"unlinked":"unavailable");
     }catch{setTelegramStatus("unavailable");setTelegramError(t.saveGateTelegramUnavailable);}
   }
-  function selectView(next:View){setView(next);setNotice("");}
-  async function copyRitual(){
-    if(!ritualGenerated||ritual.status!=="ready")return;
-    try{await navigator.clipboard.writeText(ritualText);setNotice(t.copied);}
+  function selectOffer(next:Offer){
+    const opening=activeOffer!==next;
+    setActiveOffer(opening?next:null);
+    setGeneratedOffer(null);setRitualGenerated(false);setNotice("");
+    setMeditationAdvancedOpen(false);
+    if(opening)window.requestAnimationFrame(()=>offerRef.current?.scrollIntoView({
+      block:"nearest",
+      behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"
+    }));
+  }
+  function generateOffer(){
+    if(!activeOffer||disabled||ritual.status==="blocked")return;
+    setNotice("");
+    if(activeOffer==="meditation"){
+      setMeditationScript(buildPersonalMeditationScript({
+        locale,theme,wish,focus,length:5,image:"video",tone:"gentle"
+      }));
+    }else if(activeOffer==="journey"){
+      const plan=buildPersonalImageryCourse({
+        locale,theme,goals:focus.goals,keyDifficulty:focus.difficulty,
+        keyGoal:focus.goal||wish,detailGoals:focus.details
+      });
+      setCourseTexts(plan.sessions.map((session:CourseText)=>({
+        number:session.number,title:session.title,motif:session.motif,script:session.script
+      })));
+    }else{
+      setRitualGenerated(true);
+    }
+    setGeneratedOffer(activeOffer);
+  }
+  async function copyGenerated(){
+    if(!generatedOffer)return;
+    const text=generatedOffer==="meditation"?meditationScript:
+      generatedOffer==="ritual"&&ritual.status==="ready"?ritualText:
+      courseTexts.map(session=>session.number+". "+session.title+"\n\n"+session.script).join("\n\n");
+    if(!text)return;
+    try{await navigator.clipboard.writeText(text);setNotice(t.copiedText);}
     catch{setNotice(t.copyError);}
   }
-  const back=<button type="button" className={css.back} onClick={()=>selectView("home")}
-    data-ready-back><ArrowLeft size={18} aria-hidden="true"/>{t.back}</button>;
   const header=<div className={css.selectedVideo}>
     {video&&verified?<video key={video.url} src={video.url} playsInline controls preload="metadata"
       aria-label={t.ready}/>:
@@ -237,7 +279,7 @@ export function MandalaVideoReady({
     {video&&verified?<span className={css.duration}>{video.duration}s · {video.extension.toUpperCase()}</span>:null}
   </div>;
   return <section className={css.root} data-video-ready data-ready-view={view}
-    aria-label={view==="home"?t.ready:view==="login"?t.authTitle:view==="meditation"?t.medTitle:view==="ritual"?t.ritTitle:t.courseTitle}>
+    aria-label={view==="login"?t.authTitle:t.ready}>
     {(view==="home"||view==="login")?<>
       {header}
       <div className={css.title}>
@@ -264,7 +306,8 @@ export function MandalaVideoReady({
         {t.backPro}<ArrowRight size={18} aria-hidden="true"/></button>}
       <h3 className={css.nextTitle}>{t.continue}</h3>
       <div className={css.journey}>
-        <button type="button" onClick={()=>selectView("meditation")} data-ready-meditation>
+        <button type="button" onClick={()=>selectOffer("meditation")} data-ready-meditation
+          aria-expanded={activeOffer==="meditation"} aria-controls="ready-inline-offer">
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt=""/>
@@ -273,7 +316,8 @@ export function MandalaVideoReady({
           <span><strong>{t.meditation}</strong><small>{t.meditationHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
         </button>
-        <button type="button" onClick={()=>selectView("ritual")} data-ready-ritual>
+        <button type="button" onClick={()=>selectOffer("ritual")} data-ready-ritual
+          aria-expanded={activeOffer==="ritual"} aria-controls="ready-inline-offer">
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp" alt=""/>
@@ -282,7 +326,8 @@ export function MandalaVideoReady({
           <span><strong>{t.ritual}</strong><small>{t.ritualHint}</small></span>
           <ArrowRight size={21} aria-hidden="true"/>
         </button>
-        <button type="button" onClick={()=>selectView("journey")} data-ready-journey>
+        <button type="button" onClick={()=>selectOffer("journey")} data-ready-journey
+          aria-expanded={activeOffer==="journey"} aria-controls="ready-inline-offer">
           <div className={css.thumbnail}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp" alt=""/>
@@ -292,6 +337,80 @@ export function MandalaVideoReady({
           <ArrowRight size={21} aria-hidden="true"/>
         </button>
       </div>
+      {activeOffer?<section ref={offerRef} id="ready-inline-offer" className={css.offerPanel}
+        role="region" data-ready-offer-panel data-ready-offer={activeOffer}
+        aria-label={activeOffer==="meditation"?t.meditation:activeOffer==="ritual"?t.ritual:t.journey}>
+        <div className={css.offerHeader}>
+          <h4>{activeOffer==="meditation"?t.medTitle:activeOffer==="ritual"?t.ritTitle:t.courseTitle}</h4>
+          <p>{activeOffer==="meditation"?t.medHint:activeOffer==="ritual"?t.ritHint:t.courseHint}</p>
+        </div>
+        <p className={css.context}><CheckCircle2 size={19} aria-hidden="true"/>
+          <strong>{t.selected}:</strong>{" "}{selectedGoal||t.meditation}</p>
+        {ritual.status==="blocked"?<p className={css.note} role="alert">{ritual.message}</p>:<>
+          {activeOffer==="ritual"?<details className={css.offerOptions} data-ready-ritual-options>
+            <summary>{t.customize}</summary>
+            <div className={css.ritualFields}>
+              <label>{t.bestMoment}<select value={moment} onChange={event=>{setMoment(event.target.value);setRitualGenerated(false);setGeneratedOffer(null)}}>
+                <option value="morning">{t.morning}</option><option value="evening">{t.evening}</option>
+                <option value="any">{t.any}</option></select></label>
+              <label>{t.setting}<select value={setting} onChange={event=>{setSetting(event.target.value);setRitualGenerated(false);setGeneratedOffer(null)}}>
+                <option value="quiet">{t.quiet}</option><option value="nature">{t.nature}</option>
+                <option value="desk">{t.desk}</option></select></label>
+              <label>{t.action}<select value={action} onChange={event=>{setAction(event.target.value);setRitualGenerated(false);setGeneratedOffer(null)}}>
+                <option value="observe">{t.observe}</option><option value="hand">{t.hand}</option>
+                <option value="pause">{t.pause}</option></select></label>
+              <label>{t.phrase}<input type="text" maxLength={140} value={anchor}
+                placeholder={t.phrasePlaceholder} onChange={event=>{setAnchor(event.target.value);setRitualGenerated(false);setGeneratedOffer(null)}}/></label>
+            </div>
+          </details>:null}
+          <button className={css.primary} type="button" disabled={disabled}
+            onClick={generateOffer} data-ready-generate-text>
+            <Sparkles size={19} aria-hidden="true"/>{t.generateText}<ArrowRight size={19} aria-hidden="true"/>
+          </button>
+          {generatedOffer===activeOffer?<div className={css.generated} data-ready-generated-text>
+            <p className={css.generatedNote} role="status"><CheckCircle2 size={17} aria-hidden="true"/>{t.textReady}</p>
+            {activeOffer==="meditation"?<>
+              <h5>{t.medText}</h5>
+              <pre className={css.scriptText} data-ready-meditation-text>{meditationScript}</pre>
+              <p className={css.note}><ShieldCheck size={17} aria-hidden="true"/>{t.medNote}</p>
+              <button type="button" className={css.secondary} data-ready-expand-meditation-editor
+                aria-expanded={meditationAdvancedOpen}
+                onClick={()=>setMeditationAdvancedOpen(open=>!open)}>{t.editMeditation}</button>
+              {meditationAdvancedOpen?<div className={css.reused} data-ready-meditation-editor>
+                {meditationEditor}</div>:null}
+            </>:activeOffer==="ritual"&&ritual.status==="ready"&&ritualGenerated?<>
+              <div className={css.ritualResult} data-ready-ritual-result>
+                <h5>{t.ritualResult}: {ritual.title}</h5>
+                <p>{t.structure}</p>
+                <ol>{ritual.steps.map((step,index)=><li key={index}>{step}</li>)}</ol>
+                <p>{ritual.transfer}</p>
+                {anchor.trim()?<p className={css.context}>{anchor.trim()}</p>:null}
+              </div>
+              <p className={css.note}><ShieldCheck size={17} aria-hidden="true"/>{t.ritualPrivacy}</p>
+              <button type="button" className={css.secondary}
+                onClick={()=>{setRevision(value=>value+1);setNotice("");}}>
+                <RefreshCw size={17} aria-hidden="true"/>{t.another}</button>
+            </>:activeOffer==="journey"?<>
+              <h5>{t.sessionText}</h5>
+              <div className={css.courseScripts} data-ready-eight-sessions>
+                {courseTexts.map((session,index)=><details key={session.number}
+                  open={index===0} className={css.courseSession} data-ready-session-text={session.number}>
+                  <summary><span>{session.number}</span><strong>{session.title}</strong></summary>
+                  <small>{session.motif}</small>
+                  <pre className={css.scriptText}>{session.script}</pre>
+                </details>)}
+              </div>
+              <p className={css.note}><ShieldCheck size={17} aria-hidden="true"/>{t.courseNote}</p>
+              <button className={css.secondary} type="button" disabled={disabled}
+                onClick={onOpenCourse} data-ready-create-course>
+                <BookOpen size={19} aria-hidden="true"/>{t.openPlanner}</button>
+            </>:null}
+            <button type="button" className={css.secondary} onClick={()=>void copyGenerated()}
+              data-ready-copy-generated><BookOpen size={17} aria-hidden="true"/>{t.copyText}</button>
+          </div>:null}
+          {notice?<p role="status" className={css.note}>{notice}</p>:null}
+        </>}
+      </section>:null}
     </>:null}
     {view==="login"?<div className={css.gateBackdrop} data-ready-save-gate-overlay
       onMouseDown={event=>{if(event.target===event.currentTarget)closeSaveGate();}}>
@@ -357,62 +476,5 @@ export function MandalaVideoReady({
         <p className={css.gatePrivacy}><ShieldCheck size={18} aria-hidden="true"/>{t.saveGatePrivacy}</p>
       </section>
     </div>:null}
-    {view==="meditation"?<>
-      {back}
-      <div className={css.title}><h2>{t.medTitle}</h2><p>{t.medHint}</p></div>
-      <p className={css.context}><CheckCircle2 size={19}/><strong>{t.selected}:</strong>{" "}{selectedGoal||t.meditation}</p>
-      <div className={css.reused} data-ready-meditation-editor>{meditationEditor}</div>
-      <p className={css.note}><ShieldCheck size={17} aria-hidden="true"/>{t.medNote}</p>
-    </>:null}
-    {view==="ritual"?<>
-      {back}
-      <div className={css.title}><h2>{t.ritTitle}</h2><p>{t.ritHint}</p></div>
-      <p className={css.context}><Sparkles size={19} aria-hidden="true"/><strong>{t.intention}:</strong>{" "}{selectedGoal||t.ritual}</p>
-      {ritual.status==="blocked"?<p className={css.note} role="alert">{ritual.message}</p>:<>
-        <div className={css.ritualFields}>
-          <label>{t.bestMoment}<select value={moment} onChange={event=>{setMoment(event.target.value);setRitualGenerated(false)}}>
-            <option value="morning">{t.morning}</option><option value="evening">{t.evening}</option>
-            <option value="any">{t.any}</option></select></label>
-          <label>{t.setting}<select value={setting} onChange={event=>{setSetting(event.target.value);setRitualGenerated(false)}}>
-            <option value="quiet">{t.quiet}</option><option value="nature">{t.nature}</option>
-            <option value="desk">{t.desk}</option></select></label>
-          <label>{t.action}<select value={action} onChange={event=>{setAction(event.target.value);setRitualGenerated(false)}}>
-            <option value="observe">{t.observe}</option><option value="hand">{t.hand}</option>
-            <option value="pause">{t.pause}</option></select></label>
-          <label>{t.phrase}<input type="text" maxLength={140} value={anchor}
-            placeholder={t.phrasePlaceholder} onChange={event=>{setAnchor(event.target.value);setRitualGenerated(false)}}/></label>
-        </div>
-        <button type="button" className={css.primary} disabled={disabled}
-          onClick={()=>{setRitualGenerated(true);setNotice("");}} data-ready-create-ritual>
-          <Sparkles size={19}/>{t.generateRitual}<ArrowRight size={19}/></button>
-        {ritualGenerated?<div className={css.ritualResult} data-ready-ritual-result>
-          <h3>{t.ritualResult}: {ritual.title}</h3>
-          <p>{t.structure}</p>
-          <ol>{ritual.steps.map((step,index)=><li key={index}>{step}</li>)}</ol>
-          <p>{ritual.transfer}</p>
-          {anchor.trim()?<p className={css.context}>{anchor.trim()}</p>:null}
-          <div className={css.ritualActions}>
-            <button type="button" onClick={()=>void copyRitual()}><BookOpen size={17}/>{t.copy}</button>
-            <button type="button" onClick={()=>{setRevision(value=>value+1);setRitualGenerated(false);setNotice("");}}>
-              <RefreshCw size={17}/>{t.another}</button>
-          </div>
-        </div>:null}
-        {notice?<p role="status" className={css.note}>{notice}</p>:null}
-      </>}
-      <p className={css.note}><ShieldCheck size={17}/>{t.ritualPrivacy}</p>
-    </>:null}
-    {view==="journey"?<>
-      {back}
-      <div className={css.title}><h2>{t.courseTitle}</h2><p>{t.courseHint}</p></div>
-      <p className={css.context}><CheckCircle2 size={18}/><strong>{t.selected}:</strong>{" "}{selectedGoal||t.journey}</p>
-      <div className={css.sessions} data-ready-eight-sessions>
-        {t.themes.map((name,index)=><div key={name} className={css.session}>
-          <span>{index+1}</span><div><strong>{name}</strong><small>{t.themesHints[index]}</small></div>
-        </div>)}
-      </div>
-      <p className={css.note}><ShieldCheck size={17}/>{t.courseNote}</p>
-      <button className={css.primary} type="button" disabled={disabled} onClick={onOpenCourse}
-        data-ready-create-course><BookOpen size={19}/>{t.openPlanner}<ArrowRight size={19}/></button>
-    </>:null}
   </section>;
 }
