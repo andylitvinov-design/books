@@ -127,6 +127,8 @@ export function MandalaAffirmationVoice({
   const [deviceSpeechAvailable,setDeviceSpeechAvailable]=useState(false);
   const deviceUtteranceRef=useRef<SpeechSynthesisUtterance|null>(null);
   const sampleAudioRef=useRef<HTMLAudioElement|null>(null);
+  // A cached replay must not race the post-fetch autoplay effect in WebKit.
+  const lastAutoPlayedSampleUrlRef=useRef("");
   const generatedAudioRef=useRef<HTMLAudioElement|null>(null);
   const playGeneratedAfterRequestRef=useRef(false);
   const sampleControllerRef=useRef<AbortController|null>(null);
@@ -267,6 +269,7 @@ export function MandalaAffirmationVoice({
   }
 
   function resetSample(){
+    lastAutoPlayedSampleUrlRef.current="";
     if(deviceUtteranceRef.current){
       window.speechSynthesis?.cancel();
       deviceUtteranceRef.current=null;
@@ -349,6 +352,8 @@ export function MandalaAffirmationVoice({
     // user gesture and must never spend another free provider request.
     if(!sampleBusyId && sampleVoiceId===id && sampleUrl && sampleAudioRef.current){
       const player=sampleAudioRef.current;
+      // User replay owns this gesture. A delayed effect must not call play() again.
+      lastAutoPlayedSampleUrlRef.current=sampleUrl;
       try{player.currentTime=0;await player.play();}
       catch{/* Native audio controls remain available for a manual second tap. */}
       return;
@@ -427,7 +432,9 @@ export function MandalaAffirmationVoice({
   // Attempt playback only after an explicit user request. On iPhone Safari the
   // post-network play() may be denied; the visible native player is the fallback.
   useEffect(()=>{
-    if(sampleUrl)void sampleAudioRef.current?.play().catch(()=>{});
+    if(!sampleUrl||lastAutoPlayedSampleUrlRef.current===sampleUrl)return;
+    lastAutoPlayedSampleUrlRef.current=sampleUrl;
+    void sampleAudioRef.current?.play().catch(()=>{});
   },[sampleUrl]);
 
   // Attempt playback only after an explicit narration request. Native controls

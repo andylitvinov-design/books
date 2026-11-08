@@ -5313,3 +5313,32 @@
     padding:8px 4px;min-height:70px;font-size:12px
   }
 }
+
+
+/* Montage 7 Nov — format is chosen with Style; Text and visual Effects are
+   real tabs over the existing single Canvas/MP4 editor (no duplicate player). */
+.montagePane[hidden]{display:none!important}
+.montageAspectSwitch{display:grid;gap:8px;min-width:0;margin:6px 0 2px;padding:0;border:0}
+.montageAspectSwitch legend{padding:0;margin-bottom:6px;color:#143d3a;font:800 17px/1.2 Arial,Helvetica,sans-serif}
+.montageAspectSwitch>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.montageAspectSwitch button{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:47px;padding:9px 7px;border:1px solid #d6e1d5;border-radius:13px;background:#fff;color:#174a3c;font:800 16px/1.2 Arial,Helvetica,sans-serif}
+.montageAspectSwitch button[aria-pressed="true"]{border:2px solid #067a67;background:#e6f6f1;color:#056c58}
+.montageAspectSwitch button:focus-visible,.montageVisualGrid button:focus-visible,.montageEffectIntensity input:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.montageAspectSwitch button:disabled{opacity:.6}
+.montageMovedNote{margin:0;color:#536b62;font:500 13px/1.42 Arial,Helvetica,sans-serif}
+.montageVisualGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.montageVisualGrid button{position:relative;display:flex;align-items:center;justify-content:flex-start;gap:7px;min-width:0;min-height:64px;padding:9px 8px;border:1px solid #dfdfd1;border-radius:14px;background:#fffdfa;color:#143d3a;text-align:left;font:750 13px/1.18 Arial,Helvetica,sans-serif}
+.montageVisualGrid button>span{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:11px;background:#fbf0d8;color:#ad7628;font:700 23px/1 Arial,Helvetica,sans-serif}
+.montageVisualGrid button>strong{flex:1;min-width:0;overflow-wrap:break-word}
+.montageVisualGrid button>svg{flex:none;color:#067a67}
+.montageVisualGrid button[aria-pressed="true"]{border:2px solid #067a67;background:#e6f6f1}
+.montageVisualGrid button:disabled{opacity:.6}
+.montageEffectIntensity{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;color:#143d3a;font:750 15px/1.3 Arial,Helvetica,sans-serif}
+.montageEffectIntensity strong{color:#067a67;font-variant-numeric:tabular-nums}
+.montageEffectIntensity input{grid-column:1/-1;width:100%;min-height:34px;accent-color:#067a67}
+@media(max-width:340px){.montageVisualGrid{gap:6px}.montageVisualGrid button{padding:8px 5px;font-size:12px}.montageVisualGrid button>span{width:28px;height:28px;font-size:20px}}
+
+.montageAdvancedShortcuts{display:flex;flex-wrap:wrap;gap:8px}
+.montageAdvancedShortcuts button{display:flex;align-items:center;justify-content:center;gap:6px;flex:1 1 135px;min-height:44px;padding:8px;border:1px solid #d6e1d5;border-radius:12px;background:#f5f9f3;color:#174a3c;font:700 13px/1.2 Arial,Helvetica,sans-serif}
+.montageAdvancedShortcuts button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.montageAdvancedShortcuts button:disabled{opacity:.6}
