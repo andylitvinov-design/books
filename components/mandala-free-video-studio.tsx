@@ -1431,10 +1431,12 @@ function paintCinematicFrame(
   styleVideo:HTMLVideoElement|null = null,
 ) {
   if(proceduralPlan){paintFreeVideoFrame(ctx,proceduralPlan,time,permittedLocalPortrait);return;}
-  // Replace the visible first beat, retain the other validated source clips,
-  // their audio, timeline captions and transitions.
+  // The optional standalone Style MP4 can replace its first beat, but a
+  // licensed four-shot montage must retain ALL four verified source clips.
+  // In a stock montage Style is a finishing grade, not replacement footage.
   const firstBeatSeconds=storyboard?.shots[0]?.durationSeconds??5;
-  if(montageStyleId&&time>=0&&time<firstBeatSeconds&&paintSelectedStyleShot(ctx,styleVideo)){
+  if(montageStyleId&&storyboard?.version!==FREE_FILM_PLAN_VERSION&&
+    time>=0&&time<firstBeatSeconds&&paintSelectedStyleShot(ctx,styleVideo)){
     paintStudioVisualGrade(ctx,montageStyleId);
     return;
   }
