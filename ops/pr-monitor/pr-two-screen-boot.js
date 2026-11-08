@@ -30,8 +30,8 @@
     additions += '<link rel="stylesheet" href="/gpt-agent-counter.css?v=20261106-grid-v1">'+
       '<script src="/gpt-agent-counter.js?v=20261106-grid-v1" defer><\/script>';
     // HH_CI_VERIFIED_LOAD_V2: one user-requested census; never launches workflows.
-    additions += '<link rel="stylesheet" href="/ci-verified-panel.css?v=20261107-truth-v2">'+
-      '<script src="/ci-verified-panel.js?v=20261107-truth-v2" defer><\/script>';
+    // The two existing jobs cards share the VERIFIED server census, no duplicate graphs.
+    additions += '<script src="/ci-jobs-bridge.js?v=20261108-jobs-sync-v1" defer><\/script>';
     additions += '<link rel="stylesheet" href="/pr-lifecycle-ribbon.css?v=20261107-journey-v2">'+
       '<script src="/pr-lifecycle-ribbon.js?v=20261107-journey-v2" defer><\/script>';
     // Historical attribution may be missing from legacy.html.
@@ -44,6 +44,8 @@
     // A discoverable link on the existing PR Monitor, without changing the five-item dock.
     additions += '<link rel="stylesheet" href="/commander-learning.css?v=20261107-learning-v1">';
     // Disable only old layout reordering, preserving all sources and working APIs.
+    // Keep the proven LIVE mobile screen flow; the CSS now expands the chart itself.
+    additions += "<style id=\"hh-monitor-graph-first\">@media(max-width:700px){body.hh2-active .hh2-screen{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;overscroll-behavior:auto!important;padding-top:12px!important;padding-bottom:12px!important}body.hh2-active .hh2-first{gap:8px!important}body.hh2-active .hh2-chart{min-height:190px!important;flex:0 0 auto!important}body.hh2-active #hh-merge-velocity{margin-top:4px!important;margin-bottom:4px!important}body.hh2-active .hh2-second{margin-top:7px!important}body.hh2-active .hh2-totals{margin-top:4px!important}body.hh2-active .hh2-chart-slot{overflow:visible!important}}</style>";
     html=html.replace(/<head>/i,'<head><script src="/pr-two-screen-pre.js"><\/script>');
     html=html.replace(/<\/head>/i,additions+'</head>');
     html=html.replace(/<\/header>/i,'</header><p class="hh-learning-monitor-entry"><a href="/learning.html">✦ Обучение агентов</a></p>');
