@@ -4,8 +4,6 @@ import {useEffect,useRef,useState} from "react";
 import type {ChangeEvent} from "react";
 import type {PublicLocale} from "@/lib/public-locales";
 import {prepareMessengerAudio,stageMessengerAudio} from "@/lib/mandala/messenger-audio-video-handoff.mjs";
-import {requestConsentedTimedTranscript} from "@/lib/mandala/consented-audio-stt";
-import {stageVoiceStudioHandoff} from "@/lib/mandala/voice-studio-handoff.mjs";
 import css from "./messenger-audio-video.module.css";
 
 type Prepared = {file:File;seconds:number;duration:10|15|20|30|60};
@@ -13,16 +11,10 @@ type Recording = {recorder:MediaRecorder;stream:MediaStream;timeout:ReturnType<t
 const copy = {
   ru: {
     title:"🎙 Аудиозапись → видеоролик",
-    explanation:"Запишите голос или загрузите аудио. После разовой расшифровки режиссёр сможет подобрать видеоряд по смыслу речи.",
+    explanation:"Запишите голос или выберите файл — сразу перейдём в студию с вашей записью. После разрешённой расшифровки можно автоматически подобрать сцены.",
     upload:"Выбрать аудиозапись",record:"Записать голос",stop:"Завершить запись",
-    manual:"Открыть студию без расшифровки",
-    autoConsent:"Используйте только свою запись или запись с разрешением. Кнопка подбора разрешает один раз передать аудио внешнему сервису распознавания речи для выбора видеоряда.",
-    autoLimit:"Автоматическая расшифровка доступна для файлов до 4 МБ. Вы можете открыть студию без неё.",
-    sttUnavailable:"Бесплатная расшифровка сейчас не подключена. Аудио не передано внешнему сервису; можно открыть студию без неё.",
-    sttFailed:"Не получилось распознать речь. Проверьте запись или откройте студию без расшифровки.",
-    transcribing:"Расшифровываем голос…",
-    create:"Подобрать видеоряд по голосу",ready:"Запись готова",duration:"Видеоролик до",
-    privacy:"До выбора автоматической расшифровки аудио остаётся в браузере. Студия получает запись через одноразовую локальную передачу.",
+    create:"Продолжить создание видео",ready:"Запись готова",duration:"Видеоролик до",
+    privacy:"Запись передаётся в студию только внутри браузера. Внешняя расшифровка требует отдельного согласия. Используйте собственную или разрешённую запись.",
     invalid:"Выберите MP3, M4A, WAV, AAC, WebM или аудиосообщение Telegram (OGG) до 15 МБ. Запись должна длиться не более 60 секунд.",
     unsupported:"Не удалось прочитать запись на этом устройстве. Для Telegram OGG попробуйте M4A или MP3.",
     microphone:"Нужен доступ к микрофону в защищённом браузере; можно выбрать готовую запись.",
@@ -31,16 +23,10 @@ const copy = {
   },
   en: {
     title:"🎙 Audio recording → video",
-    explanation:"Record or upload audio. With your one-time consent to transcription, the director can match approved footage to your actual words.",
+    explanation:"Record your voice or choose a file to open Studio directly with your audio. Available speech transcription can then suggest matching footage.",
     upload:"Choose an audio file",record:"Record my voice",stop:"Stop recording",
-    manual:"Open Studio without transcription",
-    autoConsent:"Use only audio you own or have permission to use. Choosing automatic matching authorizes a one-time transfer to an external speech-to-text provider to select footage.",
-    autoLimit:"Automatic transcription accepts files up to 4 MB. You can still open Studio without it.",
-    sttUnavailable:"Free transcription is not configured. No audio was sent to the external provider; open Studio without transcription instead.",
-    sttFailed:"Speech recognition failed. Check the recording or open Studio without transcription.",
-    transcribing:"Transcribing your voice…",
-    create:"Match footage to my voice",ready:"Audio ready",duration:"Video length up to",
-    privacy:"Audio stays in this browser until you choose automatic transcription. The recording is handed to Studio through one-use local storage.",
+    create:"Continue creating video",ready:"Audio ready",duration:"Video length up to",
+    privacy:"Your audio transfers locally to Studio. Any external transcription requires separate consent. Use only your own or authorized recordings.",
     invalid:"Choose MP3, M4A, WAV, AAC, WebM or Telegram OGG audio, up to 15 MB and 60 seconds.",
     unsupported:"Could not decode this recording on your device. For Telegram OGG, try M4A or MP3.",
     microphone:"Microphone access is needed in a secure browser. You can upload a recording instead.",
@@ -49,16 +35,10 @@ const copy = {
   },
   es: {
     title:"🎙 Audio grabado → vídeo",
-    explanation:"Graba o sube audio. Con tu permiso para una transcripción única, el director puede elegir escenas según tus palabras.",
+    explanation:"Graba tu voz o elige un archivo y ve directamente al Estudio con el audio. La transcripción autorizada podrá proponer las escenas.",
     upload:"Elegir audio",record:"Grabar mi voz",stop:"Terminar grabación",
-    manual:"Abrir el estudio sin transcripción",
-    autoConsent:"Utiliza solo grabaciones propias o autorizadas. El botón de selección automática permite enviar el audio una sola vez a un proveedor externo de transcripción para elegir las escenas.",
-    autoLimit:"La transcripción automática admite archivos de hasta 4 MB. Puedes abrir el estudio sin ella.",
-    sttUnavailable:"La transcripción gratuita no está configurada. No se envió audio al proveedor externo; puedes abrir el estudio sin transcripción.",
-    sttFailed:"No se pudo reconocer la voz. Comprueba el audio o abre el estudio sin transcripción.",
-    transcribing:"Transcribiendo la voz…",
-    create:"Elegir escenas según mi voz",ready:"Audio preparado",duration:"Duración máxima",
-    privacy:"El audio permanece en este navegador hasta que elijas transcripción automática. El estudio lo recibe mediante una transferencia local de un solo uso.",
+    create:"Continuar creando vídeo",ready:"Audio preparado",duration:"Duración máxima",
+    privacy:"Tu audio pasa al Estudio en este navegador. La transcripción externa requiere consentimiento aparte. Usa solo grabaciones autorizadas.",
     invalid:"Elige MP3, M4A, WAV, AAC, WebM u OGG de Telegram, hasta 15 MB y 60 segundos.",
     unsupported:"No se pudo descodificar el audio en este dispositivo. Para OGG, prueba M4A o MP3.",
     microphone:"Necesitas permitir el micrófono en un navegador seguro. También puedes subir un audio.",
@@ -72,13 +52,14 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOp
 }) {
   const t = copy[locale];
   const [prepared,setPrepared] = useState<Prepared|null>(null);
-  const [state,setState] = useState<"idle"|"checking"|"transcribing"|"sending">("idle");
+  // The conversational context may still provide a goal, but no second form is needed.
+  const goal=initialGoal.slice(0,160);
+  const [state,setState] = useState<"idle"|"checking"|"sending">("idle");
   const [recording,setRecording] = useState(false);
   const [error,setError] = useState("");
   const [preview,setPreview] = useState("");
   const micRef = useRef<Recording|null>(null);
-  const rootRef = useRef<HTMLDetailsElement|null>(null);
-  const transcriptionAbortRef = useRef<AbortController|null>(null);
+  const panelRef = useRef<HTMLDetailsElement|null>(null);
   const mountedRef = useRef(true);
   const revision = useRef(0);
   useEffect(()=>{
@@ -86,7 +67,6 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOp
     return ()=>{
       mountedRef.current = false;
       revision.current++;
-      transcriptionAbortRef.current?.abort();
       const current = micRef.current;
       micRef.current = null;
       if(current){
@@ -103,22 +83,20 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOp
     setPreview(url);
     return ()=>{URL.revokeObjectURL(url);setPreview("");};
   },[prepared]);
-  // The mobile voice card is internally scrollable above the pinned composer.
-  // Reveal the lower playback and continuation actions as soon as audio is ready.
+  // The mobile transcript is fixed-height. Reveal the final CTA after audio loads
+  // without scrolling the whole page beneath the pinned Messenger composer.
   useEffect(()=>{
     if(!prepared)return;
     const frame=window.requestAnimationFrame(()=>{
-      const root=rootRef.current;
-      if(root&&root.scrollHeight>root.clientHeight)
-        root.scrollTo({top:root.scrollHeight-root.clientHeight,behavior:"smooth"});
+      const panel=panelRef.current;
+      if(panel&&panel.scrollHeight>panel.clientHeight)panel.scrollTop=panel.scrollHeight;
     });
-    return ()=>window.cancelAnimationFrame(frame);
-  },[prepared]);
+    return()=>window.cancelAnimationFrame(frame);
+  },[prepared,preview]);
 
   async function chooseFile(file:File|undefined){
     if(!file||disabled)return;
     const current=++revision.current;
-    transcriptionAbortRef.current?.abort();
     setState("checking");setError("");setPrepared(null);
     try{
       const checked=await prepareMessengerAudio(file) as Prepared;
@@ -172,45 +150,23 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOp
       if(mountedRef.current)setError(t.microphone);
     }
   }
-  async function continueToVideo(mode:"auto"|"manual"){
+  async function continueToVideo(){
     if(!prepared||state!=="idle"||disabled||recording)return;
-    const current=++revision.current;
-    const controller=new AbortController();
-    transcriptionAbortRef.current=controller;
-    setState(mode==="auto"?"transcribing":"sending");setError("");
+    setState("sending");setError("");
     try{
-      if(mode==="auto"){
-        if(prepared.file.size>4*1024*1024)throw Error("AUDIO_STT_INVALID_FILE");
-        // This explicit button is the user's one-time external-STT consent.
-        // The original audio and timed transcript then move to Studio locally.
-        const transcript=await requestConsentedTimedTranscript(
-          prepared.file,locale,true,controller.signal);
-        if(!mountedRef.current||revision.current!==current)return;
-        if(!await stageVoiceStudioHandoff(prepared.file,transcript))
-          throw Error("AUDIO_STORAGE_UNAVAILABLE");
-      }else{
-        // No STT request and no guessing the words in a private recording.
-        // The user intentionally opens manual editing without transcription.
-        await stageMessengerAudio({...prepared,locale,
-          goal:initialGoal.trim().slice(0,160),rights:true});
-      }
-      if(!mountedRef.current||revision.current!==current)return;
-      setState("sending");
-      window.location.assign("/"+locale+"/holistic-support/mandala"+
-        (mode==="auto"?"#video-audio":"#video-director-chat"));
-    }catch(reason){
-      if(mountedRef.current&&revision.current===current&&!controller.signal.aborted){
-        const code=reason instanceof Error?reason.message:"";
-        setError(code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"?t.sttUnavailable:
-          code.startsWith("AUDIO_STT_")?t.sttFailed:t.failure);
-        setState("idle");
-      }
-    }finally{
-      if(transcriptionAbortRef.current===controller)
-        transcriptionAbortRef.current=null;
+      // Continuation is the affirmative user action; keep the existing rights
+      // validation at the local handoff boundary without a redundant checkbox.
+      await stageMessengerAudio({...prepared,locale,goal,rights:true});
+      // Same-tab navigation keeps the one-use session token and the private
+      // IndexedDB File. The existing Video Studio alone renders/charges.
+      // The Audio montage panel owns the consented transcription controls.
+      // Do not open the unrelated text-to-speech voice narration tool.
+      window.location.assign("/"+locale+"/holistic-support/mandala#video-audio");
+    }catch{
+      if(mountedRef.current){setError(t.failure);setState("idle");}
     }
   }
-  return <details ref={rootRef} open={autoOpen} className={css.root} data-hh-messenger-audio-video>
+  return <details ref={panelRef} open={autoOpen} className={css.root} data-hh-messenger-audio-video>
     <summary>{t.title}</summary>
     <div className={css.content}>
       <p>{t.explanation}</p>
@@ -235,18 +191,9 @@ export function MessengerAudioVideo({locale,initialGoal="",disabled=false,autoOp
         <strong>{t.ready}: {prepared.file.name}</strong>
         <small>{Math.ceil(prepared.seconds)} s · {t.duration} {prepared.duration} s</small>
         {preview&&<audio controls preload="metadata" src={preview} aria-label={prepared.file.name}/>}
-        <small className={css.autoNote}>{t.autoConsent}</small>
-        {prepared.file.size>4*1024*1024?<small role="status">{t.autoLimit}</small>:null}
-        <div className={css.readyActions}>
-          <button type="button" className={css.primary} data-hh-audio-video-continue
-            disabled={prepared.file.size>4*1024*1024||disabled||recording||state!=="idle"}
-            onClick={()=>void continueToVideo("auto")}>
-            {state==="transcribing"?t.transcribing:state==="sending"?t.sending:t.create}
-          </button>
-          <button type="button" className={css.secondary} data-hh-audio-video-manual
-            disabled={disabled||recording||state!=="idle"}
-            onClick={()=>void continueToVideo("manual")}>{t.manual}</button>
-        </div>
+        <button type="button" className={css.primary} data-hh-audio-video-continue
+          disabled={disabled||recording||state!=="idle"}
+          onClick={()=>void continueToVideo()}>{state==="sending"?t.sending:t.create}</button>
       </div>}
       {error&&<p className={css.error} role="alert">{error}</p>}
       <small className={css.privacy}>{t.privacy}</small>

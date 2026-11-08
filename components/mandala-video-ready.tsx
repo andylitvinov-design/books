@@ -3,6 +3,7 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import type {ReactNode} from "react";
 import Link from "next/link";
+import {useRouter} from "next/navigation";
 import {ArrowRight,BookOpen,CheckCircle2,Download,Flower2,FolderOpen,Headphones,LockKeyhole,Play,RefreshCw,Send,ShieldCheck,Sparkles,UserRound} from "lucide-react";
 import type {PublicLocale} from "@/lib/public-locales";
 import type {VideoTheme} from "@/lib/mandala/holistic-video-themes";
@@ -11,6 +12,7 @@ import {selectResourcePractice} from "@/lib/mandala/resource-practice-selector.m
 import {buildPersonalMeditationScript} from "@/lib/mandala/personal-meditation-script.mjs";
 import {buildPersonalImageryCourse} from "@/lib/mandala/personal-guided-course.mjs";
 import {appFetch} from "@/lib/app/client-fetch";
+import {createVideoCartSelection,VIDEO_CART_STORAGE_KEY,SERVICE_CART_UPDATED_EVENT} from "@/lib/commerce/cart";
 import css from "./mandala-video-ready.module.css";
 
 type VideoFile={url:string;extension:"mp4"|"webm";bytes:number;duration:number};
@@ -33,7 +35,7 @@ const COPY={
     videoChooseTitle:"Choose a video option",videoChooseHint:"Choose a format, then generate your video.",
     videoBasic:"Basic video",videoBasicHint:"Quality video from our library.",videoPhoto:"Animated photo",videoPhotoHint:"Your photo or character with gentle motion.",
     videoCharacter:"Character video",videoCharacterHint:"Personalized animated story with a character.",videoFree:"FREE",
-    videoGenerate:"Generate video",videoPaidHold:"This %price% option is not available for purchase yet. No payment or paid generation has started.",
+    videoGenerate:"Generate video",videoCartAction:"Add to cart",videoPaidInfo:"Paid videos are confirmed manually after payment. This does not start an AI render.",videoCartError:"Please choose this video in PRO instead.",
     videoFreeHold:"The free video allowance is currently unavailable. Check the current credit quote in PRO.",
     videoSetup:"Finish the required video settings in PRO, then generate.",videoIdeas:"More ideas for this video",
     verifying:"Checking playback on this device…",failed:"No playable exported video is available yet.",
@@ -70,7 +72,7 @@ const COPY={
     videoChooseTitle:"Выберите вариант видео",videoChooseHint:"Выберите формат и нажмите «Создать видео».",
     videoBasic:"Базовое видео",videoBasicHint:"Качественный видеоряд из нашей библиотеки.",videoPhoto:"Анимированное фото",videoPhotoHint:"Ваше фото или персонаж с мягкой анимацией.",
     videoCharacter:"Видео с персонажем",videoCharacterHint:"Индивидуальный анимированный ролик с персонажем.",videoFree:"БЕСПЛАТНО",
-    videoGenerate:"Создать видео",videoPaidHold:"Вариант за %price% пока нельзя оплатить или сгенерировать. Деньги не списаны, платный рендер не запускался.",
+    videoGenerate:"Создать видео",videoCartAction:"В корзину",videoPaidInfo:"Платный заказ подтверждается вручную после проверки оплаты. Генерация ИИ здесь не запускается.",videoCartError:"Выберите этот формат во вкладке PRO.",
     videoFreeHold:"Бесплатный лимит сейчас недоступен. Проверьте стоимость в кредитах во вкладке PRO.",
     videoSetup:"Завершите настройки во вкладке PRO, затем создайте видео.",videoIdeas:"Другие идеи для этого видео",
     verifying:"Проверяем воспроизведение на устройстве…",failed:"Пока нет проверенного готового видео.",
@@ -107,7 +109,7 @@ const COPY={
     videoChooseTitle:"Elige una opción de vídeo",videoChooseHint:"Elige el formato y pulsa «Generar vídeo».",
     videoBasic:"Vídeo básico",videoBasicHint:"Vídeo de calidad de nuestra biblioteca.",videoPhoto:"Foto animada",videoPhotoHint:"Tu foto o personaje con movimiento suave.",
     videoCharacter:"Vídeo con personaje",videoCharacterHint:"Historia animada personalizada con personaje.",videoFree:"GRATIS",
-    videoGenerate:"Generar vídeo",videoPaidHold:"La opción de %price% aún no está disponible. No se ha cobrado ni iniciado ninguna generación de pago.",
+    videoGenerate:"Generar vídeo",videoCartAction:"Añadir al carrito",videoPaidInfo:"El pedido se confirma manualmente tras verificar el pago. No se inicia ninguna generación de IA.",videoCartError:"Selecciona este formato en PRO.",
     videoFreeHold:"La cuota gratuita no está disponible. Consulta el coste en créditos en PRO.",
     videoSetup:"Completa la configuración en PRO y genera el vídeo.",videoIdeas:"Más ideas para este vídeo",
     verifying:"Verificando el vídeo en tu dispositivo…",failed:"Aún no hay un vídeo reproducible verificado.",
@@ -145,6 +147,7 @@ export function MandalaVideoReady({
   onGenerateBasicVideo,basicFreeAvailable
 }:Props){
   const t=COPY[locale];
+  const router=useRouter();
   const [view,setView]=useState<View>("home");
   const [videoTier,setVideoTier]=useState<VideoTier>("basic");
   const [videoGenerationNotice,setVideoGenerationNotice]=useState("");
@@ -293,7 +296,17 @@ export function MandalaVideoReady({
   function generateSelectedVideo(){
     if(disabled||checking)return;
     if(videoTier!=="basic"){
-      setVideoGenerationNotice(t.videoPaidHold.replace("%price%",videoTier==="photo"?"€3":"€5"));
+      // Keep exactly the same fixed-SKU manual checkout as PRO; no provider render or paid-state mutation.
+      const id=videoTier==="photo"?"video-extra":"video-pro";
+      const selection=createVideoCartSelection(id);
+      if(!selection){setVideoGenerationNotice(t.videoCartError);return;}
+      try{
+        window.sessionStorage.setItem(VIDEO_CART_STORAGE_KEY,JSON.stringify(selection));
+        window.dispatchEvent(new Event(SERVICE_CART_UPDATED_EVENT));
+      }catch{
+        // The cart restores the fixed SKU from the URL when session storage is blocked.
+      }
+      router.push("/"+locale+"/cart?video="+id);
       return;
     }
     if(!basicFreeAvailable){
@@ -363,8 +376,11 @@ export function MandalaVideoReady({
         </div>
         <button type="button" className={css.primary} disabled={disabled||checking}
           onClick={generateSelectedVideo} data-ready-generate>
-          <Play size={19} aria-hidden="true"/>{t.videoGenerate}<ArrowRight size={18} aria-hidden="true"/>
+          <Play size={19} aria-hidden="true"/>{videoTier==="basic"?t.videoGenerate:t.videoCartAction}<ArrowRight size={18} aria-hidden="true"/>
         </button>
+        {videoTier!=="basic"?<p className={css.note} data-ready-video-payment-disclosure>
+          <ShieldCheck size={17} aria-hidden="true"/>{t.videoPaidInfo}
+        </p>:null}
         {videoGenerationNotice?<p className={css.tierNotice} role="status"
           data-ready-video-tier-notice>{videoGenerationNotice}</p>:null}
         {videoGenerationNotice&&videoTier==="basic"?<button type="button"

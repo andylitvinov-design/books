@@ -99,7 +99,15 @@ for (const engine of [chromium, webkit]) {
         const docWidth = await page.evaluate(() => document.documentElement.scrollWidth);
         assert.ok(docWidth <= width + 2, label + " document must not overflow horizontally");
         const capture = screens.last();
-        const messenger=capture.locator('[data-messenger-only-contact]');
+        const messengerBlocks=capture.locator('[data-messenger-only-contact]');
+        assert.equal(await messengerBlocks.count(),2,
+          label+" primary messenger card plus secondary user-opened request");
+        const messenger=messengerBlocks.first();
+        const secondaryMessenger=messengerBlocks.nth(1);
+        assert.equal(await secondaryMessenger.evaluate(node=>{
+          const details=node.closest("details");
+          return Boolean(details && !details.open);
+        }),true,label+" secondary contact remains behind its deliberate disclosure");
         await messenger.waitFor({state:"visible",timeout:20000});
         const details=messenger.locator('details');
         if(await details.count()&&await details.getAttribute('open')===null)
