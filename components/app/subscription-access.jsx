@@ -243,15 +243,20 @@ function PlanSelection({ t }) {
   return <div className={styles.planSelection} data-announced-packages>
     <fieldset className={styles.planFieldset}>
       <legend>{t.choosePlan}</legend>
-      <div className={styles.planGrid}>{announced.map(({ key, amount }) => <label key={key}
+      <div className={styles.planGrid}>{announced.map(({ key, amount }) => {
+        const descriptionId = groupId + '-' + key
+        return <label key={key}
         className={styles.planCard} data-selected={planId === key}>
         <span className={styles.planHeading}>
           <input type="radio" name={groupId} value={key} checked={planId === key}
+            aria-labelledby={descriptionId + '-name ' + descriptionId + '-price'}
+            aria-describedby={descriptionId}
             onChange={() => setPlanId(key)} />
-          <span className={styles.planName}>{key.charAt(0).toUpperCase() + key.slice(1)}</span>
-          <span className={styles.planPrice}>€{amount} / {t.month}</span>
+          <span id={descriptionId + '-name'} className={styles.planName}>{key.charAt(0).toUpperCase() + key.slice(1)}</span>
+          <span id={descriptionId + '-price'} className={styles.planPrice}>€{amount} / {t.month}</span>
         </span>
-      </label>)}</div>
+        <span id={descriptionId} className={styles.srOnly}>{key === 'free' ? t.freeSelected : t.newPricingNotice}</span>
+      </label>})}</div>
     </fieldset>
     <p className={styles.notice} role="status">{t.newPricingNotice}</p>
     {planId === 'free' && <p className={styles.fine}>{t.freeSelected}</p>}
