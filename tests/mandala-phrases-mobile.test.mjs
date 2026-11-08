@@ -209,8 +209,9 @@ test("Safari fine-tuning uses one accessible button and a stable hidden region",
   ])assert.ok(phrases.includes(part),part);
   assert.ok(!phrases.includes("<details className={css.ideaDisclosure}"));
   assert.ok(css.includes(".overview .ideaDisclosure>.card[hidden]{display:none!important}"));
-  assert.ok(browser.includes("await expect(ideaToggle).toHaveAttribute(\"aria-expanded\",\"true\")"));
-  assert.ok(browser.includes("await expect(intentDetails.locator('[data-hypno-request]')).toBeVisible()"));
+  assert.ok(browser.includes("await expect(intentDetails).toBeHidden()"),
+    "personal-intent editor is kept in the Personalization tab, outside voice-only mode");
+  assert.ok(browser.includes("await expect(phrases.locator('[data-video-ideas-personalization-panel]')).toBeVisible()"));
 });
 
 test("choosing Ready discards stale idea and approval clears Wave drafts",()=>{
