@@ -73,8 +73,9 @@ test("Three short prompts are labeled in EN/RU/ES",()=>{
 test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the real visible route",()=>{
   assert.match(studio,/const continueToIdeas = \(\) => \{[\s\S]*?setActiveWorkspace\("phrases"\)/);
   assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{continueToIdeas\}/);
-  for(const text of ["Далее к идеям","Continuar a ideas","Continue to ideas"])
+  for(const text of ["Перейти к персонализации","Continuar a personalización","Proceed to personalization"])
     assert.ok(studio.includes(text),text);
+  assert.match(studio,/data-video-stage-generate="goal"[\s\S]*?onClick=\{generateFromGoal\}/);
   assert.match(studio,/const openVideoScenarioStep = \(\) => \{[\s\S]*?setVideoScenarioOpen\(true\);[\s\S]*?setShowAdvancedVideo\(true\);[\s\S]*?setActiveWorkspace\("video"\)/);
   assert.match(studio,/onAddVideo=\{\(\)=>\{[\s\S]*?openVideoScenarioStep\(\);/);
   assert.match(studio,/"video-director-chat":"video"/);
