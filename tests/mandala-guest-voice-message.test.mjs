@@ -55,7 +55,7 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit follows Goal 1 → Goal 2 → Ideas → Montage with native clicks",()=>{
+test("macOS WebKit follows Goal 1 → Goal 2 → Ideas → Montage without hidden actions",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const style=read("components/mandala-video-mobile.module.css");
@@ -74,15 +74,22 @@ test("macOS WebKit follows Goal 1 → Goal 2 → Ideas → Montage with native c
  const verify=flow.indexOf('await expect(refineToggle).toHaveAttribute("aria-expanded","true")',open);
  const montage=flow.indexOf("await montage.tap()",verify);
  assert.ok(first>=0&&last>first&&click>=0&&goal>click&&goalNext>goal&&ideas>goalNext&&refinement>ideas&&toggle>refinement&&conditional>toggle&&closed>conditional&&open>closed&&verify>open&&montage>verify,
-   "native Goal 1 → Goal 2 → Ideas refinement → Montage, no fake shortcut");
+   "native Goal 1 → Goal 2 → Ideas refinement → Montage; no hidden shortcut");
  assert.match(flow,/data-video-continue-scenarios/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/onClick=\{recipientAudioSelected\?continueToIdeas:openGoalClarification\}/);
- assert.match(studio,/recipientAudioSelected[\s\S]*?Continue to montage/);
+ assert.match(studio,/data-video-goal-page=\{goalPage\}/);
+ assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{openGoalClarification\}/);
+ assert.match(studio,/data-video-stage-generate="goal"[\s\S]*?onClick=\{generateFromGoal\}/);
  assert.match(studio,/onContinue=\{continueToIdeas\}/);
- assert.match(style,/\[data-video-scenario-open="false"\]/);
+ assert.match(style,/\[data-video-goal-page="clarify"\]/);
+ assert.ok(flow.includes('const styleTab=page.locator(\'[data-video-montage-tab="effects"]\')'));
+ assert.ok(flow.includes('await styleTab.tap()'));
+ assert.ok(flow.includes('const styles=page.locator("[data-video-montage-style]")'));
+ assert.ok(flow.includes('await expect(styles).toHaveCount(6)'));
+ assert.ok(flow.includes('await minimal.tap()'));
+ assert.ok(flow.includes('await expect(minimal).toHaveAttribute("aria-pressed","true")'));
 });
 
 test("macOS WebKit exercises explicit accessible adult consent and revocation",()=>{
@@ -134,17 +141,38 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  // audio/voice shortcut is clicked. A CSS-hidden summary is never clicked.
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const voiceTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',modes);
- const textTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',voiceTab);
+ const myVoiceTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="my-voice"]\').click()',voiceTab);
+ const textTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',myVoiceTab);
  const recordEntry=browser.indexOf("const recordEntry=phrases.locator",textTab);
  const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',recordEntry);
  const visible=browser.indexOf("await expect(recordEntry).toBeVisible",hidden);
  const tapped=browser.indexOf("await recordEntry.click()",visible);
  const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tapped);
- const details=browser.indexOf('await intentDetails.locator(":scope > summary").click()',opened);
- const options=browser.indexOf("await expect(advancedVoice.locator",details);
- assert.ok(modes>=0&&voiceTab>modes&&textTab>voiceTab&&recordEntry>textTab&&
-   hidden>recordEntry&&visible>hidden&&tapped>visible&&opened>tapped&&details>opened&&options>details,
-   "WebKit must use real Ideas Text/Voice, Record click and Hypno summary");
+ const ownMode=browser.indexOf('await expect(phrases).toHaveAttribute("data-ideas-active-tab","my-voice"',opened);
+ const returnText=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',ownMode);
+ const advancedText=browser.indexOf("const advancedText=phrases.locator",returnText);
+ const textOpened=browser.indexOf("await advancedText.click()",advancedText);
+ const ideaToggle=browser.indexOf("const ideaToggle=intentDetails.locator('[data-hypno-idea-toggle]')",textOpened);
+ const ideaClick=browser.indexOf("await ideaToggle.click()",ideaToggle);
+ const ideaExpanded=browser.indexOf('await expect(ideaToggle).toHaveAttribute("aria-expanded","true")',ideaClick);
+ const options=browser.indexOf("await expect(advancedVoice.locator",ideaExpanded);
+ assert.ok(modes>=0&&voiceTab>modes&&myVoiceTab>voiceTab&&textTab>myVoiceTab&&
+   recordEntry>textTab&&hidden>recordEntry&&visible>hidden&&tapped>visible&&
+   opened>tapped&&ownMode>opened&&returnText>ownMode&&advancedText>returnText&&
+   textOpened>advancedText&&ideaToggle>textOpened&&ideaClick>ideaToggle&&
+   ideaExpanded>ideaClick&&options>ideaExpanded,
+   "WebKit must visit Text, Voice and My Voice, then open the real Text disclosure by user taps");
+ const hypno=read("components/mandala-hypno-compact.tsx");
+ assert.ok(hypno.includes('data-hypno-idea-toggle')&&hypno.includes('aria-expanded={ideaDisclosureOpen}'),
+   "the fine-tuning control must remain a real accessible disclosure button");
+ assert.ok(hypno.includes('useEffect(()=>{if(autoExpandIdea)setIdeaDisclosureOpen(true);},[autoExpandIdea])'),
+   "the Text Advanced user action must restore the fine-tuning panel after Safari remount");
+ assert.ok(studio.includes('autoExpandIdea={activeWorkspace==="phrases"&&ideasSubtab==="text"&&ideasVoiceAdvancedOpen}'),
+   "only Text's explicit Advanced action auto-opens fine-tuning; Voice and My Voice stay compact");
+ assert.ok(!studio.includes('document.querySelector<HTMLDetailsElement>("[data-hypno-idea-details]")'),
+   "Personalize must not write to a removed native details control");
+ assert.ok(!studio.includes('document.querySelector<HTMLButtonElement>("[data-hypno-suggest-tests]")?.click()'),
+   "opening settings must not synthesize a hidden click or fetch private tests");
  assert.ok(browser.includes('data-video-ideas-own-upload'),"own audio upload remains available");
  assert.ok(!browser.includes('await advancedVoice.locator(":scope > summary").click()'),
   "hidden summary interaction is not an acceptable visitor path");
@@ -154,4 +182,67 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(css.includes('[data-video-legacy-phrase-editor]:not([hidden])'),"opt-in advanced editor not hidden by retired CSS");
  assert.ok(css.includes('[data-video-phrase-audio-shortcut]'),"audio shortcut remains visible");
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
+});
+
+test("macOS WebKit reaches real Create through visible Style → Audio and keeps MP4 + voice acceptance",()=>{
+ const flow=read("scripts/verify-affirmation-voice-browser.mjs");
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const css=read("components/mandala-video-mobile.module.css");
+ const start=flow.indexOf('phase(engine,"hypno-audio-effects-rendered")');
+ const finish=flow.indexOf('phase(engine,"start-media-recorder")',start);
+ assert.ok(start>0&&finish>start);
+ const journey=flow.slice(start,finish);
+ let last=-1;
+ for(const action of [
+   'await page.locator(\'[data-video-quick-control="editor"]\').click()',
+   'const creationStyleTab=page.locator(\'[data-video-montage-tab="effects"]\')',
+   'await expect(creationStyleTab).toBeVisible',
+   'await creationStyleTab.click()',
+   'await expect(creationStyleTab).toHaveAttribute("aria-pressed","true")',
+   'const montageAudioTab=page.locator(\'[data-video-montage-tab="audio"]\')',
+   'await montageAudioTab.click()',
+   'await expect(montageAudioTab).toHaveAttribute("aria-pressed","true")',
+   'const generate=page.locator("[data-video-quick-generate]")',
+   'await expect(generate).toBeVisible',
+   'await expect(generate).toBeEnabled'
+
+ ]){
+   const at=journey.indexOf(action,last+1);
+   assert.ok(at>last,action+" follows the real visitor path");
+   last=at;
+ }
+ assert.match(studio,/data-video-montage-next=\{montagePanel==="effects"\?"audio":"hypno"\}/);
+ assert.match(studio,/data-video-quick-generate[\s\S]*?onClick=\{createQuickVideo\}/);
+ assert.match(studio,/const continueMontageOrGenerate=\(\)=>/);
+ assert.match(css,/\[data-montage-panel="effects"\] \[data-video-order-bar\]\{display:none!important\}/);
+ assert.doesNotMatch(journey,/\.click\(\{\s*force:\s*true/);
+ assert.ok(flow.includes('const output=page.locator("[data-mandala-video-download]")'));
+ assert.ok(flow.includes('await generate.click()'));
+});
+
+test("macOS consent acceptance requires real meditation opt-out without WebKit RAF waits",()=>{
+ const browser=read("scripts/verify-practices-mobile-browser.mjs");
+ const guided=read("components/mandala-guided-course.tsx");
+ const stage=read("components/mandala-free-video-studio.tsx");
+ const begin=browser.indexOf('const skipButton=course.locator("[data-guided-skip-meditation]")');
+ const end=browser.indexOf('await programmeButton.click()',begin);
+ assert.ok(begin>0&&end>begin);
+ const flow=browser.slice(begin,end);
+ for(const step of [
+   "await skipButton.click();",
+   'await expect(skipButton).toHaveAttribute("aria-pressed","true"',
+   'await expect(audio).not.toHaveAttribute("open",""',
+   'node instanceof HTMLDetailsElement ? node.open : null',
+   ').toBe(false);',
+   'assert.equal(await audio.getAttribute("open"),null',
+   'assert.equal(await skipButton.getAttribute("aria-pressed"),"true")'
+ ])assert.ok(flow.includes(step),step);
+ assert.doesNotMatch(flow,/page\.waitForFunction|force:\s*true|\.evaluate\([^]*?\.open\s*=/,
+    "do not bypass the visitor action or trust suspended RAF polling");
+ assert.match(guided,/data-guided-skip-meditation[\s\S]*?flushSync\(\(\)=>setMeditationChoice\("omit"\)\);[\s\S]*?onOmitMeditation\?\.\(\)/);
+ assert.match(stage,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationOmitted\(true\)/);
+ assert.match(browser,/await consentLabel\.click\(\)/,
+    "the actual consent label must still receive a real click");
+ assert.match(browser,/await expect\(consentBox\)\.toBeChecked/);
+ assert.match(browser,/await expect\(send\)\.toBeEnabled/);
 });

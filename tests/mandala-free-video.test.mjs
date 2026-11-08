@@ -200,7 +200,11 @@ test("AI Video Create acknowledges only an actually accepted local render prefli
   assert.ok(start.includes("if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current||photoPending)return false;"),
     "never start a new render while a source photo is decoding or an encoder is active");
   assert.doesNotMatch(start,/\breturn\s*;/);
-  assert.match(start,/if\(!canGenerate\)return false;\s*void createVideo\(\);\s*return true;/);
+  assert.ok(start.includes("if(!canGenerate){"),"a blocked Create must explain why");
+   assert.ok(start.includes('setNotice("")'),"successful Create clears the previous error notice");
+   assert.ok(start.indexOf("if(!canGenerate){")<start.indexOf("void createVideo()"),
+     "the encoder still starts only after readiness checks");
+   assert.ok(start.includes("return true;"),"the acknowledged local video render remains unchanged");
   assert.match(quick,/if\(narrationInvalid\)[\s\S]*?return false;/);
   assert.match(quick,/return startFromHero\(\);/);
   assert.doesNotMatch(quick,/startFromHero\(\);\s*return true;/);

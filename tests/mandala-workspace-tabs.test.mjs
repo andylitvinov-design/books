@@ -75,7 +75,7 @@ function exercise(input,workspace,overrides={}){
  assert.ok(handler);
  const js=ts.transpileModule('const startFromHero='+handler.getText(ast)+';startFromHero();',{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
  let active=workspace,queued=workspace,basicTab=null,renders=0,picks=0;const cover={open:false},frames=[],scrolls=[],notices=[];
- const state={recording:false,preparing:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
+ const state={recording:false,preparing:false,hypnoAudioBusy:false,photoPending:false,phrasePending:false,narrationInvalid:false,locale:'ru',photoUrl:'blob:synthetic',backgroundOnly:false,photoConsent:false,audioNeedsAttachment:false,uploadedAudio:null,audioRights:false,source:'synthetic',...overrides};
  // Models only the source-defined workspace/display and native-details state,
  // not pixels or a real browser. React state commits at the frame boundary.
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
@@ -130,17 +130,18 @@ test("Video opens as the only active workspace, advanced first-video remains acc
   assert.match(studio,/<MandalaGuidedCourse/);
   assert.match(studio,/data-video-audio-attach/);
 });
-test("published informational YouTube no longer overlays the original Canvas hero",()=>{
+test("approved Intro/My rail uses only one main video hero and local Canvas",()=>{
   const nav=studio.indexOf('<nav className={videoStyles.quickVideoNav}');
   const start=studio.indexOf('id="video-hero"');
-  const finish=studio.indexOf('{/* Show the introductory film separately',start);
-  assert.ok(nav>0&&start>nav&&finish>start,
-    "tabs precede the Canvas; the informational YouTube overlay follows it");
-  assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
-  assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
-  assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);
-  assert.match(studio,/const activateQuickWorkspace=[\s\S]{0,220}setActiveWorkspace\(id\);[\s\S]{0,130}setIntroPlaying\(false\);[\s\S]{0,90}setStudioMode\("pump"\)/);
+  const rail=studio.indexOf('data-video-intro-my-rail',start);
+  assert.ok(nav>0&&start>nav&&rail>start,"six tabs precede the original Canvas and Intro/My rail");
+  assert.match(studio.slice(start,rail),/data-video-therapy-intro="ready"/);
+  assert.match(studio.slice(start,rail),/data-video-preview-toggle/);
+  assert.match(studio,/const showIntroHero =/);
+  assert.match(studio,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+  assert.equal((studio.match(/data-video-therapy-info/g)||[]).length,1);
+  assert.doesNotMatch(studio,/therapyIntroStandalone|therapyIntroOverlay/);
 });
 test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
   assert.match(css,/grid-auto-columns:minmax\(188px,49%\)/);
@@ -202,7 +203,7 @@ test("pending Phrases selection blocks the actual shared hero handler in every w
   for(const workspace of workspaces){
     const state=exercise(source,workspace,{phrasePending:true,photoConsent:true});
     assert.equal(state.renders,0,"cannot export the old approved words");
-    assert.equal(state.workspace,"phrases","visitor is sent to the approval tab");
+    assert.equal(state.workspace,workspace,"a failed export must not jump to Voice");
     assert.ok(state.notices.some(note=>note.includes("Сначала утвердите фразы")));
   }
 });
@@ -340,4 +341,20 @@ test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>
   assert.match(browser,/MONTAGE_MUST_START_WITH_AUTO_CONCEPT/);
   assert.match(browser,/GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION/);
   assert.match(browser,/CONCEPT_TEXT_TOOLS_DID_NOT_OPEN/);
+});
+
+// Owner-approved UX: direct export and advancing to effects are independent.
+test("the video studio exposes two independent actions on every stage",()=>{
+ const ideas=readFileSync(new URL("../components/mandala-video-ideas.tsx",import.meta.url),"utf8");
+ const hypno=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
+ for(const name of ["goal","montage"])assert.ok(studio.includes('data-video-stage-actions="'+name+'"'));
+ assert.ok(studio.includes('data-video-stage-generate="goal"'));
+ assert.ok(studio.includes('data-video-continue-scenarios'));
+ assert.ok(studio.includes('data-video-quick-generate'));
+ assert.ok(studio.includes('onClick={continueMontageOrGenerate}'));
+ assert.ok(ideas.includes('data-video-ideas-generate'));
+ assert.ok(ideas.includes('data-video-ideas-create'));
+ assert.ok(hypno.includes('data-hypno-create'));
+ assert.ok(hypno.includes('data-hypno-add-effects'));
+ assert.ok(!studio.includes('generateWithoutHypnoEffects'));
 });

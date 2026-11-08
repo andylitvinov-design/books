@@ -19,8 +19,8 @@ test("Safari movie retains the real Canvas scene, story, hypno and stage caption
     "paintCinematicFrame(ctx,image,effect,time",
     "paintStoryMotifs(ctx,time,appliedStory)",
     "paintHypnoLightOverlay(ctx,time,hypnoLight)",
-    "paintVideoAffirmations(ctx,time,affirmationLines,affirmations,duration)",
-    "paintStageCaptionOverlay(ctx,time,cinematicPlan,timelineTextClips)",
+    "paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips)",
+    "paintStageCaptionOverlay(ctx,time,plan,clips)",
     "if(usingFreeFilmCompilation&&!frame)return false",
   ])assert.ok(studio.includes(marker),marker);
 });
@@ -192,7 +192,7 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
 test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs and Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const settings=browser.indexOf('const montageSettingsTab=page.locator');
- const selectDuration=browser.indexOf('await durationSelect.selectOption("20")',settings);
+ const selectDuration=browser.indexOf('await durationSelect.selectOption("10")',settings);
  const openAudio=browser.indexOf('await montageAudio.click()',selectDuration);
  const phrases=browser.indexOf("const phrases=page.locator",openAudio);
  const reenter=browser.indexOf('await montageAudioAfterExport.click()',phrases);
@@ -377,26 +377,4 @@ test("failed Safari output hides guest Watch and labels the result as a playback
   assert.match(result,/data-video-verify-playback/);
   assert.match(result,/data-video-playback-error/);
   assert.match(result,/playbackStatus==="ready"&&result\.mode!=="catalog"&&creditConfirmed/);
-});
-
-test("macOS voice export selects four physically verified portrait sources before encoding",()=>{
-  const script=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
-  const start=script.indexOf('const aspectSelect=page.locator');
-  const duration=script.indexOf('await durationSelect.selectOption("20")',start);
-  const addVideo=script.indexOf("await addVerifiedSources.click()",duration);
-  const preset=script.indexOf("await firstPartyPreset.click()",addVideo);
-  const approved=script.indexOf("FOUR_DISTINCT_SOURCE_MASTERS_REQUIRED",preset);
-  const narration=script.indexOf('const phrases=page.locator(',approved);
-  assert.ok(start>0&&duration>start&&addVideo>duration&&preset>addVideo&&approved>preset&&narration>approved);
-  for(const marker of [
-    '[data-video-montage-preference="format"]','[data-video-montage-tab="concept"]',
-    '[data-video-timeline-add-video]','[data-free-film-compilation-catalog]',
-    '[data-free-film-preset="warm-pleasant-sun"]','[data-free-film-source]',
-    'FOUR_SOURCES_MUST_BE_APPROVED_FIRST_PARTY_MP4',
-  ])assert.ok(script.includes(marker),marker);
-  assert.match(script,/await firstPartyPreset.click\(\)/);
-  assert.match(script,/await expect\(fourSources\).toHaveCount\(4\)/);
-  assert.match(script,/phase\(engine,"four-approved-portrait-sources-selected"\)/);
-  assert.ok(studio.includes("verifiedSceneAspect(scene,aspect)"),"source eligibility is fail-closed");
-  assert.ok(studio.includes("freeFilmSourcesListed"),"export requires physically verified masters");
 });

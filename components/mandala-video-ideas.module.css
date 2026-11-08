@@ -106,3 +106,11 @@
 :global([data-mandala-mode="video"]) .phraseHeader h3{
   color:var(--hh-studio-forest,#14523F)
 }
+
+/* Independent actual video render vs. optional effects continuation. */
+.stageActions{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;margin-top:10px}
+.stageActions .create,.stageActions .addEffects{display:flex;align-items:center;justify-content:center;gap:9px;min-height:50px;width:100%;padding:9px 12px;border-radius:15px;font:800 clamp(14px,3.7vw,17px)/1.2 Arial,sans-serif;text-align:center}
+.stageActions .addEffects{border:1px solid #aed3c5;background:#fffdf7;color:#146b53}
+.stageActions button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.stageActions button:disabled{opacity:.55;cursor:not-allowed}
+.stageStatus{margin:7px 0!important;padding:10px 12px;border:1px solid #e5d6b7;border-radius:12px;background:#fff8e9;color:#594d32;font-size:13px;line-height:1.35}

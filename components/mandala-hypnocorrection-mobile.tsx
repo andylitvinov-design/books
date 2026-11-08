@@ -38,7 +38,7 @@ type Props = {
   onPickPhoto: () => void;
   onRemovePhoto: () => void;
   onCreate: () => void;
-  onCreateWithoutEffects: () => void;
+  status?: string;
   onWavePreset: () => void;
   hasPhoto: boolean;
   hasVoiceFile: boolean;
@@ -48,7 +48,7 @@ type Props = {
 
 const copy = {
   ru: {
-    title:"Гипноэффекты для вашего видео",sub:"Выберите визуальные или аудиоэффекты",phraseTab:"Фразы",visualTab:"Визуальные",audioTab:"Аудиоэффекты",applyCreate:"Применить гипноэффекты и создать видео",withoutCreate:"Создать видео без эффектов",chooseScenes:"Выбрать сцены",choosePhoto:"Выбрать фото",
+    title:"Гипноэффекты для вашего видео",sub:"Выберите визуальные или аудиоэффекты",phraseTab:"Фразы",visualTab:"Визуальные",audioTab:"Аудиоэффекты",applyCreate:"Создать видео",withoutCreate:"Добавить эффекты",chooseScenes:"Выбрать сцены",choosePhoto:"Выбрать фото",
     wave:"Быстрая настройка с Wave",waveHelp:"Подберёт мягкие эффекты по вашей цели",try:"Попробовать",
     suggested:"Предложен мягкий световой ритм и видимые фразы. Измените любой пункт или отключите его.",
     phrases:"Установки и внушения",phrasesHelp:"Слова поддержки и настройки",
@@ -77,7 +77,7 @@ const copy = {
     preview:"Проверить в основном видео",privacy:"Бесплатные эффекты выполняются локально. Персональные файлы не отправляются стороннему ИИ.",
   },
   en: {
-    title:"Hypno effects for your video",sub:"Choose visual or audio effects to personalize your video.",phraseTab:"Phrases",visualTab:"Visual effects",audioTab:"Audio effects",applyCreate:"Apply HypnoEffects and Generate Video",withoutCreate:"Generate Video without effects",chooseScenes:"Choose scenes",choosePhoto:"Choose photo",
+    title:"Hypno effects for your video",sub:"Choose visual or audio effects to personalize your video.",phraseTab:"Phrases",visualTab:"Visual effects",audioTab:"Audio effects",applyCreate:"Generate Video",withoutCreate:"Add Effects",chooseScenes:"Choose scenes",choosePhoto:"Choose photo",
     wave:"Quick setup with Wave",waveHelp:"Suggests suitable effects based on your goal",try:"Try it",
     suggested:"Gentle light waves and visible phrases suggested. You can edit or disable any effect.",
     phrases:"Phrases and suggestions",phrasesHelp:"Supportive words and timing",
@@ -106,7 +106,7 @@ const copy = {
     preview:"Preview in main video",privacy:"Free effects run on your device. Personal files are not sent to third-party AI.",
   },
   es: {
-    title:"Efectos hipnóticos para tu vídeo",sub:"Elige efectos visuales o de audio para tu vídeo.",phraseTab:"Frases",visualTab:"Visuales",audioTab:"Efectos de audio",applyCreate:"Aplicar efectos y generar vídeo",withoutCreate:"Generar vídeo sin efectos",chooseScenes:"Elegir escenas",choosePhoto:"Elegir foto",
+    title:"Efectos hipnóticos para tu vídeo",sub:"Elige efectos visuales o de audio para tu vídeo.",phraseTab:"Frases",visualTab:"Visuales",audioTab:"Efectos de audio",applyCreate:"Generar vídeo",withoutCreate:"Añadir efectos",chooseScenes:"Elegir escenas",choosePhoto:"Elegir foto",
     wave:"Ajuste rápido con Wave",waveHelp:"Sugiere efectos adecuados según tu objetivo",try:"Probar",
     suggested:"Se sugieren ondas de luz suaves y frases visibles. Puedes cambiar o desactivar todo.",
     phrases:"Frases y sugerencias",phrasesHelp:"Palabras de apoyo y ritmo",
@@ -172,7 +172,7 @@ function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailab
 export function MandalaHypnocorrectionMobile({
   locale,disabled,affirmations,onAffirmationsChange,light,onLightChange,
   onOpenPhraseEditor,onOpenScenes,
-  onPickPhoto,onRemovePhoto,onCreate,onCreateWithoutEffects,onWavePreset,hasPhoto,hasVoiceFile,voiceActive,posters,
+  onPickPhoto,onRemovePhoto,onCreate,status,onWavePreset,hasPhoto,hasVoiceFile,voiceActive,posters,
   voiceEditor,whisperEnabled,binauralEnabled,beatHz,repeatEverySeconds,whisperGain,audioEffectBusy,
   onToggleVoice,onToggleWhisper,onToggleBinaural,onBeatHzChange,onRepeatEveryChange,onWhisperGainChange,
 }:Props) {
@@ -332,11 +332,13 @@ export function MandalaHypnocorrectionMobile({
       <button type="button" data-hypno-create className={styles.create} disabled={disabled} onClick={onCreate}>
         <Sparkles size={23} aria-hidden="true"/><strong>{t.applyCreate}</strong><ArrowRight size={21} aria-hidden="true"/>
       </button>
-      <button type="button" data-hypno-without-effects className={styles.withoutEffects}
-        disabled={disabled} onClick={onCreateWithoutEffects}>
+      <button type="button" data-hypno-add-effects className={styles.withoutEffects}
+        disabled={disabled} aria-controls={"hypno-group-"+(activeGroup==="visual"?"audio":"visual")}
+        onClick={()=>setActiveGroup(activeGroup==="visual"?"audio":"visual")}>
         <Play size={20} aria-hidden="true"/><strong>{t.withoutCreate}</strong>
       </button>
     </div>
+    {status?<p className={styles.note} role="status" aria-live="polite" data-hypno-generate-status>{status}</p>:null}
     <p className={styles.privacy}>{t.privacy}</p>
   </section>;
 }

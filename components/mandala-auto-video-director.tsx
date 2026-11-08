@@ -973,7 +973,7 @@ export function MandalaAutoVideoDirector({
        </button>)}
      </div>
      {subcategoriesOpen?<div className={css.subcategories} data-auto-video-subcategories>
-       <p className={css.popularHeading} data-video-goal-category-title>{locale==="ru"?"2. Выберите категорию видео":locale==="es"?"2. Elige una categoría de vídeo":"2. Choose a video category"}</p>
+       <p className={css.popularHeading} data-video-goal-category-title>{locale==="ru"?"2. Выберите подкатегорию":locale==="es"?"2. Elige una subcategoría":"2. Choose a subcategory"}</p>
        <div className={css.topicChoices} role="group" data-mytube-subcategories
          aria-label={locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
          {taxonomySubcategories.map(item=><button type="button" key={item.id}
@@ -1041,7 +1041,7 @@ export function MandalaAutoVideoDirector({
  const visibleQuickTopicIds=[...new Set([
    ...(selectedSubcategoryId?taxonomyTopics.map(item=>item.id):[]),
    ...goalTopicIds[selectedCategoryId]
-  ])].slice(0,9);
+  ])].slice(0,6);
  const quickTopicPanel=videoAudience==="others"
   ?<div className={css.recipientTopicSummary} data-video-optional-topic-field data-video-recipient-topic-summary>
      <span>{locale==="ru"?"2. Тема видео":locale==="es"?"2. Tema":"2. Video topic"}</span>

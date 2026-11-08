@@ -1,67 +1,68 @@
 import assert from "node:assert/strict";
-import {existsSync,readFileSync} from "node:fs";
+import {readFileSync} from "node:fs";
 import test from "node:test";
+
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const view=readFileSync(new URL("../components/mandala-pro-enhance.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-pro-enhance.module.css",import.meta.url),"utf8");
-const pageCss=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
-const catalog=readFileSync(new URL("../components/mandala-stories-characters.tsx",import.meta.url),"utf8");
 
-test("approved compact iPhone PRO contains 2×3 upgrades, short nav and add-on rail",()=>{
-  const featureList=view.split("const cards=[")[1]?.split("] as const;")[0]||"";
-  const features=[...featureList.matchAll(/\{id:"([^"]+)",Icon:/g)].map(match=>match[1]);
-  assert.deepEqual(features,["greeting","cinema","place","home","director","quality"]);
-  const addList=view.split("const additions=[")[1]?.split("] as const;")[0]||"";
-  const additions=[...addList.matchAll(/\{id:"([^"]+)",Icon:/g)].map(match=>match[1]);
-  assert.deepEqual(additions,["scenes","characters","cinema","places","homes","audio"]);
-  for(const phrase of ["PRO-монтаж и улучшение","Приветствие персонажа","Киносцена (портал)",
-    "Место силы","Дом (уютное пространство)","AI-режиссёр","Качество",
-    "Добавить в видео","Перейти к монтажу"]) assert.ok(view.includes(phrase),phrase);
-  assert.match(view,/data-video-pro-shortcuts/);
-  assert.match(view,/data-video-pro-feature-grid/);
-  assert.match(view,/data-video-pro-add-panel/);
-  assert.match(css,/\.grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(css,/\.top\{display:grid;grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
-  assert.match(css,/@media\(max-width:355px\)/);
+test("PRO offers exactly three accessible priced tabs rather than six unrelated tool tiles",()=>{
+ const items=view.split('const tiers=[')[1]?.split('] as const;')[0]||"";
+ assert.deepEqual([...items.matchAll(/"(standard|extra|pro)"/g)].map(match=>match[1]),["standard","extra","pro"]);
+ assert.match(view,/role="tablist"/);
+ assert.match(view,/role="tab"/);
+ assert.match(view,/aria-selected=\{tier===item\}/);
+ assert.match(view,/role="tabpanel"/);
+ assert.match(view,/data-video-pro-tier-panel=\{tier\}/);
+ assert.match(view,/€3/);
+ assert.match(view,/€5/);
+ assert.doesNotMatch(view,/data-video-pro-shortcuts|data-pro-shortcut|data-video-pro-feature-grid/);
 });
 
-test("PRO selections lead to existing catalog or Montage, not fictitious video generation",()=>{
-  assert.equal((view.match(/data-video-pro-to-montage/g)||[]).length,1);
-  assert.match(view,/onClick=\{\(\)=>onGoToMontage\("effects"\)\}/);
-  assert.match(view,/onGoToMontage\("audio"\)/);
-  assert.match(view,/onChooseCatalog\(kind\)/);
-  assert.match(view,/data-video-pro-free-option/);
-  assert.match(view,/data-video-pro-paid-option/);
-  assert.match(view,/data-video-pro-unavailable/);
-  assert.match(studio,/onGenerateFree=\{createQuickVideo\}/);
-  assert.match(studio,/onChooseCatalog=\{setProCatalogKind\}/);
-  assert.match(studio,/onGoToMontage=\{panel=>/);
-  assert.match(catalog,/requestedKind\?:StoryAddonKind/);
-  assert.match(catalog,/useEffect\(\(\)=>\{if\(requestedKind\)setActive\(requestedKind\);\},\[requestedKind\]\)/);
-  assert.match(view,/data-video-generate-without-ai/);
-  assert.match(view,/data-video-generate-pro/);
-  assert.match(view,/onClick=\{onGenerateFree\}/);
-  assert.ok(view.includes("No payment or render was initiated."));
-  assert.doesNotMatch(view,/fetch\(|checkout|postVideoCreditAction|axios|apiKey/i);
-  assert.equal((studio.match(/data-video-mandala-hero/g)||[]).length,1);
-  assert.equal((studio.match(/<MandalaStoriesCharacters locale=/g)||[]).length,1);
-  assert.match(view,/data-video-pro-advanced-options/);
+test("Standard reuses the one existing real multitrack montage editor and guarded renderer",()=>{
+ assert.equal((studio.match(/<MandalaMultiTrackTimeline locale=\{locale\}/g)||[]).length,1);
+ assert.match(studio,/const sharedMontageTimeline = \(/);
+ assert.match(studio,/activeWorkspace==="editor" \? sharedMontageTimeline : null/);
+ assert.match(studio,/activeWorkspace==="pro"\?sharedMontageTimeline:null/);
+ assert.match(studio,/data-video-final-editor/);
+ assert.match(studio,/onMoveShot=\{moveTimelineShot\}/);
+ assert.match(studio,/onResizeShot=\{shiftFilmCut\}/);
+ assert.match(studio,/onSplitCaption=\{splitTimelineText\}/);
+ assert.match(studio,/onGenerateFree=\{createQuickVideo\}/);
+ assert.match(view,/onClick=\{onGenerateFree\}/);
+ assert.match(view,/disabled=\{disabled\|\|tier!=="standard"\}/);
+ assert.match(studio,/creditCatalog\?\.chargeRequired&&creditSession!=="guest"/);
 });
 
-test("hero/premium gallery are first-party artwork, preview/player remains original",()=>{
-  for(const filename of ["/images/holistic-house/pro-enhance-hero.webp",
-      "/images/holistic-house/pro-enhance-gallery.webp"]){
-    const path=new URL("../public"+filename,import.meta.url);
-    assert.ok(existsSync(path),filename);
-    const bytes=readFileSync(path);
-    assert.equal(bytes.toString("ascii",0,4),"RIFF",filename);
-    assert.equal(bytes.toString("ascii",8,12),"WEBP",filename);
-  }
-  assert.match(view,/backgroundPosition:item\.pos/);
-  assert.match(css,/background-size:300% 200%/);
-  assert.match(pageCss,/pro-enhance-hero\.webp/);
-  assert.match(pageCss,/data-active-workspace="pro"/);
-  assert.match(pageCss,/safe-area-inset-bottom,0px/);
-  assert.match(css,/min-height:57px/);
-  assert.match(css,/outline:3px solid #176e6e/);
+test("Extra reuses existing photo picker and catalog, PRO wish stays in same local Goal state",()=>{
+ assert.match(studio,/onPickPhoto=\{onPickPhoto\}/);
+ assert.match(view,/data-video-pro-upload-photo onClick=\{onPickPhoto\}/);
+ assert.match(view,/photoSelected/);
+ assert.match(view,/onChooseCatalog\("character"\)/);
+ assert.match(view,/data-video-pro-character-catalog/);
+ assert.match(studio,/<MandalaStoriesCharacters locale=\{locale\}/);
+ assert.match(studio,/onApply=\{next=>/);
+ assert.match(studio,/storySelectionItems\(next\)/);
+ assert.match(studio,/proWish=\{wish\} onProWishChange=\{setWish\}/);
+ assert.match(view,/data-video-pro-brief value=\{proWish\}/);
+ assert.match(view,/maxLength=\{800\}/);
+ assert.match(studio,/proTools=\{activeWorkspace==="pro"\?deepVideoDirectorPane:null\}/);
+});
+
+test("one context-specific bottom action, no fake paid request, correct mobile dock",()=>{
+ assert.equal((view.match(/data-video-pro-actions/g)||[]).length,1);
+ assert.equal((view.match(/data-video-pro-create=\{tier\}/g)||[]).length,1);
+ assert.match(view,/tier==="extra"\?t.extraCreate:t.proCreate/);
+ assert.match(view,/data-video-pro-paid-unavailable/);
+ assert.doesNotMatch(view,/fetch\(|checkout\s*\(|postVideoCreditAction|axios|apiKey/i);
+ assert.match(css,/\.actions\{position:fixed;z-index:55/);
+ assert.match(css,/bottom:calc\(78px \+ env\(safe-area-inset-bottom,0px\)\)/);
+ assert.match(css,/@media\(max-width:355px\)/);
+ assert.match(css,/@media\(min-width:760px\)/);
+ assert.match(css,/outline:3px solid #176e6e/);
+ assert.match(css,/Design Bible §10.13/);
+ assert.match(css,/:global\(\[data-mandala-mode="video"\]\)/);
+ assert.match(css,/var\(--hh-studio-surface/);
+ assert.match(css,/var\(--hh-studio-border/);
+ for(const language of ["ru","en","es"]) assert.ok(view.includes(" "+language+":{"),language);
 });

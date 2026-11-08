@@ -5,18 +5,18 @@ import type {Dispatch,SetStateAction} from "react";
 import {ArrowDown,Check,Heart,Mic,Pencil,Play,Plus,RefreshCw,Sparkles} from "lucide-react";
 import {goalCurrentMeaningId,goalDesiredMeaningId} from "./mandala-video-goal-clarification";
 import type {VideoGoalProfile} from "./mandala-video-goal-clarification";
-import {suggestMeaningPhrases} from "@/lib/mandala/video-meaning-phrases.mjs";
+import {resolveVideoIdeaContext,suggestVideoGoalPhrases} from "@/lib/mandala/video-goal-idea-phrases.mjs";
 import {isIdeaEditorSnapshot,planIdeaSelection,sanitizeIdeaPhrase} from "@/lib/mandala/video-idea-selection.mjs";
 import type {AffirmationSettings} from "@/lib/mandala/video-affirmations";
 import type {VideoLocale,VideoTheme} from "@/lib/mandala/holistic-video-themes";
 import css from "./mandala-video-ideas.module.css";
 
 type Props={
- locale:VideoLocale;theme:VideoTheme;active:boolean;disabled:boolean;settings:AffirmationSettings;
+ locale:VideoLocale;theme:VideoTheme;requestText:string;goalProfile:VideoGoalProfile;onBackToGoal:()=>void;
+ active:boolean;disabled:boolean;settings:AffirmationSettings;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
- onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;
+ onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;onGenerate:()=>void;status?:string;
  onRecord:()=>void;onResetPreview:()=>void;
- goalProfile:VideoGoalProfile;onBackToGoal:()=>void;
 };
 
 const wording={
@@ -74,16 +74,28 @@ const allFive=[0,1,2,3,4];
 const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
-export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generating,
- onChange,onPendingChange,onPreview,onCreate,onRecord,onResetPreview,goalProfile,onBackToGoal}:Props){
+export function MandalaVideoIdeas({locale,theme,requestText,active,disabled,settings,generating,
+ onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview,goalProfile,onBackToGoal}:Props){
  const t=wording[locale];
- const current=goalCurrentMeaningId(goalProfile.current[0]||"fatigue");
- const desired=goalDesiredMeaningId(goalProfile.desired[0]||"calm");
- const stateScore=goalProfile.desiredLevel;
- const energy=goalProfile.energy;
- const selectedAxes=goalProfile.axes.length?goalProfile.axes:["meaning"];
+ const goalContext=useMemo(()=>resolveVideoIdeaContext({locale,request:requestText,theme}),[locale,requestText,theme]);
+ // A real Goal2 refinement must not replace the canonical user-request topic
+ // (e.g. "love") with an unrelated default "calm" fallback.
+ const profileCustomized=goalProfile.current.join("|")!=="fatigue"||
+  goalProfile.desired.join("|")!=="calm"||goalProfile.axes.join("|")!=="meaning"||
+  goalProfile.energy!==4||goalProfile.desiredLevel!==6;
+ const goalKey=goalContext.key+(profileCustomized?"|"+JSON.stringify(goalProfile):"");
+ const configuredAxes=profileCustomized&&goalProfile.axes.length?goalProfile.axes:goalContext.axisIds;
+ const configuredCurrent=profileCustomized
+  ?goalCurrentMeaningId(goalProfile.current[goalProfile.current.length-1]||"fatigue"):"fatigue";
+ const configuredDesired=profileCustomized
+  ?goalDesiredMeaningId(goalProfile.desired[goalProfile.desired.length-1]||"calm"):goalContext.desiredId;
+ const stateScore=goalProfile.desiredLevel,energy=goalProfile.energy;
+ const [current,setCurrent]=useState(configuredCurrent);
+ const [desired,setDesired]=useState(configuredDesired);
+ const [selectedAxes,setSelectedAxes]=useState<string[]>(configuredAxes);
+ const [selectionGoalKey,setSelectionGoalKey]=useState(goalKey);
  const [revision,setRevision]=useState(0);
- const [options,setOptions]=useState<string[]>(()=>suggestMeaningPhrases(locale,selectedAxes,current,desired,stateScore,energy,0,7));
+ const [options,setOptions]=useState<string[]>(()=>suggestVideoGoalPhrases({locale,request:requestText,theme,axisIds:configuredAxes,current:configuredCurrent,desired:configuredDesired,strength:stateScore,energy,limit:7}));
  const [chosen,setChosen]=useState<number[]>(allFive);
  const [editing,setEditing]=useState<number|null>(null);
  const [draft,setDraft]=useState("");
@@ -91,16 +103,39 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
  const [moreClicks,setMoreClicks]=useState(0);
  const [feedback,setFeedback]=useState("");
  const lastApplied=useRef("");
- const signature=JSON.stringify([locale,goalProfile,revision]);
+ // A changed Goal starts a new set of proposals. Merely revisiting Ideas
+ // with the same Goal never discards locally edited/approved phrases.
+ const axesForGoal=selectionGoalKey===goalKey?selectedAxes:configuredAxes;
+ const desiredForGoal=selectionGoalKey===goalKey?desired:configuredDesired;
+ const currentForGoal=selectionGoalKey===goalKey?current:configuredCurrent;
+ useEffect(()=>{
+  if(selectionGoalKey===goalKey)return;
+  setSelectionGoalKey(goalKey);
+  setSelectedAxes(configuredAxes);
+  setDesired(configuredDesired);
+  setCurrent(configuredCurrent);
+  setRevision(0);
+ },[selectionGoalKey,goalKey,configuredAxes,configuredDesired,configuredCurrent]);
+ const signature=JSON.stringify([goalKey,axesForGoal,currentForGoal,desiredForGoal,stateScore,energy,revision]);
  const suggested=useMemo(()=>{
-   const from=goalProfile.current.length?goalProfile.current:["fatigue"];
-   const to=goalProfile.desired.length?goalProfile.desired:["calm"];
-   const axes=goalProfile.axes.length?goalProfile.axes:["meaning"];
-   const variants=Array.from({length:7},(_,i)=>suggestMeaningPhrases(
-     locale,axes,goalCurrentMeaningId(from[i%from.length]),
-     goalDesiredMeaningId(to[i%to.length]),goalProfile.desiredLevel,goalProfile.energy,revision+i,7));
-   return [...new Set(variants.flat().filter(v=>typeof v==="string"&&v.trim()&&Array.from(v).length<=36))].slice(0,7);
- },[locale,goalProfile,revision]);
+  // Preserve the first four precise, request-matched phrases. Personalized
+  // meaning options use all selected Goal2 feelings without introducing
+  // unrelated fallback phrases into requests such as "love".
+  const first=suggestVideoGoalPhrases({
+   locale,request:requestText,theme,axisIds:axesForGoal,current:currentForGoal,
+   desired:desiredForGoal,strength:stateScore,energy,revision,limit:7,
+  });
+  if(!profileCustomized)return first;
+  const from=goalProfile.current.length?goalProfile.current:["fatigue"];
+  const to=goalProfile.desired.length?goalProfile.desired:["calm"];
+  const supplement=Array.from({length:3},(_,i)=>suggestVideoGoalPhrases({
+   locale,request:requestText,theme,axisIds:axesForGoal,
+   current:goalCurrentMeaningId(from[(i+from.length-1)%from.length]),
+   desired:goalDesiredMeaningId(to[(i+to.length-1)%to.length]),
+   strength:stateScore,energy,revision:revision+i+1,limit:7,
+  }));
+  return [...new Set([...first.slice(0,4),...supplement.flat(),...first.slice(4)])].slice(0,7);
+ },[locale,requestText,theme,axesForGoal,currentForGoal,desiredForGoal,stateScore,energy,revision,profileCustomized,goalProfile]);
 
  // Keep the edited list in the parent's session state, the same source used by
  // Canvas and export. Mounting Ideas again must not replace saved user words.
@@ -164,19 +199,16 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
  };
  const moreOptions=()=>{
   if(options.length>=14)return;
-  const sequence=[
-   ...suggestMeaningPhrases(locale,selectedAxes,current,desired,stateScore,energy,revision+moreClicks+1,7),
-   ...suggestMeaningPhrases(locale,["growth","connection"],current,desired,stateScore,energy,moreClicks,7),
-   ...suggestMeaningPhrases(locale,["meaning","dignity"],current,desired,stateScore,energy,moreClicks,7),
-  ];
-  const candidates=sequence.filter((line,i)=>!options.includes(line)&&sequence.indexOf(line)===i)
-   .slice(0,Math.min(3,14-options.length));
+  const candidates=suggestVideoGoalPhrases({
+   locale,request:requestText,theme,axisIds:axesForGoal,current:currentForGoal,desired:desiredForGoal,
+   strength:stateScore,energy,revision:revision+moreClicks,
+   excluded:options,limit:Math.min(3,14-options.length),
+  });
   setMoreClicks(n=>n+1);
   if(candidates.length)apply([...options,...candidates],chosen);
  };
 
-
- return <section className={css.ideas} data-video-ideas-compact aria-label={t.select} hidden={!active}>
+ return <section className={css.ideas} data-video-ideas-compact data-video-ideas-goal-category={goalContext.categoryId||"neutral"} aria-label={t.select} hidden={!active}>
   <div className={css.sizeCard} data-video-ideas-size>
    <div className={css.sizeTitle}>
     <label htmlFor="video-ideas-text-size"><span className={css.sample} data-scale={scaleValues[textSizeIndex]}>Aa</span>{t.size}</label>
@@ -246,17 +278,26 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
   </section>
 
   <div className={css.goalSummary} data-video-ideas-goal-summary>
-  <span>{locale==="ru"?"Цель уточнена · выберите установки":
-   locale==="es"?"Objetivo definido · elige las frases":"Goal clarified · choose your support phrases"}</span>
-  <button type="button" data-video-ideas-refine data-video-ideas-edit-goal disabled={disabled}
-   onClick={onBackToGoal}>{t.refine}</button>
- </div>
+   <span>{locale==="ru"?"Цель уточнена · выберите установки":
+    locale==="es"?"Objetivo definido · elige las frases":"Goal clarified · choose your support phrases"}</span>
+   <button type="button" data-video-ideas-refine data-video-ideas-edit-goal disabled={disabled}
+    onClick={onBackToGoal}>{t.refine}</button>
+  </div>
 
-  <button type="button" className={css.create} data-video-ideas-create
-   disabled={disabled||selectedCount<5} onClick={onCreate}>
-   <Play size={23} fill="currentColor" aria-hidden="true"/>
-   {generating?t.next+"…":t.next}<span aria-hidden="true">→</span>
+  <div className={css.stageActions} data-video-stage-actions="ideas">
+  <button type="button" className={css.create} data-video-ideas-generate
+    disabled={disabled} onClick={onGenerate}>
+    <Play size={21} fill="currentColor" aria-hidden="true"/>
+    {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
   </button>
-  <p className={css.privacy}>{t.privacy}</p>
+  <button type="button" className={css.addEffects} data-video-ideas-create
+    disabled={disabled||selectedCount<5} onClick={onCreate}>
+    <Sparkles size={19} aria-hidden="true"/>
+    {locale==="ru"?"Добавить эффекты":locale==="es"?"Añadir efectos":"Add Effects"}
+    <span aria-hidden="true">→</span>
+  </button>
+ </div>
+ {status?<p className={css.stageStatus} role="status" aria-live="polite">{status}</p>:null}
+ <p className={css.privacy}>{t.privacy}</p>
  </section>;
 }

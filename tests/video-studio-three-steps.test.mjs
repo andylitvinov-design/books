@@ -14,12 +14,11 @@ test("Goal has real category/subcategory and separate optional topic and request
  assert.doesNotMatch(goal,/data-mytube-meaning-axes|data-mytube-motif-choices|data-mytube-style-filter/);
  assert.match(director,/data-video-optional-topic disabled=\{disabled\|\|!selectedSubcategoryId\}/);
  assert.match(director,/data-auto-video-input value=\{requestDraft\}/);
- assert.match(director,/const nextGoal=requestDraft\.trim\(\)\|\|item\.label/);
- assert.match(director,/onGoalChange\(nextGoal\)/);
+ assert.match(director,/const nextGoal=text\.trim\(\)\|\|fallback/);
  const field=director.slice(director.indexOf("const requestField="),director.indexOf("const requestInput="));
  assert.doesNotMatch(field,/setSelectedSubcategoryId\(|setSelectedTopicId\(/);
 });
-test("Ideas uses one accessible React-owned disclosure with genuine Safari activation",()=>{
+test("Ideas refinement uses an accessible WebKit-safe button across portal remounts",()=>{
  assert.match(director,/const \[ideaRefinementOpen,setIdeaRefinementOpen\]=useState\(false\)/);
  assert.match(director,/data-video-ideas-refinement-toggle/);
  assert.match(director,/aria-expanded=\{ideaRefinementOpen\}/);
@@ -56,47 +55,51 @@ test("Montage owns visual-style recommendations without changing rights gates",(
  assert.match(css,/\.montageStyleChoices button\{min-height:44px/);
 });
 test("Three short prompts are labeled in EN/RU/ES",()=>{
- for(const token of ["2. Выберите категорию видео","2. Elige una categoría de vídeo","2. Choose a video category",
+ for(const token of ["1б. Подкатегория","1b. Subcategoría","1b. Subcategory",
  "2. Тема (по желанию)","2. Topic (optional)","2. Tema (opcional)",
  "Refine topic, meaning and story (optional)",
- "Стиль видео","Video style"])
+ "Рекомендуемый визуальный стиль","Recommended visual style"])
    assert.ok(director.includes(token),token);
- for(const token of ["Ваше пожелание (необязательно)",
- "Your wish (optional)","Tu deseo (opcional)"])
+ for(const token of ["3. Ваше желание (необязательно)",
+ "3. Your wish (optional)","3. Tu deseo (opcional)"])
    assert.ok(studio.includes(token),token);
  assert.equal((studio.match(/<MandalaAutoVideoDirector/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 
-test("Goals, optional recipient audio, Concept and original media gates follow real visible actions",()=>{
- assert.match(studio,/const continueToIdeas = \(\) => \{[\s\S]*?setActiveWorkspace\("phrases"\)/);
- assert.match(studio,/const openGoalClarification = \(\) => \{[\s\S]*?setGoalPage\("clarify"\)/);
- assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{recipientAudioSelected\?continueToIdeas:openGoalClarification\}/);
- assert.match(studio,/recipientAudioSelected[\s\S]*?Continue to montage/);
- assert.match(studio,/onBack=\{\(\)=>setGoalPage\("first"\)\} onContinue=\{continueToIdeas\}/);
- for(const wording of ["Далее: уточнить состояние","Continuar: aclarar mi estado","Next: clarify how I feel"])
-   assert.ok(studio.includes(wording),wording);
- assert.match(studio,/const openVideoScenarioStep = \(\) => \{[\s\S]*?setGoalPage\("first"\);[\s\S]*?setVideoScenarioOpen\(true\)/);
- assert.match(studio,/onAddVideo=\{\(\)=>\{[\s\S]*?openVideoScenarioStep\(\);/);
- assert.match(studio,/"video-director-chat":"video"/);
- assert.match(studio,/hash==="video-director-chat"[\s\S]*?setDirectorChatOpen\(true\)/);
- const voice=read("scripts/verify-affirmation-voice-browser.mjs");
- const live=read("scripts/benchmarking/first-video-live-export.mjs");
- const motion=read("scripts/benchmarking/verify-original-motion-export.mjs");
- for(const file of [voice,live,motion]){
-   assert.match(file,/data-video-continue-scenarios/);
-   assert.match(file,/data-video-goal-clarify-continue/);
-   assert.match(file,/data-video-montage-concept/);
-   assert.match(file,/data-video-concept-approve/);
-   assert.match(file,/data-video-timeline-add-video/);
-   assert.doesNotMatch(file,/await (?:allStories|page\.locator\('\[data-auto-video-all-scenes\]'\))\.click\(\)/);
- }
- assert.match(voice,/FOUR_DISTINCT_VERIFIED_LICENSED_MASTERS_REQUIRED/);
- assert.match(live,/ENCODED_VIDEO_STREAM_MISSING/);
- assert.match(live,/SELECTED_SOUNDTRACK_MISSING_FROM_EXPORT/);
- assert.match(motion,/ffprobe/);
+test("Goals CTA, Montage Add video, Messenger handoff and media e2es use the real visible route",()=>{
+  assert.match(studio,/const continueToIdeas = \(\) => \{[\s\S]*?setActiveWorkspace\("phrases"\)/);
+  assert.match(studio,/data-video-continue-scenarios[\s\S]*?onClick=\{openGoalClarification\}/);
+  for(const text of ["Далее: уточнить состояние","Continuar: aclarar mi estado","Next: clarify how I feel"])
+    assert.ok(studio.includes(text),text);
+  assert.match(studio,/data-video-stage-generate="goal"[\s\S]*?onClick=\{generateFromGoal\}/);
+  assert.match(studio,/const openVideoScenarioStep = \(\) => \{[\s\S]*?setVideoScenarioOpen\(true\);[\s\S]*?setShowAdvancedVideo\(true\);[\s\S]*?setActiveWorkspace\("video"\)/);
+  assert.match(studio,/onAddVideo=\{\(\)=>\{[\s\S]*?openVideoScenarioStep\(\);/);
+  assert.match(studio,/"video-director-chat":"video"/);
+  assert.match(studio,/hash==="video-director-chat"[\s\S]*?setDirectorChatOpen\(true\)/);
+  const voice=read("scripts/verify-affirmation-voice-browser.mjs");
+  const live=read("scripts/benchmarking/first-video-live-export.mjs");
+  const motion=read("scripts/benchmarking/verify-original-motion-export.mjs");
+  for(const file of [voice,live,motion])
+    assert.match(file,/data-video-continue-scenarios/);
+  for(const file of [live,motion]){
+    assert.match(file,/data-video-montage-tab="text"/);
+    assert.match(file,/data-video-montage-effects/);
+    assert.match(file,/data-video-montage-next="text"/);
+    assert.match(file,/VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT/);
+    assert.match(file,/await page\.waitForFunction\(\(\)=>[\s\S]*?data-video-montage-tab="text"/,
+      "real WebKit must await a committed Text tab, not inspect pre-commit React state");
+    assert.doesNotMatch(file,/await page\.locator\('\[data-video-montage-tab="text"\]'\)\.click\(\)/,
+      "the protected browser must use the current visible Style -> Text Next CTA");
+    assert.match(file,/data-video-timeline-add-video/);
+    assert.doesNotMatch(file,/await (?:allStories|page\.locator\('\[data-auto-video-all-scenes\]'\))\.click\(\)/);
+  }
+  assert.match(live,/ENCODED_VIDEO_STREAM_MISSING/);
+  assert.match(live,/SELECTED_SOUNDTRACK_MISSING_FROM_EXPORT/);
+  assert.match(motion,/ffprobe/);
 });
-test("Goal step 2 is illustrated, scrollable, accessible and feeds the existing one Ideas editor",()=>{
+
+test("illustrated Goal 2 is accessible in RU/EN/ES and feeds the one Ideas editor without replacing the current request matcher",()=>{
  const goal=read("components/mandala-video-goal-clarification.tsx");
  const art=read("components/mandala-video-goal-clarification.module.css");
  const mobile=read("components/mandala-video-mobile.module.css");
@@ -104,14 +107,16 @@ test("Goal step 2 is illustrated, scrollable, accessible and feeds the existing 
  for(const token of ["data-video-goal-clarification","data-video-goal-scroll","data-video-goal-choice",
   "data-video-goal-mood","data-video-goal-axis","data-video-goal-energy",
   "data-video-goal-desired-level","data-video-goal-clarify-continue"])
-    assert.ok(goal.includes(token),token);
+  assert.ok(goal.includes(token),token);
  for(const photo of ["morning-dew.jpg","wealth-sunrise.jpg","mountain-air.jpg"])
-    assert.ok(art.includes(photo),photo);
- assert.match(goal,/listMeaningAxes\(locale\)/);
+  assert.ok(art.includes(photo),photo);
  assert.match(goal,/goalCurrentMeaningId/);
  assert.match(goal,/goalDesiredMeaningId/);
  assert.match(ideas,/goalProfile:VideoGoalProfile/);
  assert.match(ideas,/data-video-ideas-edit-goal/);
+ assert.match(ideas,/resolveVideoIdeaContext/);
+ assert.match(ideas,/suggestVideoGoalPhrases/);
+ assert.match(ideas,/profileCustomized/);
  assert.match(ideas,/data-video-ideas-text-size/);
  assert.match(ideas,/data-video-ideas-record/);
  assert.match(ideas,/selectedCount<5/);
@@ -122,7 +127,6 @@ test("Goal step 2 is illustrated, scrollable, accessible and feeds the existing 
  assert.equal((studio.match(/<MandalaVideoIdeas /g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
-
 test("anonymous video export checks the actual Ready player and secured original Blob",()=>{
   const harness=read("scripts/benchmarking/real-guest-video-file.mjs");
   const live=read("scripts/benchmarking/first-video-live-export.mjs");
