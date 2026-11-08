@@ -207,7 +207,8 @@ test("four canonical goal pills, exclusive subcategories and real scenario/audio
  assert.match(studio,/onContinue=\{\(\)=>\{/);
  assert.match(studio,/setActiveWorkspace\("phrases"\)/);
  assert.match(studio,/data-video-phrase-audio-shortcut/);
- assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setPhraseAudioExpanded\(true\)[\s\S]*?getElementById\("phrase-audio-settings"\)/);
+ assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setIdeasVoiceAdvancedOpen\(true\)[\s\S]*?setPhraseAudioExpanded\(true\)[\s\S]*?querySelector\("\[data-video-ideas-advanced-voice\]"\)/,
+   "the visible Ideas shortcut opens the existing advanced voice panel on an explicit click");
  assert.equal((director.match(/data-auto-video-input value=\{requestDraft\}/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-advanced-toggle/);

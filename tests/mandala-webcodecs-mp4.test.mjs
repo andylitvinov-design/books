@@ -210,8 +210,11 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
  assert.match(firstVideo,/await montageStyle\.click\(\)/);
- assert.match(firstVideo,/await page\.locator\('\[data-video-montage-open-concept\]'\)\.click\(\)/,
-   "visitor can review the preserved Concept through a real Settings shortcut");
+ assert.match(firstVideo,/await page\.locator\('\[data-video-ideas-tab="concept"\]'\)\.click\(\)/,
+   "visitor can review the preserved Concept through the visible Ideas tab");
+ assert.match(firstVideo,/const concept=page\.locator\('\[data-video-ideas-concept-panel\]'\)/);
+ assert.match(firstVideo,/await concept\.waitFor\(\{state:'visible',timeout:15000\}\)/,
+   "the actual Concept panel is visible before explicit guest approval");
  assert.match(firstVideo,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/,
    "guest explicitly approves Concept before timeline editing");
  assert.match(firstVideo,/const textTools=page\.locator\('\[data-video-concept-text-tools\]'\)/,
