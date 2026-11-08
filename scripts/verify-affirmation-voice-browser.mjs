@@ -586,15 +586,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await advancedText.click();
       await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
-      // This nested panel is an explicit accessible button/region, not a
-      // WebKit-sensitive native details element. One actual tap must open it.
+      // Voice mode intentionally hides the separate personal-intention editor;
+      // that content belongs to the Personalization sub-tab, not this voice-only
+      // panel. Keep the privacy boundary and verify only visible voice controls.
       const intentDetails=phrases.locator('[data-hypno-idea-details]');
-      const ideaToggle=intentDetails.locator('[data-hypno-idea-toggle]');
-      await expect(ideaToggle).toBeVisible();
-      if(await ideaToggle.getAttribute("aria-expanded")!=="true")
-        await ideaToggle.click();
-      await expect(ideaToggle).toHaveAttribute("aria-expanded","true");
-      await expect(intentDetails.locator('[data-hypno-request]')).toBeVisible();
+      await expect(intentDetails).toBeHidden();
+      await expect(phrases.locator('[data-video-ideas-personalization-panel]')).toBeVisible();
       await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();
