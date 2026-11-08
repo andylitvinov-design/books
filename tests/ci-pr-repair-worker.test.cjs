@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
-const {taskFor,commentBody,reservation,reservationStatus}=require('../scripts/ci-pr-task-state.cjs');
+const {taskFor,commentBody,reservation,reservationStatus,externalOwnerLeaseStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {stageLine,parseComment,timelineStages}=require('../scripts/ci-pr-stage-receipts.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
@@ -110,6 +110,21 @@ test('active external lease blocks concurrent worker',async()=>{
   const f=fixture({comments:[{body:'HH_PR_SWEEP_LEASE_V1 no json'}]});
   const r=await claim({github:f.github,core,context,hasToken:true,number:11});
   assert.equal(r.status,'skipped');
+});
+test('state=release clears only the same authenticated owner lease on the exact HEAD',()=>{
+ const now=Date.parse('2026-11-08T18:30:00Z');
+ const ownerName='chat-live-pr3823-conversational-tests-20261107';
+ const leaseId='pr3823-owner-lease';
+ const record={schema:'HH_PR_SWEEP_LEASE_V1',owner:ownerName,lease_id:leaseId,
+  head_sha:sha,base_ref:'codex/public-book-library',state:'claim',
+  created_at:'2026-11-08T00:29:07.537Z',expires_at:'2026-11-08T00:59:07.537Z'};
+ const release={...record,state:'release',released_at:'2026-11-08T00:30:41.261Z'};
+ const comment=(id,doc,login=owner)=>({id,user:{login},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\\n'+JSON.stringify(doc)});
+ assert.equal(externalOwnerLeaseStatus([comment(1,record),comment(2,release)],sha,now),'FREE');
+ assert.equal(externalOwnerLeaseStatus([comment(1,record)],sha,now),'OWNER_LEASE_ACTIVE');
+ assert.equal(externalOwnerLeaseStatus([comment(1,record),comment(2,release,'other-owner')],sha,now),'OWNER_LEASE_ACTIVE');
+ assert.equal(externalOwnerLeaseStatus([comment(2,release)],sha,now),'FREE');
+ assert.equal(externalOwnerLeaseStatus([comment(2,{...release,head_sha:'f'.repeat(40)})],sha,now),'FREE');
 });
 test('publisher verifies owner, SHA, changed file blob and commits exactly once',async()=>{
   const f=fixture(), candidate={head_sha:sha,files:[{path:'lib/a.ts',original_sha:newSha,
