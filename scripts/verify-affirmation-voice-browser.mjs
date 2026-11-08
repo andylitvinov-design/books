@@ -207,6 +207,18 @@ async function verifyWorkspaceHydration(browser,locale){
     await birthday.click();
     await expect(birthday).toHaveAttribute("aria-pressed","true");
     await continueToIdeas.click();
+    // The recipient route must also complete the real second Goal screen.
+    // Never bypass this with a forced Ideas tab or direct state mutation.
+    const recipientGoal2=page.locator('[data-video-goal-clarification]');
+    await expect(studio).toHaveAttribute("data-video-goal-page","clarify");
+    await expect(recipientGoal2).toBeVisible();
+    await recipientGoal2.locator('[data-video-goal-choice="current-curious"]').click();
+    await expect(recipientGoal2.locator('[data-video-goal-choice="current-curious"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await recipientGoal2.locator('[data-video-goal-choice="desired-joyful"]').click();
+    await expect(recipientGoal2.locator('[data-video-goal-choice="desired-joyful"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await recipientGoal2.locator('[data-video-goal-clarify-continue]').click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     // These are the actual source-backed montage title inputs; source edits

@@ -112,14 +112,14 @@ test("macOS same-runner heap permits the existing real WebKit movie and voice ga
 
 test("Ideas keeps production's one-click Safari disclosure with ref persistence",()=>{
   const source=readFileSync(new URL("../components/mandala-auto-video-director.tsx",import.meta.url),"utf8");
-  const start=source.indexOf("ideaTarget?createPortal(<details");
-  const end=source.indexOf("{topicPanel}",start);
+  const start=source.indexOf("ideaTarget?createPortal(<section");
+  const end=source.indexOf("{montageTarget?createPortal(",start);
   assert.ok(start>0&&end>start);
   const disclosure=source.slice(start,end);
-  assert.match(source,/const bindIdeaRefinement=useCallback/);
-  assert.match(disclosure,/ref=\{bindIdeaRefinement\}/);
-  assert.match(disclosure,/event\.preventDefault\(\)/);
-  assert.match(disclosure,/node\.open=!node\.open/);
-  assert.match(disclosure,/ideaRefinementOpenRef\.current=node\.open/);
-  assert.doesNotMatch(disclosure,/open=\{ideaRefinementExpanded\}/);
+  assert.match(disclosure,/data-video-ideas-refinement/);
+  assert.match(disclosure,/data-video-ideas-refinement-toggle/);
+  assert.match(disclosure,/aria-expanded=\{ideaRefinementOpen\}/);
+  assert.match(disclosure,/onClick=\{\(\)=>setIdeaRefinementOpen\(open=>!open\)\}/);
+  assert.match(disclosure,/data-video-ideas-refinement-panel hidden=\{!ideaRefinementOpen\}/);
+  assert.doesNotMatch(disclosure,/createPortal\(<details/);
 });
