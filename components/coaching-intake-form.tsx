@@ -8,6 +8,9 @@ import { COACHING_FIELDS, COACHING_GROUPS, COACHING_INTAKE_VERSION, COACHING_TOP
 import { DIAGNOSTIC_START_KEY, parseDiagnosticStart } from "@/lib/coaching/diagnostic-enquiry.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./coaching-intake-form.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
+
 
 type Draft = {
   topic: string;
@@ -423,6 +426,9 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
   async function submitDiagnostic() {
     if (privateCopyMode || leadBusy || leadReceipt || busy || collision) return;
     if(telegramStatus==="checking"){setLeadError(t.telegramChecking);return;}
+    if (websiteMessengerOnlyUi() && !miniLinked && !telegramHandoff) {
+      setLeadError(t.telegramUnavailable);return;
+    }
     if(telegramEntry && !miniLinked && !telegramHandoff){
       setLeadError(t.telegramUnavailable);return;
     }
@@ -591,7 +597,12 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
           {telegramStatus==="checking" ? <p role="status">{t.telegramChecking}</p> : null}
           {telegramEntry && !miniLinked && !telegramHandoff && telegramStatus!=="checking"
             ? <p className={styles.requestError} role="alert">{t.telegramUnavailable}</p> : null}
-          {!miniLinked && !telegramEntry ? <div className={styles.replyFields}>
+          {websiteMessengerOnlyUi() && !miniLinked && !telegramHandoff
+            ? <MandatoryMessengerActions locale={locale}
+                label={locale==="ru"?"Подтвердите мессенджер":locale==="es"?"Verifica tu mensajería":"Verify your messenger"}
+                telegramUrl={"https://t.me/holistichouse_bot?start=hhreview_"+locale}
+                whatsappUrl={"https://wa.me/14376066502?text="+encodeURIComponent("Holistic House: please contact me about a written situation review.")}/> : null}
+          {!miniLinked && !telegramEntry && !websiteMessengerOnlyUi() ? <div className={styles.replyFields}>
             <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
               disabled={leadBusy || busy || collision} value={replyContact.email}
               onChange={event => { setReplyContact(value => ({ ...value, email: event.target.value })); setLeadError(""); }} /></label>
@@ -602,6 +613,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
           <p className={styles.requestDisclosure}>{t.sendDisclosure}</p>
           {leadError ? <p className={styles.requestError} role="alert">{leadError}</p> : null}
           <button className={styles.sendButton} type="button" disabled={leadBusy || busy || collision || missing > 0 ||
+            (websiteMessengerOnlyUi() && !miniLinked && !telegramHandoff) ||
             (!miniLinked && !replyContact.email.trim() && !replyContact.phone.trim() && !telegramHandoff) ||
             (telegramEntry && !miniLinked && !telegramHandoff) || telegramStatus==="checking"} onClick={() => void submitDiagnostic()}>
             {leadBusy ? "…" : t.sendButton}<ArrowRight size={17} aria-hidden="true" />

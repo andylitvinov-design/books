@@ -28,6 +28,10 @@ const fixtureModules = {
   'next/navigation': { notFound: forbidden },
   'lucide-react': Object.fromEntries(['ArrowRight', 'ArrowLeft', 'Check', 'ClipboardCopy', 'LockKeyhole', 'Plus', 'ShieldCheck', 'Trash2'].map(name => [name, () => null])),
   '@/lib/app/client-fetch': { appFetch: forbidden },
+  '@/components/mandatory-messenger-actions': {
+    MandatoryMessengerActions: () => React.createElement('aside', {'data-synthetic-messenger':true}, 'Synthetic messenger chooser'),
+  },
+  '@/lib/crm/website-messenger-only.mjs': { websiteMessengerOnlyUi: () => true },
   '@/lib/coaching/intake-model': { COACHING_FIELDS: [{ id: 'request', required: true, group: 'session', max: 600, label: words('Synthetic request') }],
     COACHING_GROUPS: [{ id: 'session', title: words('Synthetic group'), hint: words('Synthetic hint') }],
     COACHING_TOPICS: [{ id: 'personal', label: words('Synthetic topic') }], COACHING_INTAKE_VERSION: 'synthetic',
