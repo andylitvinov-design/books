@@ -14,7 +14,7 @@ export type MusicMatchTrack={
   score:number;reasons:string[];
 };
 export function rankPersonalMusic(input?:{
- tracks?:readonly any[];theme?:string;wish?:string;transcript?:string;
+ tracks?:readonly unknown[];theme?:string;wish?:string;transcript?:string;
  scenarioId?:string;priorityIds?:string[];kind?:string;mood?:string;
  pace?:string;voiceFriendly?:boolean;limit?:number;
 }):MusicMatchTrack[];

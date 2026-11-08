@@ -117,13 +117,14 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(studio,/const curatedMatches=recommendCuratedAudio/);
   assert.match(studio,/const audioMatches=audioKind==="all"/);
   for (const text of ["Real recording", "Реальная запись", "Grabación real", "shortened and loudness-normalized", "сокращена и нормализована по громкости", "acortada y normalizada"]) assert.ok(studio.includes(text),text);
-  assert.match(studio,/const availableAudioTracks=\[\.\.\.scenarioTracks,\s*\.\.\.filmScenarioTracks\.filter\(track=>!scenarioTracks\.some\(selected=>selected\.id===track\.id\)\),\s*\.\.\.curatedAudioTracks,\.\.\.classicalAudioTracks,\.\.\.mandalaAudioTracks\]/);
+  assert.match(studio,/const availableAudioTracks=\[\.\.\.scenarioTracks,\.\.\.ALL_APPROVED_SCENARIO_MELODIES,/);
+  assert.match(studio,/SCENARIO_AUDIO_REGISTRY\.flatMap\(scenario=>scenarioAudioTracks\(scenario\.id\)\)/);
   assert.match(studio,/kind:audioKind,mood:audioMood,pace:audioPace/);
   assert.match(studio,/theme:audioTheme,kind:audioKind/);
   assert.match(studio,/voiceFriendly:audioVoiceFriendly,wish/);
   // Auto recommendation now attaches sound in Montage while preserving manual rights.
   assert.match(studio,/if\(!audioAuto\|\|uploadedAudio\|\|attachedAudio\?\.kind==="file"/);
-  assert.match(studio,/if\(activeWorkspace!=="editor"\)return;/);
+  assert.match(studio,/if\(activeWorkspace!=="editor"&&activeWorkspace!=="phrases"\)return;/);
   assert.match(studio,/setMusic\(current=>current===recommended\?current:recommended\)/);
   assert.match(studio,/setAttachedAudio\(current=>/);
   assert.match(studio,/current\?\.kind==="presets"/);

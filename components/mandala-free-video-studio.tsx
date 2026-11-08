@@ -2777,7 +2777,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // For an existing voice/file, suggest ONLY the five supported background beds.
   const voiceBedMode=attachedAudio?.kind==="file";
   const featuredMelodies=rankPersonalMusic({
-    tracks:voiceBedMode?mandalaAudioTracks.filter(track=>MYTUBE_MUSIC_BEDS.includes(track.id)):
+    tracks:voiceBedMode?mandalaAudioTracks.filter(track=>MYTUBE_MUSIC_BEDS.some(id=>id===track.id)):
       [...scenarioTracks,...ALL_APPROVED_SCENARIO_MELODIES,...curatedAudioTracks,
         ...mandalaAudioTracks,...classicalAudioTracks],
     ...musicContext,kind:"melody",mood:"all",pace:"all",
@@ -3882,7 +3882,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     if(recording||preparing||micRecording)return;
     if(attachedAudio?.kind==="file"){
       if(!audioRights){setMusicWarning(ui.audioRightsHelp);return;}
-      if(!MYTUBE_MUSIC_BEDS.includes(choice)){
+      if(!MYTUBE_MUSIC_BEDS.some(id=>id===choice)){
         setMusicWarning(locale==="ru"?"Для голоса выберите одну из предложенных фоновых мелодий.":
           locale==="es"?"Para voz, elige una melodía de fondo compatible.":
             "For voice, choose a compatible background melody.");
