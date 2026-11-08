@@ -18,6 +18,9 @@ export function instantCabinetTarget(href, location) {
   const from = current.pathname.match(/^\/(en|ru)\/app(?:\/|$)/)
   const to = target.pathname.match(/^\/(en|ru)\/app\/([a-z-]+)$/)
   if (!from || !to || from[1] !== to[1] || !TABS.has(to[2])) return null
+  // A bare Profile route is the public test selector, not a private mounted tab.
+  if (/^\/(en|ru)\/app\/portrait\/?$/.test(current.pathname) &&
+      !['today', 'path', 'reports'].includes(current.searchParams.get('space'))) return null
   if (to[2] === 'portrait') {
     if (!['?space=today', '?space=path', '?space=reports'].includes(target.search)) return null
   } else if (to[2] === 'course') {
