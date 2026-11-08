@@ -53,7 +53,9 @@ async function assertPinnedSixDock(page, id, active) {
         height:rect.height};
     });
     assert.equal(position.css,"fixed",id+" "+point+" dock is fixed");
-    assert.equal(position.bottom,"0px",id+" "+point+" no viewport offset");
+    assert.ok(Number.isFinite(Number.parseFloat(position.bottom)) &&
+      Math.abs(Number.parseFloat(position.bottom))<=320,
+      id+" "+point+" bounded Safari visual-viewport correction");
     assert.equal(position.staleInset,"",id+" "+point+" no stale JS correction");
     assert.ok(position.height>=52,id+" "+point+" accessible dock height");
     assert.ok(Math.abs(position.rectBottom-position.visibleBottom)<=3,
