@@ -104,3 +104,23 @@ test("EN RU ES, phone widths and syntax of edited React sources",()=>{
     .map(d=>ts.flattenDiagnosticMessageText(d.messageText," ")),[],path);
  }
 });
+
+
+test("private Messenger allows only the approved nocookie intro iframe, with an explicit iPhone escape link",()=>{
+ const middleware=read("middleware.ts");
+ const exactMessenger=/^\\/(en|ru|es)\\/app\\/messages\\/?$/;
+ const match=middleware.match(/const messengerIntroductionEmbed = ([^\\n]+)/);
+ assert.equal(match?.[1],exactMessenger.toString()+".test(pathname)");
+ for(const path of ["/en/app/messages","/ru/app/messages/","/es/app/messages"])
+   assert.equal(exactMessenger.test(path),true,path);
+ for(const path of ["/en/app","/en/app/profile","/en/app/orders",
+   "/ru/client/session/abc","/api/app/messenger","/admin/videos","/en/app/messages/admin"])
+   assert.equal(exactMessenger.test(path),false,path);
+ assert.match(middleware,/sessionEducationEmbed \\? "frame-src https:\\/\\/www\\.youtube-nocookie\\.com" : messengerIntroductionEmbed \\? "frame-src https:\\/\\/www\\.youtube-nocookie\\.com" : practitionerDraftPreview/);
+ assert.match(middleware,/practitionerDraftPreview \\? "frame-src blob:" : "frame-src 'none'"/);
+ assert.match(landing,/href=\\{introduction\\.url\\} className=\\{css\\.externalYouTube\\} target="_blank"/);
+ assert.match(landing,/rel="noopener noreferrer"\\>\\{t\\.openOnYouTube\\}/);
+ assert.match(landingCss,/\\.externalYouTube\\{/);
+ for(const name of ["Open on YouTube","Открыть на YouTube","Abrir en YouTube"])
+   assert.ok(landing.includes(name),name);
+});
