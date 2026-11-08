@@ -1327,6 +1327,18 @@ const runEngine = async ([engine, browserType]) => {
             assert.equal(photoResponse?.status(),200);
             await expect(photoPage.locator("[data-mentalica-photo-mandala]")).toBeVisible();
             await expect(photoPage.locator("[data-photo-mandala-stage]")).toBeVisible();
+            // The existing Photo constructor owns PNG export. Verify actual
+            // bytes here instead of reopening its obsolete Video-page footer.
+            const [photoDownload]=await Promise.all([
+              photoPage.waitForEvent("download",{timeout:30000}),
+              photoPage.locator("[data-mentalica-photo-mandala] [class*='actionRow']")
+                .first().locator("button").first().click(),
+            ]);
+            assert.match(photoDownload.suggestedFilename(),/mandala\.png$/);
+            const png=await bufferFromStream(await photoDownload.createReadStream());
+            assert.deepEqual(png.subarray(0, 8),
+              Buffer.from([137,80,78,71,13,10,26,10]),"dedicated Photo Mandala exports real PNG");
+            assert.ok(png.length>2000,"photo mandala PNG contains rendered illustration");
           }finally{await photoPage.close();}
         }
 
