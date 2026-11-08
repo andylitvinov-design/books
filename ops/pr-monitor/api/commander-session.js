@@ -18,7 +18,7 @@ module.exports=async function(req,res) {
   }
   if(req.method==='DELETE') {
     if(!isOriginAllowed(req))return sendJson(res,403,{error:'CROSS_ORIGIN_DENIED'});
-    res.setHeader('Set-Cookie',COOKIE+'=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict');
+    res.setHeader('Set-Cookie',COOKIE+'=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax');
     return sendJson(res,200,{signedOut:true});
   }
   if(req.method!=='POST')return sendJson(res,405,{error:'METHOD_NOT_ALLOWED'});

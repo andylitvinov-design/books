@@ -51,7 +51,7 @@ async function callStore(req,action,body={},options={}) {
       ...(method==='POST'?{body:JSON.stringify({action,...body})}:{})
     });
     const text=await response.text();
-    if(text.length>45000)throw new StoreError(503,'PRIVATE_STORE_RESPONSE_TOO_LARGE');
+    if(text.length>1200000)throw new StoreError(503,'PRIVATE_STORE_RESPONSE_TOO_LARGE');
     let data;
     try{data=JSON.parse(text)}catch{throw new StoreError(503,'PRIVATE_STORE_INVALID_RESPONSE');}
     return {status:response.status,data};
