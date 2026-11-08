@@ -124,7 +124,7 @@ test("macOS WebKit uses real Ideas Text→Voice switch and own-voice opt-in",()=
  assert.match(browser,/data-video-ideas-tab="text"/);
  assert.match(browser,/await expect\(advancedVoice\)\.toBeHidden\(\)/);
  assert.match(browser,/await recordEntry\.click\(\)/);
- assert.match(browser,/await expect\(advancedVoice\)\.toBeVisible\(\)/);
+ assert.match(browser,/await expect\(advancedVoice\)\.toBeVisible\(\{timeout:15000\}\)/);
  assert.match(browser,/data-hypno-idea-details/);
  assert.doesNotMatch(browser,/advancedVoice\.click\(\{force:true\}\)/);
 });

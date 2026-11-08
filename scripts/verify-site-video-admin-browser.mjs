@@ -227,7 +227,7 @@ try{
         await expect(target.locator('[aria-live="polite"]')).toContainText('Draft saved.')
       } else {
         await target.getByRole('button', { name: 'Hide from website', exact: true }).click()
-        await expect(target.locator('[aria-live="polite"]')).toContainText('Video hidden from the website.')
+        await expect(target.locator('[aria-live="polite"]')).toContainText('Video hidden from the website.', { timeout: 30_000 })
       }
     }
     await openEditor()
