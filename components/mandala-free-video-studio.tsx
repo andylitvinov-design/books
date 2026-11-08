@@ -77,7 +77,7 @@ import { acquirePlaybackSession, isSupportedLocalAudio, presetAudioUrl, startPre
 import {consumeMessengerAudio} from "@/lib/mandala/messenger-audio-video-handoff.mjs";
 import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-music";
 import { mandalaAudioTracks, recommendMandalaAudio } from "@/lib/mandala/audio-recommendations.mjs";
-import { scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
+import { SCENARIO_AUDIO_REGISTRY, scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
 import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
 import {curatedAudioTracks,recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
@@ -2800,10 +2800,34 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
     voiceFriendly:audioVoiceFriendly,
   });
-  const audioMatches=[...curatedMatches,...matchingScenarioTracks,...baseAudioMatches,...classicMatches];
-  const availableAudioTracks=[...scenarioTracks,
-    ...filmScenarioTracks.filter(track=>!scenarioTracks.some(selected=>selected.id===track.id)),
-    ...curatedAudioTracks,...classicalAudioTracks,...mandalaAudioTracks];
+  // Offer every approved first-party score, not only this storyboard's four.
+  // The active story still ranks first; other scores keep their actual IDs.
+  const libraryScenarioTracks=useMemo(
+    ()=>SCENARIO_AUDIO_REGISTRY.flatMap((scene:{id:string})=>scenarioAudioTracks(scene.id)),[]);
+  const catalogueScenarioMatches=libraryScenarioTracks.filter(track=>
+    (audioKind==="all"||audioKind===track.kind)&&
+    (audioMood==="all"||track.moods.includes(audioMood))&&
+    (audioPace==="all"||track.pace===audioPace)&&
+    (!audioVoiceFriendly||track.voiceSafe))
+    .sort((a,b)=>Number(b.themes.includes(audioTheme))-Number(a.themes.includes(audioTheme)));
+  const audioCandidates=[...curatedMatches,...matchingScenarioTracks,
+    ...catalogueScenarioMatches,...baseAudioMatches,...classicMatches];
+  const seenAudioSearchIds=new Set<string>();
+  const audioMatches=audioCandidates.filter(track=>{
+    if(seenAudioSearchIds.has(track.id))return false;
+    seenAudioSearchIds.add(track.id);
+    return !audioThemeOverride||track.themes.includes(audioThemeOverride);
+  });
+  // Keep every licensed track addressable by the SAME existing player/export,
+  // even after changing the search filters or moving between storyboards.
+  const availableAudioCandidates=[...scenarioTracks,...filmScenarioTracks,
+    ...curatedAudioTracks,...libraryScenarioTracks,...classicalAudioTracks,...mandalaAudioTracks];
+  const seenAvailableAudioIds=new Set<string>();
+  const availableAudioTracks=availableAudioCandidates.filter(track=>{
+    if(seenAvailableAudioIds.has(track.id))return false;
+    seenAvailableAudioIds.add(track.id);
+    return true;
+  });
   const featuredMelodies=(scenarioTracks.length?scenarioTracks:recommendMandalaAudio({
     theme:audioTheme,kind:"melody",wish,
   })).slice(0,4);
@@ -8073,6 +8097,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                       </select>
                     </label>
                   </div>
+                  <small data-video-audio-library-count role="status">
+                    {locale==="ru"?"Найдено мелодий: ":locale==="es"?"Melodías encontradas: ":"Melodies found: "}{filteredAudio.length}
+                  </small>
                   <div className={videoStyles.audioLibraryTrackList} data-video-audio-library-tracks>
                     {filteredAudio.slice(0,showAllAudio?filteredAudio.length:5).map(track=>{
                       const selected=!uploadedAudio&&music===track.id;
