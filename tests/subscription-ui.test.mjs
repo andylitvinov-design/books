@@ -391,8 +391,8 @@ test('four announced packages use native labelled radios, but never charge at ol
       node.props['aria-describedby'] && node.props['aria-labelledby']))
     assert.equal(nodes(tree).find(node => node.type === 'legend').props.children, t.choosePlan)
     assert.ok(textOf(tree).includes(t.newPricingNotice))
-    assert.ok(textOf(tree).includes('€5'))
-    assert.ok(textOf(tree).includes('€40'))
+    assert.match(textOf(tree), /€\s*5\b/)
+    assert.match(textOf(tree), /€\s*40\b/)
     assert.equal(nodes(tree).some(node => node.type === h.api.CheckoutAction), false)
     assert.equal(nodes(tree).filter(node => node.type === 'button').length, 0)
     // Selection stays local. It cannot create checkout or a paid entitlement.
