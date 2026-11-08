@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Activity, ArrowRight, BookOpen, ClipboardList, FileClock, FileText, House, ListChecks, LockKeyhole, Route, Settings2 } from 'lucide-react'
+import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, Route, Settings2 } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
 
@@ -105,33 +105,27 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         data-profile-tab={id} aria-current={current === id ? 'page' : undefined}
         className={current === id ? styles.current : styles.tab}>
         <Icon size={20} strokeWidth={1.9} aria-hidden="true" /><span>{t.tabs[id]}</span>
+        {id === 'tests' && Number.isInteger(resultCount) && resultCount > 0 &&
+          <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
       </Link>)}
     </nav>
     {current === 'today' && <>
       <div className={styles.hero} data-profile-video-hero>
-        <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>{t.label}</p>
-          <h1>{t.hero}</h1>
-          <p>{t.intro}</p>
-        </div>
+        <h1 className={styles.srOnly}>{t.hero}</h1>
         <div className={styles.videoFrame}>
           <video controls playsInline preload="none" poster={POSTER} aria-label={t.video}>
             <source src={VIDEO} type="video/mp4" />
             <track kind="captions" src="/videos/holistic-house/profile-scenic.en.vtt" srcLang="en" label="English" />
           </video>
         </div>
-        <div className={styles.heroFoot}>
-          <small>{t.film}</small>
-          <Link href={paths.path} prefetch={false}>{t.route}<ArrowRight size={17} aria-hidden="true" /></Link>
-        </div>
+        <nav className={styles.quickActions} data-profile-quick-actions aria-label={t.label}>
+          <Link href={paths.path} prefetch={false} className={styles.primaryQuickAction}><Route size={19} aria-hidden="true" />{t.route}</Link>
+          <Link href={paths.tests} prefetch={false}><ClipboardList size={19} aria-hidden="true" />{t.actions[0]}</Link>
+          <Link href={paths.state} prefetch={false}><Activity size={19} aria-hidden="true" />{t.actions[1]}</Link>
+          <Link href={paths.courses} prefetch={false}><BookOpen size={19} aria-hidden="true" />{t.actions[2]}</Link>
+        </nav>
+        <p className={styles.srOnly}>{t.privacy}</p>
       </div>
-      <div className={styles.quickActions} data-profile-quick-actions>
-        <Link href={paths.tests} prefetch={false}><ClipboardList size={19} aria-hidden="true" />{t.actions[0]}</Link>
-        <Link href={paths.state} prefetch={false}><Activity size={19} aria-hidden="true" />{t.actions[1]}</Link>
-        <Link href={paths.courses} prefetch={false}><BookOpen size={19} aria-hidden="true" />{t.actions[2]}</Link>
-      </div>
-      <p className={styles.privacyNote}><LockKeyhole size={15} aria-hidden="true" />{t.privacy}</p>
-      {Number.isInteger(resultCount) && <p className={styles.count}><ListChecks size={16} aria-hidden="true" />{resultCount} {COPY[selected].count}</p>}
     </>}
     {current !== 'today' && current !== 'create' && <div className={styles.sectionIntro}>
       <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
