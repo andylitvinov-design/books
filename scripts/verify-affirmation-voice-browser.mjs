@@ -805,8 +805,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Real attached WAV is reflected on the shared live video stage, not
       // merely in a hidden legacy audio panel or a transient preview label.
       await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
-      assert.equal(await page.locator('[data-hypno-music] [data-phrase-music-attach]').first().isDisabled(),true,
-        "standalone music cannot silently replace mixed narration WAV");
+      // Music Match now permits compatible background beds with approved voice.
+      // Prove it with a physical Safari click and confirm the narration WAV
+      // remains attached: no standalone music silently replaces a client's voice.
+      const bedChoice=page.locator('[data-hypno-music] [data-phrase-music-attach]').first();
+      await expect(bedChoice).toBeEnabled();
+      await bedChoice.click();
+      await expect(bedChoice).toHaveAttribute("aria-checked","true");
+      await expect(page.locator("[data-video-live-audio]")).toContainText(expectedFileName);
       const firstAudio=await page.locator("[data-video-affimations-audio-ready] audio").getAttribute("src");
       assert.equal(await page.locator("[data-video-affirmation-bed] option").count(),14,
         "the first-party library offers none and thirteen backgrounds");
