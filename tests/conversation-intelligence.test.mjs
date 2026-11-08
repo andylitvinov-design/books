@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { understandConversationTurn, CONVERSATION_INTELLIGENCE_VERSION } from "../lib/holistic-support/conversation-intelligence.mjs";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "../lib/holistic-support/natural-dialogue.mjs";
+import { ruleConversationReply } from "../lib/holistic-support/rule-conversation.mjs";
 const history = message => [{role:"user",text:message},{role:"assistant",text:"Как продолжим?"}];
 
 test("corrections prioritize the corrected topic",()=>{
@@ -62,4 +63,21 @@ test("bounded and versioned",()=>{
  const x=understandConversationTurn({message:"x".repeat(3001)});
  assert.equal(x.act,"over_limit"); assert.equal(x.replyFallback,null);
  assert.equal(CONVERSATION_INTELLIGENCE_VERSION,"hi-conversation-intelligence-v1");
+});
+
+test("the default deterministic chat uses dialogue intelligence before broad topic rules",()=>{
+ const correction=ruleConversationReply({message:"Не про любовь, а про деньги",locale:"ru"});
+ assert.equal(correction.source,"conversation-intelligence");
+ assert.equal(correction.understanding.topic,"work_money");
+ const followup=ruleConversationReply({message:"А почему?",locale:"ru",history:history("Мне сложно в отношениях")});
+ assert.equal(followup.understanding.act,"follow_up");
+ assert.match(followup.reply,/отношения/);
+ const ambivalence=ruleConversationReply({message:"Я хочу сменить работу, но боюсь подвести команду",locale:"ru"});
+ assert.equal(ambivalence.understanding.act,"ambivalence");
+ const direct=ruleConversationReply({message:"Напиши медитацию для сна",locale:"ru"});
+ assert.notEqual(direct.source,"conversation-intelligence");
+});
+test("question punctuation is accepted for short follow-up turns",()=>{
+ assert.equal(understandConversationTurn({message:"А почему?",locale:"ru"}).act,"follow_up");
+ assert.equal(understandConversationTurn({message:"Why?",locale:"en"}).act,"follow_up");
 });
