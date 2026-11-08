@@ -129,6 +129,21 @@ test('Error→Repair requires authenticated same PR same HEAD start timestamp af
  const empty=k.repairSample(candidates,{},k.window(now,0),0);
  assert.equal(empty.n,0);assert.equal(empty.mean_min,null);
 });
+test('Error→Repair candidates include only failed required Core CI jobs',()=>{
+ const specialistOnly=record(13,'failure',{jobs:[
+  job(131,'core-lint-types-build','success',today),job(132,'hh-specialist','failure',later),
+  job(133,'hh-merge-check','failure',later)]});
+ const mergeGateOnly=record(14,'failure',{jobs:[
+  job(141,'core-lint-types-build','success',today),job(142,'hh-specialist','success',today),
+  job(143,'hh-merge-check','failure',later)]});
+ const coreAndSpecialist=record(15,'failure',{jobs:[
+  job(151,'core-lint-types-build','failure',today),job(152,'hh-specialist','failure',later),
+  job(153,'hh-merge-check','failure',later)]});
+ const candidates=k.errors([specialistOnly,mergeGateOnly,coreAndSpecialist],k.window(now,0),now);
+ assert.equal(candidates.length,1);assert.equal(candidates[0].pr,15);
+ assert.match(candidates[0].failure_job_url,/job\/151$/);
+ assert.equal(candidates[0].failed_at,today);
+});
 test('missing 2026-10-21 historical Core data is not reported as 0% or 0 minutes',()=>{
  const data=k.report([record(1)],now);
  const hist=data.windows.two_weeks_ago;

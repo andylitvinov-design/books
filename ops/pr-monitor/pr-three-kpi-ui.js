@@ -18,7 +18,7 @@
  let box,body,meta,reload,deepButton,wavePanel,report=null,busy=false,initialized=false,observer;
  const rows=[
   {key:'error_to_repair',title:'Error → Repair',
-    what:'От завершения первого подтверждённого failed CI job до доказанного начала фактического Repair'},
+    what:'От завершения failed job core-lint-types-build до доказанного начала Repair на том же PR/HEAD'},
   {key:'ci_first_pass',title:'CI First Pass',
     what:'Доля PR, успешно завершивших обязательный Core CI с первой волны; ранняя история может отсутствовать'},
   {key:'green_to_merge',title:'Green → Merge',
