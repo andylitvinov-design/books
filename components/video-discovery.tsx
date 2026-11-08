@@ -1,6 +1,6 @@
 "use client";
 
-import {Bookmark, Clock3, Globe2, RotateCcw, Search, SlidersHorizontal, Sparkles} from "lucide-react";
+import {Bookmark, RotateCcw, Search, SlidersHorizontal, Sparkles} from "lucide-react";
 import {useEffect, useMemo, useState} from "react";
 import {rankDiscoveryVideos, VIDEO_GOALS} from "@/lib/video-discovery/ranker.mjs";
 import {VIDEO_LIFE_AREAS,VIDEO_CONTENT_TYPES,VIDEO_DIRECTIONS,VIDEO_TRADITIONS,lifeAreasForIntent} from "@/lib/video-discovery/taxonomy.mjs";
@@ -77,7 +77,7 @@ const labels={
   },
 } as const;
 const safeId=(x:unknown):x is string=>typeof x==="string"&&x.length>0&&x.length<=180;
-export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicLocale;videos:LibraryFeedItem[];variant?:"library"|"mytube"}){
+export function VideoDiscovery({locale,videos,variant="library",subtitle}:{locale:PublicLocale;videos:LibraryFeedItem[];variant?:"library"|"mytube";subtitle?:string}){
   const t=labels[locale];
   const [area,setArea]=useState("all");
   const [goal,setGoal]=useState("all");
@@ -119,15 +119,6 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
   const styleCoverage=Object.fromEntries(mytubeStyles.map(style=>[
     style.id,videos.filter(video=>video.mytubeVisualTagEvidence==="explicit_human_review"&&
       video.mytubeStyleIds?.includes(style.id)).length]));
-  const activeMyTubeSubcategory=mytubeCategoryId!=="all"&&mytubeSubcategoryId!=="all"?mytubeSubcategories.find(item=>item.id===mytubeSubcategoryId):null;
-  // Show real editorial subcategories even before a direction is selected.
-  // Each shortcut selects its parent direction; no synthetic taxonomy tags.
-  const preferredSubcategoryIds=["money-abundance","finding-love","vital-energy","stress-burnout"];
-  const mytubeQuickSubcategories=mytubeCategoryId==="all"
-    ?mytubeCategories.flatMap((category,i)=>listMyTubeSubcategories(category.id,locale)
-      .filter(item=>item.id===preferredSubcategoryIds[i])
-      .map(item=>({...item,categoryId:category.id})))
-    :mytubeSubcategories.map(item=>({...item,categoryId:mytubeCategoryId}));
   useEffect(()=>{
     try{
       const value:unknown=JSON.parse(window.localStorage.getItem(STORAGE_KEY)||"[]");
@@ -281,67 +272,59 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
   ].filter(Boolean).join(" › ")||t.mytubeAny;
   const index=VIDEO_GOALS.indexOf(goal);
   return <div className={[styles.wrapper,variant==="mytube"&&styles.mytube].filter(Boolean).join(" ")} data-hh-video-discovery="v1" data-discovery-variant={variant}>
-    {variant==="mytube" && <label className={styles.topSearch}>
-      <Search size={21} aria-hidden="true"/>
-      <span className={styles.visuallyHidden}>{t.searchLabel}</span>
-      <input type="search" data-mytube-search maxLength={120} value={search}
-        placeholder={t.searchPlaceholder} onChange={event=>setSearch(event.target.value)}/>
-      {search && <button type="button" onClick={()=>setSearch("")} aria-label={t.resetFilters}>×</button>}
-    </label>}
     {variant==="mytube"&&<>
-      <div className={styles.mytubeToolbar} data-mytube-toolbar>
-        <div className={styles.mytubeFacetRow} data-mytube-category-row>
-          <span className={styles.mytubeFacetLabel}>{t.mytubeCategoryShort}</span>
-          <div className={styles.mytubeCategoryRail} data-mytube-category-rail
-            data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
-            <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
-              onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{t.durationAll}</button>
-            {mytubeCategories.map(item=><button type="button" key={item.id}
-              data-mytube-category={item.id} aria-pressed={mytubeCategoryId===item.id}
-              onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
-          </div>
-        </div>
-        <div className={styles.mytubeFacetRow} data-mytube-subcategory-row>
-          <span className={styles.mytubeFacetLabel}>{t.mytubeTopicShort}</span>
-          <div className={styles.mytubeSubcategoryRail} data-mytube-subcategory-rail
-            data-mytube-subcategories role="group" aria-label={t.mytubeSubcategoryTitle}>
-            <button type="button" data-mytube-subcategory="all" aria-pressed={mytubeSubcategoryId==="all"}
-              onClick={()=>{setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{t.durationAll}</button>
-            {mytubeQuickSubcategories.map(item=><button type="button" key={item.id}
-              data-mytube-subcategory={item.id} aria-pressed={mytubeSubcategoryId===item.id}
-              title={item.chooseWhen}
-              onClick={()=>{setMyTubeCategoryId(item.categoryId);setMyTubeSubcategoryId(item.id);setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
-          </div>
-        </div>
-        <div className={styles.mytubeQuickControls} data-mytube-quick-controls>
-          <button type="button" data-mytube-filter-toggle className={styles.compactMoreButton}
-            aria-label={t.advanced+" · "+activeMyTubePath}
-            aria-expanded={filtersOpen} aria-controls="mytube-refine-controls mytube-more-controls"
-            onClick={()=>setFiltersOpen(value=>!value)}>
-            <SlidersHorizontal size={16} aria-hidden="true"/><span>{t.refine}</span>
-          </button>
-          <label className={styles.mytubeQuickSelect} data-mytube-language-control>
-            <Globe2 size={17} aria-hidden="true"/>
-            <span className={styles.visuallyHidden}>{t.original}</span>
-            <select data-mytube-quick-language aria-label={t.original} value={language}
-              onChange={event=>setLanguage(event.target.value)}>
-              <option value="all">{t.durationAll}</option>
-              <option value="en">EN</option><option value="ru">RU</option><option value="es">ES</option>
-            </select>
-          </label>
-          <label className={styles.mytubeQuickSelect} data-mytube-length-control>
-            <Clock3 size={17} aria-hidden="true"/>
-            <span className={styles.visuallyHidden}>{t.durationTitle}</span>
-            <select data-mytube-duration aria-label={t.durationTitle} value={durationRange}
-              disabled={!durationsAvailable} title={!durationsAvailable?t.durationTitle:undefined}
-              onChange={event=>setDurationRange(event.target.value)}>
-              <option value="all">{t.durationAll}</option>
-              {["under4","under10","4to20","20to60","over60"].map((id,i)=>
-                <option key={id} value={id}>{t.durationOptions[i]}</option>)}
-            </select>
-          </label>
+      <div className={styles.mytubeIntroBar}>
+        <p>{subtitle||t.lead}</p>
+        <div className={styles.mytubeLanguages} data-mytube-language-control
+          role="group" aria-label={t.original}>
+          {(["all","en","ru","es"] as const).map(value=><button key={value}
+            type="button" data-mytube-audio-language={value} aria-pressed={language===value}
+            onClick={()=>setLanguage(value)}>
+            {value==="all"?t.durationAll:value.toUpperCase()}
+          </button>)}
         </div>
       </div>
+      <div className={styles.mytubeSearchRow} data-mytube-toolbar>
+        <label className={styles.topSearch}>
+          <Search size={20} aria-hidden="true"/>
+          <span className={styles.visuallyHidden}>{t.searchLabel}</span>
+          <input type="search" data-mytube-search maxLength={120} value={search}
+            placeholder={t.searchPlaceholder} onChange={event=>setSearch(event.target.value)}/>
+          {search&&<button type="button" onClick={()=>setSearch("")} aria-label={t.resetFilters}>×</button>}
+        </label>
+        <button type="button" data-mytube-filter-toggle className={styles.compactMoreButton}
+          aria-label={t.advanced+" · "+activeMyTubePath}
+          aria-expanded={filtersOpen} aria-controls="mytube-refine-controls mytube-more-controls"
+          onClick={()=>setFiltersOpen(value=>!value)}>
+          <SlidersHorizontal size={18} aria-hidden="true"/>
+        </button>
+      </div>
+      <div className={styles.mytubeCategoryRail} data-mytube-category-row
+        data-mytube-category-rail data-mytube-categories role="group" aria-label={t.mytubeCategoryTitle}>
+        <button type="button" data-mytube-category="all" aria-pressed={mytubeCategoryId==="all"}
+          onClick={()=>{setMyTubeCategoryId("all");setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>
+          {t.durationAll}
+        </button>
+        {mytubeCategories.map(item=><button key={item.id} type="button"
+          data-mytube-category={item.id} aria-pressed={mytubeCategoryId===item.id}
+          onClick={()=>{setMyTubeCategoryId(item.id);setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>
+          {item.label}
+        </button>)}
+      </div>
+      {mytubeCategoryId!=="all"&&<div className={styles.mytubeSubcategoryRail}
+        data-mytube-subcategory-row data-mytube-subcategory-rail data-mytube-subcategories
+        role="group" aria-label={t.mytubeSubcategoryTitle}>
+        <button type="button" data-mytube-subcategory="all" aria-pressed={mytubeSubcategoryId==="all"}
+          onClick={()=>{setMyTubeSubcategoryId("all");setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>
+          {t.durationAll}
+        </button>
+        {mytubeSubcategories.map(item=><button key={item.id} type="button"
+          data-mytube-subcategory={item.id} aria-pressed={mytubeSubcategoryId===item.id}
+          title={item.chooseWhen}
+          onClick={()=>{setMyTubeSubcategoryId(item.id);setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>
+          {item.label}
+        </button>)}
+      </div>}
       <div className={styles.mytubeFormatTabs} data-mytube-format-tabs role="group"
         aria-label={t.formatTitle}>
         {(["all","shorts","courses","study"] as const).map(mode=><button type="button" key={mode}
@@ -372,7 +355,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         </>}
         <div id={variant==="mytube"?"mytube-refine-controls":undefined}
           className={styles.refine} hidden={variant==="mytube"&&!filtersOpen}>
-        {mytubeCategoryId!=="all"?<>
+        {mytubeCategoryId!=="all"&&variant!=="mytube"?<>
           <div className={styles.groupHeading}><strong>{t.mytubeSubcategoryTitle}</strong></div>
           <div className={styles.goals} data-mytube-subcategories role="group" aria-label={t.mytubeSubcategoryTitle}>
             <button type="button" data-mytube-subcategory="all" aria-pressed={mytubeSubcategoryId==="all"}
@@ -381,7 +364,6 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
               aria-pressed={mytubeSubcategoryId===item.id} title={item.chooseWhen}
               onClick={()=>{setMyTubeSubcategoryId(item.id);setMyTubeTopicId("all");setMyTubeScenarioId("all");setMyTubeMotifId("all");setMyTubeStyleId("all");}}>{item.label}</button>)}
           </div>
-          {activeMyTubeSubcategory?<p className={styles.note} data-mytube-choice-hint>{activeMyTubeSubcategory.chooseWhen}</p>:null}
         </>:null}
         {mytubeSubcategoryId!=="all"?<>
           <div className={styles.groupHeading}><strong>{t.mytubeTopicTitle}</strong></div>
@@ -490,8 +472,9 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
                 <option key={id} value={id}>{t.periodOptions[i]}</option>)}
             </select>
           </label>}
-          {variant!=="mytube" && durationsAvailable && <label>{t.durationTitle}
-            <select data-mytube-duration value={durationRange} onChange={event=>setDurationRange(event.target.value)}>
+          {(variant==="mytube"||durationsAvailable) && <label>{t.durationTitle}
+            <select data-mytube-duration value={durationRange} disabled={!durationsAvailable}
+              onChange={event=>setDurationRange(event.target.value)}>
               <option value="all">{t.all}</option>
               {["under4","under10","4to20","20to60","over60"].map((id,i)=>
                 <option key={id} value={id}>{t.durationOptions[i]}</option>)}
