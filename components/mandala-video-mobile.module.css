@@ -4891,7 +4891,7 @@
  .studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="false"]{
    display:none!important
  }
- .studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{
+ .studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]:not([hidden]){
    display:block!important
  }
  .studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut]{display:none!important}
@@ -5342,3 +5342,13 @@
 .montageAdvancedShortcuts button{display:flex;align-items:center;justify-content:center;gap:6px;flex:1 1 135px;min-height:44px;padding:8px;border:1px solid #d6e1d5;border-radius:12px;background:#f5f9f3;color:#174a3c;font:700 13px/1.2 Arial,Helvetica,sans-serif}
 .montageAdvancedShortcuts button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
 .montageAdvancedShortcuts button:disabled{opacity:.6}
+/* Ideas Personalization: preserve the explicit audio/voice entry on mobile,
+   but never override the hidden attribute when the user switches to Concept. */
+@media(max-width:759px){
+ .studio[data-active-workspace="phrases"] [data-video-quick-phrases][data-ideas-subtab="personalization"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]:not([hidden]){
+   display:block!important
+ }
+ .studio[data-active-workspace="phrases"] [data-video-quick-phrases][data-ideas-subtab="personalization"]>button[data-video-phrase-audio-shortcut]:not([hidden]){
+   display:flex!important
+ }
+}
