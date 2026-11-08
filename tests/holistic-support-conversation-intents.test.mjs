@@ -3,6 +3,7 @@ import test from "node:test";
 import { interpretSupportUtterance, parseSupportMinutes, chooseSupportFormat } from "../lib/holistic-support/guide-dialogue.mjs";
 import { understandConversationTurn } from "../lib/holistic-support/conversation-intelligence.mjs";
 import { ruleConversationReply } from "../lib/holistic-support/rule-conversation.mjs";
+import { planJudgmentTurn } from "../lib/holistic-support/judgment-mind.mjs";
 
 test("natural-language inputs reuse the existing privacy-safe Home Guide parser", () => {
   assert.deepEqual(interpretSupportUtterance("Да", "ru").kind,"agree");
@@ -78,4 +79,34 @@ test("conversation intelligence does not mistake disclosures or short yes for ac
 
   const direct = ruleConversationReply({ message: "Напиши медитацию для сна", locale: "ru" });
   assert.notEqual(direct.source, "conversation-intelligence");
+});
+
+test("judgment turn orchestration uses conversation cues before broad emotion matching", () => {
+  const correction = planJudgmentTurn({
+    message: "Не про любовь, а про деньги", locale: "ru", safety: { status: "clear" },
+  });
+  assert.equal(correction.status, "handled");
+  assert.equal(correction.state, "reframed");
+  assert.match(correction.reply, /работа и деньги/);
+
+  const followUp = planJudgmentTurn({
+    message: "А почему?", locale: "ru", safety: { status: "clear" },
+    history: [{ role: "user", text: "Мне сложно в отношениях" }],
+  });
+  assert.equal(followUp.status, "handled");
+  assert.match(followUp.reply, /отношения/);
+
+  const mixed = planJudgmentTurn({
+    message: "Я хочу сменить работу, но боюсь подвести команду",
+    locale: "ru", safety: { status: "clear" },
+  });
+  assert.equal(mixed.status, "handled");
+  assert.match(mixed.reply, /желание и сомнение/);
+
+  const concrete = planJudgmentTurn({
+    message: "Я не могу начать работу", locale: "ru", safety: { status: "clear" },
+  });
+  assert.equal(concrete.status, "handled");
+  assert.equal(concrete.state, "awaiting_choice");
+  assert.equal(concrete.situationCode, "starting");
 });
