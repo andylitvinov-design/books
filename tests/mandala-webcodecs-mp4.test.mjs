@@ -333,35 +333,31 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
 });
 
 
-test("compact Ideas opens its actual opt-in voice editor via visible user control",()=>{
+test("Ideas Personalization and Concept preserve real voice opt-in and WebKit audio acceptance",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
- // Verify Personalization→Concept→Personalization and explicit voice opt-in.
- // No synthetic hidden clicks and no removal of media/consent assertions.
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
  const concept=browser.indexOf('await conceptTab.click()',personal);
  const back=browser.indexOf('await personalTab.click()',concept);
- const disclosure=browser.indexOf('await voiceDisclosure.locator(":scope > summary").click()',back);
- const button=browser.indexOf('const recordEntry=phrases.locator',disclosure);
- const hidden=browser.indexOf('await expect(advancedVoice).not.toHaveAttribute("open","")',button);
- const visible=browser.indexOf('await expect(recordEntry).toBeVisible',hidden);
- const tap=browser.indexOf('await recordEntry.click()',visible);
- const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open",""',tap);
- const voiceOptions=browser.indexOf('data-video-affirmation-gender="own"',opened);
+ const visibleButton=browser.indexOf('await advancedText.click()',back);
+ const opened=browser.indexOf('await expect(voiceDisclosure).toHaveAttribute("open","")',visibleButton);
+ const voice=browser.indexOf('await voiceModeButton.click()',opened);
+ const own=browser.indexOf('await myVoiceModeButton.click()',voice);
+ const selector=browser.indexOf('const phraseSelector=page.locator',own);
+ const transcript=browser.indexOf('const transcriptDisclosure=page.locator',selector);
+ const consent=browser.indexOf('await narrationConsent.check()',transcript);
  assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
-   disclosure>back&&button>disclosure&&hidden>button&&visible>hidden&&
-   tap>visible&&opened>tap&&voiceOptions>opened,
-   "real Personalization/Concept and Record UI must reveal the original voice editor");
+   visibleButton>back&&opened>visibleButton&&voice>opened&&own>voice&&
+   selector>own&&transcript>selector&&consent>transcript,
+   "WebKit must take visible Personalization/Concept and voice modes before consented TTS");
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
- assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'),
-   "recording-open state must remain bound to the original shared editor");
- assert.match(browser,/data-video-ideas-tabs/);
- assert.match(browser,/data-video-ideas-record/);
+ assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'));
+ assert.match(studio,/data-video-ideas-voice-mode="my-voice"/);
  assert.doesNotMatch(browser,/await advancedVoice\.locator\(":scope > summary"\)\.click\(\)/);
  for(const required of ["data-video-affirmation-voice-preview","data-hypno-approve",
-  "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",
-  'spawnSync("ffprobe"','spawnSync("ffmpeg"'])
-  assert.ok(browser.includes(required),"do not lose true media/consent coverage: "+required);
+   "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",
+   'spawnSync("ffprobe"','spawnSync("ffmpeg"'])
+   assert.ok(browser.includes(required),"preserve real encoded video/audio proof: "+required);
 });
 
 test("failed Safari output hides guest Watch and labels the result as a playback failure",()=>{
