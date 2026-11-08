@@ -21,3 +21,14 @@
 R0: Confirm one-root-one-PR, source owner and cost; reconcile foundation branches. R1: security-reviewed migration with real 2-owner and 2-master RLS, consent/delete/revoke and immutable bindings. R2: client task status/events, master-client request binding, cross-user negative HTTP. R3: website AI rules memory adapter and Telegram verified-account integration with STOP/retry. R4: one protected source publication, exact-HEAD Core/Guard/Specialist, verified Vercel served SHA and signed-in iPhone/Telegram E2E before feature flag ON.
 
 **Stop if** identity or consent is unverified, draft status/lease unknown, unexpected paid services/builds, red required CI, missing migration, missing production schema, or unsafe personal data in logs. Never bypass checks to claim LIVE.
+
+## Client Memory 2.0 — «Обо мне» / owner-authored questionnaire (2026-11-08)
+Canonical product specification: https://github.com/andylitvinov-design/books/issues/1774#issuecomment-6715985895
+
+Additive implementation only: `lib/holistic-support/client-memory-questions.mjs` defines 76 optional questions, 13 categories, RU/EN/ES prompts and a three-question entry sequence. `components/app/client-about-me.jsx` is embedded in the **existing** private `/[locale]/app/memory` workspace; existing My Progress links to this space. No second account, paid provider, test history duplicate or CRM personal-data export.
+
+Storage stays in `app_private.client_ai_memory_items`, using an *encrypted questionKey within the existing row payload*, validated server-side against the allowlisted catalog and category. Confirm requires `userConfirmed:true`, live owner-bound memory opt-in and sensitive opt-in when applicable. Update preserves the encrypted questionKey; UI supports one question at a time, Skip/Back, edit existing answer and Forget. Existing owner-locked transactions reject duplicate confirmed question-key entries across tabs. The first three questions are purely optional; no marketing consent is inferred from answers.
+
+**Privacy and release:** No automatic transcript extraction, no implicit health profiling, no unauthenticated Telegram/WhatsApp recall. Current grant/CONSENT and FORCE RLS requirements remain mandatory; the attached SQL RLS recursion repair candidate must pass disposable PostgreSQL 2-owner/2-master tests and review. Existing feature flag OFF until verified migration, exact-HEAD mandatory CI, Vercel served SHA, and real signed-in mobile acceptance.
+
+**Not yet implemented here:** user-approved conversational proposal button wiring, durable per-question 'do not ask' setting, verified messenger sharing, manual personalized practitioner-per-record grant UI. Do not claim those flows LIVE from catalog/UI code.

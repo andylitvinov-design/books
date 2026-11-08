@@ -1,6 +1,7 @@
 'use client'
 import {useEffect,useState} from 'react'
 import {appFetch} from '@/lib/app/client-fetch'
+import ClientAboutMe from './client-about-me'
 import styles from './client-memory-workspace.module.css'
 
 const I18N={
@@ -99,6 +100,18 @@ export default function ClientMemoryWorkspace({locale='en',masterRequestId=null}
      category,scope:'coaching',privacyClass:sensitive?'sensitive':'general',value:value.trim(),userConfirmed:true})
    if(ok){setValue('');setSensitive(false)}
  }
+ async function saveAboutMe(question,answer){
+   return write('client-memory',{action:'confirm',id:uuid(),operationId:uuid(),
+     questionKey:question.key,category:question.category,scope:'support',
+     privacyClass:question.sensitive?'sensitive':'general',value:answer,userConfirmed:true})
+ }
+ async function editAboutMe(item,answer){
+   return write('client-memory',{action:'edit',id:item.id,expectedRevision:item.revision,
+     value:answer,pinned:item.pinned,operationId:uuid()})
+ }
+ async function forgetAboutMe(item){
+   return write('client-memory',{action:'forget',id:item.id,operationId:uuid()})
+ }
  async function change(item){
    if(!editing?.value?.trim())return
    const ok=await write('client-memory',{action:'edit',id:item.id,
@@ -139,6 +152,10 @@ export default function ClientMemoryWorkspace({locale='en',masterRequestId=null}
      <input type="checkbox" checked={Boolean(data.settings?.[field])} disabled={busy||
        (field!=='memory_enabled'&&!data.settings?.memory_enabled)}
        onChange={e=>consent(field,e.target.checked)}/>{t[label]}</label>)}
+   <ClientAboutMe locale={locale} items={data.items||[]} busy={busy}
+     memoryEnabled={Boolean(data.settings?.memory_enabled)}
+     sensitiveEnabled={Boolean(data.settings?.sensitive_enabled)}
+     onConfirm={saveAboutMe} onEdit={editAboutMe} onForget={forgetAboutMe}/>
    {data.settings?.memory_enabled&&<div className={styles.form}>
      <h3>{t.new}</h3><label>{t.category}<select value={category} onChange={e=>setCategory(e.target.value)}>
        {CATEGORIES.map(([id,label])=><option key={id} value={id}>{t[label]}</option>)}</select></label>

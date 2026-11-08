@@ -112,6 +112,13 @@ if(!isolated){
         values($1,$2,'goal','coaching',$3,'client_explicit','client_confirmed',now(),now()+interval '30 days',$4)`,
         [REC,A,'x'.repeat(100),op(1)]))
       assert.equal((await as(B,db=>db.query('select count(*)::int n from app_private.client_ai_memory_items'))).rows[0].n,0)
+      // A direct callable helper must never reveal another account's item.
+      assert.equal((await as(A,db=>db.query(
+        'select app_private.client_ai_share_item_valid($1,$2) allowed',
+        [A,REC]))).rows[0].allowed,true)
+      assert.equal((await as(B,db=>db.query(
+        'select app_private.client_ai_share_item_valid($1,$2) allowed',
+        [A,REC]))).rows[0].allowed,false)
       await as(A,db=>db.query(`insert into app_private.client_ai_memory_shares
         (id,account_id,memory_item_id,consultation_request_id,practitioner_account_id,
           scope,consent_version,operation_id,expires_at)

@@ -45,7 +45,7 @@ async function handler(request){
         onlyKeys(data,['action','values','expectedRevision','operationId'])
         result=await updateClientMemoryConsent(config,actor,data);break
       case 'confirm':
-        onlyKeys(data,['action','id','operationId','category','scope','privacyClass','value','userConfirmed'])
+        onlyKeys(data,['action','id','operationId','category','scope','privacyClass','value','userConfirmed','questionKey'])
         result=await confirmClientMemory(config,actor,data);break
       case 'edit':
         onlyKeys(data,['action','id','operationId','value','pinned','expectedRevision'])

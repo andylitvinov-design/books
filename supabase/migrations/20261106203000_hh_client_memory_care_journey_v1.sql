@@ -173,6 +173,28 @@ REVOKE ALL ON FUNCTION app_private.client_care_request_binding_valid(uuid,uuid,u
 GRANT EXECUTE ON FUNCTION app_private.client_care_request_binding_valid(uuid,uuid,uuid)
   TO hh_app_backend;
 
+-- Narrow, actor-bound share target lookup to break reciprocal RLS expansion.
+-- Migration owner must be reviewed for FORCE RLS bypass; client roles get none.
+CREATE FUNCTION app_private.client_ai_share_item_valid(
+  p_account_id uuid, p_memory_item_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $fn$
+  SELECT p_account_id=(SELECT auth.uid())
+    AND (SELECT app_private.account_active())
+    AND EXISTS (
+      SELECT 1 FROM app_private.client_ai_memory_items item
+      WHERE item.account_id=p_account_id
+        AND item.id=p_memory_item_id
+        AND item.status='confirmed'
+        AND item.expires_at>now()
+    );
+$fn$;
+REVOKE ALL ON FUNCTION app_private.client_ai_share_item_valid(uuid,uuid)
+  FROM PUBLIC,anon,authenticated,hh_app_inbox;
+GRANT EXECUTE ON FUNCTION app_private.client_ai_share_item_valid(uuid,uuid)
+  TO hh_app_backend;
+
 DO $roles$ DECLARE t text; BEGIN
   FOREACH t IN ARRAY ARRAY[
     'client_ai_memory_settings','client_ai_memory_items',
@@ -247,10 +269,8 @@ CREATE POLICY client_ai_shares_insert ON app_private.client_ai_memory_shares
       WHERE settings.account_id=client_ai_memory_shares.account_id
         AND settings.memory_enabled IS TRUE
         AND settings.master_sharing_enabled IS TRUE)
-    AND EXISTS (SELECT 1 FROM app_private.client_ai_memory_items item
-      WHERE item.account_id=client_ai_memory_shares.account_id
-        AND item.id=client_ai_memory_shares.memory_item_id
-        AND item.status='confirmed' AND item.expires_at>now())
+    AND app_private.client_ai_share_item_valid(
+      client_ai_memory_shares.account_id,client_ai_memory_shares.memory_item_id)
     AND app_private.client_care_request_binding_valid(
       consultation_request_id,account_id,practitioner_account_id)
  );

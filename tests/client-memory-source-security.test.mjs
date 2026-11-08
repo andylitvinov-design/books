@@ -18,7 +18,15 @@ test('six private tables explicitly FORCE row-level security and forbid public t
  assert.match(sql,/FORCE ROW LEVEL SECURITY/)
  assert.match(sql,/REVOKE ALL ON app_private/)
  assert.doesNotMatch(sql,/GRANT (?:SELECT|INSERT|UPDATE|DELETE|ALL) ON app_private\.\w+ TO (?:public|anon|authenticated)/i)
- assert.doesNotMatch(sql,/SECURITY DEFINER/)
+ // Exactly one narrowly-scoped security-definer helper prevents reciprocal RLS expansion.
+ // No other privileged function may be introduced by the migration.
+ assert.equal((sql.match(/SECURITY DEFINER/g)||[]).length,1)
+ assert.match(sql,/CREATE FUNCTION app_private\.client_ai_share_item_valid\(/)
+ assert.match(sql,/LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''/)
+ assert.match(sql,/REVOKE ALL ON FUNCTION app_private\.client_ai_share_item_valid\(uuid,uuid\)/)
+ assert.match(sql,/GRANT EXECUTE ON FUNCTION app_private\.client_ai_share_item_valid\(uuid,uuid\)[\s\S]*?TO hh_app_backend/)
+ assert.match(sql,/p_account_id=\(SELECT auth\.uid\(\)\)/)
+ assert.match(sql,/app_private\.account_active\(\)/)
 })
 test('master access requires current request and approved practitioner',()=>{
  assert.match(sql,/client_care_request_binding_valid/)
