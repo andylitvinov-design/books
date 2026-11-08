@@ -1431,10 +1431,13 @@ function paintCinematicFrame(
   styleVideo:HTMLVideoElement|null = null,
 ) {
   if(proceduralPlan){paintFreeVideoFrame(ctx,proceduralPlan,time,permittedLocalPortrait);return;}
-  // Replace the visible first beat, retain the other validated source clips,
-  // their audio, timeline captions and transitions.
+  // A full source-verified compilation must retain every selected physical MP4,
+  // including shot #1. Style may grade the frame but never replace a licensed
+  // timeline source in either preview, MediaRecorder, or WebCodecs export.
+  // On the no-compilation style preview the selected first-beat visual remains.
   const firstBeatSeconds=storyboard?.shots[0]?.durationSeconds??5;
-  if(montageStyleId&&time>=0&&time<firstBeatSeconds&&paintSelectedStyleShot(ctx,styleVideo)){
+  if(storyboard?.version!==FREE_FILM_PLAN_VERSION &&
+    montageStyleId&&time>=0&&time<firstBeatSeconds&&paintSelectedStyleShot(ctx,styleVideo)){
     paintStudioVisualGrade(ctx,montageStyleId);
     return;
   }
@@ -4630,16 +4633,24 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       }));
       setNotice(locale==="ru"?"Расшифровка с временными метками готова. Проверьте текст перед монтажом.":
         locale==="es"?"Transcripción con tiempos lista. Revisa el texto.":"Timed transcript ready. Review it before editing.");
+      if(recipientAudioSelected)window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.querySelector("[data-video-recipient-audio-plan]")?.scrollIntoView({
+          block:"nearest",behavior:"smooth"
+        })));
     }catch(error){
       if(controller.signal.aborted)return;
       const code=error instanceof Error?error.message:"";
       setSttError(code==="AUDIO_STT_FREE_PROVIDER_NOT_CONFIGURED"?
-        (locale==="ru"?"Бесплатное распознавание ещё не подключено. Запись осталась на устройстве.":
+        (locale==="ru"?"Бесплатное распознавание не подключено. Запись осталась на устройстве. Можно продолжить в монтаж без расшифровки.":
           locale==="es"?"El reconocimiento gratuito no está conectado. Tu audio sigue en el dispositivo.":
             "Free speech recognition is not configured. Your audio remains on this device.") :
         (locale==="ru"?"Не удалось расшифровать запись с точными таймкодами. Проверьте сеть и формат аудио.":
           locale==="es"?"No se pudo transcribir con tiempos verificados. Revisa la conexión y el formato.":
             "Timed transcription failed. Check the connection and audio format."));
+      if(recipientAudioSelected)window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+        document.querySelector("[data-video-recipient-audio-error]")?.scrollIntoView({
+          block:"nearest",behavior:"smooth"
+        })));
     }finally{
       if(sttAbortRef.current===controller){
         sttAbortRef.current=null;setSttBusy(false);
@@ -5746,6 +5757,28 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setActiveWorkspace("editor");setMontagePanel("effects");setShowAdvancedVideo(true);setVideoScenarioOpen(true);
     setStudioMode("pump");
   };
+  function goRecipientAudioToManualMontage(){
+    const entry=uploadedAudioRef.current;
+    if(!entry||!audioRights||sttBusy||recording||preparing)return;
+    // Local-only recovery: no fabricated transcript/timestamps or provider call.
+    // Keep the original authorized recording and never loop it.
+    setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
+    setAudioAuto(false);setMusic("none");
+    setActiveWorkspace("editor");setMontagePanel("audio");
+    setShowAdvancedVideo(true);setVideoScenarioOpen(true);setStudioMode("pump");
+    setNotice(locale==="ru"
+      ?"Запись добавлена в монтаж без расшифровки. Выберите видеоряд вручную."
+      :locale==="es"
+        ?"Audio añadido sin transcripción. Elige las escenas manualmente."
+        :"Audio attached without transcription. Choose footage manually.");
+    window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
+      const details=document.querySelector<HTMLDetailsElement>("[data-video-audio-details]");
+      if(details)details.open=true;
+      document.querySelector("[data-video-audio-storyboard]")?.scrollIntoView({
+        block:"nearest",behavior:"smooth"
+      });
+    }));
+  }
   // Existing recorder, STT API, shot matcher and Canvas; only a new Goal entry UI.
   const recipientAudioPanel=<section className={videoStyles.recipientAudioSteps} data-video-recipient-audio-panel>
     <strong>{locale==="ru"?"Создайте видео из вашей аудиозаписи":locale==="es"?"Crear vídeo desde tu audio":"Create visuals from your audio"}</strong>
@@ -5793,6 +5826,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         onClick={()=>void transcribeVideoVoice()}><AudioLines size={17}/>
         {sttBusy?(locale==="ru"?"Расшифровываем…":locale==="es"?"Transcribiendo…":"Transcribing…"):
           locale==="ru"?"Расшифровать":locale==="es"?"Transcribir":"Transcribe"}</button>
+      {sttError?<p role="alert" className={videoStyles.warning}
+        data-video-recipient-audio-error>{sttError}</p>:null}
+      {uploadedAudio&&!voiceTranscript?<button type="button" data-video-recipient-audio-manual
+        disabled={!audioRights||sttBusy||recording||preparing}
+        onClick={goRecipientAudioToManualMontage}>
+        <Film size={17}/>{locale==="ru"?"В монтаж без расшифровки":
+          locale==="es"?"Editar sin transcripción":"Edit without transcription"}
+      </button>:null}
       {voiceTranscript?<details><summary>{locale==="ru"?"Просмотреть текст":locale==="es"?"Ver texto":"Review transcript"}
         · {voiceTranscript.durationSeconds.toFixed(1)} s</summary><p>{voiceTranscript.text}</p></details>:null}
       </div>
@@ -5857,7 +5898,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>:null}
       </div>
     </div>
-    {sttError?<p role="alert" data-video-recipient-audio-error>{sttError}</p>:null}
     {musicWarning?<p role="status">{musicWarning}</p>:null}
     <button type="button" className={videoStyles.recipientAudioNext} data-video-recipient-audio-next
       disabled={!audioPlanApplied||!voiceVisualPlan?.canExport||!audioRights} onClick={goRecipientAudioToMontage}>
