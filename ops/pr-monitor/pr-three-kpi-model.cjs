@@ -183,7 +183,11 @@ function errors(runs,w,now) {
   const from=ts(w.from),to=ts(w.to),by=new Map();
   for(const r of runs) {
     if(!validRunWindow(r,now))continue;
-    const bad=r.jobs.filter(j=>FAIL.has(j.conclusion)&&ts(j.completed_at)!==null)
+    // Error → Repair is specifically a failed required Core CI job.
+    // Specialist and Merge Gate failures are different release stages and
+    // must never consume the bounded Core-repair evidence sample.
+    const bad=r.jobs.filter(j=>j.name==='core-lint-types-build'&&
+      FAIL.has(j.conclusion)&&ts(j.completed_at)!==null)
       .sort((a,b)=>ts(a.completed_at)-ts(b.completed_at))[0];
     if(!bad)continue;
     const at=ts(bad.completed_at);

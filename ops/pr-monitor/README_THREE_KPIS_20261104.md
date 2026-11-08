@@ -29,3 +29,8 @@ Existing read-only source: [Core CI issue #3419](https://github.com/andylitvinov
 **Cost and safety:** no new GitHub Actions workflow, schedule, runner, database, Vercel cron, paid integration, or CI/merge mutation. The on-demand read is capped at two pages on a 10-minute in-instance cache and preserves the existing GitHub rate reserve. Any source/lookup outage degrades to explicit partial coverage rather than an invented green result. The independent monitor's Vercel deployment requires separate source synchronization and LIVE verification; merging this control-repository patch alone does not deploy the Vercel monitor.
 
 **Integration check:** The control-branch merge incorporates the concurrent PR checkpoint-evidence contract and preserves its tests alongside this new KPI contract; all new checks still run in the existing workflow.
+
+
+## 2026-11-08 — Core-only Error → Repair candidate correction
+
+The KPI candidate selector must use only the failed required Core job `core-lint-types-build`. A Specialist-only `hh-specialist` failure or a `hh-merge-check` failure is a separate stage and must not consume the five-PR deep Repair evidence budget. Regression coverage verifies both the model sample and the live API's bounded per-PR reads. No historical values are rewritten; prior windows remain historical snapshots.
