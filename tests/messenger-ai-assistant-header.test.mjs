@@ -14,7 +14,7 @@ test("AI assistant header is localized and replaces obsolete notification/refres
 });
 test("History opens the existing consented private archive, not a second history store",()=>{
   assert.match(hub,/hh:messenger-open-history/);assert.match(chat,/hh:messenger-open-history/);
-  assert.match(chat,/data-hh-secure-chat-history/);assert.match(history,/Separate opt-in|Отдельное разрешение|Consentimiento separado/);
+  assert.match(chat,/<SecureDialogueHistory history=\{privateTranscript\}/);assert.match(history,/data-hh-secure-chat-history/);assert.match(history,/Separate opt-in|Отдельное разрешение|Consentimiento separado/);
 });
 test("New chat reuses the established reset handler",()=>{
   assert.match(hub,/hh:messenger-new-chat/);assert.match(chat,/const startNewConversation=\(\)=>resetConversation\(\)/);
