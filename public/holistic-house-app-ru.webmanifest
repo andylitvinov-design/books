@@ -3,7 +3,7 @@
   "short_name": "Holistic House",
   "description": "Личный кабинет Holistic House: сообщения, консультации, тесты, отчёты и курсы",
   "lang": "ru",
-  "start_url": "/ru/app/messages",
+  "start_url": "/ru",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
