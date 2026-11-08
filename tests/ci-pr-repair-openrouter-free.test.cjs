@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {DEFAULT_MODEL,selectedModel,verifyZeroPrice,requestFreePatch}=
+const {DEFAULT_MODEL,MODEL_PROFILES,chooseVerifiedFreeModel,selectedModel,verifyZeroPrice,requestFreePatch}=
   require('../scripts/ci-pr-repair-openrouter-free.cjs');
 const entry=(pricing={prompt:'0',completion:'0'})=>({id:DEFAULT_MODEL,pricing,
   architecture:{input_modalities:['text'],output_modalities:['text']}});
@@ -61,16 +61,78 @@ test('only one $0 pinned inference, without fallbacks or write tools',async()=>{
 });
 test('priced catalog, 429, wrong model, paid usage and invalid reply fail closed',async()=>{
   const cases=[
-    [response({data:[entry({prompt:'0.001',completion:'0'})]}),response({}),/PRICE_NOT_ZERO/,1],
+    [response({data:[entry({prompt:'0.001',completion:'0'})]}),response({}),/NO_VERIFIED_FREE_MODEL/,1],
     [response({data:[entry()]}),response({},429),/QUOTA_EXHAUSTED/,2],
     [response({data:[entry()]}),response({model:'paid/model',choices:[{message:{content:'patch'}}]}),/MODEL_MISMATCH/,2],
     [response({data:[entry()]}),response({model:DEFAULT_MODEL,usage:{cost:0.01},choices:[{message:{content:'patch'}}]}),/BILLING_NONZERO/,2],
-    [response({data:[entry()]}),response({model:DEFAULT_MODEL,usage:{cost:null},choices:[{message:{content:'patch'}}]}),/BILLING_NONZERO/,2],
-    [response({data:[entry()]}),response({model:DEFAULT_MODEL,choices:[]}),/PATCH_RESPONSE_INVALID/,2],
+    [response({data:[entry()]}),response({model:DEFAULT_MODEL,usage:{cost:null},choices:[{message:{content:'patch'}}]}),/BILLING_UNVERIFIED/,2],
+    [response({data:[entry()]}),response({model:DEFAULT_MODEL,usage:{cost:0},choices:[]}),/PATCH_RESPONSE_INVALID/,2],
   ];
   for(const [catalog,completion,re,expected] of cases){
     const {calls,fetchImpl}=mocked(catalog,completion);
     await assert.rejects(requestFreePatch({prompt:'test',key:'fixture',fetchImpl}),re);
     assert.equal(calls.length,expected);
   }
+});
+
+
+test('named free coding routes prioritize specialization, not catalog usage popularity',()=>{
+ assert.equal(DEFAULT_MODEL,'cohere/north-mini-code:free');
+ assert.deepEqual(MODEL_PROFILES.repair.slice(0,2),
+  ['cohere/north-mini-code:free','recursive/flint-v1.0:free']);
+ assert.equal(MODEL_PROFILES.architecture[0],'nvidia/nemotron-3-ultra-550b-a55b:free');
+ assert.equal(MODEL_PROFILES.visual[0],'nvidia/nemotron-3.5-super-vl:free');
+ assert.ok(Object.values(MODEL_PROFILES).every(profile=>profile.every(
+   candidate=>selectedModel(candidate)===candidate)));
+});
+test('one preflight catalog selects next verified free code model; one inference, zero billing',async()=>{
+ const second=MODEL_PROFILES.repair[1],picked=[];
+ const calls=[];
+ const fetchImpl=async(url,args)=>{
+  calls.push({url,args});
+  if(calls.length===1)return response({data:[
+   entry({prompt:'0.01',completion:'0'}),
+   {...entry(),id:second}
+  ]});
+  return response({model:second,usage:{cost:0},choices:[{message:{content:'diff --git a/a b/a'}}]});
+ };
+ const patch=await requestFreePatch({prompt:'public technical context',key:'fixture',
+  fetchImpl,onVerifiedModel:item=>picked.push(item)});
+ assert.match(patch,/diff --git/);
+ assert.equal(calls.length,2);
+ assert.deepEqual(picked,[{model:second,zeroCost:true,role:'repair',selection:'ranked_catalog'}]);
+ const body=JSON.parse(calls[1].args.body);
+ assert.equal(body.model,second);
+ assert.deepEqual(body.usage,{include:true});
+ assert.equal(body.models,undefined);
+ assert.equal(body.tools,undefined);
+ assert.equal(body.provider.allow_fallbacks,false);
+});
+test('explicit pin cannot silently fallback and unknown roles fail before inference',async()=>{
+ const candidate=MODEL_PROFILES.repair[0],calls=[];
+ const onlyFallback=response({data:[{...entry(),id:MODEL_PROFILES.repair[1]}]});
+ const fetchImpl=async(url)=>{
+  calls.push(url);return onlyFallback;
+ };
+ await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',model:candidate,fetchImpl}),
+   /MODEL_NOT_IN_CATALOG/);
+ assert.equal(calls.length,1);
+ assert.throws(()=>chooseVerifiedFreeModel({data:[]},{role:'not-a-role'}),/ROLE_UNKNOWN/);
+ await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',model:'not-free',fetchImpl}),
+   /MODEL_NOT_EXPLICIT_FREE/);
+ assert.equal(calls.length,1);
+});
+test('429 and missing or nonzero real response cost stop without retry',async()=>{
+ const model=MODEL_PROFILES.repair[0],catalog=response({data:[entry()]});
+ for(const result of [
+  response({},429),
+  response({model,usage:{},choices:[{message:{content:'patch'}}]}),
+  response({model,usage:{cost:0.01},choices:[{message:{content:'patch'}}]})
+ ]){
+  let count=0;
+  const fetchImpl=async()=>++count===1?catalog:result;
+  await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',fetchImpl}),
+   /QUOTA_EXHAUSTED|BILLING_UNVERIFIED|BILLING_NONZERO/);
+  assert.equal(count,2,'no LLM fallback or paid retry after attempted inference');
+ }
 });
