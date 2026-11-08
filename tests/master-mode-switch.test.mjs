@@ -1,0 +1,47 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { isUnifiedMobileDockPath, unifiedMobileDockActive, unifiedMobileDockHref } from "../lib/unified-mobile-dock.mjs";
+
+const read = path => readFile(new URL("../" + path, import.meta.url), "utf8");
+
+for (const locale of ["en", "ru", "es"]) {
+  test("Master public finder and private workspace remain one bottom-nav journey: " + locale, () => {
+    assert.equal(unifiedMobileDockHref(locale, "master"), "/" + locale + "/practice");
+    assert.equal(isUnifiedMobileDockPath("/" + locale + "/practice"), true);
+    assert.equal(isUnifiedMobileDockPath("/" + locale + "/masters"), true);
+    assert.equal(unifiedMobileDockActive("/" + locale + "/practice"), "master");
+    assert.equal(unifiedMobileDockActive("/" + locale + "/masters"), "master");
+    assert.equal(unifiedMobileDockActive("/" + locale + "/masters/andy-litvinov"), null);
+  });
+}
+
+test("the same accessible segmented navigation is above both existing page surfaces", async () => {
+  const [component, css, practice, finder, practiceBrowser, communityBrowser] = await Promise.all([
+    read("components/master-mode-switch.tsx"),
+    read("components/master-mode-switch.module.css"),
+    read("components/practice-showcase.jsx"),
+    read("app/[locale]/masters/page.tsx"),
+    read("scripts/verify-practice-visual-browser.mjs"),
+    read("scripts/verify-mentor-community-browser.mjs"),
+  ]);
+  for (const phrase of ["Find a Master", "I'm a Master", "Share services",
+    "Найти мастера", "Разместить услуги", "Buscar un maestro", "Compartir servicios"]) {
+    assert.ok(component.includes(phrase), phrase);
+  }
+  assert.match(component, /href=\{prefix \+ "\/masters"\}/);
+  assert.match(component, /href=\{prefix \+ "\/practice"\}/);
+  assert.match(component, /aria-current=\{active === "find"/);
+  assert.match(component, /aria-current=\{active === "share"/);
+  assert.doesNotMatch(component, /auth\/start|appFetch|fetch\(/);
+  assert.match(practice, /<MasterModeSwitch locale=\{locale\} active="share"\s*\/>/);
+  assert.match(finder, /<MasterModeSwitch locale=\{locale\} active="find"\s*\/>/);
+  assert.match(finder, /<MarketplaceMasterFinder practitioners=/);
+  assert.match(practice, /onClick=\{\(\) => void openAction\('create'\)\}/);
+  assert.match(css, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /min-height:\s*77px/);
+  assert.match(css, /:focus-visible/);
+  assert.match(css, /@media \(max-width: 360px\)/);
+  assert.match(practiceBrowser, /data-legacy-practice-bottom-nav/);
+  assert.match(communityBrowser, /data-master-mode="share"/);
+});

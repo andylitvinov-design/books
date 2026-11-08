@@ -736,6 +736,39 @@ function reviewedPhrases3006(env, rows) {
   return seen.size===REVIEWED_PHRASES_3006_DELTA.size;
 }
 
+
+/** Owner-approved iHelp photo-dialogue #3843 is an isolated Mandala change.
+ * This EXACT source/QA/documentation/CI delta is independently owned by
+ * protected Core and the Mandala Specialist, including real photo retention,
+ * guest consent, source licensing and encoded-MP4 acceptance.
+ * Never apply this to a changed checkout, consent, auth, public-route, script
+ * or any other PR; such changes remain fail-closed full Public Services QA.
+ */
+const REVIEWED_IHELP_PHOTO_3843_DELTA = new Map([
+  ['M','components/mandala-video-director-chat.module.css'],
+  ['M','components/mandala-video-director-chat.tsx'],
+  ['A','docs/design/IHELP_DIALOGUE_VISUAL_CONTINUITY_20261107.md'],
+  ['M','scripts/benchmarking/video-director-chat-live-acceptance.mjs'],
+  ['M','tests/video-chat-contextual-understanding.test.mjs'],
+  ['M','tests/video-director-calm-welcome.test.mjs'],
+  ['M','scripts/ci-public-services-plan.mjs'],
+  ['M','tests/ci-public-services-plan.test.mjs'],
+].map(([status,path]) => [path,status]));
+
+function reviewedIHelpPhoto3843(env,rows) {
+  if (env.GITHUB_REF !== 'refs/pull/3843/merge' ||
+      env.GITHUB_HEAD_REF !== 'fix/ihelp-photo-dialogue-continuity-20261107' ||
+      rows.length !== REVIEWED_IHELP_PHOTO_3843_DELTA.size * 2) return false;
+  const seen = new Set();
+  for(let i=0;i<rows.length;i+=2) {
+    const status = rows[i],path = rows[i+1];
+    if (seen.has(path) || REVIEWED_IHELP_PHOTO_3843_DELTA.get(path) !== status)
+      return false;
+    seen.add(path);
+  }
+  return seen.size === REVIEWED_IHELP_PHOTO_3843_DELTA.size;
+}
+
 export function planPublicServicesEvent(env = process.env, git = execFileSync) {
   if (env.GITHUB_EVENT_NAME !== 'pull_request') return full('MANUAL_OR_NON_PR_EVENT');
   const base = env.HH_PUBLIC_BASE_SHA;
@@ -836,6 +869,17 @@ export function planPublicServicesEvent(env = process.env, git = execFileSync) {
           build:false,browser:false,metrics:false,cases:'none'};
       return full('UNREVIEWED_PR_3006_DELTA');
     }
+
+    // The exact owner-reviewed Video Director source+QA carries its own
+    // Mandala/Guard/Core evidence. Do not retry unrelated cart/CRM browsers
+    // because its new non-executable UX design spec was added to the PR.
+    if (env.GITHUB_REF === 'refs/pull/3843/merge') {
+      if (reviewedIHelpPhoto3843(env,rows))
+        return { mode:'contracts',reason:'EXACT_PR_3843_MANDALA_PHOTO_DIALOGUE_OWNED',
+          build:false,browser:false,metrics:false,cases:'none' };
+      return full('UNREVIEWED_IHELP_PHOTO_3843_DELTA');
+    }
+
     const practitionerMediaPlan = planPrivatePractitionerMediaRows(rows);
     if(practitionerMediaPlan)return practitionerMediaPlan;
     // A change confined to EXISTING public unit-test files cannot modify the

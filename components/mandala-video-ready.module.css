@@ -133,3 +133,43 @@
 }
 @media(max-height:680px){.gateDialog{gap:8px}.gateTop{min-height:165px}.gateEyebrow{margin-top:10px}.gateTop h2{font-size:clamp(25px,6vw,32px)}.gateBenefits>div{padding:5px}}
 @media(prefers-reduced-motion:reduce){.gateBackdrop *{animation:none!important;transition:none!important}}
+
+/* Design Bible §10.13: Ready is the same Studio, not a gray/olive subsite.
+   Keep video media, selected mint, consent and signed-in state unchanged. */
+:global([data-mandala-mode="video"]) .root{
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) .title h2,
+:global([data-mandala-mode="video"]) .nextTitle{
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .title p,
+:global([data-mandala-mode="video"]) .journey small{
+  color:var(--hh-studio-muted,#5D6A71)
+}
+:global([data-mandala-mode="video"]) .actions>*,
+:global([data-mandala-mode="video"]) .journey>button,
+:global([data-mandala-mode="video"]) .ritualFields label,
+:global([data-mandala-mode="video"]) .ritualResult,
+:global([data-mandala-mode="video"]) .session{
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-forest,#14523F)
+}
+:global([data-mandala-mode="video"]) .ritualFields select,
+:global([data-mandala-mode="video"]) .ritualFields input,
+:global([data-mandala-mode="video"]) .context,
+:global([data-mandala-mode="video"]) .note{
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .primary{
+  background:linear-gradient(120deg,var(--hh-studio-primary,#087E61),
+    var(--hh-studio-deep,#006B4B));
+  border-color:var(--hh-studio-deep,#006B4B);
+  color:#FFFFFF
+}

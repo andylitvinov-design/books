@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import type { PublicLocale } from "@/lib/public-locales";
@@ -108,7 +109,19 @@ export function MeditationCourseEnquiry({locale,focus,courseKind="meditation"}:{
     </p>:<>
       <button type="button" className={css.open} data-meditation-course-order
         aria-expanded={open} aria-controls={formId}
-        onClick={()=>setOpen(v=>!v)}>{t.open}</button>
+        onPointerDown={event=>{
+          // On iPhone the button may scroll under a fixed navigation dock
+          // between pointerdown and pointerup. Keep the original tap target;
+          // pointercancel still prevents accidental activation on scroll.
+          if(event.isPrimary){
+            try{event.currentTarget.setPointerCapture(event.pointerId);}catch{/* Native click remains. */}
+          }
+        }}
+        onClick={()=>{
+          // Commit the real user gesture before the parent re-renders its
+          // course context or Safari shifts the scrolled viewport.
+          flushSync(()=>setOpen(current=>!current));
+        }}>{t.open}</button>
       {open?<form id={formId} className={css.form}
         data-meditation-course-contact onSubmit={event=>void submit(event)} noValidate>
         <label>{t.name}<input value={name} maxLength={120} autoComplete="name"
