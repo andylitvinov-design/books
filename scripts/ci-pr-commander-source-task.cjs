@@ -125,8 +125,12 @@ async function prepare({github,context,core,raw,freeKey,write=fs.writeFileSync}=
       'Owner instruction: ' + JSON.stringify(task.instruction),
       'Source: ' + JSON.stringify(body)
     ].join('\n');
-    const answer = await requestFreePatch({prompt,key:freeKey});
+    let verifiedModel=null;
+    const answer = await requestFreePatch({prompt,key:freeKey,role:'feature',
+      onVerifiedModel:receipt=>{verifiedModel=receipt.model;}});
     ({find,replace:replacement} = parseAiReply(answer));
+    core?.info('HH_COMMANDER_SOURCE_VERIFIED_FREE_MODEL ' +
+      JSON.stringify({model:verifiedModel,source:'live_zero_price_catalog',executed:true}));
   }
   const updated = literalChange(body,find,replacement);
   const syntaxStatus = checkCandidateSyntax(task.path,updated);

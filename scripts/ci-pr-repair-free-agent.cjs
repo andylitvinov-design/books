@@ -350,8 +350,12 @@ async function propose(){
    let reply,modelUsed=MODEL;
    if(router){
      const openrouter=require('./ci-pr-repair-openrouter-free.cjs');
-     modelUsed=openrouter.selectedModel(process.env.HH_OPENROUTER_FREE_MODEL||undefined);
-     reply=await openrouter.requestFreePatch({prompt,key:routerKey,model:modelUsed});
+     // A manual exact :free pin is respected; "auto" chooses the first
+     // currently zero-priced coding model from the bounded verified roster.
+     const requested=process.env.HH_OPENROUTER_FREE_MODEL||'auto';
+     reply=await openrouter.requestFreePatch({prompt,key:routerKey,model:requested,
+       role:'repair',onVerifiedModel:receipt=>{modelUsed=receipt.model;}});
+
      console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify({
        model:modelUsed,provider:'openrouter',zeroCost:true}));
    }else{

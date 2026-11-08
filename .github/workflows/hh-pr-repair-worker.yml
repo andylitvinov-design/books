@@ -527,7 +527,9 @@ jobs:
           HH_OPENCODE_BIN: ${{ runner.temp }}/hh-opencode/node_modules/.bin/opencode
           HH_OPENCODE_FREE_API_KEY: ${{ needs.claim.outputs.code_provider == 'opencode' && secrets.HH_OPENCODE_FREE_API_KEY || '' }}
           HH_OPENROUTER_FREE_API_KEY: ${{ needs.claim.outputs.code_provider == 'openrouter' && secrets.HH_OPENROUTER_FREE_API_KEY || '' }}
-          HH_OPENROUTER_FREE_MODEL: liquid/lfm-3-1.7b:free
+          # Free model resolved in the trusted adapter from the live zero-price catalog.
+          # A profile change never bypasses repair leases, isolation or exact-HEAD CI.
+          HH_OPENROUTER_FREE_MODEL: auto
         run: |
           set -euo pipefail
           # Proposer runs OpenCode in an empty temporary cwd, with an empty
