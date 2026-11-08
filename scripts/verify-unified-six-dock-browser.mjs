@@ -668,14 +668,22 @@ try{
  await unifiedProfile.click();
  await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
  await page.locator('[data-profile-hub-tabs]').waitFor({state:"visible",timeout:45000});
- assert.equal(await page.locator('[data-profile-tab="view"][aria-current="page"]').count(),1);
- await page.locator('[data-profile-tab="create"]').click();
- await page.waitForURL(/\/ru\/personality-profiles\/?$/,{timeout:45000});
- await page.locator('[data-profile-hub-tabs][data-profile-active="create"]').waitFor({state:"visible",timeout:45000});
+ assert.equal(await page.locator('[data-profile-tab="today"][aria-current="page"]').count(),1);
+ // The protected #3909 profile has six real sections; old View/Create tabs
+ // and /personality-profiles were replaced. Test the visible DOM and navigation,
+ // not a hidden fallback or loosened count.
+ assert.deepEqual(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').evaluateAll(
+   links=>links.map(link=>link.dataset.profileTab)),
+   ["today","tests","state","path","courses","reports"],
+   "the guest and signed-in My Space show the same six canonical sections");
+ await page.locator('[data-profile-tab="tests"]').click();
+ await page.waitForURL(/\/ru\/app\/tests\/?$/,{timeout:45000});
+ await page.locator('[data-profile-hub-tabs][data-profile-active="tests"]').waitFor({state:"visible",timeout:45000});
+ assert.equal(await page.locator('[data-profile-tab="tests"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
- assert.equal(await page.locator('[data-profile-tab]').count(),4);
- results.push({journey:"Public Profile → private guest hub → existing four-area creator with one seven-tab dock",passed:true});
+ assert.equal(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').count(),6);
+ results.push({journey:"Public Profile → six-tab My Space Today → protected Tests with one seven-tab dock",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));

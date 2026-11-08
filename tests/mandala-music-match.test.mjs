@@ -72,7 +72,7 @@ test("UI offers one of three suggestions and preserves user voice/silence",async
  const ideas=studio.slice(studio.indexOf('data-hypno-music'),
    studio.indexOf('id="phrase-audio-settings"'));
  assert.match(studio,/rankPersonalMusic\(\{tracks:rankedAudioPool/);
- assert.match(studio,/SCENARIO_AUDIO_REGISTRY\.flatMap\(scenario=>scenarioAudioTracks\(scenario\.id\)\)/);
+ assert.match(studio,/SCENARIO_AUDIO_REGISTRY\.flatMap\(\(scene:\{id:string\}\)=>scenarioAudioTracks\(scene\.id\)\)/);
  assert.match(studio,/const featuredMelodies=rankPersonalMusic/);
  assert.match(ideas,/featuredMelodies\.slice\(0,3\)/);
  assert.match(ideas,/onClick=\{\(\)=>choosePersonalMusic\(id\)\}/);

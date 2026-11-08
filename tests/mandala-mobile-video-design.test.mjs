@@ -492,7 +492,7 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   const orderEnd=studio.indexOf(";",orderStart);
   assert.deepEqual([...studio.slice(orderStart,orderEnd).matchAll(/"(energy|health|relationships|money|goals|life)"/g)]
     .map(match=>match[1]),topics,"approved topic order");
-  assert.match(studio,/1\. Выберите цель видео/);
+  assert.match(studio,/locale==="ru"\?"1\. Выберите цель":locale==="es"\?"1\. Elige tu objetivo":"1\. Choose your goal"/);
   const goal=studio.indexOf("data-video-director-goal-controls");
   const topic=studio.indexOf("data-video-director-topic-controls");
   const prompt=studio.indexOf("data-video-request-prompt");
@@ -534,7 +534,10 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
-  assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
+  assert.ok(studio.includes("quickStyleFilmFor(theme,index)?.poster"),
+    "the thumbnail must use the same certified video/poster resolver");
+  assert.ok(studio.includes("paintSelectedStyleShot(ctx,styleVideo)"),
+    "the real decoded MP4 appears in Canvas instead of only a color grade");
   assert.match(css,/\.quickVideoNav\{display:grid/);
   assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
   assert.match(css,/\.quickMusicRail\{/);

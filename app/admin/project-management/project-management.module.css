@@ -42,3 +42,11 @@
 .execution .proof a{overflow-wrap:anywhere}
 @media(max-width:390px){.execution{padding:10px}.execution .taskTools{grid-template-columns:1fr}}
 @media(max-width:354px){.execution{margin-left:-4px;margin-right:-4px}}
+
+
+/* Proofs remain plain read-only source receipts, never completion badges. */
+.sourceProof{border-top:1px solid rgba(201,178,244,.3);margin-top:12px;padding-top:12px;
+ display:grid;gap:7px;font-size:12px;line-height:1.45}
+.sourceProof strong{color:#e4d1fb;font-weight:740}
+.sourceProof p{margin:0;color:#cfcae1}
+.sourceProof a{display:block;overflow-wrap:anywhere;color:#cdb6fa;min-height:30px}
