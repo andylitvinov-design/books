@@ -1,0 +1,57 @@
+.panel{background:linear-gradient(160deg,#fffcf9 0%,#fffaf4 100%);border:1px solid #e8ddd2;border-radius:22px;padding:14px 12px 16px;box-shadow:0 8px 28px #503b2214;color:#193b31;min-width:0}
+.headline{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:6px 3px 14px}
+.headline h3{font-size:22px;line-height:1.18;font-weight:800;letter-spacing:-.025em;margin:8px 0 6px;color:#173d32}
+.headline p{font-size:14px;line-height:1.4;color:#435851;margin:0;max-width:31rem}
+.eyebrow{display:inline-flex;align-items:center;gap:5px;color:#116950;font-size:12px;font-weight:800}
+.aiSymbol{width:43px;height:43px;border-radius:14px;background:#dff4e8;display:grid;place-items:center;flex:0 0 auto;color:#087b64}
+.example{background:#fff4df;padding:11px 12px;border-radius:14px;font-size:13px;line-height:1.45;color:#785331;margin:0 0 12px}
+.example button{border:0;background:none;color:#087b64;font:inherit;font-weight:800;text-decoration:underline;margin-left:7px;cursor:pointer}
+.rows{display:grid;gap:5px}
+.row{display:grid;grid-template-columns:42px minmax(84px,31%) minmax(0,1fr) 14px;align-items:center;gap:8px;min-width:0;min-height:57px;padding:6px 8px;background:#fff;border:1px solid #e9e1d8;border-radius:15px;box-shadow:0 2px 6px #40351e09}
+.row strong{font-size:13px;line-height:1.23;color:#1c3832;overflow-wrap:anywhere}
+.rowValue{font-size:12px;line-height:1.4;color:#354942;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.rowChevron{color:#6b8880;transform:rotate(-90deg)}
+.rowIcon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#187661;background:#e8f6ec}
+.rowIcon[data-tone="rose"]{background:#fff0e9;color:#c16049}
+.rowIcon[data-tone="gold"]{background:#fff3d8;color:#ac7323}
+.rowIcon[data-tone="mint"]{background:#e8f5e9;color:#237858}
+.rowIcon[data-tone="purple"]{background:#f2e9fa;color:#8356aa}
+.rowIcon[data-tone="lilac"]{background:#f4eaff;color:#855dc1}
+.rowIcon[data-tone="blue"]{background:#e8efff;color:#486ac1}
+.rowIcon[data-tone="coral"]{background:#fff0ef;color:#ba4c56}
+.beats{margin:12px 0 8px;background:#f9fbf8;border:1px solid #dce9df;border-radius:13px;color:#1b4c3e}
+.beats summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;font-size:13px;font-weight:800;cursor:pointer}
+.beats summary::-webkit-details-marker{display:none}
+.beats[open] summary svg{transform:rotate(180deg)}
+.beats ol{margin:0;padding:3px 20px 13px 35px;font-size:13px;line-height:1.45}
+.beats li{padding:3px 0}
+.status{font-size:12px;line-height:1.4;color:#6c7770;margin:10px 2px 14px}
+.actions{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:9px}
+.actions button{min-height:62px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:15px;padding:10px 7px;font:800 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.actions button svg{flex-shrink:0}
+.approve{background:linear-gradient(115deg,#078e6a,#067e63);border:1px solid #087c60;color:white;box-shadow:0 5px 13px #087c6030}
+.edit{background:#fffdf7;border:1px solid #0d8065;color:#134d3d}
+.edit small{display:block;font:500 10px/1.4 Arial,Helvetica,sans-serif;color:#37665b;margin-top:3px}
+.actions button:disabled,.editor select:disabled,.editor textarea:disabled{opacity:.55;cursor:not-allowed}
+.guestNote{text-align:center;margin:11px 2px 0;font-size:11px;color:#5b726a}
+.editor{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:3px 0 10px}
+.editor label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:800;color:#205041;min-width:0}
+.editor select,.editor textarea{width:100%;min-width:0;border:1px solid #cbded4;border-radius:11px;padding:9px;background:#fff;color:#18382d;font:500 14px/1.35 Arial,Helvetica,sans-serif;min-height:44px}
+.editor label:nth-child(3),.editor label:nth-child(6),.editor label:nth-child(7){grid-column:1/-1}
+.editor textarea{resize:vertical}
+.styleLink{display:flex;align-items:center;gap:8px;background:#ecf7ef;border:1px solid #c9e8d8;border-radius:11px;font-weight:700;color:#116850;padding:9px;min-height:44px;grid-column:1/-1;cursor:pointer}
+.backdrop{position:fixed;inset:0;z-index:1500;background:#12231d95;display:flex;align-items:center;justify-content:center;padding:16px;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(16px,env(safe-area-inset-bottom));overflow-y:auto}
+.dialog{position:relative;background:#fffbf7;border:1px solid #fff;border-radius:26px;box-shadow:0 22px 60px #0005;width:min(430px,100%);max-height:calc(100dvh - 32px);overflow-y:auto;color:#19382e}
+.dialogImage{height:140px;background:#f3d8aa url("/images/holistic-house/reiki-approved-sunrise-v3.webp") center/cover no-repeat}
+.dialogBody{padding:18px 20px 24px;display:flex;flex-direction:column;gap:10px}
+.dialogBody h3{font-size:21px;line-height:1.2;font-weight:850;margin:0;color:#1c3b30}
+.dialogBody p{font-size:14px;line-height:1.5;color:#43544b;margin:0}
+.close{position:absolute;right:12px;top:12px;width:40px;height:40px;border:1px solid #eee;background:#fff;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:#1d392f}
+.lock{width:43px;height:43px;border-radius:14px;display:grid;place-items:center;background:#faecd7;color:#b07833}
+.login{display:flex;align-items:center;justify-content:center;gap:8px;background:#068c69;color:white!important;text-decoration:none!important;border-radius:14px;min-height:50px;padding:11px;font-size:14px;font-weight:800}
+.loginHint{font-size:12px!important;color:#697970!important}
+.checkLogin,.later{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;border:1px solid #b5d7c5;background:white;color:#175943;font-weight:700;min-height:44px;padding:9px;cursor:pointer}
+.later{border:0;background:none;color:#4e6256}
+.panel :is(button,select,textarea,a,summary):focus-visible{outline:3px solid #1d977b;outline-offset:2px}
+@media(max-width:359px){.panel{padding:11px 8px}.row{grid-template-columns:34px minmax(74px,29%) minmax(0,1fr) 12px;gap:5px;min-height:52px;padding:6px}.rowIcon{width:34px;height:34px}.row strong{font-size:12px}.rowValue{font-size:11.5px}.actions button{font-size:12px}.headline h3{font-size:20px}}
+@media(prefers-reduced-motion:reduce){.panel *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

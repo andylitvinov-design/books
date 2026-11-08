@@ -48,7 +48,8 @@ test("remote iframe is mounted only on the RU visitor's deliberate click",()=>{
   assert.match(source,/introPlaying \? \(\s*<div className={videoStyles\.therapyIntroOverlay}/);
   assert.match(source,/onClick=\{\(\)=>\{\s*premiumVideoRef\.current\?\.pause\(\);\s*setPreviewPlaying\(false\);\s*setIntroPlaying\(true\);/);
   assert.match(source,/<button className={videoStyles\.heroPlay}/);
-  assert.match(source,/setActiveWorkspace\(item\.id\);[\s\S]{0,140}setIntroPlaying\(false\);[\s\S]{0,90}setStudioMode\("pump"\)/);
+  assert.match(source,/const activateQuickWorkspace=[\s\S]{0,220}setActiveWorkspace\(id\);[\s\S]{0,140}setIntroPlaying\(false\);[\s\S]{0,90}setStudioMode\("pump"\)/);
+  assert.match(source,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
   assert.match(source,/className={videoStyles\.therapyIntroClose}[\s\S]*?onClick=\{\(\)=>setIntroPlaying\(false\)\}/);
   assert.match(source,/referrerPolicy="strict-origin-when-cross-origin"/);
   assert.match(source,/rel="noopener noreferrer"/);

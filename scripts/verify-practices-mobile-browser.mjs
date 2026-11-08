@@ -49,7 +49,10 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         assert.equal(await studio.getAttribute("data-active-workspace"),"practices",
           "deep link must activate the existing Practices workspace");
         assert.equal(await studio.getAttribute("data-video-studio-mode"),"therapy");
-        assert.equal(await page.locator('[data-video-quick-control="practices"]').getAttribute("aria-pressed"),"true");
+        assert.equal(await page.locator('[data-video-quick-controls] button').count(),6,
+          "the current six workspaces are visible without fabricating an obsolete Course tab");
+        assert.equal(await page.locator('[data-video-quick-control="ready"]').getAttribute("aria-pressed"),"true",
+          "Ready is the visible tab alias while the existing guided course is active");
         const primary=course.locator("[data-guided-generate-meditation]");
         const programmeButton=course.locator("[data-guided-create-plan]");
         assert.equal(await primary.isDisabled(),true,"require an explicit focus");
@@ -111,7 +114,31 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         assert.equal(await order.count(),1,"eight-session offer uses one real CRM form");
         await order.click();
         const form=course.locator("[data-meditation-course-contact]");
-        await form.waitFor({state:"visible"});
+        try{
+          // A completed Playwright click alone does not prove React committed
+          // the form. Verify the real button state and its visible consent form.
+          await expect(order).toHaveAttribute("aria-expanded","true",{timeout:8000});
+          await form.waitFor({state:"visible",timeout:12000});
+        }catch(error){
+          const diagnostic=await page.evaluate(()=>{
+            const course=document.querySelector("[data-video-guided-course]");
+            const button=course?.querySelector("[data-meditation-course-order]");
+            const form=course?.querySelector("[data-meditation-course-contact]");
+            const rect=button?.getBoundingClientRect();
+            const hit=rect?document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2):null;
+            return {planCurrent:course?.getAttribute("data-guided-plan-current"),
+              programmeSignature:course?.getAttribute("data-guided-programme-signature-match"),
+              planClicks:course?.getAttribute("data-guided-plan-click-count"),
+              buttonCount:course?.querySelectorAll("[data-meditation-course-order]").length??0,
+              expanded:button?.getAttribute("aria-expanded")??null,
+              formCount:course?.querySelectorAll("[data-meditation-course-contact]").length??0,
+              formVisible:Boolean(form&&form.getBoundingClientRect().height>0),
+              hitTag:hit?.tagName??null,hitDock:Boolean(hit?.closest(".mobile-bottom-navigation,[data-hh-unified-dock]")),
+              viewportWidth:innerWidth};
+          });
+          throw new Error(engine+" "+locale+" "+width+"px course form not opened by one genuine click: "+
+            JSON.stringify(diagnostic),{cause:error});
+        }
         const send=form.locator("[data-meditation-course-submit]");
         assert.equal(await send.isDisabled(),true,"one-off reply consent is not prechecked");
         await form.locator('input[type="email"]').fill("synthetic@example.invalid");

@@ -11,6 +11,7 @@ import type { JudgmentPending, JudgmentChoiceId } from "@/lib/holistic-support/j
 import { publicVideoGoalForMessage } from "@/lib/video-discovery/ranker.mjs";
 import MessengerSignIn from "@/components/app/messenger-sign-in";
 import { HolisticAgentMemoryPanel } from "@/components/holistic-agent-memory-panel";
+import {usePrivateChatHistory,SecureDialogueHistory} from "@/components/holistic-agent-history";
 import {interpretSupportUtterance} from "@/lib/holistic-support/guide-dialogue.mjs";
 import {classifyVideoChatQuestion,answerVideoChatQuestion} from "@/lib/mandala/video-chat-dialogue-knowledge.mjs";
 import {understandVideoChatReply} from "@/lib/mandala/video-chat-understanding.mjs";
@@ -327,6 +328,20 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const threadRef=useRef<HTMLDivElement|null>(null);
   const followTail=useRef(true);
   const [newBelow,setNewBelow]=useState(false);
+  const privateTranscript=usePrivateChatHistory({authenticated,onRestore:entries=>{
+    // The archive is restored only on explicit user action, never on login.
+    // Cancel an in-flight answer and any owned device speech before replacing state.
+    controller.current?.abort();voiceAbortRef.current?.abort();
+    window.dispatchEvent(new Event("hh:voice-companion-stop"));
+    const previous:Message[]=entries.flatMap(item=>[
+      {role:"user" as const,text:item.user},
+      {role:"assistant" as const,text:item.assistant},
+    ]).slice(-30);
+    setMessages(previous);setDraft("");setChoices([]);setJudgmentView(null);
+    judgmentClickLock.current=false;setVideoStep(null);setGuidedTrack(null);
+    setContentStep(null);setContentVoice(false);setEntryOpen(false);
+    setStatus("");setSource("");followTail.current=true;setNewBelow(false);
+  }});
   useEffect(()=>{
     if(pageHelp){setEntryOpen(true);setPageHelpLink(null);}
   },[pageHelp]);
@@ -782,6 +797,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       setEvidenceUsed(data.usedSavedTestEvidence===true);
       setHistoryUsed(data.usedSavedVideoHistory===true);
       setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
+      if(authenticated)void privateTranscript.savePair(text,reply);
       setSource(used==="browser"?t.used:used==="owned"?t.backend:t.simple);
     } catch (error) {
       if(!abort.signal.aborted){
@@ -860,6 +876,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     {!compact&&settings}
     {authenticated&&<HolisticAgentMemoryPanel locale={locale}
       onUse={items=>setUseAgentMemory(items.length>0)}/>}
+    {authenticated&&<SecureDialogueHistory history={privateTranscript} locale={locale}/>}
     <EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact}/>
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;

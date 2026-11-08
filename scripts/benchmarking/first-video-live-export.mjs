@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * On-demand, unauthenticated first-party LIVE video export acceptance.
- * Real browser → actual Canvas/MediaRecorder or Safari WebCodecs → download → ffprobe,
+ * Real browser → actual Canvas/MediaRecorder or Safari WebCodecs → test-owned Blob → ffprobe,
  * decoded audio and moving pixels. Never uses personal media, an AI API or POST.
  * Chromium is the default; opt-in macOS WebKit runs in CI. Neither is a physical iPhone.
  */
@@ -10,6 +10,7 @@ import {spawnSync} from 'node:child_process';
 import {mkdirSync, writeFileSync, mkdtempSync, rmSync, readFileSync} from 'node:fs';
 import {resolve, join} from 'node:path';
 import {tmpdir} from 'node:os';
+import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
 
 const LIVE_ORIGIN = 'https://holistichouse.vercel.app';
 const LOCAL_ORIGIN = 'http://127.0.0.1:3100';
@@ -84,11 +85,6 @@ function rmsPcm(mediaFile) {
   }
   return Math.sqrt(energy / samples);
 }
-async function downloadBytes(download) {
-  const chunks = [];
-  for await (const c of await download.createReadStream()) chunks.push(Buffer.from(c));
-  return Buffer.concat(chunks);
-}
 let browser;
 let page;
 let mediaDir;
@@ -104,6 +100,7 @@ try {
     locale: 'ru-RU', serviceWorkers: 'block', reducedMotion: 'reduce',
     storageState: {cookies: [], origins: []}, acceptDownloads: true,
   });
+  await installGuestVideoBlobCapture(context);
   await context.route('**/*', route => {
     const request = route.request();
     let firstParty = false;
@@ -132,16 +129,48 @@ try {
       document.querySelector('[data-mandala-free-video]')?.getAttribute('data-video-studio-hydrated')==='true',
       undefined,{timeout:40000});
   }
-  // Visitor route: Goals → Ideas → Montage Text → Add video.
-  // Never force a hidden "All stories" button. Keep all subsequent real
-  // four-shot, duration, WAV, video/audio and FFprobe requirements unchanged.
+  // Visitor route: Goals → Ideas → Montage Concept → optional Style → approved Concept → original timeline.
+  // Use the real visitor actions; do not bypass hydration, rights, or editor.
   const continueToIdeas=page.locator('[data-video-continue-scenarios]');
   await continueToIdeas.waitFor({state:'visible',timeout:40000});
   await continueToIdeas.click();
   const ideas=page.locator('[data-video-quick-control="phrases"]');
   assert.equal(await ideas.getAttribute('aria-pressed'),'true','GOALS_MUST_OPEN_IDEAS');
-  await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="text"]').click();
+  const editorTab=page.locator('[data-video-quick-control="editor"]');
+  await editorTab.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  const concept=page.locator('[data-video-montage-concept]');
+  await concept.waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('[data-video-montage-tab="concept"]').getAttribute('aria-pressed'),
+    'true','MONTAGE_MUST_START_WITH_AUTO_CONCEPT');
+  const montageStyle=page.locator('[data-video-montage-tab="effects"]');
+  await montageStyle.waitFor({state:'visible',timeout:20000});
+  await montageStyle.click();
+  await page.waitForFunction(()=>{
+    const studio=document.querySelector('[data-mandala-free-video]');
+    const style=document.querySelector('[data-video-montage-tab="effects"]');
+    const panel=document.querySelector('[data-video-basic-editor]');
+    return studio?.getAttribute('data-active-workspace')==='editor' &&
+      panel?.getAttribute('data-montage-panel')==='effects' &&
+      style?.getAttribute('aria-pressed')==='true';
+  },undefined,{timeout:15000});
+  assert.equal(await editorTab.getAttribute('aria-pressed'),'true','MONTAGE_TAB_MUST_ACTIVATE');
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-tab="concept"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  await concept.locator('[data-video-concept-approve]').click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-tab="audio"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  await page.locator('[data-video-montage-tab="concept"]').click();
+  assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
+    'true','GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION');
+  const textTools=page.locator('[data-video-concept-text-tools]');
+  await textTools.locator(':scope > summary').click();
+  await textTools.evaluate(node=>{if(!node.open)throw Error('CONCEPT_TEXT_TOOLS_DID_NOT_OPEN')});
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
   await addVideo.click();
@@ -198,24 +227,14 @@ try {
     return Boolean(button && !button.disabled);
   }, undefined, {timeout: 40000});
   await create.click({timeout: 15000});
-  const save = page.locator('[data-mandala-video-download]');
-  await save.waitFor({state: 'visible', timeout: 80000});
-  assert.equal(await page.locator('[data-video-result]').getAttribute('data-video-result-mode'),
-    'rendered', 'CATALOG_CLIP_IS_NOT_PERSONALIZED_OUTPUT');
-  // Primary Save opens the real Files / Telegram / WhatsApp delivery chooser.
-  // Wait for that user-visible state before requesting the genuine file download.
-  await save.click();
-  const delivery = page.locator('[data-video-messenger-delivery]');
-  await delivery.waitFor({state: 'visible', timeout: 10000});
-  await delivery.locator('[data-video-telegram-share]').waitFor({state: 'visible'});
-  await delivery.locator('[data-video-whatsapp-share]').waitFor({state: 'visible'});
-  const [download] = await Promise.all([
-    page.waitForEvent('download', {timeout: 25000}),
-    delivery.locator('[data-video-save-direct-choice]').click(),
-  ]);
-  const bytes = await downloadBytes(download);
+  // Guests watch the original encoded movie in Ready; protected Save is login-gated.
+  // Read the real test-owned Blob without fake sign-in, download or provider calls.
+  const captured=await readRealGuestVideo(page,{timeout:80000});
+  const bytes=captured.bytes;
+  row.anonymousSaveAuthGateVerified=captured.authGateVerified;
+  row.recordedBlobVerified=true;row.downloadedVideo=false;
   assert.ok(bytes.length > 20000, 'VIDEO_EXPORT_EMPTY');
-  const filename = download.suggestedFilename();
+  const filename = 'holistic-house-guest.'+captured.extension;
   assert.match(filename, /\.(mp4|webm)$/, 'INCORRECT_VIDEO_FILENAME');
   if (filename.endsWith('.webm')) {
     assert.deepEqual(bytes.subarray(0, 4), Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
@@ -235,7 +254,7 @@ try {
   const seconds = Number(probe.format?.duration || video.duration || 0);
   assert.ok(seconds >= 17 && seconds <= 26, 'WRONG_VIDEO_DURATION');
   const energy = rmsPcm(mediaFile);
-  Object.assign(row, {downloadedVideo: true, encodedBytes: bytes.length,
+  Object.assign(row, {recordedBlobVerified: true, encodedBytes: bytes.length,
     container: filename.endsWith('.webm') ? 'webm' : 'mp4',
     width: video.width, height: video.height, durationSeconds: Number(seconds.toFixed(2)),
     audioStreamPresent: true, decodedAudioRms: Number(energy.toFixed(4))});

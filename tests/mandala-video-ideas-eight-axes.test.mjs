@@ -32,13 +32,15 @@ test("compact Ideas screen uses actual selectors, sliders and one working Montag
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
 });
 
-test("Ideas CTA advances to Montage Style with no renderer, no audio library and no source gate",()=>{
+test("Ideas CTA advances to Montage auto Concept with no renderer, no audio library and no source gate",()=>{
  const start=studio.indexOf("const goToMontageFromIdeas = () => {");
  const end=studio.indexOf("const createQuickVideo = () => {",start);
  assert.ok(start>0&&end>start,"Ideas navigation handler");
  const action=studio.slice(start,end);
  assert.match(action,/setActiveWorkspace\("editor"\)/);
- assert.match(action,/setMontagePanel\("effects"\)/);
+ assert.match(action,/setMontagePanel\("concept"\)/);
+  assert.match(studio,/data-video-montage-concept/);
+  assert.match(studio,/data-video-concept-text-tools/);
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
  assert.match(studio,/onCreate=\{goToMontageFromIdeas\}\/>/);
@@ -65,7 +67,7 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/selectedCount<5/);
  assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
- assert.match(cmp,/presetOverride:preset,custom:picked\.slice\(5,10\)\.join/);
+ assert.match(cmp,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
  assert.match(renderer,/const textScale = settings\.textScale === "small"/);
@@ -115,4 +117,28 @@ test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list
  assert.ok(css.includes('.heroRail,')&&css.includes('.heroEditorial{display:none!important}'));
  assert.ok(css.includes('.heroCanvas{opacity:1!important;z-index:1!important}'));
  assert.ok(css.includes('[data-video-phrase-audio-shortcut]{display:none!important}'));
+});
+
+const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
+test("Ideas Text and Voice have a shared, stateful single narration editor",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ assert.match(studio,/data-video-ideas-tabs role="group"/);
+ assert.match(studio,/data-video-ideas-tab="text" aria-pressed=\{ideasSubtab==="text"\}/);
+ assert.match(studio,/data-video-ideas-tab="voice" aria-pressed=\{ideasSubtab==="voice"\}/);
+ assert.match(studio,/data-video-ideas-text-panel hidden=\{ideasSubtab!=="text"\}/);
+ assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ assert.match(studio,/data-video-ideas-own-upload/);
+ assert.match(studio,/data-video-ideas-record-voice/);
+ assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
+});
+
+test("Ideas Voice subtab is visible on desktop and switches in the real voice browser",()=>{
+ const styles=read("components/mandala-video-mobile.module.css");
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(styles,/\[data-ideas-subtab="voice"\] \[data-video-legacy-phrase-editor\]\[data-video-ideas-recording-open="true"\]\{display:block!important\}/);
+ assert.match(browser,/const ideasModes=phrases\.locator/);
+ assert.match(browser,/data-ideas-subtab","voice"/);
+ assert.match(browser,/data-video-ideas-own-upload/);
+ assert.match(browser,/data-ideas-subtab","text"/);
 });

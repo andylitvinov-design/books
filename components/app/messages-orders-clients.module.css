@@ -530,3 +530,20 @@
  .root[data-section="ai"][data-chat-editing="true"] .sections button,
  .root[data-section="ai"][data-chat-editing="true"] .sections .aiTab{height:42px;min-height:42px}
 }
+
+
+/* Insight fourth top destination; preserve the approved compact Messenger rail. */
+.root .sections{grid-template-columns:repeat(4,minmax(0,1fr))}
+.root .sections button{justify-content:center;min-width:0}
+.root .sections button span{min-width:0}
+.root .sections button strong{overflow-wrap:normal}
+@media(max-width:700px){
+ .root .sections{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+ .root .sections button,.root .sections .aiTab{gap:3px;padding:5px 3px;min-width:0}
+ .root .sections button strong,.root .sections .aiTab strong{font-size:11px;letter-spacing:-.025em}
+ .root .sections button>svg,.root .sections .aiTab svg{width:16px;height:16px;flex:none}
+}
+@media(max-width:355px){
+ .root .sections button strong,.root .sections .aiTab strong{font-size:10px}
+ .root .sections button>svg,.root .sections .aiTab svg{width:15px;height:15px}
+}

@@ -275,6 +275,112 @@ async function inspect(browserType,locale,width){
       results.push({id:marker,pinned:true,route:path,authenticated:false});
     }
   }
+  // Owner-approved 07 Nov Ideas → Voice Warm Peach color QA. Same real
+  // public Studio/editor, never a painted mock or an extra test server.
+  if(browserType===webkit && (width===390 || (locale==="ru" && width===320))){
+    await page.goto(origin+"/"+locale+"/holistic-support/mandala",{
+      waitUntil:"domcontentloaded",timeout:75000,
+    });
+    const ideaButton=page.locator('[data-video-quick-control="phrases"]');
+    await ideaButton.waitFor({state:"visible",timeout:30000});
+    await page.waitForFunction(()=>{
+      const link=document.querySelector('[data-video-quick-control="phrases"]');
+      return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
+    },null,{timeout:20000});
+    await ideaButton.click();
+    const voiceButton=page.locator('[data-video-ideas-tab="voice"]');
+    await voiceButton.waitFor({state:"visible",timeout:30000});
+    await voiceButton.click();
+    const voice=page.locator('[data-ideas-subtab="voice"] [data-hypno-voice]');
+    await voice.waitFor({state:"visible",timeout:30000});
+    const palette=await page.evaluate(()=>{
+      const root=document.querySelector('[data-mandala-mode="video"]');
+      const card=document.querySelector('[data-ideas-subtab="voice"] [data-hypno-voice]');
+      const picker=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-voice]');
+      const phrase=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-phrase]');
+      const selected=document.querySelector('[data-video-ideas-tab="voice"]');
+      const c=node=>node?getComputedStyle(node):null;
+      return {background:c(root)?.backgroundImage||"",card:c(card)?.backgroundColor||"",
+        border:c(card)?.borderTopColor||"",ink:c(picker)?.color||"",
+        pickerBackground:c(picker)?.backgroundColor||"",
+        pickerBorder:c(picker)?.borderTopColor||"",
+        phrase:c(phrase)?.backgroundColor||"",
+        selected:c(selected)?.backgroundImage||"",
+        width:document.documentElement.scrollWidth,
+        viewport:window.innerWidth,
+        dockCount:document.querySelectorAll('[data-hh-unified-dock]').length};
+    });
+    assert.match(palette.background,/rgb\(255,\s*247,\s*243\)/,
+      id+" Voice page must use peach-ivory canvas");
+    assert.equal(palette.card,"rgb(255, 252, 250)",
+      id+" Voice neutral card must be warm near-white");
+    assert.equal(palette.border,"rgb(234, 223, 217)",
+      id+" neutral card border must not be sage green");
+    assert.equal(palette.ink,"rgb(20, 43, 61)",
+      id+" original voice picker has Studio ink");
+    assert.equal(palette.pickerBackground,"rgb(255, 252, 250)",
+      id+" the nested TTS picker must not inherit green sage gradient");
+    assert.equal(palette.pickerBorder,"rgb(234, 223, 217)",
+      id+" TTS picker neutral border is warm not green");
+    assert.equal(palette.phrase,"rgb(255, 249, 245)",
+      id+" phrase inset stays warm, not green");
+    assert.match(palette.selected,/rgb\(8,\s*126,\s*97\)/,
+      id+" active Voice tab uses accessible emerald");
+    assert.ok(palette.width<=palette.viewport+2,
+      id+" Ideas Voice has no horizontal document overflow");
+    assert.equal(palette.dockCount,1,id+" one fixed Holistic House dock");
+    await voice.scrollIntoViewIfNeeded({timeout:15000});
+    await page.screenshot({
+      path:folder+"/ideas-voice-warm-peach-"+locale+"-"+width+"-webkit.png",
+      fullPage:false,animations:"disabled",
+    });
+    results.push({id:id+":ideas-voice-color",palette,passed:true});
+  }
+  // Design Bible §10.13: inspect the REAL six-workspace Studio DOM in one
+  // WebKit RU390 session without calling any TTS/video render provider.
+  if(browserType===webkit && locale==="ru" && width===390){
+    for(const tab of ["video","phrases","editor","effects","pro","ready"]){
+      const nav=page.locator('[data-video-quick-control="'+tab+'"]');
+      await nav.click({timeout:30000});
+      await page.waitForFunction(expected=>{
+        return document.querySelector('[data-active-workspace]')?.getAttribute("data-active-workspace")===expected;
+      },tab,{timeout:20000});
+      const palette=await page.evaluate(tab=>{
+        const root=document.querySelector('[data-mandala-mode="video"]');
+        const studio=document.querySelector('[data-active-workspace="'+tab+'"]');
+        const active=document.querySelector('[data-video-quick-control="'+tab+'"]');
+        const computed=studio?getComputedStyle(studio):null;
+        return {background:root?getComputedStyle(root).backgroundImage:"",
+          surface:computed?.getPropertyValue("--hh-studio-surface").trim()||"",
+          ink:computed?.getPropertyValue("--hh-studio-ink").trim()||"",
+          border:computed?.getPropertyValue("--hh-studio-border").trim()||"",
+          muted:computed?.getPropertyValue("--hh-studio-muted").trim()||"",
+          primary:computed?.getPropertyValue("--hh-studio-primary").trim()||"",
+          active:active?.getAttribute("aria-pressed"),
+          activeInk:active?getComputedStyle(active).color:"",
+          width:document.documentElement.scrollWidth, viewport:innerWidth,
+          dockCount:document.querySelectorAll("[data-hh-unified-dock]").length,
+        };
+      },tab);
+      assert.match(palette.background,/rgb\(255,\s*247,\s*243\)/,
+        id+" "+tab+" warm Studio canvas");
+      assert.deepEqual(
+        [palette.surface,palette.ink,palette.border,palette.muted,palette.primary],
+        ["#FFFCFA","#142B3D","#EADFD9","#5D6A71","#087E61"],
+        id+" "+tab+" inherits the SAME Design Bible palette");
+      assert.equal(palette.active,"true",id+" "+tab+" is the selected real workspace");
+      assert.equal(palette.activeInk,"rgb(255, 255, 255)",
+        id+" "+tab+" active control remains readable");
+      assert.ok(palette.width<=palette.viewport+2,id+" "+tab+" no document overflow");
+      assert.equal(palette.dockCount,1,id+" "+tab+" one fixed Holistic House dock");
+      await nav.scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path:folder+"/studio-palette-"+tab+"-ru-390-webkit.png",
+        fullPage:false,animations:"disabled",
+      });
+      results.push({id:id+":studio-"+tab,palette,passed:true});
+    }
+  }
   if(browserType===webkit && locale==="ru" && width===390){
     // Simulates navigator.standalone, not Safari View Controller on a phone.
     await page.addInitScript(()=>Object.defineProperty(navigator,"standalone",{
@@ -342,10 +448,65 @@ try{
    const v=window.visualViewport;
    return Math.abs(el.getBoundingClientRect().bottom-(v?v.offsetTop+v.height:innerHeight))<=3;
  },null,{timeout:10000});
+ // Owner-approved iHelp first turn: browser geometry is checked on the real
+ // Video Studio route, not a static mock. No media render or external AI call.
+ await page.locator('[data-video-ihelp-header-trigger]').click();
+ const iHelpDialog=page.locator('[data-video-director-chat-details][role="dialog"]');
+ await iHelpDialog.waitFor({state:'visible',timeout:30000});
+ const iHelpWelcome=iHelpDialog.locator('[data-video-chat-welcome]');
+ await iHelpWelcome.waitFor({state:'visible',timeout:30000});
+ for(const width of [320,390,430]){
+   await page.setViewportSize({width,height:844});
+   const geometry=await page.evaluate(()=>{
+     const root=document.querySelector('[data-video-director-chat]');
+     const thread=root?.querySelector('[class*="thread"]');
+     const welcome=root?.querySelector('[data-video-chat-welcome]');
+     const form=welcome?.querySelector('form[data-video-chat-composer]');
+     const nav=root?.querySelector('[data-video-chat-top-tabs]');
+     const hero=welcome?.querySelector('h2');
+     if(!root||!thread||!welcome||!form||!nav||!hero)return null;
+     const a=thread.getBoundingClientRect(),b=form.getBoundingClientRect(),
+       c=nav.getBoundingClientRect(),d=hero.getBoundingClientRect();
+     return {width:root.getBoundingClientRect().width,formCount:root.querySelectorAll('form[data-video-chat-composer]').length,
+       topicIds:[...welcome.querySelectorAll('[data-video-chat-welcome-goal]')].map(x=>x.getAttribute('data-video-chat-welcome-goal')),
+       formVisible:b.height>=43&&b.top>=a.top-2&&b.bottom<=a.bottom+3,
+       titleVisible:d.top>=a.top-3&&d.top<a.bottom-20,
+       navBottom:c.top>=a.bottom-3,
+       horizontalOverflow:root.scrollWidth-root.clientWidth};
+   });
+   assert.ok(geometry,'IHELP_MOBILE_GEOMETRY_NOT_READY_'+width);
+   assert.ok(geometry.width<=width+2,'IHELP_MOBILE_WINDOW_OVERFLOW_'+width);
+   assert.equal(geometry.formCount,1,'IHELP_ONE_REAL_COMPOSER_'+width);
+   assert.deepEqual(geometry.topicIds,['body','energy','love','business','stress'],
+     'IHELP_TOPIC_CHIPS_MUST_FOLLOW_REFERENCE_'+width);
+   assert.ok(geometry.formVisible,'IHELP_INPUT_MUST_BE_VISIBLE_ABOVE_DOCK_'+width);
+   assert.ok(geometry.titleVisible,'IHELP_HERO_MUST_START_IN_VIEW_'+width);
+   assert.ok(geometry.navBottom,'IHELP_TABS_MUST_FOLLOW_WELCOME_'+width);
+   assert.ok(geometry.horizontalOverflow<=2,'IHELP_OVERFLOW_'+width);
+   if(width===390)await page.screenshot({path:folder+'/ihelp-approved-welcome-390.png'});
+ }
+ await page.setViewportSize({width:390,height:844});
+ await iHelpWelcome.locator('[data-video-chat-welcome-create]').click();
+ await iHelpDialog.locator('[data-chat-inline-choices]').waitFor({state:'visible',timeout:15000});
+ assert.equal(await iHelpDialog.locator('form[data-video-chat-composer]').count(),1,
+   'IHELP_COMPOSER_STAYS_SINGLE_AFTER_START');
+ await iHelpDialog.locator('[data-video-ihelp-header] button').click();
+ await iHelpDialog.waitFor({state:'hidden',timeout:15000});
+ results.push({journey:"Owner iHelp screenshot → visible composer and category chips at 320/390/430 → real Director choices",passed:true});
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),3);
+ assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),4,
+   "Messenger rail now has AI, Orders, Clients and News");
+ const news=page.locator('[data-chat-top-tabs] button[aria-controls="hh-news-panel"]');
+ assert.equal(await news.count(),1,"News tab is visible and uniquely addressable");
+ await news.click();
+ await page.locator('[data-orders-clients-hub][data-section="news"]').waitFor({state:"visible",timeout:30000});
+ await page.locator("#hh-news-panel").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("#hh-ai-panel").isVisible(),false,
+   "the private News panel does not overlay the AI conversation");
+ await page.locator('[data-chat-top-tabs] button[aria-controls="hh-ai-panel"]').click();
+ await page.locator("#hh-ai-panel").waitFor({state:"visible",timeout:30000});
  const chat=page.locator("[data-hh-agent-preview]");
  await chat.waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-chat-menu-rail]").count(),0,
