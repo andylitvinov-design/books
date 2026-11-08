@@ -5231,3 +5231,14 @@
   width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}
 .heroCanvas .heroSelectedStyleDecoder{position:absolute!important;left:0;top:0;
   width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+
+/* Two independent Create/Continue actions, safe-area-friendly on iPhone. */
+.stageActionPair{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;width:100%;min-width:0;margin:9px 0}
+.stageActionPair>.quickGenerate,.stageActionPair>.stageAddButton{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;width:100%;min-height:50px;padding:10px 12px;border-radius:15px;font:800 clamp(14px,3.6vw,17px)/1.2 Arial,sans-serif;overflow-wrap:anywhere;text-align:center}
+.stageActionPair>.quickGenerate{border:1px solid #087b65;background:linear-gradient(115deg,#16a687,#04765f);color:white}
+.stageActionPair>.stageAddButton{border:1px solid #add1c3;background:#fffdf7;color:#12684e}
+.stageActionPair>button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.stageActionPair>button:disabled{opacity:.55;cursor:not-allowed}
+.quickOrderBar .stageActionPair{margin:0}
+.quickOrderBar .stageActionPair>.quickGenerate{min-height:50px;position:static;bottom:auto}
+@media(max-width:359px){.stageActionPair>.quickGenerate,.stageActionPair>.stageAddButton{padding:10px 6px;font-size:13px}}
