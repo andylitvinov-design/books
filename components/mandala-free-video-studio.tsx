@@ -1938,7 +1938,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
-  const [ideasSubtab,setIdeasSubtab] = useState<"text"|"voice">("text");
+  const [ideasSubtab,setIdeasSubtab] = useState<"text"|"voice"|"my-voice">("text");
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
@@ -5549,11 +5549,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Mic size={23} aria-hidden="true"/></span>
-          <div><h3>{activeWorkspace==="phrases"&&ideasSubtab==="voice"?
+          <div><h3>{activeWorkspace==="phrases"&&ideasSubtab==="my-voice"?
+              (locale==="ru"?"Мой голос для видео":locale==="es"?"Mi voz para el vídeo":"My voice for your video"):
+              activeWorkspace==="phrases"&&ideasSubtab==="voice"?
               (locale==="ru"?"Голос для вашего видео":locale==="es"?"Voz para tu vídeo":"Voice for your video"):
               (locale==="ru"?"Голос для озвучки фраз":locale==="es"?"Voz para las frases":"Voice for phrases")}</h3>
-            <p>{activeWorkspace==="phrases"&&ideasSubtab==="voice"?
-              (locale==="ru"?"Озвучьте выбранную фразу или используйте свой голос.":locale==="es"?"Narra una frase o usa tu propia voz.":"Narrate a selected phrase or use your own voice."):
+            <p>{activeWorkspace==="phrases"&&ideasSubtab==="my-voice"?
+              (locale==="ru"?"Загрузите или запишите собственный голос.":locale==="es"?"Sube o graba tu propia voz.":"Upload or record your own voice."):
+              activeWorkspace==="phrases"&&ideasSubtab==="voice"?
+              (locale==="ru"?"Выберите фразу и голос для её озвучивания.":locale==="es"?"Elige una frase y una voz para narrarla.":"Choose a phrase and a voice to narrate it."):
               (locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases")}</p></div>
         </div>
         {phrasePending&&<p className={videoStyles.phraseVoiceNotice} role="status" data-video-voice-approval-required>
@@ -5570,7 +5574,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             previousHypnoAudioRef.current=null;
             if(staleHypnoTrack){clearUploadedAudio();setAttachedAudio(null);}
           }}
-          compact={activeWorkspace==="phrases"&&ideasSubtab==="voice"}
+          compact={activeWorkspace==="phrases"&&ideasSubtab!=="text"}
+          ownVoiceOnly={activeWorkspace==="phrases"&&ideasSubtab==="my-voice"}
           extraActions={<>
         <div className={videoStyles.ideasVoiceActions} data-video-ideas-voice-actions>
           <label className={videoStyles.ideasVoiceUpload}>
@@ -5585,18 +5590,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 event.currentTarget.value="";
               }}/>
           </label>
-          <button type="button" data-video-ideas-record-voice disabled={recording||preparing}
-            onClick={()=>{
-              document.querySelector<HTMLButtonElement>('[data-video-affirmation-gender="own"]')?.click();
-              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-                document.querySelector<HTMLElement>("[data-video-own-voice-record]")
-                  ?.scrollIntoView({behavior:"smooth",block:"nearest"})));
-            }}>
-            <Mic size={19} aria-hidden="true"/>
-            {locale==="ru"?"Записать голос":locale==="es"?"Grabar mi voz":"Record a voice"}
-          </button>
         </div>
-        {uploadedAudio?<p className={videoStyles.ideasVoiceUploadNotice} role="status">
+        {uploadedAudio?<p className={videoStyles.ideasVoiceUploadNotice} data-video-ideas-own-notice role="status">
           {locale==="ru"?"Файл выбран. Подтвердите права и прикрепите дорожку ниже.":
             locale==="es"?"Archivo elegido. Confirma los derechos y añade la pista abajo.":
               "File selected. Confirm rights and attach the track below."}
@@ -5612,11 +5607,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             locale==="es"?"Las frases o la duración cambiaron. Vuelve a generar el audio.":
             "Phrases or duration changed — regenerate the voice before exporting."}
         </p>:null}
-        <p className={videoStyles.phraseVoiceNotice}>
+        {activeWorkspace!=="phrases"?<p className={videoStyles.phraseVoiceNotice}>
           {locale==="ru"?"Своя запись — дополнительный вариант. Видео сохраняет одну итоговую звуковую дорожку.":
             locale==="es"?"Tu grabación es opcional; el vídeo exporta una sola pista final.":
             "Recording your own voice is optional; the video exports one final sound track."}
-        </p>
+        </p>:null}
         <button type="button" className={videoStyles.phraseVoiceAction} disabled={recording||preparing}
           onClick={()=>{setPhraseAudioExpanded(true);window.requestAnimationFrame(()=>
             document.getElementById("phrase-audio-settings")?.scrollIntoView({block:"nearest",behavior:"smooth"}));}}>
@@ -5632,6 +5627,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
           <p>{layout.hypnosisHelp}</p></div>
       <MandalaHypnoCompact locale={locale} theme={theme} settings={affirmations} requestText={wish}
+        autoExpandIdea={activeWorkspace==="phrases"&&ideasSubtab==="text"&&ideasVoiceAdvancedOpen}
         onPendingChange={setPhrasePending} externalPhraseDraft={catalogPhraseDraft}
         onExternalPhraseClear={()=>setCatalogPhraseDraft(null)}
         onChange={setAffirmations} disabled={recording||preparing}
@@ -6884,9 +6880,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab}>
+      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab==="my-voice"?"voice":ideasSubtab} data-ideas-active-tab={ideasSubtab}>
         <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
-          aria-label={locale==="ru"?"Идеи: текст или голос":locale==="es"?"Ideas: texto o voz":"Ideas: text or voice"}>
+          aria-label={locale==="ru"?"Идеи: текст, голос или мой голос":locale==="es"?"Ideas: texto, voz o mi voz":"Ideas: text, voice or my voice"}>
           <button type="button" data-video-ideas-tab="text" aria-pressed={ideasSubtab==="text"}
             onClick={()=>{setIdeasSubtab("text");setIdeasVoiceAdvancedOpen(false);}}>
             <span className={videoStyles.ideasTabLetters} aria-hidden="true">Aa</span>
@@ -6897,14 +6893,22 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <Mic size={20} aria-hidden="true"/>
             {locale==="ru"?"Голос":locale==="es"?"Voz":"Voice"}
           </button>
+          <button type="button" data-video-ideas-tab="my-voice" aria-pressed={ideasSubtab==="my-voice"}
+            onClick={()=>{setIdeasSubtab("my-voice");setIdeasVoiceAdvancedOpen(true);}}>
+            <AudioLines size={20} aria-hidden="true"/>
+            {locale==="ru"?"Мой голос":locale==="es"?"Mi voz":"My Voice"}
+          </button>
         </div>
         <div className={videoStyles.quickSectionHeading}>
           <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Мой запрос и тема":locale==="es"?"Mi intención y tema":"My request & topic"}</h3>
           <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
             onClick={()=>{
-               const details=document.querySelector<HTMLDetailsElement>("[data-hypno-idea-details]");
-               if(details)details.open=true;
-               window.requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>("[data-hypno-suggest-tests]")?.click());
+               // The old native details is now a real accessible button/region.
+               // Open Text's visible settings; never synthesize a hidden click
+               // or access private test results without another user action.
+               setIdeasSubtab("text");
+               setIdeasVoiceAdvancedOpen(true);
+               window.requestAnimationFrame(()=>document.querySelector<HTMLElement>('[data-video-ideas-advanced-voice]')?.scrollIntoView({block:"nearest",behavior:"smooth"}));
              }}><Sparkles size={15} aria-hidden="true"/>
             {locale==="ru"?"Индивидуальный подбор":locale==="es"?"Personalizar":"Personalize"}</button>
         </div>
@@ -6919,12 +6923,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}
             onRecord={()=>{
               // Reuse the one protected local voice recorder; no extra MediaRecorder.
+              setIdeasSubtab("my-voice");
               setIdeasVoiceAdvancedOpen(true);
-              setPhraseAudioExpanded(true);
-              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
-                document.querySelector<HTMLButtonElement>('[data-video-affirmation-gender="own"]')?.click();
-                document.querySelector<HTMLElement>('[data-video-own-voice-record]')?.scrollIntoView({behavior:"smooth",block:"center"});
-              }));
+              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
+                document.querySelector<HTMLElement>('[data-video-own-voice-record]')?.scrollIntoView({behavior:"smooth",block:"center"})));
             }}
             onCreate={goToMontageFromIdeas} onGenerate={createQuickVideo} status={notice}/>
           </div>
