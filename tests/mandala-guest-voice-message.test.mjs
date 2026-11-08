@@ -121,23 +121,26 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  assert.match(studio,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.ok(studio.includes('setIdeasVoiceAdvancedOpen(true)'),"the visible Ideas audio shortcut opens the editor");
- assert.ok(studio.includes('hidden={activeWorkspace!=="phrases"}'),"voice editor is visible only within Ideas");
+ assert.ok(studio.includes('hidden={activeWorkspace!=="phrases"||ideasSubtab!=="personalization"}'),"voice editor is visible only within Ideas Personalization");
  assert.ok(studio.includes('{deepHypnoPane}'),"existing voice and approval controls are retained");
- // Retain real user initiation: Ideas hides this panel until a visible
- // audio/voice shortcut is clicked. A CSS-hidden summary is never clicked.
+ // Real visitor navigates Personalization → Concept → Personalization,
+ // then opens the native disclosure and/or Record. No synthetic hidden clicks.
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
- const voiceTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',modes);
- const textTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',voiceTab);
- const recordEntry=browser.indexOf("const recordEntry=phrases.locator",textTab);
- const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',recordEntry);
+ const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
+ const concept=browser.indexOf('await conceptTab.click()',personal);
+ const back=browser.indexOf('await personalTab.click()',concept);
+ const disclosure=browser.indexOf('await voiceDisclosure.locator(":scope > summary").click()',back);
+ const recordEntry=browser.indexOf("const recordEntry=phrases.locator",disclosure);
+ const hidden=browser.indexOf('await expect(advancedVoice).not.toHaveAttribute("open","")',recordEntry);
  const visible=browser.indexOf("await expect(recordEntry).toBeVisible",hidden);
  const tapped=browser.indexOf("await recordEntry.click()",visible);
- const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tapped);
+ const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open",""',tapped);
  const details=browser.indexOf('await intentDetails.locator(":scope > summary").click()',opened);
  const options=browser.indexOf("await expect(advancedVoice.locator",details);
- assert.ok(modes>=0&&voiceTab>modes&&textTab>voiceTab&&recordEntry>textTab&&
-   hidden>recordEntry&&visible>hidden&&tapped>visible&&opened>tapped&&details>opened&&options>details,
-   "WebKit must use real Ideas Text/Voice, Record click and Hypno summary");
+ assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
+   disclosure>back&&recordEntry>disclosure&&hidden>recordEntry&&visible>hidden&&
+   tapped>visible&&opened>tapped&&details>opened&&options>details,
+   "WebKit must use real Ideas Personalization / Concept and native Record opt-in");
  assert.ok(browser.includes('data-video-ideas-own-upload'),"own audio upload remains available");
  assert.ok(!browser.includes('await advancedVoice.locator(":scope > summary").click()'),
   "hidden summary interaction is not an acceptable visitor path");
