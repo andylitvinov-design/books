@@ -212,7 +212,7 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
 })
 
 
-test('owner Messenger preserves one private chat while topic hints prepare an unsent draft',()=>{
+test('owner Messenger preserves one chat with six in-chat entries and locale control',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const ai=source('components/app/messenger-ai-workspace.jsx')
  const css=source('components/app/messenger-ai-workspace.module.css')
@@ -226,13 +226,16 @@ test('owner Messenger preserves one private chat while topic hints prepare an un
  for(const id of ['video','meditation'])assert.ok(chat.includes('data-hh-ai-start="'+id+'"'))
  assert.ok(chat.includes('startGuided(kind:'))
  assert.ok(chat.includes('isCasualGreeting(text)'))
- // This widget has one chat instance. Shared iHelp topic chips populate its draft,
- // but must not create a second conversation/menu rail or auto-send.
+ // This widget has exactly one shared chat. The six entry choices render inside
+ // that chat; there is no separate quick-prompt rail or automatic dispatch.
  assert.doesNotMatch(ai,/data-chat-menu-rail/)
  assert.equal((ai.match(/<HolisticAgentChat\b/g)||[]).length,1)
- assert.match(ai,/<HolisticAgentChat locale=\{locale\} compact quickPrompt=\{quickPrompt\}/)
- assert.match(ai,/<IHelpTopics locale=\{locale\} onSelect=\{prompt=>setQuickPrompt\(/)
- assert.match(ai,/previous=>\(\{revision:\(previous\?\.revision\|\|0\)\+1,text:prompt\}\)/)
+ assert.match(ai,/<HolisticAgentChat locale=\{locale\} compact messengerView/)
+ assert.match(ai,/onConversationLocaleChange=\{onConversationLocaleChange\}/)
+ assert.doesNotMatch(ai,/<IHelpTopics\b/)
+ assert.match(chat,/<MessengerAiLanding/)
+ assert.match(chat,/onCreateVideo=\{startContent\}/)
+ assert.match(chat,/data-chat-skin=\{messengerView\?"messenger":undefined\}/)
  assert.match(chat,/method:"POST",credentials:"same-origin"/)
  assert.ok(mobile.includes('body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) [data-hh-unified-dock]'))
  assert.match(ui,/data-free-order-offers/)

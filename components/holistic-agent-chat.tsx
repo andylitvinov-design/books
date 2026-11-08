@@ -905,7 +905,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         }}>{locale==="ru"?"Задать другой вопрос":locale==="es"?"Hacer otra pregunta":"Ask another question"}</button>
       </div>}
       {compact&&entryOpen&&!pageHelp&&!messengerView&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
-        <button type="button" data-hh-ai-start="video" disabled={busy} onClick={startContent}>
+        <button type="button" data-hh-ai-start="video" disabled={busy} onClick={() => startContent()}>
           <span className={styles.startIcon} aria-hidden="true">🎬</span>
           <strong>{starter.video}</strong><small>{starter.videoSub}</small>
         </button>
