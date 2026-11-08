@@ -342,26 +342,22 @@ test("compact Ideas opens its actual opt-in voice editor via visible user contro
  const voice=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',text);
  const back=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',voice);
  const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',back);
- const optIn=browser.indexOf('await phraseSettings.click()',hidden);
- const optInOpened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',optIn);
- const voiceOptions=browser.indexOf('await expect(advancedVoice.locator',optInOpened);
- const bridge=browser.indexOf("await phrases.locator('[data-video-ideas-open-montage-text]').click()",voiceOptions);
+ const bridge=browser.indexOf("await phrases.locator('[data-video-ideas-open-montage-text]').click()",hidden);
  const button=browser.indexOf('const recordEntry=page.locator',bridge);
  const visible=browser.indexOf('await expect(recordEntry).toBeVisible',button);
  const tap=browser.indexOf('await recordEntry.click()',visible);
  const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tap);
+ const voiceOptions=browser.indexOf('await expect(advancedVoice.locator',opened);
  assert.ok(modes>=0&&text>modes&&voice>text&&back>voice&&hidden>back&&
-   optIn>hidden&&optInOpened>optIn&&voiceOptions>optInOpened&&bridge>voiceOptions&&
-   button>bridge&&visible>button&&tap>visible&&opened>tap,
-   "real Ideas Text opt-in and Montage Record must open the shared voice editor");
+   bridge>hidden&&button>bridge&&visible>button&&tap>visible&&
+   opened>tap&&voiceOptions>opened,
+   "real Montage Text Record and one shared My Voice editor, no hidden controls");
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
  assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'),
    "recording-open state must remain bound to the original shared editor");
  assert.match(browser,/data-video-ideas-tabs/);
  assert.match(browser,/data-video-ideas-record/);
- assert.match(browser,/const recordOwnVoice=page\.locator\('\[data-video-ideas-record-voice\]'\)/);
- assert.match(browser,/await recordOwnVoice\.click\(\)/);
- assert.doesNotMatch(browser,/await ownMode\.click\(\)|await advancedVoice\.locator\(":scope > summary"\)\.click\(\)/);
+ assert.doesNotMatch(browser,/await advancedVoice\.locator\(":scope > summary"\)\.click\(\)/);
  for(const required of ["data-video-affirmation-voice-preview","data-hypno-approve",
   "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",
   'spawnSync("ffprobe"','spawnSync("ffmpeg"'])
