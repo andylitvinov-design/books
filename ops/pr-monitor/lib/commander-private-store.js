@@ -41,7 +41,16 @@ async function callStore(req,action,body={},options={}) {
   const key=process.env.HH_PM_SUPABASE_PUBLISHABLE_KEY;
   if(url!=='https://shervdixkaxurnaecioe.supabase.co'||!key||!/^sb_publishable_[A-Za-z0-9_-]{20,}$/.test(key))
     throw new StoreError(503,'PRIVATE_STORE_NOT_CONFIGURED');
-  const endpoint= url+'/functions/v1/agent-commander-private-store-v1'+(method==='GET'?'?action='+encodeURIComponent(action):'');
+  let endpoint=url+'/functions/v1/agent-commander-private-store-v1';
+  if(method==='GET'){
+    const query=new URLSearchParams({action});
+    for(const [key,value] of Object.entries(body||{})){
+      if(value===undefined||value===null)continue;
+      if(!['string','number','boolean'].includes(typeof value))throw new StoreError(400,'INVALID_QUERY_VALUE');
+      query.set(key,String(value));
+    }
+    endpoint+='?'+query.toString();
+  }
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),9500);
   try{
     const response=await fetch(endpoint,{
