@@ -248,9 +248,10 @@
           .some(v=>String(v).toLocaleLowerCase('ru-RU').includes(needle)));
         if(!matches.length)continue;
         const child=el('details','hh-pt-task');child.open=!!needle||(i===0&&j===0);
-        const ts=el('summary');ts.append(el('strong',null,task.title),el('span',null,matches.length+' PR'));
-        child.append(ts);
         const health=taskOverview(task.prs);
+        const ts=el('summary');ts.append(el('strong',null,task.title),
+          el('span',null,health.label+' · '+matches.length+' PR'));
+        child.append(ts);
         child.append(el('p','hh-pt-task-summary',health.label+' · '+health.total+' открытых PR'+
           (health.counts.manual?' · доработка '+health.counts.manual:'')+
           (health.counts.draft?' · Draft '+health.counts.draft:'')+
