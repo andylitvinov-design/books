@@ -107,9 +107,9 @@ function cabinetBase(locale: PublicLocale) { return "/" + (locale === "ru" ? "ru
 function nextHref(summary: HomeSpaceSummary, locale: PublicLocale) {
   const root = cabinetBase(locale);
   if (summary.next === "onboarding") return root + "/portrait";
-  if (summary.next === "report") return root + "/portrait#personal-reports";
+  if (summary.next === "report") return root + "/portrait?space=reports#personal-reports";
   if (summary.next === "course" && summary.courseId) return root + "/course?courseId=" + encodeURIComponent(summary.courseId);
-  if (summary.next === "growth") return root + "/portfolio#hh-development-program";
+  if (summary.next === "growth") return root + "/portrait?space=path#hh-development-program";
   return root + "/tests";
 }
 
@@ -245,9 +245,9 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
   const root = cabinetBase(activeLocale);
   const personalActions = [
     { id: "profile", href: root + "/portrait", label: t.profile, Icon: UserRound },
-    { id: "plan", href: root + "/portfolio#hh-development-program", label: t.plan, Icon: Target },
+    { id: "plan", href: root + "/portrait?space=path#hh-development-program", label: t.plan, Icon: Target },
     { id: "tests", href: root + "/tests", label: t.tests, Icon: ClipboardList },
-    { id: "reports", href: root + "/portrait#personal-reports", label: t.reports, Icon: FileText },
+    { id: "reports", href: root + "/portrait?space=reports#personal-reports", label: t.reports, Icon: FileText },
     { id: "courses", href: root + "/course?view=courses", label: t.courses, Icon: BookOpen },
   ];
   const masterActions = [
@@ -309,7 +309,7 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
                     <Link href={root + "/portrait"} data-space-link="profile" prefetch={false} onClick={closePanel}>
                       <UserRound size={16} aria-hidden="true" /><span>{t.profile}</span><ArrowRight size={14} aria-hidden="true" />
                     </Link>
-                    <Link href={root + "/portfolio#hh-development-program"} data-space-link="plan" prefetch={false} onClick={closePanel}>
+                    <Link href={root + "/portrait?space=path#hh-development-program"} data-space-link="plan" prefetch={false} onClick={closePanel}>
                       <Target size={16} aria-hidden="true" /><span>{t.plan}</span><ArrowRight size={14} aria-hidden="true" />
                     </Link>
                     <Link href={"/" + activeLocale + "/client/tests"} prefetch={false} onClick={closePanel}>
