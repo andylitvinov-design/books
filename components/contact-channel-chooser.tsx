@@ -16,6 +16,8 @@ import { readOrganicEventReferral, withOrganicEventReferral } from "@/lib/organi
 import { readPaidAdReferral, withPaidAdReferral } from "@/lib/paid-ad-referrals";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import styles from "./contact-channel-chooser.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
 
 type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
 type SavedEnquiry = { referenceCode: string; saved: true };
@@ -507,6 +509,7 @@ export function ContactChannelChooser({
     preparedWhatsApp = draftUrl.toString();
   }
 
+  if (websiteMessengerOnlyUi()) return <MandatoryMessengerActions locale={locale} whatsappUrl={referredWhatsappUrl} label={label || c.order} collapsed={compactPhone || compactTrigger} id={id} className={className}/>;
   if (compactPhone && bookingSku) {
     const paidReady = bookingConfirmed && Boolean(saved && bookingStartsAt);
     const sessionText = bookingSku === "express-consultation-30"

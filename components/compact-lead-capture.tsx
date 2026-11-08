@@ -9,6 +9,8 @@ import type { PublicLocale } from "@/lib/public-locales";
 import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import { whatsappEnquiryUrl, telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
 import styles from "./compact-lead-capture.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
 
 type Channel = "whatsapp" | "telegram";
 type RequestAction = Channel | "request";
@@ -225,6 +227,7 @@ export function CompactLeadCapture({
     }
   }
 
+  if (websiteMessengerOnlyUi()) return <MandatoryMessengerActions locale={locale} id={id} label={title} collapsed={variant !== "inline"} whatsappUrl={whatsappEnquiryUrl({locale,service:serviceTitle,request:"Please contact me about this service.",option:formatOptions?.length && selectedFormat ? selectedFormat : undefined,pagePath:sourcePath || pathname || "/" + locale + "/services"})}/>;
   return (
     <section id={id} className={[styles.section, variant === "inline" ? styles.inline : "", variant === "diagnosis" ? styles.diagnosis : ""].filter(Boolean).join(" ")}
       data-compact-last-slide={variant === "inline" ? undefined : ""}

@@ -9,6 +9,8 @@ import { RECEIPT_SESSION_KEY } from "@/lib/practitioners/enquiry-receipt.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { telegramEnquiryUrlFromWhatsApp, whatsappEnquiryUrl } from "@/lib/whatsapp-enquiry";
 import styles from "./home-free-diagnosis-banner.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
 
 const SERVICE_TITLE = "Free drawing-based situation review";
 type Channel = "whatsapp" | "telegram";
@@ -309,7 +311,8 @@ export function HomeFreeDiagnosisBanner({ locale, context }: { locale: PublicLoc
           </Link>
         </div>
         <p className={styles.note}>{t.note}</p>
-        <div id={formId} className={styles.request} hidden={!open} data-home-diagnosis-request>
+        {open && websiteMessengerOnlyUi() ? <MandatoryMessengerActions locale={locale} whatsappUrl={whatsappEnquiryUrl({locale,service:"Free situation assessment",request:"Please contact me about a free written review.",pagePath:"/"+locale+"/services/free-situation-review"})}/> : null}
+        <div id={formId} className={styles.request} hidden={!open || websiteMessengerOnlyUi()} data-home-diagnosis-request>
           <div className={styles.requestHeading}>
             <strong>{t.requestTitle}</strong><span>{t.requestHint}</span>
           </div>

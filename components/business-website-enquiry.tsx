@@ -10,6 +10,9 @@ import type { BusinessLocale } from "@/data/business-consulting-copy";
 import { PhoneCountryInput } from "@/components/phone-country-input";
 import { parseBusinessReplyContact } from "@/lib/business-consulting/intake-policy";
 import styles from "./business-website-enquiry.module.css";
+import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
+import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
+import {whatsappEnquiryUrl} from "@/lib/whatsapp-enquiry";
 
 type Format = "free" | "express" | "full" | "mentoring";
 
@@ -143,6 +146,7 @@ export function BusinessWebsiteEnquiry({locale}:{locale:BusinessLocale}) {
     }catch{setError(t.error)}
     finally{setBusy(false)}
   }
+  if (websiteMessengerOnlyUi()) return <MandatoryMessengerActions locale={locale} label={t.title} collapsed whatsappUrl={whatsappEnquiryUrl({locale,service:"Business consulting · "+t.formatNames[format],request:"Please contact me about this consultation.",pagePath:"/"+locale+"/services/business-consulting"})}/>;
   return <section className={styles.panel} id="business-direct-request" data-business-website-enquiry aria-labelledby="business-website-title">
     <p className={styles.eyebrow}>{t.eyebrow}</p>
     <h2 id="business-website-title">{t.title}</h2>
