@@ -43,7 +43,8 @@ test("Ideas CTA advances to Montage auto Concept with no renderer, no audio libr
   assert.match(studio,/data-video-concept-text-tools/);
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}\/>/);
+ assert.ok(studio.includes('onCreate={goToMontageFromIdeas} onGenerate={createQuickVideo} status={notice}/>'),
+  "Ideas keeps its Montage navigation and gets a separate guarded Create action");
  assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
  assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,
@@ -86,8 +87,8 @@ test("Ideas rolling preview iPhone bug regression: first selected phrase is show
  assert.ok(render.includes('textScale === "small"')&&render.includes('textScale === "large"'));
  assert.ok(cmp.includes('onResetPreview();onChange(old=>'),"size slider refreshes the first actual phrase");
  assert.ok(cmp.includes('motion:"rise"'),"Ideas enables rolling renderer");
- assert.ok(studio.includes('paintVideoAffirmations(ctx,previewSeekSeconds,affirmationLines,affirmations,duration)'));
- assert.equal((studio.match(/paintVideoAffirmations\(ctx,[^,]+,affirmationLines,affirmations,duration\)/g)||[]).length,5,
+ assert.ok(studio.includes('paintSingleVideoTextOverlay(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips)'));
+ assert.equal((studio.match(/paintSingleVideoTextOverlay\(ctx,/g)||[]).length,5,
    "live preview and all three export paths share the same renderer");
 });
 
@@ -99,7 +100,7 @@ test("Ideas Play reuses film, not unstable speech synthesis; preserve real voice
  assert.ok(studio.includes('if(activeWorkspace==="phrases"||previewSeekSeconds>=duration)'),
    "Play starts from the first selected phrase");
  assert.ok(studio.includes('const playback=film.play()'),"video playback is guarded for Safari");
- assert.ok(studio.includes('if(activeWorkspace!=="phrases")paintStageCaptionOverlay(ctx,previewSeekSeconds'),
+ assert.ok(studio.includes('const visibleCaption=singleTextSource==="caption"?caption:""') && studio.includes('paintSingleVideoTextOverlay(ctx,previewSeekSeconds,'),
    "legacy caption is not drawn on top of Ideas text");
  assert.ok(studio.includes('onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}'));
  assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'));

@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect, useId, useReducer, useRef, useState} from 'react';
+import {Volume2, VolumeX} from 'lucide-react';
 import {classifyAvatarEmotion} from '@/lib/assistant-avatar/emotion-policy.mjs';
 import {initialAvatarState, reduceAvatar, type AvatarState} from '@/lib/assistant-avatar/avatar-machine';
 import {createDeviceSpeech, type SpeechController} from '@/lib/assistant-avatar/device-speech';
@@ -8,7 +9,7 @@ import styles from './emotional-avatar.module.css';
 
 type ChatMessage = {role:'user'|'assistant';text:string};
 type Locale = 'ru'|'en'|'es';
-type AvatarProps = {messages:ChatMessage[];busy:boolean;status:string;locale:Locale;compact:boolean};
+type AvatarProps = {messages:ChatMessage[];busy:boolean;status:string;locale:Locale;compact:boolean;iconOnly?:boolean};
 const copy = {
   ru:{name:'Визуальный помощник',idle:'Я рядом',reacting:'Слушаю',thinking:'Готовлю ответ',speaking:'Озвучиваю',error:'Ответ недоступен',
     show:'Показать лицо',hide:'Скрыть лицо',expand:'Увеличить портрет',collapse:'Уменьшить портрет',listen:'Озвучить ответ',stop:'Остановить озвучку',
@@ -21,7 +22,7 @@ const copy = {
     unavailable:'La voz del dispositivo no está disponible. Puedes leer la respuesta.',otherAudio:'Ya se reproduce otro audio. Inténtalo al terminar.'},
 } as const;
 
-export default function EmotionalAvatar({messages,busy,status,locale,compact}:AvatarProps) {
+export default function EmotionalAvatar({messages,busy,status,locale,compact,iconOnly=false}:AvatarProps) {
   const t=copy[locale]||copy.en;
   const faceId=useId();
   const shirtId=useId();
@@ -121,6 +122,13 @@ export default function EmotionalAvatar({messages,busy,status,locale,compact}:Av
   function hide(){speech.current?.stop();setExpanded(false);dispatch({type:'HIDE'});}
   const phase=state.phase as AvatarState['phase'];
   const statusText=t[phase==='hidden'?'idle':phase];
+  if(iconOnly)return <button type="button" className={styles.iconOnly}
+    data-hh-speech-control aria-label={state.speaking?t.stop:t.listen}
+    title={state.speaking?t.stop:t.listen} aria-pressed={state.speaking}
+    disabled={!speechAvailable||!latestReply||busy} onClick={toggleVoice}>
+    {state.speaking?<VolumeX size={21} aria-hidden="true"/>:
+      <Volume2 size={21} aria-hidden="true"/>}
+  </button>;
   if(!state.visible)return <div className={styles.hidden} data-hh-emotional-avatar-hidden>
     <button type="button" onClick={()=>dispatch({type:'SHOW'})}>{t.show}</button>
   </div>;

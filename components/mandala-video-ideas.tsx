@@ -16,7 +16,7 @@ type Cluster={id:string;label:string};
 type Props={
  locale:VideoLocale;theme:VideoTheme;active:boolean;disabled:boolean;settings:AffirmationSettings;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
- onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;
+ onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;onGenerate:()=>void;status?:string;
  onRecord:()=>void;onResetPreview:()=>void;
 };
 
@@ -76,7 +76,7 @@ const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
 export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generating,
- onChange,onPendingChange,onPreview,onCreate,onRecord,onResetPreview}:Props){
+ onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview}:Props){
  const t=wording[locale];
  const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
  const desiredOptions=useMemo<Cluster[]>(()=>listDesiredEmotionClusters(locale),[locale]);
@@ -285,11 +285,20 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
    </div>
   </details>
 
-  <button type="button" className={css.create} data-video-ideas-create
-   disabled={disabled||selectedCount<5} onClick={onCreate}>
-   <Play size={23} fill="currentColor" aria-hidden="true"/>
-   {generating?t.next+"…":t.next}<span aria-hidden="true">→</span>
+  <div className={css.stageActions} data-video-stage-actions="ideas">
+  <button type="button" className={css.create} data-video-ideas-generate
+    disabled={disabled} onClick={onGenerate}>
+    <Play size={21} fill="currentColor" aria-hidden="true"/>
+    {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
   </button>
-  <p className={css.privacy}>{t.privacy}</p>
+  <button type="button" className={css.addEffects} data-video-ideas-create
+    disabled={disabled||selectedCount<5} onClick={onCreate}>
+    <Sparkles size={19} aria-hidden="true"/>
+    {locale==="ru"?"Добавить эффекты":locale==="es"?"Añadir efectos":"Add Effects"}
+    <span aria-hidden="true">→</span>
+  </button>
+ </div>
+ {status?<p className={css.stageStatus} role="status" aria-live="polite">{status}</p>:null}
+ <p className={css.privacy}>{t.privacy}</p>
  </section>;
 }

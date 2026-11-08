@@ -280,3 +280,11 @@
   background:linear-gradient(165deg,#FFF7F3 0%,#FFF4EC 55%,#FFF0E8 100%);
   color:#142B3D
 }
+
+
+/* Video Studio ends at the two Goal actions. The old external Voice Studio
+   shortcut, legacy Mandala disclosure and redundant disclaimer stay off
+   the Video page; the independent ?mode=photo route remains available. */
+.page[data-mandala-mode="video"] .voiceStudioLink,
+.page[data-mandala-mode="video"] .advancedWorkbench,
+.page[data-mandala-mode="video"] .caution{display:none!important}

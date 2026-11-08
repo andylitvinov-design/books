@@ -11,7 +11,7 @@ test('native menu is scoped to private chats and available in RU EN ES',()=>{
   assert.equal(commands.length,15);
   assert.equal(new Set(commands.map(x=>x.command)).size,15);
   assert.ok(commands.every(x=>/^[a-z0-9_]{1,32}$/.test(x.command)&&x.description.length>0&&x.description.length<=256));
-  for(const key of ['menu','ai','ai_off','checkin','daily','daily_off','stop'])assert.ok(commands.some(x=>x.command===key));
+  for(const key of ['menu','cabinet','ai','ai_off','checkin','daily','daily_off','stop'])assert.ok(commands.some(x=>x.command===key));
  }
 });
 test('preserves existing BotFather commands, their descriptions and order',()=>{
