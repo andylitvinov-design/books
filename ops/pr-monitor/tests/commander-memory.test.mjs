@@ -68,3 +68,18 @@ test('mobile memory route and task intake are integrated without a second task D
  assert.match(task,/9\. ПАМЯТЬ ПРОЕКТА/);
  assert.match(task,/output\.value!==previous/);
 });
+
+
+test('Brain startup, task context, operations and risks are curated public capsule names',()=>{
+ for(const path of ['START_HERE.md','TASK_CONTEXT.md','OPERATIONS.md','RISKS.md'])assert.ok(brain.FILES.includes(path),path);
+ const unique=new Set(brain.FILES);assert.equal(unique.size,brain.FILES.length);
+ assert.equal(brain.FILES[0],'START_HERE.md');
+});
+test('production CSP permits only the exact public GitHub raw host for memory reads',()=>{
+ const json=JSON.parse(src('vercel.json'));
+ const csp=json.headers.flatMap(x=>x.headers).find(h=>h.key==='Content-Security-Policy').value;
+ assert.match(csp,/connect-src 'self' https:\/\/api\.github\.com https:\/\/raw\.githubusercontent\.com/);
+ assert.match(csp,/https:\/\/accounts\.google\.com\/gsi\//);
+ assert.match(csp,/default-src 'none'/);
+ assert.doesNotMatch(csp,/connect-src[^;]*\s\*/);
+});

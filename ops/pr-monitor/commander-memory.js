@@ -9,7 +9,7 @@
  const REPO='andylitvinov-design/ai-projects-brain';
  const RAW='https://raw.githubusercontent.com/'+REPO+'/main/';
  const DIRECTORY='https://api.github.com/repos/'+REPO+'/contents/projects?ref=main';
- const FILES=Object.freeze(['PROJECT.md','STATE.md','SYSTEM_MAP.md','CODEX_BRIEF.md','CHECKS.md','DECISIONS.md','RISKS.md','LOG.md']);
+ const FILES=Object.freeze(['START_HERE.md','PROJECT.md','STATE.md','TASK_CONTEXT.md','OPERATIONS.md','DECISIONS.md','SYSTEM_MAP.md','CODEX_BRIEF.md','CHECKS.md','RISKS.md','LOG.md']);
  const clean=(s,n=300)=>String(s==null?'':s).replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,n);
  const slugOK=s=>typeof s==='string'&&/^[a-z0-9][a-z0-9-]{0,62}$/.test(s);
  const sourceUrl=path=>'https://github.com/'+REPO+'/blob/main/'+path;
