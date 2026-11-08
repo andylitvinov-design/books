@@ -35,6 +35,7 @@
   const al=el('a','hh-cc-external','Смотреть счётчик GPT-агентов в PR Monitor ›');al.href='/pr-monitor.html';a.append(al);
   const b=panel('⚙ GitHub Watchdog и Repair Worker');b.append(el('p','hh-cc-muted','Проверка текущего PR и HEAD, разрешённый запуск только через существующий защищённый процесс. Подготовленная передача задачи ещё не коммит.'));
   const bl=el('a','hh-cc-external','Открыть монитор CI и очереди ›');bl.href='/pr-monitor.html';b.append(bl);
+  row(b,'🛠 AI PR Repair · North Mini Code','Проверить конкретный PR и подготовить команду для GitHub Worker; отправка владельцем, без ключей браузера','/project-management-public.html','🛠');
   const c=panel('🛡 Owner Execution Gateway');c.append(el('p','hh-cc-muted','Создание, запуск, повторы и отмена требуют авторизации владельца на существующем сервере. Публичному монитору ключи не выдаются.'));
   const cl=el('a','hh-cc-external','Открыть защищённый редактор задач ›');cl.href='/task-editor.html';c.append(cl);
   const p=panel('Подзадачи для исполнителей');row(p,'Выбрать 1–8 задач и подготовить передачу','ChatGPT Work / GitHub Issue / существующий Repair Worker','/project-management-public.html','☑');footer(s);

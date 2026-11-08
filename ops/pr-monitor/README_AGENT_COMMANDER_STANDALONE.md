@@ -2,6 +2,8 @@
 
 **Canonical destination:** https://holistic-house-pr-monitor.vercel.app
 
+**AI-ремонт PR из Commander:** [Handoff V1](../../docs/operations/HH_COMMANDER_FREE_AI_PR_REPAIR_HANDOFF_20261107.md). Кнопка на карточке PR выполняет read-only preflight exact HEAD + trusted RED Core, готовит только публичную команду владельцу в существующий GitHub Inbox #3890; запускает Worker только настоящий GitHub-комментарий владельца. Бесплатный auto Worker уже в control-plane. UI не пишет PR и не хранит токены.
+
 **Постоянный концепт выбора бесплатных моделей для кода и исправления PR:** [AI Coding Models · HH_AI_CODE_PR_MODEL_ROUTING_V1](../../docs/operations/HH_AI_CODE_PR_MODEL_ROUTING_V1.md). Выбор модели в UI не означает реальный запуск агента: Worker должен доказать выполнение, нулевую цену, текущий SHA и проверку CI.
 
 This is a **mobile-first, public/read-only navigation and briefing surface**, not a fork of the owner database. Its seven-tab dock (Home, PR, Tasks, Create, Agents, Chat, Projects) is fixed at the bottom on iPhone with safe-area support, using the original screenshot's dark purple visual identity. Public PM task content comes from the *existing* \`/project-management-public.json\`. The existing PR monitor with its complete \`legacy.html\`, 29 APIs and all historic JS/CSS assets remains at \`/pr-monitor.html\`. Nothing removes the old \`legacy.html\` path.
