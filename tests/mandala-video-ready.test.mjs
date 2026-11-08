@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {selectResourcePractice} from "../lib/mandala/resource-practice-selector.mjs";
+import {VIDEO_CART_PRODUCTS,createVideoCartSelection} from "../lib/commerce/cart.js";
 
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const ready=readFileSync(new URL("../components/mandala-video-ready.tsx",import.meta.url),"utf8");
@@ -182,19 +183,31 @@ test("Ready offers exactly three compact selectable video formats above existing
     const end=locale==="en"?ready.indexOf("  ru:{",start):
       locale==="ru"?ready.indexOf("  es:{",start):ready.indexOf("} as const;",start);
     for(const key of ["videoChooseTitle","videoBasic","videoPhoto","videoCharacter",
-      "videoFree","videoPaidHold","videoFreeHold","videoGenerate","videoIdeas"])
+      "videoFree","videoPaidInfo","videoCartAction","videoFreeHold","videoGenerate","videoIdeas"])
       assert.ok(ready.slice(start,end).includes(key+":"),locale+" "+key);
   }
 });
 
-test("Free uses existing local generator; paid tiers cannot create unverified charges",()=>{
+test("Free uses the original generator; paid Ready tiers reuse the fixed-SKU manual cart",()=>{
   assert.match(ready,/if\(videoTier!=="basic"\)/);
-  assert.match(ready,/setVideoGenerationNotice\(t.videoPaidHold/);
+  assert.match(ready,/const id=videoTier==="photo"\?"video-extra":"video-pro"/);
+  assert.match(ready,/createVideoCartSelection\(id\)/);
+  assert.match(ready,/window\.sessionStorage\.setItem\(VIDEO_CART_STORAGE_KEY,JSON\.stringify\(selection\)\)/);
+  assert.match(ready,/window\.dispatchEvent\(new Event\(SERVICE_CART_UPDATED_EVENT\)\)/);
+  assert.match(ready,/router\.push\("\/"\+locale\+"\/cart\?video="\+id\)/);
+  assert.match(ready,/data-ready-video-payment-disclosure/);
+  assert.match(ready,/videoTier==="basic"\?t\.videoGenerate:t\.videoCartAction/);
   assert.match(ready,/if\(!basicFreeAvailable\)/);
   assert.match(ready,/onGenerateBasicVideo\(\)/);
   assert.doesNotMatch(ready,/fetch\(.*pay|fetch\(.*billing|window\.location\s*=/);
+  assert.doesNotMatch(ready,/createVideoCartSelection\(id,\s*(wish|focus|anchor)/);
   assert.match(studio,/basicFreeAvailable=\{Boolean\(creditCatalog/);
   assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
   assert.match(studio,/if\(!freeVideoSelected\)\{/);
   assert.match(studio,/return createQuickVideo\(\)/);
+  const prices=Object.fromEntries(VIDEO_CART_PRODUCTS.map(item=>[item.id,item.amountMinor]));
+  assert.deepEqual(prices,{"video-extra":300,"video-pro":500});
+  assert.deepEqual(createVideoCartSelection("video-extra"),{id:"video-extra",brief:""});
+  assert.deepEqual(createVideoCartSelection("video-pro"),{id:"video-pro",brief:""});
+  assert.equal(createVideoCartSelection("video-unknown"),null);
 });
