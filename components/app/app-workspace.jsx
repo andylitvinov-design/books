@@ -61,7 +61,7 @@ import AccountLoginMethods from '@/components/app/account-login-methods'
 import AccountMessagingEntry from '@/components/app/account-messaging-entry'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
-import { shouldPauseNewSignupSave } from '@/lib/pwa/post-signup-flow'
+import { shouldPauseNewSignupSave, shouldOfferWhatsAppAfterSignup } from '@/lib/pwa/post-signup-flow'
 import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
@@ -257,7 +257,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     pendingSaveInstallAccountId.current=null
     if(shouldPauseNewSignupSave({
       pendingAccountId,accountId:currentAccountId,installEligible:isPostSignupInstallEligible(),
-    })){
+    }) || shouldOfferWhatsAppAfterSignup({pendingAccountId,accountId:currentAccountId})){
       savedExitDestination.current=destination
       setSavedInstallContext(true)
       setInstallOfferAccountId(currentAccountId)
