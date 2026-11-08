@@ -4,12 +4,13 @@
 
 **Постоянный концепт выбора бесплатных моделей для кода и исправления PR:** [AI Coding Models · HH_AI_CODE_PR_MODEL_ROUTING_V1](../../docs/operations/HH_AI_CODE_PR_MODEL_ROUTING_V1.md). Выбор модели в UI не означает реальный запуск агента: Worker должен доказать выполнение, нулевую цену, текущий SHA и проверку CI.
 
-This is a **mobile-first, public/read-only navigation and briefing surface**, not a fork of the owner database. Its five-tab dock (Home, Tasks, Create, Agents, Projects) is fixed at the bottom on iPhone with safe-area support, using the original screenshot's dark purple visual identity. Public PM task content comes from the *existing* \`/project-management-public.json\`. The existing PR monitor with its complete \`legacy.html\`, 29 APIs and all historic JS/CSS assets remains at \`/pr-monitor.html\`. Nothing removes the old \`legacy.html\` path.
+This is a **mobile-first, public/read-only navigation and briefing surface**, not a fork of the owner database. Its seven-tab dock (Home, PR, Tasks, Create, Agents, Chat, Projects) is fixed at the bottom on iPhone with safe-area support, using the original screenshot's dark purple visual identity. Public PM task content comes from the *existing* \`/project-management-public.json\`. The existing PR monitor with its complete \`legacy.html\`, 29 APIs and all historic JS/CSS assets remains at \`/pr-monitor.html\`. Nothing removes the old \`legacy.html\` path.
 
 ## Routes
 - \`/\` — public daily briefing; truthful task snapshot, blockers and entrypoints
 - \`/project-management-public.html\` — existing project → stages → subtasks → GitHub PR evidence and safe bulk executor handoff
 - \`/agents.html\` — read-only status semantics and links to existing trusted agent/Watchdog tools
+- \`/chats.html\` — existing private task chats, PR evidence and owner-authorized messages; no second database
 - \`/projects.html\` — public project registry
 - \`/pr-monitor.html\` — existing PR → Core → repair → merge monitoring with all prior charts
 - \`/legacy.html\` — original unchanged standalone PR page as fallback

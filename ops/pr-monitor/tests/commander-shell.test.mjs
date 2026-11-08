@@ -9,9 +9,14 @@ test('standalone root is Commander; existing PR monitor remains available under 
  assert.match(src('pr-monitor.html'),/pr-two-screen-boot\.js/);
  assert.doesNotMatch(src('index.html'),/pr-two-screen-boot\.js/);
 });
-test('one five-action dock is loaded for public Commander and PM views',()=>{
+test('one seven-action dock is loaded for public Commander and PM views',()=>{
  const nav=src('project-management-nav.js'),css=src('commander-shell.css');
- for(const item of ['Главная','Задачи','Создать','Агенты','Проекты'])assert.ok(nav.includes(item),item);
+ for(const item of ['Главная','PR','Задачи','Создать','Агенты','Чат','Проекты'])assert.ok(nav.includes(item),item);
+ assert.match(nav,/monitor:'\/pr-monitor\.html',chats:'\/chats\.html'/);
+ assert.match(nav,/\[\['home','Главная'\],\['monitor','PR'\],\['tasks','Задачи'\],\['add','Создать'\],\['agents','Агенты'\],\['chats','Чат'\],\['projects','Проекты'\]\]/);
+ assert.match(nav,/location\.pathname===paths\.monitor\?'monitor':location\.pathname===paths\.chats\?'chats'/);
+ assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.hh-cc-add\{width:clamp\(44px,11\.5vw,51px\)/);
  assert.match(css,/#hh-cc-dock\{position:fixed/);
  for(const [page,view]of [['index.html','home'],['agents.html','agents'],['projects.html','projects']]){
   assert.match(src(page),new RegExp('data-view="'+view+'"'));
