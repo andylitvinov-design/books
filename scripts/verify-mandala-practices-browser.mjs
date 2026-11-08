@@ -195,7 +195,7 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.ok(destinations.every(item=>item.href?.startsWith("https://")&&item.target==="_blank"),
         "both channels use secure external links and a separate messenger context");
       const disclosureNote=await enquiry.locator("[data-messenger-only-contact] p").last().innerText();
-      assert.match(disclosureNote,/Press Send|Нажмите Отправить|Pulsa Enviar/,
+      assert.match(disclosureNote,/Press Send|Нажмите.*Отправить|Pulsa Enviar/,
         "opening a messenger is not treated as a submitted enquiry");
       const geometry=await course.evaluate((el)=>{
         const rect=el.getBoundingClientRect();
