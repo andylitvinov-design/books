@@ -336,8 +336,8 @@
    const d=await json(r);
    if(r.ok&&d.authenticated===true){await initializeOwner();return}
   }catch{}
-  set('login-status','Введите существующий код владельца PR Monitor.');
-  by('owner-password').focus();
+  set('login-status','Продолжите через Google — отдельный код PR Monitor не нужен.');
+  win.HHGoogleOwnerSSO?.mount(by('google-owner'),s=>set('login-status',s));
  }
  function bind(){
   by('login-form').addEventListener('submit',login);

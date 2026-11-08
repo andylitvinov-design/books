@@ -6,8 +6,10 @@
 <link rel="stylesheet" href="/commander-shell.css">
 <link rel="stylesheet" href="/commander-shell.css?v=20261107-cc-v1">
 <link rel="stylesheet" href="/task-editor.css?v=20261107-1">
+<link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
 <script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
-<script src="/task-editor.js?v=20261107-1" defer></script>
+<script src="/owner-google-signin.js?v=20261107-v1" defer></script>
+<script src="/task-editor.js?v=20261107-sso-v1" defer></script>
 <script src="/commander-source-bridge.js?v=20261107-v1" defer></script>
 </head><body class="hh-cc-shell">
 <main class="ac-editor" id="ac-editor">
@@ -18,12 +20,14 @@
   </header>
   <section class="ac-card" id="ac-login" aria-label="Авторизация владельца">
     <h2>Доступ владельца</h2>
-    <p class="ac-subtle">Здесь используется существующий код владельца PR Monitor. Google-вход и переход на Holistic House не требуются.</p>
+    <p class="ac-subtle">Повторный код не нужен при действующей сессии владельца. В остальных случаях продолжите через Google.</p>
+    <div id="ac-google-owner" class="hh-sso-slot"></div>
+    <details class="hh-sso-backup"><summary>Резервный вход по коду</summary>
     <form id="ac-login-form" autocomplete="on">
       <label for="ac-owner-password">Код владельца</label>
       <input type="password" id="ac-owner-password" autocomplete="current-password" required>
       <button type="submit" class="ac-primary">Открыть редактор</button>
-    </form>
+    </form></details>
     <p role="status" id="ac-login-status" class="ac-note">Проверяю текущую сессию…</p>
   </section>
   <div id="ac-workspace" hidden>

@@ -4,7 +4,7 @@
  */
 (function(){
  const API='/api/pm-agent-chat';
- let panel=null,body=null,loginForm=null,main=null,notice=null,agentSel=null,modelSel=null,
+ let panel=null,body=null,loginForm=null,googleSlot=null,main=null,notice=null,agentSel=null,modelSel=null,
      editor=null,sendBtn=null,history=null,reportList=null,reportBtn=null,modeDesc=null;
  let catalog=null,connected=false,openrouterConnected=false,models=[],messages=[],reportCache=[];
  const renderedGh=new Set();
@@ -84,7 +84,8 @@
     modelsReady();
   }catch(e){
     connected=false;loginForm.hidden=false;main.hidden=true;
-    msg('Для диалога требуется код владельца PR Monitor (не Google). Просмотр задач остаётся открытым.');
+    msg('Продолжите через Google. Отдельный код PR Monitor не требуется.');
+    window.HHGoogleOwnerSSO?.mount(googleSlot,s=>msg(s));
   }
  }
  async function unlock(e){
@@ -187,13 +188,17 @@
   const title=mk('div','pm-agent-chat-heading');title.appendChild(mk('h2',null,'Чат с AI-исполнителями'));
   title.appendChild(mk('small',null,'Project Management · только владелец'));
   const workChats=mk('a','pm-chat-report-link','Открыть рабочие чаты');workChats.href='/chats.html';title.append(workChats);panel.appendChild(title);
-  panel.appendChild(mk('p','pm-chat-hint','Публичный просмотр задач без Google. Переписка и отчёты требуют входа владельца. Отчёты из существующего GitHub, чат не запускает изменения кода.'));
+  panel.appendChild(mk('p','pm-chat-hint','Публичный просмотр задач открыт. Переписка и отчёты требуют подтверждённую Google-сессию владельца. Отчёты из существующего GitHub, чат не запускает изменения кода.'));
   loginForm=mk('form','pm-chat-login');loginForm.hidden=true;
+  loginForm.append(mk('p','pm-chat-hint','Вход владельца через Google · без дополнительного кода.'));
+  googleSlot=mk('div','hh-sso-slot');loginForm.append(googleSlot);
+  const backup=mk('details','hh-sso-backup');
+  backup.append(mk('summary',null,'Резервный вход по коду'));
   const codeLabel=mk('label',null,'Код владельца PR Monitor');
   const pass=mk('input','pm-chat-password');pass.type='password';pass.name='password';pass.autocomplete='current-password';pass.required=true;pass.maxLength=256;
-  codeLabel.appendChild(pass);loginForm.append(codeLabel);
-  const unlockBtn=mk('button','pm-btn','Войти без Google');unlockBtn.type='submit';loginForm.append(unlockBtn);
-  loginForm.addEventListener('submit',unlock);panel.append(loginForm);
+  codeLabel.appendChild(pass);backup.append(codeLabel);
+  const unlockBtn=mk('button','pm-btn','Войти');unlockBtn.type='submit';backup.append(unlockBtn);
+  loginForm.append(backup);loginForm.addEventListener('submit',unlock);panel.append(loginForm);
   main=mk('div','pm-chat-main');main.hidden=true;
   const tabs=mk('div','pm-chat-tabs');
   tabs.append(btn('Диалог',()=>setTab('chat'),'pm-btn pm-tab-chat'),btn('Отчёты агентов',()=>setTab('reports'),'pm-btn pm-tab-reports'));
