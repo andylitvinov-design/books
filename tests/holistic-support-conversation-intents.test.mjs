@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { interpretSupportUtterance, parseSupportMinutes, chooseSupportFormat } from "../lib/holistic-support/guide-dialogue.mjs";
+import { understandConversationTurn } from "../lib/holistic-support/conversation-intelligence.mjs";
+import { ruleConversationReply } from "../lib/holistic-support/rule-conversation.mjs";
 
 test("natural-language inputs reuse the existing privacy-safe Home Guide parser", () => {
   assert.deepEqual(interpretSupportUtterance("Да", "ru").kind,"agree");
@@ -37,4 +39,43 @@ test("format suggestion uses explicit opt-in, free options, and never infers pay
   assert.equal(chooseSupportFormat({available:["consultation","healing"],minutes:10,need:"Обсудить"}),"healing");
   assert.equal(chooseSupportFormat({available:["tests","meditation"],minutes:5,preferred:"consultation"}),"meditation");
   assert.equal(chooseSupportFormat({available:[],minutes:10,need:"энергия"}),null);
+});
+
+test("conversation intelligence honors corrections, follow-ups and the default chat route", () => {
+  const correction = understandConversationTurn({ message: "Не про любовь, а про деньги", locale: "ru" });
+  assert.equal(correction.act, "correction");
+  assert.equal(correction.topic, "work_money");
+  assert.match(correction.replyFallback, /работа и деньги/);
+
+  const followUp = ruleConversationReply({
+    message: "А почему?", locale: "ru",
+    history: [{ role: "user", text: "Мне сложно в отношениях" }],
+  });
+  assert.equal(followUp.source, "conversation-intelligence");
+  assert.equal(followUp.understanding.act, "follow_up");
+  assert.equal(followUp.understanding.contextTopic, "relationships");
+
+  const mixed = ruleConversationReply({
+    message: "Я хочу сменить работу, но боюсь подвести команду", locale: "ru",
+  });
+  assert.equal(mixed.understanding.act, "ambivalence");
+
+  const spanish = understandConversationTurn({
+    message: "No me refiero al trabajo, sino a mi relación", locale: "es",
+  });
+  assert.equal(spanish.act, "correction");
+  assert.equal(spanish.topic, "relationships");
+});
+
+test("conversation intelligence does not mistake disclosures or short yes for actions", () => {
+  const disclosure = understandConversationTurn({ message: "Сегодня был тяжелый день", locale: "ru" });
+  assert.equal(disclosure.act, "disclosure");
+  assert.ok(disclosure.replyFallback);
+
+  const yes = understandConversationTurn({ message: "Yes", locale: "en" });
+  assert.equal(yes.act, "affirmation");
+  assert.match(yes.replyFallback, /does not trigger actions/);
+
+  const direct = ruleConversationReply({ message: "Напиши медитацию для сна", locale: "ru" });
+  assert.notEqual(direct.source, "conversation-intelligence");
 });
