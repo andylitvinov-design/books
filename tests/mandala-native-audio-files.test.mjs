@@ -152,8 +152,9 @@ test("iPhone editor wires native <audio> controls, explicit file input, EN/RU/ES
   assert.match(client,/data-video-audio-player/);
   assert.match(client,/controls preload="metadata"/);
   assert.match(client,/void player\.play\(\)\.catch/);
-  assert.match(client,/onPlay=\{\(\)=>/);
-  assert.match(client,/onPause=\{\(\)=>/);
+  // Native event handlers may take an event to reject stale Safari media nodes.
+  assert.match(client,/onPlay=\{(?:\(\)=>|event=>)/);
+  assert.match(client,/onPause=\{(?:\(\)=>|event=>)/);
   assert.match(client,/type="file"/);
   assert.match(client,/data-video-audio-upload/);
   assert.match(client,/isSupportedLocalAudio\(file\)/);
