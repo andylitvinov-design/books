@@ -27,6 +27,8 @@ on:
       - 'ops/pr-monitor/project-management-public.html'
       - 'ops/pr-monitor/commander-ui.js'
       - 'ops/pr-monitor/tests/pr-ai-repair-handoff.test.mjs'
+      - 'ops/pr-monitor/vercel.json'
+      - 'ops/pr-monitor/tests/vercel-fallback.test.cjs'
       - 'ops/pr-monitor/api/commander-codex.js'
       - 'ops/pr-monitor/commander-codex.css'
       - 'ops/pr-monitor/commander-codex.js'
@@ -297,6 +299,8 @@ jobs:
         run: node --test ops/pr-monitor/tests/commander-private-store.test.mjs ops/pr-monitor/tests/commander-chats.test.mjs ops/pr-monitor/tests/commander-editor.test.mjs ops/pr-monitor/tests/google-owner-sso.test.mjs ops/pr-monitor/tests/pm-agent-chat.test.mjs
       - name: Commander Codex dispatch security and exact-head contracts
         run: node --test ops/pr-monitor/tests/commander-codex.test.mjs
+      - name: Standalone monitor legacy fallback contract
+        run: node --test ops/pr-monitor/tests/vercel-fallback.test.cjs
       - name: PR attribution timeline evidence contracts
         run: node --test ops/pr-monitor/tests/pr-repair-cycle-model.test.cjs tests/ci-pr-timeline-audit.test.cjs tests/pr-attribution-api.test.cjs tests/pr-checkpoint-evidence.test.cjs tests/pr-cohort-wall-clock.test.cjs tests/pr-monitor-reconciliation-v2.test.cjs tests/ci-pr-core-journey-summary.test.cjs tests/pr-monitor-two-screen.test.cjs tests/pr-monitor-velocity-three-lines.test.cjs tests/pr-monitor-wave-effectiveness.test.cjs tests/pr-monitor-three-kpi-boot.test.cjs tests/pr-monitor-three-kpis.test.cjs tests/pr-monitor-three-kpis-api.test.cjs
       - name: Checkout protected production classifier for integration test
