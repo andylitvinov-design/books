@@ -1630,3 +1630,62 @@ test('modified-only public unit tests take the focused unit lane', () => {
   assert.match(wf,/Run exact modified public unit tests/);
   assert.match(wf,/node --test/);
 });
+
+test('exact #3843 iHelp photo dialogue uses real Mandala owner, never unrelated storefront',()=>{
+  const expected=[
+    ['M','components/mandala-video-director-chat.module.css'],
+    ['M','components/mandala-video-director-chat.tsx'],
+    ['A','docs/design/IHELP_DIALOGUE_VISUAL_CONTINUITY_20261107.md'],
+    ['M','scripts/benchmarking/video-director-chat-live-acceptance.mjs'],
+    ['M','tests/video-chat-contextual-understanding.test.mjs'],
+    ['M','tests/video-director-calm-welcome.test.mjs'],
+    ['M','scripts/ci-public-services-plan.mjs'],
+    ['M','tests/ci-public-services-plan.test.mjs'],
+  ];
+  const mandala=workflow('holistic-support-mandala.yml');
+  const guard=workflow('hh-pr-sweep-guard.yml');
+  const pub=workflow('hh-public-services-production.yml');
+  assert.equal(covers(pathsOf('holistic-support-mandala.yml'),
+    'components/mandala-video-director-chat.tsx'),true);
+  assert.ok(mandala.includes('node scripts/benchmarking/video-director-chat-live-acceptance.mjs'),
+    'real photo-dialogue browser acceptance must remain in the Mandala specialist');
+  assert.match(mandala,/node --test tests\/video-chat-understanding\.test\.mjs tests\/video-chat-tree\.test\.mjs tests\/video-chat-contextual-understanding\.test\.mjs/);
+  assert.ok(pub.includes("run_case \"verify-storefront-shop-browser.mjs\""),
+    'cart QA must remain required when storefront/payment sources change');
+  const base='a'.repeat(40),head='b'.repeat(40),nul=String.fromCharCode(0);
+  const env={GITHUB_EVENT_NAME:'pull_request',
+    GITHUB_REF:'refs/pull/3843/merge',
+    GITHUB_HEAD_REF:'fix/ihelp-photo-dialogue-continuity-20261107',
+    HH_PUBLIC_BASE_SHA:base,HH_PUBLIC_HEAD_SHA:head};
+  const examine=(rows,extra={})=>planPublicServicesEvent({...env,...extra},(_cmd,args)=>{
+    if(args[0]==='rev-parse')return Buffer.from(head+'\n');
+    if(args[0]==='merge-base')return Buffer.alloc(0);
+    if(args[0]==='diff')return Buffer.from(rows.flatMap(([st,p])=>[st,p]).join(nul)+nul);
+    if(args[0]==='show'){
+      const file=String(args[1]);
+      return Buffer.from(file.includes('holistic-support-mandala.yml')?mandala:
+        file.includes('hh-pr-sweep-guard.yml')?guard:pub);
+    }
+    throw Error('unexpected fake git command');
+  });
+  const result=examine(expected);
+  assert.deepEqual([result.mode,result.reason,result.build,result.browser,result.cases],
+    ['contracts','EXACT_PR_3843_MANDALA_PHOTO_DIALOGUE_OWNED',false,false,'none']);
+  assert.equal(requiresPublicServicesHeavyPr(result),false);
+  for(const delta of [
+    [...expected,['M','components/commerce/personal-cart.tsx']],
+    [...expected,['M','components/contact-channel-chooser.tsx']],
+    [...expected,['A','app/api/payments/new-gateway/route.ts']],
+    [...expected,['M','middleware.ts']],
+    [...expected,['A','docs/design/UNKNOWN_NEW_DOC.md']],
+    expected.slice(1),
+    expected.map(([st,p],i)=>i===2?['M',p]:[st,p]),
+    expected.map(([st,p],i)=>i===1?['D',p]:[st,p]),
+    [...expected,expected[0]],
+  ])assert.equal(examine(delta).mode,'full','unsafe/mixed iHelp changes must be FULL');
+  assert.equal(examine(expected,{GITHUB_REF:'refs/pull/3844/merge'}).mode,'full');
+  assert.equal(examine(expected,{GITHUB_HEAD_REF:'any-other-branch'}).mode,'full');
+  assert.equal(examine(expected,{HH_PUBLIC_BASE_SHA:''}).mode,'full');
+  assert.equal(planPublicServicesChangedPaths([
+    'components/contact-channel-chooser.tsx']).mode,'full');
+});

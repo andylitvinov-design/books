@@ -311,6 +311,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
       onOpen={id=>setSelected(id)}/>
     </section>:
    tab==='agents'?<section className={styles.section}><div className={styles.heading}><h1>{t.agents}</h1><span>{registry.length}</span></div>
+    <div className={styles.panel}><h2>⏱ {lang==='ru'?'Автоматизации · Cron Jobs':lang==='es'?'Automatizaciones · Cron Jobs':'Automations · Cron Jobs'}</h2><p className={styles.muted}>{lang==='ru'?'Читать и изменять инструкции, создавать задания с навыками и памятью агента':lang==='es'?'Ver, editar y crear tareas programadas con habilidades y memoria':'Read, edit and create scheduled tasks with skills and agent memory'}</p><a className={styles.github} href="/admin/command-center/automations">{lang==='ru'?'Открыть автоматизации':lang==='es'?'Abrir automatizaciones':'Open automations'} ↗</a></div>
     <CommandCenterPrWatch lang={lang} tasks={tasks} watch={snapshot?.prWatch} busy={busy}
       available={available} onSet={(taskId,enabled)=>send('watch_set',{taskId,enabled})}
       onCheck={taskId=>send('watch_check',{taskId})}/>
@@ -374,7 +375,7 @@ export default function CommandCenterMobile({lang='ru',initialSnapshot=null,regi
           if(suggestion.kind&&kind==='code_change')setKind(suggestion.kind);}
        }} rows={3}/>
       <CommandCenterVoiceButton lang={lang} onTranscript={spoken=>setDraft(previous=>safe((previous?previous+' ':'')+spoken,140))}/>
-      <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={800} value={details}
+      <label htmlFor="cc-extra">{t.description}</label><textarea id="cc-extra" maxLength={2000} value={details}
         onChange={e=>setDetails(e.target.value)} rows={2}/>
       {importedPrompt&&<details className={styles.importedPrompt} open>
        <summary>{transferText.heading}</summary><p>{transferText.explain}</p>

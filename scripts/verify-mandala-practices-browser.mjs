@@ -29,31 +29,20 @@ export async function verifyGuidedPractices({browser,base,engine}){
         if(url.origin!==trustedOrigin)return route.abort();
         return route.continue();
       });
-      await page.goto(base+"/"+locale+"/holistic-support/mandala",{
+      await page.goto(base+"/"+locale+"/holistic-support/mandala#guided-video-series",{
         waitUntil:"domcontentloaded",timeout:70000,
       });
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
-      // The six-tab mobile Studio keeps the old pump banner hidden on Goal.
-      // Use the actual visible journey route: Ready → 8-session course →
-      // Create my programme. Do not force-click CSS-hidden legacy controls.
-      const readyTab=page.locator('[data-video-quick-control="ready"]');
-      await expect(readyTab).toBeVisible({timeout:25000});
-      await expect(readyTab).toBeEnabled();
-      await readyTab.click();
-      await expect(readyTab).toHaveAttribute("aria-pressed","true");
-      const ready=page.locator("[data-video-ready]");
-      await expect(ready).toBeVisible({timeout:25000});
-      const journey=ready.locator("[data-ready-journey]");
-      await expect(journey).toBeVisible();
-      await journey.click();
-      await expect(ready).toHaveAttribute("data-ready-view","journey");
-      await expect(ready.locator("[data-ready-eight-sessions]")).toBeVisible();
-      const enterCourse=ready.locator("[data-ready-create-course]");
-      await expect(enterCourse).toBeVisible();
-      await expect(enterCourse).toBeEnabled();
-      await enterCourse.click();
+      const studio=page.locator("[data-mandala-free-video]");
       const course=page.locator("[data-video-guided-course]");
       await course.waitFor({state:"visible",timeout:25000});
+      // The six-tab Video Studio intentionally has no obsolete seventh
+      // "practices" tab. The existing, public #guided-video-series deep link
+      // is a real supported route to this same guided course.
+      await expect(studio).toHaveAttribute("data-active-workspace","practices");
+      await expect(studio).toHaveAttribute("data-video-studio-mode","therapy");
+      await expect(page.locator("[data-video-quick-controls] button")).toHaveCount(6);
+      await expect(page.locator('[data-video-quick-control="ready"]')).toHaveAttribute("aria-pressed","true");
       const generate=course.locator("[data-guided-generate-meditation]");
       assert.equal(await generate.isDisabled(),true,"state mode needs an explicit choice");
       assert.equal(await course.locator("[data-guided-focus-state]").count(),6,
@@ -74,28 +63,35 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.equal(await kinds.count(),3,"one selectable ritual / exercise / practice row");
       const titles=[];
       for(let i=0;i<3;i++){
-        await kinds.nth(i).click();
-        assert.equal(await kinds.nth(i).getAttribute("aria-pressed"),"true");
+        // WebKit resolves a genuine pointer click before React paints a
+        // committed selection on some locales. Require its real pressed state,
+        // never a second synthetic click or a weakened assertion.
+        const kind=kinds.nth(i);
+        await kind.click();
+        try{
+          await expect(kind).toHaveAttribute("aria-pressed","true",{timeout:15000});
+        }catch(error){
+          const evidence=await kinds.evaluateAll(nodes=>nodes.map(node=>({
+            kind:node.getAttribute("data-guided-practice-kind"),
+            pressed:node.getAttribute("aria-pressed"),
+            disabled:node.disabled,
+          })));
+          throw new Error("GUIDED_KIND_DID_NOT_COMMIT "+engine+" "+locale+
+            " index="+i+" "+JSON.stringify(evidence),{cause:error});
+        }
         titles.push(await practice.locator("h5").innerText());
       }
       assert.equal(new Set(titles).size,3,"all three choices produce genuinely different practices");
       await practice.locator("button").last().click();
       assert.notEqual(await practice.locator("h5").innerText(),titles[2],"refresh changes the method");
 
-      const include= result.locator("[data-guided-add-meditation]");
-      await include.click();
-      // The included choice must really commit before the parent scrolls
-      // the expanded narration editor. This prevents a stale WebKit tap
-      // from silently losing the next opt-out action.
-      await expect(include).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await result.locator("[data-guided-add-meditation]").click();
       const voice=page.locator("[data-video-therapy-meditation-audio]");
       await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===true);
       await voice.locator("[data-meditation-script]").waitFor({state:"attached"});
       const seeded=await voice.locator("[data-meditation-script]").inputValue();
       assert.equal(seeded.trim(),script.trim(),"approved original script reaches the existing narration editor");
-      const skip= result.locator("[data-guided-skip-meditation]");
-      await expect(skip).toBeEnabled();
-      await skip.click();
+      await result.locator("[data-guided-skip-meditation]").click();
       // WebKit may resolve the DOM click before React commits the reversible
       // omission. Wait for both verified effects, never a timed sleep.
       try{

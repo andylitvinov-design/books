@@ -49,12 +49,10 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         assert.equal(await studio.getAttribute("data-active-workspace"),"practices",
           "deep link must activate the existing Practices workspace");
         assert.equal(await studio.getAttribute("data-video-studio-mode"),"therapy");
-        // The approved six-tab Studio no longer contains a top-level Practices tab.
-        // The deep link must open the *real* course and show its user-facing
-        // "Exit course" action instead of waiting for a removed tab.
-        assert.equal(await page.locator('[data-video-quick-control="practices"]').count(),0,
-          "course is a guided flow, not a seventh Studio tab");
-        await expect(page.locator("[data-video-therapy-exit]")).toBeVisible();
+        assert.equal(await page.locator('[data-video-quick-controls] button').count(),6,
+          "the current six workspaces are visible without fabricating an obsolete Course tab");
+        assert.equal(await page.locator('[data-video-quick-control="ready"]').getAttribute("aria-pressed"),"true",
+          "Ready is the visible tab alias while the existing guided course is active");
         const primary=course.locator("[data-guided-generate-meditation]");
         const programmeButton=course.locator("[data-guided-create-plan]");
         assert.equal(await primary.isDisabled(),true,"require an explicit focus");
