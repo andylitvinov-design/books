@@ -217,7 +217,10 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  const audio=section.indexOf('data-video-phrase-audio-shortcut');
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
- assert.match(section,/<MandalaVideoIdeas/);
+ assert.doesNotMatch(section,/<MandalaVideoIdeas/);
+ assert.match(section,/data-video-ideas-open-montage-text/);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+ assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
  assert.match(section,/data-video-legacy-phrase-editor data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}\s+hidden=\{activeWorkspace!=="phrases"\} aria-hidden=\{activeWorkspace!=="phrases"\}/);
  assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
@@ -337,7 +340,7 @@ test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>
   const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
   assert.match(browser,/MONTAGE_TAB_MUST_ACTIVATE/);
   assert.match(browser,/data-video-montage-tab="effects"/);
-  assert.match(browser,/MONTAGE_MUST_START_WITH_AUTO_CONCEPT/);
+  assert.match(browser,/MONTAGE_MUST_START_WITH_STYLE/);
   assert.match(browser,/GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION/);
   assert.match(browser,/CONCEPT_TEXT_TOOLS_DID_NOT_OPEN/);
 });
