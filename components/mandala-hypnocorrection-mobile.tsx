@@ -10,7 +10,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import styles from "./mandala-hypnocorrection-mobile.module.css";
 
-export type HypnoLightSettings = { enabled: boolean; cyclesPerMinute: number; opacity: number };
+export type HypnoLightSettings = { enabled: boolean; cyclesPerMinute: number; opacity: number; mode?: "sunlight"|"glow"|"waves" };
 type GroupId = "visual" | "audio";
 type PosterGroupId = GroupId | "phrases";
 type Props = {
