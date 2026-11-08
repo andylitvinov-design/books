@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import InstantCabinetLink from './instant-cabinet-link'
 import { Activity, BookOpen, ClipboardList, FileClock, FileText, House, LockKeyhole, Route, Settings2 } from 'lucide-react'
 import { assessmentHistoryTitle } from '@/lib/assessments/personal-guidance'
 import styles from './profile-hub-tabs.module.css'
@@ -96,18 +97,18 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
   return <section className={styles.hub} data-profile-hub-tabs data-profile-active={current}>
     <header className={styles.heading}>
       <div><p className={styles.eyebrow}>{t.label}</p><h2>{t.title}</h2></div>
-      <Link href={root + '/settings'} prefetch={false} className={styles.settings}>
+      <InstantCabinetLink href={root + '/settings'} prefetch={false} className={styles.settings}>
         <Settings2 size={17} aria-hidden="true" />{t.settings}
-      </Link>
+      </InstantCabinetLink>
     </header>
     <nav className={styles.tabs} aria-label={COPY[selected].navigation}>
-      {TABS.map(({ id, icon: Icon }) => <Link key={id} href={paths[id]} prefetch={false}
+      {TABS.map(({ id, icon: Icon }) => <InstantCabinetLink key={id} href={paths[id]} prefetch={false}
         data-profile-tab={id} aria-current={current === id ? 'page' : undefined}
         className={current === id ? styles.current : styles.tab}>
         <Icon size={20} strokeWidth={1.9} aria-hidden="true" /><span>{t.tabs[id]}</span>
         {id === 'tests' && Number.isInteger(resultCount) && resultCount > 0 &&
           <span className={styles.resultBadge} aria-label={resultCount + ' ' + COPY[selected].count}>{resultCount}</span>}
-      </Link>)}
+      </InstantCabinetLink>)}
     </nav>
     {current === 'today' && <>
       <div className={styles.hero} data-profile-video-hero>
@@ -119,10 +120,10 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
           </video>
         </div>
         <nav className={styles.quickActions} data-profile-quick-actions aria-label={t.label}>
-          <Link href={paths.path} prefetch={false} className={styles.primaryQuickAction}><Route size={19} aria-hidden="true" />{t.route}</Link>
-          <Link href={paths.tests} prefetch={false}><ClipboardList size={19} aria-hidden="true" />{t.actions[0]}</Link>
-          <Link href={paths.state} prefetch={false}><Activity size={19} aria-hidden="true" />{t.actions[1]}</Link>
-          <Link href={paths.courses} prefetch={false}><BookOpen size={19} aria-hidden="true" />{t.actions[2]}</Link>
+          <InstantCabinetLink href={paths.path} prefetch={false} className={styles.primaryQuickAction}><Route size={19} aria-hidden="true" />{t.route}</InstantCabinetLink>
+          <InstantCabinetLink href={paths.tests} prefetch={false}><ClipboardList size={19} aria-hidden="true" />{t.actions[0]}</InstantCabinetLink>
+          <InstantCabinetLink href={paths.state} prefetch={false}><Activity size={19} aria-hidden="true" />{t.actions[1]}</InstantCabinetLink>
+          <InstantCabinetLink href={paths.courses} prefetch={false}><BookOpen size={19} aria-hidden="true" />{t.actions[2]}</InstantCabinetLink>
         </nav>
         <p className={styles.srOnly}>{t.privacy}</p>
       </div>
