@@ -1,11 +1,12 @@
 import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
+import {channelTransportReady} from '@/lib/crm/messenger-policy'
 import {consumeRate} from '@/lib/app/database'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
 import { operationHash } from '@/lib/app/crypto'
 import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnostics.mjs'
-import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
+import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic,processWhatsAppAccountLink } from '@/lib/crm/messenger-webhook'
 import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
@@ -58,6 +59,11 @@ export async function POST(request,{params}){
     if(provider==='telegram'&&updates.some(event=>event.type==='incoming'&&!event.callbackId))
       await ensureTelegramInlineWebhookUpdates()
     for(const event of updates){
+      if(provider==='whatsapp'){
+        const proof=await processWhatsAppAccountLink(event,config)
+        // Link-only pilot must not enable general WhatsApp CRM intake.
+        if(proof.handled||!channelTransportReady('whatsapp'))continue
+      }
       if(provider==='telegram'){
         if(event.type==='callback_ignored'){
           try{await acknowledgeTelegramInlineCallback({
