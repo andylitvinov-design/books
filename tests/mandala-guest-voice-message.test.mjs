@@ -148,6 +148,7 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
    textOpened>advancedText&&ideaToggle>textOpened&&ideaClick>ideaToggle&&
    ideaExpanded>ideaClick&&options>ideaExpanded,
    "WebKit must visit Text, Voice and My Voice, then open the real Text disclosure by user taps");
+ const hypno=read("components/mandala-hypno-compact.tsx");
  assert.ok(hypno.includes('data-hypno-idea-toggle')&&hypno.includes('aria-expanded={ideaDisclosureOpen}'),
    "the fine-tuning control must remain a real accessible disclosure button");
  assert.ok(browser.includes('data-video-ideas-own-upload'),"own audio upload remains available");
