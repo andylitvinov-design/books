@@ -132,9 +132,9 @@ export function SitewideLeadCapture() {
   }
 
   const offer = coreKind ? coreOfferDetailData(locale, coreKind) : null;
-  const serviceTitle = offer?.title || (kind === "training" ? courseTopicForPath(pathname)
-    : kind === "reading" ? "Free written Situation Review"
-      : "Personal session with Andrey Litvinov");
+  const serviceTitle = offer?.title || (kind === "reading"
+    ? "Free written Situation Review"
+    : "Personal session with Andrey Litvinov");
   const t = offer ? copy[locale].core : copy[locale][kind];
   return (
     <div data-sitewide-capture={offer ? "core-service" : kind}
