@@ -53,3 +53,36 @@
 @media(max-width:360px){.hub .tabs{gap:3px}.hub .tab,.hub .current{padding:6px 1px;font-size:10px}.hub .tab svg,.hub .current svg{width:18px;height:18px}.hub .quickActions{gap:4px}.hub .quickActions a{font-size:10.5px;padding:6px 2px;min-height:68px}}
 @media(min-width:768px){.hub .hero{max-width:720px;margin:0 auto;padding:12px}.hub .videoFrame video{max-height:320px;aspect-ratio:16/9}.hub .quickActions a{flex-direction:row;min-height:52px;padding:9px 7px}}
 @media(prefers-reduced-motion:reduce){.hub .current{box-shadow:none}}
+
+/* Account settings — same real video as the personal hub, controls on both sides. */
+.hub .settingsTabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 8px}
+.hub .settingsTabs a{display:grid;place-items:center;min-width:0;min-height:44px;padding:8px 3px;border:1px solid #e9dfd1;border-radius:13px;background:#fffcf7;color:#143d3a;font-size:clamp(11px,2.8vw,14px);font-weight:750;text-align:center;text-decoration:none}
+.hub .settingsTabs a[aria-current=page]{border:2px solid #067a67;background:#e6f6f1;color:#055a49}
+.hub[data-profile-active=settings] .hero{padding:6px}
+.hub[data-profile-active=settings] .videoFrame video{aspect-ratio:16/9;max-height:190px;object-fit:cover}
+.hub .settingsQuickActions{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;padding:7px 0 0}
+.hub .settingsQuickActions a{display:grid;place-items:center;min-height:44px;flex:1 1 29%;padding:6px 5px;border:1px solid #d5e8df;border-radius:999px;background:#fff;color:#075f50;text-align:center;font-size:12px;font-weight:750;text-decoration:none}
+.hub .settingsQuickActions a:focus-visible,.hub .settingsTabs a:focus-visible,.settingsOverview a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.settingsOverview{display:grid;gap:7px;margin-top:9px}
+.settingsIdentity,.connectionOverview,.packagesOverview{padding:10px 12px;background:#fffcf7;border:1px solid #e9dfd1;border-radius:18px}
+.settingsCardHeading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 7px}
+.settingsCardHeading a{flex:none;font-size:12px;font-weight:750;color:#067a67}
+.settingsOverview h3{margin:0;color:#143d3a;font-size:16px;line-height:1.25}
+.accountDetails{display:grid;grid-template-columns:1fr 1.5fr .7fr;gap:8px;min-width:0}
+.accountDetails span{display:grid;align-content:start;gap:2px;min-width:0}
+.accountDetails small{font-size:11px;color:#5d6a71}
+.accountDetails strong{font-size:12px;line-height:1.35;color:#143d3a;overflow-wrap:anywhere}
+.connectionOverview{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.connectionOverview h3{grid-column:1/-1}
+.connectionOverview>a{display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0;min-height:44px;padding:7px 9px;background:#f5faf7;border:1px solid #dce8df;border-radius:12px;color:#143d3a;text-decoration:none;font-size:13px;font-weight:700}
+.connectionOverview>a span{font-size:10px;font-weight:650;color:#067a67}
+.packagesGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.packageCard{display:flex;justify-content:space-between;align-items:center;gap:5px;min-height:52px;padding:8px 10px;border:1px solid #d6e0d5;border-radius:13px;background:#fff;color:#143d3a;text-decoration:none;overflow-wrap:anywhere}
+.packageCard strong{font-size:13px}
+.packageCard>span{font-size:16px;font-weight:800;color:#066b56;white-space:nowrap}
+.packageCard small{font-size:10px;color:#5d6a71;font-weight:500}
+.packageCard[data-package=master]{background:#eaf7f0}
+.packageCard[data-package=pro]{background:#fbf2de}
+.packageFinePrint{margin:7px 0 0!important;font-size:10.5px;line-height:1.35;color:#66716b}
+@media(max-width:360px){.settingsIdentity,.connectionOverview,.packagesOverview{padding:8px}.accountDetails{grid-template-columns:1fr 1.2fr .6fr;gap:5px}.packageCard{padding:8px 6px}.packageCard strong{font-size:12px}.packageCard>span{font-size:14px}}
+@media(min-width:768px){.hub[data-profile-active=settings] .hero{max-width:600px}.hub[data-profile-active=settings] .settingsOverview{grid-template-columns:1fr 1fr}.hub[data-profile-active=settings] .settingsIdentity{grid-column:1/-1}}

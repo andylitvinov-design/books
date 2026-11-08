@@ -210,8 +210,8 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
  assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
  assert.match(firstVideo,/await montageStyle\.click\(\)/);
- assert.match(firstVideo,/await page\.locator\('\[data-video-montage-tab="concept"\]'\)\.click\(\)/,
-   "visitor returns from Style to the proposed Concept");
+ assert.match(firstVideo,/await page\.locator\('\[data-video-montage-open-concept\]'\)\.click\(\)/,
+   "visitor can review the preserved Concept through a real Settings shortcut");
  assert.match(firstVideo,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/,
    "guest explicitly approves Concept before timeline editing");
  assert.match(firstVideo,/const textTools=page\.locator\('\[data-video-concept-text-tools\]'\)/,
@@ -341,15 +341,17 @@ test("compact Ideas opens its actual opt-in voice editor via visible user contro
  const text=browser.indexOf('await expect(ideasModes.locator',modes);
  const voice=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',text);
  const back=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',voice);
- const button=browser.indexOf('const recordEntry=phrases.locator',back);
- const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',button);
- const visible=browser.indexOf('await expect(recordEntry).toBeVisible',hidden);
+ const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',back);
+ const bridge=browser.indexOf("await phrases.locator('[data-video-ideas-open-montage-text]').click()",hidden);
+ const button=browser.indexOf('const recordEntry=page.locator',bridge);
+ const visible=browser.indexOf('await expect(recordEntry).toBeVisible',button);
  const tap=browser.indexOf('await recordEntry.click()',visible);
  const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tap);
  const voiceOptions=browser.indexOf('await expect(advancedVoice.locator',opened);
- assert.ok(modes>=0&&text>modes&&voice>text&&back>voice&&button>back&&
-   hidden>button&&visible>hidden&&tap>visible&&opened>tap&&voiceOptions>opened,
-   "real Ideas subtab and Record UI must reveal the original voice editor");
+ assert.ok(modes>=0&&text>modes&&voice>text&&back>voice&&hidden>back&&
+   bridge>hidden&&button>bridge&&visible>button&&tap>visible&&
+   opened>tap&&voiceOptions>opened,
+   "real Montage Text Record and one shared My Voice editor, no hidden controls");
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
  assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'),
    "recording-open state must remain bound to the original shared editor");

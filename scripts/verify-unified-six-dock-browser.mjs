@@ -10,7 +10,12 @@ if(!["localhost","127.0.0.1"].includes(url.hostname)||
 const folder="artifacts/unified-six-dock";
 mkdirSync(folder,{recursive:true});
 const results=[];
-const ids=["mytube","video","ai","practice","master","profile","analysis"];
+const ids=["mytube","video","master","ai","analysis","practice","profile"];
+const labels={
+  en:["MyTube","MyVideo","Services","AI/Chat","Hints","Study","Profile"],
+  ru:["MyTube","MyVideo","Услуги","ИИ/Чат","Подсказки","Обучение","Профиль"],
+  es:["MyTube","MyVideo","Servicios","IA/Chat","Pistas","Estudiar","Perfil"],
+};
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
 // every user-reported route: guest public Studio/Practice/Master, public MyTube,
@@ -96,6 +101,8 @@ async function inspect(browserType,locale,width){
     id+" single slim accessible taxonomy bar");
   const links=dock.locator("[data-unified-dock-item]");
   assert.deepEqual(await links.evaluateAll(els=>els.map(el=>el.dataset.unifiedDockItem)),ids,id);
+  assert.deepEqual((await links.locator("span").allTextContents()).map(label=>label.trim()),
+    labels[locale],id+" approved localized labels");
   const bounds=await links.evaluateAll(els=>els.map(el=>{
    const r=el.getBoundingClientRect();return {left:r.left,right:r.right,height:r.height};
   }));

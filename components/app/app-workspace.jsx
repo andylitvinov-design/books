@@ -68,6 +68,7 @@ import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
 import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
+import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
 import CabinetToday from '@/components/app/cabinet-today'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
@@ -677,7 +678,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           </div>
         </details>
       </header>}
-      {!documentReader && !practiceInner && page !== 'runs' && (
+      {!documentReader && !practiceInner && page !== 'runs' && page !== 'settings' && (
         <nav className="hh-nav" aria-label={c.account}>
           {nav.map(({ id, label, href }) => (
             <Link key={id} href={href} prefetch={false}
@@ -711,7 +712,7 @@ export default function AppWorkspace({ locale, path = [] }) {
         }} />
       ) : (
         <>
-          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : searchParams.get('space') === 'reports' ? 'reports' : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} />}
+          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : searchParams.get('space') === 'reports' ? 'reports' : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' ? data.account : null} />}
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
@@ -844,27 +845,43 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} requestedMessageId={searchParams.get('request') || ''} />}
           {page === 'settings' && (
-            <>
-              <Preferences data={data} locale={locale} onDone={load} />
-              {!nativeApp && <AccountLoginMethods key={'oauth:'+data.account.id}
-                accountId={data.account.id} locale={locale}/>}
-              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
-              <SubscriptionSettings />
-              <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
-              <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
-              <InstallHolisticHouse locale={locale} />
-              {nativeApp
-                ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
-                : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
-              <Privacy
-                locale={locale}
-                logout={logout}
-                onDeleted={() => {
-                  goSignedOut(setData)
-                  setDeleted(true)
-                }}
-              />
-            </>
+            <div data-profile-settings-disclosures>
+              <ProfileSettingsDisclosure id="hh-settings-account"
+                title={locale === 'ru' ? 'Аккаунт и личные данные' : locale === 'es' ? 'Cuenta y datos' : 'Account & personal data'}
+                subtitle={locale === 'ru' ? 'Имя, язык, часовой пояс и вход' : 'Name, language, time zone and sign-in'}>
+                <Preferences data={data} locale={locale} onDone={load} />
+                {!nativeApp && <AccountLoginMethods key={'oauth:'+data.account.id}
+                  accountId={data.account.id} locale={locale}/>}
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-messengers" deepLinks={['hh-telegram-connect']}
+                title={locale === 'ru' ? 'Telegram и WhatsApp' : 'Telegram & WhatsApp'}
+                subtitle={locale === 'ru' ? 'Подключения, согласия и сообщения' : 'Connections, consent and messages'}>
+                <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
+                <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+                <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-plans"
+                title={locale === 'ru' ? 'Подписка и тарифы' : locale === 'es' ? 'Suscripción y planes' : 'Subscription & plans'}
+                subtitle="Free · Practice €5 · Master €20 · Pro €40">
+                <SubscriptionSettings />
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-more" deepLinks={['hh-phone-notifications']}
+                title={locale === 'ru' ? 'Уведомления и приватность' : 'Notifications & privacy'}
+                subtitle={locale === 'ru' ? 'Уведомления, установка и управление данными' : 'Alerts, install and data controls'}>
+                <InstallHolisticHouse locale={locale} />
+                {nativeApp
+                  ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
+                  : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
+                <Privacy
+                  locale={locale}
+                  logout={logout}
+                  onDeleted={() => {
+                    goSignedOut(setData)
+                    setDeleted(true)
+                  }}
+                />
+              </ProfileSettingsDisclosure>
+            </div>
           )}
         </>
       )}

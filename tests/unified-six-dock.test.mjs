@@ -7,22 +7,38 @@ import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("one seven-button dock reuses six Practice actions and the existing Free Analysis",()=>{
- assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","ai","practice","master","profile","analysis"]);
+ assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","master","ai","analysis","practice","profile"]);
  for(const locale of ["en","ru","es"]){
   assert.deepEqual(UNIFIED_DOCK_IDS.map(id=>unifiedMobileDockHref(locale,id)),[
    "/"+locale+"/mytube",
    "/"+locale+"/holistic-support/mandala",
-   "/"+locale+"/app/messages?section=ai",
-   "/"+locale+"/holistic-support/mobile",
    "/"+locale+"/practice",
-   "/"+(locale==="es"?"en":locale)+"/app/portrait",
-   "/"+locale+"/services/free-situation-review"
+   "/"+locale+"/app/messages?section=ai",
+   "/"+locale+"/services/free-situation-review",
+   "/"+locale+"/holistic-support/mobile",
+   "/"+(locale==="es"?"en":locale)+"/app/portrait"
   ]);
   for(const id of UNIFIED_DOCK_IDS)assert.ok(unifiedMobileDockHref(locale,id));
  }
  assert.equal(unifiedMobileDockHref("ru","unknown"),null);
  assert.equal(unifiedMobileDockHref("../../admin","profile"),null);
 });
+test("shared seven-tab dock has the approved labels in every language",()=>{
+ const dock=read("components/unified-mobile-dock.tsx");
+ const expected={
+  en:{mytube:"MyTube",video:"MyVideo",master:"Services",ai:"AI/Chat",analysis:"Hints",practice:"Study",profile:"Profile"},
+  ru:{mytube:"MyTube",video:"MyVideo",master:"Услуги",ai:"ИИ/Чат",analysis:"Подсказки",practice:"Обучение",profile:"Профиль"},
+  es:{mytube:"MyTube",video:"MyVideo",master:"Servicios",ai:"IA/Chat",analysis:"Pistas",practice:"Estudiar",profile:"Perfil"}
+ };
+ for(const [locale,names] of Object.entries(expected)){
+  const row=dock.split("\n").find(line=>line.trimStart().startsWith(locale+": {"));
+  assert.ok(row,locale+" labels exist");
+  for(const id of UNIFIED_DOCK_IDS)
+   assert.ok(row.includes(id+': "'+names[id]+'"'),locale+" label for "+id);
+ }
+ assert.match(dock,/\$\{label\}:.*Free personal express review/);
+});
+
 test("standalone public tabs bypass native link handoff but not private CSP",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  assert.ok(dock.includes('["mytube", "video", "practice", "master", "analysis"].includes(id)'));
