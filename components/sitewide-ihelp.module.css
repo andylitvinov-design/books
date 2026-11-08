@@ -206,3 +206,13 @@
   }
   :global(body:has([data-profile-hub-tabs])) .launcher span{display:none}
 }
+
+/* MyTube: keep original-audio languages and category chips completely clickable.
+   Reuse the same compact mobile floating launcher above the fixed dock. */
+:global(body:has([data-mytube-page])) .launcher{
+  top:auto;bottom:calc(86px + env(safe-area-inset-bottom,0px));
+  right:max(12px,env(safe-area-inset-right,0px));
+  width:44px;min-width:44px;height:44px;min-height:44px;
+  padding:0;justify-content:center;
+}
+:global(body:has([data-mytube-page])) .launcher span{display:none}

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
   PERSONAL_PAYPAL_ME_BASE, PERSONAL_PAYPAL_PAYEE,
-  personalPayPalEnabled, buildPersonalPayPalServiceUrl,
+  personalPayPalEnabled, buildPersonalPayPalServiceUrl, buildPersonalPayPalVideoUrl,
 } from '../lib/commerce/paypal-personal.js'
 
 const file = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -59,4 +59,20 @@ test('payment page transparently requires Goods & Services and manual verificati
   assert.match(page, /Transaction ID|ID транзакции|ID de transacción/)
   assert.match(page, /paypal-personal/)
   assert.doesNotMatch(page, /markAsPaid|paid: true|paymentVerified: true|granted: true/)
+})
+
+test('two video SKUs have exact server-owned personal PayPal EUR amounts, no arbitrary or duplicated product',()=>{
+  assert.equal(buildPersonalPayPalVideoUrl('video-extra',{}),'https://paypal.me/psitrends/3EUR')
+  assert.equal(buildPersonalPayPalVideoUrl('video-pro',{}),'https://paypal.me/psitrends/5EUR')
+  assert.equal(buildPersonalPayPalVideoUrl('video-pro',{HH_PAYPAL_PERSONAL_DISABLED:'true'}),null)
+  for (const invalid of [null,undefined,'video-standard','video-extra/1EUR','video-pro?price=1','__proto__',{},'video-pro,video-extra'])
+    assert.equal(buildPersonalPayPalVideoUrl(invalid,{}),null)
+})
+test('video checkout endpoint redirects only fixed SKUs, cannot mark a video paid',()=>{
+  const source=file('app/api/payments/paypal/video/[productId]/route.ts')
+  assert.match(source,/buildPersonalPayPalVideoUrl\(productId\)/)
+  assert.match(source,/personalPayPalEnabled\(\)/)
+  assert.match(source,/status:303/)
+  assert.match(source,/Referrer-Policy/)
+  assert.doesNotMatch(source,/request\.json|markAsPaid|capture\(|confirmPayment|grantEntitlement|clientSecret|videoBrief/)
 })
