@@ -6674,6 +6674,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         disabled={recording||preparing}
         onRefreshLogin={()=>void refreshCreditSession()}
         onReturnToPro={()=>{setActiveWorkspace("pro");setStudioMode("pump");}}
+        basicFreeAvailable={Boolean(creditCatalog&&!creditCatalog.blocked&&
+          (!creditCatalog.chargeRequired||
+            (creditSession==="guest"&&!guestFirstVideoUsed)))}
+        onGenerateBasicVideo={()=>{
+          // Never substitute a credit-charged or paid render for the FREE offer.
+          if(!freeVideoSelected){
+            setPracticeType("video");setPracticeLevels(value=>({...value,video:"basic"}));
+            setActiveWorkspace("pro");setStudioMode("pump");
+            return false;
+          }
+          return createQuickVideo();
+        }}
         onOpenDelivery={()=>{
           setDeliveryChooserOpen(true);
           window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
