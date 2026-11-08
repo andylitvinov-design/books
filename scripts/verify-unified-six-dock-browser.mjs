@@ -526,12 +526,19 @@ try{
    const rect=await item.boundingBox();
    assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible action");
  }
- const before=await log.locator("p").count();
+ // The welcome card has its own paragraph, but it is removed when the
+ // conversation starts. Count actual DIRECT turns, never the landing copy.
+ const before=await log.evaluate(node=>[...node.children].filter(child=>
+   child.matches('p,[data-hh-ai-assistant-message]')).length);
  await chat.locator('[data-hh-ai-choice="video"]').click();
  await page.waitForFunction(count=>{
    const root=document.querySelector('[data-hh-agent-preview]');
+   const transcript=root?.querySelector('[role="log"]');
+   const turns=[...(transcript?.children||[])].filter(child=>
+     child.matches('p,[data-hh-ai-assistant-message]'));
    return root?.getAttribute("data-has-messages")==="true"
-     &&root.querySelectorAll('[role="log"] p').length>=count+2;
+     && turns.length>=count+2
+     && turns.some(child=>child.matches('[data-hh-ai-assistant-message]'));
  },before,{timeout:10000});
  assert.equal(await starters.count(),0,"landing yields to the original one chat transcript");
  // The current Create Content entry deliberately asks format -> source -> short
