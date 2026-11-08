@@ -43,7 +43,8 @@ test("Ideas CTA advances to Montage auto Concept with no renderer, no audio libr
   assert.match(studio,/data-video-concept-text-tools/);
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}\/>/);
+ assert.ok(studio.includes('onCreate={goToMontageFromIdeas} onGenerate={createQuickVideo} status={notice}/>'),
+  "Ideas keeps its Montage navigation and gets a separate guarded Create action");
  assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
  assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,

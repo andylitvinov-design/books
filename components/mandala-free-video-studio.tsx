@@ -5046,6 +5046,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
 
   const createQuickVideo = () => {
+    // The direct shortcut must preserve the approved paid-format gate.
+    if(!freeVideoSelected){
+      setNotice(locale==="ru"?"Для этого формата необходимо отдельное оформление. Выберите базовое видео для бесплатной генерации.":
+        locale==="es"?"Este formato requiere un pedido aparte. Elige el vídeo básico para generarlo gratis.":
+        "This format requires a separate order. Select Basic Video for a free export.");
+      return false;
+    }
     if(creditCatalog?.chargeRequired&&creditSession==="guest"&&guestFirstVideoUsed){
       setNotice(locale==="ru"?"Первое видео готово в PRO. Для следующего ролика войдите в аккаунт.":
         locale==="es"?"Tu primer vídeo está listo en PRO. Para crear otro, inicia sesión.":
