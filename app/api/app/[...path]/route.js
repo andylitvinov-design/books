@@ -335,7 +335,7 @@ async function handle(request, { params }) {
                 // The user explicitly chooses a protected editor after login.
                 ? `${origin}/${locale}/practice`
               : continueTo === 'cabinet'
-                ? `${origin}/${locale}/app/portrait`
+                ? `${origin}/${locale}/app/portrait?space=today`
                 : continueTo === 'my-practice'
                   ? profi
                     ? `${origin}/${locale}/app/practice${profi === 'course' ? '?panel=materials&materialTab=courses&create=1' : profi === 'profile' ? '?panel=profile' : profi === 'requests' ? '?panel=requests' : ['session','intro','workshop','diagnostic','energy','personal'].includes(profi) ? '?panel=services&create=1&starter=' + profi : ''}`
@@ -345,7 +345,7 @@ async function handle(request, { params }) {
                   : continueTo === 'my-courses'
                     ? `${origin}/${locale}/app/course`
                     : continueTo === 'reports'
-                      ? `${origin}/${locale}/app/portrait#personal-reports`
+                      ? `${origin}/${locale}/app/portrait?space=reports#personal-reports`
                       : continueTo === 'practitioner-growth'
                         ? `${origin}/admin/login?destination=growth`
                       : continueTo === 'practitioner-seo'
