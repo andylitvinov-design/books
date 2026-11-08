@@ -35,7 +35,7 @@ for (const browserType of [chromium, webkit]) {
           assert.equal(await card.locator("input,textarea,form").count(), 0, label + ": no contact form");
           assert.equal(await card.locator("button").count(), 1, label + ": only one primary Order button");
           assert.equal(await card.locator("img").count(), 1, label + ": teacher photo");
-          assert.match(await card.innerText(), /Mysteries & Ancient Traditions/, label + ": correct programme title");
+          assert.match(await card.innerText(), /Temple Studies/, label + ": correct programme title");
 
           const order = card.locator('[data-academy-order-button]');
           await order.scrollIntoViewIfNeeded();
@@ -63,7 +63,7 @@ for (const browserType of [chromium, webkit]) {
             const target = new URL(await link.getAttribute("href"));
             assert.equal(target.protocol, "https:", label);
             assert.equal(target.hostname, hosts[i], label);
-            assert.match(target.searchParams.get("text") || "", /Mysteries & Ancient Traditions/, label + ": service preserved");
+            assert.match(target.searchParams.get("text") || "", /Temple Studies/, label + ": service preserved");
             const message = target.searchParams.get("text") || "";
             assert.ok(message.includes("holistichouse.vercel.app/" + locale + "/academy/reiki/kundalini-reiki"), label);
             assert.doesNotMatch(message, /token=|password|private-selector|\/client\//i, label + ": no private data");
