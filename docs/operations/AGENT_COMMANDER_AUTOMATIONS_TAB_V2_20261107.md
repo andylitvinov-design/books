@@ -34,3 +34,10 @@ One recognizable **Автоматизации** tab in standalone Agent Commande
 - A new custom task is stored, not executed until headless agent adapter reviewed/connected and costs checked.
 
 Canonical: [GLOBAL_PR_ONE_PUBLISH_V1](https://github.com/andylitvinov-design/ai-projects-brain/blob/main/systems/pr-one-publish-standard.md).
+
+
+## 2026-11-08 · Quick 🤖 agent selection per automation
+
+Each owned job gets a mobile-sized agent icon and selection of the five existing persisted roles. Selection saves through new same-origin owner-only `assign_agent` (CAS revision, active-lease guard, request UUID, existing rate limits and RLS). The standalone page reuses its nonce/origin checked owner popup bridge, not guest credentials. Agent assignment cannot change the schedule, instruction, enabled flag, or execution mode.
+
+The verified four SQL jobs may separately request a new run via the **existing** `control_job/queue_now` API, if enabled. `queued` is NOT evidence of actual execution. New custom jobs remain `blocked_no_runner` and cannot be queued. Seven system Vercel cron schedules remain readonly. The role identifier is NOT a live external AI agent; a future connector would require verified execution adaptation and authorization. No migration, new cron, external provider, or additional service.
