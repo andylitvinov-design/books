@@ -10,8 +10,9 @@ import consultationStyles from './consultation-offers.module.css'
 import dynamic from 'next/dynamic'
 import { Activity, BarChart3, BookOpen, Brain, ClipboardList, Compass, ChevronDown, FileText, Heart, House, Leaf, Moon, Smile, SlidersHorizontal, Sparkles, ShieldCheck, Sun, Target, Users, UserRound, Zap, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
+import InstantCabinetLink from './instant-cabinet-link'
 import PracticeRequestConversation from './practice-request-conversation'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { COPY, labelFor, explanationFor } from './copy'
 import { getAssessmentDefinition, getDefinitionById } from '@/lib/assessments/definitions'
 import { compareResults, seriesFor, chronological } from '@/lib/profile/history'
@@ -73,7 +74,7 @@ import CabinetToday from '@/components/app/cabinet-today'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
-import { appFetch } from '@/lib/app/client-fetch'
+import { appFetch, clearCabinetBootstrapCache, getCabinetBootstrap, peekCabinetBootstrap } from '@/lib/app/client-fetch'
 import {directMessengerReturnPath} from '@/lib/app/direct-messenger-handoff.mjs'
 import { REMOTE_SUPPORT_DRAFT_KEY, TALISMAN_REQUEST_DRAFT_KEY, readRemoteSupportDraft,
   readTalismanRequestDraft, formatRemoteSupportDraft, formatTalismanRequestDraft,
@@ -126,6 +127,7 @@ function localZone() {
   }
 }
 function goSignedOut(setData) {
+  clearCabinetBootstrapCache()
   setData(null)
   try {
     const channel = new BroadcastChannel('hh-app-session')
@@ -135,13 +137,56 @@ function goSignedOut(setData) {
     /* No persistent browser fallback. */
   }
 }
+// The route stays mounted across first-level tab changes. usePathname
+// observes History API transitions without a new dynamic server round trip.
+export function AppWorkspaceNavigator({ locale, path = [] }) {
+  const pathname = usePathname()
+  const prefix = `/${locale}/app/`
+  const routedPath = typeof pathname === 'string' && pathname.startsWith(prefix)
+    ? pathname.slice(prefix.length).split('/').filter(Boolean)
+    : path
+  return <AppWorkspace locale={locale} path={routedPath} />
+}
+
 export default function AppWorkspace({ locale, path = [] }) {
   const c = COPY[locale],
     router = useRouter(),
-    searchParams = useSearchParams(),
-    [data, setData] = useState(null),
-    [state, setState] = useState('loading'),
-    [error, setError] = useState(null)
+    searchParams = useSearchParams()
+  const page = path[0] || 'portrait',
+    recordId = path[1],
+    root = `/${locale}/app`,
+    view = page === 'portrait' ? 'portrait' : 'full'
+  // Avoid showing the previous tab's reduced Profile snapshot as full data.
+  const [viewState, setViewState] = useState(() => {
+    const cached = peekCabinetBootstrap(view)
+    return { view, data: cached, state: cached ? 'ready' : 'loading' }
+  })
+  const data = viewState.view === view ? viewState.data : peekCabinetBootstrap(view)
+  const state = viewState.view === view ? viewState.state : (data ? 'ready' : 'loading')
+  const activeView = useRef(view)
+  activeView.current = view
+  const setData = useCallback(value => {
+    if (activeView.current !== view) return
+    setViewState(current => {
+      if (activeView.current !== view) return current
+      const previous = current.view === view ? current.data : peekCabinetBootstrap(view)
+      const next = typeof value === 'function' ? value(previous) : value
+      return { view, data: next, state: current.view === view ? current.state : (next ? 'ready' : 'loading') }
+    })
+  }, [view])
+  const setState = useCallback(value => {
+    if (activeView.current !== view) return
+    setViewState(current => {
+      if (activeView.current !== view) return current
+      const previous = current.view === view ? current.state : (peekCabinetBootstrap(view) ? 'ready' : 'loading')
+      return {
+        view,
+        data: current.view === view ? current.data : peekCabinetBootstrap(view),
+        state: typeof value === 'function' ? value(previous) : value,
+      }
+    })
+  }, [view])
+  const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false),
     [deleted, setDeleted] = useState(false),
     [nativeApp,setNativeApp] = useState(false),
@@ -161,9 +206,6 @@ export default function AppWorkspace({ locale, path = [] }) {
   const savedExitDestination=useRef(null)
   useEffect(()=>{setNativeApp(isNativeHolisticHouse())},[])
   const signinAttempted = useRef(false)
-  const page = path[0] || 'portrait',
-    recordId = path[1],
-    root = `/${locale}/app`
   // Preserve existing report and goal bookmarks when opening a split Profile tab.
   useEffect(() => {
     if (page !== 'portrait') return
@@ -186,11 +228,11 @@ export default function AppWorkspace({ locale, path = [] }) {
   const stressSignup = page === 'course' && searchParams.get('program') === 'stress'
   // Tab changes can race an earlier bootstrap; never show a stale account snapshot.
   const loadEpoch = useRef(0)
-  const load = useCallback(async () => {
+  const load = useCallback(async ({ refresh = true } = {}) => {
     const epoch = ++loadEpoch.current
     setError(null)
     try {
-      const fresh = await appFetch(page === 'portrait' ? 'bootstrap?view=portrait' : 'bootstrap')
+      const fresh = await getCabinetBootstrap(view, { refresh })
       if (epoch !== loadEpoch.current) return
       setData(fresh)
       setState('ready')
@@ -209,12 +251,18 @@ export default function AppWorkspace({ locale, path = [] }) {
               : 'error',
       )
     }
-  }, [page])
+  }, [view, setData, setState])
   useEffect(() => {
-    setState('loading')
-    void load()
+    const cached = peekCabinetBootstrap(view)
+    if (cached) {
+      setData(cached)
+      setState('ready')
+    } else {
+      setState('loading')
+      void load({ refresh: false })
+    }
     return () => { loadEpoch.current += 1 }
-  }, [load])
+  }, [load, view, setData, setState])
   useEffect(() => {
     let channel
     try {
@@ -222,6 +270,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       channel.onmessage = (e) => {
         if (e.data === 'signed-out') {
           retestLifetime.current.epoch += 1
+          clearCabinetBootstrapCache()
           setData(null)
           setState('signed-out')
           router.refresh()
@@ -239,6 +288,7 @@ export default function AppWorkspace({ locale, path = [] }) {
       },
       hide = () => {
         retestLifetime.current.epoch += 1
+        clearCabinetBootstrapCache()
         setData(null)
         setState('loading')
       }
@@ -527,8 +577,14 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state === 'loading')
     return (
       <main className="hh-app" aria-busy="true">
-        <p className="hh-kicker">Holistic House</p>
-        <h1>{c.loading}</h1>
+        <ProfileHubTabs locale={locale} active={page === 'tests' ? 'tests'
+          : page === 'monitoring' ? 'state' : page === 'course' ? 'courses'
+            : page === 'settings' ? 'settings'
+              : ['portfolio', 'reports'].includes(page) ? 'reports' : 'today'} />
+        <section className="hh-panel" role="status" aria-live="polite">
+          <p className="hh-kicker">Holistic House</p>
+          <p>{c.loading}</p>
+        </section>
       </main>
     )
   if (state === 'ready' && !data)
@@ -655,19 +711,19 @@ export default function AppWorkspace({ locale, path = [] }) {
           <summary>{data.account.displayName || c.account}</summary>
           <div>
             {nav.map(({ id, label, href }) => (
-              <Link key={id} href={href} prefetch={false}
+              <InstantCabinetLink key={id} href={href} prefetch={false}
                 aria-current={navIsActive(id) ? 'page' : undefined}
                 onClick={(event) => event.currentTarget.closest('details.hh-account-menu')?.removeAttribute('open')}
-              >{label}</Link>
+              >{label}</InstantCabinetLink>
             ))}
             <div className="hh-account-menu-secondary">
               <details className="hh-account-more">
                 <summary>{locale === 'ru' ? 'Дополнительно' : 'More options'}</summary>
-                <Link href={root + '/labs'} prefetch={false}>{locale === 'ru' ? 'Мои анализы' : 'My lab results'}</Link>
-                <Link href={root + '/history'} prefetch={false}>{c.history}</Link>
-                <Link href={root + '/videos'} prefetch={false}>{locale === 'ru' ? 'Мои видео' : 'My Videos'}</Link>
-                <Link href={root + '/monitoring'} prefetch={false}>{c.monitoring}</Link>
-                <Link href={root + '/settings'} prefetch={false}>{c.settings}</Link>
+                <InstantCabinetLink href={root + '/labs'} prefetch={false}>{locale === 'ru' ? 'Мои анализы' : 'My lab results'}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/history'} prefetch={false}>{c.history}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/videos'} prefetch={false}>{locale === 'ru' ? 'Мои видео' : 'My Videos'}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/monitoring'} prefetch={false}>{c.monitoring}</InstantCabinetLink>
+                <InstantCabinetLink href={root + '/settings'} prefetch={false}>{c.settings}</InstantCabinetLink>
               </details>
               <Link
                 href={`/${locale === 'en' ? 'ru' : 'en'}/app/${page}${recordId ? `/${recordId}` : ''}`}
@@ -681,9 +737,9 @@ export default function AppWorkspace({ locale, path = [] }) {
       {!documentReader && !practiceInner && page !== 'runs' && page !== 'settings' && (
         <nav className="hh-nav" aria-label={c.account}>
           {nav.map(({ id, label, href }) => (
-            <Link key={id} href={href} prefetch={false}
+            <InstantCabinetLink key={id} href={href} prefetch={false}
               aria-current={navIsActive(id) ? 'page' : undefined}
-            >{label}</Link>
+            >{label}</InstantCabinetLink>
           ))}
         </nav>
       )}
@@ -895,9 +951,9 @@ export default function AppWorkspace({ locale, path = [] }) {
           aria-label={locale === 'ru' ? 'На главную страницу Holistic House' : 'Go to Holistic House homepage'}
         ><House aria-hidden="true" size={22} /><span>{locale === 'ru' ? 'Главная' : locale === 'es' ? 'Inicio' : 'Home'}</span></Link>
         {mobileNav.map(({ id, label, href, icon: Icon }) => (
-          <Link key={id} href={href} prefetch={false}
+          <InstantCabinetLink key={id} href={href} prefetch={false}
             aria-current={navIsActive(id) ? 'page' : undefined}
-          ><Icon aria-hidden="true" size={22} /><span>{label}</span></Link>
+          ><Icon aria-hidden="true" size={22} /><span>{label}</span></InstantCabinetLink>
         ))}
       </nav>}
     </main>
