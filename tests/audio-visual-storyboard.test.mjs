@@ -92,3 +92,58 @@ test("public microphone is authorized ONLY at existing live host and Studio rout
  assert.match(next,/\/es\/app\/messages/);
  assert.match(next,/camera=\(\), microphone=\(self\), geolocation=\(\)/);
 });
+
+test("recipient audio shows STT failure at step 2 and preserves local manual progress",()=>{
+ const recipient=source.slice(source.indexOf("const recipientAudioPanel="),
+   source.indexOf("const activateQuickWorkspace="));
+ assert.ok(recipient.includes("data-video-recipient-audio-transcribe"));
+ assert.ok(recipient.indexOf("data-video-recipient-audio-error")>
+   recipient.indexOf("data-video-recipient-audio-transcribe"));
+ assert.ok(recipient.indexOf("data-video-recipient-audio-error")<
+   recipient.indexOf("data-video-recipient-audio-plan"));
+ assert.equal(recipient.split("data-video-recipient-audio-error").length-1,1);
+ assert.match(recipient,/data-video-recipient-audio-manual/);
+ assert.match(source,/function goRecipientAudioToManualMontage\(\)/);
+ assert.match(source,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,nonLoop:true\}\)/);
+ assert.match(source,/if\(recipientAudioSelected\)window\.requestAnimationFrame/);
+});
+
+test("macOS WebKit export selects visible mobile format and retains real encoder checks",()=>{
+ const browser=readFileSync(new URL(
+  "../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+ assert.match(browser,/await portrait\.click\(\)/);
+ assert.match(browser,/data-first-video-quick-aspect="portrait"/);
+ assert.match(browser,/const openFilters=async/);
+ assert.match(browser,/selectOption\('meditation'\)/);
+ assert.match(browser,/readRealGuestVideo\(page/);
+ assert.match(browser,/ffprobe/);
+ assert.doesNotMatch(browser,/\.selectOption\('portrait'\)/);
+ assert.doesNotMatch(browser,/\.click\(\{\s*force:\s*true/);
+});
+
+test("WebKit guest film identifies Safari UI state and preserves physical media gates",()=>{
+ const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+ assert.match(browser,/row\.phase='portrait-selection-confirmation'/);
+ assert.match(browser,/LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED/);
+ assert.match(browser,/root\.getClientRects\(\)\.length>0/);
+ assert.match(browser,/fieldset\.waitFor\(\{state:'visible',timeout:15000\}\)/);
+ assert.match(browser,/LIVE_VIDEO_FILTERS_DISABLED/);
+ assert.match(browser,/firstVideoWidgets:/);
+ assert.match(browser,/WEBKIT_MOVIE_EXPORT_LAST_PHASE/);
+ assert.match(browser,/await portrait\.click\(\)/);
+ assert.match(browser,/await first\.locator\('\[data-first-video-music\]'\)\.selectOption\('meditation'\)/);
+ assert.match(browser,/readRealGuestVideo\(page/);
+ assert.match(browser,/ffprobe/);
+ assert.doesNotMatch(browser,/\.click\(\{\s*force:\s*true/);
+});
+
+test("approved 4-shot footage is never replaced by a selected style preview",()=>{
+ const painter=source.slice(source.indexOf("function paintCinematicFrame("),
+   source.indexOf("/** Each authored caption",source.indexOf("function paintCinematicFrame(")));
+ assert.match(painter,/if\(storyboard\?\.version!==FREE_FILM_PLAN_VERSION\s*&&\s*montageStyleId/);
+ assert.match(painter,/paintSelectedStyleShot\(ctx,styleVideo\)/);
+ assert.match(painter,/paintStudioVisualGrade\(ctx,montageStyleId\|\|storyboard\.styleId\)/);
+ assert.match(painter,/stockShotVideo:null/);
+ assert.match(source,/const frame=freeFilmVideoAt\(time,true\)/);
+ assert.match(source,/if\(usingFreeFilmCompilation&&!frame\)return false/);
+});

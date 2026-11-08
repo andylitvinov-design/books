@@ -6,6 +6,7 @@ import {ArrowLeft,ArrowRight,Bell,Clock3,Headphones,MessageCircle,PackageCheck,R
 import PracticeRequestConversation from './practice-request-conversation'
 import MessengerAiWorkspace from './messenger-ai-workspace'
 import MessagesDailyBriefing from './messages-daily-briefing'
+import MessengerGuestGate from './messenger-guest-gate'
 import styles from './messages-orders-clients.module.css'
 
 const TEXT={
@@ -308,6 +309,7 @@ export default function MessagesOrdersClients({locale='en',children}){
     else url.searchParams.delete('order')
     window.history.replaceState(window.history.state,'',url)
   }
+  const guestAccess=aiIdentity.status==='guest'
   const clientTab=ordersData?.hasPractice?t.clients:t.conversations
   const detailMode=(section==='orders'&&Boolean(selected))||(section==='clients'&&clientDetailOpen)
   // Load-dependent helper lives inside the active panel, not above the tabs.
@@ -366,6 +368,7 @@ export default function MessagesOrdersClients({locale='en',children}){
           onAuthRetry={retryAiIdentity}/>
     </div>
     <div id="hh-orders-panel" role="tabpanel" className={styles.panel} hidden={section!=='orders'}>
+      {guestAccess?(section==='orders'?<MessengerGuestGate locale={locale} section="orders"/>:null):<>
       {listHelper}
       {!loading&&!error&&orders.length>0&&!selected&&
         <aside className={styles.notifyInvite}>
@@ -480,17 +483,20 @@ export default function MessagesOrdersClients({locale='en',children}){
           <Link href={'/'+(locale==='es'?'en':locale)+'/app/practice'}>{t.myPractice}<ArrowRight size={18}/></Link>
         </div>
       </div>}
+      </>}
     </div>
     <div id="hh-clients-panel" role="tabpanel" className={styles.clients} hidden={section!=='clients'}>
+      {guestAccess?(section==='clients'?<MessengerGuestGate locale={locale} section="clients"/>:null):<>
       {listHelper}
       {clientsVisited&&(isValidElement(children)?cloneElement(children,{
         onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children)}
+      </>}
     </div>
     <div id="hh-news-panel" role="tabpanel" hidden={section!=='news'}>
-      <MessagesDailyBriefing locale={locale} accountId={aiIdentity.accountId}
+      {guestAccess?(section==='news'?<MessengerGuestGate locale={locale} section="news"/>:null):<MessagesDailyBriefing locale={locale} accountId={aiIdentity.accountId}
         authStatus={aiIdentity.status} active={section==='news'}
         orders={ordersData?.accountId===aiIdentity.accountId?ordersData.orders:null}
-        refreshKey={generation}/>
+        refreshKey={generation}/>}
     </div>
   </section>
 }
