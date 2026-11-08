@@ -5231,3 +5231,85 @@
   width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}
 .heroCanvas .heroSelectedStyleDecoder{position:absolute!important;left:0;top:0;
   width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+
+/* Approved 2026-11-07 Ideas: Text / Voice / My Voice, responsive in one row. */
+.studio[data-active-workspace="phrases"] .ideasSubtabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+.studio[data-active-workspace="phrases"] .ideasSubtabs button{gap:clamp(3px,1.3vw,7px);padding:7px 3px;font-size:clamp(12px,3.4vw,16px);line-height:1.2;white-space:nowrap}
+.studio[data-active-workspace="phrases"] .ideasSubtabs .ideasTabLetters{font-size:clamp(17px,5vw,23px)}
+.studio[data-active-workspace="phrases"] .ideasSubtabs button svg{flex:none;width:clamp(16px,4.5vw,20px);height:clamp(16px,4.5vw,20px)}
+
+/* Three-tab Ideas: the original advanced phrase/audio shortcut remains a real
+   user-visible Text-only disclosure. Own Voice must never show those controls. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="text"] >button[data-video-phrase-audio-shortcut]{
+  display:flex!important;align-items:center;justify-content:center;
+  gap:8px;min-height:44px;max-width:100%;margin:7px 0 4px;
+  padding:9px 12px;border:1px solid #D8E7DC;border-radius:13px;
+  color:#145848;background:#FFFCFA;font-weight:750;font-size:clamp(12px,3.3vw,15px)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="text"] >button[data-video-phrase-audio-shortcut]:focus-visible{
+  outline:3px solid #D4AB61;outline-offset:2px
+}
+
+/* Two independent Create/Continue actions, safe-area-friendly on iPhone. */
+.stageActionPair{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;width:100%;min-width:0;margin:9px 0}
+.stageActionPair>.quickGenerate,.stageActionPair>.stageAddButton{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;width:100%;min-height:50px;padding:10px 12px;border-radius:15px;font:800 clamp(14px,3.6vw,17px)/1.2 Arial,sans-serif;overflow-wrap:anywhere;text-align:center}
+.stageActionPair>.quickGenerate{border:1px solid #087b65;background:linear-gradient(115deg,#16a687,#04765f);color:white}
+.stageActionPair>.stageAddButton{border:1px solid #add1c3;background:#fffdf7;color:#12684e}
+.stageActionPair>button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.stageActionPair>button:disabled{opacity:.55;cursor:not-allowed}
+.quickOrderBar .stageActionPair{margin:0}
+.quickOrderBar .stageActionPair>.quickGenerate{min-height:50px;position:static;bottom:auto}
+@media(max-width:359px){.stageActionPair>.quickGenerate,.stageActionPair>.stageAddButton{padding:10px 6px;font-size:13px}}
+
+
+/* One opt-in recorded Video Therapy presentation in the original Goal hero,
+   including the owner's published film poster; never a second player. */
+.studio .therapyHero{position:absolute;inset:0;z-index:8;overflow:hidden;border-radius:inherit;background:#123e35;color:#fff}
+.studio .therapyHeroLaunch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:100%;min-height:0;padding:6px 9px;border:0;border-radius:inherit;cursor:pointer;color:#fff;text-align:center;background:linear-gradient(90deg,rgba(9,31,27,.68),rgba(5,30,28,.26)),url("/images/video-studio-presentation-ru.jpg") center/cover}
+.studio .therapyHeroKicker{font:750 clamp(8px,2.3vw,10px)/1.15 Arial,Helvetica,sans-serif;letter-spacing:.12em}
+.studio .therapyHeroPlayIcon{display:flex;align-items:center;justify-content:center;width:clamp(38px,9vw,43px);height:clamp(38px,9vw,43px);border:2px solid #f8f4e8;border-radius:50%;background:#ffffff2c;box-shadow:0 2px 12px #051a1666}
+.studio .therapyHeroTitle{font:800 clamp(14px,4vw,21px)/1.15 Georgia,serif;text-wrap:balance;text-shadow:0 2px 6px #051a16}
+.studio .therapyHeroCaption{font:750 clamp(10px,2.6vw,12px)/1.15 Arial,Helvetica,sans-serif;background:#143d34cc;border-radius:9px;padding:3px 6px}
+.studio .therapyHeroPlayback{position:absolute;inset:0;background:#061b19}
+.studio .therapyHeroFrame{display:block;width:100%;height:100%;border:0}
+.studio .therapyHeroClose,.studio .therapyHeroExternal{position:absolute;z-index:2;display:flex;align-items:center;justify-content:center;min-height:44px;padding:5px 8px;border:1px solid #ffffffb5;border-radius:9px;background:#124434f0;color:#fff;font:750 clamp(9px,2.4vw,11px)/1.15 Arial,Helvetica,sans-serif;text-decoration:none}
+.studio .therapyHeroClose{top:5px;right:5px;max-width:70%;cursor:pointer}
+.studio .therapyHeroExternal{bottom:5px;left:5px;min-width:70px}
+.studio .therapyHeroEnglish{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:100%;padding:5px 8px;text-align:center;background:linear-gradient(130deg,#153c35,#335745)}
+.studio .therapyHeroEnglish strong{font:800 clamp(12px,3.5vw,19px)/1.1 Georgia,serif}
+.studio .therapyHeroEnglish>span:not(.therapyHeroKicker){font:600 clamp(9px,2.5vw,11px)/1.1 Arial,Helvetica,sans-serif}
+.studio .therapyHeroEnglish button{min-height:29px;padding:4px 7px;border:1px solid #f6e9c9;border-radius:7px;background:#fffaf0;color:#1b4638;font:750 clamp(9px,2.6vw,11px)/1.1 Arial,Helvetica,sans-serif;cursor:pointer}
+.studio .therapyHeroEnglish a{color:#fff;text-decoration:underline;font:650 clamp(9px,2.4vw,10px)/1.1 Arial,Helvetica,sans-serif}
+.studio .therapyHeroLaunch:focus-visible,.studio .therapyHeroClose:focus-visible,.studio .therapyHeroExternal:focus-visible,.studio .therapyHeroEnglish button:focus-visible,.studio .therapyHeroEnglish a:focus-visible{outline:3px solid #ffe18b;outline-offset:-3px}
+@media(max-width:359px){.studio .therapyHeroClose{max-width:75%;font-size:9px}.studio .therapyHeroEnglish{gap:2px}.studio .therapyHeroEnglish button{padding:3px 6px}}
+
+/* Goal's two independent actions share one mobile row, while other stages
+   retain their approved layouts and the fixed dock remains unobstructed. */
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;align-items:stretch;min-width:0
+}
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>button{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;min-width:0;min-height:68px;padding:8px 6px;white-space:normal;
+  overflow-wrap:anywhere;font:800 clamp(12px,3.3vw,14px)/1.2 Arial,sans-serif;
+  text-align:center;touch-action:manipulation
+}
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>button svg{
+  flex:none;width:18px;height:18px
+}
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>.stageAddButton svg:last-child{
+  display:none
+}
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>.quickGenerate small{
+  font:700 11px/1.15 Arial,sans-serif;opacity:.92
+}
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>[data-video-stage-status]{
+  grid-column:1/-1
+}
+.studio[data-active-workspace="video"] [data-video-credit-status]{display:none!important}
+@media(max-width:354px){
+  .studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]{gap:7px}
+  .studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>button{
+    padding:8px 4px;min-height:70px;font-size:12px
+  }
+}

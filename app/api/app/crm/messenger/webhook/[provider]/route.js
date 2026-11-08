@@ -65,13 +65,13 @@ export async function POST(request,{params}){
         if(event.type==='incoming'){
           const intake=await processWhatsAppDiagnostic(event,config)
           if(intake.handled&&intake.reply){
-            // The signed event, consent and CRM state commit BEFORE one reply
-            // attempt. Uncertain Meta responses are never automatically retried.
+            // Consent/CRM state are committed before one reply attempt.
+            // Uncertain provider outcomes must not automatically repeat.
             try{await sendWhatsAppDiagnosticPrompt({
               to:intake.to,text:intake.reply,keyboard:intake.keyboard,locale:intake.locale
             })}catch{console.error('HH_CRM_WA_PROMPT_SEND_UNCONFIRMED')}
           }
-          // No general WhatsApp lead from a message lacking explicit intake consent.
+          // No contact is created from an unconsented generic message.
           continue
         }
       }
@@ -115,7 +115,7 @@ export async function POST(request,{params}){
           if(companion.text){
             try{await sendTelegramCompanionMessage({
               to:companion.to,text:companion.text,
-              markup:companion.markup,locale:companion.locale,
+              markup:companion.markup,locale:companion.locale,photo:companion.photo===true,
               presentation:companion.presentationFirstStart===true})
             }catch(error){
               const evidence=telegramPromptFailureEvidence(event.eventId,error,
