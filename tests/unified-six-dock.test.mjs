@@ -235,12 +235,13 @@ test("Video Mandala uses a compact, public mobile header and Reiki filters canno
 });
 
 
-test("MyTube stays dark with a swipeable direction rail and expandable deeper filters",()=>{
+test("MyTube keeps all real directions in one row and expands true subcategories only on demand",()=>{
  const page=read("app/[locale]/mytube/page.tsx");
  const style=read("app/[locale]/mytube/mytube.module.css");
  const discovery=read("components/video-discovery.tsx");
  const css=read("components/video-discovery.module.css");
  const browser=read("scripts/verify-unified-six-dock-browser.mjs");
+ const iHelpCss=read("components/sitewide-ihelp.module.css");
  assert.match(page,/themeColor:"#0f0f0f"/);
  assert.match(style,/--mytube-bg:#0f0f0f/);
  assert.match(discovery,/data-mytube-category-rail/);
@@ -251,10 +252,15 @@ test("MyTube stays dark with a swipeable direction rail and expandable deeper fi
  for(const name of ["data-mytube-categories","data-mytube-subcategories","data-mytube-topics","data-mytube-scenarios"])
   assert.match(discovery,new RegExp(name));
  assert.match(css,/\.mytube \.mytubeCategoryRail\{/);
- assert.match(css,/overflow-x:auto/);
+ assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+ assert.doesNotMatch(css.slice(css.indexOf("/* MyTube-only compact five-choice editorial taxonomy.")),/overflow-x:auto/);
+ assert.match(discovery,/data-mytube-language-control/);
+ assert.match(discovery,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
  assert.match(css,/\.mytube \.compactMoreButton\{/);
  assert.match(discovery,/data-mytube-format-mode=\{mode\}/);
- assert.match(browser,/rail\.evaluate\(el=>el\.scrollLeft\)/);
+ assert.match(browser,/rail\.evaluate\(el=>el\.scrollWidth<=el\.clientWidth\+2\)/);
+ assert.ok(iHelpCss.includes(":global(body:has([data-mytube-page])) .launcher{"));
+ assert.match(browser,/floating iHelp must not block original-language choices/);
  assert.match(browser,/refined\.isVisible\(\),false/);
 });
 test("Shorts / Study are exclusive editorial shelves and unknown lengths remain available",async()=>{
