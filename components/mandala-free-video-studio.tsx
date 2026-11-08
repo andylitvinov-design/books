@@ -5712,7 +5712,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             const listening=samplePreviewId===id&&soundPreview;
             return <div className={videoStyles.phraseMusicItem} key={id} data-phrase-music-track={id}>
               <button type="button" className={videoStyles.phraseMusicChoice} data-phrase-music-attach={id}
-                aria-pressed={checked} disabled={recording||preparing||micRecording||Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration)}
+                aria-pressed={checked} disabled={recording||preparing||micRecording}
                 onClick={()=>toggleQuickMusic(id)}>
                 <span aria-hidden="true">{checked?<Check size={21}/>:<Music2 size={21}/>}</span>
                 <span>{track.name[locale]}</span>
@@ -7003,7 +7003,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <button type="button" className={videoStyles.quickMusicCheck}
                 role="checkbox" aria-checked={checked} data-video-quick-music-check={id}
                 aria-label={(checked?"✓ ":"")+track.name[locale]}
-                disabled={recording||preparing||micRecording||Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration)}
+                disabled={recording||preparing||micRecording}
                 onClick={()=>toggleQuickMusic(id)}>
                 <span className={videoStyles.quickMusicCheckbox} aria-hidden="true">
                   {checked?<Check size={15} strokeWidth={3}/>:null}

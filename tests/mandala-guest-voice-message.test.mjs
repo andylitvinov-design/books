@@ -55,7 +55,7 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit hydration follows visible Goals → Ideas → Montage without legacy clicks",()=>{
+test("macOS WebKit hydration follows visible Goal → Montage → Ideas without legacy clicks",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const style=read("components/mandala-video-mobile.module.css");
@@ -74,7 +74,8 @@ test("macOS WebKit hydration follows visible Goals → Ideas → Montage without
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/onClick=\{continueToIdeas\}/);
+ assert.match(studio,/onClick=\{continueToMontage\}/);
+ assert.match(studio,/const continueToMontage = \(\) => \{[\s\S]*?setActiveWorkspace\("editor"\)/);
  assert.match(style,/\[data-video-scenario-open="false"\]/);
 });
 

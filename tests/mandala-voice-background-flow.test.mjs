@@ -72,3 +72,60 @@ test("The background remains selected if voice needs regeneration",()=>{
   assert.match(invalidate,/setAttachedAudio\(voiceBackgroundTrack\)/);
   assert.match(invalidate,/setVoiceBackgroundTrack\(null\)/);
 });
+
+// Exercise the real TS mixer with a deterministic browser AudioContext stand-in,
+// not another copy of the algorithm. No provider calls or paid media rendering.
+test("local export mixes a non-looping spoken WAV and looping background into one track",async()=>{
+ const ts=(await import("typescript")).default;
+ const compiled=ts.transpileModule(audio,{
+   fileName:"local-video-music.ts",
+   compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}
+ }).outputText;
+ const starts=[],sources=[],fetched=[],track={stopped:false,stop(){this.stopped=true;}};
+ const sharedContext={
+   state:"suspended",currentTime:5,
+   resume(){this.state="running";return Promise.resolve();},
+   decodeAudioData:async()=>({length:100,duration:8}),
+   createMediaStreamDestination:()=>({stream:{
+     getAudioTracks:()=>[track],getTracks:()=>[track]}}),
+   createGain:()=>({gain:{
+     value:0,setValueAtTime(){},cancelScheduledValues(){},
+     setTargetAtTime(){},linearRampToValueAtTime(){}
+   },connect(){},disconnect(){}}),
+   createBufferSource:()=>{
+     const node={loop:false,buffer:null,connect(){},disconnect(){},stop(){},
+       start(at){starts.push(at);}};
+     sources.push(node);return node;
+   },
+   close(){this.closed=true;return Promise.resolve();}
+ };
+ class FakeFile{
+   constructor(name){this.name=name;this.type="audio/wav";this.size=800;}
+   arrayBuffer(){return Promise.resolve(new ArrayBuffer(80));}
+ }
+ const nav={audioSession:{type:"ambient"}};
+ const api={};
+ new Function("exports","window","navigator","fetch","Blob","File",compiled)(
+   api,{AudioContext:class{constructor(){return sharedContext;}}},
+   nav,
+   async(url,options)=>{
+     fetched.push({url,options});return {ok:true,arrayBuffer:async()=>new ArrayBuffer(100)};
+   },
+   Blob,FakeFile);
+ const voice=new FakeFile("approved-voice.wav");
+ const mix=await api.startVoiceOverBackgroundAudio(voice,"warm-morning",90,20,
+   {seconds:15,startSeconds:2,deferStart:true});
+ assert.ok(mix,"voice and first-party music must be accepted for one local movie");
+ assert.equal(mix.track,track);
+ assert.deepEqual(fetched.map(x=>x.url),["/audio/mandala/warm-morning.wav"]);
+ assert.equal(fetched[0].options.credentials,"same-origin");
+ assert.equal(sources.length,2,"voice and music remain separate audio nodes");
+ assert.deepEqual(sources.map(x=>x.loop),[false,true],
+   "speech runs once while the soundtrack loops");
+ assert.equal(starts.length,0,"no playback before trusted record click");
+ mix.begin();
+ assert.deepEqual(starts,[7,5],"spoken start offset differs from soundtrack");
+ mix.setVolume(60);mix.fadeOut();mix.close();
+ assert.equal(track.stopped,true);
+ assert.equal(nav.audioSession.type,"ambient","restore original iOS audio session");
+});
