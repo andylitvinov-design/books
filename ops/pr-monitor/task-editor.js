@@ -324,11 +324,43 @@
   if(typeof packet.fullPrompt==='string'&&packet.fullPrompt.trim().length>30){
    by('prompt').value=packet.fullPrompt.slice(0,15000);sourceAtPrompt=raw;
   }else compose();
-  set('state','Получен черновик · не сохранён');
+  const ids=(Array.isArray(packet.relatedPr)?packet.relatedPr:[]).filter(n=>Number.isSafeInteger(n)&&n>0&&n<100000).slice(0,MAX_PR);
+  if(ids.length){linked=new Set(ids);renderLinked();}
+  set('state','Получен комментарий/черновик · не сохранён');
+  return ids;
+ }
+ async function addPriorContext(prs){
+  if(!remoteEnabled||!prs?.length)return;
+  const initial=val('prompt'),source=val('source');if(!initial||issueNumber)return;
+  try{
+   const data=await api('list');
+   const matching=(data.tasks||[]).filter(t=>(t.relatedPr||[]).some(n=>prs.includes(n))&&t.taskId!==taskId);
+   const selected=matching.slice(0,8),notes=[];
+   for(const item of selected){
+    try{
+     const response=await api('read&id='+item.issueNumber);
+     const record=response.record;
+     if(record?.schema==='HH_COMMANDER_TASK_V1')notes.push('Приватная задача #'+item.issueNumber+
+      ' · '+String(item.state||'UNKNOWN').slice(0,40)+' · обновлена '+String(item.updatedAt||'UNKNOWN').slice(0,45)+
+      '\nИсходный запрос: '+String(record.source||'').slice(0,480)+
+      '\nПоследний сохранённый план: '+String(record.plan||record.summary||'').slice(0,420));
+    }catch{notes.push('Приватная задача #'+item.issueNumber+' · детали недоступны.');}
+   }
+   if(val('prompt')!==initial||val('source')!==source||dirty===false)return;
+   const attachment=notes.length?
+    '\n\nПРЕДЫДУЩИЕ ПРИВАТНЫЕ ЗАДАЧИ ПО СВЯЗАННЫМ PR ('+selected.length+'/'+matching.length+'):\n'+notes.join('\n\n')+
+    '\nИсполнитель должен проверить остальные связанные приватные задачи и свежие GitHub events.':
+    '\n\nПРЕДЫДУЩИЕ ПРИВАТНЫЕ ЗАДАЧИ: совпадений по PR в доступной выборке не найдено; полный архив не подтверждён.';
+   const room=15000-initial.length;
+   if(room>180)by('prompt').value=initial+attachment.slice(0,room);
+   else set('history','Промпт уже заполнен; историю приватных задач проверьте вручную.');
+   set('history','Приватная история по связанным PR: '+selected.length+' / '+matching.length+' найденных в выборке; агент НЕ запущен.');
+   quality();
+  }catch(e){set('history','История приватных задач недоступна: '+safeText(e)+'. Проверьте её вручную.');}
  }
  async function initializeOwner(){
   authorized=true;by('login').hidden=true;by('workspace').hidden=false;
-  consume();quality();await status();
+  const ids=consume();quality();await status();if(ids?.length)await addPriorContext(ids);
  }
  async function checkAuth(){
   try{
