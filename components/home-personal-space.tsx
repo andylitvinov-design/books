@@ -187,7 +187,8 @@ export function HomePersonalSpaceProvider({ locale, children }: { locale: Public
       requestRef.current?.abort();
       setSummary(null);
       setPhase("idle");
-      void load();
+      // Back/forward cache restoration alone is not consent for a private account query.
+      if (dialogRef.current?.open) void load();
     };
     window.addEventListener("pageshow", restore);
     return () => {

@@ -15,7 +15,7 @@ test('cabinet actions go to existing editors and personal paths, never into user
   assert.equal(cabinetActionHref('video', 'en'), '/en/app/practice?panel=materials&materialTab=videos')
   assert.equal(cabinetActionHref('audio', 'ru'), '/ru/app/practice?panel=materials&materialTab=audio')
   assert.equal(cabinetActionHref('tests', 'ru'), '/ru/app/tests')
-  assert.equal(cabinetActionHref('reports', 'en'), '/en/app/portrait#personal-reports')
+  assert.equal(cabinetActionHref('reports', 'en'), '/en/app/portrait?space=reports#personal-reports')
   assert.equal(cabinetActionHref('lessons', 'en'), '/en/app/course?view=courses')
   assert.equal(cabinetActionHref('ideas', 'en'), '/en/books')
   assert.equal(cabinetActionHref('unsafe', 'en'), null)
