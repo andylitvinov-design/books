@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 const src=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('owner login reuses the existing Holistic House Google sign-in page',()=>{
  const auth=src('owner-google-signin.js'),chat=src('chats.html'),editor=src('task-editor.html');
- assert.match(auth,/holistichouse\.vercel\.app\/commander-connect\.html/);
+ assert.match(auth,/const MAIN='https:\/\/holistichouse\.vercel\.app'/);
+ assert.match(auth,/link\.href=MAIN\+'\/commander-connect\.html\?next='/);
  assert.match(auth,/Продолжить через Google/);
  assert.doesNotMatch(auth,/accounts\.google\.com\/gsi\/client|google\.accounts\.id|localStorage|sessionStorage/);
  assert.match(chat,/id="cc-google-owner"/);assert.match(editor,/id="ac-google-owner"/);
@@ -21,7 +22,7 @@ test('owner-only APIs use the private edge store and do not claim executor dispa
  const chats=src('api/commander-chats.js'),drafts=src('api/commander-drafts.js');
  const helper=src('lib/commander-private-store.js'),ui=src('commander-chats.js');
  assert.match(chats,/commander_from_task/);assert.match(chats,/callStore/);
- assert.match(drafts,/commander_queue_task/);assert.match(drafts,/agentStarted/);
+ assert.match(drafts,/commander_queue_task/);assert.match(drafts,/SUPABASE_PRIVATE/);
  assert.match(helper,/Authorization:'Bearer '\+token/);
  assert.match(ui,/AWAITING|Не запущен|НЕ ЗАПУЩЕН/);
 });

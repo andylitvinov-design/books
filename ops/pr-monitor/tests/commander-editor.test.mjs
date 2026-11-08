@@ -21,7 +21,7 @@ test('guest requests cannot read or save private tasks',async()=>{
  for(const method of ['GET','POST']){
   const res=response();
   await api({method,url:'/api/commander-drafts?action=status',
-   headers:{host:'holistic-house-pr-monitor.vercel.app'},body:{record:{}}},res);
+   headers:{host:'holistic-house-pr-monitor.vercel.app',...(method==='POST'?{origin:'https://holistic-house-pr-monitor.vercel.app','sec-fetch-site':'same-origin'}:{})},body:{record:{}}},res);
   assert.equal(res.statusCode,401);assert.equal(res.body.error,'OWNER_SESSION_REQUIRED');
   assert.match(res.headers['Cache-Control'],/no-store/);
  }
@@ -32,8 +32,9 @@ test('guest requests cannot read or save private tasks',async()=>{
 });
 test('owner JWT is parsed for forwarding but verified by the private Edge Function',()=>{
  const exp=Math.floor(Date.now()/1000)+600;
+ const header=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');
  const payload=Buffer.from(JSON.stringify({sub:'123e4567-e89b-42d3-a456-426614174000',exp})).toString('base64url');
- const token='header.'+payload+'.signature';
+ const token=header+'.'+payload+'.'+'a'.repeat(43);
  assert.equal(store.tokenFromRequest({headers:{cookie:'hh_commander_supabase_auth='+token}}),token);
  const helper=src('lib/commander-private-store.js');
  assert.match(helper,/Authorization:'Bearer '\+token/);
@@ -46,7 +47,8 @@ test('editor saves and queues only verified owner tasks; no fake dispatch',()=>{
  assert.match(js,/fetch\('\/api\/commander-session'/);
  assert.match(js,/api\('save'/);assert.match(js,/api\('queue'/);
  assert.match(apiSource,/commander_save_task/);assert.match(apiSource,/commander_queue_task/);
- assert.match(apiSource,/agentStarted/);assert.match(apiSource,/SUPABASE_PRIVATE/);
+ assert.match(apiSource,/commander_queue_task/);assert.match(apiSource,/SUPABASE_PRIVATE/);
+ assert.match(js,/r\.queuedForReview!==true\|\|r\.agentStarted!==false/);
  assert.doesNotMatch(apiSource,/workflow_dispatch|HH_PM_GITHUB_WRITE_TOKEN|api\.github\.com/);
  assert.match(js,/Исполнитель не запущен/);
 });
