@@ -35,7 +35,11 @@ test('WhatsApp six-stage first-person dialogue does not create a lead before con
   assert.equal(first.body,null)
   assert.equal(first.consent,false)
   assert.match(first.reply,/WhatsApp/)
-  assert.deepEqual(first.keyboard,[['Да, начинаем','Не сейчас']])
+  assert.deepEqual(first.keyboard,[['Да, начинаем']])
+  // The production welcome presents only explicit affirmative consent; absence of a No button never enrolls automatically.
+  const notNow=whatsappIntakeEvent({stage:'consent',locale:'ru'},input('Не сейчас'))
+  assert.equal(notNow.consent,false)
+  assert.equal(notNow.body,null)
   const consent=whatsappIntakeEvent({stage:'consent',locale:'ru'},input('Да, начинаем'))
   assert.equal(consent.stage,'focus')
   assert.equal(consent.consent,true)
