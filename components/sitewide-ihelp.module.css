@@ -90,27 +90,35 @@
 .chat :global([data-hh-agent-preview][data-page-help] [data-hh-ihelp-actions] button:focus-visible){
  outline:3px solid #176e6e;outline-offset:2px
 }
+/* Like the native Video Director, only the transcript scrolls; the composer stays on one line. */
 .chat :global([data-hh-agent-preview][data-page-help]>form){
- flex:none;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
- gap:6px;margin:0;min-height:67px;padding:8px 9px;
- border:1px solid #c9e3d7;border-radius:21px;background:#fff;
+ flex:none;display:flex;align-items:center;box-sizing:border-box;min-width:0;
+ gap:6px;margin:0 2px 4px;min-height:62px;padding:6px 8px;
+ border:1px solid #c9e3d7;border-radius:22px;background:#fff;
  box-shadow:0 3px 13px #1e57421b
 }
 .chat :global([data-hh-agent-preview][data-page-help]>form textarea){
- min-width:0;width:100%;height:49px;min-height:49px;max-height:105px;
- padding:10px 5px;border:0;border-radius:12px;background:transparent;
- color:#143d3a;resize:vertical;font:500 16px/1.3 system-ui,sans-serif
+ flex:1 1 0%;min-width:0;width:0;height:44px;min-height:44px;max-height:92px;
+ padding:10px 7px;border:0;border-radius:13px;background:transparent;
+ color:#143d3a;resize:none;font:500 16px/1.35 system-ui,sans-serif
 }
-.chat :global([data-hh-agent-preview][data-page-help]>form .actions){
- display:flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:wrap;
- max-width:172px;margin:0
+.chat :global([data-hh-agent-preview][data-page-help]>form>div){
+ flex:none;display:flex;align-items:center;justify-content:flex-end;
+ gap:4px;flex-wrap:nowrap;max-width:none;margin:0
 }
-.chat :global([data-hh-agent-preview][data-page-help]>form .actions button){
- min-height:44px;padding:6px 9px;border-radius:13px;font-size:12px
+.chat :global([data-hh-agent-preview][data-page-help]>form>div>button),
+.chat :global([data-hh-agent-preview][data-page-help]>form>div>details>summary){
+ box-sizing:border-box;display:grid;place-items:center;flex:none;
+ width:40px;min-width:40px;height:44px;min-height:44px;padding:5px;
+ border:1px solid #e5eee7;border-radius:15px;background:#fff;
+ color:#176b5d;font-size:12px
 }
-.chat :global([data-hh-agent-preview][data-page-help]>form .actions button[type="submit"]){
- background:linear-gradient(130deg,#22b9a9,#078b76);color:#fff;
- border:1px solid #078b76
+.chat :global([data-hh-agent-preview][data-page-help]>form>div>button[type="submit"]){
+ width:44px;min-width:44px;border-color:#0b9079;border-radius:50%;
+ background:linear-gradient(130deg,#22b9a9,#078b76);color:#fff
+}
+.chat :global([data-hh-agent-preview][data-page-help]>form textarea:focus-visible){
+ outline:2px solid #176e6e;outline-offset:-2px
 }
 .chat :global([data-hh-agent-preview][data-page-help] [data-hh-emotional-avatar-hidden]){
  margin:0;min-height:0
@@ -130,8 +138,13 @@
 .panel:has([data-has-messages]) :global([data-hh-ihelp-topics]){display:none}
 @media(max-width:760px){
  .launcher{top:max(64px,calc(env(safe-area-inset-top,0px) + 8px));min-height:44px;padding:6px 10px}
- .panel{inset:0;width:100vw;height:100dvh;max-height:none;border-radius:0;border:0;
-  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+ .panel{inset:auto;top:var(--hh-ihelp-visual-top,0px);left:0;right:0;
+  width:100vw;height:var(--hh-ihelp-visual-height,100dvh);max-height:none;
+  border-radius:0;border:0;padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+ .panel[data-hh-mobile-keyboard-open] :global([data-hh-ihelp-welcome]),
+ .panel[data-hh-mobile-keyboard-open] :global([data-hh-ihelp-topics]),
+ .panel[data-hh-mobile-keyboard-open] .bottomNav{display:none}
  .header{min-height:52px;padding:5px 11px}
  .heading strong{font-size:19px}
  .heading small{font-size:11px}
@@ -155,9 +168,11 @@
   height:53px;border-radius:11px
  }
  .chat :global([data-hh-agent-preview][data-page-help]>form){gap:4px;padding:6px}
- .chat :global([data-hh-agent-preview][data-page-help]>form .actions){max-width:140px;gap:2px}
- .chat :global([data-hh-agent-preview][data-page-help]>form .actions button){
-  min-height:42px;padding:5px 7px;font-size:11px
+ .chat :global([data-hh-agent-preview][data-page-help]>form){gap:3px;padding:5px}
+ .chat :global([data-hh-agent-preview][data-page-help]>form>div){gap:3px}
+ .chat :global([data-hh-agent-preview][data-page-help]>form>div>button),
+ .chat :global([data-hh-agent-preview][data-page-help]>form>div>details>summary){
+  width:38px;min-width:38px;padding:5px
  }
 }
 @media(max-height:650px){
@@ -180,3 +195,24 @@
  border-color:#88ceb5;color:#067a67}
 .bottomNav a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
 :global(body:has([data-video-ihelp-header-trigger])) .launcher{display:none!important}
+
+
+/* Profile / Video Studio mobile: never cover the six top tabs or scenic player. */
+@media(max-width:600px){
+  :global(body:has([data-profile-hub-tabs])) .launcher{
+    top:auto;right:max(12px,env(safe-area-inset-right,0px));
+    bottom:calc(86px + env(safe-area-inset-bottom,0px));
+    width:44px;min-width:44px;height:44px;min-height:44px;padding:0;
+  }
+  :global(body:has([data-profile-hub-tabs])) .launcher span{display:none}
+}
+
+/* MyTube: keep original-audio languages and category chips completely clickable.
+   Reuse the same compact mobile floating launcher above the fixed dock. */
+:global(body:has([data-mytube-page])) .launcher{
+  top:auto;bottom:calc(86px + env(safe-area-inset-bottom,0px));
+  right:max(12px,env(safe-area-inset-right,0px));
+  width:44px;min-width:44px;height:44px;min-height:44px;
+  padding:0;justify-content:center;
+}
+:global(body:has([data-mytube-page])) .launcher span{display:none}

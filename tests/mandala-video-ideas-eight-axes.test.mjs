@@ -22,28 +22,30 @@ test("eight exact canonical axes, all three languages, five safe unique phrases"
     assert.notDeepEqual(ref,suggestMeaningPhrases(lang,...args));
  }
 });
-test("compact Ideas screen uses actual selectors, sliders and one working Montage action",()=>{
+test("one phrase editor supplies Montage Text with selected and manually edited lines",()=>{
  for(const marker of ["data-video-ideas-current","data-video-ideas-desired","data-video-ideas-state-score",
    "data-video-ideas-energy-score","data-video-meaning-axis","data-video-idea-phrase","data-video-ideas-create"])
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/listMeaningAxes\(locale\)/);
  assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("visual"\);setPreviewPlaying\(false\);\}\}/);
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
 });
 
-test("Ideas CTA advances to Montage auto Concept with no renderer, no audio library and no source gate",()=>{
+test("Ideas shortcut opens the single Montage Text editor without renderer or paid request",()=>{
  const start=studio.indexOf("const goToMontageFromIdeas = () => {");
  const end=studio.indexOf("const createQuickVideo = () => {",start);
  assert.ok(start>0&&end>start,"Ideas navigation handler");
  const action=studio.slice(start,end);
  assert.match(action,/setActiveWorkspace\("editor"\)/);
- assert.match(action,/setMontagePanel\("concept"\)/);
+ assert.match(action,/setMontagePanel\("text"\)/);
   assert.match(studio,/data-video-montage-concept/);
   assert.match(studio,/data-video-concept-text-tools/);
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}\/>/);
+ assert.ok(studio.includes('data-video-ideas-open-montage-text') && studio.includes('onGenerate={createQuickVideo} status={notice}/>'),
+  'Ideas links to Montage Text and the same phrase editor has one guarded Create action');
  assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
  assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,
@@ -66,12 +68,13 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
   "data-video-ideas-record","data-video-ideas-minimum","data-video-ideas-refine"])
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/selectedCount<5/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("visual"\);setPreviewPlaying\(false\);\}\}/);
  assert.match(cmp,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
  assert.match(renderer,/const textScale = settings\.textScale === "small"/);
- assert.match(studio,/onRecord=\{\(\)=>\{[\s\S]*?data-video-affirmation-gender="own"/);
+ assert.match(studio,/onRecord=\{\(\)=>\{[\s\S]*?setIdeasSubtab\("my-voice"\)/);
  assert.match(studio,/data-video-own-voice-record/);
 });
 
@@ -86,8 +89,8 @@ test("Ideas rolling preview iPhone bug regression: first selected phrase is show
  assert.ok(render.includes('textScale === "small"')&&render.includes('textScale === "large"'));
  assert.ok(cmp.includes('onResetPreview();onChange(old=>'),"size slider refreshes the first actual phrase");
  assert.ok(cmp.includes('motion:"rise"'),"Ideas enables rolling renderer");
- assert.ok(studio.includes('paintVideoAffirmations(ctx,previewSeekSeconds,affirmationLines,affirmations,duration)'));
- assert.equal((studio.match(/paintVideoAffirmations\(ctx,[^,]+,affirmationLines,affirmations,duration\)/g)||[]).length,5,
+ assert.ok(studio.includes('paintSingleVideoTextOverlay(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips)'));
+ assert.equal((studio.match(/paintSingleVideoTextOverlay\(ctx,/g)||[]).length,5,
    "live preview and all three export paths share the same renderer");
 });
 
@@ -99,11 +102,11 @@ test("Ideas Play reuses film, not unstable speech synthesis; preserve real voice
  assert.ok(studio.includes('if(activeWorkspace==="phrases"||previewSeekSeconds>=duration)'),
    "Play starts from the first selected phrase");
  assert.ok(studio.includes('const playback=film.play()'),"video playback is guarded for Safari");
- assert.ok(studio.includes('if(activeWorkspace!=="phrases")paintStageCaptionOverlay(ctx,previewSeekSeconds'),
+ assert.ok(studio.includes('const visibleCaption=singleTextSource==="caption"?caption:""') && studio.includes('paintSingleVideoTextOverlay(ctx,previewSeekSeconds,'),
    "legacy caption is not drawn on top of Ideas text");
  assert.ok(studio.includes('onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}'));
  assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'));
- assert.ok(studio.includes('onCreate={goToMontageFromIdeas}'),"CTA retains real Montage destination");
+ assert.ok(studio.includes('data-video-ideas-open-montage-text'), 'Ideas retains an explicit working Montage destination');
 });
 
 test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list fits the screen",()=>{
@@ -120,7 +123,7 @@ test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list
 });
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
-test("Ideas Text and Voice have a shared, stateful single narration editor",()=>{
+test("Ideas Text, Voice and My Voice share one stateful audio editor and real recorder",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
  assert.match(studio,/data-video-ideas-tabs role="group"/);
  assert.match(studio,/data-video-ideas-tab="text" aria-pressed=\{ideasSubtab==="text"\}/);
@@ -129,7 +132,9 @@ test("Ideas Text and Voice have a shared, stateful single narration editor",()=>
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
  assert.match(studio,/data-video-ideas-own-upload/);
- assert.match(studio,/data-video-ideas-record-voice/);
+ assert.match(studio,/data-video-ideas-tab="my-voice"/);
+ const recorder=read("components/mandala-local-voice-tracks.tsx");
+ assert.match(recorder,/data-video-ideas-record-voice/);
  assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
 });
 

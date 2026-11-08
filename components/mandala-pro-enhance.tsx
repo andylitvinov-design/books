@@ -1,192 +1,178 @@
 "use client";
 import {useState} from "react";
+import {useRouter} from "next/navigation";
+import {createVideoCartSelection,VIDEO_CART_STORAGE_KEY,SERVICE_CART_UPDATED_EVENT} from "@/lib/commerce/cart";
 import type {ReactNode} from "react";
-import {ArrowRight,AudioLines,Check,Clapperboard,Film,House,Leaf,Mountain,Play,Plus,SlidersHorizontal,Sparkles,UsersRound,WandSparkles} from "lucide-react";
+import {ArrowRight, Camera, Check, ChevronDown, Clapperboard, Film, Sparkles, UsersRound} from "lucide-react";
 import type {StoryAddonKind} from "@/lib/mandala/story-addon-catalog";
 import styles from "./mandala-pro-enhance.module.css";
 
 type Locale="en"|"ru"|"es";
-type Panel="effects"|"audio";
-const gallery="/images/holistic-house/pro-enhance-gallery.webp";
-const cards=[
-  {id:"greeting",Icon:UsersRound,pos:"50% 0%",kind:"character"},
-  {id:"cinema",Icon:Clapperboard,pos:"100% 0%",kind:"story"},
-  {id:"place",Icon:Mountain,pos:"0% 0%",kind:"place"},
-  {id:"home",Icon:House,pos:"0% 100%",kind:"place"},
-  {id:"director",Icon:WandSparkles,pos:"100% 100%",kind:"story"},
-  {id:"quality",Icon:SlidersHorizontal,pos:"50% 100%",kind:"symbol"}
-] as const;
-type CardId=(typeof cards)[number]["id"];
-const top=[
- {id:"montage",Icon:Film},{id:"greeting",Icon:UsersRound},
- {id:"cinema",Icon:Clapperboard},{id:"place",Icon:Mountain},
- {id:"home",Icon:House},{id:"quality",Icon:SlidersHorizontal}
-] as const;
-const additions=[
- {id:"scenes",Icon:Film,pos:"0% 0%",kind:"story"},
- {id:"characters",Icon:UsersRound,pos:"50% 0%",kind:"character"},
- {id:"cinema",Icon:Clapperboard,pos:"100% 0%",kind:"story"},
- {id:"places",Icon:Mountain,pos:"0% 100%",kind:"place"},
- {id:"homes",Icon:House,pos:"0% 100%",kind:"place"},
- {id:"audio",Icon:AudioLines,pos:"50% 100%",kind:"audio"}
-] as const;
+type Tier="standard"|"extra"|"pro";
+const tiers=["standard","extra","pro"] as const;
 const copy={
  ru:{
-  title:"PRO-монтаж и улучшение",desc:"Профессиональная сборка, кинематографичность и качество",
-  add:"Добавить в видео",next:"Перейти к монтажу",more:"Другие творческие настройки",
-  free:"Бесплатные варианты",paid:"PRO-варианты",choose:"Выберите вариант",
-  freeHint:"Откроется существующий каталог. Бесплатны только проверенные готовые материалы.",
-  pending:"Платная AI-генерация пока не подключена. Списаний и рендера не было.",
-  noAi:"Сгенерировать видео без ИИ-эффектов",ai:"Добавить AI PRO и создать видео",
-  top:{montage:"Монтаж",greeting:"Персонаж",cinema:"Киносцена",place:"Место силы",home:"Дом",quality:"Качество"},
-  cards:{
-   greeting:{title:"Приветствие персонажа",desc:"Вступление, настрой, контакт"},
-   cinema:{title:"Киносцена (портал)",desc:"Переход, эффект, глубина"},
-   place:{title:"Место силы",desc:"Природа, энергия, вдохновение"},
-   home:{title:"Дом (уютное пространство)",desc:"Гармония, тепло, безопасность"},
-   director:{title:"AI-режиссёр",desc:"Автоулучшение и умный монтаж"},
-   quality:{title:"Качество",desc:"Цвет, чёткость, звук и стиль"}
-  },
-  addNames:{scenes:"Сцены",characters:"Персонажи",cinema:"Киносцены",places:"Места силы",homes:"Дома",audio:"Аудиофразы"}
+  title:"Видеоредактор PRO",tabs:{standard:"Стандарт",extra:"Экстра",pro:"PRO"},
+  prices:{standard:"Бесплатно*",extra:"€3",pro:"€5"},
+  standardTitle:"Монтаж вашего видео",standardDesc:"Соединяйте сцены, меняйте их порядок, длительность, переходы, титры и звук. Это наш действующий редактор — без второго видеодвижка.",
+  extraTitle:"Анимированное фото и персонаж",extraDesc:"Добавьте собственное фото и выберите анимированного персонажа из каталога для вашего ролика.",
+  photoTitle:"Анимировать моё фото",photoDesc:"Фото используется с вашего разрешения. Предпросмотр доступен в редакторе.",
+  photoButton:"Загрузить фото",photoChosen:"Фото выбрано",photoPending:"Подготовка фото…",
+  characterTitle:"Анимированные персонажи",characterDesc:"Выберите подходящего персонажа из существующего каталога.",
+  showCharacters:"Выбрать персонажа",hideCharacters:"Свернуть список",
+  proTitle:"Ролик по вашему сценарию",proDesc:"Опишите, каким должен быть весь фильм: сцены, настроение, герои, переходы и финал.",
+  wishLabel:"Ваши пожелания",wishPlaceholder:"Например: первые 5 секунд — рассвет у моря, затем встреча двух людей, мягкий свет, спокойный финал…",
+  proTools:"Дополнительные режиссёрские настройки",privacy:"Текст остаётся в редакторе. Он не отправляется платному AI-сервису автоматически.",
+  freeCreate:"Создать видео бесплатно",extraCreate:"Создать видео за €3",proCreate:"Создать видео за €5",
+  unavailable:"В корзине можно выбрать PayPal.Me. Перевод подтверждается вручную; видео не создаётся автоматически.",
+  cartAdd:"В корзину",
+  creditsInfo:"* Первый ролик для гостя бесплатно; следующие могут стоить кредиты согласно балансу.",
+  preview:"Посмотреть монтаж"
  },
  en:{
-  title:"PRO montage & enhancement",desc:"Professional editing, cinematic style and quality",
-  add:"Add to video",next:"Continue to montage",more:"More creative controls",
-  free:"Free options",paid:"PRO options",choose:"Choose an option",
-  freeHint:"Opens the existing catalog. Only verified available media is free.",
-  pending:"Paid AI generation is not connected. No payment or render was initiated.",
-  noAi:"Generate video without AI effects",ai:"Add AI PRO and generate video",
-  top:{montage:"Montage",greeting:"Character",cinema:"Film scene",place:"Power place",home:"Home",quality:"Quality"},
-  cards:{
-   greeting:{title:"Character greeting",desc:"Welcome, warmth and connection"},
-   cinema:{title:"Cinema scene (portal)",desc:"Transition, effects and depth"},
-   place:{title:"Place of power",desc:"Nature and inspiration"},
-   home:{title:"Home (cozy space)",desc:"Warmth and safety"},
-   director:{title:"AI Director",desc:"Smart editing and improvements"},
-   quality:{title:"Quality",desc:"Color, clarity, sound and style"}
-  },
-  addNames:{scenes:"Scenes",characters:"Characters",cinema:"Cinema scenes",places:"Power places",homes:"Homes",audio:"Spoken phrases"}
+  title:"PRO video editor",tabs:{standard:"Standard",extra:"Extra",pro:"PRO"},
+  prices:{standard:"Free*",extra:"€3",pro:"€5"},
+  standardTitle:"Edit your video",standardDesc:"Combine shots, reorder and trim scenes, adjust transitions, captions and sound in our existing editor — one real export engine.",
+  extraTitle:"Animated photo & character",extraDesc:"Add your own photo and choose an animated character from the existing catalog.",
+  photoTitle:"Animate my photo",photoDesc:"Only use a photo you have permission to use. Preview it in the editor.",
+  photoButton:"Upload photo",photoChosen:"Photo selected",photoPending:"Preparing photo…",
+  characterTitle:"Animated characters",characterDesc:"Choose a character from our existing catalog.",
+  showCharacters:"Choose a character",hideCharacters:"Hide characters",
+  proTitle:"A video made to your brief",proDesc:"Describe your full film: scenes, mood, characters, transitions and ending.",
+  wishLabel:"Your directions",wishPlaceholder:"For example: first 5 seconds — seaside sunrise, then two people meet, soft golden light and a peaceful ending…",
+  proTools:"Advanced director settings",privacy:"Your brief stays in the editor. It is not automatically sent to a paid AI service.",
+  freeCreate:"Create video for free",extraCreate:"Create video for €3",proCreate:"Create video for €5",
+  unavailable:"PayPal.Me is available in the cart. Payments require manual verification; video rendering is not automatic.",
+  cartAdd:"Add to cart",
+  creditsInfo:"* The first guest video is free; additional exports may use your existing credit balance.",
+  preview:"Preview montage"
  },
  es:{
-  title:"Montaje y mejoras PRO",desc:"Edición profesional, estilo cinematográfico y calidad",
-  add:"Añadir al vídeo",next:"Ir al montaje",more:"Más ajustes creativos",
-  free:"Opciones gratis",paid:"Opciones PRO",choose:"Elige una opción",
-  freeHint:"Abre el catálogo actual. Solo los materiales verificados son gratis.",
-  pending:"La generación de IA de pago todavía no está conectada. No hubo cobro ni render.",
-  noAi:"Generar vídeo sin efectos de IA",ai:"Añadir IA PRO y generar vídeo",
-  top:{montage:"Montaje",greeting:"Personaje",cinema:"Escena",place:"Lugar",home:"Casa",quality:"Calidad"},
-  cards:{
-   greeting:{title:"Saludo del personaje",desc:"Introducción y conexión"},
-   cinema:{title:"Escena de cine (portal)",desc:"Transición, efectos y profundidad"},
-   place:{title:"Lugar especial",desc:"Naturaleza e inspiración"},
-   home:{title:"Casa acogedora",desc:"Armonía y seguridad"},
-   director:{title:"Director IA",desc:"Montaje y mejoras inteligentes"},
-   quality:{title:"Calidad",desc:"Color, nitidez, sonido y estilo"}
-  },
-  addNames:{scenes:"Escenas",characters:"Personajes",cinema:"Escenas de cine",places:"Lugares",homes:"Casas",audio:"Frases de voz"}
+  title:"Editor de vídeo PRO",tabs:{standard:"Estándar",extra:"Extra",pro:"PRO"},
+  prices:{standard:"Gratis*",extra:"€3",pro:"€5"},
+  standardTitle:"Edita tu vídeo",standardDesc:"Combina y ordena escenas, ajusta duración, transiciones, títulos y sonido en el editor existente.",
+  extraTitle:"Foto animada y personaje",extraDesc:"Añade tu foto y elige un personaje animado del catálogo actual.",
+  photoTitle:"Animar mi foto",photoDesc:"Utiliza solo fotos autorizadas. Puedes ver una vista previa.",
+  photoButton:"Subir foto",photoChosen:"Foto seleccionada",photoPending:"Preparando foto…",
+  characterTitle:"Personajes animados",characterDesc:"Elige un personaje del catálogo existente.",
+  showCharacters:"Elegir personaje",hideCharacters:"Ocultar personajes",
+  proTitle:"Un vídeo a tu medida",proDesc:"Describe todo el vídeo: escenas, emoción, personajes, transiciones y final.",
+  wishLabel:"Tus indicaciones",wishPlaceholder:"Por ejemplo: primero un amanecer junto al mar, después dos personas se encuentran, luz suave y un final tranquilo…",
+  proTools:"Opciones avanzadas del director",privacy:"El texto permanece en el editor. No se envía automáticamente a un proveedor de IA de pago.",
+  freeCreate:"Crear vídeo gratis",extraCreate:"Crear vídeo por €3",proCreate:"Crear vídeo por €5",
+  unavailable:"Puedes usar PayPal.Me desde el carrito. El pago se verifica manualmente y el vídeo no se genera automáticamente.",
+  cartAdd:"Añadir al carrito",
+  creditsInfo:"* El primer vídeo de invitado es gratis; los siguientes pueden usar créditos.",
+  preview:"Vista previa del montaje"
  }
 } as const;
+
 type Props={
- locale:Locale;disabled:boolean;onGenerateFree:()=>void;
- onGoToMontage:(panel:Panel)=>void;onChooseCatalog:(kind:StoryAddonKind)=>void;
+ locale:Locale;
+ disabled:boolean;
+ onGenerateFree:()=>void;
+ onPickPhoto:()=>void;
+ photoSelected:boolean;
+ photoPending:boolean;
+ proWish:string;
+ onProWishChange:(value:string)=>void;
+ freeButtonLabel?:string;
+ onChooseCatalog:(kind:StoryAddonKind)=>void;
+ standardEditor:ReactNode;
+ proTools?:ReactNode;
  children?:ReactNode;
 };
-export function MandalaProEnhance({locale,disabled,onGenerateFree,onGoToMontage,onChooseCatalog,children}:Props){
- const [selected,setSelected]=useState<CardId>("greeting");
- const [shortcut,setShortcut]=useState<string>("montage");
- const [showOptions,setShowOptions]=useState(false);
- const [advancedOpen,setAdvancedOpen]=useState(false);
- const [showUnavailable,setShowUnavailable]=useState(false);
+
+export function MandalaProEnhance({
+ locale,disabled,onGenerateFree,onPickPhoto,photoSelected,photoPending,proWish,
+ onProWishChange,freeButtonLabel,onChooseCatalog,standardEditor,proTools,children
+}:Props){
+ const router=useRouter();
+ const [tier,setTier]=useState<Tier>("standard");
+ const [charactersOpen,setCharactersOpen]=useState(false);
  const t=copy[locale];
- const choose=(id:CardId)=>{setSelected(id);setShortcut(id);setShowOptions(true);setShowUnavailable(false);};
- const openFree=(kind:StoryAddonKind)=>{onChooseCatalog(kind);setAdvancedOpen(true);setShowUnavailable(false);};
- const openAdd=(id:(typeof additions)[number]["id"])=>{
-   if(id==="audio"){onGoToMontage("audio");return;}
-   const match=additions.find(item=>item.id===id);
-   if(match&&match.kind!=="audio")openFree(match.kind as StoryAddonKind);
+ const chooseTier=(next:Tier)=>{
+   setTier(next);
+   if(next==="extra"){onChooseCatalog("character");setCharactersOpen(true);}
  };
- const chosen=cards.find(item=>item.id===selected)!;
+ const addToCart=()=>{
+   const id=tier==="extra"?"video-extra":tier==="pro"?"video-pro":null;
+   if(!id||disabled)return;
+   const selected=createVideoCartSelection(id,proWish);
+   if(!selected)return;
+   try{window.sessionStorage.setItem(VIDEO_CART_STORAGE_KEY,JSON.stringify(selected));
+     window.dispatchEvent(new Event(SERVICE_CART_UPDATED_EVENT));}catch{}
+   router.push("/"+locale+"/cart?video="+id);
+ };
+ const heading=tier==="standard"?t.standardTitle:tier==="extra"?t.extraTitle:t.proTitle;
+ const description=tier==="standard"?t.standardDesc:tier==="extra"?t.extraDesc:t.proDesc;
  return <section className={styles.panel} data-video-pro-enhance data-workspace-section="pro"
-    data-pro-selected-upgrade={selected} aria-labelledby="video-pro-upgrade-title">
-   <nav className={styles.top} data-video-pro-shortcuts aria-label={t.title}>
-    {top.map(item=>{
-      const Icon=item.Icon;
-      return <button type="button" key={item.id} disabled={disabled} data-pro-shortcut={item.id}
-       aria-pressed={shortcut===item.id} onClick={()=>{
-        if(item.id==="montage"){
-          setShortcut("montage");setShowOptions(false);setShowUnavailable(false);
-        }else choose(item.id);
-       }}>
-       <Icon size={21} aria-hidden="true"/><span>{t.top[item.id]}</span>
-      </button>;
-    })}
+   data-pro-tier={tier} aria-label={t.title}>
+   <nav className={styles.tiers} role="tablist" aria-label={t.title} data-video-pro-tiers>
+     {tiers.map(item=><button type="button" role="tab" key={item} id={"pro-tab-"+item}
+       aria-selected={tier===item} aria-controls="pro-tier-panel"
+       disabled={disabled} data-video-pro-tier={item}
+       onClick={()=>chooseTier(item)}>
+       <strong>{t.tabs[item]}</strong><span>{t.prices[item]}</span>
+     </button>)}
    </nav>
-   <div className={styles.section}>
-    <header className={styles.heading}>
-      <span className={styles.headingIcon}><Sparkles size={23} aria-hidden="true"/></span>
-      <span className={styles.headingText}><h3 id="video-pro-upgrade-title">{t.title}</h3><p>{t.desc}</p></span>
-    </header>
-    <div className={styles.grid} role="group" aria-label={t.title} data-video-pro-feature-grid>
-      {cards.map(item=>{
-        return <button type="button" key={item.id} disabled={disabled}
-          className={styles.card} data-pro-upgrade-id={item.id}
-          aria-pressed={selected===item.id} onClick={()=>choose(item.id)}>
-          <span className={styles.poster} aria-hidden="true"><span
-           style={{backgroundImage:'url("'+gallery+'")',backgroundPosition:item.pos}}/></span>
-          <span className={styles.cardText}><strong>{t.cards[item.id].title}</strong>
-             <small>{t.cards[item.id].desc}</small></span>
-          <span className={styles.cardAction} aria-hidden="true">
-            {selected===item.id?<Check size={16}/>:<Play size={14} fill="currentColor"/>}
-          </span>
-        </button>;
-      })}
-    </div>
-    {showOptions?<div className={styles.options} role="region" data-video-pro-options
-      aria-label={t.cards[selected].title}>
-      <strong>{t.choose}: {t.cards[selected].title}</strong>
-      <div className={styles.optionButtons}>
-       <button type="button" disabled={disabled} data-video-pro-free-option
-         onClick={()=>selected==="quality"?onGoToMontage("effects"):openFree(chosen.kind)}>
-         <Leaf size={18} aria-hidden="true"/>{t.free}
-       </button>
-       <button type="button" disabled={disabled} data-video-pro-paid-option
-         onClick={()=>setShowUnavailable(true)}><Sparkles size={18} aria-hidden="true"/>{t.paid}</button>
-      </div>
-      <small>{t.freeHint}</small>
-    </div>:null}
-    {showUnavailable?<p role="status" className={styles.notice} data-video-pro-unavailable>{t.pending}</p>:null}
+   <section id="pro-tier-panel" role="tabpanel" aria-labelledby={"pro-tab-"+tier}
+     className={styles.section} data-video-pro-tier-panel={tier}>
+     <header className={styles.heading}>
+       <Clapperboard size={23} aria-hidden="true"/>
+       <div><h3>{heading}</h3><p>{description}</p></div>
+     </header>
+     {tier==="standard"?<div className={styles.editor} data-video-pro-standard-editor>
+       {standardEditor}
+     </div>:null}
+     {tier==="extra"?<div className={styles.extra} data-video-pro-extra-options>
+       <div className={styles.feature}>
+         <span className={styles.featureIcon}><Camera size={24} aria-hidden="true"/></span>
+         <div><strong>{t.photoTitle}</strong><p>{t.photoDesc}</p>
+           {photoSelected?<small className={styles.selected}><Check size={14} aria-hidden="true"/>{t.photoChosen}</small>:null}
+         </div>
+         <button type="button" className={styles.secondaryButton}
+           disabled={disabled||photoPending} data-video-pro-upload-photo onClick={onPickPhoto}>
+           {photoPending?t.photoPending:t.photoButton}
+         </button>
+       </div>
+       <div className={styles.character}>
+         <div className={styles.featureHeading}><UsersRound size={22} aria-hidden="true"/>
+           <div><strong>{t.characterTitle}</strong><p>{t.characterDesc}</p></div>
+         </div>
+         <button type="button" className={styles.catalogToggle} data-video-pro-choose-character
+           disabled={disabled} aria-expanded={charactersOpen}
+           onClick={()=>{onChooseCatalog("character");setCharactersOpen(open=>!open);}}>
+           {charactersOpen?t.hideCharacters:t.showCharacters}
+           <ChevronDown size={17} aria-hidden="true"/>
+         </button>
+         {charactersOpen?<div className={styles.catalog} data-video-pro-character-catalog>{children}</div>:null}
+       </div>
+     </div>:null}
+     {tier==="pro"?<div className={styles.proBrief} data-video-pro-custom-brief>
+       <label htmlFor="video-pro-brief"><Sparkles size={18} aria-hidden="true"/>{t.wishLabel}</label>
+       <textarea id="video-pro-brief" data-video-pro-brief value={proWish}
+         onChange={event=>onProWishChange(event.currentTarget.value)}
+         disabled={disabled} maxLength={800} rows={4} placeholder={t.wishPlaceholder}/>
+       <small className={styles.wishCounter}>{proWish.length}/800</small>
+       <p className={styles.privacy}>{t.privacy}</p>
+       {proTools?<details className={styles.proTools} data-video-pro-director-tools>
+         <summary>{t.proTools}<ChevronDown size={18} aria-hidden="true"/></summary>
+         {proTools}
+       </details>:null}
+     </div>:null}
+   </section>
+   {tier==="standard"?<small className={styles.creditsNote}>{t.creditsInfo}</small>:
+     <p className={styles.notice} role="status" data-video-pro-paid-unavailable>{t.unavailable}</p>}
+   <div className={styles.actions} data-video-pro-actions>
+     <button type="button" className={styles.createButton} data-video-pro-create={tier}
+       data-video-generate-without-ai={tier==="standard"?"true":undefined}
+       disabled={disabled} onClick={()=>{if(tier==="standard")onGenerateFree();else addToCart();}}>
+       <Film size={20} aria-hidden="true"/>
+       <span>{tier==="standard"?(freeButtonLabel||t.freeCreate):
+         t.cartAdd+" · "+t.prices[tier]}</span>
+       {tier==="standard"?<ArrowRight size={19} aria-hidden="true"/>:null}
+     </button>
    </div>
-   <div className={styles.section} data-video-pro-add-panel>
-     <h3 className={styles.addTitle}><Plus size={23} aria-hidden="true"/>{t.add}</h3>
-     <div className={styles.addRail} role="group" aria-label={t.add}>
-       {additions.map(item=>{
-         const Icon=item.Icon;
-         return <button type="button" key={item.id} data-pro-add-kind={item.id}
-           disabled={disabled} onClick={()=>openAdd(item.id)}>
-           <span className={styles.addPoster} aria-hidden="true"><span
-             style={{backgroundImage:'url("'+gallery+'")',backgroundPosition:item.pos}}/>
-             <Icon size={19}/></span>
-           <strong>{t.addNames[item.id]}</strong>
-         </button>;
-       })}
-     </div>
-   </div>
-   <button className={styles.continueButton} type="button" data-video-pro-to-montage
-     disabled={disabled} onClick={()=>onGoToMontage("effects")}>
-       <Clapperboard size={24} aria-hidden="true"/><span>{t.next}</span>
-       <ArrowRight size={25} aria-hidden="true"/>
-   </button>
-   <details className={styles.advanced} data-video-pro-advanced-options open={advancedOpen}
-      onToggle={event=>setAdvancedOpen(event.currentTarget.open)}>
-      <summary><SlidersHorizontal size={16} aria-hidden="true"/>{t.more}</summary>
-      <div className={styles.legacy}>{children}</div>
-      <div className={styles.legacyActions} data-video-pro-actions>
-       <button type="button" data-video-generate-pro disabled={disabled}
-         onClick={()=>setShowUnavailable(true)}>{t.ai}</button>
-       <button type="button" data-video-generate-without-ai disabled={disabled}
-         onClick={onGenerateFree}>{t.noAi}</button>
-      </div>
-      {showUnavailable?<p className={styles.notice} role="status">{t.pending}</p>:null}
-   </details>
  </section>;
 }

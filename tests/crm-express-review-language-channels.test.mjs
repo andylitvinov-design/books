@@ -133,7 +133,8 @@ test('free-review messenger CTAs have branded colors, clear localized names and 
   assert.ok(capture.indexOf('<TelegramDiagnosticEntry locale={locale} />') <
     capture.indexOf('<button ref={revealRef}'), 'messenger choices precede the discreet secure-form link')
   assert.doesNotMatch(capture,/reveal:\s*"Request my free review"/)
-  assert.match(capture,/secureAlternative: "Use the secure website form instead"/)
+  assert.match(capture,/secureAlternative: "Choose Telegram or WhatsApp"/)
+  assert.match(capture,/publicWizard = enableWizard && !websiteMessengerOnlyUi\(\)/)
   assert.match(capture,/data-express-reveal disabled=\{!hydrated\} aria-expanded=\{expanded\}/)
   assert.match(capture,/data-express-hydrated=\{hydrated \? "true" : "false"\}/)
   assert.match(captureCss,/\.reveal\{display:inline-flex;/)

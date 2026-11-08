@@ -45,8 +45,8 @@ test("three lanes share one exporter and user edits invalidate stale Blob",()=>{
   assert.match(editor,/data-video-track="text"/);
   assert.match(editor,/data-video-track="audio"/);
   assert.match(editor,/onPointerDown/);
-  assert.match(studio,/paintStageCaptionOverlay\(ctx,frameTime,cinematicPlan,timelineTextClips\)/);
-  assert.match(studio,/paintStageCaptionOverlay\(ctx,time,cinematicPlan,timelineTextClips\)/);
+  assert.match(studio,/paintSingleVideoTextOverlay\(ctx,frameTime,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/);
+  assert.match(studio,/paintSingleVideoTextOverlay\(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/);
   assert.match(studio,/audioStartSeconds,timelineTextClips/);
   assert.match(studio,/startSeconds:effectiveAudioStartSeconds/);
   assert.match(studio,/musicSession\?\.begin\?\.\(\)/);

@@ -99,14 +99,31 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         await audio.locator("[data-meditation-script]").waitFor({state:"visible",timeout:20000});
         const seeded=await audio.locator("[data-meditation-script]").inputValue();
         assert.ok(seeded.length>100,"actual generated text transferred to existing editor");
-        await course.locator("[data-guided-skip-meditation]").click();
-        await page.waitForFunction(()=>{
-          const skip=document.querySelector("[data-guided-skip-meditation]");
-          const audio=document.querySelector("[data-video-therapy-meditation-audio]");
-          return skip?.getAttribute("aria-pressed")==="true" && audio?.open===false;
-        },null,{timeout:15000});
+        const skipButton=course.locator("[data-guided-skip-meditation]");
+        await skipButton.click();
+        // WebKit may suspend requestAnimationFrame polling in backgrounded
+        // windows. Assert BOTH actual user-visible states independently using
+        // Playwright's native locator polling, then the native details.open
+        // property through a Node-side expect.poll (not browser RAF).
+        // Neither outcome is assumed, forced, retried or written by this test.
+        try {
+          await expect(skipButton).toHaveAttribute("aria-pressed","true",{timeout:15000});
+          await expect(audio).not.toHaveAttribute("open","",{timeout:15000});
+          await expect.poll(
+            ()=>audio.evaluate(node=>node instanceof HTMLDetailsElement ? node.open : null),
+            {timeout:15000,message:"opt-out must close the real narration details"}
+          ).toBe(false);
+        } catch(error) {
+          // Synthetic-only state diagnostics, no private script or contact data.
+          const observed=await page.evaluate(()=>({
+            skipped:document.querySelector("[data-guided-skip-meditation]")?.getAttribute("aria-pressed"),
+            detailsOpen:document.querySelector("[data-video-therapy-meditation-audio]")?.open,
+            detailElement:document.querySelector("[data-video-therapy-meditation-audio]")?.tagName,
+          }));
+          throw new Error("Real meditation opt-out did not fully commit: "+JSON.stringify(observed),{cause:error});
+        }
         assert.equal(await audio.getAttribute("open"),null,"skip closes the existing audio editor");
-        assert.equal(await course.locator("[data-guided-skip-meditation]").getAttribute("aria-pressed"),"true");
+        assert.equal(await skipButton.getAttribute("aria-pressed"),"true");
         await programmeButton.click();
         assert.equal(await course.locator("[data-guided-session]").count(),8);
         assert.equal(await course.locator("[data-guided-free-video]").count(),1);

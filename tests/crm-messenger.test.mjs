@@ -1,6 +1,11 @@
 import test from 'node:test'
 // Include the new consent and manual campaign guards in the existing protected CRM check.
 import './crm-telegram-campaigns.test.mjs'
+// The verified WhatsApp link regressions run in the EXISTING CRM job (no workflow change).
+import './crm-whatsapp-account-link.test.mjs'
+import './crm-whatsapp-guided-intake.test.mjs'
+import './crm-whatsapp-replay-receipts.test.mjs'
+import './crm-whatsapp-receipt-isolation.test.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {canReply,channelTransportReady,telegramPilotReady,telegramBotBusinessId,messengerSetupStatus,validateMessageText,MESSENGER_CHANNELS,normalizeReplyFailure,evaluateMessengerReplyEligibility} from '../lib/crm/messenger-policy.js'
