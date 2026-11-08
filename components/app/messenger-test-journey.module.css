@@ -38,3 +38,17 @@
 .srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .panel :is(button,a,input,select):focus-visible{outline:3px solid #0b896c;outline-offset:2px}
 @media(max-width:355px){.choices{grid-template-columns:1fr}}
+
+/* v1.1: inline chat controls; no modal, overflow or nested scroll traps on iPhone. */
+.recover,.confirmation,.resultCard{min-width:0;display:grid;gap:9px;padding:11px;border:1px solid #d8e7df;border-radius:14px;background:#fff}
+.recover p,.confirmation p,.resultCard p{margin:0;overflow-wrap:anywhere}
+.controls{min-width:0;display:flex;flex-wrap:wrap;gap:7px}
+.controls>button{min-height:44px;flex:1 1 125px}
+.resultCard{font-size:13px;line-height:1.5}
+.resultCard>strong{font-size:15px;color:#174e40}
+.resultCard small{color:#5f776b}
+.resultCard ul{padding:0;margin:0;list-style:none;display:grid;gap:5px}
+.resultCard li{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-bottom:1px solid #e5eee8;padding:5px 0}
+.resultCard li span{min-width:0;overflow-wrap:anywhere}
+.resultCard li b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.confirmation:focus-within{outline:2px solid #0b8266;outline-offset:2px}
