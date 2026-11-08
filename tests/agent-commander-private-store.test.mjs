@@ -35,6 +35,13 @@ test('private store source requires a verified Supabase user and owner ACL', () 
   assert.match(config, /verify_jwt = true/)
 })
 
+test('GET read endpoints preserve only the approved query arguments', () => {
+  const edge = read('supabase/functions/agent-commander-private-store-v1/index.ts')
+  assert.match(edge, /const params=new URL\(req\.url\)\.searchParams/)
+  assert.match(edge, /\["issueNumber","pr"\]\.includes\(key\)/)
+  assert.match(edge, /DUPLICATE_QUERY_PARAMETER/)
+})
+
 test('private tables are forced-RLS and direct privileges are revoked', () => {
   const migration = read('supabase/migrations/20261108202918_agent_commander_private_store_v1_20261108.sql')
   for (const table of ['commander_tasks','commander_chats','commander_chat_events']) {
