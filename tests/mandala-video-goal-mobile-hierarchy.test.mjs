@@ -35,3 +35,10 @@ test("Only six existing taxonomy topics are offered on the first Goal screen",()
   assert.match(mobile,/\[data-video-goal-topic-chips\] button/);
   assert.match(mobile,/min-height:60px!important/);
 });
+
+test("legacy CSS cannot hide mobile subcategory heading or shrink choice buttons",()=>{
+  assert.match(mobile,/\[data-auto-video-goal-panel\] \[data-auto-video-subcategories\] > p\[data-video-goal-category-title\]\s*\{\s*display:block!important;/);
+  assert.match(mobile,/\[data-auto-video-goal-panel\] \[data-auto-video-subcategories\] \[data-mytube-subcategories\] button\[data-auto-video-subcategory\]\s*\{[^}]*min-height:62px!important;[^}]*font:750 clamp\(14px,3\.9vw,16px\)/);
+  assert.match(mobile,/button\[data-auto-video-subcategory\] span\s*\{\s*font:inherit!important;/);
+  assert.match(mobile,/button\[data-auto-video-subcategory\]\[aria-pressed="true"\]\s*\{[^}]*border:2px solid #087f69!important;/);
+});
