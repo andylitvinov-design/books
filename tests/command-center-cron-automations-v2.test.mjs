@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {CRON_SYSTEM_JOBS,CRON_BRAIN_SOURCES,sanitizeAutomation,detectScheduleFromText,
- suggestSkillIdsFromText,automationRuntime,createAutomation,updateAutomation} from '../lib/command-center/cron-automations.mjs';
+ suggestSkillIdsFromText,automationRuntime,createAutomation,updateAutomation,assignAutomationAgent,CRON_AGENT_PROFILES} from '../lib/command-center/cron-automations.mjs';
 const UUID='37e76e84-bcf0-44a9-a55d-6d3a1b8f6db1';
 const good={title:'Ежедневный контроль PR',instruction:'Каждое утро проверять только подтверждённые факты по PR и сообщать три блокера.',
  schedule:'daily_9',brainScope:'ai-projects-brain',agentRole:'analyst',skillIds:['pr.queue-reconcile','task.stall-watchdog'],enabled:false};
@@ -90,4 +90,44 @@ test('additive migration retains private FORCE RLS and disables arbitrary automa
  assert.match(api,/CROSS_ORIGIN_DENIED/);
  assert.match(api,/createAutomation/);
  assert.match(api,/updateAutomation/);
+});
+
+test('five existing agent roles are metadata, not fictional AI runners',()=>{
+ assert.deepEqual(CRON_AGENT_PROFILES.map(x=>x.id),['commander','analyst','engineering','marketing','education']);
+ assert.ok(CRON_AGENT_PROFILES.every(x=>x.aiRunnerConnected===false));
+});
+test('agent assignment changes only role under optimistic revision and lease',async()=>{
+ const q=[];
+ const db={query:async(sql,args=[])=>{
+  q.push({sql,args});
+  if(sql.includes('FOR UPDATE'))return {rows:[{id:UUID,skill_id:'task.stall-watchdog',agent_role:'commander',execution_mode:'builtin',revision:3,lease_until:null}]};
+  if(sql.includes('INSERT INTO app_private.cc_skill_events'))return {rows:[{request_id:UUID}]};
+  if(sql.includes('SET agent_role=$2'))return {rows:[{id:UUID,agent_role:'analyst',revision:4}]};
+  throw Error('Unexpected query');
+ }};
+ const out=await assignAutomationAgent(db,{jobId:UUID,expectedRevision:3,agentRole:'analyst'},UUID);
+ assert.equal(out.status,'agent_assigned');assert.equal(out.runtime,'builtin_readonly');
+ assert.deepEqual(q.at(-1).args,[UUID,'analyst',3]);
+ assert.match(q.at(-1).sql,/lease_until<=now\(\)/);
+ assert.doesNotMatch(q.at(-1).sql,/SET enabled|SET schedule|SET execution_mode/);
+});
+test('reject unknown agent, stale revision and leased execution',async()=>{
+ const reject={query:async()=>{throw Error('Malformed input should not query DB');}};
+ assert.equal((await assignAutomationAgent(reject,{jobId:UUID,expectedRevision:1,agentRole:'root'},UUID)).status,'invalid');
+ const stale={query:async()=>({rows:[{id:UUID,skill_id:'custom.x',execution_mode:'blocked_no_runner',agent_role:'commander',revision:7,lease_until:null}]})};
+ assert.equal((await assignAutomationAgent(stale,{jobId:UUID,expectedRevision:6,agentRole:'analyst'},UUID)).status,'revision_conflict');
+ const running={query:async()=>({rows:[{id:UUID,skill_id:'custom.x',execution_mode:'blocked_no_runner',agent_role:'commander',revision:7,lease_until:'2999-01-01T00:00:00Z'}]})};
+ assert.equal((await assignAutomationAgent(running,{jobId:UUID,expectedRevision:7,agentRole:'analyst'},UUID)).status,'running');
+});
+test('both automation UIs provide an agent icon via existing owner-protected API',async()=>{
+ const standalone=await readFile(new URL('../standalone/agent-commander/commander-automations.js',import.meta.url),'utf8');
+ const protectedUi=await readFile(new URL('../app/admin/command-center/automations/automation-manager.jsx',import.meta.url),'utf8');
+ const api=await readFile(new URL('../app/api/admin/command-center/skills/route.js',import.meta.url),'utf8');
+ assert.match(standalone,/hh-cron-agent-btn/);assert.match(standalone,/action:'assign_agent'/);
+ assert.match(standalone,/action:'control_job'/);
+ assert.match(protectedUi,/aria-expanded=\{assigning===job.id\}/);
+ assert.match(protectedUi,/action:'assign_agent'/);
+ assert.match(api,/assignAutomationAgent/);assert.match(api,/CROSS_ORIGIN_DENIED/);
+ assert.match(api,/ownerMaterialRequest/);
+ assert.doesNotMatch(standalone,/localStorage|sessionStorage|supabaseKey|adminToken/);
 });

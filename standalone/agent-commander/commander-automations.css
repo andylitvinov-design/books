@@ -45,3 +45,16 @@
 .hh-cron-error{color:#ffd0d3;background:#55293f;border-radius:10px;padding:10px;font-size:12px;margin:7px 0}
 .hh-cron-good{color:#a4f5d0;background:#22483d;border-radius:10px;padding:10px;font-size:12px;margin:7px 0}
 @media(max-width:340px){#hh-automations{padding:8px 10px 28px}.hh-cron-intro h1{font-size:24px}.hh-cron-job{padding:9px}.hh-cron-summary b{font-size:20px}}
+
+/* Protected quick agent assignment on each mobile Cron Job. */
+.hh-cron-jobrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(80px,100px);gap:7px;align-items:stretch;margin-bottom:8px}
+.hh-cron-jobrow .hh-cron-job{min-width:0;margin:0}
+.hh-cron-agent-btn{min-height:54px;padding:7px 5px;border-radius:13px;border:1px solid #9878be;background:#322a4c;color:#f5e9ff;font-size:12px;font-weight:750;line-height:1.25;overflow-wrap:anywhere}
+.hh-cron-agent-btn[aria-expanded=true]{outline:2px solid #caa4ff}
+.hh-cron-agent-picker{padding:12px;margin:-2px 0 10px;border-radius:14px;border:1px solid #8a6fb0;background:#27253d;display:grid;gap:11px}
+.hh-cron-agent-picker>strong{font-size:14px}
+.hh-cron-agent-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.hh-cron-agent-choice{min-height:44px;padding:9px;color:#e8d8f6;background:#2b2941;border:1px solid #6e5988;border-radius:10px;font-size:13px}
+.hh-cron-agent-choice[aria-pressed=true]{border-color:#cdaaef;background:#674895;color:#fff;font-weight:750}
+.hh-cron-agent-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.6fr);gap:7px}
+@media(max-width:340px){.hh-cron-jobrow{grid-template-columns:minmax(0,1fr) 80px}.hh-cron-jobrow .hh-cron-job-tag{display:none}.hh-cron-agent-btn{font-size:11px}}
