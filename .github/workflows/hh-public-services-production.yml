@@ -163,6 +163,13 @@ on:
       # Video Director's isolated source-only test also belongs to Mandala.
       - '!tests/first-video-director.test.mjs'
       - '!components/mandala-meditation.module.css'
+      # Exact reviewed Video Studio-only UI: no booking, checkout or
+      # public service API; independently verified by Mandala Core/WebKit.
+      # Mixed PRs touching other service files still start this workflow.
+      - '!components/mandala-pro-enhance.tsx'
+      - '!components/mandala-pro-enhance.module.css'
+      - '!components/mandala-video-ideas.tsx'
+      - '!components/mandala-video-ideas.module.css'
 permissions:
   contents: read
   pull-requests: read

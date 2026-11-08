@@ -1,6 +1,23 @@
 /* Mobile first Video Studio, art-directed to the approved Holistic House mock.
    The same local renderers are used for thumbnails, preview and exported clips. */
-.studio{--ink:#183d35;--green:#07936c;--cream:var(--hh-light-canvas);--edge:#e9e6db;
+.studio{
+  /* Studio Warm Peach: ONE semantic palette inherited by all seven real
+     Video Studio workspaces and nested original editors. */
+  --hh-studio-canvas:#FFF7F3;
+  --hh-studio-edge:#FFF0E8;
+  --hh-studio-surface:#FFFCFA;
+  --hh-studio-inset:#FFF9F5;
+  --hh-studio-border:#EADFD9;
+  --hh-studio-divider:#EEE6E0;
+  --hh-studio-shadow:0 5px 18px rgb(66 42 31 / 7%);
+  --hh-studio-ink:#142B3D;
+  --hh-studio-forest:#14523F;
+  --hh-studio-muted:#5D6A71;
+  --hh-studio-primary:#087E61;
+  --hh-studio-deep:#006B4B;
+  --hh-studio-selected:#EAF5EC;
+  --ink:var(--hh-studio-ink);--green:var(--hh-studio-primary);
+  --cream:var(--hh-studio-canvas);--edge:var(--hh-studio-border);
   color:var(--ink);font:500 14px/1.4 Arial,Helvetica,sans-serif;min-width:0;
   max-width:960px;margin:0 auto;padding:2px 0 76px}
 .studio *{box-sizing:border-box}
@@ -3552,10 +3569,10 @@
     color:#087b60!important;
   }
   .studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"] {
-    border-color:#0a8967!important;
-    background:linear-gradient(145deg,#27a782,#08795f)!important;
+    border-color:var(--hh-studio-deep,#006B4B)!important;
+    background:linear-gradient(120deg,var(--hh-studio-primary,#087E61),var(--hh-studio-deep,#006B4B))!important;
     color:#fff!important;
-    box-shadow:0 3px 9px #06775c2a!important;
+    box-shadow:0 5px 18px rgb(66 42 31 / 12%)!important;
   }
   .studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"] svg {
     color:#fff!important;
@@ -4454,6 +4471,68 @@
 @media(min-width:760px){.montageAudioOverlay{align-items:center;padding:24px}.montageAudioDialog{border-radius:26px;max-height:86dvh}}
 @media(max-width:359px){.montageAudioDialogScroll{padding:4px 9px 12px}.montageAudioDialogFooter{padding-left:9px;padding-right:9px}.montageAudioDialogFooter button{font-size:12px}}
 
+
+/* Hypno follows Montage: the already-selected goal stays in Goal/Ideas,
+   and one existing shared video player precedes three Hypno effect tabs. */
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-quick-section="1"],
+.studio[data-active-workspace="effects"] .quickBuilder>.hypnoIntroSlot{display:none!important}
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel]{order:3!important}
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-result]{order:4!important}
+
+
+/* 06 Nov owner-approved Hypno hero: photo/player left, effect heading right.
+   Video preview is the original Canvas, not a second media element. */
+.hypnoStageTitle{display:none}
+@media(max-width:759px){
+ .studio[data-active-workspace="effects"] .previewStageHeading{display:none!important}
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail{
+  display:flex!important;align-items:center;gap:10px!important
+ }
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail>.hero{
+  flex:0 0 58%!important;width:58%!important;max-width:58%!important;
+  min-width:0;aspect-ratio:16/9!important;border-radius:16px!important
+ }
+ .studio[data-active-workspace="effects"] .previewStage .heroRail{display:none!important}
+ .studio[data-active-workspace="effects"] .heroEditorial{display:none!important}
+ .studio[data-active-workspace="effects"] .previewStage .heroPlay{
+  left:50%!important;top:50%!important
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle{
+  display:flex;flex:1 1 0;align-items:flex-start;gap:6px;min-width:0;
+  padding:3px 0;color:#087b60
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle>svg{
+  flex:none;width:21px;height:21px;margin-top:1px
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle>div{min-width:0}
+ .studio[data-active-workspace="effects"] .hypnoStageTitle h3{
+  font:800 clamp(15px,4.5vw,22px)/1.09 Georgia,serif;color:#17334b;
+  overflow-wrap:anywhere
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle p{
+  margin:6px 0 0;color:#5d6a71;
+  font:500 clamp(10px,2.9vw,13px)/1.27 Arial,sans-serif;
+  overflow-wrap:anywhere
+ }
+ /* Title is in the hero for mobile; the Wave action remains in its real
+    child editor, immediately before the three tabs. */
+ .studio[data-active-workspace="effects"] [data-hypno-compact="true"] .heading{
+  display:none!important
+ }
+ .studio[data-active-workspace="effects"] [data-hypno-compact="true"] .intro{
+  justify-content:flex-end;margin-bottom:8px
+ }
+}
+@media(max-width:359px){
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail{gap:6px!important}
+ .studio[data-active-workspace="effects"] .previewStage .heroWithRail>.hero{
+  flex-basis:55%!important;width:55%!important;max-width:55%!important
+ }
+ .studio[data-active-workspace="effects"] .hypnoStageTitle{gap:4px}
+ .studio[data-active-workspace="effects"] .hypnoStageTitle>svg{width:18px;height:18px}
+ .studio[data-active-workspace="effects"] .hypnoStageTitle h3{font-size:15px}
+}
+
 /* iHelp opens the ONE existing Director as an opt-in overlay. Its React state
    remains mounted across Video/Ideas/Effects/Montage tab switches. */
 .iHelpVideoBackdrop{position:fixed;inset:0;z-index:180;width:100vw;height:100dvh;
@@ -4608,6 +4687,54 @@
  .studio .previewStage .heroRail button span{font-size:9px}
 }
 
+/* Compact approved PRO/Enhance page. Do not affect Goal, Montage or Hypno. */
+@media(max-width:759px){
+ .studio[data-active-workspace="pro"] .quickBuilder{
+   gap:5px!important;padding:0 3px 9px!important;min-width:0;
+ }
+ .studio[data-active-workspace="pro"] .workspaceHeading{
+   position:absolute!important;width:1px!important;height:1px!important;
+   overflow:hidden!important;clip-path:inset(50%)!important;
+   white-space:nowrap!important;margin:0!important;padding:0!important;
+ }
+ .studio[data-active-workspace="pro"] .quickBuilder>.previewStage{
+   display:grid!important;gap:0!important;padding:0!important;margin:0!important;
+   border:0!important;background:transparent!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStageHeading{display:none!important}
+ .studio[data-active-workspace="pro"] .previewStage>.heroWithRail{
+   width:100%!important;max-width:none!important;
+   grid-template-columns:minmax(0,1fr) 71px!important;gap:6px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .hero{
+   height:clamp(105px,18dvh,155px)!important;min-height:0!important;
+   max-height:155px!important;aspect-ratio:auto!important;
+   border-radius:16px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial{
+   left:9px!important;bottom:8px!important;max-width:69%!important;gap:2px!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial h2{
+   font-size:clamp(13px,3.65vw,18px)!important;line-height:1.08!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEditorial p{
+   font-size:clamp(9px,2.4vw,11px)!important;line-height:1.12!important;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroEyebrow{display:none!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroPlay{
+   width:44px!important;height:44px!important;min-width:44px;min-height:44px;
+ }
+ .studio[data-active-workspace="pro"] .previewStage .heroRail{display:grid!important;gap:4px!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button{padding:5px 3px!important}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button strong{font-size:10px}
+ .studio[data-active-workspace="pro"] .previewStage .heroRail button span{font-size:8px}
+}
+@media(max-width:759px) and (max-height:740px){
+ .studio[data-active-workspace="pro"] .previewStage .hero{
+   height:clamp(94px,15dvh,125px)!important
+ }
+}
+
 /* Messenger Video validated handoff visibility.
    The compact Goals screen hides unopened advanced panels, not the original
    Director explicitly opened after a verified, one-use chat handoff.
@@ -4619,14 +4746,512 @@
  }
 }
 
-/* Presentation occupies the approved shared 16:9 video stage, never a second
-   player; external YouTube iframe is created only after an explicit tap. */
+
+/* Free first video: PRO shows the actual decoded local recording. Preserve
+   the native MediaRecorder/WebCodecs stage, non-PRO views and save policy. */
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  order:1!important;align-items:start;gap:10px;width:100%;min-width:0;
+  margin:0!important;padding:clamp(12px,3vw,20px);
+  border:1px solid #cfe5d8;border-radius:20px;background:#fffefa;
+  scroll-margin-top:14px;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>*{
+  grid-column:1/-1!important;grid-row:auto!important;min-width:0;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>h3{
+  font:800 clamp(19px,4.6vw,25px)/1.2 Arial,Helvetica,sans-serif;
+  color:#174c3c;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>video{
+  display:block!important;width:100%!important;max-width:760px!important;
+  height:auto!important;max-height:min(65svh,600px)!important;
+  aspect-ratio:auto!important;object-fit:contain!important;
+  margin:0 auto!important;border-radius:14px;background:#142b27;
+}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result] .resultActions{
+  display:flex!important;flex-wrap:wrap;gap:8px;grid-template-columns:none!important;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions{
+  display:grid;gap:9px;min-width:0;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions>button{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  width:100%;min-height:48px;padding:11px 15px;border:0;border-radius:13px;
+  background:#078767;color:#fff;font:800 16px/1.2 Arial,Helvetica,sans-serif;
+  cursor:pointer;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions>button:focus-visible{
+  outline:3px solid #be9a54;outline-offset:3px;
+}
+.studio[data-active-workspace="pro"] .guestPreviewActions p{
+  margin:0!important;color:#5a7466;font:500 13px/1.45 Arial,Helvetica,sans-serif;
+}
+@media(max-width:759px){
+  .studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){
+    padding:12px!important;gap:10px!important;
+  }
+  .studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]>video{
+    max-height:62svh!important;
+  }
+}
+
+
+
+
+/* Ready workspace: six compact tabs, only the actual verified film, existing delivery. */
+.studio[data-active-workspace="ready"] .quickBuilder>.previewStage,
+.studio[data-active-workspace="ready"] .quickBuilder>.workspaceHeading,
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result],
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-result-empty]{display:none!important}
+.studio[data-active-workspace="ready"] .quickBuilder>[data-video-ready]{display:grid!important;order:3;grid-column:1/-1;min-width:0}
+.studio[data-active-workspace="pro"] .quickBuilder>[data-video-result]:not([hidden]){display:grid!important}
+.studio .quickVideoNav button[data-video-quick-control="ready"][aria-pressed="true"]{color:#fff!important;background:linear-gradient(135deg,#329c7b,#067a67)!important;border-color:#08745d!important;box-shadow:0 3px 14px #0875532b!important}
+.studio .quickVideoNav button[data-video-quick-control="ready"][aria-pressed="true"] svg{color:#fff!important}
+@media(max-width:759px){
+ .studio .quickVideoNav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px!important;margin:6px 0 0!important;padding:0!important}
+ .studio .quickVideoNav button{min-width:0!important;min-height:54px!important;padding:5px 2px!important;gap:4px!important;border-radius:11px!important;font:750 clamp(9px,2.8vw,11.5px)/1.13 Arial,Helvetica,sans-serif!important;letter-spacing:-.01em!important;box-shadow:0 2px 7px #213b2711!important}
+ .studio .quickVideoNav button svg{width:18px!important;height:18px!important;flex:none}
+ .studio .quickVideoNav button:first-child:not([aria-pressed="true"]){background:#fffdf7!important;border-color:#e9dfd1!important;color:#214c3c!important}
+ .studio[data-active-workspace="ready"] .quickBuilder>[data-video-ready]{grid-column:1/-1;order:3;padding:12px!important;margin:0!important}
+}
+@media(max-width:350px){
+ .studio .quickVideoNav{gap:3px!important}
+ .studio .quickVideoNav button{padding:5px 1px!important;font-size:9px!important}
+}
+
+/* Compact music picker: one viewport, three dropdowns, real explicit Select.
+   The existing sound dock stays mounted but is not duplicated visually. */
+.audioLibrarySearch{display:flex;align-items:center;gap:9px;border:1px solid #d7ddd3;border-radius:14px;background:#fffefa;padding:0 12px;min-height:45px}
+.audioLibrarySearch input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:15px;min-height:43px;color:#204b3c}
+.audioLibraryFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0}
+.audioLibraryFilters label{display:grid;gap:3px;min-width:0;font-size:11px;font-weight:750;color:#49695b}
+.audioLibraryFilters select{width:100%;min-width:0;min-height:42px;padding:6px 4px;border:1px solid #d5ded2;border-radius:12px;background:#fffefa;color:#24513e;font-size:12px}
+.audioLibraryTrackList{display:grid;gap:6px}
+.audioLibraryTrack{display:grid;grid-template-columns:40px minmax(0,1fr) 37px 83px;align-items:center;gap:7px;padding:8px;border:1px solid #e1e7df;border-radius:15px;background:#fffefa;min-width:0}
+.audioLibraryTrack[data-selected=true]{border-color:#139777;background:#effaf2}
+.audioLibraryTrackPlay{display:grid;place-items:center;width:40px;height:43px;border:0;border-radius:50%;background:#dcf2df;color:#0d7055}
+.audioLibraryTrackInfo{display:grid;gap:3px;min-width:0}
+.audioLibraryTrackInfo strong{font-size:14px;line-height:1.2;color:#173e32;overflow-wrap:anywhere}
+.audioLibraryTrackInfo small{font-size:11px;color:#67776c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.audioLibraryFavorite{display:grid;place-items:center;min-height:44px;border:0;background:transparent;color:#6d8479}
+.audioLibraryTrackSelect{display:flex;align-items:center;justify-content:center;gap:3px;min-height:43px;min-width:0;padding:4px;border:1px solid #bdd3c4;border-radius:12px;background:#fffefa;color:#16674f;font-size:12px;font-weight:800}
+.audioLibraryTrackSelect[aria-pressed=true]{background:#078468;color:#fff;border-color:#078468}
+.audioLibraryMore{width:100%;min-height:42px;margin-top:8px;border:1px solid #d1e2d4;border-radius:12px;background:#edf7ef;color:#215e46;font-weight:750}
+.audioLibrarySourceActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.audioLibrarySourceActions label,.audioLibrarySourceActions button{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;min-height:44px;border:1px solid #cbded0;border-radius:12px;background:#eef8f1;color:#245b46;font-size:12px;font-weight:750}
+.audioLibrarySourceActions label input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.audioLibraryRights{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:12px;color:#285644}
+.audioLibraryHiddenEngine{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;pointer-events:none!important}
+.audioLibraryHiddenEngine *{pointer-events:none!important}
+.montageAudioDialog{max-height:min(88dvh,790px)}
+.montageAudioDialogScroll{padding-top:8px}
+@media(max-width:359px){.audioLibraryTrack{grid-template-columns:36px minmax(0,1fr) 30px 67px;gap:4px;padding:6px}.audioLibraryTrackSelect{font-size:11px}.audioLibraryFilters{gap:4px}.audioLibraryFilters select{font-size:11px}}
+
+
+/* Ideas iPhone rising phrases repair — 07 Nov.
+   Real original 16:9 Canvas, not a second screen or a static mock. */
+@media(max-width:759px){
+ .studio[data-active-workspace="phrases"] .quickBuilder{gap:5px!important;min-width:0}
+ .studio[data-active-workspace="phrases"] .quickBuilder>.previewStage{
+   order:2!important;display:block!important;min-width:0;max-width:100%;
+   margin:0!important;padding:0!important;border:0!important;
+   box-shadow:none!important;background:transparent!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStageHeading{display:none!important}
+ .studio[data-active-workspace="phrases"] .previewStage>.heroWithRail{
+   display:flex!important;justify-content:center!important;align-items:center!important;
+   width:100%!important;min-width:0!important;max-width:100%!important;gap:0!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .hero{
+   flex:0 1 320px!important;width:min(100%,320px)!important;max-width:320px!important;
+   min-width:0!important;min-height:0!important;max-height:none!important;height:auto!important;
+   aspect-ratio:16/9!important;margin:0!important;border-radius:15px!important;overflow:hidden!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .heroRail,
+ .studio[data-active-workspace="phrases"] .previewStage .heroEditorial{display:none!important}
+ .studio[data-active-workspace="phrases"] .previewStage .hero .heroPromo{opacity:0!important}
+ .studio[data-active-workspace="phrases"] .previewStage .hero .heroCanvas{opacity:1!important;z-index:1!important}
+ .studio[data-active-workspace="phrases"] .previewStage .hero .heroShade{
+   z-index:2!important;background:linear-gradient(0deg,#0b241938,transparent 58%)!important;
+   pointer-events:none!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .heroPlay{
+   z-index:6!important;left:auto!important;right:7px!important;top:auto!important;bottom:7px!important;
+   width:41px!important;height:41px!important;min-width:41px!important;min-height:41px!important;
+   transform:none!important
+ }
+ .studio[data-active-workspace="phrases"] .previewStage .heroDuration{
+   top:6px!important;right:6px!important;padding:4px 7px!important;font-size:10px!important
+ }
+ .studio[data-active-workspace="phrases"] .quickBuilder>[data-video-quick-phrases]{
+   display:block!important;order:3!important;margin:0!important;padding:0!important;
+   min-width:0!important;max-width:100%!important;border:0!important;box-shadow:none!important
+ }
+ .studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="false"]{
+   display:none!important
+ }
+ .studio[data-active-workspace="phrases"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{
+   display:block!important
+ }
+ .studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut]{display:none!important}
+}
+
+/* Approved Ideas Text/Voice segmented switch; shared preview, voice and single audio attachment. */
+.ideasSubtabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0;padding:4px;margin:5px 0 10px;border:1px solid #dfded3;border-radius:17px;background:#fffcf7;box-shadow:0 3px 11px #345f4a14}
+.ideasSubtabs button{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;min-height:51px;padding:8px;border:1px solid transparent;border-radius:13px;background:transparent;color:#195b4e;font:800 clamp(15px,4vw,19px)/1.3 Arial,Helvetica,sans-serif;cursor:pointer}
+.ideasSubtabs button[aria-pressed="true"]{border-color:#07856a;background:linear-gradient(120deg,#11a885,#007d63);color:#fff;box-shadow:0 2px 6px #147d6130}
+.ideasSubtabs button:focus-visible{outline:3px solid #d4ab61;outline-offset:2px}
+.ideasTabLetters{font:800 23px/1 Arial,Helvetica,sans-serif}
+.ideasTextPanel[hidden]{display:none!important}
+.ideasVoiceActions{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ideasVoiceUpload,.ideasVoiceActions>button{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:48px;padding:9px 6px;border:1px solid #b5d7c6;border-radius:14px;background:#fffcf7;color:#135547;font:750 clamp(12px,3.5vw,15px)/1.2 Arial,sans-serif;text-align:center;cursor:pointer}
+.ideasVoiceUpload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.ideasVoiceUpload:focus-within,.ideasVoiceActions>button:focus-visible{outline:3px solid #d4ab61;outline-offset:2px}
+.ideasVoiceUploadNotice{margin:4px 0!important;font-size:13px;color:#326d56}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"]>.quickSectionHeading{display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-ideas-advanced-voice]{margin:0;border:0;background:transparent}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-ideas-advanced-voice]>summary{display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-hypnosis-section]{padding:0;margin:0;border:0;box-shadow:none;background:transparent}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-hypnosis-section]>:not([data-hypno-overview]){display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-overview]{margin:0;padding:0;border:0;box-shadow:none;background:transparent}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-overview]>:not([data-hypno-voice]):not(#phrase-audio-settings){display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceSection{margin:0;padding:12px;border-radius:19px;border:1px solid #cbe4d8;background:#fffdf9}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceActions{display:grid;margin:10px 0}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceAction{display:none!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-phrase-audio-shortcut]{display:none!important}
+@media(max-width:359px){.ideasSubtabs button{gap:5px;min-height:46px;font-size:15px}.ideasTabLetters{font-size:20px}.ideasVoiceUpload,.ideasVoiceActions>button{font-size:12px}}
+
+/* Voice stays visible on desktop and on mobile; Text mode retains its original collapsed editor. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{display:block!important}
+
+/* Inside Voice at 320px keep all three real voice profiles visible, not a hidden horizontal scroll. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-affirmation-voice-select] > div:nth-child(2) > div[role="group"]{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ grid-auto-flow:row!important;grid-auto-columns:auto!important;
+ overflow:visible!important;gap:6px!important;min-width:0!important
+}
+
+
+/* Owner-approved 07-Nov compact PRO: original player only, with a short cinematic cover. */
+@media(max-width:759px){
+  .studio[data-active-workspace="pro"] .quickBuilder{
+    min-width:0!important;padding-bottom:calc(var(--hh-unified-nav-height,90px) + env(safe-area-inset-bottom,0px) + 18px)!important
+  }
+  .studio[data-active-workspace="pro"] .quickBuilder>.previewStage{
+    display:grid!important;box-sizing:border-box!important;width:100%!important;
+    max-width:100%!important;min-width:0!important;grid-column:1/-1!important;
+    padding:0!important;margin:0!important;border:0!important;background:transparent!important
+  }
+  .studio[data-active-workspace="pro"] .previewStage>.heroWithRail{
+    display:block!important;box-sizing:border-box!important;width:100%!important;
+    max-width:100%!important;min-width:0!important;margin:0!important
+  }
+  .studio[data-active-workspace="pro"] .previewStage .heroRail{display:none!important}
+  .studio[data-active-workspace="pro"] .previewStage>.heroWithRail>.hero{
+    display:block!important;box-sizing:border-box!important;flex:none!important;
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    height:clamp(118px,36vw,164px)!important;max-height:164px!important;
+    min-height:0!important;aspect-ratio:auto!important;
+    margin:0!important;border-radius:19px!important
+  }
+  .studio[data-active-workspace="pro"] .previewStage .hero[data-hero-promo="true"] .heroPromo{
+    opacity:1!important;
+    background-image:linear-gradient(100deg,#122e271c,transparent 70%),
+      url("/images/holistic-house/pro-enhance-hero.webp")!important;
+    background-position:center 50%!important;background-size:cover!important
+  }
+  .studio[data-active-workspace="pro"] .previewStage .heroPromo::after{display:none!important}
+  .studio[data-active-workspace="pro"] .previewStage .hero[data-hero-promo="true"] .heroCanvas{
+    opacity:0!important
+  }
+  .studio[data-active-workspace="pro"] .previewStage .heroShade{
+    background:linear-gradient(0deg,#112b2e94,transparent 54%)!important
+  }
+  .studio[data-active-workspace="pro"] .quickBuilder>[data-video-pro-enhance]{
+    display:grid!important;order:20!important;min-width:0!important
+  }
+}
+@media(max-width:759px) and (max-height:740px){
+  .studio[data-active-workspace="pro"] .previewStage>.heroWithRail>.hero{
+    height:clamp(105px,32vw,142px)!important
+  }
+}
+
+/* Compact screenshot-matched Ideas Voice; selected movie itself is unchanged. */
+.studio[data-active-workspace="phrases"] .ideasSubtabs{gap:3px;padding:4px;margin:4px 0 10px;border:1px solid #E9DFD1;border-radius:17px;background:#FFFCF7;box-shadow:0 2px 9px #483B2D0d}
+.studio[data-active-workspace="phrases"] .ideasSubtabs button{min-height:49px;border-radius:13px;color:#155444;font-size:clamp(15px,4vw,18px)}
+.studio[data-active-workspace="phrases"] .ideasSubtabs button[aria-pressed="true"]{background:linear-gradient(115deg,#12A987,#037960);border-color:#07856A;color:white}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceSection{gap:9px!important;padding:13px 12px!important;margin:0!important;border:1px solid #D8E7DC!important;border-radius:21px!important;background:#FFFCF7!important;box-shadow:0 4px 14px #664C3010!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading{align-items:center;gap:10px;margin:0 0 2px}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading>span{width:43px;height:43px;flex-basis:43px;border-radius:13px;background:linear-gradient(120deg,#FFF0D9,#E6F6F1);color:#087C65}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading h3{font-size:clamp(19px,5.25vw,23px)!important;color:#17334B;line-height:1.14}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading p{margin:3px 0 0;font-size:clamp(12px,3.15vw,14px);line-height:1.28;color:#5D6A71}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceActions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:2px 0!important}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceUpload,
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceActions>button{min-height:48px;border:1px solid #D8DED6;border-radius:13px;background:#FFFCF7;color:#155444;font-size:clamp(11px,3.1vw,14px);font-weight:780;box-shadow:0 1px 5px #563D270a}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceUpload svg,
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceActions>button svg{flex:none;color:#087C65}
+@media(max-width:360px){.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceSection{padding:10px 9px!important}}
+
+/* On-page audio storyboard; same server consent and original local montage. */
+.recipientAudioSteps{display:grid;gap:12px;min-width:0;padding:12px;background:linear-gradient(145deg,#fffcf7,#eff9f0);
+ border:1px solid #b3dbc8;border-radius:19px;color:#143d3a}
+.recipientAudioSteps *{box-sizing:border-box;min-width:0}
+.recipientAudioSteps>strong{font:850 19px/1.22 system-ui,sans-serif}
+.recipientAudioSteps>small{color:#5d6a71;font:500 12px/1.4 system-ui,sans-serif}
+.recipientAudioStep{display:grid;grid-template-columns:29px minmax(0,1fr);gap:9px;
+ border-top:1px solid #e6e8df;padding-top:9px}
+.recipientAudioStep>b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;
+ background:#07885f;color:#fff;font:800 15px/1 system-ui,sans-serif}
+.recipientAudioStep>div{display:grid;gap:9px}
+.recipientAudioStep>div>strong{font:800 16px/1.23 system-ui,sans-serif}
+.recipientAudioStep small{color:#5d6a71;font:500 13px/1.36 system-ui,sans-serif}
+.recipientAudioActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.recipientAudioActions>label,.recipientAudioStep button{display:flex;align-items:center;justify-content:center;gap:6px;
+ min-height:44px;border:1px solid #b2d7c7;border-radius:13px;padding:9px;
+ background:#ecfaf3;color:#14523f;font:750 13px/1.2 system-ui,sans-serif;cursor:pointer}
+.recipientAudioActions input[type=file]{position:absolute;width:1px;height:1px;opacity:0;clip-path:inset(50%)}
+.recipientAudioActions:focus-within>label{outline:3px solid #176e6e;outline-offset:2px}
+.recipientAudioStep button:disabled,.recipientAudioNext:disabled{opacity:.5;cursor:not-allowed}
+.recipientAudioConsent{display:flex;align-items:flex-start;gap:9px;font:500 13px/1.37 system-ui,sans-serif;color:#315548}
+.recipientAudioConsent input{flex:none;width:19px;height:19px;accent-color:#07885f}
+.recipientAudioSelected{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:8px;border-radius:12px;background:#eaf7ee}
+.recipientAudioSelected strong{overflow-wrap:anywhere;font:700 13px/1.2 system-ui,sans-serif}
+.recipientAudioSelected audio{width:100%;max-width:100%}
+.recipientAudioConcept{display:grid;gap:7px;padding:10px;border-radius:12px;background:#eaf7ee}
+.recipientAudioConcept ol{margin:0;padding-left:20px;font:500 13px/1.45 system-ui,sans-serif}
+.recipientAudioKeywords{display:flex;gap:5px;flex-wrap:wrap}
+.recipientAudioKeywords span{padding:5px 8px;border-radius:30px;background:#fffdfa;color:#1d5744;font:700 12px/1.2 system-ui,sans-serif}
+.recipientAudioSteps .recipientAudioNext{display:flex;align-items:center;justify-content:space-between;gap:8px;
+ min-height:55px;padding:12px;border:0;border-radius:15px;background:linear-gradient(115deg,#07885f,#006b4b);
+ color:white;font:850 clamp(16px,4.5vw,19px)/1.2 system-ui,sans-serif}
+@media(max-width:370px){.recipientAudioSteps{padding:9px}
+ .recipientAudioStep{grid-template-columns:26px minmax(0,1fr);gap:7px}
+ .recipientAudioActions{grid-template-columns:1fr}}
+
+/* Source-backed audio concept below the existing single Goal/audio workflow. */
+.recipientAudioFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+  margin:2px 0 0;min-width:0}
+.recipientAudioFields>div{display:grid;align-content:start;gap:3px;min-width:0;
+  padding:8px 9px;border:1px solid #d1e7da;border-radius:10px;background:#fffdfa}
+.recipientAudioFields>div[data-video-recipient-audio-goal]{grid-column:1/-1}
+.recipientAudioFields dt{font:700 11px/1.3 system-ui,sans-serif;color:#536f65}
+.recipientAudioFields dd{margin:0;overflow-wrap:anywhere;font:700 13px/1.38 system-ui,sans-serif;color:#174b3a}
+.recipientAudioConcept[data-video-recipient-audio-concept-preview] small{font:500 11px/1.45 system-ui,sans-serif;color:#536f65}
+.recipientAudioConcept[data-video-recipient-audio-concept-preview] details{font:500 12px/1.45 system-ui,sans-serif;color:#174b3a}
+.recipientAudioConcept[data-video-recipient-audio-concept-preview] p[role=status]{font:600 12px/1.4 system-ui,sans-serif;color:#754a1d}
+@media(max-width:370px){.recipientAudioFields{gap:5px}
+  .recipientAudioFields>div{padding:6px}
+  .recipientAudioFields dd{font-size:12px}}
+
+/* Design Bible §10.12 (07 Nov): Ideas → Voice is Studio Warm Peach, not the
+   old gray/sage phrase-editor theme. This is deliberately scoped to the real
+   Ideas Voice state; Text, Goal, Montage, Hypno, PRO and shared video canvas
+   retain their own intentional palettes and functional state. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"]{
+  --hh-voice-ink:#142B3D;
+  --hh-voice-forest:#14523F;
+  --hh-voice-muted:#5D6A71;
+  --hh-voice-card:#FFFCFA;
+  --hh-voice-field:#FFF9F5;
+  --hh-voice-border:#EADFD9;
+  --hh-voice-divider:#EEE6E0;
+  --hh-voice-emerald:#087E61;
+  --hh-voice-emerald-deep:#006B4B;
+  --hh-voice-mint:#EAF5EC;
+  --hh-voice-shadow:0 5px 18px rgb(66 42 31 / 7%);
+  color:var(--hh-voice-ink)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasSubtabs{
+  background:var(--hh-voice-card);border-color:var(--hh-voice-border);
+  box-shadow:var(--hh-voice-shadow)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasSubtabs button:not([aria-pressed="true"]){
+  color:var(--hh-voice-forest);background:transparent
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasSubtabs button[aria-pressed="true"]{
+  color:#fff;border-color:var(--hh-voice-emerald-deep);
+  background:linear-gradient(120deg,var(--hh-voice-emerald),var(--hh-voice-emerald-deep));
+  box-shadow:0 4px 12px rgb(66 42 31 / 12%)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseVoiceSection{
+  border-color:var(--hh-voice-border);background:var(--hh-voice-card);
+  color:var(--hh-voice-ink);box-shadow:var(--hh-voice-shadow)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading>span{
+  color:var(--hh-voice-forest);background:linear-gradient(135deg,#FFF1D8,#FCEEF6)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading h3{
+  color:var(--hh-voice-ink)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .phraseAudioHeading p{
+  color:var(--hh-voice-muted)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceUpload,
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceActions>button{
+  color:var(--hh-voice-forest);background:var(--hh-voice-card);
+  border-color:var(--hh-voice-border);box-shadow:var(--hh-voice-shadow)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] .ideasVoiceUploadNotice{
+  color:var(--hh-voice-muted)
+}
+
+
+/* P0 WebKit RU320 computed-style repair, Ideas → Voice ONLY.
+   Earlier [data-hypno-voice] media-styled gradient has its own stacking rule;
+   require the approved solid neutral card, not transparent over sage/yellow.
+   Keep all other Hypno voice panels and the Canvas untouched. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-hypno-voice]{
+  background:#FFFCFA!important;
+  background-image:none!important;
+  border-color:var(--hh-voice-border,#EADFD9)!important;
+  box-shadow:var(--hh-voice-shadow,0 5px 18px rgb(66 42 31 / 7%))!important
+}
+
+
+/* Real WebKit RU320 cascade proof: [data-video-affirmation-voice] is still
+   reset to transparent by an old stronger parent selector. The actual TTS
+   panel must be warm near-white with its own warm neutral border. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="voice"] [data-video-affirmation-voice]{
+  background:#FFFCFA!important;
+  background-image:none!important;
+  border:1px solid #EADFD9!important;
+  color:#142B3D!important;
+  box-shadow:none!important
+}
+
+/* Design Bible §10.13 — ALL real Video Studio workspaces. Shared semantic
+   skin for ordinary surfaces ONLY. Selected category palettes, real footage,
+   media canvases, semantic warnings and PRO cinematic imagery remain intact.
+   This prevents Goal/Ideas/Montage/Hypno/PRO/Ready from drifting into sage. */
+.studio[data-active-workspace] .quickBuilder{
+  color:var(--hh-studio-ink);
+}
+.studio[data-active-workspace] :is(
+  .quickSection,.quickLegacy,.quickBenefits,.quickAudioItem,
+  .quickMontageGrid fieldset,.montagePane,.audioSection
+){
+  background:var(--hh-studio-surface);
+  border-color:var(--hh-studio-border);
+  box-shadow:var(--hh-studio-shadow)
+}
+.studio[data-active-workspace] :is(
+  .quickSectionHeading h3,.quickHeaderText h2,
+  .montagePane h3,.quickPromptTitle
+){
+  color:var(--hh-studio-forest)
+}
+.studio[data-active-workspace] :is(
+  .quickSectionHeading p,.quickHint,.quickPrivacy,.quickHeaderText p
+){
+  color:var(--hh-studio-muted)
+}
+.studio[data-active-workspace] :is(
+  .quickWish,.quickLegacy[open]>summary,
+  .quickMontageGrid button:not([aria-pressed="true"]),
+  .quickAudioFilters button:not([aria-pressed="true"])
+){
+  background:var(--hh-studio-inset);
+  border-color:var(--hh-studio-border);
+  color:var(--hh-studio-forest)
+}
+.studio[data-active-workspace] .quickVideoNav button:not([aria-pressed="true"]){
+  background:var(--hh-studio-surface);
+  border-color:var(--hh-studio-border);
+  color:var(--hh-studio-forest);
+  box-shadow:var(--hh-studio-shadow)
+}
+.studio[data-active-workspace] .quickVideoNav button:not([aria-pressed="true"]) svg{
+  color:var(--hh-studio-primary)
+}
+.studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"]{
+  background:linear-gradient(120deg,var(--hh-studio-primary),var(--hh-studio-deep));
+  border-color:var(--hh-studio-deep);
+  color:#FFFFFF;
+  box-shadow:0 5px 18px rgb(66 42 31 / 12%)
+}
+.studio[data-active-workspace] .quickVideoNav button[aria-pressed="true"] svg{
+  color:#FFFFFF
+}
+.studio[data-active-workspace] :is(
+  .quickGenerate,.montageStepNext,.montageExport,
+  button[data-video-continue-scenarios]
+){
+  background:linear-gradient(120deg,var(--hh-studio-primary),var(--hh-studio-deep));
+  border-color:var(--hh-studio-deep);
+  color:#FFFFFF
+}
+.studio[data-active-workspace] :is(
+  .quickGenerate,.montageStepNext,.montageExport,
+  button[data-video-continue-scenarios]
+):focus-visible{
+  outline:3px solid #176E6E;outline-offset:2px
+}
+.studio[data-active-workspace] .quickLegacy[open]{
+  background:var(--hh-studio-surface);
+  border-color:var(--hh-studio-border)
+}
+
+/* Original Goal/Ideas auto-director root can have a stale olive background.
+   This data-selected real module is shared; keep its category and media cards. */
+.studio[data-active-workspace] [data-auto-video-director]{
+  background:var(--hh-studio-surface);
+  border-color:var(--hh-studio-border);
+  color:var(--hh-studio-ink);
+  box-shadow:var(--hh-studio-shadow)
+}
+
+/* Goal → recipient audio storyboard: original user-consented audio/STT and
+   existing selected state stay operational; only default neutral chrome is
+   normalized. Added after production recipient-mode source without replacing
+   or dropping its new API/style behavior. */
+.studio[data-active-workspace] .recipientAudioSteps{
+  background:var(--hh-studio-surface);
+  border-color:var(--hh-studio-border);
+  color:var(--hh-studio-ink);
+  box-shadow:var(--hh-studio-shadow)
+}
+.studio[data-active-workspace] .recipientAudioStep{
+  border-color:var(--hh-studio-divider)
+}
+.studio[data-active-workspace] :is(
+  .recipientAudioActions>label,.recipientAudioStep button
+){
+  background:var(--hh-studio-inset);
+  border-color:var(--hh-studio-border);
+  color:var(--hh-studio-forest)
+}
+.studio[data-active-workspace] .recipientAudioSteps .recipientAudioNext{
+  background:linear-gradient(120deg,var(--hh-studio-primary),var(--hh-studio-deep));
+  color:#FFFFFF
+}
+/* Show the same approved artwork while Safari decodes the selected MP4. */
+.heroCanvas .heroSelectedStylePoster{position:absolute;inset:0;z-index:1;
+  width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}
+.heroCanvas .heroSelectedStyleDecoder{position:absolute!important;left:0;top:0;
+  width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+
+/* Two independent Create/Continue actions, safe-area-friendly on iPhone. */
+.stageActionPair{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;width:100%;min-width:0;margin:9px 0}
+.stageActionPair>.quickGenerate,.stageActionPair>.stageAddButton{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;width:100%;min-height:50px;padding:10px 12px;border-radius:15px;font:800 clamp(14px,3.6vw,17px)/1.2 Arial,sans-serif;overflow-wrap:anywhere;text-align:center}
+.stageActionPair>.quickGenerate{border:1px solid #087b65;background:linear-gradient(115deg,#16a687,#04765f);color:white}
+.stageActionPair>.stageAddButton{border:1px solid #add1c3;background:#fffdf7;color:#12684e}
+.stageActionPair>button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.stageActionPair>button:disabled{opacity:.55;cursor:not-allowed}
+.quickOrderBar .stageActionPair{margin:0}
+.quickOrderBar .stageActionPair>.quickGenerate{min-height:50px;position:static;bottom:auto}
+@media(max-width:359px){.stageActionPair>.quickGenerate,.stageActionPair>.stageAddButton{padding:10px 6px;font-size:13px}}
+
+
+/* One opt-in recorded Video Therapy presentation in the original Goal hero,
+   including the owner's published film poster; never a second player. */
 .studio .therapyHero{position:absolute;inset:0;z-index:8;overflow:hidden;border-radius:inherit;background:#123e35;color:#fff}
-.studio .therapyHeroLaunch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;height:100%;min-height:0;padding:6px 9px;border:0;border-radius:inherit;cursor:pointer;color:#fff;text-align:center;background:radial-gradient(ellipse at 74% 17%,#c1a77a88,transparent 66%),linear-gradient(145deg,#102c2d,#215e51)}
+.studio .therapyHeroLaunch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:100%;min-height:0;padding:6px 9px;border:0;border-radius:inherit;cursor:pointer;color:#fff;text-align:center;background:linear-gradient(90deg,rgba(9,31,27,.68),rgba(5,30,28,.26)),url("/images/video-studio-presentation-ru.jpg") center/cover}
 .studio .therapyHeroKicker{font:750 clamp(8px,2.3vw,10px)/1.15 Arial,Helvetica,sans-serif;letter-spacing:.12em}
-.studio .therapyHeroPlayIcon{display:flex;align-items:center;justify-content:center;width:clamp(33px,9vw,43px);height:clamp(33px,9vw,43px);border:2px solid #f8f4e8;border-radius:50%;background:#ffffff2c;box-shadow:0 2px 12px #051a1666}
-.studio .therapyHeroTitle{font:800 clamp(14px,4vw,21px)/1.15 Georgia,serif;text-wrap:balance}
-.studio .therapyHeroCaption{font:650 clamp(10px,2.6vw,12px)/1.15 Arial,Helvetica,sans-serif}
+.studio .therapyHeroPlayIcon{display:flex;align-items:center;justify-content:center;width:clamp(38px,9vw,43px);height:clamp(38px,9vw,43px);border:2px solid #f8f4e8;border-radius:50%;background:#ffffff2c;box-shadow:0 2px 12px #051a1666}
+.studio .therapyHeroTitle{font:800 clamp(14px,4vw,21px)/1.15 Georgia,serif;text-wrap:balance;text-shadow:0 2px 6px #051a16}
+.studio .therapyHeroCaption{font:750 clamp(10px,2.6vw,12px)/1.15 Arial,Helvetica,sans-serif;background:#143d34cc;border-radius:9px;padding:3px 6px}
 .studio .therapyHeroPlayback{position:absolute;inset:0;background:#061b19}
 .studio .therapyHeroFrame{display:block;width:100%;height:100%;border:0}
 .studio .therapyHeroClose,.studio .therapyHeroExternal{position:absolute;z-index:2;display:flex;align-items:center;justify-content:center;min-height:44px;padding:5px 8px;border:1px solid #ffffffb5;border-radius:9px;background:#124434f0;color:#fff;font:750 clamp(9px,2.4vw,11px)/1.15 Arial,Helvetica,sans-serif;text-decoration:none}

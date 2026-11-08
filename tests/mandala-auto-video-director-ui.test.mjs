@@ -15,7 +15,9 @@ test("Auto Director reuses the one studio renderer and precedes the real result"
  assert.ok(studio.indexOf('data-video-quick-audio-choices') < studio.indexOf("<MandalaAutoVideoDirector"));
  assert.ok(studio.indexOf("<MandalaAutoVideoDirector") < studio.indexOf('id="personal-video-result"'));
  assert.ok(studio.includes("compileFreeFilmPreset(preset,locale,seconds"));
- assert.ok(studio.includes("onApply={applyAutoFilm}"));
+ assert.match(studio,/onApply=\{\(presetId,seconds,edit,options\)=>[\s\S]{0,190}applyAutoFilm\(presetId,seconds,edit,aspect,options\?\.keepGoalFlow\)/);
+ assert.match(studio,/goalContinueRef=\{goalContinueRef\}/);
+ assert.match(director,/goalContinueRef\.current=prepareGoalForIdeas/);
  assert.ok(studio.includes("setPracticeLevels(value=>({...value,video:\"basic\"}))"));
 });
 test("only one goal input, a visible proposal and a confirmation gate",()=>{
@@ -142,8 +144,8 @@ test("mobile six workspaces use short locale labels without changing full panel 
    const group=source.slice(start,next);
    for(const label of labels[language])assert.ok(group.includes('tab:"'+label+'"'),language+" "+label);
  }
- assert.match(studio,/aria-pressed=\{activeWorkspace===item.id\|\|\(!activeWorkspace&&item.id==="video"\)\}/,
-   "Video tab is selected on the initial one-screen mock");
+ assert.match(studio,/aria-pressed=\{activeWorkspace===item\.id\|\|\(activeWorkspace==="practices"&&item\.id==="ready"\)\|\|\(!activeWorkspace&&item\.id==="video"\)\}/,
+   "Ready highlights the retained course planner and Goal stays selected at entry");
 });
 
 test("desktop keeps six themes while iPhone uses four canonical MyTube goals",()=>{
@@ -157,14 +159,14 @@ test("desktop keeps six themes while iPhone uses four canonical MyTube goals",()
 });
 
 test("the selected real soundtrack is synchronized with the original central Canvas Play",()=>{
- assert.match(studio,/if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\)/,
+ assert.match(studio,/if\(activeWorkspace!=="phrases"&&!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\)/,
    "selected audio must begin from the same trusted Play tap on Safari");
  assert.match(studio,/if\(previewPlaying\)\{stopMovieSound\(\);setPreviewPlaying\(false\);\}/,
    "pausing the video must pause its selected native audio");
  assert.match(studio,/function playQuickTrack\(choice:PresetId\)/,
    "retain the existing one user-gesture audio player");
- assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;[\s\S]*?if\(!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\);\s*setPreviewPlaying\(true\)/,
-   "Play never starts audio during export");
+ assert.match(studio,/const openAffirmationPreview = \(\) => \{\s*if\s*\(recording \|\| preparing\) return;[\s\S]*?if\(activeWorkspace!=="phrases"&&!previewPlaying\)startMovieSound\(attachedAudio,soundVolume,previewSeekSeconds>=duration\?0:previewSeekSeconds\);\s*setPreviewPlaying\(true\)/,
+   "Play never starts audio during export; Ideas has an intentionally silent visual preview");
 });
 
 // Regression from #2900: four real preview cards must appear before the first click.
@@ -285,14 +287,15 @@ test("Holistic Light mobile overrides the legacy small-card grid without adding 
 test("Montage and PRO retain one operational video/audio pipeline without duplicate controls",()=>{
   const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
   assert.match(studio,/\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
-  assert.match(studio,/\{id:"practices",Icon:Leaf\},\{id:"pro",Icon:Zap\}/);
+  assert.match(studio,/\{id:"pro",Icon:Zap\},\{id:"ready",Icon:Check\}/);
   assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
   assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
   assert.match(studio,/data-video-basic-editor/);
   const nav=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'),
     studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.montageQuickTools}')));
-  assert.deepEqual([...nav.matchAll(/id:"(effects|text|audio|settings)",Icon:/g)].map(m=>m[1]),
-    ["effects","text","audio","settings"],"Style, Add text, Audio, Settings");
+  assert.deepEqual([...nav.matchAll(/id:"(effects|audio|concept|settings)",Icon:/g)].map(m=>m[1]),
+    ["effects","audio","concept","settings"],"Style, Audio, Concept, Settings under the existing player");
+  assert.match(studio,/data-video-concept-text-tools/,"caption editor and timeline remain available");
   assert.match(studio,/data-video-montage-style=\{index\}/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
   assert.match(studio,/basicPanelTab==="photo" \? deepCharacterPhotoPane : null/);
@@ -417,11 +420,19 @@ test("approved first screen keeps six tabs above a real 16:9 Canvas and one righ
  assert.match(mobile,/aspect-ratio:16\/9!important/);
 });
 
-test("goal, topic and one free-text prompt precede the four scenario choices",()=>{
+test("the approved single wish and match action precede goal cards, category, topic and scenario choices",()=>{
  const prompt=studio.indexOf("data-video-request-prompt");
  const goal=studio.indexOf("data-video-director-goal-controls");
  const topic=studio.indexOf("data-video-director-topic-controls");
- assert.ok(goal>=0&&goal<topic&&topic<prompt,"the owner-approved goal and topic precede the single text request");
+ const next=studio.indexOf("data-video-continue-scenarios");
+ assert.ok(prompt>=0&&prompt<goal&&goal<topic&&topic<next,"approved wish → goal → category/topic → Ideas order");
+ assert.match(studio,/data-video-wish-above-goals/);
+ assert.match(studio,/data-video-director-audience-controls/);
+ assert.match(director,/data-auto-video-audience=\{mode\}/);
+ assert.match(director,/createPortal\(audienceBar,audienceTarget\)/);
+ assert.doesNotMatch(studio,/data-video-goal-audience-option/);
+ assert.match(director,/data-video-goal-topic-chips/);
+ assert.match(director,/onClick=\{designFromRequest\}/);
  assert.match(studio,/data-video-continue-scenarios/);
  assert.match(studio,/setVideoScenarioOpen\(true\)/);
  assert.equal((director.match(/data-auto-video-input value=\{requestDraft\}/g)||[]).length,1);

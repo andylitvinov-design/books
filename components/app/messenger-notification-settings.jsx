@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react'
 import {BellRing,CheckCircle2,Clock3,MessageCircle,Send,RefreshCw} from 'lucide-react'
 import {appFetch} from '@/lib/app/client-fetch'
+import WhatsAppAccountLink from './whatsapp-account-link'
 import {
  DEFAULT_MESSENGER_TOPICS,MESSENGER_CONTACT_NOTICE_VERSION,CRM_ACCOUNT_LINK_NOTICE_VERSION,
  MESSENGER_NOTIFICATION_CHANNELS,MESSENGER_NOTIFICATION_TOPICS,
@@ -294,6 +295,7 @@ export default function MessengerNotificationSettings({locale='en',accountId}){
      </article>
     })}
    </div>}
+  <WhatsAppAccountLink accountId={accountId} locale={locale}/>
   <p className={styles.privacy}>{t.private}</p>
   {notice&&<p role="status" aria-live="polite" className={styles.success}>{notice}</p>}
   {error&&view&&<p role="alert" className={styles.error}>{error}</p>}

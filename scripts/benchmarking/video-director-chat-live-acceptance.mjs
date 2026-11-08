@@ -177,12 +177,55 @@ try{
       'CREATIVE_BRIEF_LIMIT_REGRESSION');
     const before=await chat.boundingBox();
     assert.ok(before&&before.width<=sizes[locale]+2,'CHAT_OVERFLOWS_MOBILE_VIEWPORT');
+    const welcome=chat.locator('[data-video-chat-welcome]');
+    if(entryStep==='category'&&await welcome.count()===1){
+      assert.equal(await chat.locator('[data-video-chat-welcome-goal]').count(),5,
+        'CALM_WELCOME_CANONICAL_FIVE_GOALS');
+      for(const selector of ['[data-video-chat-welcome-create]',
+        '[data-video-chat-welcome-browse]','[data-video-chat-welcome-help]',
+        '[data-video-chat-welcome-how]']){
+        assert.equal(await chat.locator(selector).count(),1,
+          'CALM_WELCOME_ACTION_MISSING_'+selector);
+      }
+      const hero=await chat.locator('[data-video-chat-welcome] h2').boundingBox();
+      assert.ok(hero&&hero.width<=sizes[locale]+2,'CALM_WELCOME_HERO_OVERFLOW');
+      const logViewport=chat.locator('[role="log"]');
+      const scrollTop=await logViewport.evaluate(element=>element.scrollTop);
+      assert.ok(scrollTop<=2,'CALM_WELCOME_MUST_START_AT_TOP');
+      const logRect=await logViewport.boundingBox();
+      assert.ok(logRect&&hero&&hero.y>=logRect.y-2&&hero.y<logRect.y+logRect.height-24,
+        'CALM_WELCOME_GREETING_MUST_BE_IN_VIEWPORT');
+      await chat.locator('[data-video-chat-welcome-create]').click();
+      await chat.locator('[data-chat-inline-choices]').waitFor({state:'visible',timeout:10000});
+      assert.equal(await chat.locator('[data-video-chat-welcome]').count(),0,
+        'CALM_WELCOME_MUST_YIELD_TO_REAL_CHAT');
+      assert.equal(await chat.getAttribute('data-chat-dialogue'),'true',
+        'PHOTO_DIALOGUE_STATE_MISSING');
+      const dialogueHero=chat.locator('[data-video-chat-dialogue-hero]');
+      await dialogueHero.waitFor({state:'visible',timeout:10000});
+      const dialogueRect=await dialogueHero.boundingBox();
+      assert.ok(dialogueRect&&dialogueRect.height>=100&&dialogueRect.width<=sizes[locale]+2,
+        'PHOTO_HERO_MUST_SURVIVE_CREATE');
+      assert.equal(await dialogueHero.evaluate(node=>
+        getComputedStyle(node).backgroundImage.includes('reiki-approved-sunrise-v3.webp')),true,
+        'PHOTO_HERO_ASSET_CHANGED');
+      assert.equal(await chat.locator('[data-video-chat-composer]').count(),1,
+        'ACTIVE_REPLY_COMPOSER_DUPLICATED');
+      const activeComposer=chat.locator('[data-video-chat-composer]');
+      assert.ok(await activeComposer.isVisible(),'ACTIVE_REPLY_COMPOSER_MUST_BE_VISIBLE');
+      const composerRect=await activeComposer.boundingBox();
+      const navRect=await chat.locator('[data-video-chat-top-tabs]').boundingBox();
+      assert.ok(composerRect&&navRect&&navRect.y>=composerRect.y,
+        'AI_ORDERS_CLIENTS_AFTER_COMPOSER');
+    }
     let selectedCaption=null;
     if(entryStep==='category'){
       // The same canonical category/topic/scenario/idea/phrase registry drives
       // the actual messenger. This path is required as soon as it is LIVE.
       const pick=async(step,id,expectedCount)=>{
         await state(page,step);
+        assert.equal(await chat.locator('[data-video-chat-dialogue-hero]').count(),1,
+          'PHOTO_HERO_LOST_AT_STAGE_'+step);
         const panel=chat.locator('[data-chat-inline-choices]');
         assert.equal(await panel.count(),1,'ONE_ACTIVE_INLINE_ANSWER_PANEL_'+step);
         assert.equal(await panel.getAttribute('data-chat-choice-stage'),step,

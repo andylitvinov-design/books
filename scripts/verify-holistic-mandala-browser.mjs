@@ -697,16 +697,12 @@ const runEngine = async ([engine, browserType]) => {
         // Verify presentation in the real Goal film viewport, before the
         // Canvas controls. No iframe loads before deliberate Play.
         const ownerIntro=quick.locator('[data-video-therapy-intro="ready"]');
-        const englishIntro=quick.locator('[data-video-therapy-intro="english-channel"]');
-        if(locale==="ru"&&await ownerIntro.isVisible()){
+        if((locale==="ru"||locale==="en")&&await ownerIntro.isVisible()){
           assert.equal(await page.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
           await ownerIntro.click();
           await expect(page.locator('iframe[src*="youtube-nocookie.com/embed/P9Wvo3gEY6U"]')).toHaveCount(1);
           await page.locator('[data-video-therapy-intro-close]').click();
           await expect(page.locator("[data-video-preview-toggle]")).toBeVisible();
-        }else if(locale==="en"&&await englishIntro.isVisible()){
-          assert.equal(await page.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
-          await page.locator('[data-video-therapy-editor]').click();
         }
         // The owner-approved screen has ONE visible Play, on the central Canvas.
         // Keep the native first-party MP4 mounted for the same renderer, without
@@ -986,9 +982,19 @@ const runEngine = async ([engine, browserType]) => {
             process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-third-workspace.png");
         }
         await workspaceQuick.locator('[data-video-quick-control="editor"]').click();
+        const conceptPanel=page.locator("[data-video-montage-concept]");
+        await expect(conceptPanel).toBeVisible({timeout:15000});
+        await expect(conceptPanel.locator("[data-video-concept-approve]")).toBeVisible();
+        const conceptTextTools=page.locator("[data-video-concept-text-tools]");
+        if(!(await conceptTextTools.evaluate(node=>node.open)))
+          await conceptTextTools.locator(":scope > summary").click();
+        const conceptScript=page.locator("[data-video-editor-scenario]");
+        if(!(await conceptScript.evaluate(node=>node.open)))
+          await conceptScript.locator(":scope > summary").click();
+        await expect(page.locator('[data-video-montage-script]')).toBeVisible();
+        await page.locator('[data-video-montage-tab="settings"]').click();
         const montageStyleSettings=page.locator('[data-video-editor-style-settings]');
         await expect(montageStyleSettings).toBeVisible({timeout:15000});
-        await expect(page.locator('[data-video-montage-script]')).toBeVisible();
         if(!(await montageStyleSettings.evaluate(node=>node.open)))
           await montageStyleSettings.locator(":scope > summary").click();
         await expect(page.locator('[data-video-duration="30"]')).toBeVisible({timeout:15000});
@@ -1070,18 +1076,10 @@ const runEngine = async ([engine, browserType]) => {
         const introRail=quick.locator('[data-video-intro-info]');
         await expect(introRail).toBeVisible();
         assert.equal(await hero.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
-        if(locale==="ru"){
+        if(locale==="ru"||locale==="en"){
           await introRail.click();
           await expect(hero.locator('iframe[src*="youtube-nocookie.com/embed/P9Wvo3gEY6U"]')).toHaveCount(1);
           await hero.locator('[data-video-therapy-intro-close]').click();
-          await expect(hero.locator('[data-video-preview-toggle]')).toBeVisible();
-        }else if(locale==="en"){
-          await introRail.click();
-          await expect(hero.locator('[data-video-therapy-intro="english-channel"]')).toBeVisible();
-          assert.equal(await hero.locator('iframe[src*="youtube-nocookie.com"]').count(),0);
-          assert.equal(await hero.locator('[data-video-therapy-youtube="en"]').getAttribute("href"),
-            "https://www.youtube.com/@aatapro/videos");
-          await hero.locator('[data-video-therapy-editor]').click();
           await expect(hero.locator('[data-video-preview-toggle]')).toBeVisible();
         }
         assert.equal(await page.locator("[data-video-therapy-info]").count(),0,
@@ -2276,6 +2274,12 @@ const runEngine = async ([engine, browserType]) => {
         await workspaceNav.locator('[data-video-quick-control="pro"]').click();
         await expect(page.locator('[data-video-quick-builder] [data-video-cover-options]')).toBeVisible();
         await workspaceNav.locator('[data-video-quick-control="editor"]').click();
+        const conceptText=page.locator('[data-video-concept-text-tools]');
+        if(!(await conceptText.evaluate(node=>node.open)))
+          await conceptText.locator(':scope > summary').click();
+        const scriptPanel=page.locator('[data-video-editor-scenario]');
+        if(!(await scriptPanel.evaluate(node=>node.open)))
+          await scriptPanel.locator(':scope > summary').click();
         if(width<=430){
           const layout=await page.evaluate(()=>{
             const rect=q=>{const r=document.querySelector(q)?.getBoundingClientRect();
@@ -2293,6 +2297,7 @@ const runEngine = async ([engine, browserType]) => {
             layout.script.top>=layout.hero.bottom-2&&layout.nav.width<=layout.viewport,
             engine+" "+locale+" "+width+" iPhone Montage composition: "+JSON.stringify(layout));
         }
+        await page.locator('[data-video-montage-tab="settings"]').click();
         const styleDetails=page.locator("[data-video-editor-style-settings]");
         if(!(await styleDetails.evaluate(node=>node.open)))
           await styleDetails.locator(":scope > summary").click();

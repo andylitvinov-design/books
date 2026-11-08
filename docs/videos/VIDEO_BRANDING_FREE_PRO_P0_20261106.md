@@ -21,3 +21,9 @@ Local: `node --test tests/video-branding.test.mjs`. Mandatory exact-HEAD Core/Sp
 
 ## Deferred
 Paid Practice Pro was not confirmed for sale. Map commercial entitlements, billing lifecycle, reusable projects, cross-channel server checks and approved final logo as separately reviewed milestones. Do not sell an unavailable tier or conflate creative Video Studio Pro with cabinet Pro.
+
+## P1 fail-closed professional fallback guard · 7 November 2026
+- Prevent the professional rendering path from returning `mode:catalog` when Canvas recording is unsupported. The source MP4 is *not* a generated branded movie; present a localized retry message instead.
+- Hide both download links to raw-original MP4 whenever `professionalMode` is active. Add an explicit defensive result-action guard even if a future code path returns a catalog fallback.
+- Add a compact FREE watermark disclosure before the professional director, while keeping the post-render exact-variant label. Personal/nonprofessional fallback behavior remains unchanged.
+- Paid Practice Pro remains gated; no new billable service, no watermark-removal bypass and no changes to existing credit/debit, consent, ownership, upload, or source licenses.

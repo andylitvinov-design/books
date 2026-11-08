@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {paintVideoBrandStamp,videoBrandStampLayout,resolveVideoExportVariant,
-  VIDEO_EXPORT_POLICY_VERSION} from '../lib/mandala/video-branding.mjs'
+  VIDEO_EXPORT_POLICY_VERSION,canOfferOriginalVideoSource} from '../lib/mandala/video-branding.mjs'
 import {pilotVideoExportCapability} from '../lib/mandala/video-branding-policy.mjs'
 
 const owner='12345678-1234-4234-8234-123456789abc'
@@ -66,4 +66,11 @@ test('watermark modifies real Canvas frames only in branded mode and restores co
   assert.equal(calls.at(-1),'restore')
   assert.ok(calls.includes('text:Holistic House'))
   assert.equal(calls.filter(c=>c==='stroke').length,6)
+})
+
+
+test('professional exports cannot offer a raw source MP4 if Canvas recording fails',()=>{
+  assert.equal(canOfferOriginalVideoSource(false),true)
+  assert.equal(canOfferOriginalVideoSource(),true)
+  assert.equal(canOfferOriginalVideoSource(true),false)
 })

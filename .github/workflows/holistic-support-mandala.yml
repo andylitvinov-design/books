@@ -323,6 +323,13 @@ jobs:
       - name: Generate dedicated scenario music and four classic performances
         if: steps.policy.outputs.policy_only != 'true'
         run: node scripts/generate-scenario-melodies.mjs && node scripts/generate-scenario-melodies.mjs --check
+      - name: Smart Audio Concept 38-field semantic and privacy contracts
+        if: steps.policy.outputs.policy_only != 'true'
+        run: |
+          node --check lib/mandala/video-concept-semantic.mjs
+          node --check lib/mandala/auto-video-concept.mjs
+          node --check lib/mandala/audio-visual-storyboard.mjs
+          node --test tests/mandala-audio-smart-concept.test.mjs tests/mandala-video-concept.test.mjs
       - name: Verify 48 scenarios each have four real unique music files
         if: steps.policy.outputs.policy_only != 'true'
         run: node --test tests/mandala-scenario-audio.test.mjs
@@ -561,7 +568,7 @@ jobs:
           # Actual WebKit MP4/audio release acceptance still runs unchanged.
           node --test tests/video-studio-question-registry.test.mjs tests/mandala-video-goal-media-coverage.test.mjs tests/mandala-approved-mobile-studio.test.mjs
   voice-webkit-macos:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-') || startsWith(github.head_ref, 'feat/mytube-unified-six-bottom-') || startsWith(github.head_ref, 'feat/mytube-six-dock-production-') || github.head_ref == 'fix/mandala-compact-goals-montage-20261103' || github.head_ref == 'codex/professional-growth-templates-20261031') }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-') || startsWith(github.head_ref, 'feat/voice-timed-storyboard-') || startsWith(github.head_ref, 'feat/mytube-unified-six-bottom-') || startsWith(github.head_ref, 'feat/mytube-six-dock-production-') || github.head_ref == 'fix/mandala-compact-goals-montage-20261103' || github.head_ref == 'codex/professional-growth-templates-20261031') }}
     needs: [webkit_preflight]
     runs-on: macos-15
     timeout-minutes: 25
@@ -595,7 +602,8 @@ jobs:
       - name: Install and build exact voice release candidate
         run: |
           npm ci --no-audit --no-fund
-          npm run build
+          # Same macOS runner; increase only the build worker's V8 heap, not the CI scope.
+          NODE_OPTIONS=--max-old-space-size=3072 npm run build
       # Reuse Playwright's version-pinned WebKit payload; encoded-media tests still execute.
       - name: Restore pinned Playwright WebKit browser
         uses: actions/cache@v4

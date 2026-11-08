@@ -15,6 +15,7 @@ import { freeMeditationVideos } from "@/data/academy/holistic-support-meditation
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 import styles from "@/components/mandala-meditation.module.css";
+import "@/components/mandala-video-goal-refresh.css";
 
 type Props = { params: Promise<{ locale: string }>; searchParams?: Promise<{ pro?: string; master?: string; service?: string; mode?: string }> };
 
