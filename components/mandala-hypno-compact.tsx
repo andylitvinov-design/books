@@ -188,6 +188,9 @@ export function MandalaHypnoCompact({
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
   const [open,setOpen]=useState<EditPanel>(null);
+  // Safari can lose the native disclosure state when its parent editor rerenders.
+  // Keep the actual user-visible toggle controlled, including external opens.
+  const [ideaDisclosureOpen,setIdeaDisclosureOpen]=useState(false);
   const [problemIndex,setProblemIndex]=useState(0);
   const [goalId,setGoalId]=useState<VideoAffirmationGoal>(topicGoals[theme][0]);
   const [ownIdea,setOwnIdea]=useState("");
@@ -466,8 +469,12 @@ export function MandalaHypnoCompact({
   const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   return (
     <section className={css.overview} data-hypno-overview aria-label={locale==="ru"?"Персональные гипноаффирмации":ui.phrases}>
-      <details className={css.ideaDisclosure} data-hypno-idea-details>
-        <summary><Target size={21} aria-hidden="true"/>
+      <details className={css.ideaDisclosure} data-hypno-idea-details
+        open={ideaDisclosureOpen} onToggle={event=>setIdeaDisclosureOpen(event.currentTarget.open)}>
+        <summary onClick={event=>{
+          event.preventDefault();
+          setIdeaDisclosureOpen(value=>!value);
+        }}><Target size={21} aria-hidden="true"/>
           <span>{ideaText}</span><Pencil size={19} aria-hidden="true"/></summary>
       <section className={css.card} data-hypno-request data-hypno-idea>
         <div className={css.cardHead}>

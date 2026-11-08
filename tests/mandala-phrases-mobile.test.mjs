@@ -167,7 +167,9 @@ test("real WebKit voice acceptance expands the approved transcript before compar
   const voice=read("components/mandala-affirmation-voice.tsx");
   assert.match(voice,/<details className=\{css\.transcriptDisclosure\} data-video-affirmation-transcript-review>/);
   assert.match(voice,/data-video-affirmation-spoken-text/);
-  assert.match(e2e,/const transcriptDisclosure=page\.locator\("\[data-video-affirmation-voice\] details"\)/);
+  assert.match(e2e,/const transcriptDisclosure=page\.locator\("\[data-video-affirmation-transcript-review\]"\)/);
+  assert.match(e2e,/await expect\(transcriptDisclosure\)\.toHaveCount\(1\)/);
+  assert.match(e2e,/await expect\(transcriptDisclosure\)\.toHaveCount\(0\)/);
   assert.match(e2e,/await transcriptDisclosure\.locator\(":scope > summary"\)\.click\(\)/);
   assert.match(e2e,/await expect\(speech\)\.toBeVisible\(\)/);
   assert.match(e2e,/assert\.equal\(affirmationRequests\[0\]\.text,transcript\)/);
@@ -189,4 +191,11 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
   assert.match(browser,/await page\.locator\("\[data-video-affirmation-bed\]"\)\.selectOption\("ocean"\)/);
   assert.match(browser,/const audioTrack=streams\.find\(row=>row\.codec_type==="audio"\)/);
   assert.match(browser,/assert\.ok\(audioTrack/);
+});
+
+test("WebKit idea fine-tuning disclosure stays open through React rerenders",()=>{
+  assert.match(phrases,/const \[ideaDisclosureOpen,setIdeaDisclosureOpen\]=useState\(false\)/);
+  assert.match(phrases,/open=\{ideaDisclosureOpen\} onToggle=\{event=>setIdeaDisclosureOpen\(event\.currentTarget\.open\)\}/);
+  assert.match(phrases,/setIdeaDisclosureOpen\(value=>!value\)/);
+  assert.match(phrases,/event\.preventDefault\(\)/);
 });
