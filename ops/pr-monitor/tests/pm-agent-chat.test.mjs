@@ -12,8 +12,8 @@ test('price guard allows only currently catalog-verified zero priced :free model
  assert.equal(t.freePrice({id:'vendor/model:free',pricing:{prompt:'0'}}),false);
  assert.equal(t.freePrice({id:'vendor/model:free',pricing:{prompt:'0',completion:'0',unknown:'priced'}}),false);
 });
-test('invalid owner cookies denied and origin enforced',()=>{
- assert.equal(t.isOwner({headers:{cookie:'hh_seo_owner=invalid'}}),false);
+test('invalid owner cookies denied and origin enforced',async()=>{
+ assert.equal(await t.isOwner({headers:{cookie:'hh_seo_owner=invalid'}}),false);
  assert.equal(t.correctOrigin({headers:{origin:'https://evil.example',host:'holistic-house-pr-monitor.vercel.app'}}),false);
  assert.equal(t.correctOrigin({headers:{origin:'https://holistic-house-pr-monitor.vercel.app',host:'holistic-house-pr-monitor.vercel.app'}}),true);
 });
@@ -26,6 +26,8 @@ test('trusted bot/connector only, not arbitrary commenter impersonation',()=>{
 test('public page preserved and private chat uses existing owner session',()=>{
  const api=read('api/pm-agent-chat.js'),ui=read('pm-agent-chat.js'),html=read('project-management-public.html');
  assert.match(api,/SEO_SESSION_SECRET/);
+ assert.match(api,/await isOwner\(req\)/);
+ assert.match(api,/commander-private-store/);
  assert.match(api,/OPENROUTER_KEY_NOT_CONFIGURED/);
  assert.match(api,/provider:\{allow_fallbacks:false,max_price/);
  assert.doesNotMatch(api,/workflow_dispatch|service_role/);

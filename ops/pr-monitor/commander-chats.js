@@ -1,6 +1,6 @@
 'use strict';
 /* HH_COMMANDER_THREADS_V1: authenticated multi-chat workspace.
- * Durable storage: verified private GitHub issues; fallback: AES-GCM vault
+ * Durable storage: owner-verified Supabase private tables; fallback: AES-GCM vault
  * on this device. Assignment and AI answers are NOT agent execution.
  */
 (function(win,doc){
@@ -388,7 +388,7 @@
   authorized=true;show('login',false);
   let status;try{status=await request(SERVER+'?action=status')}catch{status={privateStoreConfigured:false}}
   remote=!!status.privateStoreConfigured;
-  el('storage-label').textContent=remote?'Приватные GitHub-чаты · история доступна между устройствами.':
+  el('storage-label').textContent=remote?'Защищённые чаты Supabase · история доступна между устройствами.':
    'Зашифровано на этом устройстве · серверная синхронизация не подключена.';
   show('vault',false);show('board',remote);show('export',!remote);show('import-label',!remote);
   try{
