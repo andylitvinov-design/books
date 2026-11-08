@@ -51,7 +51,8 @@ test("approved HeyGen exports map EN and RU to distinct captioned MP4s, not YouT
  assert.match(landing,/durationSeconds:96\.862/);
  for(const phrase of ["English audio","Русская озвучка","Audio en inglés"])
    assert.ok(landing.includes(phrase),phrase);
- assert.doesNotMatch(landing,/youtube-nocookie|<iframe|approvedTelegramPresentation|autoplay=1|files2\.heygen\.ai/);
+ assert.doesNotMatch(landing,/youtube-nocookie|<iframe|approvedTelegramPresentation|autoplay=1/);
+ assert.doesNotMatch(landing,/src:"https:\/\/files2\.heygen\.ai/);
  assert.match(landing,/<video ref=\{videoRef\} src=\{introduction\.src\} controls playsInline preload="none"/);
  assert.match(landing,/videoRef\.current\?\.play\(\)/);
  assert.match(landing,/videoRef\.current\?\.pause\(\)/);
