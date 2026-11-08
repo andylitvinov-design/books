@@ -12,7 +12,7 @@
   hermes:'Hermes · передача',manual:'Ручной исполнитель'};
  const STATES={planned:'Запланировано',assigned:'Назначено · не запущено',working:'В работе · по заявлению',
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
- let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,models=[],aiReady=false,busy=false;
+ let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
  const show=(id,yes)=>{el(id).hidden=!yes};
  const info=s=>{el('alert').textContent=String(s)};
@@ -31,6 +31,52 @@
  }
  const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
  const to64=a=>{let s='';for(let i=0;i<a.length;i+=8192)s+=String.fromCharCode(...a.subarray(i,i+8192));return win.btoa(s)};
+ /* Non-extractable on-device key; all chat APIs still require verified owner session. */
+ const DEVICE_DB='hh.commander.device-key.v1';
+ async function deviceKey(){
+  if(!win.indexedDB||!win.crypto?.subtle)throw Error('Защищённое хранилище недоступно');
+  const db=await new Promise((resolve,reject)=>{
+   const r=win.indexedDB.open(DEVICE_DB,1);
+   r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('keys'))r.result.createObjectStore('keys')};
+   r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(Error('DEVICE_DB_UNAVAILABLE'));
+  });
+  try{
+   const existing=await new Promise((resolve,reject)=>{
+    const tx=db.transaction('keys','readonly'),r=tx.objectStore('keys').get('main');
+    r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(Error('DEVICE_KEY_UNAVAILABLE'));
+   });
+   if(existing)return existing;
+   const k=await win.crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+   await new Promise((resolve,reject)=>{const tx=db.transaction('keys','readwrite');
+    tx.objectStore('keys').put(k,'main');tx.oncomplete=()=>resolve();tx.onerror=()=>reject(Error('DEVICE_KEY_SAVE_FAILED'))});
+   return k;
+  }finally{db.close()}
+ }
+ async function unlockDevice(){
+  if(!win.crypto?.subtle||!win.localStorage)throw Error('Недоступно шифрование устройства');
+  const raw=win.localStorage.getItem(KEY),stored=raw?JSON.parse(raw):null;
+  if(stored?.version===1)return false;
+  if(stored&&(stored.version!==2||typeof stored.iv!=='string'||typeof stored.ciphertext!=='string'))throw Error('Некорректный архив');
+  const k=await deviceKey();
+  let data=null;
+  if(stored){
+   const clear=await win.crypto.subtle.decrypt({name:'AES-GCM',iv:from64(stored.iv)},k,from64(stored.ciphertext));
+   data=JSON.parse(new TextDecoder().decode(clear));
+   if(data.schema!==SCHEMA||!Array.isArray(data.chats)||data.chats.length>80)throw Error('Некорректная история');
+  }
+  chats=data?.chats||[];key=k;salt=null;deviceMode=true;
+  if(!stored)await persist();
+  return true;
+ }
+ async function migrateLegacy(){
+  const backup=win.localStorage.getItem(KEY),prevKey=key,prevSalt=salt;
+  if(!backup||JSON.parse(backup).version!==1)return;
+  try{
+   const k=await deviceKey();
+   win.localStorage.setItem(KEY+'.legacy-encrypted-backup',backup);
+   key=k;salt=null;deviceMode=true;await persist();
+  }catch(e){key=prevKey;salt=prevSalt;deviceMode=false;win.localStorage.setItem(KEY,backup);throw e}
+ }
  async function derive(password,s){
   const raw=await win.crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);
   return win.crypto.subtle.deriveKey({name:'PBKDF2',salt:s,iterations:210000,hash:'SHA-256'},
@@ -43,7 +89,9 @@
   if(json.length>850000)throw Error('Лимит локального хранилища. Сохраните резервную копию.');
   const iv=win.crypto.getRandomValues(new Uint8Array(12));
   const cipher=await win.crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(json));
-  win.localStorage.setItem(KEY,JSON.stringify({version:1,salt:to64(salt),iv:to64(iv),ciphertext:to64(new Uint8Array(cipher))}));
+  win.localStorage.setItem(KEY,JSON.stringify(deviceMode?
+   {version:2,iv:to64(iv),ciphertext:to64(new Uint8Array(cipher))}:
+   {version:1,salt:to64(salt),iv:to64(iv),ciphertext:to64(new Uint8Array(cipher))}));
  }
  async function unlock(password){
   if(password.length<10)throw Error('Пароль должен содержать не меньше 10 символов');
@@ -63,11 +111,22 @@
   }else chats=[];
   key=k;salt=s;if(!stored)await persist();
  }
- function exportBackup(){
-  const raw=win.localStorage.getItem(KEY);if(!raw)return info('Нет локальной копии');
-  const u=URL.createObjectURL(new Blob([raw],{type:'application/json'})),a=make('a');
-  a.href=u;a.download='commander-encrypted-chats.json';doc.body.append(a);a.click();a.remove();
-  win.setTimeout(()=>URL.revokeObjectURL(u),1500);info('Сохранена зашифрованная копия. Не теряйте пароль.');
+ async function exportBackup(){
+  let raw=win.localStorage.getItem(KEY);if(!raw)return info('Нет локальной копии');
+  try{
+   if(deviceMode){
+    const password=win.prompt('Пароль для переносимой копии чатов (от 10 символов)')||'';
+    if(password.length<10)return info('Для экспорта требуется пароль от 10 символов.');
+    const salt=win.crypto.getRandomValues(new Uint8Array(16)),iv=win.crypto.getRandomValues(new Uint8Array(12));
+    const k=await derive(password,salt);
+    const clear=new TextEncoder().encode(JSON.stringify({schema:SCHEMA,chats}));
+    const cipher=await win.crypto.subtle.encrypt({name:'AES-GCM',iv},k,clear);
+    raw=JSON.stringify({version:1,salt:to64(salt),iv:to64(iv),ciphertext:to64(new Uint8Array(cipher))});
+   }
+   const u=URL.createObjectURL(new Blob([raw],{type:'application/json'})),a=make('a');
+   a.href=u;a.download='commander-encrypted-chats.json';doc.body.append(a);a.click();a.remove();
+   win.setTimeout(()=>URL.revokeObjectURL(u),1500);info('Зашифрованная резервная копия сохранена.');
+  }catch(e){info('Не удалось сохранить резервную копию: '+String(e.message||e))}
  }
  async function importBackup(e){
   const f=e.target.files?.[0];if(!f)return;
@@ -77,7 +136,7 @@
    const raw=await f.text(),v=JSON.parse(raw);
    if(v.version!==1||typeof v.ciphertext!=='string'||from64(v.salt).length!==16||from64(v.iv).length!==12||v.ciphertext.length>950000)
     throw Error('Неверный формат шифрования');
-   win.localStorage.setItem(KEY,raw);key=null;salt=null;chats=[];thread=null;messages=[];
+   win.localStorage.setItem(KEY,raw);key=null;salt=null;deviceMode=false;chats=[];thread=null;messages=[];
    show('board',false);show('vault',true);info('Архив импортирован. Введите его пароль.');
   }catch(err){info('Ошибка импорта: '+String(err.message||err))}
  }
@@ -331,7 +390,7 @@
   remote=!!status.privateStoreConfigured;
   el('storage-label').textContent=remote?'Приватные GitHub-чаты · история доступна между устройствами.':
    'Зашифровано на этом устройстве · серверная синхронизация не подключена.';
-  show('vault',!remote);show('board',remote);show('export',!remote);show('import-label',!remote);
+  show('vault',false);show('board',remote);show('export',!remote);show('import-label',!remote);
   try{
    const s=await request(AI+'?action=status');aiReady=s.modes?.openrouter===true;
    if(aiReady){const m=await request(AI+'?action=models');models=m.models||[];aiReady=models.length>0;}
@@ -340,11 +399,16 @@
   for(const m of models){const o=make('option',null,m.name+' · '+m.id);o.value=m.id;el('model').append(o)}
   el('mode').querySelector('option[value=openrouter]').disabled=!aiReady;
   if(remote){try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}catch(e){
-   remote=false;chats=[];show('board',false);show('vault',true);show('export',true);show('import-label',true);
-   el('storage-label').textContent='Серверное хранилище недоступно. Только локальный зашифрованный режим.';
-   info('Приватная синхронизация недоступна: '+String(e.message||e)+'. Создайте/откройте локальное хранилище.');
+   remote=false;chats=[];el('storage-label').textContent='Защищённое локальное хранилище. Серверная синхронизация недоступна.';
   }}
-  else info('Для локальной работы откройте зашифрованную историю.');
+  if(!remote){
+   show('export',true);show('import-label',true);
+   try{
+    const unlocked=await unlockDevice();show('vault',!unlocked);show('board',unlocked);
+    if(unlocked){renderList();info('Рабочие чаты открыты без дополнительного пароля.');}
+    else info('Для переноса старой истории введите её прежний пароль один раз.');
+   }catch(e){show('board',false);show('vault',true);info('Автоматическое хранилище недоступно: '+String(e.message||e))}
+  }
  }
  el('login-form').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -355,8 +419,8 @@
   }catch(err){info('Вход не выполнен: '+String(err.message||err))}
  });
  el('vault-form').addEventListener('submit',async e=>{
-  e.preventDefault();try{await unlock(el('vault-password').value);el('vault-password').value='';
-   show('vault',false);show('board',true);renderList();info('Зашифрованные чаты открыты.')}
+  e.preventDefault();try{await unlock(el('vault-password').value);await migrateLegacy();el('vault-password').value='';
+   show('vault',false);show('board',true);renderList();info('Чаты открыты. Повторный пароль больше не требуется.')}
   catch(err){info('Хранилище не открыто: '+String(err.message||err))}
  });
  el('new-toggle').addEventListener('click',()=>show('create',el('create').hidden));
@@ -370,6 +434,7 @@
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
  el('mode').addEventListener('change',()=>show('model-label',el('mode').value==='openrouter'));
  request(AI+'?action=status').then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
-  authorized=false;show('login',true);info('Для доступа нужен код владельца PR Monitor.');
+  authorized=false;show('login',true);info('Продолжите через Google — отдельный код PR Monitor не нужен.');
+   win.HHGoogleOwnerSSO?.mount(el('google-owner'),s=>info(s));
  });
 })(window,document);

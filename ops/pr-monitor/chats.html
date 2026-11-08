@@ -5,8 +5,10 @@
 <title>Рабочие чаты · Agent Commander · Holistic House</title>
 <link rel="stylesheet" href="/commander-shell.css?v=20261107-cc-v1">
 <link rel="stylesheet" href="/commander-chats.css?v=20261107-v1">
+<link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
 <script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
-<script src="/commander-chats.js?v=20261107-v1" defer></script>
+<script src="/owner-google-signin.js?v=20261107-v1" defer></script>
+<script src="/commander-chats.js?v=20261107-sso-v1" defer></script>
 </head><body class="hh-cc-shell">
 <main id="cc-chat-root" class="cc-chats-page">
 <header class="cc-chats-hero"><a class="cc-back" href="/agents.html" aria-label="Назад к агентам">‹</a>
@@ -14,12 +16,15 @@
 <p>Отдельный диалог для каждой команды или задачи · исполнители · PR · результаты.</p></div></header>
 <p class="cc-alert" id="cc-alert" role="status" aria-live="polite">Проверяю доступ владельца…</p>
 <section id="cc-login" class="cc-surface" hidden aria-label="Авторизация владельца">
-<h2>Доступ владельца</h2><p class="cc-help">Используйте существующий код PR Monitor, без Google-входа.</p>
+<h2>Вход через Google</h2>
+<p class="cc-help">Подтверждённая сессия владельца открывает чаты сразу. Если сессия закончилась, продолжите через Google.</p>
+<div id="cc-google-owner" class="hh-sso-slot"></div>
+<details class="hh-sso-backup"><summary>Резервный вход по коду</summary>
 <form id="cc-login-form"><label>Код владельца<input id="cc-password" type="password" autocomplete="current-password" required maxlength="256"></label>
-<button type="submit" class="cc-primary">Войти</button></form></section>
+<button type="submit" class="cc-primary">Войти</button></form></details></section>
 <section id="cc-vault" class="cc-surface" hidden aria-label="Локальное защищённое хранилище">
-<h2>Зашифрованная история на устройстве</h2>
-<p class="cc-help">Серверная синхронизация пока не настроена. Можно создавать постоянные чаты на этом устройстве. История зашифрована AES-GCM, для открытия нужен выбранный вами пароль. Без пароля восстановление невозможно.</p>
+<h2>Открытие старой истории</h2>
+<p class="cc-help">Обнаружена история со старым паролем. Введите его один раз, чтобы перенести чаты в защищённое хранилище этого устройства. Для новых чатов повторный пароль не потребуется.</p>
 <form id="cc-vault-form"><label>Пароль локальной истории (не код PR Monitor)
 <input id="cc-vault-password" type="password" autocomplete="new-password" minlength="10" maxlength="200" required></label>
 <button class="cc-primary" type="submit">Открыть / создать хранилище</button></form>
