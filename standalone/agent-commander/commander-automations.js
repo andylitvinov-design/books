@@ -9,11 +9,12 @@
  const TIMES=[['10m','Каждые 10 минут'],['30m','Каждые 30 минут'],['hourly','Каждый час'],['daily_9','Каждый день в 09:00 (Торонто)'],['weekly_mon_9','Понедельник в 09:00 (Торонто)']];
  const BRAINS=[['none','Без дополнительной памяти'],['ai-projects-brain','AI Projects Brain · память проектов'],['agent-council','AI Council · пока не подключён']];
  const ROLES=[['commander','Commander'],['analyst','Аналитик'],['engineering','Инженер'],['marketing','Маркетолог'],['education','Образование']];
- let bridge=null,nonce=null,connected=false,data=null,active='mine',editing=null,draft=null,busy=false,error='',notice='';
+ let bridge=null,nonce=null,connected=false,data=null,active='mine',editing=null,draft=null,busy=false,error='',notice='',selecting=null,selectedRole='commander';
  const pending=new Map();
  const el=(tag,cls,txt)=>{const o=document.createElement(tag);if(cls)o.className=cls;if(txt!==undefined)o.textContent=String(txt);return o;};
  const clean=v=>typeof v==='string'?v:'';
  const textTitle=job=>job.title||job.skill_id;
+ const roleName=id=>ROLES.find(x=>x[0]===id)?.[1]||id||'Нет агента';
  const when=s=>TIMES.find(x=>x[0]===s)?.[1]||s;
  const nowFormat=value=>{if(!value)return '—';const d=new Date(value);return Number.isFinite(d.getTime())?d.toLocaleString('ru-RU',{timeZone:'America/Toronto',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—';};
  function nonceValue(){return [...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');}
@@ -39,16 +40,19 @@
   try{
    const response=await send('write',{...body,requestId:crypto.randomUUID()});
    const result=response.data;
-   if(response.status!==200||!['created_draft','updated'].includes(result?.status))
+   if(response.status!==200||!['created_draft','updated','agent_assigned','unchanged','queued'].includes(result?.status))
     throw Error(result?.status||result?.error||'NOT_SAVED');
-   editing=null;draft=null;notice=result.status==='created_draft'?
-    'Черновик сохранён. Нужен подключённый AI-исполнитель для автоматического запуска.':'Изменения сохранены.';
+   editing=null;draft=null;selecting=null;notice=result.status==='created_draft'?
+    'Черновик сохранён. Нужен подключённый AI-исполнитель для автоматического запуска.':
+    result.status==='agent_assigned'?'Профиль агента назначен. Подключение AI-исполнителя проверяется отдельно.':
+    result.status==='unchanged'?'Агент уже назначен.':
+    result.status==='queued'?'Поставлено в очередь штатного исполнителя; выполнение проверьте в истории.':'Изменения сохранены.';
    await read();
   }catch(e){error='Не удалось сохранить: '+String(e.message||'ошибка');render();}
   finally{busy=false;render();}
  }
  function start(job){
-  editing=job?job.id:'new';
+  selecting=null;editing=job?job.id:'new';
   draft=job?{title:clean(job.title||job.skill_id),instruction:clean(job.instruction),schedule:job.schedule,
    brainScope:job.brain_scope||'none',agentRole:job.agent_role||'commander',
    skillIds:Array.isArray(job.skill_ids)?[...job.skill_ids]:[],enabled:Boolean(job.enabled)}:
@@ -164,6 +168,38 @@
   wrap.append(actions);
   return wrap;
  }
+ function openAgentPicker(job){
+  editing=null;draft=null;selecting=job.id;selectedRole=job.agent_role||'commander';error='';notice='';render();
+ }
+ function drawAgentPicker(job){
+  const box=el('section','hh-cron-agent-picker');
+  box.append(el('strong',null,'🤖 Выбрать агента · '+textTitle(job)));
+  const choices=el('div','hh-cron-agent-choices');
+  const profiles=Array.isArray(data?.agentProfiles)?data.agentProfiles:ROLES.map(([id,name])=>({id,name}));
+  for(const profile of profiles){
+   if(!ROLES.some(([id])=>id===profile.id))continue;
+   const button=itemButton(profile.name,'hh-cron-agent-choice',()=>{selectedRole=profile.id;render();});
+   button.setAttribute('aria-pressed',String(selectedRole===profile.id));choices.append(button);
+  }
+  box.append(choices,paragraph('hh-cron-muted',job.execution_mode==='builtin'?
+   'Запуск выполняет штатный SQL-алгоритм, а не выбранная AI-модель. Вы можете назначить профиль и запросить запуск.':
+   'Профиль сохраняется, но AI-исполнитель ещё не подключён. Автоматический запуск отключён.'));
+  const actions=el('div','hh-cron-agent-actions');
+  const save=itemButton(busy?'Сохраняю…':'Назначить агента','hh-cron-action',()=>{
+   write({action:'assign_agent',jobId:job.id,expectedRevision:job.revision,agentRole:selectedRole});
+  });save.disabled=busy;
+  actions.append(save,itemButton('Отмена','hh-cron-action alt',()=>{selecting=null;render();}));
+  box.append(actions);
+  if(job.execution_mode==='builtin'){
+   const queue=itemButton('▶ Запросить выполнение','hh-cron-action alt',()=>{
+    write({action:'control_job',jobId:job.id,mode:'queue_now'});
+   });queue.disabled=busy||!job.enabled;
+   box.append(queue,paragraph('hh-cron-muted',job.enabled?
+    'Задание будет поставлено в очередь существующего Cron-исполнителя, не выполняется мгновенно.':
+    'Сначала включите штатное задание в редакторе, затем запросите выполнение.'));
+  }
+  return box;
+ }
  function drawList(){
   const section=el('section'),tabs=el('div','hh-cron-tabs');
   for(const [id,label] of [['mine','Мои задания'],['system','Системные']]){
@@ -171,12 +207,17 @@
   }section.append(tabs);
   if(active==='mine'){
    for(const job of data?.jobs||[]){
+    const row=el('div','hh-cron-jobrow');
     const b=itemButton('', 'hh-cron-job',()=>start(job)),body=el('span','hh-cron-job-body');
     body.append(el('strong',null,textTitle(job)),el('small',null,when(job.schedule)+' · '+(job.last_state||'Без запусков')),
       el('small',null,(job.instruction||'').slice(0,120)));
     b.append(body,el('span','hh-cron-job-tag',job.execution_mode==='builtin'?
      (job.enabled?'Включено':'Пауза'):'Нет исполнителя'));
-    section.append(b);
+    const agent=itemButton('🤖 '+roleName(job.agent_role),'hh-cron-agent-btn',()=>openAgentPicker(job));
+    agent.setAttribute('aria-label','Выбрать агента для '+textTitle(job));
+    agent.setAttribute('aria-expanded',String(selecting===job.id));
+    row.append(b,agent);section.append(row);
+    if(selecting===job.id)section.append(drawAgentPicker(job));
    }
    if(!data?.jobs?.length)section.append(paragraph('hh-cron-muted','Заданий пока нет.'));
    section.append(itemButton('＋ Новая автоматизация','hh-cron-action',()=>start(null)));
@@ -184,7 +225,7 @@
    for(const system of data?.systemJobs||[]){
     const box=el('article','hh-cron-job'),body=el('div','hh-cron-job-body');
     body.append(el('strong',null,system.title),el('small',null,'Cron: '+system.schedule),el('p',null,system.description));
-    box.append(body,el('span','hh-cron-job-tag','CODE'));section.append(box);
+    box.append(body,el('span','hh-cron-job-tag','🤖 CODE'));section.append(box);
    }
    section.append(paragraph('hh-cron-muted','Системные задания выполняются через действующий GitHub/Vercel, их нельзя редактировать как пользовательские Cron Jobs.'));
   }
