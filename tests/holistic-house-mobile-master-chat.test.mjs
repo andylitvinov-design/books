@@ -16,7 +16,7 @@ test('one installable Holistic House PWA opens its real Messages tab in all loca
     const manifest=JSON.parse(read(file))
     assert.equal(manifest.id,'/en/app','all languages share one installed icon')
     assert.equal(manifest.display,'standalone')
-    assert.equal(manifest.start_url,'/'+locale+'/app/messages')
+    assert.equal(manifest.start_url,'/'+locale,'PWA opens public locale Home before private Messages')
     assert.ok(manifest.shortcuts.some(shortcut=>shortcut.url==='/'+locale+'/app/messages'))
   }
   const releases=JSON.parse(read('data/native-public-releases.json'))
