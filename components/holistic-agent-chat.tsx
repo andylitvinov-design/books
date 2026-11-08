@@ -709,8 +709,9 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     if(compact&&videoStep&&judgmentChoice===null){
       // Direct editor instructions remain editable; a user's newly stated
       // personal difficulty can explicitly switch to supportive dialogue.
-      const supportSwitch=planJudgmentTurn({message:text,locale,
-        safety:{status:"clear"}}).state==="awaiting_choice";
+      const supportState=planJudgmentTurn({message:text,locale,
+        safety:{status:"clear"},history:messages.slice(-6)}).state;
+      const supportSwitch=supportState==="awaiting_choice"||supportState==="emotion_acknowledged";
       if(!requiresProtectedReply(text,locale)&&!supportSwitch){
         judgmentClickLock.current=false;answerVideo(text);return;
       }
@@ -728,7 +729,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       followTail.current=true;setNewBelow(false);setStatus("");setSource("");setChoices([]);
       setNeedsPrivateSignIn(false);setShowVideoSignIn(false);setEntryOpen(false);setDraft("");
       const candidate=planJudgmentTurn({message:text,locale,
-        safety:{status:"clear"},pending:judgmentView?.pending,choiceId:judgmentChoice});
+        safety:{status:"clear"},history:prior,pending:judgmentView?.pending,choiceId:judgmentChoice});
       const handled=candidate.status!=="abstain";
       const answer=requiresProtectedReply(text,locale)?starter.safety:
         handled?candidate.reply:guestAnswer(text,prior);
@@ -798,7 +799,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
         if(reason==="SIGN_IN_REQUIRED"&&compact&&mode==="rules"){
           // Expired session: answer from public rules; private API stays protected.
           const candidate=planJudgmentTurn({message:text,locale,
-            safety:{status:"clear"},pending:null});
+            safety:{status:"clear"},history:prior,pending:null});
           const answer=requiresProtectedReply(text,locale)?starter.safety:
             candidate.status!=="abstain"?candidate.reply:guestAnswer(text,prior);
           setJudgmentView(!requiresProtectedReply(text,locale)&&candidate.status!=="abstain"?
