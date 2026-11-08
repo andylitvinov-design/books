@@ -17,8 +17,12 @@ const cases = [
   ["en", "imagery-therapy", 320],
   ["en", "imagery-therapy", 390],
   ["en", "imagery-therapy", 430],
+  ["ru", "imagery-therapy", 320],
   ["ru", "imagery-therapy", 390],
+  ["ru", "imagery-therapy", 430],
+  ["es", "imagery-therapy", 320],
   ["es", "imagery-therapy", 390],
+  ["es", "imagery-therapy", 430],
   ["en", "psychohomeopathy", 390],
   ["en", "systemic-constellations", 390],
   ["en", "hypnotherapy-course", 390],
@@ -33,6 +37,9 @@ for (const engine of [chromium, webkit]) {
       const page = await browser.newPage({
         viewport: { width, height }, hasTouch: true,
         deviceScaleFactor: 1, reducedMotion: "reduce",
+        // A PWA Service Worker bypasses Playwright route interception.
+        // Block it so all synthetic CRM POSTs stay in this test's mock.
+        serviceWorkers: "block",
       });
       const errors = [];
       page.on("pageerror", error => errors.push(error.message));
@@ -101,29 +108,96 @@ for (const engine of [chromium, webkit]) {
         assert.equal(await consent.isChecked(),false,label+" consent unchecked by default");
         assert.ok(await form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]').count()<=1,
           label+" attribution is optional and separate");
-        // The current CRM-first capture uses an explicit messenger button, not
-        // a legacy form submit. Before consent it MUST NOT dispatch a POST.
-        assert.equal(await form.locator('button[type="submit"]').count(),0,
-          label+" no default form submission");
+        // The current CRM-first form offers a deliberate request-only submit
+        // alongside messenger choices. Neither may write before consent.
+        const requestOnly=form.locator('button[type="submit"][data-compact-request-only]');
+        assert.equal(await requestOnly.count(),1,label+" one explicit CRM request");
+        assert.ok(await requestOnly.isDisabled(),label+" contact and consent gate request");
+        await form.locator('input[name="contact"][required]').fill('synthetic@example.invalid');
+        assert.ok(await requestOnly.isDisabled(),label+" no CRM submit before consent");
         const action=form.locator('button[data-compact-channel="whatsapp"]');
         await action.waitFor({state:"visible"});
-        let unexpectedWrites=0;
-        await page.route("**/api/service-enquiries",route=>{
-          if(route.request().method()==="POST"){unexpectedWrites++;return route.abort("blockedbyclient");}
+        const originalPageUrl=page.url();
+        const requests=[];
+        let resolveInterceptedPost, rejectInterceptedPost;
+        // The route handler itself is the authoritative proof that the
+        // synthetic POST was blocked; WebKit need not emit requestfailed.
+        const interceptedPost=new Promise((resolve,reject)=>{
+          resolveInterceptedPost=resolve;
+          rejectInterceptedPost=reject;
+        });
+        await page.context().route("**/api/service-enquiries",async route=>{
+          // Real CRM is NEVER contacted by synthetic CI; every POST is
+          // aborted before it can reach any server.
+          if(route.request().method()==="POST"){
+            const interceptedBody=route.request().postDataJSON();
+            requests.push(interceptedBody);
+            try{
+              await route.abort("blockedbyclient");
+              resolveInterceptedPost(interceptedBody);
+            }catch(error){
+              rejectInterceptedPost(error);
+              throw error;
+            }
+            return;
+          }
           return route.continue();
         });
         await action.click();
-        await form.locator('[role="alert"]').waitFor({state:"visible",timeout:10000});
-        assert.equal(unexpectedWrites,0,label+" no CRM request without consent");
+        await page.waitForTimeout(200); // permit browser event processing without consent
+        assert.equal(requests.length,0,label+" no CRM request without consent");
+        assert.equal(await consent.isChecked(),false,label+" channel does not auto-consent");
+        assert.ok(await consent.isVisible(),label+" personal-reply consent stays visible");
+        assert.ok(await requestOnly.isDisabled(),label+" request-only button remains gated");
+        assert.equal(page.url(),originalPageUrl,label+" unconsented action stays on page");
+        // A valid synthetic opt-in must activate the real handler. Intercept
+        // the resulting POST rather than risking a real enquiry or trusting
+        // an error-message animation whose timing depends on hydration.
+        await consent.check();
+        assert.ok(await requestOnly.isEnabled(),label+" request activates after opt-in");
+        const post=page.waitForRequest(req=>
+          req.method()==="POST" && new URL(req.url()).pathname==="/api/service-enquiries",
+          {timeout:10000});
+        // waitForRequest precedes routing on WebKit. Await the awaited
+        // route.abort() completion itself, bounded without network writes.
+        let acknowledgementTimeout;
+        const abortAcknowledgement=Promise.race([
+          interceptedPost,
+          new Promise((_,reject)=>{
+            acknowledgementTimeout=setTimeout(
+              ()=>reject(new Error(label+" synthetic POST interception timed out (intercepted="+requests.length+")")),10000);
+          }),
+        ]);
+        let consentedRequest, acknowledgedPayload;
+        try{
+          await requestOnly.click();
+          [consentedRequest,acknowledgedPayload]=await Promise.all([post,abortAcknowledgement]);
+        }finally{
+          clearTimeout(acknowledgementTimeout);
+        }
+        const payload=consentedRequest.postDataJSON();
+        assert.deepEqual(acknowledgedPayload,payload,
+          label+" exactly the consented POST was aborted before network");
+        assert.equal(payload.contactConsent,true,label+" recorded contact consent");
+        assert.equal(payload.contact.email,"synthetic@example.invalid",label+" synthetic email only");
+        assert.equal(requests.length,1,label+" exactly one synthetic request is intercepted");
+        assert.equal(await page.locator("[data-lead-saved]").count(),0,
+          label+" intercepted request cannot claim a saved CRM receipt");
+        assert.equal(page.url(),originalPageUrl,label+" no thank-you redirect without server receipt");
         assert.equal(await page.locator("[data-sitewide-capture]:visible").count(), 0,
           label + " no duplicate generic form");
         assert.deepEqual(errors, [], label + " unexpected page errors");
+        if (slug === "imagery-therapy" && width === 320 && locale === "en") {
+          await capture.scrollIntoViewIfNeeded();
+          await page.screenshot({ path: output + "/imagery-en-final-capture-320-" + engine.name() + ".png" });
+        }
         if (engine === webkit && slug === "imagery-therapy" && width === 390 && locale === "en") {
           await page.screenshot({ path: output + "/imagery-en-first-screen-webkit.png" });
           await capture.scrollIntoViewIfNeeded();
           await page.screenshot({ path: output + "/imagery-en-final-form-webkit.png" });
         }
         results.push({ label, screens: rows, horizontalOverflow: false, form: true, errors: [] });
+        console.log("PASS visual service route: "+label);
       } finally {
         await page.close();
       }

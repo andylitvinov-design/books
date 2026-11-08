@@ -10,7 +10,12 @@ if(!["localhost","127.0.0.1"].includes(url.hostname)||
 const folder="artifacts/unified-six-dock";
 mkdirSync(folder,{recursive:true});
 const results=[];
-const ids=["mytube","video","ai","practice","master","profile","analysis"];
+const ids=["mytube","video","master","ai","analysis","practice","profile"];
+const labels={
+  en:["MyTube","MyVideo","Services","AI/Chat","Hints","Study","Profile"],
+  ru:["MyTube","MyVideo","Услуги","ИИ/Чат","Подсказки","Обучение","Профиль"],
+  es:["MyTube","MyVideo","Servicios","IA/Chat","Pistas","Estudiar","Perfil"],
+};
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
 // every user-reported route: guest public Studio/Practice/Master, public MyTube,
@@ -86,13 +91,16 @@ async function inspect(browserType,locale,width){
     id+" selected direction is always directly visible");
   assert.equal(await refined.isVisible(),false,
     id+" deeper taxonomy must not push videos down by default");
-  assert.equal(await page.locator("[data-mytube-format-tabs] button").count(),3,
-    id+" three semantic learning shelves are visible");
+  assert.deepEqual(
+    await page.locator("[data-mytube-format-tabs] button").evaluateAll(els=>els.map(el=>el.dataset.mytubeFormatMode)),
+    ["all","shorts","courses","study"],id+" four functional editorial shelves are visible");
   const filterBounds=await moreFilters.boundingBox();
   assert.ok(filterBounds&&filterBounds.height>=44&&filterBounds.height<=60,
     id+" single slim accessible taxonomy bar");
   const links=dock.locator("[data-unified-dock-item]");
   assert.deepEqual(await links.evaluateAll(els=>els.map(el=>el.dataset.unifiedDockItem)),ids,id);
+  assert.deepEqual((await links.locator("span").allTextContents()).map(label=>label.trim()),
+    labels[locale],id+" approved localized labels");
   const bounds=await links.evaluateAll(els=>els.map(el=>{
    const r=el.getBoundingClientRect();return {left:r.left,right:r.right,height:r.height};
   }));
@@ -142,11 +150,28 @@ async function inspect(browserType,locale,width){
     const button=document.querySelector("[data-mytube-category]");
     return !!button && Object.keys(button).some(key=>key.startsWith("__reactProps$"));
   },null,{timeout:15000});
+  const topicRail=page.locator("[data-mytube-subcategory-rail]");
+  assert.equal(await topicRail.isVisible(),true,id+" topic shortcuts remain visible above videos");
+  assert.equal(await topicRail.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])').count(),4,
+    id+" four genuine quick topics are visible before a category is selected");
+  const quickLanguage=page.locator("[data-mytube-quick-language]");
+  assert.equal(await quickLanguage.isVisible(),true,id+" language switcher visible");
+  for(const value of ["ru","en","es","all"]){
+    await quickLanguage.selectOption(value);
+    assert.equal(await quickLanguage.inputValue(),value,id+" quick language "+value);
+  }
+  const quickDuration=page.locator("[data-mytube-duration]");
+  assert.equal(await quickDuration.count(),1,id+" inline verified-duration switcher");
+  if(await quickDuration.isEnabled()){
+    await quickDuration.selectOption("under4");
+    assert.equal(await quickDuration.inputValue(),"under4",id+" duration filters verified source length");
+    await quickDuration.selectOption("all");
+  }
   if(browserType===webkit&&locale==="ru"&&width===390){
    await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
    await page.screenshot({path:folder+"/mytube-webkit-ru-390.png",fullPage:false});
   }
-  for(const mode of ["shorts","study","all"]){
+  for(const mode of ["shorts","courses","study","all"]){
     const control=page.locator('[data-mytube-format-mode="'+mode+'"]');
     await control.click();
     assert.equal(await control.getAttribute("aria-pressed"),"true",id+" active "+mode);
@@ -159,8 +184,10 @@ async function inspect(browserType,locale,width){
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"true",
     id+" one filter action reveals additional filters");
   await moreControls.waitFor({state:"visible",timeout:15000});
-  assert.ok(await moreControls.locator("select").count()>=2,
-    id+" language and sort controls are available after opening filters");
+  assert.ok(await moreControls.locator("select").count()>=1,
+    id+" sort and advanced selectors remain available after opening filters");
+  assert.equal(await quickLanguage.isVisible(),true,
+    id+" original-audio language remains available inline");
   // Subcategory controls are intentionally empty until a direction is chosen.
   assert.equal(await refined.isVisible(),false,
     id+" no empty subcategory panel when all directions are selected");
@@ -169,20 +196,25 @@ async function inspect(browserType,locale,width){
   await refined.waitFor({state:"visible",timeout:15000});
   await page.waitForFunction(()=>document.querySelector('[data-mytube-category="energy-confidence"]')
     ?.getAttribute("aria-pressed")==="true",null,{timeout:15000});
-  const subcategories=page.locator('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
+  const subcategories=topicRail.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
+  assert.equal(await refined.locator('[data-mytube-subcategory]:not([data-mytube-subcategory="all"])').count(),4,
+    id+" advanced and quick taxonomy share four genuine subcategories");
   await subcategories.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await subcategories.count(),4,id+" four unambiguous subcategories");
   await subcategories.first().click();
   await page.waitForFunction(()=>{
-    const first=document.querySelector('[data-mytube-subcategories] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
+    const first=document.querySelector('[data-mytube-subcategory-rail] [data-mytube-subcategory]:not([data-mytube-subcategory="all"])');
     return first?.getAttribute("aria-pressed")==="true";
   },null,{timeout:15000});
   const topics=page.locator('[data-mytube-topics] [data-mytube-topic]:not([data-mytube-topic="all"])');
   await topics.first().waitFor({state:"visible",timeout:15000});
   assert.equal(await topics.count(),4,id+" four distinct topics");
   await page.locator('[data-mytube-category="all"]').click();
-  await page.waitForFunction(()=>!document.querySelector('[data-mytube-subcategories]'),
-    null,{timeout:15000});
+  await page.waitForFunction(()=>{
+    const rail=document.querySelector("[data-mytube-subcategory-rail]");
+    return !!rail && rail.querySelector('[data-mytube-subcategory="all"]')?.getAttribute("aria-pressed")==="true" &&
+      !document.querySelector("#mytube-refine-controls [data-mytube-subcategories]");
+  },null,{timeout:15000});
   await moreFilters.click();
   assert.equal(await moreFilters.getAttribute("aria-expanded"),"false",
     id+" closing filters restores the compact video-first layout");
@@ -248,6 +280,112 @@ async function inspect(browserType,locale,width){
       if(browserType===webkit && locale==="ru" && width===390)
         await page.screenshot({path:folder+"/"+active+"-webkit-ru-390-guest.png",fullPage:false});
       results.push({id:marker,pinned:true,route:path,authenticated:false});
+    }
+  }
+  // Owner-approved 07 Nov Ideas → Voice Warm Peach color QA. Same real
+  // public Studio/editor, never a painted mock or an extra test server.
+  if(browserType===webkit && (width===390 || (locale==="ru" && width===320))){
+    await page.goto(origin+"/"+locale+"/holistic-support/mandala",{
+      waitUntil:"domcontentloaded",timeout:75000,
+    });
+    const ideaButton=page.locator('[data-video-quick-control="phrases"]');
+    await ideaButton.waitFor({state:"visible",timeout:30000});
+    await page.waitForFunction(()=>{
+      const link=document.querySelector('[data-video-quick-control="phrases"]');
+      return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
+    },null,{timeout:20000});
+    await ideaButton.click();
+    const voiceButton=page.locator('[data-video-ideas-tab="voice"]');
+    await voiceButton.waitFor({state:"visible",timeout:30000});
+    await voiceButton.click();
+    const voice=page.locator('[data-ideas-subtab="voice"] [data-hypno-voice]');
+    await voice.waitFor({state:"visible",timeout:30000});
+    const palette=await page.evaluate(()=>{
+      const root=document.querySelector('[data-mandala-mode="video"]');
+      const card=document.querySelector('[data-ideas-subtab="voice"] [data-hypno-voice]');
+      const picker=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-voice]');
+      const phrase=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-phrase]');
+      const selected=document.querySelector('[data-video-ideas-tab="voice"]');
+      const c=node=>node?getComputedStyle(node):null;
+      return {background:c(root)?.backgroundImage||"",card:c(card)?.backgroundColor||"",
+        border:c(card)?.borderTopColor||"",ink:c(picker)?.color||"",
+        pickerBackground:c(picker)?.backgroundColor||"",
+        pickerBorder:c(picker)?.borderTopColor||"",
+        phrase:c(phrase)?.backgroundColor||"",
+        selected:c(selected)?.backgroundImage||"",
+        width:document.documentElement.scrollWidth,
+        viewport:window.innerWidth,
+        dockCount:document.querySelectorAll('[data-hh-unified-dock]').length};
+    });
+    assert.match(palette.background,/rgb\(255,\s*247,\s*243\)/,
+      id+" Voice page must use peach-ivory canvas");
+    assert.equal(palette.card,"rgb(255, 252, 250)",
+      id+" Voice neutral card must be warm near-white");
+    assert.equal(palette.border,"rgb(234, 223, 217)",
+      id+" neutral card border must not be sage green");
+    assert.equal(palette.ink,"rgb(20, 43, 61)",
+      id+" original voice picker has Studio ink");
+    assert.equal(palette.pickerBackground,"rgb(255, 252, 250)",
+      id+" the nested TTS picker must not inherit green sage gradient");
+    assert.equal(palette.pickerBorder,"rgb(234, 223, 217)",
+      id+" TTS picker neutral border is warm not green");
+    assert.equal(palette.phrase,"rgb(255, 249, 245)",
+      id+" phrase inset stays warm, not green");
+    assert.match(palette.selected,/rgb\(8,\s*126,\s*97\)/,
+      id+" active Voice tab uses accessible emerald");
+    assert.ok(palette.width<=palette.viewport+2,
+      id+" Ideas Voice has no horizontal document overflow");
+    assert.equal(palette.dockCount,1,id+" one fixed Holistic House dock");
+    await voice.scrollIntoViewIfNeeded({timeout:15000});
+    await page.screenshot({
+      path:folder+"/ideas-voice-warm-peach-"+locale+"-"+width+"-webkit.png",
+      fullPage:false,animations:"disabled",
+    });
+    results.push({id:id+":ideas-voice-color",palette,passed:true});
+  }
+  // Design Bible §10.13: inspect the REAL six-workspace Studio DOM in one
+  // WebKit RU390 session without calling any TTS/video render provider.
+  if(browserType===webkit && locale==="ru" && width===390){
+    for(const tab of ["video","phrases","editor","effects","pro","ready"]){
+      const nav=page.locator('[data-video-quick-control="'+tab+'"]');
+      await nav.click({timeout:30000});
+      await page.waitForFunction(expected=>{
+        return document.querySelector('[data-active-workspace]')?.getAttribute("data-active-workspace")===expected;
+      },tab,{timeout:20000});
+      const palette=await page.evaluate(tab=>{
+        const root=document.querySelector('[data-mandala-mode="video"]');
+        const studio=document.querySelector('[data-active-workspace="'+tab+'"]');
+        const active=document.querySelector('[data-video-quick-control="'+tab+'"]');
+        const computed=studio?getComputedStyle(studio):null;
+        return {background:root?getComputedStyle(root).backgroundImage:"",
+          surface:computed?.getPropertyValue("--hh-studio-surface").trim()||"",
+          ink:computed?.getPropertyValue("--hh-studio-ink").trim()||"",
+          border:computed?.getPropertyValue("--hh-studio-border").trim()||"",
+          muted:computed?.getPropertyValue("--hh-studio-muted").trim()||"",
+          primary:computed?.getPropertyValue("--hh-studio-primary").trim()||"",
+          active:active?.getAttribute("aria-pressed"),
+          activeInk:active?getComputedStyle(active).color:"",
+          width:document.documentElement.scrollWidth, viewport:innerWidth,
+          dockCount:document.querySelectorAll("[data-hh-unified-dock]").length,
+        };
+      },tab);
+      assert.match(palette.background,/rgb\(255,\s*247,\s*243\)/,
+        id+" "+tab+" warm Studio canvas");
+      assert.deepEqual(
+        [palette.surface,palette.ink,palette.border,palette.muted,palette.primary],
+        ["#FFFCFA","#142B3D","#EADFD9","#5D6A71","#087E61"],
+        id+" "+tab+" inherits the SAME Design Bible palette");
+      assert.equal(palette.active,"true",id+" "+tab+" is the selected real workspace");
+      assert.equal(palette.activeInk,"rgb(255, 255, 255)",
+        id+" "+tab+" active control remains readable");
+      assert.ok(palette.width<=palette.viewport+2,id+" "+tab+" no document overflow");
+      assert.equal(palette.dockCount,1,id+" "+tab+" one fixed Holistic House dock");
+      await nav.scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path:folder+"/studio-palette-"+tab+"-ru-390-webkit.png",
+        fullPage:false,animations:"disabled",
+      });
+      results.push({id:id+":studio-"+tab,palette,passed:true});
     }
   }
   if(browserType===webkit && locale==="ru" && width===390){
@@ -317,32 +455,119 @@ try{
    const v=window.visualViewport;
    return Math.abs(el.getBoundingClientRect().bottom-(v?v.offsetTop+v.height:innerHeight))<=3;
  },null,{timeout:10000});
+ // Owner-approved iHelp first turn: browser geometry is checked on the real
+ // Video Studio route, not a static mock. No media render or external AI call.
+ await page.locator('[data-video-ihelp-header-trigger]').click();
+ const iHelpDialog=page.locator('[data-video-director-chat-details][role="dialog"]');
+ await iHelpDialog.waitFor({state:'visible',timeout:30000});
+ const iHelpWelcome=iHelpDialog.locator('[data-video-chat-welcome]');
+ await iHelpWelcome.waitFor({state:'visible',timeout:30000});
+ for(const width of [320,390,430]){
+   await page.setViewportSize({width,height:844});
+   const geometry=await page.evaluate(()=>{
+     const root=document.querySelector('[data-video-director-chat]');
+     const thread=root?.querySelector('[class*="thread"]');
+     const welcome=root?.querySelector('[data-video-chat-welcome]');
+     const form=welcome?.querySelector('form[data-video-chat-composer]');
+     const nav=root?.querySelector('[data-video-chat-top-tabs]');
+     const hero=welcome?.querySelector('h2');
+     if(!root||!thread||!welcome||!form||!nav||!hero)return null;
+     const a=thread.getBoundingClientRect(),b=form.getBoundingClientRect(),
+       c=nav.getBoundingClientRect(),d=hero.getBoundingClientRect();
+     return {width:root.getBoundingClientRect().width,formCount:root.querySelectorAll('form[data-video-chat-composer]').length,
+       topicIds:[...welcome.querySelectorAll('[data-video-chat-welcome-goal]')].map(x=>x.getAttribute('data-video-chat-welcome-goal')),
+       formVisible:b.height>=43&&b.top>=a.top-2&&b.bottom<=a.bottom+3,
+       titleVisible:d.top>=a.top-3&&d.top<a.bottom-20,
+       navBottom:c.top>=a.bottom-3,
+       horizontalOverflow:root.scrollWidth-root.clientWidth};
+   });
+   assert.ok(geometry,'IHELP_MOBILE_GEOMETRY_NOT_READY_'+width);
+   assert.ok(geometry.width<=width+2,'IHELP_MOBILE_WINDOW_OVERFLOW_'+width);
+   assert.equal(geometry.formCount,1,'IHELP_ONE_REAL_COMPOSER_'+width);
+   assert.deepEqual(geometry.topicIds,['body','energy','love','business','stress'],
+     'IHELP_TOPIC_CHIPS_MUST_FOLLOW_REFERENCE_'+width);
+   assert.ok(geometry.formVisible,'IHELP_INPUT_MUST_BE_VISIBLE_ABOVE_DOCK_'+width);
+   assert.ok(geometry.titleVisible,'IHELP_HERO_MUST_START_IN_VIEW_'+width);
+   assert.ok(geometry.navBottom,'IHELP_TABS_MUST_FOLLOW_WELCOME_'+width);
+   assert.ok(geometry.horizontalOverflow<=2,'IHELP_OVERFLOW_'+width);
+   if(width===390)await page.screenshot({path:folder+'/ihelp-approved-welcome-390.png'});
+ }
+ await page.setViewportSize({width:390,height:844});
+ await iHelpWelcome.locator('[data-video-chat-welcome-create]').click();
+ await iHelpDialog.locator('[data-chat-inline-choices]').waitFor({state:'visible',timeout:15000});
+ assert.equal(await iHelpDialog.locator('form[data-video-chat-composer]').count(),1,
+   'IHELP_COMPOSER_STAYS_SINGLE_AFTER_START');
+ await iHelpDialog.locator('[data-video-ihelp-header] button').click();
+ await iHelpDialog.waitFor({state:'hidden',timeout:15000});
+ results.push({journey:"Owner iHelp screenshot → visible composer and category chips at 320/390/430 → real Director choices",passed:true});
  await page.locator('[data-unified-dock-item="ai"]').click();
  await page.waitForURL(/\/ru\/app\/messages\?section=ai/,{timeout:30000});
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),3);
+ assert.equal(await page.locator("[data-chat-top-tabs] > *").count(),4,
+   "Messenger rail now has AI, Orders, Clients and News");
+ const news=page.locator('[data-chat-top-tabs] button[aria-controls="hh-news-panel"]');
+ assert.equal(await news.count(),1,"News tab is visible and uniquely addressable");
+ await news.click();
+ await page.locator('[data-orders-clients-hub][data-section="news"]').waitFor({state:"visible",timeout:30000});
+ await page.locator("#hh-news-panel").waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator("#hh-ai-panel").isVisible(),false,
+   "the private News panel does not overlay the AI conversation");
+ await page.locator('[data-chat-top-tabs] button[aria-controls="hh-ai-panel"]').click();
+ await page.locator("#hh-ai-panel").waitFor({state:"visible",timeout:30000});
  const chat=page.locator("[data-hh-agent-preview]");
  await chat.waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-chat-menu-rail]").count(),0,
    "obsolete five-button rail must not consume transcript space");
- await chat.locator("[data-hh-ai-welcome]").waitFor({state:"visible"});
+ await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
  const log=chat.locator('[role="log"]');
- const starters=chat.locator('[data-hh-ai-start]');
- assert.equal(await starters.count(),4,"real video, meditation, test and master start actions");
- for(const id of ["video","meditation","hint","master"]){
-   const item=chat.locator('[data-hh-ai-start="'+id+'"]');
-   await item.waitFor({state:"visible"});
+ const starters=chat.locator('[data-hh-ai-quick-actions] [data-hh-ai-choice]');
+ const six=["test","video","practice","session","course","ask"];
+ assert.deepEqual(await starters.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hh-ai-choice"))),
+   six,"single iChat landing displays exactly six real actions");
+ assert.equal(await chat.locator("iframe").count(),0,"approved introduction video needs a deliberate Play click");
+ for(const id of six){
+   const item=chat.locator('[data-hh-ai-choice="'+id+'"]');
+   await item.waitFor({state:"visible",timeout:15000});
    const rect=await item.boundingBox();
-   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible start button");
+   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible action");
  }
- const before=await log.locator("p").count();
- await chat.locator('[data-hh-ai-start="video"]').click();
+ // The welcome card has its own paragraph, but it is removed when the
+ // conversation starts. Count actual DIRECT turns, never the landing copy.
+ const before=await log.evaluate(node=>[...node.children].filter(child=>
+   child.matches('p,[data-hh-ai-assistant-message]')).length);
+ await chat.locator('[data-hh-ai-choice="video"]').click();
  await page.waitForFunction(count=>{
-   const root=document.querySelector("[data-hh-agent-preview]");
+   const root=document.querySelector('[data-hh-agent-preview]');
+   const transcript=root?.querySelector('[role="log"]');
+   const turns=[...(transcript?.children||[])].filter(child=>
+     child.matches('p,[data-hh-ai-assistant-message]'));
    return root?.getAttribute("data-has-messages")==="true"
-     && root.querySelectorAll('[role="log"] p').length>=count+2;
+     && turns.length>=count+2
+     && turns.some(child=>child.matches('[data-hh-ai-assistant-message]'));
  },before,{timeout:10000});
- assert.equal(await starters.count(),0,"introduction gives way to the live transcript");
+ assert.equal(await starters.count(),0,"landing yields to the original one chat transcript");
+ // The current Create Content entry deliberately asks format -> source -> short
+ // personal idea BEFORE the canonical video goal tree. Earlier browser QA
+ // expected the retired one-tap goal branch and timed out without testing it.
+ const contentKinds=chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind]');
+ await contentKinds.first().waitFor({state:"visible",timeout:15000});
+ assert.deepEqual(await contentKinds.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-content-kind"))),
+   ["video","audio","meditation","message"],
+   "Create Content exposes four real formats before video planning");
+ assert.equal(await chat.locator("[data-hh-video-sign-in]").count(),0,
+   "no Google login at content-format choice");
+ await chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind="video"]').click();
+ const contentSources=chat.locator('[data-hh-content-step="source"] [data-hh-content-source]');
+ await contentSources.first().waitFor({state:"visible",timeout:15000});
+ assert.deepEqual(await contentSources.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-content-source"))),
+   ["text","voice"],"video supports the two approved input methods");
+ await chat.locator('[data-hh-content-step="source"] [data-hh-content-source="text"]').click();
+ await chat.locator('[data-hh-content-step="brief"]').waitFor({state:"attached",timeout:15000});
+ await chat.locator("textarea").fill("Хочу больше спокойствия и уверенности");
+ await chat.locator('button[type="submit"]').click();
+ await chat.locator('[data-hh-video-chat-step="category"]').waitFor({state:"visible",timeout:15000});
  // Personal-video creation has the exact MyTube four-goal hierarchy, no
  // unrelated ready-made-video CTA and no Google wall before the brief.
  const videoGoals=chat.locator("[data-hh-video-chat-options] [data-hh-video-chat-choice]");
@@ -384,23 +609,37 @@ try{
    .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
- // Test every starter against its real route or visible live message.
- await chat.getByRole("button",{name:"Новый разговор"}).click();
- await chat.locator('[data-hh-ai-start="meditation"]').click();
+ // Check the six approved iChat actions through actual user clicks, never mocked routes.
+ const resetViaMore=async()=>{
+   // The current compact Messenger keeps New conversation inside the actual
+   // + (More actions) menu; do not test a button hidden under closed details.
+   const more=chat.locator('details[data-hh-ai-more]');
+   await more.locator('summary').click();
+   await more.getByRole('button',{name:'Новый разговор'}).click();
+   if(await more.evaluate(node=>node.open))
+     await more.locator('summary').click();
+ };
+ await resetViaMore();
+ await chat.locator('[data-hh-ai-choice="practice"]').waitFor({state:"visible"});
+ await chat.locator('[data-hh-ai-choice="practice"]').click();
  await chat.getByText(/сколько минут у вас есть/).waitFor({state:"visible"});
- await chat.getByRole("button",{name:"Новый разговор"}).click();
- await chat.locator('[data-hh-ai-start="hint"]').click();
- const testLink=chat.locator("[data-hh-ai-tests-link]");
- await testLink.waitFor({state:"visible"});
- assert.equal(await testLink.getAttribute("href"),"/ru/tests");
- await testLink.click();
+ await resetViaMore();
+ await chat.locator('[data-hh-ai-choice="ask"]').click();
+ assert.equal(await chat.locator("textarea").evaluate(node=>document.activeElement===node),
+   true,"Ask focuses the existing unsent composer without auto-submission");
+ await chat.locator('[data-hh-ai-choice="test"]').click();
  await page.waitForURL(/\/ru\/tests\/?$/,{timeout:45000});
  await page.locator('[data-free-entry-landing="tests"]').waitFor({state:"visible",timeout:30000});
  await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
- await chat.locator('[data-hh-ai-start="master"]').waitFor({state:"visible",timeout:30000});
- await chat.locator('[data-hh-ai-start="master"]').click();
- await page.waitForURL(/\/ru\/services\/free-situation-review\/?$/,{timeout:45000});
- await page.locator('[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-choice="session"]').waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-choice="session"]').click();
+ await page.waitForURL(/\/ru\/services\/?$/,{timeout:45000});
+ await page.locator("h1").first().waitFor({state:"visible",timeout:30000});
+ await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+ await chat.locator('[data-hh-ai-choice="course"]').waitFor({state:"visible",timeout:30000});
+ await chat.locator('[data-hh-ai-choice="course"]').click();
+ await page.waitForURL(/\/ru\/academy\/?$/,{timeout:45000});
+ await page.locator("h1").first().waitFor({state:"visible",timeout:30000});
  await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
@@ -414,7 +653,7 @@ try{
  assert.equal(await page.locator("[data-support-practice-tabs] > *").count(),3);
  await page.locator('[data-support-practice-tabs] button').nth(1).click();
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
- results.push({journey:"MyTube → Video → live AI transcript and four active starters → private Orders/Clients → Practice",passed:true});
+ results.push({journey:"MyTube → Video → six real iChat choices → one protected transcript → private Orders/Clients → Practice",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
  // with one seventh link to the REAL free express-review page.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
@@ -460,14 +699,22 @@ try{
  await unifiedProfile.click();
  await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
  await page.locator('[data-profile-hub-tabs]').waitFor({state:"visible",timeout:45000});
- assert.equal(await page.locator('[data-profile-tab="view"][aria-current="page"]').count(),1);
- await page.locator('[data-profile-tab="create"]').click();
- await page.waitForURL(/\/ru\/personality-profiles\/?$/,{timeout:45000});
- await page.locator('[data-profile-hub-tabs][data-profile-active="create"]').waitFor({state:"visible",timeout:45000});
+ assert.equal(await page.locator('[data-profile-tab="today"][aria-current="page"]').count(),1);
+ // The protected #3909 profile has six real sections; old View/Create tabs
+ // and /personality-profiles were replaced. Test the visible DOM and navigation,
+ // not a hidden fallback or loosened count.
+ assert.deepEqual(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').evaluateAll(
+   links=>links.map(link=>link.dataset.profileTab)),
+   ["today","tests","state","path","courses","reports"],
+   "the guest and signed-in My Space show the same six canonical sections");
+ await page.locator('[data-profile-tab="tests"]').click();
+ await page.waitForURL(/\/ru\/app\/tests\/?$/,{timeout:45000});
+ await page.locator('[data-profile-hub-tabs][data-profile-active="tests"]').waitFor({state:"visible",timeout:45000});
+ assert.equal(await page.locator('[data-profile-tab="tests"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('.mobile-bottom-navigation:visible').count(),0);
- assert.equal(await page.locator('[data-profile-tab]').count(),4);
- results.push({journey:"Public Profile → private guest hub → existing four-area creator with one seven-tab dock",passed:true});
+ assert.equal(await page.locator('[data-profile-hub-tabs] [data-profile-tab]').count(),6);
+ results.push({journey:"Public Profile → six-tab My Space Today → protected Tests with one seven-tab dock",passed:true});
 
 }finally{await browser.close();}
 writeFileSync(folder+"/results.json",JSON.stringify(results,null,2));

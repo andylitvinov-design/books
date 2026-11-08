@@ -71,7 +71,7 @@ test('Private photos remain linked to the new one-screen customer messenger',()=
     'ME-GOAL-OBSTACLE drawing, shared voluntarily for private review'])
     assert.ok(chat.includes(marker),marker)
   assert.match(chat,/!m\.photo\|\|!photoOnlyMessage\.test\(String\(m\.text\|\|''\)\.trim\(\)\)/)
-  assert.match(chat,/m\.photo&&selected\.channel==='telegram'&&<CrmTelegramPhoto/)
+  assert.match(chat,/m\.photo&&\['telegram','whatsapp'\]\.includes\(selected\.channel\)&&<CrmTelegramPhoto/)
   assert.match(chat,/purpose=\{m\.photoPurpose==='drawing'\?'drawing':'portrait'\}/)
   assert.match(chat,/placeholder=\{conversationOnly\|\|compact\?/)
   assert.match(inbox,/function PrivateAvatar\(/)

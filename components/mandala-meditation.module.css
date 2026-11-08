@@ -262,3 +262,29 @@
     padding-top:0!important;
   }
 }
+
+
+/* Design Bible §10.12 — Video Studio Ideas → Voice ONLY. The historic
+   yellow/olive Video Mandala canvas is not the owner-approved sunlit-peach
+   Voice surface. :has targets the mounted active workspace, so Goal,
+   Text, Montage, PRO, and the separate photo editor retain their themes. */
+.page[data-mandala-mode="video"]:has([data-active-workspace="phrases"] [data-ideas-subtab="voice"]){
+  background:linear-gradient(165deg,#FFF7F3 0%,#FFF4EC 55%,#FFF0E8 100%);
+  color:#142B3D
+}
+
+/* Design Bible §10.13 — one warm Video Studio canvas for every existing
+   workspace including Goal, Ideas/Text/Voice, Montage, Hypno, PRO and Ready.
+   Photo Mandala and unrelated pages explicitly retain their own themes. */
+.page[data-mandala-mode="video"]:has([data-active-workspace]){
+  background:linear-gradient(165deg,#FFF7F3 0%,#FFF4EC 55%,#FFF0E8 100%);
+  color:#142B3D
+}
+
+
+/* Video Studio ends at the two Goal actions. The old external Voice Studio
+   shortcut, legacy Mandala disclosure and redundant disclaimer stay off
+   the Video page; the independent ?mode=photo route remains available. */
+.page[data-mandala-mode="video"] .voiceStudioLink,
+.page[data-mandala-mode="video"] .advancedWorkbench,
+.page[data-mandala-mode="video"] .caution{display:none!important}

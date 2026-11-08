@@ -1,13 +1,16 @@
 import { NextResponse,after } from 'next/server'
 import { getAppConfig } from '@/lib/app/config'
+import {channelTransportReady} from '@/lib/crm/messenger-policy'
+import {consumeRate} from '@/lib/app/database'
 import { PRIVATE_HEADERS, safeError } from '@/lib/app/http'
 import { MESSENGER_CHANNELS } from '@/lib/crm/messenger-policy'
 import { operationHash } from '@/lib/app/crypto'
 import { telegramPromptFailureEvidence } from '@/lib/crm/telegram-prompt-diagnostics.mjs'
-import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic } from '@/lib/crm/messenger-webhook'
-import { sendTelegramDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage } from '@/lib/crm/messenger-provider'
+import { verifyMessengerWebhook,verifyMessengerChallenge,normalizeMessengerUpdates,ingestMessengerUpdate,processTelegramDiagnostic,processWhatsAppAccountLink,processWhatsAppDiagnostic } from '@/lib/crm/messenger-webhook'
+import { sendTelegramDiagnosticPrompt, sendWhatsAppDiagnosticPrompt, ensureTelegramInlineWebhookUpdates, acknowledgeTelegramInlineCallback, sendTelegramCompanionMessage } from '@/lib/crm/messenger-provider'
 import { telegramPresentationOnStart } from '@/lib/crm/telegram-presentation.mjs'
 import {processTelegramCompanion} from '@/lib/crm/telegram-companion-service'
+import {shouldBootstrapTelegramNativeMenu} from '@/lib/crm/telegram-companion-native-commands.mjs'
 import { receiveOwnerTelegramVideoWebhook } from '@/lib/practitioners/owner-telegram-video-service'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
@@ -56,6 +59,22 @@ export async function POST(request,{params}){
     if(provider==='telegram'&&updates.some(event=>event.type==='incoming'&&!event.callbackId))
       await ensureTelegramInlineWebhookUpdates()
     for(const event of updates){
+      if(provider==='whatsapp'){
+        const proof=await processWhatsAppAccountLink(event,config)
+        if(proof.handled||!channelTransportReady('whatsapp'))continue
+        if(event.type==='incoming'){
+          const intake=await processWhatsAppDiagnostic(event,config)
+          if(intake.handled&&intake.reply){
+            // Consent/CRM state are committed before one reply attempt.
+            // Uncertain provider outcomes must not automatically repeat.
+            try{await sendWhatsAppDiagnosticPrompt({
+              to:intake.to,text:intake.reply,keyboard:intake.keyboard,locale:intake.locale
+            })}catch{console.error('HH_CRM_WA_PROMPT_SEND_UNCONFIRMED')}
+          }
+          // No contact is created from an unconsented generic message.
+          continue
+        }
+      }
       if(provider==='telegram'){
         if(event.type==='callback_ignored'){
           try{await acknowledgeTelegramInlineCallback({
@@ -65,6 +84,29 @@ export async function POST(request,{params}){
         }
         const companion=await processTelegramCompanion(event,config)
         if(companion.handled){
+          // Client-initiated bootstrap of native Telegram Menu. Never do this
+          // for callbacks, diagnostic deep links, media, STOP or owner video.
+          // The signed webhook + committed Companion session are already
+          // verified, and all Bot API calls run after the reply is committed.
+          if(companion.text&&!event.callbackId&&shouldBootstrapTelegramNativeMenu(
+             event,process.env.HH_CRM_MSG_TELEGRAM_USERNAME)){
+            after(async()=>{
+              try{
+                // Across serverless instances, at most one bootstrap attempt
+                // per rolling hour. Existing daily 09:00 cron remains fallback.
+                await consumeRate(config,{op:'hh-crm-tg-native-menu-on-first-home'},1,3600)
+                const {ensureTelegramCompanionNativeMenu}=await import(
+                  '@/lib/crm/messenger-provider')
+                const status=await ensureTelegramCompanionNativeMenu(process.env)
+                if(status.ready)console.info('HH_CRM_TG_COMMAND_MENU_READY',{
+                  source:'first_home',changedScopes:status.changedScopes||0})
+                else console.error('HH_CRM_TG_COMMAND_MENU_NOT_READY',{reason:status.reason})
+              }catch(error){
+                if(error?.code!=='RATE_LIMITED')
+                  console.error('HH_CRM_TG_COMMAND_MENU_SETUP_FAILED')
+              }
+            })
+          }
           if(event.callbackId){
             try{await acknowledgeTelegramInlineCallback({
               callbackId:event.callbackId,to:event.userId,
@@ -73,7 +115,7 @@ export async function POST(request,{params}){
           if(companion.text){
             try{await sendTelegramCompanionMessage({
               to:companion.to,text:companion.text,
-              markup:companion.markup,locale:companion.locale,
+              markup:companion.markup,locale:companion.locale,photo:companion.photo===true,
               presentation:companion.presentationFirstStart===true})
             }catch(error){
               const evidence=telegramPromptFailureEvidence(event.eventId,error,

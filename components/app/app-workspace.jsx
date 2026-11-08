@@ -61,13 +61,14 @@ import AccountLoginMethods from '@/components/app/account-login-methods'
 import AccountMessagingEntry from '@/components/app/account-messaging-entry'
 import InstallHolisticHouse from '@/components/app/install-holistic-house'
 import PostSignupInstallOffer, { isPostSignupInstallEligible } from '@/components/app/post-signup-install-offer'
-import { shouldPauseNewSignupSave } from '@/lib/pwa/post-signup-flow'
+import { shouldPauseNewSignupSave, shouldOfferWhatsAppAfterSignup } from '@/lib/pwa/post-signup-flow'
 import { isNativePsiAlchemy, isNativeHolisticHouse } from '@/lib/native/client'
 import courseQuizStyles from './course-quiz.module.css'
 import Course14DayOverview from '@/components/app/course-14-day-overview'
 import CourseGuestLanding from '@/components/app/course-guest-landing'
 import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
 import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
+import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
 import CabinetToday from '@/components/app/cabinet-today'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
@@ -163,6 +164,15 @@ export default function AppWorkspace({ locale, path = [] }) {
   const page = path[0] || 'portrait',
     recordId = path[1],
     root = `/${locale}/app`
+  // Preserve existing report and goal bookmarks when opening a split Profile tab.
+  useEffect(() => {
+    if (page !== 'portrait') return
+    const fragment = window.location.hash
+    const destination = fragment === '#personal-reports' ? 'reports'
+      : fragment === '#hh-development-program' ? 'path' : null
+    if (destination && searchParams.get('space') !== destination)
+      router.replace(root + '/portrait?space=' + destination + fragment, { scroll: false })
+  }, [page, root, router, searchParams])
   const practiceInner = page === 'practice'
   const retestLifetime = useRef({ mounted: false, epoch: 0 })
   const retestScope = useRef(null)
@@ -248,7 +258,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     pendingSaveInstallAccountId.current=null
     if(shouldPauseNewSignupSave({
       pendingAccountId,accountId:currentAccountId,installEligible:isPostSignupInstallEligible(),
-    })){
+    }) || shouldOfferWhatsAppAfterSignup({pendingAccountId,accountId:currentAccountId})){
       savedExitDestination.current=destination
       setSavedInstallContext(true)
       setInstallOfferAccountId(currentAccountId)
@@ -544,7 +554,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state !== 'ready' && page === 'portrait' && !stressSignup)
     return (
       <main className="hh-app hh-app--cabinet-guest">
-        <ProfileHubTabs locale={locale} active="view" />
+        <ProfileHubTabs locale={locale} active="today" />
         <CabinetGuestOverview
           locale={locale} busy={busy} onSignin={()=>signin('google')}
           onTelegramSignin={()=>signin('telegram')} telegramAvailable={telegramAvailable}
@@ -558,7 +568,7 @@ export default function AppWorkspace({ locale, path = [] }) {
   if (state !== 'ready')
     return (
       <main className="hh-app">
-        {['portfolio','tests','settings'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : 'results'} />}
+        {['portfolio','tests','settings','monitoring'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'monitoring' ? 'state' : page === 'tests' ? 'tests' : 'reports'} />}
         <section className="hh-entry hh-panel">
           <p className="hh-kicker">Holistic House · {c.portrait}</p>
           <h1>{state === 'unavailable' ? c.unavailable : stressSignup
@@ -668,7 +678,7 @@ export default function AppWorkspace({ locale, path = [] }) {
           </div>
         </details>
       </header>}
-      {!documentReader && !practiceInner && page !== 'runs' && (
+      {!documentReader && !practiceInner && page !== 'runs' && page !== 'settings' && (
         <nav className="hh-nav" aria-label={c.account}>
           {nav.map(({ id, label, href }) => (
             <Link key={id} href={href} prefetch={false}
@@ -702,21 +712,28 @@ export default function AppWorkspace({ locale, path = [] }) {
         }} />
       ) : (
         <>
-          {['portrait','portfolio','tests','settings'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? 'view' : 'results'} resultCount={page === 'portrait' ? (data.results || []).length : null} />}
+          {['portrait','portfolio','tests','settings','monitoring','course','reports'].includes(page) && <ProfileHubTabs locale={locale} active={page === 'settings' ? 'settings' : page === 'portrait' ? (searchParams.get('space') === 'path' ? 'path' : searchParams.get('space') === 'reports' ? 'reports' : 'today') : page === 'portfolio' || page === 'reports' ? 'reports' : page === 'monitoring' ? 'state' : page === 'course' ? 'courses' : 'tests'} resultCount={page === 'portrait' && !searchParams.get('space') ? (data.results || []).length : null} account={page === 'settings' ? data.account : null} />}
           {page === 'continue' && (
             <SaveContinuation data={data} locale={locale} reload={load} onComplete={completeSaveContinuation} />
           )}
           {page === 'portrait' && (
-            <>
-              <ProfileResultsArchive locale={locale} results={data.results || []} />
-              <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
-              <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
-              <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
-              <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []}
-                reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
-            </>
-          )}
-          {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
+             <>
+               {!['path','reports'].includes(searchParams.get('space')) && <>
+                 <CabinetToday locale={locale} practitioner={Boolean(data.practitioner || data.practice)} owner={Boolean(data.practitioner)} />
+                 <AccountMessagingEntry key={'messaging:' + data.account.id} accountId={data.account.id} locale={locale} />
+               </>}
+               {searchParams.get('space') === 'path' && <>
+                 <CabinetJourney key={'journey:' + data.account.id} accountId={data.account.id} locale={locale} />
+                 <DevelopmentProgram key={'development:' + data.account.id} accountId={data.account.id} locale={locale} results={data.results || []} hideBottomNotes />
+               </>}
+               {searchParams.get('space') === 'reports' && <>
+                 <ProfileResultsArchive locale={locale} results={data.results || []} />
+                 <ProfileDomains locale={locale} mode="account" accountId={data.account.id} results={data.results || []} savedReports={data.savedReports || []} savedDocuments={data.savedDocuments || []} hideDevelopment
+                   reportsContent={<><PersonalAnalysisPanel key={data.account.id} locale={locale} reports={reportTimeline(data.savedReports)} savedSessions={data.savedSessions || []} embedded /><ClientExpressReports locale={locale} accountId={data.account.id}/></>} />
+               </>}
+             </>
+           )}
+           {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
            {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
@@ -828,27 +845,43 @@ export default function AppWorkspace({ locale, path = [] }) {
           {page === 'history' && <><HistoryView data={data} locale={locale} reload={load} /><ClientMaterialsFromAndy locale={locale} /></>}
           {page === 'consultations' && <Consultations data={data} locale={locale} reload={load} initialServiceId={searchParams.get('service') || ''} source={searchParams.get('source') || ''} requestedMessageId={searchParams.get('request') || ''} />}
           {page === 'settings' && (
-            <>
-              <Preferences data={data} locale={locale} onDone={load} />
-              {!nativeApp && <AccountLoginMethods key={'oauth:'+data.account.id}
-                accountId={data.account.id} locale={locale}/>}
-              <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
-              <SubscriptionSettings />
-              <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
-              <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
-              <InstallHolisticHouse locale={locale} />
-              {nativeApp
-                ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
-                : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
-              <Privacy
-                locale={locale}
-                logout={logout}
-                onDeleted={() => {
-                  goSignedOut(setData)
-                  setDeleted(true)
-                }}
-              />
-            </>
+            <div data-profile-settings-disclosures>
+              <ProfileSettingsDisclosure id="hh-settings-account"
+                title={locale === 'ru' ? 'Аккаунт и личные данные' : locale === 'es' ? 'Cuenta y datos' : 'Account & personal data'}
+                subtitle={locale === 'ru' ? 'Имя, язык, часовой пояс и вход' : 'Name, language, time zone and sign-in'}>
+                <Preferences data={data} locale={locale} onDone={load} />
+                {!nativeApp && <AccountLoginMethods key={'oauth:'+data.account.id}
+                  accountId={data.account.id} locale={locale}/>}
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-messengers" deepLinks={['hh-telegram-connect']}
+                title={locale === 'ru' ? 'Telegram и WhatsApp' : 'Telegram & WhatsApp'}
+                subtitle={locale === 'ru' ? 'Подключения, согласия и сообщения' : 'Connections, consent and messages'}>
+                <MessengerNotificationSettings key={"messenger:" + data.account.id} accountId={data.account.id} locale={locale} />
+                <CommunicationPreferences key={data.account.id} accountId={data.account.id} locale={locale} />
+                <ClientContactPhone key={'client-phone:'+data.account.id} accountId={data.account.id} locale={locale} />
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-plans"
+                title={locale === 'ru' ? 'Подписка и тарифы' : locale === 'es' ? 'Suscripción y planes' : 'Subscription & plans'}
+                subtitle="Free · Practice €5 · Master €20 · Pro €40">
+                <SubscriptionSettings />
+              </ProfileSettingsDisclosure>
+              <ProfileSettingsDisclosure id="hh-settings-more" deepLinks={['hh-phone-notifications']}
+                title={locale === 'ru' ? 'Уведомления и приватность' : 'Notifications & privacy'}
+                subtitle={locale === 'ru' ? 'Уведомления, установка и управление данными' : 'Alerts, install and data controls'}>
+                <InstallHolisticHouse locale={locale} />
+                {nativeApp
+                  ? <NativeMessageNotifications key={'native:'+data.account.id} accountId={data.account.id} locale={locale}/>
+                  : <NotificationSettings key={"push:" + data.account.id} accountId={data.account.id} locale={locale} />}
+                <Privacy
+                  locale={locale}
+                  logout={logout}
+                  onDeleted={() => {
+                    goSignedOut(setData)
+                    setDeleted(true)
+                  }}
+                />
+              </ProfileSettingsDisclosure>
+            </div>
           )}
         </>
       )}
@@ -3307,7 +3340,7 @@ function SavedReportPage({ id, locale, reload }) {
     try {
       await appFetch('reports/' + id + '/remove', {})
       await reload()
-      router.replace('/' + locale + '/app/portrait#personal-reports')
+      router.replace('/' + locale + '/app/portrait?space=reports#personal-reports')
     } catch (e) {
       setError(e)
       setBusy(false)
@@ -3318,7 +3351,7 @@ function SavedReportPage({ id, locale, reload }) {
       <section className="hh-panel">
         <h1>{ru ? 'Отчёт больше недоступен' : 'Report no longer available'}</h1>
         <p>{ru ? 'Ссылка в истории может оставаться как запись, но содержимое было отозвано или исходный отчёт больше недоступен.' : 'The history reference may remain, but the content was withdrawn or the source report is no longer available.'}</p>
-        <Link className="hh-primary" href={'/' + locale + '/app/portrait#personal-reports'} prefetch={false}>
+        <Link className="hh-primary" href={'/' + locale + '/app/portrait?space=reports#personal-reports'} prefetch={false}>
           {ru ? 'К моим отчётам' : 'Back to My Reports'}
         </Link>
       </section>
@@ -3328,7 +3361,7 @@ function SavedReportPage({ id, locale, reload }) {
   return (
     <article className="hh-saved-document-reader" data-canonical-saved-report>
       <nav className="hh-saved-document-reader__toolbar" aria-label={ru ? 'Действия с отчётом' : 'Report actions'}>
-        <Link href={'/' + locale + '/app/portrait#personal-reports'} prefetch={false}>
+        <Link href={'/' + locale + '/app/portrait?space=reports#personal-reports'} prefetch={false}>
           {ru ? '← Мои отчёты' : '← My reports'}
         </Link>
         <Link href={'/' + (ru ? 'en' : 'ru') + '/app/reports/' + encodeURIComponent(id)} prefetch={false}>
