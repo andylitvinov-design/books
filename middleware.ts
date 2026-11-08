@@ -157,9 +157,9 @@ export async function middleware(request: NextRequest) {
   // Public video pages use only these two reviewed embed providers. Keep the
   // cabinet, reports, APIs and document previews on the restrictive policy.
   const publicVideoDocument = publicDocument || videoManager
-  // The published Messenger welcome is click-to-load, on this exact private
-  // route only. All unrelated Account, client and API pages still forbid iframes.
-  const messengerIntroductionEmbed = /^\/(en|ru|es)\/app\/messages\/?$/.test(pathname)
+  // The owner-published RU/EN Messenger introductions are native MP4, not iframes.
+  // Permit only their exact private entry route to load the pinned media CDN.
+  const messengerIntroductionVideo = /^\/(en|ru|es)\/app\/messages\/?$/.test(pathname)
   // Only actual client-session pages and their owner preview may display the
   // explicit, click-to-load YouTube education iframe. Keep all other private
   // pages, Account routes, reports, and APIs at frame-src 'none'.
@@ -240,8 +240,8 @@ export async function middleware(request: NextRequest) {
   const csp = [
     "default-src 'self'", `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${youtubeOAuthUploadAllowed ? ' https://accounts.google.com' : ''}${developmentEval}`, "style-src 'self' 'unsafe-inline'",
     (academyVideoPage ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : publicVideoDocument ? "img-src 'self' data: https://i.ytimg.com https://psitrends.com https://www.psitrends.com https://www.google-analytics.com" : "img-src 'self' data: https://www.google-analytics.com") + (ownerMessengerImages || publicMandalaLocalImages || supportMobilePublishedMedia || privateSupportPhotoCabinet ? ' blob:' : '') + listingImageOrigin + eventsPosterImageOrigin + practitionerCourseMediaOrigin + reikiPhotoOrigin + directMessageStorageOrigin + privateSupportPhotoOrigin,
-    youtubeOAuthUploadAllowed ? "frame-src https://accounts.google.com" : publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" + (practitionerCourseReader ? ' https://player.vimeo.com' : '') : sessionEducationEmbed ? "frame-src https://www.youtube-nocookie.com" : messengerIntroductionEmbed ? "frame-src https://www.youtube-nocookie.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
-    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager||coachingOwnerAudioManager||practitionerCourseEditor||publicMandalaLocalImages||ownerMessengerImages||liveAudioPage) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin + practitionerCourseMediaOrigin + (supportMobilePublishedMedia ? listingImageOrigin : '') + directMessageStorageOrigin,
+    youtubeOAuthUploadAllowed ? "frame-src https://accounts.google.com" : publicVideoDocument ? "frame-src https://www.youtube-nocookie.com https://app.heygen.com" + (practitionerCourseReader ? ' https://player.vimeo.com' : '') : sessionEducationEmbed ? "frame-src https://www.youtube-nocookie.com" : practitionerDraftPreview ? "frame-src blob:" : "frame-src 'none'",
+    (tantraReikiPage ? "media-src 'self' https://psitrends.com" : "media-src 'self'") + ((ownerRecorderPage||deliveryOrigin||reportNarrationReader||reikiIntroAudioManager||coachingOwnerAudioManager||practitionerCourseEditor||publicMandalaLocalImages||ownerMessengerImages||liveAudioPage) ? ' blob:' : '') + deliveryOrigin + reikiIntroAudioOrigin + practitionerCourseMediaOrigin + (supportMobilePublishedMedia ? listingImageOrigin : '') + directMessageStorageOrigin + (messengerIntroductionVideo ? ' https://resource2.heygen.ai' : ''),
     "font-src 'self'", "connect-src 'self'" + liveAudioOrigin + (youtubeOAuthUploadAllowed ? " https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com" : "") + deliveryOrigin + directMessageStorageOrigin + externalVideoUploadOrigin + practitionerCourseMediaOrigin + ((reikiIntroAudioManager||coachingOwnerAudioManager) ? reikiIntroAudioOrigin : '') + (privateDocument ? "" : " https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com"), "object-src 'none'", "base-uri 'none'", "form-action 'self'" + (youtubeOAuthUploadAllowed ? " https://accounts.google.com" : ""), "frame-ancestors 'none'",
   ].join('; ')
   requestHeaders.set('x-nonce', nonce)

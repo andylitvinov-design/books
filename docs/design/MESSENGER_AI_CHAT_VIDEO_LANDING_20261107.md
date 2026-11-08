@@ -13,7 +13,7 @@
 | Region | Approved | Implementation |
 | --- | --- | --- |
 | Top | AI / My orders / My clients / News, Messenger compact header | Existing real hub; retain |
-| Hero | sunrise woman, greeting, prominent video play | ~136–195px natural-photo poster, RU approved film only after tap |
+| Hero | sunrise woman, greeting, prominent video play | ~136–195px natural-photo poster, locale-matched RU/EN native captioned MP4 only after tap |
 | Intro | 40px same woman avatar, one warm chat prompt | small local image + localized question |
 | Choices | 3×2 illustrated pastel cards | existing tests, real studio flow, meditation guide, service page, academy, focus composer |
 | Conversation | same woman's round portrait by assistant messages | real message transcript only; no duplicate generated replies |
@@ -24,13 +24,13 @@
 - Test → `/{locale}/tests`; Create video → `startContent` inside current chat (wizard, **not** render); Practice → existing `startGuided('meditation')`; Session → `/{locale}/services` (request, **not** booking); Course → `/{locale}/academy`; Ask → focus the same unsent textarea.
 - Portrait memory panel and large emotional face do **not** mount in Messenger; memory API, secure archive, existing server auth, RLS, sensitive-safety and opt-in processing remain unchanged. Other iHelp surfaces retain their own avatar and memory UI.
 - Mic toggles the existing `MessengerAudioVideo`, not a fake voice-chat call; + opens real audio attachment and Reset; tiny speaker runs the existing browser SpeechSynthesis controller **only after actual text reply**; no new external provider, upload, autoplay, medical claims, charge, notification or lead.
-- **Video truth:** source `approvedTelegramPresentation('ru')`, stable owner-approved YouTube `G0Db6yOCMto` (1:37) loads *only after explicit Play*, labelled Russian audio in EN/RU/ES. EN/ES have no approved dubbed presentation; do not show an unrendered film as their own. Video hero is a photo **poster**, not an AI woman actually speaking.
+- **Video truth (8 Nov update):** owner-approved RU HeyGen 96.862s export `72e3e6f45c3664b0b8d75281b1b413a5` and completed EN HeyGen 91.2457s export `8d998c778af3b563aa63233aa4fb4a06` are served by the existing unsigned, publicly reachable `resource2.heygen.ai/movio/video/...` captioned MP4 CDN URLs through the HTML5 `<video>` player (not YouTube iframe). No player logo, info button, new provider, billed render, or signed download URL. Only start playback after user Play; mobile Safari video is pre-mounted with `preload="none"` and `play()` is called within click activation. RU→RU, EN→EN, ES→EN fallback explicitly marked `Audio en inglés`, not misrepresented as Spanish. On load failure an on-screen retry and link to the original MP4 are available. The hero remains a poster before Play.
 - Localization: EN/RU/ES for title, choices, video notice, recording, Reset and Send. On 320px grid/cards shrink; only conversation pane scrolls, composer remains flex-pinned above Safari keyboard and dock.
 
 ## Verification gates
 - Focused source/TSX and routing contracts in `tests/messenger-ai-landing.test.mjs` plus updated legacy source tests.
 - CI mandatory: exact-HEAD Core (TS/lint/build), applicable IA/Specialist, `hh-merge-check`; no CI/wake spoof or bypass.
-- Browser visual QA: same-view Chromium/WebKit at 320/354/390/430, confirm first screen hero and all six cards scroll behind pinned textarea; tap a card, video click, mic/audio consent, response bubbles, keyboard and photo crop. Test account/private history and provider playback separately. If screenshots unavailable, mark visual QA **UNVERIFIED**; a test script is not screenshot evidence.
+- Browser visual QA: same-view Chromium/WebKit at 320/354/390/430, confirm poster and six cards scroll behind pinned textarea; tap RU/EN Play and assert the locale-specific native MP4 has real metadata/playback and no YouTube overlay, CSP media-src only on Messenger, video close/retry, mic/audio consent, response bubbles and keyboard. Test account/private history and provider playback separately. If screenshots unavailable, mark visual QA **UNVERIFIED**; a test script is not screenshot evidence.
 - Production: protected merge SHA → Vercel READY for same SHA or proven descendant → canonical alias → actual functional taps. Not LIVE merely from merge/200 response.
 
 GLOBAL_PR_ONE_PUBLISH_V1: staged_before_open=yes; local_checks=partial; post_open_head_updates=0; extra_waves=none; cost_new_spend=NO_NEW_SERVICES.
