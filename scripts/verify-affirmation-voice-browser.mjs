@@ -447,7 +447,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await ideasModes.locator('[data-video-ideas-tab="voice"]').click();
       await expect(phrases).toHaveAttribute("data-ideas-subtab","voice");
       await expect(phrases.locator("[data-hypno-voice]")).toBeVisible();
-      await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(1);
+      await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(0);
       await expect(phrases.locator('[data-video-affirmation-gender="male"]')).toBeVisible();
       const compactVoicePanel=phrases.locator('[data-video-affirmation-voice][data-voice-layout="compact"]');
       await expect(compactVoicePanel).toBeVisible();
@@ -462,7 +462,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
           const genders=[...panel.querySelectorAll('[data-video-affirmation-gender]:not([hidden])')].map(n=>n.getBoundingClientRect());
           return {tops:cards.map(n=>n.getBoundingClientRect().top),widths:cards.map(n=>n.getBoundingClientRect().width),
             genders:genders.map(n=>n.top),
-            upload:panel.querySelector('[data-video-ideas-voice-actions]')?.getBoundingClientRect().bottom,
+            sampleBottom:panel.querySelector('[data-video-affirmation-voice-select]')?.getBoundingClientRect().bottom,
+            consentTop:panel.querySelector('[data-video-affirmation-voice-consent]')?.getBoundingClientRect().top,
+            choiceTop:panel.querySelector('[data-video-affirmation-voice-select]')?.getBoundingClientRect().top,
             action:panel.querySelector('[data-video-generate-affirmation-audio]')?.getBoundingClientRect().top,
             doc:document.documentElement.scrollWidth,screen:document.documentElement.clientWidth};
         });
@@ -470,12 +472,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         assert.ok(shape.widths.every(x=>x>=60),"readable cards "+width+" "+JSON.stringify(shape));
         assert.ok(shape.tops.every(x=>Math.abs(x-shape.tops[0])<3),"one card row "+width);
         assert.ok(shape.genders.length===2&&Math.abs(shape.genders[0]-shape.genders[1])<3,"two gender tabs "+width);
-        assert.ok(shape.upload<=shape.action+2,"upload and record before generation "+width);
+        assert.ok(shape.consentTop<shape.choiceTop,"explicit consent precedes voice cards "+width);
+        assert.ok(shape.action>=shape.sampleBottom&&shape.action-shape.sampleBottom<32,
+          "generation follows voice sample "+width);
         assert.ok(shape.doc<=shape.screen+2,"no horizontal overflow "+width);
         if(engine==="chromium"){mkdirSync("artifacts/hypno-compact",{recursive:true});
           await page.screenshot({path:"artifacts/hypno-compact/ideas-voice-"+locale+"-"+width+".png",fullPage:true});}
       }
       await page.setViewportSize({width:390,height:840});
+      await ideasModes.locator('[data-video-ideas-tab="my-voice"]').click();
+      await expect(phrases).toHaveAttribute("data-ideas-active-tab","my-voice");
+      await expect(phrases.locator("[data-video-ideas-own-upload]")).toHaveCount(1);
+      await expect(phrases.locator("[data-video-ideas-record-voice]")).toHaveCount(1);
+      await expect(phrases.locator("[data-video-own-voice-record]")).toBeVisible();
+      await expect(phrases.locator("[data-video-generate-affirmation-audio]")).toHaveCount(0);
+      await expect(phrases.locator('[data-video-affirmation-voice-card="maya"]')).toBeHidden();
       await ideasModes.locator('[data-video-ideas-tab="text"]').click();
       await expect(phrases).toHaveAttribute("data-ideas-subtab","text");
       await expect(phrases.locator("[data-video-ideas-text-panel]")).toBeVisible();
@@ -524,8 +535,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await recordEntry.click();
       await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
-      await expect(page.locator('[data-video-affirmation-gender="own"]'))
-        .toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await expect(phrases).toHaveAttribute("data-ideas-active-tab","my-voice",{timeout:15000});
       await expect(page.locator('[data-video-own-voice-record]')).toBeVisible();
       // Hypno's optional fine-tuning has its own native user disclosure.
       // Open it visibly rather than forcing hidden select controls.
@@ -558,6 +568,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Reproduction of the phone screenshot: unsaved phrase edits block
       // narration generation, NOT male/female selection or voice previews.
       await expect(page.locator("[data-hypno-pending]")).toBeVisible();
+      await ideasModes.locator('[data-video-ideas-tab="voice"]').click();
       const chooserPending=page.locator("[data-video-affirmation-voice-select]");
       await expect(chooserPending.locator('[data-video-affirmation-gender="male"]')).toBeEnabled();
       await chooserPending.locator('[data-video-affirmation-gender="male"]').click();
@@ -606,9 +617,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       // Record two independent browser-local tracks using the real
       // MediaRecorder and a deterministic WebAudio microphone fixture.
-      const ownMode=page.locator('[data-video-affirmation-gender="own"]');
-      await expect(ownMode).toBeEnabled();
-      await ownMode.click();
+      await ideasModes.locator('[data-video-ideas-tab="my-voice"]').click();
+      await expect(phrases).toHaveAttribute("data-ideas-active-tab","my-voice");
       const ownPanel=page.locator("[data-video-own-voice]");
       await expect(ownPanel).toBeVisible();
       await expect(page.locator('[data-video-affirmation-voice-card="maya"]')).toBeHidden();
@@ -709,7 +719,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         });
       }
       assert.equal(payloads.length,beforeOwnRequests,"local voice cannot leak to a TTS provider");
-      await page.locator('[data-video-affirmation-gender="female"]').click();
+      await ideasModes.locator('[data-video-ideas-tab="voice"]').click();
       await expect(ownPanel).toBeHidden();
       // New visit-level markers are available for stable scope checking;
       // retain existing production WebKit-safe transcript open/review logic.
