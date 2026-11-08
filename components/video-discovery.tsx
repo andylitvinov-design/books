@@ -23,7 +23,7 @@ const labels={
     searchLabel:"Поиск видео",searchPlaceholder:"Поиск по названию, теме или автору…",
     sourceTitle:"Автор / источник",sourceAll:"Все источники",
     periodTitle:"Дата публикации",periodOptions:["За год","2020-е","2010-е","2000-е"],
-    durationTitle:"Длительность",durationOptions:["До 4 минут","4–20 минут","20–60 минут","Больше часа"],resetFilters:"Сбросить фильтры",durationAll:"Все",formatTitle:"Формат видео",shortFormat:"Краткие",studyFormat:"Обучение",shortsHint:"Короткие введения и анонсы",studyHint:"Уроки, занятия и практики",
+    durationTitle:"Длительность",durationOptions:["До 4 минут","До 10 минут","4–20 минут","20–60 минут","Больше часа"],resetFilters:"Сбросить фильтры",durationAll:"Все",formatTitle:"Формат видео",shortFormat:"Краткие",studyFormat:"Обучение",shortsHint:"Короткие введения и анонсы",studyHint:"Уроки, занятия и практики",
     contentTitle:"Тип видео",directionTitle:"Направление",traditionTitle:"Традиция",
     types:["Мягкая медитация","Практика-подкачка","Объяснение","Урок курса"],
     directions:["Магическое","Храмовое","Психологическое","Рейки / энергия","Телесное"],
@@ -43,7 +43,7 @@ const labels={
     searchLabel:"Search videos",searchPlaceholder:"Search by title, topic or creator…",
     sourceTitle:"Creator / source",sourceAll:"All sources",
     periodTitle:"Upload date",periodOptions:["Past year","2020s","2010s","2000s"],
-    durationTitle:"Duration",durationOptions:["Under 4 minutes","4–20 minutes","20–60 minutes","Over 1 hour"],resetFilters:"Reset filters",durationAll:"All",formatTitle:"Video format",shortFormat:"Shorts",studyFormat:"Study",shortsHint:"Brief introductions and previews",studyHint:"Lessons, learning and guided practices",
+    durationTitle:"Duration",durationOptions:["Under 4 minutes","Up to 10 minutes","4–20 minutes","20–60 minutes","Over 1 hour"],resetFilters:"Reset filters",durationAll:"All",formatTitle:"Video format",shortFormat:"Shorts",studyFormat:"Study",shortsHint:"Brief introductions and previews",studyHint:"Lessons, learning and guided practices",
     contentTitle:"Video type",directionTitle:"Approach",traditionTitle:"Tradition",
     types:["Soft meditation","Energy practice","Explanation","Course lesson"],
     directions:["Symbolic / magical","Temple practice","Psychological","Reiki / energy","Somatic"],
@@ -63,7 +63,7 @@ const labels={
     searchLabel:"Buscar vídeos",searchPlaceholder:"Buscar por título, tema o autor…",
     sourceTitle:"Autor / fuente",sourceAll:"Todas las fuentes",
     periodTitle:"Fecha de publicación",periodOptions:["Último año","Década de 2020","Década de 2010","Década de 2000"],
-    durationTitle:"Duración",durationOptions:["Menos de 4 minutos","4–20 minutos","20–60 minutos","Más de 1 hora"],resetFilters:"Restablecer filtros",durationAll:"Todos",formatTitle:"Formato de vídeo",shortFormat:"Breves",studyFormat:"Clases",shortsHint:"Introducciones y avances",studyHint:"Lecciones, formación y prácticas",
+    durationTitle:"Duración",durationOptions:["Menos de 4 minutos","Hasta 10 minutos","4–20 minutos","20–60 minutos","Más de 1 hora"],resetFilters:"Restablecer filtros",durationAll:"Todos",formatTitle:"Formato de vídeo",shortFormat:"Breves",studyFormat:"Clases",shortsHint:"Introducciones y avances",studyHint:"Lecciones, formación y prácticas",
     contentTitle:"Tipo de vídeo",directionTitle:"Enfoque",traditionTitle:"Tradición",
     types:["Meditación suave","Práctica energética","Explicación","Lección de curso"],
     directions:["Simbólico / mágico","Práctica del templo","Psicológico","Reiki / energía","Somático"],
@@ -161,7 +161,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
     return videos.filter(item=>{
       // Editorial format uses published video intent; unknown length is eligible.
       if(variant==="mytube"&&!matchesMyTubeFormat(item,formatMode))return false;
-      if(needle && ![item.title,item.description,item.sourceLabel||"",item.author||"",item.seriesTitle||""]
+      if(needle && ![item.title,item.description,item.sourceLabel||"",item.author||"",item.seriesTitle||"",item.topicTags?.join(" ")||""]
           .join(" ").toLocaleLowerCase(locale).includes(needle))return false;
       if(source!=="all" && (item.sourceLabel||item.author||"")!==source)return false;
 
@@ -244,6 +244,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
         const seconds=item.durationVerifiedSeconds;
         if(!Number.isFinite(seconds)||!seconds||seconds<=0)return false;
         if(durationRange==="under4" && seconds>=240)return false;
+        if(durationRange==="under10" && seconds>600)return false;
         if(durationRange==="4to20" && (seconds<240||seconds>1200))return false;
         if(durationRange==="20to60" && (seconds<=1200||seconds>3600))return false;
         if(durationRange==="over60" && seconds<=3600)return false;
@@ -335,7 +336,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
               disabled={!durationsAvailable} title={!durationsAvailable?t.durationTitle:undefined}
               onChange={event=>setDurationRange(event.target.value)}>
               <option value="all">{t.durationAll}</option>
-              {["under4","4to20","20to60","over60"].map((id,i)=>
+              {["under4","under10","4to20","20to60","over60"].map((id,i)=>
                 <option key={id} value={id}>{t.durationOptions[i]}</option>)}
             </select>
           </label>
@@ -492,7 +493,7 @@ export function VideoDiscovery({locale,videos,variant="library"}:{locale:PublicL
           {variant!=="mytube" && durationsAvailable && <label>{t.durationTitle}
             <select data-mytube-duration value={durationRange} onChange={event=>setDurationRange(event.target.value)}>
               <option value="all">{t.all}</option>
-              {["under4","4to20","20to60","over60"].map((id,i)=>
+              {["under4","under10","4to20","20to60","over60"].map((id,i)=>
                 <option key={id} value={id}>{t.durationOptions[i]}</option>)}
             </select>
           </label>}

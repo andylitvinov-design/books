@@ -115,9 +115,18 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(studio,/scenarioAudioTracks\(activeFreeFilmPreset\)/);
   assert.match(studio,/const baseAudioMatches=recommendMandalaAudio/);
   assert.match(studio,/const curatedMatches=recommendCuratedAudio/);
-  assert.match(studio,/const audioMatches=\[\.\.\.curatedMatches,\.\.\.matchingScenarioTracks,\.\.\.baseAudioMatches,\.\.\.classicMatches\]/);
+  // The full first-party scenario catalog follows context-specific suggestions,
+  // without duplicating masters or bypassing the explicit theme filter.
+  assert.match(studio,/SCENARIO_AUDIO_REGISTRY\.flatMap\(\(scene:\{id:string\}\)=>scenarioAudioTracks\(scene\.id\)\)/);
+  assert.match(studio,/const audioCandidates=\[\.\.\.curatedMatches,\.\.\.matchingScenarioTracks,\s*\.\.\.catalogueScenarioMatches,\.\.\.baseAudioMatches,\.\.\.classicMatches\]/);
+  assert.match(studio,/const seenAudioSearchIds=new Set<string>\(\)/);
+  assert.match(studio,/if\(seenAudioSearchIds\.has\(track\.id\)\)return false/);
+  assert.match(studio,/return !audioThemeOverride\|\|track\.themes\.includes\(audioThemeOverride\)/);
   for (const text of ["Real recording", "Реальная запись", "Grabación real", "shortened and loudness-normalized", "сокращена и нормализована по громкости", "acortada y normalizada"]) assert.ok(studio.includes(text),text);
-  assert.match(studio,/const availableAudioTracks=\[\.\.\.scenarioTracks,\s*\.\.\.filmScenarioTracks\.filter\(track=>!scenarioTracks\.some\(selected=>selected\.id===track\.id\)\),\s*\.\.\.curatedAudioTracks,\.\.\.classicalAudioTracks,\.\.\.mandalaAudioTracks\]/);
+  // A selected music ID stays playable by the same local player after filter changes.
+  assert.match(studio,/const availableAudioCandidates=\[\.\.\.scenarioTracks,\.\.\.filmScenarioTracks,\s*\.\.\.curatedAudioTracks,\.\.\.libraryScenarioTracks,\.\.\.classicalAudioTracks,\.\.\.mandalaAudioTracks\]/);
+  assert.match(studio,/const seenAvailableAudioIds=new Set<string>\(\)/);
+  assert.match(studio,/if\(seenAvailableAudioIds\.has\(track\.id\)\)return false/);
   assert.match(studio,/kind:audioKind,mood:audioMood,pace:audioPace/);
   assert.match(studio,/theme:audioTheme,kind:audioKind/);
   assert.match(studio,/voiceFriendly:audioVoiceFriendly,wish/);

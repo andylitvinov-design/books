@@ -492,13 +492,17 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   const orderEnd=studio.indexOf(";",orderStart);
   assert.deepEqual([...studio.slice(orderStart,orderEnd).matchAll(/"(energy|health|relationships|money|goals|life)"/g)]
     .map(match=>match[1]),topics,"approved topic order");
-  assert.match(studio,/1\. Выберите цель видео/);
+  assert.match(studio,/locale==="ru"\?"1\. Выберите цель":locale==="es"\?"1\. Elige tu objetivo":"1\. Choose your goal"/);
   const goal=studio.indexOf("data-video-director-goal-controls");
   const topic=studio.indexOf("data-video-director-topic-controls");
   const prompt=studio.indexOf("data-video-request-prompt");
   const next=studio.indexOf("data-video-continue-scenarios");
-  assert.ok(goal>=0&&goal<topic&&topic<prompt&&prompt<next,
-    "goal and topic precede the single free-text request and next-stage action");
+  assert.ok(prompt>=0&&prompt<goal&&goal<topic&&topic<next,
+    "approved wish and Match button precede goal, category, topic chips and the original next-stage action");
+  assert.match(studio,/data-video-wish-above-goals/);
+  assert.match(studio,/data-video-director-audience-controls/);
+  assert.match(read("components/mandala-auto-video-director.tsx"),/data-auto-video-audience=\{mode\}/);
+  assert.doesNotMatch(studio,/data-video-goal-audience-option/);
   assert.match(css,/data-video-scenario-open="false"[\s\S]*?data-auto-video-director\]\{display:none!important\}/);
   assert.match(studio,/data-video-director-topic-controls/);
   assert.match(studio,/Сформировать индивидуальную программу видеотерапии бесплатно/);
@@ -510,7 +514,9 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
     studio.indexOf("</nav>",studio.indexOf("<nav className={videoStyles.quickVideoNav}")));
   for(const id of ["video","phrases","effects","pro","ready","editor"])
     assert.ok(studio.includes('id:"'+id+'"'),"localized workspace "+id);
-  assert.match(workspaceNav,/setActiveWorkspace\(item\.id\)/);
+  assert.match(workspaceNav,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
+  assert.match(workspaceNav,/onPointerUp=\{\(\)=>\{if\(activeWorkspace!==item\.id\)activateQuickWorkspace\(item\.id\);\}\}/);
+  assert.match(studio,/const activateQuickWorkspace=[\s\S]{0,190}setActiveWorkspace\(id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
   assert.match(studio,/\{deepHypnoPane\}/);
@@ -528,7 +534,10 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
-  assert.match(studio,/getThemedRealFilm\(theme,quickStyleSceneIds\[theme\]\[index\]/);
+  assert.ok(studio.includes("quickStyleFilmFor(theme,index)?.poster"),
+    "the thumbnail must use the same certified video/poster resolver");
+  assert.ok(studio.includes("paintSelectedStyleShot(ctx,styleVideo)"),
+    "the real decoded MP4 appears in Canvas instead of only a color grade");
   assert.match(css,/\.quickVideoNav\{display:grid/);
   assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
   assert.match(css,/\.quickMusicRail\{/);
@@ -551,13 +560,19 @@ test("studio workspace buttons remain disabled until their real handlers hydrate
   const nav=studio.slice(studio.indexOf('<nav className={videoStyles.quickVideoNav}'),
     studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.quickVideoNav}')));
   assert.match(nav,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
-  assert.match(nav,/onClick=\{\(\)=>\{/);
+  assert.match(nav,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
+  assert.match(nav,/onPointerUp=\{\(\)=>\{if\(activeWorkspace!==item\.id\)activateQuickWorkspace\(item\.id\);\}\}/);
+  assert.match(studio,/const activateQuickWorkspace=[\s\S]{0,190}setActiveWorkspace\(id\)/);
 });
 
 test("director controls and All stories stay disabled until the studio hydrates",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const director=read("components/mandala-auto-video-director.tsx");
-  const mount=studio.slice(studio.indexOf("<MandalaAutoVideoDirector"),studio.indexOf("<MandalaAutoVideoDirector")+900);
+  const mountStart=studio.indexOf("<MandalaAutoVideoDirector");
+  assert.ok(mountStart>=0,"director is mounted in Studio");
+  const mountEnd=studio.indexOf("/>",mountStart);
+  assert.ok(mountEnd>mountStart,"director JSX tag is closed");
+  const mount=studio.slice(mountStart,mountEnd+2);
   assert.match(mount,/disabled=\{!studioHydrated\|\|recording\|\|preparing\}/);
   assert.match(director,/data-auto-video-all-scenes disabled=\{disabled\} onClick=\{onShowAll\}/);
 });

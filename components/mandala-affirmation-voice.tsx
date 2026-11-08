@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { AudioLines, Check, Download, LoaderCircle, Play, Volume2 } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import { VOICE_STUDIO_MODEL, VOICE_STUDIO_SAMPLE, VOICE_STUDIO_VOICES } from "@/lib/mandala/voice-studio.mjs";
@@ -23,8 +24,8 @@ export type AffirmationVoiceResult={
 const durationChoices=[10,20,30,60] as const;
 const copy={
   ru:{
-    title:"Озвучить аффирмации",lead:"Выберите утверждённую фразу и голос. Получите настоящую бесплатную озвучку и добавьте её в видео.",
-    voice:"Голос",female:"Женский (3)",male:"Мужской (3)",own:"Мой голос",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
+    title:"Озвучить аффирмации",lead:"Выберите утверждённую фразу и голос. Получите настоящую бесплатную озвучку и добавьте её в видео.",myVoiceLead:"Загрузите свою запись или запишите голос прямо здесь.",
+    voice:"Голос",female:"Женский (3)",male:"Мужской (3)",own:"Мой голос",chooseVoice:"Выберите голос",phraseCount:"фраз",consentBrief:"Разрешаю отправить только выбранный утверждённый текст бесплатному сервису озвучки.",privacyDetails:"Как используется текст",generateApply:"Создать голос и добавить в видео",language:"Язык",background:"Фон",none:"Без фона",ocean:"Море",rain:"Дождь",breeze:"Ветер",
     phrase:"Фраза для озвучки",allPhrases:"Все утверждённые фразы",sample:"Прослушать",sampleBusy:"Загрузка…",sampleCancel:"Отменить",sampleBusyHelp:"Готовим короткий образец голоса. Вы можете отменить запрос или выбрать другой голос.",sampleCancelled:"Загрузка отменена. Нажмите «Прослушать», чтобы повторить.",sampleTimeout:"Голос не загрузился за 27 секунд. Попробуйте ещё раз — другие голоса доступны.",sampleAudioError:"Образец не воспроизвёлся. Нажмите «Прослушать» ещё раз — загрузим свежую запись.",sampleReady:"Образец готов. Если воспроизведение не началось, нажмите ▶ в плеере.",sampleError:"Не удалось прослушать образец. Повторите позже.",sampleQuota:"Лимит прослушиваний исчерпан — попробуйте позднее.",deviceSample:"Системный голос · пример текста",deviceNote:"Это голос устройства для примера чтения, НЕ выбранный голос Софии, Майи или Алисы. Системный пример не прикрепляется к видео.",deviceError:"Системный голос недоступен на этом устройстве.",sampleTitle:"Образец голоса",
     pendingText:"Сначала утвердите изменённые фразы выше.",
     preview:"Выбранная фраза",enable:"Сначала включите аффирмации и выберите фразы выше.",
@@ -37,8 +38,8 @@ const copy={
     finished:"Голос в видео",status:"Длительность речи",seconds:"сек.",backupUsed:" · OpenRouter/xAI",freeUsed:" · бесплатный OpenRouter/Deepgram"
   },
   en:{
-    title:"Narrate affirmations",lead:"Choose an approved phrase and voice. Generate a free real voice track and attach it to your video.",
-    voice:"Voice",female:"Female (3)",male:"Male (3)",own:"My voice",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
+    title:"Narrate affirmations",lead:"Choose an approved phrase and voice. Generate a free real voice track and attach it to your video.",myVoiceLead:"Upload an audio recording or record your voice here.",
+    voice:"Voice",female:"Female (3)",male:"Male (3)",own:"My voice",chooseVoice:"Choose a voice",phraseCount:"phrases",consentBrief:"I agree to send only the selected approved text to a free voice provider.",privacyDetails:"How the text is used",generateApply:"Generate voice & apply to video",language:"Language",background:"Background",none:"Voice only",ocean:"Ocean",rain:"Rain",breeze:"Breeze",
     phrase:"Phrase to narrate",allPhrases:"All approved phrases",sample:"Listen",sampleBusy:"Loading…",sampleCancel:"Cancel",sampleBusyHelp:"Preparing a short voice sample. You can cancel or select another voice.",sampleCancelled:"Loading cancelled. Tap Listen to retry.",sampleTimeout:"The voice did not load within 27 seconds. Retry or choose another voice.",sampleAudioError:"The sample did not play. Tap Listen again to download a fresh voice sample.",sampleReady:"Voice sample ready. Tap ▶ in the player if it did not start.",sampleError:"Could not load the sample. Try again later.",sampleQuota:"Sample quota reached. Please try later.",deviceSample:"Device voice · text example",deviceNote:"This is your device voice for a reading example, NOT the selected Sofia, Maya or Alisa voice. It is not attached to the video.",deviceError:"Device voice playback is unavailable.",sampleTitle:"Voice sample",
     pendingText:"Approve the edited phrases above first.",
     preview:"Selected spoken phrase",enable:"First enable affirmations and select your phrases above.",
@@ -51,8 +52,8 @@ const copy={
     finished:"Voice in video",status:"Speech duration",seconds:"sec",backupUsed:" · OpenRouter/xAI",freeUsed:" · free OpenRouter/Deepgram"
   },
   es:{
-    title:"Poner voz a las afirmaciones",lead:"Elige una frase aprobada y una voz. Genera gratis una pista de voz real para tu vídeo.",
-    voice:"Voz",female:"Femenino (3)",male:"Masculino (3)",own:"Mi voz",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
+    title:"Poner voz a las afirmaciones",lead:"Elige una frase aprobada y una voz. Genera gratis una pista de voz real para tu vídeo.",myVoiceLead:"Sube una grabación o graba tu voz aquí.",
+    voice:"Voz",female:"Femenino (3)",male:"Masculino (3)",own:"Mi voz",chooseVoice:"Elige una voz",phraseCount:"frases",consentBrief:"Autorizo enviar solo el texto aprobado seleccionado a un servicio de voz gratuito.",privacyDetails:"Cómo se utiliza el texto",generateApply:"Generar voz y añadir al vídeo",language:"Idioma",background:"Fondo",none:"Solo voz",ocean:"Mar",rain:"Lluvia",breeze:"Brisa",
     phrase:"Frase que se leerá",allPhrases:"Todas las frases aprobadas",sample:"Escuchar",sampleBusy:"Cargando…",sampleCancel:"Cancelar",sampleBusyHelp:"Preparando una muestra breve. Puedes cancelar o elegir otra voz.",sampleCancelled:"Carga cancelada. Pulsa Escuchar para reintentar.",sampleTimeout:"La voz no cargó en 27 segundos. Reintenta o elige otra voz.",sampleAudioError:"La muestra no se reprodujo. Pulsa Escuchar otra vez para descargar una voz nueva.",sampleReady:"Muestra lista. Pulsa ▶ en el reproductor si no empieza.",sampleError:"No se pudo reproducir la muestra. Inténtalo luego.",sampleQuota:"Límite de muestras alcanzado. Vuelve más tarde.",deviceSample:"Voz del dispositivo · ejemplo",deviceNote:"Es la voz del dispositivo, NO la voz seleccionada de Sofía, Maya o Alicia. No se añade al vídeo.",deviceError:"No se puede reproducir la voz del dispositivo.",sampleTitle:"Muestra de voz",
     pendingText:"Primero aprueba las frases editadas arriba.",
     preview:"Frase elegida",enable:"Activa las afirmaciones y selecciona tus frases arriba.",
@@ -84,10 +85,11 @@ const backgroundNames:Record<string,{ru:string;en:string;es:string}>={
 };
 
 export function MandalaAffirmationVoice({
-  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,initialPreferences,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,
+  locale,lines,enabled,durationSeconds,disabled,approvalPending=false,initialPreferences,onAttach,onGenerating,onInvalidate,onPreferencesChange,onDetachLocal,compact=false,ownVoiceOnly=false,extraActions,
 }:{
   locale:PublicLocale;lines:string[];enabled:boolean;durationSeconds:number;disabled:boolean;approvalPending?:boolean;
   initialPreferences?:AffirmationVoicePreferences;
+  compact?:boolean;ownVoiceOnly?:boolean;extraActions?:ReactNode;
   onAttach:(result:AffirmationVoiceResult)=>void;
   onGenerating:(value:boolean)=>void;
   onInvalidate?:()=>void;
@@ -147,6 +149,14 @@ export function MandalaAffirmationVoice({
   const onInvalidateRef=useRef(onInvalidate);
   onInvalidateRef.current=onInvalidate;
   const originRef=useRef({speechText,voiceId,language});
+  // Safari can defer the native <details> toggle until after React commits.
+  // Preserve a visitor's real open state across a voice card or locale rerender.
+  const voiceAdvancedOpenRef=useRef(false);
+  const voiceAdvancedNodeRef=useRef<HTMLDetailsElement|null>(null);
+  const bindVoiceAdvanced=useCallback((node:HTMLDetailsElement|null)=>{
+    voiceAdvancedNodeRef.current=node;
+    if(node)node.open=voiceAdvancedOpenRef.current;
+  },[]);
   useEffect(()=>onPreferencesChange({voiceId,language,bed}),[voiceId,language,bed,onPreferencesChange]);
   const onGeneratingRef=useRef(onGenerating);
   onGeneratingRef.current=onGenerating;
@@ -478,24 +488,33 @@ export function MandalaAffirmationVoice({
       if(job===jobRef.current){setBusy(false);controllerRef.current=null;onGeneratingRef.current(false);}
     }
   }
-  return <section className={css.panel} id="video-affirmation-voice" data-video-affirmation-voice
-    data-video-affirmation-phase={generationPhase} aria-labelledby="video-affirmation-voice-title">
+  const deviceSampleControl=deviceSpeechAvailable?<div className={css.deviceSampleGroup}>
+    <button type="button" className={css.deviceSampleButton}
+      data-video-affirmation-device-voice onClick={previewDeviceSample}
+      disabled={busy||disabled||Boolean(sampleBusyId)}>
+      <Volume2 size={16} aria-hidden="true"/>{t.deviceSample}
+    </button><small className={css.sampleStatus}>{t.deviceNote}</small>
+  </div>:null;
+  return <section className={css.panel} data-voice-layout={compact?"compact":"default"} data-own-voice-only={ownVoiceOnly?"true":"false"}
+    id="video-affirmation-voice" data-video-affirmation-voice data-video-affirmation-phase={generationPhase} aria-labelledby="video-affirmation-voice-title">
     <div className={css.heading}>
       <AudioLines size={20} aria-hidden="true"/>
-      <div><h4 id="video-affirmation-voice-title">{t.title}</h4><p>{t.lead}</p></div>
+      <div><h4 id="video-affirmation-voice-title">{ownVoiceOnly?t.own:t.title}</h4><p>{ownVoiceOnly?t.myVoiceLead:t.lead}</p></div>
     </div>
-    {voiceGender!=="own" ? <div className={css.selectedPhrase} data-video-affirmation-selection-summary>
+    {!ownVoiceOnly&&voiceGender!=="own" && !compact ? <div className={css.selectedPhrase} data-video-affirmation-selection-summary>
       <small>{t.phrase} · {t.voice}: <strong data-video-affirmation-selected-voice>{VOICE_STUDIO_VOICES.find(v=>v.id===voiceId)?.name[locale]}</strong></small>
       <p data-video-affirmation-selected-phrase>{approvalPending?t.pendingText:speechText||t.enable}</p>
     </div>:null}
-    {voiceGender!=="own" ? <details className={css.transcriptDisclosure} data-video-affirmation-transcript-review>
+    {!ownVoiceOnly&&voiceGender!=="own" && (!compact || phraseChoice==="all") ? <details className={css.transcriptDisclosure} data-video-affirmation-transcript-review>
       <summary>{t.preview} · {t.review}</summary>
       {speechText?<div className={css.transcript}>
         <p data-video-affirmation-spoken-text>{speechText}</p>
       </div>:<p className={css.hint} role="status">{t.enable}</p>}
     </details> : null}
-    {voiceGender!=="own" && lines.length>1?<label className={css.phrasePick}>
-      <span>{t.phrase}</span>
+    {!ownVoiceOnly&&voiceGender!=="own" && (compact||lines.length>1)?<label className={css.phrasePick}>
+      <span className={css.phrasePickTitle}><span>{t.phrase}</span>
+        {compact?<small data-video-affirmation-phrase-count>{phraseChoice==="all"?lines.length:lines.length?Math.min((selectedIndex??0)+1,lines.length):0} / {lines.length} {t.phraseCount}</small>:null}
+      </span>
       <select data-video-affirmation-phrase value={phraseChoice==="all"?"all":selectedIndex??0}
         disabled={disabled||busy} onChange={event=>{
           // An attached older voice must never be reused for a newly chosen line.
@@ -509,16 +528,19 @@ export function MandalaAffirmationVoice({
       </select>
     </label>:null}
     <div className={css.voiceChoices} data-video-affirmation-voice-select role="group" aria-label={t.voice}>
-      <div className={css.genderTabs} role="group" aria-label={t.voice}>
+      <div className={css.voiceToolbar} hidden={ownVoiceOnly}>
+        {compact?<strong className={css.chooseVoice}>{t.chooseVoice}</strong>:null}
+        <div className={css.genderTabs} role="group" aria-label={t.voice}>
         {(["female","male","own"] as const).map(id=><button type="button" key={id}
-          data-video-affirmation-gender={id} aria-pressed={voiceGender===id}
+          data-video-affirmation-gender={id} aria-pressed={voiceGender===id} hidden={compact&&id==="own"}
           disabled={busy||disabled} onClick={()=>{
             resetSample();setVoiceGender(id);
             if(id!=="own")setVoiceId(id==="female"?"maya":"mark");
             setConsent(false);
           }}>{id==="female"?t.female:id==="male"?t.male:t.own}</button>)}
+        </div>
       </div>
-      <div className={css.presetVoiceGroup} hidden={voiceGender==="own"}>
+      <div className={css.presetVoiceGroup} hidden={ownVoiceOnly||voiceGender==="own"}>
         <div className={css.voiceCards} role="group" aria-label={voiceGender==="female"?t.female:t.male}>
           {VOICE_STUDIO_VOICES.filter(v=>v.gender===voiceGender).map(v=><div className={css.voiceCard} key={v.id}>
             <button type="button" className={css.voiceCardSelect}
@@ -547,19 +569,29 @@ export function MandalaAffirmationVoice({
             onCanPlay={sampleCanPlay} onError={samplePlaybackError}/>
         </div>:null}
         {(sampleBusyId||sampleMessage)?<small className={css.sampleStatus} role="status" aria-live="polite">{sampleBusyId?t.sampleBusyHelp:sampleMessage}</small>:null}
-        {deviceSpeechAvailable?<button type="button" className={css.deviceSampleButton}
-          data-video-affirmation-device-voice onClick={previewDeviceSample}
-          disabled={busy||disabled||Boolean(sampleBusyId)}>
-          <Volume2 size={16} aria-hidden="true"/>{t.deviceSample}
-        </button>:null}
-        {deviceSpeechAvailable?<small className={css.sampleStatus}>{t.deviceNote}</small>:null}
+        {!compact?deviceSampleControl:null}
       </div>
-      <MandalaLocalVoiceTracks locale={locale} hidden={voiceGender!=="own"}
+      <MandalaLocalVoiceTracks locale={locale} hidden={!ownVoiceOnly&&voiceGender!=="own"}
+        compact={ownVoiceOnly} uploadAction={ownVoiceOnly?extraActions:null}
         disabled={disabled||busy} approvalPending={approvalPending} onAttach={onAttach} onDetach={onDetachLocal}/>
     </div>
-    {voiceGender!=="own" ? <>
-    <details className={css.voiceAdvanced} data-video-affirmation-voice-advanced>
-      <summary>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
+    {!ownVoiceOnly&&voiceGender!=="own" ? <>
+    <details ref={bindVoiceAdvanced} className={css.voiceAdvanced} data-video-affirmation-voice-advanced
+      onToggle={event=>{
+        if(event.currentTarget===voiceAdvancedNodeRef.current)
+          voiceAdvancedOpenRef.current=event.currentTarget.open;
+      }}>
+      <summary onClick={event=>{
+        // Commit the genuine click (also dispatched for keyboard activation);
+        // do not force the browser test or show controls before a user gesture.
+        event.preventDefault();
+        const node=event.currentTarget.parentElement;
+        if(node instanceof HTMLDetailsElement){
+          node.open=!node.open;
+          voiceAdvancedOpenRef.current=node.open;
+        }
+      }}>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
+    {compact?deviceSampleControl:null}
     <div className={css.controls}>
       <label>{t.language}
         <select data-video-affirmation-language value={language} disabled={busy||disabled}
@@ -592,11 +624,13 @@ export function MandalaAffirmationVoice({
     </div>
     <small className={css.hint}>{levels.balanced}</small>
     </details>
-    <label className={css.consent}>
+    <div className={css.consentRow}><label className={css.consent}>
       <input data-video-affirmation-voice-consent type="checkbox" checked={consent}
         disabled={busy||disabled||approvalPending||!speechText} onChange={e=>setConsent(e.currentTarget.checked)}/>
-      <span>{t.consent}</span>
+      <span>{compact?t.consentBrief:t.consent}</span>
     </label>
+    {compact?<details className={css.consentDetails}><summary>{t.privacyDetails}</summary>
+      <p>{t.consent}</p></details>:null}</div>
     <button type="button" className={css.action} data-video-generate-affirmation-audio
       disabled={!languageAvailable||!speechText||!consent||busy||mixing||disabled||approvalPending}
       // Mobile Safari may dispatch touchend but not pointerup or compatibility click.
@@ -641,7 +675,7 @@ export function MandalaAffirmationVoice({
         void createAudio();
       }}>
       {busy?<LoaderCircle size={18} aria-hidden="true"/>:<Volume2 size={18} aria-hidden="true"/>}
-      {busy?mixing?t.mixing:t.busy:t.generate}
+      {busy?mixing?t.mixing:t.busy:compact?t.generateApply:t.generate}
     </button>
     {!languageAvailable?<small className={css.warning} role="status">{t.unavailable}</small>:<small className={css.hint}>{t.limit}</small>}
     {audioUrl?<div className={css.result} data-video-affimations-audio-ready>
@@ -653,6 +687,6 @@ export function MandalaAffirmationVoice({
       <p>{t.tip}</p>
     </div>:null}
     </> : null}
-    {message?<p className={css.message} role="status" aria-live="polite">{message}</p>:null}
+    {!ownVoiceOnly&&message?<p className={css.message} role="status" aria-live="polite">{message}</p>:null}
   </section>;
 }

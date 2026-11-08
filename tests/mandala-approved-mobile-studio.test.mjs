@@ -84,14 +84,14 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/meditation:\{basic:2\.90,smart:4\.90,pro:null\}/);
   assert.match(source,/course:\{basic:19\.90,smart:null,pro:39\}/);
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
-  const finalCreate=source.slice(source.indexOf("data-video-quick-generate"),
+  const direct=source.slice(source.indexOf("data-video-quick-generate"),
     source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
-  assert.match(finalCreate,/onClick=\{continueMontageOrGenerate\}/,
-    "Montage advances through Style, Text and Audio before creating");
-  assert.match(finalCreate,/montagePanel!=="effects"&&montagePanel!=="text"/,
-    "Style and Text stay navigable before the final export");
-  assert.match(finalCreate,/!freeVideoSelected\|\|\(usingFreeFilmCompilation&&!freeFilmSourcesListed\)\|\|voiceGenerating\|\|narrationInvalid\|\|phrasePending/,
-    "Final Create still requires approved footage, narration and phrases");
+  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":"hypno"}'),
+    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"audio":"hypno"}')));
+  assert.ok(direct.includes('onClick={createQuickVideo}'),"Create must use the original real renderer");
+  assert.ok(addEffects.includes('onClick={continueMontageOrGenerate}'),"Add must only advance");
+  for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){','if(!canGenerate){'])
+    assert.ok(source.includes(guard),"protected export gate: "+guard);
   assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,
     "Four local MP4s must prime on the trusted Create click");
   assert.match(css,/\.quickFormatDemo\{[\s\S]*?aspect-ratio:16\/9/);
@@ -280,7 +280,12 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
     "one gesture begins the original Canvas + same-origin MP4 playback");
   assert.doesNotMatch(source,/video\.play\(\)\.then\(\(\)=>setPreviewPlaying\(true\)\)/,
     "WebKit cannot defer playback UI state until a media promise resolves");
-  assert.match(source,/data-video-quick-extras/);
+  assert.doesNotMatch(source,/data-video-quick-extras/,
+    "removed duplicate PRO extras must not overlay the three-tier editor");
+  const proTiers=read("components/mandala-pro-enhance.tsx");
+  assert.match(proTiers,/data-video-pro-tiers/);
+  assert.match(proTiers,/data-video-pro-standard-editor/);
+  assert.match(proTiers,/data-video-pro-choose-character/);
   assert.match(source,/openQuickDetailed\("video-settings"\)/);
   assert.match(source,/openQuickDetailed\("video-audio"\)/);
   assert.match(css,/\.quickBrandBar\{display:none\}/);
