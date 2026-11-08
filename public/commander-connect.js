@@ -1,5 +1,4 @@
 (() => {
-  const MAIN = 'https://holistichouse.vercel.app'
   const MONITOR = 'https://holistic-house-pr-monitor.vercel.app'
   const KEY = 'hh.commander.monitor.next.v1'
   const status = document.getElementById('status')
