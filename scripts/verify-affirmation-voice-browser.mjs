@@ -794,11 +794,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // available only when the visitor explicitly chooses All phrases.
       await phraseSelector.selectOption("1");
       await expect(phraseSelector).toHaveValue("1");
-      await expect(page.locator("[data-video-affirmation-transcript-review]")).toHaveCount(0);
+      await expect(page.locator("[data-video-affirmation-transcript-review]")).toBeHidden();
       await phraseSelector.selectOption("all");
       await expect(page.locator("[data-video-affirmation-transcript-review]")).toBeVisible();
       await phraseSelector.selectOption("1");
-      await expect(page.locator("[data-video-affirmation-transcript-review]")).toHaveCount(0);
+      await expect(page.locator("[data-video-affirmation-transcript-review]")).toBeHidden();
       const approved=(await phraseSelector.locator('option[value="1"]').innerText())
         .replace(/^2\.\s*/,"").trim();
       const expectedSpeech=/[.!?…]$/u.test(approved)?approved:approved+".";
