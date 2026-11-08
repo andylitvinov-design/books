@@ -41,3 +41,23 @@ test('existing Messenger and new gate transpile as React JSX',()=>{
   assert.deepEqual(errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')),[],path)
  }
 })
+
+test('website Telegram login is separate server-gated Supabase OAuth, not bot-chat consent',()=>{
+ assert.ok(signin.includes("fetch('/api/app/auth/providers'"))
+ assert.ok(signin.includes('data?.telegram===true'))
+ assert.ok(signin.includes('setTelegramWebsiteLogin(false)'))
+ assert.ok(signin.includes("provider==='telegram'&&!telegramWebsiteLogin"))
+ assert.ok(signin.includes('body:JSON.stringify({locale,continueTo,provider,'))
+ assert.ok(signin.includes('data-hh-messenger-telegram-login'))
+ assert.ok(signin.includes('data-hh-messenger-google-login'))
+ assert.ok(signin.includes("onClick={()=>signin('telegram')}"))
+ assert.ok(signin.includes("onClick={()=>signin('google')}"))
+ assert.ok(signin.includes('await Browser.open({url:destination.href})'))
+ assert.ok(signin.includes('resolveTelegramFirstEntry(data,locale)'))
+ for(const translation of [
+  'Open website Cabinet with Telegram',
+  'Войти в кабинет сайта через Telegram',
+  'Acceder al gabinete web con Telegram',
+ ])assert.ok(signin.includes(translation),translation)
+ assert.doesNotMatch(signin,/window\.localStorage|sessionStorage|loginWithWhatsApp/)
+})
