@@ -34,6 +34,14 @@ test("one real iChat, one scroll log, 6 first-party actions and always-visible c
  assert.equal((landing.match(/<iframe\b/g)||[]).length,1);
 });
 
+test("illustrated welcome stays at its top on first render; dialogue still scrolls to newest reply",()=>{
+ const first=chat.slice(chat.indexOf("const revealLatest=()=>"),chat.indexOf("revealLatest();",chat.indexOf("const revealLatest=()=>")));
+ assert.match(first,/messengerView&&messages.length===0/);
+ assert.match(first,/thread.scrollTop=0/);
+ assert.match(first,/if\(followTail\.current\)/);
+ assert.match(first,/thread.scrollTop=thread.scrollHeight/);
+});
+
 test("approved video only: click-to-load Russian source, no fake English/Spanish render",()=>{
  assert.match(landing,/approvedTelegramPresentation\("ru"\)/);
  assert.match(landing,/playing&&introduction\?/);

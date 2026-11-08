@@ -359,6 +359,13 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     const thread=threadRef.current;
     if(!thread)return;
     const revealLatest=()=>{
+      if(messengerView&&messages.length===0){
+        // The illustrated first screen opens at its hero, not its last card.
+        // Do not scroll the page or push the pinned composer below the dock.
+        thread.scrollTop=0;
+        setNewBelow(false);
+        return;
+      }
       if(followTail.current){
         // Scroll only the internal transcript, never the iPhone page or dock.
         thread.scrollTop=thread.scrollHeight;
@@ -370,7 +377,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     const frame=window.requestAnimationFrame(revealLatest);
     return ()=>window.cancelAnimationFrame(frame);
   },[messages.length,status,choices.length,judgmentView,videoStep,videoDraft,contentStep,contentVoice,
-    videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen]);
+    videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen,messengerView]);
   useEffect(()=>{
     if(!compact)return;
     const input=composerRef.current;
