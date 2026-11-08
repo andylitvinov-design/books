@@ -1,0 +1,4 @@
+project_id = "shervdixkaxurnaecioe"
+
+[functions.agent-commander-private-store-v1]
+verify_jwt = true
