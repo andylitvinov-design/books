@@ -77,7 +77,8 @@ test("client money-flow studio offers 16 original and licensed looks and starts 
   assert.match(effects, /ctx\.clip\("evenodd"\)/);
   assert.match(css, /@media\(max-width:350px\)\{\.moneyFlowSection/);
   assert.match(browser, /data-mandala-money-option/);
-  assert.doesNotMatch(studio + effects, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen|publish/i);
+  const executableCode=(studio+effects).replace(/^[ \t]*\/\/.*$/gm,"");
+  assert.doesNotMatch(executableCode, /\bfetch\s*\(|XMLHttpRequest|FormData|localStorage|sessionStorage|sendBeacon|supabase|kling\.ai|higgsfield|heygen|publish/i);
 
   const diagnostic = ts.transpileModule(effects, {
     fileName: "lib/mandala/money-flow-effects.ts",

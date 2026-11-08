@@ -115,7 +115,9 @@ test("studio exposes four scenario melodies in its existing real audio/video mix
   const pipeline=JSON.parse(read("package.json"));
   const buildAudio=read("scripts/generate-soft-ocean-melody.mjs");
   assert.match(studio,/scenarioAudioTracks\(activeFreeFilmPreset\)/);
-  assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
+  assert.match(studio,/featuredMelodies\.slice\(0,3\)/);
+  assert.match(studio,/const featuredMelodies=rankPersonalMusic/);
+  assert.match(studio,/const ALL_APPROVED_SCENARIO_MELODIES/);
   assert.match(studio,/availableAudioTracks\.find/);
   assert.match(studio,/toggleQuickMusic\(id\)/);
   assert.match(studio,/playQuickTrack\(id\)/);
