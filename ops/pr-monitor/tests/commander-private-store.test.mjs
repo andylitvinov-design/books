@@ -23,6 +23,11 @@ test('monitor session cookie is short-lived, HttpOnly, Secure and Lax',()=>{
  assert.match(source,/Math\.min\(900/);
  assert.doesNotMatch(source,/localStorage|sessionStorage/);
 });
+test('GET read parameters are forwarded with the action and never require a POST body',()=>{
+ const helper=require('node:fs').readFileSync(new URL('../lib/commander-private-store.js',import.meta.url),'utf8');
+ assert.match(helper,/new URLSearchParams\(\{action\}\)/);
+ assert.match(helper,/query\.set\(key,String\(value\)\)/);
+});
 test('Origin is exact and owner JWT is not accepted from query parameters',()=>{
  assert.equal(store.isOriginAllowed({headers:{host:'holistic-house-pr-monitor.vercel.app',origin:'https://holistic-house-pr-monitor.vercel.app'}}),true);
  assert.equal(store.isOriginAllowed({headers:{host:'holistic-house-pr-monitor.vercel.app',origin:'https://evil.example'}}),false);
