@@ -90,3 +90,14 @@ test('unified seven-item dock uses idempotent signed correction for iOS Safari',
  assert.match(reservation,/--hh-unified-nav-height/)
  assert.match(reservation,/data-keyboard-open="true"/)
 })
+
+
+test('signed visual dock helper has matching TypeScript declaration',()=>{
+ const declaration=read('lib/mobile-visual-bottom.d.mts')
+ const implementation=read('lib/mobile-visual-bottom.mjs')
+ assert.match(declaration,/export interface VisualDockBottomOffsetInput/)
+ for(const field of ['dockBottom?: number;','visualBottom?: number;','currentOffset?: number;'])
+   assert.ok(declaration.includes(field),'typed visual dock offset '+field)
+ assert.match(declaration,/export declare function visualDockBottomOffset\(input\?: VisualDockBottomOffsetInput\): number;/)
+ assert.match(implementation,/export function visualDockBottomOffset\(/)
+});
