@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { englishCabinetTarget } from '@/lib/app/spanish-cabinet-bridge.mjs'
-import AppWorkspace from '@/components/app/app-workspace'
+import { AppWorkspaceNavigator } from '@/components/app/app-workspace'
 import './workspace.css'
 import './assessment-dashboard.css'
 import './insights-compact.css'
@@ -73,5 +73,5 @@ export default async function AppPage({ params, searchParams }) {
   if (path[0] === 'analysis' && path.length === 1) redirect('/' + locale + '/app/portrait?space=reports#personal-reports')
   // A tab-specific workspace cannot briefly render full screens with a
   // previous tab's reduced Profile data while the next bootstrap is loading.
-  return <AppWorkspace key={path[0]} locale={locale} path={path} />
+  return <AppWorkspaceNavigator locale={locale} path={path} />
 }
