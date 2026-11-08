@@ -54,6 +54,21 @@ type JudgmentView = {status:string;state:string;choices:{id:JudgmentChoiceId;lab
 type AgentReply = { judgment?:JudgmentView|null;status:string;reply:string;modelUsed:boolean;source:string;
   suggestions:{id:string;kind:string;title:string;href:string}[];decision:AgentDecision;
   browserModelAllowed:boolean; usedSavedTestEvidence?:boolean; usedSavedVideoHistory?:boolean };
+
+function recommendationPortrait(item:AgentReply["suggestions"][number]):string {
+  const title=item.title.toLowerCase();
+  if(/kundalini|кундалини/.test(title))return "/images/holistic-house/reiki-practitioner-sunrise.webp";
+  if(/yggdrasil|иггдрасил|игдрасил/.test(title))return "/images/holistic-house/ideas-pine-sharp.avif";
+  if(/tantra|тантра/.test(title))return "/images/holistic-house/tantra-reiki-yin-yang-cover.svg";
+  const art:Record<string,string>={
+    video:"/images/holistic-house/ready-save-sunrise-portrait.jpg",
+    audio:"/images/holistic-house/course-hero-mindful.svg",
+    test:"/images/holistic-house/assessment-lotus.svg",
+    course:"/images/holistic-house/course-start-heron.webp",
+    service:"/images/holistic-house/support-mock-portrait.webp",
+  };
+  return art[item.kind]||"/images/holistic-house/reiki-approved-sunrise-v3.webp";
+}
 const copy = {
   ru:{ title:"Разговор с AI-проводником",disclosure:"Я — AI-проводник Holistic House, не человек и не психотерапевт.",
     intro:"Опишите запрос свободно. По вашему согласию можно учесть проверенные результаты выбранной темы без передачи баллов нейросети.",
@@ -331,6 +346,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const composerRef=useRef<HTMLTextAreaElement|null>(null);
   const threadRef=useRef<HTMLDivElement|null>(null);
   const followTail=useRef(true);
+  const programmaticScrollTop=useRef<number|null>(null);
   const [newBelow,setNewBelow]=useState(false);
   const privateTranscript=usePrivateChatHistory({authenticated,onRestore:entries=>{
     // The archive is restored only on explicit user action, never on login.
@@ -373,8 +389,22 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         return;
       }
       if(followTail.current){
-        // Scroll only the internal transcript, never the iPhone page or dock.
-        thread.scrollTop=thread.scrollHeight;
+        // Keep the latest user question and assistant answer above short recommendation cards.
+        // Only scroll the transcript, not the Safari visual viewport or pinned composer.
+        if(messengerView&&messages.length>0&&choices.length>0){
+          const turns=thread.querySelectorAll<HTMLElement>('[data-hh-chat-turn="user"]');
+          const latest=turns[turns.length-1];
+          if(latest){
+            const offset=latest.getBoundingClientRect().top-thread.getBoundingClientRect().top;
+            const maxScroll=Math.max(0,thread.scrollHeight-thread.clientHeight);
+            const target=Math.min(maxScroll,Math.max(0,thread.scrollTop+offset-6));
+            programmaticScrollTop.current=target;
+            thread.scrollTop=target;
+          }else thread.scrollTop=thread.scrollHeight;
+        }else{
+          programmaticScrollTop.current=null;
+          thread.scrollTop=thread.scrollHeight;
+        }
         setNewBelow(false);
       }else if(messages.length)setNewBelow(true);
     };
@@ -862,6 +892,25 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     </label>}
     </details>
   );
+  const availableSuggestions=choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id));
+  const renderRecommendation=(x:AgentReply["suggestions"][number])=><article className={styles.offer} key={x.id} data-hh-recommendation-card>
+    <img src={recommendationPortrait(x)} alt="" className={styles.offerPortrait}
+      width={70} height={70} loading="lazy" decoding="async"/>
+    <div className={styles.offerBody}>
+      <div className={styles.offerTitle}><strong>{x.title}</strong>
+        <small>{t.kinds[x.kind as keyof typeof t.kinds]||x.kind}</small></div>
+      <div className={styles.offerFoot}>
+        <a href={x.href} rel="noreferrer" className={styles.offerOpen}>{t.option} ↗</a>
+        <details className={styles.offerFeedback}>
+          <summary>{locale==="ru"?"Отметить":locale==="es"?"Marcar":"Feedback"}</summary>
+          <div className={styles.feedbackActions}>
+            <button type="button" onClick={()=>setDismissedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.hide}</button>
+            <button type="button" onClick={()=>setCompletedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.tried}</button>
+          </div>
+        </details>
+      </div>
+    </div>
+  </article>;
   return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
     data-video-auth-status={compact?(authenticated?"authenticated":authStatus):undefined}
     data-page-help={pageHelp?"true":undefined} data-has-messages={messages.length>0||undefined}
@@ -874,14 +923,19 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     {!messengerView&&<EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact}/>}
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;
+        if(programmaticScrollTop.current!==null){
+          const automatic=Math.abs(el.scrollTop-programmaticScrollTop.current)<3;
+          programmaticScrollTop.current=null;
+          if(automatic)return;
+        }
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
-      {compact&&messengerView&&!messages.length&&<MessengerAiLanding
+      {compact&&messengerView&&!pageHelp&&!messages.length&&<MessengerAiLanding
         locale={locale} onCreateVideo={startContent}
         onPractice={()=>startGuided("meditation")}
         onAsk={()=>composerRef.current?.focus({preventScroll:true})}/>}
-      {compact&&!messengerView&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
+      {compact&&(!messengerView||pageHelp)&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
       {messages.map((m,index)=>messengerView&&m.role==="assistant"?
         <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
@@ -889,7 +943,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
             width={37} height={37} loading="lazy" alt="" className={styles.messagePortrait}/>
           <p className={styles.assistant}>{m.text}</p>
         </div>:
-        <p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
+        <p key={index} data-hh-chat-turn={m.role} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
       {compact&&pageHelpLink&&<a className={styles.testLink} data-hh-ihelp-link href={pageHelpLink.href}>{pageHelpLink.label} · {t.option}</a>}
       {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
@@ -1040,20 +1094,20 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         {locale==="ru"?"Другое / Пропустить":locale==="es"?"Otro / Omitir":"Other / Skip"}
       </button>
     </div>}
-    {source&&<p className={styles.muted}>{t.source}: {source==="browser"?t.used:source==="owned"?t.backend:t.simple}</p>}
+    {source&&<p className={messengerView?styles.sourceBadge:styles.muted}>{t.source}: {source==="browser"?t.used:source==="owned"?t.backend:t.simple}</p>}
     {evidenceUsed&&<p className={styles.muted} role="status">{t.evidenceUsed}</p>}
     {historyUsed&&<p className={styles.muted} role="status">{t.historyUsed}</p>}
-    {choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id)).length>0&&
-      <div className={styles.choices}><h2>{t.suggestions}</h2>
-        {choices.filter(x=>!dismissedIds.includes(x.id)&&!completedIds.includes(x.id)).map(x=>
-          <div className={styles.offer} key={x.id}>
-            <a href={x.href} rel="noreferrer">{x.title} · {t.option}</a>
-            <div className={styles.feedbackActions}>
-              <button type="button" onClick={()=>setDismissedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.hide}</button>
-              <button type="button" onClick={()=>setCompletedIds(ids=>[...new Set([...ids,x.id])].slice(-20))}>{t.tried}</button>
-            </div>
-          </div>)}
-        <small className={styles.muted}>{t.localFeedback}</small>
+    {availableSuggestions.length>0&&
+      <div className={styles.choices} data-hh-verified-options><h2>{t.suggestions}</h2>
+        <div className={styles.offerList}>{availableSuggestions.slice(0,3).map(renderRecommendation)}</div>
+        {availableSuggestions.length>3&&<details className={styles.moreRecommendations}>
+          <summary>{locale==="ru"?"Другие варианты":locale==="es"?"Más opciones":"More options"} ({availableSuggestions.length-3})</summary>
+          <div className={styles.offerList}>{availableSuggestions.slice(3).map(renderRecommendation)}</div>
+        </details>}
+        {messengerView?<details className={styles.choicesInfo}>
+          <summary>{locale==="ru"?"Об этих рекомендациях":locale==="es"?"Sobre estas opciones":"About these options"}</summary>
+          <small>{t.localFeedback}</small>
+        </details>:<small className={styles.muted}>{t.localFeedback}</small>}
       </div>}
     {status&&<p role="alert" className={styles.assistant}>{status}</p>}
     {compact&&needsPrivateSignIn&&<MessengerSignIn locale={locale}/>}
@@ -1109,7 +1163,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
           <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
           <div className={styles.composerMenu}>{voiceAttachment}{resetControl}</div>
         </details>:voiceAttachment}
-        {messengerView&&<button type="button" className={styles.recorderToggle}
+        {messengerView&&!pageHelp&&<button type="button" className={styles.recorderToggle}
           onClick={()=>setRecorderOpen(value=>!value)} aria-pressed={recorderOpen}
           aria-label={locale==="ru"?"Записать голос для видео":locale==="es"?"Grabar audio para vídeo":"Record audio for video"}
           title={locale==="ru"?"Записать голос для видео":locale==="es"?"Grabar audio para vídeo":"Record audio for video"}>
