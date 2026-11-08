@@ -49,13 +49,16 @@ test("Concept never claims video exists; unsupported IDs are rejected",()=>{
   assert.equal(videoConceptIsValid({...p,scenarioId:"invented"}),false);
   assert.equal(videoConceptIsValid({...p,motifId:"invented"}),false);
 });
-test("Montage still owns the original single editor and verifies guest approval UX",()=>{
+test("Ideas Concept owns the original single editor; Montage retains Settings and media",()=>{
   const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const concept=readFileSync(new URL("../components/mandala-video-concept.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-video-concept.module.css",import.meta.url),"utf8");
-  assert.match(source,/data-video-montage-concept/);
+  assert.match(source,/data-video-ideas-concept-panel/);
+  assert.equal((source.match(/<MandalaVideoConcept /g)||[]).length,1);
+  assert.doesNotMatch(source,/data-video-montage-concept/);
   assert.match(source,/\{id:"effects",Icon:Sparkles\},\{id:"audio",Icon:Music2\}/);
-  assert.match(source,/\{id:"concept",Icon:Brain\},\{id:"settings",Icon:SlidersHorizontal\}/);
+  assert.doesNotMatch(source,/\{id:"concept",Icon:Brain\}/);
+  assert.match(source,/data-video-ideas-tab="concept"/);
   assert.match(source,/data-video-concept-text-tools/);
   assert.match(source,/data-video-montage-text/);
   assert.match(source,/MandalaMultiTrackTimeline/);
@@ -77,14 +80,15 @@ test("Montage still owns the original single editor and verifies guest approval 
   assert.match(css,/safe-area-inset-bottom/);
 });
 
-test("macOS WebKit must enter Style from default Concept before selecting media",()=>{
+test("macOS WebKit begins with Montage Style and independently reviews Ideas Concept",()=>{
   const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const start=source.indexOf('const editorTab=page.locator');
   const end=source.indexOf('const selectedStyle=page.locator',start);
   assert.ok(start>0&&end>start);
   const route=source.slice(start,end);
-  assert.match(route,/\[data-video-montage-tab="concept"\]/);
-  assert.match(route,/await montageStyleTab\.click\(\)/);
+  assert.match(route,/\[data-video-montage-tab="effects"\]/);
+  assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
+  assert.match(route,/\[data-video-montage-tab="concept"\]'.*toHaveCount\(0\)/);
   assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
 });

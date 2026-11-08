@@ -9,12 +9,14 @@ import {suggestMeaningPhrases} from "@/lib/mandala/video-meaning-phrases.mjs";
 import {isIdeaEditorSnapshot,planIdeaSelection,sanitizeIdeaPhrase} from "@/lib/mandala/video-idea-selection.mjs";
 import type {AffirmationSettings} from "@/lib/mandala/video-affirmations";
 import type {VideoLocale,VideoTheme} from "@/lib/mandala/holistic-video-themes";
+import {goalCurrentMeaningId,goalDesiredMeaningId,type VideoGoalProfile} from "./mandala-video-personalization";
 import css from "./mandala-video-ideas.module.css";
 
 type Axis={id:string;label:string;description:string};
 type Cluster={id:string;label:string};
 type Props={
  locale:VideoLocale;theme:VideoTheme;active:boolean;disabled:boolean;settings:AffirmationSettings;
+ profile?:VideoGoalProfile;
  generating:boolean;onChange:Dispatch<SetStateAction<AffirmationSettings>>;
  onPendingChange:Dispatch<SetStateAction<boolean>>;onPreview:()=>void;onCreate:()=>void;onGenerate:()=>void;status?:string;
  onRecord:()=>void;onResetPreview:()=>void;
@@ -75,7 +77,7 @@ const allFive=[0,1,2,3,4];
 const scaleValues=["small","medium","large"] as const;
 const cleanPhrase=sanitizeIdeaPhrase;
 
-export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generating,
+export function MandalaVideoIdeas({locale,theme,active,disabled,settings,profile,generating,
  onChange,onPendingChange,onPreview,onCreate,onGenerate,status,onRecord,onResetPreview}:Props){
  const t=wording[locale];
  const currentOptions=useMemo<Cluster[]>(()=>listCurrentEmotionClusters(locale),[locale]);
@@ -95,9 +97,30 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
  const [moreClicks,setMoreClicks]=useState(0);
  const [feedback,setFeedback]=useState("");
  const lastApplied=useRef("");
- const signature=JSON.stringify([locale,selectedAxes,current,desired,stateScore,energy,revision]);
- const suggested=useMemo(()=>suggestMeaningPhrases(locale,selectedAxes,current,desired,stateScore,energy,revision,7),
-  [locale,selectedAxes,current,desired,stateScore,energy,revision]);
+ // The questions in Ideas / Personalization are the single source for the
+ // phrase engine; no second Goal questionnaire or independent response cache.
+ const effectiveAxes=profile?.axes?.length?profile.axes:selectedAxes;
+ const currentMeanings=profile?.current?.length?profile.current.map(goalCurrentMeaningId):[current];
+ const desiredMeanings=profile?.desired?.length?profile.desired.map(goalDesiredMeaningId):[desired];
+ const effectiveStateScore=profile?.desiredLevel??stateScore;
+ const effectiveEnergy=profile?.energy??energy;
+ const profileKey=JSON.stringify(profile??null);
+ const signature=JSON.stringify([locale,effectiveAxes,currentMeanings,desiredMeanings,
+  effectiveStateScore,effectiveEnergy,revision]);
+ const suggested=useMemo(()=>{
+  const length=Math.max(currentMeanings.length,desiredMeanings.length);
+  const pools=Array.from({length},(_,i)=>suggestMeaningPhrases(
+   locale,effectiveAxes,currentMeanings[i%currentMeanings.length],
+   desiredMeanings[i%desiredMeanings.length],effectiveStateScore,effectiveEnergy,revision+i,7));
+  const combined:string[]=[];
+  for(let j=0;j<7;j++)for(const pool of pools){
+   const line=pool[j];
+   if(line&&!combined.includes(line)&&combined.length<7)combined.push(line);
+  }
+  return combined;
+ // The serialized profile makes a changed answer invalidate candidates exactly once.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[locale,profileKey,current,desired,stateScore,energy,selectedAxes,revision]);
 
  // Keep the edited list in the parent's session state, the same source used by
  // Canvas and export. Mounting Ideas again must not replace saved user words.
@@ -162,9 +185,9 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
  const moreOptions=()=>{
   if(options.length>=14)return;
   const sequence=[
-   ...suggestMeaningPhrases(locale,selectedAxes,current,desired,stateScore,energy,revision+moreClicks+1,7),
-   ...suggestMeaningPhrases(locale,["growth","connection"],current,desired,stateScore,energy,moreClicks,7),
-   ...suggestMeaningPhrases(locale,["meaning","dignity"],current,desired,stateScore,energy,moreClicks,7),
+   ...suggestMeaningPhrases(locale,effectiveAxes,currentMeanings[0],desiredMeanings[0],effectiveStateScore,effectiveEnergy,revision+moreClicks+1,7),
+   ...suggestMeaningPhrases(locale,["growth","connection"],currentMeanings[0],desiredMeanings[0],effectiveStateScore,effectiveEnergy,moreClicks,7),
+   ...suggestMeaningPhrases(locale,["meaning","dignity"],currentMeanings[0],desiredMeanings[0],effectiveStateScore,effectiveEnergy,moreClicks,7),
   ];
   const candidates=sequence.filter((line,i)=>!options.includes(line)&&sequence.indexOf(line)===i)
    .slice(0,Math.min(3,14-options.length));
@@ -245,7 +268,7 @@ export function MandalaVideoIdeas({locale,theme,active,disabled,settings,generat
     onClick={()=>apply(options,[])}>{t.clear}</button>
   </section>
 
-  <details className={css.refine} data-video-ideas-refine>
+  <details className={css.refine} data-video-ideas-refine hidden={Boolean(profile)}>
    <summary><SlidersHorizontal size={19} aria-hidden="true"/>{t.refine}<ChevronDown size={18} aria-hidden="true"/></summary>
    <div className={css.stateCard} data-video-ideas-state>
     <h3 className={css.title}><Heart size={20} aria-hidden="true"/>{t.title}</h3>

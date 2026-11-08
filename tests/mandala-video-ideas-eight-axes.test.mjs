@@ -32,19 +32,19 @@ test("compact Ideas screen uses actual selectors, sliders and one working Montag
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
 });
 
-test("Ideas CTA advances to Montage auto Concept with no renderer, no audio library and no source gate",()=>{
+test("Ideas Add Effects opens existing Hypno without a renderer, audio library or source gate",()=>{
  const start=studio.indexOf("const goToMontageFromIdeas = () => {");
  const end=studio.indexOf("const createQuickVideo = () => {",start);
  assert.ok(start>0&&end>start,"Ideas navigation handler");
  const action=studio.slice(start,end);
- assert.match(action,/setActiveWorkspace\("editor"\)/);
- assert.match(action,/setMontagePanel\("concept"\)/);
-  assert.match(studio,/data-video-montage-concept/);
+ assert.match(action,/setActiveWorkspace\("effects"\)/);
+ assert.match(action,/setMontagePanel\("effects"\)/);
+ assert.match(studio,/data-video-ideas-concept-panel/);
   assert.match(studio,/data-video-concept-text-tools/);
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
  assert.ok(studio.includes('onCreate={goToMontageFromIdeas} onGenerate={createQuickVideo} status={notice}/>'),
-  "Ideas keeps its Montage navigation and gets a separate guarded Create action");
+  "Ideas keeps Effects navigation and a separate guarded Create action");
  assert.match(cmp,/data-video-ideas-create[\s\S]*?disabled=\{disabled\|\|selectedCount<5\}/);
  assert.doesNotMatch(cmp,/canGenerate/,"moving to Montage must not depend on video readiness");
  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection\}/,
@@ -121,12 +121,12 @@ test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list
 });
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
-test("Ideas Text and Voice have a shared, stateful single narration editor",()=>{
+test("Ideas Personalization and Concept preserve one shared narration editor",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
  assert.match(studio,/data-video-ideas-tabs role="group"/);
- assert.match(studio,/data-video-ideas-tab="text" aria-pressed=\{ideasSubtab==="text"\}/);
- assert.match(studio,/data-video-ideas-tab="voice" aria-pressed=\{ideasSubtab==="voice"\}/);
- assert.match(studio,/data-video-ideas-text-panel hidden=\{ideasSubtab!=="text"\}/);
+ assert.match(studio,/data-video-ideas-tab="personalization" aria-pressed=\{ideasSubtab==="personalization"\}/);
+ assert.match(studio,/data-video-ideas-tab="concept" aria-pressed=\{ideasSubtab==="concept"\}/);
+ assert.match(studio,/data-video-ideas-personalization-panel hidden=\{ideasSubtab!=="personalization"\}/);
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
  assert.match(studio,/data-video-ideas-own-upload/);
@@ -134,12 +134,15 @@ test("Ideas Text and Voice have a shared, stateful single narration editor",()=>
  assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
 });
 
-test("Ideas Voice subtab is visible on desktop and switches in the real voice browser",()=>{
+test("Ideas keeps two tabs on mobile and the original opt-in voice editor inside Personalization",()=>{
  const styles=read("components/mandala-video-mobile.module.css");
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.match(styles,/\[data-ideas-subtab="voice"\] \[data-video-legacy-phrase-editor\]\[data-video-ideas-recording-open="true"\]\{display:block!important\}/);
+ assert.match(styles,/\.studio\[data-active-workspace="phrases"\] \.ideasSubtabs button/);
+ assert.match(styles,/@media\(max-width:359px\)/);
  assert.match(browser,/const ideasModes=phrases\.locator/);
- assert.match(browser,/data-ideas-subtab","voice"/);
+ assert.match(browser,/data-video-ideas-tab="concept"/);
+ assert.match(browser,/data-video-ideas-tab="personalization"/);
+ assert.match(browser,/const voiceDisclosure=phrases\.locator/);
+ assert.match(browser,/await voiceDisclosure\.locator\(":scope > summary"\)\.click\(\)/);
  assert.match(browser,/data-video-ideas-own-upload/);
- assert.match(browser,/data-ideas-subtab","text"/);
 });

@@ -5274,3 +5274,31 @@
     padding:8px 4px;min-height:70px;font-size:12px
   }
 }
+
+
+/* Ideas / Personalization + Concept are the only two visible modes.
+   The moved Concept is the original approved editor, not a duplicate. */
+.studio[data-active-workspace="phrases"] .ideasSubtabs button{
+  gap:5px;
+  padding:8px 4px;
+  min-height:48px;
+  font-size:clamp(11px,3.75vw,16px);
+  line-height:1.2;
+}
+.studio[data-active-workspace="phrases"] .ideasSubtabs button svg{flex:none;width:18px;height:18px}
+.ideasConceptPane{min-width:0;max-width:100%;margin:2px 0 12px}
+.ideasConceptPane[hidden],
+.studio [data-video-ideas-personalization-panel][hidden],
+.studio [data-video-ideas-voice-panel][hidden]{display:none!important}
+.studio[data-active-workspace="editor"] .montageQuickTools{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+}
+@media(max-width:359px){
+  .studio[data-active-workspace="phrases"] .ideasSubtabs button{gap:3px;font-size:11px;padding:7px 2px}
+  .studio[data-active-workspace="phrases"] .ideasSubtabs button svg{width:16px;height:16px}
+}
+
+.studio[data-active-workspace="phrases"] [data-video-director-idea-controls][hidden],
+.studio[data-active-workspace="phrases"] [data-video-phrase-audio-shortcut][hidden]{
+  display:none!important;
+}
