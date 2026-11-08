@@ -783,7 +783,6 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Compact Voice deliberately omits the old permanent selectedPhrase
       // summary. Its approved phrase is always visible in the native selector;
       // the full transcript is an opt-in disclosure ONLY for "All phrases".
-      await expect(page.locator("[data-video-affirmation-transcript-review]")).toHaveCount(0);
       await expect(page.locator("[data-video-affirmation-selection-summary]")).toHaveCount(0);
       await expect(page.locator("[data-video-affirmation-voice-advanced]")).toHaveCount(1);
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
@@ -791,8 +790,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await phraseSelector.waitFor({state:"visible"});
       assert.ok((await phraseSelector.locator("option").count())>=3,
         "the visitor can choose one of their approved phrases or all");
+      // A single approved phrase stays compact; the full transcript is
+      // available only when the visitor explicitly chooses All phrases.
       await phraseSelector.selectOption("1");
       await expect(phraseSelector).toHaveValue("1");
+      await expect(page.locator("[data-video-affirmation-transcript-review]")).toHaveCount(0);
+      await phraseSelector.selectOption("all");
+      await expect(page.locator("[data-video-affirmation-transcript-review]")).toBeVisible();
+      await phraseSelector.selectOption("1");
+      await expect(page.locator("[data-video-affirmation-transcript-review]")).toHaveCount(0);
       const approved=(await phraseSelector.locator('option[value="1"]').innerText())
         .replace(/^2\.\s*/,"").trim();
       const expectedSpeech=/[.!?…]$/u.test(approved)?approved:approved+".";
