@@ -2105,6 +2105,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const micRef = useRef<{recorder:MediaRecorder;stream:MediaStream;chunks:Blob[];timeout:ReturnType<typeof setTimeout>}|null>(null);
   const [soundPreview,setSoundPreview] = useState(false);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
+  // Safari may keep playing a keyed native audio node after React detaches it.
+  const activeAudioPreviewRef=useRef<HTMLAudioElement|null>(null);
   const [samplePreviewId,setSamplePreviewId] = useState<PresetId|null>(null);
   // Virtual players exist only during a user-initiated film preview.
   // The visible native player and microphone stay single instances.
@@ -2126,6 +2128,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // Prime media in the visitor gesture: WebKit often rejects delayed play()
   // called from a timer. An initially silent source is unmuted at its offset.
   function startMovieSound(attached:AttachedAudio|null,volume:number,fromSeconds=previewSeekSeconds){
+    // Film voice + bed are an intentional mix. A separate audition is not.
+    stopSoundPreview();
     stopMovieSound();
     if(!attached||(attached.kind==="file"&&!audioRights))return;
     const fileUrl=attached.kind==="file"?URL.createObjectURL(attached.file):null;
@@ -2205,6 +2209,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     },(audioStartSeconds-fromSeconds)*1000);
   }
   const restoreAudioSessionRef = useRef<(() => void) | null>(null);
+  // Pause the old native audio *during* React's keyed replacement/unmount.
+  // Delayed media events from the old player must not affect the new session.
+  const setAudioPreviewNode=useCallback((node:HTMLAudioElement|null)=>{
+    const previous=audioPreviewRef.current;
+    if(previous&&previous!==node){
+      previous.pause();
+      if(activeAudioPreviewRef.current===previous){
+        activeAudioPreviewRef.current=null;
+        restoreAudioSessionRef.current?.();
+        restoreAudioSessionRef.current=null;
+        setSoundPreview(false);
+      }
+    }
+    audioPreviewRef.current=node;
+  },[]);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [uploadedAudio,setUploadedAudio] = useState<{file:File;url:string}|null>(null);
   const [importedAudioSeconds,setImportedAudioSeconds]=useState<number|null>(null);
@@ -3897,8 +3916,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   }
 
   function stopSoundPreview(){
-    const player=audioPreviewRef.current;
-    if(player && !player.paused) player.pause();
+    const current=audioPreviewRef.current;
+    const active=activeAudioPreviewRef.current;
+    if(active&&!active.paused)active.pause();
+    if(current&&current!==active&&!current.paused)current.pause();
+    activeAudioPreviewRef.current=null;
     restoreAudioSessionRef.current?.();
     restoreAudioSessionRef.current=null;
     setSoundPreview(false);
@@ -3908,6 +3930,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     const player=audioPreviewRef.current;
     if(!player || !previewAudioUrl) {setMusicWarning(ui.soundUnavailable);return;}
     if(!player.paused){stopSoundPreview();return;}
+    stopMovieSound();
+    setPreviewPlaying(false);
+    stopSoundPreview();
+    activeAudioPreviewRef.current=player;
     try {
       if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
       player.muted=false;
@@ -3916,6 +3942,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       try { player.volume=Math.min(1,Math.max(0,soundVolume/100)); }
       catch { /* Use device hardware media volume instead. */ }
       void player.play().catch(()=>{
+        if(activeAudioPreviewRef.current!==player)return;
         stopSoundPreview();
         if(aliveRef.current)setMusicWarning(ui.soundUnavailable);
       });
@@ -3928,19 +3955,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // This never silently attaches audio to the video or uploads client files.
   function playAudioTrack(choice: Exclude<AmbientMusic,"none">){
     if(recording||preparing||micRecording)return;
+    stopMovieSound();
+    setPreviewPlaying(false);
     if(!uploadedAudio&&music===choice){toggleSoundPreview();return;}
+    stopSoundPreview();
+    // Change the keyed source only after the previous node is silenced.
     flushSync(()=>{
       setAudioAuto(false);
       chooseMusic(choice);
     });
     const player=audioPreviewRef.current;
     if(!player){setMusicWarning(ui.soundUnavailable);return;}
+    activeAudioPreviewRef.current=player;
     try{
       if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
       player.muted=false;
       try{player.volume=Math.min(1,Math.max(0,soundVolume/100));}
       catch{/* iOS hardware media volume is authoritative. */}
       void player.play().catch(()=>{
+        if(activeAudioPreviewRef.current!==player)return;
         stopSoundPreview();
         if(aliveRef.current)setMusicWarning(ui.soundUnavailable);
       });
@@ -3979,11 +4012,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     flushSync(()=>{if(activeWorkspace!=="phrases"){setActiveWorkspace("editor");setBasicPanelTab("music");}setSamplePreviewId(choice);});
     const player=audioPreviewRef.current;
     if(!player){setMusicWarning(ui.soundUnavailable);return;}
+    activeAudioPreviewRef.current=player;
     try{
       if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
       player.muted=false;
       try{player.volume=Math.min(1,Math.max(0,soundVolume/100));}catch{}
       void player.play().catch(()=>{
+        if(activeAudioPreviewRef.current!==player)return;
         stopSoundPreview();if(aliveRef.current)setMusicWarning(ui.soundUnavailable);
       });
     }catch{stopSoundPreview();setMusicWarning(ui.soundUnavailable);}
@@ -5154,6 +5189,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       });
     }));
   };
+  // Generate only on this explicit click. Recipient-specific footage is
+  // applied first; React commits it before we use the real local encoder.
+  // A current callback keeps that encoder inside the trusted iOS gesture.
+  const freshGoalCreateRef=useRef<()=>boolean>(()=>false);
+  useLayoutEffect(()=>{freshGoalCreateRef.current=createQuickVideo;});
+  const generateFromGoal=()=>{
+    if(!studioHydrated||recording||preparing)return false;
+    let goalValid=true;
+    flushSync(()=>{goalValid=goalContinueRef.current?.()!==false;});
+    if(!goalValid)return false;
+    return freshGoalCreateRef.current();
+  };
+
   const openVideoScenarioStep = () => {
     setVideoScenarioOpen(true);
     setShowAdvancedVideo(true);
@@ -5417,15 +5465,34 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 onChange={event=>setSoundVolume(Number(event.currentTarget.value))}/>
             </label>
           </div>
-          {previewAudioUrl && !audioPlaybackError ? <audio key={previewAudioUrl} ref={audioPreviewRef}
+          {previewAudioUrl && !audioPlaybackError ? <audio key={previewAudioUrl} ref={setAudioPreviewNode}
             src={previewAudioUrl} controls preload="metadata" loop={!uploadedAudio}
             data-video-audio-player data-video-audio-source={uploadedAudio?"user-file":"site-preset"}
             aria-label={uploadedAudio?.file.name||selectedAudio?.name[locale]||ui.music}
-            onPlay={()=>{if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
-              setSoundPreview(true);setMusicWarning("");}}
-            onPause={()=>{restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);}}
-            onEnded={()=>{restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);}}
-            onError={()=>{
+            onPlay={event=>{
+              const player=event.currentTarget;
+              if(player!==audioPreviewRef.current||player.paused){player.pause();return;}
+              const previous=activeAudioPreviewRef.current;
+              if(previous&&previous!==player)previous.pause();
+              activeAudioPreviewRef.current=player;
+              // Native controls also honor exclusive audition/film playback.
+              stopMovieSound();setPreviewPlaying(false);
+              if(!restoreAudioSessionRef.current)restoreAudioSessionRef.current=acquirePlaybackSession();
+              setSoundPreview(true);setMusicWarning("");
+            }}
+            onPause={event=>{
+              if(activeAudioPreviewRef.current!==event.currentTarget)return;
+              activeAudioPreviewRef.current=null;
+              restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);
+            }}
+            onEnded={event=>{
+              if(activeAudioPreviewRef.current!==event.currentTarget)return;
+              activeAudioPreviewRef.current=null;
+              restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;setSoundPreview(false);
+            }}
+            onError={event=>{
+              if(event.currentTarget!==audioPreviewRef.current)return;
+              activeAudioPreviewRef.current=null;
               restoreAudioSessionRef.current?.();restoreAudioSessionRef.current=null;
               setAudioPlaybackError(true);setSoundPreview(false);setMusicWarning(ui.soundUnavailable);
             }}
@@ -6135,14 +6202,20 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div data-video-director-topic-controls className={videoStyles.quickTopicHost}/>
           <div className={videoStyles.stageActionPair} data-video-stage-actions="goal" data-video-request-after-topic>
             <button type="button" className={videoStyles.quickGenerate} data-video-stage-generate="goal"
-              disabled={!studioHydrated||recording||preparing} onClick={createQuickVideo}>
+              disabled={!studioHydrated||recording||preparing} onClick={generateFromGoal}>
               <Play size={20} fill="currentColor" aria-hidden="true"/>
-              {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
+              {locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate video"}
+              {creditCatalog?.chargeRequired && creditCatalog.ready ?
+                <small>{creditSession==="guest"&&!guestFirstVideoUsed
+                  ?locale==="ru"?"Первое бесплатно":locale==="es"?"Primero gratis":"First free"
+                  :creditCatalog.priceCredits+" "+(locale==="ru"?"кредитов":locale==="es"?"créditos":"credits")}</small>
+                :null}
             </button>
             <button type="button" className={videoStyles.stageAddButton} data-video-continue-scenarios
               disabled={!studioHydrated||recording||preparing} onClick={continueToIdeas}>
               <Sparkles size={19} aria-hidden="true"/>
-              {locale==="ru"?"Добавить эффекты":locale==="es"?"Añadir efectos":"Add Effects"}
+              {locale==="ru"?"Перейти к персонализации":
+                locale==="es"?"Continuar a personalización":"Proceed to personalization"}
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             {notice?<p className={videoStyles.quickStatus} role="status" aria-live="polite" data-video-stage-status>{notice}</p>:null}

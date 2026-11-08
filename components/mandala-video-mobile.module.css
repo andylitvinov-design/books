@@ -5260,3 +5260,35 @@
 .quickOrderBar .stageActionPair{margin:0}
 .quickOrderBar .stageActionPair>.quickGenerate{min-height:50px;position:static;bottom:auto}
 @media(max-width:359px){.stageActionPair>.quickGenerate,.stageActionPair>.stageAddButton{padding:10px 6px;font-size:13px}}
+
+
+/* Goal's two independent actions share one mobile row, while other stages
+   retain their approved layouts and the fixed dock remains unobstructed. */
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;align-items:stretch;min-width:0
+}
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>button{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;min-width:0;min-height:68px;padding:8px 6px;white-space:normal;
+  overflow-wrap:anywhere;font:800 clamp(12px,3.3vw,14px)/1.2 Arial,sans-serif;
+  text-align:center;touch-action:manipulation
+}
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>button svg{
+  flex:none;width:18px;height:18px
+}
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>.stageAddButton svg:last-child{
+  display:none
+}
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>.quickGenerate small{
+  font:700 11px/1.15 Arial,sans-serif;opacity:.92
+}
+.studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>[data-video-stage-status]{
+  grid-column:1/-1
+}
+.studio[data-active-workspace="video"] [data-video-credit-status]{display:none!important}
+@media(max-width:354px){
+  .studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]{gap:7px}
+  .studio[data-active-workspace="video"] .stageActionPair[data-video-stage-actions="goal"]>button{
+    padding:8px 4px;min-height:70px;font-size:12px
+  }
+}
