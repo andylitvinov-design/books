@@ -221,8 +221,10 @@ test("choosing Ready discards stale idea and approval clears Wave drafts",()=>{
  for(const status of ['draft','ready','custom','external','idea','safety'])
    assert.ok(phrases.includes('?"'+status+'":null'),status);
  assert.match(browser,/if\(engine==="webkit"\)await approvalButton\.tap\(\)/);
- assert.ok(browser.includes("APPROVED_PHRASES_STILL_PENDING"));
- assert.ok(browser.includes('data-hypno-pending-reasons'));
+ assert.ok(browser.includes('await expect(page.locator("[data-hypno-pending]")).toHaveCount(0)'),
+   "the approved phrase flow finishes with no pending edits");
+ assert.ok(browser.includes("data-video-affirmation-phrase"));
+ assert.ok(browser.includes("data-video-affirmation-transcript-review"));
 });
 
 test("five-phrase limit requires a real removal before the visitor adds another",()=>{
