@@ -207,7 +207,9 @@ test("four canonical goal pills, exclusive subcategories and real scenario/audio
  assert.match(studio,/onContinue=\{\(\)=>\{/);
  assert.match(studio,/setActiveWorkspace\("phrases"\)/);
  assert.match(studio,/data-video-phrase-audio-shortcut/);
- assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setPhraseAudioExpanded\(true\)[\s\S]*?getElementById\("phrase-audio-settings"\)/);
+ assert.match(studio,/data-video-phrase-audio-shortcut hidden=\{ideasSubtab!=="personalization"\}/);
+ assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setIdeasSubtab\("personalization"\)[\s\S]*?setIdeasVoiceAdvancedOpen\(true\)[\s\S]*?setPhraseAudioExpanded\(true\)[\s\S]*?querySelector\("\[data-video-ideas-advanced-voice\]"\)/);
+ assert.match(studio,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((director.match(/data-auto-video-input value=\{requestDraft\}/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-advanced-toggle/);
@@ -294,7 +296,11 @@ test("Montage and PRO retain one operational video/audio pipeline without duplic
   const nav=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'),
     studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.montageQuickTools}')));
   assert.deepEqual([...nav.matchAll(/id:"(effects|audio|concept|settings)",Icon:/g)].map(m=>m[1]),
-    ["effects","audio","concept","settings"],"Style, Audio, Concept, Settings under the existing player");
+    ["effects","audio","settings"],"Montage has Style, Audio, Settings; Concept moved to Ideas");
+  assert.equal((studio.match(/<MandalaVideoConcept /g)||[]).length,1,
+    "the single original Concept editor must remain operational");
+  assert.match(studio,/data-video-ideas-tab="concept"/);
+  assert.match(studio,/data-video-ideas-concept-panel hidden=\{ideasSubtab!=="concept"\}/);
   assert.match(studio,/data-video-concept-text-tools/,"caption editor and timeline remain available");
   assert.match(studio,/data-video-montage-style=\{index\}/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
@@ -312,7 +318,7 @@ test("Montage and PRO retain one operational video/audio pipeline without duplic
   assert.match(studio,/data-video-final-editor/);
   assert.match(studio,/data-video-editor-style-settings/);
   assert.match(studio,/data-video-quick-generate/);
-  assert.match(css,/\.montageQuickTools\{\s*display:grid!important;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.studio\[data-active-workspace="editor"\] \.montageQuickTools\{\s*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 
