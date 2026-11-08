@@ -60,10 +60,8 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     await expect(page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]')).toBeVisible();
-    // Text editor was moved from Ideas into the second Montage subtab.
-    await page.locator('[data-video-ideas-open-montage-text]').click();
-    await expect(page.locator('[data-video-montage-tab="text"]'))
-      .toHaveAttribute("aria-pressed","true");
+    // Optional Goal refinement belongs to Ideas/Personalization. It becomes
+    // intentionally hidden on Montage Text, so exercise it BEFORE navigation.
     const refinement=page.locator('[data-video-ideas-refinement]');
     await expect(refinement.locator(":scope > summary")).toBeVisible();
     // The native details may already be open after the Ideas transition.
@@ -75,6 +73,14 @@ async function verifyWorkspaceHydration(browser,locale){
     await refinement.locator(":scope > summary").click();
     await expect(refinement).toHaveAttribute("open","");
     await expect(page.locator('[data-auto-video-topic-panel]')).toBeVisible();
+    // Validate the physical Ideas -> Montage Text CTA and the shared editor.
+    await page.locator('[data-video-ideas-open-montage-text]').click();
+    await expect(page.locator('[data-video-montage-tab="text"]'))
+      .toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-montage-text]')).toBeVisible();
+    // Return to Ideas before testing the independent top-level Montage tap.
+    await ideas.tap();
+    await expect(studio).toHaveAttribute("data-active-workspace","phrases");
     const montage=page.locator('[data-video-quick-control="editor"]');
     await expect(montage).toBeVisible({timeout:15000});
     await expect(montage).toBeEnabled({timeout:15000});
@@ -524,18 +530,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Text mode deliberately collapses the advanced editor. The actual
       // visitor taps Record a phrase to reveal it; this does not request mic access.
       await expect(advancedVoice).toBeHidden();
-      // The physical Record choice is now on Montage → Text. Selecting it
-      // opens the unchanged Ideas Voice editor with the same parent state.
-      await phrases.locator('[data-video-ideas-open-montage-text]').click();
-      const recordEntry=page.locator('[data-video-montage-text] [data-video-ideas-record]');
-      await expect(recordEntry).toBeVisible();
-      await recordEntry.click();
-      await expect(phrases).toHaveAttribute('data-ideas-subtab','voice');
-      await expect(advancedVoice).toBeVisible({timeout:15000});
+      // Legacy Hypno editing is intentionally hidden from the compact Voice
+      // tab; its accessible opt-in lives in Ideas Text. Exercise actual taps
+      // and the selected/approved phrase state before opening Voice.
+      const phraseSettings=phrases.locator('[data-video-phrase-audio-shortcut]');
+      await expect(phraseSettings).toBeVisible();
+      await phraseSettings.click();
+      await expect(advancedVoice).toBeVisible();
       await expect(advancedVoice).toHaveAttribute("open","");
-      await expect(page.locator('[data-video-affirmation-gender="own"]'))
-        .toHaveAttribute("aria-pressed","true",{timeout:15000});
-      await expect(page.locator('[data-video-own-voice-record]')).toBeVisible();
       // Hypno's optional fine-tuning has its own native user disclosure.
       // Open it visibly rather than forcing hidden select controls.
       const intentDetails=phrases.locator('[data-hypno-idea-details]');
@@ -564,9 +566,22 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","false");
       await chosenPhrase.click();
       await expect(chosenPhrase).toHaveAttribute("aria-pressed","true");
-      // Reproduction of the phone screenshot: unsaved phrase edits block
-      // narration generation, NOT male/female selection or voice previews.
       await expect(page.locator("[data-hypno-pending]")).toBeVisible();
+      // The physical Record choice is in Montage Text. Selecting it opens
+      // the unchanged Ideas Voice editor with the same parent state.
+      await phrases.locator('[data-video-ideas-open-montage-text]').click();
+      const recordEntry=page.locator('[data-video-montage-text] [data-video-ideas-record]');
+      await expect(recordEntry).toBeVisible();
+      await recordEntry.click();
+      await expect(phrases).toHaveAttribute('data-ideas-subtab','voice');
+      await expect(advancedVoice).toBeVisible({timeout:15000});
+      await expect(advancedVoice).toHaveAttribute("open","");
+      await expect(page.locator('[data-video-affirmation-gender="own"]'))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await expect(page.locator('[data-video-own-voice-record]')).toBeVisible();
+      // Pending edit visibility was verified above in the real Ideas Text
+      // editor; compact Voice deliberately hides phrase-edit controls, while
+      // narration is still blocked until explicit approval.
       const chooserPending=page.locator("[data-video-affirmation-voice-select]");
       await expect(chooserPending.locator('[data-video-affirmation-gender="male"]')).toBeEnabled();
       await chooserPending.locator('[data-video-affirmation-gender="male"]').click();
@@ -609,15 +624,30 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // WebKit can return from a click before React commits the visitor's
       // approved phrases. Wait for actual approved, selected transcript state,
       // not just the already-mounted voice panel. Keep consent and WAV proof.
+      // Approval is an actual phrase-edit action, intentionally hidden from
+      // compact Voice. Reopen Ideas Text via a visible click, approve, then
+      // return to Voice and verify original consent and encoded audio checks.
+      await phrases.locator('[data-video-ideas-tab="text"]').click();
+      await expect(phrases).toHaveAttribute('data-ideas-subtab','text');
+      await expect(phraseSettings).toBeVisible();
+      await phraseSettings.click();
+      await expect(advancedVoice).toBeVisible();
       await page.locator("[data-hypno-approve]").click();
       await expect(page.locator("[data-hypno-pending]")).toHaveCount(0,{timeout:15000});
       await expect(page.locator("[data-hypno-overview-enable]")).toBeChecked({timeout:15000});
+      await phrases.locator('[data-video-ideas-tab="voice"]').click();
+      await expect(phrases).toHaveAttribute('data-ideas-subtab','voice');
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       // Record two independent browser-local tracks using the real
       // MediaRecorder and a deterministic WebAudio microphone fixture.
       const ownMode=page.locator('[data-video-affirmation-gender="own"]');
-      await expect(ownMode).toBeEnabled();
-      await ownMode.click();
+      // In compact Voice the own-gender switch is intentionally hidden; the
+      // public "Record a voice" button is the real visitor entry to that mode.
+      const recordOwnVoice=page.locator('[data-video-ideas-record-voice]');
+      await expect(recordOwnVoice).toBeVisible();
+      await expect(recordOwnVoice).toBeEnabled();
+      await recordOwnVoice.click();
+      await expect(ownMode).toHaveAttribute("aria-pressed","true");
       const ownPanel=page.locator("[data-video-own-voice]");
       await expect(ownPanel).toBeVisible();
       await expect(page.locator('[data-video-affirmation-voice-card="maya"]')).toBeHidden();
