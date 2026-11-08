@@ -107,3 +107,21 @@ body.hh2-active .hh2-full{display:none!important}
  .hh2-compare{gap:3px}
  .hh2-stage-coverage{font-size:9px}
 }
+
+.hh2-measured{display:grid;gap:8px;min-width:0}
+.hh2-measured h3{font-size:15px;margin:5px 0 0;color:#eef7ff}
+.hh2-measured .hh2-stage-row strong:last-child{font-size:11px;color:#a3dafa}
+.hh2-measured .hh2-inline-warning{color:#d6ba89}
+.hh2-measured .hh2-button{justify-self:start}
+
+/* 2026-11-08: full-height native document flow. No scroll inside the PR graph. */
+body.hh2-active .hh2-screen{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;overscroll-behavior:auto!important}
+.hh2-chart,body.hh2-active .hh2-chart{height:auto!important;max-height:none!important;min-height:0!important;flex:0 0 auto!important;overflow:visible!important}
+.hh2-chart-slot,body.hh2-active .hh2-chart-slot{height:auto!important;max-height:none!important;min-height:0!important;flex:0 0 auto!important;overflow:visible!important;overscroll-behavior:auto!important}
+.hh2-chart-slot #hh-pr-trends{height:auto!important;max-height:none!important;overflow:visible!important;width:100%;min-width:0}
+.hh2-chart-slot #hh-pr-trends .hh-trends-plot{max-height:none!important}
+@media(max-width:700px){
+ .hh2-screen,.hh2-first,.hh2-second{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;overscroll-behavior:auto!important}
+ .hh2-first .hh2-chart{height:auto!important;max-height:none!important;flex:none!important;overflow:visible!important}
+ .hh2-first .hh2-chart-slot{height:auto!important;max-height:none!important;flex:none!important;overflow:visible!important}
+}
