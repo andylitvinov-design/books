@@ -604,7 +604,7 @@ async function exercise(engine, browserType, width) {
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
           // The unified Profile dock now opens the PRIVATE Cabinet first.
           // Verify the hard CSP boundary, guest isolation and the public
-          // "Create" tab instead of assuming the old public-only destination.
+          // actual six-tab My Space and separate public profile builder.
           await cspPage.locator('.mobile-bottom-navigation [data-nav-item="profile"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/app/portrait');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
@@ -613,8 +613,14 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
           await expect(cspPage.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
-          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-create'; });
-          await cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="create"]').click();
+          // Current My Space has six PRIVATE tabs, not the retired Create link.
+          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
+          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="tests"]')).toHaveAttribute('href', '/en/app/tests');
+          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="create"]')).toHaveCount(0);
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-builder'; });
+          // The builder is now a separate public route. Exercise the real
+          // private-to-public CSP boundary with a fresh document navigation.
+          await cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/personality-profiles');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
