@@ -53,6 +53,7 @@ import { allocateFreeFilmTimeline, allocateAdaptiveFilmTimeline, allocateSourceB
 import {validateMontageClips,isSafeMontageScene} from "@/lib/mandala/video-montage-sources.mjs";
 import {autoFillApprovedFilm} from "@/lib/mandala/auto-fill-approved-film.mjs";
 import {normalizeStageCaption,stageCaptionAt} from "@/lib/mandala/stage-caption-track.mjs";
+import {pickSingleVideoTextSource} from "@/lib/mandala/single-video-text-track.mjs";
 import {clampTrackSecond,timedCaptionAt,splitTimelineCaption,duplicateTimelineCaption} from "@/lib/mandala/editable-timeline.mjs";
 import {distributeMontageSetups,isMontageSetupClip,reorderMontageSetups,retimeMontageSetups} from "@/lib/mandala/creative-editor-setups.mjs";
 import {paintCreativeTimelineShot,CREATIVE_TRANSITIONS,CREATIVE_LOOKS} from "@/lib/mandala/creative-timeline-effects.mjs";
@@ -1466,6 +1467,23 @@ function paintCinematicFrame(
   // Non-destructive per-shot finishing: preview and encoded export use this Canvas.
   paintCreativeTimelineShot(ctx,storyboard.shots,storyboard.shots.indexOf(shot),localTime);
 }
+/** One Canvas text compositor for preview and every exported format. */
+function paintSingleVideoTextOverlay(
+  ctx:CanvasRenderingContext2D,time:number,
+  source:"affirmations"|"stage"|"caption"|"none",
+  lines:readonly string[],settings:AffirmationSettings,totalSeconds:number,
+  plan:CinematicStoryboard|null,clips:readonly TimelineTextClip[]|null,
+):void{
+  if(source==="affirmations"){
+    // Legacy medium/high density could draw 2-3 sentences simultaneously.
+    // Present one readable phrase and only one selected size/visibility.
+    const visibility=settings.visibility.includes("large")?"large":
+      settings.visibility.includes("small")?"small":"frame";
+    paintVideoAffirmations(ctx,time,lines,{...settings,density:"low",visibility:[visibility]},totalSeconds);
+  }else if(source==="stage"){
+    paintStageCaptionOverlay(ctx,time,plan,clips);
+  }
+}
 /** Each authored caption is rendered locally on the same Canvas as MediaRecorder. */
 function paintStageCaptionOverlay(
   ctx:CanvasRenderingContext2D,time:number,plan:CinematicStoryboard|null,
@@ -2729,6 +2747,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       attachedAudio.voiceId!==voicePreferences.voiceId || attachedAudio.language!==voicePreferences.language ||
       attachedAudio.bed!==voicePreferences.bed ||
       (attachedAudio.speechSeconds||0)>duration-effectiveAudioStartSeconds-0.35));
+  // Select one client-appropriate text source before any Canvas frame is drawn.
+  // Explicit edits and already-approved speech are protected from replacement.
+  const singleTextSource=pickSingleVideoTextSource({
+    affirmationsEnabled:affirmations.enabled,affirmationLines,
+    affirmationVisibility:affirmations.visibility,timelineCaptions:timelineTextClips,
+    storyboardCaptions:cinematicPlan?.version===FREE_FILM_PLAN_VERSION
+      ?cinematicPlan.shots.map(shot=>shot.overlayText||""):[],
+    captionMode,caption,wish,
+    approvedNarration:Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration&&!narrationInvalid),
+  });
+  const visibleCaption=singleTextSource==="caption"?caption:"";
   const attachedPresetIds:PresetId[]=attachedAudio?.kind==="presets"?attachedAudio.ids
     :attachedAudio?.kind==="preset"?[attachedAudio.id]:[];
   const selectedAudioKey=uploadedAudio?"file:"+uploadedAudio.url:music==="none"?"none"
@@ -2749,7 +2778,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // a decorative image finishes loading in a different editor panel.
   const signature = JSON.stringify([source,backgroundOnly?null:frameUrl,backgroundOnly?null:photoUrl,theme,moneyScene,otherScene,backgroundOnly,
     effect,aspect,duration,quality,speed,brightness,attachedAudioKey,attachedAudio?soundVolume:0,
-    audioStartSeconds,timelineTextClips,caption,affirmations,hypnoLight,
+    audioStartSeconds,timelineTextClips,caption,singleTextSource,wish,affirmations,hypnoLight,
     attachedAudio?.kind==="file"?musicBed:null,
     cinematicPlan?.version,cinematicPlan?.styleId,cinematicPlan?.shots.map(shot=>[shot.sceneId,shot.startSeconds,shot.durationSeconds,shot.overlayText||"",
        shot.transitionIn||"soft",shot.colorLook||"original",shot.motion??null,
@@ -3228,12 +3257,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const styleFirstBeat=Boolean(selectedStyleFilm&&styleFilmReady&&previewSeekSeconds<
          (cinematicPlan?.shots[0]?.durationSeconds??5));
        if(!usingFreeFilmCompilation||scrubFrame||styleFirstBeat){
-        paintCinematicFrame(ctx,image,effect,previewSeekSeconds,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,scrubFrame,currentFreeVideoPlan,
+        paintCinematicFrame(ctx,image,effect,previewSeekSeconds,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,scrubFrame,currentFreeVideoPlan,
           creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current);
         paintHypnoLightOverlay(ctx,previewSeekSeconds,hypnoLight);
         paintStoryMotifs(ctx,previewSeekSeconds,appliedStory);
-        if(activeWorkspace==="phrases"||!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,previewSeekSeconds,affirmationLines,affirmations,duration);
-        if(activeWorkspace!=="phrases")paintStageCaptionOverlay(ctx,previewSeekSeconds,cinematicPlan,timelineTextClips);
+        paintSingleVideoTextOverlay(ctx,previewSeekSeconds,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
       }
       if (!previewPlaying) return;
       const previewCores=Number.isFinite(navigator.hardwareConcurrency)?navigator.hardwareConcurrency:4;
@@ -3254,12 +3282,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const styleBeatReady=Boolean(selectedStyleFilm&&styleFilmReady&&frameSecond<
              (cinematicPlan?.shots[0]?.durationSeconds??5));
            if(!usingFreeFilmCompilation||stockFrame||styleBeatReady){
-            paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
+            paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current);
             paintStoryMotifs(ctx,frameSecond,appliedStory);
             paintHypnoLightOverlay(ctx,frameSecond,hypnoLight);
-            if(activeWorkspace==="phrases"||!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,activeWorkspace==="phrases"?elapsed:frameSecond,affirmationLines,affirmations,duration);
-      if(activeWorkspace!=="phrases")paintStageCaptionOverlay(ctx,frameSecond,cinematicPlan,timelineTextClips);
+            paintSingleVideoTextOverlay(ctx,frameSecond,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
           }
           lastFrame = now;
         }
@@ -3269,7 +3296,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }).catch(() => { /* PNG preparation can be retried in the parent editor. */ });
     return () => { cancelled = true; window.cancelAnimationFrame(animation); };
   }, [source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, previewSeekSeconds,
-    recording, speed, brightness, caption, affirmations, hypnoLight, locale, cinematicPlan,
+    recording, speed, brightness, caption, visibleCaption, singleTextSource, wish, affirmations, hypnoLight, locale, cinematicPlan,
     usingFreeFilmCompilation, freeFilmReady, appliedStory, timelineTextClips,stopMovieSound,duration,previewFrameRevision,
     creationMode,currentFreeVideoPlan,activeMontageStyleId,selectedStyleFilm?.src,styleFilmReady,backgroundOnly,photoConsent,photoUrl,activeWorkspace]);
 
@@ -3551,12 +3578,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       if (!ctx) throw new Error("Canvas unsupported");
       const firstStockFrame=freeFilmVideoAt(0,false);
       if(usingFreeFilmCompilation&&!firstStockFrame)throw new Error("licensed_video_frame_unavailable");
-      paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,firstStockFrame,currentFreeVideoPlan,
+      paintCinematicFrame(ctx,image,effect,0,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,firstStockFrame,currentFreeVideoPlan,
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current);
       paintStoryMotifs(ctx,0,appliedStory);
       paintHypnoLightOverlay(ctx,0,hypnoLight);
-      if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,0,affirmationLines,affirmations,duration);
-      paintStageCaptionOverlay(ctx,0,cinematicPlan,timelineTextClips);
+      paintSingleVideoTextOverlay(ctx,0,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
        paintVideoBrandStamp(ctx,exportBrandVariant);
       // Device-aware capture targets smoother frames while keeping low-end
       // iPhone and timed subliminal-frame fallback bounded.
@@ -3615,13 +3641,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             renderFrame:time=>{
               const frame=freeFilmVideoAt(time,true);
               if(usingFreeFilmCompilation&&!frame)return false;
-              paintCinematicFrame(ctx,image,effect,time,aspect,moneyScene,caption,
+              paintCinematicFrame(ctx,image,effect,time,aspect,moneyScene,visibleCaption,
                 theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,frame,currentFreeVideoPlan,
                 creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current);
               paintStoryMotifs(ctx,time,appliedStory);
               paintHypnoLightOverlay(ctx,time,hypnoLight);
-              if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,time,affirmationLines,affirmations,duration);
-              paintStageCaptionOverlay(ctx,time,cinematicPlan,timelineTextClips);
+              paintSingleVideoTextOverlay(ctx,time,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
               paintVideoBrandStamp(ctx,exportBrandVariant);
               return true;
             },
@@ -3836,12 +3861,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             job.animation=requestAnimationFrame(animate);return;
           }
           stockGapSince=0;
-          paintCinematicFrame(ctx,image,effect,frameTime,aspect,moneyScene,caption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
+          paintCinematicFrame(ctx,image,effect,frameTime,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current);
           paintStoryMotifs(ctx,frameTime,appliedStory);
           paintHypnoLightOverlay(ctx,frameTime,hypnoLight);
-          if(!timelineTextClips?.some(isMontageSetupClip))paintVideoAffirmations(ctx,frameTime,affirmationLines,affirmations,duration);
-      paintStageCaptionOverlay(ctx,frameTime,cinematicPlan,timelineTextClips);
+          paintSingleVideoTextOverlay(ctx,frameTime,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips);
           paintVideoBrandStamp(ctx,exportBrandVariant);
           lastFrame=now;
           if(now-lastProgress>650){
