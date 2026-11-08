@@ -118,5 +118,21 @@ test("macOS WebKit export selects visible mobile format and retains real encoder
  assert.match(browser,/readRealGuestVideo\(page/);
  assert.match(browser,/ffprobe/);
  assert.doesNotMatch(browser,/\.selectOption\('portrait'\)/);
- assert.doesNotMatch(browser,/force:\s*true/);
+ assert.doesNotMatch(browser,/\.click\(\{\s*force:\s*true/);
+});
+
+test("WebKit guest film identifies Safari UI state and preserves physical media gates",()=>{
+ const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
+ assert.match(browser,/row\.phase='portrait-selection-confirmation'/);
+ assert.match(browser,/LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED/);
+ assert.match(browser,/root\.getClientRects\(\)\.length>0/);
+ assert.match(browser,/fieldset\.waitFor\(\{state:'visible',timeout:15000\}\)/);
+ assert.match(browser,/LIVE_VIDEO_FILTERS_DISABLED/);
+ assert.match(browser,/firstVideoWidgets:/);
+ assert.match(browser,/WEBKIT_MOVIE_EXPORT_LAST_PHASE/);
+ assert.match(browser,/await portrait\.click\(\)/);
+ assert.match(browser,/await first\.locator\('\[data-first-video-music\]'\)\.selectOption\('meditation'\)/);
+ assert.match(browser,/readRealGuestVideo\(page/);
+ assert.match(browser,/ffprobe/);
+ assert.doesNotMatch(browser,/\.click\(\{\s*force:\s*true/);
 });

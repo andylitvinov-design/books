@@ -198,21 +198,32 @@ try {
   const portrait=first.locator('[data-first-video-quick-aspect="portrait"]');
   row.quickPortraitButtonCount=await portrait.count();
   assert.equal(row.quickPortraitButtonCount,1,'MOBILE_ASPECT_CONTROL_MISSING');
+  row.phase='portrait-real-click';
   await portrait.click();
-  await page.waitForFunction(()=>
-    document.querySelector('[data-first-video-quick-aspect="portrait"]')
-      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  row.phase='portrait-selection-confirmation';
+  // Verify React committed the selection on the actual visible, hydrated
+  // first-video widget, not another hidden or detached mobile host.
+  try {
+    await page.waitForFunction(()=>[...document.querySelectorAll(
+      '[data-first-free-video][data-first-video-hydrated="true"]'
+    )].some(root=>root.getClientRects().length>0&&
+      root.querySelector('[data-first-video-quick-aspect="portrait"]')
+        ?.getAttribute('aria-pressed')==='true'),undefined,{timeout:15000});
+  } catch {throw Error('LIVE_VIDEO_PORTRAIT_SELECTION_NOT_REFLECTED');}
   // Advanced settings remain genuine native select interactions. Open the
   // disclosure only if closed; never force-select a hidden/disabled field.
   const filters=first.locator('[data-first-video-filters]');
   const openFilters=async()=>{
-    if(!await filters.evaluate(element=>element.open))
+    row.phase='native-filters-opening';
+    await filters.waitFor({state:'visible',timeout:15000});
+    if(!await filters.evaluate(element=>element instanceof HTMLDetailsElement&&element.open))
       await filters.locator(':scope > summary').click();
-    await page.waitForFunction(()=>{
-      const el=document.querySelector('[data-first-video-filters]');
-      return el instanceof HTMLDetailsElement && el.open &&
-        el.querySelector('fieldset')?.disabled===false;
-    },undefined,{timeout:15000});
+    const fieldset=filters.locator('fieldset');
+    await fieldset.waitFor({state:'visible',timeout:15000});
+    assert.equal(await fieldset.isEnabled(),true,'LIVE_VIDEO_FILTERS_DISABLED');
+    assert.equal(await filters.evaluate(element=>element.open),true,
+      'LIVE_VIDEO_FILTERS_NOT_OPEN');
+    row.phase='native-filters-ready';
   };
   await openFilters();
   assert.equal(await first.locator('[data-first-video-aspect]').inputValue(),
@@ -377,6 +388,20 @@ try {
             })),
             progress:Number(progress?.getAttribute('aria-valuenow')||0),
             hadResult:Boolean(document.querySelector('[data-mandala-video-download]')),
+            // Structure-only diagnostic: never capture audio, transcript or text.
+            firstVideoWidgets:[...document.querySelectorAll('[data-first-free-video]')].slice(0,3)
+              .map(root=>({
+                hydrated:root.getAttribute('data-first-video-hydrated')==='true',
+                visible:root.getClientRects().length>0,
+                portraitPressed:root.querySelector('[data-first-video-quick-aspect="portrait"]')
+                  ?.getAttribute('aria-pressed')==='true',
+                filtersOpen:Boolean(root.querySelector('[data-first-video-filters]')?.open),
+                filtersDisabled:root.querySelector('[data-first-video-filters] fieldset')
+                  ?.disabled??null,
+              })),
+            advancedOpen:Boolean(document.querySelector('[data-video-first-video-advanced]')?.open),
+            activeWorkspace:document.querySelector('[data-mandala-free-video]')
+              ?.getAttribute('data-active-workspace')||null,
           };
         }),
         new Promise((_,reject)=>setTimeout(()=>reject(Error('WEBKIT_MEDIA_DIAGNOSTIC_TIMEOUT')),3000)),
@@ -387,6 +412,7 @@ try {
   }
   if(safeEncoderCodes.length)row.encoderFailureCodes=[...safeEncoderCodes];
   console.error(source===LIVE_ORIGIN?'LIVE_FIRST_VIDEO_REAL_EXPORT_FAIL':'LOCAL_FIRST_VIDEO_REAL_EXPORT_FAIL', row.failure);
+  if(row.phase)console.error('WEBKIT_MOVIE_EXPORT_LAST_PHASE',row.phase);
   if(row.exportDiagnostic)console.error('WEBKIT_MOVIE_EXPORT_SAFE_DIAGNOSTIC',JSON.stringify(row.exportDiagnostic));
   if(row.encoderFailureCodes)console.error('WEBKIT_MOVIE_ENCODER_CODES',row.encoderFailureCodes.join(','));
   process.exitCode = 1;
