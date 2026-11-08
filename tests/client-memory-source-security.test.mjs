@@ -73,6 +73,16 @@ test('master sharing is not accidentally blocked by owner-only settings RLS',()=
  assert.match(sql,/client_ai_memory_disable_revokes_shares/)
  assert.match(sql,/s\.revoked_at IS NULL/)
 })
+test('shared trigger dispatches by table before accessing relation-specific NEW fields',()=>{
+ const fn=sql.split('CREATE FUNCTION app_private.client_memory_guard_immutable_bindings()')[1]
+    .split('REVOKE ALL ON FUNCTION app_private.client_memory_guard_immutable_bindings()')[0]
+ for(const table of ['client_care_tasks','client_ai_memory_shares','client_ai_memory_items']){
+   assert.match(fn,new RegExp("(?:IF|ELSIF) TG_TABLE_NAME = '"+table+"' THEN"))
+   assert.doesNotMatch(fn,new RegExp("TG_TABLE_NAME = '"+table+"' AND"))
+ }
+ assert.match(fn,/CLIENT_MEMORY_SHARE_IMMUTABLE/)
+ assert.match(fn,/OLD\.revoked_at IS NOT NULL AND NEW\.revoked_at IS DISTINCT FROM OLD\.revoked_at/)
+})
 test('share expiry, revoked state and authenticated master bindings cannot be rewritten',()=>{
  assert.match(sql,/NEW\.expires_at IS DISTINCT FROM OLD\.expires_at/)
  assert.match(sql,/OLD\.revoked_at IS NOT NULL AND NEW\.revoked_at IS DISTINCT FROM OLD\.revoked_at/)

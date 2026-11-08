@@ -345,7 +345,8 @@ CREATE POLICY client_ai_audit_insert ON app_private.client_ai_memory_audit
 CREATE FUNCTION app_private.client_memory_guard_immutable_bindings()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $guard$
 BEGIN
-  IF TG_TABLE_NAME = 'client_care_tasks' AND (
+  IF TG_TABLE_NAME = 'client_care_tasks' THEN
+    IF (
     NEW.id IS DISTINCT FROM OLD.id OR
     NEW.client_account_id IS DISTINCT FROM OLD.client_account_id OR
     NEW.practitioner_account_id IS DISTINCT FROM OLD.practitioner_account_id OR
@@ -356,10 +357,11 @@ BEGIN
     NEW.due_on IS DISTINCT FROM OLD.due_on OR
     NEW.operation_id IS DISTINCT FROM OLD.operation_id OR
     NEW.created_at IS DISTINCT FROM OLD.created_at
-  ) THEN
-    RAISE EXCEPTION 'CLIENT_CARE_BINDING_IMMUTABLE' USING ERRCODE = '23514';
-  END IF;
-  IF TG_TABLE_NAME = 'client_ai_memory_shares' AND (
+    ) THEN
+      RAISE EXCEPTION 'CLIENT_CARE_BINDING_IMMUTABLE' USING ERRCODE = '23514';
+    END IF;
+  ELSIF TG_TABLE_NAME = 'client_ai_memory_shares' THEN
+    IF (
     NEW.id IS DISTINCT FROM OLD.id OR
     NEW.account_id IS DISTINCT FROM OLD.account_id OR
     NEW.memory_item_id IS DISTINCT FROM OLD.memory_item_id OR
@@ -370,10 +372,11 @@ BEGIN
     NEW.expires_at IS DISTINCT FROM OLD.expires_at OR
     NEW.consent_version IS DISTINCT FROM OLD.consent_version OR
     (OLD.revoked_at IS NOT NULL AND NEW.revoked_at IS DISTINCT FROM OLD.revoked_at)
-  ) THEN
-    RAISE EXCEPTION 'CLIENT_MEMORY_SHARE_IMMUTABLE' USING ERRCODE = '23514';
-  END IF;
-  IF TG_TABLE_NAME = 'client_ai_memory_items' AND (
+    ) THEN
+      RAISE EXCEPTION 'CLIENT_MEMORY_SHARE_IMMUTABLE' USING ERRCODE = '23514';
+    END IF;
+  ELSIF TG_TABLE_NAME = 'client_ai_memory_items' THEN
+    IF (
     NEW.id IS DISTINCT FROM OLD.id OR
     NEW.account_id IS DISTINCT FROM OLD.account_id OR
     NEW.category IS DISTINCT FROM OLD.category OR
@@ -383,8 +386,9 @@ BEGIN
     NEW.operation_id IS DISTINCT FROM OLD.operation_id OR
     NEW.confirmed_at IS DISTINCT FROM OLD.confirmed_at OR
     NEW.created_at IS DISTINCT FROM OLD.created_at
-  ) THEN
-    RAISE EXCEPTION 'CLIENT_MEMORY_ITEM_OWNER_IMMUTABLE' USING ERRCODE = '23514';
+    ) THEN
+      RAISE EXCEPTION 'CLIENT_MEMORY_ITEM_OWNER_IMMUTABLE' USING ERRCODE = '23514';
+    END IF;
   END IF;
   RETURN NEW;
 END;
