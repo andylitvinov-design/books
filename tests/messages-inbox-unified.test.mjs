@@ -142,7 +142,7 @@ test('Messages uses the seven-destination global dock with Free Analysis; legacy
   assert.match(oldNav,/className="hh-mobile-app-nav"/)
   assert.match(workspace,/const mobileNav = \[/)
   assert.match(css,/data-keyboard-open="true"/)
-  assert.deepEqual(UNIFIED_DOCK_IDS,['mytube','video','ai','practice','master','profile','analysis'])
+  assert.deepEqual(UNIFIED_DOCK_IDS,['mytube','video','master','ai','analysis','practice','profile'])
   for(const locale of ['en','ru','es']){
     assert.equal(isUnifiedMobileDockPath('/'+locale+'/app/messages'),true)
     assert.equal(unifiedMobileDockHref(locale,'ai'),'/'+locale+'/app/messages?section=ai')
