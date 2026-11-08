@@ -8,6 +8,11 @@ const L={
 };
 const OPTIONS=[['10m','every10'],['30m','every30'],['hourly','hourly'],['daily_9','daily'],['weekly_mon_9','weekly']];
 const roles=['commander','analyst','engineering','marketing','education'];
+const PICK={
+ ru:{choose:'Выбрать агента',assign:'Назначить агента',cancel:'Отмена',assigned:'Агент назначен',fixed:'Задачу выполняет штатный SQL-исполнитель. Выбранная роль не меняет исходный код.',blocked:'AI-исполнитель пока не подключён. Выбор роли не запускает задание.',queue:'▶ Запросить выполнение',queued:'Поставлено в очередь. Фактическое выполнение проверьте по журналу.',enable:'Сначала включите штатное задание.'},
+ en:{choose:'Choose agent',assign:'Assign agent',cancel:'Cancel',assigned:'Agent assigned',fixed:'The job runs on the existing SQL worker; the role does not alter its algorithm.',blocked:'AI runner not connected. Choosing a profile does not start the job.',queue:'▶ Request run',queued:'Queued. Check actual execution in run history.',enable:'Enable this builtin job first.'},
+ es:{choose:'Elegir agente',assign:'Asignar agente',cancel:'Cancelar',assigned:'Agente asignado',fixed:'El trabajo usa el ejecutor SQL y no cambia su algoritmo.',blocked:'Ejecutor de IA sin conectar. Elegir un rol no ejecuta la tarea.',queue:'▶ Solicitar ejecución',queued:'En cola. Verifique la ejecución en el historial.',enable:'Primero active el trabajo fijo.'}
+};
 const empty=()=>({title:'',instruction:'',schedule:'daily_9',brainScope:'ai-projects-brain',agentRole:'commander',skillIds:[],enabled:false});
 const labelSkill=(s,lang)=>lang==='ru'?s.titleRu:lang==='es'?s.titleEs:s.titleEn;
 function inferSchedule(text){
@@ -25,9 +30,10 @@ function suggest(text,catalog){
 }
 function fmt(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'America/Toronto'});}
 export default function AutomationManager({lang='ru'}){
- const t=L[lang]||L.ru;
+ const t=L[lang]||L.ru,ap=PICK[lang]||PICK.ru;
  const [data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[ok,setOk]=useState('');
  const [mode,setMode]=useState('my'),[editing,setEditing]=useState(null),[draft,setDraft]=useState(empty());
+  const [assigning,setAssigning]=useState(null),[assignedRole,setAssignedRole]=useState('commander');
  const load=useCallback(async()=>{try{
   const res=await fetch('/api/admin/command-center/skills',{credentials:'same-origin',cache:'no-store'});
   if(!res.ok)throw Error('api');const json=await res.json();
@@ -37,7 +43,7 @@ export default function AutomationManager({lang='ru'}){
  const active=data?.jobs||[],catalog=data?.catalog||[],system=data?.systemJobs||[];
  const skillMap=useMemo(()=>new Map(catalog.map(s=>[s.id,s])),[catalog]);
  const set=(k,v)=>setDraft(old=>({...old,[k]:v}));
- function start(job){setEditing(job?job.id:'new');setDraft(job?
+ function start(job){setAssigning(null);setEditing(job?job.id:'new');setDraft(job?
   {title:job.title||job.skill_id,instruction:job.instruction||'',schedule:job.schedule,
   brainScope:job.brain_scope||'none',agentRole:job.agent_role||'commander',skillIds:job.skill_ids||[],
   enabled:job.enabled}:empty());setError('');setOk('');}
@@ -56,9 +62,27 @@ export default function AutomationManager({lang='ru'}){
   }catch(e){setError(t.error+' · '+String(e?.message||'unknown'));}
   finally{setBusy(false);}
  }
- function instructionChange(v){set('instruction',v);if(editing==='new'){const schedule=inferSchedule(v);if(schedule)setDraft(old=>({...old,instruction:v,schedule}));}}
+ function chooseAgent(job){setEditing(null);setAssigning(job.id);setAssignedRole(job.agent_role||'commander');setError('');setOk('');}
+  async function agentAction(body,okMessage,success){
+   if(busy)return;setBusy(true);setError('');setOk('');
+   try{
+    const res=await fetch('/api/admin/command-center/skills',{method:'POST',credentials:'same-origin',
+     headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({...body,requestId:crypto.randomUUID()})});
+    const out=await res.json();
+    if(!res.ok||!success.includes(out.status))throw Error(out.status||'api');
+    setAssigning(null);await load();setOk(okMessage);
+   }catch(e){setError(t.error+' · '+String(e?.message||'unknown'));}
+   finally{setBusy(false);}
+  }
+  const assignAgent=job=>agentAction({action:'assign_agent',jobId:job.id,
+   expectedRevision:job.revision,agentRole:assignedRole},ap.assigned,['agent_assigned','unchanged']);
+  const queueJob=job=>agentAction({action:'control_job',jobId:job.id,mode:'queue_now'},ap.queued,['queued']);
+  function instructionChange(v){set('instruction',v);if(editing==='new'){const schedule=inferSchedule(v);if(schedule)setDraft(old=>({...old,instruction:v,schedule}));}}
  function toggleSkill(id){setDraft(old=>{const have=old.skillIds.includes(id),arr=have?old.skillIds.filter(x=>x!==id):old.skillIds.length<8?[...old.skillIds,id]:old.skillIds;return {...old,skillIds:arr};});}
  const current=active.find(j=>j.id===editing);
+  const profiles=Array.isArray(data?.agentProfiles)?data.agentProfiles:roles.map(id=>({id,name:id}));
+  const agentName=id=>profiles.find(x=>x.id===id)?.name||id||'Commander';
  return <div className={styles.root}><header className={styles.header}><a href="/admin/command-center">‹</a><strong>{t.title}</strong><button type="button" onClick={()=>start(null)}>＋</button></header>
   <main className={styles.main}>
    <div className={styles.hero}><small>AGENT COMMANDER · CRON JOBS</small><h1>{t.title}</h1><p>{t.subtitle}</p></div>
@@ -80,8 +104,28 @@ export default function AutomationManager({lang='ru'}){
     <button className={styles.secondary} type="button" onClick={()=>setEditing(null)}>{t.cancel}</button>
    </section>:<>
     <div className={styles.tabs}><button type="button" aria-pressed={mode==='my'} onClick={()=>setMode('my')} className={mode==='my'?styles.current:''}>{t.my}</button><button aria-pressed={mode==='system'} type="button" onClick={()=>setMode('system')} className={mode==='system'?styles.current:''}>{t.system}</button></div>
-    {mode==='my'?<>{active.length===0&&<p>{t.none}</p>}{active.map(job=><button key={job.id} className={styles.job} onClick={()=>start(job)} type="button"><div><strong>{job.title||job.skill_id}</strong><span>{OPTIONS.find(x=>x[0]===job.schedule)?.[1]?t[OPTIONS.find(x=>x[0]===job.schedule)[1]]:job.schedule} · {job.last_state||t.unknown}</span><small>{(job.instruction||'').slice(0,150)}</small></div><span className={styles.pill}>{job.execution_mode==='builtin'?(job.enabled?t.active:t.paused):t.blocked}</span></button>)}</>:
-    system.map(job=><div key={job.id} className={styles.job}><div><strong>{job.title}</strong><span>{job.schedule}</span><small>{job.description}</small></div><span className={styles.pill}>SYSTEM</span></div>)}
+    {mode==='my'?<>{active.length===0&&<p>{t.none}</p>}{active.map(job=><div key={job.id} className={styles.agentGroup}>
+      <div className={styles.agentRow}>
+       <button className={styles.job} onClick={()=>start(job)} type="button"><div><strong>{job.title||job.skill_id}</strong><span>{OPTIONS.find(x=>x[0]===job.schedule)?.[1]?t[OPTIONS.find(x=>x[0]===job.schedule)[1]]:job.schedule} · {job.last_state||t.unknown}</span><small>{(job.instruction||'').slice(0,150)}</small></div><span className={styles.pill}>{job.execution_mode==='builtin'?(job.enabled?t.active:t.paused):t.blocked}</span></button>
+       <button type="button" className={styles.agentButton} aria-label={ap.choose+' · '+(job.title||job.skill_id)} aria-expanded={assigning===job.id} onClick={()=>chooseAgent(job)}>🤖<small>{agentName(job.agent_role)}</small></button>
+      </div>
+      {assigning===job.id&&<section className={styles.agentPicker}>
+       <strong>🤖 {ap.choose}</strong>
+       <select aria-label={ap.choose} value={assignedRole} onChange={e=>setAssignedRole(e.target.value)}>
+        {profiles.filter(x=>roles.includes(x.id)).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
+       </select>
+       <p>{job.execution_mode==='builtin'?ap.fixed:ap.blocked}</p>
+       <div className={styles.agentActions}>
+        <button type="button" className={styles.primary} disabled={busy} onClick={()=>assignAgent(job)}>{busy?t.loading:ap.assign}</button>
+        <button type="button" className={styles.secondary} onClick={()=>setAssigning(null)}>{ap.cancel}</button>
+       </div>
+       {job.execution_mode==='builtin'&&<>
+        <button type="button" className={styles.secondary} disabled={busy||!job.enabled} onClick={()=>queueJob(job)}>{ap.queue}</button>
+        {!job.enabled&&<small>{ap.enable}</small>}
+       </>}
+      </section>}
+     </div>)}</>:
+    system.map(job=><div key={job.id} className={styles.job}><div><strong>{job.title}</strong><span>{job.schedule}</span><small>{job.description}</small></div><span className={styles.pill}>🤖 SYSTEM</span></div>)}
     <button type="button" onClick={()=>start(null)} className={styles.primary}>＋ {t.new}</button>
     <section className={styles.history}><h2>{t.runs}</h2>{(data?.runs||[]).slice(0,7).map(r=><p key={r.id}>{r.skill_id} · {r.state} · {fmt(r.started_at)}</p>)}</section>
    </>}

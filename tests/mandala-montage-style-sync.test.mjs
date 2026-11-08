@@ -42,3 +42,10 @@ test("style selection preserves the existing four-shot plan, captions and music"
  assert.ok(click.includes("setCinematicPlan(current=>current?{...current,styleId:visualStyleId}:null)"));
  assert.ok(!click.includes("setCinematicPlan(null)"));
 });
+
+test("licensed four-scene montage takes precedence over thumbnail-style source",()=>{
+ const painter=source.slice(source.indexOf("function paintCinematicFrame("),
+   source.indexOf("/** Each authored caption",source.indexOf("function paintCinematicFrame(")));
+ assert.match(painter,/storyboard\?\.version!==FREE_FILM_PLAN_VERSION/);
+ assert.match(painter,/paintStudioVisualGrade\(ctx,montageStyleId\|\|storyboard\.styleId\)/);
+});

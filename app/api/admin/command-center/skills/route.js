@@ -4,7 +4,7 @@ import {transaction,consumeRate,closeDatabase} from '@/lib/app/database';
 import {ccUuid} from '@/lib/command-center/contracts.mjs';
 import {CRON_SKILLS,validateCronJob} from '@/lib/command-center/cron-skills.mjs';
 import {readCronJobs,saveCronJob,controlCronJob} from '@/lib/command-center/cron-jobs.mjs';
-import {createAutomation,updateAutomation,CRON_SYSTEM_JOBS,CRON_BRAIN_SOURCES} from '@/lib/command-center/cron-automations.mjs';
+import {createAutomation,updateAutomation,assignAutomationAgent,CRON_AGENT_PROFILES,CRON_SYSTEM_JOBS,CRON_BRAIN_SOURCES} from '@/lib/command-center/cron-automations.mjs';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 export const revalidate=0;
@@ -13,7 +13,7 @@ export async function GET(request){
  try{return await ownerMaterialRequest(request,async({config})=>{
   if(new URL(request.url).search)return privateJson({error:'INVALID_QUERY'},400);
   const state=await transaction(config,null,db=>readCronJobs(db),{server:true});
-  return privateJson({...state,catalog:CRON_SKILLS,systemJobs:CRON_SYSTEM_JOBS,brainSources:CRON_BRAIN_SOURCES});
+  return privateJson({...state,catalog:CRON_SKILLS,systemJobs:CRON_SYSTEM_JOBS,brainSources:CRON_BRAIN_SOURCES,agentProfiles:CRON_AGENT_PROFILES});
  });}catch{return privateJson({error:'SKILL_REGISTRY_UNAVAILABLE'},503);}
  finally{await closeDatabase();}
 }
@@ -39,6 +39,10 @@ export async function POST(request){
      'instruction','schedule','skillIds','brainScope','agentRole','enabled'].includes(k)))
     return privateJson({error:'INVALID_AUTOMATION'},400);
    result=await transaction(config,null,db=>updateAutomation(db,data,data.requestId),{server:true});
+  }else if(data.action==='assign_agent'){
+   if(Object.keys(data).some(k=>!['action','requestId','jobId','expectedRevision','agentRole'].includes(k)))
+    return privateJson({error:'INVALID_AGENT_ASSIGNMENT'},400);
+   result=await transaction(config,null,db=>assignAutomationAgent(db,data,data.requestId),{server:true});
   }else if(data.action==='control_job'){
    if(Object.keys(data).some(k=>!['action','requestId','jobId','mode'].includes(k))||
      !ccUuid(data.jobId)||!['pause','resume','queue_now'].includes(data.mode))

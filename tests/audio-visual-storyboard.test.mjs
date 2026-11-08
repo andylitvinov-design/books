@@ -136,3 +136,14 @@ test("WebKit guest film identifies Safari UI state and preserves physical media 
  assert.match(browser,/ffprobe/);
  assert.doesNotMatch(browser,/\.click\(\{\s*force:\s*true/);
 });
+
+test("approved 4-shot footage is never replaced by a selected style preview",()=>{
+ const painter=source.slice(source.indexOf("function paintCinematicFrame("),
+   source.indexOf("/** Each authored caption",source.indexOf("function paintCinematicFrame(")));
+ assert.match(painter,/if\(storyboard\?\.version!==FREE_FILM_PLAN_VERSION\s*&&\s*montageStyleId/);
+ assert.match(painter,/paintSelectedStyleShot\(ctx,styleVideo\)/);
+ assert.match(painter,/paintStudioVisualGrade\(ctx,montageStyleId\|\|storyboard\.styleId\)/);
+ assert.match(painter,/stockShotVideo:null/);
+ assert.match(source,/const frame=freeFilmVideoAt\(time,true\)/);
+ assert.match(source,/if\(usingFreeFilmCompilation&&!frame\)return false/);
+});

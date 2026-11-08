@@ -1431,10 +1431,13 @@ function paintCinematicFrame(
   styleVideo:HTMLVideoElement|null = null,
 ) {
   if(proceduralPlan){paintFreeVideoFrame(ctx,proceduralPlan,time,permittedLocalPortrait);return;}
-  // Replace the visible first beat, retain the other validated source clips,
-  // their audio, timeline captions and transitions.
+  // A full source-verified compilation must retain every selected physical MP4,
+  // including shot #1. Style may grade the frame but never replace a licensed
+  // timeline source in either preview, MediaRecorder, or WebCodecs export.
+  // On the no-compilation style preview the selected first-beat visual remains.
   const firstBeatSeconds=storyboard?.shots[0]?.durationSeconds??5;
-  if(montageStyleId&&time>=0&&time<firstBeatSeconds&&paintSelectedStyleShot(ctx,styleVideo)){
+  if(storyboard?.version!==FREE_FILM_PLAN_VERSION &&
+    montageStyleId&&time>=0&&time<firstBeatSeconds&&paintSelectedStyleShot(ctx,styleVideo)){
     paintStudioVisualGrade(ctx,montageStyleId);
     return;
   }
