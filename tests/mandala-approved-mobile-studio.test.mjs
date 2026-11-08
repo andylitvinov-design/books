@@ -280,7 +280,12 @@ test("approved compact iPhone hierarchy has one working hero Play, safe extras a
     "one gesture begins the original Canvas + same-origin MP4 playback");
   assert.doesNotMatch(source,/video\.play\(\)\.then\(\(\)=>setPreviewPlaying\(true\)\)/,
     "WebKit cannot defer playback UI state until a media promise resolves");
-  assert.match(source,/data-video-quick-extras/);
+  assert.doesNotMatch(source,/data-video-quick-extras/,
+    "removed duplicate PRO extras must not overlay the three-tier editor");
+  const proTiers=read("components/mandala-pro-enhance.tsx");
+  assert.match(proTiers,/data-video-pro-tiers/);
+  assert.match(proTiers,/data-video-pro-standard-editor/);
+  assert.match(proTiers,/data-video-pro-choose-character/);
   assert.match(source,/openQuickDetailed\("video-settings"\)/);
   assert.match(source,/openQuickDetailed\("video-audio"\)/);
   assert.match(css,/\.quickBrandBar\{display:none\}/);
