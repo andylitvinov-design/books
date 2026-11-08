@@ -119,7 +119,7 @@ test('state=release clears only the same authenticated owner lease on the exact 
   head_sha:sha,base_ref:'codex/public-book-library',state:'claim',
   created_at:'2026-11-08T00:29:07.537Z',expires_at:'2026-11-08T00:59:07.537Z'};
  const release={...record,state:'release',released_at:'2026-11-08T00:30:41.261Z'};
- const comment=(id,doc,login=owner)=>({id,user:{login},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\\n'+JSON.stringify(doc)});
+ const comment=(id,doc,login=owner)=>({id,user:{login},body:'<!-- HH_PR_SWEEP_LEASE_V1 -->\n'+JSON.stringify(doc)});
  assert.equal(externalOwnerLeaseStatus([comment(1,record),comment(2,release)],sha,now),'FREE');
  assert.equal(externalOwnerLeaseStatus([comment(1,record)],sha,now),'OWNER_LEASE_ACTIVE');
  assert.equal(externalOwnerLeaseStatus([comment(1,record),comment(2,release,'other-owner')],sha,now),'OWNER_LEASE_ACTIVE');
