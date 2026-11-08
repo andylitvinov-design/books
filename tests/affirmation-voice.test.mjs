@@ -328,10 +328,13 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
   assert.ok(ui.includes('setConsent(false)'));
   assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
   const speechChangeEffect=ui.slice(
-    ui.indexOf('    const textChanged=originRef.current.speechText!==speechText;'),
-    ui.indexOf('  },[speechText,voiceId,language]);'));
+    ui.indexOf('    const textChanged=previous.speechText!==speechText;'),
+    ui.indexOf('  },[speechText,voiceId,language,busy,mixing,locale]);'));
   assert.match(speechChangeEffect,/if\(voiceDataRef\.current\)onInvalidateRef\.current\?\.\(\)/,
     "changing the spoken phrase must detach its previous WAV");
+  assert.match(ui,/useLayoutEffect\(\(\)=>\{/,"detach stale audio before the next paint");
+  assert.match(ui,/previous\.speechText===speechText && previous\.voiceId===voiceId/,
+    "identical approved input must never abort valid narration");
   assert.doesNotMatch(speechChangeEffect,/voiceDataRef\.current&&!textChanged/,
     "do not leave the removed spoken line attached merely because its text changed");
   assert.ok(ui.includes('body:JSON.stringify({mode:"affirmations",voiceId,language,text:speechText,consent:true})'));
