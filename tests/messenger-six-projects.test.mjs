@@ -11,6 +11,14 @@ const runner=read('components/app/messenger-test-journey.jsx')
 
 test('first screen shows six owner-requested projects with explanatory subtitles in RU/EN/ES',()=>{
  for(const locale of ['en','ru','es'])assert.match(projects,new RegExp('^'+locale+':\\{','m'))
+ const ru=projects.slice(projects.indexOf("\nru:{"),projects.indexOf("\nes:{"));
+ const es=projects.slice(projects.indexOf("\nes:{"));
+ for(const title of ['title:"Подсказка"','title:"Тесты"','title:"Сессии"','title:"Практики"'])
+   assert.ok(ru.includes(title),title);
+ for(const title of ['title:"Orientación"','title:"Test"','title:"Sesiones"','title:"Práctica"'])
+   assert.ok(es.includes(title),title);
+ assert.doesNotMatch(ru,/title:"(?:Get a hint|Get a test|Sessions|Practice)"/);
+ assert.doesNotMatch(es,/title:"(?:Get a hint|Get a test|Sessions|Practice)"/);
  for(const id of ['hint','test','mytube','sessions','practice','ai-video']){
    assert.ok(projects.includes('id:"'+id+'"'),id)
    assert.ok(projectCss.includes('data-hh-ai-project="'+id+'"'),id)
