@@ -605,11 +605,20 @@ try{
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
  // Check the six approved iChat actions through actual user clicks, never mocked routes.
- await chat.getByRole("button",{name:"Новый разговор"}).click();
+ const resetViaMore=async()=>{
+   // The current compact Messenger keeps New conversation inside the actual
+   // + (More actions) menu; do not test a button hidden under closed details.
+   const more=chat.locator('details[data-hh-ai-more]');
+   await more.locator('summary').click();
+   await more.getByRole('button',{name:'Новый разговор'}).click();
+   if(await more.evaluate(node=>node.open))
+     await more.locator('summary').click();
+ };
+ await resetViaMore();
  await chat.locator('[data-hh-ai-choice="practice"]').waitFor({state:"visible"});
  await chat.locator('[data-hh-ai-choice="practice"]').click();
  await chat.getByText(/сколько минут у вас есть/).waitFor({state:"visible"});
- await chat.getByRole("button",{name:"Новый разговор"}).click();
+ await resetViaMore();
  await chat.locator('[data-hh-ai-choice="ask"]').click();
  assert.equal(await chat.locator("textarea").evaluate(node=>document.activeElement===node),
    true,"Ask focuses the existing unsent composer without auto-submission");

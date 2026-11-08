@@ -235,7 +235,7 @@ test('owner Messenger preserves one private chat and six explicit quick actions'
  assert.match(ai,/authenticated=\{authenticated\} authStatus=\{authStatus\}/)
  assert.match(ai,/onAuthRetry=\{onAuthRetry\}/)
  assert.doesNotMatch(ai,/<IHelpTopics\b|quickPrompt=\{/)
- assert.match(chat,/compact&&messengerView&&!messages\.length&&<MessengerAiLanding/)
+ assert.match(chat,/compact&&messengerView&&!pageHelp&&!messages\.length&&<MessengerAiLanding/)
  assert.match(chat,/onCreateVideo=\{startContent\}/)
  assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/)
  assert.match(chat,/onAsk=\{\(\)=>composerRef\.current\?\.focus\(\{preventScroll:true\}\)\}/)
