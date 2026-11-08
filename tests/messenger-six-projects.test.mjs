@@ -31,11 +31,11 @@ test('every follow-up button contains a clear label and an explanatory sentence'
  assert.match(agent,/<strong>\{option\.label\}<\/strong><small>\{option\.description\}<\/small>/)
  assert.match(agentCss,/\.projectOptions button small/)
  assert.match(agentCss,/\.projectOptions button strong/)
- for(const block of projects.split('options:[').slice(1)){
-   const end=block.indexOf(']}')
-   const options=block.slice(0,end<0?block.length:end)
-   assert.equal((options.match(/description:/g)||[]).length,4)
- }
+ const optionBlocks=[...projects.matchAll(/options:\[([\s\S]*?)\]\}/g)]
+   .map(match=>match[1]).filter(block=>block.trim())
+ assert.equal(optionBlocks.length,15) // five directions × three locales
+ for(const block of optionBlocks)
+   assert.equal((block.match(/description:/g)||[]).length,4)
  assert.match(agent,/options\.slice\(0,4\)/)
 })
 
