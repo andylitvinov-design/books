@@ -87,6 +87,15 @@ try {
       ? await page.reload(options)
       : await page.goto(destination.href, options)
     if (!response) response = await page.reload(options)
+    // Next 15 isolated DEV can briefly lack clientReferenceManifest during
+    // FIRST dynamic compilation. One identical-document retry must return 200;
+    // never soften a LIVE request or skip genuine route verification.
+    if (!live && response?.status() === 500) {
+      console.warn('First isolated DEV render returned 500 for '+target+
+        '. Retrying exact document once; repeated 500 remains a hard failure.')
+      await pause(350)
+      response = await page.reload(options)
+    }
     assert.ok(response, `No document response for ${target}`)
     assert.equal(response.status(), 200, target)
     // Archived source books may contain a nested main landmark of their own.

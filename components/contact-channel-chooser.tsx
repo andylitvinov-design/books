@@ -512,7 +512,7 @@ export function ContactChannelChooser({
   if (websiteMessengerOnlyUi()) return <div data-contact-channel-chooser
     data-session-booking-flow={bookingSku?"":undefined} data-booking-sku={bookingSku||undefined}>
     <MandatoryMessengerActions locale={locale} whatsappUrl={referredWhatsappUrl}
-      label={label||c.order} collapsed={compactPhone||compactTrigger} id={id} className={className}/>
+      label={label||c.order} collapsed={(compactPhone||compactTrigger)&&!allowSecureExpressClaim} id={id} className={className}/>
   </div>;
   if (compactPhone && bookingSku) {
     const paidReady = bookingConfirmed && Boolean(saved && bookingStartsAt);

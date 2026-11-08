@@ -102,7 +102,8 @@ for (const engine of [chromium, webkit]) {
         const messenger=capture.locator('[data-messenger-only-contact]');
         await messenger.waitFor({state:"visible",timeout:20000});
         const details=messenger.locator('details');
-        if(await details.count())await details.locator(':scope > summary').click();
+        if(await details.count()&&await details.getAttribute('open')===null)
+          await details.locator(':scope > summary').click();
         const whatsapp=messenger.locator('a[data-messenger-only-channel="whatsapp"]');
         const telegram=messenger.locator('a[data-messenger-only-channel="telegram"]');
         await whatsapp.waitFor({state:"visible",timeout:15000});

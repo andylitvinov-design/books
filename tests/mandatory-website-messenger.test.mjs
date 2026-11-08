@@ -18,6 +18,10 @@ test("website-only intake UI shows Telegram and WhatsApp with honest Send disclo
  assert.doesNotMatch(ui,/mailto:|\/api\/service-enquiries|type="email"/);
  assert.match(ui,/bot\.kind==="review"\?t\.review:t\.bot/);
  assert.match(ui,/setBot\(null\)/);
+ const chooser=read("components/contact-channel-chooser.tsx");
+ assert.match(chooser,/collapsed=\{\(compactPhone\|\|compactTrigger\)&&!allowSecureExpressClaim\}/);
+ const css=read("components/mandatory-messenger-actions.module.css");
+ assert.match(css,/@media\(max-width:430px\)\{\.art\{height:44px\}\}/);
  assert.match(ui,/data-telegram-route=\{bot\?\.kind\|\|"manual"\}/);
  for(const p of ["components/contact-channel-chooser.tsx","components/compact-lead-capture.tsx","components/business-website-enquiry.tsx","components/meditation-course-enquiry.tsx"]) {
    assert.match(read(p),/if \(websiteMessengerOnlyUi\(\)\) return /,p);
