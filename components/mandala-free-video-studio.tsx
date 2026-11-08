@@ -6704,7 +6704,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}
             onRecord={()=>{
-              // Reuse the one protected local voice recorder; no extra MediaRecorder.
+              // Record is a real visitor choice: open the already mounted Voice
+              // subtab as well as its disclosure, rather than showing a
+              // collapsed voice editor below the Text-only mobile workspace.
+              // Reuse the protected local recorder; never request mic here.
+              setIdeasSubtab("voice");
               setIdeasVoiceAdvancedOpen(true);
               setPhraseAudioExpanded(true);
               window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>{
@@ -6719,9 +6723,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div id="video-ideas-voice-panel" data-video-legacy-phrase-editor data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}
             hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
             <details className={videoStyles.phraseAudioSettings}
-              data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}
-              onToggle={event=>setIdeasVoiceAdvancedOpen(event.currentTarget.open)}>
-              <summary><AudioLines size={18} aria-hidden="true"/>
+              data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}>
+              <summary onClick={event=>{
+                // WebKit can dispatch a queued native toggle event from a previous
+                // Text/Voice switch after Record was tapped. Only a direct user
+                // summary click changes this controlled disclosure state.
+                event.preventDefault();
+                setIdeasVoiceAdvancedOpen(current=>!current);
+              }}><AudioLines size={18} aria-hidden="true"/>
                 {locale==="ru"?"Дополнительные настройки фраз и голоса":
                   locale==="es"?"Opciones adicionales de frases y voz":
                     "Advanced phrase and voice settings"}
