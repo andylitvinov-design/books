@@ -5653,7 +5653,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           }}/> : null}
       </details>
       {activeWorkspace==="phrases" ? hypnoVoiceEditor : null}
-      <section className={videoStyles.phraseMusicSection} data-hypno-music>
+      <section className={videoStyles.phraseMusicSection} data-hypno-music data-personalized-music-match>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Music2 size={23} aria-hidden="true"/></span>
           <div><h3>{locale==="ru"?"4. Подобрать музыку":locale==="es"?"4. Elegir música":"4. Choose music"}</h3>

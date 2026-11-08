@@ -808,7 +808,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Music Match now permits compatible background beds with approved voice.
       // Prove it with a physical Safari click and confirm the narration WAV
       // remains attached: no standalone music silently replaces a client's voice.
-      const bedChoice=page.locator('[data-hypno-music] [data-phrase-music-attach]').first();
+      const personalMusic=page.locator('[data-hypno-music][data-personalized-music-match]');
+      await expect(personalMusic).toBeVisible({timeout:15000});
+      await expect(personalMusic.locator('[role="radio"]')).toHaveCount(3);
+      const bedChoice=personalMusic.locator('[data-phrase-music-attach]').first();
+      await expect(bedChoice).toBeVisible();
       await expect(bedChoice).toBeEnabled();
       await bedChoice.click();
       await expect(bedChoice).toHaveAttribute("aria-checked","true");
