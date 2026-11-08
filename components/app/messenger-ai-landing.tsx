@@ -14,7 +14,7 @@ const COPY={
     lead:"Ask, explore, learn and create with me.",
     question:"What would you like to do today?",
     watch:"Watch the Holistic House introduction (Russian audio)",
-    videoLanguage:"Russian audio",
+    videoLanguage:"Russian audio",openOnYouTube:"Open on YouTube",
     close:"Close introduction video",
     choices:"Choose how to begin",
     test:"Take a test",video:"Create a video",practice:"Do a practice",
@@ -25,7 +25,7 @@ const COPY={
     lead:"Спрашивайте, исследуйте, учитесь и создавайте.",
     question:"Чем вы хотите заняться сегодня?",
     watch:"Посмотреть видео о Holistic House",
-    videoLanguage:"Русская озвучка",
+    videoLanguage:"Русская озвучка",openOnYouTube:"Открыть на YouTube",
     close:"Закрыть видеопрезентацию",
     choices:"Выберите, с чего начать",
     test:"Пройти тест",video:"Создать видео",practice:"Выбрать практику",
@@ -36,7 +36,7 @@ const COPY={
     lead:"Pregunta, explora, aprende y crea conmigo.",
     question:"¿Qué te gustaría hacer hoy?",
     watch:"Ver la introducción de Holistic House (audio en ruso)",
-    videoLanguage:"Audio en ruso",
+    videoLanguage:"Audio en ruso",openOnYouTube:"Abrir en YouTube",
     close:"Cerrar vídeo de presentación",
     choices:"Elige cómo empezar",
     test:"Hacer un test",video:"Crear un vídeo",practice:"Hacer una práctica",
@@ -68,6 +68,8 @@ export function MessengerAiLanding({locale,onCreateVideo,onPractice,onAsk}:{
             src={`https://www.youtube-nocookie.com/embed/${introduction.youtubeId}?autoplay=1&playsinline=1&rel=0`}
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/>
+          <a href={introduction.url} className={css.externalYouTube} target="_blank"
+            rel="noopener noreferrer">{t.openOnYouTube}</a>
           <button type="button" className={css.dismiss} onClick={()=>setPlaying(false)}
             aria-label={t.close}><X size={19} aria-hidden="true"/></button>
         </div>:
