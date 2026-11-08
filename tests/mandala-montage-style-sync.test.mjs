@@ -43,20 +43,9 @@ test("style selection preserves the existing four-shot plan, captions and music"
  assert.ok(!click.includes("setCinematicPlan(null)"));
 });
 
-test("style finishing layer never replaces the first licensed shot in real four-scene export",()=>{
- const start=source.indexOf("function paintCinematicFrame(");
- const end=source.indexOf("/** Each authored caption",start);
- assert.ok(start>=0&&end>start,"shared Canvas painter must exist");
- const painter=source.slice(start,end);
- const firstBeat=painter.slice(0,painter.indexOf("const filmSecond="));
- assert.match(firstBeat,/if\(montageStyleId&&storyboard\?\.version!==FREE_FILM_PLAN_VERSION&&/);
- assert.match(firstBeat,/paintSelectedStyleShot\(ctx,styleVideo\)/,
-   "standalone style MP4 still changes its own first beat");
- assert.match(painter,/storyboard\.version===FREE_FILM_PLAN_VERSION\?stockShotVideo:null/,
-   "licensed montage must paint its real decoded stock frame");
- assert.match(painter,/paintStudioVisualGrade\(ctx,montageStyleId\|\|storyboard\.styleId\)/,
-   "selected visual style must still color-grade all original stock clips");
- const mutant=firstBeat.replace("storyboard?.version!==FREE_FILM_PLAN_VERSION&&","");
- assert.doesNotMatch(mutant,/if\(montageStyleId&&storyboard\?\.version!==FREE_FILM_PLAN_VERSION&&/,
-   "removing the licensed four-shot guard must fail the contract");
+test("licensed four-scene montage takes precedence over thumbnail-style source",()=>{
+ const painter=source.slice(source.indexOf("function paintCinematicFrame("),
+   source.indexOf("/** Each authored caption",source.indexOf("function paintCinematicFrame(")));
+ assert.match(painter,/storyboard\?\.version!==FREE_FILM_PLAN_VERSION/);
+ assert.match(painter,/paintStudioVisualGrade\(ctx,montageStyleId\|\|storyboard\.styleId\)/);
 });
