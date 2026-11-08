@@ -267,6 +267,7 @@
         verify.addEventListener('click',()=>auditTask(task,report,verify));
         agent.addEventListener('click',()=>handoff(task,agent,agentReport));
         controls.append(verify,agent);child.append(controls,report,agentReport);
+        env.HHPRContextComments?.mount({host:controls,container:child,kind:'task',title:task.title,prs:task.prs,context:group.title});
         for(const p of matches){
           const r=el('div','hh-pt-pr'),head=el('div','hh-pt-pr-head');
           head.append(link(p.number),el('span','hh-pt-badge hh-pt-'+p.status,statusText[p.status]));
@@ -274,6 +275,7 @@
           r.append(head,el('p',null,p.title),el('small',null,
             (p.base.ref==='codex/public-book-library'?'Production':p.base.ref==='codex/bootstrap-books'?'Control':'Stacked')+
             (p.labels.map(x=>x.name).find(x=>/^hh:priority:[1-5]$/.test(x))?' · P'+p.labels.find(x=>/^hh:priority:[1-5]$/.test(x.name)).name.slice(-1):'')));
+          env.HHPRContextComments?.mount({host:head,container:r,kind:'pr',title:p.title,prs:[p],context:task.title});
           child.append(r);
         }
         g.append(child);gVisible+=matches.length;
