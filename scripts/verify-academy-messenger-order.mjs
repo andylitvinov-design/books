@@ -65,7 +65,7 @@ for (const browserType of [chromium, webkit]) {
             assert.equal(target.hostname, hosts[i], label);
             assert.match(target.searchParams.get("text") || "", /Temple Studies/, label + ": service preserved");
             const message = target.searchParams.get("text") || "";
-            assert.ok(message.includes("holistichouse.vercel.app/" + locale + "/academy/reiki/kundalini-reiki"), label);
+            assert.ok(message.includes("holistichouse.vercel.app/" + locale + "/academy/mysteries"), label);
             assert.doesNotMatch(message, /token=|password|private-selector|\/client\//i, label + ": no private data");
           }
           bounds = await card.boundingBox();
