@@ -185,7 +185,8 @@
   const root=document.getElementById('pm-root');if(!root?.parentNode)return;
   panel=mk('section','pm-agent-chat');panel.id='pm-agent-chat';
   const title=mk('div','pm-agent-chat-heading');title.appendChild(mk('h2',null,'Чат с AI-исполнителями'));
-  title.appendChild(mk('small',null,'Project Management · только владелец'));panel.appendChild(title);
+  title.appendChild(mk('small',null,'Project Management · только владелец'));
+  const workChats=mk('a','pm-chat-report-link','Открыть рабочие чаты');workChats.href='/chats.html';title.append(workChats);panel.appendChild(title);
   panel.appendChild(mk('p','pm-chat-hint','Публичный просмотр задач без Google. Переписка и отчёты требуют входа владельца. Отчёты из существующего GitHub, чат не запускает изменения кода.'));
   loginForm=mk('form','pm-chat-login');loginForm.hidden=true;
   const codeLabel=mk('label',null,'Код владельца PR Monitor');
@@ -213,7 +214,7 @@
   sendBtn=mk('button','pm-btn','Отправить сообщение');sendBtn.type='submit';form.append(sendBtn);
   form.addEventListener('submit',sendMessage);dialog.append(form);
   dialog.append(btn('Скачать историю чата',transcript,'pm-btn pm-quiet'));
-  dialog.append(mk('p','pm-chat-hint','История хранится только в открытой вкладке. Не вводите ключи или личные данные клиентов.'));
+  dialog.append(mk('p','pm-chat-hint','Это быстрый временный диалог. Для отдельной постоянной истории каждой задачи перейдите в «Рабочие чаты». Не вводите ключи или личные данные клиентов.'));
   const ghLink=mk('a','pm-chat-report-link','Открыть публичный GitHub Agent Inbox #3890');
   ghLink.href='https://github.com/andylitvinov-design/books/issues/3890';ghLink.target='_blank';ghLink.rel='noopener noreferrer';
   dialog.append(ghLink);main.append(dialog);

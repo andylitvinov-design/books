@@ -18,7 +18,7 @@
  const mk=(tag,cls,text)=>{const e=doc.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=String(text);return e};
  const json=async(response)=>{try{return await response.json()}catch{return {error:'INVALID_SERVER_RESPONSE'}}};
  const safeText=e=>String(e?.message||e||'Ошибка').slice(0,180);
- function markDirty(){dirty=true;qualityOK=false;
+ function markDirty(){dirty=true;qualityOK=false;if(by('open-task-chat'))by('open-task-chat').disabled=true;
   set('state',issueNumber?'Изменения не сохранены · задача #'+issueNumber:'Черновик · не сохранён');
  }
  function record(){
@@ -175,6 +175,7 @@
     'Серверное хранение пока не подключено. Доступна зашифрованная копия на устройстве; задача не передаётся агенту.');
    by('save-remote').disabled=!remoteEnabled;
    by('queue').disabled=!remoteEnabled||!issueNumber||dirty;
+   by('open-task-chat').disabled=!remoteEnabled||!issueNumber||dirty;
   }catch(e){remoteEnabled=false;by('save-remote').disabled=true;by('queue').disabled=true;
    set('remote-status','Серверная проверка недоступна: '+safeText(e));}
  }
@@ -188,6 +189,7 @@
    set('remote-status','Сохранено в проверенном приватном GitHub-хранилище. Исполнитель не запущен.');
    set('history','Сохранён серверный черновик #'+issueNumber+' · '+new Date(r.observedAt).toLocaleString('ru-RU')+'. Агент не запускался.');
    by('queue').disabled=false;by('save-remote').disabled=false;
+   by('open-task-chat').disabled=false;
   }catch(e){set('remote-status','Не сохранено: '+safeText(e));by('save-remote').disabled=!remoteEnabled}
  }
  async function queue(){
@@ -225,6 +227,7 @@
    fill(r.record);issueNumber=id;dirty=false;sourceAtPrompt=val('source');
    set('state','Задача #'+id+' · загружена');set('history','Открыта сохранённая задача #'+id+'. Исполнение не предполагается автоматически.');
    by('queue').disabled=!remoteEnabled;
+   by('open-task-chat').disabled=!remoteEnabled;
   }catch(e){set('history','Не удалось открыть задачу: '+safeText(e))}
  }
  const toB64=bytes=>{let result='';for(let i=0;i<bytes.length;i+=8192)
@@ -354,6 +357,12 @@
   by('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(val('prompt'));set('prompt-note','Промпт скопирован.')}catch{by('prompt').focus();by('prompt').select();set('prompt-note','Текст выделен — скопируйте вручную.')}});
   by('save-remote').addEventListener('click',save);
   by('queue').addEventListener('click',queue);
+  by('open-task-chat').addEventListener('click',()=>{
+   if(!authorized||!remoteEnabled||dirty||!issueNumber||!/^[0-9a-f-]{36}$/i.test(taskId)){
+    set('remote-status','Сначала сохраните задачу в защищённом хранилище.');return;
+   }
+   win.location.assign('/chats.html?task='+encodeURIComponent(taskId));
+  });
   by('list').addEventListener('click',loadList);
   by('backup-save').addEventListener('click',backupSave);
   by('backup-load').addEventListener('click',backupLoad);
