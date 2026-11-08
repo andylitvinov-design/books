@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { appFetch } from "@/lib/app/client-fetch";
 import Image from "next/image";
@@ -191,6 +191,7 @@ export function MandalaHypnoCompact({
   // Safari can lose the native disclosure state when its parent editor rerenders.
   // Keep the actual user-visible toggle controlled, including external opens.
   const [ideaDisclosureOpen,setIdeaDisclosureOpen]=useState(false);
+  const ideaControlsId=useId();
   const [problemIndex,setProblemIndex]=useState(0);
   const [goalId,setGoalId]=useState<VideoAffirmationGoal>(topicGoals[theme][0]);
   const [ownIdea,setOwnIdea]=useState("");
@@ -469,21 +470,15 @@ export function MandalaHypnoCompact({
   const selectedScene=scenes.find(scene=>scene.id===activeScene)||scenes[0];
   return (
     <section className={css.overview} data-hypno-overview aria-label={locale==="ru"?"Персональные гипноаффирмации":ui.phrases}>
-      <details className={css.ideaDisclosure} data-hypno-idea-details
-        open={ideaDisclosureOpen} onToggle={event=>setIdeaDisclosureOpen(event.currentTarget.open)}>
-        <summary onClick={event=>{
-          event.preventDefault();
-          // Commit the same user gesture synchronously to WebKit's native
-          // disclosure, then mirror the actual DOM state in React. A delayed
-          // toggle event must not reverse an already-visible user action.
-          const details=event.currentTarget.parentElement;
-          if(details instanceof HTMLDetailsElement){
-            details.open=!details.open;
-            setIdeaDisclosureOpen(details.open);
-          }
-        }}><Target size={21} aria-hidden="true"/>
-          <span>{ideaText}</span><Pencil size={19} aria-hidden="true"/></summary>
-      <section className={css.card} data-hypno-request data-hypno-idea>
+      <div className={css.ideaDisclosure} data-hypno-idea-details>
+        <button type="button" className={css.ideaDisclosureToggle} data-hypno-idea-toggle
+          aria-expanded={ideaDisclosureOpen} aria-controls={ideaControlsId}
+          onClick={()=>setIdeaDisclosureOpen(value=>!value)}>
+          <Target size={21} aria-hidden="true"/>
+          <span>{ideaText}</span><Pencil size={19} aria-hidden="true"/>
+        </button>
+      <section className={css.card} data-hypno-request data-hypno-idea
+        id={ideaControlsId} hidden={!ideaDisclosureOpen}>
         <div className={css.cardHead}>
           <span className={css.emblem}><Target size={22} aria-hidden="true"/></span>
           <div className={css.heading}><h4>{ideaCopy[locale].title}</h4><p>{ideaCopy[locale].hint}</p></div>
@@ -523,7 +518,7 @@ export function MandalaHypnoCompact({
         <button type="button" className={css.ideaApply} data-hypno-apply-request disabled={disabled}
           onClick={propose}><WandSparkles size={19} aria-hidden="true"/>{ideaCopy[locale].apply}<ChevronRight size={18} aria-hidden="true"/></button>
       </section>
-      </details>
+      </div>
 
       <details className={css.strategyDisclosure}>
         <summary>{extra.strategy} · {extra.wave}<ChevronDown size={17} aria-hidden="true"/></summary>

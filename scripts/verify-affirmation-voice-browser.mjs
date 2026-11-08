@@ -548,13 +548,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await advancedText.click();
       await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
-      // Hypno's optional fine-tuning has its own native user disclosure.
-      // Open it visibly rather than forcing hidden select controls.
+      // This nested panel is an explicit accessible button/region, not a
+      // WebKit-sensitive native details element. One actual tap must open it.
       const intentDetails=phrases.locator('[data-hypno-idea-details]');
-      await expect(intentDetails.locator(":scope > summary")).toBeVisible();
-      if(await intentDetails.getAttribute("open")===null)
-        await intentDetails.locator(":scope > summary").click();
-      await expect(intentDetails).toHaveAttribute("open","");
+      const ideaToggle=intentDetails.locator('[data-hypno-idea-toggle]');
+      await expect(ideaToggle).toBeVisible();
+      if(await ideaToggle.getAttribute("aria-expanded")!=="true")
+        await ideaToggle.click();
+      await expect(ideaToggle).toHaveAttribute("aria-expanded","true");
+      await expect(intentDetails.locator('[data-hypno-request]')).toBeVisible();
       await expect(advancedVoice.locator('[data-hypno-select-tone]')).toBeVisible();
       for(const name of ["tone","focus","length"])
         await expect(phrases.locator("[data-hypno-select-"+name+"]")).toBeVisible();

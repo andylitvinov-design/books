@@ -192,11 +192,19 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
   assert.match(browser,/assert\.ok\(audioTrack/);
 });
 
-test("WebKit idea fine-tuning disclosure stays open through React rerenders",()=>{
-  assert.match(phrases,/const \[ideaDisclosureOpen,setIdeaDisclosureOpen\]=useState\(false\)/);
-  assert.match(phrases,/open=\{ideaDisclosureOpen\} onToggle=\{event=>setIdeaDisclosureOpen\(event\.currentTarget\.open\)\}/);
-  assert.match(phrases,/details\.open=!details\.open/);
-  assert.match(phrases,/setIdeaDisclosureOpen\(details\.open\)/);
-  assert.match(phrases,/details instanceof HTMLDetailsElement/);
-  assert.match(phrases,/event\.preventDefault\(\)/);
+test("Safari fine-tuning uses one accessible button and a stable hidden region",()=>{
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  const css=read("components/mandala-hypno-compact.module.css");
+  for(const part of [
+    "const ideaControlsId=useId();",
+    "<div className={css.ideaDisclosure} data-hypno-idea-details>",
+    "data-hypno-idea-toggle",
+    "aria-expanded={ideaDisclosureOpen} aria-controls={ideaControlsId}",
+    "onClick={()=>setIdeaDisclosureOpen(value=>!value)}",
+    "id={ideaControlsId} hidden={!ideaDisclosureOpen}",
+  ])assert.ok(phrases.includes(part),part);
+  assert.ok(!phrases.includes("<details className={css.ideaDisclosure}"));
+  assert.ok(css.includes(".overview .ideaDisclosure>.card[hidden]{display:none!important}"));
+  assert.ok(browser.includes("await expect(ideaToggle).toHaveAttribute(\"aria-expanded\",\"true\")"));
+  assert.ok(browser.includes("await expect(intentDetails.locator('[data-hypno-request]')).toBeVisible()"));
 });
