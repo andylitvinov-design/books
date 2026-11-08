@@ -1164,13 +1164,34 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const nextPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="4"]');
       await expect(nextPhrase).toBeVisible();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
-      await nextPhrase.click();
+      // Preserve the explicitly approved one-line narration when the existing
+      // editor has reached its five-phrase limit. A real visitor frees one
+      // unspoken slot before selecting the next phrase.
+      const selectedBefore=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase][aria-pressed="true"]');
+      const currentSelected=await selectedBefore.count();
+      assert.ok(currentSelected>=1&&currentSelected<=5,"real Hypno selected phrase count");
+      if(currentSelected===5){
+        const selectedRows=await selectedBefore.all();
+        let freed=false;
+        for(const row of selectedRows){
+          if((await row.innerText()).includes(approved))continue;
+          if(engine==="webkit")await row.tap();
+          else await row.click();
+          await expect(row).toHaveAttribute("aria-pressed","false");
+          freed=true;break;
+        }
+        assert.ok(freed,"a non-spoken phrase can be deselected without revoking the WAV");
+      }
+      await expect(nextPhrase).toBeEnabled();
+      if(engine==="webkit")await nextPhrase.tap();
+      else await nextPhrase.click();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","true");
       await expect(page.locator("[data-hypno-pending]")).toBeVisible({timeout:10000});
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled({timeout:10000});
       assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
         "unapproved edits cannot invalidate consented audio");
-      await page.locator('[data-hypno-approve]').click();
+      if(engine==="webkit")await approvalButton.tap();
+      else await approvalButton.click();
       await expect(page.locator("[data-hypno-pending]")).not.toBeVisible();
       assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
         "adding an unspoken phrase does not invalidate the actual WAV");
@@ -1182,13 +1203,15 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const spokenPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase]').filter({hasText:approved});
       await expect(spokenPhrase).toHaveCount(1);
       await expect(spokenPhrase).toHaveAttribute("aria-pressed","true");
-      await spokenPhrase.click();
+      if(engine==="webkit")await spokenPhrase.tap();
+      else await spokenPhrase.click();
       await expect(spokenPhrase).toHaveAttribute("aria-pressed","false");
       await expect(page.locator("[data-hypno-pending]")).toBeVisible({timeout:10000});
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled({timeout:10000});
       assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
         "pending edits do not revoke the prior approved transcript");
-      await page.locator('[data-hypno-approve]').click();
+      if(engine==="webkit")await approvalButton.tap();
+      else await approvalButton.click();
       // The old WAV must never be available for silent reuse after its exact
       // approved spoken line is removed. The editor may mark it stale and
       // block export, or eagerly detach it; both preserve the safety gate.

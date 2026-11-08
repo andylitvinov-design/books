@@ -219,3 +219,12 @@ test("choosing Ready discards stale idea and approval clears Wave drafts",()=>{
  assert.ok(browser.includes("APPROVED_PHRASES_STILL_PENDING"));
  assert.ok(browser.includes('data-hypno-pending-reasons'));
 });
+
+test("five-phrase limit requires a real removal before the visitor adds another",()=>{
+ const script=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.ok(phrases.includes('disabled={disabled||(!chosen.includes(i)&&selectedCount>=5)}'));
+ assert.ok(phrases.includes('data-hypno-selection-limit role="status"'));
+ for(const needle of ["if(currentSelected===5){","a non-spoken phrase can be deselected without revoking the WAV",
+   'await nextPhrase.tap()','await approvalButton.tap()','await spokenPhrase.tap()'])
+  assert.ok(script.includes(needle),needle);
+});

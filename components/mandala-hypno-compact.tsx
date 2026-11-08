@@ -652,8 +652,9 @@ export function MandalaHypnoCompact({
         <div className={css.phraseCounter}><strong>{locale==="ru"?"Выберите фразы":locale==="es"?"Elige frases":"Choose phrases"}</strong><span>{selectedCount}/5 {ui.selected}</span></div>
         <div className={css.phraseMiniList}>
           {candidates.map((sentence,i)=><div className={css.phraseRow} key={i}>
+            {/* Five selected phrases is the firm limit; do not silently ignore a sixth tap. */}
             <button type="button" data-hypno-phrase={i} aria-pressed={chosen.includes(i)}
-              disabled={disabled} onClick={()=>toggleSelected(i)}>
+              disabled={disabled||(!chosen.includes(i)&&selectedCount>=5)} onClick={()=>toggleSelected(i)}>
               <span className={css.phraseNumber}>{i+1}</span>
               {chosen.includes(i)?<Check size={17} aria-hidden="true"/>:<span className={css.phraseUnchecked} aria-hidden="true">○</span>}
               <span className={css.phraseText}>{sentence}</span>
@@ -666,6 +667,11 @@ export function MandalaHypnoCompact({
               }}><Pencil size={19} aria-hidden="true"/></button>
           </div>)}
         </div>
+        {selectedCount>=5?<p className={css.contextNote} data-hypno-selection-limit role="status">
+          {locale==="ru"?"Выбрано 5 фраз. Снимите выбор с одной, чтобы добавить другую.":
+            locale==="es"?"Has elegido 5 frases. Desmarca una para añadir otra.":
+            "Five phrases selected. Deselect one before adding another."}
+        </p>:null}
         {customPhraseText.split(/\r?\n/).filter(Boolean).map((sentence,i)=><div key={i} className={css.customPhrase}><Check size={18} aria-hidden="true"/>{sentence}</div>)}
         <div className={css.phraseFoot}>
           <button type="button" disabled={disabled} onClick={()=>{setReplacingIndex(null);setOwnOpen(v=>!v);}}>{extra.add}<ChevronDown size={14}/></button>
