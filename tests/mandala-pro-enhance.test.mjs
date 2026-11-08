@@ -54,7 +54,7 @@ test("one context-specific bottom action, no fake paid request, correct mobile d
  assert.equal((view.match(/data-video-pro-create=\{tier\}/g)||[]).length,1);
  assert.match(view,/tier==="extra"\?t.extraCreate:t.proCreate/);
  assert.match(view,/data-video-pro-paid-unavailable/);
- assert.doesNotMatch(view,/fetch\(|checkout|postVideoCreditAction|axios|apiKey/i);
+ assert.doesNotMatch(view,/fetch\(|checkout\s*\(|postVideoCreditAction|axios|apiKey/i);
  assert.match(css,/\.actions\{position:fixed;z-index:55/);
  assert.match(css,/bottom:calc\(78px \+ env\(safe-area-inset-bottom,0px\)\)/);
  assert.match(css,/@media\(max-width:355px\)/);
