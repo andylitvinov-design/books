@@ -127,6 +127,8 @@ export function MandalaAffirmationVoice({
   const [deviceSpeechAvailable,setDeviceSpeechAvailable]=useState(false);
   const deviceUtteranceRef=useRef<SpeechSynthesisUtterance|null>(null);
   const sampleAudioRef=useRef<HTMLAudioElement|null>(null);
+  // A cached replay must not race the post-fetch autoplay effect in WebKit.
+  const lastAutoPlayedSampleUrlRef=useRef("");
   const generatedAudioRef=useRef<HTMLAudioElement|null>(null);
   const playGeneratedAfterRequestRef=useRef(false);
   const sampleControllerRef=useRef<AbortController|null>(null);
@@ -267,6 +269,7 @@ export function MandalaAffirmationVoice({
   }
 
   function resetSample(){
+    lastAutoPlayedSampleUrlRef.current="";
     if(deviceUtteranceRef.current){
       window.speechSynthesis?.cancel();
       deviceUtteranceRef.current=null;
@@ -349,6 +352,8 @@ export function MandalaAffirmationVoice({
     // user gesture and must never spend another free provider request.
     if(!sampleBusyId && sampleVoiceId===id && sampleUrl && sampleAudioRef.current){
       const player=sampleAudioRef.current;
+      // User replay owns this gesture. A delayed effect must not call play() again.
+      lastAutoPlayedSampleUrlRef.current=sampleUrl;
       try{player.currentTime=0;await player.play();}
       catch{/* Native audio controls remain available for a manual second tap. */}
       return;
@@ -427,7 +432,9 @@ export function MandalaAffirmationVoice({
   // Attempt playback only after an explicit user request. On iPhone Safari the
   // post-network play() may be denied; the visible native player is the fallback.
   useEffect(()=>{
-    if(sampleUrl)void sampleAudioRef.current?.play().catch(()=>{});
+    if(!sampleUrl||lastAutoPlayedSampleUrlRef.current===sampleUrl)return;
+    lastAutoPlayedSampleUrlRef.current=sampleUrl;
+    void sampleAudioRef.current?.play().catch(()=>{});
   },[sampleUrl]);
 
   // Attempt playback only after an explicit narration request. Native controls
@@ -582,14 +589,13 @@ export function MandalaAffirmationVoice({
           voiceAdvancedOpenRef.current=event.currentTarget.open;
       }}>
       <summary onClick={event=>{
-        // Commit the genuine click (also dispatched for keyboard activation);
-        // do not force the browser test or show controls before a user gesture.
-        event.preventDefault();
+        // Native summary toggling must be the *only* DOM toggle. WebKit may
+        // commit its default action after React's event handler; toggling
+        // node.open here as well can immediately close a genuine user tap.
+        // Save the intended next state early for a concurrent React remount.
         const node=event.currentTarget.parentElement;
-        if(node instanceof HTMLDetailsElement){
-          node.open=!node.open;
-          voiceAdvancedOpenRef.current=node.open;
-        }
+        if(node instanceof HTMLDetailsElement)
+          voiceAdvancedOpenRef.current=!node.open;
       }}>{locale==="ru"?"Дополнительные настройки озвучки":locale==="es"?"Opciones de narración":"Voice options"}</summary>
     {compact?deviceSampleControl:null}
     <div className={css.controls}>

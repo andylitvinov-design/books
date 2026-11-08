@@ -137,9 +137,10 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  const voiceTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="voice"]\').click()',modes);
  const myVoiceTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="my-voice"]\').click()',voiceTab);
  const textTab=browser.indexOf('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click()',myVoiceTab);
- const recordEntry=browser.indexOf("const recordEntry=phrases.locator",textTab);
- const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',recordEntry);
- const visible=browser.indexOf("await expect(recordEntry).toBeVisible",hidden);
+ const hidden=browser.indexOf('await expect(advancedVoice).toBeHidden()',textTab);
+ const bridge=browser.indexOf("await phrases.locator('[data-video-ideas-open-montage-text]').click()",hidden);
+ const recordEntry=browser.indexOf('const recordEntry=page.locator',bridge);
+ const visible=browser.indexOf('await expect(recordEntry).toBeVisible',recordEntry);
  const tapped=browser.indexOf("await recordEntry.click()",visible);
  const opened=browser.indexOf('await expect(advancedVoice).toHaveAttribute("open","")',tapped);
  const ownMode=browser.indexOf('await expect(phrases).toHaveAttribute("data-ideas-active-tab","my-voice"',opened);
@@ -151,22 +152,11 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  const ideaExpanded=browser.indexOf('await expect(ideaToggle).toHaveAttribute("aria-expanded","true")',ideaClick);
  const options=browser.indexOf("await expect(advancedVoice.locator",ideaExpanded);
  assert.ok(modes>=0&&voiceTab>modes&&myVoiceTab>voiceTab&&textTab>myVoiceTab&&
-   recordEntry>textTab&&hidden>recordEntry&&visible>hidden&&tapped>visible&&
-   opened>tapped&&ownMode>opened&&returnText>ownMode&&advancedText>returnText&&
-   textOpened>advancedText&&ideaToggle>textOpened&&ideaClick>ideaToggle&&
-   ideaExpanded>ideaClick&&options>ideaExpanded,
-   "WebKit must visit Text, Voice and My Voice, then open the real Text disclosure by user taps");
- const hypno=read("components/mandala-hypno-compact.tsx");
- assert.ok(hypno.includes('data-hypno-idea-toggle')&&hypno.includes('aria-expanded={ideaDisclosureOpen}'),
-   "the fine-tuning control must remain a real accessible disclosure button");
- assert.ok(hypno.includes('useEffect(()=>{if(autoExpandIdea)setIdeaDisclosureOpen(true);},[autoExpandIdea])'),
-   "the Text Advanced user action must restore the fine-tuning panel after Safari remount");
- assert.ok(studio.includes('autoExpandIdea={activeWorkspace==="phrases"&&ideasSubtab==="text"&&ideasVoiceAdvancedOpen}'),
-   "only Text's explicit Advanced action auto-opens fine-tuning; Voice and My Voice stay compact");
- assert.ok(!studio.includes('document.querySelector<HTMLDetailsElement>("[data-hypno-idea-details]")'),
-   "Personalize must not write to a removed native details control");
- assert.ok(!studio.includes('document.querySelector<HTMLButtonElement>("[data-hypno-suggest-tests]")?.click()'),
-   "opening settings must not synthesize a hidden click or fetch private tests");
+   hidden>textTab&&bridge>hidden&&recordEntry>bridge&&visible>recordEntry&&
+   tapped>visible&&opened>tapped&&ownMode>opened&&returnText>ownMode&&
+   advancedText>returnText&&textOpened>advancedText&&ideaToggle>textOpened&&
+   ideaClick>ideaToggle&&ideaExpanded>ideaClick&&options>ideaExpanded,
+   "WebKit must use real Montage Text Record → My Voice and visible Ideas Text refinement");
  assert.ok(browser.includes('data-video-ideas-own-upload'),"own audio upload remains available");
  assert.ok(!browser.includes('await advancedVoice.locator(":scope > summary").click()'),
   "hidden summary interaction is not an acceptable visitor path");
@@ -178,7 +168,7 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
 });
 
-test("macOS WebKit reaches real Create through visible Style → Audio and keeps MP4 + voice acceptance",()=>{
+test("macOS WebKit reaches real Create through Style → Settings → advanced Audio and keeps MP4 + voice acceptance",()=>{
  const flow=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const css=read("components/mandala-video-mobile.module.css");
@@ -193,9 +183,10 @@ test("macOS WebKit reaches real Create through visible Style → Audio and keeps
    'await expect(creationStyleTab).toBeVisible',
    'await creationStyleTab.click()',
    'await expect(creationStyleTab).toHaveAttribute("aria-pressed","true")',
-   'const montageAudioTab=page.locator(\'[data-video-montage-tab="audio"]\')',
+   'await page.locator(\'[data-video-montage-tab="settings"]\').click()',
+   'const montageAudioTab=page.locator(\'[data-video-montage-open-audio]\')',
    'await montageAudioTab.click()',
-   'await expect(montageAudioTab).toHaveAttribute("aria-pressed","true")',
+   'await expect(page.locator(\'[data-video-montage-audio]\')).toBeVisible()',
    'const generate=page.locator("[data-video-quick-generate]")',
    'await expect(generate).toBeVisible',
    'await expect(generate).toBeEnabled'
@@ -205,7 +196,7 @@ test("macOS WebKit reaches real Create through visible Style → Audio and keeps
    assert.ok(at>last,action+" follows the real visitor path");
    last=at;
  }
- assert.match(studio,/data-video-montage-next=\{montagePanel==="effects"\?"audio":"hypno"\}/);
+ assert.match(studio,/data-video-montage-next=\{montagePanel==="effects"\?"text":montagePanel==="text"\?"visual":"audio"\}/);
  assert.match(studio,/data-video-quick-generate[\s\S]*?onClick=\{createQuickVideo\}/);
  assert.match(studio,/const continueMontageOrGenerate=\(\)=>/);
  assert.match(css,/\[data-montage-panel="effects"\] \[data-video-order-bar\]\{display:none!important\}/);

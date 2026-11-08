@@ -8,6 +8,7 @@ import { mkdirSync, readFileSync, writeFileSync, createWriteStream } from 'node:
 import { promisify } from 'node:util'
 import { chromium, expect } from '@playwright/test'
 import { verifyAboutTestimonials } from './verify-about-testimonials-browser.mjs'
+import {assertMessengerOnlyCapture} from './helpers/messenger-only-contract.mjs'
 
 const live = process.argv.includes('--live')
 const origin = live ? 'https://holistichouse.vercel.app' : 'http://127.0.0.1:3100'
@@ -86,6 +87,15 @@ try {
       ? await page.reload(options)
       : await page.goto(destination.href, options)
     if (!response) response = await page.reload(options)
+    // Next 15 isolated DEV can briefly lack clientReferenceManifest during
+    // FIRST dynamic compilation. One identical-document retry must return 200;
+    // never soften a LIVE request or skip genuine route verification.
+    if (!live && response?.status() === 500) {
+      console.warn('First isolated DEV render returned 500 for '+target+
+        '. Retrying exact document once; repeated 500 remains a hard failure.')
+      await pause(350)
+      response = await page.reload(options)
+    }
     assert.ok(response, `No document response for ${target}`)
     assert.equal(response.status(), 200, target)
     // Archived source books may contain a nested main landmark of their own.
@@ -246,7 +256,10 @@ try {
     // Wu Xing is now a focused free entry and consented enquiry, not a
     // separate automatic method-video promotion. Preserve the approved flow.
     await navigate('/ru/services/dao-health-profile')
-    await expect(page.locator('main[data-free-entry-landing="dao"] [data-compact-lead-form]')).toHaveCount(1)
+    const daoHandoff=await assertMessengerOnlyCapture(page.locator('main[data-free-entry-landing="dao"]'),expect,
+      {locale:'ru',label:'Dao free-start messenger-only contact'});
+    assert.match(daoHandoff.draft,/У-Син|Wu Xing/,
+      'The selected Dao/Wu Xing profile must be named in the message draft')
     assert.equal(await page.locator('[data-service-video="overview"]').count(), 0,
       'The separate Dao free start must not imply a video consultation')
     pass('Nine video service routes and the separate Dao free entry preserve exact approved formats')

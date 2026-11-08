@@ -188,16 +188,14 @@ async function verify(engine, browser, locale, width) {
     assert.match(await page.locator('[data-business-offer="full"]').innerText(),/(?:€\s*100|100\s*€)/u,
       label+": displayed €100 full price");
 
-    // Real first-party request form exists, but no POST is made. Consent must
-    // remain unchecked, mandatory and submission blocked before explicit opt-in.
-    const enquiry = page.locator("[data-business-website-enquiry]");
+    // No browser/email-only form can submit a lead. First-party CTA
+    // preserves the selected service and opens two voluntary messenger drafts.
+    const enquiry=page.locator('[data-business-website-enquiry]');
     await enquiry.waitFor({state:"visible",timeout:15000});
-    assert.equal(await enquiry.locator('input[type="checkbox"][required]').count(),1,
-      label+": explicit contact consent");
-    assert.equal(await enquiry.locator('input[type="checkbox"][required]').isChecked(),false,
-      label+": no implicit consent");
-    assert.equal(await enquiry.locator('button[type="submit"]').isDisabled(),true,
-      label+": cannot submit without consent");
+    assert.equal(await enquiry.locator('input[type="email"],input[type="tel"],button[type="submit"]').count(),0,
+      label+": no unverified email or phone request");
+    assert.equal(await enquiry.locator('[data-messenger-only-contact]').count(),1,
+      label+": one messenger-only business request card");
     // Wait for the express deep-link navigation before testing the independent
     // free CTA. Otherwise WebKit can deliver the previous hash navigation after
     // the next waitForURL has been installed, producing a false failure.
@@ -206,7 +204,17 @@ async function verify(engine, browser, locale, width) {
     await page.locator('[data-business-offer="express"] [data-business-direct-option="express"]').click();
     await directNavigation;
     assert.equal(await enquiry.locator('[data-business-field="format"]').inputValue(),"express",
-      label+": actual express SKU preselected on first-party contact form");
+      label+": express format retained when opening the handoff");
+    const messenger=enquiry.locator('[data-messenger-only-contact]');
+    const details=messenger.locator('details');
+    if(await details.count())await details.locator(':scope > summary').click();
+    const wa=new URL(await messenger.locator('a[data-messenger-only-channel="whatsapp"]').getAttribute('href'));
+    assert.equal(wa.origin,'https://wa.me',label+": WhatsApp customer-initiated");
+    assert.match(wa.searchParams.get('text')||'',/€50|50 €/,label+": €50 price carried");
+    assert.equal(await messenger.locator('a[data-messenger-only-channel="telegram"]').count(),1,
+      label+": Telegram alternative");
+    assert.equal(await enquiry.locator('[data-lead-saved]').count(),0,
+      label+": opening a messenger is not a saved lead");
     await noOverflow("paid request");
     // This is an iPhone/WebKit touch context. A mouse click can complete
     // without committing the Next client-side transition under CI load.

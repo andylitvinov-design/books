@@ -1,0 +1,12 @@
+.root{width:100%;max-width:100%;font:inherit}.body{display:grid;gap:12px;padding:15px;border:1px solid #e6ddcf;border-radius:14px;background:#fffaf3;color:#423b33}.intro,.note{margin:0;line-height:1.45}.intro{font-size:.95rem}.note{font-size:.83rem;color:#665a51}.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions a{min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:12px;color:#fff;text-decoration:none;font-weight:700;outline-offset:3px}.whatsapp{background:#176c4b}.telegram{background:#1575a5}.summary{list-style:none;cursor:pointer;min-height:48px;display:flex;align-items:center;padding:13px 15px;background:#365b4a;color:white;border-radius:12px;font-weight:700}.summary::-webkit-details-marker{display:none}details[open]>.body{margin-top:8px}@media(max-width:345px){.actions{grid-template-columns:1fr}}
+/* Reuse existing first-party sunrise asset; never display a modal or stock image. */
+.art{display:block;width:100%;height:76px;max-width:100%;object-fit:cover;object-position:center 52%;border-radius:12px;background:#f5e4cb}
+/* Keep the approved photo without pushing a 320px screen taller
+   than the viewport; retain 48px+ actual messenger action hit targets. */
+@media(max-width:430px){.art{height:44px}}
+@media(max-width:350px){
+ .art{height:38px}
+ /* Keep the real image and ≥48px actions while fitting the RU final capture
+    inside the 844px mobile viewport instead of weakening the browser test. */
+ .body{padding:11px 13px;gap:10px}
+}

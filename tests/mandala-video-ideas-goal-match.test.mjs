@@ -81,7 +81,7 @@ test("Changing the goal invalidates automatic drafts without destroying manual e
  assert.equal(revised.settingsPatch.presetOverride[0],"Love is possible for me");
 });
 
-test("One Ideas editor receives the actual Goal request and keeps original render path",()=>{
+test("One shared Montage Text editor receives the actual Goal request and keeps original render path",()=>{
  assert.match(studio,/<MandalaVideoIdeas locale=\{locale\} theme=\{theme\} requestText=\{wish\}/);
  assert.match(ideas,/resolveVideoIdeaContext\(\{locale,request:requestText,theme\}\)/);
  assert.match(ideas,/data-video-ideas-goal-category=\{goalContext.categoryId\|\|"neutral"\}/);
@@ -89,6 +89,9 @@ test("One Ideas editor receives the actual Goal request and keeps original rende
  assert.match(ideas,/onChange\(old=>\(\{\.\.\.old,\.\.\.initial.settingsPatch,ideasDraft:initial.editor,/);
  assert.match(ideas,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  assert.match(ideas,/onResetPreview\(\);/);
- assert.match(studio,/onCreate=\{goToMontageFromIdeas\}/);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("visual"\);setPreviewPlaying\(false\);\}\}/);
+ assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1,
+   "only one shared phrases editor; no duplicate video caption or recorder");
  assert.doesNotMatch(ideas,/fetch\(|localStorage|navigator\.sendBeacon|SpeechSynthesisUtterance/);
 });

@@ -25,14 +25,24 @@ test("text / original-audio choices reuse existing real flows",()=>{
  'encodeMessengerVideoHandoff(videoDraft,locale,contentBrief)',
  'maxLength={contentStep==="brief"?160:2000}'])
    assert.ok(chat.includes(text),text);
- assert.ok(chat.includes('if(!requiresProtectedReply(text,locale)){answerVideo(text);return;}'));
+ // The current protected Messenger checks content safety and support switches
+ // before answering the video request; do not assume the superseded one-liner.
+ assert.ok(chat.includes('if(!requiresProtectedReply(text,locale)&&!supportSwitch){'));
+ assert.ok(chat.includes('judgmentClickLock.current=false;answerVideo(text);return;'));
  assert.match(chat,/MessengerAudioVideo locale=\{locale\}/);
  assert.ok(voice.includes('open={autoOpen}'));
  assert.ok(voice.includes('await stageMessengerAudio('));
  assert.ok(!voice.includes('checked={rights}'),"no duplicate rights checkbox in mobile audio card");
- assert.ok(voice.includes('requestConsentedTimedTranscript('));
- assert.ok(voice.includes('stageVoiceStudioHandoff('));
- assert.ok(voice.includes('data-hh-audio-video-manual'));
+ const studio=src("components/mandala-free-video-studio.tsx");
+ // The one Messenger CTA hands the local file to Studio. Only an explicit
+ // separate Studio action may send audio to the consented external STT provider.
+ assert.ok(voice.includes('data-hh-audio-video-continue'));
+ assert.ok(voice.includes('#video-audio'));
+ assert.ok(!voice.includes('requestConsentedTimedTranscript('));
+ assert.ok(!voice.includes('data-hh-audio-video-manual'));
+ assert.ok(studio.includes('requestConsentedTimedTranscript('));
+ assert.ok(studio.includes('data-video-audio-stt-consent'));
+ assert.ok(studio.includes('data-video-audio-transcribe'));
  assert.ok(chat.includes('По вашему отдельному разрешению речь будет расшифрована'));
 });
 test("validated Studio handoff accepts bounded brief without skipping canonical selection",()=>{

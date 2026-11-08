@@ -29,8 +29,9 @@ test("Standard reuses the one existing real multitrack montage editor and guarde
  assert.match(studio,/onResizeShot=\{shiftFilmCut\}/);
  assert.match(studio,/onSplitCaption=\{splitTimelineText\}/);
  assert.match(studio,/onGenerateFree=\{createQuickVideo\}/);
- assert.match(view,/onClick=\{onGenerateFree\}/);
- assert.match(view,/disabled=\{disabled\|\|tier!=="standard"\}/);
+ assert.match(view,/tier==="standard"\)onGenerateFree\(\);else addToCart\(\)/);
+ assert.match(view,/data-video-generate-without-ai=\{tier==="standard"/);
+ assert.match(view,/disabled=\{disabled\} onClick=/);
  assert.match(studio,/creditCatalog\?\.chargeRequired&&creditSession!=="guest"/);
 });
 
@@ -52,8 +53,10 @@ test("Extra reuses existing photo picker and catalog, PRO wish stays in same loc
 test("one context-specific bottom action, no fake paid request, correct mobile dock",()=>{
  assert.equal((view.match(/data-video-pro-actions/g)||[]).length,1);
  assert.equal((view.match(/data-video-pro-create=\{tier\}/g)||[]).length,1);
- assert.match(view,/tier==="extra"\?t.extraCreate:t.proCreate/);
+ assert.match(view,/t.cartAdd\+" · "\+t.prices\[tier\]/);
  assert.match(view,/data-video-pro-paid-unavailable/);
+ assert.match(view,/VIDEO_CART_STORAGE_KEY/);
+ assert.match(view,/router.push\("\/"\+locale\+"\/cart\?video="\+id\)/);
  assert.doesNotMatch(view,/fetch\(|checkout\s*\(|postVideoCreditAction|axios|apiKey/i);
  assert.match(css,/\.actions\{position:fixed;z-index:55/);
  assert.match(css,/bottom:calc\(78px \+ env\(safe-area-inset-bottom,0px\)\)/);
