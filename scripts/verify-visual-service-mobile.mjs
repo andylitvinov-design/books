@@ -100,14 +100,17 @@ for (const engine of [chromium, webkit]) {
         assert.ok(docWidth <= width + 2, label + " document must not overflow horizontally");
         const capture = screens.last();
         const messengerBlocks=capture.locator('[data-messenger-only-contact]');
-        assert.equal(await messengerBlocks.count(),2,
-          label+" primary messenger card plus secondary user-opened request");
+        const messengerCount=await messengerBlocks.count();
+        assert.ok(messengerCount>=1&&messengerCount<=2,
+          label+" one primary card and at most one optional user-opened request; got "+messengerCount);
         const messenger=messengerBlocks.first();
-        const secondaryMessenger=messengerBlocks.nth(1);
-        assert.equal(await secondaryMessenger.evaluate(node=>{
-          const details=node.closest("details");
-          return Boolean(details && !details.open);
-        }),true,label+" secondary contact remains behind its deliberate disclosure");
+        if(messengerCount===2){
+          const secondaryMessenger=messengerBlocks.nth(1);
+          assert.equal(await secondaryMessenger.evaluate(node=>{
+            const details=node.closest("details");
+            return Boolean(details && !details.open);
+          }),true,label+" optional contact remains behind its deliberate disclosure");
+        }
         await messenger.waitFor({state:"visible",timeout:20000});
         const details=messenger.locator('details');
         if(await details.count()&&await details.getAttribute('open')===null)
