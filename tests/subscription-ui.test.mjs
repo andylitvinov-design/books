@@ -378,25 +378,29 @@ test('cancellation retains paid access until a new server status confirms otherw
   h.unmount()
 })
 
-test('tier selector provides native labelled radio controls in both languages and Free never checks out', () => {
+test('four announced packages use native labelled radios, but never charge at old backend prices', () => {
   for (const locale of ['en', 'ru']) {
     const context = { locale, status: freeStatus(), phase: 'ready', busy: '' }
     const h = harness({ context }), t = SUBSCRIPTION_COPY[locale]
     let tree = h.render('PlanSelection', { t })
     const inputs = nodes(tree).filter(node => node.type === 'input')
-    assert.deepEqual(inputs.map(node => node.props.value), ['free', 'advanced', 'premium'])
-    assert.equal(inputs.find(node => node.props.checked).props.value, 'advanced')
-    assert.ok(inputs.every(node => node.props.type === 'radio' && node.props.name && node.props['aria-describedby']))
+    assert.deepEqual(inputs.map(node => node.props.value), ['free', 'practice', 'master', 'pro'])
+    assert.equal(inputs.find(node => node.props.checked).props.value, 'free')
+    assert.equal(nodes(tree).filter(node => node.type === 'label').length, 4)
+    assert.ok(inputs.every(node => node.props.type === 'radio' && node.props.name &&
+      node.props['aria-describedby'] && node.props['aria-labelledby']))
     assert.equal(nodes(tree).find(node => node.type === 'legend').props.children, t.choosePlan)
-    assert.ok(textOf(tree).includes(t.scheduling))
-    assert.ok(textOf(tree).includes(t.plans.premium.price))
-    inputs[0].props.onChange()
+    assert.ok(textOf(tree).includes(t.newPricingNotice))
+    assert.match(textOf(tree), /€\s*5\b/)
+    assert.match(textOf(tree), /€\s*40\b/)
+    assert.equal(nodes(tree).some(node => node.type === h.api.CheckoutAction), false)
+    assert.equal(nodes(tree).filter(node => node.type === 'button').length, 0)
+    // Selection stays local. It cannot create checkout or a paid entitlement.
+    inputs[3].props.onChange()
     tree = h.render('PlanSelection', { t })
-    const action = nodes(tree).find(node => node.type === h.api.CheckoutAction)
-    assert.equal(action.props.planId, 'free')
-    const free = h.render('CheckoutAction', action.props)
-    assert.equal(nodes(free).filter(node => node.type === 'button').length, 0)
-    assert.equal(textOf(free), t.freeSelected)
+    assert.equal(nodes(tree).filter(node => node.type === 'input')
+      .find(node => node.props.checked).props.value, 'pro')
+    assert.equal(nodes(tree).filter(node => node.type === 'button').length, 0)
   }
 })
 
