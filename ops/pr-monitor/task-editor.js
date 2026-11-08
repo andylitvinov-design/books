@@ -186,7 +186,7 @@
    const r=await api('save',{record:record(),...(issueNumber?{issueNumber}:{})},'POST');
    if(!r.saved||!Number.isSafeInteger(r.issueNumber))throw Error('Сохранение не подтверждено');
    issueNumber=r.issueNumber;dirty=false;lastSaved='PRIVATE_SAVED';set('state','Задача #'+issueNumber+' · сохранена');
-   set('remote-status','Сохранено в проверенном приватном GitHub-хранилище. Исполнитель не запущен.');
+   set('remote-status','Сохранено в защищённом хранилище Supabase. Исполнитель не запущен.');
    set('history','Сохранён серверный черновик #'+issueNumber+' · '+new Date(r.observedAt).toLocaleString('ru-RU')+'. Агент не запускался.');
    by('queue').disabled=false;by('save-remote').disabled=false;
    by('open-task-chat').disabled=false;
@@ -364,7 +364,7 @@
  }
  async function checkAuth(){
   try{
-   const r=await fetch('/api/seo-auth',{credentials:'same-origin',cache:'no-store'});
+   const r=await fetch('/api/commander-session',{credentials:'same-origin',cache:'no-store'});
    const d=await json(r);
    if(r.ok&&d.authenticated===true){await initializeOwner();return}
   }catch{}

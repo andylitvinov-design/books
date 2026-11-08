@@ -18,7 +18,15 @@ function same(a,b){
   if(typeof a!=='string'||typeof b!=='string'||a.length!==b.length)return false;
   return crypto.timingSafeEqual(Buffer.from(a),Buffer.from(b));
 }
-function isOwner(req){
+async function isOwner(req){
+ try{
+  const store=require('../lib/commander-private-store');
+  if(store.tokenFromRequest(req)){
+   const status=await store.callStore(req,'status',{}, {method:'GET'});
+   if(status.status===200&&status.data?.owner===true&&status.data?.privateStoreConfigured===true)return true;
+  }
+ }catch{}
+
  const secret=process.env.SEO_SESSION_SECRET||'';
  const cookie=String(req.headers?.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith(OWNER_COOKIE+'='));
  if(!secret||!cookie)return false;
@@ -220,7 +228,7 @@ module.exports=async function(req,res){
  res.setHeader('X-Content-Type-Options','nosniff');
  res.setHeader('Referrer-Policy','no-referrer');
  if(!['GET','POST'].includes(req.method))return json(res,405,{error:'METHOD_NOT_ALLOWED'});
- if(!isOwner(req))return json(res,401,{error:'OWNER_SESSION_REQUIRED',loginEndpoint:'/api/seo-auth'});
+ if(!await isOwner(req))return json(res,401,{error:'OWNER_SESSION_REQUIRED',loginEndpoint:'/commander-auth.html'});
  const action=new URL(req.url,'https://holistic-house-pr-monitor.vercel.app').searchParams.get('action')||'status';
  if(req.method==='GET'){
   if(action==='status')return json(res,200,{schema:'HH_PM_AGENT_CHAT_V1',authenticated:true,
