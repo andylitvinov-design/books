@@ -537,6 +537,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(advancedVoice).toHaveAttribute("open","");
       await expect(phrases).toHaveAttribute("data-ideas-active-tab","my-voice",{timeout:15000});
       await expect(page.locator('[data-video-own-voice-record]')).toBeVisible();
+      // My Voice is deliberately only a recorder/uploader. For phrase
+      // fine-tuning the visitor returns to Text and opens its visible advanced
+      // shortcut: never click controls hidden beneath another tab.
+      await ideasModes.locator('[data-video-ideas-tab="text"]').click();
+      await expect(phrases).toHaveAttribute("data-ideas-active-tab","text");
+      await expect(advancedVoice).toBeHidden();
+      const advancedText=phrases.locator('[data-video-phrase-audio-shortcut]');
+      await expect(advancedText).toBeVisible();
+      await advancedText.click();
+      await expect(advancedVoice).toBeVisible({timeout:15000});
+      await expect(advancedVoice).toHaveAttribute("open","");
       // Hypno's optional fine-tuning has its own native user disclosure.
       // Open it visibly rather than forcing hidden select controls.
       const intentDetails=phrases.locator('[data-hypno-idea-details]');
@@ -608,12 +619,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         .toContainText(locale==="ru"?"Не удалось прослушать":"Could not load");
       rejectSofiaSample=false;
       await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled();
+      // Approved phrase edits are intentionally Text-only in this three-tab
+      // design; return to that visible panel to approve pending changes.
+      await ideasModes.locator('[data-video-ideas-tab="text"]').click();
+      await expect(advancedVoice).toBeHidden();
+      await expect(advancedText).toBeVisible();
+      await advancedText.click();
+      await expect(page.locator("[data-hypno-approve]")).toBeVisible();
       // WebKit can return from a click before React commits the visitor's
       // approved phrases. Wait for actual approved, selected transcript state,
       // not just the already-mounted voice panel. Keep consent and WAV proof.
       await page.locator("[data-hypno-approve]").click();
       await expect(page.locator("[data-hypno-pending]")).toHaveCount(0,{timeout:15000});
       await expect(page.locator("[data-hypno-overview-enable]")).toBeChecked({timeout:15000});
+      await ideasModes.locator('[data-video-ideas-tab="voice"]').click();
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});
       // Record two independent browser-local tracks using the real
       // MediaRecorder and a deterministic WebAudio microphone fixture.
@@ -1118,7 +1137,13 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Adding another approved phrase must preserve the WAV of the
       // exact one-line text already spoken and encoded in the exported MP4.
       await page.locator('[data-video-quick-control="phrases"]').click();
+      // The subsequent stale-WAV safety cases change approved phrases, not
+      // narration options, so expose Text's real advanced editor first.
+      await ideasModes.locator('[data-video-ideas-tab="text"]').click();
+      await expect(advancedText).toBeVisible();
+      await advancedText.click();
       const nextPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="4"]');
+      await expect(nextPhrase).toBeVisible();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
       await nextPhrase.click();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","true");

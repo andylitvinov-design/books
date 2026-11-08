@@ -48,3 +48,12 @@ test("My Voice owns real recorder/upload; cloud consent and apply remain Voice-o
  assert.ok(c.includes('>.voiceChoices{order:4;margin-bottom:0}'));
  assert.ok(c.includes('>.action{order:5}'));
 });
+
+test("Text exposes genuine advanced phrase controls without leaking them into My Voice",()=>{
+ const css=read("components/mandala-video-mobile.module.css");
+ const script=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.ok(css.includes('[data-ideas-subtab="text"] >button[data-video-phrase-audio-shortcut]'));
+ assert.ok(script.includes("const advancedText=phrases.locator('[data-video-phrase-audio-shortcut]')"));
+ assert.ok(script.includes('await advancedText.click();'));
+ assert.ok(script.includes('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click();'));
+});

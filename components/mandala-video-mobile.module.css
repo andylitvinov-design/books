@@ -5237,3 +5237,15 @@
 .studio[data-active-workspace="phrases"] .ideasSubtabs button{gap:clamp(3px,1.3vw,7px);padding:7px 3px;font-size:clamp(12px,3.4vw,16px);line-height:1.2;white-space:nowrap}
 .studio[data-active-workspace="phrases"] .ideasSubtabs .ideasTabLetters{font-size:clamp(17px,5vw,23px)}
 .studio[data-active-workspace="phrases"] .ideasSubtabs button svg{flex:none;width:clamp(16px,4.5vw,20px);height:clamp(16px,4.5vw,20px)}
+
+/* Three-tab Ideas: the original advanced phrase/audio shortcut remains a real
+   user-visible Text-only disclosure. Own Voice must never show those controls. */
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="text"] >button[data-video-phrase-audio-shortcut]{
+  display:flex!important;align-items:center;justify-content:center;
+  gap:8px;min-height:44px;max-width:100%;margin:7px 0 4px;
+  padding:9px 12px;border:1px solid #D8E7DC;border-radius:13px;
+  color:#145848;background:#FFFCFA;font-weight:750;font-size:clamp(12px,3.3vw,15px)
+}
+.studio[data-active-workspace="phrases"] [data-ideas-subtab="text"] >button[data-video-phrase-audio-shortcut]:focus-visible{
+  outline:3px solid #D4AB61;outline-offset:2px
+}
