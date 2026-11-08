@@ -36,6 +36,24 @@ test('Add Effects only navigates; direct Generate still applies paid and consent
  assert.ok(studio.includes('data-video-concept-text-tools'));
 });
 
+
+test('stale phrase narration blocks direct Generate, not the Add Effects navigation',()=>{
+ const stage=studio.indexOf('data-video-stage-actions="montage"');
+ assert.ok(stage>0,"real final action group");
+ const fromCreate=studio.indexOf('data-video-quick-generate',stage);
+ const create=studio.slice(fromCreate,studio.indexOf('</button>',fromCreate));
+ const addStart=studio.indexOf('data-video-montage-next={montagePanel===',stage);
+ const add=studio.slice(addStart,studio.indexOf('</button>',addStart));
+ assert.ok(addStart>fromCreate);
+ assert.match(create,/disabled=\{!studioHydrated\|\|recording\|\|preparing\|\|narrationInvalid\}/);
+ assert.match(create,/onClick=\{createQuickVideo\}/);
+ assert.match(add,/onClick=\{continueMontageOrGenerate\}/);
+ assert.doesNotMatch(add,/narrationInvalid/);
+ assert.match(studio,/data-video-narration-reapproval/);
+ assert.match(studio,/const narrationInvalid=Boolean\(/);
+ assert.match(studio,/if\(narrationInvalid\)\{/);
+});
+
 test('guest native player is mounted without sign-in; save and share stay gated',()=>{
   const from=studio.indexOf('data-video-result hidden={!result}')
   const block=studio.slice(from,studio.indexOf('):<p>{ui.myVideosInfo}</p>}',from))

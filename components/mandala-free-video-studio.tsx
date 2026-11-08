@@ -8418,7 +8418,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           </div>
           <div className={videoStyles.stageActionPair} data-video-stage-actions="montage">
             <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-              disabled={!studioHydrated||recording||preparing} onClick={createQuickVideo}>
+              disabled={!studioHydrated||recording||preparing||narrationInvalid} onClick={createQuickVideo}>
               {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={20} fill="currentColor" aria-hidden="true"/>}
               {recording||preparing?quick.creating:
                 locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
@@ -8433,6 +8433,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
           </div>
+          {narrationInvalid&&<p role="status" className={videoStyles.quickStatus} data-video-narration-reapproval>
+            {locale==="ru"?"Озвучка больше не соответствует выбранным фразам. Обновите голос во вкладке «Идеи», затем создайте видео.":
+              locale==="es"?"La voz ya no coincide con las frases. Actualiza la narración en Ideas antes de crear el vídeo.":
+                "Your voice no longer matches the chosen phrases. Regenerate it in Ideas before creating the video."}
+          </p>}
           {phrasePending&&<p role="status" className={videoStyles.quickStatus} data-video-phrase-approval-required>
             {locale==="ru"?"Новые фразы ещё не утверждены. Откройте вкладку «Фразы» и подтвердите выбор.":
               locale==="es"?"Tus nuevas frases requieren confirmación en la pestaña «Frases».":
