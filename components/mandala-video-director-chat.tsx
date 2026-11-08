@@ -3,7 +3,7 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import Link from "next/link";
 import type {ChangeEvent,FormEvent} from "react";
-import {ArrowRight,Check,Film,ImagePlus,Music2,Send,SlidersHorizontal,Sparkles} from "lucide-react";
+import {ArrowRight,BriefcaseBusiness,Check,Film,Heart,ImagePlus,Leaf,MessageCircle,Mic,Music2,Play,Send,SlidersHorizontal,Sparkles,Zap} from "lucide-react";
 import {recommendAutoVideo} from "@/lib/mandala/auto-video-director.mjs";
 import {compileExecutableVideoScenario,parseAiVideoCutSuggestion} from "@/lib/mandala/video-executable-director.mjs";
 import {normalizeStageCaption} from "@/lib/mandala/stage-caption-track.mjs";
@@ -44,7 +44,7 @@ type Props={
  onCreate:()=>boolean|void;onOpenResult:()=>void;onOpenDelivery:()=>void;onOpenEditor:()=>void;onPickPhoto:()=>void;onOpenAudio:()=>void;
 };
 const copy={
- ru:{title:"AI-видеорежиссёр",subtitle:"Подбираю реальные видеосюжеты · бесплатно",intro:"Привет! Создадим ваше видео: выберем цель, тему, сценарий, идею и слова поддержки. Нажимайте готовые ответы прямо в чате или пишите своими словами.",
+ ru:{title:"AI-видеорежиссёр",subtitle:"Создавайте вдохновляющие видео из реальных кадров",intro:"Привет! Создадим ваше видео: выберем цель, тему, сценарий, идею и слова поддержки. Нажимайте готовые ответы прямо в чате или пишите своими словами.",
   category:"Какова цель вашего видео? Выберите направление или опишите запрос своими словами.",topic:"Какую тему хотите раскрыть? Выберите одну из шести.",scenario:"Какой сценарий вам ближе? Четыре варианта — разные истории.",idea:"Какую главную идею передать зрителю?",phrase:"Какие слова поддержки включить в видео? Выберите фразу или настройте её тон.",skipPhrase:"Без фраз",back:"← Назад",skip:"Пропустить",quickAuto:"Выбери за меня",quickHelp:"Как это работает?",quickActions:"Действия в чате",chatPhoto:"Выбор фотографии открыт. Возвращайтесь к беседе после добавления.",conceptNote:"Выбранный сюжет пока не привязан к отдельным MP4. Ниже — другой, доступный монтаж по вашей теме, а не точная экранизация этого сюжета.",selectedPrefix:"Выбрано: ",unknownGoal:"Пока не могу определить тему по описанию. Выберите цель ниже — ваш текст сохранён.",tone:"Тон",speaker:"Обращение",length:"Длина",toneNames:{gentle:"Бережно",confident:"Уверенно",grounded:"Спокойно",inspiring:"Вдохновляюще"},speakerNames:{self:"От себя · Я",support:"К тебе · Ты"},lengthNames:{short:"Коротко",extended:"Развёрнуто"},
   filterNames:{mood:"Атмосфера",aspect:"Формат",duration:"Время",music:"Музыка",phrases:"Фразы"},
   goal:"Какое видео вы представляете? Можно написать одной фразой.",mood:"Какая атмосфера нужна — мягкая или динамичная?",aspect:"Где будете смотреть ролик? Выберите формат.",duration:"Какой длины сделать ролик?",music:"Какую музыку добавить?",phrases:"Добавить поддерживающие фразы на экран?",review:"Я подобрал сюжет по вашим ответам. Проверьте сцены и параметры перед созданием.",ready:"Сценарий утверждён. Можно запускать запись настоящего видео.",
@@ -59,7 +59,7 @@ const copy={
   themeChips:["Хочу больше спокойствия","Любовь и близость","Энергия и бодрость","Уверенность в себе"],
   moodChoices:[["Мягкая","slow"],["Динамичная","dynamic"]],aspectChoices:[["Вертикальный 9:16","portrait"],["Горизонтальный 16:9","landscape"],["Квадрат 1:1","square"]],
   musicChoices:[["Нежная музыка","love"],["Спокойная","meditation"],["Гармония","harmony"],["Без музыки","none"]],phraseChoices:[["Да, добавить","yes"],["Нет","no"]]},
- en:{title:"AI Video Director",subtitle:"Real approved footage · free",intro:"Hi! Let’s create your video: goal, topic, story, idea and supportive words. Tap any answer in this conversation or type in your own words.",
+ en:{title:"AI Video Director",subtitle:"Create inspiring videos with real footage",intro:"Hi! Let’s create your video: goal, topic, story, idea and supportive words. Tap any answer in this conversation or type in your own words.",
   category:"What is your video's goal? Choose an area or describe what matters to you.",topic:"Which of these six topics fits best?",scenario:"Which of the four different stories would you like?",idea:"What main idea should the video convey?",phrase:"Choose a supportive line, or customize its tone.",skipPhrase:"No captions",back:"← Back",skip:"Skip",quickAuto:"Choose for me",quickHelp:"How does it work?",quickActions:"Actions in chat",chatPhoto:"Photo selection opened. You can return to this conversation.",conceptNote:"This narrative is not yet linked to its own MP4 footage. The edit below is an available topic-based alternative, not an exact rendering of that story.",selectedPrefix:"Selected: ",unknownGoal:"I couldn't place that description in the topic tree. Choose a goal below; your words are saved.",tone:"Tone",speaker:"Address",length:"Length",toneNames:{gentle:"Gentle",confident:"Confident",grounded:"Grounded",inspiring:"Inspiring"},speakerNames:{self:"First person · I",support:"Support · You"},lengthNames:{short:"Short",extended:"Extended"},
   filterNames:{mood:"Mood",aspect:"Format",duration:"Length",music:"Music",phrases:"Phrases"},
   goal:"What kind of video do you imagine? Describe it briefly.",mood:"What mood should it have — gentle or dynamic?",aspect:"Where will you use the video? Choose a format.",duration:"How long should it be?",music:"What soundtrack would you like?",phrases:"Add supportive phrases to the screen?",review:"Here's a story assembled from available footage. Review it before creating.",ready:"Story approved. You can now create the real video.",
@@ -74,7 +74,7 @@ const copy={
   themeChips:["I want more calm","Love and connection","Energy and vitality","Confidence and focus"],
   moodChoices:[["Gentle","slow"],["Dynamic","dynamic"]],aspectChoices:[["Vertical 9:16","portrait"],["Landscape 16:9","landscape"],["Square 1:1","square"]],
   musicChoices:[["Warm melody","love"],["Meditative","meditation"],["Harmony","harmony"],["Silent","none"]],phraseChoices:[["Yes, add them","yes"],["No","no"]]},
- es:{title:"Director de vídeo IA",subtitle:"Escenas reales autorizadas · gratis",intro:"¡Hola! Creemos tu vídeo: objetivo, tema, historia, idea y palabras de apoyo. Pulsa una respuesta aquí mismo o escribe con tus palabras.",
+ es:{title:"Director de vídeo IA",subtitle:"Crea vídeos inspiradores con escenas reales",intro:"¡Hola! Creemos tu vídeo: objetivo, tema, historia, idea y palabras de apoyo. Pulsa una respuesta aquí mismo o escribe con tus palabras.",
   category:"¿Cuál es el objetivo de tu vídeo? Elige un área o describe tu necesidad.",topic:"¿Cuál de estos seis temas encaja mejor?",scenario:"¿Cuál de las cuatro historias prefieres?",idea:"¿Qué idea central quieres transmitir?",phrase:"Elige una frase de apoyo o cambia su tono.",skipPhrase:"Sin frases",back:"← Atrás",skip:"Omitir",quickAuto:"Elige por mí",quickHelp:"¿Cómo funciona?",quickActions:"Acciones en el chat",chatPhoto:"Se abrió el selector de fotos. Puedes volver a la conversación.",conceptNote:"Esta historia todavía no tiene sus propios MP4. El montaje disponible es una alternativa sobre el tema, no la representación exacta del guion.",selectedPrefix:"Elegido: ",unknownGoal:"No he identificado el tema. Elige un objetivo de la lista; tu descripción se conserva.",tone:"Tono",speaker:"Tratamiento",length:"Longitud",toneNames:{gentle:"Suave",confident:"Segura",grounded:"Serena",inspiring:"Inspiradora"},speakerNames:{self:"Desde mí · Yo",support:"Apoyo · Tú"},lengthNames:{short:"Corta",extended:"Larga"},
   filterNames:{mood:"Ambiente",aspect:"Formato",duration:"Tiempo",music:"Música",phrases:"Frases"},
   goal:"¿Qué tipo de vídeo imaginas? Descríbelo en una frase.",mood:"¿Qué ambiente buscas: suave o dinámico?",aspect:"¿Dónde usarás el vídeo? Elige el formato.",duration:"¿Qué duración prefieres?",music:"¿Qué música prefieres?",phrases:"¿Añadir frases de apoyo en pantalla?",review:"Encontré una historia con escenas disponibles. Comprueba los ajustes antes de crear.",ready:"Historia aprobada. Ya puedes crear el vídeo real.",
@@ -91,22 +91,29 @@ const copy={
   musicChoices:[["Melodía suave","love"],["Meditación","meditation"],["Armonía","harmony"],["Sin música","none"]],phraseChoices:[["Sí, añadir","yes"],["No","no"]]},
 } as const;
 const welcomeCopy={
-  ru:{hello:"Привет!",headline:"Создадим ваше видео ✨",lead:"Ваша идея, текст или голос — начало красивого видео.",
-    create:"Создать своё видео",browse:"Готовые видео",ideas:"Помощь и идеи",actions:"Выберите действие",
-    goal:"Что для вас важно?",goalHint:"Выберите тему или расскажите о своей идее.",
-    ownWords:"Или расскажите своими словами…",how:"Как это работает?",
-    help:"Выберите цель или напишите о своей идее. Мы предложим доступные видеосцены; перед созданием вы проверите сценарий."},
-  en:{hello:"Hi!",headline:"Let's create your video ✨",lead:"Start with your idea, words or audio. We'll help shape the video.",
-    create:"Create my video",browse:"Ready-made videos",ideas:"Help & ideas",actions:"Choose what to do",
-    goal:"What's your goal?",goalHint:"Pick an area or tell me what matters to you.",
-    ownWords:"Or tell me in your own words…",how:"How it works?",
-    help:"Choose a goal or describe your idea. We'll suggest available footage; you'll review the story before creating a video."},
-  es:{hello:"¡Hola!",headline:"Creemos tu vídeo ✨",lead:"Empieza con tu idea, texto o audio. Te ayudamos a darle forma.",
-    create:"Crear mi vídeo",browse:"Vídeos listos",ideas:"Ayuda e ideas",actions:"Elige qué hacer",
-    goal:"¿Qué deseas conseguir?",goalHint:"Elige un tema o cuéntame lo que te importa.",
-    ownWords:"O cuéntamelo con tus palabras…",how:"¿Cómo funciona?",
-    help:"Elige un objetivo o describe tu idea. Propondremos escenas disponibles; revisarás la historia antes de crear el vídeo."},
+ ru:{hello:"Привет!",headline:"Создадим ваше видео",lead:"Превратим вашу идею, текст или голос в красивое видео.",
+  create:"Создать видео",browse:"Выбрать идеи",ideas:"Задать вопрос",actions:"Выберите действие",
+  goal:"Или выберите тему:",topicNames:{body:"Тело",business:"Работа",energy:"Энергия",love:"Любовь",stress:"Стресс"},
+  ownWords:"Ваша идея или цель…",how:"Как это работает?",
+  help:"Опишите цель своими словами или выберите одну из пяти тем. Я помогу подобрать подходящую идею и доступные видеосцены.",
+  journeyTitle:"Ваше видео — ваш сюжет",journeyLead:"Выберите вариант или расскажите своими словами.",more:"Настройки ИИ и звука",
+  library:"Посмотреть готовые видео"},
+ en:{hello:"Hi!",headline:"Let's create your video",lead:"Turn your idea, text or voice into a beautiful video.",
+  create:"Create my video",browse:"Explore ideas",ideas:"Ask a question",actions:"Choose what to do",
+  goal:"Or choose a topic:",topicNames:{body:"Body",business:"Work",energy:"Energy",love:"Love",stress:"Stress"},
+  ownWords:"Your goal or idea…",how:"How does it work?",
+  help:"Describe your goal in your own words or pick one of five topics. I'll help you find a suitable idea and available video footage.",
+  journeyTitle:"Your video, your story",journeyLead:"Choose an answer or describe your idea.",more:"AI & audio options",
+  library:"Browse ready-made videos"},
+ es:{hello:"¡Hola!",headline:"Creemos tu vídeo",lead:"Transforma tu idea, texto o voz en un vídeo bonito.",
+  create:"Crear mi vídeo",browse:"Explorar ideas",ideas:"Hacer una pregunta",actions:"Elige qué hacer",
+  goal:"O elige un tema:",topicNames:{body:"Cuerpo",business:"Trabajo",energy:"Energía",love:"Amor",stress:"Estrés"},
+  ownWords:"Tu idea u objetivo…",how:"¿Cómo funciona?",
+  help:"Describe tu objetivo o elige uno de cinco temas. Te ayudaré a encontrar ideas y escenas disponibles.",
+  journeyTitle:"Tu vídeo, tu historia",journeyLead:"Elige una opción o cuéntame tu idea.",more:"Opciones de IA y sonido",
+  library:"Ver vídeos disponibles"},
 } as const;
+const WELCOME_TOPIC_ORDER=["body","energy","love","business","stress"];
 
 const initial=(goal:string,locale:PublicLocale):Draft=>{
  const parsed=parseVideoChatIntent(goal);
@@ -380,6 +387,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    [[t.back,"назад"],[step==="phrase"?t.skipPhrase:t.skip,"пропусти"],
      [t.quickAuto,"выбери сам"]];
  const activeAssistantId=lines.reduce((id,line)=>line.role==="assistant"?line.id:id,-1);
+ const welcomeChoices=[...choices].sort((a,b)=>WELCOME_TOPIC_ORDER.indexOf(a[1])-WELCOME_TOPIC_ORDER.indexOf(b[1]));
  const suggestSemantic=(utterance:string,requestedStep:Step,base:Draft):boolean=>{
    if(!aiConsent||disabled||captureStarted||utterance.length>480||
       !VIDEO_CHAT_TREE_STEPS.includes(requestedStep)||requestedStep==="phrase"||
@@ -772,13 +780,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
    if(accepted===false){addLine("assistant",t.blocked);return;}
    setCaptureObserved(false);setCaptureStarted(true);
  };
-  return <section id="video-director-chat" ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} data-chat-welcome={showWelcome?"true":undefined} aria-labelledby="video-director-chat-heading">
-   <header className={css.heading}>
-     <span className={css.avatar} aria-hidden="true"><Sparkles size={20}/></span>
-     <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
-     <button type="button" className={css.iconButton} disabled={disabled||captureStarted} onClick={onOpenEditor} aria-label={t.editor} title={t.editor}><SlidersHorizontal size={20}/></button>
-   </header>
-   <nav className={css.chatTabs} aria-label={
+  const chatNav=<nav className={css.chatTabs} aria-label={
      locale==="ru"?"ИИ, заказы и клиенты":locale==="es"?"IA, pedidos y clientes":"AI, orders and clients"}
      data-video-chat-top-tabs>
      <span aria-current="page">{locale==="ru"?"ИИ":locale==="es"?"IA":"AI"}</span>
@@ -788,7 +790,27 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      <Link href={"/"+locale+"/app/messages?section=clients"} prefetch={false}>
        {locale==="ru"?"Клиенты":locale==="es"?"Clientes":"Clients"}
      </Link>
-   </nav>
+   </nav>;
+  const composer=<form className={css.composer} data-video-chat-composer onSubmit={(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();answer(input);}}>
+     {showWelcome?<span className={css.composerSymbol} aria-hidden="true"><Leaf size={22}/></span>:<button className={css.composerTool} type="button" onClick={onPickPhoto} disabled={disabled} aria-label={t.photo} title={t.photo}><ImagePlus size={21}/></button>}
+     <textarea ref={composerRef} rows={showWelcome?1:2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
+       onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();answer(input);}}}
+       maxLength={800} disabled={disabled}
+       autoComplete="off" aria-label={t.placeholder} placeholder={showWelcome?w.ownWords:t.placeholder}/>
+     {showWelcome&&<button className={css.composerMic} type="button" onClick={onOpenAudio} disabled={disabled} aria-label={t.audio} title={t.audio}><Mic size={20}/></button>}
+     {!showWelcome&&<button className={css.composerMic} type="button" onClick={onOpenAudio} disabled={disabled} aria-label={t.audio} title={t.audio}><Mic size={20}/></button>}
+     <button className={css.send} type="submit" aria-label={t.send} disabled={disabled||!input.trim()}><Send size={19}/></button>
+   </form>;
+  return <section id="video-director-chat" ref={windowRef} className={css.window} data-video-director-chat data-chat-step={step} data-chat-hydrated={clientHydrated?"true":"false"} data-chat-welcome={showWelcome?"true":undefined} data-chat-dialogue={!showWelcome?"true":undefined} aria-labelledby="video-director-chat-heading">
+   <header className={css.heading}>
+     <span className={css.avatar} aria-hidden="true"><Sparkles size={20}/></span>
+     <span className={css.titleGroup}><strong id="video-director-chat-heading">{t.title}</strong><small>{t.subtitle}</small></span>
+     <button type="button" className={css.iconButton} disabled={disabled||captureStarted} onClick={onOpenEditor} aria-label={t.editor} title={t.editor}><SlidersHorizontal size={20}/></button>
+   </header>
+   {!showWelcome&&<div className={`${css.welcomeHero} ${css.dialogueHero}`} data-video-chat-dialogue-hero>
+     <h2 className={css.dialogueTitle}>{w.journeyTitle}</h2>
+     <p className={css.dialogueLead}>{w.journeyLead}</p>
+   </div>}
    {pageHelp&&!showWelcome&&<details className={css.pageHelp} data-video-ihelp-context data-help-tab={pageHelp.section}>
      <summary>{w.how}</summary>
      <p>{pageHelp.greeting}</p>
@@ -810,39 +832,50 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        </button>
      </div>
    </details>}
-   <div ref={threadRef} className={css.thread} role="log" aria-live="polite" aria-relevant="additions text">
+   <div ref={threadRef} className={css.thread} role={showWelcome?"region":"log"} aria-label={showWelcome?w.headline:undefined} aria-live={showWelcome?"off":"polite"} aria-relevant="additions text">
      {showWelcome?<div className={css.welcome} data-video-chat-welcome>
        <div className={css.welcomeHero}>
-         <p className={css.welcomeEyebrow}>iHelp · {t.title}</p>
          <h2 className={css.welcomeTitle}><span>{w.hello}</span>{w.headline}</h2>
          <p className={css.welcomeLead}>{w.lead}</p>
        </div>
        <div className={css.welcomeActions} role="group" aria-label={w.actions}>
-         <button type="button" data-video-chat-welcome-create
-           disabled={disabled||captureStarted} onClick={()=>setWelcomeDismissed(true)}>
-           <Film size={27} aria-hidden="true"/><strong>{w.create}</strong><ArrowRight size={19} aria-hidden="true"/>
+         <button type="button" data-video-chat-welcome-create disabled={disabled||captureStarted}
+           onClick={()=>setWelcomeDismissed(true)}>
+           <span className={css.actionMedia} data-welcome-action-media="create" aria-hidden="true"><Play size={26}/></span>
+           <strong>{w.create}</strong>
          </button>
-         <Link href={"/"+locale+"/mytube"} prefetch={false} data-video-chat-welcome-browse>
-           <Film size={27} aria-hidden="true"/><strong>{w.browse}</strong><ArrowRight size={19} aria-hidden="true"/>
-         </Link>
-         <button type="button" data-video-chat-welcome-help
-           disabled={disabled||captureStarted} onClick={()=>{setWelcomeDismissed(true);answer("помоги");}}>
-           <Sparkles size={27} aria-hidden="true"/><strong>{w.ideas}</strong><ArrowRight size={19} aria-hidden="true"/>
+         <button type="button" data-video-chat-welcome-browse disabled={disabled||captureStarted}
+           onClick={()=>{setWelcomeDismissed(true);answer("помоги");}}>
+           <span className={css.actionMedia} data-welcome-action-media="ideas" aria-hidden="true"><Leaf size={27}/></span>
+           <strong>{w.browse}</strong>
+         </button>
+         <button type="button" data-video-chat-welcome-help disabled={disabled||captureStarted}
+           onClick={()=>composerRef.current?.focus({preventScroll:true})}>
+           <span className={css.actionMedia} data-welcome-action-media="ask" aria-hidden="true"><MessageCircle size={30}/></span>
+           <strong>{w.ideas}</strong>
          </button>
        </div>
+       {composer}
        <div className={css.welcomeGoals} data-video-chat-welcome-goals>
-         <h3>{w.goal}</h3><p>{w.goalHint}</p>
+         <p>{w.goal}</p>
          <div className={css.goalRail} role="group" aria-label={w.goal}>
-           {choices.map(([label,value])=><button key={value} type="button"
+           {welcomeChoices.map(([label,value])=><button key={value} type="button"
              data-video-chat-tree-choice={value} data-video-chat-welcome-goal={value}
              disabled={disabled||captureStarted}
              onClick={()=>{setWelcomeDismissed(true);answer(value);}}>
-             <span className={css.goalArt} aria-hidden="true"/><strong>{label}</strong>
+             {value==="body"?<Leaf size={17} aria-hidden="true"/>:
+              value==="business"?<BriefcaseBusiness size={17} aria-hidden="true"/>:
+              value==="energy"?<Zap size={17} aria-hidden="true"/>:
+              value==="love"?<Heart size={17} aria-hidden="true"/>:
+              <Leaf size={17} aria-hidden="true"/>}
+             <strong>{w.topicNames[value as keyof typeof w.topicNames]}</strong>
            </button>)}
          </div>
        </div>
        <details className={css.welcomeHelp} data-video-chat-welcome-how>
-         <summary>{w.how}</summary><p>{w.help}</p>
+         <summary>{w.how}</summary>
+         <p>{w.help}</p>
+         <Link href={"/"+locale+"/mytube"} prefetch={false}>{w.library}</Link>
        </details>
      </div>:lines.map(line=>line.role==="assistant"?<div key={line.id} className={css.assistantTurn}
          data-chat-assistant-turn={line.id}>
@@ -985,14 +1018,9 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
        <button type="button" className={css.secondary} onClick={()=>{onInvalidate();setStep("review");}}>{t.edit}</button>
      </div>:null}
    </div>
-   <form className={css.composer} onSubmit={(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();answer(input);}}>
-     <button className={css.composerTool} type="button" onClick={onPickPhoto} disabled={disabled} aria-label={t.photo} title={t.photo}><ImagePlus size={21}/></button>
-     <textarea ref={composerRef} rows={2} value={input} onChange={(event:ChangeEvent<HTMLTextAreaElement>)=>setInput(event.currentTarget.value)}
-       onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();answer(input);}}}
-       maxLength={800} disabled={disabled}
-       autoComplete="off" aria-label={t.placeholder} placeholder={showWelcome?w.ownWords:t.placeholder}/>
-     <button className={css.send} type="submit" aria-label={t.send} disabled={disabled||!input.trim()}><Send size={19}/></button>
-   </form>
+   {!showWelcome&&composer}
+   {!showWelcome&&<details className={css.chatAdvanced} data-video-chat-advanced>
+     <summary>{w.more}</summary>
    <label className={css.aiOptIn}>
      <input type="checkbox" checked={aiConsent} disabled={disabled}
        onChange={(event:ChangeEvent<HTMLInputElement>)=>{
@@ -1007,5 +1035,7 @@ export function MandalaVideoDirectorChat({locale,goal,theme,presets,scenes,disab
      <span>{t.aiConsent}{aiStatus==="loading"?" · "+t.aiBusy:""}{semanticStatus==="loading"?" · "+t.aiUnderstanding:""}</span>
    </label>
    <div className={css.foot}><span>{aiConsent?t.noteAi:t.note}</span><button type="button" onClick={onOpenAudio} disabled={disabled}><Music2 size={14}/>{t.audio}</button></div>
+   </details>}
+   {chatNav}
  </section>;
 }

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import styles from './practice-showcase.module.css'
+import { MasterModeSwitch } from './master-mode-switch'
 
 const COPY = {
   ru: {
@@ -352,15 +353,22 @@ export default function PracticeShowcase({ locale = 'en' }) {
 
   return <div className={styles.screen} data-practice-showcase data-practice-design="unified-20261028" data-auth-state={session}>
     <div className={styles.shell}>
-      <header className={styles.header}>
+      <header className={styles.networkHeader} data-master-network-heading>
         <div>
-          <h1>{t.title}</h1>
-          <p>{t.subtitle}</p>
+          <h1>{locale === 'ru' ? 'Сеть мастеров' : locale === 'es' ? 'Red de maestros' : 'Master Network'}</h1>
+          <p>{locale === 'ru' ? 'Найдите мастера или поделитесь своими услугами' : locale === 'es' ? 'Encuentra profesionales o comparte tus servicios' : 'Find a practitioner or share your services'}</p>
         </div>
         <button className={styles.notification} type="button" aria-label={t.requests} onClick={() => void openAction('requests')}>
           <Bell size={23} aria-hidden="true" />
           {signedIn && newRequests > 0 && <span className={styles.notificationDot} />}
         </button>
+      </header>
+      <MasterModeSwitch locale={locale} active="share" />
+      <header className={styles.header} data-practice-workspace-heading>
+        <div>
+          <h1>{t.title}</h1>
+          <p>{t.subtitle}</p>
+        </div>
       </header>
 
       <section className={styles.identity} aria-label={t.yourProfile}>
@@ -379,7 +387,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
             <Leaf size={22} aria-hidden="true"/><small>{t.active}</small><b>{metric}</b><span>{t.offers}</span>
           </button>
           <button type="button" className={styles.metricCream} onClick={() => void openAction('requests')}>
-            <Users size={22} aria-hidden="true"/><small>{t.requests}</small><b>{requestMetric}</b><span>{t.new}</span>
+            <ClipboardList size={22} aria-hidden="true"/><small>{t.requests}</small><b>{requestMetric}</b><span>{t.new}</span>
           </button>
         </div>
       </section>
@@ -446,6 +454,7 @@ export default function PracticeShowcase({ locale = 'en' }) {
               <span className={styles.toolCopy}><strong>{t[label]}</strong><small>
                 {key === 'requests' && signedIn && practice ? t.new + ': ' + String(newRequests) : t[note]}
               </small></span>
+              {key === 'requests' && signedIn && newRequests > 0 && <span className={styles.requestBadge} aria-label={String(newRequests) + ' ' + t.new}>{newRequests}</span>}
               <ChevronRight size={16} aria-hidden="true"/>
             </button>
           )}

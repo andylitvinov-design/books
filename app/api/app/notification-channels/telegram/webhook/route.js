@@ -8,6 +8,8 @@ import {dispatchPractitionerMessagePush} from '@/lib/app/client-message-push'
 import {dispatchClientTelegramNotification} from '@/lib/app/client-telegram-dispatch'
 import {receiveOwnerAiTelegramWebhook} from '@/lib/practitioners/owner-ai-telegram-service'
 import {parseOwnerAiUpdate} from '@/lib/practitioners/owner-ai-telegram.mjs'
+import {parseOwnerRouterUpdate} from '@/lib/practitioners/owner-telegram-router.mjs'
+import {receiveOwnerTelegramRouterWebhook} from '@/lib/practitioners/owner-telegram-router-service'
 import {receiveOwnerTelegramAudioWebhook} from '@/lib/practitioners/owner-telegram-audio-service'
 import {receiveOwnerTelegramVideoWebhook} from '@/lib/practitioners/owner-telegram-video-service'
 
@@ -37,6 +39,35 @@ export async function POST(request){
      if(video.background)after(async()=>{
        try{await video.background()}
        catch{console.error('HH_OWNER_VIDEO_DOT_AFTER_FAILED')}
+     })
+     return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
+   }
+   // A plain owner text or Telegram voice is kept as a private, encrypted
+   // routing draft. No model or Commander task runs until one of two buttons
+   // is explicitly selected. Existing video and active audio /combine have
+   // their own earlier or fallback handlers.
+   if(parseOwnerRouterUpdate(update)){
+     after(async()=>{
+       try{
+         const routed=await receiveOwnerTelegramRouterWebhook(config,update)
+         if(routed.handled)return
+         const originalAudio=await receiveOwnerTelegramAudioWebhook(config,update)
+         if(originalAudio.handled){
+           if(originalAudio.background)await originalAudio.background()
+           return
+         }
+         const owner=await receiveOwnerAiTelegramWebhook(config,update)
+         if(!owner.handled){
+           const client=await receiveClientTelegramWebhook(config,update)
+           if(client.relayMessageId)await Promise.allSettled([
+             dispatchPractitionerMessagePush(config,client.relayMessageId),
+             dispatchClientTelegramNotification(config,client.relayMessageId),
+           ])
+         }
+       }catch{
+         // Never log text, speech, Telegram bot tokens, callback payload or chat IDs.
+         console.error('HH_OWNER_ROUTER_AFTER_FAILED')
+       }
      })
      return NextResponse.json({ok:true},{headers:PRIVATE_HEADERS})
    }
