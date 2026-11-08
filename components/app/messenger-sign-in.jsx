@@ -12,7 +12,7 @@ const COPY={
   ru:{cabinet:'Открыть кабинет сайта через Google',telegram:'Подтвердить через Telegram',telegramReview:'Продолжить в Telegram через личный разбор',telegramReviewHint:'Короткий маршрут личных сообщений ещё не включён. После согласия Telegram предложит пройти вопросы бесплатного личного разбора. Для кабинета сайта нужен отдельный вход.',telegramHint:'В Telegram нажмите Start, затем Agree. Для кабинета сайта требуется отдельный вход.',telegramUnavailable:'Подтверждение Telegram временно недоступно.',differentMaster:'Для этого мастера подтверждённый мессенджер Holistic House пока не подключён.',button:'Войти через Google',busy:'Открываем защищённый вход…',error:'Не удалось открыть вход. Попробуйте ещё раз.'},
   es:{cabinet:'Abrir el gabinete web con Google',telegram:'Verificar con Telegram',telegramReview:'Continuar en Telegram (revisión personal)',telegramReviewHint:'El acceso directo a mensajes aún no está activado. Tras el consentimiento, Telegram te pedirá completar las preguntas de la revisión gratuita. El gabinete web requiere un inicio de sesión aparte.',telegramHint:'En Telegram pulsa Start y después Agree. El gabinete web requiere acceso separado.',telegramUnavailable:'La verificación de Telegram no está disponible.',differentMaster:'Este profesional todavía no tiene un mensajero verificado de Holistic House.',button:'Continuar con Google',busy:'Abriendo acceso seguro…',error:'No se pudo abrir el acceso. Inténtalo de nuevo.'},
 }
-export default function MessengerSignIn({locale='en',recipientSlug='',label='',continueTo='direct-messages'}){
+export default function MessengerSignIn({locale='en',recipientSlug='',label='',continueTo='direct-messages',googleOnly=false}){
   const c=COPY[locale]||COPY.en
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
@@ -22,7 +22,7 @@ export default function MessengerSignIn({locale='en',recipientSlug='',label='',c
   const messengerFirst=continueTo==='direct-messages'
   // The currently verified bot belongs to the Holistic House owner.
   // Never imply that another practitioner's contact has been verified.
-  const ownerMessenger=messengerFirst&&(!recipientSlug||recipientSlug==='andy-litvinov')
+  const ownerMessenger=messengerFirst&&!googleOnly&&(!recipientSlug||recipientSlug==='andy-litvinov')
   useEffect(()=>{
     if(!ownerMessenger){setTelegramLink('');setTelegramRoute('');setTelegramChecked(true);return}
     const controller=new AbortController()
@@ -67,7 +67,7 @@ export default function MessengerSignIn({locale='en',recipientSlug='',label='',c
     }
   }
   return <span data-hh-messenger-sign-in style={{display:'inline-grid',gap:8}}>
-    {messengerFirst&&(ownerMessenger
+    {messengerFirst&&!googleOnly&&(ownerMessenger
       ?telegramLink
         ?<><a href={telegramLink} className="hh-primary" target="_blank"
              rel="noopener noreferrer nofollow" referrerPolicy="no-referrer"
