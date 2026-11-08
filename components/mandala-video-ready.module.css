@@ -57,6 +57,35 @@
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important;transition:none!important}}
 
 
+/* Compact single-choice video formats; practice ideas remain immediately below. */
+.tierList{display:grid;gap:7px}
+.tierOption{display:grid;grid-template-columns:19px clamp(68px,22vw,105px) minmax(0,1fr) auto;
+ align-items:center;gap:9px;min-width:0;min-height:92px;padding:8px 10px;
+ border:1px solid #e7ded4;border-radius:18px;background:var(--hh-studio-surface,#fffcf7);
+ color:var(--hh-studio-ink,#143d3a);cursor:pointer}
+.tierOption[data-selected="true"]{border:2px solid #07856b;background:#eff9f3;padding:7px 9px}
+.tierOption input{width:19px;height:19px;margin:0;accent-color:#087c60;cursor:pointer}
+.tierOption>img{display:block;width:100%;height:73px;object-fit:cover;border-radius:12px}
+.tierCopy{display:grid;gap:4px;align-content:center;min-width:0}
+.tierCopy strong{font:800 clamp(13px,3.8vw,18px)/1.2 Arial,sans-serif;color:#143d3a}
+.tierCopy small{font:500 clamp(11px,3vw,14px)/1.36 Arial,sans-serif;color:#5d6a71;overflow-wrap:anywhere}
+.tierPrice{align-self:start;justify-self:end;border-radius:999px;padding:6px 8px;
+ background:#e0f5e9;color:#087151;white-space:nowrap;font:800 clamp(10px,2.9vw,13px)/1.15 Arial,sans-serif}
+.tierOption[data-ready-video-tier="photo"] .tierPrice{background:#fff0d7;color:#885615}
+.tierOption[data-ready-video-tier="character"] .tierPrice{background:#efe2fa;color:#663b98}
+.tierNotice{margin:0;padding:11px 12px;border:1px solid #edd6b7;border-radius:13px;
+ background:#fff8ed;color:#77512b;font:650 13px/1.45 Arial,sans-serif}
+.tierOption:focus-within{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:350px){
+ .tierOption{grid-template-columns:17px 61px minmax(0,1fr) auto;gap:5px;padding:7px;min-height:82px}
+ .tierOption[data-selected="true"]{padding:6px}
+ .tierOption>img{height:63px}
+ .tierPrice{padding:5px;font-size:9px}
+ .tierCopy strong{font-size:12px}
+ .tierCopy small{font-size:10px}
+}
+@media(min-width:760px){.tierList{max-width:100%}.tierOption{grid-template-columns:21px 115px minmax(0,1fr) auto}}
+
 /* In-page continuation offers; cards stay in view while texts are prepared locally. */
 .journey>button[aria-expanded="true"]{border:2px solid #087c60;background:#e8f6f0;box-shadow:0 3px 14px #0d6a5030}
 .offerPanel{display:grid;gap:12px;padding:clamp(10px,3.5vw,17px);min-width:0;border:1px solid #cbded3;border-radius:19px;background:#fffdfa;scroll-margin-bottom:calc(82px + env(safe-area-inset-bottom))}
