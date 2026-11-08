@@ -10,7 +10,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./coaching-intake-form.module.css";
 import {MandatoryMessengerActions} from "@/components/mandatory-messenger-actions";
 import {websiteMessengerOnlyUi} from "@/lib/crm/website-messenger-only.mjs";
-import {whatsappEnquiryUrl} from "@/lib/whatsapp-enquiry";
+
 
 type Draft = {
   topic: string;
@@ -601,9 +601,7 @@ export function CoachingIntakeForm({ locale, initialPrivateCopyMode = false }: {
             ? <MandatoryMessengerActions locale={locale}
                 label={locale==="ru"?"Подтвердите мессенджер":locale==="es"?"Verifica tu mensajería":"Verify your messenger"}
                 telegramUrl={"https://t.me/holistichouse_bot?start=hhreview_"+locale}
-                whatsappUrl={whatsappEnquiryUrl({locale,service:"Free written Situation Review",
-                  request:"I would like to request a written situation review.",
-                  pagePath:"/"+locale+"/coaching/intake"})}/> : null}
+                whatsappUrl={"https://wa.me/14376066502?text="+encodeURIComponent("Holistic House: please contact me about a written situation review.")}/> : null}
           {!miniLinked && !telegramEntry && !websiteMessengerOnlyUi() ? <div className={styles.replyFields}>
             <label>{t.sendEmail}<input type="email" autoComplete="email" maxLength={254}
               disabled={leadBusy || busy || collision} value={replyContact.email}
