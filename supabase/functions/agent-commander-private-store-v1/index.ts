@@ -109,7 +109,16 @@ async function handler(req){
   if(!["GET","POST"].includes(req.method))return reply(405,{error:"METHOD_NOT_ALLOWED"},origin);
   if(origin&&!ALLOWED_ORIGINS.has(origin))return reply(403,{error:"ORIGIN_DENIED"},origin);
   let body={},action;
-  if(req.method==="GET")action=new URL(req.url).searchParams.get("action")||"status";
+  if(req.method==="GET"){
+    const params=new URL(req.url).searchParams;
+    action=params.get("action")||"status";
+    for(const [key,value] of params.entries()){
+      if(key==="action")continue;
+      if(!["issueNumber","pr"].includes(key))return reply(400,{error:"UNKNOWN_QUERY_PARAMETER"},origin);
+      if(Object.prototype.hasOwnProperty.call(body,key))return reply(400,{error:"DUPLICATE_QUERY_PARAMETER"},origin);
+      body[key]=value;
+    }
+  }
   else{
     if(Number(req.headers.get("content-length")||"0")>MAX_BODY_BYTES)return reply(413,{error:"BODY_TOO_LARGE"},origin);
     const raw=await req.text();if(raw.length>MAX_BODY_BYTES)return reply(413,{error:"BODY_TOO_LARGE"},origin);
