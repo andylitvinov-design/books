@@ -14,6 +14,7 @@ import { ArticleDirectory } from "@/components/practitioner-article-directory";
 import { MentorCommunitySwitch } from "@/components/mentor-community-switch";
 import { CommunityServiceHighlights } from "@/components/community-service-highlights";
 import { MasterModeSwitch } from "@/components/master-mode-switch";
+import masterStyles from "./masters-page.module.css";
 
 type PageProps = { params: Promise<{ locale: string }>; searchParams?: Promise<{ view?: string | string[] }> };
 type PublishedCourseRow = {
@@ -108,14 +109,15 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
   const services = practitioners.flatMap((practitioner) => practitioner.services || []);
 
   return (
-    <main className="services-shell services-shell--studio" lang={locale}>
-      <PublicSiteHeader locale={locale} />
+    <main className={`services-shell services-shell--studio ${masterStyles.directory}`} lang={locale} data-master-directory>
+      <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
       <MasterModeSwitch locale={locale} active="find" />
       <MentorCommunitySwitch locale={locale} initialView={requestedView === "articles" ? "articles" : "mentors"} hasArticles={articles.length > 0} hasServices={services.length > 0}
         mastersUnavailable={mastersResult.status === "rejected"}
         articlesUnavailable={articlesResult.status === "rejected"}
         mentors={<MarketplaceMasterFinder practitioners={practitioners} courses={courses} coursesUnavailable={coursesResult.status === "rejected"} locale={locale} />}
         articles={<>
+          <CommunityServiceHighlights locale={locale} services={services} articlesAvailable={articles.length > 0 || articlesResult.status === "rejected"} />
           {articles.length > 0 && <ArticleDirectory locale={locale} preview articles={articles.map((a) => ({
           id: a.id,
           slug: a.slug,
@@ -127,7 +129,7 @@ export default async function MastersPage({ params, searchParams }: PageProps) {
           coverPath: a.published.coverPath || "",
           tags: Array.isArray(a.published.tags) ? a.published.tags : [],
         }))} />}
-          <CommunityServiceHighlights locale={locale} services={services} articlesAvailable={articles.length > 0 || articlesResult.status === "rejected"} />
+          
         </>}
       />
     </main>

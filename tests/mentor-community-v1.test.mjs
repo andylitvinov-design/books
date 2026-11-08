@@ -35,7 +35,7 @@ test("community switch exposes an accessible, keyboard-driven two-panel view", a
   assert.match(switcher, /hidden=\{view !== "mentors"\}/);
   assert.match(switcher, /hidden=\{view !== "articles"\}/);
   for (const key of ["ArrowRight", "ArrowLeft", "Home", "End"]) assert.ok(switcher.includes(key));
-  for (const value of ["Find a mentor", "Сообщество наставников", "Comunidad de mentores"]) {
+  for (const value of ["Find a Master", "Найти мастера", "Encuentra un profesional"]) {
     assert.ok(switcher.includes(value));
   }
   assert.match(css, /min-height: 44px/);
@@ -128,7 +128,9 @@ test("approved services fill the community alongside moderated articles without 
   assert.match(repository, /async listPublicServices/);
   assert.match(journal, /listPublicServices\(locale\)/);
   assert.match(journal, /articleResult\.status === "rejected"/);
-  assert.match(switcher, /Articles & services/);
+  assert.match(switcher, /Services & articles/);
+  assert.match(switcher, /\/services\/catalog/);
+  assert.match(switcher, /communityFooter/);
   assert.match(switcher, /materialTab=services/);
   assert.match(switcher, /hasArticles \|\| hasServices/);
 });
