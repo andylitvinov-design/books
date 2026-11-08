@@ -104,13 +104,13 @@ const SETTINGS_HUB_COPY = {
 const VIDEO = '/videos/holistic-house/film-collection-v3/sun-autumn-hills.mp4'
 const POSTER = '/videos/holistic-house/film-collection-v3/sun-autumn-hills.jpg'
 
-export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null, account = null }) {
+export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = null, account = null, publicEntry = false }) {
   const selected = COPY[locale] ? locale : 'en'
   const t = STUDIO_COPY[selected]
   // Existing protected Cabinet uses EN fallback for ES; do not introduce a new account.
   const accountLocale = selected === 'es' ? 'en' : selected
   const root = '/' + accountLocale + '/app'
-  const paths = {
+  const privatePaths = {
     today: root + '/portrait?space=today',
     tests: root + '/tests',
     state: root + '/monitoring',
@@ -118,6 +118,14 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
     courses: root + '/course?view=courses',
     reports: root + '/portrait?space=reports',
   }
+  // Guest Profile never initiates account reads just by visiting or changing tabs.
+  const paths = publicEntry ? { ...privatePaths,
+    today: root + '/portrait',
+    tests: '#profile-free-tests',
+    state: '/' + selected + '/client?startTests=state',
+    path: '/' + selected + '/personality-profiles',
+    courses: '/' + selected + '/academy',
+  } : privatePaths
   const current = active === 'view' ? 'today' : active === 'results' ? 'reports' : active
   const settingsMode = current === 'settings'
   const s = SETTINGS_HUB_COPY[selected]
@@ -194,7 +202,7 @@ export function ProfileHubTabs({ locale = 'en', active = 'today', resultCount = 
         <p className={styles.packageFinePrint}>{s.note}</p>
       </div>
     </section>}
-    {current !== 'today' && current !== 'create' && !settingsMode && <div className={styles.sectionIntro}>
+    {current !== 'today' && current !== 'create' && !settingsMode && !publicEntry && <div className={styles.sectionIntro}>
       <h1>{t.tabs[current] || t.title}</h1><p>{t.details[current] || t.privacy}</p>
     </div>}
     {current === 'create' && <p className={styles.hint}>{COPY[selected].creationHint}</p>}

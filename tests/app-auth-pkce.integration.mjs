@@ -291,6 +291,8 @@ test('session cabinet one-tap OAuth accepts only allowlisted app destinations, n
   const url=new URL(response.headers.get('location'))
   assert.equal(url.pathname+url.hash,path)
   assert.equal(url.searchParams.get('auth'),'cancelled')
+  if (continuation === 'cabinet') assert.equal(url.searchParams.get('space'), 'today')
+  if (continuation === 'reports') assert.equal(url.searchParams.get('space'), 'reports')
   assert(!url.href.includes('client/session/'))
  }
  const forbidden = new NextRequest(origin + '/api/app/auth/start',{
