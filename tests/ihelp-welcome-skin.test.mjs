@@ -54,8 +54,9 @@ test("sitewide iHelp keeps its single actual chat and functional contextual acti
 
 test("Messages iHelp reuses the same view and one protected AI conversation",()=>{
  assert.equal((messages.match(/<HolisticAgentChat\b/g)||[]).length,1);
- assert.match(messages,/<IHelpWelcome locale=\{locale\} section="general" compact/);
- assert.match(messages,/<IHelpTopics locale=\{locale\}/);
+ assert.match(messages,/messengerView/);
+ assert.doesNotMatch(messages,/<IHelpTopics/);
+ assert.match(read("../components/holistic-agent-chat.tsx"),/<MessengerAiLanding/);
  assert.match(messages,/authenticated=\{authenticated\}/);
  assert.match(messages,/onAuthRetry=\{onAuthRetry\}/);
  assert.doesNotMatch(messages,/new WebSocket|createClient\(|\bfetch\(/);
@@ -63,7 +64,7 @@ test("Messages iHelp reuses the same view and one protected AI conversation",()=
 
 test("topic taps fill an unsent draft, never auto-send or read private DOM",()=>{
  assert.match(dialog,/setQuickPrompt\(previous=>/);
- assert.match(messages,/setQuickPrompt\(/);
+ assert.match(read("../components/holistic-agent-chat.tsx"),/onCreateVideo={startContent}/);
  assert.match(surface,/onSelect\(t\.topics\[key\]\.prompt\)/);
  assert.doesNotMatch(surface,/window\.|document\.|fetch\(|localStorage|sessionStorage/);
  assert.match(dialog,/\[data-mandala-free-video\]/);

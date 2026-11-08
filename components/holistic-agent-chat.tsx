@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import {Mic, Paperclip, Plus, Send, X} from "lucide-react";
+import {MessengerAiLanding} from "@/components/app/messenger-ai-landing";
 import { prepareNaturalDialogue, finishNaturalDialogue } from "@/lib/holistic-support/natural-dialogue.mjs";
 import type { PublicLocale } from "@/lib/public-locales";
 import { AXIS_REFS } from "@/lib/holistic-support/axis-offer-matcher.mjs";
@@ -251,9 +253,9 @@ type NativeLanguageModel = { availability:(options:unknown)=>Promise<string>;
   create:(options?:unknown)=>Promise<NativePromptSession> };
 export type HolisticAgentPageHelp = {greeting:string;section?:string;actions:Array<{id:string;label:string;prompt:string;reply:string;href?:string;track?:"video"|"meditation"|"hint"}>};
 export type HolisticAgentQuickPrompt = {revision:number;text:string;format?:"video"|"audio"|"course"|"service"|"test"};
-export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticated=false,authStatus="guest",onAuthRetry,pageHelp}:{
+export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticated=false,authStatus="guest",onAuthRetry,pageHelp,messengerView=false}:{
  locale:PublicLocale;compact?:boolean;quickPrompt?:HolisticAgentQuickPrompt|null;authenticated?:boolean;
- authStatus?:"guest"|"checking"|"authenticated"|"unavailable";onAuthRetry?:()=>void;pageHelp?:HolisticAgentPageHelp|null
+ authStatus?:"guest"|"checking"|"authenticated"|"unavailable";onAuthRetry?:()=>void;pageHelp?:HolisticAgentPageHelp|null;messengerView?:boolean
 }) {
   const t=copy[locale];
   const starter=messengerStarter[locale];
@@ -293,6 +295,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   const voiceAbortRef=useRef<AbortController|null>(null);
   useEffect(()=>()=>voiceAbortRef.current?.abort(),[]);
   const [entryOpen,setEntryOpen]=useState(true);
+  const [recorderOpen,setRecorderOpen]=useState(false);
   const [guideLink,setGuideLink]=useState<"tests"|null>(null);
   const [testChatOpen,setTestChatOpen]=useState(false);
   const [testRevision,setTestRevision]=useState(0);
@@ -778,6 +781,25 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
     event.preventDefault();
     void sendTurn(draft);
   }
+  function resetConversation(){controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
+
+  const voiceAttachment=compact?<label className={styles.mode} data-hh-voice-message-upload
+    style={{display:"inline-flex",alignItems:"center",cursor:"pointer",fontSize:13}}>
+    {messengerView?<><Paperclip size={19} aria-hidden="true"/>
+      <span>{locale==="ru"?"Прикрепить аудио":locale==="es"?"Adjuntar audio":"Attach audio"}</span></>:
+      locale==="ru"?"🎙 Аудио":locale==="es"?"🎙 Audio":"🎙 Voice"}
+    <input type="file"
+      accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,audio/ogg,.mp3,.m4a,.wav,.webm,.ogg,.aac"
+      aria-label={locale==="ru"?"Прикрепить аудиосообщение":locale==="es"?"Adjuntar audio":"Attach voice message"}
+      disabled={voiceBusy||busy}
+      style={{position:"absolute",width:1,height:1,opacity:0}}
+      onChange={event=>{
+        selectVoiceMessage(event.currentTarget.files?.[0]||null);
+        event.currentTarget.value="";
+      }}/>
+  </label>:null;
+  const resetControl=<button type="button" onClick={resetConversation}>{t.reset}</button>;
+
   const settings = (
     <details className={compact?styles.compactSettings:styles.expandedSettings} open={!compact}>
       <summary>{compact?(locale==="ru"?"Настройки":locale==="es"?"Ajustes":"Settings"):(locale==="ru"?"Режим ответа и конфиденциальность":locale==="es"?"Modo y privacidad":"Response mode and privacy")}</summary>
@@ -824,21 +846,32 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
   );
   return <section className={styles.root} data-hh-agent-preview data-compact={compact||undefined}
     data-video-auth-status={compact?(authenticated?"authenticated":authStatus):undefined}
-    data-page-help={pageHelp?"true":undefined} data-has-messages={messages.length>0||undefined}>
+    data-page-help={pageHelp?"true":undefined} data-has-messages={messages.length>0||undefined}
+    data-chat-skin={messengerView?"messenger":undefined}>
     {!compact&&<><h1>{t.title}</h1><p>{t.disclosure}</p><p>{t.intro}</p></>}
     {!compact&&settings}
-    {authenticated&&<HolisticAgentMemoryPanel locale={locale}
+    {authenticated&&!messengerView&&<HolisticAgentMemoryPanel locale={locale}
       onUse={items=>setUseAgentMemory(items.length>0)}/>}
     {authenticated&&<SecureDialogueHistory history={privateTranscript} locale={locale}/>}
-    <EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact}/>
+    {!messengerView&&<EmotionalAvatar messages={messages} busy={busy} status={status} locale={locale} compact={compact}/>}
     <div ref={threadRef} className={styles.thread} role="log" aria-live="polite"
       onScroll={event=>{const el=event.currentTarget;
         const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<64;
         followTail.current=atBottom;
         if(atBottom)setNewBelow(false)}}>
-      {compact&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
+      {compact&&messengerView&&!messages.length&&<MessengerAiLanding
+        locale={locale} onCreateVideo={startContent}
+        onPractice={()=>startGuided("meditation")}
+        onAsk={()=>composerRef.current?.focus({preventScroll:true})}/>}
+      {compact&&!messengerView&&<p className={styles.assistant} data-hh-ai-welcome>{pageHelp?.greeting??starter.welcome}</p>}
       {!compact&&!messages.length&&<p className={styles.muted}>{t.start}</p>}
-      {messages.map((m,index)=><p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
+      {messages.map((m,index)=>messengerView&&m.role==="assistant"?
+        <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
+          <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
+            width={37} height={37} loading="lazy" alt="" className={styles.messagePortrait}/>
+          <p className={styles.assistant}>{m.text}</p>
+        </div>:
+        <p key={index} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
       {compact&&pageHelpLink&&<a className={styles.testLink} data-hh-ihelp-link href={pageHelpLink.href}>{pageHelpLink.label} · {t.option}</a>}
       {compact&&guideLink==="tests"&&<a className={styles.testLink} data-hh-ai-tests-link
         href={"/"+locale+"/tests"}>{starter.testsLink}</a>}
@@ -853,7 +886,7 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
           setEntryOpen(false);composerRef.current?.focus({preventScroll:true});
         }}>{locale==="ru"?"Задать другой вопрос":locale==="es"?"Hacer otra pregunta":"Ask another question"}</button>
       </div>}
-      {compact&&entryOpen&&!pageHelp&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
+      {compact&&entryOpen&&!pageHelp&&!messengerView&&<div className={styles.startActions} role="group" aria-label={starter.actions}>
         <button type="button" data-hh-ai-start="video" disabled={busy} onClick={startContent}>
           <span className={styles.startIcon} aria-hidden="true">🎬</span>
           <strong>{starter.video}</strong><small>{starter.videoSub}</small>
@@ -1054,26 +1087,27 @@ export function HolisticAgentChat({locale,compact=false,quickPrompt,authenticate
       <textarea ref={composerRef} value={draft} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder}
         maxLength={contentStep==="brief"?160:2000} rows={compact?1:3} disabled={busy} aria-label={t.placeholder}/>
       <div className={styles.actions}>
-        {compact&&<label className={styles.mode} data-hh-voice-message-upload
-          style={{display:"inline-flex",alignItems:"center",cursor:"pointer",fontSize:13}}>
-          {locale==="ru"?"🎙 Аудио":locale==="es"?"🎙 Audio":"🎙 Voice"}
-          <input type="file"
-            accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,audio/ogg,.mp3,.m4a,.wav,.webm,.ogg,.aac"
-            aria-label={locale==="ru"?"Прикрепить аудиосообщение":locale==="es"?"Adjuntar audio":"Attach voice message"}
-            disabled={voiceBusy||busy}
-            style={{position:"absolute",width:1,height:1,opacity:0}}
-            onChange={event=>{
-              selectVoiceMessage(event.currentTarget.files?.[0]||null);
-              event.currentTarget.value="";
-            }}/>
-        </label>}
-        <button type="button" onClick={()=>{controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);}}>{t.reset}</button>
-        <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}>{busy?t.loading:t.send}</button>
-        {busy&&<button type="button" onClick={()=>controller.current?.abort()}>{t.cancel}</button>}
+        {messengerView?<details className={styles.composerMore} data-hh-ai-more>
+          <summary aria-label={locale==="ru"?"Дополнительные действия":locale==="es"?"Más acciones":"More actions"}><Plus size={19} aria-hidden="true"/></summary>
+          <div className={styles.composerMenu}>{voiceAttachment}{resetControl}</div>
+        </details>:voiceAttachment}
+        {messengerView&&<button type="button" className={styles.recorderToggle}
+          onClick={()=>setRecorderOpen(value=>!value)} aria-pressed={recorderOpen}
+          aria-label={locale==="ru"?"Записать голос для видео":locale==="es"?"Grabar audio para vídeo":"Record audio for video"}
+          title={locale==="ru"?"Записать голос для видео":locale==="es"?"Grabar audio para vídeo":"Record audio for video"}>
+          <Mic size={20} aria-hidden="true"/>
+        </button>}
+        {messengerView&&<EmotionalAvatar messages={messages} busy={busy}
+          status={status} locale={locale} compact={compact} iconOnly/>}
+        {!messengerView&&resetControl}
+        <button type="submit" disabled={busy||!draft.trim()||(mode==="owned"&&!agree)}
+          aria-label={messengerView?(busy?t.loading:t.send):undefined}>{messengerView?<Send size={20} aria-hidden="true"/>:busy?t.loading:t.send}</button>
+        {busy&&<button type="button" onClick={()=>controller.current?.abort()}
+          aria-label={messengerView?t.cancel:undefined}>{messengerView?<X size={19} aria-hidden="true"/>:t.cancel}</button>}
       </div>
     </form>
-    {compact&&!contentVoice&&<MessengerAudioVideo locale={locale}
-      initialGoal={videoDraft.goal||""} disabled={busy}/>}
+    {compact&&!contentVoice&&(!messengerView||recorderOpen)&&<MessengerAudioVideo locale={locale}
+      initialGoal={videoDraft.goal||""} disabled={busy} autoOpen={messengerView&&recorderOpen}/>}
     {!compact&&<details className={styles.programPanel} data-hh-eight-session-preview>
       <summary>{t.programTitle}</summary>
       <p className={styles.muted}>{t.programInfo}</p>
