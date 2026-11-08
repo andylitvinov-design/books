@@ -151,6 +151,14 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  const hypno=read("components/mandala-hypno-compact.tsx");
  assert.ok(hypno.includes('data-hypno-idea-toggle')&&hypno.includes('aria-expanded={ideaDisclosureOpen}'),
    "the fine-tuning control must remain a real accessible disclosure button");
+ assert.ok(hypno.includes('useEffect(()=>{if(autoExpandIdea)setIdeaDisclosureOpen(true);},[autoExpandIdea])'),
+   "the Text Advanced user action must restore the fine-tuning panel after Safari remount");
+ assert.ok(studio.includes('autoExpandIdea={activeWorkspace==="phrases"&&ideasSubtab==="text"&&ideasVoiceAdvancedOpen}'),
+   "only Text's explicit Advanced action auto-opens fine-tuning; Voice and My Voice stay compact");
+ assert.ok(!studio.includes('document.querySelector<HTMLDetailsElement>("[data-hypno-idea-details]")'),
+   "Personalize must not write to a removed native details control");
+ assert.ok(!studio.includes('document.querySelector<HTMLButtonElement>("[data-hypno-suggest-tests]")?.click()'),
+   "opening settings must not synthesize a hidden click or fetch private tests");
  assert.ok(browser.includes('data-video-ideas-own-upload'),"own audio upload remains available");
  assert.ok(!browser.includes('await advancedVoice.locator(":scope > summary").click()'),
   "hidden summary interaction is not an acceptable visitor path");

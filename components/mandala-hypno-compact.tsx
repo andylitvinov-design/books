@@ -177,13 +177,14 @@ const profileDirections:Record<string,HypnoTestProposal>={
 };
 export function MandalaHypnoCompact({
   locale, theme, settings, onChange, disabled=false, scenes, activeScene, activePoster, requestText="", children,
-  externalPhraseDraft=null, onExternalPhraseClear, onPendingChange,
+  externalPhraseDraft=null, onExternalPhraseClear, onPendingChange, autoExpandIdea=false,
   onSelectScene, onSelectTheme, onPreview, onCreate, onApply,
 }: {
   locale:VideoLocale; theme:VideoTheme; settings:AffirmationSettings;
   onChange:(next:AffirmationSettings)=>void; disabled?:boolean;
   scenes:SceneOption[]; activeScene:string; activePoster?:string|null; requestText?:string; children?:ReactNode;
   externalPhraseDraft?:string|null; onExternalPhraseClear?:()=>void; onPendingChange?:(pending:boolean)=>void;
+  autoExpandIdea?:boolean;
   onSelectScene:(id:string)=>void; onSelectTheme:(next:VideoTheme)=>void; onPreview:()=>void; onCreate:()=>void; onApply?:()=>void;
 }) {
   const ui=copy[locale],extra=hypnoExtra[locale];
@@ -191,6 +192,9 @@ export function MandalaHypnoCompact({
   // Safari can lose the native disclosure state when its parent editor rerenders.
   // Keep the actual user-visible toggle controlled, including external opens.
   const [ideaDisclosureOpen,setIdeaDisclosureOpen]=useState(false);
+  // One real tap on Text's Advanced settings opens its inner fine-tuning panel.
+  // Recover the expanded state if Safari remounts the nested editor.
+  useEffect(()=>{if(autoExpandIdea)setIdeaDisclosureOpen(true);},[autoExpandIdea]);
   const ideaControlsId=useId();
   const [problemIndex,setProblemIndex]=useState(0);
   const [goalId,setGoalId]=useState<VideoAffirmationGoal>(topicGoals[theme][0]);

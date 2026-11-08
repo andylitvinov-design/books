@@ -5627,6 +5627,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
           <p>{layout.hypnosisHelp}</p></div>
       <MandalaHypnoCompact locale={locale} theme={theme} settings={affirmations} requestText={wish}
+        autoExpandIdea={activeWorkspace==="phrases"&&ideasSubtab==="text"&&ideasVoiceAdvancedOpen}
         onPendingChange={setPhrasePending} externalPhraseDraft={catalogPhraseDraft}
         onExternalPhraseClear={()=>setCatalogPhraseDraft(null)}
         onChange={setAffirmations} disabled={recording||preparing}
@@ -6808,9 +6809,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Мой запрос и тема":locale==="es"?"Mi intención y tema":"My request & topic"}</h3>
           <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
             onClick={()=>{
-               const details=document.querySelector<HTMLDetailsElement>("[data-hypno-idea-details]");
-               if(details)details.open=true;
-               window.requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>("[data-hypno-suggest-tests]")?.click());
+               // The old native details is now a real accessible button/region.
+               // Open Text's visible settings; never synthesize a hidden click
+               // or access private test results without another user action.
+               setIdeasSubtab("text");
+               setIdeasVoiceAdvancedOpen(true);
+               window.requestAnimationFrame(()=>document.querySelector<HTMLElement>('[data-video-ideas-advanced-voice]')?.scrollIntoView({block:"nearest",behavior:"smooth"}));
              }}><Sparkles size={15} aria-hidden="true"/>
             {locale==="ru"?"Индивидуальный подбор":locale==="es"?"Personalizar":"Personalize"}</button>
         </div>
