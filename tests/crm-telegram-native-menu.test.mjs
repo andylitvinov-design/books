@@ -8,8 +8,9 @@ test('native menu is scoped to private chats and available in RU EN ES',()=>{
  assert.deepEqual(CRM_PRIVATE_COMMAND_SCOPE,{type:'all_private_chats'});
  for(const locale of ['ru','en','es']){
   const commands=telegramCompanionNativeCommands(locale);
-  assert.equal(commands.length,14);
-  assert.equal(new Set(commands.map(x=>x.command)).size,14);
+  assert.equal(commands.length,15);
+  assert.equal(new Set(commands.map(x=>x.command)).size,15);
+  assert.deepEqual(commands.map(x=>x.command),['menu','cabinet','ai','ai_off','checkin','meditation','materials','video','review','daily','daily_off','lang_ru','lang_en','lang_es','stop']);
   assert.ok(commands.every(x=>/^[a-z0-9_]{1,32}$/.test(x.command)&&x.description.length>0&&x.description.length<=256));
   for(const key of ['menu','ai','ai_off','checkin','daily','daily_off','stop'])assert.ok(commands.some(x=>x.command===key));
  }
