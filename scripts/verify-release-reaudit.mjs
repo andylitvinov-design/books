@@ -602,9 +602,8 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage).toHaveURL(origin + '/en/services');
           await expect(cspPage.locator('main')).toHaveClass(/services-shell/);
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'same-public-document', 'Same-policy links must retain soft navigation');
-          // The unified Profile dock now opens the PRIVATE Cabinet first.
-          // Verify the hard CSP boundary, guest isolation and the public
-          // "Create" tab instead of assuming the old public-only destination.
+          // The owner's current My Space Profile has six PRIVATE sections.
+          // Retired "Create" is not a seventh tab, and guest data stays private.
           await cspPage.locator('.mobile-bottom-navigation [data-nav-item="profile"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/app/portrait');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
@@ -613,12 +612,25 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
           await expect(cspPage.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
-          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-create'; });
-          await cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="create"]').click();
+          const profileTabs = cspPage.locator('[data-profile-hub-tabs] [data-profile-tab]');
+          await expect(profileTabs).toHaveCount(6);
+          const privateTestsTab = cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="tests"]');
+          await expect(privateTestsTab).toHaveAttribute('href', '/en/app/tests');
+          await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-to-private-tests'; });
+          await privateTestsTab.click();
+          await expect(cspPage).toHaveURL(origin + '/en/app/tests');
+          await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), 'private-profile-to-private-tests',
+            'Same-policy private Profile to private Tests must keep the document');
+          // The PUBLIC Personality Profiles builder remains a separate,
+          // directly addressable route: test its true browser CSP transition
+          // before following the real link back into protected assessment UI.
+          await cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' });
           await expect(cspPage).toHaveURL(origin + '/en/personality-profiles');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'public-video');
           await waitForDocument();
-          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Private Profile to public builder must load a new document');
+          assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined,
+            'Private tests to public builder must load a new document');
           await expect(cspPage.locator('[data-profile-direct-tests]')).toBeVisible();
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'public-builder-before-private-tests'; });
           await cspPage.locator('[data-profile-direct-tests]').click();

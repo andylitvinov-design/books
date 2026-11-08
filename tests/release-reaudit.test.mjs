@@ -297,7 +297,10 @@ test('release re-audit follows the real private Profile and public builder acros
   const guest = read('components/app/cabinet-guest-overview.jsx');
   const builder = read('components/personality-profiles-builder.tsx');
   assert.ok(navigation.includes("profile: 'app/portrait'"), 'Profile dock uses the existing private Cabinet');
-  assert.ok(hub.includes("create: '/' + selected + '/personality-profiles'"), 'Private Profile has a real public Create tab');
+  const sixTabs = ['today','tests','state','path','courses','reports'];
+  for(const id of sixTabs) assert.ok(hub.includes("{ id: '"+id+"'"), 'Private Profile retains '+id);
+  assert.ok(hub.includes("tests: root + '/tests'"), 'Protected Tests route is the actual six-tab target');
+  assert.ok(!hub.includes("data-profile-tab=\"create\""), 'Retired public Create tab stays retired');
   assert.ok(guest.includes('data-cabinet-guest-overview'), 'Anonymous Profile must remain guest-only');
   assert.ok(builder.includes('data-profile-direct-tests'), 'Builder preserves a real protected tests link');
   const start = source.indexOf('// The unified Profile dock now opens the PRIVATE Cabinet first.');
@@ -310,10 +313,15 @@ test('release re-audit follows the real private Profile and public builder acros
     "window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document'",
     "locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible()",
     "locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0)",
-    "locator('[data-profile-hub-tabs] [data-profile-tab=\"create\"]').click()",
+    "locator('[data-profile-hub-tabs] [data-profile-tab=\"tests\"]')",
+    "toHaveCount(6)",
+    "toHaveAttribute('href', '/en/app/tests')",
+    "toHaveURL(origin + '/en/app/tests')",
+    "'Same-policy private Profile to private Tests must keep the document'",
     "toHaveURL(origin + '/en/personality-profiles')",
     "toHaveAttribute('data-csp-class', 'public-video')",
-    "window.__cspDocumentProbe), undefined, 'Private Profile to public builder must load a new document'",
+    "cspPage.goto(origin + '/en/personality-profiles'",
+    "'Private tests to public builder must load a new document'",
     "locator('[data-profile-direct-tests]').click()",
     "toHaveURL(origin + '/en/client/tests')",
     "window.__cspDocumentProbe), undefined, 'Public tests to private must load a new document'",
