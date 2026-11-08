@@ -528,3 +528,14 @@ test("voice export uses visible Audio-stage Generate, never the hidden Style-sta
     "video with consented narration must use a real visible Audio-tab export button");
   assert.doesNotMatch(source.slice(effects,generate),/click\(\{force:true\}\)/);
 });
+
+test("WebKit cached voice replay invokes one native play() per real tap, never a second TTS request",()=>{
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+  assert.match(voice,/const lastAutoPlayedSampleUrlRef=useRef\("")/);
+  assert.match(voice,/lastAutoPlayedSampleUrlRef\.current=sampleUrl;\s*try\{player\.currentTime=0;await player\.play\(\)/);
+  assert.match(voice,/if\(!sampleUrl\|\|lastAutoPlayedSampleUrlRef\.current===sampleUrl\)return/);
+  assert.match(voice,/lastAutoPlayedSampleUrlRef\.current=sampleUrl;\s*void sampleAudioRef\.current\?\.play\(\)/);
+  assert.match(browser,/await expect\.poll\(\(\)=>page\.evaluate\(\(\)=>window\.__hhPreviewReplayCount\)\)\.toBe\(1\)/);
+  assert.match(browser,/replay must not spend a second free TTS request/);
+});
