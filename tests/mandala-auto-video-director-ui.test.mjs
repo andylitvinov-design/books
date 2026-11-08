@@ -293,8 +293,13 @@ test("Montage and PRO retain one operational video/audio pipeline without duplic
   assert.match(studio,/data-video-basic-editor/);
   const nav=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'),
     studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.montageQuickTools}')));
-  assert.deepEqual([...nav.matchAll(/id:"(effects|audio|concept|settings)",Icon:/g)].map(m=>m[1]),
-    ["effects","audio","concept","settings"],"Style, Audio, Concept, Settings under the existing player");
+  assert.deepEqual([...nav.matchAll(/id:"(effects|text|visual|settings)",Icon:/g)].map(m=>m[1]),
+    ["effects","text","visual","settings"],"Style, Text, Effects and Settings under the existing player");
+  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+  assert.match(studio,/data-video-montage-visual-effect=\{item.id\}/);
+  assert.match(studio,/data-video-montage-aspect-switch/);
+  assert.match(studio,/data-video-montage-open-concept/);
+  assert.match(studio,/data-video-montage-open-audio/);
   assert.match(studio,/data-video-concept-text-tools/,"caption editor and timeline remain available");
   assert.match(studio,/data-video-montage-style=\{index\}/);
   assert.match(studio,/onClick=\{\(\)=>quickPickStyle\(index\)\}/);
