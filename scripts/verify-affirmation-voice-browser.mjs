@@ -212,12 +212,15 @@ async function verifyWorkspaceHydration(browser,locale){
     const recipientGoal2=page.locator('[data-video-goal-clarification]');
     await expect(studio).toHaveAttribute("data-video-goal-page","clarify");
     await expect(recipientGoal2).toBeVisible();
-    await recipientGoal2.locator('[data-video-goal-choice="current-curious"]').click();
-    await expect(recipientGoal2.locator('[data-video-goal-choice="current-curious"]'))
-      .toHaveAttribute("aria-pressed","true");
-    await recipientGoal2.locator('[data-video-goal-choice="desired-joyful"]').click();
-    await expect(recipientGoal2.locator('[data-video-goal-choice="desired-joyful"]'))
-      .toHaveAttribute("aria-pressed","true");
+    // The same profile was already selected in the earlier personal-video path.
+    // React uses toggle semantics: a second real tap would DESELECT the choice.
+    // Reuse that user-approved selection; physically tap only if unselected.
+    const currentCurious=recipientGoal2.locator('[data-video-goal-choice="current-curious"]');
+    if(await currentCurious.getAttribute("aria-pressed")!=="true")await currentCurious.click();
+    await expect(currentCurious).toHaveAttribute("aria-pressed","true");
+    const desiredJoyful=recipientGoal2.locator('[data-video-goal-choice="desired-joyful"]');
+    if(await desiredJoyful.getAttribute("aria-pressed")!=="true")await desiredJoyful.click();
+    await expect(desiredJoyful).toHaveAttribute("aria-pressed","true");
     await recipientGoal2.locator('[data-video-goal-clarify-continue]').click();
     await expect(ideas).toHaveAttribute("aria-pressed","true");
     await expect(studio).toHaveAttribute("data-active-workspace","phrases");
