@@ -168,7 +168,7 @@ test("Ideas advanced voice stays opt-in and is exercised through a real WebKit c
  assert.ok(css.includes('data-active-workspace="phrases"'),"visibility exception scoped to Ideas");
 });
 
-test("macOS WebKit reaches real Create through visible Style → Audio and keeps MP4 + voice acceptance",()=>{
+test("macOS WebKit reaches real Create through Style → Settings → advanced Audio and keeps MP4 + voice acceptance",()=>{
  const flow=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
  const css=read("components/mandala-video-mobile.module.css");
@@ -183,9 +183,10 @@ test("macOS WebKit reaches real Create through visible Style → Audio and keeps
    'await expect(creationStyleTab).toBeVisible',
    'await creationStyleTab.click()',
    'await expect(creationStyleTab).toHaveAttribute("aria-pressed","true")',
-   'const montageAudioTab=page.locator(\'[data-video-montage-tab="audio"]\')',
+   'await page.locator(\'[data-video-montage-tab="settings"]\').click()',
+   'const montageAudioTab=page.locator(\'[data-video-montage-open-audio]\')',
    'await montageAudioTab.click()',
-   'await expect(montageAudioTab).toHaveAttribute("aria-pressed","true")',
+   'await expect(page.locator(\'[data-video-montage-audio]\')).toBeVisible()',
    'const generate=page.locator("[data-video-quick-generate]")',
    'await expect(generate).toBeVisible',
    'await expect(generate).toBeEnabled'
@@ -195,7 +196,7 @@ test("macOS WebKit reaches real Create through visible Style → Audio and keeps
    assert.ok(at>last,action+" follows the real visitor path");
    last=at;
  }
- assert.match(studio,/data-video-montage-next=\{montagePanel==="effects"\?"audio":"hypno"\}/);
+ assert.match(studio,/data-video-montage-next=\{montagePanel==="effects"\?"text":montagePanel==="text"\?"visual":"audio"\}/);
  assert.match(studio,/data-video-quick-generate[\s\S]*?onClick=\{createQuickVideo\}/);
  assert.match(studio,/const continueMontageOrGenerate=\(\)=>/);
  assert.match(css,/\[data-montage-panel="effects"\] \[data-video-order-bar\]\{display:none!important\}/);
