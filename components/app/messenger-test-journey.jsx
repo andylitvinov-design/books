@@ -60,6 +60,15 @@ const COPY = {
   },
 }
 
+// Editorial topic matches for the assistant's Get a test entry. Rights, startability
+// and guest eligibility remain enforced by the canonical catalogue below.
+const FOCUS_TERMS = {
+  personality: ['personality', 'strength', 'identity', 'big-five', 'ipip'],
+  stress: ['stress', 'anxiety', 'mood', 'wellbeing', 'body', 'health'],
+  relationships: ['relationship', 'attachment', 'intimacy', 'love', 'compassion'],
+  work: ['work', 'career', 'professional', 'financial', 'resource', 'burnout'],
+}
+
 const ALL_TESTS = MONITORING_CATALOG.filter(item =>
   item.startable === true && item.rightsStatus === 'cleared' && item.guestEligible === true && item.key !== 'phq-9'
 ).map(item => {
@@ -94,8 +103,8 @@ function timezone() {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' }
 }
 
-/** @param {{ locale?: 'en'|'ru'|'es', onAdvance?: (() => void)|null, onClose?: (() => void)|null }} props */
-export default function MessengerTestJourney({ locale = 'en', onAdvance = null, onClose = null }) {
+/** @param {{ locale?: 'en'|'ru'|'es', focus?: keyof typeof FOCUS_TERMS|null, onAdvance?: (() => void)|null, onClose?: (() => void)|null }} props */
+export default function MessengerTestJourney({ locale = 'en', focus = null, onAdvance = null, onClose = null }) {
   const t = COPY[locale] || COPY.en
   const [selectedKey, setSelectedKey] = useState('')
   const [adult, setAdult] = useState(false)
@@ -123,10 +132,20 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
   const signalKey = signal ? signal.questionId + ':' + signal.value : null
   const transcript = definition && run ? definition.questions.slice(Math.max(0, state.index - 3), state.index)
     .filter(item => Object.prototype.hasOwnProperty.call(run.answers || {}, item.id)) : []
-  const filtered = ALL_TESTS.filter(entry => {
+  const focusMatches = focus && FOCUS_TERMS[focus] ? ALL_TESTS.filter(entry => {
+    const info = [
+      entry.item.key, entry.item.title?.en, ...(entry.item.topics || []),
+      ...(entry.item.categoryAffinities || []),
+      ...(entry.item.analysisAxes || []).map(axis => axis.key),
+    ].filter(Boolean).join(' ').toLowerCase()
+    return FOCUS_TERMS[focus].some(term => info.includes(term))
+  }) : []
+  // Suggestions are only a starting point. The searchable cleared catalogue remains available.
+  const source = !search.trim() && !expanded && focusMatches.length ? focusMatches : ALL_TESTS
+  const filtered = source.filter(entry => {
     const label = entry.item.title?.[locale] || entry.item.title?.en || entry.item.key
     return !search.trim() || (label + ' ' + entry.item.key).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
-  }).slice(0, search.trim() || expanded ? 200 : 6)
+  }).slice(0, search.trim() || expanded ? 200 : 4)
 
   function notify() { onAdvance?.() }
   function changeTest(key) {

@@ -1,0 +1,17 @@
+/* Six first-party projects and descriptive, tap-friendly choices. */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0;width:100%;padding:0 0 8px}
+.card{--surface:#e8f6ee;--edge:#cae7d7;--ink:#175f4e;position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:119px;padding:12px 7px 22px;border:1px solid var(--edge);border-radius:19px;background:var(--surface);color:var(--ink);box-shadow:0 2px 9px #30463a0e;text-align:center;overflow:hidden;cursor:pointer;font:inherit}
+.card>svg,.card>strong,.card>small{position:relative;z-index:1;flex:none}
+.card strong{font:780 clamp(14px,3.7vw,18px)/1.16 system-ui,sans-serif;text-wrap:balance}
+.card small{font:560 clamp(10px,2.65vw,12px)/1.24 system-ui,sans-serif;max-width:96%;text-wrap:balance}
+.art{position:absolute;inset:auto 0 0;height:40px;background-position:center;background-size:cover;opacity:.47;-webkit-mask-image:linear-gradient(transparent,#000);mask-image:linear-gradient(transparent,#000)}
+.card[data-hh-ai-project="hint"]{--surface:#e8f6ee;--edge:#c7e8d8;--ink:#155b49}.card[data-hh-ai-project="hint"] .art{background-image:url('/images/holistic-house/ideas-pine-reference.webp')}
+.card[data-hh-ai-project="test"]{--surface:#e9f3fd;--edge:#cfe4f0;--ink:#2a7491}.card[data-hh-ai-project="test"] .art{background-image:url('/images/holistic-house/books-library.webp')}
+.card[data-hh-ai-project="mytube"]{--surface:#eee8fa;--edge:#e0d4f3;--ink:#714aa0}.card[data-hh-ai-project="mytube"] .art{background-image:url('/images/holistic-house/ideas-zen-landscape.svg')}
+.card[data-hh-ai-project="sessions"]{--surface:#fff3dc;--edge:#eddcb9;--ink:#97651e}.card[data-hh-ai-project="sessions"] .art{background-image:url('/images/holistic-house/reiki-practitioner-sunrise.webp')}
+.card[data-hh-ai-project="practice"]{--surface:#ffefe9;--edge:#f0dacf;--ink:#aa5961}.card[data-hh-ai-project="practice"] .art{background-image:url('/images/holistic-house/messenger-zen-stones.svg')}
+.card[data-hh-ai-project="ai-video"]{--surface:#e6f4f1;--edge:#bde5de;--ink:#13816c}.card[data-hh-ai-project="ai-video"] .art{background-image:url('/images/holistic-house/course-journey-landscape.svg')}
+.card:hover{border-color:#77af9e;box-shadow:0 5px 13px #294e3b1e}.card:focus-visible{outline:3px solid #087d68;outline-offset:2px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:355px){.grid{gap:6px}.card{min-height:100px;padding:9px 5px 19px;border-radius:15px;gap:3px}.card>svg{width:20px;height:20px}.card small{font-size:10px}.art{height:28px}}
+@media(max-height:700px){.card{min-height:95px;padding-bottom:17px}.art{height:26px}}
