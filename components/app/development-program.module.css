@@ -29,15 +29,20 @@
 .pill svg{flex-shrink:0;color:#277b82}
 .sectorGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
 .sectorCard{min-width:0;border:1px solid #d6e6e3;background:#f8fbf9;padding:15px;border-radius:15px}
-.sectorTop{display:flex;justify-content:space-between;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:13px}
+.sectorTop{display:flex;justify-content:space-between;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
 .sectorTop strong{font-size:14px;color:#2d4b52;font-weight:750}
-.sectorTop span{font-size:12px;color:#39777a;font-weight:730;background:#e5f2ee;border-radius:7px;padding:4px 7px;white-space:nowrap}
+.currentRow{display:flex;align-items:center;justify-content:space-between;gap:5px 11px;flex-wrap:wrap;min-height:39px;padding:8px 10px;border:1px solid #dce9e6;border-radius:10px;background:#fff}
+.currentLabel{font-size:11px;font-weight:650;color:#607576}
+.currentCount{font-size:11.5px;font-weight:760;color:#2b7471}
+.currentMissing{font-size:11.5px;font-weight:760;color:#697b7d}
+.targetArea{margin-top:9px;padding:9px 10px 7px;border:1px dashed #e4cbd4;border-radius:10px;background:#fff9fb}
 .slider{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;min-width:0}
-.sliderTitle{font-size:11px;font-weight:600;line-height:1.35;color:#607576}
-.sliderValue{font-size:16px;font-weight:800;line-height:1.2;color:#8b3853;font-variant-numeric:tabular-nums}
-.slider input,.subSlider input{width:100%;min-width:0;grid-column:1/-1;margin:2px 0;accent-color:#227e87;cursor:pointer;min-height:22px}
+.sliderTitle{font-size:11px;font-weight:740;line-height:1.35;color:#794456}
+.sliderValue{font-size:17px;font-weight:800;line-height:1.2;color:#8b3853;font-variant-numeric:tabular-nums}
+.slider input,.subSlider input{width:100%;min-width:0;grid-column:1/-1;margin:2px 0;accent-color:#8b3853;cursor:pointer;min-height:22px}
 .endpoints{grid-column:1/-1;display:flex;justify-content:space-between;color:#93a1a0;font-size:10px}
-.coverage{display:block;margin-top:11px;color:#738587;font-size:11px}
+.targetNote{display:block;margin-top:4px;color:#7b6870;font-size:10px;line-height:1.35}
+.targetLoading{margin:0!important;color:#7b6870;font-size:11px;line-height:1.4}
 .status{font-size:12px;color:#657d80;margin:0 0 10px}
 .details{margin-top:13px;border:1px solid #dbe5e1;border-radius:12px;background:#fff}
 .details>summary,.method>summary{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:47px;padding:12px 13px;list-style:none;font-size:12px;font-weight:730;color:#245e68;cursor:pointer}
@@ -119,8 +124,10 @@
   .panel{padding:10px}
   .sectorGrid{grid-template-columns:minmax(0,1fr);gap:8px}
   .sectorCard{padding:12px}
-  .sectorTop{margin-bottom:5px}
+  .sectorTop{margin-bottom:7px}
   .sectorTop strong{font-size:13px}
+  .currentRow{padding:8px 9px}
+  .targetArea{padding:8px 9px 7px}
   .save{min-height:48px}
   .courses{grid-template-columns:minmax(0,1fr)}
   .priorityCard{gap:8px;padding:10px}
@@ -317,3 +324,17 @@
   .profileInvitationFooter{margin-top:9px}
 }
 @media(prefers-reduced-motion:reduce){.profileTestCard,.profileTestMore>summary svg,.root .profileDomainTab{transition:none}}
+
+/* Goal Profile is an optional PRIVATE three-item check-in, never a clinical score. */
+.goalCheckin{min-width:0;margin:0 0 16px;padding:13px;border:1px solid #b8d6cb;border-radius:13px;background:#f6faf7;color:#28463f}
+.goalCheckin legend{padding:0 6px;font-weight:750;font-size:.94rem;color:#215e53}
+.goalCheckin p{font-size:.8rem;line-height:1.45;margin:2px 0 10px;overflow-wrap:anywhere}
+.goalRatingGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.goalRatingRow{display:flex;flex-direction:column;justify-content:space-between;min-width:0;gap:8px;padding:10px;border:1px solid #cbded6;border-radius:10px;background:#fff}
+.goalRatingRow span{min-width:0;font-size:.83rem;line-height:1.28;font-weight:680;overflow-wrap:anywhere}
+.goalRatingRow select{min-width:0;width:100%;min-height:44px;padding:7px;color:#173f37;background:#fff;border:1px solid #a6c4ba;border-radius:8px;font:inherit;cursor:pointer}
+.goalRatingRow select:focus-visible,.goalCheckinFooter button:focus-visible{outline:3px solid #24796b;outline-offset:2px}
+.goalCheckinFooter{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.goalCheckinFooter small{font-size:.73rem;line-height:1.4;flex:1 1 190px}
+.goalCheckinFooter button{min-height:44px;border:1px solid #b9d1c8;border-radius:9px;padding:7px 10px;color:#225b50;background:#fff;cursor:pointer}
+@media(max-width:650px){.goalRatingGrid{grid-template-columns:1fr}.goalRatingRow{flex-direction:row;align-items:center}.goalRatingRow span{flex:1}.goalRatingRow select{max-width:145px}}

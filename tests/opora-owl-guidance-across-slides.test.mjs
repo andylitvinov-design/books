@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs'
 import {lessonFor} from '../lib/inner-growth/lesson-library.js'
 import {COURSE_ANTISTRESS_SKILLS_V7} from '../lib/inner-growth/anti-stress-skills-v7.js'
 import {mount,nodes,findButton} from './helpers/route-pipeline-harness.mjs'
+import {advanceOporaTo} from './helpers/opora-gentle-navigation.mjs'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const tips={en:'Show gentle guidance',ru:'Показать мягкую подсказку',es:'Ver una pista suave'}
@@ -28,7 +29,7 @@ for(const locale of ['en','ru','es']){
       let saves=0
       const h=mount('opora-experience-player',{locale,data,onClose(){},onFinish(){},onSession(){saves++;return true}})
       try{
-        for(let i=0;i<(day===1?7:2);i++){findButton(h.tree,next[locale]).props.onClick();await h.settle()}
+        await advanceOporaTo(h,'practice',next[locale])
         const section=nodes(h.tree).find(n=>n.props?.['data-gentle-guidance']==='practice')
         assert.ok(section,'missing practice guidance on '+locale+' day '+day)
         assert.ok(nodes(section).some(n=>n.type==='img'&&n.props?.src==='/images/holistic-house/gentle-owl.svg'))
@@ -47,6 +48,7 @@ for(const locale of ['en','ru','es']){
       onClose(){},onFinish(){},onSession(){throw new Error('unexpected write')}})
     try{
       for(const moment of ['arrive','support','practice','feel','affirmation','save']){
+        await advanceOporaTo(h,moment,next[locale])
         // The pure acceptance slide is deliberately not a hint or another exercise.
         if(moment==='support')assert.ok(!nodes(h.tree).some(n=>n.props?.['data-gentle-guidance']))
         if(['arrive','practice','feel','save'].includes(moment)){

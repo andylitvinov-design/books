@@ -15,6 +15,8 @@ const TEXT = {
     free: 'Free to begin',
     personal: 'Personal and private',
     signin: 'Open my Cabinet with Google',
+    telegramSignin: 'Start with Telegram',
+    telegramNote: 'Already use Google here? Sign in with Google first and link Telegram in Settings to keep your existing Cabinet.',
     signingIn: 'Connecting to Google…',
     testsLink: 'Explore free tests',
     sectionEyebrow: 'YOUR PERSONAL JOURNEY',
@@ -47,6 +49,8 @@ const TEXT = {
     free: 'Начните бесплатно',
     personal: 'Лично и конфиденциально',
     signin: 'Открыть мой кабинет через Google',
+    telegramSignin: 'Начать через Telegram',
+    telegramNote: 'Уже есть кабинет через Google? Сначала войдите через Google, затем привяжите Telegram в настройках, чтобы сохранить прежние данные.',
     signingIn: 'Подключаем Google…',
     testsLink: 'Посмотреть бесплатные тесты',
     sectionEyebrow: 'ВАШ ПУТЬ РАЗВИТИЯ',
@@ -79,6 +83,8 @@ const TEXT = {
     free: 'Empieza gratis',
     personal: 'Personal y privado',
     signin: 'Abrir mi gabinete con Google',
+    telegramSignin: 'Empezar con Telegram',
+    telegramNote: '¿Ya tienes un gabinete con Google? Entra primero con Google y vincula Telegram en Ajustes para conservar tus datos.',
     signingIn: 'Conectando con Google…',
     testsLink: 'Explorar tests gratuitos',
     sectionEyebrow: 'TU CAMINO PERSONAL',
@@ -110,7 +116,7 @@ const FEATURE_ICONS = { tests: ClipboardCheck, trends: Activity, plan: ChartNoAx
 const PRACTICE_ICONS = { services: Users, articles: FilePenLine }
 
 export default function CabinetGuestOverview({
-  locale = 'en', busy = false, onSignin, unavailable = false, onRetry, errorMessage, sessionNotice = false,
+  locale = 'en', busy = false, onSignin, onTelegramSignin, telegramAvailable = false, unavailable = false, onRetry, errorMessage, sessionNotice = false,
 }) {
   const selectedLocale = Object.hasOwn(TEXT, locale) ? locale : 'en'
   const t = TEXT[selectedLocale]
@@ -128,13 +134,19 @@ export default function CabinetGuestOverview({
             <span><LockKeyhole size={16} aria-hidden="true" />{t.personal}</span>
           </div>
           <div className={styles.actions}>
-            {!unavailable && <button type="button" className={styles.primaryAction} disabled={busy} onClick={onSignin}>
+            {telegramAvailable && !unavailable && <button type="button" data-telegram-auth="login" className={styles.primaryAction}
+              disabled={busy} onClick={onTelegramSignin}>
+              {t.telegramSignin}<ArrowRight aria-hidden="true" size={19} />
+            </button>}
+            {!unavailable && <button type="button" className={telegramAvailable ? styles.secondaryAction : styles.primaryAction}
+              disabled={busy} onClick={onSignin}>
               {busy ? t.signingIn : t.signin}<ArrowRight aria-hidden="true" size={19} />
             </button>}
             <Link href={'/' + selectedLocale + '/client/tests'} className={styles.secondaryAction} prefetch={false}>
               {t.testsLink}<ArrowRight aria-hidden="true" size={18} />
             </Link>
           </div>
+          {telegramAvailable && <p className={styles.identityNote}>{t.telegramNote}</p>}
           {unavailable && <p className={styles.error} role="status">{t.unavailable}</p>}
           {sessionNotice && <p className={styles.sessionNotice} role="status">{t.sessionNotice}</p>}
           {errorMessage && <p className={styles.error} role="alert">{errorMessage}</p>}

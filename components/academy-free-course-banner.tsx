@@ -14,6 +14,7 @@ const copy = {
     count: "4 courses",
     open: "Choose a course",
     start: "Start course",
+    price: "Price · €0",
     details: "Details",
     note: "The Reiki introductions are free to explore; personal initiations need teacher confirmation. Stress Relief is education and support, not a substitute for professional care.",
   },
@@ -24,6 +25,7 @@ const copy = {
     count: "4 курса",
     open: "Выбрать курс",
     start: "Пройти",
+    price: "Цена · €0",
     details: "Детали",
     note: "Вводные материалы Рейки бесплатны, личная инициация — по согласованию. «ОПОРА» — образовательная поддержка, не замена профессиональной помощи.",
   },
@@ -34,6 +36,7 @@ const copy = {
     count: "4 cursos",
     open: "Elegir un curso",
     start: "Empezar",
+    price: "Precio · €0",
     details: "Detalles",
     note: "Las introducciones a Reiki son gratuitas; las iniciaciones personales requieren confirmación. OPORA se abre en inglés y ofrece apoyo educativo, no atención clínica.",
   },
@@ -177,6 +180,7 @@ export function AcademyFreeCourseBanner({ locale }: { locale: PublicLocale }) {
                   </span>
                   <div className={styles.courseContent}>
                     <span className={styles.courseType}>{info.type}</span>
+                     <span className={styles.pricePill}>{t.price}</span>
                     <h3>{info.title}</h3>
                     <p>{info.description}</p>
                     <div className={styles.courseFooter}>

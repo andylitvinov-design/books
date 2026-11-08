@@ -6,7 +6,9 @@ import { getCommerceConfig } from "@/lib/commerce/config";
 import { personalPayPalEnabled } from "@/lib/commerce/paypal-personal";
 import { wisePaymentsEnabled } from "@/lib/commerce/wise-payments";
 import { configuredSquarePaymentLinks } from "@/lib/commerce/square-payment-links";
+import { getSquareGatewayConfig } from "@/lib/commerce/square-gateway";
 import { configuredPayPalHostedLinks } from "@/lib/commerce/paypal-hosted-links";
+import { configuredIndividualCardLinks } from "@/lib/commerce/card-payment-links";
 import type { ServiceLocale } from "@/lib/commerce/catalog";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -25,11 +27,13 @@ export default async function CartPage({ params }: Props) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const commerce = getCommerceConfig();
+  const squareGateway = getSquareGatewayConfig();
   const verifiedPayPalCheckout = commerce.provider === "paypal" && commerce.enabled;
   return <main className="services-shell services-shell--studio" lang={locale} data-service-cart-page>
     <PublicSiteHeader locale={locale} />
     <PersonalCart locale={locale} paypalEnabled={personalPayPalEnabled()} wiseEnabled={wisePaymentsEnabled()}
-      squareLinks={configuredSquarePaymentLinks()} verifiedPayPalEnabled={verifiedPayPalCheckout}
-      hostedPayPalLinks={configuredPayPalHostedLinks()} />
+      squareLinks={configuredSquarePaymentLinks()} squareApiEnabled={squareGateway.enabled} squareApiEnvironment={squareGateway.environment}
+      squareApiPrices={squareGateway.enabled ? squareGateway.prices : {}} verifiedPayPalEnabled={verifiedPayPalCheckout}
+      hostedPayPalLinks={configuredPayPalHostedLinks()} stripeLinks={configuredIndividualCardLinks()} />
   </main>;
 }

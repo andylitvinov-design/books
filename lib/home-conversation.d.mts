@@ -4,9 +4,11 @@ import type { PublicLocale } from "./public-locales";
 export type HomeGuideGoal = "understand" | "tests" | "practice" | "consult" | "ideas";
 export declare const homeGuideGoals: ReadonlyArray<HomeGuideGoal>;
 export type HomeGuideContext = {
-  lang: PublicLocale; topic: IdeasTopic | null; matched: boolean; urgent: boolean; interest: "reiki" | null;
+  lang: PublicLocale; topic: IdeasTopic | null; matched: boolean; urgent: boolean; interest: "reiki" | "courses" | "site" | null;
+  subtopic: string | null;
 };
 export declare function resolveHomeGuideQuestion(input: string, fallbackLocale?: PublicLocale, previous?: HomeGuideContext | null): HomeGuideContext;
+export declare function homeGuideOpening(context: HomeGuideContext | null): Record<PublicLocale, string>;
 export declare function homeGuideDestinations(args: {
   goal: HomeGuideGoal;
   topic: IdeasTopic | null;
@@ -27,4 +29,27 @@ export declare function chooseHomeGuideOffer(context: HomeGuideContext | null, c
   context: HomeGuideContext; response: LocalizedText | null; offers: HomeGuideOffer[];
 } | null;
 
+export type HomeGuideCategory = "all" | "services" | "courses" | "tests" | "free";
+export declare const homeGuideCategories: ReadonlyArray<HomeGuideCategory>;
+export declare function browseHomeGuideOffers(args: {
+  category: HomeGuideCategory;
+  locale: PublicLocale;
+  question?: string;
+}): { urgent: boolean; matched: boolean; offers: HomeGuideOffer[] };
+
+export type HomeGuideQuickStart = {
+  id: "stress" | "relationships" | "direction" | "business" | "resources" | "reiki";
+  title: string;
+  category: string;
+  href: string;
+};
+export declare function homeGuideQuickStarts(locale?: PublicLocale): HomeGuideQuickStart[];
+
 export declare function matchHomeGuideReply(input: string, context: HomeGuideContext | null): string | null;
+export declare function homeGuideFreeTextStep(input: string, context: HomeGuideContext | null, pageLocale?: PublicLocale): {
+  context: HomeGuideContext; response: Record<PublicLocale, string>; offers: HomeGuideOffer[];
+} | null;
+export declare function homeGuideConversationCue(input: string, context: HomeGuideContext | null): {
+  kind: "thanks" | "unsure" | "price" | "free" | "alternatives";
+  response: Record<PublicLocale, string>;
+} | null;

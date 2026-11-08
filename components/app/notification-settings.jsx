@@ -20,6 +20,22 @@ const COPY={
  done:'Сервис push принял сообщение. Появление зависит от настроек устройства.',
  saved:'Настройки сохранены',error:'Не удалось выполнить действие. Попробуйте ещё раз.',
  loading:'Загружаем настройки…',devices:'Устройств'},
+ es:{title:'Avisos en el teléfono',intro:'Recordatorios y mensajes privados, solo con tu permiso.',
+ sample:'Vista previa',today:'Un pequeño paso para hoy',course:'MI CURSO · 14 DÍAS',
+ mins:'5–12 minutos',ready:'La práctica de hoy está lista',open:'Abrir mi curso',
+ allow:'Activar avisos',disable:'Desactivar en todos los dispositivos',
+ send:'Enviar aviso de prueba',on:'Avisos activados',off:'Avisos desactivados',
+ mobile:'En iPhone: Safari → Compartir → Añadir a pantalla de inicio; abre la app y activa los avisos.',
+ unsupported:'Este navegador o aplicación no admite notificaciones push.',
+ blocked:'Los avisos están bloqueados en el teléfono o navegador.',
+ server:'El servidor todavía no tiene configurado el envío push.',
+ native:'Las actividades en vivo estilo Duolingo requieren una app iOS nativa (ActivityKit).',
+ planned:'Los recordatorios automáticos aún no están activos. Puedes probar el envío.',
+ reminder:'Recordar mi práctica diaria',messages:'Avisarme de mensajes privados nuevos',
+ messagePrivacy:'El texto del mensaje no aparece en la pantalla bloqueada.',
+ hour:'Hora local',save:'Guardar',done:'El servicio push aceptó el aviso; su aparición depende del dispositivo.',
+ saved:'Preferencias guardadas',error:'No se pudo completar la acción.',
+ loading:'Cargando ajustes…',devices:'Dispositivos'},
  en:{title:'Phone notifications',intro:'Course reminders and private-message alerts — only with your consent.',
  sample:'Design preview',today:'A small step for today',course:'MY COURSE · 14 DAYS',
  mins:'5–12 minutes',ready:'Today’s practice is ready',open:'Open my course',
@@ -137,9 +153,10 @@ export default function NotificationSettings({locale='en',compact=false,accountI
         {state.enabled&&<label>{c.hour}<select value={hour} onChange={e=>setHour(Number(e.target.value))}>
           {Array.from({length:14},(_,i)=>i+8).map(n=><option key={n} value={n}>{String(n).padStart(2,'0')}:00</option>)}
         </select></label>}</div>
-      <div className={styles.buttons}>{state.enabled?
-        <><button onClick={save} disabled={busy}>{c.save}</button>
-        <button onClick={testPush} disabled={busy}>{c.send}</button>
+      <div className={styles.buttons}>
+        <button onClick={save} disabled={busy}>{c.save}</button>
+        {state.enabled?
+        <><button onClick={testPush} disabled={busy}>{c.send}</button>
         <button className={styles.outline} onClick={disable} disabled={busy}><BellOff size={15}/>{c.disable}</button></>:
         <button onClick={enable} disabled={busy||!state.ready||!canPush()||needsHomeScreen()}><Bell size={15}/>{c.allow}</button>}
       </div>

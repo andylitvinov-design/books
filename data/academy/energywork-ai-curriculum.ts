@@ -31,7 +31,7 @@ export type EnergyworkTestimonial = {
 export type EnergyworkSlide = {
   id: string;
   phase: EnergyworkPhase;
-  kind: "welcome" | "lesson" | "video" | "practice" | "reflection" | "voices" | "milestone" | "path-choice" | "finish";
+  kind: "welcome" | "lesson" | "audio-intro" | "video" | "practice" | "reflection" | "voices" | "milestone" | "path-choice" | "finish";
   testimonials?: EnergyworkTestimonial[];
   title: Localized;
   body: Localized;
@@ -147,7 +147,7 @@ export const energyworkPhases: Record<EnergyworkPhase, Localized> = {
   tantra: l("Tantra Reiki", "Тантра Рейки"),
   kundalini: l("Kundalini Reiki", "Кундалини Рейки"),
   yggdrasil: l("Reiki Yggdrasil", "Рейки Иггдрасиль"),
-  initiation: l("Personal Reiki Initiation", "Личная Рейки-инициация"),
+  initiation: l("Reiki Initiation Options", "Варианты Рейки-инициации"),
   complete: l("Your learning journal", "Ваш учебный дневник"),
 };
 
@@ -230,10 +230,13 @@ const tantraPracticeQuestion: EnergyworkQuestion = {
 };
 
 const commonSlides: EnergyworkSlide[] = [
+  // The existing welcome ID is the title page. A short experience question
+  // follows it, then Andrey's video introduces the Flight to the Sun lesson.
+  // All stable IDs, progress records and personal answers are preserved.
   { id: "welcome-01", phase: "welcome", kind: "welcome", image: image.world,
-    title: l("Reiki Practitioner — a five-day journey", "Практик Рейки — пятидневный курс"),
-    body: l("Explore the principles of Kundalini Reiki, Tantra Reiki and Reiki Yggdrasil. Each day brings a short exercise and a meditation to discover the character of each system through your own experience.",
-      "Познакомьтесь с принципами Кундалини Рейки, Тантра Рейки и Рейки Иггдрасиль. Каждый день вас ждут небольшое упражнение и медитация, чтобы на собственном опыте исследовать особенности каждой системы.") },
+    title: l("Reiki Practitioner", "Практик Рейки"),
+    body: l("Discover Tantra Reiki, Kundalini Reiki and Reiki Yggdrasil through gentle meditations and short daily practices.",
+      "Познакомьтесь с Тантра Рейки, Кундалини Рейки и Рейки Иггдрасиль через мягкие медитации и короткие ежедневные практики.") },
   { id: "welcome-02", phase: "welcome", kind: "reflection",
     title: l("How familiar are you with Reiki?", "Насколько вы знакомы с Рейки?"),
     body: l("Not a test — just choose your experience.",
@@ -244,6 +247,10 @@ const commonSlides: EnergyworkSlide[] = [
       { id: "reiki-1-2", label: l("I have Reiki Level 1 or 2", "У меня уже есть 1-я или 2-я ступень Рейки") },
       { id: "master", label: l("I'm a Reiki Master", "Я мастер Рейки") },
     ] } },
+  { id: "welcome-video", phase: "welcome", kind: "video",
+    title: l("First, a word from Andrey", "Сначала — слово Андрея"),
+    body: l("Watch Andrey introduce Flight to the Sun. The original guided meditation has its own slide in Lesson 1.",
+      "Сначала посмотрите вступление Андрея к «Полёту к Солнцу». Оригинальная медитация будет отдельным слайдом первого урока.") },
 
   { id: "flight-01", phase: "flight", kind: "lesson", image: image.sun,
     title: l("The Sun is calling. Ready?", "Солнце зовёт. Готовы?"),
@@ -255,9 +262,14 @@ const commonSlides: EnergyworkSlide[] = [
       l("Explore images and feelings", "Исследуем образы и чувства"),
       l("Remember one special image", "Запоминаем один особенный образ"),
     ] },
+  { id: "flight-audio", phase: "flight", kind: "audio-intro", introAudioKey: "flight", image: image.sun,
+    title: l("Andrey's audio welcome", "Аудиоприветствие Андрея"),
+    body: l("Listen to an optional personal introduction before the Sun meditation, or go straight to the video. Nothing starts automatically.",
+      "Перед медитацией «Полёт к Солнцу» можно прослушать личное аудиовведение Андрея или сразу перейти к видео. Автозапуска нет.") },
   { id: "flight-02", phase: "flight", kind: "video", videoKey: "flight-to-sun",
-    title: l("Watch Flight to the Sun", "Посмотрите «Полёт к Солнцу»"),
-    body: l("Listen to Andrey’s recording, or skip it if you prefer.", "Послушайте запись Андрея или пропустите её, если хотите.") },
+    title: l("Flight to the Sun · guided meditation", "Полёт к Солнцу · медитация"),
+    body: l("Follow the original guided meditation in English. Pause or continue at your own pace.",
+      "Включите оригинальную медитацию «Полёт к Солнцу» на английском. Можно остановиться или продолжить в своём темпе.") },
   { id: "flight-03", phase: "flight", kind: "practice", question: sunPracticeQuestion,
     title: l("A gentle pause", "Небольшая пауза"),
     body: l("For one minute, notice the Sun’s light and warmth within and around you.",
@@ -278,10 +290,6 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Lesson 1 complete — well done!", "Первый урок пройден — отлично!"),
     body: l("You've taken your first step. Next, discover Tantra Reiki.", "Первый шаг сделан. Впереди — знакомство с Тантра Рейки.") },
 
-  { id: "flight-save", phase: "flight", kind: "milestone",
-    title: l("A beautiful first step!", "Первый шаг — это прекрасно!"),
-    body: l("Your first Reiki lesson is complete. Let's keep your reflections close so you can return to them whenever you wish.",
-      "Первый урок Рейки завершён. Сохраним ваши впечатления, чтобы вы могли в любой момент к ним вернуться.") },
 
   { id: "presence-01", phase: "tantra", kind: "lesson", image: image.world,
     title: l("After Tantra Reiki: the foundation of presence", "После Тантра Рейки: основа присутствия"),
@@ -293,21 +301,17 @@ const commonSlides: EnergyworkSlide[] = [
     title: l("Second lesson completed!", "Второй урок пройден!"),
     body: l("Keep going through all five lessons to prepare for a personal initiation with Andrey and explore joining our Reiki and energywork community.", "Пройдите остальные уроки, чтобы подготовиться к личной инициации у Андрея и присоединению к сообществу практиков Рейки и энергопрактик.") },
 
-  { id: "intention-01", phase: "initiation", kind: "lesson", image: image.sun,
-    title: l("What is intention?", "Что такое намерение?"),
-    body: l("In these traditions, intention gives a practice direction. It is a personal purpose, not a promise that an outcome must happen.", "В этих традициях намерение задаёт направление практики. Это личная цель, а не обещание обязательного результата.") },
-  { id: "intention-03", phase: "initiation", kind: "reflection",
-    title: l("Write your own intention", "Запишите своё намерение"),
-    body: l("Keep it simple and within your influence, such as making room for a short quiet pause.", "Пусть оно будет простым и посильным, например выделить пару минут для спокойной паузы."),
-    question: { type: "text", prompt: l("My intention for this course…", "Моё намерение для курса…") } },
+  // The original two intention explanation/writing screens were retired on 22 Oct.
+  // The existing closing timer and answer ID stay, with a neutral stand-alone exercise.
   { id: "intention-04", phase: "initiation", kind: "practice", question: practiceQuestion,
-    title: l("Try your intention gently", "Мягко вспомните намерение"),
-    body: l("For a few moments, notice your intention while staying aware of your surroundings. It is fine to change it later.", "На несколько мгновений вспомните своё намерение, оставаясь в контакте с окружающим. Позже его можно изменить.") },
+    title: l("A short pause before finishing", "Короткая пауза перед завершением"),
+    body: l("For two minutes, gently notice how you feel after this lesson. You may stop or skip at any time.",
+      "В течение двух минут мягко прислушайтесь к своему состоянию после урока. Можно остановиться или пропустить практику.") },
 
   { id: "paths-01", phase: "initiation", kind: "lesson",
-    title: l("Your next step: personal initiation", "Следующий шаг: личная инициация"),
-    body: l("A personal initiation is separate from this course and needs Andrey's confirmation. Here's how to choose and send a request.",
-      "Личная инициация проходит отдельно от курса и требует подтверждения Андрея. Узнайте, как выбрать направление и подать заявку."),
+    title: l("Your next step: Reiki initiation", "Следующий шаг: Рейки-инициация"),
+    body: l("Watch Andrey’s introduction to lesson five. This recording is not an initiation. After the course, request a free chat-guided initiation or an optional personal session.",
+      "Посмотрите вводное видео Андрея к пятому уроку. Запись не является инициацией. После курса можно запросить бесплатную инициацию в чате или личную сессию."),
     introAudioKey: "initiation",
     introTopics: [
       l("Compare three Reiki traditions", "Сравниваем три традиции Рейки"),
@@ -317,9 +321,6 @@ const commonSlides: EnergyworkSlide[] = [
   { id: "paths-03", phase: "initiation", kind: "lesson", image: image.tantra,
     title: l("One course, several initiation options", "Один курс — несколько вариантов инициации"),
     body: l("You may discuss initiation in any of the three traditions, one at a time. Completion of this educational course does not mean an initiation has taken place.", "Вы можете обсудить инициацию в любой из трёх традиций, по очереди. Прохождение учебного курса само по себе не означает получения инициации.") },
-  { id: "paths-04", phase: "initiation", kind: "lesson",
-    title: l("Prepare your personal initiation request", "Подготовьте заявку на личную инициацию"),
-    body: l("Review the five lesson reports and answers. They stay private unless you choose to share them with the teacher. A request only starts a discussion; it never grants initiation automatically.", "Проверьте отчёты и ответы по пяти урокам. Они остаются приватными, пока вы сами не решите показать их преподавателю. Заявка лишь начинает обсуждение, а не предоставляет инициацию автоматически.") },
 ];
 
 const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
@@ -334,9 +335,18 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
         l("Imagine roots, trunk and crown", "Представляем корни, ствол и крону"),
         l("Share one impression", "Делимся одним впечатлением"),
       ] },
+    { id: "ygg-intro-video", phase: "yggdrasil", kind: "video",
+      title: l("Andrey introduces Reiki Yggdrasil", "Андрей представляет Рейки Иггдрасиль"),
+      body: l("Watch the lesson introduction. The original meditation follows on its own screen.",
+        "Посмотрите введение к уроку. Оригинальная медитация — на следующем отдельном слайде.") },
+    { id: "ygg-audio", phase: "yggdrasil", kind: "audio-intro", introAudioKey: "yggdrasil", image: image.tree,
+      title: l("Andrey's Yggdrasil audio welcome", "Аудиоприветствие Андрея к Рейки Иггдрасиль"),
+      body: l("An optional audio introduction before the guided meditation. Continue even if it has not been published yet.",
+        "По желанию прослушайте личное введение перед медитацией. Если запись пока не опубликована, просто продолжите.") },
     { id: "ygg-02", phase: "yggdrasil", kind: "video", videoKey: "reiki-yggdrasil",
-      title: l("Original Reiki Yggdrasil meditation", "Оригинальная медитация Рейки Иггдрасиль"),
-      body: l("English recording shared by Andrey. Participation is optional.", "Английская запись Андрея. Участие необязательно.") },
+      title: l("Reiki Yggdrasil · guided meditation", "Рейки Иггдрасиль · медитация"),
+      body: l("Follow the original Reiki Yggdrasil guided meditation in English.",
+        "Включите оригинальную медитацию Рейки Иггдрасиль на английском языке.") },
     { id: "ygg-03", phase: "yggdrasil", kind: "practice", question: practiceQuestion,
       title: l("A one-minute tree image", "Минута с образом дерева"),
       body: l("For one minute, imagine or draw a tree with roots, a trunk and a crown.", "Одну минуту представляйте или рисуйте дерево с корнями, стволом и кроной.") },
@@ -394,9 +404,18 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
         l("Notice connection and boundaries", "Замечаем связь и границы"),
         l("Try a guided meditation", "Пробуем медитацию"),
       ] },
+    { id: "tan-intro-video", phase: "tantra", kind: "video",
+      title: l("Andrey introduces Tantra Reiki", "Андрей представляет Тантра Рейки"),
+      body: l("Watch the introduction, then continue to the separate guided meditation.",
+        "Посмотрите вводное видео, затем переходите к отдельной медитации.") },
+    { id: "tan-audio", phase: "tantra", kind: "audio-intro", introAudioKey: "tantra", image: image.tantra,
+      title: l("Andrey's Tantra Reiki audio welcome", "Аудиоприветствие Андрея к Тантра Рейки"),
+      body: l("A short optional introduction before the guided meditation. Listening is your choice.",
+        "Короткое личное введение перед медитацией. Прослушивание — по желанию.") },
     { id: "tan-02", phase: "tantra", kind: "video", videoKey: "tantra-reiki",
-      title: l("Original Tantra Reiki practice", "Оригинальная практика Тантра Рейки"),
-      body: l("Watch Andrey's original English practice at your chosen pace.", "Посмотрите оригинальную английскую практику Андрея в комфортном темпе.") },
+      title: l("Tantra Reiki · guided meditation", "Тантра Рейки · медитация"),
+      body: l("Practice with the original English Tantra Reiki meditation.",
+        "Практикуйте с оригинальной медитацией Тантра Рейки на английском языке.") },
     { id: "tan-voices", phase: "tantra", kind: "voices", videoKey: "tantra-reiki", image: image.tantra,
       title: l("Voices from Tantra Reiki", "Отзывы о Тантра Рейки"),
       body: l("Published learner experiences from the course, not this exact recording.", "Отзывы учеников о курсе, а не об этой конкретной записи."),
@@ -443,9 +462,18 @@ const pathSlides: Record<EnergyworkPath, EnergyworkSlide[]> = {
         l("Feel your sense of grounding", "Находим ощущение опоры"),
         l("Try a gentle meditation", "Пробуем мягкую медитацию"),
       ] },
+    { id: "kun-intro-video", phase: "kundalini", kind: "video",
+      title: l("Andrey introduces Kundalini Reiki", "Андрей представляет Кундалини Рейки"),
+      body: l("Watch the lesson introduction before the separate guided meditation.",
+        "Сначала посмотрите введение, затем откройте отдельную медитацию.") },
+    { id: "kun-audio", phase: "kundalini", kind: "audio-intro", introAudioKey: "kundalini", image: image.kundalini,
+      title: l("Andrey's Kundalini Reiki audio welcome", "Аудиоприветствие Андрея к Кундалини Рейки"),
+      body: l("An optional audio greeting before the original guided meditation. Continue without listening if you prefer.",
+        "Аудиоприветствие перед оригинальной медитацией. Можно перейти дальше без прослушивания.") },
     { id: "kun-02", phase: "kundalini", kind: "video", videoKey: "kundalini-reiki",
-      title: l("Original Kundalini Reiki meditation", "Оригинальная медитация Кундалини Рейки"),
-      body: l("Andrey's English-language source recording. Stop or skip whenever you wish.", "Авторская английская запись Андрея. В любой момент можно остановить или пропустить.") },
+      title: l("Kundalini Reiki · guided meditation", "Кундалини Рейки · медитация"),
+      body: l("Follow the original guided meditation in English, at your own pace.",
+        "Включите оригинальную медитацию на английском языке. Практикуйте в своём темпе.") },
     { id: "kun-03", phase: "kundalini", kind: "practice", question: practiceQuestion,
       title: l("A one-minute grounding pause", "Минута ощущения опоры"),
       body: l("For one minute, notice the support of the floor or your chair.", "Одну минуту замечайте опору пола или стула.") },
@@ -509,11 +537,17 @@ const initiationSlides: EnergyworkSlide[] = [
     question: { type: "text", prompt: l("I would like to ask…", "Я хочу спросить…") } },
 ];
 
+const initiationPhotoSlide: EnergyworkSlide = {
+  id: "init-photo-01", phase: "complete", kind: "lesson",
+  title: l("Send your photo for Reiki initiation", "Отправьте своё фото мастеру для Рейки-инициации"),
+  body: l("Save a current photo privately in My Courses. It will be attached to your initiation request only with your confirmation.", "Сохраните своё актуальное фото приватно в «Моих курсах». Мастер получит его с заявкой только после вашего подтверждения."),
+};
+
 const endSlides: EnergyworkSlide[] = [
   { id: "end-01", phase: "complete", kind: "reflection",
-    title: l("Choose your personal Reiki initiation", "Выберите личную Рейки-инициацию"),
-    body: l("Choose one Level 1 initiation as a free gift. You may also request the other two by donation. Tell Andrey about yourself, your preferred time and why this matters to you.", "Выберите одну инициацию первой ступени в подарок. Две другие можно запросить за добровольный донейшн. Расскажите Андрею о себе, удобном времени и своей мотивации."),
-    question: { type: "text", prompt: l("My personal initiation request and motivation", "Моя заявка и мотивация на личную инициацию") } },
+    title: l("Choose your Reiki initiation format", "Выберите формат Рейки-инициации"),
+    body: l("Choose one free Level 1 initiation in chat. Add other Reiki systems by donation, or request a personal 30-minute (€50) or 60-minute (€100) session. No payment is taken here.", "Выберите одну бесплатную инициацию I ступени в чате. Другие системы — за донейшн; личная сессия — 30 минут (€50) или 60 минут (€100). Здесь нет оплаты."),
+    question: { type: "text", prompt: l("My Reiki initiation request and motivation", "Моя заявка на Рейки-инициацию и мотивация") } },
   { id: "end-02", phase: "complete", kind: "finish", image: image.world,
     title: l("Congratulations! All five Reiki lessons complete", "Поздравляем! Все пять уроков Рейки пройдены"),
     body: l("You've completed your Reiki learning journey and prepared for a personal next step. Level 1 initiation is arranged separately; completing these lessons is not an initiation or certification.", "Вы завершили пять уроков Рейки и подготовились к следующему личному шагу. Инициация первой ступени согласуется отдельно: завершение курса само по себе не является инициацией или сертификацией.") },
@@ -547,20 +581,17 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
   const finalLesson = [
     commonSlides.find((slide) => slide.id === "paths-01")!,
     ...commonSlides.filter((slide) => slide.phase === "initiation" &&
-      slide.id !== "paths-01" && slide.id !== "paths-04"),
+      slide.id !== "paths-01"),
     ...initiationSlides,
     endSlides[0]!,
-    commonSlides.find((slide) => slide.id === "paths-04")!,
     endSlides[1]!,
   ];
 
   return [
     ...commonSlides.filter((slide) => slide.phase === "welcome"),
-    // Finish the Sun practice and celebrate Lesson 1 before the Google-save gate.
-    // This must match the canonical p10 sequence: flight-03 → flight-done → flight-save.
+    // Single graduation/consent checkpoint after the Sun practice.
     ...withClosingPractices(commonSlides.filter((slide) =>
-      slide.phase === "flight" && slide.id !== "flight-save"), ["flight-03"], "flight-done"),
-    commonSlides.find((slide) => slide.id === "flight-save")!,
+      slide.phase === "flight"), ["flight-03"], "flight-done"),
     ...withClosingPractices([
       ...pathSlides.tantra,
       ...commonSlides.filter((slide) => slide.phase === "tantra"),
@@ -568,7 +599,8 @@ export function energyworkSlides(_legacyPath: EnergyworkPath | null = null): Ene
     ...withClosingPractices(pathSlides.kundalini, ["kun-03"], "kun-done"),
     ...withClosingPractices(pathSlides.yggdrasil, ["ygg-03"], "ygg-done"),
     // The fifth lesson starts at paths-01, not in the previous Yggdrasil lesson.
-    // The remaining intention practice stays before the final congratulations.
-    ...withClosingPractices(finalLesson, ["intention-04"], "end-02"),
+    // The short optional closing pause stays before the final congratulations.
+    ...withClosingPractices(finalLesson, ["intention-04"], "end-02")
+      .flatMap((item) => item.id === "end-02" ? [initiationPhotoSlide, item] : [item]),
   ];
 }

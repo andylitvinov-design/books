@@ -27,20 +27,26 @@ test('Lesson 1 ends at flight-done and the Google save cursor opens Lesson 2', (
   const slides = energyworkSequence()
   const completed = slides.indexOf('flight-done')
   assert.equal(slides[completed + 1], ENERGYWORK_FIRST_LESSON_NEXT)
+  assert.ok(!slides.includes('flight-save'), 'No second first-lesson finish slide')
   assert.equal(ENERGYWORK_FIRST_LESSON_NEXT, 'tan-01')
   assert.match(learner, /slide\.id === "flight-done" && \["guest", "consent"\]\.includes\(sync\)/)
   assert.match(learner, /data-reiki-first-lesson-save/)
   assert.match(learner, /data-reiki-first-lesson-consent/)
   assert.match(learner, /data-reiki-first-lesson-google-save/)
   assert.match(learner, /href="\/privacy"/)
-  assert.match(css, /\.firstLessonSaveAction/)
+  assert.match(css, /data-reiki-first-lesson-gate/)
 })
 
 test('Handoff retains all first-lesson reflections only in a short-lived same-tab record', () => {
   const now = 2_000_000
   const encoded = energyworkCreateFirstLessonHandoff(guestAnswers,'ru',now)
   const result = energyworkReadFirstLessonHandoff(encoded,'ru',now+1)
-  assert.deepEqual(result, {answers:guestAnswers})
+  assert.deepEqual(result, {answers:guestAnswers,afterSave:'continue'})
+  const finishToday = energyworkReadFirstLessonHandoff(
+    energyworkCreateFirstLessonHandoff(guestAnswers,'ru',now,'courses'),'ru',now+1)
+  assert.deepEqual(finishToday,{answers:guestAnswers,afterSave:'courses'})
+  assert.equal(energyworkReadFirstLessonHandoff(
+    JSON.stringify({...JSON.parse(encoded),afterSave:'evil'}),'ru',now+1),null)
   assert.match(ENERGYWORK_FIRST_LESSON_STORAGE_KEY,/^hh-reiki-first-lesson-oauth-v1$/)
   assert.equal(energyworkReadFirstLessonHandoff(encoded,'en',now+1),null,'Cannot resume on a different locale')
   assert.equal(energyworkReadFirstLessonHandoff(encoded,'ru',now+15*60*1000),null,'Expires after 15 minutes')
@@ -51,6 +57,7 @@ test('Handoff retains all first-lesson reflections only in a short-lived same-ta
   assert.match(learner,/continueTo: "energywork"/)
   assert.match(route,/continueTo === 'energywork'/)
   assert.match(learner,/void completeFirstLesson\(pending\)/)
+  assert.match(learner,/if \(handoff\.afterSave === "courses"\) window\.location\.assign/)
 })
 
 test('Rejects forged slides, missing answers, missing mandatory review, and oversized payloads', () => {
@@ -73,7 +80,7 @@ test('Rejects forged slides, missing answers, missing mandatory review, and over
 
 test('Private onboarding and atomic account-owned save never enroll or share with teacher silently', () => {
   assert.match(learner,/adult: true, necessary: true, marketing: false/)
-  assert.match(learner,/firstLesson: handoff/)
+  assert.match(learner,/firstLesson: \{ answers: handoff\.answers \}/)
   assert.match(learner,/teacherConsent: false/)
   assert.match(server,/body\.teacherConsent === true\)\s+throw new AppError\('INVALID_FIRST_LESSON',400\)/)
   assert.match(server,/let firstLesson = null/)

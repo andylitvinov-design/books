@@ -2,6 +2,7 @@
 
 import { ChevronDown, ExternalLink, Film, Play } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { StaticPortrait } from "@/components/static-portrait";
 import { useEffect, useId, useRef, useState } from "react";
 import { parseSiteVideoSource, siteVideoWatchUrl, type PublishedSiteVideo } from "@/lib/site-videos/model";
@@ -20,6 +21,8 @@ export type SiteVideoPlayerProps = {
   className?: string;
   /** Same-origin illustrative image visible whenever YouTube blocks its real thumbnail. */
   fallbackPoster?: string;
+  /** Suppress offsite watch links while keeping inline playback on this site. */
+  internalOnly?: boolean;
 };
 
 const copy = {
@@ -27,21 +30,21 @@ const copy = {
     play: "Watch video", watch: "Watch on YouTube", watchHeygen: "Open video on HeyGen",
     aiDisclosure: "AI-assisted video.", andyAiDisclosure: "AI-assisted video using Andy’s digital twin and voice.",
     aiShort: "AI video", avatarShort: "AI avatar", transcript: "Read transcript", transcriptShort: "Transcript",
-    details: "Video details", duration: "Duration", seconds: "seconds", newTab: "opens in a new tab",
+    details: "Video details", master: "Video by", allMasterVideos: "All videos by this master", duration: "Duration", seconds: "seconds", newTab: "opens in a new tab",
     stalled: "Video not opening?", retry: "Try again",
   },
   ru: {
     play: "Смотреть видео", watch: "Открыть на YouTube", watchHeygen: "Открыть видео в HeyGen",
     aiDisclosure: "Видео создано с помощью ИИ.", andyAiDisclosure: "Видео с цифровым двойником и голосом Энди, созданное с помощью ИИ.",
     aiShort: "ИИ-видео", avatarShort: "ИИ-аватар", transcript: "Читать текст видео", transcriptShort: "Текст видео",
-    details: "О видео", duration: "Продолжительность", seconds: "сек.", newTab: "откроется в новой вкладке",
+    details: "О видео", master: "Видео мастера", allMasterVideos: "Все видео мастера", duration: "Продолжительность", seconds: "сек.", newTab: "откроется в новой вкладке",
     stalled: "Видео не открывается?", retry: "Повторить",
   },
   es: {
     play: "Ver vídeo", watch: "Ver en YouTube", watchHeygen: "Abrir vídeo en HeyGen",
     aiDisclosure: "Vídeo creado con ayuda de inteligencia artificial.", andyAiDisclosure: "Vídeo creado con inteligencia artificial mediante el doble digital y la voz de Andy.",
     aiShort: "Vídeo IA", avatarShort: "Avatar IA", transcript: "Leer el texto en español", transcriptShort: "Texto en español",
-    details: "Detalles del vídeo", duration: "Duración", seconds: "segundos", newTab: "se abre en una pestaña nueva",
+    details: "Detalles del vídeo", master: "Vídeo de", allMasterVideos: "Todos los vídeos del profesional", duration: "Duración", seconds: "segundos", newTab: "se abre en una pestaña nueva",
     stalled: "¿No se abre el vídeo?", retry: "Reintentar",
   },
 } as const;
@@ -96,7 +99,7 @@ function videoDuration(seconds?: number) {
 }
 
 /** A page cannot turn arbitrary source data into an iframe URL. */
-export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, minimal = false, posterPriority = false, className, fallbackPoster }: SiteVideoPlayerProps) {
+export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, minimal = false, posterPriority = false, className, fallbackPoster, internalOnly = false }: SiteVideoPlayerProps) {
   const watchUrl = siteVideoWatchUrl(video);
   const source = watchUrl ? parseSiteVideoSource(watchUrl) : null;
   if (!source) return null;
@@ -104,12 +107,12 @@ export function SiteVideoPlayer({ video, locale, textLanguage, compact = false, 
     <PlayableSiteVideo
       key={`${source.heygenId ? "heygen:" + source.heygenId : "youtube:" + source.youtubeId}:${locale}:${video.language}`}
       video={{ ...video, ...source }} locale={locale} textLanguage={textLanguage} compact={compact}
-      minimal={minimal || minimalPageVideoIds.has(source.heygenId ?? "")} posterPriority={posterPriority} className={className} fallbackPoster={fallbackPoster}
+      minimal={minimal || minimalPageVideoIds.has(source.heygenId ?? "")} posterPriority={posterPriority} className={className} fallbackPoster={fallbackPoster} internalOnly={internalOnly}
     />
   );
 }
 
-function PlayableSiteVideo({ video, locale, textLanguage = video.language, compact = false, minimal = false, posterPriority = false, className, fallbackPoster }: SiteVideoPlayerProps) {
+function PlayableSiteVideo({ video, locale, textLanguage = video.language, compact = false, minimal = false, posterPriority = false, className, fallbackPoster, internalOnly = false }: SiteVideoPlayerProps) {
   const text = copy[locale];
   const [playing, setPlaying] = useState(false);
   const [showRecovery, setShowRecovery] = useState(false);
@@ -158,8 +161,16 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
   }
   function showFallbackPoster() { setPoster((current) => current === "maxres" ? "hq" : current === "hq" ? "direct" : null); }
 
-  const externalLink = <a className="site-video-watch-link" href={watchUrl} target="_blank" rel="noopener noreferrer" aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}>{watchLabel}<ExternalLink aria-hidden="true" /></a>;
-  const mirrorLink = mirrorId ? <a className="site-video-watch-link" href={`https://www.youtube.com/watch?v=${mirrorId}`}
+  const externalLink = internalOnly ? null : <a className="site-video-watch-link" href={watchUrl} target="_blank" rel="noopener noreferrer" aria-label={`${watchLabel}: ${video.title} (${text.newTab})`}>{watchLabel}<ExternalLink aria-hidden="true" /></a>;
+  const masterLink = video.practitionerSlug && video.practitionerName ? (
+    <p className="site-video-master-byline">
+      <span>{text.master}: </span>
+      <Link className="site-video-master-link" href={`/${locale}/masters/${video.practitionerSlug}#practitioner-videos`}>
+        {video.practitionerName} <span className="site-video-master-all">{text.allMasterVideos} →</span>
+      </Link>
+    </p>
+  ) : null;
+  const mirrorLink = mirrorId && !internalOnly ? <a className="site-video-watch-link" href={`https://www.youtube.com/watch?v=${mirrorId}`}
     target="_blank" rel="noopener noreferrer" aria-label={`${text.watch}: ${video.title} (${text.newTab})`}>
     {text.watch}<ExternalLink aria-hidden="true" />
   </a> : null;
@@ -197,25 +208,27 @@ function PlayableSiteVideo({ video, locale, textLanguage = video.language, compa
           <span>{text.stalled}</span>
           <button type="button" onClick={() => { setPlaying(false); setShowRecovery(false); }}>{text.retry}</button>
           {video.transcript && <button type="button" onClick={openTranscript}>{text.transcriptShort}</button>}
-          <a href={watchUrl} target="_blank" rel="noopener noreferrer">{text.watchHeygen}<ExternalLink aria-hidden="true" /></a>
+          {!internalOnly && <a href={watchUrl} target="_blank" rel="noopener noreferrer">{text.watchHeygen}<ExternalLink aria-hidden="true" /></a>}
         </div>
       )}
       {minimal ? (
         <figcaption className="site-video-caption">
           <span className={styles.accessibleTitle} id={titleId} lang={textLanguage}>{video.title}</span>
-          <details ref={transcriptRef} className="site-video-transcript">
+          {(!internalOnly || video.transcript) && <details ref={transcriptRef} className="site-video-transcript">
             <summary>{video.transcript ? text.transcriptShort : text.details}<ChevronDown aria-hidden="true" /></summary>
-            <div className="site-video-more">{video.transcript && <p lang={textLanguage}>{video.transcript}</p>}<div className="site-video-actions">{externalLink}</div></div>
-          </details>
+            <div className="site-video-more">{video.transcript && <p lang={textLanguage}>{video.transcript}</p>}{externalLink && <div className="site-video-actions">{externalLink}</div>}</div>
+          </details>}
           {mirrorLink && <div className={styles.quickWatch}>{mirrorLink}</div>}
+          {masterLink}
           {(isHeygen || audioNotice) && <span className="site-video-ai-badge" title={isHeygen ? aiDisclosure : undefined} aria-label={[audioNotice, isHeygen ? aiDisclosure : ""].filter(Boolean).join(". ")}>{audioNotice}{audioNotice && isHeygen ? " · " : ""}{isHeygen ? (isApprovedAndyIntro ? text.avatarShort : text.aiShort) : ""}</span>}
         </figcaption>
       ) : (
         <figcaption className="site-video-caption">
           <div className="site-video-copy" lang={textLanguage}><p className="site-video-title" id={titleId}>{video.title}</p>{video.description && <p className="site-video-description">{video.description}</p>}</div>
+          {masterLink}
           {audioNotice && <p className="site-video-description site-video-audio-language">{audioNotice}</p>}
           {isHeygen && <p className="site-video-description site-video-ai-disclosure">{aiDisclosure}</p>}
-          <div className="site-video-actions">{externalLink}{mirrorLink}{duration && <time className="site-video-duration-text" dateTime={`PT${duration.total}S`} aria-label={`${text.duration}: ${duration.total} ${text.seconds}`}>{duration.label}</time>}</div>
+          {(!internalOnly || duration) && <div className="site-video-actions">{externalLink}{mirrorLink}{duration && <time className="site-video-duration-text" dateTime={`PT${duration.total}S`} aria-label={`${text.duration}: ${duration.total} ${text.seconds}`}>{duration.label}</time>}</div>}
           {video.transcript && <details ref={transcriptRef} className="site-video-transcript"><summary>{text.transcript}<ChevronDown aria-hidden="true" /></summary><p lang={textLanguage}>{video.transcript}</p></details>}
         </figcaption>
       )}

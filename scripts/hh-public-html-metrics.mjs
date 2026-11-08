@@ -8,6 +8,20 @@ const NEXT_RSC_PUSH = /(?:self|globalThis)\.__next_f\.push\s*\(/;
 // The real decoded Flight size separates data growth from JS-string escaping overhead.
 const NEXT_FLIGHT_TEXT = /(?:self|globalThis)\.__next_f\.push\(\s*\[\s*1\s*,\s*("(?:\\.|[^"\\])*")\s*\]\s*\)/g;
 
+// Public component markers only: the profiler never returns Flight strings,
+// HTML, user text, video metadata, request headers or server-side identifiers.
+// Presence within a Flight chunk is approximate, NOT exact component ownership.
+const PUBLIC_RSC_MARKERS = Object.freeze({
+  carousel: "data-home-section-carousel",
+  freeDiagnosis: "data-home-free-diagnosis-banner",
+  conversationGuide: "data-home-conversation-guide",
+  featuredWorkspace: "data-home-featured-workspace",
+  personalSpace: "data-home-personal-space",
+  testimonials: "data-personal-testimonials",
+  moreDisclosure: "data-home-more-deferred",
+  introVideo: "data-video-slot",
+});
+
 export function analyzePublicHtmlPayload(html) {
   if (typeof html !== 'string') throw new TypeError('HTML response must be a string');
   const decodedHtmlBytes = Buffer.byteLength(html, 'utf8');
@@ -21,6 +35,11 @@ export function analyzePublicHtmlPayload(html) {
   let parsedFlightChunks = 0;
   let unreadableFlightChunks = 0;
   const rscSizeBands = { under1KiB: 0, from1To4KiB: 0, from4To16KiB: 0, over16KiB: 0 };
+  const rscMarkerOnlyBytes = Object.fromEntries(Object.keys(PUBLIC_RSC_MARKERS).map(key => [key, 0]));
+  const rscMarkerChunkCounts = Object.fromEntries(Object.keys(PUBLIC_RSC_MARKERS).map(key => [key, 0]));
+  let rscMultiMarkerBytes = 0;
+  let rscUnclassifiedFlightBytes = 0;
+  const rscLargestFlightChunks = [];
 
   for (const [, attributes, script] of html.matchAll(INLINE_SCRIPT)) {
     if (/(?:^|\s)src\s*=/i.test(attributes)) continue;
@@ -39,8 +58,21 @@ export function analyzePublicHtmlPayload(html) {
       for (const [, serialized] of script.matchAll(NEXT_FLIGHT_TEXT)) {
         try {
           const flightText = JSON.parse(serialized);
-          decodedFlightBytes += Buffer.byteLength(flightText, 'utf8');
+          const flightBytes = Buffer.byteLength(flightText, 'utf8');
+          decodedFlightBytes += flightBytes;
           parsedFlightChunks++;
+          const publicMarkers = Object.entries(PUBLIC_RSC_MARKERS)
+            .filter(([, marker]) => flightText.includes(marker))
+            .map(([name]) => name);
+          for (const marker of publicMarkers) rscMarkerChunkCounts[marker]++;
+          if (publicMarkers.length === 1) rscMarkerOnlyBytes[publicMarkers[0]] += flightBytes;
+          else if (publicMarkers.length > 1) rscMultiMarkerBytes += flightBytes;
+          else rscUnclassifiedFlightBytes += flightBytes;
+          // Only allowlisted marker names, sizes and stable ordinal are recorded.
+          // Never persist a Flight fragment or substring, even in CI artifacts.
+          rscLargestFlightChunks.push({ ordinal: parsedFlightChunks, bytes: flightBytes, publicMarkers });
+          rscLargestFlightChunks.sort((a, b) => b.bytes - a.bytes || a.ordinal - b.ordinal);
+          if (rscLargestFlightChunks.length > 5) rscLargestFlightChunks.pop();
         } catch { unreadableFlightChunks++; }
       }
     }
@@ -57,6 +89,11 @@ export function analyzePublicHtmlPayload(html) {
     parsedFlightChunks,
     unreadableFlightChunks,
     rscSizeBands,
+    rscMarkerOnlyBytes,
+    rscMarkerChunkCounts,
+    rscMultiMarkerBytes,
+    rscUnclassifiedFlightBytes,
+    rscLargestFlightChunks,
     // Inline script body bytes are already included in the decoded HTML total.
     // Excluding those bodies separates HTML markup from hydration/LD-JSON cost.
     htmlExcludingInlineScriptBodiesBytes: decodedHtmlBytes - inlineScriptBytes,

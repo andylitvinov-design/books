@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs'
 import {
   capturePwaInstallPrompt,onPwaInstallPrompt,requestPwaInstallation,pwaInstalled,
 } from '../lib/pwa/install-prompt.js'
-import {shouldPauseNewSignupSave} from '../lib/pwa/post-signup-flow.js'
+import {shouldPauseNewSignupSave,shouldOfferWhatsAppAfterSignup} from '../lib/pwa/post-signup-flow.js'
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
 
 test('deferred browser install event survives registration and is consumed once',async()=>{
@@ -96,7 +96,7 @@ test('existing iOS/Android PWA remains same Holistic House app; no test-only APK
     assert.equal(x.name,'Holistic House')
     assert.equal(x.id,'/en/app')
     assert.equal(x.display,'standalone')
-    assert.ok(x.shortcuts.some(y=>y.url.endsWith('/app/consultations')))
+    assert.ok(x.shortcuts.some(y=>y.url.endsWith('/app/messages')))
   }
   const ui=read('components/app/post-signup-install-offer.jsx')
   assert.doesNotMatch(ui,/\.apk|testflight|app-store|play\.google|google-services\.json|HH_FCM/)
@@ -128,4 +128,33 @@ test('post-signup report Save offers install only for the matching new active ac
   assert.match(offer,/context!=='saved'/)
   assert.match(offer,/context==='saved'/)
   assert.doesNotMatch(offer,/sessionStorage|localStorage|PushManager|Notification\.requestPermission/)
+})
+
+test('Cabinet install control reuses the pre-login browser prompt and respects native shells',()=>{
+  const panel=read('components/app/install-holistic-house.jsx')
+  assert.match(panel,/onPwaInstallPrompt\(event=>setOffer\(Boolean\(event\)\)\)/)
+  assert.match(panel,/requestPwaInstallation\(\)/)
+  assert.doesNotMatch(panel,/window\.addEventListener\('beforeinstallprompt'/)
+  assert.match(panel,/window\.Capacitor\?\.isNativePlatform\?\.\(\)===true/)
+  assert.match(panel,/navigator\.maxTouchPoints>1/)
+  assert.match(panel,/appinstalled/)
+})
+
+test('newly consented Google Cabinet offers one optional manual WhatsApp contact on phones and desktop',()=>{
+  assert.equal(shouldOfferWhatsAppAfterSignup({pendingAccountId:'id1',accountId:'id1'}),true)
+  for(const [pendingAccountId,accountId] of [[null,'id1'],['id1','id2'],['','id1'],['id1',null]]){
+    assert.equal(shouldOfferWhatsAppAfterSignup({pendingAccountId,accountId}),false)
+  }
+  const offer=read('components/app/post-signup-install-offer.jsx')
+  const workspace=read('components/app/app-workspace.jsx')
+  assert.match(offer,/showWhatsApp=visible&&\(context==='signup'\|\|context==='saved'\)/)
+  assert.match(offer,/showInstall=visible&&device\.mobile&&!device\.installed/)
+  assert.match(offer,/whatsappEnquiryUrl\(\{locale,\.\.\.waDraft\}\)/)
+  assert.match(offer,/data-hh-post-signup-whatsapp-contact/)
+  assert.match(offer,/target="_blank" rel="noopener noreferrer nofollow"/)
+  assert.match(offer,/Это не вход на сайт, не привязка кабинета/)
+  assert.match(offer,/No account token, phone, report|NO account token, phone, report/)
+  assert.match(workspace,/shouldOfferWhatsAppAfterSignup\(\{pendingAccountId,accountId:currentAccountId\}\)/)
+  assert.doesNotMatch(offer,/localStorage|sessionStorage|PushManager|Notification\.requestPermission/)
+  assert.doesNotMatch(offer,/auth\.admin|signInWithOtp|sendMessage\(/)
 })

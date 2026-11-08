@@ -1,0 +1,47 @@
+.shell {
+  position: sticky;
+  top: 4px;
+  z-index: 10;
+  min-width: 0;
+  margin: 0 0 12px;
+  padding: 14px 18px 11px;
+  border: 1px solid #c1d8c8;
+  border-radius: 17px;
+  color: #315d4d;
+  background: linear-gradient(120deg, #f2f8f0 0%, #fffdfa 90%);
+  box-shadow: 0 8px 23px #1f4a351c;
+}
+.topline { display: flex; align-items: center; justify-content: space-between; min-width: 0; gap: 12px; }
+.heading { display: grid; min-width: 0; gap: 2px; }
+.kicker { display: flex; align-items: center; gap: 6px; margin: 0 0 3px; font-size: 10px; font-weight: 800; letter-spacing: .075em; color: #6d7967; }
+.heading > strong { font-size: clamp(17px, 2vw, 22px); font-weight: 800; line-height: 1.2; }
+.testName { display: block; max-width: 60ch; color: #51725f; font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+.percent { flex: none; display: grid; justify-items: end; gap: 1px; font-variant-numeric: tabular-nums; }
+.percent strong { color: #792f48; font-size: 21px; font-weight: 800; }
+.percent span { font-size: 10px; color: #617b6c; }
+.track { overflow: hidden; height: 7px; margin-top: 10px; background: #d7e5db; border-radius: 20px; }
+.track > span { display: block; height: 100%; border-radius: inherit; background: #397960; transition: width .15s ease-out; }
+.steps { display: grid; gap: 5px; margin: 9px 0 0; padding: 0; list-style: none; }
+.steps li { display: grid; place-items: center; height: 25px; min-width: 0; border: 1px solid #cfdfd2; border-radius: 7px; font-size: 10px; font-weight: 800; font-variant-numeric: tabular-nums; color: #809589; background: #fff; }
+.steps .done { border-color: #397960; color: #fff; background: #397960; }
+.steps .current { border-color: #792f48; color: #792f48; background: #fff5f7; box-shadow: inset 0 0 0 1px #792f48; }
+.note { margin: 8px 0 0; font-size: 10px; line-height: 1.4; color: #637768; }
+@media (max-width: 640px) {
+  .shell { top: 2px; padding: 11px 12px 9px; border-radius: 12px; margin-bottom: 7px; }
+  .kicker { font-size: 9px; }
+  .heading > strong { font-size: 16px; }
+  .testName { font-size: 11px; max-width: 29ch; }
+  .percent strong { font-size: 19px; }
+  .steps { gap: 3px; }
+  .steps li { height: 21px; border-radius: 5px; font-size: 9px; }
+  .steps li span { line-height: 1; }
+  .note { font-size: 9px; margin-top: 6px; }
+}
+@media (max-width: 350px) {
+  .shell { padding-inline: 9px; }
+  .kicker { letter-spacing: .01em; }
+  .testName { max-width: 23ch; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .track > span { transition: none; }
+}

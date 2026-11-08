@@ -61,15 +61,15 @@ test('practitioner cookies are scoped to both editor and upload API, never the w
   assert.match(session,/httpOnly: true/)
   assert.match(session,/sameSite: 'strict'/)
   assert.match(session,/response\.cookies\.set\(adminApiCookieName/)
-  assert.match(admin,/jar\.set\(adminApiCookieName, signature, adminApiSessionOptions\)/)
+  assert.match(admin,/response\.cookies\.set\(adminApiCookieName, authorized\.token/)
   assert.match(admin,/jar\.set\(adminApiCookieName, '', \{ \.\.\.adminApiSessionOptions, maxAge: 0 \}\)/)
   assert.match(admin,/jar\.get\(adminApiCookieName\)/)
 })
 
 test('old-cookie upgrade refuses anonymous or cross-site callers',()=>{
   const route=source('app/admin/api/recorder-auth/route.js')
-  assert.match(route,/requireAdminRequest\(\)/)
-  assert.match(route,/issueTrustedAdminSession\(response\)/)
+  assert.match(route,/await restoreAdminApiSession\(response\)/)
+  assert.doesNotMatch(route,/issueTrustedAdminSession/)
   assert.match(route,/fetchSite!=='same-origin'/)
   assert.match(route,/origin!==new URL\(request\.url\)\.origin/)
   assert.match(route,/status:401/)

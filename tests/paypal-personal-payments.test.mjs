@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
   PERSONAL_PAYPAL_ME_BASE, PERSONAL_PAYPAL_PAYEE,
-  personalPayPalEnabled, buildPersonalPayPalServiceUrl,
+  personalPayPalEnabled, buildPersonalPayPalServiceUrl, buildPersonalPayPalVideoUrl,
 } from '../lib/commerce/paypal-personal.js'
 
 const file = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
@@ -34,22 +34,20 @@ test('redirect always goes to owner-controlled PayPal.Me with no browser prices,
   assert.doesNotMatch(route, /request\.json|searchParams|markAsPaid|payment_verified|grantEntitlement|PAYPAL_CLIENT_SECRET/)
 })
 
-test('all EN/RU/ES service selectors show only fixed-price personal payment choices', () => {
+test('Alchemy booking hides personal PayPal links until the confirmed session enters the existing cart', () => {
   const capture = file('components/consultation-choice-capture.tsx')
   const alchemy = file('components/alchemy-soul-lead-form.tsx')
-  const main = file('app/[locale]/services/page.tsx')
-  const spanish = file('app/es/services/page.tsx')
   const landing = file('components/alchemy-soul-landing.tsx')
-  const cta = file('components/public-consultation-cta.tsx')
+  const chooser = file('components/contact-channel-chooser.tsx')
+  const cart = file('app/[locale]/cart/page.tsx')
   assert.match(capture, /isPaidRequest && paypalPersonalEnabled/)
   assert.match(capture, /\/api\/payments\/paypal\//)
-  assert.match(alchemy, /selected !== "month" && \(wiseEnabled \|\| paypalPersonalEnabled \|\| Boolean\(zenInquiryUrl\)\)/)
-  assert.match(alchemy, /\{paypalPersonalEnabled \? \(/)
-  assert.match(alchemy, /"express-consultation-30" : "personal-session-60"/)
-  assert.match(landing, /paypalPersonalEnabled=\{personalPayPalEnabled\(\)\}/)
-  assert.match(cta, /paypalPersonalEnabled=\{paypalPersonalEnabled\}/)
-  assert.match(main, /paypalPersonalEnabled=\{personalPayPalEnabled\(\)\}/)
-  assert.match(spanish, /paypalPersonalEnabled=\{personalPayPalEnabled\(\)\}/)
+  assert.match(alchemy, /bookingSku=\{selected === "30"/)
+  assert.doesNotMatch(alchemy, /data-alchemy-payment-disclosure|\/api\/payments\/paypal/)
+  assert.match(landing, /bookingSku="personal-session-60"/)
+  assert.match(chooser, /paidReady && paymentExpanded/)
+  assert.match(chooser, /data-booking-cart-link/)
+  assert.match(cart, /<PersonalCart/)
 })
 
 test('payment page transparently requires Goods & Services and manual verification', () => {
@@ -61,4 +59,20 @@ test('payment page transparently requires Goods & Services and manual verificati
   assert.match(page, /Transaction ID|ID транзакции|ID de transacción/)
   assert.match(page, /paypal-personal/)
   assert.doesNotMatch(page, /markAsPaid|paid: true|paymentVerified: true|granted: true/)
+})
+
+test('two video SKUs have exact server-owned personal PayPal EUR amounts, no arbitrary or duplicated product',()=>{
+  assert.equal(buildPersonalPayPalVideoUrl('video-extra',{}),'https://paypal.me/psitrends/3EUR')
+  assert.equal(buildPersonalPayPalVideoUrl('video-pro',{}),'https://paypal.me/psitrends/5EUR')
+  assert.equal(buildPersonalPayPalVideoUrl('video-pro',{HH_PAYPAL_PERSONAL_DISABLED:'true'}),null)
+  for (const invalid of [null,undefined,'video-standard','video-extra/1EUR','video-pro?price=1','__proto__',{},'video-pro,video-extra'])
+    assert.equal(buildPersonalPayPalVideoUrl(invalid,{}),null)
+})
+test('video checkout endpoint redirects only fixed SKUs, cannot mark a video paid',()=>{
+  const source=file('app/api/payments/paypal/video/[productId]/route.ts')
+  assert.match(source,/buildPersonalPayPalVideoUrl\(productId\)/)
+  assert.match(source,/personalPayPalEnabled\(\)/)
+  assert.match(source,/status:303/)
+  assert.match(source,/Referrer-Policy/)
+  assert.doesNotMatch(source,/request\.json|markAsPaid|capture\(|confirmPayment|grantEntitlement|clientSecret|videoBrief/)
 })

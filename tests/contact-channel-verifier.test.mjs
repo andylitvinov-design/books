@@ -46,6 +46,10 @@ function mountChooser(locale, fault, reducedMotion = false, locationOptions = {}
     'next/navigation': { usePathname: () => location.pathname },
     'lucide-react': Object.fromEntries(['ChevronDown', 'MessageCircle', 'Send', 'ShoppingBag'].map(name => [name, () => null])),
     '@/components/acquisition-event-link': { AcquisitionEventLink: ({ attributes, ...props }) => jsx('a', { ...props, ...attributes }) },
+    '@/lib/crm/website-messenger-only.mjs': { websiteMessengerOnlyUi: () => false },
+    '@/components/mandatory-messenger-actions': {
+      MandatoryMessengerActions: () => jsx('aside', { 'data-messenger-only-contact': '' }),
+    },
     '@/lib/whatsapp-enquiry': enquiries,
     '@/lib/organic-event-referrals': referrals,
     './contact-channel-chooser.module.css': { default: {} },
@@ -217,22 +221,19 @@ test('actual chooser ignores invalid or personal referral parameters without cha
   }
 });
 
-test('release retains explicit paid selection, free internal action, reset, privacy and separate footer Telegram checks', () => {
+test('release audit retains consent and private handoff checks on the current compact form', () => {
   const source = read('scripts/verify-release-reaudit.mjs');
-  const paid = source.slice(source.indexOf("await check('paid-imagery-consultation-safe-handoff'"), source.indexOf("if (width === 390)"));
+  const paid = source.slice(source.indexOf("await check('paid-imagery-consultation-safe-handoff'"), source.indexOf('if (width === 390)'));
   assert.match(paid, /services\/imagery-therapy/);
-  assert.match(paid, /openContactChannelChooser\(capture, expect\)/);
-  assert.match(paid, /assertPreparedContactChannels\(chooser, expect\)/);
-  assert.match(paid, /\[data-consultation-action\]'\)\)\.toHaveCount\(2\)/);
-  assert.match(paid, /for \(const action of \[whatsapp, telegram\]\)/);
-  assert.match(paid, /assertPaidUrl\('session', '60', '€100'\)/);
-  assert.match(paid, /nth\(1\)\.click\(\);\s*chooser = await openContactChannelChooser\(capture, expect\);\s*const changedUrl = await assertPaidUrl\('questions', '30', '€50'\)/);
-  assert.match(paid, /\[data-contact-channel-chooser\]'\)\)\.toHaveCount\(0\)/);
-  assert.match(paid, /await expect\(action\)\.toHaveCount\(1\)/);
-  assert.match(paid, /assert.equal\(freeUrl.href, origin \+ `\/\$\{locale\}\/services\/free-situation-review`\)/);
-  assert.match(paid, /Reset must restore the exact paid request/);
-  assert.match(paid, /telegram"\]:not\(\[data-consultation-action\]\)/);
-  assert.match(paid, /No private intake fields/);
+  assert.match(paid, /services\/free-situation-review/);
+  assert.match(paid, /assertSyntheticLoopback/);
+  assert.match(paid, /replyConsent\)\.not\.toBeChecked/);
+  assert.match(paid, /attribution\)\.not\.toBeChecked/);
+  assert.match(paid, /submissions, 0/);
+  assert.match(paid, /submissions, 1/);
+  assert.match(paid, /submitted\.contactConsent, true/);
+  assert.match(paid, /data-lead-saved/);
+  assert.match(paid, /enquiry-qa%40example\.test/);
   assert.match(source, /assert\.deepEqual\(cspErrors, \[\]/);
 });
 

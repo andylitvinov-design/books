@@ -14,24 +14,24 @@ import styles from "./sitewide-lead-capture.module.css";
 
 const copy = {
   en: {
-    personal: { title: "Want to talk about your next step?", lead: "Leave a contact — Andrey will personally reply about a suitable service." },
-    reading: { title: "Have a question after reading?", lead: "Leave a contact for a free written starting point." },
+    personal: { title: "Let’s find your next step", lead: "Choose WhatsApp or Telegram and send your message. Andrey will answer personally." },
+    reading: { title: "Have a question after reading?", lead: "Ask for a written starting point in Telegram or WhatsApp." },
     training: { title: "Ready to begin?", lead: "Ask Andrey about the programme, next start and how to join.", order: "Order", note: "You send the message yourself. No booking or payment is made automatically." },
-    core: { title: "Interested in this personal service?", lead: "Leave a contact — Andrey will explain the next step." },
+    core: { title: "Interested in this personal service?", lead: "Write to Andrey in Telegram or WhatsApp." },
     network: { title: "Ask this practitioner", lead: "Choose an offer and send a request to its practitioner.", action: "View request options" },
   },
   ru: {
-    personal: { title: "Хотите обсудить свой вопрос?", lead: "Оставьте контакт — Андрей лично ответит по подходящей услуге." },
-    reading: { title: "Появился вопрос после чтения?", lead: "Оставьте контакт — подскажем бесплатный письменный первый шаг." },
+    personal: { title: "Обсудим ваш следующий шаг?", lead: "Напишите в Telegram или WhatsApp — Андрей ответит лично." },
+    reading: { title: "Появился вопрос после чтения?", lead: "Напишите в Telegram или WhatsApp — подскажем первый шаг." },
     training: { title: "Готовы начать?", lead: "Спросите Андрея о программе, ближайшем старте и записи.", order: "Заказать", note: "Сообщение отправляете вы сами. Запись и оплата не оформляются автоматически." },
-    core: { title: "Интересует эта услуга?", lead: "Оставьте контакт — Андрей подскажет следующий шаг." },
+    core: { title: "Интересует эта услуга?", lead: "Напишите в Telegram или WhatsApp — Андрей подскажет следующий шаг." },
     network: { title: "Свяжитесь с этим мастером", lead: "Выберите услугу и отправьте запрос непосредственно её автору.", action: "Выбрать услугу" },
   },
   es: {
-    personal: { title: "¿Quieres hablar sobre el siguiente paso?", lead: "Deja tu contacto y Andrey responderá personalmente." },
-    reading: { title: "¿Tienes preguntas después de leer?", lead: "Deja tu contacto para recibir orientación inicial gratuita por escrito." },
+    personal: { title: "Hablemos de tu siguiente paso", lead: "Elige Telegram o WhatsApp para escribirnos. Andrey responderá personalmente." },
+    reading: { title: "¿Tienes preguntas después de leer?", lead: "Escribe por Telegram o WhatsApp para recibir orientación." },
     training: { title: "¿Listo para empezar?", lead: "Pregunta a Andrey por el programa, las próximas fechas y cómo unirte.", order: "Solicitar", note: "Tú decides si envías el mensaje. No se reserva ni cobra nada automáticamente." },
-    core: { title: "¿Te interesa este servicio?", lead: "Deja tu contacto y Andrey te explicará cómo seguir." },
+    core: { title: "¿Te interesa este servicio?", lead: "Escribe por Telegram o WhatsApp para consultar los próximos pasos." },
     network: { title: "Consulta con este profesional", lead: "Elige una oferta y envía la solicitud directamente al profesional.", action: "Ver servicios" },
   },
 } as const;

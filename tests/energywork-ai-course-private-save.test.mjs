@@ -8,7 +8,7 @@ import {
   ENERGYWORK_INITIATION, ENERGYWORK_QUESTIONS, ENERGYWORK_LESSON_STARTS,
   ENERGYWORK_REPORT_IDS, ENERGYWORK_LESSON_ANSWER_IDS,
   ENERGYWORK_MEDITATION_REPORT_IDS, energyworkMeditationFeedbackComplete,
-  energyworkSequence, energyworkAnswerValid, energyworkInitiationReady, energyworkAdvanceAlreadyStored,
+  energyworkSequence, energyworkAnswerValid, energyworkInitiationReady, energyworkAdvanceAlreadyStored, energyworkWelcomeResumeId,
   energyworkLegacyResumeId, energyworkPreviousResumeId, energyworkP2ResumeId, energyworkP3ResumeId, energyworkP4ResumeId,
 } from '../data/academy/energywork-ai-schema.js'
 
@@ -29,7 +29,7 @@ const repository = read('lib/academy/energywork-course-repository.js')
 const route = read('app/api/app/[...path]/route.js')
 const learner = read('components/energywork-ai-learner.tsx')
 
-test('Server registry includes exactly 63 editorial IDs in one fixed five-lesson order', () => {
+test('Server registry includes exactly 68 editorial IDs in one fixed five-lesson order', () => {
   assert.equal(ENERGYWORK_KEY, 'academy-energywork-principles')
   assert.equal(ENERGYWORK_VERSION, '2026-10-20.p10')
   assert.equal(ENERGYWORK_P4_VERSION, '2026-10-19.p4')
@@ -40,24 +40,38 @@ test('Server registry includes exactly 63 editorial IDs in one fixed five-lesson
   const editorial = [...source.matchAll(/id: "(?:welcome|flight|presence|intention|boundaries|paths|ygg|tan|kun|init|end)-[^"]+"/g)]
     .map(match=>match[0].slice(5,-1)).filter(id=>id !== 'tan-study-03')
   const registered = [...ENERGYWORK_COMMON,...Object.values(ENERGYWORK_BRANCH).flat(),...ENERGYWORK_INITIATION,...ENERGYWORK_FINISH]
-  assert.equal(editorial.length, 63)
-  assert.equal(new Set(registered).size,63)
+  assert.equal(editorial.length, 68)
+  assert.equal(new Set(registered).size,68)
   assert.deepEqual([...editorial].sort(),[...registered].sort())
   const sequence = energyworkSequence()
-  assert.equal(sequence.length,63)
-  assert.deepEqual(sequence.slice(2,9), ['flight-01','flight-02','flight-voices','flight-05','flight-04','flight-03','flight-done'])
-  assert.equal(sequence[9],'flight-save')
-  assert.equal(sequence[10],'tan-01')
+  assert.equal(sequence.length, 68)
+  assert.deepEqual(sequence.slice(3,11), ['flight-01','flight-audio','flight-02','flight-voices','flight-05','flight-04','flight-03','flight-done'])
+  assert.ok(!sequence.includes('flight-save'))
+  assert.equal(sequence[11],'tan-01')
   assert.equal(sequence[0],'welcome-01')
+  assert.equal(sequence[1],'welcome-02')
+  assert.equal(sequence[2],'welcome-video')
   assert.equal(sequence.at(-1),'end-02')
   assert.deepEqual(ENERGYWORK_LESSON_STARTS,['flight-01','tan-01','kun-01','ygg-01','paths-01'])
   for (let i=1;i<ENERGYWORK_LESSON_STARTS.length;i++)
     assert.ok(sequence.indexOf(ENERGYWORK_LESSON_STARTS[i]) > sequence.indexOf(ENERGYWORK_LESSON_STARTS[i-1]))
   assert.ok(sequence.indexOf('presence-01') > sequence.indexOf('tan-02'))
   assert.ok(sequence.indexOf('presence-01') < sequence.indexOf('kun-01'))
-  assert.ok(sequence.indexOf('end-01') < sequence.indexOf('paths-04'))
+  assert.ok(sequence.indexOf('end-01') < sequence.indexOf('intention-04'))
+  assert.ok(!sequence.includes('paths-04'))
   for(const oldPath of [null,'tantra','yggdrasil','kundalini'])
     assert.deepEqual(energyworkSequence(oldPath),sequence,'Old branches do not change sequence')
+})
+
+test('Old introduction bookmarks show the question before Andrey’s video without losing answers', () => {
+  assert.equal(energyworkWelcomeResumeId('welcome-video', {}), 'welcome-02')
+  assert.equal(energyworkWelcomeResumeId('welcome-video', {'welcome-02': 'unknown'}), 'welcome-02')
+  assert.equal(energyworkWelcomeResumeId('welcome-video', {'welcome-02': 'master'}), 'welcome-video')
+  assert.equal(energyworkWelcomeResumeId('welcome-video', {'welcome-02': 'beginner'}), 'welcome-video')
+  assert.equal(energyworkWelcomeResumeId('welcome-01', {}), 'welcome-01')
+  assert.equal(energyworkWelcomeResumeId('flight-01', {}), 'flight-01')
+  assert.match(repository, /return energyworkWelcomeResumeId\(row\.slide_id, answers\)/)
+  assert.match(learner, /progressRef\.current = value\.slideId \?\? "welcome-01"/)
 })
 
 test('Meditation feedback gates the next screen; five reports and answers gate initiation', () => {

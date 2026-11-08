@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Brain, CalendarDays, ChevronDown, FileText, Flower2, HeartHandshake, Leaf, LockKeyhole, MessageCircle, Sparkles } from 'lucide-react'
 import { recommendationItemType } from '@/lib/documents/recommendation'
+import FreeExpressMyRequests from './free-express-my-requests'
 import { PROFILE_AREAS, profileServiceOffer } from '@/lib/profile/profile-service-offers'
 import { availableSavedReports, latestReceivedReport } from '@/lib/profile/report-summary'
 import './profile-domains.css'
@@ -184,7 +185,7 @@ function ProfileServiceOffer({ area, locale }) {
 export function ProfileDomains({
   locale = 'en', mode = 'account', selector = null, accountId = null, assessments = [], homeopathyUpdates = [],
   results = [], savedReports = [], savedDocuments = [], children = null,
-  overviewContent = null, reportsContent = null, focusReports = false,
+  overviewContent = null, reportsContent = null, focusReports = false, hideDevelopment = false,
 }) {
   const ru = locale === 'ru'
   const t = WORDS[ru ? 'ru' : 'en']
@@ -322,7 +323,7 @@ export function ProfileDomains({
       <span><FileText size={23} aria-hidden="true" /><span><strong>{ru ? 'Мои лабораторные анализы' : 'My laboratory results'}</strong><small>{ru ? 'Загрузить показатели · увидеть отклонения · получить план' : 'Add values · see out-of-range indicators · create a plan'}</small></span></span>
       <ArrowRight size={20} aria-hidden="true" />
     </Link>}
-    {!external && accountId && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} hideBottomNotes />}
+    {!external && accountId && !hideDevelopment && <DevelopmentProgram key={accountId} accountId={accountId} locale={locale} results={results} hideBottomNotes />}
     {external && <details className="hh-domain-more" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="hh-domain-more-toggle">
         <span className="hh-domain-more-summary"><strong>{t.browseTitle}</strong><small>{t.browseHint}</small>
@@ -394,6 +395,7 @@ export function ProfileDomains({
       </div>
     </details>}
     {external && <p className="hh-domain-private"><LockKeyhole size={15} aria-hidden="true" />{t.private}</p>}
+    {!external && accountId && <FreeExpressMyRequests locale={locale} />}
     {external && footerActions}
   </section>
 }

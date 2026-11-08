@@ -1,0 +1,287 @@
+{
+  "schemaVersion": "hh-free-nature-stock-research-v1",
+  "verifiedPageDate": "2026-11-06",
+  "catalogIndex": "https://freenaturestock.com/videos/",
+  "publisherLicensePage": "https://freenaturestock.com/license/",
+  "publisherTermsPage": "https://freenaturestock.com/terms/",
+  "licenseIdClaim": "cc0_1_0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "sourcePageCount": 12,
+  "licenseReviewRequired": true,
+  "physicalMediaDownloaded": false,
+  "cloudflareUploaded": false,
+  "ownerVisualApproval": false,
+  "note": "Official individual video pages checked 2026-11-06. The listed resolution and duration come from webpage metadata, NOT decoded MP4 proof. No individual candidate is approved, counted as unique filmed footage, or generator-eligible. Download only individually through permitted workflows after review; people/property/brands need separate clearance.",
+  "sources": [
+    {
+      "id": "red-sunset",
+      "sourceAssetId": "red-sunset",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/red-sunset/",
+      "title": "Red Sunset",
+      "visualTags": [
+        "sunset",
+        "sun",
+        "sky",
+        "warm"
+      ],
+      "durationSeconds": 17,
+      "pageAdvertisedDimensions": {
+        "width": 3840,
+        "height": 2160
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "clouds-and-sun-time-lapse",
+      "sourceAssetId": "clouds-and-sun-time-lapse",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/clouds-and-sun-time-lapse/",
+      "title": "Clouds and Sun Time-lapse",
+      "visualTags": [
+        "sun",
+        "sky",
+        "sunlight",
+        "clouds"
+      ],
+      "durationSeconds": 28,
+      "pageAdvertisedDimensions": {
+        "width": 4096,
+        "height": 2304
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "golden-water-ripples-at-sunset",
+      "sourceAssetId": "golden-water-ripples-at-sunset",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/golden-water-ripples-at-sunset/",
+      "title": "Golden Water Ripples at Sunset",
+      "visualTags": [
+        "water",
+        "sunset",
+        "sunlight",
+        "golden-hour"
+      ],
+      "durationSeconds": 17,
+      "pageAdvertisedDimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "moody-sun-and-clouds-through-trees",
+      "sourceAssetId": "moody-sun-and-clouds-through-trees",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/moody-sun-and-clouds-through-trees/",
+      "title": "Moody Sun and Clouds Through Trees",
+      "visualTags": [
+        "sunlight",
+        "trees",
+        "sky",
+        "clouds"
+      ],
+      "durationSeconds": 17,
+      "pageAdvertisedDimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "golden-maple-tree-in-the-breeze",
+      "sourceAssetId": "golden-maple-tree-in-the-breeze",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/golden-maple-tree-in-the-breeze/",
+      "title": "Golden Maple Tree in the Breeze",
+      "visualTags": [
+        "trees",
+        "leaves",
+        "sunlight",
+        "autumn"
+      ],
+      "durationSeconds": 34,
+      "pageAdvertisedDimensions": {
+        "width": 3840,
+        "height": 2160
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "maple-leaf-in-the-sunlight",
+      "sourceAssetId": "maple-leaf-in-the-sunlight",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/maple-leaf-in-the-sunlight/",
+      "title": "Maple Leaf in the Sunlight",
+      "visualTags": [
+        "leaf",
+        "sunlight",
+        "nature"
+      ],
+      "durationSeconds": 17,
+      "pageAdvertisedDimensions": {
+        "width": 3840,
+        "height": 2160
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "falling-autumn-maple-leaves-and-swaying-pine-trees",
+      "sourceAssetId": "falling-autumn-maple-leaves-and-swaying-pine-trees",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/falling-autumn-maple-leaves-and-swaying-pine-trees/",
+      "title": "Falling Autumn Maple Leaves and Swaying Pine Trees",
+      "visualTags": [
+        "leaves",
+        "trees",
+        "pine",
+        "autumn"
+      ],
+      "durationSeconds": 35,
+      "pageAdvertisedDimensions": {
+        "width": 3840,
+        "height": 2160
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "rain-drops-on-a-leaf",
+      "sourceAssetId": "rain-drops-on-a-leaf",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/rain-drops-on-a-leaf/",
+      "title": "Rain Drops on a Leaf",
+      "visualTags": [
+        "rain",
+        "leaf",
+        "water"
+      ],
+      "durationSeconds": 29,
+      "pageAdvertisedDimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "glowing-birch-tree-leaves",
+      "sourceAssetId": "glowing-birch-tree-leaves",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/glowing-birch-tree-leaves/",
+      "title": "Glowing Birch Tree Leaves",
+      "visualTags": [
+        "leaves",
+        "sunlight",
+        "trees"
+      ],
+      "durationSeconds": 11,
+      "pageAdvertisedDimensions": {
+        "width": 3840,
+        "height": 2160
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "beautiful-garden-chive-flowers",
+      "sourceAssetId": "beautiful-garden-chive-flowers",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/beautiful-garden-chive-flowers/",
+      "title": "Beautiful Garden Chive Flowers",
+      "visualTags": [
+        "flowers",
+        "garden",
+        "sunlight"
+      ],
+      "durationSeconds": 16,
+      "pageAdvertisedDimensions": {
+        "width": 3840,
+        "height": 2160
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "leaves-dancing-before-a-waterfall",
+      "sourceAssetId": "leaves-dancing-before-a-waterfall",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/leaves-dancing-before-a-waterfall/",
+      "title": "Leaves Dancing Before a Waterfall",
+      "visualTags": [
+        "leaves",
+        "waterfall",
+        "forest"
+      ],
+      "durationSeconds": 28,
+      "pageAdvertisedDimensions": {
+        "width": 3840,
+        "height": 2160
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    },
+    {
+      "id": "tall-grass-blowing-in-the-wind",
+      "sourceAssetId": "tall-grass-blowing-in-the-wind",
+      "provider": "free_nature_stock",
+      "sourcePage": "https://freenaturestock.com/video/tall-grass-blowing-in-the-wind/",
+      "title": "Tall Grass Blowing in the Wind",
+      "visualTags": [
+        "grass",
+        "meadow",
+        "nature"
+      ],
+      "durationSeconds": 21,
+      "pageAdvertisedDimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "nativeAspectVerified": false,
+      "stage": "CANDIDATE_RESEARCH_ONLY",
+      "countedAsOriginal": false,
+      "generatorEligible": false,
+      "ownerApproved": false
+    }
+  ]
+}

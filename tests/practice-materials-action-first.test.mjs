@@ -26,7 +26,7 @@ test('every material tab exposes one meaningful primary action immediately after
  assert.match(hub,/\{isOwner&&<button[^\n]*onClick=\{onOpenYoutube\}/)
  assert.match(articles,/data-material-primary-action="articles"/)
  assert.match(articles,/onClick=\{\(\)=>choose\(null\)\}/)
- assert.match(hub,/Создать курс/)
+ assert.match(hub,/Создать или изменить курс/)
  assert.match(hub,/Загрузить аудио/)
  assert.match(hub,/Record/)
  assert.match(hub,/Upload video/)

@@ -1,18 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    {
-      "path": "/api/internal/housekeeping",
-      "schedule": "0 5 * * *"
-    },
-    {
-      "path": "/api/internal/practice-telegram-digest",
-      "schedule": "0 13 * * *"
-    },
-    {
-      "path": "/api/internal/council-archive-telegram",
-      "schedule": "0 21 * * *"
-    }
+    {"path": "/api/internal/housekeeping", "schedule": "0 5 * * *"},
+    {"path": "/api/internal/direct-message-push", "schedule": "*/5 * * * *"},
+    {"path": "/api/internal/revenue-ideas-telegram", "schedule": "0 13,14 * * *"},
+    {"path": "/api/internal/practice-telegram-digest", "schedule": "0 13,14,19,20 * * *"},
+    {"path": "/api/internal/council-archive-telegram", "schedule": "0 16,17 * * *"},
+    {"path": "/api/internal/market-intel-telegram", "schedule": "0 18,19 * * *"},
+    {"path": "/api/internal/video-scout-hourly", "schedule": "17 * * * *"}
   ],
   "git": {
     "deploymentEnabled": {

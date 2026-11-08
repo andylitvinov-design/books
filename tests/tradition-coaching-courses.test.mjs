@@ -1,0 +1,229 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {TRADITION_COURSES,traditionCourse,traditionBySlug,traditionEndcaps} from '../lib/personal-coaching/traditions.js'
+import {TRADITION_STAGE_KEYS,traditionStages,traditionStageGuide,traditionStageImage,traditionStageSource} from '../lib/personal-coaching/tradition-visuals.js'
+const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
+test('two course templates do not alias GROW or each other and have 11/10 screens',()=>{
+  assert.deepEqual(TRADITION_COURSES.map(item=>item.slug),['egyptian','greek'])
+  assert.deepEqual(TRADITION_COURSES.map(item=>item.totalScreens),[11,10])
+  assert.equal(new Set(TRADITION_COURSES.map(item=>item.template)).size,2)
+  for(const course of TRADITION_COURSES){
+    assert.ok(course.template.startsWith('hh-'))
+    assert.notEqual(course.template,'hh-personal-coaching-v1')
+    assert.equal(traditionBySlug(course.slug),course)
+    assert.equal(traditionCourse(course.template),course)
+    assert.ok(!traditionCourse(course.template+'-spoofed'))
+    const endcaps=traditionEndcaps(course)
+    assert.deepEqual(endcaps.map(q=>q.id),['goal','action_24h'])
+    assert.ok(endcaps.every(q=>q.required&&q.choices.length===5))
+    for(const lang of ['en','ru','es']){
+      assert.ok(course.name[lang].length>7)
+      assert.ok(course.description[lang].length>20)
+      assert.ok(endcaps.every(q=>q.question[lang].length>12))
+      assert.ok(endcaps.every(q=>q.choices.every(c=>c.label[lang]?.length>1)))
+    }
+  }
+})
+test('author catalog questions remain private, with stable 8 Egyptian and 8 Greek levels',()=>{
+ const sql=source('supabase/migrations/20261023185000_hh_coaching_tradition_models_seed.sql')
+ const records=(table)=>[...((sql.split('INSERT INTO app_private.'+table+' (')[1]||'').split('ON CONFLICT DO NOTHING')[0]).matchAll(/^  \(/gm)].length
+ assert.deepEqual(['coaching_models','coaching_schemes','coaching_steps','coaching_questions','coaching_answer_sets'].map(records),[2,2,16,17,17])
+ assert.match(sql,/egyptian_goal_planning_reflective_v1/)
+ assert.match(sql,/greek_goal_planning_reflective_v1/)
+ assert.match(sql,/haibit_experience_v1/)
+ assert.match(sql,/haibit_first_action_v1/)
+ assert.doesNotMatch(sql,/GRANT |DROP TABLE|TRUNCATE|account_id|payload_ciphertext/i)
+})
+test('one existing encrypted owner-scoped record holds independent track histories',()=>{
+ const src=source('lib/app/personal-coaching.js')
+ assert.match(src,/export async function readTraditionCoaching/)
+ assert.match(src,/export async function saveTraditionCoaching/)
+ assert.match(src,/transaction\(config,actor/)
+ assert.match(src,/readRow\(db,actor,true\)/)
+ assert.match(src,/seal\(course,sealContext\(actor\),config\)/)
+ assert.match(src,/openSealed\(row\.payload_ciphertext,sealContext\(actor\),config\)/)
+ assert.match(src,/course\.traditionTracks\[template\]/)
+ assert.match(src,/delete course\.traditionTracks\[template\]/)
+ assert.match(src,/course\.current\.status!=='not_started'/)
+ assert.match(src,/PERSONAL_COACH_REVISION_CONFLICT/)
+ assert.match(src,/COACHING_CHOICE_INVALID/)
+ assert.match(src,/COACHING_SESSION_INCOMPLETE/)
+ assert.match(src,/readTraditionQuestions\(db,def\)/)
+ assert.doesNotMatch(src,/app_private\.business_coaching_programs|insert into app_private\.tradition_coaching/)
+})
+test('authenticated API and validated route keep unrecognized mode inaccessible',()=>{
+ const api=source('app/api/app/[...path]/route.js')
+ const app=source('components/app/app-workspace.jsx')
+ const route=source('app/[locale]/app/[[...path]]/page.jsx')
+ assert.match(api,/joined === 'tradition-coaching'/)
+ assert.match(api,/request\.headers\.get\('x-hh-account-id'\) !== actor\.id/)
+ assert.match(api,/await auth\.verified\(\)/)
+ assert.match(api,/readTraditionCoaching\(config, actor, template\)/)
+ assert.match(api,/saveTraditionCoaching\(config, actor, template, await readBody\(request, 8192\)\)/)
+ assert.match(app,/TraditionCoaching/)
+ assert.match(app,/hh-egyptian-goal-planning-v1/)
+ assert.match(app,/hh-greek-goal-planning-v1/)
+ assert.match(route,/\['egyptian','greek'\]\.includes\(path\[1\]\)/)
+ assert.match(route,/robots: \{ index: false, follow: false \}/)
+})
+test('Reiki-style one question screen, choices, optional dictation and await before switching',()=>{
+ const ui=source('components/app/tradition-coaching.jsx')
+ const voice=source('components/app/coaching-question-voice.jsx')
+ const css=source('components/app/tradition-coaching.module.css')
+ const base=source('components/app/personal-coaching.module.css')
+ const classes=(text,prefix)=>[...new Set([...text.matchAll(new RegExp('\\b'+prefix+'\\.([A-Za-z_][A-Za-z_0-9]*)','g'))].map(m=>m[1]))]
+ const available=text=>new Set([...text.matchAll(/(?<![\w-])\.([A-Za-z_][A-Za-z_0-9-]*)/g)].map(m=>m[1]))
+ assert.deepEqual(classes(ui,'extra').concat(classes(voice,'styles')).filter(c=>!available(css).has(c)),[])
+ assert.deepEqual(classes(ui,'base').filter(c=>!available(base).has(c)),[])
+ assert.match(ui,/data-tradition-one-question/)
+ assert.match(ui,/role="radiogroup"/)
+ assert.match(ui,/data-choice-id=\{option\.id\}/)
+ assert.match(ui,/await send\('answer'/)
+ assert.match(ui,/await send\('complete'/)
+ assert.match(ui,/beforeunload/)
+ assert.match(ui,/onTranscript=/)
+ assert.match(ui,/maxLength=\{500\}/)
+ assert.match(css,/@media\(max-width:380px\)/)
+ assert.match(base,/safe-area-inset-bottom/)
+ assert.doesNotMatch(ui,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
+ assert.match(voice,/window\.confirm\(t\.notice\)/)
+ assert.match(voice,/SpeechRecognition\|\|window\.webkitSpeechRecognition/)
+ assert.match(voice,/capture\.onresult=/)
+ assert.match(voice,/window\.speechSynthesis\.cancel\(\)/)
+ assert.doesNotMatch(voice,/MediaRecorder|audio\.src|fetch\(/)
+})
+test('ancient planning methods are separate choices in Coaching only',()=>{
+ const academy=source('components/academy-hub.tsx')
+ const lounge=source('components/public-coaching-discovery.jsx')
+ const courses=source('components/app/my-courses-dashboard.jsx')
+ const art=source('lib/coaching/public-session-art.js')
+ assert.ok(academy.includes('const coachingItem: AcademyCourseItem = '))
+ for(const slug of ['egyptian','greek']){
+  assert.ok(!academy.includes('academy-free-'+slug+'-goal-planning'))
+  assert.ok(lounge.includes('id="'+slug+'" traditionKey="'+slug+'"'))
+  assert.ok(lounge.includes("primaryHref={traditionHref('"+slug+"')}"))
+  assert.ok(art.includes(slug+':'))
+ }
+ assert.doesNotMatch(courses,/data-ancient-coaching-courses|data-tradition-course-card/)
+ assert.match(courses,/data-personal-coaching-course-link/)
+})
+
+test('lesson footer stays visible on 320–430px phones while the question scrolls inside the slide',()=>{
+ const ui=source('components/app/tradition-coaching.jsx')
+ const css=source('components/app/tradition-coaching.module.css')
+ assert.match(ui,/extra\.courseSheet/)
+ assert.match(ui,/extra\.courseSession/)
+ assert.match(ui,/extra\.courseScroll/)
+ assert.match(ui,/extra\.courseIntro/)
+ assert.match(ui,/extra\.courseSummary/)
+ assert.match(css,/\.courseSheet\{[\s\S]*?height:calc\(100dvh - 105px\)/)
+ assert.match(css,/\.courseScroll\{[^}]*overflow-y:auto/)
+ assert.match(css,/@media\(max-width:600px\)/)
+ assert.match(css,/height:calc\(100dvh - 58px\)/)
+ assert.match(css,/@media\(max-height:550px\)/)
+ const base=source('components/app/personal-coaching.module.css')
+ assert.match(base,/\.footer\{position:sticky/)
+ assert.match(base,/safe-area-inset-bottom/)
+})
+
+test('author source level guides cover all eight Egyptian bodies and eight Greek principles with distinct historic photographs',()=>{
+ const expected={
+  egyptian:['ka','ba','ib','sah','haibit','hu','ren','sekhem'],
+  greek:['epithymia','thymos','logos','nous','eidos','idea','daimon','telos']
+ }
+ for(const [slug,levels] of Object.entries(expected)){
+   assert.deepEqual(TRADITION_STAGE_KEYS[slug],levels)
+   const stages=traditionStages(slug)
+   assert.equal(stages.length,8)
+   assert.equal(new Set(stages.map(x=>x.photo.file)).size,8)
+   assert.equal(traditionStageGuide(slug,'start').id,levels[0])
+   assert.equal(traditionStageGuide(slug,'finish').id,levels[7])
+   assert.equal(traditionStageGuide(slug,'unrecognized'),null)
+   for(const stage of stages){
+     assert.equal(traditionStageGuide(slug,stage.id),stage)
+     assert.match(traditionStageImage(stage),/^\/images\/holistic-house\/coaching-ancient\/[a-z-]+\.(?:jpg|png)$/)
+     assert.match(traditionStageSource(stage),/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/)
+     assert.ok(stage.photo.file.endsWith('.jpg')||stage.photo.file.endsWith('.JPG')||stage.photo.file.endsWith('.png'))
+     assert.ok(stage.photo.credit.length>=4)
+     assert.ok(stage.photo.license.length>=3)
+     for(const locale of ['en','ru','es']){
+       assert.ok(stage.title[locale].length>=7,slug+' '+stage.id+' '+locale+' title')
+       assert.ok(stage.description[locale].length>=65,slug+' '+stage.id+' '+locale+' context')
+       assert.ok(stage.focus[locale].length>=15,slug+' '+stage.id+' '+locale+' author question')
+     }
+   }
+ }
+})
+test('stages are illustrated before the question and shown in a pre-course map without changing persistence',()=>{
+ const component=source('components/app/tradition-coaching.jsx')
+ const css=source('components/app/tradition-coaching.module.css')
+ const guide=source('lib/personal-coaching/tradition-visuals.js')
+ assert.match(component,/data-tradition-stage-overview/)
+ assert.match(component,/traditionStages\(def\.slug\)\.map/)
+ assert.match(component,/entryStep==='roadmap'/)
+ assert.match(component,/TraditionStageArt stage=\{stageGuide\}/)
+ assert.ok(component.indexOf('TraditionStageArt stage={stageGuide}')<component.indexOf('>{question.question?.[lang]}</h1>'))
+ assert.match(component,/referrerPolicy="no-referrer"/)
+ assert.match(component,/loading=\{compact\?'lazy':'eager'\}/)
+ assert.match(component,/onError=\{event=>\{event\.currentTarget\.hidden=true\}\}/)
+ assert.match(css,/\.stagePhoto img\[hidden\]\{display:none\}/)
+ assert.match(component,/rel="noopener noreferrer"/)
+ assert.match(css,/\.roadmapList\{[^}]*overflow-y:auto/)
+ assert.match(css,/\.stageCard/)
+ assert.match(css,/@media\(max-width:380px\)/)
+ assert.match(css,/\[data-tradition-coaching="egyptian"\]/)
+ assert.match(css,/\[data-tradition-coaching="greek"\]/)
+ assert.doesNotMatch(component,/localStorage|sessionStorage|dangerouslySetInnerHTML/)
+ assert.doesNotMatch(guide,/fetch\(|sessionStorage|localStorage|account_id|payload_ciphertext/)
+})
+
+test('Egyptian and Greek coaching use fitting photos and preserve lesson image fallback',()=>{
+ const courses=source('lib/personal-coaching/traditions.js')
+ const academy=source('components/academy-hub.tsx')
+ const dashboard=source('components/app/my-courses-dashboard.jsx')
+ const lounge=source('components/public-coaching-discovery.jsx')
+ const art=source('components/app/tradition-coaching.jsx')
+ assert.match(courses,/"ru": "Египетское планирование"/)
+ assert.match(courses,/"ru": "Греческое планирование"/)
+ assert.match(courses,/coaching-ancient\/egyptian-cover\.jpg/)
+ assert.match(courses,/coaching-ancient\/greek-cover\.jpg/)
+ assert.doesNotMatch(academy,/academy-free-egyptian-goal-planning|academy-free-greek-goal-planning/)
+ assert.doesNotMatch(dashboard,/data-ancient-coaching-courses|data-tradition-course-card/)
+ assert.match(lounge,/image=\{traditionCoachingArt.egyptian\}/)
+ assert.match(lounge,/image=\{traditionCoachingArt.greek\}/)
+ assert.match(art,/event.currentTarget.hidden=true/)
+ assert.match(art,/referrerPolicy="no-referrer"/)
+})
+
+
+test('all 18 approved Egyptian and Greek photographs are mapped to unique first-party assets',async()=>{
+ const {traditionCoachingArt}=await import('../lib/coaching/public-session-art.js')
+ const {TRADITION_COURSES}=await import('../lib/personal-coaching/traditions.js')
+ const root='/images/holistic-house/coaching-ancient/'
+ assert.equal(traditionCoachingArt.egyptian,root+'egyptian-cover.jpg')
+ assert.equal(traditionCoachingArt.greek,root+'greek-cover.jpg')
+ for(const course of TRADITION_COURSES){
+  assert.equal(course.art,traditionCoachingArt[course.slug])
+  assert.equal(traditionStages(course.slug).length,8)
+ }
+ const stages=['egyptian','greek'].flatMap(slug=>traditionStages(slug))
+ const urls=stages.map(traditionStageImage)
+ assert.equal(urls.length,16)
+ assert.equal(new Set(urls).size,16)
+ for(const url of urls)assert.ok(url.startsWith(root))
+ const builder=source('scripts/cache-ancient-coaching-photos.mjs')
+ const scripts=JSON.parse(source('package.json')).scripts
+ assert.match(builder,/traditionStages\(slug\)/)
+ assert.match(builder,/traditionStageImage\(stage\)/)
+ assert.match(builder,/response\.arrayBuffer\(\)/)
+ assert.match(builder,/validPhoto\(/)
+ assert.match(scripts.prebuild,/cache-ancient-coaching-photos\.mjs/)
+ assert.match(scripts.predev,/cache-ancient-coaching-photos\.mjs/)
+ assert.match(source('.gitignore'),/coaching-ancient/)
+ // Visible artist/license/source attribution must remain attached to lessons.
+ for(const stage of stages){
+  assert.match(traditionStageSource(stage),/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/)
+  assert.ok(stage.photo.credit&&stage.photo.license)
+ }
+})
