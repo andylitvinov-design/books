@@ -4,4 +4,9 @@
 /* Keep the approved photo without pushing a 320px screen taller
    than the viewport; retain 48px+ actual messenger action hit targets. */
 @media(max-width:430px){.art{height:44px}}
-@media(max-width:350px){.art{height:38px}}
+@media(max-width:350px){
+ .art{height:38px}
+ /* Keep the real image and ≥48px actions while fitting the RU final capture
+    inside the 844px mobile viewport instead of weakening the browser test. */
+ .body{padding:11px 13px;gap:10px}
+}
