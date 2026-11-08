@@ -631,8 +631,29 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // WebKit can return from a click before React commits the visitor's
       // approved phrases. Wait for actual approved, selected transcript state,
       // not just the already-mounted voice panel. Keep consent and WAV proof.
-      await page.locator("[data-hypno-approve]").click();
-      await expect(page.locator("[data-hypno-pending]")).toHaveCount(0,{timeout:15000});
+      const approvalButton=page.locator("[data-hypno-approve]");
+      await expect(approvalButton).toBeEnabled();
+      // A real iPhone touch is the authority for WebKit, while Chromium uses
+      // the normal click. Capture the actual DOM click without private text.
+      await page.evaluate(()=>{
+        window.__hhApproveClickCount=0;
+        document.querySelector("[data-hypno-approve]")?.addEventListener("click",()=>{
+          window.__hhApproveClickCount++;
+        });
+      });
+      if(engine==="webkit")await approvalButton.tap();
+      else await approvalButton.click();
+      try{
+        await expect(page.locator("[data-hypno-pending]")).toHaveCount(0,{timeout:15000});
+      }catch(error){
+        const pending=await page.locator("[data-hypno-pending]")
+          .getAttribute("data-hypno-pending-reasons").catch(()=>null);
+        const clicks=await page.evaluate(()=>window.__hhApproveClickCount??0);
+        const checked=await page.locator("[data-hypno-overview-enable]").isChecked();
+        throw new Error(engine+" APPROVED_PHRASES_STILL_PENDING "+JSON.stringify({
+          reasons:pending,clicks,checked
+        }),{cause:error});
+      }
       await expect(page.locator("[data-hypno-overview-enable]")).toBeChecked({timeout:15000});
       await ideasModes.locator('[data-video-ideas-tab="voice"]').click();
       await page.locator("[data-video-affirmation-voice]").waitFor({state:"visible"});

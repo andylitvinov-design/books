@@ -208,3 +208,14 @@ test("Safari fine-tuning uses one accessible button and a stable hidden region",
   assert.ok(browser.includes("await expect(ideaToggle).toHaveAttribute(\"aria-expanded\",\"true\")"));
   assert.ok(browser.includes("await expect(intentDetails.locator('[data-hypno-request]')).toBeVisible()"));
 });
+
+test("choosing Ready discards stale idea and approval clears Wave drafts",()=>{
+ const browser=read("scripts/verify-affirmation-voice-browser.mjs");
+ assert.match(phrases,/setIdeaPending\(false\);\s*setReadyDraft\(\{selected:\[0,1,2\],resetPreset:true\}\)/);
+ assert.match(phrases,/setDraftState\(null\);setReadyDraft\(null\);setCustomDraft\(null\);setIdeaPending\(false\)/);
+ for(const status of ['draft','ready','custom','external','idea','safety'])
+   assert.ok(phrases.includes('?"'+status+'":null'),status);
+ assert.match(browser,/if\(engine==="webkit"\)await approvalButton\.tap\(\)/);
+ assert.ok(browser.includes("APPROVED_PHRASES_STILL_PENDING"));
+ assert.ok(browser.includes('data-hypno-pending-reasons'));
+});

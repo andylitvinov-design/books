@@ -350,6 +350,9 @@ export function MandalaHypnoCompact({
   const ready=()=>{
     pending.current?.abort();runId.current++;
     setModel("wave");setDraftState(null);setGeminiBusy(false);setGeminiNotice("");
+    // Choosing Ready intentionally replaces an unapproved idea/request draft.
+    // Do not leave the old ideaPending flag blocking a later explicit Approve.
+    setIdeaPending(false);
     setReadyDraft({selected:[0,1,2],resetPreset:true});
     setSelectionSource("ready");setApprovalKey("");setOpen(null);
   };
@@ -466,7 +469,8 @@ export function MandalaHypnoCompact({
         custom:customPhraseText,visibility:externalPhraseDraft!==null?["large" as const]:settings.visibility};
       onChange(next);
       setApprovalKey(JSON.stringify([theme,next.enabled,next.selected,next.custom,next.presetOverride]));
-      setReadyDraft(null);setCustomDraft(null);setIdeaPending(false);
+      // The approved Ready/custom selection supersedes every stale Wave draft.
+      setDraftState(null);setReadyDraft(null);setCustomDraft(null);setIdeaPending(false);
       onExternalPhraseClear?.();
     }else setApprovalKey(signature);
   }
@@ -772,7 +776,12 @@ export function MandalaHypnoCompact({
         <button type="button" data-video-affirmation-preview disabled={disabled||hasPendingEdits} aria-label={ui.previewButton}
           onClick={onPreview}><CirclePlay size={19} aria-hidden="true"/>{ui.previewButton}<ChevronRight size={15}/></button>
       </section>
-      {hasPendingEdits&&<p className={css.contextNote} role="status" data-hypno-pending>
+      {hasPendingEdits&&<p className={css.contextNote} role="status" data-hypno-pending
+        data-hypno-pending-reasons={[
+          draftState?"draft":null,readyDraft?"ready":null,
+          customDraft!==null?"custom":null,externalPhraseDraft!==null?"external":null,
+          ideaPending?"idea":null,safetyBlocked?"safety":null,
+        ].filter(Boolean).join(",")}>
         {safetyBlocked?summary:locale==="ru"?"Сначала подтвердите выбранные фразы.":locale==="es"?"Confirma las frases elegidas antes de crear el vídeo.":"Approve your selected phrases before creating the video."}
       </p>}
       <button type="button" className={css.create} data-hypno-create-video disabled={disabled||!settings.enabled||hasPendingEdits}
