@@ -26,7 +26,8 @@ test('Holistic House app has its own branded install manifest, without renaming 
   const {readFile}=await import('node:fs/promises')
   const page=await readFile(new URL('../app/[locale]/app/[[...path]]/page.jsx',import.meta.url),'utf8')
   // EN/RU/ES share the existing app install identity; OPORA has a separate,
-  // explicit programme manifest. The installed entry is the Messages hub.
+  // explicit programme manifest. The installed entry is the localized Home
+  // route; Messages remains a direct manifest shortcut.
   assert.match(page,/manifest: oporaInstall \?/)
   for(const locale of ['en','ru','es']){
     const suffix=locale==='en'?'':'-'+locale
@@ -34,7 +35,8 @@ test('Holistic House app has its own branded install manifest, without renaming 
     assert.equal(manifest.name,'Holistic House')
     assert.equal(manifest.lang,locale)
     assert.equal(manifest.id,'/en/app','locales must not create duplicate installations')
-    assert.equal(manifest.start_url,'/'+locale+'/app/messages')
+    assert.equal(manifest.start_url,'/'+locale)
+    assert.ok(manifest.shortcuts.some(shortcut=>shortcut.url==='/'+locale+'/app/messages'))
     assert.ok(manifest.icons.some(icon=>icon.src==='/holistic-house-icon/192'))
     assert.ok(manifest.icons.some(icon=>icon.src==='/holistic-house-icon/512' && icon.purpose==='maskable'))
     assert.ok(manifest.icons.some(icon=>icon.src==='/icons/holistic-house-teal.svg'))
