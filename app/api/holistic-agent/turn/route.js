@@ -15,6 +15,7 @@ import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendat
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
 import { signJudgmentChoice, verifyJudgmentChoice } from "@/lib/holistic-support/judgment-token.mjs";
@@ -120,6 +121,8 @@ export async function POST(request) {
     const repository = createAppRepository(config);
     await repository.ensureAccount(actor);
     const body = inputOf(await readBody(request,32000));
+    // The message language outranks a stale /en or /ru route; signed choices retain their verified context.
+    if(body.judgmentChoice==null)body.locale=detectConversationLocale(body.message,body.locale);
     const experimentalEnabled=process.env.HH_AGENT_CHAT_ENABLED==="true" &&
       (process.env.VERCEL_ENV!=="production" ||
         process.env.HH_AGENT_PRODUCTION_APPROVED==="true");

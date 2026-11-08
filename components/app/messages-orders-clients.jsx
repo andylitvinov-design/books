@@ -91,8 +91,10 @@ function priceOf(order,t){
     ? new Intl.NumberFormat('en-IE',{maximumFractionDigits:2}).format(Number(r.price))+' '+(r.currency||'EUR')
     :t.noPrice
 }
-export default function MessagesOrdersClients({locale='en',children}){
+export default function MessagesOrdersClients({locale:routeLocale='en',children}){
   const searchParams=useSearchParams()
+  const [locale,setLocale]=useState(routeLocale)
+  useEffect(()=>setLocale(routeLocale),[routeLocale])
   const t=TEXT[locale]||TEXT.en,status=STATES[locale]||STATES.en
   const [section,setSection]=useState(()=>{
     const requested=searchParams.get('section')
@@ -161,7 +163,7 @@ export default function MessagesOrdersClients({locale='en',children}){
       .catch(e=>{if(!controller.signal.aborted){setError(t.error);setSignedOut(e.message==='SIGN_IN_REQUIRED');setOrdersData(null)}})
       .finally(()=>{if(!controller.signal.aborted)setLoading(false)})
     return()=>controller.abort()
-  },[generation,locale])
+  },[generation,routeLocale])
   // Orders failures are not logout; only a verified identity change can reset chat.
   useEffect(()=>{
     if(aiIdentity.status==='authenticated'){
@@ -322,7 +324,7 @@ export default function MessagesOrdersClients({locale='en',children}){
         loading="lazy" width="118" height="104" className={styles.introArt}/>
     </div>
   )
-  return <section ref={hubRef} className={styles.root} data-orders-clients-hub
+  return <section ref={hubRef} className={styles.root} lang={locale} data-orders-clients-hub
     data-detail-open={detailMode||undefined} data-section={section}>
     <div className={styles.sections} role="tablist" aria-label={t.title} data-chat-top-tabs>
       <button type="button" role="tab" aria-controls="hh-ai-panel" aria-selected={section==='ai'}
@@ -364,7 +366,7 @@ export default function MessagesOrdersClients({locale='en',children}){
     </header>
     <div id="hh-ai-panel" role="tabpanel" data-hh-messenger-ai hidden={section!=='ai'}>
       <MessengerAiWorkspace key={aiSession} locale={locale}
-          authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}
+          onConversationLocaleChange={setLocale} authenticated={aiIdentity.status==='authenticated'} authStatus={aiIdentity.status}
           onAuthRetry={retryAiIdentity}/>
     </div>
     <div id="hh-orders-panel" role="tabpanel" className={styles.panel} hidden={section!=='orders'}>
@@ -489,7 +491,7 @@ export default function MessagesOrdersClients({locale='en',children}){
       {guestAccess?(section==='clients'?<MessengerGuestGate locale={locale} section="clients"/>:null):<>
       {listHelper}
       {clientsVisited&&(isValidElement(children)?cloneElement(children,{
-        onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children)}
+        locale,onClientsCount:setClientCount,onDetailChange:setClientDetailOpen}):children)}
       </>}
     </div>
     <div id="hh-news-panel" role="tabpanel" hidden={section!=='news'}>
