@@ -473,7 +473,14 @@ export function MandalaHypnoCompact({
         open={ideaDisclosureOpen} onToggle={event=>setIdeaDisclosureOpen(event.currentTarget.open)}>
         <summary onClick={event=>{
           event.preventDefault();
-          setIdeaDisclosureOpen(value=>!value);
+          // Commit the same user gesture synchronously to WebKit's native
+          // disclosure, then mirror the actual DOM state in React. A delayed
+          // toggle event must not reverse an already-visible user action.
+          const details=event.currentTarget.parentElement;
+          if(details instanceof HTMLDetailsElement){
+            details.open=!details.open;
+            setIdeaDisclosureOpen(details.open);
+          }
         }}><Target size={21} aria-hidden="true"/>
           <span>{ideaText}</span><Pencil size={19} aria-hidden="true"/></summary>
       <section className={css.card} data-hypno-request data-hypno-idea>

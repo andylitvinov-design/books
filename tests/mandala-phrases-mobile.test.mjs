@@ -195,6 +195,8 @@ test("real WebKit voice acceptance expands advanced sound options before selecti
 test("WebKit idea fine-tuning disclosure stays open through React rerenders",()=>{
   assert.match(phrases,/const \[ideaDisclosureOpen,setIdeaDisclosureOpen\]=useState\(false\)/);
   assert.match(phrases,/open=\{ideaDisclosureOpen\} onToggle=\{event=>setIdeaDisclosureOpen\(event\.currentTarget\.open\)\}/);
-  assert.match(phrases,/setIdeaDisclosureOpen\(value=>!value\)/);
+  assert.match(phrases,/details\.open=!details\.open/);
+  assert.match(phrases,/setIdeaDisclosureOpen\(details\.open\)/);
+  assert.match(phrases,/details instanceof HTMLDetailsElement/);
   assert.match(phrases,/event\.preventDefault\(\)/);
 });
