@@ -147,6 +147,8 @@
       registerPR(p,badge);inline.appendChild(badge);
     }
     head.appendChild(inline);card.appendChild(head);
+    window.HHPRContextComments?.mount({host:head,container:card,kind:'task',title:task.id+' · '+task.title,
+      prs:task.prs,context:'Проект: '+project.title+'; этап: '+stage.title+'; статус задачи: '+L[status(task.status)]});
     window.HHPM_ASSIGN?.attach(card,task,stage,project);
     const actions=el('div','pm-task-actions');
     for(const p of task.prs){

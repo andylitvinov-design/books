@@ -5,7 +5,20 @@
 const BASE='https://openrouter.ai/api/v1';
 const CHAT_ENDPOINT='/api/v1/chat/completions';
 const CHAT_CATALOG=BASE+'/models?endpoints='+encodeURIComponent(CHAT_ENDPOINT);
-const DEFAULT_MODEL='liquid/lfm-3-1.7b:free';
+// Ordered CANDIDATES, not proven winners. Live catalog + zero-price validation wins.
+const DEFAULT_MODEL='cohere/north-mini-code:free';
+const MODEL_PROFILES=Object.freeze({
+  repair:Object.freeze(['cohere/north-mini-code:free','recursive/flint-v1.0:free',
+    'nvidia/nemotron-3-ultra-550b-a55b:free','xingchen-agi/xing4.0-29b-a4b:free']),
+  feature:Object.freeze(['cohere/north-mini-code:free','nvidia/nemotron-3-ultra-550b-a55b:free',
+    'recursive/flint-v1.0:free','google/gemma-4-31b-it:free']),
+  architecture:Object.freeze(['nvidia/nemotron-3-ultra-550b-a55b:free',
+    'xingchen-agi/xing4.0-29b-a4b:free','cohere/north-mini-code:free']),
+  review:Object.freeze(['nvidia/nemotron-3-ultra-550b-a55b:free',
+    'dots-studio/dots-3-note-preview:free','xingchen-agi/xing4.0-29b-a4b:free']),
+  visual:Object.freeze(['nvidia/nemotron-3.5-super-vl:free',
+    'cohere/north-mini-code:free','google/gemma-4-31b-it:free'])
+});
 const MAX_REPLY=40000;
 function selectedModel(value=DEFAULT_MODEL){
   if(typeof value!=='string'||!/^[A-Za-z0-9][\w.-]*\/[A-Za-z0-9][\w.-]*:free$/.test(value))
@@ -39,6 +52,27 @@ function verifyZeroPrice(catalog,model){
     throw Error('FREE_AI_OPENROUTER_NOT_TEXT_CHAT');
   return {model:id,zeroCost:true};
 }
+/** Resolve before sending ANY inference; availability fallback is catalog-only.
+ * No second model/API call after provider rejection, quota error, or bad patch.
+ * Explicit pinned model never silently changes into another model.
+ */
+function chooseVerifiedFreeModel(catalog,{model='auto',role='repair'}={}){
+  if(!Object.hasOwn(MODEL_PROFILES,role))
+    throw Error('FREE_AI_OPENROUTER_ROLE_UNKNOWN');
+  if(model!=='auto'){
+    const selected=selectedModel(model);
+    return {...verifyZeroPrice(catalog,selected),role,selection:'pinned'};
+  }
+  if(!Array.isArray(catalog?.data))throw Error('FREE_AI_OPENROUTER_CATALOG_INVALID');
+  for(const candidate of MODEL_PROFILES[role]){
+    try{return {...verifyZeroPrice(catalog,candidate),role,selection:'ranked_catalog'};}
+    catch(error){
+      if(!/^FREE_AI_OPENROUTER_(?:MODEL_NOT_IN_CATALOG|PRICE_UNKNOWN|PRICE_NOT_ZERO|NOT_TEXT_CHAT)$/.test(String(error?.message||'')))
+        throw error;
+    }
+  }
+  throw Error('FREE_AI_OPENROUTER_NO_VERIFIED_FREE_MODEL');
+}
 async function getJson(fetchImpl,url,options,timeoutMs){
   let response;
   try{response=await fetchImpl(url,{...options,signal:AbortSignal.timeout(timeoutMs)});}
@@ -53,8 +87,9 @@ async function getJson(fetchImpl,url,options,timeoutMs){
   }catch{throw Error('FREE_AI_OPENROUTER_RESPONSE_INVALID');}
   return body;
 }
-async function requestFreePatch({prompt,key,model=DEFAULT_MODEL,fetchImpl=global.fetch}={}){
-  const selected=selectedModel(model);
+async function requestFreePatch({prompt,key,model='auto',role='repair',
+  fetchImpl=global.fetch,onVerifiedModel=undefined}={}){
+  if(model!=='auto')selectedModel(model); // reject malformed manual overrides before any API call
   if(typeof key!=='string'||!key.trim())
     throw Error('FREE_AI_OPENROUTER_KEY_NOT_CONFIGURED');
   if(typeof fetchImpl!=='function')throw Error('FREE_AI_OPENROUTER_NETWORK_UNAVAILABLE');
@@ -62,20 +97,26 @@ async function requestFreePatch({prompt,key,model=DEFAULT_MODEL,fetchImpl=global
     throw Error('FREE_AI_OPENROUTER_PROMPT_UNSAFE');
   const catalog=await getJson(fetchImpl,CHAT_CATALOG,
     {method:'GET',headers:{Accept:'application/json'}},10000);
-  verifyZeroPrice(catalog,selected);
-  // Exactly ONE inference attempt: one pinned :free model, zero price cap,
+  const selection=chooseVerifiedFreeModel(catalog,{model,role});
+  const selected=selection.model;
+  if(typeof onVerifiedModel==='function')onVerifiedModel(selection);
+  // Exactly ONE inference attempt: one pre-verified :free model, zero price cap,
   // zero cross-model fallback, no tools, no file operations, no paid retries.
   const completion=await getJson(fetchImpl,BASE+'/chat/completions',{
     method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json',
       Accept:'application/json'},
     body:JSON.stringify({model:selected,messages:[{role:'user',content:prompt}],
-      max_tokens:5500,stream:false,
+      max_tokens:5500,stream:false,usage:{include:true},
       provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
         data_collection:'deny'}})
   },170000);
   if(completion?.model!==selected)throw Error('FREE_AI_OPENROUTER_MODEL_MISMATCH');
   const cost=completion?.usage?.cost;
-  if(cost!==undefined&&(cost===null||!Number.isFinite(Number(cost))||Number(cost)!==0))
+  if(typeof cost!=='number'||!Number.isFinite(cost))
+    throw Error('FREE_AI_OPENROUTER_BILLING_UNVERIFIED');
+  if(cost!==0||completion?.usage?.is_byok===true||
+     Object.values(completion?.usage?.cost_details||{}).some(value=>
+       value!==null&&value!==undefined&&(!Number.isFinite(Number(value))||Number(value)!==0)))
     throw Error('FREE_AI_OPENROUTER_BILLING_NONZERO');
   if(completion?.choices?.length!==1||
     typeof completion.choices[0]?.message?.content!=='string'||
@@ -84,4 +125,5 @@ async function requestFreePatch({prompt,key,model=DEFAULT_MODEL,fetchImpl=global
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
   return completion.choices[0].message.content;
 }
-module.exports={BASE,CHAT_ENDPOINT,CHAT_CATALOG,DEFAULT_MODEL,selectedModel,verifyZeroPrice,requestFreePatch};
+module.exports={BASE,CHAT_ENDPOINT,CHAT_CATALOG,DEFAULT_MODEL,MODEL_PROFILES,
+  selectedModel,verifyZeroPrice,chooseVerifiedFreeModel,requestFreePatch};

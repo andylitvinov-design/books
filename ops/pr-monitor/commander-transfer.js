@@ -22,14 +22,15 @@
   ].filter(Boolean).join('\n').slice(0,800);
   return text.length>=10?text:clip(raw,800);
  }
- function begin({raw,fullPrompt},status){
+ function begin({raw,fullPrompt,relatedPr},status){
   const source=String(raw||'').trim().slice(0,2500);
   if(source.length<8){if(status)status.textContent='Сначала опишите задачу.';return false}
   if(!win.sessionStorage||!win.location?.assign){
    if(status)status.textContent='Передача недоступна в браузере. Скопируйте промпт вручную.';return false;
   }
   const packet={version:2,at:Date.now(),raw:source,fullPrompt:String(fullPrompt||'').trim().slice(0,15000),
-   summary:summarize(source,String(fullPrompt||''))};
+   summary:summarize(source,String(fullPrompt||'')),
+   relatedPr:[...new Set((Array.isArray(relatedPr)?relatedPr:[]).filter(n=>Number.isSafeInteger(n)&&n>0&&n<100000))].slice(0,15)};
   try{
    win.sessionStorage.setItem(KEY,JSON.stringify(packet));
    // No URL parameters, cross-origin messaging, popup or public task write.
