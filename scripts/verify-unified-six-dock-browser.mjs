@@ -127,6 +127,10 @@ async function inspect(browserType,locale,width){
     },null,{timeout:10000});
    }
   }
+  // The dock is tested after a bottom scroll. Return to the top before testing
+  // the filter controls; a sticky masthead cannot be the click target.
+  await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
+  await page.waitForFunction(()=>window.scrollY<=3,null,{timeout:10000});
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
   assert.ok(overflow<=2,id+" horizontal overflow "+overflow);
   // Exactly All plus the four canonical category names must fit without a swipe.
@@ -147,6 +151,15 @@ async function inspect(browserType,locale,width){
   assert.equal(await topicRail.count(),0,id+" no subcategories before category selection");
   const quickLanguage=page.locator("[data-mytube-language-control]");
   assert.equal(await quickLanguage.isVisible(),true,id+" original audio languages at top");
+  const helpLauncher=page.locator("[data-hh-ihelp-trigger]");
+  assert.equal(await helpLauncher.count(),1,id+" iHelp launcher preserved");
+  const [languageBounds,helpBounds]=await Promise.all([quickLanguage.boundingBox(),helpLauncher.boundingBox()]);
+  assert.ok(languageBounds&&helpBounds,id+" iHelp and language controls measurable");
+  const overlapsHelp=languageBounds.x<helpBounds.x+helpBounds.width&&
+    languageBounds.x+languageBounds.width>helpBounds.x&&
+    languageBounds.y<helpBounds.y+helpBounds.height&&
+    languageBounds.y+languageBounds.height>helpBounds.y;
+  assert.equal(overlapsHelp,false,id+" floating iHelp must not block original-language choices");
   for(const value of ["ru","en","es","all"]){
     const button=quickLanguage.locator('[data-mytube-audio-language="'+value+'"]');
     await button.click();
@@ -172,6 +185,7 @@ async function inspect(browserType,locale,width){
   const quickDuration=page.locator("[data-mytube-duration]");
   assert.equal(await quickDuration.count(),1,id+" duration moved into advanced filters");
   if(await quickDuration.isEnabled()){
+    await moreControls.locator("details summary").first().click();
     await quickDuration.selectOption("under4");
     assert.equal(await quickDuration.inputValue(),"under4",id+" verified-duration selection");
     await quickDuration.selectOption("all");
@@ -191,6 +205,7 @@ async function inspect(browserType,locale,width){
   const topics=page.locator('[data-mytube-topics] [data-mytube-topic]:not([data-mytube-topic="all"])');
   assert.equal(await topics.count(),4,id+" deeper topics remain accessible");
   await page.locator('[data-mytube-category="all"]').click();
+  await topicRail.waitFor({state:"detached",timeout:15000});
   assert.equal(await topicRail.count(),0,id+" subcategories disappear after All");
   assert.equal(await refined.isVisible(),false,id+" related filters reset");
   await moreFilters.click();

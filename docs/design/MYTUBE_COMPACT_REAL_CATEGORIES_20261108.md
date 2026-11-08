@@ -15,11 +15,12 @@
 5. Hide subcategories under All. Selecting any category reveals precisely its four real localized subcategories plus All, and automatically resets incompatible topic/scenario/motif/style selections. Topics, scenarios, verified duration, source, date, sort and saved stay inside the existing advanced disclosures.
 6. Four content-format tabs All / Shorts / Courses / Study remain fully functional, followed by the unchanged reviewed-video catalog.
 7. Existing fixed bottom dock and safe-area behavior preserved, including ongoing separate dock-order/anchoring PRs.
+8. **Verified QA overlap blocker:** sitewide iHelp is a fixed 64px-top widget that can intercept MyTube original-audio controls in the new header. Scope iHelp to a compact bottom-right launcher above the dock **only** while MyTube is mounted, preserving accessibility and all other route placements. Browser QA must check no language/FAB rectangle overlap.
 
 ## Behavioral and release contracts
 - Public guest search/category/audio/format changes filter only published videos; no new catalogue, auto-approval or external player autoplay.
 - Preserve authorized playback-on-click, approved metadata, source/rights checks, private data and iHelp. No new paid API, database/migration, auth, billing or external sends.
-- Test at 320, 354, 390 and 430px, Chromium and WebKit, plus EN/RU/ES. Assert all 5 category chips share a single row, none require horizontal scrolling, conditional four true subcategories render correctly, language filters switch without navigation, deeper choices reset and player/empty state remains honest.
+- Test at 320, 354, 390 and 430px, Chromium and WebKit, plus EN/RU/ES. Before testing filters after bottom-dock scroll, restore scroll position to top; never simulate an impossible click through the sticky topbar. Assert all 5 category chips share a single row, none require horizontal scrolling, conditional four true subcategories render correctly, language filters switch without navigation, deeper choices reset and player/empty state remains honest.
 - Existing `tests/mytube-duration.test.mjs` and `scripts/verify-unified-six-dock-browser.mjs` modified, no new CI workflows or runners.
 - **Preflight:** structured in-memory source assertions and CSS brace balance checked before first remote branch publication; full TypeScript, ESLint, Next build, route-matched screenshots/overlays and actual iPhone Safari not available in local connected device (Mac offline). Require protected exact-head CI and independently confirmed production Vercel READY/alias/SHA before LIVE claim.
 

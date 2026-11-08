@@ -224,6 +224,7 @@ test("MyTube keeps all real directions in one row and expands true subcategories
  const discovery=read("components/video-discovery.tsx");
  const css=read("components/video-discovery.module.css");
  const browser=read("scripts/verify-unified-six-dock-browser.mjs");
+ const iHelpCss=read("components/sitewide-ihelp.module.css");
  assert.match(page,/themeColor:"#0f0f0f"/);
  assert.match(style,/--mytube-bg:#0f0f0f/);
  assert.match(discovery,/data-mytube-category-rail/);
@@ -241,6 +242,8 @@ test("MyTube keeps all real directions in one row and expands true subcategories
  assert.match(css,/\.mytube \.compactMoreButton\{/);
  assert.match(discovery,/data-mytube-format-mode=\{mode\}/);
  assert.match(browser,/rail\.evaluate\(el=>el\.scrollWidth<=el\.clientWidth\+2\)/);
+ assert.ok(iHelpCss.includes(":global(body:has([data-mytube-page])) .launcher{"));
+ assert.match(browser,/floating iHelp must not block original-language choices/);
  assert.match(browser,/refined\.isVisible\(\),false/);
 });
 test("Shorts / Study are exclusive editorial shelves and unknown lengths remain available",async()=>{
