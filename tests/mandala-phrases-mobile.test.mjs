@@ -227,11 +227,13 @@ test("choosing Ready discards stale idea and approval clears Wave drafts",()=>{
  assert.ok(browser.includes("data-video-affirmation-transcript-review"));
 });
 
-test("five-phrase limit requires a real removal before the visitor adds another",()=>{
+test("ten-phrase limit and stale spoken-audio guard use the current visible Montage Text editor",()=>{
  const script=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.ok(phrases.includes('disabled={disabled||(!chosen.includes(i)&&selectedCount>=5)}'));
- assert.ok(phrases.includes('data-hypno-selection-limit role="status"'));
- for(const needle of ["if(currentSelected===5){","a non-spoken phrase can be deselected without revoking the WAV",
-   'await nextPhrase.tap()','await approvalButton.tap()','await spokenPhrase.tap()'])
-  assert.ok(script.includes(needle),needle);
+ assert.ok(phrases.includes("else if(chosen.length>=10)setFeedback(t.max)"));
+ assert.ok(phrases.includes("Choose up to 10 phrases for your video."));
+ assert.ok(phrases.includes("The maximum remains ten"));
+ assert.ok(script.includes("const unselectedToggle=phraseEditor.locator('[data-video-idea-select][aria-pressed=\"false\"]').first()"));
+ assert.ok(script.includes("const spokenToggle=spokenPhrase.locator('[data-video-idea-select]')"));
+ assert.ok(script.includes("adding an unspoken phrase does not invalidate the actual WAV"));
+ assert.ok(script.includes("removing the spoken phrase must block stale WAV reuse or detach it"));
 });
