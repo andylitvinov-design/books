@@ -229,6 +229,12 @@ Growth Intelligence замыкает цикл:
 
 **Жёсткое правило UI:** демонстрационные макеты и synthetic fixtures всегда помечаются «Демо / synthetic». Реальные экраны показывают только полученные и проверяемые данные, включая статус источника и время последнего обновления.
 
+**Instagram publishing baseline after PR #4006:**
+- The existing Meta Graph API OAuth foundation and owner-confirmed JPEG Feed publisher are now in the production baseline. The publisher uses the selected `socialAccountId`, verifies the exact linked professional Instagram account and Page permissions, creates a media container, checks processing state, calls `media_publish`, then reads back the permalink/provider media ID.
+- The direct publish action is owner-confirmed and server-gated by `HH_GROWTH_INSTAGRAM_PUBLISH_ENABLED`, which remains OFF until the owner completes Meta authorization and a controlled acceptance test.
+- The durable calendar/dry-run queue is still simulation-only. No unattended Instagram schedule worker or automatic reposting is enabled.
+- The owner-approved account pair is `@wizards.secrets` (work) and `@andy.therapist` (personal). OAuth, approval, provider receipts and Content DNA are separate. Provider identity/Insights are not considered connected until actual Meta readback succeeds.
+
 ### 14.3. Единый контракт данных и статусов измерений
 
 Перед миграцией выполнить read-only аудит действующей Supabase/Postgres схемы, Redis editorial store, текущих provider adapters и существующих analytics/attribution таблиц. Переиспользовать совместимую таблицу/модуль, если он уже существует. Не создавать параллельную аналитику, не мигрировать всё в Redis и не добавлять новую БД.
