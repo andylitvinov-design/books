@@ -117,8 +117,7 @@ export default async function MyCoachPage({ params }: PageProps) {
   // unknown; it is never presented as a fabricated score.
   if (practitioners.length) {
     try {
-      const summaries: { practitionerId: string; count: number; average: number }[] =
-        if (!config) throw new Error("Review directory is not configured");
+      if (!config) throw new Error("Review directory is not configured");
       const summaries: { practitionerId: string; count: number; average: number }[] =
         await createServiceReviewRepository(config)
           .listPublicSummariesForPractitioners(practitioners.map((coach) => coach.id));
