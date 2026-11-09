@@ -3,7 +3,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {CheckCircle2, AlertCircle, CircleHelp, RefreshCcw, ShieldCheck} from 'lucide-react'
 import {GROWTH_PUBLICATION_NETWORKS,CHANNEL_CAPABILITIES} from '@/lib/growth-studio/channel-capabilities.mjs'
-import {checkGrowthTelegramPublisherAction,checkGrowthStudioStorageAction,checkGrowthStudioProviderReadinessAction} from '@/app/admin/growth-studio/actions'
+import {checkGrowthTelegramPublisherAction,checkGrowthStudioStorageAction,checkGrowthStudioProviderReadinessAction,listGrowthStudioInstagramAccountsAction,disconnectGrowthStudioInstagramAccountAction} from '@/app/admin/growth-studio/actions'
 import styles from './growth-studio.module.css'
 import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 
@@ -158,6 +158,9 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const [providerSnapshot,setProviderSnapshot]=useState(null)
   const [providerChecking,setProviderChecking]=useState(false)
   const [providerFailed,setProviderFailed]=useState(false)
+  const [instagramAccounts,setInstagramAccounts]=useState(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=>({...account,connectionState:'pending_authorization',publishingEnabled:false})))
+  const [instagramConnectAvailable,setInstagramConnectAvailable]=useState(false)
+  const [instagramAccountsFailed,setInstagramAccountsFailed]=useState(false)
   const all=useMemo(()=>GROWTH_PUBLICATION_NETWORKS.map(id=>({id,...CHANNEL_CAPABILITIES[id]})),[])
   async function verify(){
     if(!telegram.ready||checking)return
@@ -212,6 +215,17 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       providerProbeInFlight.current=false
     }
   },[])
+  const refreshInstagramAccounts=useCallback(async()=>{
+    try{
+      const result=await listGrowthStudioInstagramAccountsAction()
+      if(result?.ok===true&&Array.isArray(result.accounts)){
+        setInstagramAccounts(result.accounts)
+        setInstagramConnectAvailable(result.connectAvailable===true)
+        setInstagramAccountsFailed(false)
+      }else setInstagramAccountsFailed(true)
+    }catch{setInstagramAccountsFailed(true)}
+  },[])
+  useEffect(()=>{void refreshInstagramAccounts()},[refreshInstagramAccounts])
   useEffect(()=>{void checkProviders()},[checkProviders])
   return <details className={styles.connectionPanel}>
     <summary><ShieldCheck size={19} aria-hidden="true"/><span>{t.summary}</span>
@@ -348,16 +362,34 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       <p>{locale==='ru'
         ?'Аккаунты заведены отдельно от брендов сайта. Каждый профиль подключается владельцем через Meta; пока разрешения не подтверждены, публикация отключена.'
         :'Accounts are separate from website brands. Each profile must be authorized by its owner through Meta; publishing stays disabled until permissions are verified.'}</p>
+      {instagramAccountsFailed&&<p className={styles.connectionError} role="alert">{locale==='ru'?'Не удалось проверить аккаунты Instagram.':'Could not read Instagram account status.'}</p>}
       <div className={styles.growthSetupSteps}>
-        {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=><section key={account.id}>
+        {instagramAccounts.map(account=><section key={account.id}>
           <h4>{account.label}</h4>
-          <p>{locale==='ru'?account.ruPurpose:account.enPurpose}</p>
-          <small>{locale==='ru'?'Статус: ожидает подключения Meta OAuth · публикация выключена':'Status: awaiting Meta OAuth · publishing disabled'}</small>
+          <p>{locale==='ru'?GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(x=>x.id===account.id)?.ruPurpose: GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(x=>x.id===account.id)?.enPurpose}</p>
+          <small>{account.connectionState==='connected'
+            ? (locale==='ru'?'Meta подтвердил профиль · ':'Meta profile verified · ')+('@'+account.username)
+            : (locale==='ru'?'Ожидает авторизации Meta':'Awaiting Meta authorization')}</small>
+          {account.lastVerifiedAt&&<small>{locale==='ru'?'Проверено: ':'Verified: '}{new Date(account.lastVerifiedAt).toLocaleString(locale==='ru'?'ru-RU':'en-CA',{timeZone:'America/Toronto'})}</small>}
+          <small>{account.publishingEnabled
+            ? (locale==='ru'?'Публикация разрешена':'Publishing enabled')
+            : (locale==='ru'?'Автопубликация выключена до выпуска и проверки Publisher Worker':'Auto-publishing remains disabled until the Publisher Worker is released and verified')}</small>
+          <div className={styles.connectionNav}>
+            {instagramConnectAvailable
+              ? <a href={`/api/admin/growth-studio/instagram/connect?accountId=${encodeURIComponent(account.id)}`}>{account.connectionState==='connected'?(locale==='ru'?'Переподключить':'Reconnect'):(locale==='ru'?'Подключить Instagram':'Connect Instagram')} ↗</a>
+              : <small>{locale==='ru'?'Настройки Meta App/шифрования ещё не заданы на сервере':'Meta App / encryption settings are not configured on the server'}</small>}
+            {account.connectionState==='connected'&&<button type="button" onClick={async()=>{
+              if(!window.confirm(locale==='ru'?'Отключить этот Instagram-аккаунт?':'Disconnect this Instagram account?'))return
+              const result=await disconnectGrowthStudioInstagramAccountAction({accountId:account.id})
+              if(result?.ok)await refreshInstagramAccounts()
+            }}>{locale==='ru'?'Отключить':'Disconnect'}</button>}
+          </div>
         </section>)}
       </div>
       <div className={styles.connectionNav}>
         <a href="https://app.metricool.com/" target="_blank" rel="noopener noreferrer">{t.setupMetricool} ↗</a>
         <a href="https://business.facebook.com/" target="_blank" rel="noopener noreferrer">{t.setupMeta} ↗</a>
+        <button type="button" onClick={refreshInstagramAccounts}>{locale==='ru'?'Обновить статус':'Refresh status'}</button>
       </div>
     </div>
     <div className={styles.connectionScroller}>
