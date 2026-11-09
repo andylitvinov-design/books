@@ -70,6 +70,20 @@ test('cannot approve blank caption or plan a past/unapproved post',() => {
   assert.throws(()=>nextGrowthPost({current:approved,action:'plan',now:fixedNow}),/invalid_transition/)
 })
 
+test('Instagram account target is persisted independently and legacy drafts remain readable',()=>{
+  const id=postId()
+  const selected=normalizePostFields(fields({instagramAccountId:'wizards_secrets'}))
+  assert.equal(selected.instagramAccountId,'wizards_secrets')
+  const draft=nextGrowthPost({fields:{...fields(),instagramAccountId:'wizards_secrets'},action:'save',id,now:fixedNow})
+  assert.equal(draft.instagramAccountId,'wizards_secrets')
+  assert.equal(isSavedGrowthPost(draft),true)
+  const legacy=nextGrowthPost({fields:fields(),action:'save',id:postId(),now:fixedNow})
+  const {instagramAccountId,...legacyWithoutTarget}=legacy
+  assert.equal(isSavedGrowthPost(legacyWithoutTarget),true)
+  assert.throws(()=>normalizePostFields(fields({instagramAccountId:'someone_elses_account'})),/invalid_post/)
+  assert.equal(normalizePostFields(fields({channel:'facebook',instagramAccountId:'wizards_secrets'})).instagramAccountId,'')
+})
+
 test('private URLs, off-brand destinations, query data and encoded private routes are forbidden',() => {
   for (const url of [
     'https://evil.example/en','http://holistichouse.vercel.app/','//evil.example',
