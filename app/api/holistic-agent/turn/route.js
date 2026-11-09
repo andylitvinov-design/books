@@ -156,7 +156,7 @@ export async function POST(request) {
         : null;
       if(body.judgmentContext && !context)throw new AppError("INVALID_JUDGMENT_CONTEXT",400);
       const judgment=planJudgmentTurn({
-        message:body.message,locale:body.locale,safety,history:body.history,history:body.history,
+        message:body.message,locale:body.locale,safety,history:body.history,
         pending:context?.pending||null,choiceId:body.judgmentChoice||null,
       });
       if(judgment.status!=="abstain") {
