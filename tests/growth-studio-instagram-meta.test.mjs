@@ -141,9 +141,10 @@ test('account Redis store returns safe status only and isolates two encrypted cr
     PRESCRIPTIONS_KV_REST_API_URL:'https://redis.example.com',
     PRESCRIPTIONS_KV_REST_API_TOKEN:'synthetic-redis-token',
   },fetchFn})
-  const state=createInstagramOAuthState({accountId:'my_coach_ai',nonce:randomUUID()},stateSecret)
-  await store.createOAuthState(state.split('.')[0],state)
-  const consumed=await store.consumeOAuthState(state.split('.')[0])
+  const nonce=randomUUID()
+  const state=createInstagramOAuthState({accountId:'my_coach_ai',nonce},stateSecret)
+  await store.createOAuthState(nonce,state)
+  const consumed=await store.consumeOAuthState(nonce)
   assert.equal(consumed,state)
   await store.saveConnected({
     accountId:'my_coach_ai',providerAccountId:'ig-1',username:'my.coach.ai',
