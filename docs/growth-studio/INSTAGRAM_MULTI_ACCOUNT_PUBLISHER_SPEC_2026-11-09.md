@@ -649,3 +649,39 @@ Publer subscription cancellation/reduction is explicitly out of scope until owne
 - Meta app credentials, OAuth redirect configuration, verified professional accounts and provider permission grants are not available in current Production configuration.
 - No Meta token store, real Meta publish call, real schedule worker or provider receipt is activated by this step.
 - The dry-run queue remains non-publishing. Do not turn it into public publishing until the subsequent adapter/worker PR has exact-head checks, owner-approved credentials and controlled post acceptance.
+
+
+## OAuth implementation progress — 9 November 2026
+
+### Implemented in the current PR (not production yet)
+- Official Instagram Login authorize URL and callback under the existing owner-only Growth Studio API route.
+- HMAC-signed state, 10-minute one-time Redis nonce, HttpOnly/Secure/SameSite=Lax state cookie, exact redirect URI origin/path validation, and server-side owner check on callback.
+- Exchange authorization code for short-lived token, long-lived token exchange, check the two required publishing scopes and read the exact Instagram profile identity.
+- Strict match between the Meta-reported username and the target account handle. A different handle cannot be bound to a requested destination.
+- AES-256-GCM token encryption and separate Redis metadata/credential keys. Token values and provider account IDs are not returned by account-list actions.
+- Owner Connections UI now shows live safe readback, Connect/Reconnect, Disconnect and refresh. Tokens nearing expiry switch to `reauthorization_required`.
+- No OAuth credentials are currently configured, so both accounts remain pending until the owner configures Meta App and Vercel Production secrets.
+
+### First publishing adapter implemented, still gated
+- Server-only adapter for a single Instagram JPEG Feed Post through Instagram Login API: public JPEG preflight, media container, container status readback, publish, and final media permalink readback.
+- Requires exact approved post revision, selected account, required scopes, unexpired token, explicit confirmation and a separate `HH_GROWTH_INSTAGRAM_PUBLISH_ENABLED=true` flag.
+- Ambiguous publish result returns `delivery_unknown`, never a false success; no automatic retry.
+- No owner-facing publish action or background worker is wired yet. The adapter is dormant and no public post has been sent.
+- First supported media format is deliberately only single JPEG Feed Post. Reels, carousel, Stories and video upload need separate format-specific work and acceptance.
+
+### Still outstanding before Instagram Publisher is LIVE
+- Implement/release the provider delivery state machine and real worker using the existing durable queue design, with per-account leases, exact approval revision, cancel, backoff only for safely retryable states, and manual resolution of unknown outcomes.
+- Persist provider receipts and update editorial status only after exact provider media ID + canonical permalink readback.
+- Add a protected scheduled trigger/worker. The current Redis queue remains dry-run only; no Cron entry has been added or enabled for Instagram. Any new recurring trigger must be reviewed against existing Vercel limits/costs before activation.
+- Complete app configuration, Meta app permissions/access review as applicable, and owner authorization for each account.
+- Add separate real test publications only after owner approval; first for one account, then the second.
+- Analytics and first-party business attribution remain unimplemented.
+
+### Current server-side variables (names only; values never belong in chat/issues)
+- `HH_GROWTH_INSTAGRAM_LOGIN_CLIENT_ID`
+- `HH_GROWTH_INSTAGRAM_LOGIN_CLIENT_SECRET`
+- `HH_GROWTH_INSTAGRAM_REDIRECT_URI`
+- `HH_GROWTH_INSTAGRAM_OAUTH_STATE_SECRET`
+- `HH_GROWTH_INSTAGRAM_TOKEN_ENCRYPTION_KEY`
+- `HH_GROWTH_INSTAGRAM_GRAPH_API_VERSION`
+- `HH_GROWTH_INSTAGRAM_PUBLISH_ENABLED` (must stay unset/false until worker and acceptance are complete)
