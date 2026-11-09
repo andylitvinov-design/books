@@ -55,7 +55,7 @@ test('only one scheduled Watchdog writer and no second hourly Control Tower scan
  const handoff=w.split('  direct-handoff:\n')[1]?.split('\n    runs-on:')[0];
  assert.ok(handoff,'worker-completion direct handoff remains');
  assert.doesNotMatch(handoff,/github\.event_name == 'schedule'/);
- assert.ok(w.includes("cron: '6,16,26,36,46,56 * * * *'"),
+ assert.ok(w.includes("cron: '7,17,27,37,47,57 * * * *'"),
   'existing bounded Watchdog schedule remains as a fallback');
  assert.doesNotMatch(c,/^  schedule:/m,'hourly duplicate Control Tower observer removed');
  assert.match(w,/  conflict-event-handoff:/,'existing conflict event route preserved');
