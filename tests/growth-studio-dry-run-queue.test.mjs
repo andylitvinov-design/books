@@ -36,6 +36,26 @@ test('dry-run queue produces validated hashed metadata and never pretends an act
  assert.equal(GROWTH_DRY_RUN_FLAG,'HH_GROWTH_QUEUE_DRY_RUN_ENABLED')
  assert.deepEqual(makeJob(source),job)
 })
+test('dry-run job identity is account-specific for work and personal Instagram profiles',()=>{
+ const sourceId=randomUUID()
+ const makeSource=socialAccountId=>{
+  const draft=nextGrowthPost({action:'save',id:sourceId,fields:{
+   brand:'holistic_house',channel:'instagram',socialAccountId,locale:'en',
+   title:'Public test post',caption:'Public content only.',sourceUrl:'/en/academy',
+   campaign:'public_test',scheduledAt:'',mediaUrl:'',mediaAlt:'',
+  },now})
+  return nextGrowthPost({action:'approve',current:draft,now})
+ }
+ const work=makeJob(makeSource('wizards_secrets'))
+ const personal=makeJob(makeSource('andy_therapist'))
+ assert.equal(work.socialAccountId,'wizards_secrets')
+ assert.equal(personal.socialAccountId,'andy_therapist')
+ assert.notEqual(work.id,personal.id)
+ assert.notEqual(work.payloadHash,personal.payloadHash)
+ assert.equal(isValidDryRunJob(work),true)
+ assert.equal(isValidDryRunJob(personal),true)
+})
+
 test('unapproved, expired revisions, invalid clock and impossible future dates fail closed',()=>{
  const src=approvedSource()
  assert.throws(()=>makeJob({...src,status:'draft'}),/invalid_queue_request/)
