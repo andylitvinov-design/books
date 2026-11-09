@@ -116,9 +116,17 @@ export { PSYCHOLOGY_VIDEO_COURSES, PSYCHOLOGY_VIDEO_SKILLS,
   selectPsychologyVideoCourse } from "./psychologist-video-curricula.mjs";
 export { KIP_MOTIFS, KIP_SYMBOLS, KIP_REFERENCE_SOURCES,
   listKipMotifs, exploreKipSymbol } from "./kip-symbol-registry.mjs";
-export { PERSONAL_MEDITATION_VERSION } from
-  "./psychologist-meditation-composer.mjs";
+export { PERSONAL_MEDITATION_VERSION, composePersonalMeditation,
+  composePersonalMeditationSeries } from "./psychologist-meditation-composer.mjs";
+export { MEDITATION_IMAGE_ATLAS, MEDITATION_IMAGE_BY_ID,
+  listMeditationImages, MEDITATION_IMAGE_AVOID_TAGS } from "./meditation-image-atlas.mjs";
+export { MEDITATION_METAPHORS, MEDITATION_METAPHOR_BY_ID,
+  listMeditationMetaphors } from "./meditation-metaphor-atlas.mjs";
+export { MEDITATION_STORY_ARCS, MEDITATION_STORY_ARC_BY_ID,
+  listMeditationStoryArcs, listMeditationNarrativeCatalog,
+  selectMeditationNarrative } from "./meditation-story-architect.mjs";
 export type { PsychologistLocale, PsychologistFocus, PsychologyInput,
   PsychologyProgram, PsychologyDialogueInput, PsychologyDialogueTurn,
   PsychologistStatus, PsychologyVideoCourseDraft, PsychologyVideoLesson,
-  PsychologyMeditationDraft, PsychologyMeditationSegment } from "./psychologist-mind.mjs";
+  PsychologyMeditationDraft, PsychologyMeditationSegment,
+  PsychologyMeditationSeries, PsychologyStoryCatalog } from "./psychologist-mind.mjs";
