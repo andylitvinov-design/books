@@ -1,0 +1,111 @@
+.page {
+  --coach-ink: #123e39;
+  --coach-green: #087e68;
+  --coach-line: #e9ded2;
+  min-height: 100vh;
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  color: var(--coach-ink);
+  background: linear-gradient(180deg, #fbf7f0 0%, #fffdf8 48%, #f8f2e9 100%);
+}
+.wrap {
+  width: min(1160px, calc(100% - 36px));
+  margin: 0 auto;
+  padding: 12px 0 48px;
+}
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 260px;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: clamp(22px, 4vw, 42px);
+  border: 1px solid #e2d4c4;
+  border-radius: 28px;
+  background: #e9eee6;
+  box-shadow: 0 12px 30px rgb(63 49 34 / 8%);
+}
+.hero::before {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  content: "";
+  background: url("/images/holistic-house/ideas-pine-sharp.avif") center 42% / cover no-repeat;
+}
+.hero::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background: linear-gradient(100deg, rgb(248 249 240 / 97%) 0%, rgb(245 248 239 / 87%) 44%, rgb(237 243 231 / 20%) 100%);
+}
+.heroCopy { max-width: 650px; }
+.eyebrow {
+  margin: 0 0 12px;
+  color: #397064;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .13em;
+}
+.hero h1 {
+  margin: 0;
+  color: #123e39;
+  font-size: clamp(38px, 5.5vw, 62px);
+  font-weight: 800;
+  letter-spacing: -.055em;
+  line-height: 1;
+}
+.heroCopy > p:last-child {
+  max-width: 570px;
+  margin: 13px 0 0;
+  color: #233b36;
+  font-size: clamp(16px, 2vw, 20px);
+  line-height: 1.42;
+}
+.topicPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 26px;
+}
+.topicPills span {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 8px 15px;
+  border: 1px solid rgb(255 255 255 / 88%);
+  border-radius: 99px;
+  background: rgb(255 253 247 / 82%);
+  color: #143c37;
+  font-size: 13px;
+  font-weight: 750;
+  box-shadow: 0 4px 14px rgb(44 57 45 / 7%);
+  backdrop-filter: blur(8px);
+}
+.finder { padding-top: 19px; }
+.unavailable {
+  margin: 16px 0;
+  padding: 12px 15px;
+  border: 1px solid #e2c9bc;
+  border-radius: 14px;
+  background: #fff7f0;
+  color: #765243;
+  font-size: 14px;
+  line-height: 1.5;
+}
+@media (max-width: 640px) {
+  .wrap { width: calc(100% - 20px); padding-top: 8px; }
+  .hero { min-height: 230px; padding: 20px 18px; border-radius: 21px; }
+  .hero::after {
+    background: linear-gradient(100deg, rgb(248 249 240 / 97%) 0%, rgb(245 248 239 / 80%) 65%, rgb(237 243 231 / 30%) 100%);
+  }
+  .hero h1 { font-size: clamp(37px, 10vw, 48px); }
+  .heroCopy > p:last-child { max-width: 95%; font-size: 15px; }
+  .topicPills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 20px; }
+  .topicPills span { justify-content: center; min-height: 42px; padding: 7px 9px; font-size: 11px; text-align: center; }
+  .finder { padding-top: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page * { scroll-behavior: auto !important; }
+}
