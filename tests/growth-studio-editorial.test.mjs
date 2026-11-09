@@ -82,6 +82,9 @@ test('Instagram account target is persisted independently and legacy drafts rema
   assert.equal(isSavedGrowthPost(legacyWithoutTarget),true)
   assert.throws(()=>normalizePostFields(fields({instagramAccountId:'someone_elses_account'})),/invalid_post/)
   assert.equal(normalizePostFields(fields({channel:'facebook',instagramAccountId:'wizards_secrets'})).instagramAccountId,'')
+  const actions=readFileSync(new URL('../app/admin/growth-studio/actions.js',import.meta.url),'utf8')
+  assert.match(actions,/input\.action==='save' && input\.fields\?\.channel==='instagram'/)
+  assert.match(actions,/instagram_account_required/)
 })
 
 test('private URLs, off-brand destinations, query data and encoded private routes are forbidden',() => {
