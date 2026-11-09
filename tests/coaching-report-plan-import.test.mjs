@@ -36,13 +36,14 @@ function fixture(status='accepted'){
  const source=readFileSync(new URL('../lib/app/coaching-report-store.js',import.meta.url),'utf8')
   .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
  const factory=runInNewContext('(deps)=>{const {randomUUID,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReportDraft,reviewCoachingReportDraft,validateCoachingReportV2}=deps;'+source+';return importAcceptedReportActions}')
+ let activeActor=owner.id
  const calls=[],captured={goals:[],actions:[],changes:[]}
  const planId='40000000-0000-4000-8000-000000000001'
  const areaId='50000000-0000-4000-8000-000000000001'
  const db={query:async(sql,args=[])=>{
   calls.push({sql,args})
-  if(sql.startsWith('select id from app.accounts'))return {rows:[{id:owner.id}]}
-  if(sql.includes('from app_private.coaching_reports')&&sql.includes('for update of r'))return {rows:[row]}
+  if(sql.startsWith('select id from app.accounts'))return {rows:activeActor===owner.id?[{id:owner.id}]:[]}
+  if(sql.includes('from app_private.coaching_reports')&&sql.includes('for update of r'))return {rows:activeActor===owner.id?[row]:[]}
   if(sql.includes('from app_private.coaching_session_consents'))return {rows:[{accepted:true,revoked_at:null}]}
   if(sql.includes('from app_private.coaching_action_items a where'))return {rows:captured.existing||[]}
   if(sql.startsWith('insert into app_private.coaching_life_plans'))return {rows:[{id:planId,plan_version:1,status:'active'}]}
@@ -55,7 +56,7 @@ function fixture(status='accepted'){
   if(sql.startsWith('insert into app_private.coaching_life_plan_changes')){captured.changes.push({args});return {rows:[]}}
   throw new Error('Unexpected query: '+sql)
  }}
- const transaction=async(_config,actor,fn)=>fn(db)
+ const transaction=async(_config,actor,fn)=>{activeActor=actor.id;return fn(db)}
  const service=factory({randomUUID,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReportDraft:null,reviewCoachingReportDraft,validateCoachingReportV2})
  return {service,row,report,db,calls,captured,planId,areaId}
 }
