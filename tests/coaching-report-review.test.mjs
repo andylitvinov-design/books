@@ -29,6 +29,6 @@ test('decline and defer never generate acceptance, and reflection-only may be re
   assert.equal(reviewed.actionCandidates[0].acceptedAt,null)
   assert.equal(reviewed.evidence.some(e=>e.kind==='client_action_acceptance'),false)
  }
- const reflection=make();reflection.actionCandidates=[]
+ const reflection=make();reflection.actionCandidates=[];reflection.sections.actionPlan.candidateIds=[];reflection.sections.actionPlan.status='not_captured';reflection.sections.actionPlan.text=null;reflection.sections.actionPlan.evidenceIds=[]
  assert.equal(reviewCoachingReportDraft(reflection,[],now).review.status,'confirmed')
 })
