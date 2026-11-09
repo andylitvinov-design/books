@@ -262,7 +262,10 @@ jobs:
             echo "::error::Checkout parent SHAs differ from the submitted PR HEAD"; exit 1;
           }
           if ! git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
-            for extra in 8 32; do
+            # Feature branches may already include a much newer production
+            # first-parent base while the PR target SHA is hundreds of commits
+            # old. Keep recovery bounded, but deep enough to prove that ancestry.
+            for extra in 128 512; do
               git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"
               if git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base" 2>/dev/null; then
                 break
