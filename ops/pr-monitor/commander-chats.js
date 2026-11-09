@@ -13,13 +13,14 @@
  const STATES={planned:'Запланировано',assigned:'Назначено · не запущено',working:'В работе · по заявлению',
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
+ let reportRefreshTimer=null,reportSyncBusy=false;
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
  const show=(id,yes)=>{el(id).hidden=!yes};
  const info=s=>{el('alert').textContent=String(s)};
  const time=s=>{try{return new Date(s).toLocaleString('ru-RU',{dateStyle:'short',timeStyle:'short'})}catch{return '—'}};
  const id=()=>win.crypto.randomUUID();
  const htmlLink=(box,label,url)=>{
-  if(!/^https:\/\/github\.com\/andylitvinov-design\/books\/(?:pull\/\d+|issues\/(?:1419|3128)#issuecomment-\d+)$/.test(url))return;
+  if(!/^https:\/\/github\.com\/andylitvinov-design\/books\/(?:pull\/\d+|issues\/(?:1419|3128|3890)#issuecomment-\d+)$/.test(url))return;
   const a=make('a',null,label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';box.append(a);
  };
  async function request(url,method='GET',body){
@@ -208,6 +209,14 @@
   el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('thread',true);
   renderMessages();renderList();
  }
+ function startReportPolling(){
+  if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
+  reportRefreshTimer=null;
+  if(!thread||!Array.isArray(thread.prs)||!thread.prs.length)return;
+  reportRefreshTimer=win.setInterval(()=>{
+   if(thread&&doc.visibilityState!=='hidden')void reportList({automatic:true,silent:true});
+  },120000);
+ }
  async function openChat(c){
   if(busy)return;
   try{
@@ -216,6 +225,8 @@
     thread=v.chat;messages=v.messages;if(v.truncated)info('Длинная история GitHub: охват ограничен пятью страницами.');
    }else{thread=chats.find(x=>x.id===c.id);messages=thread?.messages||[];}
    if(!thread)throw Error('Чат не найден');renderThread();
+   startReportPolling();
+   void reportList({automatic:true,silent:true});
    el('thread').scrollIntoView({block:'start',behavior:'smooth'});
   }catch(err){info('Ошибка открытия чата: '+String(err.message||err))}
  }
@@ -234,7 +245,7 @@
     chats.unshift(c);await persist();
    }
    if(remote){chats.unshift(c);messages=[];}else messages=c.messages;
-   thread=c;renderThread();show('create',false);el('create-form').reset();
+   thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});show('create',false);el('create-form').reset();
    info('Чат создан. Назначение исполнителей не запускает работу.');
   }catch(err){info('Чат не создан: '+String(err.message||err))}
   finally{busy=false}
@@ -321,36 +332,86 @@
   }
   info('Статусы PR проверены отдельно; функциональный LIVE ещё не проверен.');
  }
- async function reportList(){
-  if(!thread)return;const box=el('report-list');box.replaceChildren(make('p','cc-help','Получаю GitHub отчёты…'));
+ function reportMentionsPr(report,numbers){
+  const haystack=String(report?.body||'')+' '+String(report?.url||'');
+  return numbers.some(n=>new RegExp('(?:\\bPR\\s*#?'+n+'(?!\\d)|/pull/'+n+'(?:\\b|/))','i').test(haystack));
+ }
+ async function stableReportEventId(chatId,reportId){
+  const input=new win.TextEncoder().encode('HH_COMMANDER_CI_REPORT_V1:'+chatId+':'+reportId);
+  const hash=new Uint8Array(await win.crypto.subtle.digest('SHA-256',input));
+  const bytes=Array.from(hash.slice(0,16));
+  bytes[6]=(bytes[6]&15)|80;bytes[8]=(bytes[8]&63)|128;
+  const hex=bytes.map(v=>v.toString(16).padStart(2,'0')).join('');
+  return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
+ }
+ async function reportList({automatic=false,silent=false}={}){
+  if(!thread||reportSyncBusy)return;
+  const current=thread,box=el('report-list');reportSyncBusy=true;
+  if(!silent)box.replaceChildren(make('p','cc-help','Получаю свежие CI/Repair отчёты…'));
   try{
-   const d=await request(AI+'?action=reports');box.replaceChildren();
-   if(!d.reports?.length)box.append(make('p','cc-help','Отчётов нет.'));
-   for(const r of d.reports.slice(0,12)){
-    if(r.sourceVerified!==true||!['GitHub Actions','ChatGPT Triage'].includes(r.agent))continue;
+   if(!Array.isArray(current.prs)||!current.prs.length){
+    box.replaceChildren(make('p','cc-help','Добавьте номер PR в настройки чата, чтобы получать связанные CI/Repair отчёты.'));
+    return;
+   }
+   const d=await request(AI+'?action=reports');
+   if(thread?.id!==current.id)return;
+   const agents=['GitHub Actions','ChatGPT Triage','OpenRouter Free · GitHub Worker','GitHub Repair Gateway'];
+   const reports=(d.reports||[]).filter(r=>r.sourceVerified===true&&agents.includes(r.agent)&&
+    typeof r.id==='string'&&typeof r.url==='string'&&reportMentionsPr(r,current.prs))
+    .sort((a,b)=>Date.parse(b.createdAt||0)-Date.parse(a.createdAt||0)).slice(0,6);
+   box.replaceChildren();
+   if(!reports.length){
+    box.append(make('p','cc-help','Для связанных PR новых подписанных отчётов пока нет. Проверка обновляется при открытии чата и каждые 2 минуты, пока он открыт.'));
+    return;
+   }
+   for(const r of reports){
+    if(thread?.id!==current.id)break;
+    let eventId='';
+    try{eventId=await stableReportEventId(current.id,r.id)}catch{}
+    let attached=!!eventId&&messages.some(m=>m.id===eventId);
+    const target=chats.find(x=>x.id===current.id);
+    if(!attached&&target&&!remote)attached=(target.messages||[]).some(m=>m.id===eventId);
+    if(automatic&&!attached&&eventId)attached=await attach(r,null,eventId,true);
     const item=make('div','cc-report');
-    item.append(make('strong',null,r.agent+' · '+time(r.createdAt)),make('p',null,r.body.slice(0,480)));
-    htmlLink(item,'Источник',r.url);
-    const b=make('button',null,'Прикрепить к чату');b.type='button';
-    b.addEventListener('click',()=>attach(r,b));item.append(b);box.append(item);
+    item.append(make('strong',null,r.agent+' · '+time(r.createdAt)),
+     make('p',null,r.body.slice(0,480)),
+     make('small','cc-help','Отчёт по PR #'+current.prs.filter(n=>reportMentionsPr(r,[n])).join(', #')+' · не доказательство source commit или LIVE'));
+    htmlLink(item,'Источник GitHub',r.url);
+    if(attached)item.append(make('small','cc-report-attached','✓ Добавлено в историю этого чата'));
+    else{
+     const b=make('button',null,'Прикрепить к чату');b.type='button';
+     b.addEventListener('click',()=>attach(r,b,eventId||undefined,false));item.append(b);
+    }
+    box.append(item);
    }
   }catch(err){box.replaceChildren(make('p','cc-help','Источники недоступны: '+String(err.message||err)))}
+  finally{reportSyncBusy=false;}
  }
- async function attach(r,b){
-  if(!thread||busy)return;busy=true;b.disabled=true;
+ async function attach(r,b,eventIdOverride,quiet=false){
+  if(!thread||busy)return false;
+  const current=thread;busy=true;if(b)b.disabled=true;
   try{
+   let event=null;
    if(remote){
-    const d=await request(SERVER+'?action=attach','POST',{issueNumber:thread.issueNumber,eventId:id(),url:r.url});
-    messages.push(d.event);
+    const d=await request(SERVER+'?action=attach','POST',{issueNumber:current.issueNumber,eventId:eventIdOverride||id(),url:r.url});
+    event=d.event||null;
    }else{
-    const target=chats.find(x=>x.id===thread.id);
-    target.messages.push({schema:'HH_COMMANDER_EVENT_V1',id:id(),kind:'github_report',author:r.agent,
-     text:r.body.slice(0,1600),url:r.url,createdAt:r.createdAt,sourceVerified:true,proofLevel:'REPORT_ONLY_NOT_COMMIT'});
-    target.updatedAt=new Date().toISOString();await persist();messages=target.messages;
+    const target=chats.find(x=>x.id===current.id);if(!target)throw Error('CHAT_NOT_FOUND');
+    const eventId=eventIdOverride||id();
+    event=(target.messages||[]).find(x=>x.id===eventId)||{
+     schema:'HH_COMMANDER_EVENT_V1',id:eventId,kind:'github_report',author:r.agent,
+     text:r.body.slice(0,1600),url:r.url,createdAt:r.createdAt,sourceVerified:false,proofLevel:'REPORT_ONLY_NOT_COMMIT'
+    };
+    if(!(target.messages||[]).some(x=>x.id===eventId)){
+     target.messages.push(event);target.updatedAt=new Date().toISOString();await persist();
+    }
    }
-   renderMessages();renderList();info('Отчёт прикреплён; он не доказывает код, Merge или LIVE.');
-  }catch(err){info('Не удалось прикрепить отчёт: '+String(err.message||err))}
-  finally{busy=false;b.disabled=false}
+   if(event&&thread?.id===current.id&&!messages.some(x=>x.id===event.id))messages.push(event);
+   if(thread?.id===current.id){renderMessages();renderList();}
+   if(!quiet)info('Отчёт прикреплён; он не доказывает код, Merge или LIVE.');
+   return Boolean(event);
+  }catch(err){if(!quiet)info('Не удалось прикрепить отчёт: '+String(err.message||err));return false}
+  finally{busy=false;if(b)b.disabled=false}
  }
  async function handoff(){
   if(!thread)return;
@@ -429,7 +490,7 @@
  el('check-prs').addEventListener('click',checkPRs);el('load-reports').addEventListener('click',reportList);
  el('handoff').addEventListener('click',handoff);
  el('search').addEventListener('input',renderList);el('filter').addEventListener('change',renderList);
- el('close-thread').addEventListener('click',()=>{thread=null;messages=[];show('thread',false);renderList()});
+ el('close-thread').addEventListener('click',()=>{if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);reportRefreshTimer=null;thread=null;messages=[];show('thread',false);renderList()});
  el('refresh').addEventListener('click',async()=>{if(remote)try{await listRemote();info('Чаты обновлены.')}catch(e){info(String(e.message||e))}else renderList()});
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
  el('mode').addEventListener('change',()=>show('model-label',el('mode').value==='openrouter'));

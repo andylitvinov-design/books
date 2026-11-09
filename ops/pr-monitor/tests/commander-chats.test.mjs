@@ -57,3 +57,18 @@ test('chat UI keeps encrypted local recovery and does not claim assignment is ex
  assert.match(js,/UNVERIFIED_ASSIGNMENT_ONLY/);
  assert.doesNotMatch(js,/service_role|HH_PM_GITHUB_WRITE_TOKEN|api\.github\.com\/repos\/.*issues/);
 });
+
+test('linked PR chats automatically sync signed CI/Repair reports with stable private event IDs',()=>{
+ const js=src('commander-chats.js'),html=src('chats.html');
+ assert.match(js,/reportList\(\{automatic:true,silent:true\}\)/);
+ assert.match(js,/reportRefreshTimer=win\.setInterval/);
+ assert.match(js,/120000\)/);
+ assert.match(js,/doc\.visibilityState!=='hidden'/);
+ assert.match(js,/reportMentionsPr/);
+ assert.match(js,/stableReportEventId/);
+ assert.match(js,/eventIdOverride\|\|id\(\)/);
+ assert.match(js,/proofLevel:'REPORT_ONLY_NOT_COMMIT'/);
+ assert.match(js,/reportSyncBusy/);
+ assert.match(html,/CI \/ Repair/);
+ assert.match(html,/2 минуты/);
+});
