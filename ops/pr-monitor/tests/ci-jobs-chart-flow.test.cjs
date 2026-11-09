@@ -46,6 +46,7 @@ test('client bridges existing job cards with a single on-demand GET and no CI di
  assert.match(js,/\.hh2-ci-card/);
  assert.doesNotMatch(js,/setInterval|workflow_dispatch|method:'POST'/);
  assert.match(boot,/ci-jobs-bridge\.js/);
+ assert.match(boot,/20261109-workflow-labels-v1/);
  assert.doesNotMatch(boot,/ci-verified-panel\.js/);
 });
 test('PR chart flows with document, no nested chart scroll or viewport height cap',()=>{
