@@ -197,8 +197,9 @@ jobs:
             }} : null;
             const dryRun=context.eventName==='push'||
               String(context.payload.inputs?.dry_run??'false')==='true';
+            const eventFastPath=isTrustedQualityFailureEvent(context);
             const report=await run({github,core,context,repairGithub,
-              hasMergeToken:Boolean(token),dryRun,directHandoffLocal:true});
+              hasMergeToken:Boolean(token),dryRun,directHandoffLocal:true,eventFastPath});
             // A code push is ALREADY an inspection-only Watchdog run; capture
             // first-seen timestamps into the existing issue without touching
             // any PR, CI, runner, or Watchdog KPI clock.
