@@ -14,7 +14,10 @@ import {randomUUID} from 'node:crypto'
 test('preview projects only evidence-backed populated fields and actual action statuses',()=>{
  const report=buildCoachingReportV2Draft({session:{id:'test',status:'completed',answers:{goal:'Rest more',action:'Take a walk'},reflections:{}},questions:[{id:'goal',stepKey:'goal'},{id:'action',stepKey:'action'}]})
  const view=reportPreviewRows(report,'en')
- assert.deepEqual(view.sections.map(x=>x.text),['Rest more','Rest more'])
+ assert.equal(view.sections.length,10)
+ assert.equal(view.sections.find(x=>x.key==='desiredOutcome').text,'Rest more')
+ assert.equal(view.sections.find(x=>x.key==='actionPlan').status,'captured')
+ assert.equal(view.sections.find(x=>x.key==='mainObstacles').status,'not_captured')
  assert.deepEqual(view.actions.map(x=>x.status),['draft'])
  assert.equal(view.actions.length,1)
 })
@@ -22,7 +25,8 @@ test('preview rejects unknown schemas and never invents an empty report or candi
  assert.throws(()=>reportPreviewRows({schemaVersion:'unknown'},'en'),/COACHING_REPORT_VERSION_INVALID/)
  const report=buildCoachingReportV2Draft({session:{id:'test',status:'completed',answers:{},reflections:{}},questions:[]})
  const view=reportPreviewRows(report,'ru')
- assert.deepEqual(view.sections,[])
+ assert.equal(view.sections.length,10)
+ assert.ok(view.sections.every(section=>section.text==='В этой сессии не зафиксировано' || section.key==='actionPlan'))
  assert.deepEqual(view.actions,[])
 })
 
