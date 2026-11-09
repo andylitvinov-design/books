@@ -691,7 +691,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', href: root + '/messages', icon: MessageCircle },
     { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', href: root + '/progress', icon: BarChart3 },
     { id: 'my-coaching-plan', label: locale === 'ru' ? 'Мой план' : locale === 'es' ? 'Mi plan' : 'My plan', href: root + '/my-coaching-plan', icon: Target },
-    { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
+    // Settings remains available from the account menu; the bottom dock keeps My Plan visible.
   ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||
