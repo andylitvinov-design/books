@@ -310,7 +310,7 @@ await import('./app-telegram-oidc-login.test.mjs')
 test('Commander owner login check always ends and exposes a retry action when auth provider is slow', async () => {
   const source = await readFile(new URL('../public/commander-connect.js', import.meta.url), 'utf8')
   const page = await readFile(new URL('../public/commander-connect.html', import.meta.url), 'utf8')
-  assert.match(page, /commander-connect\\.js\\?v=20261109-owner-timeout-v1/)
+  assert.ok(page.includes('commander-connect.js?v=20261109-owner-timeout-v1'))
   assert.match(source, /fetchWithTimeout/)
   assert.match(source, /8000, 'Проверка сессии'/)
   assert.match(source, /10000, 'Проверка владельца'/)
