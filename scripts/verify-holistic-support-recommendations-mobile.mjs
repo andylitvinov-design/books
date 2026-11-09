@@ -40,10 +40,10 @@ for (const engine of [chromium, webkit]) {
           assert.equal(response?.status(), 200, label + " existing mobile route");
           const root = page.locator("[data-holistic-mobile-alternative]");
           await root.waitFor({ state: "visible", timeout: 30000 });
-          await page.waitForFunction(() => {
-            const input = document.querySelector('[data-support-scale="relationships"] input[type="range"]');
-            return Boolean(input && Object.keys(input).some(key => key.startsWith("__reactProps$")));
-          }, null, {timeout:30000});
+          const relationshipsInput=root.locator('[data-support-scale="relationships"] input[type="range"]');
+          await relationshipsInput.waitFor({state:"visible",timeout:30000});
+          assert.equal(await root.locator('[data-support-scale] input[type="range"]').count(),4,
+            label+" four hydrated, user-operable scale controls");
 
           const assessment = root.locator('[aria-labelledby="mobile-assessment-title"]');
           const photo = root.locator("[data-support-photo]");

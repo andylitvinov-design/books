@@ -61,6 +61,10 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(voiceEditor,/onAttach\(\{file,speechFile,/);
   assert.match(page,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,narration:true/);
   assert.match(page,/narrationInvalid/);
+  assert.match(page,/const narrationPhraseMismatch=attachedAudio\?\.kind==="file"&&attachedAudio\.narration&&[\s\S]*!isApprovedAffirmationNarration\(affirmationLines,attachedAudio\.spokenText,affirmations\.enabled\)/,
+    "removing an actually spoken phrase invalidates its WAV immediately, even during pending edits");
+  assert.match(page,/narrationPhraseMismatch \|\| \(!phrasePending&&/,
+    "only unrelated duration and voice-setting changes wait for phrase approval");
   assert.match(page,/narrationDurationMismatch[\s\S]*Math\.abs\(\(attachedAudio\.mixSeconds\?\?0\)-duration\)>0\.35/,
     "sub-frame WAV duration rounding is not misclassified as stale narration");
   assert.match(page,/attachedAudio\.voiceId!==voicePreferences\.voiceId/);
@@ -326,12 +330,14 @@ test("mobile one-phrase selection uses approved lines only, revokes consent and 
   assert.ok(ui.includes('data-video-affirmation-phrase'));
   assert.ok(ui.includes('affirmationNarrationForSelection(lines,phraseChoice==="all"?"all":selectedIndex??0)'));
   assert.ok(ui.includes('setConsent(false)'));
-  assert.ok(ui.includes('if(voiceDataRef.current)onInvalidateRef.current?.()'));
+  assert.ok(ui.includes('onInvalidateRef.current?.();'));
   const speechChangeEffect=ui.slice(
     ui.indexOf('    const textChanged=previous.speechText!==speechText;'),
     ui.indexOf('  },[speechText,voiceId,language,busy,mixing,locale]);'));
-  assert.match(speechChangeEffect,/if\(voiceDataRef\.current\)onInvalidateRef\.current\?\.\(\)/,
-    "changing the spoken phrase must detach its previous WAV");
+  assert.match(speechChangeEffect,/onInvalidateRef\.current\?\.\(\);/,
+    "changing the spoken phrase must detach its previous WAV even after the voice panel remounts");
+  assert.doesNotMatch(speechChangeEffect,/if\(voiceDataRef\.current\)/,
+    "parent-attached WAV invalidation cannot depend on a child-local Blob ref");
   assert.match(ui,/useLayoutEffect\(\(\)=>\{/,"detach stale audio before the next paint");
   assert.match(ui,/previous\.speechText===speechText && previous\.voiceId===voiceId/,
     "identical approved input must never abort valid narration");
@@ -405,11 +411,12 @@ test("post-effect browser acceptance checks the actual mixed WAV after an unrela
   assert.match(afterEffect,/data-video-live-audio[^\n]*toContainText\("holistic-house-hypno-audio\.wav"\)/);
 });
 
-test("browser stale-audio check removes the spoken phrase by text after selection reordering",()=>{
-  assert.match(source,/const spokenPhrase=[^\n]*data-hypno-phrase[^\n]*filter\(\{hasText:approved\}\)/);
-  assert.match(source,/expect\(spokenPhrase\)\.toHaveCount\(1\)/);
-  assert.match(source,/await spokenPhrase\.click\(\)/);
+test("browser stale-audio check removes the spoken phrase through the visible Montage Text selection",()=>{
+  assert.match(source,/const spokenPhrase=phraseRows\.filter\(\{hasText:approved\}\)/);
+  assert.match(source,/const spokenToggle=spokenPhrase\.locator\('\[data-video-idea-select\]'\)/);
+  assert.match(source,/await spokenToggle\.click\(\)/);
   assert.match(source,/removed spoken phrase must block stale WAV reuse or detach it/);
+  assert.match(source,/removing the spoken phrase must block stale WAV reuse or detach it/);
 });
 
 test('browser checks phrase consent before switching to the separate montage workspace',()=>{
