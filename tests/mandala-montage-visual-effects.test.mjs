@@ -46,11 +46,11 @@ test('Preserves the existing Hypno waves and strictly avoids fast strobing',()=>
    'existing wave overlay must remain the fallback for older saved projects');
 });
 
-test('Four visible Montage tabs and one real shared Text engine; no second renderer',()=>{
+test('Five visible Montage tabs preserve the separate video storyboard and one shared Text engine',()=>{
  const rail=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'));
  const firstNav=rail.slice(0,rail.indexOf('</nav>'));
  assert.deepEqual([...firstNav.matchAll(/\{id:"(\w+)",Icon:/g)].map(match=>match[1]),
-  ['effects','text','visual','settings']);
+  ['effects','text','visual','settings','concept']);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
@@ -63,6 +63,12 @@ test('Four visible Montage tabs and one real shared Text engine; no second rende
  assert.match(studio,/data-video-montage-aspect=\{item.id\}/);
  assert.match(studio,/onClick=\{\(\)=>changeVideoAspect\(item.id\)\}/);
  assert.match(studio,/data-video-montage-open-concept/);
+ assert.match(studio,/data-video-montage-open-storyboard/);
+ assert.match(studio,/id:"concept",Icon:Film/);
+ assert.match(studio,/data-video-montage-concept/);
+ assert.equal((studio.match(/<MandalaCinematicDirector /g)||[]).length,1);
+ assert.match(studio,/data-video-pro-open-montage-storyboard/);
+ assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
  assert.match(studio,/data-video-montage-open-audio/);
  assert.match(css,/\.montageVisualGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(css,/\.montageAspectSwitch>div\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
