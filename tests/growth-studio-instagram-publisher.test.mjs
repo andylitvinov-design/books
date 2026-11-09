@@ -13,9 +13,25 @@ const approvedPost=(overrides={})=>({
   revision:3,status:'approved',brand:'holistic_house',channel:'instagram',
   socialAccountId:'wizards_secrets',locale:'en',title:'Test image post',
   caption:'A public post approved for the Wizards Secrets profile.',
+  sourceUrl:'',campaign:'',scheduledAt:'',
   mediaUrl:'https://holistichouse.vercel.app/uploads/approved-image.jpg',
   mediaAlt:'A sunlit green garden',
   ...overrides,
+})
+
+test('the caption sent to Instagram matches the confirmed caption including the campaign link',async()=>{
+  const post=approvedPost({sourceUrl:'https://holistichouse.vercel.app/about',campaign:'launch'})
+  const {client,calls,fetchFn}=fakeProvider()
+  await publishApprovedInstagramImage({post,expectedRevision:3,confirmed:true,environment,providerClient:client,fetchFn})
+  assert.equal(calls.find(call=>call.method==='create').caption,
+    post.caption+'\n\nhttps://holistichouse.vercel.app/about?utm_source=instagram&utm_medium=organic_social&utm_campaign=launch&utm_content=en')
+})
+
+test('the Instagram caption limit includes the campaign link before provider requests',async()=>{
+  const post=approvedPost({caption:'x'.repeat(2180),sourceUrl:'https://holistichouse.vercel.app/about'})
+  const {client,calls,fetchFn}=fakeProvider()
+  await assert.rejects(publishApprovedInstagramImage({post,expectedRevision:3,confirmed:true,environment,providerClient:client,fetchFn}),/instagram_media_preflight_failed/)
+  assert.equal(calls.length,0)
 })
 function fakeProvider({publishFailure=false,statusCode='FINISHED',targetId='wizards_secrets',username=META_ACCOUNT_TARGETS[targetId]?.handle||'wizards.secrets'}={}){
   const calls=[]
