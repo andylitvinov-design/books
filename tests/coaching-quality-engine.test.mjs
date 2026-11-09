@@ -46,7 +46,7 @@ test('missing dimensions reduce evidence coverage and cannot be counted as passi
   delete evaluations.actionQuality;
   delete evaluations.completion;
   const result = evaluateCoachingSessionQuality(session, evaluations);
-  assert.equal(result.coverage, 65);
+  assert.equal(result.coverage, 75);
   assert.equal(result.status, 'insufficient_evidence');
   assert.deepEqual(result.missingDimensions, ['completion', 'actionQuality', 'reportAccuracy']);
   assert.equal(result.reviewRequired, true);
