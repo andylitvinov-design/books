@@ -62,6 +62,39 @@ function fixture(){
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
 
+test('pilot pause survives reload and retries, preserves answers and requires explicit resume',async()=>{
+ const {api}=fixture()
+ const id=n=>`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:id(1)})
+ const pause={action:'pause',revision:s.revision,turnId:id(2)}
+ s=await api.savePersonalCoaching({},a,pause)
+ assert.equal(s.course.current.status,'paused')
+ assert.equal((await api.savePersonalCoaching({},a,pause)).revision,s.revision)
+ const loaded=await api.readPersonalCoaching({},a)
+ assert.equal(loaded.course.current.answers.real,'choice:time')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'options',answer:'choice:try',turnId:id(3)}),err=>err.code==='PERSONAL_COACH_QUESTION_UNAVAILABLE')
+ const started=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1',revision:s.revision})
+ assert.equal(started.course.current.status,'paused')
+ const resume={action:'resume',revision:s.revision,turnId:id(4)}
+ s=await api.savePersonalCoaching({},a,resume)
+ assert.equal(s.course.current.status,'active')
+ assert.equal(s.course.current.answers.real,'choice:time')
+ assert.equal((await api.savePersonalCoaching({},a,resume)).revision,s.revision)
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...resume,action:'pause'}),err=>err.code==='PERSONAL_COACH_TURN_ID_REUSED')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'pause',revision:s.revision-1,turnId:id(5)}),err=>err.code==='PERSONAL_COACH_REVISION_CONFLICT')
+})
+
+test('pause and resume cannot bypass safety hold or operate on another account',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'I want to kill myself'})
+ for(const action of ['pause','resume']){
+  await assert.rejects(()=>api.savePersonalCoaching({},a,{action,revision:s.revision,turnId:'20000000-0000-4000-8000-000000000006'}),err=>err.code==='PERSONAL_COACH_SAFETY_HOLD')
+  await assert.rejects(()=>api.savePersonalCoaching({},b,{action,revision:0,turnId:'20000000-0000-4000-8000-000000000007'}),err=>err.code==='PERSONAL_COACH_NOT_STARTED')
+ }
+})
+
 test('reviewed continuity and safety hold coexist without accepting unreviewed context',async()=>{
  const {api}=fixture()
  const draft={version:1,reviewStatus:'needs_review',active_goals:[{text:'Protect personal time'}]}

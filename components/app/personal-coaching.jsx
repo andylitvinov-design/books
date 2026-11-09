@@ -202,7 +202,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const lastApprovedPlan=[session,...(course?.history||[])]
     .find(item=>item?.actionPlan?.approvedAt&&typeof item.actionPlan.actionText==='string')?.actionPlan||null
   function turnFor(action,revision,fields={}){
-    if(session?.schemeKey!=='grow_overload_20_v1'||!['answer','reflection','complete','finish_without_plan'].includes(action))return null
+    if(session?.schemeKey!=='grow_overload_20_v1'||!['answer','reflection','complete','finish_without_plan','pause','resume'].includes(action))return null
     const key=JSON.stringify([action,revision,fields])
     if(pendingTurn.current?.key!==key)pendingTurn.current={key,id:crypto.randomUUID()}
     return pendingTurn.current.id
@@ -442,6 +442,15 @@ export default function PersonalCoaching({locale='en',accountId}){
           <button type="button" className={styles.delete} disabled={busy} onClick={erase}><Trash2 size={15}/>{t.delete}</button>
           {error&&<p className={styles.error} role="alert">{error}</p>}
         </div>
+        : session?.status==='paused' ? <div className={styles.summary} data-coaching-paused>
+          <h1>{lang==='ru'?'Сессия на паузе':lang==='es'?'Sesión en pausa':'Session paused'}</h1>
+          <p>{lang==='ru'?'Сохранённые ответы останутся доступны, когда вы вернётесь.':lang==='es'?'Tus respuestas guardadas estarán disponibles cuando vuelvas.':'Your saved answers will be here when you return.'}</p>
+          <button type="button" className={styles.primary} disabled={busy} onClick={()=>command('resume')}>
+            {lang==='ru'?'Продолжить сессию':lang==='es'?'Continuar sesión':'Resume session'}
+          </button>
+          <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.close}</Link>
+          {error&&<p className={styles.error} role="alert">{error}</p>}
+        </div>
         : entry ? <div className={styles.session} data-private-coaching-onboarding>
           <div className={styles.questionArea}>
             {entry.step==='intro'?<CoachingSessionIntroduction locale={lang} headingRef={titleRef}
@@ -670,6 +679,10 @@ export default function PersonalCoaching({locale='en',accountId}){
               </button>
             </div>
             {!question.required&&<button type="button" className={styles.skip} disabled={busy} onClick={()=>next(true)}>{t.skip}</button>}
+            {isOverload&&<button type="button" className={styles.skip} disabled={busy||dictating}
+              onClick={()=>{if((!dirty&&!(pendingFollowup&&reflectionDraft.trim()))||window.confirm(t.unsaved))command('pause')}}>
+              {lang==='ru'?'Поставить на паузу':lang==='es'?'Pausar sesión':'Pause session'}
+            </button>}
             {session?.schemeKey==='grow_overload_20_v1'&&<button type="button" className={styles.skip} disabled={busy||dictating}
               onClick={()=>{if(!dirty||window.confirm(t.unsaved))command('finish_without_plan')}}>
               {lang==='ru'?'Завершить без плана':lang==='es'?'Terminar sin un plan':'Finish without a plan'}
