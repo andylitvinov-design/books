@@ -89,6 +89,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
 test('monitor-side owner token handoff is bounded, retryable and removes bearer from URL',()=>{
  const auth=src('commander-auth.js');
  assert.match(auth,/fetchWithTimeout/);
+ assert.match(src('commander-auth.html'),/commander-auth\.js\?v=20261109-handoff-retry-v1/);
  assert.match(auth,/11000/);
  assert.match(auth,/history\.replaceState\(null,'',location\.pathname\+location\.search\)/);
  assert.match(auth,/sessionToken=''/);
