@@ -1,4 +1,4 @@
-export type UnifiedDockId = "mytube"|"video"|"ai"|"practice"|"master"|"profile"|"analysis";
+export type UnifiedDockId = "mytube"|"video"|"ai"|"practice"|"coach"|"services"|"profile";
 export declare const UNIFIED_DOCK_IDS: readonly UnifiedDockId[];
 export declare function isUnifiedMobileDockHomePath(pathname?:string):boolean;
 export declare function isUnifiedMobileDockPath(pathname?:string):boolean;
