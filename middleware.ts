@@ -74,7 +74,8 @@ export async function middleware(request: NextRequest) {
   // The canonical unprefixed home always renders English; /ru renders Russian.
   // Legacy ?lang=ru links redirect at the page boundary, never emit mixed-language HTML.
   const pageLocale = pathname === '/' ? 'en' : (urlLocale ?? (['en', 'ru', 'es'].includes(queryLocale ?? '') ? queryLocale : preference) ?? 'en')
-  requestHeaders.set('x-public-page-locale', pageLocale)
+  requestHeaders.set('x-public-page-locale', pathname === '/commander-connect.html' ? 'ru' : pageLocale)
+  if (pathname === '/commander-connect.html') requestHeaders.set('x-standalone-commander', '1')
   const nonce = crypto.randomUUID().replaceAll('-', '')
   const developmentEval = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''
   const videoManager = pathname === '/admin/videos'
