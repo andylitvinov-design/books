@@ -18,7 +18,7 @@ import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-c
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
-import { readCoachingLifePlan, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
+import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
 import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
 import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
@@ -865,6 +865,9 @@ async function handle(request, { params }) {
       if (path.length===1 && method==='GET') {
         const locale=new URL(request.url).searchParams.get('locale')||'en'
         return json(await readCoachingLifePlan(config,actor,{locale}))
+      }
+      if (path.length===3 && path[1]==='areas' && method==='POST') {
+        return json(await updateCoachingLifePlanArea(config,actor,{...await readBody(request,8192),areaKey:path[2]}))
       }
       if (path.length===2 && path[1]==='import' && method==='POST') {
         return json(await importCoachingReportActions(config,actor,await readBody(request,2048)))
