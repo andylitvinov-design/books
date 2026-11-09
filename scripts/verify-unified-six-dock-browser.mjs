@@ -675,7 +675,7 @@ try{
 
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  await homeDock.locator('[data-unified-dock-item="myCoach"]').click();
- await page.waitForURL(/\\/ru\\/my-coach\\/?$/,{timeout:45000});
+ await page.waitForURL(url=>url.pathname==="/ru/my-coach"||url.pathname==="/ru/my-coach/",{timeout:45000});
  await page.locator("[data-my-coach-page]").waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator('[data-unified-dock-item="myCoach"][aria-current="page"]').count(),1);
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
