@@ -220,7 +220,9 @@ test("choosing Ready preserves private audio state while the current Ideas edito
  assert.ok(ideas.includes("data-video-idea-select"));
  assert.ok(browser.includes("data-video-affirmation-phrase"));
  assert.ok(browser.includes("data-video-affirmation-transcript-review"));
- assert.ok(browser.includes("removing the spoken phrase must block stale WAV reuse or detach it"));
+ assert.ok(browser.includes("data-video-narration-reapproval"),"removed spoken phrases require explicit narration reapproval");
+ assert.ok(browser.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"),"stale audio stays attached only as unusable media");
+ assert.ok(browser.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
  assert.doesNotMatch(browser,/approvalButton\.tap\(\)/,
    "the retired standalone Hypno approval button must not reappear");
 });
@@ -235,5 +237,7 @@ test("ten-phrase limit and stale spoken-audio guard use the current visible Mont
  assert.match(script,/const unselectedToggle=phraseEditor\.locator\('\[data-video-idea-select\]\[aria-pressed="false"\]'\)\.first\(\)/);
  assert.ok(script.includes("const spokenToggle=spokenPhrase.locator('[data-video-idea-select]')"));
  assert.ok(script.includes("adding an unspoken phrase does not invalidate the actual WAV"));
- assert.ok(script.includes("A removed spoken phrase must block stale WAV reuse or detach it before export."));
+ assert.ok(script.includes("data-video-narration-reapproval"));
+ assert.ok(script.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"));
+ assert.ok(script.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
 });
