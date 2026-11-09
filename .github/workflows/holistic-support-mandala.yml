@@ -255,8 +255,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      - name: Prepare verified upstream FFmpeg for full Mandala runtime
         if: steps.policy.outputs.policy_only != 'true'
+        uses: ./.github/actions/ci-ffmpeg-static
+      - name: Install lockfile dependencies without networked FFmpeg postinstall
+        if: steps.policy.outputs.policy_only != 'true'
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Materialize SHA-verified FFmpeg for Mandala runtime and Next trace
+        if: steps.policy.outputs.policy_only != 'true'
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Verify focused Mandala and CI scope contracts without app install
         if: steps.policy.outputs.policy_only == 'true'
         run: node --test tests/ci-heavy-impact.test.mjs tests/ci-workflow-globs.test.mjs

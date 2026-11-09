@@ -81,8 +81,14 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22, cache: npm}
-      - name: Install project dependencies
-        run: npm ci --no-audit --no-fund
+      - name: Prepare SHA-verified FFmpeg (official upstream asset)
+        uses: ./.github/actions/ci-ffmpeg-static
+      - name: Install project dependencies without networked FFmpeg postinstall
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Materialize verified FFmpeg in the package-local runtime path
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Verify private GROW model, old programme pause and course discovery
         run: |
           node --check lib/personal-coaching/questions.js
