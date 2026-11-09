@@ -225,3 +225,29 @@ test('Redis connection errors fail closed and never create browser fallback reco
   const malformed=createGrowthStudioStore({environment,fetchFn:async()=>({ok:true,json:async()=>({result:null})})})
   await assert.rejects(malformed.list(),/storage_unavailable/)
 })
+
+
+test('Instagram drafts persist an explicit social destination; server approval gate requires it for newly edited drafts',()=>{
+  const id=postId()
+  const instagram=fields({channel:'instagram',socialAccountId:'my_coach_ai'})
+  const draft=nextGrowthPost({fields:instagram,action:'save',id,now:fixedNow})
+  assert.equal(draft.socialAccountId,'my_coach_ai')
+  assert.equal(isSavedGrowthPost(draft),true)
+  const approved=nextGrowthPost({current:draft,action:'approve',now:fixedNow})
+  assert.equal(approved.status,'approved')
+  const missing=nextGrowthPost({fields:fields({channel:'instagram'}),action:'save',id:postId(),now:fixedNow})
+  assert.equal(missing.socialAccountId,'')
+  assert.equal(nextGrowthPost({current:missing,action:'approve',now:fixedNow}).status,'approved')
+  const actions=readFileSync(new URL('../app/admin/growth-studio/actions.js',import.meta.url),'utf8')
+  assert.match(actions,/input\.action==='approve' && current\?\.channel==='instagram'/)
+  assert.match(actions,/Object\.hasOwn\(current,'socialAccountId'\) && !current\.socialAccountId/)
+  assert.match(actions,/instagram_account_required/)
+  assert.throws(()=>normalizePostFields({...instagram,socialAccountId:'untrusted-account'}),/invalid_post/)
+  assert.throws(()=>normalizePostFields({...instagram,channel:'facebook'}),/invalid_post/)
+})
+
+test('legacy saved posts without socialAccountId remain readable',()=>{
+  const legacy=nextGrowthPost({fields:fields(),action:'save',id:postId(),now:fixedNow})
+  const {socialAccountId,...oldShape}=legacy
+  assert.equal(isSavedGrowthPost(oldShape),true)
+})
