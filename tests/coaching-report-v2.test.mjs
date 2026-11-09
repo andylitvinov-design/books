@@ -114,6 +114,25 @@ test('missing answers stay absent; no invented actions, recommendations, diagnos
   assert.equal(validateCoachingReportV2(report).valid, true)
 })
 
+test('reflection-only completion does not turn a prior explored action into a plan candidate', () => {
+  const report = buildCoachingReportV2Draft({
+    session: completedSession({outcome:'reflection_only'}), questions,
+  })
+  assert.deepEqual(report.actionCandidates, [])
+  assert.deepEqual(report.outcome.confirmedDecisions, [])
+  assert.ok(report.evidence.some(item => item.role === 'action'), 'the original answer remains evidence')
+})
+
+test('an action separately approved after reflection-only completion remains an explicit commitment', () => {
+  const report = buildCoachingReportV2Draft({
+    session: completedSession({outcome:'reflection_only', actionPlan:{
+      actionText:'A later confirmed action', approvedAt:'2026-11-09T16:19:00.000Z',
+    }}), questions,
+  })
+  assert.equal(report.actionCandidates[0].text,'A later confirmed action')
+  assert.equal(report.actionCandidates[0].status,'accepted')
+})
+
 test('locale falls back safely and preserves the client’s original words', () => {
   const report = buildCoachingReportV2Draft({
     session: completedSession(),
