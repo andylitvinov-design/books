@@ -254,7 +254,12 @@ jobs:
           [[ "$tested_head" == "$PR_HEAD_SHA" && "$tested_base" =~ ^[0-9a-f]{40}$ ]] || {
             echo "::error::Checkout parent SHAs differ from the submitted PR HEAD"; exit 1;
           }
-          relation="$(gh api "repos/$GITHUB_REPOSITORY/compare/$EVENT_BASE_SHA...$tested_base" --jq '.status')"
+          compare_json="$(curl --fail --silent --show-error --max-time 20 \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}")"
+          relation="$(printf '%s' "$compare_json" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{const x=JSON.parse(s);if(typeof x.status!=="string")process.exit(2);process.stdout.write(x.status)}catch{process.exit(2)}})')"
           [[ "$relation" == "ahead" || "$relation" == "identical" ]] || {
             echo "::error::Event base is not an ancestor of the immutable tested base ($relation)"; exit 1;
           }
