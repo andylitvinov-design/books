@@ -1,6 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { runInNewContext } from 'node:vm'
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import ts from 'typescript'
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
 
@@ -33,4 +38,28 @@ test('the prioritisation question may use one authored reality follow-up in the 
   assert.match(source,/priorities:'reality'/)
   assert.match(source,/const prompts=Object\.freeze/)
   assert.match(source,/rows\.some\(row=>row\.stage===stage\)/)
+})
+
+test('private coaching routes suppress the global promotional ribbon, while public routes retain it',()=>{
+  const require=createRequire(import.meta.url)
+  const output=ts.transpileModule(read('components/sitewide-antistress-banner.tsx'),{
+    compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true},
+  }).outputText
+  let pathname=''
+  const empty=()=>null
+  const modules={react:React,'react/jsx-runtime':require('react/jsx-runtime'),
+    'next/link':({children})=>React.createElement('a',null,children),'next/image':empty,
+    'next/navigation':{usePathname:()=>pathname},'lucide-react':{ArrowRight:empty,ChevronDown:empty,Sparkles:empty},
+    '@/lib/public-card-artwork':{cardArtworkUrl:()=>''},'@/components/static-portrait':{StaticPortrait:empty},
+    './sitewide-antistress-banner.module.css':{}}
+  const exports={}
+  runInNewContext(output,{exports,require:name=>{if(Object.hasOwn(modules,name))return modules[name];throw Error(name)}})
+  for(const locale of ['en','ru','es']){
+    for(const path of [`/${locale}/app/coaching`,`/${locale}/app/coaching/greek`]){
+      pathname=path
+      assert.equal(renderToStaticMarkup(React.createElement(exports.SitewideAntistressBanner,{initialLocale:locale})), '')
+    }
+    pathname=`/${locale}/coaching`
+    assert.match(renderToStaticMarkup(React.createElement(exports.SitewideAntistressBanner,{initialLocale:locale})),/data-sitewide-personal-review-banner/)
+  }
 })

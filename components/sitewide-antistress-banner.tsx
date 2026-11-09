@@ -96,6 +96,8 @@ const isDistractionSensitivePage = (pathname: string) =>
   /^\/(?:ru|en|es)\/practice\/?$/.test(pathname) ||
   // The private practitioner editor shares the new minimal header and dock.
   /^\/(?:ru|en|es)\/app\/practice\/?$/.test(pathname) ||
+  // Coaching can enter a safety hold; keep promotional offers out of the private session.
+  /^\/(?:ru|en|es)\/app\/coaching(?:\/|$)/.test(pathname) ||
   // My Space is video-first: leave its first viewport for the player and real actions.
   /^\/(?:ru|en|es)\/app\/portrait\/?$/.test(pathname) ||
   // The signed-in Orders / Clients Messenger is an app, not a marketing page.
