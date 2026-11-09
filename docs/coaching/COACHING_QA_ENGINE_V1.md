@@ -98,3 +98,5 @@ Missing rates, mixed currencies, incomplete metering or provider-call/receipt mi
 ## 8. Non-goals / safety
 
 No LLM judge, psychological diagnosis, sentiment profiling, transcript retention, public coach rating, new paid provider, hidden cost fallback or automatic production promotion. The engine is a quality-assurance support tool; it is not proof of coaching effectiveness or a clinical outcome measure.
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]
