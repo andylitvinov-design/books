@@ -405,11 +405,12 @@ test("post-effect browser acceptance checks the actual mixed WAV after an unrela
   assert.match(afterEffect,/data-video-live-audio[^\n]*toContainText\("holistic-house-hypno-audio\.wav"\)/);
 });
 
-test("browser stale-audio check removes the spoken phrase by text after selection reordering",()=>{
-  assert.match(source,/const spokenPhrase=[^\n]*data-hypno-phrase[^\n]*filter\(\{hasText:approved\}\)/);
-  assert.match(source,/expect\(spokenPhrase\)\.toHaveCount\(1\)/);
-  assert.match(source,/await spokenPhrase\.click\(\)/);
+test("browser stale-audio check removes the spoken phrase through the visible Montage Text selection",()=>{
+  assert.match(source,/const spokenPhrase=phraseRows\.filter\(\{hasText:approved\}\)/);
+  assert.match(source,/const spokenToggle=spokenPhrase\.locator\('\[data-video-idea-select\]'\)/);
+  assert.match(source,/await spokenToggle\.click\(\)/);
   assert.match(source,/removed spoken phrase must block stale WAV reuse or detach it/);
+  assert.match(source,/removing the spoken phrase must block stale WAV reuse or detach it/);
 });
 
 test('browser checks phrase consent before switching to the separate montage workspace',()=>{
