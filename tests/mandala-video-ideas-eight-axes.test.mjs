@@ -155,3 +155,8 @@ test("WebKit keeps two Ideas tabs and real opt-in voice while four Montage tabs 
  for(const tab of ['id:"effects",Icon:Sparkles','id:"text",Icon:Type','id:"visual",Icon:Zap','id:"settings",Icon:SlidersHorizontal'])
   assert.ok(studio.includes(tab),tab);
 });
+
+test("selecting a new phrase at the ten-phrase cap replaces the last choice and reports it",()=>{
+ assert.match(cmp,/else if\(chosen\.length>=10\)\{[\s\S]*?apply\(options,\[\.\.\.chosen\.slice\(0,-1\),index\]\);[\s\S]*?setFeedback\(t\.savedReplaced\);/);
+ assert.match(cmp,/Choose up to 10 phrases|Выбрано максимум 10|Elige hasta 10/i);
+});
