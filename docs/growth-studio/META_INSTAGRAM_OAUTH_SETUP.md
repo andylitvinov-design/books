@@ -4,6 +4,16 @@ Date: 2026-11-09
 
 This implementation uses **Instagram Graph API with Facebook Login** because the commissioning requirement explicitly needs the linked Facebook Page and its Page ID. This is distinct from Instagram Login, which uses the Instagram-specific permission family and does not supply the same Page-link workflow.
 
+## Owner-approved Instagram destinations
+
+| Internal target | Role | Handle | Editorial profile |
+|---|---|---|---|
+| `wizards_secrets` | Work | `@wizards.secrets` | Wizards Secrets · Holistic House |
+| `andy_therapist` | Personal | `@andy.therapist` | Andy Therapist |
+
+Each destination has separate Meta OAuth state, encrypted credentials, Instagram/Page IDs, publish approval and performance history. Former targets are no longer active.
+
+
 ## Meta app configuration
 
 1. Use/create a Meta Business app in the Meta for Developers account controlled by the business owner.
@@ -31,7 +41,7 @@ Set these as server-only secrets, then deploy:
 2. Click Connect beside one target account. Complete Facebook login and grant the requested scopes.
 3. Callback reads granted permissions, managed Pages and linked professional Instagram account metadata.
 4. The callback matches the exact expected username, requires a Page content-creation task, and stores encrypted credentials in the existing Redis service. It rejects missing/ambiguous matches.
-5. Repeat the authorization flow separately for each handle: `@my.coach.ai`, `@my.couch.ai`, `@wizards.secrets` and `@andy.therapist`. Each must resolve to exactly one linked professional Instagram account and Facebook Page.
+5. Repeat separately for the work profile `@wizards.secrets` and the personal profile `@andy.therapist`.
 6. Check status at `/api/admin/growth-studio/meta/status`. Only non-secret metadata is returned.
 
 Requested scopes:
@@ -50,7 +60,10 @@ Comments and messaging scopes are deliberately excluded.
 - Tokens are encrypted with AES-256-GCM before entering Redis; Redis keys are isolated per target and expire after 60 days.
 - No token, app secret, authorization code or full provider payload is returned to the browser or logged.
 - Disconnect deletes the corresponding credential record.
-- Publishing is hard-disabled; this OAuth foundation does not send posts. A separate reviewed publisher worker, account-aware approval, idempotency/reconciliation and test-post receipts are still required before LIVE.
+- The existing Growth Studio now includes a server-only, owner-confirmed Instagram JPEG Feed publisher with account identity checks and provider receipt/permalink readback. It is not an unattended scheduler.
+- `HH_GROWTH_INSTAGRAM_PUBLISH_ENABLED` defaults OFF; keep it unset/false until the owner has completed Meta consent for each target and verified the returned identity, Page, scopes and posting task.
+- A publish action requires an exact owner confirmation for the saved approved post, an exact account match, a public JPEG preflight and provider readback. An ambiguous result becomes `delivery_unknown`; the UI must not retry automatically.
+- The dry-run scheduler remains simulation-only. No unattended posting, no automatic repeat, and no ad campaign is enabled.
 
 ## Meta UI access prerequisite
 
