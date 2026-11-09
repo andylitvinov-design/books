@@ -275,7 +275,23 @@ test('Life Plan endpoints use the existing authenticated catch-all route and acc
  assert.match(route,/import \{ readCoachingLifePlan, importCoachingReportActions \} from '@\/lib\/app\/coaching-life-plan'/)
  assert.match(route,/path\[0\] === 'coaching-life-plan'/)
  assert.match(route,/readCoachingLifePlan\(config,actor,\{locale\}\)/)
+ assert.match(route,/updateCoachingLifePlanArea\(config,actor,\{\.\.\.await readBody\(request,8192\),areaKey:path\[2\]\}\)/)
  assert.match(route,/importCoachingReportActions\(config,actor,await readBody\(request,2048\)\)/)
  const block=route.slice(route.indexOf("if (path[0] === 'coaching-life-plan')"),route.indexOf("if (joined === 'tradition-coaching-summary')"))
  assert.match(block,/request\.headers\.get\('x-hh-account-id'\) !== actor\.id/)
+})
+
+test('My Coaching Plan workspace JSX and route contract parse cleanly',async()=>{
+ const ts=(await import('typescript')).default
+ for(const path of ['components/app/my-coaching-plan.jsx','components/app/app-workspace.jsx']){
+  const source=readFileSync(new URL('../'+path,import.meta.url),'utf8')
+  const parsed=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JSX)
+  const errors=parsed.parseDiagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error)
+  assert.equal(errors.length,0,path+': '+errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')).join('; '))
+ }
+ const page=readFileSync(new URL('../app/[locale]/app/[[...path]]/page.jsx',import.meta.url),'utf8')
+ assert.match(page,/my-coaching-plan/)
+ const workspace=readFileSync(new URL('../components/app/app-workspace.jsx',import.meta.url),'utf8')
+ assert.match(workspace,/page === 'my-coaching-plan' && <MyCoachingPlan/)
+ assert.match(workspace,/root \+ '\/my-coaching-plan'/)
 })
