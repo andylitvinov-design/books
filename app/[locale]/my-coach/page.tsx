@@ -91,10 +91,22 @@ export default async function MyCoachPage({ params }: PageProps) {
 
   let practitioners: PublicPractitioner[] = [];
   let courses: PublicMentorCourse[] = [];
-  const config = getAppConfig();
+  let config: ReturnType<typeof getAppConfig> | null = null;
+  try {
+    config = getAppConfig();
+  } catch {
+    // Public discovery must remain renderable when optional catalogue services
+    // are not configured (for example, isolated preview/browser environments).
+  }
   const [mastersResult, coursesResult] = await Promise.allSettled([
-    createPractitionerRepository(config).listPublicPractitioners(locale),
-    createPractitionerCourseRepository(config).catalog(),
+    Promise.resolve().then(() => {
+      if (!config) throw new Error("Practitioner directory is not configured");
+      return createPractitionerRepository(config).listPublicPractitioners(locale);
+    }),
+    Promise.resolve().then(() => {
+      if (!config) throw new Error("Practitioner courses are not configured");
+      return createPractitionerCourseRepository(config).catalog();
+    }),
   ]);
 
   if (mastersResult.status === "fulfilled") {
@@ -105,6 +117,8 @@ export default async function MyCoachPage({ params }: PageProps) {
   // unknown; it is never presented as a fabricated score.
   if (practitioners.length) {
     try {
+      const summaries: { practitionerId: string; count: number; average: number }[] =
+        if (!config) throw new Error("Review directory is not configured");
       const summaries: { practitionerId: string; count: number; average: number }[] =
         await createServiceReviewRepository(config)
           .listPublicSummariesForPractitioners(practitioners.map((coach) => coach.id));
