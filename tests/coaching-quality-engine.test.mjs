@@ -1,5 +1,3 @@
-[Reading 268 lines from start (total: 268 lines, 0 remaining)]
-
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
