@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { parsePrTrigger, matchesTrigger } from '../lib/ci/specialist-aggregate.mjs';
 
 const workflow = (name) => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 
@@ -451,4 +452,68 @@ test('benchmark scripts and standalone Video Studio UI do not allocate unrelated
     'app/api/service-enquiries/**'
   ]) assert.ok(pathsOnly.includes("      - '" + sensitive + "'"),
     'real public booking/checkout/service changes must keep E2E: ' + sensitive);
+});
+
+
+test('Core Mandala fast contracts run only as fallback when the BASE/HEAD Specialist path filter does not own the diff',()=>{
+  const core=workflow('hh-pr-core-release.yml');
+  const mandala=workflow('holistic-support-mandala.yml');
+  const owner=core.split('      - name: Resolve BASE-trusted Mandala Specialist owner for overlapping fast contracts')[1]
+    ?.split('      - name: Fast Mandala release contracts')[0];
+  const fast=core.split('      - name: Fast Mandala release contracts')[1]
+    ?.split('      - name: Verify Source Preflight unit contracts')[0];
+  assert.ok(owner,'Core resolves ownership before considering the duplicate test suite');
+  assert.ok(fast,'Core keeps its bounded fallback release suite');
+  for(const marker of [
+    "git rev-parse', 'HEAD^1",
+    "git rev-parse', 'HEAD^2",
+    "HH_EVENT_HEAD_SHA",
+    "git show",
+    "lib/ci/specialist-aggregate.mjs",
+    "parsePrTrigger",
+    "matchesTrigger",
+    "specialist_owns_mandala=",
+  ]) assert.ok(owner.includes(marker),'owner router must verify '+marker);
+  assert.match(fast,/steps\\.mandala_owner\\.outputs\\.specialist_owns_mandala != 'true'/);
+
+  const specialistOwns=(baseSource,headSource,changed)=>{
+    const triggers=[
+      parsePrTrigger(baseSource,'.github/workflows/holistic-support-mandala.yml:base'),
+      parsePrTrigger(headSource,'.github/workflows/holistic-support-mandala.yml:head'),
+    ];
+    return triggers.some(trigger=>matchesTrigger(trigger,changed,'codex/public-book-library'));
+  };
+  assert.equal(specialistOwns(mandala,mandala,['components/mandala-free-video-studio.tsx']),true,
+    'a changed Mandala component belongs to the independent specialist workflow');
+  assert.equal(specialistOwns(mandala,mandala,['tests/affirmation-voice.test.mjs']),true,
+    'the real voice acceptance test is owned by the specialist path');
+  assert.equal(specialistOwns(mandala,mandala,['tests/mandala-video-phrase-catalog.test.mjs']),true,
+    'the phrase-catalog contract is owned by its dedicated specialist path');
+  assert.equal(specialistOwns(mandala,mandala,['tests/mandala-audio-attach.test.mjs']),false,
+    'an isolated test outside the specialist manifest retains Core fallback coverage');
+  assert.equal(specialistOwns(mandala,mandala,['scripts/benchmarking/first-video-live-export.mjs']),false,
+    'the first-video benchmark keeps the Core fallback unless its specialist path is explicitly added');
+
+  const narrowed=mandala.replace("      - 'components/mandala-*'\\n",'');
+  assert.equal(specialistOwns(mandala,narrowed,['components/mandala-free-video-studio.tsx']),true,
+    'candidate narrowing cannot remove BASE-owned specialist coverage');
+  const extended=mandala.replace("      - 'tests/affirmation-voice.test.mjs'\\n",
+    "      - 'tests/affirmation-voice.test.mjs'\\n      - 'tests/mandala-audio-attach.test.mjs'\\n");
+  assert.equal(specialistOwns(mandala,extended,['tests/mandala-audio-attach.test.mjs']),true,
+    'a HEAD-only owner addition is also considered by the same BASE/HEAD union');
+  assert.throws(()=>specialistOwns(mandala,'not a supported workflow',['components/mandala-free-video-studio.tsx']),
+    /MISSING_ON|UNSUPPORTED/,'unknown workflow syntax must not authorize skipping Core tests');
+
+  const duplicated=[
+    'tests/affirmation-voice.test.mjs',
+    'tests/mandala-webcodecs-mp4.test.mjs',
+    'tests/mandala-audio-attach.test.mjs',
+    'tests/mandala-export.test.mjs',
+    'tests/mandala-free-video.test.mjs',
+    'tests/mandala-video-phrase-catalog.test.mjs',
+  ];
+  for(const name of duplicated){
+    assert.ok(fast.includes(name),'Core fallback must retain '+name);
+    assert.ok(mandala.includes(name),'Specialist focused unit coverage must retain '+name);
+  }
 });
