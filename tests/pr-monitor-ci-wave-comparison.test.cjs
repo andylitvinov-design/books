@@ -60,7 +60,7 @@ test('CI wave comparison uses three equal 24-hour windows and counts only runs q
 test('a wave queued outside the selected window is not counted as a wave in that period',()=>{
   const now=Date.parse('2026-11-09T12:00:00.000Z');
   const start=now-23*60*60_000;
-  const prior=makeRun(811,1001,iso(start-30*60_000),'a','failure');
+  const prior=makeRun(811,1001,iso(start-2*60*60_000),'a','failure');
   const inWindow=makeRun(811,1002,iso(start+15*60_000),'b','success');
   const store={runs:[prior,inWindow],comments:1,pages:1,pagination_partial:false,
     remaining:100,fetched_at:iso(now),stale:false};
@@ -68,5 +68,5 @@ test('a wave queued outside the selected window is not counted as a wave in that
   assert.equal(current.wave_summary.ci_runs,1);
   assert.equal(current.wave_summary.repeat_waves,1);
   assert.equal(current.wave_summary.intervals,1);
-  assert.equal(current.wave_summary.gap_mean_minutes_per_pr,30);
+  assert.equal(current.wave_summary.gap_mean_minutes_per_pr,131);
 });
