@@ -394,14 +394,16 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
           <p>{locale==='ru'?GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(x=>x.id===account.id)?.ruPurpose: GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(x=>x.id===account.id)?.enPurpose}</p>
           <small>{account.connectionState==='connected'
             ? (locale==='ru'?'Meta подтвердил профиль · ':'Meta profile verified · ')+('@'+account.username)
-            : (locale==='ru'?'Ожидает авторизации Meta':'Awaiting Meta authorization')}</small>
+            : account.connectionState==='reauthorization_required'
+              ? (locale==='ru'?'Требуется повторная авторизация Meta':'Meta reauthorization required')
+              : (locale==='ru'?'Ожидает авторизации Meta':'Awaiting Meta authorization')}</small>
           {account.lastVerifiedAt&&<small>{locale==='ru'?'Проверено: ':'Verified: '}{new Date(account.lastVerifiedAt).toLocaleString(locale==='ru'?'ru-RU':'en-CA',{timeZone:'America/Toronto'})}</small>}
           <small>{account.publishingEnabled
             ? (locale==='ru'?'Публикация разрешена':'Publishing enabled')
             : (locale==='ru'?'Автопубликация выключена до выпуска и проверки Publisher Worker':'Auto-publishing remains disabled until the Publisher Worker is released and verified')}</small>
           <div className={styles.connectionNav}>
             {instagramConnectAvailable
-              ? <a href={`/api/admin/growth-studio/instagram/connect?accountId=${encodeURIComponent(account.id)}`}>{account.connectionState==='connected'?(locale==='ru'?'Переподключить':'Reconnect'):(locale==='ru'?'Подключить Instagram':'Connect Instagram')} ↗</a>
+              ? <a href={`/api/admin/growth-studio/instagram/connect?accountId=${encodeURIComponent(account.id)}`}>{account.connectionState==='connected'||account.connectionState==='reauthorization_required'?(locale==='ru'?'Переподключить':'Reconnect'):(locale==='ru'?'Подключить Instagram':'Connect Instagram')} ↗</a>
               : <small>{locale==='ru'?'Настройки Meta App/шифрования ещё не заданы на сервере':'Meta App / encryption settings are not configured on the server'}</small>}
             {account.connectionState==='connected'&&<button type="button" onClick={async()=>{
               if(!window.confirm(locale==='ru'?'Отключить этот Instagram-аккаунт?':'Disconnect this Instagram account?'))return
