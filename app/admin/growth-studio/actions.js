@@ -74,6 +74,11 @@ export async function updateGrowthStudioPostAction(input) {
     const current = newRecord ? null : await store.get(id)
     if ((current?.revision ?? 0) !== input.expectedRevision || (!current && !newRecord))
       return {ok:false,error:current ? 'conflict' : 'not_found'}
+    // New and edited Instagram drafts must explicitly bind one approved destination.
+    // Historical records remain readable, but cannot be newly saved without a target.
+    if(input.action==='save' && input.fields?.channel==='instagram' &&
+       (typeof input.fields.instagramAccountId!=='string' || !input.fields.instagramAccountId.trim()))
+      return {ok:false,error:'instagram_account_required'}
     const post = nextGrowthPost({current,fields:input.fields,action:input.action,id})
     await store.save(post,input.expectedRevision)
     return {ok:true,record:post}
