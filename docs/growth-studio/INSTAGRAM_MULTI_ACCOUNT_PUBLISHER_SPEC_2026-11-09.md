@@ -10,6 +10,14 @@
 
 ---
 
+## 0. Owner decision superseding earlier account lists — 9 November 2026
+
+The active Instagram destinations are exactly:
+- Work: `@wizards.secrets` (`wizards_secrets`)
+- Personal professional: `@andy.therapist` (`andy_therapist`)
+
+The earlier `@my.coach.ai` and `@my.couch.ai` destinations are retired from the active allowlist. Older four-account references elsewhere in historical implementation notes are superseded by this owner decision. Do not authorize, select or publish to the retired targets through the active Growth Studio UI. Existing encrypted records for old target IDs are not migrated or silently reassigned.
+
 ## 1. Цель
 
 Довести существующий Holistic House Growth Studio до полноценного многопрофильного Publisher, который позволяет готовить, согласовывать, планировать, публиковать и проверять контент отдельно для нескольких Instagram-аккаунтов.
@@ -20,10 +28,10 @@
 
 | Внутренний ключ | Instagram handle | Бренд/назначение | Стартовый статус |
 |---|---|---|---|
-| `my_coach_ai` | `@my.coach.ai` | My Coach AI | `pending_authorization` |
-| `my_couch_ai` | `@my.couch.ai` | My Couch AI | `pending_authorization` |
+| `wizards_secrets` | `@wizards.secrets` | Wizards Secrets · work / entertainment | `pending_authorization` |
+| `andy_therapist` | `@andy.therapist` | Andy Therapist · personal professional | `pending_authorization` |
 
-Повторное упоминание `my.coach.ai` в исходном запросе — это тот же профиль, а не третий аккаунт. Аккаунты должны быть самостоятельными сущностями с отдельными provider ID, полномочиями, настройками, расписанием, публикациями, ошибками и аналитикой.
+Утверждённая владельцем активная конфигурация — ровно два профиля: рабочий `@wizards.secrets` и личный профессиональный `@andy.therapist`. Прежние `@my.coach.ai` и `@my.couch.ai` не являются активными destinations. Два утверждённых профиля должны оставаться самостоятельными сущностями с отдельными provider ID, полномочиями, настройками, расписанием, публикациями, ошибками и аналитикой.
 
 **Важно:** регистрация handle в коде не доказывает существование аккаунта, владение им или наличие разрешения на публикацию. Фактическая идентичность устанавливается только после авторизации и readback от Meta/провайдера.
 
@@ -58,7 +66,7 @@
 Последний readback Metricool показал один бренд ID `7153286`, timezone `America/Toronto`, с YouTube only. Instagram/Facebook в этом readback отсутствуют. Подключение Metricool в ChatGPT само по себе не является credential для сайта/Vercel.
 
 ### В работе, но ещё не LIVE
-PR #3997 добавляет реестр `@my.coach.ai` и `@my.couch.ai` в Connections. Оба профиля имеют `pending_authorization`, пустой provider ID и `publishEnabled=false`. PR Draft, не слит в production. Composer account selector, OAuth, реальная очередь и реальный Instagram-пост ещё не реализованы.
+PR #3997 зарегистрировал первые два Instagram destinations, PR #4003 добавил официальный Meta Facebook Login OAuth и зашифрованное серверное хранение, а PR #4006 добавил выбор destination в composer и owner-confirmed JPEG Feed Post adapter. Production-код поддерживает account-aware drafts и ручной запуск одного уже одобренного JPEG-поста. Актуальная конфигурация владельца заменяет прежнюю пару My Coach/My Couch на два профиля: `@wizards.secrets` и `@andy.therapist`. Оба остаются `pending_authorization` без provider ID и с выключенной публикацией до отдельного Meta identity/Page/permission readback. Автоматический schedule worker не подключён; dry-run queue не отправляет публикации.
 
 **Все статусы этого документа следует пересматривать по актуальному readback перед началом каждого этапа.**
 
@@ -222,9 +230,9 @@ Approval относится к точной версии:
 
 Не запрашивать у владельца пароль Instagram в Holistic House и не просить отправлять коды/токены в чат.
 
-### 4.3. Комиссионирование двух аккаунтов
+### 4.3. Комиссионирование двух утверждённых аккаунтов
 
-Для `@my.coach.ai` и `@my.couch.ai` выполнить отдельно:
+Для `@my.coach.ai`, `@my.couch.ai`, `@wizards.secrets` и `@andy.therapist` выполнить отдельно:
 1. Проверить существование точного handle и профессионального типа аккаунта.
 2. Авторизовать владельца через Meta/одобренный transport.
 3. Прочитать provider account ID и привязанный Page.
@@ -258,7 +266,7 @@ Approval относится к точной версии:
 - provider delivery job;
 - provider receipt.
 
-Каждая цель публикации — отдельная job. Для двух аккаунтов один исходный пост создаёт две независимые jobs.
+Каждая цель публикации — отдельная job. Один исходный пост, выбранный для нескольких профилей, создаёт отдельную независимую job для каждого профиля.
 
 Пример ключа идемпотентности:
 `contentId + revision + provider + accountId + scheduledOccurrence`.
@@ -514,10 +522,10 @@ Worker должен:
 ### Этап 0 — baseline / account commissioning
 - Принять/довести PR #3997 через актуальные проверки.
 - Повторно проверить production source SHA и Growth Studio status.
-- Подтвердить оба handles, владелец, тип аккаунта, связанные Pages и доступ.
+- Подтвердить все четыре handles, владельца, профессиональный тип аккаунта, связанные Pages и доступ.
 - Выбрать официальный transport с учётом реальных API прав и нулевой доплаты.
 - Не выполнять публичные записи.
-**Выход:** обе записи видны в production, но статусы остаются pending, пока нет реальной OAuth-проверки.
+**Выход:** все четыре записи видны в production, но статусы остаются pending, пока нет реальной OAuth-проверки.
 
 ### Этап 1 — аккаунты и OAuth
 - Persistent account registry.
@@ -526,7 +534,7 @@ Worker должен:
 - Connect/re-auth/disconnect/pause.
 - Owner Connections UI.
 - Тесты cross-account isolation и secrecy.
-**Выход:** оба профиля отображаются как connected только при доказанном provider readback.
+**Выход:** все четыре профиля отображаются как connected только при доказанном provider readback.
 
 ### Этап 2 — account-aware composer и calendar
 - Account selector.
@@ -542,13 +550,13 @@ Worker должен:
 - Worker/cron на имеющейся инфраструктуре; cost guard.
 - idempotency, leases, retry/reconcile, cancel/dead-letter.
 - provider receipt + readback.
-**Выход:** один низкорисковый тестовый пост в одном отдельно выбранном аккаунте после явного подтверждения владельца; затем независимый тест второго аккаунта. Каждый пост должен иметь точный provider ID/URL.
+**Выход:** по одному низкорисковому тестовому посту в каждом отдельно выбранном аккаунте после явного подтверждения владельца. Каждый пост должен иметь точный provider ID/URL и независимый readback.
 
 ### Этап 4 — стабильный multi-account release
-- E2E: оба аккаунта, разные варианты, разные media types, Toronto timezone/DST, expiry, permissions, retries, unknown outcome, duplicate prevention.
+- E2E: два утверждённых аккаунта, разные варианты, разные media types, Toronto timezone/DST, expiry, permissions, retries, unknown outcome, duplicate prevention.
 - desktop and iPhone Safari/Chromium/WebKit.
 - telemetry, queue alerts, audit log, rollback.
-**Выход:** повторяемый подтверждённый publish flow для обоих аккаунтов.
+**Выход:** повторяемый подтверждённый publish flow для всех четырёх аккаунтов.
 
 ### Этап 5 — аналитика и growth attribution
 - реальные разрешённые provider metrics;
@@ -562,7 +570,7 @@ Worker должен:
 ## 12. Тестирование и критерии приёмки
 
 ### 12.1. Unit / integration
-- два профиля не смешиваются;
+- четыре профиля не смешиваются;
 - корректно обрабатывается повторный/дублирующий handle;
 - нельзя публиковать без connected state;
 - нельзя планировать неподдерживаемый media type;
@@ -590,10 +598,10 @@ Worker должен:
 2. Current required CI/Core release-ready/actionlint GREEN; no skipped mandatory gates.
 3. Vercel deployment READY and canonical alias includes exact merged SHA or proven descendant.
 4. Owner-only account connection route protected; non-owner denied.
-5. Both Instagram accounts are separately authorized and actual handle + provider ID readback confirmed.
-6. Each account can be selected separately in composer.
-7. One approved test post is sent to account #1 and provider ID/public URL read back.
-8. Independent approved test post is sent to account #2 and provider ID/public URL read back.
+5. All four Instagram accounts are separately authorized and actual handle + provider ID readback confirmed.
+6. Each of the four accounts can be selected separately in composer.
+7. One separately approved test post is sent to each selected account and provider ID/public URL read back.
+8. Confirm independent receipts and no cross-account leakage across all two approved profiles.
 9. Retry/replay confirms no duplicate.
 10. Account errors/expired authorization do not spill across accounts.
 11. Real mobile UI test at 320–430 px.
@@ -601,7 +609,7 @@ Worker должен:
 13. No unapproved spend and no private client data transfer.
 
 ### 12.4. Definition of DONE
-Publisher may be called **LIVE for Instagram** only after both account connections and separate end-to-end publication receipts have been verified in production. A merged PR, green unit tests, a successful Meta login, a scheduled local item or a dry-run result do not satisfy this definition.
+Publisher may be called **LIVE for Instagram** only after all four account connections and separate end-to-end publication receipts have been verified in production. A merged PR, green unit tests, a successful Meta login, a scheduled local item or a dry-run result do not satisfy this definition.
 
 Publer subscription cancellation/reduction is explicitly out of scope until owner separately reviews actual multi-account parity and decides to migrate.
 
@@ -621,11 +629,11 @@ Publer subscription cancellation/reduction is explicitly out of scope until owne
 ## 14. Итоговый приоритет
 
 1. **P0:** выпустить текущий account registry PR #3997 и проверить production.
-2. **P0:** подтвердить и авторизовать оба реальных Instagram профиля через официальный путь.
+2. **P0:** подтвердить и авторизовать все четыре реальных Instagram профиля через официальный путь.
 3. **P1:** постоянный multi-account registry и composer selector.
 4. **P1:** account-specific scheduling + реальный worker + provider receipts.
 5. **P1:** стабильность, идемпотентность, восстановление и мониторинг.
 6. **P2:** метрики и first-party attribution.
-7. **P3:** расширение на новые платформы после успешной работы двух Instagram-аккаунтов.
+7. **P3:** расширение на новые платформы после успешной работы всех четырёх Instagram-аккаунтов.
 
 **Ожидаемый итог:** одна система Growth Studio управляет многими брендами и социальными аккаунтами, а каждая публикация имеет независимый destination, approval, schedule, provider receipt и измеримый результат.
