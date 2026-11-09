@@ -351,7 +351,11 @@ test('Mandala workflow-only speed route fails closed for all product or deleted 
   assert.match(source,/M:tests\/pr-fast-lane\.test\.mjs/);
   assert.match(source,/policy_only=false/);
   assert.match(source,/node --test tests\/ci-heavy-impact\.test\.mjs tests\/ci-workflow-globs\.test\.mjs/);
-  assert.match(source,/- run: npm ci --no-audit --no-fund\n        if: steps\.policy\.outputs\.policy_only != 'true'/);
+  assert.match(source,/name: Prepare verified upstream FFmpeg for full Mandala runtime[\s\S]*?uses: \.\/\.github\/actions\/ci-ffmpeg-static/);
+  assert.match(source,/name: Install lockfile dependencies without networked FFmpeg postinstall[\s\S]*?npm ci --ignore-scripts --no-audit --no-fund/);
+  assert.match(source,/name: Materialize SHA-verified FFmpeg for Mandala runtime and Next trace[\s\S]*?stage: materialize/);
+  assert.match(source,/name: Install pinned dependencies without networked FFmpeg postinstall[\s\S]*?npm ci --ignore-scripts --no-audit --no-fund/);
+  assert.match(source,/ln -sfn "\$ffmpeg_bin" node_modules\/ffmpeg-static\/ffmpeg/);
   for(const name of ['Mandala and mobile support contracts','Voice provider contract and negative cases','Targeted lint']){
     const clause=source.split('      - name: '+name+'\n')[1]?.split('\n')[0] || '';
     assert.match(clause,/steps\.policy\.outputs\.policy_only != 'true'/);
