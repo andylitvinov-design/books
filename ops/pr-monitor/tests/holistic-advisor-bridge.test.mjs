@@ -43,19 +43,19 @@ test('Director UI exposes the existing advisor in the same chat and reuses exist
   const html = readFileSync(path.join(root, 'chats.html'), 'utf8');
   const js = readFileSync(path.join(root, 'commander-chats.js'), 'utf8');
   assert.match(html, /option value="holistic-advisor">Holistic House AI Advisor/);
-  assert.match(js, /request\\('\\/api\\/holistic-advisor'/);
-  assert.match(js, /append\\(c,'ai',r\\.reply/);
+  assert.match(js, /request\('\/api\/holistic-advisor'/);
+  assert.match(js, /append\(c,'ai',r\.reply/);
   assert.match(js, /История этого чата|последние реплики этого чата/);
-  assert.match(js, /mode!=='holistic-advisor'&&!thread\\.executors\\.includes\\(mode\\)/);
+  assert.match(js, /mode!=='holistic-advisor'&&!thread\.executors\.includes\(mode\)/);
 });
 
 test('bridge is owner-gated, pins a single destination and HMAC-signs the bounded envelope', () => {
   const api = readFileSync(path.join(root, 'api/holistic-advisor.js'), 'utf8');
-  assert.match(api, /await requireOwner\\(req\\)/);
-  assert.match(api, /callStore\\(req, 'status'/);
-  assert.match(api, /https:\\/\\/holistichouse\\.vercel\\.app\\/api\\/holistic-agent\\/director-turn/);
-  assert.match(api, /createHmac\\('sha256', key\\)/);
+  assert.match(api, /await requireOwner\(req\)/);
+  assert.match(api, /callStore\(req, 'status'/);
+  assert.match(api, /https:\/\/holistichouse\.vercel\.app\/api\/holistic-agent\/director-turn/);
+  assert.match(api, /createHmac\('sha256', key\)/);
   assert.match(api, /x-hh-director-signature/);
   assert.match(api, /redirect: 'error'/);
-  assert.doesNotMatch(api, /body\\.ownerId|body\\.actor|body\\.userId/);
+  assert.doesNotMatch(api, /body\.ownerId|body\.actor|body\.userId/);
 });
