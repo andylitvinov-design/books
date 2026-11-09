@@ -138,6 +138,29 @@ test('pilot validates written action at will and permits the review rating at th
  assert.equal(s.course.current.answers.review,'choice:useful')
 })
 
+test('a lost completion acknowledgement can be retried without another revision',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ const turn={action:'finish_without_plan',revision:s.revision,turnId:'40000000-0000-4000-8000-000000000001'}
+ s=await api.savePersonalCoaching({},a,turn)
+ const replay=await api.savePersonalCoaching({},a,turn)
+ assert.equal(replay.revision,s.revision)
+ assert.equal(replay.course.current.outcome,'reflection_only')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...turn,action:'complete'}),err=>err.code==='PERSONAL_COACH_TURN_ID_REUSED')
+})
+
+test('a lost reflection acknowledgement is idempotent and cannot change its content',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,start)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time'})
+ const turn={action:'reflection',revision:s.revision,questionId:'real',followupKey:'reality_choice_v1',note:'A careful reflection',turnId:'50000000-0000-4000-8000-000000000001'}
+ s=await api.savePersonalCoaching({},a,turn)
+ const replay=await api.savePersonalCoaching({},a,turn)
+ assert.equal(replay.revision,s.revision)
+ assert.equal(replay.course.current.reflections.real.text,'A careful reflection')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...turn,note:'Changed reflection'}),err=>err.code==='PERSONAL_COACH_TURN_ID_REUSED')
+})
+
 test('pilot cannot substitute a rating for an unwritten action',async()=>{
  const {api}=fixture()
  let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})

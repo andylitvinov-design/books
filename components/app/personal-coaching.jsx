@@ -32,7 +32,7 @@ const copy={
     time:'Choose a coaching approach · 10–30 minutes',private:'Your answers stay private in your account.',
     start:'Start my session',resume:'Continue my session',new:'Start another session',
     loading:'Opening your private session…',loadError:'Your session could not be loaded. Try again.',
-    saveError:'Your answer was not saved. Please try again.',
+    saveError:'Could not confirm the save. Retry or reload to check your saved session.',
     conflict:'Your session changed in another tab. Reload to get the newest saved answers.',
     retry:'Reload session',close:'Exit session',unsaved:'You have an unsaved answer. Leave without saving it?',
     question:'QUESTION',of:'OF',back:'Back',next:'Save & continue',finish:'Save & finish',skip:'Skip this question',
@@ -57,7 +57,7 @@ const copy={
     time:'Выберите подход · примерно 10–30 минут',private:'Ваши ответы сохраняются только в личном кабинете.',
     start:'Начать сессию',resume:'Продолжить сессию',new:'Начать новую сессию',
     loading:'Открываем вашу личную сессию…',loadError:'Не удалось загрузить сессию. Попробуйте ещё раз.',
-    saveError:'Ответ не сохранился. Попробуйте ещё раз.',
+    saveError:'Не удалось подтвердить сохранение. Повторите попытку или обновите сессию.',
     conflict:'Сессия изменилась в другой вкладке. Обновите сохранённые ответы.',
     retry:'Обновить сессию',close:'Закрыть сессию',unsaved:'Этот ответ не сохранён. Выйти без сохранения?',
     question:'ВОПРОС',of:'ИЗ',back:'Назад',next:'Сохранить и далее',finish:'Сохранить и завершить',skip:'Пропустить вопрос',
@@ -82,7 +82,7 @@ const copy={
     time:'Elige un enfoque · 10–30 minutos',private:'Tus respuestas permanecen privadas.',
     start:'Empezar sesión',resume:'Continuar sesión',new:'Empezar otra sesión',
     loading:'Abriendo tu sesión…',loadError:'No se pudo cargar. Inténtalo de nuevo.',
-    saveError:'No se guardó tu respuesta. Inténtalo de nuevo.',conflict:'Otra pestaña ha modificado la sesión. Actualiza tus datos.',
+    saveError:'No se pudo confirmar el guardado. Inténtalo de nuevo o actualiza la sesión.',conflict:'Otra pestaña ha modificado la sesión. Actualiza tus datos.',
     retry:'Actualizar sesión',close:'Salir',unsaved:'Tu respuesta no está guardada. ¿Salir?',
     question:'PREGUNTA',of:'DE',back:'Atrás',next:'Guardar y seguir',finish:'Guardar y terminar',skip:'Saltar pregunta',
     hint:'Tu respuesta, con tus propias palabras (también puedes dictarla)',placeholder:'Sin prisa. Unas frases son suficientes…',required:'Escribe algunas palabras.',
@@ -166,7 +166,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
   const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
   const titleRef=useRef(null),busyRef=useRef(false)
-  const pendingAnswer=useRef(null)
+  const pendingTurn=useRef(null)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
   const activeQuestions=questionsFor(course,catalog)
@@ -199,6 +199,12 @@ export default function PersonalCoaching({locale='en',accountId}){
   const entryModel=entry?.choice?.model||catalog?.models?.find(item=>item.modelKey===entry?.choice?.modelKey)
   const lastApprovedPlan=[session,...(course?.history||[])]
     .find(item=>item?.actionPlan?.approvedAt&&typeof item.actionPlan.actionText==='string')?.actionPlan||null
+  function turnFor(action,revision,fields={}){
+    if(session?.schemeKey!=='grow_overload_20_v1'||!['answer','reflection','complete','finish_without_plan'].includes(action))return null
+    const key=JSON.stringify([action,revision,fields])
+    if(pendingTurn.current?.key!==key)pendingTurn.current={key,id:crypto.randomUUID()}
+    return pendingTurn.current.id
+  }
   function visit(indexToOpen,values,items=activeQuestions){
     const next=Math.max(0,Math.min(items.length-1,indexToOpen))
     setIndex(next)
@@ -260,14 +266,9 @@ export default function PersonalCoaching({locale='en',accountId}){
     busyRef.current=true;setBusy(true);setError('');setNotice('')
     try{
       const revision=state?.revision||0
-      let turnId
-      if(action==='answer'&&session?.schemeKey==='grow_overload_20_v1'){
-        const key=JSON.stringify([revision,fields.questionId,fields.answer])
-        if(pendingAnswer.current?.key!==key)pendingAnswer.current={key,id:crypto.randomUUID()}
-        turnId=pendingAnswer.current.id
-      }
+      const turnId=turnFor(action,revision,fields)
       const value=await appFetch('personal-coaching',{action,revision,...fields,...(turnId?{turnId}:{})},'POST',{accountId})
-      if(turnId)pendingAnswer.current=null
+      if(turnId)pendingTurn.current=null
       setState(value)
       setNotice(t.saved)
       return value
@@ -348,7 +349,9 @@ export default function PersonalCoaching({locale='en',accountId}){
     if(busyRef.current)return null
     busyRef.current=true;setBusy(true);setError('')
     try{
-      const value=await appFetch('personal-coaching',{action,revision:saved.revision},'POST',{accountId})
+      const turnId=turnFor(action,saved.revision)
+      const value=await appFetch('personal-coaching',{action,revision:saved.revision,...(turnId?{turnId}:{})},'POST',{accountId})
+      if(turnId)pendingTurn.current=null
       setState(value);setNotice(t.saved)
       return value
     }catch(e){setError(e?.code==='PERSONAL_COACH_REVISION_CONFLICT'?t.conflict:t.saveError);return null}

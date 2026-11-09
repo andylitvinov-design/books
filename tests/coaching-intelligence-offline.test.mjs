@@ -132,7 +132,7 @@ test('backend keeps saved reflections and approved plans owner encrypted and opt
     'seal(course,sealContext(actor),config)','authoredFollowupFor(question,original,course.current.reflections)',
     'PERSONAL_COACH_REFLECTION_UNAVAILABLE','PERSONAL_COACH_PLAN_INVALID'])
     assert.ok(src.includes(literal),literal)
-  assert.match(src,/onlyKeys\(input,\['action','revision','questionId','followupKey','note'\]\)/)
+  assert.match(src,/onlyKeys\(input,\['action','revision','questionId','followupKey','note','turnId'\]\)/)
   assert.match(api,/await auth\.verified\(\)/)
   assert.match(api,/savePersonalCoaching\(config, actor, await readBody\(request, 8192\)\)/)
   assert.doesNotMatch(src,/process\.env\.GEMINI|\bfetch\(/)
