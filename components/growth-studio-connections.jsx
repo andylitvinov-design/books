@@ -160,7 +160,6 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const [providerFailed,setProviderFailed]=useState(false)
   const [metaAccounts,setMetaAccounts]=useState([])
   const [metaError,setMetaError]=useState('')
-  const metaTargetLabels={my_coach_ai:'@my.coach.ai',my_couch_ai:'@my.couch.ai'}
   const loadMetaAccounts=useCallback(async()=>{
     try{
       const response=await fetch('/api/admin/growth-studio/meta/status',{cache:'no-store',credentials:'same-origin'})
@@ -375,7 +374,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
           const status=metaAccounts.find(item=>item.targetId===account.id)
           const connected=status?.connectionState==='connected'
           return <section key={account.id}>
-            <h4>{metaTargetLabels[account.id]}</h4>
+            <h4>{account.label}</h4>
             <p>{connected
               ?(locale==='ru'?'Подключён: ':'Connected: ')+status.handle+' · '+(status.pageName||'Facebook Page')+' · Page ID '+status.pageId
               :(locale==='ru'?'Ожидает авторизации владельца через Meta':'Waiting for owner authorization through Meta')}</p>
