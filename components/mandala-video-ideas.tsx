@@ -183,8 +183,12 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
  };
  const toggle=(index:number)=>{
   if(chosen.includes(index))apply(options,chosen.filter(i=>i!==index));
-  else if(chosen.length>=10)setFeedback(t.max);
-  else apply(options,[...chosen,index]);
+  else if(chosen.length>=10){
+   // An explicit choice at the cap replaces the last selected phrase. This
+   // keeps the hard maximum of ten while making the visible choice actionable.
+   apply(options,[...chosen.slice(0,-1),index]);
+   setFeedback(t.savedReplaced);
+  }else apply(options,[...chosen,index]);
  };
  const saveDraft=(index:number)=>{
   const value=cleanPhrase(draft);
