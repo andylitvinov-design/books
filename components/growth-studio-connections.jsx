@@ -374,10 +374,8 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
           const status=metaAccounts.find(item=>item.targetId===account.id)
           const connected=status?.connectionState==='connected'
           return <section key={account.id}>
-            <h4>{account.accountRole==='work'
-              ?(locale==='ru'?'Рабочий аккаунт':'Work account')
-              :(locale==='ru'?'Личный аккаунт':'Personal account')} · {account.displayName||account.label}</h4>
-            <small>{account.label}</small>
+            <h4>{account.label}</h4>
+            <small>{account.accountRole==='work'?(locale==='ru'?'Рабочий аккаунт':'Work account'):(locale==='ru'?'Личный аккаунт':'Personal account')}</small>
             <p>{connected
               ?(locale==='ru'?'Подключён: ':'Connected: ')+status.handle+' · '+(status.pageName||'Facebook Page')+' · Page ID '+status.pageId
               :(locale==='ru'?'Ожидает авторизации владельца через Meta':'Waiting for owner authorization through Meta')}</p>
