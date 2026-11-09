@@ -5,7 +5,7 @@ import {runInNewContext} from 'node:vm'
 import {readFileSync} from 'node:fs'
 import {AppError,onlyKeys,requireUUID} from '../lib/assessments/contracts.js'
 import {seal,openSealed,operationHash} from '../lib/app/crypto.js'
-import {buildCoachingReportV2Draft} from '../lib/personal-coaching/report-v2.js'
+import {buildCoachingReportV2Draft,validateCoachingReportV2} from '../lib/personal-coaching/report-v2.js'
 import {reviewCoachingReportDraft} from '../lib/personal-coaching/report-review.mjs'
 
 const owner={id:'10000000-0000-4000-8000-000000000001'}
