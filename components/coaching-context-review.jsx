@@ -19,7 +19,7 @@ export default function CoachingContextReview({locale='en',context,onConfirm,onS
  useEffect(()=>{setValues(Object.fromEntries(FIELDS.map(key=>[key,lines(context?.[key])])));setStyle(context?.preferred_coaching_style||'');setValidation('')},[context]);
  if(!context)return null;
  function confirm(){
-  const parsed=Object.fromEntries(FIELDS.map(key=>[key,values[key].split('\\n').map(text=>text.trim()).filter(Boolean)]));
+  const parsed=Object.fromEntries(FIELDS.map(key=>[key,values[key].split('\n').map(text=>text.trim()).filter(Boolean)]));
   if(FIELDS.some(key=>parsed[key].length>4||parsed[key].some(text=>text.length>240))){setValidation(t.limit);return;}
   setValidation('');
   const next={version:1,generatedAt:context.generatedAt,reviewStatus:'client_confirmed',
