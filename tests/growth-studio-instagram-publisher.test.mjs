@@ -42,7 +42,7 @@ function fakeProvider({publishFailure=false,statusCode='FINISHED',timestamp='202
     async publishContainer(id){calls.push({method:'publish',id});if(publishFailure)throw new Error('ambiguous timeout');return {id:'media-test-200'}},
     async getPublishedMedia(id){calls.push({method:'readback',id});return {
       id:'media-test-200',permalink:'https://www.instagram.com/p/AbCdEf123/',
-      ...(timestamp===undefined?{}:{timestamp}),media_type:'IMAGE',
+      ...(timestamp===null?{}:{timestamp}),media_type:'IMAGE',
     }},
   }
   const fetchFn=async(url,options={})=>{
@@ -140,7 +140,7 @@ test('ambiguous media_publish response returns delivery_unknown and is never lab
 })
 
 test('missing or invalid Meta provider timestamp never creates a confirmed published receipt',async()=>{
-  for(const timestamp of [undefined,'not-a-date']){
+  for(const timestamp of [null,'not-a-date']){
     const {client,calls,fetchFn}=fakeProvider({timestamp})
     const result=await publishApprovedInstagramImage({post:approvedPost(),expectedRevision:3,confirmed:true,environment,providerClient:client,fetchFn,now})
     assert.equal(result.state,'delivery_unknown')
