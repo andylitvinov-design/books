@@ -223,7 +223,7 @@ Growth Intelligence замыкает цикл:
 На основании последнего commissioning readback в комментариях #1214:
 - Существующий owner-only Growth Studio, редактор, EN/RU/ES варианты, календарь, Content Radar, preflight, Redis editorial storage и ручное планирование — базовая платформа для расширения.
 - Redis очередь из #2711 остаётся **dry-run/simulation**. Она не вызывает внешний provider, не доказывает планирование поста и не означает автопубликацию.
-- Instagram registry из PR #3997 содержит два разных назначения `@my.coach.ai` и `@my.couch.ai`, но PR на момент последнего readback — Draft, не production; записи имеют `pending_authorization`, пустой provider account ID и `publishEnabled=false`. Третье повторение `my.coach.ai` дедуплицировано.
+- Владелец утвердил ровно два Instagram destinations: рабочий `@wizards.secrets` и личный профессиональный `@andy.therapist`. У каждого отдельные внутренние ID/brandKey, Meta OAuth credentials, approval, calendar, publisher delivery receipts и Content DNA. До фактической Meta identity/Page/scope-проверки оба профиля остаются `pending_authorization`; Insights и публикация не считаются включёнными.
 - Последний Metricool readback показывает один бренд с YouTube; Instagram/Facebook не подтверждены. Metricool ChatGPT/MCP-соединение не является серверной API-авторизацией Vercel.
 - Поэтому сейчас нельзя показывать настоящие Instagram Top Posts, сравнения аккаунтов, hashtag performance или выводы, будто AI уже обучился на результатах Instagram.
 
@@ -353,6 +353,12 @@ Content DNA строится отдельно по:
 - тематическому кластеру и контентной серии.
 
 Извлекаемые признаки: headline/hook structure, вопрос/утверждение/афоризм/список, тематический тег, длина caption, тип CTA, эмоциональная рамка (юмор/удивление/узнавание/любопытство и т.п.), visual/scene descriptors из авторского creative brief, язык, format, timing, hashtag groups. AI не должен анализировать лицо, личность или чувствительные характеристики зрителей.
+
+**Два независимых Content DNA:**
+- **Work — @wizards.secrets:** wizard-визуальность, юмор, загадки, короткие афоризмы, shareability и переходы к бесплатным тестам.
+- **Personal — @andy.therapist:** авторский профессиональный голос, экспертные наблюдения, образовательные материалы и доверие к автору.
+
+Не переносить тон, hooks и успешные темы одного профиля на другой без отдельного эксперимента и согласования владельца. Общие отчёты показывают метрики отдельно по каждому аккаунту; общий Content DNA не строится.
 
 **Статистика и доверие:** каждый вывод содержит число наблюдений, временной интервал, сравнимую когорту и confidence label. Установить минимальные sample thresholds до включения рекомендаций; до достижения порога показывать `insufficient evidence`. Использовать медианы/распределения и shrinkage/сглаживание для малых выборок. Модель не делает причинный вывод «юмор вызвал рост», если не было контролируемого эксперимента; формулировка — «в наблюдаемой выборке юмористические публикации имели более высокий median share rate». Не смешивать разные окна/размеры аудиторий и не обучаться на synthetic examples как на собственных результатах.
 
