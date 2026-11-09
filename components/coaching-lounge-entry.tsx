@@ -137,7 +137,7 @@ export function CoachingLoungeEntry({ locale, selected, onSelect }: {
 }) {
   const t = copy[locale];
   return <div className={styles.root} data-coaching-lounge-hero lang={locale}>
-    <section className={styles.hero} data-coaching-first-screen aria-labelledby="coaching-entry-title">
+    <section className={styles.hero} data-coaching-first-screen data-coaching-hero-fallback="/images/holistic-house/hero-olive-incense.webp" aria-labelledby="coaching-entry-title">
       <Image src="/images/holistic-house/ideas-pine-sharp.avif" alt="" fill priority
         className={styles.heroImage} sizes="(max-width: 650px) 100vw, 1080px" />
       <div className={styles.heroOverlay} aria-hidden="true" />
