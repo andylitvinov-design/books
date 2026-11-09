@@ -431,3 +431,5 @@ try {
   mkdirSync('artifacts/benchmarking', {recursive: true});
   writeFileSync(resolve(ARTIFACT), JSON.stringify(row, null, 2) + '\n');
 }
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

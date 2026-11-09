@@ -895,22 +895,25 @@ test('Public Services shallow recovery never bypasses exact merged HEAD and ance
   assert.ok(preflight, 'Public Services must validate the real synthetic merge before routing');
   const required = [
     'fetch-depth: 2',
-    'actual_checkout="$(git rev-parse HEAD)"',
-    '"$actual_checkout" == "$GITHUB_SHA"',
-    '"$(git rev-parse --is-shallow-repository)" == true',
-    'git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"',
-    'tested_base="$(git rev-parse HEAD^1 2>/dev/null || true)"',
-    'tested_head="$(git rev-parse HEAD^2 2>/dev/null || true)"',
-    '"$tested_head" == "$PR_HEAD_SHA"',
-    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
+    '\[\[ "$(git rev-parse HEAD)" == "$EXPECTED_MERGE_SHA" \]\]',
+    'mapfile -t tested_parents < <(git cat-file -p HEAD | sed -n',
+    '\[\[ "${#tested_parents[@]}" -eq 2 \]\]',
+    'tested_base="${tested_parents[0]}"',
+    'tested_head="${tested_parents[1]}"',
+    '\[\[ "$tested_head" == "$PR_HEAD_SHA" && "$tested_base" =~ ^[0-9a-f]{40}$ \]\]',
+    'compare_json="$(curl --fail --silent --show-error --max-time 20',
+    '/compare/${EVENT_BASE_SHA}...${tested_base}',
+    '\[\[ "$relation" == "ahead" || "$relation" == "identical" \]\]',
   ];
   for (const item of required) assert.ok((item === 'fetch-depth: 2' ? workflow : preflight).includes(item),
     'Missing fail-closed checkout proof: ' + item);
-  assert.ok(preflight.indexOf('git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"') <
-    preflight.lastIndexOf('[[ "$tested_head" == "$PR_HEAD_SHA"'),
-    'Limited recovery must precede repeated strict parent validation, not override it');
+  assert.ok(preflight.indexOf('mapfile -t tested_parents') < preflight.indexOf('compare_json=') &&
+    preflight.indexOf('compare_json=') < preflight.indexOf('[[ "$relation" == "ahead" || "$relation" == "identical" ]]'),
+    'Exact merge parents must be checked before authenticated ancestry acceptance');
   assert.doesNotMatch(preflight, /fetch-depth: 0|git fetch .*--unshallow|continue-on-error:\s*true/,
     'No full clone or ignored failures allowed');
   assert.ok(workflow.includes("  public-services:\n    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),
     'Ready PR real browser source/security gating must remain enabled');
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

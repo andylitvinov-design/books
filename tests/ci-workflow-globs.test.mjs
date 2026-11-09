@@ -456,3 +456,5 @@ test('benchmark scripts and standalone Video Studio UI do not allocate unrelated
   ]) assert.ok(pathsOnly.includes("      - '" + sensitive + "'"),
     'real public booking/checkout/service changes must keep E2E: ' + sensitive);
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

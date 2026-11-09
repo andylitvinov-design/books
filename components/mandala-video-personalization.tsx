@@ -164,3 +164,5 @@ export function MandalaVideoPersonalization({locale,value,onChange,onBack,onCont
    disabled={disabled} onClick={onBack}><ArrowLeft size={16} aria-hidden="true"/>{t.back}</button>
  </div>;
 }
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

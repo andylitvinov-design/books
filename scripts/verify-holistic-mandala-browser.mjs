@@ -2513,3 +2513,5 @@ assert.equal(passes, viewports.length * engines.length,
   "Every language, viewport and real browser engine must pass");
 console.log("Mandala browser E2E:", passes, "of", viewports.length * engines.length, "checks passed");
 
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

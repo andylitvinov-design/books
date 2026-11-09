@@ -75,6 +75,7 @@ jobs:
           node --check lib/growth-studio/telegram.mjs
           node --check lib/growth-studio/provider-readiness.mjs
           node --check lib/growth-studio/dry-run-queue.mjs
+          node --check lib/growth-studio/dry-run-worker.mjs
           node --check app/admin/growth-studio/dry-run-actions.js
           node --check lib/growth-studio/store.js
           node --check lib/growth-studio/source-preview.mjs
@@ -113,3 +114,5 @@ jobs:
       - name: Next.js build
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}
         run: npm run build
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

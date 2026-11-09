@@ -365,3 +365,5 @@ test("the video studio exposes two independent actions on every stage",()=>{
  assert.ok(hypno.includes('data-hypno-add-effects'));
  assert.ok(!studio.includes('generateWithoutHypnoEffects'));
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

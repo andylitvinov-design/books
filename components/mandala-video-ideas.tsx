@@ -358,3 +358,5 @@ export function MandalaVideoIdeas({locale,theme,requestText,profile,active,disab
  <p className={css.privacy}>{t.privacy}</p>
  </section>;
 }
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

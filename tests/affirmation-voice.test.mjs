@@ -543,3 +543,5 @@ test("WebKit cached voice replay invokes one native play() per real tap, never a
   assert.match(browser,/await expect\.poll\(\(\)=>page\.evaluate\(\(\)=>window\.__hhPreviewReplayCount\)\)\.toBe\(1\)/);
   assert.match(browser,/replay must not spend a second free TTS request/);
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

@@ -1220,9 +1220,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(unselectedToggle).toBeEnabled();
       const unselectedIndex=await unselectedToggle.getAttribute('data-video-idea-select');
       assert.ok(unselectedIndex!==null,"unselected phrase has a stable source index");
+      const countBeforeAddition=Number(((await montageCountLabel.innerText()).match(/^\s*(\d+)/)||[])[1]||0);
+      const optionCountBeforeAddition=await phraseRows.count();
+      assert.ok(countBeforeAddition>=5,"approved phrase selection remains above the five-phrase minimum");
+      assert.ok(countBeforeAddition<10,"an additional phrase can be selected below the hard maximum");
       await unselectedToggle.click();
       await expect(phraseEditor.locator(`[data-video-idea-select="${unselectedIndex}"]`)).toHaveAttribute('aria-pressed','true');
-      await expect(montageCountLabel).toContainText("10 /");
+      await expect(montageCountLabel).toContainText(`${countBeforeAddition+1} / ${optionCountBeforeAddition}`);
+      assert.ok(countBeforeAddition+1<=10,"adding a phrase never exceeds the ten-phrase export limit");
       assert.equal(await page.locator('[data-video-narration-stale]').isVisible(),false,
         "adding an unspoken phrase does not invalidate the actual WAV");
       await expect(page.locator('[data-video-live-audio]')).toContainText("holistic-house-hypno-audio.wav");
@@ -1291,3 +1296,5 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
   }finally{phase(engine,"closing-browser");await withDeadline(browser.close(),10000,engine+" browser.close");phase(engine,"closed");}
 }
 clearTimeout(watchdog);
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

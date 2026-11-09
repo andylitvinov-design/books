@@ -237,3 +237,5 @@ test("ten-phrase limit and stale spoken-audio guard use the current visible Mont
  assert.ok(script.includes("adding an unspoken phrase does not invalidate the actual WAV"));
  assert.ok(script.includes("removing the spoken phrase must block stale WAV reuse or detach it"));
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

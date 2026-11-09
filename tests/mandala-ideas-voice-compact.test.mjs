@@ -52,10 +52,12 @@ test("My Voice owns real recorder/upload; cloud consent and apply remain Voice-o
 test("Personalization exposes real Voice/My Voice consent through a visible action",()=>{
  const css=read("components/mandala-video-mobile.module.css");
  const script=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.ok(css.includes('[data-ideas-subtab="personalization"] > button[data-video-phrase-audio-shortcut]'));
+ assert.ok(css.includes('[data-video-quick-phrases][data-ideas-subtab="personalization"]>button[data-video-phrase-audio-shortcut]:not([hidden])'));
  assert.ok(script.includes("const advancedText=phrases.locator('[data-video-phrase-audio-shortcut]')"));
  assert.ok(script.includes("await advancedText.click()"));
  assert.ok(script.includes("await personalTab.click()"));
  assert.ok(script.includes("await myVoiceModeButton.click()"));
  assert.ok(script.includes("await narrationConsent.check()"));
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

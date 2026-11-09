@@ -271,3 +271,5 @@ for (const engine of [chromium, webkit]) {
 }
 await writeFile(output+"/summary.json",JSON.stringify({cases:evidence},null,2));
 console.log("Support lowest-rating / gallery / talisman browser checks: " + evidence.length + " passed");
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

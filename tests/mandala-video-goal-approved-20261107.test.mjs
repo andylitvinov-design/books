@@ -128,3 +128,5 @@ test("macOS WebKit uses real Ideas Text→Voice switch and own-voice opt-in",()=
  assert.match(browser,/data-hypno-idea-details/);
  assert.doesNotMatch(browser,/advancedVoice\.click\(\{force:true\}\)/);
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

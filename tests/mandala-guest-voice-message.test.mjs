@@ -153,3 +153,5 @@ test("Ideas Personalization and Concept retain a single opt-in Voice/My Voice We
  assert.ok(css.includes('[data-ideas-subtab="voice"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{display:block!important}'), "the voice editor is exposed only inside its selected Voice/My Voice submode");
  assert.match(css,/data-video-phrase-audio-shortcut\]:not\(\[hidden\]\)/);
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

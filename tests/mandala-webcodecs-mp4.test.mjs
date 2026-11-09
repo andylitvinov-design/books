@@ -374,3 +374,5 @@ test("failed Safari output hides guest Watch and labels the result as a playback
   assert.match(result,/data-video-playback-error/);
   assert.match(result,/playbackStatus==="ready"&&result\.mode!=="catalog"&&creditConfirmed/);
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

@@ -38,3 +38,5 @@
 .moodFilter{margin-left:auto}
 .moodFilter button{min-width:44px;min-height:44px}
 @media(max-width:370px){.moodFilter button{min-width:44px;min-height:44px}.cardName{flex:1 1 135px}.cardHead{gap:5px}}
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

@@ -74,10 +74,12 @@ test("Preserve one voice recorder, optional effects and compact mobile layout",(
   assert.match(studio,/data-video-ideas-voice-mode="my-voice"/);
   assert.match(mobile,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
   assert.match(mobile,/@media\(max-width:359px\)/);
-  assert.match(mobile,/\.ideasConceptPane\[hidden\]/);
+  assert.match(mobile,/\.ideasConceptPane\[hidden\]\{display:none!important\}/);
   for(const marker of ['data-video-ideas-tab="personalization"',
     'data-video-ideas-tab="concept"',"data-video-ideas-advanced-voice",
     "data-personalization-kind","data-video-montage-style"])
     assert.ok(browser.includes(marker),marker);
   assert.match(browser,/for\(const width of \[320,354,390,430\]\)/);
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]

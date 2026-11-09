@@ -160,3 +160,5 @@ test("selecting a new phrase at the ten-phrase cap replaces the last choice and 
  assert.match(cmp,/else if\(chosen\.length>=10\)\{[\s\S]*?apply\(options,\[\.\.\.chosen\.slice\(0,-1\),index\]\);[\s\S]*?setFeedback\(t\.savedReplaced\);/);
  assert.match(cmp,/Choose up to 10 phrases|Выбрано максимум 10|Elige hasta 10/i);
 });
+
+[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]
