@@ -1223,8 +1223,8 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       assert.equal(await page.locator('[data-video-narration-stale]').isVisible(),false,
         "adding an unspoken phrase does not invalidate the actual WAV");
       await expect(page.locator('[data-video-live-audio]')).toContainText("holistic-house-hypno-audio.wav");
-      // Removing the exact phrase used for synthesis must invalidate the old
-      // audio or detach it before export; no silent reuse is allowed.
+      // A removed spoken phrase must block stale WAV reuse or detach it before export.
+      // The exact approved text remains the safety boundary; no silent reuse is allowed.
       await spokenToggle.click();
       await expect(spokenToggle).toHaveAttribute('aria-pressed','false');
       await page.waitForFunction(() => {
