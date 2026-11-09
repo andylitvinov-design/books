@@ -195,7 +195,7 @@ test("Messenger UI uses one-shot undo snapshot with the existing secure handoff"
     "setVideoDraft(previous.draft);",
     "setVideoStep(previous.step);",
     "stageVideoHandoff()",
-    "requiresProtectedReply(text,locale)"
+    "requiresProtectedReply(text,turnLocale)"
   ])assert.ok(ui.includes(literal),literal);
   const reducer=read("lib/mandala/video-chat-messenger-flow.mjs");
   assert.ok(reducer.includes("extractVideoChatCorrection(value)"));
