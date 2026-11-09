@@ -225,7 +225,7 @@ test('wrong account cannot access the private report or create a Life Plan row',
  assert.equal(state.plan,null)
 })
 
-test('report import is retry-safe and does not duplicate goal, action or audit events',async()=>{
+test('report import is retry-safe and does not duplicate goal, action, consent or audit events',async()=>{
  const {service,state,report}=buildService()
  const candidate=report.actionCandidates[0]
  const input={reportId,reportRevision:1,areaKey:'career_business',candidateIds:[candidate.candidateId],planConsent:true}
