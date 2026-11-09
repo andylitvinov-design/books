@@ -26,7 +26,7 @@ test('watchdog has independent cron; failed Core is a direct event workflow',()=
 
 test('allowlisted failed quality workflows use exact-PR event fast path, not another inventory scheduler',()=>{
  const watchdog=read('hh-pr-ten-minute-watchdog');
- const dispatcher=read('hh-pr-queue-dispatcher');
+ const dispatcher=readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
  const contract=read('hh-pr-watchdog-contract-ci');
  assert.ok(watchdog.includes('isTrustedQualityFailureEvent(context)'));
  assert.ok(watchdog.includes("directHandoffLocal:true,eventFastPath});"));
