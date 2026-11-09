@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createMetaOAuthState,verifyMetaOAuthState,encryptMetaCredentials,decryptMetaCredentials,META_REQUIRED_SCOPES,META_ACCOUNT_TARGETS} from '../lib/growth-studio/meta-instagram.mjs'
-import {isValidInstagramInsightDate,isValidInstagramInsightRange,normalizeInstagramInsightMetrics} from '../lib/growth-studio/instagram-insights.mjs'
+import {isValidInstagramInsightDate,isValidInstagramInsightRange,instagramInsightUnixRange,normalizeInstagramInsightMetrics} from '../lib/growth-studio/instagram-insights.mjs'
 
 const secret='synthetic-test-secret-only-never-a-real-production-secret'
 test('Meta OAuth state is signed, target-bound and expires',()=>{
@@ -44,6 +44,12 @@ test('Instagram Insights date ranges are canonical and bounded to 90 days',()=>{
   assert.equal(isValidInstagramInsightRange('2026-10-01','2026-11-09'),true)
   assert.equal(isValidInstagramInsightRange('2026-08-01','2026-11-09'),false)
   assert.equal(isValidInstagramInsightRange('2026-11-10','2026-11-09'),false)
+})
+test('Instagram Insights bounds convert canonical UTC dates into inclusive Unix seconds',()=>{
+  assert.deepEqual(instagramInsightUnixRange('2026-11-09','2026-11-09'),{
+    since:1794182400,until:1794268799,
+  })
+  assert.throws(()=>instagramInsightUnixRange('2026-02-30','2026-11-09'),/invalid_insights_range/)
 })
 test('Instagram Insights normalization keeps only allowlisted numeric aggregate metrics',()=>{
   const metrics=normalizeInstagramInsightMetrics({data:[
