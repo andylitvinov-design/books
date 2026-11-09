@@ -18,3 +18,8 @@ The concept diagram's `coaching_life_plans → life_plan_areas → coaching_goal
 
 ## Release checks
 Run `node --test tests/personal-coaching-client-context.test.mjs` and `npm run test:coaching:release`. The new context is backward-compatible with envelopes that do not yet contain a `clientContext` field. Do not turn on any model/provider feature flag or claim production LIVE without the separate approved provider, privacy, migration, CI and mobile acceptance gates.
+
+
+## Existing Life Plan source integration (2026-11-09 follow-up)
+
+The private development-goals endpoint is the existing owner-authored source for the four Life Plan directional targets. The next-session review now reads it through the authenticated `development-goals` API, and only when the record has a saved revision (revision >= 1) projects the four named sector targets into `life_plan_changes`. Unsaved default 50/100 values are ignored. Numeric test measurements, raw test answers, axis-level diagnostic details and check-in payloads are not included. The client reviews/edits these target labels alongside previous session notes before they are attached to the new encrypted coaching session.
