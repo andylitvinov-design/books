@@ -157,7 +157,7 @@ function saveManualReminders(records) {
   setTimeout(()=>URL.revokeObjectURL(url),1000)
 }
 function saveCsv(records) {
-  const cols=['id','brand','channel','locale','title','caption','sourceUrl','campaign','scheduledAt','mediaUrl','mediaAlt','status','updatedAt']
+  const cols=['id','brand','channel','instagramAccountId','locale','title','caption','sourceUrl','campaign','scheduledAt','mediaUrl','mediaAlt','status','updatedAt']
   const raw='\ufeff'+[cols.join(','),...records.map(x=>cols.map(key=>csvCell(x[key])).join(','))].join('\r\n')
   const url=URL.createObjectURL(new Blob([raw],{type:'text/csv;charset=utf-8;'}))
   const link=document.createElement('a');link.href=url;link.download='hh-growth-studio-editorial.csv'
@@ -272,6 +272,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   }
   async function execute(action,post){
     if (!ready||!storageVerified||busy) return
+    if(action==='save'&&form.channel==='instagram'&&!form.instagramAccountId){setNotice(locale==='ru'?'Выберите Instagram-аккаунт для черновика.':'Choose an Instagram account for this draft.');return}
     setBusy(true);setNotice('')
     try {
       const result=await updateGrowthStudioPostAction(action==='save'
