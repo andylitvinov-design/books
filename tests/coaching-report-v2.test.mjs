@@ -147,6 +147,15 @@ test('validator rejects broken evidence references, fabricated acceptance and mo
   fabricated.actionCandidates[0].acceptedAt = '2026-11-09T16:20:00.000Z'
   assert.ok(validateCoachingReportV2(fabricated).errors.includes('REPORT_ACTION_ACCEPTANCE_INVALID'))
 
+  const unconfirmed = structuredClone(valid)
+  unconfirmed.actionCandidates[0].status = 'accepted'
+  unconfirmed.actionCandidates[0].acceptedAt = '2026-11-09T16:20:00.000Z'
+  assert.ok(validateCoachingReportV2(unconfirmed).errors.includes('REPORT_ACTION_ACCEPTANCE_INVALID'))
+
+  const unsupportedOutcome = structuredClone(valid)
+  unsupportedOutcome.outcome.mainDifficulty.evidenceIds = ['unknown-evidence']
+  assert.ok(validateCoachingReportV2(unsupportedOutcome).errors.includes('REPORT_OUTCOME_EVIDENCE_INVALID'))
+
   const tooMany = structuredClone(valid)
   tooMany.actionCandidates = Array.from({ length: 4 }, (_, index) => ({
     candidateId: 'candidate-' + index,
