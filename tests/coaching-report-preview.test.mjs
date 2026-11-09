@@ -141,6 +141,16 @@ test('archive remains available without a session and removes only the selected 
  assert.match(page,/<CoachingReportPreview\s+accountId=\{accountId\}\s+archiveOnly/)
 })
 
+test('saved reports expose a client-selected Life Plan area and only confirmed actions are importable',()=>{
+ const source=readFileSync(new URL('../components/coaching-report-preview.jsx',import.meta.url),'utf8')
+ assert.match(source,/Add confirmed actions to My Coaching Plan/)
+ assert.match(source,/Добавить подтверждённые действия в My Coaching Plan/)
+ assert.match(source,/areaKey:planAreaKey,confirmed:true/)
+ assert.match(source,/item\.status==='accepted'/)
+ assert.match(source,/body\.confirmed/)
+ assert.match(source,/body\.areaKey/)
+})
+
 test('session deletion confirmation explains that saved reports remain separately',()=>{
  const source=readFileSync(new URL('../components/app/personal-coaching.jsx',import.meta.url),'utf8')
  assert.match(source,/deleteConfirm:'[^']*Saved reports remain[^']*'/)
