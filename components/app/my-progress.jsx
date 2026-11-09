@@ -285,6 +285,7 @@ export default function MyProgress({ data, locale='en' }) {
           <h1>{t.title}</h1>
           <p>{accountName || t.noProfileName} <span aria-hidden="true">·</span> {t.profile}</p>
           <Link href={root+'/portrait'} prefetch={false}>{t.profileOpen}<ArrowRight size={14}/></Link>
+           <Link href={root+'/memory'} prefetch={false}>{lang==='ru'?'Обо мне · память и практики':lang==='es'?'Sobre mí · memoria y prácticas':'About me · memory & practices'}<ArrowRight size={14}/></Link>
         </div>
       </div>
       <p className={styles.heroIntro}>{t.intro}</p>
