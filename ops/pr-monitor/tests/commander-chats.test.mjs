@@ -85,3 +85,15 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
+
+test('monitor-side owner token handoff is bounded, retryable and removes bearer from URL',()=>{
+ const auth=src('commander-auth.js');
+ assert.match(auth,/fetchWithTimeout/);
+ assert.match(auth,/11000/);
+ assert.match(auth,/history\.replaceState\(null,'',location\.pathname\+location\.search\)/);
+ assert.match(auth,/sessionToken=\$\{?''\}?/);
+ assert.match(auth,/retryAction\(message,\(\)=>exchangeToken\(next\)\)/);
+ assert.match(auth,/sessionToken=''[\s\S]{0,100}location\.replace\(next\)/);
+ assert.match(auth,/if\(response\.status===401\|\|response\.status===403\)sessionToken=''/);
+ assert.match(auth,/HttpOnly|api\/commander-session/);
+});
