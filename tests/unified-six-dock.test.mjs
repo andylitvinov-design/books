@@ -12,7 +12,7 @@ test("one seven-button dock includes Services and My Coach on existing destinati
   assert.deepEqual(UNIFIED_DOCK_IDS.map(id=>unifiedMobileDockHref(locale,id)),[
    "/"+locale+"/mytube",
    "/"+locale+"/holistic-support/mandala",
-   "/"+locale+"/masters",
+   "/"+locale+"/my-coach",
    "/"+locale+"/app/messages?section=ai",
    "/"+locale+"/services",
    "/"+locale+"/holistic-support/mobile",
@@ -76,7 +76,7 @@ test("Holistic House Home and Free Analysis share exactly one fixed seven-button
  assert.ok(review.includes('FreeEntryLanding locale={locale} kind="situation"'));
  assert.ok(model.includes("compactNavigationIds = ['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple']"));
  assert.ok(menu.includes("id: 'practice', label: text.practice, href: '/' + activeLocale + '/holistic-support/mobile'"));
- assert.ok(menu.includes("id: 'my-coach', label: myCoachMenuCopy[activeLocale], href: '/' + activeLocale + '/masters'"));
+ assert.ok(menu.includes("id: 'my-coach', label: myCoachMenuCopy[activeLocale], href: '/' + activeLocale + '/my-coach'"));
  assert.ok(menu.includes("My Coach"));
  assert.ok(!menu.includes("id: 'services', label: text.services"));
  for(const language of ["Practice","Практика","Práctica"])assert.ok(model.includes(language));
@@ -85,7 +85,7 @@ test("Holistic House Home and Free Analysis share exactly one fixed seven-button
 test("route-aware single dock, guest/signed-in consistency and private pages excluded",()=>{
  for(const locale of ["en","ru","es"]){
   for(const path of ["mytube","holistic-support/mandala","holistic-support/mobile","practice",
-   "app/messages","app/portrait","app/practice","temple-insights","masters","services","services/free-situation-review"]){
+   "app/messages","app/portrait","app/practice","temple-insights","my-coach","services","services/free-situation-review"]){
    assert.ok(isUnifiedMobileDockPath("/"+locale+"/"+path),path);
   }
   assert.equal(unifiedMobileDockActive("/"+locale+"/mytube"),"mytube");
@@ -96,7 +96,7 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"practice");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/messages"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/portrait"),"profile");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),"coach");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/my-coach"),"coach");
   assert.equal(unifiedMobileDockActive("/"+locale+"/services"),"services");
   assert.equal(unifiedMobileDockActive("/"+locale+"/services/free-situation-review"),"services");
   assert.equal(isUnifiedMobileDockPath("/"+locale+"/app/document-view"),false);
