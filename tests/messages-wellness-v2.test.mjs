@@ -198,9 +198,11 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
  const css=source('components/app/messages-orders-clients.module.css')
  for(const text of ['AI · Orders · Clients','ИИ · Заказы · Клиенты','IA · Pedidos · Clientes'])
    assert.ok(ui.includes(text),text)
- assert.match(ui,/<p>\{t.subtitle\}<\/p>/)
+ for(const label of ["AI Assistant","ИИ-ассистент","Asistente IA"])assert.ok(ui.includes(label),label);
+ assert.match(ui,/data-hh-ai-chat-history/);
+ assert.match(ui,/data-hh-ai-new-chat/);
  assert.doesNotMatch(ui,/<p>\{section==='ai'\?/)
- const header=ui.indexOf('<header className={styles.head}>')
+ const header=ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>')
  const tabs=ui.indexOf('<div className={styles.sections} role="tablist"')
  const orders=ui.indexOf('<div id="hh-orders-panel"')
  assert.ok(tabs!==-1&&header>tabs&&orders>header,'tab switcher appears before shared heading')
@@ -212,14 +214,14 @@ test('Messenger keeps the same header and tab shell across AI, Orders, Clients a
 })
 
 
-test('owner Messenger preserves one private chat and six explicit quick actions',()=>{
+test('owner Messenger preserves one chat with six in-chat entries and locale control',()=>{
  const ui=source('components/app/messages-orders-clients.jsx')
  const ai=source('components/app/messenger-ai-workspace.jsx')
  const css=source('components/app/messenger-ai-workspace.module.css')
  const chat=source('components/holistic-agent-chat.tsx')
  const mobile=source('app/[locale]/app/messages/messages-page.css')
  assert.ok(ui.indexOf('<div className={styles.sections} role="tablist"')<
-   ui.indexOf('<header className={styles.head}>'))
+   ui.indexOf('<header className={styles.head} data-hh-ai-assistant-header>'))
  assert.match(css,/\.layout\{display:flex;flex-direction:column/)
  assert.match(css,/\.content\{display:flex;flex:1/)
  assert.ok(chat.includes('data-hh-ai-welcome'))
@@ -234,9 +236,12 @@ test('owner Messenger preserves one private chat and six explicit quick actions'
  assert.match(ai,/<HolisticAgentChat locale=\{locale\} compact messengerView/)
  assert.match(ai,/authenticated=\{authenticated\} authStatus=\{authStatus\}/)
  assert.match(ai,/onAuthRetry=\{onAuthRetry\}/)
+ assert.match(ai,/onConversationLocaleChange=\{onConversationLocaleChange\}/)
+ assert.match(chat,/data-chat-skin=\{messengerView\?"messenger":undefined\}/)
  assert.doesNotMatch(ai,/<IHelpTopics\b|quickPrompt=\{/)
- assert.match(chat,/compact&&messengerView&&!pageHelp&&!messages\.length&&<MessengerAiLanding/)
- assert.match(chat,/onCreateVideo=\{startContent\}/)
+ assert.match(chat,/compact&&messengerView&&!pageHelp&&!messages\.length&&<>[\s\S]*?<MessengerAiLanding/)
+ assert.ok(chat.includes('<MessengerSixProjects locale={locale} onSelect={startProject}/>'))
+ assert.match(chat,/onCreateVideo=\{(?:startContent|\(\)\s*=>\s*startContent\(\))\}/)
  assert.match(chat,/onPractice=\{\(\)=>startGuided\("meditation"\)\}/)
  assert.match(chat,/onAsk=\{\(\)=>composerRef\.current\?\.focus\(\{preventScroll:true\}\)\}/)
  assert.match(chat,/if\(!quickPrompt\)return;\s*setDraft\(quickPrompt\.text\.slice\(0,2000\)\)/)

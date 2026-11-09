@@ -35,7 +35,13 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: '22', cache: npm}
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Protected orders and owner Messages regression contracts
         run: |
           node --conditions=react-server --test tests/messages-approved-entry.test.mjs tests/messages-orders-clients.test.mjs tests/messages-simple-inbox.test.mjs tests/messages-inbox-unified.test.mjs tests/messages-inbox-tabs.test.mjs tests/messages-iphone-keyboard-layout.test.mjs tests/mobile-visual-dock.test.mjs tests/messages-private-media-pagination.test.mjs tests/direct-message-media-transport.test.mjs tests/practitioner-request-voice.test.mjs tests/practitioner-request-multimedia.test.mjs
@@ -76,6 +82,12 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: '22', cache: npm}
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Isolated PostgreSQL operator audit, RLS and cross-account denial
         run: node --conditions=react-server --test --test-concurrency=1 tests/public-enquiry-contact-audit-rls.integration.mjs

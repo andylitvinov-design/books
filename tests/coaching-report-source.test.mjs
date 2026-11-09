@@ -14,23 +14,32 @@ function fixture(){
  const session={id:SID,status:'completed',schemeKey:'grow_overload_20_v1',modelKey:'grow_v1',answers:{goal:'Rest more',reality:'Too many deadlines',action:'Take a short walk'},reflections:{}}
  const records=new Map([[A,{course:{current:session,history:[]},revision:4,updatedAt:'2026-11-09'}],[B,{course:null,revision:0,updatedAt:null}]])
  const source=readFileSync(new URL('../lib/app/coaching-report-v2.js',import.meta.url),'utf8').replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
- const factory=runInNewContext('(deps)=>{const {readPersonalCoaching,transaction,loadSchemeQuestions,buildCoachingReportV2Draft,PERSONAL_COACH_QUESTIONS,AppError,onlyKeys,requireUUID}=deps;'+source+';return readCoachingReportDraft}')
- const deps={readPersonalCoaching:async(_config,actor)=>records.get(actor.id),
-  transaction:async(_config,_actor,fn)=>fn({}),loadSchemeQuestions:async()=>({schemeKey:'grow_overload_20_v1',modelKey:'grow_v1',questions}),
+ const factory=runInNewContext('(deps)=>{const {readPersonalCoaching,readPersonalCoachingInTransaction,transaction,loadSchemeQuestions,buildCoachingReportV2Draft,PERSONAL_COACH_QUESTIONS,AppError,onlyKeys,requireUUID}=deps;'+source+';return readCoachingReportDraft}')
+ const calls=[]
+ const deps={readPersonalCoaching:async(_config,actor)=>records.get(actor.id),readPersonalCoachingInTransaction:async(db,_config,actor)=>{calls.push(['session',db]);return records.get(actor.id)},
+  transaction:async(_config,_actor,fn)=>fn({}),loadSchemeQuestions:async db=>{calls.push(['catalog',db]);return {schemeKey:'grow_overload_20_v1',modelKey:'grow_v1',questions}},
   buildCoachingReportV2Draft,PERSONAL_COACH_QUESTIONS:questions,AppError,onlyKeys,requireUUID}
- return {read:factory(deps),records,session,deps}
+ return {read:factory(deps),records,session,deps,calls}
 }
 const input={sessionId:SID,revision:4,locale:'en'}
 
 test('draft is built only from the authenticated owner saved session and revision',async()=>{
  const {read}=fixture()
  const result=await read({}, {id:A}, input)
+ assert.equal(Object.hasOwn(result,'sourceSession'),false)
  assert.equal(result.report.sessionId,SID)
  assert.equal(result.report.generation.sourceRevision,4)
  assert.equal(result.report.outcome.clientFocus.text,'Rest more')
  await assert.rejects(()=>read({}, {id:B},{...input,revision:0}),err=>err.code==='COACHING_REPORT_SESSION_NOT_FOUND')
  await assert.rejects(()=>read({}, {id:A},{...input,revision:3}),err=>err.code==='PERSONAL_COACH_REVISION_CONFLICT')
  await assert.rejects(()=>read({}, {id:A},{...input,answers:{goal:'forged'}}),err=>err.code==='UNKNOWN_FIELD')
+})
+
+test('locked report generation reads both the source and catalog through its existing transaction',async()=>{
+ const {read,calls}=fixture(),db={marker:'locked transaction'}
+ const result=await read({}, {id:A},input,db)
+ assert.equal(result.report.sessionId,SID)
+ assert.deepEqual(calls,[['session',db],['catalog',db]])
 })
 
 test('held, missing, ambiguous and catalog-mismatched sessions never generate a draft',async()=>{
@@ -45,7 +54,7 @@ test('held, missing, ambiguous and catalog-mismatched sessions never generate a 
  records.get(A).course.history=[]
  deps.loadSchemeQuestions=async()=>null
  const source=readFileSync(new URL('../lib/app/coaching-report-v2.js',import.meta.url),'utf8').replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
- const changed=runInNewContext('(deps)=>{const {readPersonalCoaching,transaction,loadSchemeQuestions,buildCoachingReportV2Draft,PERSONAL_COACH_QUESTIONS,AppError,onlyKeys,requireUUID}=deps;'+source+';return readCoachingReportDraft}')(deps)
+ const changed=runInNewContext('(deps)=>{const {readPersonalCoaching,readPersonalCoachingInTransaction,transaction,loadSchemeQuestions,buildCoachingReportV2Draft,PERSONAL_COACH_QUESTIONS,AppError,onlyKeys,requireUUID}=deps;'+source+';return readCoachingReportDraft}')(deps)
  await assert.rejects(()=>changed({}, {id:A},input),err=>err.code==='COACHING_REPORT_CATALOG_UNAVAILABLE')
 })
 
@@ -73,7 +82,7 @@ test('preview route uses the existing authenticated same-origin and private resp
 test('report source and tests route to existing coaching and database gates',()=>{
  const workflow=readFileSync(new URL('../.github/workflows/hh-personal-coaching-session.yml',import.meta.url),'utf8')
  const trigger=parsePrTrigger(workflow,'hh-personal-coaching-session.yml')
- for(const filename of ['lib/app/coaching-report-v2.js','tests/coaching-report-source.test.mjs','tests/coaching-report-v2.test.mjs']){
+ for(const filename of ['lib/app/coaching-report-v2.js','lib/app/coaching-report-store.js','supabase/migrations/20261109210000_hh_coaching_report_storage_v1.sql','tests/coaching-report-source.test.mjs','tests/coaching-report-v2.test.mjs']){
   assert.equal(matchesTrigger(trigger,[filename],'codex/public-book-library'),true,filename)
   assert.equal(decideHeavyImpact('app-r1',[{filename,status:'modified'}]).database,true,filename)
  }

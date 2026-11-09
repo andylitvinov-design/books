@@ -280,12 +280,73 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || (steps.diff.outputs.docs_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT') && steps.diff.outputs.ci_only != 'true' }}
         with:
           stage: materialize
-      # When full Mandala browser QA is advisory, Core retains a mandatory
-      # bounded, exact-tested-merge source gate for narration/privacy and codecs.
-      # The Specialist aggregator checks this trusted marker on BASE before
-      # treating Mandala's expensive independent workflow as diagnostic.
+      # The exact same six media/voice contracts also belong to the BASE-trusted Mandala
+      # focused-unit suite. Run them here only when that Specialist workflow does NOT
+      # own this exact diff. Use the shared BASE+HEAD path-filter implementation; never
+      # mirror its globs or trust only candidate workflow edits.
+      - name: Resolve BASE-trusted Mandala Specialist owner for overlapping fast contracts
+        id: mandala_owner
+        if: github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT'
+        env:
+          HH_EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
+          import { resolve } from 'node:path';
+          import { pathToFileURL } from 'node:url';
+
+          const workflowPath = '.github/workflows/holistic-support-mandala.yml';
+          const baseSha = execFileSync('git', ['rev-parse', 'HEAD^1'], { encoding: 'utf8' }).trim();
+          const testedHead = execFileSync('git', ['rev-parse', 'HEAD^2'], { encoding: 'utf8' }).trim();
+          if (!/^[0-9a-f]{40}$/.test(baseSha) ||
+              !/^[0-9a-f]{40}$/.test(testedHead) ||
+              testedHead !== process.env.HH_EVENT_HEAD_SHA) {
+            throw new Error('MANDALA_OWNER_ROUTE_UNVERIFIED_HEAD');
+          }
+
+          const changed = execFileSync(
+            'git',
+            ['diff', '--no-renames', '--name-only', '-z', baseSha, 'HEAD'],
+            { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 },
+          ).split('\0').filter(Boolean);
+          if (!changed.length || changed.length > 3000) {
+            throw new Error('MANDALA_OWNER_ROUTE_INVALID_DIFF');
+          }
+
+          // Read both workflow versions. Specialist uses this same BASE/HEAD union;
+          // a candidate PR cannot narrow its own required owner.
+          const baseWorkflow = execFileSync(
+            'git', ['show', baseSha + ':' + workflowPath],
+            { encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 },
+          );
+          const headWorkflow = readFileSync(workflowPath, 'utf8');
+          const trustedModule = execFileSync(
+            'git', ['show', baseSha + ':lib/ci/specialist-aggregate.mjs'],
+            { encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 },
+          );
+          const trustedPath = resolve(process.env.RUNNER_TEMP, 'hh-specialist-aggregate-base.mjs');
+          writeFileSync(trustedPath, trustedModule);
+          const { parsePrTrigger, matchesTrigger } = await import(pathToFileURL(trustedPath).href);
+          const baseTrigger = parsePrTrigger(baseWorkflow, workflowPath + ':base');
+          const headTrigger = parsePrTrigger(headWorkflow, workflowPath + ':head');
+          const specialistOwns = [baseTrigger, headTrigger].some(trigger =>
+            matchesTrigger(trigger, changed, 'codex/public-book-library'));
+          appendFileSync(process.env.GITHUB_OUTPUT, 'specialist_owns_mandala=' + String(specialistOwns) + '\n');
+          appendFileSync(
+            process.env.GITHUB_STEP_SUMMARY,
+            'Mandala duplicate-test owner: ' + (specialistOwns ? 'BASE-trusted Specialist' : 'Core fallback') + '\n',
+          );
+          console.log('Mandala overlapping fast contracts delegated to Specialist: ' + specialistOwns);
+          NODE
+
+      # This is a Core fallback only when the BASE/HEAD path router says the
+      # independent Mandala workflow does not own this exact diff. When it does,
+      # that workflow runs the same unit contracts once and Specialist validates it.
       - name: Fast Mandala release contracts (HH_MANDALA_FAST_RELEASE_V1)
-        if: ${{ github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' }}
+        if: ${{ github.event_name == 'pull_request' && steps.diff.outputs.docs_only != 'true' && steps.diff.outputs.ci_only != 'true' && steps.fast.outputs.route != 'ASSETS' && steps.fast.outputs.route != 'TEXT' && steps.mandala_owner.outputs.specialist_owns_mandala != 'true' }}
         shell: bash
         run: |
           set -euo pipefail

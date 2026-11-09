@@ -306,3 +306,17 @@ test('session cabinet one-tap OAuth accepts only allowlisted app destinations, n
 // Run the Telegram OIDC identity-proof and multilingual-entry suite inside the
 // existing mandatory App R1 PKCE job; never leave this security test orphaned.
 await import('./app-telegram-oidc-login.test.mjs')
+
+test('Commander owner login check always ends and exposes a retry action when auth provider is slow', async () => {
+  const source = await readFile(new URL('../public/commander-connect.js', import.meta.url), 'utf8')
+  const page = await readFile(new URL('../public/commander-connect.html', import.meta.url), 'utf8')
+  assert.ok(page.includes('commander-connect.js?v=20261109-owner-timeout-v1'))
+  assert.match(source, /fetchWithTimeout/)
+  assert.match(source, /8000, 'Проверка сессии'/)
+  assert.match(source, /10000, 'Проверка владельца'/)
+  assert.match(source, /12000, 'Google-вход'/)
+  assert.match(source, /showAction\(String\(error\.message \|\| error\) \+ ' Войдите повторно через Google\.'/)
+  assert.match(source, /Повторить проверку/)
+  assert.match(source, /button\.addEventListener\('click'/)
+  assert.doesNotMatch(source, /addEventListener\('click', startGoogle, \{ once: true \}\)/)
+})
