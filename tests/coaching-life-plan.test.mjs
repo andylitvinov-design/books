@@ -320,4 +320,8 @@ test('My Coaching Plan workspace JSX and route contract parse cleanly',async()=>
  assert.doesNotMatch(dock,/id: 'settings'/,'Settings remain in the account menu so the five-column mobile dock stays within its layout')
  const spanish=readFileSync(new URL('../lib/app/spanish-cabinet-bridge.mjs',import.meta.url),'utf8')
  assert.match(spanish,/my-coaching-plan/)
+ const planPage=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.match(planPage,/planConsent/)
+ assert.match(planPage,/planConsent:planConsents\[record\.id\]===true/)
+ assert.match(planPage,/disabled=\{!selected\.length\|\|planConsents\[record\.id\]!==true/)
 })
