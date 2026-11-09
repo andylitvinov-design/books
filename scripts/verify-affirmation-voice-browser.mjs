@@ -1195,13 +1195,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await personalTab.click();
       await expect(advancedText).toBeVisible();
       await advancedText.click();
-      const nextPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase="4"]');
+      // My Voice intentionally hides the Hypno phrase picker. Return to the
+      // standard Voice mode before testing the real selected-phrase editor.
+      const standardVoiceMode=advancedVoice.locator('[data-video-ideas-voice-mode="voice"]');
+      await expect(standardVoiceMode).toBeVisible();
+      if(await standardVoiceMode.getAttribute("aria-pressed")!=="true"){
+        if(engine==="webkit")await standardVoiceMode.tap();
+        else await standardVoiceMode.click();
+      }
+      await expect(standardVoiceMode).toHaveAttribute("aria-pressed","true");
+      const voicePhraseEditor=advancedVoice.locator('[data-ideas-subtab="voice"]');
+      await expect(voicePhraseEditor).toBeVisible();
+      const nextPhrase=voicePhraseEditor.locator('[data-hypno-phrase="4"]');
       await expect(nextPhrase).toBeVisible();
       await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
       // Preserve the explicitly approved one-line narration when the existing
       // editor has reached its five-phrase limit. A real visitor frees one
       // unspoken slot before selecting the next phrase.
-      const selectedBefore=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase][aria-pressed="true"]');
+      const selectedBefore=voicePhraseEditor.locator('[data-hypno-phrase][aria-pressed="true"]');
       const currentSelected=await selectedBefore.count();
       assert.ok(currentSelected>=1&&currentSelected<=5,"real Hypno selected phrase count");
       if(currentSelected===5){
@@ -1234,7 +1245,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // synthesis must invalidate the attached soundtrack before export.
       // Selection order may differ from candidate indices after toggling. Find
       // the exact phrase used in the TTS request, not a positional lookalike.
-      const spokenPhrase=page.locator('[data-workspace-section="phrases"] [data-hypno-phrase]').filter({hasText:approved});
+      const spokenPhrase=voicePhraseEditor.locator('[data-hypno-phrase]').filter({hasText:approved});
       await expect(spokenPhrase).toHaveCount(1);
       await expect(spokenPhrase).toHaveAttribute("aria-pressed","true");
       if(engine==="webkit")await spokenPhrase.tap();
