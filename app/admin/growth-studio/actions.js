@@ -7,6 +7,8 @@ import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
 import {prepareEvergreenGrowthDrafts} from '@/lib/growth-studio/evergreen.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-readiness.mjs'
+import {createGrowthInstagramAccountStore} from '@/lib/growth-studio/instagram-account-store.mjs'
+import {readInstagramMetaConfiguration} from '@/lib/growth-studio/instagram-meta.mjs'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
@@ -206,4 +208,32 @@ export async function publishGrowthTelegramNowAction(input){
     // The provider may have delivered. Never auto-retry this ambiguous state.
     return {ok:false,error:'telegram_delivery_unknown'}
   }
+}
+
+
+// Safe owner-only Instagram account status. Never returns provider IDs or credentials.
+export async function listGrowthStudioInstagramAccountsAction(){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  try{
+    const store=createGrowthInstagramAccountStore()
+    if(!store)return {ok:false,error:'storage_unavailable'}
+    const [accounts,config]=await Promise.all([
+      store.listAccounts(),Promise.resolve(readInstagramMetaConfiguration()),
+    ])
+    return {ok:true,accounts,connectAvailable:config.ready}
+  }catch{return {ok:false,error:'instagram_accounts_unavailable'}}
+}
+
+export async function disconnectGrowthStudioInstagramAccountAction(input){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+    Object.keys(input).some(key=>key!=='accountId')||
+    !['my_coach_ai','my_couch_ai'].includes(input.accountId))
+    return {ok:false,error:'invalid_account'}
+  try{
+    const store=createGrowthInstagramAccountStore()
+    if(!store)return {ok:false,error:'storage_unavailable'}
+    await store.disconnect(input.accountId)
+    return {ok:true,accountId:input.accountId}
+  }catch{return {ok:false,error:'instagram_accounts_unavailable'}}
 }
