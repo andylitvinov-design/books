@@ -28,6 +28,7 @@
   var queueSnapshot = null, queueFallback = null, queueError = null, archive = null, archivePending = false;
   var auditRequests = 0, auditBusy = false, auditCache = new Map();
   var diagnostics = null, archiveNote = null;
+  var journeyComparison = null, journeyComparisonPending = false, waveCompareMount = null;
   var number = new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 1});
   function make(tag, className, value) {
     var e = document.createElement(tag);
@@ -66,6 +67,10 @@
       median: quantile(0.5), p50: quantile(0.5), p90: quantile(0.9), p95: quantile(0.95),
       rows: rows.sort(function (a,b) { return b.minutes-a.minutes; }),
       from: win.from, to: win.to, complete: win.complete === true};
+  }
+  function displayMetric(value,unit) {
+    if(typeof value!=='number'||!Number.isFinite(value)||value<0)return '—';
+    return new Intl.NumberFormat('ru-RU',{maximumFractionDigits:1}).format(value)+(unit?' '+unit:'');
   }
   function originalQueue() {
     var grid = document.querySelector('#hh-ci-queue-detail .hh-queue-grid');
@@ -207,6 +212,12 @@
       stages[key].substeps[pair[0]]={value:value,note:note};
     }
     target.append(list);
+    if(key==='ci_gaps'){
+      waveCompareMount=make('section','hh2-wave-comparison');
+      waveCompareMount.append(make('h3','','Сколько волн CI запускалось и где терялось время'));
+      waveCompareMount.append(make('p','hh2-meta','Загружаю одинаковые 24-часовые окна: сейчас, неделю назад и две недели назад…'));
+      target.append(waveCompareMount);
+    }
     var sample=make('p','hh2-sample','Времена не выводятся из разности других этапов. Глубокие замеры и архив CI могут иметь иной охват PR.');
     target.append(sample);stages[key].sample=sample;
   }
@@ -266,6 +277,7 @@
           make('small','hh2-stage-coverage',item?'n='+item.n+'/'+N:'n=0/'+N));
         st.name.title=item?'Наблюдаемые Core events: '+item.n+' из '+N:'Нет проверенных меток времени';
       }
+      st.week.textContent='—';st.week.title='Нет сопоставимых подтверждённых CI events за неделю назад';
       st.history.textContent='—';
       st.history.title='Нет сопоставимых подтверждённых CI events за 2 недели назад';
       if(key==='merge_to_live')continue;
@@ -292,6 +304,7 @@
       }
     }
     // Current stage and substep contributions are from exactly ONE denominator.
+    applyJourneyComparison();
     let total=Object.values(model.stage_totals_ms).reduce((a,b)=>a+b,0)/60000/N;
     let m=model.overall_mean_minutes;
     diagnostics.textContent='Арифметика: сумма всех этапов '+duration(total)+
@@ -322,6 +335,77 @@
       note.textContent=p.covered?'Core CI подтверждена; сегменты суммируются с общим временем.':
         'Нет сопоставимого сохранённого Core CI пути: длительность PR не приписана CI или Repair.';
     });
+  }
+  function renderWaveComparison() {
+    if(!waveCompareMount)return;
+    waveCompareMount.replaceChildren();
+    waveCompareMount.append(make('h3','','Количество волн CI и паузы между ними'));
+    if(!journeyComparison||journeyComparison.schema!=='HH_CI_JOURNEY_PERIOD_COMPARISON_V1'){
+      waveCompareMount.append(make('p','hh2-meta','Сравнение не подтверждено. Нет данных — это не нулевое значение.'));
+      return;
+    }
+    var byId=Object.fromEntries((journeyComparison.periods||[]).map(p=>[p.id,p]));
+    var head=make('div','hh2-wave-row hh2-wave-head');
+    head.append(make('span','','Показатель'),make('strong','','Сейчас'),
+      make('strong','','7 дн. назад'),make('strong','','14 дн. назад'));
+    waveCompareMount.append(head);
+    var metrics=[
+      ['Всего CI runs','ci_runs','шт'],['Повторные waves','repeat_waves','шт'],
+      ['Среднее runs / PR','mean_runs_per_pr',''],['Интервалов между waves','intervals','шт'],
+      ['Переходов на новый HEAD','new_head','шт'],['Повторов на том же HEAD','same_head','шт'],
+      ['HEAD не подтверждён','unverified_head','шт'],
+      ['Пауза после failed Core','after_failed','шт'],
+      ['Пауза после successful Core','after_success','шт'],
+      ['Сумма пауз','gap_total_minutes','мин'],['P50 паузы','gap_p50_minutes','мин'],
+      ['P95 паузы','gap_p95_minutes','мин']
+    ];
+    metrics.forEach(function(spec){
+      var row=make('div','hh2-wave-row');
+      row.append(make('span','',spec[0]));
+      ['current','week_ago','two_weeks_ago'].forEach(function(id){
+        row.append(make('strong','',displayMetric(byId[id]?.wave_summary?.[spec[1]],spec[2])));
+      });
+      waveCompareMount.append(row);
+    });
+    waveCompareMount.append(make('p','hh2-meta','Одинаковые окна по 24 ч. Охват наблюдаемых PR: '+
+      ['current','week_ago','two_weeks_ago'].map(function(id){
+        var p=byId[id];return (p?.label||id)+' '+(p?.wave_summary?.observed_prs??'—')+
+          '/'+(p?.coverage?.archived_prs??'—');
+      }).join(' · ')+'. Архив неполный. Новый HEAD не доказывает, кто и почему задержал публикацию.'));
+    var s=stages.ci_gaps;
+    [['current','current'],['week_ago','week'],['two_weeks_ago','history']].forEach(function(pair){
+      var p=byId[pair[0]],v=p?.wave_summary?.gap_mean_minutes_per_pr;
+      s[pair[1]].textContent=typeof v==='number'?duration(v):'—';
+      s[pair[1]].title=p?'Паузы между waves в окне '+(p.period?.from||'—')+
+        ' → '+(p.period?.to||'—')+'; PR cohort n='+p.wave_summary.observed_prs+
+        '. Неизвестное не считается нулём.':'Нет данных';
+    });
+  }
+  function applyJourneyComparison() {
+    if(!journeyComparison||journeyComparison.schema!=='HH_CI_JOURNEY_PERIOD_COMPARISON_V1')return;
+    renderWaveComparison();
+  }
+  async function readJourneyComparison() {
+    if(journeyComparisonPending||journeyComparison)return;
+    journeyComparisonPending=true;
+    try{
+      var response=await fetch('/api/ci-journey-summary?hours=24&compare=1',{
+        cache:'default',headers:{Accept:'application/json'}});
+      if(!response.ok)throw Error('HTTP '+response.status);
+      var data=await response.json();
+      if(data.schema!=='HH_CI_JOURNEY_PERIOD_COMPARISON_V1'||
+        !Array.isArray(data.periods)||data.periods.length!==3||
+        !data.periods.some(p=>p.id==='current')||
+        !data.periods.some(p=>p.id==='week_ago')||
+        !data.periods.some(p=>p.id==='two_weeks_ago'))throw Error('Неполный набор сравнения CI');
+      journeyComparison=data;applyJourneyComparison();
+    }catch(e){
+      if(waveCompareMount){
+        waveCompareMount.replaceChildren(make('h3','','Количество волн CI и паузы между ними'),
+          make('p','hh2-meta','Сравнение недоступно: '+String(e.message||e)+
+            '. Неполные данные не заменяются нулями.'));
+      }
+    }finally{journeyComparisonPending=false;}
   }
   async function readArchive() {
     if(archivePending||archive)return;
@@ -389,26 +473,26 @@
     head2.append(title2,back);two.append(head2);
     comparison = make('div','hh2-compare');
     var compareTitle = make('div','hh2-stage-head');
-    compareTitle.append(make('strong','','Этап · n/N'),make('strong','','Среднее / PR'),make('strong','','2 недели назад'));
+    compareTitle.append(make('strong','','Этап · n/N'),make('strong','','Сейчас'),make('strong','','7 дней назад'),make('strong','','14 дней назад'));
     comparison.append(compareTitle);
     STAGES.forEach(function (spec) {
       var detail = make('details','hh2-stage-item');
       var summary = make('summary','hh2-stage-row');
-      var name = make('span','',spec[1]), current = make('strong','','—'), history = make('strong','','—');
-      summary.append(name,current,history);
+      var name = make('span','',spec[1]), current = make('strong','','—'), week = make('strong','','—'), history = make('strong','','—');
+      summary.append(name,current,week,history);
       var explanation = make('div','hh2-detail');
       detail.append(summary,explanation);
       comparison.append(detail);
-      stages[spec[0]] = {name:name,current:current,history:history,explanation:explanation};
+      stages[spec[0]] = {name:name,current:current,week:week,history:history,explanation:explanation};
       buildSubsteps(spec[0],explanation);
       detail.addEventListener('toggle',function(){if(detail.open&&archive)applyArchive();});
     });
     var all = make('details','hh2-stage-item hh2-total');
     var sum = make('summary','hh2-stage-row');
     sum.append(make('span','','Итого: Created → Merged'),
-      make('strong','','—'),make('strong','','—'));
-    all.append(sum,make('div','hh2-detail','Только PR, созданные и смерженные внутри одинаковых 24-часовых окон Toronto. До LIVE это не полный путь.'));
-    comparison.append(all);stages.total={current:sum.children[1],history:sum.children[2]};
+      make('strong','','—'),make('strong','','—'),make('strong','','—'));
+    all.append(sum,make('div','hh2-detail','Сравнение использует одинаковые 24-часовые окна: сейчас, 7 дней назад и 14 дней назад. До LIVE это не полный путь.'));
+    comparison.append(all);stages.total={current:sum.children[1],week:sum.children[2],history:sum.children[3]};
     two.append(comparison);
     diagnostics=make('p','hh2-diagnostic','Проверяю охват подэтапов и сопоставимость периодов…');
     two.append(diagnostics);
@@ -570,6 +654,7 @@
     if(!archive){
       for(const [key] of STAGES){
         stages[key].current.textContent='—';
+        stages[key].week.textContent='—';
         stages[key].history.textContent='—';
       }
       diagnostics.textContent=baseline?
@@ -808,7 +893,7 @@
   }
   function start() {
     if (mounted || !document.body) return;
-    build();chartAndMetrics();if(!STAGE_ONLY)void readHistorical();void readCurrentCohort();
+    build();chartAndMetrics();void readJourneyComparison();if(!STAGE_ONLY)void readHistorical();void readCurrentCohort();
     if(!STAGE_ONLY){
       void readQueue();
       document.getElementById('refresh')?.addEventListener('click',()=>void readQueue());
