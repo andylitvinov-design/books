@@ -251,3 +251,24 @@ test('legacy saved posts without socialAccountId remain readable',()=>{
   const {socialAccountId,...oldShape}=legacy
   assert.equal(isSavedGrowthPost(oldShape),true)
 })
+
+
+test('Meta Graph Instagram receipts are valid only for the exact selected account and a real public permalink',()=>{
+  const base=nextGrowthPost({fields:fields({channel:'instagram',socialAccountId:'my_coach_ai'}),action:'save',id:postId(),now:fixedNow})
+  const approved=nextGrowthPost({current:base,action:'approve',now:fixedNow})
+  const published={...approved,status:'published',revision:approved.revision+1,updatedAt:fixedNow.toISOString(),
+    attemptId:postId(),delivery:{provider:'meta_graph_api',accountId:'my_coach_ai',
+      providerPostId:'123456789012345',containerId:'987654321098765',
+      url:'https://www.instagram.com/p/AbCdEf123/',publishedAt:fixedNow.toISOString(),mediaType:'IMAGE'}}
+  assert.equal(isSavedGrowthPost(published),true)
+  assert.equal(isSavedGrowthPost({...published,delivery:{...published.delivery,accountId:'my_couch_ai'}}),false)
+  assert.equal(isSavedGrowthPost({...published,delivery:{...published.delivery,url:'https://evil.example/p/AbCdEf123/'}}),false)
+  assert.equal(isSavedGrowthPost({...published,delivery:{...published.delivery,providerPostId:'not-an-id'}}),false)
+})
+
+test('owner approval action requires selected Instagram account for newly edited drafts and preserves old records',()=>{
+  const actions=readFileSync(new URL('../app/admin/growth-studio/actions.js',import.meta.url),'utf8')
+  assert.match(actions,/input\.action==='approve' && current\?\.channel==='instagram'/)
+  assert.match(actions,/Object\.hasOwn\(current,'socialAccountId'\) && !current\.socialAccountId/)
+  assert.match(actions,/instagram_account_required/)
+})
