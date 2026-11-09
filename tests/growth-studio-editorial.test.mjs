@@ -268,7 +268,10 @@ test('Meta Graph Instagram receipts are valid only for the exact selected accoun
 
 test('owner approval action requires selected Instagram account for newly edited drafts and preserves old records',()=>{
   const actions=readFileSync(new URL('../app/admin/growth-studio/actions.js',import.meta.url),'utf8')
-  assert.match(actions,/input\.action==='approve' && current\?\.channel==='instagram'/)
-  assert.match(actions,/Object\.hasOwn\(current,'socialAccountId'\) && !current\.socialAccountId/)
+  assert.match(actions,/input\.action==='save' && input\.fields\?\.channel==='instagram'/)
+  assert.match(actions,/input\.action==='approve'\|\|input\.action==='plan'/)
   assert.match(actions,/instagram_account_required/)
+  const composer=readFileSync(new URL('../components/growth-studio.jsx',import.meta.url),'utf8')
+  assert.match(composer,/value=\{form\.socialAccountId\|\|''\}/)
+  assert.match(composer,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS\.map\(account/)
 })
