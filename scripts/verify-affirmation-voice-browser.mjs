@@ -596,25 +596,19 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // My Voice is deliberately only a recorder/uploader. For phrase
       // fine-tuning the visitor returns to Text and opens its visible advanced
       // shortcut: never click controls hidden beneath another tab.
-      await personalTab.click();
+            await personalTab.click();
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
-      await expect(advancedVoice).toBeVisible({timeout:15000});
-      await expect(advancedVoice).toHaveAttribute("open","");
-      // Re-resolve the current visible control after the workspace round-trip.
-      // On native WebKit use a tap so the state change is a real user gesture.
-      const returnToStandardVoice=advancedVoice.locator('[data-video-ideas-voice-mode="voice"]');
-      await expect(returnToStandardVoice).toBeVisible();
-      if(await returnToStandardVoice.getAttribute("aria-pressed")!=="true"){
-        if(engine==="webkit")await returnToStandardVoice.tap();
-        else await returnToStandardVoice.click();
-      }
-      await expect(returnToStandardVoice).toHaveAttribute("aria-pressed","true",{timeout:10000});
-      // Reuse the visible Personalization voice shortcut.
+      // Switching back from Montage returns to Personalization with the
+      // advanced disclosure collapsed. Reopen it through the same visible
+      // shortcut a visitor uses before choosing the standard voice mode.
       await expect(advancedText).toBeVisible();
       await advancedText.click();
       await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
-      // Voice mode intentionally hides the separate personal-intention editor;
+      await voiceModeButton.click();
+      await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
+      await expect(personalTab).toHaveAttribute("aria-pressed","true");
+            // Voice mode intentionally hides the separate personal-intention editor;
       // that content belongs to Personalization and phrase editing belongs to
       // Montage → Text. Keep this voice-only panel focused on approved speech.
       const intentDetails=phrases.locator('[data-hypno-idea-details]');
