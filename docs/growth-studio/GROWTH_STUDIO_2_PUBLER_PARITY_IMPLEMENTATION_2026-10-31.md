@@ -418,3 +418,14 @@ AI предлагает варианты, но не перезаписывает
 - Existing owner approval, source provenance, immutable approval hash, idempotency, kill switches, audit and rollback contracts in sections 3–5 remain mandatory.
 
 **Implementation rule:** this section extends the existing Growth Studio 2.0 master specification and #1214. It is a specification, not evidence that Social Insights, account OAuth, AI learning or publication analytics are already implemented or LIVE.
+
+### 14.14. Official API reference links checked 9 November 2026
+
+- Meta Instagram API (official Meta Postman documentation; Professional accounts, Page linkage, publishing and insights): https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api
+- YouTube Analytics API reference and OAuth scopes: https://developers.google.com/youtube/analytics/reference
+- YouTube Analytics metric catalogue: https://developers.google.com/youtube/reporting/v1/reports/metrics
+- YouTube Analytics data model and processing latency: https://developers.google.com/youtube/analytics/data_model
+- Metricool API eligibility by plan and separate MCP availability: https://help.metricool.com/plans-add-ons-and-api-access-explained-xux1u
+- Metricool official API integration guide: https://help.metricool.com/basic-guide-for-api-integration-r97af
+
+These links are technical references, not evidence that any account is connected, that requested scopes have been granted, or that a paid plan is active.
