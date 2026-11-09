@@ -171,15 +171,15 @@ test('server actions are owner-only, flag-off and do not import social providers
 
 
 test('dry-run queue carries the selected Instagram destination and binds it into job identity',()=>{
- const firstDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'my_coach_ai'},now})
+ const firstDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'wizards_secrets'},now})
  const firstSource=nextGrowthPost({action:'approve',current:firstDraft,now})
  const first=makeJob(firstSource)
- assert.equal(first.socialAccountId,'my_coach_ai')
+ assert.equal(first.socialAccountId,'wizards_secrets')
  assert.equal(isValidDryRunJob(first),true)
- const secondDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'my_couch_ai'},now})
+ const secondDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'andy_therapist'},now})
  const secondSource=nextGrowthPost({action:'approve',current:secondDraft,now})
  const second=makeJob(secondSource)
- assert.equal(second.socialAccountId,'my_couch_ai')
+ assert.equal(second.socialAccountId,'andy_therapist')
  assert.notEqual(first.id,second.id)
  const missingDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:''},now})
  const missingSource=nextGrowthPost({action:'approve',current:missingDraft,now})
