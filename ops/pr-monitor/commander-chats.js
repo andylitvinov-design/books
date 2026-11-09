@@ -457,8 +457,16 @@
  }
  async function authenticated(){
   authorized=true;show('login',false);
-  let status;try{status=await request(SERVER+'?action=status')}catch{status={privateStoreConfigured:false}}
+  let status,statusError=null;
+  try{status=await request(SERVER+'?action=status')}
+  catch(error){statusError=error;status={privateStoreConfigured:false}}
   remote=!!status.privateStoreConfigured;
+  if(statusError){
+   show('vault',false);show('board',false);
+   el('storage-label').textContent='Проверка защищённого серверного хранилища временно не завершилась.';
+   info('Вход владельца подтверждён, но сервер чатов не ответил: '+String(statusError.message||statusError)+' Нажмите «Обновить», чтобы повторить проверку.');
+   return;
+  }
   el('storage-label').textContent=remote?'Защищённые чаты Supabase · история доступна между устройствами.':
    'Зашифровано на этом устройстве · серверная синхронизация не подключена.';
   show('vault',false);show('board',remote);show('export',!remote);show('import-label',!remote);
