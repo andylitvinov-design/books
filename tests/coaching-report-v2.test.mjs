@@ -58,6 +58,37 @@ test('deterministic Report v2 is versioned and grounded in the saved session ans
   assert.equal(validateCoachingReportV2(report).valid, true)
 })
 
+test('separate topic and desired outcome answers in the same GROW stage stay distinct', () => {
+  const legacyQuestions = [
+    {id:'topic',stage:'goal',question:{en:'What would you like to work through?'}},
+    {id:'outcome',stage:'goal',question:{en:'What would make this session useful?'}},
+    {id:'reality',stage:'reality'},
+    {id:'first_step',stage:'will'},
+  ]
+  const report = buildCoachingReportV2Draft({
+    session: completedSession({
+      answers: {
+        topic:'I want to think about changing jobs.',
+        outcome:'Leave with one realistic decision.',
+        reality:'I have two possible directions.',
+        first_step:'Compare the two roles on Friday.',
+      },
+    }),
+    questions: legacyQuestions,
+  })
+
+  assert.equal(report.outcome.clientFocus.text, 'I want to think about changing jobs.')
+  assert.equal(report.outcome.desiredResult.text, 'Leave with one realistic decision.')
+  assert.notEqual(report.outcome.clientFocus.text, report.outcome.desiredResult.text)
+  assert.ok(report.evidence.some(item => item.questionId === 'outcome' &&
+    item.role === 'desired_result' && item.value === 'Leave with one realistic decision.'))
+  assert.ok(report.evidence.some(item => item.questionId === 'reality' &&
+    item.value === 'I have two possible directions.'))
+  assert.ok(report.evidence.some(item => item.questionId === 'first_step' &&
+    item.value === 'Compare the two roles on Friday.'))
+  assert.equal(validateCoachingReportV2(report).valid, true)
+})
+
 test('only an already-approved client action is represented as accepted and confirmed', () => {
   const report = buildCoachingReportV2Draft({
     session: completedSession({
