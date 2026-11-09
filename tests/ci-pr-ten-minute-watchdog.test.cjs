@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, canDispatchRepair, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, canDispatchRepair, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease, eventOnlyPR, isTrustedCoreFailureEvent} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
 const SHA = 'b'.repeat(40);
 const NOW = 1800000000000;
 const pr = number => ({
@@ -1871,4 +1871,51 @@ test('missing verified job ID keeps original signed handoff but never constructs
   assert.ok(body.includes('Confirmed failed Core source step'));
   assert.ok(!body.includes('/job/'));
   assert.equal(labels,1);
+});
+
+
+test('trusted failed Core workflow_run wakes only its exact same-repo production PR',async()=>{
+ const target={...pr(401),state:'open',draft:false,
+   head:{sha:'d'.repeat(40),ref:'fix-exact-core-401',repo:{full_name:'andylitvinov-design/books'}},
+   base:{ref:'codex/public-book-library'}};
+ const workflowRun={
+   id:9901,run_attempt:1,name:'HH PR core release gate',
+   path:'.github/workflows/hh-pr-core-release.yml@refs/pull/401/merge',
+   event:'pull_request',status:'completed',conclusion:'failure',
+   repository:{full_name:'andylitvinov-design/books'},
+   head_repository:{full_name:'andylitvinov-design/books'},
+   head_branch:target.head.ref,head_sha:'e'.repeat(40),pull_requests:[]
+ };
+ const context={repo:{owner:'andylitvinov-design',repo:'books'},
+   ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_run',
+   payload:{workflow_run:workflowRun}};
+ assert.equal(isTrustedCoreFailureEvent(context),true,
+   'a completed exact-path same-repository Core failure is an actionable event');
+ const calls=[];
+ const selected=await eventOnlyPR({rest:{pulls:{list:async args=>{
+   calls.push(args);return {data:[target]};
+ }}}},'andylitvinov-design','books',async(_name,fn)=>fn(),context);
+ assert.deepEqual(selected,[target]);
+ assert.deepEqual(calls,[{owner:'andylitvinov-design',repo:'books',state:'open',
+   head:'andylitvinov-design:'+target.head.ref,per_page:100}]);
+ for(const invalid of [
+   {...context,ref:'refs/heads/other'},
+   {...context,payload:{workflow_run:{...workflowRun,path:'.github/workflows/other.yml'}}},
+   {...context,payload:{workflow_run:{...workflowRun,conclusion:'success'}}},
+   {...context,payload:{workflow_run:{...workflowRun,head_repository:{full_name:'fork/books'}}}},
+   {...context,payload:{workflow_run:{...workflowRun,repository:{full_name:'other/books'}}}},
+   {...context,payload:{workflow_run:{...workflowRun,run_attempt:0}}},
+   {...context,payload:{workflow_run:{...workflowRun,pull_requests:[{},{}]}}},
+ ]) assert.equal(isTrustedCoreFailureEvent(invalid),false,
+   'untrusted, stale, successful, forked or ambiguous events cannot enter the fast path');
+ const ambiguous=await eventOnlyPR({rest:{pulls:{list:async()=>({data:[target,{...target,number:402}]})}}},
+   'andylitvinov-design','books',async(_name,fn)=>fn(),context);
+ assert.equal(ambiguous,null,'shared source branches remain ambiguous and fail closed');
+});
+
+test('default-branch Watchdog subscribes to Core failures and enables only verified single-PR fast path',()=>{
+ const source=require('node:fs').readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ assert.match(source,/workflows:[\\s\\S]*?-'HH PR core release gate'/);
+ assert.ok(source.includes('isTrustedCoreFailureEvent(context)||isTrustedQualityFailureEvent(context)'));
+ assert.ok(source.includes('eventFastPath});'));
 });
