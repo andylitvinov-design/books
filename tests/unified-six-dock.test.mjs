@@ -6,15 +6,14 @@ import {buildPublishedVideoIndex} from "../lib/video-discovery/catalog.mjs";
 import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
-test("one seven-button dock reuses six Practice actions and the existing Free Analysis",()=>{
- assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","master","ai","analysis","practice","profile"]);
+test("one six-button dock routes the My Coach tab to the canonical coach directory",()=>{
+ assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","myCoach","ai","practice","profile"]);
  for(const locale of ["en","ru","es"]){
   assert.deepEqual(UNIFIED_DOCK_IDS.map(id=>unifiedMobileDockHref(locale,id)),[
    "/"+locale+"/mytube",
    "/"+locale+"/holistic-support/mandala",
-   "/"+locale+"/practice",
+   "/"+locale+"/my-coach",
    "/"+locale+"/app/messages?section=ai",
-   "/"+locale+"/services/free-situation-review",
    "/"+locale+"/holistic-support/mobile",
    "/"+(locale==="es"?"en":locale)+"/app/portrait"
   ]);
@@ -23,11 +22,11 @@ test("one seven-button dock reuses six Practice actions and the existing Free An
  assert.equal(unifiedMobileDockHref("ru","unknown"),null);
  assert.equal(unifiedMobileDockHref("../../admin","profile"),null);
 });
-test("shared seven-tab dock has the approved labels in every language",()=>{
+test("shared six-tab dock has the approved labels in every language",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  const expected={
-  en:{mytube:"MyTube",video:"MyVideo",master:"Services",ai:"AI/Chat",analysis:"Hints",practice:"Study",profile:"Profile"},
-  ru:{mytube:"MyTube",video:"MyVideo",master:"Услуги",ai:"ИИ/Чат",analysis:"Подсказки",practice:"Обучение",profile:"Профиль"},
+  en:{mytube:"MyTube",video:"MyVideo",myCoach:"My Coach",ai:"AI/Chat",practice:"Study",profile:"Profile"},
+  ru:{mytube:"MyTube",video:"MyVideo",myCoach:"Мой коуч",ai:"ИИ/Чат",practice:"Обучение",profile:"Профиль"},
   es:{mytube:"MyTube",video:"MyVideo",master:"Servicios",ai:"IA/Chat",analysis:"Pistas",practice:"Estudiar",profile:"Perfil"}
  };
  for(const [locale,names] of Object.entries(expected)){
@@ -36,12 +35,12 @@ test("shared seven-tab dock has the approved labels in every language",()=>{
   for(const id of UNIFIED_DOCK_IDS)
    assert.ok(row.includes(id+': "'+names[id]+'"'),locale+" label for "+id);
  }
- assert.match(dock,/\$\{label\}:.*Free personal express review/);
+
 });
 
 test("standalone public tabs bypass native link handoff but not private CSP",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
- assert.ok(dock.includes('["mytube", "video", "practice", "master", "analysis"].includes(id)'));
+ assert.ok(dock.includes('["mytube", "video", "myCoach", "practice"].includes(id)'));
  assert.ok(dock.includes('window.matchMedia?.("(display-mode: standalone)")'));
  assert.ok(dock.includes('(window.navigator as Navigator & {standalone?: boolean}).standalone'));
  assert.ok(dock.includes("event.preventDefault();"));
@@ -52,7 +51,7 @@ test("standalone public tabs bypass native link handoff but not private CSP",()=
  assert.ok(csp.includes("window.location.assign(url.href)"));
 });
 
-test("Holistic House Home and Free Analysis share exactly one fixed seven-button dock",()=>{
+test("Holistic House Home and My Coach share exactly one fixed six-button dock",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  const shell=read("app/unified-mobile-dock.css");
  const legacy=read("components/mobile-bottom-navigation.tsx");
@@ -78,21 +77,20 @@ test("Holistic House Home and Free Analysis share exactly one fixed seven-button
  for(const language of ["Practice","Практика","Práctica"])assert.ok(model.includes(language));
 });
 
-test("route-aware single dock, guest/signed-in consistency and private pages excluded",()=>{
+test("route-aware dock includes My Coach and excludes private pages",()=>{
  for(const locale of ["en","ru","es"]){
-  for(const path of ["mytube","holistic-support/mandala","holistic-support/mobile","practice",
-   "app/messages","app/portrait","app/practice","temple-insights","services/free-situation-review"]){
+  for(const path of ["mytube","holistic-support/mandala","holistic-support/mobile","my-coach",
+   "app/messages","app/portrait","temple-insights"]){
    assert.ok(isUnifiedMobileDockPath("/"+locale+"/"+path),path);
   }
   assert.equal(unifiedMobileDockActive("/"+locale+"/mytube"),"mytube");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala"),"video");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mandala","#video-director-chat"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/holistic-support/mobile"),"practice");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/practice"),"master");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"master");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/my-coach"),"myCoach");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/messages"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/portrait"),"profile");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/services/free-situation-review"),"analysis");
+
   assert.equal(isUnifiedMobileDockPath("/"+locale+"/app/document-view"),false);
   assert.equal(isUnifiedMobileDockPath("/"+locale+"/client/private-selector"),false);
  }
@@ -100,7 +98,7 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
  assert.equal(isUnifiedMobileDockPath("/ru/app/runs"),false);
  assert.equal(isUnifiedMobileDockPath("/ru/holistic-support/mandala-evil"),false);
 });
-test("one screenshot-1 style seven-button dock and protected old docks removed visually",()=>{
+test("one screenshot-1 style six-button dock and protected old docks removed visually",()=>{
  const page=read("app/layout.tsx");
  const dock=read("components/unified-mobile-dock.tsx");
  const css=read("components/unified-mobile-dock.module.css");
@@ -111,7 +109,7 @@ test("one screenshot-1 style seven-button dock and protected old docks removed v
  assert.match(dock,/data-unified-dock-item=\{id\}/);
  assert.match(dock,/aria-current=\{active === id \? "page" : undefined\}/);
  assert.match(dock,/data-keyboard-open/);
- assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
+ assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
  assert.match(css,/position:fixed/);
  assert.match(css,/safe-area-inset-bottom/);
  // Center fixed UI without a translated compositing layer on iPhone Safari.
