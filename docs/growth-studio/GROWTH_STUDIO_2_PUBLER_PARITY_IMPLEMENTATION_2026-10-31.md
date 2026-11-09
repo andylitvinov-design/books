@@ -223,7 +223,7 @@ Growth Intelligence замыкает цикл:
 На основании последнего commissioning readback в комментариях #1214:
 - Существующий owner-only Growth Studio, редактор, EN/RU/ES варианты, календарь, Content Radar, preflight, Redis editorial storage и ручное планирование — базовая платформа для расширения.
 - Redis очередь из #2711 остаётся **dry-run/simulation**. Она не вызывает внешний provider, не доказывает планирование поста и не означает автопубликацию.
-- Instagram registry из PR #3997 содержит два разных назначения `@my.coach.ai` и `@my.couch.ai`, но PR на момент последнего readback — Draft, не production; записи имеют `pending_authorization`, пустой provider account ID и `publishEnabled=false`. Третье повторение `my.coach.ai` дедуплицировано.
+- Instagram registry из PR #3997 ранее содержал два черновых назначения, которые владелец заменил 9 ноября 2026 на актуальную пару: **рабочий `@wizards.secrets`** и **личный профессиональный `@andy.therapist`**. Эти два аккаунта должны иметь разные внутренние ключи, brandKey, Content DNA, календарные фильтры, performance и attribution. Оба остаются `pending_authorization`, `providerAccountId=null`, `providerPageId=null`, `publishEnabled=false` и `insightsEnabled=false`, пока Meta/provider не подтвердит identity, account type, Page linkage и scopes. Задание этих handles владельцем не считается provider verification.
 - Последний Metricool readback показывает один бренд с YouTube; Instagram/Facebook не подтверждены. Metricool ChatGPT/MCP-соединение не является серверной API-авторизацией Vercel.
 - Поэтому сейчас нельзя показывать настоящие Instagram Top Posts, сравнения аккаунтов, hashtag performance или выводы, будто AI уже обучился на результатах Instagram.
 
