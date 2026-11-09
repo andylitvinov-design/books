@@ -16,7 +16,7 @@ const copy={
   noRating:'Not rated',goals:'Goals',actions:'Actions',noGoals:'No goals yet in this area.',
   reportsEmpty:'Your saved coaching reports will appear here.',report:'Session report',reviewed:'Reviewed by you',
   noActions:'No accepted actions in this report yet.',chooseArea:'Add accepted actions to a life area',
-  chooseActions:'Choose the actions to add',add:'Add to my plan',adding:'Adding…',added:'Added to your Life Plan',
+  chooseActions:'Choose the actions to add',planConsent:'I agree that these selected actions may be used as context in my future coaching sessions. This does not share them with practitioners.',add:'Add to my plan',adding:'Adding…',added:'Added to your Life Plan',
   already:'Already added',select:'Choose a life area',none:'No actions selected',reportError:'Could not load your reports.',
   loadError:'Could not load your Life Plan.',saveError:'Could not save these changes. Your text is still here.',
   importError:'Could not add these actions. Your report remains saved.',
@@ -34,7 +34,7 @@ const copy={
   noRating:'Не оценено',goals:'Цели',actions:'Действия',noGoals:'В этой сфере пока нет целей.',
   reportsEmpty:'Здесь появятся сохранённые отчёты коучинга.',report:'Отчёт сессии',reviewed:'Подтверждён вами',
   noActions:'В этом отчёте пока нет принятых действий.',chooseArea:'Добавить принятые действия в сферу жизни',
-  chooseActions:'Выберите действия для добавления',add:'Добавить в мой план',adding:'Добавляем…',added:'Добавлено в ваш план жизни',
+  chooseActions:'Выберите действия для добавления',planConsent:'Я согласен, чтобы выбранные действия могли использоваться как контекст в моих будущих коуч-сессиях. Это не означает передачу данных специалистам.',add:'Добавить в мой план',adding:'Добавляем…',added:'Добавлено в ваш план жизни',
   already:'Уже добавлено',select:'Выберите сферу жизни',none:'Действия не выбраны',reportError:'Не удалось загрузить отчёты.',
   loadError:'Не удалось загрузить план жизни.',saveError:'Не удалось сохранить. Введённый текст остался здесь.',
   importError:'Не удалось добавить действия. Отчёт остался сохранённым.',
@@ -52,7 +52,7 @@ const copy={
   noRating:'Sin valorar',goals:'Metas',actions:'Acciones',noGoals:'Todavía no hay metas en esta área.',
   reportsEmpty:'Tus informes guardados aparecerán aquí.',report:'Informe de sesión',reviewed:'Confirmado por ti',
   noActions:'Este informe aún no contiene acciones aceptadas.',chooseArea:'Añadir acciones aceptadas a un área',
-  chooseActions:'Elige las acciones que deseas añadir',add:'Añadir a mi plan',adding:'Añadiendo…',added:'Añadido a tu plan de vida',
+  chooseActions:'Elige las acciones que deseas añadir',planConsent:'Acepto que estas acciones seleccionadas se utilicen como contexto en futuras sesiones de coaching. Esto no comparte mis datos con profesionales.',add:'Añadir a mi plan',adding:'Añadiendo…',added:'Añadido a tu plan de vida',
   already:'Ya añadido',select:'Elige un área de vida',none:'No hay acciones seleccionadas',reportError:'No se pudieron cargar los informes.',
   loadError:'No se pudo cargar tu plan de vida.',saveError:'No se pudieron guardar los cambios. El texto sigue aquí.',
   importError:'No se pudieron añadir las acciones. El informe sigue guardado.',
@@ -79,7 +79,7 @@ function domainState(area){
 export default function MyCoachingPlan({accountId,locale='en'}){
  const lang=copy[locale]?locale:'en',t=copy[lang]
  const [tab,setTab]=useState('plan'),[plan,setPlan]=useState(null),[reports,setReports]=useState([])
- const [drafts,setDrafts]=useState({}),[selections,setSelections]=useState({}),[areas,setAreas]=useState({})
+ const [drafts,setDrafts]=useState({}),[selections,setSelections]=useState({}),[areas,setAreas]=useState({}),[planConsents,setPlanConsents]=useState({})
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState(''),[importing,setImporting]=useState('')
  const [notice,setNotice]=useState(''),[reportError,setReportError]=useState('')
  const load=useCallback(async()=>{
@@ -123,10 +123,11 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   setImporting(record.id);setNotice('');setReportError('')
   try{
    const result=await appFetch('coaching-life-plan/import',{
-    reportId:record.id,reportRevision:record.revision,areaKey,candidateIds:selected,
+    reportId:record.id,reportRevision:record.revision,areaKey,candidateIds:selected,planConsent:planConsents[record.id]===true,
    },'POST',{accountId})
    setNotice(t.added+' · '+result.imported)
    setSelections(prev=>({...prev,[record.id]:[]}))
+   setPlanConsents(prev=>({...prev,[record.id]:false}))
    await load()
   }catch(e){setReportError(e?.code||t.importError)}
   finally{setImporting('')}
@@ -225,7 +226,12 @@ export default function MyCoachingPlan({accountId,locale='en'}){
         <span>{candidate.text}{wasImported&&<small>{t.already}</small>}</span>
        </label>
       })}
-      <button type="button" className={styles.primaryButton} disabled={!selected.length||Boolean(importing)} onClick={()=>importActions(record)}>
+      {selected.length>0&&<label className={styles.planConsent}>
+       <input type="checkbox" checked={planConsents[record.id]===true}
+        onChange={e=>setPlanConsents(prev=>({...prev,[record.id]:e.target.checked}))}/>
+       <span>{t.planConsent}</span>
+      </label>}
+      <button type="button" className={styles.primaryButton} disabled={!selected.length||planConsents[record.id]!==true||Boolean(importing)} onClick={()=>importActions(record)}>
        {importing===record.id?<LoaderCircle className={styles.spin} size={16}/>:<Plus size={16}/>} {importing===record.id?t.adding:t.add}
       </button>
       {reportError&&<p className={styles.inlineError} role="alert">{t.importError}</p>}
