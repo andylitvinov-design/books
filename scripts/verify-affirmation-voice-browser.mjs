@@ -1204,70 +1204,37 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         else await standardVoiceMode.click();
       }
       await expect(standardVoiceMode).toHaveAttribute("aria-pressed","true");
-      const voicePhraseEditor=advancedVoice.locator('[data-ideas-subtab="voice"]');
-      await expect(voicePhraseEditor).toBeVisible();
-      const nextPhrase=voicePhraseEditor.locator('[data-hypno-phrase="4"]');
-      await expect(nextPhrase).toBeVisible();
-      await expect(nextPhrase).toHaveAttribute("aria-pressed","false");
-      // Preserve the explicitly approved one-line narration when the existing
-      // editor has reached its five-phrase limit. A real visitor frees one
-      // unspoken slot before selecting the next phrase.
-      const selectedBefore=voicePhraseEditor.locator('[data-hypno-phrase][aria-pressed="true"]');
-      const currentSelected=await selectedBefore.count();
-      assert.ok(currentSelected>=1&&currentSelected<=5,"real Hypno selected phrase count");
-      if(currentSelected===5){
-        const selectedRows=await selectedBefore.all();
-        let freed=false;
-        for(const row of selectedRows){
-          if((await row.innerText()).includes(approved))continue;
-          if(engine==="webkit")await row.tap();
-          else await row.click();
-          await expect(row).toHaveAttribute("aria-pressed","false");
-          freed=true;break;
-        }
-        assert.ok(freed,"a non-spoken phrase can be deselected without revoking the WAV");
-      }
-      await expect(nextPhrase).toBeEnabled();
-      if(engine==="webkit")await nextPhrase.tap();
-      else await nextPhrase.click();
-      await expect(nextPhrase).toHaveAttribute("aria-pressed","true");
-      await expect(page.locator("[data-hypno-pending]")).toBeVisible({timeout:10000});
-      await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled({timeout:10000});
-      assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
-        "unapproved edits cannot invalidate consented audio");
-      if(engine==="webkit")await approvalButton.tap();
-      else await approvalButton.click();
-      await expect(page.locator("[data-hypno-pending]")).not.toBeVisible();
-      assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
-        "adding an unspoken phrase does not invalidate the actual WAV");
-      await expect(page.locator("[data-video-live-audio]")).toContainText("holistic-house-hypno-audio.wav");
-      // Unlike the unrelated edit, removing the phrase selected for actual
-      // synthesis must invalidate the attached soundtrack before export.
-      // Selection order may differ from candidate indices after toggling. Find
-      // the exact phrase used in the TTS request, not a positional lookalike.
-      const spokenPhrase=voicePhraseEditor.locator('[data-hypno-phrase]').filter({hasText:approved});
+      // Phrase selection is now owned by the real Montage → Text editor.
+      // Do not use the retired hidden Ideas/Hypno phrase picker.
+      await phrases.locator('[data-video-ideas-open-montage-text]').click();
+      const phraseEditor=page.locator('[data-video-montage-text] [data-video-ideas-phrases]');
+      await expect(phraseEditor).toBeVisible();
+      const phraseRows=phraseEditor.locator('[data-video-idea-phrase]');
+      const spokenPhrase=phraseRows.filter({hasText:approved});
       await expect(spokenPhrase).toHaveCount(1);
-      await expect(spokenPhrase).toHaveAttribute("aria-pressed","true");
-      if(engine==="webkit")await spokenPhrase.tap();
-      else await spokenPhrase.click();
-      await expect(spokenPhrase).toHaveAttribute("aria-pressed","false");
-      await expect(page.locator("[data-hypno-pending]")).toBeVisible({timeout:10000});
-      await expect(page.locator("[data-video-generate-affirmation-audio]")).toBeDisabled({timeout:10000});
-      assert.equal(await page.locator("[data-video-narration-stale]").isVisible(),false,
-        "pending edits do not revoke the prior approved transcript");
-      if(engine==="webkit")await approvalButton.tap();
-      else await approvalButton.click();
-      // The old WAV must never be available for silent reuse after its exact
-      // approved spoken line is removed. The editor may mark it stale and
-      // block export, or eagerly detach it; both preserve the safety gate.
+      const spokenToggle=spokenPhrase.locator('[data-video-idea-select]');
+      await expect(spokenToggle).toHaveAttribute('aria-pressed','true');
+      // Adding an unspoken phrase must preserve the WAV already approved for
+      // the spoken line. This uses the same visible control as a real visitor.
+      const unselectedToggle=phraseEditor.locator('[data-video-idea-select][aria-pressed="false"]').first();
+      await expect(unselectedToggle).toBeEnabled();
+      await unselectedToggle.click();
+      await expect(unselectedToggle).toHaveAttribute('aria-pressed','true');
+      assert.equal(await page.locator('[data-video-narration-stale]').isVisible(),false,
+        "adding an unspoken phrase does not invalidate the actual WAV");
+      await expect(page.locator('[data-video-live-audio]')).toContainText("holistic-house-hypno-audio.wav");
+      // Removing the exact phrase used for synthesis must invalidate the old
+      // audio or detach it before export; no silent reuse is allowed.
+      await spokenToggle.click();
+      await expect(spokenToggle).toHaveAttribute('aria-pressed','false');
       await page.waitForFunction(() => {
-        const warning=document.querySelector("[data-video-narration-stale]");
-        const attached=document.querySelector("[data-video-live-audio]");
+        const warning=document.querySelector('[data-video-narration-stale]');
+        const attached=document.querySelector('[data-video-live-audio]');
         return Boolean(warning)||!attached;
       },null,{timeout:15000});
-      assert.ok(await page.locator("[data-video-narration-stale]").isVisible() ||
-        await page.locator("[data-video-live-audio]").count()===0,
-        "removed spoken phrase must block stale WAV reuse or detach it");
+      assert.ok(await page.locator('[data-video-narration-stale]').isVisible() ||
+        await page.locator('[data-video-live-audio]').count()===0,
+        "removing the spoken phrase must block stale WAV reuse or detach it");
       // Phrase narration belongs to this workspace; verify revoked consent
       // before switching to the separate cloud voice controls in Montage.
       await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
