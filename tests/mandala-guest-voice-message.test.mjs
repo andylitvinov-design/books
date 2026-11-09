@@ -153,3 +153,14 @@ test("Ideas Personalization and Concept retain a single opt-in Voice/My Voice We
  assert.ok(css.includes('[data-ideas-subtab="voice"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{display:block!important}'), "the voice editor is exposed only inside its selected Voice/My Voice submode");
  assert.match(css,/data-video-phrase-audio-shortcut\]:not\(\[hidden\]\)/);
 });
+
+
+test("guided meditation include/omit commits native narration disclosure after React state",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ assert.match(studio,/const \[courseMeditationIncluded,setCourseMeditationIncluded\]=useState\(false\)/);
+ assert.match(studio,/else if\(courseMeditationIncluded&&courseMeditationDraft\)details\.open=true/);
+ assert.match(studio,/if\(courseMeditationOmitted\)details\.open=false/);
+ assert.match(studio,/setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\);/);
+ assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);/);
+ assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
+});
