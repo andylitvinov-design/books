@@ -23,7 +23,7 @@ const copy={
   overview:'Session overview',initialSituation:'Initial situation',desiredOutcome:'Desired outcome',
   keyDiscoveries:'Key discoveries',mainObstacles:'Main obstacles',strengthsResources:'Strengths & resources',
   newPerspective:'New perspective',decisions:'Decisions',actionPlan:'Action plan',followUp:'Follow-up',
-  notCaptured:'Not captured in this session',unrated:'Not rated by you',
+  notCaptured:'Not captured in this session',unrated:'Not rated by you',overviewFallback:'Session details are unavailable.',actionPlanNote:'Review the confirmed action choices below.',
  },
  ru:{
   title:'Мой план коучинга',subtitle:'Ваши жизненные сферы, решения и следующие шаги, собранные из коучинговых сессий.',
@@ -41,7 +41,7 @@ const copy={
   overview:'Обзор сессии',initialSituation:'Исходная ситуация',desiredOutcome:'Желаемый результат',
   keyDiscoveries:'Ключевые открытия',mainObstacles:'Основные препятствия',strengthsResources:'Сильные стороны и ресурсы',
   newPerspective:'Новый взгляд',decisions:'Решения',actionPlan:'План действий',followUp:'Продолжение',
-  notCaptured:'В этой сессии не зафиксировано',unrated:'Вы не ставили оценку',
+  notCaptured:'В этой сессии не зафиксировано',unrated:'Вы не ставили оценку',overviewFallback:'Данные сессии недоступны.',actionPlanNote:'Подтверждённые варианты действий представлены ниже.'
  },
  es:{
   title:'Mi plan de coaching',subtitle:'Tus áreas de vida, decisiones y próximos pasos reunidos de tus sesiones.',
@@ -59,7 +59,7 @@ const copy={
   overview:'Resumen de la sesión',initialSituation:'Situación inicial',desiredOutcome:'Resultado deseado',
   keyDiscoveries:'Descubrimientos clave',mainObstacles:'Obstáculos principales',strengthsResources:'Fortalezas y recursos',
   newPerspective:'Nueva perspectiva',decisions:'Decisiones',actionPlan:'Plan de acción',followUp:'Seguimiento',
-  notCaptured:'No se registró en esta sesión',unrated:'No lo has valorado',
+  notCaptured:'No se registró en esta sesión',unrated:'No lo has valorado',overviewFallback:'Los datos de la sesión no están disponibles.',actionPlanNote:'Las acciones confirmadas aparecen a continuación.'
  },
 }
 
@@ -194,7 +194,21 @@ export default function MyCoachingPlan({accountId,locale='en'}){
     return <article className={styles.reportCard} key={record.id} data-coaching-report={record.id}>
      <div className={styles.reportTop}><div><span>{t.reviewed}</span><h2>{reportTitle(report,lang,t)}</h2><small>{formatDate(record.createdAt,lang)}</small></div><span className={styles.reportRevision}>v{record.revision}</span></div>
      <details className={styles.reportDetails}><summary>{t.report} · {sections.length} sections <ChevronDown size={16}/></summary>
-      {sections.map(([key,label])=><div className={styles.reportSection} key={key}><b>{label}</b><p>{report.sections?.[key]?.status==='not_captured'?t.notCaptured:(report.sections?.[key]?.text||t.notCaptured)}</p></div>)}
+      {sections.map(([key,label])=>{
+       const section=report.sections?.[key]
+       let value=section?.status==='not_captured'?t.notCaptured:(section?.text||t.notCaptured)
+       if(key==='sessionOverview'){
+        const meta=section?.metadata||{}
+        const bits=[]
+        if(meta.modelKey)bits.push(meta.modelKey.replace(/_v\\d+$/,'').toUpperCase())
+        if(Number.isSafeInteger(meta.durationSeconds)&&meta.durationSeconds>0)bits.push(Math.round(meta.durationSeconds/60)+' min')
+        const date=formatDate(meta.completedAt,lang)
+        if(date)bits.push(date)
+        value=bits.join(' · ')||t.overviewFallback
+       }
+       if(key==='actionPlan')value=report.actionCandidates?.length?t.actionPlanNote:t.notCaptured
+       return <div className={styles.reportSection} key={key}><b>{label}</b><p>{value}</p></div>
+      })}
      </details>
      <div className={styles.importPanel}>
       <h3>{t.chooseArea}</h3>
