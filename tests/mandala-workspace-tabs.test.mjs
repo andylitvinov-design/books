@@ -301,11 +301,14 @@ test("all six workspaces use the same in-flow navigation and one real export",()
 
 test("guided meditation opt-out is reconciled after React commit without losing explicit reopen",()=>{
   assert.match(studio,/const \[courseMeditationOmitted,setCourseMeditationOmitted\]=useState\(false\)/);
-  assert.match(studio,/useLayoutEffect\(\(\)=>\{\s*if\(!courseMeditationOmitted\)return;/);
-  assert.match(studio,/if\(details instanceof HTMLDetailsElement\)details\.open=false/);
-  assert.match(studio,/\},\[courseMeditationOmitted,courseMeditationDraft\]\)/);
-  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationOmitted\(false\)/);
-  assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationOmitted\(true\)/);
+  assert.match(studio,/const \[courseMeditationIncluded,setCourseMeditationIncluded\]=useState\(false\)/);
+  assert.match(studio,/useLayoutEffect\(\(\)=>\{/);
+  assert.match(studio,/if\(courseMeditationOmitted\)details\.open=false/);
+  assert.match(studio,/else if\(courseMeditationIncluded&&courseMeditationDraft\)details\.open=true/);
+  assert.match(studio,/\},\[courseMeditationIncluded,courseMeditationOmitted,courseMeditationDraft\]\)/);
+  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\)/);
+  assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);[\s\S]*?setCourseMeditationOmitted\(true\)/);
+  assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
 });
 
 test("validated Messenger video handoff visibly opens the original Studio Director on compact Goals",()=>{
