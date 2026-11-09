@@ -17,10 +17,10 @@ const approvedPost=(overrides={})=>({
   mediaAlt:'A sunlit green garden',
   ...overrides,
 })
-function fakeProvider({publishFailure=false,statusCode='FINISHED',username='wizards.secrets'}={}){
+function fakeProvider({publishFailure=false,statusCode='FINISHED',targetId='wizards_secrets',username=META_ACCOUNT_TARGETS[targetId]?.handle||'wizards.secrets'}={}){
   const calls=[]
   const client={
-    targetId:'wizards_secrets',username,
+    targetId,username,
     async createImageContainer(input){calls.push({method:'create',...input});return {id:'container-test-100'}},
     async getContainerStatus(id){calls.push({method:'status',id});return {id,status_code:statusCode}},
     async publishContainer(id){calls.push({method:'publish',id});if(publishFailure)throw new Error('ambiguous timeout');return {id:'media-test-200'}},
@@ -97,6 +97,19 @@ test('wrong Meta handle, wrong account, missing approval revision and unsupporte
     providerClient:otherProfile.client,fetchFn:otherProfile.fetchFn,now,
   }),/instagram_account_not_connected/)
   assert.equal(calls.length,0)
+})
+
+test('the personal professional profile uses its own exact Meta destination and provider receipt',async()=>{
+  const targetId='andy_therapist'
+  const {client,calls,fetchFn}=fakeProvider({targetId,username:'andy.therapist'})
+  const post=approvedPost({socialAccountId:targetId,caption:'A personal professional post.'})
+  const result=await publishApprovedInstagramImage({
+    post,expectedRevision:3,confirmed:true,environment,providerClient:client,fetchFn,now,
+  })
+  assert.equal(result.state,'published')
+  assert.equal(result.accountId,targetId)
+  assert.equal(client.targetId,targetId)
+  assert.equal(calls.filter(item=>item.method==='publish').length,1)
 })
 
 test('ambiguous media_publish response returns delivery_unknown and is never labelled published',async()=>{
