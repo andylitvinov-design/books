@@ -48,7 +48,6 @@ test('allowlisted quality workflow failures fast-path only their exact associate
   e=>{e.repository.full_name='outside/books';},
   e=>{e.pull_requests=[];},
   e=>{e.pull_requests.push({...e.pull_requests[0],number:3947});},
-  e=>{e.pull_requests[0].head.sha='c'.repeat(40);},
   e=>{e.pull_requests[0].base.ref='codex/bootstrap-books';}
  ]){
   const bad=structuredClone(good);mutate(bad.payload.workflow_run);
@@ -56,6 +55,9 @@ test('allowlisted quality workflow failures fast-path only their exact associate
  }
  const stale={...pr,head:{...pr.head,sha:'c'.repeat(40)}};
  assert.equal(qualityEventMatchesPR(good.payload.workflow_run,stale),false);
+ const wrongAssociation=structuredClone(good.payload.workflow_run);
+ wrongAssociation.pull_requests[0].head.sha='c'.repeat(40);
+ assert.equal(qualityEventMatchesPR(wrongAssociation,pr),false);
  const fork=structuredClone(good);fork.payload.workflow_run.head_repository.full_name='fork/books';
  assert.equal(isTrustedQualityFailureEvent(fork),false);
 });
@@ -173,5 +175,6 @@ test('ambiguous, stale or foreign failed-Core callbacks never authorize targeted
 test('fast failed-Core handoff cannot wake the full Control Tower as a second hop',()=>{
  const source=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
  assert.ok(source.includes("if (centralDispatch && !eventFastPath && !directHandoffLocal && !budget.exhausted)"));
- assert.ok(source.includes("inventoryScope:eventFastPath?'VERIFIED_SINGLE_CORE_EVENT_PR'"));
+ assert.ok(source.includes('VERIFIED_SINGLE_CORE_EVENT_PR'));
+ assert.ok(source.includes('VERIFIED_SINGLE_QUALITY_EVENT_PR'));
 });
