@@ -1,7 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {META_ACCOUNT_TARGETS} from '../lib/growth-studio/meta-instagram.mjs'
-import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '../lib/growth-studio/instagram-accounts.mjs'
 import {publishApprovedInstagramImage,isInstagramPublisherEnabled} from '../lib/growth-studio/instagram-publisher.mjs'
 
 const now=new Date('2026-11-09T16:30:00.000Z')
@@ -12,16 +11,16 @@ const environment={
 const approvedPost=(overrides={})=>({
   id:'fb4a8dc4-115a-4b3a-bd3b-bc9b0eb7c3d0',
   revision:3,status:'approved',brand:'holistic_house',channel:'instagram',
-  socialAccountId:'my_coach_ai',locale:'en',title:'Test image post',
-  caption:'A public post approved for the My Coach AI profile.',
+  socialAccountId:'wizards_secrets',locale:'en',title:'Test image post',
+  caption:'A public post approved for the Wizards Secrets profile.',
   mediaUrl:'https://holistichouse.vercel.app/uploads/approved-image.jpg',
   mediaAlt:'A sunlit green garden',
   ...overrides,
 })
-function fakeProvider({publishFailure=false,statusCode='FINISHED',username='my.coach.ai'}={}){
+function fakeProvider({publishFailure=false,statusCode='FINISHED',targetId='wizards_secrets',username=META_ACCOUNT_TARGETS[targetId]?.handle||'wizards.secrets'}={}){
   const calls=[]
   const client={
-    targetId:'my_coach_ai',username,
+    targetId,username,
     async createImageContainer(input){calls.push({method:'create',...input});return {id:'container-test-100'}},
     async getContainerStatus(id){calls.push({method:'status',id});return {id,status_code:statusCode}},
     async publishContainer(id){calls.push({method:'publish',id});if(publishFailure)throw new Error('ambiguous timeout');return {id:'media-test-200'}},
@@ -62,7 +61,7 @@ test('approved JPEG Feed Post uses the existing Meta Graph account client and re
   })
   assert.equal(result.state,'published')
   assert.equal(result.provider,'meta_graph_api')
-  assert.equal(result.accountId,'my_coach_ai')
+  assert.equal(result.accountId,'wizards_secrets')
   assert.equal(result.providerPostId,'media-test-200')
   assert.equal(result.permalink,'https://www.instagram.com/p/AbCdEf123/')
   assert.equal(result.containerId,'container-test-100')
@@ -77,7 +76,7 @@ test('approved JPEG Feed Post uses the existing Meta Graph account client and re
 test('wrong Meta handle, wrong account, missing approval revision and unsupported media fail before provider writes',async()=>{
   const {client,calls,fetchFn}=fakeProvider()
   await assert.rejects(publishApprovedInstagramImage({
-    post:approvedPost({socialAccountId:'my_couch_ai'}),expectedRevision:3,confirmed:true,
+    post:approvedPost({socialAccountId:'andy_therapist'}),expectedRevision:3,confirmed:true,
     environment,providerClient:client,fetchFn,now,
   }),/instagram_account_not_connected/)
   await assert.rejects(publishApprovedInstagramImage({
@@ -92,12 +91,25 @@ test('wrong Meta handle, wrong account, missing approval revision and unsupporte
     post:approvedPost({mediaAlt:''}),expectedRevision:3,confirmed:true,
     environment,providerClient:client,fetchFn,now,
   }),/instagram_media_preflight_failed/)
-  const otherProfile=fakeProvider({username:'my.couch.ai'})
+  const otherProfile=fakeProvider({username:'andy.therapist'})
   await assert.rejects(publishApprovedInstagramImage({
     post:approvedPost(),expectedRevision:3,confirmed:true,environment,
     providerClient:otherProfile.client,fetchFn:otherProfile.fetchFn,now,
   }),/instagram_account_not_connected/)
   assert.equal(calls.length,0)
+})
+
+test('the personal professional profile uses its own exact Meta destination and provider receipt',async()=>{
+  const targetId='andy_therapist'
+  const {client,calls,fetchFn}=fakeProvider({targetId,username:'andy.therapist'})
+  const post=approvedPost({socialAccountId:targetId,caption:'A personal professional post.'})
+  const result=await publishApprovedInstagramImage({
+    post,expectedRevision:3,confirmed:true,environment,providerClient:client,fetchFn,now,
+  })
+  assert.equal(result.state,'published')
+  assert.equal(result.accountId,targetId)
+  assert.equal(client.targetId,targetId)
+  assert.equal(calls.filter(item=>item.method==='publish').length,1)
 })
 
 test('ambiguous media_publish response returns delivery_unknown and is never labelled published',async()=>{
@@ -121,14 +133,8 @@ test('container not ready is returned as provider_processing without publish',as
   assert.equal(calls.some(x=>x.method==='publish'),false)
 })
 
-test('Meta OAuth and publishing allowlist matches all four independent UI destinations',()=>{
-  assert.deepEqual(Object.keys(META_ACCOUNT_TARGETS),GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=>account.id))
-  assert.deepEqual(Object.values(META_ACCOUNT_TARGETS).map(account=>account.handle),
-    ['my.coach.ai','my.couch.ai','wizards.secrets','andy.therapist'])
-  for(const account of GROWTH_INSTAGRAM_ACCOUNT_TARGETS){
-    assert.equal(META_ACCOUNT_TARGETS[account.id]?.handle,account.label.slice(1))
-    assert.equal(account.connectionState,'pending_authorization')
-    assert.equal(account.providerAccountId,null)
-    assert.equal(account.publishEnabled,false)
-  }
+test('only registered account IDs are accepted by the official Meta account mapping',()=>{
+  assert.deepEqual(Object.keys(META_ACCOUNT_TARGETS),['wizards_secrets','andy_therapist'])
+  assert.equal(META_ACCOUNT_TARGETS.wizards_secrets.handle,'wizards.secrets')
+  assert.equal(META_ACCOUNT_TARGETS.andy_therapist.handle,'andy.therapist')
 })

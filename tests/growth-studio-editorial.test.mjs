@@ -229,9 +229,9 @@ test('Redis connection errors fail closed and never create browser fallback reco
 
 test('Instagram drafts persist an explicit social destination; server approval gate requires it for newly edited drafts',()=>{
   const id=postId()
-  const instagram=fields({channel:'instagram',socialAccountId:'my_coach_ai'})
+  const instagram=fields({channel:'instagram',socialAccountId:'wizards_secrets'})
   const draft=nextGrowthPost({fields:instagram,action:'save',id,now:fixedNow})
-  assert.equal(draft.socialAccountId,'my_coach_ai')
+  assert.equal(draft.socialAccountId,'wizards_secrets')
   assert.equal(isSavedGrowthPost(draft),true)
   const approved=nextGrowthPost({current:draft,action:'approve',now:fixedNow})
   assert.equal(approved.status,'approved')
@@ -239,8 +239,8 @@ test('Instagram drafts persist an explicit social destination; server approval g
   assert.equal(missing.socialAccountId,'')
   assert.equal(nextGrowthPost({current:missing,action:'approve',now:fixedNow}).status,'approved')
   const actions=readFileSync(new URL('../app/admin/growth-studio/actions.js',import.meta.url),'utf8')
-  assert.match(actions,/input\.action==='approve' && current\?\.channel==='instagram'/)
-  assert.match(actions,/Object\.hasOwn\(current,'socialAccountId'\) && !current\.socialAccountId/)
+  assert.match(actions,/input\.action==='save' && input\.fields\?\.channel==='instagram'/)
+  assert.match(actions,/input\.action==='approve'\|\|input\.action==='plan'/)
   assert.match(actions,/instagram_account_required/)
   assert.throws(()=>normalizePostFields({...instagram,socialAccountId:'untrusted-account'}),/invalid_post/)
   assert.throws(()=>normalizePostFields({...instagram,channel:'facebook'}),/invalid_post/)
@@ -254,21 +254,24 @@ test('legacy saved posts without socialAccountId remain readable',()=>{
 
 
 test('Meta Graph Instagram receipts are valid only for the exact selected account and a real public permalink',()=>{
-  const base=nextGrowthPost({fields:fields({channel:'instagram',socialAccountId:'my_coach_ai'}),action:'save',id:postId(),now:fixedNow})
+  const base=nextGrowthPost({fields:fields({channel:'instagram',socialAccountId:'wizards_secrets'}),action:'save',id:postId(),now:fixedNow})
   const approved=nextGrowthPost({current:base,action:'approve',now:fixedNow})
   const published={...approved,status:'published',revision:approved.revision+1,updatedAt:fixedNow.toISOString(),
-    attemptId:postId(),delivery:{provider:'meta_graph_api',accountId:'my_coach_ai',
+    attemptId:postId(),delivery:{provider:'meta_graph_api',accountId:'wizards_secrets',
       providerPostId:'123456789012345',containerId:'987654321098765',
       url:'https://www.instagram.com/p/AbCdEf123/',publishedAt:fixedNow.toISOString(),mediaType:'IMAGE'}}
   assert.equal(isSavedGrowthPost(published),true)
-  assert.equal(isSavedGrowthPost({...published,delivery:{...published.delivery,accountId:'my_couch_ai'}}),false)
+  assert.equal(isSavedGrowthPost({...published,delivery:{...published.delivery,accountId:'andy_therapist'}}),false)
   assert.equal(isSavedGrowthPost({...published,delivery:{...published.delivery,url:'https://evil.example/p/AbCdEf123/'}}),false)
   assert.equal(isSavedGrowthPost({...published,delivery:{...published.delivery,providerPostId:'not-an-id'}}),false)
 })
 
 test('owner approval action requires selected Instagram account for newly edited drafts and preserves old records',()=>{
   const actions=readFileSync(new URL('../app/admin/growth-studio/actions.js',import.meta.url),'utf8')
-  assert.match(actions,/input\.action==='approve' && current\?\.channel==='instagram'/)
-  assert.match(actions,/Object\.hasOwn\(current,'socialAccountId'\) && !current\.socialAccountId/)
+  assert.match(actions,/input\.action==='save' && input\.fields\?\.channel==='instagram'/)
+  assert.match(actions,/input\.action==='approve'\|\|input\.action==='plan'/)
   assert.match(actions,/instagram_account_required/)
+  const composer=readFileSync(new URL('../components/growth-studio.jsx',import.meta.url),'utf8')
+  assert.match(composer,/value=\{form\.socialAccountId\|\|''\}/)
+  assert.match(composer,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS\.map\(account/)
 })

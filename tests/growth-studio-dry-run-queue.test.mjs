@@ -36,6 +36,26 @@ test('dry-run queue produces validated hashed metadata and never pretends an act
  assert.equal(GROWTH_DRY_RUN_FLAG,'HH_GROWTH_QUEUE_DRY_RUN_ENABLED')
  assert.deepEqual(makeJob(source),job)
 })
+test('dry-run job identity is account-specific for work and personal Instagram profiles',()=>{
+ const sourceId=randomUUID()
+ const makeSource=socialAccountId=>{
+  const draft=nextGrowthPost({action:'save',id:sourceId,fields:{
+   brand:'holistic_house',channel:'instagram',socialAccountId,locale:'en',
+   title:'Public test post',caption:'Public content only.',sourceUrl:'/en/academy',
+   campaign:'public_test',scheduledAt:'',mediaUrl:'',mediaAlt:'',
+  },now})
+  return nextGrowthPost({action:'approve',current:draft,now})
+ }
+ const work=makeJob(makeSource('wizards_secrets'))
+ const personal=makeJob(makeSource('andy_therapist'))
+ assert.equal(work.socialAccountId,'wizards_secrets')
+ assert.equal(personal.socialAccountId,'andy_therapist')
+ assert.notEqual(work.id,personal.id)
+ assert.notEqual(work.payloadHash,personal.payloadHash)
+ assert.equal(isValidDryRunJob(work),true)
+ assert.equal(isValidDryRunJob(personal),true)
+})
+
 test('unapproved, expired revisions, invalid clock and impossible future dates fail closed',()=>{
  const src=approvedSource()
  assert.throws(()=>makeJob({...src,status:'draft'}),/invalid_queue_request/)
@@ -151,15 +171,15 @@ test('server actions are owner-only, flag-off and do not import social providers
 
 
 test('dry-run queue carries the selected Instagram destination and binds it into job identity',()=>{
- const firstDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'my_coach_ai'},now})
+ const firstDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'wizards_secrets'},now})
  const firstSource=nextGrowthPost({action:'approve',current:firstDraft,now})
  const first=makeJob(firstSource)
- assert.equal(first.socialAccountId,'my_coach_ai')
+ assert.equal(first.socialAccountId,'wizards_secrets')
  assert.equal(isValidDryRunJob(first),true)
- const secondDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'my_couch_ai'},now})
+ const secondDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'andy_therapist'},now})
  const secondSource=nextGrowthPost({action:'approve',current:secondDraft,now})
  const second=makeJob(secondSource)
- assert.equal(second.socialAccountId,'my_couch_ai')
+ assert.equal(second.socialAccountId,'andy_therapist')
  assert.notEqual(first.id,second.id)
  const missingDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:''},now})
  const missingSource=nextGrowthPost({action:'approve',current:missingDraft,now})

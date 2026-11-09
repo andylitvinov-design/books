@@ -10,6 +10,14 @@
 
 ---
 
+## 0. Owner decision superseding earlier account lists — 9 November 2026
+
+The active Instagram destinations are exactly:
+- Work: `@wizards.secrets` (`wizards_secrets`)
+- Personal professional: `@andy.therapist` (`andy_therapist`)
+
+The earlier `@my.coach.ai` and `@my.couch.ai` destinations are retired from the active allowlist. Older four-account references elsewhere in historical implementation notes are superseded by this owner decision. Do not authorize, select or publish to the retired targets through the active Growth Studio UI. Existing encrypted records for old target IDs are not migrated or silently reassigned.
+
 ## 1. Цель
 
 Довести существующий Holistic House Growth Studio до полноценного многопрофильного Publisher, который позволяет готовить, согласовывать, планировать, публиковать и проверять контент отдельно для нескольких Instagram-аккаунтов.
@@ -20,12 +28,10 @@
 
 | Внутренний ключ | Instagram handle | Бренд/назначение | Стартовый статус |
 |---|---|---|---|
-| `my_coach_ai` | `@my.coach.ai` | My Coach AI | `pending_authorization` |
-| `my_couch_ai` | `@my.couch.ai` | My Couch AI | `pending_authorization` |
-| `wizards_secrets` | `@wizards.secrets` | Wizards Secrets · entertainment | `pending_authorization` |
-| `andy_therapist` | `@andy.therapist` | Andy Therapist · professional profile | `pending_authorization` |
+| `wizards_secrets` | `@wizards.secrets` | Wizards Secrets · work / entertainment | `pending_authorization` |
+| `andy_therapist` | `@andy.therapist` | Andy Therapist · personal professional | `pending_authorization` |
 
-Повторное упоминание `my.coach.ai` в исходном запросе — это тот же профиль, а не третий аккаунт. Итого заведены четыре разные цели. Аккаунты должны быть самостоятельными сущностями с отдельными provider ID, полномочиями, настройками, расписанием, публикациями, ошибками и аналитикой.
+Утверждённая владельцем активная конфигурация — ровно два профиля: рабочий `@wizards.secrets` и личный профессиональный `@andy.therapist`. Прежние `@my.coach.ai` и `@my.couch.ai` не являются активными destinations. Два утверждённых профиля должны оставаться самостоятельными сущностями с отдельными provider ID, полномочиями, настройками, расписанием, публикациями, ошибками и аналитикой.
 
 **Важно:** регистрация handle в коде не доказывает существование аккаунта, владение им или наличие разрешения на публикацию. Фактическая идентичность устанавливается только после авторизации и readback от Meta/провайдера.
 
@@ -60,7 +66,7 @@
 Последний readback Metricool показал один бренд ID `7153286`, timezone `America/Toronto`, с YouTube only. Instagram/Facebook в этом readback отсутствуют. Подключение Metricool в ChatGPT само по себе не является credential для сайта/Vercel.
 
 ### В работе, но ещё не LIVE
-PR #3997 зарегистрировал первые два Instagram destinations, PR #4003 добавил официальный Meta Facebook Login OAuth и зашифрованное серверное хранение, а PR #4006 добавил выбор destination в composer и owner-confirmed JPEG Feed Post adapter. Production-код поддерживает account-aware drafts и ручной запуск одного уже одобренного JPEG-поста. Настоящее расширение реестра включает четыре цели: `@my.coach.ai`, `@my.couch.ai`, `@wizards.secrets`, `@andy.therapist`. Все четыре остаются `pending_authorization` без provider ID и с выключенной публикацией до отдельного Meta identity/Page/permission readback. Автоматический schedule worker не подключён; dry-run queue не отправляет публикации.
+PR #3997 зарегистрировал первые два Instagram destinations, PR #4003 добавил официальный Meta Facebook Login OAuth и зашифрованное серверное хранение, а PR #4006 добавил выбор destination в composer и owner-confirmed JPEG Feed Post adapter. Production-код поддерживает account-aware drafts и ручной запуск одного уже одобренного JPEG-поста. Актуальная конфигурация владельца заменяет прежнюю пару My Coach/My Couch на два профиля: `@wizards.secrets` и `@andy.therapist`. Оба остаются `pending_authorization` без provider ID и с выключенной публикацией до отдельного Meta identity/Page/permission readback. Автоматический schedule worker не подключён; dry-run queue не отправляет публикации.
 
 **Все статусы этого документа следует пересматривать по актуальному readback перед началом каждого этапа.**
 
@@ -224,7 +230,7 @@ Approval относится к точной версии:
 
 Не запрашивать у владельца пароль Instagram в Holistic House и не просить отправлять коды/токены в чат.
 
-### 4.3. Комиссионирование четырёх аккаунтов
+### 4.3. Комиссионирование двух утверждённых аккаунтов
 
 Для `@my.coach.ai`, `@my.couch.ai`, `@wizards.secrets` и `@andy.therapist` выполнить отдельно:
 1. Проверить существование точного handle и профессионального типа аккаунта.
@@ -547,7 +553,7 @@ Worker должен:
 **Выход:** по одному низкорисковому тестовому посту в каждом отдельно выбранном аккаунте после явного подтверждения владельца. Каждый пост должен иметь точный provider ID/URL и независимый readback.
 
 ### Этап 4 — стабильный multi-account release
-- E2E: все четыре аккаунта, разные варианты, разные media types, Toronto timezone/DST, expiry, permissions, retries, unknown outcome, duplicate prevention.
+- E2E: два утверждённых аккаунта, разные варианты, разные media types, Toronto timezone/DST, expiry, permissions, retries, unknown outcome, duplicate prevention.
 - desktop and iPhone Safari/Chromium/WebKit.
 - telemetry, queue alerts, audit log, rollback.
 **Выход:** повторяемый подтверждённый publish flow для всех четырёх аккаунтов.
@@ -595,7 +601,7 @@ Worker должен:
 5. All four Instagram accounts are separately authorized and actual handle + provider ID readback confirmed.
 6. Each of the four accounts can be selected separately in composer.
 7. One separately approved test post is sent to each selected account and provider ID/public URL read back.
-8. Confirm independent receipts and no cross-account leakage across all four profiles.
+8. Confirm independent receipts and no cross-account leakage across all two approved profiles.
 9. Retry/replay confirms no duplicate.
 10. Account errors/expired authorization do not spill across accounts.
 11. Real mobile UI test at 320–430 px.
