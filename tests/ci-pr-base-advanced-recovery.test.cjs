@@ -159,8 +159,8 @@ test('stale manual source-repair marker does not block exact BASE_ADVANCED recov
   created_at:'2026-11-04T21:00:00.000Z',expires_at:'2026-11-04T21:10:00.000Z'};
  const held=world({pr:{labels:[{name:'hh:repair-manual'}]},
   comments:[{id:9001,user:{login:'another-owner'},body:
-   '<!-- HH_PR_SWEEP_LEASE_V1 -->\\n```json\\n'+
-   JSON.stringify(activeLease)+'\\n```'}]});
+   '<!-- HH_PR_SWEEP_LEASE_V1 -->\n```json\n'+
+   JSON.stringify(activeLease)+'\n```'}]});
  const heldResult=await run(held);
  assert.equal(heldResult.status,'SKIPPED');
  assert.equal(heldResult.reason,'ACTIVE_OR_UNVERIFIED_SOURCE_LEASE');
