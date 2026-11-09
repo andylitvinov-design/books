@@ -128,7 +128,7 @@ jobs:
             github.event.workflow_run.conclusion == 'timed_out' ||
             github.event.workflow_run.conclusion == 'startup_failure'
           ) &&
-          !contains(fromJSON('["HH PR source Repair Worker","HH zero-cost PR CI worker","HH PR core release gate"]'), github.event.workflow_run.name)
+          !contains(fromJSON('["HH PR source Repair Worker","HH zero-cost PR CI worker"]'), github.event.workflow_run.name)
         )
       ) &&
       github.event_name != 'pull_request_target' &&
