@@ -88,7 +88,7 @@ test('single scheduled Watchdog shares a writer lease with targeted Core and con
   assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'failure'"));
   assert.ok(reconcile.includes("github.event.workflow_run.event == 'pull_request'"));
   assert.ok(reconcile.includes("contains(fromJSON("));
-  const direct=s.split('  direct-handoff:\\n')[1]?.split('    runs-on:')[0];
+  const direct=s.split('  direct-handoff:\n')[1]?.split('    runs-on:')[0];
   assert.ok(direct.includes("github.event.workflow_run.event == 'pull_request'"));
   assert.ok(direct.includes("github.event.workflow_run.conclusion == 'failure'"));
   assert.ok(direct.includes("!contains(fromJSON("));
