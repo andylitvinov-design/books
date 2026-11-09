@@ -80,7 +80,7 @@ test('private start happens only after both slides, then stores consented topic 
   assert.match(privateClient,/function prepare\(/)
   assert.match(privateClient,/function begin\(\)/)
   assert.match(privateClient,/entry\.step==='intro'\?<CoachingSessionIntroduction/)
-  assert.match(privateClient,/:<CoachingSessionTopic/)
+  assert.match(privateClient,/CoachingSessionTopic locale=/)
   assert.match(privateClient,/entry\.step==='topic'&&\(!entry\.clientTopic/)
   assert.match(privateClient,/begin\(\)/)
   assert.match(privateClient,/clientQuestion,clientTopic/)
@@ -91,7 +91,7 @@ test('private start happens only after both slides, then stores consented topic 
   assert.match(backend,/clientTopic\?\{clientTopic\}/)
   assert.match(backend,/seal\(course,sealContext\(actor\),config\)/)
   assert.match(backend,/readRow\(db,actor,true\)/)
-  assert.match(backend,/onlyKeys\(input,\['action','revision','schemeKey','clientQuestion','clientTopic','adultConfirmed'\]\)/)
+  assert.match(backend,/onlyKeys\(input,\['action','revision','schemeKey','clientQuestion','clientTopic','adultConfirmed','clientContext'\]\)/)
   assert.doesNotMatch(privateClient,/localStorage|sessionStorage|\bfetch\(|sendBeacon\(/)
 })
 

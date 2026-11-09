@@ -81,6 +81,7 @@ jobs:
           node --check lib/growth-studio/evergreen.mjs
           node --check lib/growth-studio/manual-inbox.mjs
           node --check lib/growth-studio/meta-instagram.mjs
+          node --check lib/growth-studio/instagram-insights.mjs
           node --check lib/growth-studio/instagram-publisher.mjs
           node --check app/api/admin/growth-studio/meta/connect/route.js
           node --check app/api/admin/growth-studio/meta/callback/route.js

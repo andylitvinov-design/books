@@ -232,6 +232,8 @@ test('quality cohort roll-up excludes session and client identifiers', () => {
 
 test('economics roll-up preserves unknown records and refuses mixed currencies', () => {
   const known = calculateSessionEconomics({
+    meteringComplete: true,
+    providerCalls: 1,
     usage: [{ unit: 'token', quantity: 10, unitPriceMinor: 2, currency: 'CAD' }],
   });
   const unknown = calculateSessionEconomics({

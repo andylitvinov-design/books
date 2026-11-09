@@ -1295,8 +1295,10 @@ test('Public Services performance guards preserve the exact-head and sensitive-b
   for (const fragment of [
     'fetch-depth: 2',
     'Verify bounded Public Services PR ancestry before impact routing',
-    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
-    'git fetch --quiet --no-tags --deepen="$extra" origin "$tested_base"',
+    'GH_TOKEN: ${{ github.token }}',
+    'https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}',
+    'Authorization: Bearer ${GH_TOKEN}',
+    '[[ "$relation" == "ahead" || "$relation" == "identical" ]] || {',
     'actions/cache/restore@v4',
     'actions/cache/save@v4',
     'hh-public-next-',
@@ -1568,7 +1570,7 @@ test('PR #2969 exactly reviewed 120-scenario audio cannot trigger 13 unrelated p
     'deleted protection test never qualifies');
 });
 
-test('Public Services checkout uses the exact event merge and raw, shallow-safe two-parent proof',()=>{
+test('Public Services checkout uses the exact event merge and authenticated GitHub ancestry proof',()=>{
   const yaml=workflow('hh-public-services-production.yml');
   for(const critical of [
     'ref: ${{ github.sha }}',
@@ -1579,10 +1581,11 @@ test('Public Services checkout uses the exact event merge and raw, shallow-safe 
     '"\${#tested_parents[@]}" -eq 2',
     'tested_base="\${tested_parents[0]}"',
     'tested_head="\${tested_parents[1]}"',
-    'git merge-base --is-ancestor "$EVENT_BASE_SHA" "$tested_base"',
+    'GH_TOKEN: ${{ github.token }}',
+    'https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}',
+    'Authorization: Bearer ${GH_TOKEN}',
+    '[[ "$relation" == "ahead" || "$relation" == "identical" ]] || {',
   ])assert.ok(yaml.includes(critical),'missing fail-closed exact event verification '+critical);
-  assert.ok(yaml.includes('git fetch --quiet --no-tags --deepen=2 origin "$GITHUB_SHA"'),
-    'bounded recovery from protected production must remain available');
   assert.ok(yaml.includes('mapfile -t tested_parents'),
     'the final proof must read raw parent SHAs even after bounded recovery');
   assert.ok(yaml.includes('PR_HEAD_SHA'),'event PR head must remain exact');
