@@ -204,7 +204,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const lastApprovedPlan=[session,...(course?.history||[])]
     .find(item=>item?.actionPlan?.approvedAt&&typeof item.actionPlan.actionText==='string')?.actionPlan||null
   function turnFor(action,revision,fields={}){
-    if((action==='start'?fields.schemeKey:session?.schemeKey)!=='grow_overload_20_v1'||!['start','answer','reflection','complete','finish_without_plan','pause','resume'].includes(action))return null
+    if((action==='start'?fields.schemeKey:session?.schemeKey)!=='grow_overload_20_v1'||!['start','answer','reflection','complete','finish_without_plan','pause','resume','plan'].includes(action))return null
     const key=JSON.stringify([action,revision,fields])
     if(pendingTurn.current?.key!==key)pendingTurn.current={key,id:crypto.randomUUID()}
     return pendingTurn.current.id

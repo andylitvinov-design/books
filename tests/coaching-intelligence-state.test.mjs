@@ -62,6 +62,41 @@ function fixture(){
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
 
+test('lost pilot plan acknowledgement is idempotent and a reused ID cannot alter it',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'finish_without_plan',revision:s.revision})
+ const request={action:'plan',revision:s.revision,goal:'Rest',obstacle:'Time',actionText:'Take a short walk',when:'Tomorrow',confidence:7,turnId:'40000000-0000-4000-8000-000000000001'}
+ const first=await api.savePersonalCoaching({},a,request)
+ const retry=await api.savePersonalCoaching({},a,request)
+ assert.equal(retry.revision,first.revision)
+ assert.equal(retry.course.current.actionPlan.actionText,'Take a short walk')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...request,actionText:'A different action'}),err=>err.code==='PERSONAL_COACH_TURN_ID_REUSED')
+})
+
+test('urgent content in any plan field enters a persistent safety hold without approving a plan',async()=>{
+ for(const field of ['goal','obstacle','actionText','when']){
+  const {api}=fixture()
+  let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+  s=await api.savePersonalCoaching({},a,{action:'finish_without_plan',revision:s.revision})
+  const request={action:'plan',revision:s.revision,goal:'Rest',obstacle:'Time',actionText:'Take a short walk',when:'Tomorrow',confidence:7,turnId:'40000000-0000-4000-8000-000000000002',[field]:'I want to kill myself'}
+  const held=await api.savePersonalCoaching({},a,request)
+  assert.equal(held.course.current.status,'safety_hold',field)
+  assert.equal(held.course.current.actionPlan,undefined,field)
+  assert.equal((await api.readPersonalCoaching({},a)).course.current.status,'safety_hold')
+  assert.equal((await api.savePersonalCoaching({},a,request)).revision,held.revision)
+ }
+})
+
+test('urgent plan content enters safety hold even without a proposed action',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'finish_without_plan',revision:s.revision})
+ s=await api.savePersonalCoaching({},a,{action:'plan',revision:s.revision,goal:'I want to kill myself',obstacle:'',actionText:'',when:'',confidence:null,turnId:'40000000-0000-4000-8000-000000000003'})
+ assert.equal(s.course.current.status,'safety_hold')
+ assert.equal(s.course.current.actionPlan,undefined)
+})
+
 test('lost pilot start acknowledgement can be retried without a second session',async()=>{
  const {api}=fixture()
  const request={...start,schemeKey:'grow_overload_20_v1',turnId:'30000000-0000-4000-8000-000000000001'}

@@ -1,6 +1,7 @@
 'use client'
 import {useState} from 'react'
 import {Check,ClipboardCheck} from 'lucide-react'
+import {isCoachingSafetyConcern} from '@/lib/personal-coaching/model-matcher'
 import styles from './coaching-action-plan.module.css'
 
 const copy={
@@ -41,7 +42,8 @@ export default function CoachingActionPlan({locale='en',initial={},onSave,privat
   const change=(key,value)=>{setFields(previous=>({...previous,[key]:value}));setSaved(false);setError('')}
   async function confirm(){
     if(saving||disabled)return
-    if(fields.actionText.trim().length<3){setError(t.needed);return}
+    const safetyConcern=privateSave&&[fields.goal,fields.obstacle,fields.actionText,fields.when].some(isCoachingSafetyConcern)
+    if(fields.actionText.trim().length<3&&!safetyConcern){setError(t.needed);return}
     setSaving(true);setError('')
     try{
       const result=await onSave({
