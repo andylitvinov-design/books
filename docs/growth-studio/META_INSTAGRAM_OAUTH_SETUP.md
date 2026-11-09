@@ -4,6 +4,18 @@ Date: 2026-11-09
 
 This implementation uses **Instagram Graph API with Facebook Login** because the commissioning requirement explicitly needs the linked Facebook Page and its Page ID. This is distinct from Instagram Login, which uses the Instagram-specific permission family and does not supply the same Page-link workflow.
 
+## Registered Instagram destinations
+
+The owner-only Connections panel manages three independent accounts:
+
+| Internal target | Instagram handle | Brand |
+|---|---|---|
+| `my_coach_ai` | `@my.coach.ai` | My Coach AI |
+| `my_couch_ai` | `@my.couch.ai` | My Couch AI |
+| `wizards_secrets` | `@wizards.secrets` | Wizards Secrets |
+
+The OAuth callback binds each login to the selected target and requires an exact case-insensitive handle match. A login for one profile can never silently satisfy another target.
+
 ## Meta app configuration
 
 1. Use/create a Meta Business app in the Meta for Developers account controlled by the business owner.
