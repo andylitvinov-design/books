@@ -325,9 +325,12 @@ test('Commander owner login check always ends and exposes a retry action when au
 test('Commander login document is rewritten through the nonce-aware page under strict-dynamic CSP', async () => {
   const middleware = await readFile(new URL('../middleware.ts', import.meta.url), 'utf8')
   const page = await readFile(new URL('../app/commander-connect/page.tsx', import.meta.url), 'utf8')
+  const layout = await readFile(new URL('../app/layout.tsx', import.meta.url), 'utf8')
   assert.ok(middleware.includes("pathname === '/commander-connect.html'"))
   assert.ok(middleware.includes("NextResponse.rewrite(new URL('/commander-connect'"))
   assert.ok(middleware.includes("request: { headers: requestHeaders }"))
+  assert.ok(middleware.includes("requestHeaders.set('x-standalone-commander', '1')"))
+  assert.ok(layout.includes('standaloneCommander ? children'))
   assert.ok(page.includes("import Script from 'next/script'"))
   assert.ok(page.includes("const requestHeaders = await headers()"))
   assert.ok(page.includes("requestHeaders.get('x-nonce')"))
