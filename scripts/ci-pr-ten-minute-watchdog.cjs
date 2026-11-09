@@ -335,7 +335,7 @@ async function eventOnlyPR(github,owner,repo,limited,context) {
     run?.event==='pull_request'&&run?.status==='completed'&&
     ['failure','timed_out','startup_failure'].includes(run.conclusion)&&
     run?.repository?.full_name===full&&run?.head_repository?.full_name===full&&
-    Number.isSafeInteger(run.id)&&run.id>0&&SHA.test(run.head_sha||'')&&
+    Number.isSafeInteger(run.id)&&run.id>0&&/^[a-f0-9]{40}$/i.test(run.head_sha||'')&&
     typeof run.head_branch==='string'&&run.head_branch.length>0&&run.head_branch.length<=255;
   const qualityEvent=isTrustedQualityFailureEvent(context);
   if(!coreEvent&&!qualityEvent)return null;
@@ -347,7 +347,7 @@ async function eventOnlyPR(github,owner,repo,limited,context) {
   const pr=data[0];
   if(pr?.state!=='open'||pr.draft||pr.base?.ref!==PROD||
      pr.head?.ref!==run.head_branch||pr.head?.repo?.full_name!==full||
-     !SHA.test(pr.head?.sha||''))return null;
+     !/^[a-f0-9]{40}$/i.test(pr.head?.sha||''))return null;
   if(qualityEvent&&!qualityEventMatchesPR(run,pr))return null;
   // GitHub sometimes returns pull_requests: [] for genuine Core events.
   // A nonempty Core association must, however, agree with the selected PR.
