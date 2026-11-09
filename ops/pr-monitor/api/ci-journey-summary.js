@@ -4,7 +4,7 @@ const ISSUE=3419,BASE='codex/public-book-library';
 const HOST='https://api.github.com/repos/andylitvinov-design/books';
 const PREFIX='<!-- HH_CORE_CI_JOURNEY_SHARD_V1:';
 const SCHEMA='HH_CORE_CI_JOURNEY_SHARD_V1';
-const HOURS=[1,6,24,72],SHA=/^[a-f0-9]{40}$/i;
+const HOURS=[1,6,24,72,168,336,360],SHA=/^[a-f0-9]{40}$/i;
 const t=x=>{const n=Date.parse(x||'');return Number.isFinite(n)?n:null;};
 const rnd=x=>Math.round(x*100)/100;
 const quant=(arr,p)=>{if(!arr.length)return null;const a=[...arr].sort((x,y)=>x-y);
@@ -65,28 +65,38 @@ async function fetchArchive(force=false){
  if(cache&&Date.now()-last<(force?60000:300000))return {...cache,stale:false};
  if(pending)return pending;
  pending=(async()=>{
-   const since=new Date(Date.now()-96*3600000).toISOString();
-   const url=HOST+'/issues/'+ISSUE+'/comments?per_page=100&since='+encodeURIComponent(since);
+   // Fifteen days are required for equal 24h windows: now, -7d and -14d.
+   // Read only the existing authenticated archive with bounded pagination.
+   const since=new Date(Date.now()-360*3600000).toISOString();
    const headers={Accept:'application/vnd.github+json',
      'User-Agent':'HH-CI-Journey-Read-Only','X-GitHub-Api-Version':'2022-11-28'};
    const token=process.env.GITHUB_TOKEN||process.env.GH_TOKEN;
    if(token)headers.Authorization='Bearer '+token;
-   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),8500);
-   let response;
-   try{response=await fetch(url,{headers,signal:ctrl.signal});}
-   finally{clearTimeout(timer);}
-   const remaining=Number(response.headers.get('x-ratelimit-remaining'));
-   if(!response.ok||(Number.isFinite(remaining)&&remaining<5))
-     throw Error('ARCHIVE_HTTP_'+response.status+(remaining<5?'_RATE_RESERVE':''));
-   const comments=await response.json();
-   if(!Array.isArray(comments))throw Error('ARCHIVE_INVALID');
+   const comments=[];
+   let remaining=null,lastPageSize=0,pages=0;
+   const MAX_PAGES=5;
+   for(let page=1;page<=MAX_PAGES;page++){
+     const url=HOST+'/issues/'+ISSUE+'/comments?per_page=100&page='+page+
+       '&since='+encodeURIComponent(since);
+     const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),8500);
+     let response;
+     try{response=await fetch(url,{headers,signal:ctrl.signal});}
+     finally{clearTimeout(timer);}
+     remaining=Number(response.headers.get('x-ratelimit-remaining'));
+     if(!response.ok||(Number.isFinite(remaining)&&remaining<10))
+       throw Error('ARCHIVE_HTTP_'+response.status+(remaining<10?'_RATE_RESERVE':''));
+     const batch=await response.json();
+     if(!Array.isArray(batch))throw Error('ARCHIVE_INVALID');
+     pages++;lastPageSize=batch.length;comments.push(...batch);
+     if(batch.length<100)break;
+   }
    const byRun=new Map();
    for(const c of comments)for(const r of parse(c)){
      const id=r.run_id+':'+r.attempt;
      if(!byRun.has(id)||byRun.get(id).partial_jobs&&!r.partial_jobs)byRun.set(id,r);
    }
-   cache={runs:[...byRun.values()],comments:comments.length,
-     pagination_partial:comments.length>=100,
+   cache={runs:[...byRun.values()],comments:comments.length,pages,
+     pagination_partial:pages===MAX_PAGES&&lastPageSize===100,
      remaining:Number.isFinite(remaining)?remaining:null,
      fetched_at:new Date().toISOString()};
    last=Date.now();return {...cache,stale:false};
@@ -187,7 +197,7 @@ function summarizePR(pr,runs){
  return {pr,first_at:new Date(first).toISOString(),last_at:new Date(end).toISOString(),
    job_clock_ms:jobClockMs,
    elapsed_ms:end-first,elapsed_minutes:rnd((end-first)/60000),stages_ms:stages,
-   wave_rows:waveRows,
+   wave_rows:waveRows,wave_gap_samples_ms:waveRows.map(x=>x.duration_ms),
    wave_head_evidence:{
      new_head_count:wave.new_head.count,new_head_ms:wave.new_head.ms,
      same_head_count:wave.same_head.count,same_head_ms:wave.same_head.ms,
@@ -208,15 +218,15 @@ function summarizePR(pr,runs){
    last_url:safeRun(lastRun.workflow_url)||msurl(lastRun.run_id),
    history_complete:false};
 }
-function report(store,h,now=Date.now()){
+function report(store,h,now=Date.now(),offsetHours=0){
  const byPR=new Map();
  for(const run of store.runs){
    if(!byPR.has(run.pr))byPR.set(run.pr,[]);
    byPR.get(run.pr).push(run);
  }
- const cutoff=now-h*3600000;
+ const periodEnd=now-offsetHours*3600000,cutoff=periodEnd-h*3600000;
  const rows=[...byPR.entries()].map(([pr,runs])=>summarizePR(pr,runs)).filter(Boolean)
-   .filter(x=>t(x.last_at)>=cutoff&&t(x.last_at)<=now+60000)
+   .filter(x=>t(x.last_at)>=cutoff&&t(x.last_at)<=periodEnd+60000)
    .sort((a,b)=>b.elapsed_ms-a.elapsed_ms||a.pr-b.pr);
  const nums=rows.map(x=>x.elapsed_ms),sum=nums.reduce((a,b)=>a+b,0);
  const stages=['workflow_wait','runner_wait','checks','between_waves_unknown','other_unknown'];
@@ -235,6 +245,39 @@ function report(store,h,now=Date.now()){
  const waveReconciled=Math.abs(waveTotalMs-stageTotals.between_waves_unknown)<=1;
  const stageMeans=Object.fromEntries(stages.map(k=>[k,rows.length?
    rnd(stageTotals[k]/rows.length/60000):null]));
+ // Scope this wave summary to the selected window. The main journey rows remain
+ // lifetime timelines for their PR cohort; these wave counts are period-specific.
+ const cohortPRs=new Set(rows.map(row=>row.pr));
+ const periodRuns=store.runs.filter(run=>cohortPRs.has(run.pr)&&
+   t(run.queued_at)>=cutoff&&t(run.queued_at)<periodEnd);
+ const periodWaveRows=rows.flatMap(row=>(row.wave_rows||[])
+   .filter(w=>t(w.ended_at)>=cutoff&&t(w.ended_at)<periodEnd)
+   .map(w=>({...w,pr:row.pr})));
+ const gapSamples=periodWaveRows.map(w=>w.duration_ms)
+   .filter(n=>Number.isFinite(n)&&n>=0);
+ const ciRuns=periodRuns.length,repeatWaves=periodWaveRows.length;
+ const periodCounts={
+   new_head:periodWaveRows.filter(w=>w.kind==='new_head').length,
+   same_head:periodWaveRows.filter(w=>w.kind==='same_head').length,
+   unverified_head:periodWaveRows.filter(w=>w.kind==='unverified_head').length
+ };
+ const afterFailed=periodWaveRows.filter(w=>w.after_failure===true).length;
+ const afterSuccess=periodWaveRows.filter(w=>w.kind==='new_head'&&w.prior_conclusion==='success').length;
+ const gapTotalMs=gapSamples.reduce((a,b)=>a+b,0);
+ const waveSummary={
+   observed_prs:rows.length,ci_runs:ciRuns,repeat_waves:repeatWaves,
+   mean_runs_per_pr:rows.length?rnd(ciRuns/rows.length):null,
+   mean_repeat_waves_per_pr:rows.length?rnd(repeatWaves/rows.length):null,
+   intervals:gapSamples.length,prs_with_intervals:new Set(periodWaveRows.map(w=>w.pr)).size,
+   new_head:periodCounts.new_head,same_head:periodCounts.same_head,
+   unverified_head:periodCounts.unverified_head,after_failed:afterFailed,after_success:afterSuccess,
+   gap_total_minutes:rnd(gapTotalMs/60000),
+   gap_mean_minutes_per_pr:rows.length?rnd(gapTotalMs/rows.length/60000):null,
+   gap_mean_minutes_per_interval:gapSamples.length?rnd(gapTotalMs/gapSamples.length/60000):null,
+   gap_p50_minutes:gapSamples.length?rnd(quant(gapSamples,.5)/60000):null,
+   gap_p95_minutes:gapSamples.length?rnd(quant(gapSamples,.95)/60000):null,
+   archive_complete:false,pagination_partial:store.pagination_partial===true
+ };
  const jobClockSummary=Object.fromEntries(['core','specialist','merge_gate'].map(key=>{
    const observed=rows.map(row=>row.job_clock_ms?.[key])
      .filter(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0);
@@ -245,6 +288,7 @@ function report(store,h,now=Date.now()){
  }));
  return {schema:'HH_CI_FIRST_LAST_ARCHIVE_V1',
    generated_at:new Date(now).toISOString(),
+   period:{from:new Date(cutoff).toISOString(),to:new Date(periodEnd).toISOString(),offset_hours:offsetHours,duration_hours:h},
    period_hours:h,cohort:'LAST_OBSERVED_CORE_JOB_COMPLETED_IN_WINDOW',
    archive_url:'https://github.com/andylitvinov-design/books/issues/'+ISSUE,
    coverage:{label:'VERIFIED_RUN_SAMPLE_NOT_ALL_PRS',comments_seen:store.comments,
@@ -264,6 +308,7 @@ function report(store,h,now=Date.now()){
      repeats:rows.reduce((n,x)=>n+x.repeats,0),
      jobless_startup_runs:rows.reduce((n,x)=>n+x.jobless_startup_runs,0),
      failures:rows.reduce((n,x)=>n+x.failures,0)},
+   wave_summary:waveSummary,
    wave_head_evidence:{schema:'HH_CI_WAVE_HEAD_EVIDENCE_V1',
      cohort:'SAME_OBSERVED_CI_ROWS_AS_SUMMARY',
      n:rows.length,total_gap_count:Object.values(waveCounts).reduce((n,v)=>n+v,0),
@@ -294,6 +339,25 @@ function report(store,h,now=Date.now()){
    // Drilldown is requested by user interaction, never on the overview load.
    rows:rows.slice(0,250).map(({wave_rows,...row})=>row)};
 }
+function comparePeriods(store,h,now=Date.now()){
+ const specs=[
+   {id:'current',label:'Последние 24 часа',offset_hours:0},
+   {id:'week_ago',label:'Та же дата неделю назад',offset_hours:168},
+   {id:'two_weeks_ago',label:'Та же дата две недели назад',offset_hours:336}
+ ];
+ return {schema:'HH_CI_JOURNEY_PERIOD_COMPARISON_V1',generated_at:new Date(now).toISOString(),
+   period_hours:h,comparison_basis:'SAME_DURATION_WINDOW_SHIFTED_BY_7D_AND_14D',
+   archive_url:'https://github.com/andylitvinov-design/books/issues/'+ISSUE,
+   periods:specs.map(spec=>{
+     const item=report(store,h,now,spec.offset_hours);
+     return {id:spec.id,label:spec.label,offset_hours:spec.offset_hours,period:item.period,
+       coverage:item.coverage,summary:item.summary,stage_breakdown:item.stage_breakdown,
+       wave_head_evidence:item.wave_head_evidence,wave_summary:item.wave_summary,
+       job_clock_summary:item.job_clock_summary,top_delays:item.wave_head_evidence.top_delays};
+   }),
+   note:'Сравниваются одинаковые 24-часовые окна, сдвинутые на 7 и 14 суток. Это не сумма последних 7/14 дней. Архив CI частичный; отсутствие события не равно нулю.'
+ };
+}
 function waveDetail(store,pr,h,now=Date.now()){
  const matches=store.runs.filter(run=>run.pr===pr);
  const row=matches.length?summarizePR(pr,matches):null;
@@ -314,14 +378,17 @@ module.exports=async(req,res)=>{
  const hours=Number(req.query?.hours||24);
  if(!HOURS.includes(hours)){res.statusCode=400;return res.end(JSON.stringify({error:'INVALID_HOURS'}));}
  const rawPr=req.query?.pr;
+ const compare=req.query?.compare==='1';
  if(rawPr!==undefined&&(typeof rawPr!=='string'||!/^[1-9][0-9]{0,5}$/.test(rawPr))){
    res.statusCode=400;return res.end(JSON.stringify({error:'INVALID_PR'}));}
  try{
    const store=await fetchArchive(force);
    res.statusCode=200;
-   res.end(JSON.stringify(rawPr===undefined?report(store,hours):waveDetail(store,Number(rawPr),hours)));
+   if(compare&&rawPr!==undefined){res.statusCode=400;return res.end(JSON.stringify({error:'COMPARE_CANNOT_INCLUDE_PR'}));}
+   res.end(JSON.stringify(compare?comparePeriods(store,hours):
+     rawPr===undefined?report(store,hours):waveDetail(store,Number(rawPr),hours)));
  }
  catch(e){res.statusCode=503;res.end(JSON.stringify({schema:'HH_CI_FIRST_LAST_ARCHIVE_V1',
    error:String(e.message||e).slice(0,90),missing_is_not_zero:true}));}
 };
-module.exports._test={parse,summarizePR,report,waveDetail};
+module.exports._test={parse,summarizePR,report,comparePeriods,waveDetail};
