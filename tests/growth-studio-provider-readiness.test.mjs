@@ -1,155 +1,71 @@
-import assert from 'node:assert/strict'
-import test from 'node:test'
-import {readFileSync} from 'node:fs'
-import {
-  readGrowthStudioProviderReadiness, GROWTH_CONNECTION_STATES,
-} from '../lib/growth-studio/provider-readiness.mjs'
-import {GROWTH_PUBLICATION_NETWORKS} from '../lib/growth-studio/channel-capabilities.mjs'
-import {RUSSIAN_CHANNEL_ID} from '../lib/youtube/upload-history-model.mjs'
+# Wizards Secrets — Instagram profile commissioning
 
-const fakeToken='123456789:'+'A'.repeat(40)
-const fakeEnglish={
-  id:'UC'+'E'.repeat(22),name:'Test English video channel',handle:'@test_english',
-}
-const fakeOauth='123456789012-abcDEFghij.apps.googleusercontent.com'
-const emptyYoutube={
-  oauthConfig:async()=>null,
-  channels:async()=>({ru:{id:RUSSIAN_CHANNEL_ID},en:null}),
-}
-const pairedYoutube={
-  oauthConfig:async()=>fakeOauth,
-  channels:async()=>({ru:{id:RUSSIAN_CHANNEL_ID},en:fakeEnglish}),
-}
+Date: 2026-11-09
 
-test('every Growth Studio channel has one truthful local status; none defaults to verified',async()=>{
-  const result=await readGrowthStudioProviderReadiness({
-    environment:{},youtubeStore:emptyYoutube,
-  })
-  assert.deepEqual(Object.keys(result.channels).sort(),[...GROWTH_PUBLICATION_NETWORKS].sort())
-  assert.equal(result.channels.telegram.state,'not_connected')
-  assert.equal(result.channels.telegram.channelConfigured,false)
-  assert.equal(result.channels.youtube.state,'not_connected')
-  assert.equal(result.channels.youtube.uploaderStoreReadable,true)
-  assert.equal(result.channels.youtube.oauthClientConfigured,false)
-  assert.equal(result.channels.youtube.englishChannelPaired,false)
-  assert.equal(result.channels.eventbrite.state,'external_tool')
-  assert.equal(result.channels.meetup.state,'manual_only')
-  for(const channel of GROWTH_PUBLICATION_NETWORKS){
-    assert.ok(GROWTH_CONNECTION_STATES.includes(result.channels[channel].state))
-    assert.notEqual(result.channels[channel].state,'verified')
-    assert.notEqual(result.channels[channel].state,'published')
-  }
-})
+## Profile identity
 
-test('Telegram config is unverified even with a valid bot and a public channel',async()=>{
-  const env={
-    HH_GROWTH_TELEGRAM_ENABLED:'true',
-    HH_GROWTH_TELEGRAM_BOT_TOKEN:fakeToken,
-    HH_GROWTH_TELEGRAM_CHAT_ID:'@holistic_public_channel',
-    HH_PRACTICE_TG_BOT_TOKEN:'should-never-read-client-private-bot',
-  }
-  const result=await readGrowthStudioProviderReadiness({
-    environment:env,youtubeStore:emptyYoutube,
-  })
-  assert.equal(result.channels.telegram.state,'configured_unverified')
-  assert.equal(result.channels.telegram.channelConfigured,true)
-  assert.ok(!JSON.stringify(result).includes(fakeToken),'no bot token may leave the server')
-  assert.ok(!JSON.stringify(result).includes('@holistic_public_channel'),'do not return exact channel unnecessarily')
-  assert.ok(!JSON.stringify(result).includes('should-never-read'),'client bot is never reused')
-  const disabled=await readGrowthStudioProviderReadiness({
-    environment:{...env,HH_GROWTH_TELEGRAM_ENABLED:'false'},youtubeStore:emptyYoutube,
-  })
-  assert.equal(disabled.channels.telegram.state,'not_connected')
-  const incomplete=await readGrowthStudioProviderReadiness({
-    environment:{HH_PRACTICE_TG_BOT_TOKEN:fakeToken},youtubeStore:emptyYoutube,
-  })
-  assert.equal(incomplete.channels.telegram.state,'not_connected')
-})
+- Handle: `@wizards.secrets`
+- Display name: **Wizard Secrets | Holistic House**
+- Internal Growth Studio target: `wizards_secrets`
+- Account purpose: an English-first discovery and entertainment channel that attracts attention through wizard-flavoured curiosity, clever jokes, short aphorisms and surprising observations, then introduces people to Holistic House through free self-discovery tests.
+- Relationship to Holistic House: a distinct media brand and acquisition channel, not a therapist/coach profile and not a place for clinical claims.
 
-test('YouTube stored public web client ID is a setup signal, not a logged-in channel',async()=>{
-  const result=await readGrowthStudioProviderReadiness({
-    environment:{},youtubeStore:pairedYoutube,
-  })
-  assert.equal(result.channels.youtube.state,'configured_unverified')
-  assert.equal(result.channels.youtube.oauthClientConfigured,true)
-  assert.equal(result.channels.youtube.uploaderStoreReadable,true)
-  assert.equal(result.channels.youtube.englishChannelPaired,true)
-  assert.equal(result.channels.telegram.state,'not_connected')
-  assert.ok(!JSON.stringify(result).includes(fakeOauth),'no client ID returned to general status UI')
-  assert.ok(!JSON.stringify(result).includes(fakeEnglish.id),'no channel IDs returned')
-  for(const platform of ['instagram','facebook','google_business','tiktok','wordpress']){
-    assert.equal(result.channels[platform].state,'manual_only',platform)
-  }
-})
+## Recommended profile copy
 
-test('YouTube Redis failure/disabled uploader fails closed, even if OAuth config is supplied',async()=>{
-  const blocked={
-    oauthConfig:async()=>{throw Error('network down')},
-    channels:async()=>{throw Error('read failed')},
-  }
-  const fail=await readGrowthStudioProviderReadiness({
-    environment:{HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID:fakeOauth},youtubeStore:blocked,
-  })
-  assert.equal(fail.channels.youtube.state,'unavailable')
-  assert.equal(fail.channels.youtube.oauthClientConfigured,true)
-  assert.equal(fail.channels.youtube.uploaderStoreReadable,false)
-  assert.equal(fail.channels.youtube.englishChannelPaired,false)
-  const none=await readGrowthStudioProviderReadiness({
-    environment:{HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID:fakeOauth},youtubeStore:null,
-  })
-  assert.equal(none.channels.youtube.state,'unavailable')
-  const explicitlyDisabled=await readGrowthStudioProviderReadiness({
-    environment:{HH_YOUTUBE_PHONE_UPLOAD_ENABLED:'false'},youtubeStore:pairedYoutube,
-  })
-  assert.equal(explicitlyDisabled.channels.youtube.state,'not_connected')
-  assert.equal(explicitlyDisabled.channels.youtube.uploaderDisabled,true)
-  const badId=await readGrowthStudioProviderReadiness({
-    environment:{HH_YOUTUBE_UPLOAD_OAUTH_CLIENT_ID:'not-a-real-web-client'},youtubeStore:emptyYoutube,
-  })
-  assert.equal(badId.channels.youtube.state,'not_connected')
-})
+**Bio (English):**
 
-test('owner-gated read-only action returns no tokens or automatic publish path',()=>{
-  const actions=readFileSync(new URL('../app/admin/growth-studio/actions.js',import.meta.url),'utf8')
-  const start=actions.indexOf('export async function checkGrowthStudioProviderReadinessAction()')
-  const end=actions.indexOf('export async function checkGrowthTelegramPublisherAction()',start)
-  assert.ok(start>0&&end>start)
-  const body=actions.slice(start,end)
-  assert.match(body,/requireAdminRequest\(\)/)
-  assert.match(body,/await readGrowthStudioProviderReadiness\(\)/)
-  assert.match(body,/readiness_unavailable/)
-  assert.doesNotMatch(body,/sendTelegramPost|fetch\(|publishGrowthTelegramNowAction|client|user_id/)
-})
+✨ Little secrets. Clever spells. Unexpected wisdom.
+🪄 Short wizard wit & curious discoveries.
+🔮 Discover yourself with free Holistic House tests ↓
 
-test('owner-only UI shows separate local, external, and manual states without fake provider confirmations',()=>{
-  const src=readFileSync(new URL('../components/growth-studio-connections.jsx',import.meta.url),'utf8')
-  const page=readFileSync(new URL('../app/admin/growth-studio/page.js',import.meta.url),'utf8')
-  assert.match(page,/requireAdminRequest\(\)/)
-  assert.match(page,/robots:\{index:false,follow:false\}/)
-  assert.match(src,/checkGrowthStudioProviderReadinessAction\(\)/)
-  assert.match(src,/useEffect\(\(\)=>\{void checkProviders\(\)\},\[checkProviders\]\)/)
-  assert.match(src,/providerProbeInFlight\.current/)
-  assert.match(src,/t\.sitePublisherWarning/)
-  assert.match(src,/isYoutube\?\(providerSnapshot\?\.youtube/)
-  assert.match(src,/providerSnapshot\?\.telegram/)
-  assert.match(src,/t\.siteExternal:t\.manualOnly/)
-  assert.doesNotMatch(src,/PRESCRIPTIONS_ADMIN_PIN|PRESCRIPTIONS_KV_REST_API_TOKEN|HH_GROWTH_TELEGRAM_BOT_TOKEN\s*=|process\.env/)
-  assert.doesNotMatch(src,/createScheduledPost|createCampaign|paidAdsEnabled\s*=\s*true/)
-})
+**Name field:** Wizard Secrets | Holistic House
 
+**Website:** `https://holistichouse.vercel.app`
 
-test('Instagram destination registry includes three distinct requested brands without duplicate entries',async()=>{
-  const {GROWTH_INSTAGRAM_ACCOUNT_TARGETS}=await import('../lib/growth-studio/instagram-accounts.mjs')
-  const labels=GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.label)
-  assert.deepEqual(labels,['@my.coach.ai','@wizards.secrets','@my.couch.ai'])
-  assert.equal(new Set(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.id)).size,3)
-  for(const account of GROWTH_INSTAGRAM_ACCOUNT_TARGETS){
-    assert.equal(account.network,'instagram')
-    assert.equal(account.connectionState,'pending_authorization')
-    assert.equal(account.publishEnabled,false)
-    assert.equal(account.providerAccountId,null)
-  }
-  const ui=readFileSync(new URL('../components/growth-studio-connections.jsx',import.meta.url),'utf8')
-  assert.match(ui,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS/)
-  assert.match(ui,/publishing disabled|публикация выключена/)
-})
+Use the main Holistic House entry page initially; once a dedicated public tests landing URL is confirmed, change the bio link to that destination. Do not invent a campaign URL.
+
+## Editorial rules
+
+1. Short, quotable, shareable. A post should work even when the viewer knows nothing about Holistic House.
+2. No lectures, moralizing, therapy claims or long explanations. Let humour, surprise and aphorism carry the content.
+3. Use an original generic wizard/mentor visual identity. Do not imply the account is official Harry Potter content or imitate protected character likenesses, logos, film stills, costumes or quotes.
+4. Tie back to Holistic House lightly: occasional invitation to try a free test, explore a personal pattern or discover a new perspective. Do not turn every post into an advertisement.
+5. English-first for broad European reach. Localized RU/ES versions can be prepared as separate variants when the audience and workflow are ready.
+6. Keep the account independent from the personal professional profile `@andy.therapist` in editorial approval, OAuth credentials, content variants, schedules, analytics and post receipts.
+
+## Suggested recurring formats
+
+- **Wizard's one-liners:** one sharp aphorism or playful observation.
+- **Tiny mysteries:** a curiosity hook followed by a surprising reveal.
+- **Spell-check for everyday life:** humorous reframing of familiar habits.
+- **The odd truth:** short paradoxes that invite sharing or comments.
+- **A mirror, not a lecture:** a curious question that naturally points to a free Holistic House self-test.
+
+## First 10 post prompts
+
+1. “Some people read the stars. Others still ignore the calendar.”
+2. “A little mystery is useful. Especially when the answer is you.”
+3. “Not every closed door is enchanted. Some just need a handle.”
+4. “The wisest spell? Knowing which problem is not yours.”
+5. “Your comfort zone has excellent security. Terrible travel reviews.”
+6. “A crystal ball is just a mirror with better marketing.”
+7. “The plot twist is usually hiding in your own habits.”
+8. “Even a wizard needs a map. Start with one honest question.”
+9. “A potion can change the mood. A good question can change the story.”
+10. “Curiosity is the only magic that gets stronger when shared.”
+
+These are original editorial prompts, not quotations from books or films.
+
+## Commissioning checklist
+
+- [ ] Set the display name and bio in Instagram.
+- [ ] Add the Holistic House website link.
+- [ ] Use an original generic wizard avatar and matching highlight covers.
+- [ ] Convert the Instagram account to Professional (Creator or Business).
+- [ ] Link it to the correct Facebook Page.
+- [ ] Add the owner to the Meta Developer App if the app is in Development mode.
+- [ ] In Growth Studio → Connections, choose **@wizards.secrets** → Connect with Meta.
+- [ ] Confirm the returned username is exactly `wizards.secrets`, and verify the Page ID, Instagram ID, permissions and Page content-creation task.
+- [ ] Keep publishing disabled until a separate approved test post is confirmed by Meta and read back by provider ID/URL.
+
+Profile text and editorial setup can be done manually before OAuth. OAuth and posting cannot be truthfully marked connected without the owner's real Meta consent.
