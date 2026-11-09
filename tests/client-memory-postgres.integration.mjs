@@ -83,7 +83,7 @@ if(!isolated){
           WHERE p.id=recipient_practitioner_id AND p.trusted_auth_user_id=auth.uid() AND p.active AND p.status='approved'));
       `)
       // Real SQL executes BEGIN/COMMIT. This test owns its disposable DB.
-      const source = await readFile(new URL('../docs/coaching/CLIENT_MEMORY_CARE_JOURNEY_DRAFT.sql',import.meta.url),'utf8')
+      const source = await readFile(new URL('../supabase/migrations/20261106203000_hh_client_memory_care_journey_v1.sql',import.meta.url),'utf8')
       await db.query(source)
       const force = await db.query(`select relname,relrowsecurity,relforcerowsecurity from pg_class
         where oid in ('app_private.client_ai_memory_settings'::regclass,
@@ -138,10 +138,54 @@ if(!isolated){
       assert.equal((await as(M2,db=>db.query('select count(*)::int n from app_private.client_care_tasks'))).rows[0].n,0)
       await as(A,db=>db.query("update app_private.client_care_tasks set status='accepted',revision=revision+1 where id=$1",[TASK]))
       await as(A,db=>db.query("update app_private.client_care_tasks set status='self_reported',revision=revision+1 where id=$1",[TASK]))
+      // Client cannot mark their own report as master-reviewed.
+      await assert.rejects(()=>as(A,db=>db.query(
+        "update app_private.client_care_tasks set status='reviewed',revision=revision+1 where id=$1",[TASK])))
+      // A different, active master must neither see nor review this client's task.
+      assert.equal((await as(M2,db=>db.query(
+        "update app_private.client_care_tasks set status='reviewed',revision=revision+1 where id=$1",[TASK]))).rowCount,0)
       await as(M1,db=>db.query("update app_private.client_care_tasks set status='reviewed',revision=revision+1 where id=$1",[TASK]))
       const status=await as(A,db=>db.query('select status,revision from app_private.client_care_tasks where id=$1',[TASK]))
       assert.deepEqual(status.rows[0],{status:'reviewed',revision:3})
       assert.equal((await as(M2,db=>db.query('select count(*)::int n from app_private.client_ai_memory_settings'))).rows[0].n,0)
+
+      // Sensitive items require a separate consent; a second master cannot be
+      // substituted into a valid owner's share request.
+      await assert.rejects(()=>as(A,db=>db.query(`insert into app_private.client_ai_memory_items
+        (id,account_id,category,scope,privacy_class,payload_ciphertext,source_kind,confidence,
+         confirmed_at,expires_at,operation_id)
+        values('30000000-0000-4000-8000-000000000002',$1,'goal','coaching','sensitive',$2,
+          'client_explicit','client_confirmed',now(),now()+interval '30 days',$3)`,
+        [A,'y'.repeat(100),op(4)])))
+      await assert.rejects(()=>as(A,db=>db.query(`insert into app_private.client_ai_memory_shares
+        (id,account_id,memory_item_id,consultation_request_id,practitioner_account_id,
+          scope,consent_version,operation_id,expires_at)
+        values('40000000-0000-4000-8000-000000000002',$1,$2,$3,$4,
+          'view_one_item','client-ai-share-v2',$5,now()+interval '7 days')`,
+        [A,REC,REQ,M2,op(5)])))
+
+      // Re-enabling sharing and then deleting settings must revoke every live grant.
+      await as(A,db=>db.query(`update app_private.client_ai_memory_settings
+        set memory_enabled=true,master_sharing_enabled=true where account_id=$1`,[A]))
+      await as(A,db=>db.query(`insert into app_private.client_ai_memory_shares
+        (id,account_id,memory_item_id,consultation_request_id,practitioner_account_id,
+          scope,consent_version,operation_id,expires_at)
+        values('40000000-0000-4000-8000-000000000003',$1,$2,$3,$4,
+          'view_one_item','client-ai-share-v2',$5,now()+interval '7 days')`,
+        [A,REC,REQ,M1,op(6)]))
+      await as(A,db=>db.query('delete from app_private.client_ai_memory_settings where account_id=$1',[A]))
+      const deletedSettingsShare=await as(A,db=>db.query(
+        "select revoked_at from app_private.client_ai_memory_shares where id='40000000-0000-4000-8000-000000000003'"))
+      assert.ok(deletedSettingsShare.rows[0].revoked_at)
+
+      // Neither anon nor authenticated can directly read these private tables.
+      for(const role of ['anon','authenticated']){
+        await db.query('begin')
+        try{
+          await db.query(`set local role ${role}`)
+          await assert.rejects(()=>db.query('select * from app_private.client_ai_memory_items'))
+        }finally{await db.query('rollback')}
+      }
     }finally { await db.end() }
   })
 }
