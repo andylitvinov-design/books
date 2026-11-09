@@ -1218,8 +1218,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // the spoken line. This uses the same visible control as a real visitor.
       const unselectedToggle=phraseEditor.locator('[data-video-idea-select][aria-pressed="false"]').first();
       await expect(unselectedToggle).toBeEnabled();
+      const unselectedIndex=await unselectedToggle.getAttribute('data-video-idea-select');
+      assert.ok(unselectedIndex!==null,"unselected phrase has a stable source index");
       await unselectedToggle.click();
-      await expect(unselectedToggle).toHaveAttribute('aria-pressed','true');
+      await expect(phraseEditor.locator(`[data-video-idea-select="${unselectedIndex}"]`)).toHaveAttribute('aria-pressed','true');
+      await expect(montageCountLabel).toContainText("10 /");
       assert.equal(await page.locator('[data-video-narration-stale]').isVisible(),false,
         "adding an unspoken phrase does not invalidate the actual WAV");
       await expect(page.locator('[data-video-live-audio]')).toContainText("holistic-house-hypno-audio.wav");
