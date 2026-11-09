@@ -158,6 +158,21 @@ jobs:
             core.info('HH_DIRECT_CORE_HANDOFF '+JSON.stringify(result));
             await core.summary.addHeading('Core failure: direct exact-HEAD Repair')
               .addCodeBlock(JSON.stringify(result,null,2)).write();
+      - name: Send trusted failed-Core evidence to Hermes when the bridge is configured
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        env:
+          HERMES_ORIGIN_URL: ${{ secrets.HERMES_ORIGIN_URL }}
+          HERMES_SHARED_SECRET: ${{ secrets.HERMES_SHARED_SECRET }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {sendWorkflowFailure}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-hermes-event-bridge.cjs');
+            const result=await sendWorkflowFailure({github,context,core});
+            core.summary.addHeading('Hermes CI event bridge')
+              .addCodeBlock(JSON.stringify(result,null,2)).write();
+
       - name: Persist completed Core job timings without another runner
         if: ${{ always() }}
         uses: actions/github-script@v7
