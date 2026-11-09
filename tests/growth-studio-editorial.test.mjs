@@ -225,3 +225,25 @@ test('Redis connection errors fail closed and never create browser fallback reco
   const malformed=createGrowthStudioStore({environment,fetchFn:async()=>({ok:true,json:async()=>({result:null})})})
   await assert.rejects(malformed.list(),/storage_unavailable/)
 })
+
+
+test('Instagram drafts persist an explicit social destination and cannot be approved without one',()=>{
+  const id=postId()
+  const instagram=fields({channel:'instagram',socialAccountId:'my_coach_ai'})
+  const draft=nextGrowthPost({fields:instagram,action:'save',id,now:fixedNow})
+  assert.equal(draft.socialAccountId,'my_coach_ai')
+  assert.equal(isSavedGrowthPost(draft),true)
+  const approved=nextGrowthPost({current:draft,action:'approve',now:fixedNow})
+  assert.equal(approved.status,'approved')
+  const missing=nextGrowthPost({fields:fields({channel:'instagram'}),action:'save',id:postId(),now:fixedNow})
+  assert.equal(missing.socialAccountId,'')
+  assert.throws(()=>nextGrowthPost({current:missing,action:'approve',now:fixedNow}),/invalid_transition/)
+  assert.throws(()=>normalizePostFields({...instagram,socialAccountId:'untrusted-account'}),/invalid_post/)
+  assert.throws(()=>normalizePostFields({...instagram,channel:'facebook'}),/invalid_post/)
+})
+
+test('legacy saved posts without socialAccountId remain readable',()=>{
+  const legacy=nextGrowthPost({fields:fields(),action:'save',id:postId(),now:fixedNow})
+  const {socialAccountId,...oldShape}=legacy
+  assert.equal(isSavedGrowthPost(oldShape),true)
+})
