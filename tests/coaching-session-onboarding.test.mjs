@@ -80,7 +80,7 @@ test('private start happens only after both slides, then stores consented topic 
   assert.match(privateClient,/function prepare\(/)
   assert.match(privateClient,/function begin\(\)/)
   assert.match(privateClient,/entry\.step==='intro'\?<CoachingSessionIntroduction/)
-  assert.match(privateClient,/:<CoachingSessionTopic/)
+  assert.match(privateClient,/CoachingSessionTopic locale=\\{lang\\}/)
   assert.match(privateClient,/entry\.step==='topic'&&\(!entry\.clientTopic/)
   assert.match(privateClient,/begin\(\)/)
   assert.match(privateClient,/clientQuestion,clientTopic/)
