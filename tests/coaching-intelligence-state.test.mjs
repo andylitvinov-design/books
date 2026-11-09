@@ -5,6 +5,7 @@ import {runInNewContext} from 'node:vm'
 import {createHash} from 'node:crypto'
 import {authoredFollowupFor} from '../lib/personal-coaching/offline-intelligence.js'
 import {isCoachingSafetyConcern} from '../lib/personal-coaching/model-matcher.js'
+import {normalizeClientCoachingContext} from '../lib/personal-coaching/client-context.mjs'
 
 const source=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
 const server=source.replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
@@ -54,12 +55,26 @@ function fixture(){
   traditionCourse:()=>null,traditionEndcaps:()=>[],
   loadSchemeQuestions:async(_db,schemeKey)=>['grow_quick_v1','grow_overload_20_v1'].includes(schemeKey)
    ?{schemeKey,modelKey:'grow_v1',questions:schemeKey==='grow_overload_20_v1'?questions.map(q=>q.id==='action'?{...q,stepKey:'will'}:q):questions,requiredCustomPlan:schemeKey==='grow_overload_20_v1'}:null,
-  authoredFollowupFor,isCoachingSafetyConcern,createHash,
+  authoredFollowupFor,isCoachingSafetyConcern,normalizeClientCoachingContext,createHash,
  }
- const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor,isCoachingSafetyConcern}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
+ const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor,isCoachingSafetyConcern,normalizeClientCoachingContext}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
  return {api:factory(deps),store}
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
+
+test('reviewed continuity and safety hold coexist without accepting unreviewed context',async()=>{
+ const {api}=fixture()
+ const draft={version:1,reviewStatus:'needs_review',active_goals:[{text:'Protect personal time'}]}
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...start,clientContext:draft}),err=>err.code==='COACHING_CONTEXT_CONFIRMATION_REQUIRED')
+ const reviewed={...draft,reviewStatus:'client_confirmed'}
+ let s=await api.savePersonalCoaching({},a,{...start,clientContext:reviewed})
+ assert.equal(s.course.current.clientContext.active_goals[0].text,'Protect personal time')
+ assert.equal((await api.readPersonalCoaching({},b)).course,null)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'I want to kill myself'})
+ assert.equal(s.course.current.status,'safety_hold')
+ assert.equal((await api.readPersonalCoaching({},a)).course.current.clientContext.reviewStatus,'client_confirmed')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...start,revision:s.revision,clientContext:reviewed}),err=>err.code==='PERSONAL_COACH_SAFETY_HOLD')
+})
 
 test('urgent answer persists a safety hold across reload and prevents further coaching',async()=>{
  const {api}=fixture()

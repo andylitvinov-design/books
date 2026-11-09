@@ -274,7 +274,7 @@ export async function publishGrowthInstagramNowAction(input){
       updatedAt:new Date().toISOString(),
       delivery:{provider:'meta_graph_api',accountId:result.accountId,
         providerPostId:result.providerPostId,url:result.permalink,
-        publishedAt:result.publishedAt||new Date().toISOString(),
+        publishedAt:result.publishedAt,
         containerId:result.containerId,mediaType:result.mediaType}}
     try{
       await store.save(delivered,claimed.revision)

@@ -8,10 +8,13 @@ const raw=process.env.HH_TEST_ADMIN_DATABASE_URL||''
 let isolated=false
 try {
   const url=new URL(raw)
+  const local=url.port==='55439'
+  const ci=url.port==='5432' && process.env.CI==='true' && process.env.GITHUB_ACTIONS==='true' &&
+    process.env.NODE_ENV==='test' && raw==='postgres://postgres:synthetic-ci-admin@127.0.0.1:5432/hh_coaching_rls_test'
   isolated=process.env.HH_APP_TEST_RUNTIME==='isolated' &&
     process.env.HH_COACHING_RLS_TEST==='synthetic-only' && !process.env.VERCEL &&
     ['postgres:','postgresql:'].includes(url.protocol) && url.hostname==='127.0.0.1' &&
-    url.port==='55439' && url.pathname==='/hh_coaching_rls_test' && !url.search && !url.hash
+    (local||ci) && url.pathname==='/hh_coaching_rls_test' && !url.search && !url.hash
 } catch {}
 
 const A='10000000-0000-4000-8000-000000000001'
@@ -27,8 +30,9 @@ if(!isolated){
     try {
       const identity=(await db.query("select current_database() as db, inet_server_addr()::text as host, current_setting('port')::int as port, to_regnamespace('app') as app")).rows[0]
       assert.equal(identity.db,'hh_coaching_rls_test')
-      assert.equal(identity.host,'127.0.0.1/32')
-      assert.equal(identity.port,55439)
+      const ci=process.env.CI==='true'&&process.env.GITHUB_ACTIONS==='true'&&identity.port===5432
+      if(!ci)assert.equal(identity.host,'127.0.0.1/32')
+      assert.ok(ci||identity.port===55439)
       assert.equal(identity.app,null,'refuse a nonempty application database')
       await db.query(`
         do $roles$ begin

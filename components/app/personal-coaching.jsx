@@ -8,6 +8,8 @@ import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import PersonalCoachingPicker from './personal-coaching-picker'
+import CoachingContextReview from '@/components/coaching-context-review'
+import { buildClientCoachingContext } from '@/lib/personal-coaching/client-context.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
@@ -280,15 +282,22 @@ export default function PersonalCoaching({locale='en',accountId}){
   function prepare(choice,clientQuestion,adultConfirmed){
     // The picker only prepares a choice. No private record is created until
     // the visitor has seen the session briefing and selected a request topic.
+    const previousSessions=[...(course?.history||[]),...(course?.current?.status==='completed'?[course.current]:[])]
+    const candidate=previousSessions.length?buildClientCoachingContext(previousSessions):null
+    const clientContext=candidate&&['active_goals','previous_commitments','completed_actions','open_topics','previous_insights','linked_reports','life_plan_changes']
+      .some(key=>candidate[key]?.length)?candidate:null
     setEntry({choice,clientQuestion,adultConfirmed:adultConfirmed===true,
-      topicAdultConfirmed:adultConfirmed===true,clientTopic:'',checkin:'',step:'intro'})
+      topicAdultConfirmed:adultConfirmed===true,clientTopic:'',checkin:'',step:'intro',
+      clientContext,contextReviewed:!clientContext})
     setError('')
   }
   async function begin(){
     if(!entry?.clientTopic||(entry.clientTopic==='sexuality'&&!entry.topicAdultConfirmed))return
     const {choice,clientQuestion,clientTopic}=entry
     const adultConfirmed=entry.adultConfirmed||entry.topicAdultConfirmed
+    if(entry.clientContext&&!entry.contextReviewed)return
     const result=await command('start',{schemeKey:choice.schemeKey,clientQuestion,clientTopic,
+      ...(entry.clientContext&&entry.contextReviewed?{clientContext:entry.clientContext}:{}),
       ...((choice.modelKey==='tantric_intimacy_v1'||choice.scheme?.tags?.includes('sexuality')||clientTopic==='sexuality')?{adultConfirmed}:{})})
     if(result){
       const list=questionsFor(result.course,catalog)
@@ -442,17 +451,21 @@ export default function PersonalCoaching({locale='en',accountId}){
               approach={translated(entryModel?.focus,lang)} outcome={translated(entry.choice.scheme?.result,lang)}
               imageSrc={cardArtworkUrl(coachingArt[entry.choice.modelKey]||coachingArt.grow_v1)}
                checkin={entry.checkin} onCheckinChange={checkin=>setEntry(previous=>({...previous,checkin}))}/>
-            :<CoachingSessionTopic locale={lang} checkin={entry.checkin} value={entry.clientTopic} headingRef={titleRef}
+            :<><CoachingSessionTopic locale={lang} checkin={entry.checkin} value={entry.clientTopic} headingRef={titleRef}
               onChange={clientTopic=>setEntry(previous=>({...previous,clientTopic,topicAdultConfirmed:previous.adultConfirmed}))}
               ageConfirmed={entry.topicAdultConfirmed}
-              onAgeConfirm={value=>setEntry(previous=>({...previous,topicAdultConfirmed:value}))}/>}
+              onAgeConfirm={value=>setEntry(previous=>({...previous,topicAdultConfirmed:value}))}/>
+              {entry.clientContext&&<CoachingContextReview locale={lang} context={entry.clientContext}
+                onConfirm={clientContext=>setEntry(previous=>({...previous,clientContext,contextReviewed:true}))}
+                onSkip={()=>setEntry(previous=>({...previous,clientContext:null,contextReviewed:true}))}/>}
+            </>}
             {error&&<p className={styles.error} role="alert">{error}</p>}
           </div>
           <footer className={styles.footer}><div className={styles.footerActions}>
             <button type="button" className={styles.back} disabled={busy}
               onClick={()=>{if(entry.step==='intro')setEntry(null);else setEntry(previous=>({...previous,step:'intro'}))}}>
               <ChevronLeft size={18}/>{t.back}</button>
-            <button type="button" className={styles.primary} disabled={busy||(entry.step==='topic'&&(!entry.clientTopic||(entry.clientTopic==='sexuality'&&!entry.topicAdultConfirmed)))}
+            <button type="button" className={styles.primary} disabled={busy||(entry.step==='topic'&&(!entry.clientTopic||(entry.clientTopic==='sexuality'&&!entry.topicAdultConfirmed)||(entry.clientContext&&!entry.contextReviewed)))}
               onClick={()=>entry.step==='intro'?setEntry(previous=>({...previous,step:'topic'})):begin()}>
               {entry.step==='intro'?entryCopyContinue(lang):entryCopyBegin(lang)}<ArrowRight size={18}/></button>
           </div></footer>
