@@ -167,3 +167,34 @@ test('validator rejects broken evidence references, fabricated acceptance and mo
   }))
   assert.ok(validateCoachingReportV2(tooMany).errors.includes('REPORT_ACTION_CANDIDATE_LIMIT'))
 })
+
+test('accepted action and confirmed decision must match the actual confirmation evidence', () => {
+  const valid = buildCoachingReportV2Draft({ session: completedSession({ actionPlan: {
+    actionText:'Write a note', approvedAt:'2026-11-09T16:19:00.000Z',
+  }}), questions })
+  const changedAction = structuredClone(valid)
+  changedAction.actionCandidates[0].text = 'Transfer funds'
+  assert.ok(validateCoachingReportV2(changedAction).errors.includes('REPORT_ACTION_ACCEPTANCE_INVALID'))
+  const changedDecision = structuredClone(valid)
+  changedDecision.outcome.confirmedDecisions[0].text = 'A different decision'
+  assert.ok(validateCoachingReportV2(changedDecision).errors.includes('REPORT_DECISION_INVALID'))
+  const alteredTime = structuredClone(valid)
+  alteredTime.actionCandidates[0].acceptedAt = '2026-11-09T17:00:00.000Z'
+  assert.ok(validateCoachingReportV2(alteredTime).errors.includes('REPORT_ACTION_ACCEPTANCE_INVALID'))
+  const anotherConfirmation = structuredClone(valid)
+  anotherConfirmation.evidence.push({evidenceId:'plan:other',kind:'client_confirmed_action',
+    source:'approved_client_action_plan',value:'Another action',capturedAt:'2026-11-09T16:19:00.000Z'})
+  anotherConfirmation.actionCandidates[0].sourceEvidenceIds=['plan:other']
+  assert.ok(validateCoachingReportV2(anotherConfirmation).errors.includes('REPORT_ACTION_ACCEPTANCE_INVALID'))
+})
+
+test('outcome text and role must match the referenced saved-answer evidence', () => {
+  const valid = buildCoachingReportV2Draft({ session: completedSession(), questions })
+  const changed = structuredClone(valid)
+  changed.outcome.clientFocus.text = 'An unsupported claim'
+  assert.ok(validateCoachingReportV2(changed).errors.includes('REPORT_OUTCOME_EVIDENCE_INVALID'))
+  const wrongRole = structuredClone(valid)
+  const actionEvidence = valid.evidence.find(row => row.role === 'action')
+  wrongRole.outcome.clientFocus = {text:actionEvidence.value,evidenceIds:[actionEvidence.evidenceId]}
+  assert.ok(validateCoachingReportV2(wrongRole).errors.includes('REPORT_OUTCOME_EVIDENCE_INVALID'))
+})
