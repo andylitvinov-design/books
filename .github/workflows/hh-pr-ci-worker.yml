@@ -1,7 +1,7 @@
 name: HH zero-cost PR CI worker
 on:
   schedule:
-    - cron: '4,14,24,34,44,54 * * * *'
+    - cron: '3,13,23,33,43,53 * * * *'
   # No workflow_run fanout: Watchdog dispatches only an actionable queue.
   workflow_dispatch:
     inputs:
