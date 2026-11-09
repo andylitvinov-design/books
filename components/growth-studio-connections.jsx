@@ -176,7 +176,11 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       await loadMetaAccounts()
     }catch{setMetaError(locale==='ru'?'Не удалось отключить аккаунт':'Could not disconnect account')}
   }
-  useEffect(()=>{void loadMetaAccounts()},[loadMetaAccounts])
+  useEffect(()=>{
+    void loadMetaAccounts()
+    const metaResult=new URLSearchParams(window.location.search).get('meta')
+    if(metaResult&&!metaResult.startsWith('connected_'))setMetaError(metaResult)
+  },[loadMetaAccounts])
   const all=useMemo(()=>GROWTH_PUBLICATION_NETWORKS.map(id=>({id,...CHANNEL_CAPABILITIES[id]})),[])
   async function verify(){
     if(!telegram.ready||checking)return
@@ -389,7 +393,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       <div className={styles.connectionNav}>
         <a href="https://developers.facebook.com/" target="_blank" rel="noopener noreferrer">Meta for Developers ↗</a>
         <a href="https://business.facebook.com/" target="_blank" rel="noopener noreferrer">{t.setupMeta} ↗</a>
-        <a href="/docs/growth-studio/META_INSTAGRAM_OAUTH_SETUP.md" target="_blank" rel="noopener noreferrer">{locale==='ru'?'Инструкция настройки OAuth':'OAuth setup guide'} ↗</a>
+        <a href="https://github.com/andylitvinov-design/books/blob/codex/meta-instagram-oauth-foundation-20261109/docs/growth-studio/META_INSTAGRAM_OAUTH_SETUP.md" target="_blank" rel="noopener noreferrer">{locale==='ru'?'Инструкция настройки OAuth':'OAuth setup guide'} ↗</a>
       </div>
     </div>
     <div className={styles.connectionScroller}>
