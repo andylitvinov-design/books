@@ -105,8 +105,9 @@ export default async function MyCoachPage({ params }: PageProps) {
   // unknown; it is never presented as a fabricated score.
   if (practitioners.length) {
     try {
-      const summaries = await createServiceReviewRepository(config)
-        .listPublicSummariesForPractitioners(practitioners.map((coach) => coach.id));
+      const summaries: { practitionerId: string; count: number; average: number }[] =
+        await createServiceReviewRepository(config)
+          .listPublicSummariesForPractitioners(practitioners.map((coach) => coach.id));
       const byId = new Map(summaries.map((summary) => [
         summary.practitionerId,
         { count: summary.count, average: summary.average },
