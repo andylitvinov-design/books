@@ -62,6 +62,42 @@ function fixture(){
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
 
+test('lost pilot start acknowledgement can be retried without a second session',async()=>{
+ const {api}=fixture()
+ const request={...start,schemeKey:'grow_overload_20_v1',turnId:'30000000-0000-4000-8000-000000000001'}
+ const first=await api.savePersonalCoaching({},a,request)
+ const retry=await api.savePersonalCoaching({},a,request)
+ assert.equal(retry.revision,first.revision)
+ assert.equal(retry.course.current.id,first.course.current.id)
+ assert.equal(retry.course.history.length,0)
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...request,clientQuestion:'A different coaching question'}),err=>err.code==='PERSONAL_COACH_TURN_ID_REUSED')
+ assert.equal((await api.readPersonalCoaching({},b)).course,null)
+})
+
+test('lost acknowledgement of a safety-held pilot start returns the same hold',async()=>{
+ const {api}=fixture()
+ const request={...start,schemeKey:'grow_overload_20_v1',clientQuestion:'I want to kill myself',turnId:'30000000-0000-4000-8000-000000000002'}
+ const first=await api.savePersonalCoaching({},a,request)
+ const retry=await api.savePersonalCoaching({},a,request)
+ assert.equal(first.course.current.status,'safety_hold')
+ assert.equal(retry.course.current.id,first.course.current.id)
+ assert.equal(retry.course.current.status,'safety_hold')
+})
+
+test('retrying a new pilot after completion does not duplicate history',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ const previous=s.course.current.id
+ s=await api.savePersonalCoaching({},a,{action:'finish_without_plan',revision:s.revision})
+ const request={...start,schemeKey:'grow_overload_20_v1',revision:s.revision,turnId:'30000000-0000-4000-8000-000000000003'}
+ const first=await api.savePersonalCoaching({},a,request)
+ const retry=await api.savePersonalCoaching({},a,request)
+ assert.equal(retry.course.current.id,first.course.current.id)
+ assert.equal(retry.course.history.length,1)
+ assert.equal(retry.course.history[0].id,previous)
+ assert.equal(retry.revision,first.revision)
+})
+
 test('pilot pause survives reload and retries, preserves answers and requires explicit resume',async()=>{
  const {api}=fixture()
  const id=n=>`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`
