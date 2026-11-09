@@ -294,7 +294,7 @@
   e.preventDefault();if(!thread||busy)return;
   const text=el('message').value.trim(),mode=el('mode').value,model=el('model').value;
   if(text.length<2||text.length>1200)return info('Сообщение должно содержать 2–1200 символов.');
-  if(!thread.executors.includes(mode))return info('Сначала назначьте этого исполнителя в настройках чата.');
+  if(mode!=='holistic-advisor'&&!thread.executors.includes(mode))return info('Сначала назначьте этого исполнителя в настройках чата.');
   if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
   const c=thread,context=messages.slice(-8).filter(x=>['owner','assistant_unverified'].includes(x.kind))
    .map(x=>({role:x.kind==='owner'?'user':'assistant',content:x.text.slice(0,800)}));
@@ -305,11 +305,23 @@
    const room=Math.max(0,1200-text.length-2);
    const contextPart=contextText.slice(0,Math.min(320,room));
    const requestMessage=contextPart?contextPart+'\n'+text:text;
-   const r=await request(AI+'?action=chat','POST',{mode,message:requestMessage,model:mode==='openrouter'?model:undefined,
-    tasks:c.tasks||[],history:context});
-   if(typeof r.reply!=='string'||!r.reply.trim())throw Error('Пустой ответ AI');
-   await append(c,'ai',r.reply.slice(0,1800),r.model||mode);
-   info('Ответ сохранён. Это консультация, не коммит или LIVE.');
+   let r;
+   if(mode==='holistic-advisor'){
+    const locale=(doc.documentElement.lang||'ru').toLowerCase().split('-')[0];
+    r=await request('/api/holistic-advisor','POST',{
+     requestId:id(),message:text,locale:['ru','en','es'].includes(locale)?locale:'ru',
+     history:context.map(turn=>({role:turn.role,text:turn.content.slice(0,800)}))
+    });
+    if(typeof r.reply!=='string'||!r.reply.trim())throw Error('Совет ИИ не вернул ответ');
+    await append(c,'ai',r.reply.slice(0,1800),r.model||'Holistic House AI Advisor');
+    info('Ответ получен от Holistic House AI Advisor и сохранён. Это консультация, не запуск исполнителя.');
+   }else{
+    r=await request(AI+'?action=chat','POST',{mode,message:requestMessage,model:mode==='openrouter'?model:undefined,
+     tasks:c.tasks||[],history:context});
+    if(typeof r.reply!=='string'||!r.reply.trim())throw Error('Пустой ответ AI');
+    await append(c,'ai',r.reply.slice(0,1800),r.model||mode);
+    info('Ответ сохранён. Это консультация, не коммит или LIVE.');
+   }
   }catch(err){info('Сохранение/AI неполное: '+String(err.message||err))}
   finally{busy=false;el('send').disabled=false}
  }
