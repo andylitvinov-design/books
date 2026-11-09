@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
+import {createHash} from 'node:crypto'
 import {authoredFollowupFor} from '../lib/personal-coaching/offline-intelligence.js'
 import {isCoachingSafetyConcern} from '../lib/personal-coaching/model-matcher.js'
 
@@ -53,9 +54,9 @@ function fixture(){
   traditionCourse:()=>null,traditionEndcaps:()=>[],
   loadSchemeQuestions:async(_db,schemeKey)=>['grow_quick_v1','grow_overload_20_v1'].includes(schemeKey)
    ?{schemeKey,modelKey:'grow_v1',questions,requiredCustomPlan:false}:null,
-  authoredFollowupFor,isCoachingSafetyConcern,
+  authoredFollowupFor,isCoachingSafetyConcern,createHash,
  }
- const factory=runInNewContext('(deps)=>{const {randomUUID,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor,isCoachingSafetyConcern}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
+ const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor,isCoachingSafetyConcern}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
  return {api:factory(deps),store}
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
@@ -99,6 +100,38 @@ test('user may finish the overload pilot without inventing a plan',async()=>{
  assert.equal(s.course.current.status,'completed')
  assert.equal(s.course.current.outcome,'reflection_only')
  assert.equal(s.course.current.actionPlan,undefined)
+})
+
+test('overload pilot rejects jumping ahead but permits editing a previously answered question',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ const id=n=>`10000000-0000-4000-8000-${String(n).padStart(12,'0')}`
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time'}),err=>err.code==='PERSONAL_COACH_INVALID_TURN_ID')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'A premature step',turnId:id(1)}),err=>err.code==='PERSONAL_COACH_QUESTION_OUT_OF_ORDER')
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:id(2)})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'options',answer:null,turnId:id(3)})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'Updated context',turnId:id(4)})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'A chosen step',turnId:id(5)})
+ assert.equal(s.course.current.answers.action,'A chosen step')
+})
+
+test('duplicate answer turn returns the committed revision and rejects reuse with different content',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ const turn={action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:'10000000-0000-4000-8000-000000000001'}
+ s=await api.savePersonalCoaching({},a,turn)
+ const replay=await api.savePersonalCoaching({},a,turn)
+ assert.equal(replay.revision,s.revision)
+ assert.equal(replay.course.current.answers.real,'choice:time')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...turn,answer:'changed'}),err=>err.code==='PERSONAL_COACH_TURN_ID_REUSED')
+ await assert.rejects(()=>api.savePersonalCoaching({},b,turn),err=>err.code==='PERSONAL_COACH_REVISION_CONFLICT')
+})
+
+test('urgent answer interrupts even when sent for a later valid question',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'I want to kill myself',turnId:'10000000-0000-4000-8000-000000000001'})
+ assert.equal(s.course.current.status,'safety_hold')
 })
 
 test('actual server-state code validates and persists chosen authored reflection, rejects forged key and duplicate stage',async()=>{

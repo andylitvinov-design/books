@@ -166,6 +166,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
   const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
   const titleRef=useRef(null),busyRef=useRef(false)
+  const pendingAnswer=useRef(null)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
   const activeQuestions=questionsFor(course,catalog)
@@ -255,7 +256,15 @@ export default function PersonalCoaching({locale='en',accountId}){
     if(busyRef.current||!accountId)return null
     busyRef.current=true;setBusy(true);setError('');setNotice('')
     try{
-      const value=await appFetch('personal-coaching',{action,revision:state?.revision||0,...fields},'POST',{accountId})
+      const revision=state?.revision||0
+      let turnId
+      if(action==='answer'&&session?.schemeKey==='grow_overload_20_v1'){
+        const key=JSON.stringify([revision,fields.questionId,fields.answer])
+        if(pendingAnswer.current?.key!==key)pendingAnswer.current={key,id:crypto.randomUUID()}
+        turnId=pendingAnswer.current.id
+      }
+      const value=await appFetch('personal-coaching',{action,revision,...fields,...(turnId?{turnId}:{})},'POST',{accountId})
+      if(turnId)pendingAnswer.current=null
       setState(value)
       setNotice(t.saved)
       return value
@@ -324,7 +333,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     }
     const saved=await command('answer',{questionId:question.id,answer})
     if(!saved)return
-    if(saved.course?.current?.status==='safety_hold')return
+    if(saved.course?.current?.status==='safety_hold'||saved.course?.current?.status==='completed')return
     if(index===activeQuestions.length-1){
       // Completion is reported only after the final answer and status both persisted.
       const completed=await commandAfterSave(saved,'complete')
