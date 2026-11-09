@@ -8,7 +8,7 @@ Date: 2026-11-09
 - Display name: **Wizard Secrets | Holistic House**
 - Internal Growth Studio target: `wizards_secrets`
 - Account purpose: an English-first discovery and entertainment channel that attracts attention through wizard-flavoured curiosity, clever jokes, short aphorisms and surprising observations, then introduces people to Holistic House through free self-discovery tests.
-- Relationship to Holistic House: a distinct media brand and acquisition channel, not a therapist/coach profile and not a place for clinical claims.
+- Relationship to Holistic House: the work-facing Holistic House discovery brand. It must remain separate from the personal professional profile `@andy.therapist` and must not make clinical claims.
 
 ## Recommended profile copy
 
@@ -31,7 +31,7 @@ Use the main Holistic House entry page initially; once a dedicated public tests 
 3. Use an original generic wizard/mentor visual identity. Do not imply the account is official Harry Potter content or imitate protected character likenesses, logos, film stills, costumes or quotes.
 4. Tie back to Holistic House lightly: occasional invitation to try a free test, explore a personal pattern or discover a new perspective. Do not turn every post into an advertisement.
 5. English-first for broad European reach. Localized RU/ES versions can be prepared as separate variants when the audience and workflow are ready.
-6. Keep the account independent from the personal professional profile `@andy.therapist` in editorial approval, OAuth credentials, content variants, schedules, analytics and post receipts.
+6. Keep the work account independent from the personal `@andy.therapist` profile in editorial approval, OAuth credentials, content variants, schedules, analytics and post receipts.
 
 ## Suggested recurring formats
 
