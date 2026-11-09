@@ -327,16 +327,33 @@ function needsFailedCoreCronBackstop(state) {
 // A failed Core or allowlisted specialist/browser workflow callback concerns
 // one PR, not the complete 100+ PR inventory. The quality path additionally
 // requires the signed event's sole PR association to match the live exact HEAD.
+function isTrustedCoreFailureEvent(context) {
+  const run=context?.payload?.workflow_run;
+  return !!(context?.eventName==='workflow_run' &&
+    context.ref==='refs/heads/'+DEFAULT &&
+    context.repo?.owner+'/'+context.repo?.repo===REPO &&
+    run?.name===CORE_NAME &&
+    String(run.path||'').split('@')[0]==='.github/workflows/hh-pr-core-release.yml' &&
+    run.event==='pull_request' && run.status==='completed' &&
+    ['failure','timed_out','startup_failure'].includes(run.conclusion) &&
+    run.repository?.full_name===REPO &&
+    run.head_repository?.full_name===REPO &&
+    Number.isSafeInteger(run.id) && run.id>0 &&
+    Number.isSafeInteger(run.run_attempt) && run.run_attempt>=1 &&
+    typeof run.head_branch==='string' && run.head_branch.length>0 &&
+    run.head_branch.length<=255 && /^[a-f0-9]{40}$/i.test(run.head_sha||'') &&
+    Array.isArray(run.pull_requests) && run.pull_requests.length<=1 &&
+    (run.pull_requests.length===0 ||
+      (Number.isSafeInteger(run.pull_requests[0]?.number) &&
+       run.pull_requests[0].number>0 &&
+       run.pull_requests[0].base?.ref===PROD &&
+       /^[a-f0-9]{40}$/i.test(run.pull_requests[0].head?.sha||''))));
+}
+
 async function eventOnlyPR(github,owner,repo,limited,context) {
   const run=context?.payload?.workflow_run;
   const full=owner+'/'+repo;
-  const coreEvent=context?.eventName==='workflow_run'&&run?.name===CORE_NAME&&
-    run?.path?.split('@')[0]==='.github/workflows/hh-pr-core-release.yml'&&
-    run?.event==='pull_request'&&run?.status==='completed'&&
-    ['failure','timed_out','startup_failure'].includes(run.conclusion)&&
-    run?.repository?.full_name===full&&run?.head_repository?.full_name===full&&
-    Number.isSafeInteger(run.id)&&run.id>0&&/^[a-f0-9]{40}$/i.test(run.head_sha||'')&&
-    typeof run.head_branch==='string'&&run.head_branch.length>0&&run.head_branch.length<=255;
+  const coreEvent=isTrustedCoreFailureEvent(context);
   const qualityEvent=isTrustedQualityFailureEvent(context);
   if(!coreEvent&&!qualityEvent)return null;
   const {data}=await limited('failed-workflow-exact-branch',()=>
@@ -1341,4 +1358,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {eventOnlyPR,isTrustedQualityFailureEvent,qualityEventMatchesPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
+module.exports = {eventOnlyPR,isTrustedCoreFailureEvent,isTrustedQualityFailureEvent,qualityEventMatchesPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
