@@ -415,19 +415,20 @@ test("browser stale-audio check removes the spoken phrase through the visible Mo
   assert.match(source,/const spokenPhrase=phraseRows\.filter\(\{hasText:approved\}\)/);
   assert.match(source,/const spokenToggle=spokenPhrase\.locator\('\[data-video-idea-select\]'\)/);
   assert.match(source,/await spokenToggle\.click\(\)/);
-  assert.match(source,/removed spoken phrase must block stale WAV reuse or detach it/);
-  assert.match(source,/removing the spoken phrase must block stale WAV reuse or detach it/);
+  assert.match(source,/data-video-narration-reapproval/);
+  assert.match(source,/data-video-quick-generate/);
+  assert.match(source,/the old WAV may remain attached, but must be unusable until narration is regenerated/);
 });
 
 test('browser checks phrase consent before switching to the separate montage workspace',()=>{
-  const start=source.indexOf('removed spoken phrase must block stale WAV reuse or detach it');
+  const start=source.indexOf('the old WAV may remain attached, but must be unusable until narration is regenerated');
   const consent=source.indexOf('await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked',start);
   const montage=source.indexOf('data-video-quick-control="editor"',start);
   assert.ok(start>=0&&consent>start&&montage>consent,'the phrase consent control must be checked while its workspace is mounted');
 });
 
 test('stale narration safety remains checked after the phrase warning unmounts',()=>{
-  const start=source.indexOf('removed spoken phrase must block stale WAV reuse or detach it');
+  const start=source.indexOf('the old WAV may remain attached, but must be unusable until narration is regenerated');
   const after=source.slice(start,source.indexOf('const voicePanel=',start));
   assert.match(after,/const stillHasOldVoice=/);
   assert.match(after,/stillHasOldVoice[\s\S]*?toBeDisabled\(\)/);
