@@ -2,6 +2,10 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
 import {readFileSync} from 'node:fs'
+import {mkdtemp,copyFile,writeFile,rm} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
+import {pathToFileURL} from 'node:url'
 import {
   GrowthStudioError, normalizePostFields, normalizePublicSource, nextGrowthPost,
   publicCampaignLink, isSavedGrowthPost,
@@ -250,6 +254,59 @@ test('legacy saved posts without socialAccountId remain readable',()=>{
   const legacy=nextGrowthPost({fields:fields(),action:'save',id:postId(),now:fixedNow})
   const {socialAccountId,...oldShape}=legacy
   assert.equal(isSavedGrowthPost(oldShape),true)
+})
+
+test('saved posts for historical Instagram destinations remain readable in the editorial list',async()=>{
+  const ids=['my_coach_ai','my_couch_ai']
+  const records=ids.map((socialAccountId,index)=>({
+    id:`fb4a8dc4-115a-4b3a-bd3b-bc9b0eb7c3d${index}`,
+    brand:'holistic_house',channel:'instagram',socialAccountId,locale:'en',
+    title:'Historical draft',caption:'A public draft',sourceUrl:'',campaign:'',
+    scheduledAt:'',mediaUrl:'',mediaAlt:'',status:'draft',revision:1,
+    createdAt:'2026-11-09T12:00:00.000Z',updatedAt:'2026-11-09T12:00:00.000Z',
+  }))
+  const store=createGrowthStudioStore({
+    environment:{PRESCRIPTIONS_KV_REST_API_URL:'https://synthetic-redis.example',PRESCRIPTIONS_KV_REST_API_TOKEN:'synthetic'},
+    fetchFn:async()=>({ok:true,json:async()=>({result:records.flatMap(record=>[record.id,JSON.stringify(record)])})}),
+  })
+  assert.deepEqual((await store.list()).map(record=>record.socialAccountId).sort(),ids.sort())
+})
+
+test('retired Instagram destinations remain readable but cannot be selected for new posts',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'growth-retired-test-'))
+  try {
+    await writeFile(join(dir,'package.json'),'{"type":"module"}')
+    for(const name of ['model.mjs','channel-capabilities.mjs','store.js','dry-run-queue.mjs'])
+      await copyFile(new URL('../lib/growth-studio/'+name,import.meta.url),join(dir,name))
+    await writeFile(join(dir,'instagram-accounts.mjs'),
+      "export const GROWTH_INSTAGRAM_ACCOUNT_TARGETS=[{id:'wizards_secrets'}]")
+    const {isSavedGrowthPost,normalizePostFields,publicCampaignLink,nextGrowthPost}=await import(pathToFileURL(join(dir,'model.mjs')))
+    const {createGrowthStudioStore}=await import(pathToFileURL(join(dir,'store.js')))
+    const {createDryRunJob}=await import(pathToFileURL(join(dir,'dry-run-queue.mjs')))
+    const post={id:'fb4a8dc4-115a-4b3a-bd3b-bc9b0eb7c3d0',brand:'holistic_house',
+      channel:'instagram',socialAccountId:'my_coach_ai',locale:'en',title:'Historical draft',
+      caption:'A public draft',sourceUrl:'',campaign:'',scheduledAt:'',mediaUrl:'',mediaAlt:'',
+      status:'draft',revision:1,createdAt:'2026-11-09T12:00:00.000Z',updatedAt:'2026-11-09T12:00:00.000Z'}
+    const store=createGrowthStudioStore({
+      environment:{PRESCRIPTIONS_KV_REST_API_URL:'https://synthetic-redis.example',PRESCRIPTIONS_KV_REST_API_TOKEN:'synthetic'},
+      fetchFn:async()=>({ok:true,json:async()=>({result:[post.id,JSON.stringify(post)]})}),
+    })
+    assert.equal(isSavedGrowthPost(post),true)
+    assert.equal((await store.list())[0].id,post.id)
+    assert.equal(publicCampaignLink(post),'')
+    const published={...post,status:'published',revision:2,attemptId:'fb4a8dc4-115a-4b3a-bd3b-bc9b0eb7c3d1',
+      delivery:{provider:'meta_graph_api',accountId:'my_coach_ai',providerPostId:'123456789',
+        containerId:'987654321',url:'https://www.instagram.com/p/AbCdEf123/',publishedAt:'2026-11-09T12:00:00.000Z'}}
+    assert.equal(isSavedGrowthPost(published),true)
+    assert.equal(isSavedGrowthPost({...published,delivery:{...published.delivery,accountId:'wizards_secrets'}}),false)
+    assert.equal(isSavedGrowthPost({...post,socialAccountId:'unknown_retired_account'}),false)
+    assert.match(publicCampaignLink({...post,sourceUrl:'https://holistichouse.vercel.app/about'}),/utm_source=instagram/)
+    const {id,status,revision,createdAt,updatedAt,...newFields}=post
+    assert.throws(()=>normalizePostFields(newFields),/invalid_post/)
+    assert.throws(()=>nextGrowthPost({current:post,action:'approve'}),/invalid_transition/)
+    assert.throws(()=>nextGrowthPost({current:{...post,status:'approved',scheduledAt:'2099-02-01T17:00:00.000Z'},action:'plan'}),/invalid_transition/)
+    assert.throws(()=>createDryRunJob({...post,status:'approved'},{expectedRevision:1,scheduledAt:'2026-11-10T12:00:00.000Z',now:new Date('2026-11-09T12:00:00.000Z')}),/invalid_queue_request/)
+  } finally { await rm(dir,{recursive:true,force:true}) }
 })
 
 
