@@ -13,6 +13,7 @@ import GrowthStudioConnections from './growth-studio-connections'
 import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
+import {analyzeGrowthSocialSeo} from '@/lib/growth-studio/social-seo.mjs'
 import styles from './growth-studio.module.css'
 
 const BRANDS={holistic_house:'Holistic House',toronto_tantra:'TorontoTantra',psitrends:'PsiTrends'}
@@ -222,6 +223,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     try {return publicCampaignLink({...form,scheduledAt:isoFromLocal(form.scheduledAt)})} catch {return ''}
   },[form])
   const draftPreflight=reviewGrowthPublication({...form,status:'draft'},{telegramConfigured:telegram.ready,telegramChannelVerified:telegramVerified})
+  const socialSeo=useMemo(()=>analyzeGrowthSocialSeo({title:form.title,caption:form.caption,
+    mediaUrl:form.mediaUrl,mediaAlt:form.mediaAlt,locale}),[form.title,form.caption,form.mediaUrl,form.mediaAlt,locale])
   const plannedConflict=form.scheduledAt?findManualTimeConflicts({records,brand:form.brand,channel:form.channel,
     scheduledAt:isoFromLocal(form.scheduledAt),excludeId:editing?.id}).length:0
   const suggestManualTime=()=>{
@@ -493,6 +496,13 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
             value={form.title} onChange={set('title')}/></label>
           <label>{t.caption}<textarea disabled={!ready||!storageVerified||busy} maxLength={3500} rows={5} value={form.caption}
             placeholder={locale==='ru'?'Напишите публичный текст...':'Write public post text...'} onChange={set('caption')}/></label>
+          {form.channel==='instagram'&&<div className={styles.publisherDiagnostics} role="status" aria-live="polite">
+            <strong>{locale==='ru'?'Social SEO · проверка черновика':'Social SEO · draft check'} — {socialSeo.score}/100</strong>
+            <p className={styles.hint}>{socialSeo.disclaimer}</p>
+            <p className={styles.hint}>{locale==='ru'?'Ключевые термины в подписи':'Title terms in caption'}: {socialSeo.matchedKeywordCount}/{socialSeo.titleKeywordCount}
+              {' · '}{locale==='ru'?'Уникальные хештеги':'Unique hashtags'}: {socialSeo.hashtagCount}</p>
+            {socialSeo.recommendations.length>0&&<ul>{socialSeo.recommendations.map((item,index)=><li key={index}>{item}</li>)}</ul>}
+          </div>}
         </div>
         <details key={editing?.id||'new'} open={isEditing} className={styles.composerOptions}>
           <summary>{t.moreOptions}{form.mediaUrl?' · 📷':''}{form.scheduledAt?' · 📅':''}</summary>

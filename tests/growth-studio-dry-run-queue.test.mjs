@@ -7,6 +7,7 @@ import {
  GROWTH_DRY_RUN_FLAG,createDryRunJob,isValidDryRunJob,
  createMemoryGrowthDryRunQueueStore,createGrowthDryRunQueueStore,simulateDueDryRunJobs,
 } from '../lib/growth-studio/dry-run-queue.mjs'
+import {runGrowthDryRunWorker} from '../lib/growth-studio/dry-run-worker.mjs'
 
 const now=new Date('2026-11-10T12:00:00.000Z')
 const scheduledAt='2026-11-11T12:00:00.000Z'
@@ -222,4 +223,35 @@ test('dry-run queue carries the selected Instagram destination and binds it into
  const missingSource=nextGrowthPost({action:'approve',current:missingDraft,now})
  assert.throws(()=>makeJob(missingSource),/invalid_queue_request/)
  assert.throws(()=>createDryRunJob({...firstSource,socialAccountId:'my_coach_ai'},{expectedRevision:firstSource.revision,scheduledAt,now}),/invalid_queue_request/)
+})
+
+test('hourly worker is disabled by default and simulates due jobs only when explicitly enabled',async()=>{
+ const createdAt=new Date('2026-11-10T10:00:00.000Z')
+ const dueAt='2026-11-10T10:01:00.000Z'
+ const workerNow=new Date('2026-11-10T10:02:00.000Z')
+ const draft=nextGrowthPost({action:'save',id:randomUUID(),fields:sourceFields,now:createdAt})
+ const source=nextGrowthPost({action:'approve',current:draft,now:createdAt})
+ const job=createDryRunJob(source,{expectedRevision:source.revision,scheduledAt:dueAt,now:createdAt})
+ const queue=createMemoryGrowthDryRunQueueStore({getSource:async id=>id===source.id?source:null})
+ await queue.enqueue(job)
+ let queueFactoryCalls=0
+ const disabled=await runGrowthDryRunWorker({
+   environment:{VERCEL_ENV:'production'},
+   queueFactory:()=>{queueFactoryCalls++;return queue},
+   now:workerNow,
+ })
+ assert.equal(disabled.status,'disabled')
+ assert.equal(disabled.simulated,0)
+ assert.equal(queueFactoryCalls,0)
+ const result=await runGrowthDryRunWorker({
+   environment:{VERCEL_ENV:'production',[GROWTH_DRY_RUN_FLAG]:'true'},
+   queueFactory:()=>queue,now:workerNow,
+ })
+ assert.equal(result.status,'simulated')
+ assert.equal(result.simulated,1)
+ assert.equal(result.externalPublishing,false)
+ assert.equal(result.jobs[0].state,'simulated')
+ assert.equal(result.jobs[0].deliveryMode,'dry_run_only')
+ assert.equal(Object.hasOwn(result.jobs[0],'providerPostId'),false)
+ assert.equal((await queue.get(job.id)).state,'simulated')
 })

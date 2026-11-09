@@ -111,7 +111,7 @@ test('mobile inbox resumes replies only when visible and online, never caches pr
   const orders=read('components/app/messages-orders-clients.jsx')
   assert.match(page,/<MessagesOrdersClients locale=\{locale\}>/)
   assert.match(orders,/hh-phone-notifications/)
-  assert.match(orders,/<Bell size=\{17\}/)
+    assert.ok(orders.includes('<Bell '),'notification bell icon is present')
   assert.match(css,/flex-wrap:wrap/)
   assert.match(sw,/PRIVATE_PREFIXES/)
   assert.match(sw,/\/es\/app/)

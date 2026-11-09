@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildClientCoachingContext, normalizeClientCoachingContext, confirmedModelContext } from '../lib/personal-coaching/client-context.mjs'
+import { buildClientCoachingContext, developmentGoalsContextItems, normalizeClientCoachingContext, confirmedModelContext } from '../lib/personal-coaching/client-context.mjs'
 
 test('builds a compact context from completed sessions without copying raw transcripts',()=>{
  const context=buildClientCoachingContext([
@@ -37,4 +37,18 @@ test('sensitive items remain owner-visible but are excluded from a future model 
  const confirmed=normalizeClientCoachingContext(draft,{clientConfirmed:true})
  assert.equal(confirmedModelContext(confirmed).previous_insights.length,0)
  assert.equal(confirmed.previous_insights.length,1)
+})
+
+test('only explicitly saved Life Plan targets are presented for client review',()=>{
+ const empty=developmentGoalsContextItems({revision:0,goals:{version:1,targets:{body:50,work:50,relationships:50,growth:50}}},'ru')
+ assert.deepEqual(empty,[])
+ const saved=developmentGoalsContextItems({revision:2,updatedAt:'2026-11-08T10:00:00Z',
+  goals:{version:1,targets:{body:65,work:80,relationships:55,growth:70},details:{stress:90}}},'ru')
+ assert.equal(saved.length,4)
+ assert.ok(saved[0].text.includes('Тело, здоровье и энергия'))
+ assert.ok(saved[0].text.includes('65/100'))
+ assert.ok(saved[0].text.includes('2026-11-08'))
+ assert.equal(saved[0].confirmed,false)
+ assert.equal(JSON.stringify(saved).includes('stress'),false)
+ assert.deepEqual(developmentGoalsContextItems({revision:1,goals:{version:2,targets:{body:99}}},'en'),[])
 })

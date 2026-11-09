@@ -11,6 +11,7 @@ import {
   publicCampaignLink, isSavedGrowthPost,
 } from '../lib/growth-studio/model.mjs'
 import {createMemoryGrowthStudioStore,createGrowthStudioStore} from '../lib/growth-studio/store.js'
+import {analyzeGrowthSocialSeo} from '../lib/growth-studio/social-seo.mjs'
 
 const postId = () => randomUUID()
 const fields = (overrides={}) => ({
@@ -335,4 +336,43 @@ test('owner approval action requires selected Instagram account for newly edited
   assert.ok(composer.includes("<select required disabled={!ready||!storageVerified||busy} value={form.socialAccountId||''}"))
   assert.match(composer,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS\.some\(account=>account\.id===form\.socialAccountId\)/)
   assert.match(composer,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS\.map\(account/)
+})
+
+test('Social SEO checks are local, account-independent and return actionable non-ranking advice',()=>{
+ const result=analyzeGrowthSocialSeo({
+  title:'Mindful breathing for everyday stress',
+  caption:'Discover mindful breathing and simple everyday stress practices. Join the next open session. #MindfulBreathing #EverydayCalm #StressSkills',
+  mediaUrl:'https://holistichouse.vercel.app/images/breathing.jpg',
+  mediaAlt:'A person sitting quietly beside a sunlit window, practising calm breathing',
+  locale:'en',
+ })
+ assert.equal(result.score,100)
+ assert.equal(result.matchedKeywordCount>0,true)
+ assert.equal(result.hashtagCount,3)
+ assert.ok(result.disclaimer.includes('does not measure Instagram ranking'))
+ assert.ok(!Object.hasOwn(result,'accountId'))
+ assert.ok(!Object.hasOwn(result,'caption'))
+})
+test('Social SEO flags duplicate hashtags and missing descriptive alt text without external calls',()=>{
+ const result=analyzeGrowthSocialSeo({
+  title:'Практика осознанного дыхания',
+  caption:'Узнайте о практике дыхания и начните сегодня. #дыхание #дыхание #осознанность',
+  mediaUrl:'https://holistichouse.vercel.app/images/breathing.jpg',
+  mediaAlt:'Фото',
+  locale:'ru',
+ })
+ assert.equal(result.checks.find(x=>x.code==='hashtags').passed,false)
+ assert.equal(result.checks.find(x=>x.code==='alt').passed,false)
+ assert.ok(result.recommendations.some(x=>x.includes('хештегов')))
+ assert.ok(result.recommendations.some(x=>x.includes('альтернативным')))
+})
+test('Social SEO supports Spanish editorial guidance and treats absent media alt as not applicable',()=>{
+ const result=analyzeGrowthSocialSeo({
+  title:'Respiración consciente para tu bienestar',
+  caption:'Descubre la respiración consciente. Aprende una práctica sencilla. #Respiracion #Bienestar #Calma',
+  locale:'es',
+ })
+ assert.equal(result.checks.some(x=>x.code==='alt'),false)
+ assert.equal(result.hashtagCount,3)
+ assert.ok(result.disclaimer.includes('predice el alcance'))
 })
