@@ -526,7 +526,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 <p><em>{followupCopy[lang].answer}:</em> {session.reflections[item.id].text}</p>}
             </div>)}
           </div>
-          <CoachingActionPlan key={session.id} locale={lang} privateSave
+          <CoachingActionPlan key={session.id} locale={lang} privateSave lowConfidenceGuidance={isOverload}
             initial={session.actionPlan||draftCoachingActionPlan(activeQuestions,session.answers,session.clientQuestion||'',lang)}
             disabled={busy} onSave={async fields=>{
               if(conflictingPlan!==undefined&&!coachingPlansEqual(fields,conflictingPlan)&&!window.confirm(lang==='ru'?'Заменить план, сохранённый в другой вкладке, вашим черновиком?':lang==='es'?'¿Reemplazar el plan guardado en otra pestaña con tu borrador?':'Replace the plan saved in another tab with your draft?'))return false
