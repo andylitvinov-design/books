@@ -9,7 +9,7 @@ This implementation uses **Instagram Graph API with Facebook Login** because the
 1. Use/create a Meta Business app in the Meta for Developers account controlled by the business owner.
 2. Add Facebook Login and Instagram Graph API products.
 3. Configure the OAuth redirect URI to exactly:
-   `https://<production-host>/api/admin/growth-studio/meta/callback`
+   `https://holistichouse.vercel.app/api/admin/growth-studio/meta/callback`
 4. Set the Meta App Domains and HTTPS Privacy Policy / Data Deletion URLs in the app settings.
 5. Start in Development mode with the owner added as an app role. Request Advanced Access/App Review and Business Verification only when onboarding people who are not app-role users requires it.
 6. Link each target Instagram Professional account (Business or Creator) to its corresponding Facebook Page. The Facebook user authorizing the app must have a Page task that permits content creation.
@@ -21,7 +21,7 @@ Set these as server-only secrets, then deploy:
 - `META_APP_ID` — Meta app ID.
 - `META_APP_SECRET` — Meta app secret. Never expose to client code.
 - `META_REDIRECT_URI` — exact HTTPS callback URL registered above.
-- `META_GRAPH_API_VERSION` — explicitly selected, currently supported Graph API version, e.g. `vXX.X`; do not silently rely on an outdated hard-coded version.
+- `META_GRAPH_API_VERSION` — pinned to `v27.0` in Vercel Production (confirmed current Meta API version on 2026-11-09). Update deliberately when Meta releases a newer supported version.
 - `META_TOKEN_ENCRYPTION_KEY` — high-entropy secret (at least 32 random bytes). Used to derive the AES-256-GCM encryption key and OAuth state-signing key. Rotating it requires a planned credential re-encryption/reconnect.
 - Existing `PRESCRIPTIONS_KV_REST_API_URL` and `PRESCRIPTIONS_KV_REST_API_TOKEN` — existing Redis REST connection; no new storage service.
 
