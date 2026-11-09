@@ -74,7 +74,7 @@ test('linked PR chats automatically sync signed CI/Repair reports with stable pr
 });
 
 test('server chat refresh is retryable and never silently switches to a local archive',()=>{
- const js=src('commander-chats.js');
+ const js=src('commander-chats.js'),html=src('chats.html');
  assert.match(js,/13000/);
  assert.match(js,/AbortError/);
  assert.match(js,/if\(remote\)\{await listRemote\(\)/);
