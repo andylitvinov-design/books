@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
 import {authoredFollowupFor} from '../lib/personal-coaching/offline-intelligence.js'
+import {isCoachingSafetyConcern} from '../lib/personal-coaching/model-matcher.js'
 
 const source=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
 const server=source.replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
@@ -50,14 +51,55 @@ function fixture(){
   PERSONAL_COACH_VERSION:1,PERSONAL_COACH_TEMPLATE:'hh-personal-coaching-v1',
   personalCoachQuestion:()=>null,TRADITION_COURSES:[],
   traditionCourse:()=>null,traditionEndcaps:()=>[],
-  loadSchemeQuestions:async(_db,schemeKey)=>schemeKey==='grow_quick_v1'
+  loadSchemeQuestions:async(_db,schemeKey)=>['grow_quick_v1','grow_overload_20_v1'].includes(schemeKey)
    ?{schemeKey,modelKey:'grow_v1',questions,requiredCustomPlan:false}:null,
-  authoredFollowupFor,
+  authoredFollowupFor,isCoachingSafetyConcern,
  }
- const factory=runInNewContext('(deps)=>{const {randomUUID,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
+ const factory=runInNewContext('(deps)=>{const {randomUUID,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor,isCoachingSafetyConcern}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
  return {api:factory(deps),store}
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
+
+test('urgent answer persists a safety hold across reload and prevents further coaching',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,start)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'I want to kill myself'})
+ assert.equal(s.course.current.status,'safety_hold')
+ assert.equal((await api.readPersonalCoaching({},a)).course.current.status,'safety_hold')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'options',answer:'choice:try'}),err=>err.code==='PERSONAL_COACH_SAFETY_HOLD')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'complete',revision:s.revision}),err=>err.code==='PERSONAL_COACH_SAFETY_HOLD')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...start,revision:s.revision}),err=>err.code==='PERSONAL_COACH_SAFETY_HOLD')
+})
+
+test('safety screening covers the full answer and initial question',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,start)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'a'.repeat(610)+' I want to kill myself'})
+ assert.equal(s.course.current.status,'safety_hold')
+ const other=fixture()
+ const first=await other.api.savePersonalCoaching({},a,{...start,clientQuestion:'I want to kill myself'})
+ assert.equal(first.course.current.status,'safety_hold')
+})
+
+test('urgent authored reflection enters the same hold; explicit deletion remains possible',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,start)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time'})
+ s=await api.savePersonalCoaching({},a,{action:'reflection',revision:s.revision,questionId:'real',followupKey:'reality_choice_v1',note:'Я хочу покончить с собой'})
+ assert.equal(s.course.current.status,'safety_hold')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'finish_without_plan',revision:s.revision}),err=>err.code==='PERSONAL_COACH_SAFETY_HOLD')
+ s=await api.savePersonalCoaching({},a,{action:'delete',revision:s.revision,confirmed:true})
+ assert.equal(s.course,null)
+})
+
+test('user may finish the overload pilot without inventing a plan',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'finish_without_plan',revision:s.revision})
+ assert.equal(s.course.current.status,'completed')
+ assert.equal(s.course.current.outcome,'reflection_only')
+ assert.equal(s.course.current.actionPlan,undefined)
+})
 
 test('actual server-state code validates and persists chosen authored reflection, rejects forged key and duplicate stage',async()=>{
  const {api}=fixture()

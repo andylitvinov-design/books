@@ -184,6 +184,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const persisted=session?.answers?.[question?.id]
   const dirty=Boolean(session?.status==='active' && question && draft!==(typeof persisted==='string'?persisted:''))
   const finished=session?.status==='completed'
+  const safetyHold=session?.status==='safety_hold'
   const adaptive=coachingAdaptivePrompt({question,questions:activeQuestions,index,
     answers:session?.answers||{},locale:lang,requiredCustomPlan:Boolean(scheme?.requiredCustomPlan)})
   const standardPrompt=translated(question?.prompt||question?.question,lang)
@@ -299,6 +300,7 @@ export default function PersonalCoaching({locale='en',accountId}){
         questionId:pendingFollowup.questionId,followupKey:pendingFollowup.key,note:reflectionDraft.trim(),
       })
       if(!saved)return
+      if(saved.course?.current?.status==='safety_hold')return
       visit(index+1,saved.course?.current?.answers)
     }else{
       visit(index+1,session?.answers)
@@ -322,6 +324,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     }
     const saved=await command('answer',{questionId:question.id,answer})
     if(!saved)return
+    if(saved.course?.current?.status==='safety_hold')return
     if(index===activeQuestions.length-1){
       // Completion is reported only after the final answer and status both persisted.
       const completed=await commandAfterSave(saved,'complete')
@@ -407,6 +410,13 @@ export default function PersonalCoaching({locale='en',accountId}){
         : !catalog ? <div className={styles.center} role="alert">
           <p>{t.loadError}</p>
           <button type="button" className={styles.primary} onClick={reload}>{t.retry}</button>
+        </div>
+        : safetyHold ? <div className={styles.summary} data-coaching-safety-hold role="alert">
+          <h1>{lang==='ru'?'Сейчас важна ваша безопасность':lang==='es'?'Tu seguridad es lo primero':'Your safety comes first'}</h1>
+          <p>{lang==='ru'?'Эта сессия приостановлена. Если вам угрожает непосредственная опасность, обратитесь в местную экстренную службу. Свяжитесь с человеком, которому доверяете, или с квалифицированной кризисной службой в вашем регионе.':lang==='es'?'Esta sesión está en pausa. Si estás en peligro inmediato, llama a los servicios de emergencia locales. Contacta con una persona de confianza o un servicio de crisis de tu zona.':'This session is paused. If you are in immediate danger, contact your local emergency services. Reach out to someone you trust or a qualified crisis service in your area.'}</p>
+          <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.close}</Link>
+          <button type="button" className={styles.delete} disabled={busy} onClick={erase}><Trash2 size={15}/>{t.delete}</button>
+          {error&&<p className={styles.error} role="alert">{error}</p>}
         </div>
         : entry ? <div className={styles.session} data-private-coaching-onboarding>
           <div className={styles.questionArea}>
@@ -633,6 +643,10 @@ export default function PersonalCoaching({locale='en',accountId}){
               </button>
             </div>
             {!question.required&&<button type="button" className={styles.skip} disabled={busy} onClick={()=>next(true)}>{t.skip}</button>}
+            {session?.schemeKey==='grow_overload_20_v1'&&<button type="button" className={styles.skip} disabled={busy||dictating}
+              onClick={()=>{if(!dirty||window.confirm(t.unsaved))command('finish_without_plan')}}>
+              {lang==='ru'?'Завершить без плана':lang==='es'?'Terminar sin un plan':'Finish without a plan'}
+            </button>}
           </footer>
         </div>}
       </section>
