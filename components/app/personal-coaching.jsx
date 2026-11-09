@@ -10,7 +10,7 @@ import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-c
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingContextReview from '@/components/coaching-context-review'
 import { buildClientCoachingContext } from '@/lib/personal-coaching/client-context.mjs'
-import { reconcileCoachingDraft } from '@/lib/personal-coaching/reconnect.mjs'
+import { reconcileCoachingDraft, reconcileCoachingPlan, coachingPlansEqual } from '@/lib/personal-coaching/reconnect.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
@@ -168,10 +168,12 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
   const [conflictingAnswer,setConflictingAnswer]=useState(undefined)
+  const [conflictingPlan,setConflictingPlan]=useState(undefined)
   const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
   const titleRef=useRef(null),busyRef=useRef(false)
   const pendingTurn=useRef(null)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
+  useEffect(()=>{setConflictingPlan(undefined)},[session?.id])
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
   const activeQuestions=questionsFor(course,catalog)
   const question=activeQuestions[index]||activeQuestions[0]
@@ -289,6 +291,21 @@ export default function PersonalCoaching({locale='en',accountId}){
       setError(e?.code==='PERSONAL_COACH_REVISION_CONFLICT'?t.conflict:t.saveError)
       return null
     }finally{busyRef.current=false;setBusy(false)}
+  }
+  async function refreshPlan(){
+    if(busyRef.current||!accountId)return
+    busyRef.current=true;setBusy(true);setError('')
+    try{
+      const value=await appFetch('personal-coaching',undefined,'GET',{accountId})
+      const result=reconcileCoachingPlan(session,value.course?.current,conflictingPlan)
+      if(result.kind==='safety_hold'){setState(value);return}
+      if(result.kind!=='ready'){
+        setError(lang==='ru'?'Сессия изменилась. Скопируйте черновик перед выходом.':lang==='es'?'La sesión cambió. Copia tu borrador antes de salir.':'The session changed. Copy your draft before leaving.')
+        return
+      }
+      setState(value);setConflictingPlan(result.conflict)
+      setNotice(lang==='ru'?'Сессия обновлена; черновик плана сохранён на экране.':lang==='es'?'Sesión actualizada; tu borrador permanece en pantalla.':'Session refreshed; your plan draft remains on screen.')
+    }catch{setError(t.loadError)}finally{busyRef.current=false;setBusy(false)}
   }
   function prepare(choice,clientQuestion,adultConfirmed){
     // The picker only prepares a choice. No private record is created until
@@ -511,7 +528,24 @@ export default function PersonalCoaching({locale='en',accountId}){
           </div>
           <CoachingActionPlan key={session.id} locale={lang} privateSave
             initial={session.actionPlan||draftCoachingActionPlan(activeQuestions,session.answers,session.clientQuestion||'',lang)}
-            disabled={busy} onSave={async fields=>Boolean(await command('plan',fields))}/>
+            disabled={busy} onSave={async fields=>{
+              if(conflictingPlan!==undefined&&!coachingPlansEqual(fields,conflictingPlan)&&!window.confirm(lang==='ru'?'Заменить план, сохранённый в другой вкладке, вашим черновиком?':lang==='es'?'¿Reemplazar el plan guardado en otra pestaña con tu borrador?':'Replace the plan saved in another tab with your draft?'))return false
+              const saved=await command('plan',fields)
+              if(saved)setConflictingPlan(undefined)
+              return Boolean(saved)
+            }}/>
+          {notice&&<p role="status">{notice}</p>}
+          {error&&<p role="alert">{error} <button type="button" disabled={busy} onClick={refreshPlan}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
+          {conflictingPlan!==undefined&&<div className={styles.answer} data-coaching-conflicting-plan>
+            <strong>{lang==='ru'?'План из другой вкладки:':lang==='es'?'Plan de otra pestaña:':'Plan from another tab:'}</strong>
+            {conflictingPlan?<>{[
+              ['goal',lang==='ru'?'Цель':lang==='es'?'Objetivo':'Goal'],
+              ['obstacle',lang==='ru'?'Препятствие':lang==='es'?'Obstáculo':'Obstacle'],
+              ['actionText',lang==='ru'?'Действие':lang==='es'?'Acción':'Action'],
+              ['when',lang==='ru'?'Когда':lang==='es'?'Cuándo':'When'],
+              ['confidence',lang==='ru'?'Уверенность':lang==='es'?'Confianza':'Confidence'],
+            ].map(([key,label])=><p key={key}><strong>{label}: </strong>{conflictingPlan[key]??'—'}</p>)}</>:<p>{lang==='ru'?'Нет сохранённого плана':lang==='es'?'No hay plan guardado':'No saved plan'}</p>}
+          </div>}
           {recapRows.length>0&&<section className={styles.smartRecap} data-coaching-evidence-recap aria-label={iCopy.recap}>
             <h2>{iCopy.recap}</h2>
             <p>{iCopy.recapNote}</p>
