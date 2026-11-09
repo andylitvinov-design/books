@@ -279,6 +279,10 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   }
   async function execute(action,post){
     if (!ready||!storageVerified||busy) return
+    if(action==='save'&&form.channel==='instagram'&&
+       !GROWTH_INSTAGRAM_ACCOUNT_TARGETS.some(account=>account.id===form.socialAccountId)){
+      setNotice(t.instagram_account_required);return
+    }
     setBusy(true);setNotice('')
     try {
       const result=await updateGrowthStudioPostAction(action==='save'
@@ -440,7 +444,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           <label>{t.channel}<select disabled={!ready||!storageVerified||busy} value={form.channel} onChange={set('channel')}>
             {GROWTH_CHANNELS.map(channel=><option key={channel} value={channel}>{CHANNELS[channel]}</option>)}</select></label>
           {form.channel==='instagram'&&<label>{locale==='ru'?'Аккаунт Instagram':'Instagram account'}
-            <select disabled={!ready||!storageVerified||busy} value={form.socialAccountId||''} onChange={set('socialAccountId')}>
+            <select required disabled={!ready||!storageVerified||busy} value={form.socialAccountId||''} onChange={set('socialAccountId')}>
               <option value="">{locale==='ru'?'Выберите аккаунт':'Select an account'}</option>
               {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=><option key={account.id} value={account.id}>{account.label}</option>)}
             </select>
