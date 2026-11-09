@@ -64,11 +64,16 @@ test('rejects invalid source SHA, invalid run identity and foreign base reposito
   assert.equal(validateCoreFailureEvent(foreignBase).reason, 'PR_SOURCE_HEAD_NOT_VERIFIED');
 });
 
-test('diagnostics are bounded, unique names only', () => {
+test('diagnostics are bounded, unique names only and preserve ordinary text', () => {
   const result = diagnosticsFromJobs([
     { name: 'Typecheck', conclusion: 'failure', steps: [{ name: 'tsc', conclusion: 'failure' }, { name: 'checkout', conclusion: 'success' }] },
     { name: 'Typecheck', conclusion: 'failure', steps: [{ name: 'tsc', conclusion: 'failure' }] },
-    { name: 'Passed', conclusion: 'success', steps: [{ name: 'ignored', conclusion: 'failure' }] }
+    { name: 'Passed', conclusion: 'success', steps: [{ name: 'ignored', conclusion: 'failure' }] },
+    { name: 'Build\\u0000 Worker', conclusion: 'timed_out', steps: [{ name: 'Run\\nTests', conclusion: 'timed_out' }] }
   ]);
-  assert.deepEqual(result, { category: 'UNKNOWN', failedJobs: ['Typecheck'], failedSteps: ['tsc'] });
+  assert.deepEqual(result, {
+    category: 'UNKNOWN',
+    failedJobs: ['Typecheck', 'Build  Worker'],
+    failedSteps: ['tsc', 'Run Tests']
+  });
 });
