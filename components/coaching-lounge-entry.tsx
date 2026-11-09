@@ -16,6 +16,7 @@ const copy = {
     title: "Free Diagnosis & Personal Coaching",
     headline: "Choose a way to explore your situation.",
     lead: "A free written review, a live coaching session, or deeper imagery-based personal work with Andrey.",
+    leadCompact: "Free written review, personal coaching or deeper guided work.",
     choose: "Choose your starting point",
     freeAction: "Get free diagnosis",
     sessionAction: "Request coaching session · from €50",
@@ -51,6 +52,7 @@ const copy = {
     title: "Диагностика, коучинг и глубинная работа",
     headline: "Выберите подходящий формат работы.",
     lead: "Бесплатный письменный разбор, личная коучинг-сессия или глубинная работа с образами и переживаниями.",
+    leadCompact: "Бесплатный разбор, личный коучинг или глубинная работа.",
     choose: "Как хотите начать",
     freeAction: "Бесплатная диагностика",
     sessionAction: "Коучинг-сессия · от €50",
@@ -86,6 +88,7 @@ const copy = {
     title: "Diagnóstico gratis y coaching personal",
     headline: "Elige cómo explorar tu situación.",
     lead: "Una revisión escrita gratis, una sesión de coaching o un trabajo personal más profundo con imágenes.",
+    leadCompact: "Revisión escrita gratis, coaching personal o trabajo guiado profundo.",
     choose: "Elige cómo empezar",
     freeAction: "Diagnóstico gratuito",
     sessionAction: "Sesión de coaching · desde €50",
@@ -120,11 +123,9 @@ const copy = {
 
 // The parent owns this selection so its bottom "Request session" CTA and the
 // three photo cards always open the SAME consented enquiry, never the free form.
-export function CoachingLoungeEntry({ locale, selected, onSelect }: {
-  locale: Locale; selected: Choice; onSelect: (next: Choice) => void;
-}) {
+function offersFor(locale: Locale) {
   const t = copy[locale];
-  const offers = [
+  return [
     { id: "free", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", badge: t.freeBadge,
       title: t.freeTitle, body: t.freeBody, detail: t.freeDetail },
     { id: "session", image: "/images/holistic-house/andy-about.png", badge: t.sessionBadge,
@@ -132,31 +133,44 @@ export function CoachingLoungeEntry({ locale, selected, onSelect }: {
     { id: "deep", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", badge: t.deepBadge,
       title: t.deepTitle, body: t.deepBody, detail: t.deepDetail },
   ] as const;
+}
 
-  return <div className={styles.root} data-coaching-three-paths lang={locale}>
-    <section className={styles.hero} data-coaching-first-screen aria-labelledby="coaching-entry-title">
-      <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill priority
+export function CoachingLoungeEntry({ locale, selected, onSelect }: {
+  locale: Locale; selected: Choice; onSelect: (next: Choice) => void;
+}) {
+  const t = copy[locale];
+  return <div className={styles.root} data-coaching-lounge-hero lang={locale}>
+    <section className={styles.hero} data-coaching-first-screen data-coaching-hero-fallback="/images/holistic-house/hero-olive-incense.webp" aria-labelledby="coaching-entry-title">
+      <Image src="/images/holistic-house/ideas-pine-sharp.avif" alt="" fill priority
         className={styles.heroImage} sizes="(max-width: 650px) 100vw, 1080px" />
       <div className={styles.heroOverlay} aria-hidden="true" />
       <div className={styles.heroCopy}>
         <p className={styles.eyebrow}>{t.eyebrow}</p>
-        <h1 id="coaching-entry-title">{t.title}</h1>
-        <p className={styles.heroHeadline}>{t.headline}</p>
-        <p className={styles.heroLead}>{t.lead}</p>
+        <h1 id="coaching-entry-title">{locale === "ru" ? "Гостиная коучинга" : locale === "es" ? "Salón de coaching" : "Coaching Lounge"}</h1>
+        <p className={styles.heroHeadline}>{locale === "ru" ? "Выбери тему и подходящий формат личной работы" : locale === "es" ? "Elige tu tema y una forma de trabajar contigo" : "Choose a topic and the support that fits you"}</p>
+        <p className={styles.heroLead}>{t.leadCompact}</p>
         <nav className={styles.heroChoices} aria-label={t.choose}>
           <a href="#coaching-intake" onClick={() => onSelect("free")} data-coaching-hero-choice="free">
-            <Sparkles size={20} aria-hidden="true"/><span>{t.freeAction}</span><ArrowRight size={19} aria-hidden="true"/>
+            <Sparkles size={19} aria-hidden="true"/><span>{t.freeAction}</span><ArrowRight size={17} aria-hidden="true"/>
           </a>
           <a href="#coaching-intake" onClick={() => onSelect("session")} data-coaching-hero-choice="session">
-            <HeartHandshake size={20} aria-hidden="true"/><span>{t.sessionAction}</span><ArrowRight size={19} aria-hidden="true"/>
+            <HeartHandshake size={19} aria-hidden="true"/><span>{t.sessionAction}</span><ArrowRight size={17} aria-hidden="true"/>
           </a>
           <Link href={"/" + locale + "/services/imagery-therapy#request-session"} prefetch={false} data-coaching-hero-choice="deep">
-            <Flower2 size={20} aria-hidden="true"/><span>{t.deepAction}</span><ArrowRight size={19} aria-hidden="true"/>
+            <Flower2 size={19} aria-hidden="true"/><span>{t.deepAction}</span><ArrowRight size={17} aria-hidden="true"/>
           </Link>
         </nav>
       </div>
     </section>
+  </div>;
+}
 
+export function CoachingLoungeOffers({ locale, selected, onSelect }: {
+  locale: Locale; selected: Choice; onSelect: (next: Choice) => void;
+}) {
+  const t = copy[locale];
+  const offers = offersFor(locale);
+  return <div className={styles.root} data-coaching-three-paths lang={locale}>
     <section className={styles.offersSection} aria-labelledby="coaching-three-paths-heading">
       <header className={styles.sectionHeading}>
         <h2 id="coaching-three-paths-heading">{t.offersHeading}</h2>
