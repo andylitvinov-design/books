@@ -629,3 +629,23 @@ Publer subscription cancellation/reduction is explicitly out of scope until owne
 7. **P3:** расширение на новые платформы после успешной работы двух Instagram-аккаунтов.
 
 **Ожидаемый итог:** одна система Growth Studio управляет многими брендами и социальными аккаунтами, а каждая публикация имеет независимый destination, approval, schedule, provider receipt и измеримый результат.
+
+
+---
+
+## Implementation progress — 9 November 2026
+
+### Merged baseline
+- PR #3997 has been merged to `codex/public-book-library` as `801948f6836fc828049f33d5ffb44f20d6ceb47a`. This publishes the two-account target registry and Connections UI only. It does not connect Meta or enable publishing.
+
+### Current implementation PR
+- Account-aware composer work is being added in a separate PR from the new production base.
+- `socialAccountId` is an explicit, allowlisted field in the editorial model. Legacy records with no such field remain readable.
+- Instagram drafts can select `@my.coach.ai` or `@my.couch.ai`; server validation rejects unknown account IDs and rejects cross-network reuse.
+- Instagram draft approval requires a selected account destination. Selection alone does not imply OAuth or permission to publish.
+- The two registered accounts remain pending authorization, provider IDs unset and real publishing disabled.
+
+### Still blocked externally / intentionally not activated
+- Meta app credentials, OAuth redirect configuration, verified professional accounts and provider permission grants are not available in current Production configuration.
+- No Meta token store, real Meta publish call, real schedule worker or provider receipt is activated by this step.
+- The dry-run queue remains non-publishing. Do not turn it into public publishing until the subsequent adapter/worker PR has exact-head checks, owner-approved credentials and controlled post acceptance.
