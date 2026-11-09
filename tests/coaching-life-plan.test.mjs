@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {randomUUID} from 'node:crypto'
+import {createHash,randomUUID} from 'node:crypto'
 import {runInNewContext} from 'node:vm'
 import {readFileSync} from 'node:fs'
 import {AppError,onlyKeys,requireUUID} from '../lib/assessments/contracts.js'
