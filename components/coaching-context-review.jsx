@@ -19,11 +19,15 @@ export default function CoachingContextReview({locale='en',context,onConfirm,onS
  useEffect(()=>{setValues(Object.fromEntries(FIELDS.map(key=>[key,lines(context?.[key])])));setStyle(context?.preferred_coaching_style||'');setValidation('')},[context]);
  if(!context)return null;
  function confirm(){
+  const parsed=Object.fromEntries(FIELDS.map(key=>[key,values[key].split('\\n').map(text=>text.trim()).filter(Boolean)]));
+  if(FIELDS.some(key=>parsed[key].length>4||parsed[key].some(text=>text.length>240))){setValidation(t.limit);return;}
+  setValidation('');
   const next={version:1,generatedAt:context.generatedAt,reviewStatus:'client_confirmed',
-    ...Object.fromEntries(FIELDS.map(key=>[key,values[key].split('\n').map(text=>text.trim()).filter(Boolean).slice(0,4).map(text=>({text,confirmed:true,status:key==='previous_commitments'?'planned':'current'}))])),
+    ...Object.fromEntries(FIELDS.map(key=>[key,parsed[key].map(text=>({text,confirmed:true,status:key==='previous_commitments'?'planned':'current'}))])),
     preferred_coaching_style:style||null};
   onConfirm(next);
  }
+
  return <section className={styles.panel} aria-label={t.title} data-client-coaching-context>
   <h2>{t.title}</h2><p>{t.intro}</p>
   {FIELDS.map(key=><label key={key} className={styles.field}><span>{t[LABELS[key]]}</span>
