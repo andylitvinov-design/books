@@ -468,7 +468,7 @@ test('Core Mandala fast contracts run only as fallback when the BASE/HEAD Specia
     "execFileSync", "HEAD^1",
     "execFileSync", "HEAD^2",
     "HH_EVENT_HEAD_SHA",
-    "git show",
+    "['git', 'show'",
     "lib/ci/specialist-aggregate.mjs",
     "parsePrTrigger",
     "matchesTrigger",
