@@ -138,16 +138,20 @@ test('owner-only UI shows separate local, external, and manual states without fa
 })
 
 
-test('Instagram destination registry includes the two distinct requested brands without duplicate entries',async()=>{
+test('Instagram registry keeps work and personal profiles separate and fails closed until provider authorization',async()=>{
   const {GROWTH_INSTAGRAM_ACCOUNT_TARGETS}=await import('../lib/growth-studio/instagram-accounts.mjs')
   const labels=GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.label)
-  assert.deepEqual(labels,['@my.coach.ai','@my.couch.ai'])
+  assert.deepEqual(labels,['@wizards.secrets','@andy.therapist'])
   assert.equal(new Set(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.id)).size,2)
+  assert.deepEqual(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.accountRole),['work','personal'])
+  assert.deepEqual(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.brandKey),['wizards_secrets','andy_personal'])
   for(const account of GROWTH_INSTAGRAM_ACCOUNT_TARGETS){
     assert.equal(account.network,'instagram')
     assert.equal(account.connectionState,'pending_authorization')
     assert.equal(account.publishEnabled,false)
+    assert.equal(account.insightsEnabled,false)
     assert.equal(account.providerAccountId,null)
+    assert.equal(account.providerPageId,null)
   }
   const ui=readFileSync(new URL('../components/growth-studio-connections.jsx',import.meta.url),'utf8')
   assert.match(ui,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS/)
