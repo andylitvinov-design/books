@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {readFileSync}=require('node:fs'),{createRequire}=require('node:module');
 const requireFromHere=createRequire(__filename);
-const {number,evidence}=require('../ci-jobs-bridge.js');
+const {number,evidence,workflowDisplay}=require('../ci-jobs-bridge.js');
 const src=n=>readFileSync(requireFromHere.resolve('../'+n),'utf8');
 const NOW=Date.parse('2026-11-08T06:10:00.000Z');
 function sample(opts={}){
@@ -19,6 +19,18 @@ test('both CI jobs labels use bounded verified job evidence, not workflow status
  assert.equal(evidence(sample({coverage:{complete:true},ci:{queued_jobs:0}}),NOW).waiting,'0');
  assert.equal(number(0,false),'—');
  assert.equal(number(-1,false),'—');
+});
+test('workflow counters are explicit and different from CI job counters',()=>{
+ const x=workflowDisplay('1','5',3);
+ assert.equal(x.queuedLabel,'Workflows ожидают');
+ assert.equal(x.runningLabel,'Workflows выполняются');
+ assert.match(x.note,/5 выполняются · 1 ожидают/);
+ assert.match(x.note,/зависших CI workflows: 3/);
+ assert.match(x.note,/не число jobs/);
+ const js=src('ci-jobs-bridge.js');
+ assert.match(js,/CI jobs выполняются/);
+ assert.match(js,/Workflows выполняются/);
+ assert.match(js,/quick-explanation/);
 });
 test('stale or structurally unverified CI evidence must not be shown as jobs',()=>{
  assert.equal(evidence(sample(),NOW+181000),null);

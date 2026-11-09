@@ -8,6 +8,16 @@
  function number(n,complete){
    return !valid(n)?'—':complete?String(n):n>0?'≥'+n:'—';
  }
+ function workflowDisplay(queued,running,stale){
+   const safe=v=>/^\d+$/.test(String(v??'').trim())?String(v).trim():'—';
+   const staleText=valid(stale)?' · зависших CI workflows: '+stale:'';
+   return {
+     queuedLabel:'Workflows ожидают',
+     runningLabel:'Workflows выполняются',
+     note:'GitHub Actions workflows: '+safe(running)+' выполняются · '+safe(queued)+' ожидают'+staleText+
+       '. Здесь статусы всех workflow, включая CI, Watchdog и другие действия; это не число jobs. Реальные CI jobs показаны отдельно ниже.'
+   };
+ }
  function evidence(data,now=Date.now()){
    if(!data||data.schema!==SCHEMA||!data.ci||!data.coverage)return null;
    const at=Date.parse(data.observed_at||''),age=now-at;
@@ -24,13 +34,47 @@
      observed_at:data.observed_at
    };
  }
- if(typeof module!=='undefined'&&module.exports)module.exports={number,evidence};
+ if(typeof module!=='undefined'&&module.exports)module.exports={number,evidence,workflowDisplay};
  if(!root||typeof document==='undefined')return;
  let snapshot=null,loading=null,lastRequest=0,paintQueued=false;
+ let workflowExplanationBase='',lastWorkflowExplanation='';
+ const workflowObserver=new MutationObserver(()=>syncWorkflowUi());
  const observed=new WeakSet(),watch=new MutationObserver(schedule);
  const waitingForDom=new MutationObserver(schedule);
  function put(el,value){
    if(el&&el.textContent!==value)el.textContent=value;
+ }
+ function syncWorkflowUi(){
+   const queued=document.getElementById('quick-queued');
+   const running=document.getElementById('quick-running');
+   const display=workflowDisplay(queued?.textContent,running?.textContent,snapshot?.ci?.stale_workflows);
+   const relabel=(node,label)=>{
+     const caption=node?.closest('.counter')?.querySelector('span');
+     if(caption)put(caption,label);
+     if(node?.parentElement){
+       node.parentElement.title=display.note;
+       node.parentElement.setAttribute('aria-label',label+': '+(node.textContent?.trim()||'—'));
+     }
+   };
+   relabel(queued,display.queuedLabel);
+   relabel(running,display.runningLabel);
+   const explanation=document.getElementById('quick-explanation');
+   if(explanation){
+     const current=explanation.textContent.trim();
+     if(current!==lastWorkflowExplanation)
+       workflowExplanationBase=current.replace(/\s*· GitHub Actions workflows:.*$/,'');
+     const next=(workflowExplanationBase||'')+' · '+display.note;
+     put(explanation,next);
+     lastWorkflowExplanation=next;
+   }
+   document.querySelectorAll('#hh-ci-queue-detail .hh-queue-metric').forEach(card=>{
+     const caption=card.querySelector('.hh-queue-label');
+     const value=caption?.textContent?.trim()||'';
+     if(value==='WF ждут')put(caption,'Workflows ждут');
+     else if(value==='WF идут')put(caption,'Workflows выполняются');
+     else if(value==='Jobs ждут')put(caption,'CI jobs ждут');
+     else if(value==='Jobs идут')put(caption,'CI jobs выполняются');
+   });
  }
  function findRows(){
    const found=[];
@@ -42,13 +86,15 @@
    });
    document.querySelectorAll('#hh-ci-queue-detail .hh-queue-metric').forEach(card=>{
      const label=card.querySelector('.hh-queue-label')?.textContent?.trim()||'';
-     const key=label==='Jobs идут'?'running':label==='Jobs ждут'?'waiting':null;
+     const key=(label==='CI jobs выполняются'||label==='Jobs идут')?'running':
+       (label==='CI jobs ждут'||label==='Jobs ждут')?'waiting':null;
      if(key)found.push({key,card,target:card.querySelector('strong'),sub:null});
    });
    return found;
  }
  function render(){
    paintQueued=false;
+   syncWorkflowUi();
    const d=evidence(snapshot);
    if(!d)return;
    for(const item of findRows()){
@@ -95,6 +141,7 @@
        const data=await r.json();
        if(!adopt(data))throw Error('INVALID_OR_STALE_CI_CENSUS');
        root.__hhCiVerifiedSnapshot=data;
+       syncWorkflowUi();
        root.dispatchEvent(new Event('hh:ci-verified-updated'));
      }catch(e){
        // Preserve an explicit unknown rather than substituting workflow counts.
@@ -108,6 +155,10 @@
  });
  function init(){
    waitingForDom.observe(document.documentElement,{childList:true,subtree:true});
+   [document.getElementById('quick-queued'),document.getElementById('quick-running'),
+     document.getElementById('quick-explanation')].filter(Boolean).forEach(node=>
+       workflowObserver.observe(node,{childList:true,subtree:true,characterData:true}));
+   syncWorkflowUi();
    schedule();
    const refresh=document.getElementById('refresh');
    refresh?.addEventListener('click',()=>void load(true));
