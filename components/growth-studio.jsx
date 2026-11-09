@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import {useEffect, useMemo, useState} from 'react'
 import {CalendarClock, CalendarDays, Check, CheckCheck, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
-import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction} from '@/app/admin/growth-studio/actions'
+import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction,publishGrowthInstagramNowAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
 import GrowthStudioManualInbox from './growth-studio-manual-inbox'
 import GrowthStudioEvergreen from './growth-studio-evergreen'
@@ -30,7 +30,8 @@ const COPY={
     storagePassed:'Protected draft storage verified',moreOptions:'Extra options · brand, language, media and calendar',
     advancedHint:'Optional public content only. Changes to an approved post require a fresh review.',
     draft:'Draft',approved:'Approved',planned_manual:'Manual plan',archived:'Archived',manual_done:'Manually marked done · unverified',
-    sending:'Sending — do not retry',published:'Published (provider confirmed)',delivery_unknown:'Delivery uncertain — verify in Telegram',
+    sending:'Sending — do not retry',published:'Published (provider confirmed)',delivery_unknown:'Delivery uncertain — verify the social account before any retry',
+    instagramPublish:'Publish now to Instagram',instagramConfirm:'Publish this exact JPEG post to the selected Instagram account now?',instagramSent:'Instagram confirmed publication and returned a post link.',instagram_delivery_unknown:'Instagram delivery is uncertain. Do not retry; inspect the account before taking further action.',instagram_publishing_disabled:'Instagram publishing is disabled until its protected server flag is enabled after commissioning.',instagram_account_not_connected:'Connect and verify this Instagram account in Connections first.',instagram_media_preflight_failed:'Instagram needs a public JPEG image and descriptive alt text.',instagram_invalid_approved_post:'Approve this exact Instagram post and select its destination first.',
     manualInbox:'To publish',manualDoneConfirm:'Have you actually posted this exact content in your chosen account? This only records your manual statement; Growth Studio CANNOT verify the social post.',manualDoneNotice:'Marked done manually — not verified by a social platform.',manualDoneButton:'Mark done (manual)',manualUndoConfirm:'Restore this item to the manual publishing queue? It will be counted as pending again.',manualUndoNotice:'Restored to manual posting queue.',manualUndo:'Restore manual task',manualDoneTime:'Owner marked done (not provider verified)',pending:'For review',planned:'Planned for manual posting',noAuto:'No posts are published automatically. Telegram requires a separate confirmed send.',
     telegramReady:'Telegram channel ready',telegramDisabled:'Telegram is not connected. Add the dedicated bot settings.',
     telegramSend:'Publish now to Telegram',telegramConfirm:'Publish this exact post now to the configured public Telegram channel?',
@@ -72,7 +73,8 @@ const COPY={
     storagePassed:'Хранилище черновиков проверено',moreOptions:'Дополнительно · проект, язык, медиа и календарь',
     advancedHint:'Только публичные материалы. После изменения одобренного поста требуется новое согласование.',
     draft:'Черновик',approved:'Одобрено',planned_manual:'Ручной план',archived:'Архив',manual_done:'Отмечено вручную · не проверено',
-    sending:'Отправка — не повторять',published:'Опубликовано (подтверждено)',delivery_unknown:'Доставка неясна — проверьте Telegram',
+    sending:'Отправка — не повторять',published:'Опубликовано (подтверждено)',delivery_unknown:'Доставка неясна — проверьте соцсеть перед повтором',
+    instagramPublish:'Опубликовать сейчас в Instagram',instagramConfirm:'Опубликовать этот точный JPEG-пост в выбранный Instagram-аккаунт сейчас?',instagramSent:'Instagram подтвердил публикацию и вернул ссылку.',instagram_delivery_unknown:'Результат публикации неясен. Не повторяйте отправку; сначала проверьте аккаунт вручную.',instagram_publishing_disabled:'Автопубликация Instagram выключена до завершения настройки и проверки сервера.',instagram_account_not_connected:'Сначала подключите и проверьте этот Instagram-аккаунт в разделе Connections.',instagram_media_preflight_failed:'Для Instagram требуется публичное JPEG-изображение и текст описания alt.',instagram_invalid_approved_post:'Сначала согласуйте точный Instagram-пост и выберите аккаунт.',
     manualInbox:'К публикации',manualDoneConfirm:'Вы действительно разместили этот точный материал в нужном аккаунте? Это только ваша отметка; Growth Studio НЕ проверил пост в соцсети.',manualDoneNotice:'Отмечено вручную. Доставка в соцсеть не подтверждена.',manualDoneButton:'Отметить вручную',manualUndoConfirm:'Вернуть задачу в очередь ручных публикаций? Она снова будет считаться ожидающей.',manualUndoNotice:'Возвращено в очередь ручных публикаций.',manualUndo:'Вернуть задачу',manualDoneTime:'Отмечено вами; провайдер не проверялся',pending:'На согласование',planned:'Запланировано вручную',noAuto:'Автопубликация отключена. Для Telegram требуется отдельное подтверждение отправки.',
     telegramReady:'Канал Telegram подключён',telegramDisabled:'Telegram не подключён — настройте отдельного бота.',
     telegramSend:'Опубликовать сейчас в Telegram',telegramConfirm:'Опубликовать этот точный текст сейчас в настроенном публичном Telegram-канале?',
@@ -308,6 +310,22 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   function undoManualDone(post){
     if(!window.confirm(t.manualUndoConfirm))return
     execute('undo_manual',post)
+  }
+  async function sendInstagram(post){
+    if(busy)return
+    const account=GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(item=>item.id===post.socialAccountId)
+    if(!account)return setNotice(t.instagram_invalid_approved_post)
+    const exactText=[post.caption,publicCampaignLink(post)].filter(Boolean).join('\n\n')
+    const confirmation=[t.instagramConfirm,account.label,BRANDS[post.brand],post.title,exactText,post.mediaUrl,post.mediaAlt].filter(Boolean).join('\n\n')
+    if(!window.confirm(confirmation))return
+    setBusy(true);setNotice('')
+    try{
+      const result=await publishGrowthInstagramNowAction({id:post.id,expectedRevision:post.revision,confirmed:true})
+      if(result.record)onCreated([result.record])
+      if(result.ok)setNotice(t.instagramSent)
+      else setNotice(t[result.error]||t.instagram_delivery_unknown)
+    }catch{setNotice(t.instagram_delivery_unknown)}
+    finally{setBusy(false)}
   }
   async function sendTelegram(post){
     if(!telegram.ready||!telegramVerified||busy)return
@@ -574,6 +592,10 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <div className={styles.postButtons}>
           {post.status==='draft'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
           {post.status==='approved'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
+          {post.channel==='instagram'&&post.status==='approved'&&post.socialAccountId&&
+            <button type="button" disabled={busy||!ready||!storageVerified||! /\.jpe?g$/i.test(new URL(post.mediaUrl||'https://invalid.invalid').pathname)||!post.mediaAlt}
+              title={t.instagramPublish} onClick={()=>sendInstagram(post)}>
+              <Send size={15}/>{t.instagramPublish}</button>}
           {post.channel==='telegram'&&post.brand==='holistic_house'&&['approved','planned_manual'].includes(post.status)&&
             <button type="button" disabled={busy||!ready||!storageVerified||!telegramVerified}
               title={telegramVerified?t.telegramSend:locale==='ru'?'Сначала проверьте права бота в разделе подключений':'Verify bot posting rights under Connections first'} onClick={()=>sendTelegram(post)}>
