@@ -247,7 +247,16 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-csp-class', cspClass)
   requestHeaders.set('Content-Security-Policy', csp)
-  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  // The standalone Commander sign-in document must be rendered by Next so its
+  // external bootstrap script receives this request's CSP nonce. A static file
+  // under public/ cannot know the per-request nonce and strict-dynamic blocks it.
+  const commanderConnectDocument = pathname === '/commander-connect.html'
+    && ['GET', 'HEAD'].includes(request.method)
+  const response = commanderConnectDocument
+    ? NextResponse.rewrite(new URL('/commander-connect' + request.nextUrl.search, request.url), {
+        request: { headers: requestHeaders },
+      })
+    : NextResponse.next({ request: { headers: requestHeaders } })
   for (const { name, value, options } of authCookieChanges) response.cookies.set(name, value, options)
   response.headers.set('Content-Security-Policy', csp)
   if (privatePath(request.nextUrl.pathname) || authCookieChanges.length) {
