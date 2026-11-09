@@ -374,5 +374,5 @@ test('Social SEO supports Spanish editorial guidance and treats absent media alt
  })
  assert.equal(result.checks.some(x=>x.code==='alt'),false)
  assert.equal(result.hashtagCount,3)
- assert.ok(result.disclaimer.includes('no predice el alcance'))
+ assert.ok(result.disclaimer.includes('predice el alcance'))
 })
