@@ -544,7 +544,11 @@ export default function PersonalCoaching({locale='en',accountId}){
               ['actionText',lang==='ru'?'Действие':lang==='es'?'Acción':'Action'],
               ['when',lang==='ru'?'Когда':lang==='es'?'Cuándo':'When'],
               ['confidence',lang==='ru'?'Уверенность':lang==='es'?'Confianza':'Confidence'],
-            ].map(([key,label])=><p key={key}><strong>{label}: </strong>{conflictingPlan[key]??'—'}</p>)}</>:<p>{lang==='ru'?'Нет сохранённого плана':lang==='es'?'No hay plan guardado':'No saved plan'}</p>}
+            ].map(([key,label])=><p key={key}><strong>{label}: </strong>{conflictingPlan[key]??'—'}</p>)}
+              {conflictingPlan.feasibilityReview&&<p>{conflictingPlan.feasibilityReview==='keep'
+                ?(lang==='ru'?'План оставлен без изменения':lang==='es'?'Plan mantenido':'Plan kept')
+                :(lang==='ru'?'Рассмотрен меньший шаг':lang==='es'?'Paso más pequeño considerado':'Smaller step considered')}</p>}
+            </>:<p>{lang==='ru'?'Нет сохранённого плана':lang==='es'?'No hay plan guardado':'No saved plan'}</p>}
           </div>}
           {recapRows.length>0&&<section className={styles.smartRecap} data-coaching-evidence-recap aria-label={iCopy.recap}>
             <h2>{iCopy.recap}</h2>

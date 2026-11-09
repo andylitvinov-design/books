@@ -40,7 +40,7 @@ export default function CoachingActionPlan({locale='en',initial={},onSave,privat
   const [saving,setSaving]=useState(false)
   const [saved,setSaved]=useState(Boolean(initial?.approvedAt))
   const [error,setError]=useState('')
-  const [feasibilityChoice,setFeasibilityChoice]=useState('')
+  const [feasibilityChoice,setFeasibilityChoice]=useState(['considered','keep'].includes(initial?.feasibilityReview)?initial.feasibilityReview:'')
   const change=(key,value)=>{setFields(previous=>({...previous,[key]:value}));setFeasibilityChoice('');setSaved(false);setError('')}
   async function confirm(){
     if(saving||disabled)return
@@ -56,6 +56,7 @@ export default function CoachingActionPlan({locale='en',initial={},onSave,privat
         goal:fields.goal.trim(),obstacle:fields.obstacle.trim(),
         actionText:fields.actionText.trim(),when:fields.when.trim(),
         confidence:fields.confidence===''?null:Number(fields.confidence),
+        ...(privateSave&&needsFeasibilityReview(lowConfidenceGuidance,fields.confidence)&&feasibilityChoice?{feasibilityReview:feasibilityChoice}:{}),
       })
       if(result===false||result===null){setError(t.failed);return}
       setSaved(true)
@@ -80,8 +81,8 @@ export default function CoachingActionPlan({locale='en',initial={},onSave,privat
     {needsFeasibilityReview(lowConfidenceGuidance,fields.confidence)&&<div className={styles.feasibility} data-coaching-feasibility>
       <p>{lang==='ru'?'Если этот шаг кажется трудным, можно сделать его меньше — например, выбрать более короткое действие или удобное время. Вы решаете сами.':lang==='es'?'Si este paso parece difícil, puedes hacerlo más pequeño: por ejemplo, elegir una acción más corta o un momento adecuado. Tú decides.':'If this step feels difficult, you can make it smaller—for example, choose a shorter action or a better time. You decide.'}</p>
       <div className={styles.feasibilityChoices}>
-        <button type="button" disabled={saving||disabled} aria-pressed={feasibilityChoice==='adjusted'} onClick={()=>{setFeasibilityChoice('adjusted');setError('')}}>{lang==='ru'?'Я рассмотрел(а) меньший шаг':lang==='es'?'Consideré un paso más pequeño':'I considered a smaller step'}</button>
-        <button type="button" disabled={saving||disabled} aria-pressed={feasibilityChoice==='keep'} onClick={()=>{setFeasibilityChoice('keep');setError('')}}>{lang==='ru'?'Оставить мой план':lang==='es'?'Mantener mi plan':'Keep my plan'}</button>
+        <button type="button" disabled={saving||disabled} aria-pressed={feasibilityChoice==='considered'} onClick={()=>{setFeasibilityChoice('considered');setSaved(false);setError('')}}>{lang==='ru'?'Я рассмотрел(а) меньший шаг':lang==='es'?'Consideré un paso más pequeño':'I considered a smaller step'}</button>
+        <button type="button" disabled={saving||disabled} aria-pressed={feasibilityChoice==='keep'} onClick={()=>{setFeasibilityChoice('keep');setSaved(false);setError('')}}>{lang==='ru'?'Оставить мой план':lang==='es'?'Mantener mi plan':'Keep my plan'}</button>
       </div>
     </div>}
     <p className={styles.privacy} id="hh-coaching-plan-report-note" data-coaching-save-report-notice>{privateSave?t.reportPrivate:t.reportGuest}</p>

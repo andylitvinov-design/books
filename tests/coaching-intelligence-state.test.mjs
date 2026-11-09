@@ -62,6 +62,32 @@ function fixture(){
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
 
+test('pilot persists a reviewed low-confidence plan and idempotently rejects altered review',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'finish_without_plan',revision:s.revision})
+ const request={action:'plan',revision:s.revision,goal:'Rest',obstacle:'Time',actionText:'Take a short walk',when:'Tomorrow',confidence:3,turnId:'50000000-0000-4000-8000-000000000001'}
+ await assert.rejects(()=>api.savePersonalCoaching({},a,request),err=>err.code==='PERSONAL_COACH_FEASIBILITY_REVIEW_REQUIRED')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...request,feasibilityReview:'fabricated'}),err=>err.code==='PERSONAL_COACH_PLAN_INVALID')
+ const chosen={...request,feasibilityReview:'considered'}
+ const saved=await api.savePersonalCoaching({},a,chosen)
+ assert.equal(saved.course.current.actionPlan.feasibilityReview,'considered')
+ assert.equal((await api.readPersonalCoaching({},a)).course.current.actionPlan.feasibilityReview,'considered')
+ assert.equal((await api.savePersonalCoaching({},a,chosen)).revision,saved.revision)
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...chosen,feasibilityReview:'keep'}),err=>err.code==='PERSONAL_COACH_TURN_ID_REUSED')
+})
+
+test('legacy plans remain valid and urgent content bypasses missing review',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'finish_without_plan',revision:s.revision})
+ const plan={action:'plan',revision:s.revision,goal:'Rest',obstacle:'Time',actionText:'Take a short walk',when:'Tomorrow',confidence:2}
+ s=await api.savePersonalCoaching({},a,plan)
+ assert.equal(s.course.current.actionPlan.feasibilityReview,undefined)
+ s=await api.savePersonalCoaching({},a,{...plan,revision:s.revision,goal:'I want to kill myself',turnId:'50000000-0000-4000-8000-000000000002'})
+ assert.equal(s.course.current.status,'safety_hold')
+})
+
 test('lost pilot plan acknowledgement is idempotent and a reused ID cannot alter it',async()=>{
  const {api}=fixture()
  let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})

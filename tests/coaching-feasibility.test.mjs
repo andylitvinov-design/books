@@ -9,7 +9,7 @@ test('pilot asks for feasibility review only for a valid rating below seven',()=
 })
 test('review accepts an explicit client choice and never blocks recognized safety content',()=>{
  assert.equal(canSaveFeasibility(true,'3','',false),false)
- assert.equal(canSaveFeasibility(true,'3','adjusted',false),true)
+ assert.equal(canSaveFeasibility(true,'3','considered',false),true)
  assert.equal(canSaveFeasibility(true,'3','keep',false),true)
  assert.equal(canSaveFeasibility(true,'3','forged',false),false)
  assert.equal(canSaveFeasibility(true,'3','',true),true)
