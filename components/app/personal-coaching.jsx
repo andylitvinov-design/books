@@ -10,6 +10,7 @@ import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-c
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingContextReview from '@/components/coaching-context-review'
 import { buildClientCoachingContext } from '@/lib/personal-coaching/client-context.mjs'
+import { reconcileCoachingDraft } from '@/lib/personal-coaching/reconnect.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
@@ -220,16 +221,23 @@ export default function PersonalCoaching({locale='en',accountId}){
     setError('')
   }
   async function reload(){
-    if(!accountId)return
+    if(!accountId||busyRef.current)return
+    if(pendingFollowup&&reflectionDraft.trim()&&!window.confirm(t.unsaved))return
     setLoading(true);setError('')
     try{
       const [value,loadedCatalog]=await Promise.all([
         appFetch('personal-coaching',undefined,'GET',{accountId}),
         appFetch('personal-coaching-catalog',undefined,'GET',{accountId}),
       ])
-      setState(value);setCatalog(loadedCatalog)
       const list=questionsFor(value.course,loadedCatalog)
-      visit(firstUnanswered(list,value.course?.current?.answers),value.course?.current?.answers,list)
+      const restored=reconcileCoachingDraft({prior:session,current:value.course?.current,questions:list,questionId:question?.id,draft,dirty,fallbackIndex:firstUnanswered(list,value.course?.current?.answers)})
+      if(dirty&&!restored.retained&&value.course?.current?.status!=='safety_hold'&&!window.confirm(t.unsaved))return
+      setState(value);setCatalog(loadedCatalog)
+      visit(restored.index,value.course?.current?.answers,list)
+      if(restored.retained){
+        setDraft(restored.draft)
+        setNotice(lang==='ru'?'Загружена актуальная сессия. Ваш черновик сохранён на экране; проверьте его перед отправкой.':lang==='es'?'Sesión actualizada. Tu borrador sigue en pantalla; revísalo antes de enviarlo.':'Session refreshed. Your draft remains on screen; review it before sending.')
+      }
     }catch{setError(t.loadError)}
     finally{setLoading(false)}
   }
@@ -449,7 +457,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             {lang==='ru'?'Продолжить сессию':lang==='es'?'Continuar sesión':'Resume session'}
           </button>
           <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.close}</Link>
-          {error&&<p className={styles.error} role="alert">{error}</p>}
+          {error&&<p className={styles.error} role="alert">{error} <button type="button" disabled={busy} onClick={reload}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
         </div>
         : entry ? <div className={styles.session} data-private-coaching-onboarding>
           <div className={styles.questionArea}>
@@ -555,7 +563,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             <p className={styles.messageTip}>{followupCopy[lang].why}</p>
           </div>
           <footer className={styles.footer} data-coaching-messenger-footer>
-            {error&&<p className={styles.footerMessage} role="alert">{error}</p>}
+            {error&&<p className={styles.footerMessage} role="alert">{error} <button type="button" disabled={busy||dictating} onClick={reload}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
               <textarea id="hh-coaching-followup" className={styles.textarea}
@@ -647,7 +655,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                       </div>
           <footer className={styles.footer} data-coaching-messenger-footer>
             {notice&&<p className={styles.footerMessage} role="status"><Check size={15}/>{notice}</p>}
-            {error&&<p className={styles.footerMessage} role="alert">{error}</p>}
+            {error&&<p className={styles.footerMessage} role="alert">{error} <button type="button" disabled={busy||dictating} onClick={reload}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
                 {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
