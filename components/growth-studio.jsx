@@ -11,6 +11,7 @@ import GrowthStudioSourcePicker from './growth-studio-source-picker'
 import {nextManualSlot,findManualTimeConflicts,buildManualCalendarIcs} from '@/lib/growth-studio/manual-calendar.mjs'
 import GrowthStudioConnections from './growth-studio-connections'
 import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
+import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
 import styles from './growth-studio.module.css'
 
@@ -112,7 +113,7 @@ const CHANNEL_WARNINGS={
 }
 const METHOD_LABELS={en:{telegram_opt_in:'Telegram · separate owner approval',existing_uploader:'Separate YouTube uploader, OAuth not verified',manual:'Manual posting; no API connected',event_adapter:'Event publisher / manual event listing'},ru:{telegram_opt_in:'Telegram · отдельное подтверждение',existing_uploader:'Загрузчик YouTube, OAuth ещё не подтверждён',manual:'Ручное размещение; API не подключён',event_adapter:'Модуль событий / ручное размещение'}}
 const empty = () => ({
-  brand:'holistic_house',channel:'manual',locale:'en',title:'',caption:'',
+  brand:'holistic_house',channel:'manual',socialAccountId:'',locale:'en',title:'',caption:'',
   sourceUrl:'',campaign:'',scheduledAt:'',mediaUrl:'',mediaAlt:'',
 })
 const isoFromLocal = input => {
@@ -272,7 +273,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     try {
       const result=await updateGrowthStudioPostAction(action==='save'
         ? {action:'save',id:editing?.id??null,expectedRevision:editing?.revision??0,
-          fields:{brand:form.brand,channel:form.channel,locale:form.locale,title:form.title,
+          fields:{brand:form.brand,channel:form.channel,socialAccountId:form.socialAccountId||'',locale:form.locale,title:form.title,
             caption:form.caption,sourceUrl:form.sourceUrl,campaign:form.campaign,
             scheduledAt:isoFromLocal(form.scheduledAt),mediaUrl:form.mediaUrl,mediaAlt:form.mediaAlt}}
         : {action,id:post.id,expectedRevision:post.revision,
@@ -412,6 +413,16 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <div className={styles.quickComposerFields}>
           <label>{t.channel}<select disabled={!ready||!storageVerified||busy} value={form.channel} onChange={set('channel')}>
             {GROWTH_CHANNELS.map(channel=><option key={channel} value={channel}>{CHANNELS[channel]}</option>)}</select></label>
+          {form.channel==='instagram'&&<label>{locale==='ru'?'Аккаунт Instagram':'Instagram account'}
+            <select disabled={!ready||!storageVerified||busy} value={form.socialAccountId||''}
+              onChange={set('socialAccountId')}>
+              <option value="">{locale==='ru'?'Выберите аккаунт':'Select an account'}</option>
+              {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=><option key={account.id} value={account.id}>{account.label}</option>)}
+            </select>
+            <small>{locale==='ru'
+              ?'Оба аккаунта пока ожидают Meta OAuth. Выбор задаёт назначение черновика, но не включает публикацию.'
+              :'Both accounts are awaiting Meta OAuth. Selection sets the draft destination; it does not enable publishing.'}</small>
+          </label>}
           <label>{t.title}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={120} required
             placeholder={locale==='ru'?'Название публикации':'Post title'}
             value={form.title} onChange={set('title')}/></label>
@@ -424,6 +435,11 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           <div className={styles.pair}>
             <label>{t.brand}<select disabled={!ready||!storageVerified||busy} value={form.brand} onChange={set('brand')}>
               {Object.keys(GROWTH_BRANDS).map(brand=><option key={brand} value={brand}>{BRANDS[brand]}</option>)}</select></label>
+            {form.channel==='instagram'&&<label>{locale==='ru'?'Аккаунт Instagram':'Instagram account'}
+              <select disabled={!ready||!storageVerified||busy} value={form.socialAccountId||''} onChange={set('socialAccountId')}>
+                <option value="">{locale==='ru'?'Выберите аккаунт':'Select an account'}</option>
+                {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=><option key={account.id} value={account.id}>{account.label}</option>)}
+              </select></label>}
             <label>{t.language}<select disabled={!ready||!storageVerified||busy} value={form.locale} onChange={set('locale')}>
               {GROWTH_LANGUAGES.map(language=><option key={language} value={language}>{language.toUpperCase()}</option>)}</select></label>
             <label>{t.campaign}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={64} pattern="[a-zA-Z0-9_-]*"
