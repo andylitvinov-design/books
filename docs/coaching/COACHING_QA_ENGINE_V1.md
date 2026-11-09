@@ -75,7 +75,7 @@ The engine reports duration, observed token counts, provider usage and cost in m
 2. every unit has a configured unit rate;
 3. all rates share one currency.
 
-Missing rates or mixed currencies result in `cost_unknown`, never a guessed total. Limits for duration, tokens and cost are independently evaluated. External providers remain disabled unless separately approved. Provider prices must be stored in server-side configuration with effective date/version; never ship provider credentials or tariff secrets to the browser.
+Missing rates, mixed currencies, incomplete metering or provider-call/receipt mismatches result in `cost_unknown`, never a guessed total. An empty usage list is zero cost only when metering is explicitly complete and the trusted caller confirms `providerCalls = 0`. Limits for duration, tokens and cost are independently evaluated. External providers remain disabled unless separately approved. Provider prices must be stored in server-side configuration with effective date/version; never ship provider credentials or tariff secrets to the browser.
 
 ## 6. Privacy and storage
 

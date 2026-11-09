@@ -76,7 +76,7 @@ test('low safety score blocks release even with all other dimensions high', () =
 test('quality input rejects unsupported model scoring source', () => {
   const evaluations = completeEvaluations();
   evaluations.listening.source = 'llm_judge';
-  assert.throws(() => evaluateCoachingSessionQuality(session, evaluations), /source is not allowed/);
+  assert.throws(() => evaluateCoachingSessionQuality(session, evaluations), /Evaluation source .* is not allowed/);
 });
 
 test('quality input rejects evidence IDs not present in the session', () => {
@@ -142,6 +142,8 @@ test('economics calculates provider cost only from observed priced usage', () =>
   const result = calculateSessionEconomics({
     startedAt: '2026-11-09T14:00:00.000Z',
     endedAt: '2026-11-09T14:20:00.000Z',
+    meteringComplete: true,
+    providerCalls: 2,
     usage: [
       { provider: 'approved-llm', unit: 'token', quantity: 1000, unitPriceMinor: 2, currency: 'USD' },
       { provider: 'approved-voice', unit: 'minute', quantity: 4, unitPriceMinor: 3, currency: 'USD' },
@@ -157,6 +159,8 @@ test('economics calculates provider cost only from observed priced usage', () =>
 
 test('unpriced or mixed-currency provider usage remains cost-unknown', () => {
   const result = calculateSessionEconomics({
+    meteringComplete: true,
+    providerCalls: 2,
     usage: [
       { provider: 'provider-a', unit: 'token', quantity: 200, unitPriceMinor: 1, currency: 'USD' },
       { provider: 'provider-b', unit: 'minute', quantity: 2 },
@@ -168,7 +172,7 @@ test('unpriced or mixed-currency provider usage remains cost-unknown', () => {
 });
 
 test('deterministic/no-provider session costs zero rather than inventing a model charge', () => {
-  const result = calculateSessionEconomics({ usage: [] });
+  const result = calculateSessionEconomics({ usage: [], meteringComplete: true, providerCalls: 0 });
   assert.equal(result.cost.known, true);
   assert.equal(result.cost.totalMinor, 0);
   assert.equal(result.status, 'measured');
@@ -176,6 +180,8 @@ test('deterministic/no-provider session costs zero rather than inventing a model
 
 test('mixed currency cannot produce a false summed total', () => {
   const result = calculateSessionEconomics({
+    meteringComplete: true,
+    providerCalls: 2,
     usage: [
       { provider: 'a', unit: 'token', quantity: 10, unitPriceMinor: 1, currency: 'USD' },
       { provider: 'b', unit: 'minute', quantity: 2, unitPriceMinor: 2, currency: 'CAD' },
@@ -189,6 +195,8 @@ test('usage limits are independently observable', () => {
   const result = calculateSessionEconomics({
     startedAt: '2026-11-09T14:00:00.000Z',
     endedAt: '2026-11-09T15:00:00.000Z',
+    meteringComplete: true,
+    providerCalls: 1,
     usage: [{ unit: 'token', quantity: 9000, unitPriceMinor: 1, currency: 'CAD' }],
     limits: { maxDurationSeconds: 1800, maxTokens: 5000, maxCostMinor: 500 },
   });
@@ -235,4 +243,23 @@ test('economics roll-up preserves unknown records and refuses mixed currencies',
   assert.equal(summary.unknownCount, 1);
   assert.equal(summary.totalMinor, 20);
   assert.equal(summary.status, 'partially_unknown');
+});
+
+
+test('empty usage is not zero cost unless complete metering confirms no provider calls', () => {
+  const missingMetering = calculateSessionEconomics({ usage: [] });
+  const missingReceipt = calculateSessionEconomics({
+    usage: [],
+    meteringComplete: true,
+    providerCalls: 1,
+  });
+  assert.equal(missingMetering.cost.known, false);
+  assert.equal(missingMetering.cost.totalMinor, null);
+  assert.equal(missingReceipt.cost.known, false);
+  assert.equal(missingReceipt.status, 'cost_unknown');
+});
+
+test('provider-call count must be a non-negative integer', () => {
+  assert.throws(() => calculateSessionEconomics({ providerCalls: -1 }), /non-negative integer/);
+  assert.throws(() => calculateSessionEconomics({ providerCalls: 1.5 }), /non-negative integer/);
 });
