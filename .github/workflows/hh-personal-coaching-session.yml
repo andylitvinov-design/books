@@ -5,6 +5,7 @@ on:
     paths:
       - 'lib/personal-coaching/**'
       - 'components/coaching-context-review*'
+      - 'components/coaching-report-preview*'
       - 'tests/personal-coaching-client-context.test.mjs'
       - 'lib/app/personal-coaching.js'
       - 'lib/app/coaching-report-v2.js'
@@ -101,7 +102,7 @@ jobs:
           node --check lib/app/personal-coaching-catalog.js
           node --check lib/app/personal-coaching.js
           node --check lib/app/coaching-report-v2.js
-          node --test tests/coaching-report-source.test.mjs tests/coaching-report-v2.test.mjs
+          node --test tests/coaching-report-preview.test.mjs tests/coaching-report-source.test.mjs tests/coaching-report-v2.test.mjs
           node --check lib/personal-coaching/traditions.js
           node --check lib/academy/coaching-audio-model.js
           node --check lib/academy/coaching-audio-store.js

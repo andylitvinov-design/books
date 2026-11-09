@@ -77,4 +77,6 @@ test('report source and tests route to existing coaching and database gates',()=
   assert.equal(matchesTrigger(trigger,[filename],'codex/public-book-library'),true,filename)
   assert.equal(decideHeavyImpact('app-r1',[{filename,status:'modified'}]).database,true,filename)
  }
+ for(const filename of ['components/coaching-report-preview.jsx','components/coaching-report-preview.module.css','lib/personal-coaching/report-preview.mjs','tests/coaching-report-preview.test.mjs'])
+  assert.equal(matchesTrigger(trigger,[filename],'codex/public-book-library'),true,filename)
 })

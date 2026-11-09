@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import CoachingReportPreview from '@/components/coaching-report-preview'
 import { ArrowRight, Check, ChevronLeft, Copy, Download, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
@@ -487,6 +488,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 onFocus={event=>event.target.select()} />
             </label>}
           </section>}
+          <CoachingReportPreview accountId={accountId} sessionId={session.id} revision={state.revision} locale={lang}/>
           <button type="button" className={styles.primary} data-coaching-download-pdf disabled={busy} onClick={()=>downloadReport(session)}><Download size={18}/>{t.pdf}</button>
           <p className={styles.privacyNote}>{t.share}</p>
           {course.history?.length>0&&<details className={styles.history}>
