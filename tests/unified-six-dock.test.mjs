@@ -27,7 +27,7 @@ test("shared six-tab dock has the approved labels in every language",()=>{
  const expected={
   en:{mytube:"MyTube",video:"MyVideo",myCoach:"My Coach",ai:"AI/Chat",practice:"Study",profile:"Profile"},
   ru:{mytube:"MyTube",video:"MyVideo",myCoach:"Мой коуч",ai:"ИИ/Чат",practice:"Обучение",profile:"Профиль"},
-  es:{mytube:"MyTube",video:"MyVideo",master:"Servicios",ai:"IA/Chat",analysis:"Pistas",practice:"Estudiar",profile:"Perfil"}
+  es:{mytube:"MyTube",video:"MyVideo",myCoach:"Mi coach",ai:"IA/Chat",practice:"Estudiar",profile:"Perfil"}
  };
  for(const [locale,names] of Object.entries(expected)){
   const row=dock.split("\n").find(line=>line.trimStart().startsWith(locale+": {"));
