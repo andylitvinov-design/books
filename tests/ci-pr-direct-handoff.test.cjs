@@ -140,3 +140,18 @@ test('failed independent PR workflow runs dispatch the durable queue after Watch
  assert.ok(job.includes('needs: reconcile'));
  assert.ok(job.includes('group: hh-control-tower-single-writer'));
 });
+
+test('workflow_run wake allowlist covers production PR workflows within GitHub subscription cap',()=>{
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const trigger=watchdog.split('  workflow_run:\n')[1]?.split('  push:\n')[0];
+ assert.ok(trigger,'workflow_run trigger exists');
+ const names=[...trigger.matchAll(/^      - '(.+)'$/gm)].map(m=>m[1]);
+ assert.ok(names.includes('HH Growth Studio editorial checks'));
+ assert.ok(names.includes('HH one-shot PR backlog recovery'));
+ assert.ok(names.includes('HH PR Control Tower queue dispatcher'));
+ assert.ok(names.includes('HH PR three-cohort evidence backfill'));
+ assert.ok(names.length<=20,'GitHub workflow_run workflow subscription limit exceeded: '+names.length);
+ assert.ok(names.includes('HH PR source Repair Worker'));
+ assert.ok(names.includes('HH zero-cost PR CI worker'));
+ assert.ok(!names.includes('HH PR core release gate'),'Core keeps its dedicated handoff owner');
+});

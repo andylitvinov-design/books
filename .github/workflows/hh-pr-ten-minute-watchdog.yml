@@ -36,6 +36,10 @@ on:
       - 'Video publication safety and legacy private preflight'
       - 'Holistic House nightly public URL / media crawl'
       - 'Native CI'
+      - 'HH Growth Studio editorial checks'
+      - 'HH one-shot PR backlog recovery'
+      - 'HH PR Control Tower queue dispatcher'
+      - 'HH PR three-cohort evidence backfill'
     types: [completed]
   push:
     branches: ['codex/bootstrap-books']
