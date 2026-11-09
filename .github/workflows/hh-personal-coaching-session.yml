@@ -1,7 +1,7 @@
 name: HH Personal Coaching Session
 on:
   pull_request:
-    branches: [codex/public-book-library]
+    branches: [codex/public-book-library, codex/coaching-platform-foundation-v1]
     paths:
       - 'lib/personal-coaching/**'
       - 'components/coaching-context-review*'
@@ -10,6 +10,12 @@ on:
       - 'lib/app/personal-coaching.js'
       - 'lib/app/coaching-report-v2.js'
       - 'lib/app/coaching-report-store.js'
+      - 'lib/app/coaching-life-plan.js'
+      - 'components/app/my-coaching-plan*'
+      - 'tests/coaching-life-plan.test.mjs'
+      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'components/app/app-workspace.jsx'
+      - 'lib/app/spanish-cabinet-bridge.mjs'
       - 'supabase/migrations/20261109210000_hh_coaching_report_storage_v1.sql'
       - 'tests/coaching-report-*.test.mjs'
       - 'lib/app/personal-coaching-catalog.js'
@@ -104,7 +110,8 @@ jobs:
           node --check lib/app/personal-coaching-catalog.js
           node --check lib/app/personal-coaching.js
           node --check lib/app/coaching-report-v2.js
-          node --test tests/coaching-report-save-intent.test.mjs tests/coaching-report-store.test.mjs tests/coaching-report-review.test.mjs tests/coaching-report-preview.test.mjs tests/coaching-report-source.test.mjs tests/coaching-report-v2.test.mjs
+          node --check lib/app/coaching-life-plan.js
+          node --test tests/coaching-life-plan.test.mjs tests/coaching-report-save-intent.test.mjs tests/coaching-report-store.test.mjs tests/coaching-report-review.test.mjs tests/coaching-report-preview.test.mjs tests/coaching-report-source.test.mjs tests/coaching-report-v2.test.mjs
           node --check lib/personal-coaching/traditions.js
           node --check lib/academy/coaching-audio-model.js
           node --check lib/academy/coaching-audio-store.js
