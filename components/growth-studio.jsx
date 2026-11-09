@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import {useEffect, useMemo, useState} from 'react'
+import {useEffect, useMemo, useRef, useState} from 'react'
 import {CalendarClock, CalendarDays, Check, CheckCheck, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
-import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction,publishGrowthInstagramNowAction} from '@/app/admin/growth-studio/actions'
+import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction,publishGrowthInstagramNowAction,readGrowthInstagramInsightsAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
 import GrowthStudioManualInbox from './growth-studio-manual-inbox'
 import GrowthStudioEvergreen from './growth-studio-evergreen'
@@ -174,6 +174,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [telegramVerified,setTelegramVerified]=useState(false)
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
+  const [instagramInsights,setInstagramInsights]=useState({})
+  const insightsRequest=useRef(false)
   const [editing,setEditing]=useState(null)
   const [form,setForm]=useState(()=>({...empty(),locale:initialLocale==='ru'?'ru':'en'}))
   const [workspaceOpen,setWorkspaceOpen]=useState(false)
@@ -330,6 +332,18 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       else setNotice(t[result.error]||t.instagram_delivery_unknown)
     }catch{setNotice(t.instagram_delivery_unknown)}
     finally{setBusy(false)}
+  }
+  async function readInstagramInsights(post){
+    if(busy||insightsRequest.current)return
+    insightsRequest.current=true;setBusy(true)
+    setInstagramInsights(previous=>({...previous,[post.id]:{loading:true}}))
+    try{
+      const result=await readGrowthInstagramInsightsAction({id:post.id})
+      setInstagramInsights(previous=>({...previous,[post.id]:result.ok
+        ?{data:result.insights}:{error:result.error}}))
+    }catch{
+      setInstagramInsights(previous=>({...previous,[post.id]:{error:'insights_unavailable'}}))
+    }finally{insightsRequest.current=false;setBusy(false)}
   }
   async function sendTelegram(post){
     if(!telegram.ready||!telegramVerified||busy)return
@@ -597,6 +611,27 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           <p className={styles.verifiedText}><a href={post.delivery.url} target="_blank" rel="noopener noreferrer">
             {locale==='ru'?'Открыть опубликованный Instagram-пост':'Open published Instagram post'} ↗
           </a></p>}
+        {post.status==='published'&&post.socialAccountId==='wizards_secrets'&&
+          post.delivery?.provider==='meta_graph_api'&&post.delivery?.mediaType==='IMAGE'&&<div>
+            <button type="button" disabled={busy} onClick={()=>readInstagramInsights(post)}>
+              <RefreshCcw size={15}/>{locale==='ru'?'Получить статистику Meta':'Get Meta insights'}
+            </button>
+            {instagramInsights[post.id]?.loading&&<p role="status">{locale==='ru'?'Загрузка статистики…':'Loading insights…'}</p>}
+            {instagramInsights[post.id]?.error&&<p role="alert">{instagramInsights[post.id].error==='meta_insights_rate_limited'
+              ?(locale==='ru'?'Подождите минуту перед следующим запросом статистики.':'Wait one minute before requesting insights again.')
+              :(locale==='ru'?'Статистика недоступна. Проверьте подключение и разрешения Meta, затем попробуйте снова.'
+                :'Insights are unavailable. Check the Meta connection and permissions, then try again.')}</p>}
+            {instagramInsights[post.id]?.data&&<div role="status">
+              <p className={styles.hint}>{locale==='ru'?'Meta · данные за всё время · не сохраняются':'Meta · lifetime data · not saved'}
+                {' · '}{instagramInsights[post.id].data.apiVersion}{' · '}{formatTime(instagramInsights[post.id].data.capturedAt,locale)}</p>
+              <ul>{['reach','likes','comments','shares','saves','views'].map(key=>{
+                const labels={reach:['Охват','Reach'],likes:['Нравится','Likes'],comments:['Комментарии','Comments'],
+                  shares:['Поделились','Shares'],saves:['Сохранения','Saves'],views:['Просмотры','Views']}
+                const metric=instagramInsights[post.id].data.metrics[key]
+                return <li key={key}>{labels[key][locale==='ru'?0:1]}: {metric.status==='FRESH'?metric.value:(locale==='ru'?'Нет данных':'No data')}</li>
+              })}</ul>
+            </div>}
+          </div>}
         <div className={styles.postButtons}>
           {post.status==='draft'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
           {post.status==='approved'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
@@ -613,7 +648,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           {post.status==='manual_done'&&<button type="button" disabled={busy||!ready||!storageVerified}
             onClick={()=>undoManualDone(post)}><RefreshCcw size={15}/>{t.manualUndo}</button>}
           {post.status==='manual_done'&&<small className={styles.manualDoneTimestamp}>{t.manualDoneTime}: {formatTime(post.manualDoneAt,locale)}</small>}
-          {post.status==='published'&&post.delivery?.url&&
+          {post.status==='published'&&post.delivery?.provider==='telegram'&&post.delivery?.url&&
             <a className={styles.deliveryLink} href={post.delivery.url} target="_blank" rel="noopener noreferrer">Telegram #{post.delivery.messageId} ↗</a>}
           {['approved','planned_manual','archived'].includes(post.status)&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('reopen',post)}><RefreshCcw size={15}/>{t.reopen}</button>}
           {!['archived','sending','published','delivery_unknown','manual_done'].includes(post.status)&&

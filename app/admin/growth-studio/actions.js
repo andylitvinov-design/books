@@ -9,12 +9,22 @@ import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-readiness.mjs'
 import {isInstagramPublisherEnabled,publishApprovedInstagramImage} from '@/lib/growth-studio/instagram-publisher.mjs'
 import {createMetaInstagramPublisherClient} from '@/lib/growth-studio/meta-instagram.mjs'
+import {loadOwnerInstagramInsights} from '@/lib/growth-studio/instagram-insights.mjs'
 import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
   ['invalid_post','invalid_action','invalid_transition','not_found','conflict','capacity_reached','invalid_recurrence','invalid_source'].includes(error.code)
     ? error.code : 'storage_unavailable'
+
+// Explicit owner-triggered read of a saved, provider-confirmed Wizards post.
+// The client supplies only our editorial ID, never a provider ID or credential.
+export async function readGrowthInstagramInsightsAction(input) {
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+    Object.keys(input).some(key=>key!=='id'))return {ok:false,error:'insights_invalid_post'}
+  return loadOwnerInstagramInsights({id:input.id,authorize:async()=>true,getStore:getGrowthStudioStore})
+}
 
 // Read-only public-page metadata preview, explicitly invoked by the owner.
 // No save, provider side effect, AI translation or automatic publication.
