@@ -45,7 +45,7 @@ test('Director UI exposes the existing advisor in the same chat and reuses exist
   assert.match(html, /option value="holistic-advisor">Holistic House AI Advisor/);
   assert.match(js, /request\('\/api\/holistic-advisor'/);
   assert.match(js, /append\(c,'ai',r\.reply/);
-  assert.match(js, /История этого чата|последние реплики этого чата/);
+  assert.match(js, /history:context\.map\(turn=>\(\{role:turn\.role,text:turn\.content\.slice\(0,800\)\}\)\)/);
   assert.match(js, /mode!=='holistic-advisor'&&!thread\.executors\.includes\(mode\)/);
 });
 
