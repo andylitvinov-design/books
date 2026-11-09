@@ -17,7 +17,7 @@ import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-re
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
-import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
+import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport, importAcceptedReportActions } from '@/lib/app/coaching-report-store'
 import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
 import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
@@ -857,6 +857,7 @@ async function handle(request, { params }) {
       if (path.length===1 && method==='POST') return json(await saveCoachingReport(config,actor,await readBody(request,4096)))
       if (path.length===2 && method==='GET') return json(await readCoachingReport(config,actor,path[1]))
       if (path.length===3 && path[2]==='delete' && method==='POST') return json(await deleteCoachingReport(config,actor,path[1],await readBody(request,1024)))
+      if (path.length===3 && path[2]==='import' && method==='POST') return json(await importAcceptedReportActions(config,actor,path[1],await readBody(request,1024)))
       throw new AppError('NOT_FOUND',404)
     }
     if (joined === 'tradition-coaching-summary') {
