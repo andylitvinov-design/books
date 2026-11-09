@@ -119,3 +119,19 @@ test('independent required PR workflow failures wake the same serialized Watchdo
  assert.ok(reconcile.includes("github.event.workflow_run.event == 'pull_request'"));
  assert.ok(reconcile.includes("group: hh-control-tower-single-writer"));
 });
+
+test('failed independent PR workflow runs dispatch the durable queue after Watchdog reconcile',()=>{
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const job=watchdog.split('  direct-handoff:\\n')[1]?.split('    runs-on:')[0];
+ assert.ok(job,'direct-handoff job exists');
+ assert.ok(job.includes("github.event.workflow_run.event == 'pull_request'"));
+ assert.ok(job.includes("github.event.workflow_run.head_repository.full_name == 'andylitvinov-design/books'"));
+ for(const conclusion of ['failure','timed_out','startup_failure'])
+   assert.ok(job.includes("github.event.workflow_run.conclusion == '"+conclusion+"'"));
+ assert.ok(job.includes("!contains(fromJSON("));
+ assert.ok(job.includes("'HH PR core release gate'"));
+ assert.ok(job.includes("'HH PR source Repair Worker'"));
+ assert.ok(job.includes("'HH zero-cost PR CI worker'"));
+ assert.ok(job.includes('needs: reconcile'));
+ assert.ok(job.includes('group: hh-control-tower-single-writer'));
+});
