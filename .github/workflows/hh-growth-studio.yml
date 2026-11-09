@@ -69,6 +69,7 @@ jobs:
       - name: Validate JS modules
         run: |
           node --check lib/growth-studio/model.mjs
+          node --check lib/growth-studio/social-seo.mjs
           node --check lib/growth-studio/manual-calendar.mjs
           node --check lib/growth-studio/channel-capabilities.mjs
           node --check lib/growth-studio/bulk.mjs
