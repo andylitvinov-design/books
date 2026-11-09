@@ -60,7 +60,10 @@ Comments and messaging scopes are deliberately excluded.
 - Tokens are encrypted with AES-256-GCM before entering Redis; Redis keys are isolated per target and expire after 60 days.
 - No token, app secret, authorization code or full provider payload is returned to the browser or logged.
 - Disconnect deletes the corresponding credential record.
-- Publishing is hard-disabled; this OAuth foundation does not send posts. A separate reviewed publisher worker, account-aware approval, idempotency/reconciliation and test-post receipts are still required before LIVE.
+- The existing Growth Studio now includes a server-only, owner-confirmed Instagram JPEG Feed publisher with account identity checks and provider receipt/permalink readback. It is not an unattended scheduler.
+- `HH_GROWTH_INSTAGRAM_PUBLISH_ENABLED` defaults OFF; keep it unset/false until the owner has completed Meta consent for each target and verified the returned identity, Page, scopes and posting task.
+- A publish action requires an exact owner confirmation for the saved approved post, an exact account match, a public JPEG preflight and provider readback. An ambiguous result becomes `delivery_unknown`; the UI must not retry automatically.
+- The dry-run scheduler remains simulation-only. No unattended posting, no automatic repeat, and no ad campaign is enabled.
 
 ## Meta UI access prerequisite
 
