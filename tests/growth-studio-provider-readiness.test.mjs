@@ -136,3 +136,20 @@ test('owner-only UI shows separate local, external, and manual states without fa
   assert.doesNotMatch(src,/PRESCRIPTIONS_ADMIN_PIN|PRESCRIPTIONS_KV_REST_API_TOKEN|HH_GROWTH_TELEGRAM_BOT_TOKEN\s*=|process\.env/)
   assert.doesNotMatch(src,/createScheduledPost|createCampaign|paidAdsEnabled\s*=\s*true/)
 })
+
+
+test('Instagram registry contains only separate work and personal profiles',async()=>{
+  const {GROWTH_INSTAGRAM_ACCOUNT_TARGETS}=await import('../lib/growth-studio/instagram-accounts.mjs')
+  assert.deepEqual(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.label),['@wizards.secrets','@andy.therapist'])
+  assert.deepEqual(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.accountRole),['work','personal'])
+  assert.deepEqual(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.brandKey),['wizards_secrets','andy_personal'])
+  for(const account of GROWTH_INSTAGRAM_ACCOUNT_TARGETS){
+    assert.equal(account.connectionState,'pending_authorization')
+    assert.equal(account.publishEnabled,false)
+    assert.equal(account.insightsEnabled,false)
+    assert.equal(account.providerAccountId,null)
+    assert.equal(account.providerPageId,null)
+  }
+  const ui=readFileSync(new URL('../components/growth-studio-connections.jsx',import.meta.url),'utf8')
+  assert.match(ui,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS/)
+})

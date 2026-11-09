@@ -86,41 +86,31 @@ try {
       const contact = dialog.locator("[data-remote-public-order-contact]");
       await contact.waitFor({state:"visible"});
       assert.equal(new URL(page.url()).pathname,path,locale+": stays on public route, no client-side cabinet jump");
-      assert.equal(await contact.locator('[data-contact-channel-chooser]').count(),1,locale+": shared consent form");
-      assert.equal(await contact.getByRole('button',{name:/Google/i}).count(),1,locale+": Google option");
-      assert.equal(await contact.locator('input[type="tel"]').count(),1,locale+": phone option");
-      assert.equal(await contact.locator('input[type="checkbox"][required]').count(),1);
-      assert.equal(await contact.locator('button[type="submit"]').isDisabled(),true,locale+": opt-in required");
-
-      // Synthetic OAuth return: public scheduling metadata only. Never log in.
-      await page.evaluate(([p, service]) => window.sessionStorage.setItem("hh-google-enquiry-return",
-        JSON.stringify({path:p,service,panel:"synthetic-panel"})),
-        [path,"Reiki support · Andy · 30 min"]);
-      await page.goto(origin + path + "?hh_enquiry=google", {waitUntil:"domcontentloaded"});
-      const resumed = page.locator('dialog[open] [data-remote-public-order-contact]');
-      await resumed.waitFor({state:"visible",timeout:30000});
-      assert.equal(new URL(page.url()).pathname,path,locale+": resumes same public modal");
-      assert.equal(await resumed.locator('button[type="submit"]').isDisabled(),true);
-      await resumed.locator('input[type="tel"]').fill("416 555 1234");
-      await resumed.locator('input[type="checkbox"][required]').check();
-      await resumed.locator('button[type="submit"]').click();
-      await resumed.getByText("HH-A1B2C3D4E5F6").waitFor();
-      assert.equal(requests.length,1,locale+": exactly one consented synthetic CRM request");
-      assert.equal(requests[0].sourcePath,path);
-      assert.equal(requests[0].contactConsent,true);
-      assert.equal(requests[0].contact.phone,"+14165551234");
-      assert.match(requests[0].serviceTitle,/Reiki support · Andy · 30 min/);
-      assert.match(requests[0].description,/Tantra Reiki/);
-      if (locale === "ru") assert.match(requests[0].description,/Personal intention/,
-        "No offscreen focus choice is required to request a Reiki session");
-      if (locale !== "en") assert.match(requests[0].description,/По согласованию|Por acordar/,
-        locale+": no fabricated date/time for an unscheduled enquiry");
+      // An unverified browser, Google email or typed phone cannot create a CRM
+      // enquiry. The selected published Reiki method stays in the draft.
+      const card=contact.locator('[data-messenger-only-contact]');
+      await card.waitFor({state:"visible"});
+      assert.equal(await card.count(),1,locale+": one two-channel request card");
+      const disclosure=card.locator('details');
+      if(await disclosure.count())await disclosure.locator(':scope > summary').click();
+      const whatsapp=card.locator('a[data-messenger-only-channel="whatsapp"]');
+      const telegram=card.locator('a[data-messenger-only-channel="telegram"]');
+      await whatsapp.waitFor({state:"visible",timeout:10000});
+      await telegram.waitFor({state:"visible",timeout:10000});
+      const draft=new URL(await whatsapp.getAttribute('href'));
+      assert.equal(draft.origin,'https://wa.me');
+      assert.match(draft.searchParams.get('text')||'',/Tantra Reiki/,locale+": chosen method retained");
+      assert.match(draft.searchParams.get('text')||'',/30 min/,locale+": chosen duration retained");
+      assert.equal(await contact.locator('form,input[type="tel"],input[type="email"],input[type="checkbox"]').count(),0,
+        locale+": no unverified contact-only submission");
+      assert.equal(await contact.locator('[data-lead-saved]').count(),0,locale+": no fake saved receipt");
+      assert.equal(requests.length,0,locale+": no synthetic CRM POST just from opening options");
       assert.equal(await page.locator("[data-cart-verified-paypal-checkout]").count(),0);
       assert.deepEqual(errors,[],locale+": no uncaught JS errors");
       if (locale==="ru") await page.screenshot({
         path:"artifacts/reiki-mobile-order/ru-390-success.png",fullPage:false,timeout:12000,
       });
-      console.log("PASS "+locale+" / "+width+" WebKit Reiki modal → phone/Google → simulated CRM receipt");
+      console.log("PASS "+locale+" / "+width+" WebKit Reiki modal → two messenger drafts, no unverified CRM receipt");
     } finally { await ctx.close(); }
   }
 } finally { await browser.close(); }

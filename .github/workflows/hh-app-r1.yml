@@ -288,6 +288,9 @@ jobs:
       - name: Execute SQL, restricted-role RLS, concurrency, rollback and repository tests
         if: needs.impact.outputs.database == 'true'
         run: npm run test:app:db
+      - name: Isolated two-client/two-master client memory SQL and RLS acceptance
+        if: needs.impact.outputs.database == 'true'
+        run: node scripts/ci-client-memory-rls.mjs
       - name: Prove exact eight-row registry proposal, atomic conflicts and full readback
         if: needs.impact.outputs.database == 'true'
         run: node scripts/verify-eight-v2-registry-proposal.mjs

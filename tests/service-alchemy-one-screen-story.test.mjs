@@ -66,7 +66,8 @@ test("Alchemy/browser routes use semantic readiness with real booking and privac
  assert.match(s,/assert\.equal\(response\?\.status\(\), 200/);
  assert.match(s,/data-session-booking-flow/);
  assert.match(s,/data-booking-payment-options/);
- assert.match(s,/booking submit enabled before phone and consent/);
+ assert.match(s,/no standalone email or phone booking/);
+ assert.match(s,/data-messenger-only-contact/);
  assert.doesNotMatch(s,/data-compact-phone-trigger/);
  const pub=read("scripts/verify-public-services-production.mjs");
  assert.doesNotMatch(pub,/waitUntil:\s*"networkidle"/);

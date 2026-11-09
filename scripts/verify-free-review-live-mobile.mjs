@@ -147,8 +147,8 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const radios = enquiry.locator('input[name="express-review-focus"]');
           assert.equal(await radios.count(), 2, "exactly two request focuses");
           assert.equal(await enquiry.locator('input[name="express-review-focus"]:checked').count(), 1, "a single selected focus");
-          assert.equal(await enquiry.locator('[data-reiki-phone-enquiry]').count(), 1,
-            "only one CRM-first contact capture");
+          assert.equal(await enquiry.locator('[data-messenger-only-contact]').count(),1,
+            "one customer-initiated messenger handoff; no email-only capture");
           const featured = main.locator("[data-featured-free-review-testimonials]");
           await featured.waitFor({ state: "visible" });
           const featuredGeometry = await featured.evaluate(section => {
@@ -253,53 +253,34 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             "capture must not block page scrolling");
           assert.equal(await main.locator('[role="dialog"], [aria-modal="true"]').count(), 0,
             "no modal after clicking the hero CTA");
-          assert.equal(await enquiry.locator('input[type="tel"]').count(), 1, "one phone field");
-          assert.equal(await enquiry.locator('input[type="checkbox"][required]').isChecked(), false,
-            "opening the form is not contact consent");
-          // Optional analytics/source linking is separate from required one-off reply consent.
-          const attribution= enquiry.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
-          if(await attribution.count())assert.equal(await attribution.isChecked(),false,
-            "opening the form cannot opt the visitor into source attribution");
-          // The protected v2 wizard and the legacy compact capture are distinct
-          // safe variants. Neither navigation nor form opening creates a lead.
-          const wizardV2 = await enquiry.locator('[data-free-express-lead]').count() === 1;
-          if (wizardV2) {
-            const lead = enquiry.locator('[data-free-express-lead]');
-            assert.equal(await lead.locator('textarea').count(), 1, "one short question");
-            assert.equal(await lead.locator('input[type="checkbox"][required]').isChecked(), false,
-              "explicit consent remains unchecked");
-            assert.equal(await enquiry.locator('[data-free-express-receipt]').count(), 0,
-              "no CRM receipt from opening the form");
-            const fit = await enquiry.evaluate(root => {
-              const card = root.getBoundingClientRect();
-              const submit = root.querySelector('[data-free-express-lead] button[type="submit"]')?.getBoundingClientRect();
-              const fixedTab = [...document.querySelectorAll('nav')]
-                .filter(nav => getComputedStyle(nav).position === 'fixed')
-                .map(nav => nav.getBoundingClientRect())
-                .find(rect => rect.top > 0 && rect.top < innerHeight);
-              return { cardHeight: card.height, cardTop: card.top, submitBottom: submit?.bottom,
-                tabTop: fixedTab?.top ?? innerHeight,
-                overflow: document.documentElement.scrollWidth - innerWidth };
-            });
-            record.compactLeadFit = fit;
-            assert.ok(fit.cardHeight <= height - 90,
-              "first-contact section is not one mobile screen: " + JSON.stringify(fit));
-            assert.ok(fit.submitBottom <= fit.tabTop - 8,
-              "submit button must sit above fixed bottom tabs: " + JSON.stringify(fit));
-            assert.ok(fit.overflow <= 2, "mobile capture has no horizontal overflow");
-            assert.equal(await page.locator('[data-first-party-consent]').isVisible(), false,
-              "optional visitor analytics prompt cannot cover an open contact form");
-            if (width === 390) await page.screenshot({
-              path: output + "/" + name + "-compact-v2.png",
-              animations: "disabled", timeout: 20000 });
-          } else {
-            assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
-            assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
-            // Telegram's readiness fallback is also role="status" and is NOT a lead.
-            // Inspect only this consented capture's receipt/confirmation statuses.
-            assert.equal(await enquiry.locator('[data-reiki-phone-enquiry] [role="status"]').count(), 0,
-              "no actual lead saved by navigating");
-          }
+          const widget=enquiry.locator('[data-messenger-only-contact]');
+          await widget.waitFor({state:"visible",timeout:15000});
+          const details=widget.locator('details');
+          if(await details.count()&&await details.getAttribute('open')===null)
+            await details.locator(':scope > summary').click();
+          const wa=widget.locator('a[data-messenger-only-channel="whatsapp"]');
+          const tg=widget.locator('a[data-messenger-only-channel="telegram"]');
+          await wa.waitFor({state:"visible",timeout:10000});
+          await tg.waitFor({state:"visible",timeout:10000});
+          const draft=new URL(await wa.getAttribute('href'));
+          assert.equal(draft.origin,'https://wa.me',"approved WhatsApp contact");
+          assert.ok((draft.searchParams.get('text')||'').length>24,
+            "public review identity and request appear in the messaging draft");
+          assert.equal(await widget.locator('input[type="tel"],input[type="email"],form').count(),0,
+            "email and typed phone cannot be a substitute for verified messenger contact");
+          assert.equal(await enquiry.locator('[data-lead-saved], [data-free-express-receipt]').count(),0,
+            "opening a link does not prove CRM write, booking or delivery");
+          assert.equal(await widget.locator('a[data-messenger-only-channel]').count(),2,
+            "exactly two messenger choices");
+          const fit=await widget.evaluate(node=>({
+            width:node.getBoundingClientRect().width,
+            overflow:document.documentElement.scrollWidth-innerWidth,
+          }));
+          record.compactLeadFit=fit;
+          assert.ok(fit.overflow<=2,"messenger options stay within iPhone width");
+          if(width===390)await page.screenshot({
+            path:output+"/"+name+"-messenger-only.png",animations:"disabled",timeout:20000
+          });
           // Touch users select the full 94px+ labelled card, not the tiny native
           // radio dot. WebKit may still be smoothly scrolling from the hero
           // anchor and a direct input.check() can hit a moving 19px target.
@@ -311,16 +292,13 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             && (width === 320 || width === 430) ? 3 : 1;
           for (let cycle = 0; cycle < cycles; cycle++) {
             await tapFocusAndVerify(page, enquiry, "energy");
-            assert.equal(await enquiry.locator('input[type="checkbox"][required]').isChecked(), false,
-              "changing the focus cannot silently opt the user in");
+            assert.equal(await widget.locator('input[type="checkbox"][required]').count(),0,
+              "focus change never creates hidden consent or unverified web submission");
             await tapFocusAndVerify(page, enquiry, "situation");
           }
-          const receiptStatus = wizardV2
-            ? '[data-free-express-receipt]'
-            : '[data-reiki-phone-enquiry] [role="status"]';
-          assert.equal(await enquiry.locator(receiptStatus).count(), 0,
-            "changing focus is not a lead or booking");
-          await enquiry.locator('input[type="tel"]').focus();
+          assert.equal(await enquiry.locator('[data-lead-saved], [data-free-express-receipt]').count(),0,
+            "changing the selected focus never fabricates a CRM lead");
+          if(await details.count())await details.locator(':scope > summary').focus();
           await page.keyboard.press("Escape");
           assert.equal(await reveal.getAttribute("aria-expanded"), "false", "Escape folds the form");
           assert.equal(new URL(page.url()).hash, "", "closing clears the stale review anchor");

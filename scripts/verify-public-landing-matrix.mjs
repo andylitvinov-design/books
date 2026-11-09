@@ -57,19 +57,24 @@ for (const engine of [chromium,webkit]) {
             null,{timeout:15000});
           await final.locator("[data-express-inline-disclosure]").waitFor({state:"visible",timeout:15000});
         }
-        // Reply consent is required; the separate analytics-attribution opt-in
-        // is optional and must not be mistaken for a duplicate reply consent.
-        const replyConsent=final.locator('input[type="checkbox"][required]');
-        assert.equal(await replyConsent.count(),1,label+" one required reply consent");
-        assert.equal(await replyConsent.isChecked(),false,label+" reply consent unchecked by default");
-        const attribution=final.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
-        assert.ok(await attribution.count()<=1,label+" at most one optional attribution choice");
-        if(await attribution.count()) {
-          assert.equal(await attribution.first().getAttribute("required"),null,
-            label+" attribution consent remains optional");
-        }
-        assert.ok(await final.locator('input:not([type="checkbox"]):not([type="radio"])').count()>0,
-          label+" a real non-choice contact input");
+        // Owner P0: all public product enquiries must be customer-initiated
+        // Telegram/WhatsApp, never a direct email/phone CRM write.
+        const messenger=final.locator('[data-messenger-only-contact]');
+        assert.equal(await messenger.count(),1,label+" one messenger-only final capture");
+        const details=messenger.locator('details');
+        if(await details.count()&&await details.getAttribute('open')===null)
+          await details.locator(':scope > summary').click();
+        const whatsapp=messenger.locator('a[data-messenger-only-channel="whatsapp"]');
+        const telegram=messenger.locator('a[data-messenger-only-channel="telegram"]');
+        await whatsapp.waitFor({state:"visible",timeout:15000});
+        await telegram.waitFor({state:"visible",timeout:15000});
+        const draft=new URL(await whatsapp.getAttribute("href"));
+        assert.equal(draft.origin,"https://wa.me",label+" customer-initiated WhatsApp");
+        assert.ok((draft.searchParams.get("text")||"").length>24,label+" selected offer in draft");
+        assert.equal(await messenger.locator('form,input[type="tel"],input[type="email"]').count(),0,
+          label+" no unverified website submission");
+        assert.equal(await final.locator('[data-lead-saved]').count(),0,
+          label+" opening messenger links is not CRM proof");
         assert.equal(await page.locator("[data-sitewide-capture]:visible").count(),0,
           label+" no duplicate global form");
         const docWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
