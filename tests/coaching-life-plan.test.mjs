@@ -96,6 +96,58 @@ function buildService({report=makeReport(),ownerId=owner.id}={}){
  return {service:factory({randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2}),state,report}
 }
 
+function buildAreaEditService({existing=false}={}){
+ const source=readFileSync(new URL('../lib/app/coaching-life-plan.js',import.meta.url),'utf8')
+  .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
+ const state={plan:null,area:existing?{
+  id:'50000000-0000-4000-8000-000000000001',plan_id:'40000000-0000-4000-8000-000000000001',
+  account_id:owner.id,area_key:'career_business',revision:1,
+  current_state_ciphertext:seal('Current role feels overloaded.',{accountId:owner.id,recordId:'50000000-0000-4000-8000-000000000001',field:'coaching.life_plan.current_state'},config),
+  desired_state_ciphertext:null,obstacles_ciphertext:null,self_rating:null,rating_source:null,status:'active',
+ }:null,changes:[],queries:[],version:1}
+ const db={query:async(sql,args=[])=>{
+  state.queries.push({sql,args})
+  if(sql.includes('select id from app.accounts'))return {rows:[{id:owner.id}]}
+  if(sql.includes('insert into app_private.coaching_life_plans')){
+   if(!state.plan)state.plan={id:'40000000-0000-4000-8000-000000000001',plan_version:1}
+   return {rows:[]}
+  }
+  if(sql.includes("select id,plan_version from app_private.coaching_life_plans where account_id=$1 and status='active'")){
+   return {rows:state.plan?[{...state.plan,plan_version:state.version}]:[]}
+  }
+  if(sql.includes('select id,revision,current_state_ciphertext,desired_state_ciphertext,obstacles_ciphertext,self_rating,rating_source,status from app_private.coaching_life_plan_areas')){
+   return {rows:state.area?[{...state.area}]:[]}
+  }
+  if(sql.includes('insert into app_private.coaching_life_plan_areas')){
+   state.area={id:args[0],plan_id:args[1],account_id:args[2],area_key:args[3],
+    current_state_ciphertext:args[4],desired_state_ciphertext:args[5],obstacles_ciphertext:args[6],
+    self_rating:args[7],rating_source:args[8],status:args[9],revision:1}
+   return {rows:[]}
+  }
+  if(sql.includes('update app_private.coaching_life_plan_areas set current_state_ciphertext')){
+   if(!state.area||state.area.revision!==args[8])return {rows:[]}
+   Object.assign(state.area,{current_state_ciphertext:args[2],desired_state_ciphertext:args[3],
+    obstacles_ciphertext:args[4],self_rating:args[5],rating_source:args[6],status:args[7],revision:state.area.revision+1})
+   return {rows:[{revision:state.area.revision}]}
+  }
+  if(sql.includes('insert into app_private.coaching_life_plan_changes')){
+   state.changes.push(args);return {rows:[]}
+  }
+  if(sql.includes('update app_private.coaching_life_plans set plan_version=plan_version+1')){
+   state.version++;return {rows:[]}
+  }
+  if(sql.includes('select plan_version from app_private.coaching_life_plans where id=$1')){
+   return {rows:[{plan_version:state.version}]}
+  }
+  throw new Error('Unexpected SQL: '+sql)
+ }}
+ const transaction=async(_config,_actor,fn)=>fn(db)
+ const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2}=deps;'+source+';return updateCoachingLifePlanArea}')
+ const update=factory({randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,
+  readCoachingReport:async()=>{throw new Error('not used')},validateCoachingReportV2})
+ return {update,state}
+}
+
 test('import uses only accepted, evidence-backed action IDs and client-selected life domain',async()=>{
  const {service,state,report}=buildService()
  const candidate=report.actionCandidates[0]
@@ -182,6 +234,41 @@ test('empty Life Plan reads do not create plan/domain records and still return a
  assert.equal(calls.some(sql=>sql.startsWith('insert')),false)
 })
 
+
+test('Life Plan area edits are encrypted, revisioned and written to the change journal',async()=>{
+ const {update,state}=buildAreaEditService()
+ const result=await update(config,owner,{areaKey:'career_business',revision:0,
+  currentState:'My workload is fragmented.',desiredState:'A sustainable weekly schedule.',
+  obstacles:'Too many parallel commitments.',selfRating:6})
+ assert.equal(result.revision,1)
+ assert.equal(result.planVersion,2)
+ assert.equal(state.changes.length,1)
+ assert.equal(openSealed(state.area.current_state_ciphertext,{accountId:owner.id,recordId:state.area.id,field:'coaching.life_plan.current_state'},config),'My workload is fragmented.')
+ assert.equal(openSealed(state.area.desired_state_ciphertext,{accountId:owner.id,recordId:state.area.id,field:'coaching.life_plan.desired_state'},config),'A sustainable weekly schedule.')
+ assert.equal(state.area.rating_source,'client_self_report')
+})
+
+test('unchanged Life Plan area values do not create new revisions or duplicate audit rows',async()=>{
+ const {update,state}=buildAreaEditService({existing:true})
+ const input={areaKey:'career_business',revision:1,currentState:'Current role feels overloaded.',desiredState:'',obstacles:'',selfRating:null}
+ const result=await update(config,owner,input)
+ assert.equal(result.changed,false)
+ assert.equal(result.revision,1)
+ assert.equal(state.changes.length,0)
+ assert.equal(state.version,1)
+})
+
+test('stale Life Plan area revisions and invalid self-ratings are rejected',async()=>{
+ const {update,state}=buildAreaEditService({existing:true})
+ await assert.rejects(()=>update(config,owner,{areaKey:'career_business',revision:0,
+  currentState:'A changed value',desiredState:'',obstacles:'',selfRating:null}),
+  err=>err.code==='COACHING_PLAN_REVISION_CONFLICT')
+ await assert.rejects(()=>update(config,owner,{areaKey:'career_business',revision:1,
+  currentState:'A changed value',desiredState:'',obstacles:'',selfRating:11}),
+  err=>err.code==='COACHING_PLAN_RATING_INVALID')
+ assert.equal(state.changes.length,0)
+ assert.equal(state.version,1)
+})
 
 test('Life Plan endpoints use the existing authenticated catch-all route and account switch guard',()=>{
  const route=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8')
