@@ -235,5 +235,5 @@ test("ten-phrase limit and stale spoken-audio guard use the current visible Mont
  assert.match(script,/const unselectedToggle=phraseEditor\.locator\('\[data-video-idea-select\]\[aria-pressed="false"\]'\)\.first\(\)/);
  assert.ok(script.includes("const spokenToggle=spokenPhrase.locator('[data-video-idea-select]')"));
  assert.ok(script.includes("adding an unspoken phrase does not invalidate the actual WAV"));
- assert.ok(script.includes("removing the spoken phrase must block stale WAV reuse or detach it"));
+ assert.ok(script.includes("A removed spoken phrase must block stale WAV reuse or detach it before export."));
 });
