@@ -57,7 +57,13 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Verify all 14 × EN/RU/ES second-screen skill explanations and unchanged save flow
         run: node --test tests/opora-support-second-screen.test.mjs
       - name: Verify AS-6.0 five channels per day, 14 practical lessons, music and historical sessions
@@ -115,7 +121,13 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Validate the isolated AS5.6 fixture and safety regressions
         run: node --test tests/opora-as56-brief-practice.test.mjs tests/opora-as56-browser-fixture.test.mjs tests/opora-as57-calm-morning.test.mjs
       - name: Install isolated browser tools

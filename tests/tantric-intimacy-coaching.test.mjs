@@ -79,7 +79,7 @@ test('server verifies adult self-attestation before private encrypted start; oth
  const css=read('components/app/personal-coaching.module.css')
  assert.match(server,/scheme.topicTags\?\.includes\('sexuality'\)/)
  assert.match(server,/PERSONAL_COACH_ADULT_CONFIRMATION_REQUIRED/)
- assert.match(server,/onlyKeys\(input,\['action','revision','schemeKey','clientQuestion','clientTopic','adultConfirmed','clientContext'\]\)/)
+ assert.match(server,/onlyKeys\(input,\['action','revision','schemeKey','clientQuestion','clientTopic','adultConfirmed','clientContext','turnId'\]\)/)
  assert.match(picker,/isAdultModel&&!adultConfirmed/)
  assert.match(picker,/checked=\{adultConfirmed\}/)
  assert.match(runner,/adultConfirmed:adultConfirmed===true/)

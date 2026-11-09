@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {mkdirSync,writeFileSync} from "node:fs";
 import {createRequire} from "node:module";
 const require=createRequire(import.meta.url);
-const {chromium,webkit}=require(process.env.HH_PLAYWRIGHT_PACKAGE||"playwright");
+const {chromium,webkit,expect}=require(process.env.HH_PLAYWRIGHT_PACKAGE||"playwright");
 const origin=process.env.HH_PUBLIC_QA_ORIGIN||"http://127.0.0.1:3100";
 const url=new URL(origin);
 if(!["localhost","127.0.0.1"].includes(url.hostname)||
@@ -418,7 +418,19 @@ async function inspect(browserType,locale,width){
     assert.equal(popups,0,"standalone public tabs must not open another page");
     results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → Master → Free Analysis → Practice",sameDocument:true});
   }
- }finally{await context.close();await browser.close();}
+ }finally{
+  // WebKit may dispose a context as part of a crash/teardown race after the
+  // scenario has completed. Treat an already-disposed context as closed, but
+  // surface every other cleanup error and always close the owning browser.
+  try{await context.close();}
+  catch(error){
+    if(!/Failed to find context with id|Target page, context or browser has been closed/.test(String(error?.message)))throw error;
+  }
+  try{await browser.close();}
+  catch(error){
+    if(!/Target page, context or browser has been closed|Browser has been closed/.test(String(error?.message)))throw error;
+  }
+ }
 }
 for(const locale of ["ru","en","es"]){
  for(const width of [320,390,430])await inspect(webkit,locale,width);
@@ -519,32 +531,32 @@ try{
    "obsolete five-button rail must not consume transcript space");
  await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
  const log=chat.locator('[role="log"]');
- const starters=chat.locator('[data-hh-ai-quick-actions] [data-hh-ai-choice]');
- const six=["test","video","practice","session","course","ask"];
- assert.deepEqual(await starters.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hh-ai-choice"))),
-   six,"single iChat landing displays exactly six real actions");
+ const projectGrid=chat.locator('[data-hh-messenger-six-projects]');
+ await projectGrid.waitFor({state:"visible",timeout:15000});
+ const projects=chat.locator('[data-hh-messenger-six-projects] [data-hh-ai-project]');
+ const six=["hint","test","mytube","sessions","practice","ai-video"];
+ assert.deepEqual(await projects.evaluateAll(nodes=>nodes.map(node=>node.getAttribute("data-hh-ai-project"))),
+   six,"Messenger shows the six current project entries in canonical order");
  assert.equal(await chat.locator("iframe").count(),0,"approved introduction video needs a deliberate Play click");
  for(const id of six){
-   const item=chat.locator('[data-hh-ai-choice="'+id+'"]');
+   const item=chat.locator('[data-hh-ai-project="'+id+'"]');
    await item.waitFor({state:"visible",timeout:15000});
    const rect=await item.boundingBox();
-   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible action");
+   assert.ok(rect&&rect.width>=44&&rect.height>=44,id+" accessible project card");
  }
- // The welcome card has its own paragraph, but it is removed when the
- // conversation starts. Count actual DIRECT turns, never the landing copy.
- const before=await log.evaluate(node=>[...node.children].filter(child=>
-   child.matches('p,[data-hh-ai-assistant-message]')).length);
- await chat.locator('[data-hh-ai-choice="video"]').click();
- await page.waitForFunction(count=>{
-   const root=document.querySelector('[data-hh-agent-preview]');
-   const transcript=root?.querySelector('[role="log"]');
-   const turns=[...(transcript?.children||[])].filter(child=>
-     child.matches('p,[data-hh-ai-assistant-message]'));
-   return root?.getAttribute("data-has-messages")==="true"
-     && turns.length>=count+2
-     && turns.some(child=>child.matches('[data-hh-ai-assistant-message]'));
- },before,{timeout:10000});
- assert.equal(await starters.count(),0,"landing yields to the original one chat transcript");
+ // The former generic quick-action landing is intentionally retired; its
+ // hidden links must not be mistaken for the six visible project cards.
+ assert.equal(await chat.locator('[data-hh-ai-quick-actions] [data-hh-ai-choice]:visible').count(),0,
+   "retired generic quick actions remain hidden");
+ // AI-Video opens the existing in-chat format selector through the approved
+ // six-project entry. No generation, payment or external request occurs here.
+ await chat.locator('[data-hh-ai-project="ai-video"]').click();
+ const initialContentKinds=chat.locator('[data-hh-content-step="kind"] [data-hh-content-kind]');
+ await initialContentKinds.first().waitFor({state:"visible",timeout:15000});
+ assert.deepEqual(await initialContentKinds.evaluateAll(nodes=>nodes.map(node=>
+   node.getAttribute("data-hh-content-kind"))),["video","audio","meditation","message"],
+   "Video opens the four approved formats inside the same chat");
+  assert.equal(await chat.locator('[data-hh-ai-quick-actions] [data-hh-ai-choice]').count(),0,"landing yields to the original one chat transcript");
  // The current Create Content entry deliberately asks format -> source -> short
  // personal idea BEFORE the canonical video goal tree. Earlier browser QA
  // expected the retired one-tap goal branch and timed out without testing it.
@@ -608,38 +620,92 @@ try{
    .some(node=>node.textContent?.includes("Я здесь!")),null,{timeout:10000});
  assert.equal(await chat.locator("video").count(),0,
    "no completed video is claimed before rendering");
- // Check the six approved iChat actions through actual user clicks, never mocked routes.
+
+ // Language follows the message, not the /en route. Keep both turns in one
+ // transcript and verify the composer/region language changes without navigation.
+ await page.goto(origin+"/en/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+ await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:30000});
+ const bilingualInput=chat.locator("textarea");
+ const bilingualLog=chat.locator('[role="log"]');
+ await bilingualInput.fill("Хочу денег");
+ await chat.locator('button[type="submit"]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="ru",null,{timeout:15000});
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="Что сейчас для вас важно?",null,{timeout:10000});
+ await page.waitForFunction(()=>[...document.querySelectorAll('[data-hh-agent-preview] [data-hh-chat-turn="user"]')]
+   .some(node=>node.textContent?.includes("Хочу денег")),null,{timeout:10000});
+ await bilingualInput.fill("I want to discuss my income");
+ await chat.locator('button[type="submit"]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview]')?.getAttribute("lang")==="en",null,{timeout:15000});
+ await page.waitForFunction(()=>document.querySelector('[data-hh-agent-preview] textarea')?.getAttribute("placeholder")==="What's on your mind?",null,{timeout:10000});
+ assert.equal(new URL(page.url()).pathname,"/en/app/messages",
+   "switching dialogue language does not navigate away from the original route");
+ const retainedTurns=await bilingualLog.locator('[data-hh-chat-turn="user"]').allTextContents();
+ assert.ok(retainedTurns.some(text=>text.includes("Хочу денег")),"Russian turn remains in the same transcript");
+ assert.ok(retainedTurns.some(text=>text.includes("I want to discuss my income")),"English turn is appended, not substituted");
+ assert.equal(await bilingualLog.locator('[data-hh-chat-turn="user"]').count(),2,
+   "two language changes preserve exactly the two submitted user turns");
+ results.push({journey:"English Messenger route → Russian message → English message; transcript retained without route navigation",passed:true});
+ // The bilingual journey deliberately ends in English. Begin a separate RU
+ // project-entry journey so project-link assertions verify locale propagation,
+ // not the stale locale from the prior test case.
+ await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+ await chat.waitFor({state:"visible",timeout:30000});
+ await expect.poll(()=>chat.getAttribute("lang")).toBe("ru");
+ await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
+ // Exercise the six current project cards and their one-question / four-choice
+ // flows. The retired generic data-hh-ai-choice links stay hidden by design.
  const resetViaMore=async()=>{
-   // The current compact Messenger keeps New conversation inside the actual
-   // + (More actions) menu; do not test a button hidden under closed details.
    const more=chat.locator('details[data-hh-ai-more]');
-   await more.locator('summary').click();
-   await more.getByRole('button',{name:'Новый разговор'}).click();
-   if(await more.evaluate(node=>node.open))
-     await more.locator('summary').click();
+   await more.waitFor({state:"visible",timeout:15000});
+   if(await more.evaluate(node=>!node.open)) await more.locator("summary").click();
+   const resetButtons=more.locator("button");
+   await expect.poll(()=>resetButtons.count()).toBe(1);
+   await resetButtons.first().click();
+   if(await more.evaluate(node=>node.open)) await more.locator("summary").click();
+   await chat.locator('[data-hh-ai-landing]').waitFor({state:"visible",timeout:15000});
+   await expect.poll(()=>chat.locator('[data-hh-chat-turn="user"]').count()).toBe(0);
  };
- await resetViaMore();
- await chat.locator('[data-hh-ai-choice="practice"]').waitFor({state:"visible"});
- await chat.locator('[data-hh-ai-choice="practice"]').click();
- await chat.getByText(/сколько минут у вас есть/).waitFor({state:"visible"});
- await resetViaMore();
- await chat.locator('[data-hh-ai-choice="ask"]').click();
+ const openProject=async(id)=>{
+   await resetViaMore();
+   await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
+   await chat.locator('[data-hh-ai-project="'+id+'"]').click();
+   await chat.locator('[data-hh-project-step="'+id+'"]').waitFor({state:"visible",timeout:15000});
+   assert.ok(await chat.locator('[data-hh-project-choice]').count()<=4,
+     id+" must expose no more than four short choices");
+ };
+ await openProject("practice");
+ await chat.locator('[data-hh-project-choice="stress"]').click();
+ const practiceLink=chat.locator('[data-hh-ihelp-link]');
+ await practiceLink.waitFor({state:"visible",timeout:15000});
+ await expect.poll(()=>chat.getAttribute("lang")).toBe("ru");
+ assert.equal(await practiceLink.getAttribute("href"),"/ru/courses/antistress",
+   "Practice route follows the Russian conversation language");
+
+ await openProject("hint");
+ await chat.locator('[data-hh-project-choice="life"]').click();
+ await expect.poll(()=>chat.locator('[data-hh-ai-assistant-message]').count()).toBeGreaterThan(0);
  assert.equal(await chat.locator("textarea").evaluate(node=>document.activeElement===node),
-   true,"Ask focuses the existing unsent composer without auto-submission");
- await chat.locator('[data-hh-ai-choice="test"]').click();
- await page.waitForURL(/\/ru\/tests\/?$/,{timeout:45000});
- await page.locator('[data-free-entry-landing="tests"]').waitFor({state:"visible",timeout:30000});
- await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
- await chat.locator('[data-hh-ai-choice="session"]').waitFor({state:"visible",timeout:30000});
- await chat.locator('[data-hh-ai-choice="session"]').click();
- await page.waitForURL(/\/ru\/services\/?$/,{timeout:45000});
- await page.locator("h1").first().waitFor({state:"visible",timeout:30000});
- await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
- await chat.locator('[data-hh-ai-choice="course"]').waitFor({state:"visible",timeout:30000});
- await chat.locator('[data-hh-ai-choice="course"]').click();
- await page.waitForURL(/\/ru\/academy\/?$/,{timeout:45000});
- await page.locator("h1").first().waitFor({state:"visible",timeout:30000});
- await page.goto(origin+"/ru/app/messages?section=ai",{waitUntil:"domcontentloaded",timeout:75000});
+   true,"Get a hint asks one question and focuses the same unsent composer");
+
+ await openProject("test");
+ await chat.locator('[data-hh-project-choice="stress"]').click();
+ const testJourney=chat.locator('[data-hh-messenger-test-chat]');
+ await testJourney.waitFor({state:"visible",timeout:15000});
+
+ await openProject("mytube");
+ await chat.locator('[data-hh-project-choice="calm"]').click();
+ const mytubeLink=chat.locator('[data-hh-ihelp-link]');
+ await mytubeLink.waitFor({state:"visible",timeout:15000});
+ assert.equal(await mytubeLink.getAttribute("href"),"/ru/mytube?goal=stress",
+   "MyTube uses the existing topic-filtered catalogue in Russian");
+
+ await openProject("sessions");
+ await chat.locator('[data-hh-project-choice="free-review"]').click();
+ const sessionLink=chat.locator('[data-hh-ihelp-link]');
+ await sessionLink.waitFor({state:"visible",timeout:15000});
+ assert.equal(await sessionLink.getAttribute("href"),"/ru/services/free-situation-review",
+   "Sessions links to the existing free situation-review route in Russian");
+
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();
  await page.locator("#hh-orders-panel").waitFor({state:"visible"});
@@ -698,7 +764,8 @@ try{
  await unifiedProfile.click();
  await page.waitForURL(/\/ru\/app\/portrait\/?$/,{timeout:45000});
  await page.locator('[data-profile-hub-tabs]').waitFor({state:"visible",timeout:45000});
- assert.equal(await page.locator('[data-profile-tab="today"][aria-current="page"]').count(),1);
+ assert.equal(await page.locator('[data-profile-tab="tests"][aria-current="page"]').count(),1,
+   "guest Profile intentionally opens its public Tests-first section");
  // The protected #3909 profile has six real sections; old View/Create tabs
  // and /personality-profiles were replaced. Test the visible DOM and navigation,
  // not a hidden fallback or loosened count.
@@ -707,7 +774,7 @@ try{
    ["today","tests","state","path","courses","reports"],
    "the guest and signed-in My Space show the same six canonical sections");
  await page.locator('[data-profile-tab="tests"]').click();
- await page.waitForURL(/\/ru\/app\/tests\/?$/,{timeout:45000});
+ await page.waitForFunction(()=>location.hash==="#profile-free-tests",{},{timeout:15000});
  await page.locator('[data-profile-hub-tabs][data-profile-active="tests"]').waitFor({state:"visible",timeout:45000});
  assert.equal(await page.locator('[data-profile-tab="tests"][aria-current="page"]').count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"][aria-current="page"]').count(),1);

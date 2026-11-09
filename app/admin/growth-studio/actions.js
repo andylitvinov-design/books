@@ -10,6 +10,7 @@ import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-re
 import {isInstagramPublisherEnabled,publishApprovedInstagramImage} from '@/lib/growth-studio/instagram-publisher.mjs'
 import {createMetaInstagramPublisherClient} from '@/lib/growth-studio/meta-instagram.mjs'
 import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
+import {isValidInstagramInsightDate,isValidInstagramInsightRange,normalizeInstagramInsightMetrics} from '@/lib/growth-studio/instagram-insights.mjs'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
@@ -29,6 +30,38 @@ export async function previewPublicGrowthSourceAction(input) {
     return {ok:false,error:error instanceof GrowthStudioError && allowed.has(error.code)
       ?error.code:'source_unavailable'}
   }
+}
+
+
+// Read-only, account-separated Instagram metrics. Never returns comments, captions,
+// audience identities, tokens or customer/therapy data.
+export async function getGrowthInstagramInsightsAction(input={}){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+     Object.keys(input).some(key=>!['since','until'].includes(key)))
+    return {ok:false,error:'invalid_insights_request'}
+  const end=input.until||new Date().toISOString().slice(0,10)
+  if(!isValidInstagramInsightDate(end))return {ok:false,error:'invalid_insights_request'}
+  const start=input.since||new Date(Date.parse(end+'T00:00:00.000Z')-29*86_400_000).toISOString().slice(0,10)
+  if(!isValidInstagramInsightDate(start)||!isValidInstagramInsightDate(end)||!isValidInstagramInsightRange(start,end))
+    return {ok:false,error:'invalid_insights_request'}
+  const accounts=await Promise.all(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(async target=>{
+    try{
+      const client=await createMetaInstagramPublisherClient(target.id)
+      const response=await client.getAccountInsights({since:start,until:end})
+      const metrics=normalizeInstagramInsightMetrics(response)
+      return {accountId:target.id,handle:target.handle,status:'available',
+        period:{since:start,until:end},capturedAt:new Date().toISOString(),metrics}
+    }catch(error){
+      const allowed=new Set(['meta_not_configured','meta_storage_unavailable','meta_credential_unavailable',
+        'meta_account_not_connected','meta_token_invalid','meta_permissions_missing',
+        'meta_insights_permission_missing','meta_graph_error'])
+      return {accountId:target.id,handle:target.handle,status:'unavailable',
+        error:allowed.has(error?.code)?error.code:'insights_unavailable',
+        period:{since:start,until:end},capturedAt:new Date().toISOString(),metrics:{}}
+    }
+  }))
+  return {ok:true,period:{since:start,until:end},accounts}
 }
 
 // An explicit owner click verifies the existing Redis REST connection by

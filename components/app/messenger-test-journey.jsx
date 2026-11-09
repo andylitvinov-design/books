@@ -105,6 +105,15 @@ const EXTRA = {
     cannotInterpret:'Interpretación no disponible; revisa el informe original.', version:'Versión de la prueba'
   },
 }
+// Editorial topic matches for the assistant's six-project test entry.
+// Rights, startability and guest eligibility stay enforced by the canonical catalogue.
+const FOCUS_TERMS = {
+  personality: ['personality', 'strength', 'identity', 'big-five', 'ipip'],
+  stress: ['stress', 'anxiety', 'mood', 'wellbeing', 'body', 'health'],
+  relationships: ['relationship', 'attachment', 'intimacy', 'love', 'compassion'],
+  work: ['work', 'career', 'professional', 'financial', 'resource', 'burnout'],
+}
+
 const ALL_TESTS = MONITORING_CATALOG.filter(item =>
   item.startable === true && item.rightsStatus === 'cleared' && item.guestEligible === true && item.key !== 'phq-9'
 ).map(item => {
@@ -139,8 +148,8 @@ function timezone() {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' }
 }
 
-/** @param {{ locale?: 'en'|'ru'|'es', onAdvance?: (() => void)|null, onClose?: (() => void)|null, incomingTurn?: { seq: number, text: string }|null, suggestedKey?: string }} props */
-export default function MessengerTestJourney({ locale = 'en', onAdvance = null, onClose = null, incomingTurn = null, suggestedKey = '' }) {
+/** @param {{ locale?: 'en'|'ru'|'es', focus?: keyof typeof FOCUS_TERMS|null, onAdvance?: (() => void)|null, onClose?: (() => void)|null, incomingTurn?: { seq: number, text: string }|null, suggestedKey?: string }} props */
+export default function MessengerTestJourney({ locale = 'en', focus = null, onAdvance = null, onClose = null, incomingTurn = null, suggestedKey = '' }) {
   const t = COPY[locale] || COPY.en
   const extra = EXTRA[locale] || EXTRA.en
   const [selectedKey, setSelectedKey] = useState('')
@@ -179,10 +188,20 @@ export default function MessengerTestJourney({ locale = 'en', onAdvance = null, 
   const signalKey = signal ? signal.questionId + ':' + signal.value : null
   const transcript = definition && run ? definition.questions.slice(Math.max(0, state.index - 3), state.index)
     .filter(item => Object.prototype.hasOwnProperty.call(run.answers || {}, item.id)) : []
-  const filtered = ALL_TESTS.filter(entry => {
+  const focusMatches = focus && FOCUS_TERMS[focus] ? ALL_TESTS.filter(entry => {
+    const info = [
+      entry.item.key, entry.item.title?.en, ...(entry.item.topics || []),
+      ...(entry.item.categoryAffinities || []),
+      ...(entry.item.analysisAxes || []).map(axis => axis.key),
+    ].filter(Boolean).join(' ').toLowerCase()
+    return FOCUS_TERMS[focus].some(term => info.includes(term))
+  }) : []
+  // Suggestions shape the first screen; search still covers the full cleared catalogue.
+  const source = !search.trim() && !expanded && focusMatches.length ? focusMatches : ALL_TESTS
+  const filtered = source.filter(entry => {
     const label = entry.item.title?.[locale] || entry.item.title?.en || entry.item.key
     return !search.trim() || (label + ' ' + entry.item.key).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
-  }).slice(0, search.trim() || expanded ? 200 : 6)
+  }).slice(0, search.trim() || expanded ? 200 : 4)
 
   useEffect(() => {
     let live = true
