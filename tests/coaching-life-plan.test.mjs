@@ -1,0 +1,183 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {randomUUID} from 'node:crypto'
+import {runInNewContext} from 'node:vm'
+import {readFileSync} from 'node:fs'
+import {AppError,onlyKeys,requireUUID} from '../lib/assessments/contracts.js'
+import {seal,openSealed,operationHash} from '../lib/app/crypto.js'
+import {buildCoachingReportV2Draft} from '../lib/personal-coaching/report-v2.js'
+import {reviewCoachingReportDraft} from '../lib/personal-coaching/report-review.mjs'
+
+const owner={id:'10000000-0000-4000-8000-000000000001'}
+const reportId='20000000-0000-4000-8000-000000000001'
+const sessionId='30000000-0000-4000-8000-000000000001'
+const now='2026-11-09T22:00:00.000Z'
+const config={encryptionKey:Buffer.alloc(32,73),encryptionKeyId:'test'}
+
+function makeReport(status='accepted'){
+ const draft=buildCoachingReportV2Draft({
+  session:{id:sessionId,status:'completed',schemeKey:'grow_quick_v1',modelKey:'grow_v1',
+   clientQuestion:'I want to decide whether to change roles.',
+   answers:{topic:'Career direction',outcome:'Choose one practical next step',reality:'Two roles are possible',action:'Compare responsibilities with a trusted colleague.'},
+   reflections:{},startedAt:'2026-11-09T21:40:00.000Z',completedAt:'2026-11-09T22:00:00.000Z'},
+  questions:[
+   {id:'topic',stage:'goal'},{id:'outcome',stage:'goal'},
+   {id:'reality',stage:'reality'},{id:'action',stage:'will'},
+  ],locale:'en',sourceRevision:9,
+ })
+ return reviewCoachingReportDraft(draft,[{candidateId:draft.actionCandidates[0].candidateId,status}],now)
+}
+
+function buildService({report=makeReport(),ownerId=owner.id}={}){
+ const source=readFileSync(new URL('../lib/app/coaching-life-plan.js',import.meta.url),'utf8')
+  .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
+ const state={plan:null,area:null,goal:null,actions:new Map(),changes:[],queries:[],planVersion:1}
+ const reportRecord={id:reportId,session_id:sessionId,status:'confirmed',current_revision:1,content_hash:operationHash(report,config)}
+ const db={query:async(sql,args=[])=>{
+  state.queries.push({sql,args})
+  if(sql.includes('select id from app.accounts'))return {rows:[{id:ownerId}]}
+  if(sql.includes('select id,session_id,status,current_revision,content_hash from app_private.coaching_reports')){
+   return {rows:ownerId===owner.id?[reportRecord]:[]}
+  }
+  if(sql.includes('insert into app_private.coaching_life_plans')){
+   if(!state.plan)state.plan={id:'40000000-0000-4000-8000-000000000001',plan_version:1}
+   return {rows:[]}
+  }
+  if(sql.includes("select id,plan_version from app_private.coaching_life_plans where account_id=$1 and status='active'")){
+   return {rows:state.plan?[{...state.plan}]:[]}
+  }
+  if(sql.includes('insert into app_private.coaching_life_plan_areas')){
+   if(!state.area)state.area={id:'50000000-0000-4000-8000-000000000001',area_key:args[2]}
+   return {rows:[]}
+  }
+  if(sql.includes('select id from app_private.coaching_life_plan_areas')){
+   return {rows:state.area&&state.area.area_key===args[2]?[{id:state.area.id}]:[]}
+  }
+  if(sql.includes('insert into app_private.coaching_goals')){
+   if(!state.goal){
+    state.goal={id:args[0],area_id:args[1],account_id:args[2],source_session_id:args[3],source_report_id:args[4],
+     title_ciphertext:args[5],desired_outcome_ciphertext:args[6],status:'proposed',idempotency_key:args[7]}
+    return {rows:[{id:state.goal.id,revision:1}]}
+   }
+   return {rows:[]}
+  }
+  if(sql.includes('select id,area_id,source_report_id,revision from app_private.coaching_goals')){
+   return {rows:state.goal?[{id:state.goal.id,area_id:state.goal.area_id,source_report_id:state.goal.source_report_id,revision:1}]:[]}
+  }
+  if(sql.includes('insert into app_private.coaching_action_items')){
+   const key=args[5]
+   if(state.actions.has(key))return {rows:[]}
+   const row={id:args[0],goal_id:args[1],account_id:args[2],source_session_id:args[3],source_report_id:args[4],
+    source_action_key:key,description_ciphertext:args[6],status:'accepted',client_confirmed_at:args[7]}
+   state.actions.set(key,row)
+   return {rows:[{id:row.id,status:row.status,client_confirmed_at:row.client_confirmed_at}]}
+  }
+  if(sql.includes('select id,goal_id,status,client_confirmed_at from app_private.coaching_action_items')){
+   const row=state.actions.get(args[2])
+   return {rows:row?[{id:row.id,goal_id:row.goal_id,status:row.status,client_confirmed_at:row.client_confirmed_at}]:[]}
+  }
+  if(sql.includes('insert into app_private.coaching_life_plan_changes')){
+   state.changes.push(args);return {rows:[]}
+  }
+  if(sql.includes('update app_private.coaching_life_plans set plan_version=plan_version+1')){
+   state.planVersion++;if(state.plan)state.plan.plan_version=state.planVersion;return {rows:[]}
+  }
+  if(sql.includes('select id,plan_version from app_private.coaching_life_plans where id=$1')){
+   return {rows:state.plan?[{id:state.plan.id,plan_version:state.planVersion}]:[]}
+  }
+  throw new Error('Unexpected SQL: '+sql)
+ }}
+ const transaction=async(_config,_actor,fn)=>fn(db)
+ const readCoachingReport=async(_config,actor,id)=>{
+  if(actor.id!==owner.id||id!==reportId)throw new AppError('COACHING_REPORT_NOT_FOUND',404)
+  return {report:{id,sessionId,revision:1,report}}
+ }
+ const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2}=deps;'+source+';return {readCoachingLifePlan,importCoachingReportActions}}')
+ return {service:factory({randomUUID,createHash,AppError,onlyKeys,requireUUID,transaction,seal,openSealed,operationHash,readCoachingReport,validateCoachingReportV2}),state,report}
+}
+
+test('import uses only accepted, evidence-backed action IDs and client-selected life domain',async()=>{
+ const {service,state,report}=buildService()
+ const candidate=report.actionCandidates[0]
+ const result=await service.importCoachingReportActions(config,owner,{
+  reportId,reportRevision:1,areaKey:'career_business',candidateIds:[candidate.candidateId],
+ })
+ assert.equal(result.areaKey,'career_business')
+ assert.equal(result.goalCreated,true)
+ assert.equal(result.imported,1)
+ assert.equal(state.goal.status,'proposed')
+ assert.equal(state.actions.get(candidate.candidateId).status,'accepted')
+ assert.equal(state.actions.get(candidate.candidateId).client_confirmed_at,candidate.acceptedAt)
+ assert.equal(state.changes.length,2,'one encrypted audit record for goal and action')
+ const title=openSealed(state.goal.title_ciphertext,{accountId:owner.id,recordId:state.goal.id,field:'coaching.life_plan.goal.title'},config)
+ assert.equal(title,'Choose one practical next step')
+ const action=openSealed(state.actions.get(candidate.candidateId).description_ciphertext,
+  {accountId:owner.id,recordId:state.actions.get(candidate.candidateId).id,field:'coaching.life_plan.action.description'},config)
+ assert.equal(action,candidate.text)
+ assert.equal(result.planVersion,2)
+})
+
+test('deferred or declined actions cannot enter My Coaching Plan',async()=>{
+ for(const status of ['deferred','declined']){
+  const {service,state,report}=buildService({report:makeReport(status)})
+  const id=report.actionCandidates[0].candidateId
+  await assert.rejects(()=>service.importCoachingReportActions(config,owner,{
+   reportId,reportRevision:1,areaKey:'career_business',candidateIds:[id],
+  }),err=>err.code==='COACHING_PLAN_ACTION_NOT_ACCEPTED')
+  assert.equal(state.goal,null)
+  assert.equal(state.actions.size,0)
+ }
+})
+
+test('import rejects caller-supplied report content, unknown fields, invalid area and duplicate candidate IDs',async()=>{
+ const {service}=buildService()
+ const base={reportId,reportRevision:1,areaKey:'career_business',candidateIds:['candidate']}
+ for(const input of [
+  {...base,report:{actions:['forged']}},
+  {...base,accountId:owner.id},
+  {...base,areaKey:'other'},
+  {...base,candidateIds:['same','same']},
+  {...base,reportRevision:0},
+ ])await assert.rejects(()=>service.importCoachingReportActions(config,owner,input),err=>err.code==='COACHING_PLAN_IMPORT_INVALID'||err.code==='UNKNOWN_FIELD')
+})
+
+test('wrong account cannot access the private report or create a Life Plan row',async()=>{
+ const {service,state}=buildService({ownerId:'10000000-0000-4000-8000-000000000002'})
+ await assert.rejects(()=>service.importCoachingReportActions(config,{id:'10000000-0000-4000-8000-000000000002'},{
+  reportId,reportRevision:1,areaKey:'career_business',candidateIds:['candidate'],
+ }),err=>err.code==='COACHING_REPORT_NOT_FOUND')
+ assert.equal(state.plan,null)
+})
+
+test('report import is retry-safe and does not duplicate goal, action or audit events',async()=>{
+ const {service,state,report}=buildService()
+ const candidate=report.actionCandidates[0]
+ const input={reportId,reportRevision:1,areaKey:'career_business',candidateIds:[candidate.candidateId]}
+ const first=await service.importCoachingReportActions(config,owner,input)
+ const second=await service.importCoachingReportActions(config,owner,input)
+ assert.equal(first.goalId,second.goalId)
+ assert.equal(first.imported,1)
+ assert.equal(second.imported,0)
+ assert.equal(state.actions.size,1)
+ assert.equal(state.changes.length,2)
+ assert.equal(second.planVersion,2)
+})
+
+test('empty Life Plan reads do not create plan/domain records and still return all eight domains',async()=>{
+ const source=readFileSync(new URL('../lib/app/coaching-life-plan.js',import.meta.url),'utf8')
+ const body=source.replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
+ const calls=[]
+ const transaction=async(_config,_actor,fn)=>fn({query:async(sql,args=[])=>{
+  calls.push(sql)
+  if(sql.includes('select id from app.accounts'))return {rows:[{id:owner.id}]}
+  if(sql.includes("select id,plan_version,status,created_at,updated_at from app_private.coaching_life_plans"))return {rows:[]}
+  throw new Error('Unexpected SQL: '+sql)
+ }})
+ const factory=runInNewContext('(deps)=>{const {AppError,transaction,openSealed}=deps;'+body+';return readCoachingLifePlan}')
+ const read=factory({AppError,transaction,openSealed})
+ const result=await read(config,owner,{locale:'ru'})
+ assert.equal(result.plan,null)
+ assert.equal(result.domains.length,8)
+ assert.ok(result.domains.every(area=>area.status==='not_started'&&area.selfRating===null))
+ assert.equal(calls.some(sql=>sql.startsWith('insert')),false)
+})
