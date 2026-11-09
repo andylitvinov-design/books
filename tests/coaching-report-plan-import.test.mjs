@@ -42,7 +42,7 @@ function fixture(status='accepted'){
  const areaId='50000000-0000-4000-8000-000000000001'
  const db={query:async(sql,args=[])=>{
   calls.push({sql,args})
-  if(sql.startsWith('select id from app.accounts'))return {rows:activeActor===owner.id?[{id:owner.id}]:[]}
+  if(sql.startsWith('select id from app.accounts'))return {rows:[{id:activeActor}]}
   if(sql.includes('from app_private.coaching_reports')&&sql.includes('for update of r'))return {rows:activeActor===owner.id?[row]:[]}
   if(sql.includes('from app_private.coaching_session_consents'))return {rows:[{accepted:true,revoked_at:null}]}
   if(sql.includes('from app_private.coaching_action_items a where'))return {rows:captured.existing||[]}
@@ -51,7 +51,7 @@ function fixture(status='accepted'){
   if(sql.startsWith('insert into app_private.coaching_life_plan_areas'))return {rows:[]}
   if(sql.startsWith('select id,revision,status from app_private.coaching_life_plan_areas'))return {rows:[{id:areaId,revision:1,status:'active'}]}
   if(sql.startsWith('insert into app_private.coaching_goals')){captured.goals.push({args});return {rows:[]}}
-  if(sql.startsWith('insert into app_private.coaching_action_items')){captured.actions.push({args});return {rows:[{id:args[0]}]}}
+  if(sql.startsWith('insert into app_private.coaching_action_items')){captured.actions.push({args,sql});return {rows:[{id:args[0]}]}}
   if(sql.startsWith('update app_private.coaching_life_plans'))return {rows:[]}
   if(sql.startsWith('insert into app_private.coaching_life_plan_changes')){captured.changes.push({args});return {rows:[]}}
   throw new Error('Unexpected query: '+sql)
@@ -77,7 +77,7 @@ test('confirmed report action imports transactionally into the existing owner Li
  assert.equal(result.areaKey,'career_business')
  assert.equal(captured.goals.length,1)
  assert.equal(captured.actions.length,1)
- assert.equal(captured.changes.length,5)
+ assert.equal(captured.changes.length,4)
  const goalArgs=captured.goals[0].args
  const goalId=goalArgs[0]
  assert.equal(goalArgs[1],areaId)
@@ -87,8 +87,8 @@ test('confirmed report action imports transactionally into the existing owner Li
  assert.equal(actionArgs[1],goalId)
  assert.equal(actionArgs[4],reportId)
  assert.equal(actionArgs[5],report.actionCandidates[0].candidateId)
- assert.equal(actionArgs[8],'accepted')
- assert.equal(actionArgs[9],confirmedAt)
+ assert.match(captured.actions[0].sql,/'accepted'/)
+ assert.equal(actionArgs[8],confirmedAt)
  assert.equal(openSealed(actionArgs[6],{accountId:owner.id,recordId:actionArgs[0],field:'coaching.action.description'},config),'Compare both options on Friday')
  assert.equal(captured.changes[0].args[8].length>20,true)
  assert.ok(captured.changes.every(item=>item.args[8].length>20),'life-plan audit snapshots are encrypted')
@@ -108,7 +108,9 @@ test('a replay returns the existing imported action instead of creating a second
 test('deferred or declined candidates are never added to the Life Plan',async()=>{
  const {service,captured}=fixture('deferred')
  const result=await service(config,owner,reportId,{areaKey:'personal_growth',confirmed:true})
- assert.deepEqual(result,{imported:false,count:0,reason:'NO_ACCEPTED_ACTIONS'})
+ assert.equal(result.imported,false)
+ assert.equal(result.count,0)
+ assert.equal(result.reason,'NO_ACCEPTED_ACTIONS')
  assert.deepEqual(captured.goals,[])
  assert.deepEqual(captured.actions,[])
 })

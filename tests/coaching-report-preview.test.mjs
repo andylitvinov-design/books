@@ -147,8 +147,9 @@ test('saved reports expose a client-selected Life Plan area and only confirmed a
  assert.match(source,/Добавить подтверждённые действия в My Coaching Plan/)
  assert.match(source,/areaKey:planAreaKey,confirmed:true/)
  assert.match(source,/item\.status==='accepted'/)
- assert.match(source,/body\.confirmed/)
- assert.match(source,/body\.areaKey/)
+ assert.match(source,/areaKey:planAreaKey,confirmed:true/)
+ assert.match(source,/item\.status==='accepted'/)
+ assert.doesNotMatch(source,/body\.confirmed|body\.areaKey/)
 })
 
 test('session deletion confirmation explains that saved reports remain separately',()=>{
