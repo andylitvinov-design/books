@@ -21,7 +21,11 @@ test("Ideas has exactly two real substages and the same single Concept generator
     assert.ok(studio.includes(label),label);
   assert.equal((studio.match(/<MandalaVideoPersonalization /g)||[]).length,1);
   assert.equal((studio.match(/<MandalaVideoConcept /g)||[]).length,1);
-  assert.doesNotMatch(studio,/data-video-montage-tab="concept"|setMontagePanel\("concept"\)/);
+  assert.match(studio,/id:"concept",Icon:Film/,
+    "Montage retains its own independent video-storyboard destination");
+  assert.match(studio,/data-video-montage-open-storyboard/);
+  assert.match(studio,/data-video-montage-open-storyboard[\s\S]*?setMontagePanel\("concept"\)/,
+    "Montage storyboard shortcut never switches to Ideas");
   assert.match(studio,/setApprovedVideoConcept\(approved\)/);
   assert.match(studio,/setActiveWorkspace\("editor"\);setMontagePanel\("effects"\)/);
   assert.match(studio,/onGenerate=\{createQuickVideo\}/);

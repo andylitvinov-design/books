@@ -141,7 +141,7 @@ test("Ideas shows Personalization and Concept without cloning Montage or the rec
  assert.match(recorder,/data-video-ideas-record-voice/);
  assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
 });
-test("WebKit keeps two Ideas tabs and real opt-in voice while four Montage tabs remain",()=>{
+test("WebKit keeps two Ideas tabs and real opt-in voice while five Montage tabs remain",()=>{
  const styles=read("components/mandala-video-mobile.module.css");
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  assert.match(styles,/\.studio\[data-active-workspace="phrases"\] \.ideasSubtabs\{/);

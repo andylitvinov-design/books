@@ -4083,7 +4083,7 @@
   border:0!important;box-shadow:none!important;padding:0!important;margin:0!important
 }
 .studio[data-active-workspace="editor"] .montageQuickTools{
-  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));
   gap:7px;min-width:0;overflow:visible!important;margin:0;padding:0
 }
 .studio[data-active-workspace="editor"] .montageQuickTools button{

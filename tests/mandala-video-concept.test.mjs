@@ -54,8 +54,14 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
   const concept=readFileSync(new URL("../components/mandala-video-concept.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-video-concept.module.css",import.meta.url),"utf8");
   assert.match(source,/data-video-ideas-concept-panel/);
-  assert.doesNotMatch(source,/data-video-montage-concept/);
-  assert.equal((source.match(/<MandalaVideoConcept /g)||[]).length,1);
+  assert.match(source,/data-video-montage-concept/);
+  assert.equal((source.match(/<MandalaVideoConcept /g)||[]).length,1,
+    "the written concept remains a single editor in Ideas");
+  assert.equal((source.match(/<MandalaCinematicDirector /g)||[]).length,1,
+    "the separate cinematic storyboard remains a single editor in Montage");
+  assert.match(source,/id:"concept",Icon:Film/);
+  assert.match(source,/setMontagePanel\("concept"\)/);
+  assert.match(source,/data-video-pro-open-montage-storyboard/);
   assert.match(source,/\{id:"effects",Icon:Sparkles\},\{id:"text",Icon:Type\}/);
   assert.match(source,/\{id:"visual",Icon:Zap\},\{id:"settings",Icon:SlidersHorizontal\}/);
   assert.match(source,/data-video-montage-open-concept/);

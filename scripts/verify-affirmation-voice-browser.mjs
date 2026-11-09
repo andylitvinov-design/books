@@ -99,8 +99,30 @@ async function verifyWorkspaceHydration(browser,locale){
       })).catch(()=>({diagnosticsUnavailable:true}));
       throw new Error("WEBKIT_MONTAGE_SINGLE_TAP_NOT_COMMITTED "+JSON.stringify(state),{cause:error});
     }
-    // A real visitor opens the unique Concept in Ideas, not hidden Montage.
+    // Open the independent video storyboard in Montage. The written Concept stays in Ideas.
     const montageStyle=page.locator('[data-video-montage-tab="effects"]');
+    await expect(montageStyle).toHaveAttribute("aria-pressed","true");
+    const montageStoryboardTab=page.locator('[data-video-montage-tab="concept"]');
+    await expect(montageStoryboardTab).toBeVisible();
+    await montageStoryboardTab.tap();
+    await expect(montageStoryboardTab).toHaveAttribute("aria-pressed","true");
+    const montageVideoConcept=page.locator('[data-video-montage-concept]');
+    await expect(montageVideoConcept).toBeVisible();
+    const cinematicDirector=montageVideoConcept.locator('[data-cinematic-director]');
+    await expect(cinematicDirector).toBeVisible();
+    await cinematicDirector.locator('[aria-controls="cinematic-director-content"]').tap();
+    const visualIdea=cinematicDirector.locator('[data-director-visual-idea] textarea');
+    await expect(visualIdea).toBeVisible();
+    await visualIdea.fill(locale==="ru"?"Белая птица летит над горами, затем появляется рассвет.":
+      locale==="es"?"Un ave blanca vuela sobre las montañas y aparece el amanecer.":
+      "A white bird flies over mountains as the sunrise appears.");
+    await cinematicDirector.locator('[data-director-create-plan]').tap();
+    await expect(cinematicDirector.locator('[data-director-storyboard]')).toBeVisible();
+    const storyboardShotCount=await cinematicDirector.locator('[data-director-shot]').count();
+    assert.ok(storyboardShotCount===4||storyboardShotCount===6,
+      "Montage video concept creates four or six real scene cards");
+    await expect(cinematicDirector.locator('[data-director-scene-choice]')).toHaveCount(storyboardShotCount);
+    await montageStyle.tap();
     await expect(montageStyle).toHaveAttribute("aria-pressed","true");
     const ideasTop=page.locator('[data-video-quick-control="phrases"]');
     await ideasTop.tap();

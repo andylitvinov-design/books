@@ -7849,7 +7849,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <nav className={videoStyles.montageQuickTools} data-video-montage-tools
             aria-label={locale==="ru"?"Разделы монтажа":locale==="es"?"Secciones de montaje":"Montage sections"}>
             {([{id:"effects",Icon:Sparkles},{id:"text",Icon:Type},
-              {id:"visual",Icon:Zap},{id:"settings",Icon:SlidersHorizontal}] as const).map(item=>
+              {id:"visual",Icon:Zap},{id:"settings",Icon:SlidersHorizontal},
+              {id:"concept",Icon:Film}] as const).map(item=>
               <button type="button" key={item.id} data-video-montage-tab={item.id}
                 aria-pressed={montagePanel===item.id} aria-controls="video-montage-active-panel"
                 disabled={recording||preparing}
@@ -7861,12 +7862,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   settings:{ru:"Настройки",en:"Settings",es:"Ajustes"},
                   effects:{ru:"Стиль",en:"Style",es:"Estilo"},
                   text:{ru:"Текст",en:"Text",es:"Texto"},
-                  visual:{ru:"Эффекты",en:"Effects",es:"Efectos"}
+                  visual:{ru:"Эффекты",en:"Effects",es:"Efectos"},
+                  concept:{ru:"Сюжет",en:"Story",es:"Guion"}
                 } as const)[item.id][locale]}</span>
               </button>)}
           </nav>
           <div data-video-director-style-controls hidden={montagePanel!=="effects"} />
           <div id="video-montage-active-panel" className={videoStyles.montageActivePanel}>
+          {montagePanel==="concept" ? <section className={videoStyles.montagePane}
+            data-video-montage-concept aria-label={locale==="ru"?"Видеоконцепт и раскадровка":
+              locale==="es"?"Concepto visual y storyboard":"Video concept and storyboard"}>
+            <div className={videoStyles.quickSectionHeading}>
+              <div><h3>{locale==="ru"?"Видеоконцепт и раскадровка":
+                locale==="es"?"Concepto visual y storyboard":"Video concept & storyboard"}</h3>
+                <p>{locale==="ru"?"Соберите последовательность сцен и выберите визуальный материал для каждого кадра. Текстовый концепт остаётся отдельно в разделе «Идеи».":
+                  locale==="es"?"Ordena las escenas y elige el material visual de cada toma. El concepto textual permanece en Ideas.":
+                  "Build a sequence of scenes and choose the visual source for each shot. The written concept remains separately in Ideas."}</p></div>
+            </div>
+            {deepVideoDirectorPane}
+          </section> : null}
           {montagePanel==="settings" ? <div className={videoStyles.montagePreferences} data-video-montage-preferences>
             <div className={videoStyles.montagePreferencesHeader}>
               <SlidersHorizontal size={22} aria-hidden="true"/>
@@ -7956,9 +7970,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </details>
             <div className={videoStyles.montageAdvancedShortcuts}>
               <button type="button" data-video-montage-open-concept
-                disabled={recording||preparing} onClick={()=>{setActiveWorkspace("phrases");setIdeasSubtab("concept");}}>
-                <Brain size={17} aria-hidden="true"/>
-                {locale==="ru"?"Сценарий и концепция":locale==="es"?"Concepto y guion":"Concept and storyboard"}
+                data-video-montage-open-storyboard disabled={recording||preparing}
+                onClick={()=>{setActiveWorkspace("editor");setMontagePanel("concept");}}>
+                <Film size={17} aria-hidden="true"/>
+                {locale==="ru"?"Видеоконцепт и раскадровка":locale==="es"?"Concepto visual y guion":"Video concept & storyboard"}
               </button>
               <button type="button" data-video-montage-open-audio
                 disabled={recording||preparing} onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}>
@@ -8500,7 +8515,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             : guestFirstVideoUsed
               ? (locale==="ru"?"Создать следующее видео":locale==="es"?"Crear otro vídeo":"Create another video")
               : undefined}
-          proTools={activeWorkspace==="pro"?deepVideoDirectorPane:null}
+          proTools={activeWorkspace==="pro"?<button type="button" data-video-pro-open-montage-storyboard
+            onClick={()=>{setActiveWorkspace("editor");setMontagePanel("concept");}}>
+            <Film size={17} aria-hidden="true"/>{locale==="ru"?"Открыть видеоконцепт в Монтаже":
+              locale==="es"?"Abrir el storyboard en Montaje":"Open video storyboard in Montage"}
+            <ArrowRight size={16} aria-hidden="true"/>
+          </button>:null}
           standardEditor={<section className={videoStyles.quickSection}
             data-workspace-section="pro" data-video-final-editor
             aria-label={locale==="ru"?"Монтаж сцен":locale==="es"?"Montaje de escenas":"Scene editor"}>

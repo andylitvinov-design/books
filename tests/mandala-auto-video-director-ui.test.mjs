@@ -293,12 +293,14 @@ test("Montage and PRO retain one operational video/audio pipeline without duplic
   assert.match(studio,/data-video-basic-editor/);
   const nav=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'),
     studio.indexOf('</nav>',studio.indexOf('<nav className={videoStyles.montageQuickTools}')));
-  assert.deepEqual([...nav.matchAll(/id:"(effects|text|visual|settings)",Icon:/g)].map(m=>m[1]),
-    ["effects","text","visual","settings"],"Style, Text, Effects and Settings under the existing player");
+  assert.deepEqual([...nav.matchAll(/id:"(effects|text|visual|settings|concept)",Icon:/g)].map(m=>m[1]),
+    ["effects","text","visual","settings","concept"],"Style, Text, Effects, Settings and Storyboard under the existing player");
   assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
   assert.match(studio,/data-video-montage-visual-effect=\{item.id\}/);
   assert.match(studio,/data-video-montage-aspect-switch/);
   assert.match(studio,/data-video-montage-open-concept/);
+  assert.match(studio,/data-video-montage-concept/);
+  assert.match(studio,/data-video-pro-open-montage-storyboard/);
   assert.match(studio,/data-video-montage-open-audio/);
   assert.match(studio,/data-video-concept-text-tools/,"caption editor and timeline remain available");
   assert.match(studio,/data-video-montage-style=\{index\}/);
@@ -317,7 +319,7 @@ test("Montage and PRO retain one operational video/audio pipeline without duplic
   assert.match(studio,/data-video-final-editor/);
   assert.match(studio,/data-video-editor-style-settings/);
   assert.match(studio,/data-video-quick-generate/);
-  assert.match(css,/\.montageQuickTools\{\s*display:grid!important;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.montageQuickTools\{\s*display:grid!important;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
 });
 
