@@ -251,7 +251,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     }))
   }
   const set=field=>event=>setForm(old=>({...old,[field]:event.target.value}))
-  const setChannel=event=>{const channel=event.target.value;setForm(old=>({...old,channel,instagramAccountId:channel==='instagram'?(old.instagramAccountId||'wizards_secrets'):''}))}
+  const setChannel=event=>{const channel=event.target.value;setForm(old=>({...old,channel,instagramAccountId:channel==='instagram'&&old.channel==='instagram'?old.instagramAccountId:''}))}
   const reset=()=>{setEditing(null);setForm({...empty(),locale});setNotice('');setTab('compose')}
   const edit=post=>{
     setEditing({id:post.id,revision:post.revision})
