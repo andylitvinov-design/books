@@ -72,3 +72,29 @@ test('linked PR chats automatically sync signed CI/Repair reports with stable pr
  assert.match(html,/CI \/ Repair/);
  assert.match(html,/2 минуты/);
 });
+
+test('server chat refresh is retryable and never silently switches to a local archive',()=>{
+ const js=src('commander-chats.js'),html=src('chats.html');
+ assert.match(js,/13000/);
+ assert.match(js,/AbortError/);
+ assert.match(js,/if\(remote\)\{await listRemote\(\)/);
+ assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
+ assert.match(js,/A transient API failure must not silently replace server chats/);
+ assert.match(js,/Серверное хранилище временно недоступно/);
+ assert.match(html,/commander-chats\.js\?v=20261109-retry-v1/);
+ assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
+ assert.match(js,/if\(statusError\)/);
+});
+
+test('monitor-side owner token handoff is bounded, retryable and removes bearer from URL',()=>{
+ const auth=src('commander-auth.js');
+ assert.match(auth,/fetchWithTimeout/);
+ assert.match(src('commander-auth.html'),/commander-auth\.js\?v=20261109-handoff-retry-v1/);
+ assert.match(auth,/11000/);
+ assert.match(auth,/history\.replaceState\(null,'',location\.pathname\+location\.search\)/);
+ assert.match(auth,/sessionToken=''/);
+ assert.match(auth,/retryAction\(message,\(\)=>exchangeToken\(next\)\)/);
+ assert.match(auth,/sessionToken=''[\s\S]{0,100}location\.replace\(next\)/);
+ assert.match(auth,/if\(response\.status===401\|\|response\.status===403\)sessionToken=''/);
+ assert.match(auth,/HttpOnly|api\/commander-session/);
+});

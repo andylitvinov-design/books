@@ -24,9 +24,16 @@
   const a=make('a',null,label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';box.append(a);
  };
  async function request(url,method='GET',body){
-  const r=await win.fetch(url,{method,credentials:'same-origin',cache:'no-store',redirect:'error',
-   headers:{Accept:'application/json',...(body?{'Content-Type':'application/json'}:{})},
-   ...(body?{body:JSON.stringify(body)}:{})});
+  const controller=new AbortController(),timer=win.setTimeout(()=>controller.abort(),13000);
+  let r;
+  try{
+   r=await win.fetch(url,{method,credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal,
+    headers:{Accept:'application/json',...(body?{'Content-Type':'application/json'}:{})},
+    ...(body?{body:JSON.stringify(body)}:{})});
+  }catch(error){
+   if(error?.name==='AbortError')throw Error('Сервер не ответил за 13 секунд. Повторите проверку соединения.');
+   throw error;
+  }finally{win.clearTimeout(timer)}
   let j;try{j=await r.json()}catch{throw Error('Не удалось прочитать ответ сервера')}
   if(!r.ok)throw Error(j.error||'HTTP '+r.status);return j;
  }
@@ -442,13 +449,24 @@
   }catch(err){info('Не удалось связать задачу с чатом: '+String(err.message||err))}
  }
  async function listRemote(){
-  const r=await request(SERVER+'?action=list');chats=r.chats||[];
+  const r=await request(SERVER+'?action=list');
+  if(!Array.isArray(r.chats))throw Error('Сервер вернул некорректный список рабочих чатов.');
+  chats=r.chats;
   renderList();if(r.incomplete)info('Индекс серверных чатов неполон: лимит GitHub API.');
+  return r;
  }
  async function authenticated(){
   authorized=true;show('login',false);
-  let status;try{status=await request(SERVER+'?action=status')}catch{status={privateStoreConfigured:false}}
+  let status,statusError=null;
+  try{status=await request(SERVER+'?action=status')}
+  catch(error){statusError=error;status={privateStoreConfigured:false}}
   remote=!!status.privateStoreConfigured;
+  if(statusError){
+   show('vault',false);show('board',false);
+   el('storage-label').textContent='Проверка защищённого серверного хранилища временно не завершилась.';
+   info('Вход владельца подтверждён, но сервер чатов не ответил: '+String(statusError.message||statusError)+' Нажмите «Обновить», чтобы повторить проверку.');
+   return;
+  }
   el('storage-label').textContent=remote?'Защищённые чаты Supabase · история доступна между устройствами.':
    'Зашифровано на этом устройстве · серверная синхронизация не подключена.';
   show('vault',false);show('board',remote);show('export',!remote);show('import-label',!remote);
@@ -459,9 +477,15 @@
   el('model').replaceChildren();
   for(const m of models){const o=make('option',null,m.name+' · '+m.id);o.value=m.id;el('model').append(o)}
   el('mode').querySelector('option[value=openrouter]').disabled=!aiReady;
-  if(remote){try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}catch(e){
-   remote=false;chats=[];el('storage-label').textContent='Защищённое локальное хранилище. Серверная синхронизация недоступна.';
-  }}
+  if(remote){
+   show('board',true);
+   try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
+   catch(e){
+    // A transient API failure must not silently replace server chats with a local vault.
+    el('storage-label').textContent='Серверное хранилище временно недоступно. Локальная копия не подменяет рабочие чаты.';
+    info('Не удалось загрузить рабочие чаты: '+String(e.message||e)+' Нажмите «Обновить», чтобы повторить.');
+   }
+  }
   if(!remote){
    show('export',true);show('import-label',true);
    try{
@@ -491,7 +515,20 @@
  el('handoff').addEventListener('click',handoff);
  el('search').addEventListener('input',renderList);el('filter').addEventListener('change',renderList);
  el('close-thread').addEventListener('click',()=>{if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);reportRefreshTimer=null;thread=null;messages=[];show('thread',false);renderList()});
- el('refresh').addEventListener('click',async()=>{if(remote)try{await listRemote();info('Чаты обновлены.')}catch(e){info(String(e.message||e))}else renderList()});
+ el('refresh').addEventListener('click',async()=>{
+  if(busy)return;
+  busy=true;el('refresh').disabled=true;
+  try{
+   if(remote){await listRemote();info('Серверные рабочие чаты обновлены.');}
+   else if(authorized){await authenticated();}
+   else{
+    const s=await request(AI+'?action=status');
+    if(s.authenticated===true)await authenticated();
+    else throw Error('Сессия владельца закончилась. Войдите через Google.');
+   }
+  }catch(e){info('Проверка рабочих чатов не завершена: '+String(e.message||e));}
+  finally{busy=false;el('refresh').disabled=false;}
+ });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
  el('mode').addEventListener('change',()=>show('model-label',el('mode').value==='openrouter'));
  request(AI+'?action=status').then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
