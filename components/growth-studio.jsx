@@ -11,6 +11,7 @@ import GrowthStudioSourcePicker from './growth-studio-source-picker'
 import {nextManualSlot,findManualTimeConflicts,buildManualCalendarIcs} from '@/lib/growth-studio/manual-calendar.mjs'
 import GrowthStudioConnections from './growth-studio-connections'
 import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
+import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
 import styles from './growth-studio.module.css'
 
@@ -49,11 +50,12 @@ const COPY={
     archivedNotice:'Archived.',reopened:'Back in draft.',tryAgain:'Could not save. Refresh and try again.',
     unauthorized:'Admin session expired. Sign in again.',conflict:'This post changed. Refresh before editing again.',
     invalid_transition:'Save and approve the post first; the planned date must be in the future.',
+    instagram_account_required:'Choose an Instagram account before approving this draft.',
     invalid_post:'Check the required fields, URL, text length and campaign code.',
     storage_unavailable:'Storage is unavailable. No changes were saved.',
     capacity_reached:'The editorial calendar has reached its record limit.',
     not_found:'This post was not found.',invalid_action:'Unsupported action.',
-    filter:'Filter',all:'All statuses',allBrands:'All brands',today:'Today',
+    filter:'Filter',all:'All statuses',allBrands:'All brands',allAccounts:'All accounts',instagramAccount:'Instagram account',today:'Today',
     next:'Next month',previous:'Previous month',monthItems:'manual plans',
     other:'Unscheduled / drafts',draftCount:'Drafts',approvedCount:'Approved',
     planCount:'Manual plans',publishedCount:'Confirmed online',notMeasured:'Not integrated',
@@ -91,10 +93,11 @@ const COPY={
     archivedNotice:'В архиве.',reopened:'Снова черновик.',tryAgain:'Не удалось сохранить. Обновите список и повторите.',
     unauthorized:'Сессия администратора истекла. Войдите ещё раз.',conflict:'Публикация изменилась. Обновите список перед редактированием.',
     invalid_transition:'Сначала сохраните и одобрите текст; дата должна быть в будущем.',
+    instagram_account_required:'Выберите аккаунт Instagram перед согласованием черновика.',
     invalid_post:'Проверьте поля, ссылку, длину текста и код кампании.',
     storage_unavailable:'Хранилище недоступно. Изменения не сохранены.',
     capacity_reached:'Достигнут лимит записей календаря.',not_found:'Запись не найдена.',invalid_action:'Недоступное действие.',
-    filter:'Фильтр',all:'Все статусы',allBrands:'Все проекты',today:'Сегодня',
+    filter:'Фильтр',all:'Все статусы',allBrands:'Все проекты',allAccounts:'Все аккаунты',instagramAccount:'Аккаунт Instagram',today:'Сегодня',
     next:'Следующий месяц',previous:'Предыдущий месяц',monthItems:'планов вручную',
     other:'Без даты / черновики',draftCount:'Черновики',approvedCount:'Одобрено',
     planCount:'Ручной план',publishedCount:'Подтверждено онлайн',notMeasured:'Не подключено',
@@ -112,7 +115,7 @@ const CHANNEL_WARNINGS={
 }
 const METHOD_LABELS={en:{telegram_opt_in:'Telegram · separate owner approval',existing_uploader:'Separate YouTube uploader, OAuth not verified',manual:'Manual posting; no API connected',event_adapter:'Event publisher / manual event listing'},ru:{telegram_opt_in:'Telegram · отдельное подтверждение',existing_uploader:'Загрузчик YouTube, OAuth ещё не подтверждён',manual:'Ручное размещение; API не подключён',event_adapter:'Модуль событий / ручное размещение'}}
 const empty = () => ({
-  brand:'holistic_house',channel:'manual',locale:'en',title:'',caption:'',
+  brand:'holistic_house',channel:'manual',socialAccountId:'',locale:'en',title:'',caption:'',
   sourceUrl:'',campaign:'',scheduledAt:'',mediaUrl:'',mediaAlt:'',
 })
 const isoFromLocal = input => {
@@ -177,6 +180,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [evergreenSource,setEvergreenSource]=useState(null)
   const [filter,setFilter]=useState('active')
   const [brandFilter,setBrandFilter]=useState('all')
+  const [accountFilter,setAccountFilter]=useState('all')
   const [month,setMonth]=useState(()=>torontoKey(new Date().toISOString()).slice(0,7))
   useEffect(()=>{
     const onLocale=event=>{
@@ -191,8 +195,9 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const sorted=useMemo(()=>orderGrowthPosts(records),[records])
   const visible=useMemo(()=>sorted.filter(post=>{
     if (brandFilter!=='all' && post.brand!==brandFilter) return false
+    if (accountFilter!=='all' && post.socialAccountId!==accountFilter) return false
     return filter==='all'||(filter==='active'?post.status!=='archived':post.status===filter)
-  }),[sorted,filter,brandFilter])
+  }),[sorted,filter,brandFilter,accountFilter])
   const scheduled=useMemo(()=>visible.filter(post=>post.status==='planned_manual'),[visible])
   const library=useMemo(()=>{
     const byUrl=new Map()
@@ -245,7 +250,11 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       }
     }))
   }
-  const set=field=>event=>setForm(old=>({...old,[field]:event.target.value}))
+  const set=field=>event=>setForm(old=>{
+    const value=event.target.value
+    if(field==='channel'&&value!=='instagram')return {...old,channel:value,socialAccountId:''}
+    return {...old,[field]:value}
+  })
   const reset=()=>{setEditing(null);setForm({...empty(),locale});setNotice('');setTab('compose')}
   const edit=post=>{
     setEditing({id:post.id,revision:post.revision})
@@ -272,7 +281,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     try {
       const result=await updateGrowthStudioPostAction(action==='save'
         ? {action:'save',id:editing?.id??null,expectedRevision:editing?.revision??0,
-          fields:{brand:form.brand,channel:form.channel,locale:form.locale,title:form.title,
+          fields:{brand:form.brand,channel:form.channel,socialAccountId:form.socialAccountId||'',locale:form.locale,title:form.title,
             caption:form.caption,sourceUrl:form.sourceUrl,campaign:form.campaign,
             scheduledAt:isoFromLocal(form.scheduledAt),mediaUrl:form.mediaUrl,mediaAlt:form.mediaAlt}}
         : {action,id:post.id,expectedRevision:post.revision,
@@ -412,6 +421,15 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
         <div className={styles.quickComposerFields}>
           <label>{t.channel}<select disabled={!ready||!storageVerified||busy} value={form.channel} onChange={set('channel')}>
             {GROWTH_CHANNELS.map(channel=><option key={channel} value={channel}>{CHANNELS[channel]}</option>)}</select></label>
+          {form.channel==='instagram'&&<label>{locale==='ru'?'Аккаунт Instagram':'Instagram account'}
+            <select disabled={!ready||!storageVerified||busy} value={form.socialAccountId||''} onChange={set('socialAccountId')}>
+              <option value="">{locale==='ru'?'Выберите аккаунт':'Select an account'}</option>
+              {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=><option key={account.id} value={account.id}>{account.label}</option>)}
+            </select>
+            <small>{locale==='ru'
+              ?'Оба аккаунта пока ожидают Meta OAuth. Выбор задаёт назначение черновика, но не включает публикацию.'
+              :'Both accounts are awaiting Meta OAuth. Selection sets the draft destination; it does not enable publishing.'}</small>
+          </label>}
           <label>{t.title}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={120} required
             placeholder={locale==='ru'?'Название публикации':'Post title'}
             value={form.title} onChange={set('title')}/></label>
@@ -501,13 +519,17 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     {(tab==='posts'||tab==='calendar'||tab==='inbox')&&<div className={styles.filters}>
       <label>{t.brand}<select value={brandFilter} onChange={event=>setBrandFilter(event.target.value)}>
         <option value="all">{t.allBrands}</option>{Object.keys(BRANDS).map(key=><option key={key} value={key}>{BRANDS[key]}</option>)}</select></label>
+      <label>{t.instagramAccount}<select value={accountFilter} onChange={event=>setAccountFilter(event.target.value)}>
+        <option value="all">{t.allAccounts}</option>
+        {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=><option key={account.id} value={account.id}>{account.label}</option>)}
+      </select></label>
       {tab!=='inbox'&&<label>{t.filter}<select value={filter} onChange={event=>setFilter(event.target.value)}>
         <option value="active">{t.all}</option><option value="all">{t.all} + {t.archived}</option>
         {['draft','approved','planned_manual','manual_done','sending','published','delivery_unknown','archived'].map(status=><option key={status} value={status}>{t[status]}</option>)}
       </select></label>}
     </div>}
     {tab==='inbox'&&<GrowthStudioManualInbox
-      records={records.filter(post=>brandFilter==='all'||post.brand===brandFilter)}
+      records={records.filter(post=>(brandFilter==='all'||post.brand===brandFilter)&&(accountFilter==='all'||post.socialAccountId===accountFilter))}
       locale={locale} ready={ready&&storageVerified} busy={busy}
       onEdit={edit} onMarkDone={markManualDone}/>}
     {tab==='calendar'&&<div className={styles.calendar}>
@@ -524,7 +546,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           const items=scheduledByDay.get(key)||[]
           return <div className={key===today?styles.today:styles.day} key={key}>
             <span>{i+1}</span>
-            {items.slice(0,3).map(post=><button key={post.id} title={post.title} onClick={()=>edit(post)} type="button">{CHANNELS[post.channel]} · {post.title}</button>)}
+            {items.slice(0,3).map(post=><button key={post.id} title={post.title} onClick={()=>edit(post)} type="button">{CHANNELS[post.channel]}{post.socialAccountId?' · '+(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(account=>account.id===post.socialAccountId)?.label||'Instagram'):''} · {post.title}</button>)}
             {items.length>3&&<small>+{items.length-3}</small>}
           </div>
         })}
@@ -544,7 +566,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       {!visible.length&&<p className={styles.empty}>{t.noPosts}</p>}
       {visible.map(post=><article key={post.id} className={styles.post}>
         <div className={styles.postHeading}><div><span className={styles.status} data-state={post.status}>{publicationStatusLabel(post.status,locale)}</span>
-          <h3>{post.title}</h3><p>{BRANDS[post.brand]} · {CHANNELS[post.channel]} · {post.locale.toUpperCase()}</p>
+          <h3>{post.title}</h3><p>{BRANDS[post.brand]} · {CHANNELS[post.channel]}{post.socialAccountId?' · '+(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(account=>account.id===post.socialAccountId)?.label||'Instagram'):''} · {post.locale.toUpperCase()}</p>
           {post.scheduledAt&&<small>{formatTime(post.scheduledAt,locale)} · {t.localTime}</small>}</div>
           {!['sending','published','delivery_unknown','manual_done'].includes(post.status)
             && <button type="button" disabled={busy} onClick={()=>edit(post)}><Edit3 size={15}/>{t.edit}</button>}</div>
