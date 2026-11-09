@@ -125,3 +125,20 @@ body.hh2-active .hh2-screen{height:auto!important;min-height:0!important;max-hei
  .hh2-first .hh2-chart{height:auto!important;max-height:none!important;flex:none!important;overflow:visible!important}
  .hh2-first .hh2-chart-slot{height:auto!important;max-height:none!important;flex:none!important;overflow:visible!important}
 }
+
+/* 2026-11-09: CI wave count + matched 7/14-day comparison. */
+.hh2-stage-head,.hh2-stage-row{grid-template-columns:minmax(0,1.45fr) repeat(3,minmax(0,.68fr))}
+.hh2-stage-head strong{font-size:9px;line-height:1.15;text-align:right}
+.hh2-stage-row strong{font-size:10px;line-height:1.15}
+.hh2-wave-comparison{display:grid;gap:5px;margin:10px 0 5px;padding:9px;border:1px solid #365570;border-radius:9px;background:#0b1d2d}
+.hh2-wave-comparison h3{margin:0;color:#e7f4ff;font-size:12px;line-height:1.3}
+.hh2-wave-row{display:grid;grid-template-columns:minmax(0,1.45fr) repeat(3,minmax(0,.68fr));gap:5px;align-items:center;padding:5px 0;border-bottom:1px solid #28465e;font-size:10px}
+.hh2-wave-row span{color:#b4cadd;overflow-wrap:anywhere}
+.hh2-wave-row strong{font-size:10px;color:#cce7ff;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.hh2-wave-head{border-bottom:1px solid #54718a;color:#9fbed4}
+.hh2-wave-head span,.hh2-wave-head strong{font-weight:800;color:#a9cbe2}
+@media(max-width:359px){
+ .hh2-stage-head,.hh2-stage-row,.hh2-wave-row{grid-template-columns:minmax(0,1.35fr) repeat(3,minmax(0,.62fr));gap:3px}
+ .hh2-stage-head strong,.hh2-stage-row strong,.hh2-wave-row strong{font-size:9px}
+ .hh2-wave-comparison{padding:7px}
+}
