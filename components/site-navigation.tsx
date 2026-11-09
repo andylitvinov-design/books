@@ -16,7 +16,6 @@ import { HomePersonalSpaceNavEntry } from './home-personal-space';
 type Props = { locale?: PublicLocale; onLocaleChange?: (locale: Locale) => void };
 
 const shopMenuCopy = { en: 'Shop', ru: 'Магазин', es: 'Tienda' } as const;
-const myCoachMenuCopy = { en: 'My Coach', ru: 'Мой коуч', es: 'Mi coach' } as const;
 
 const siteMenuCopy = {
   en: {
@@ -124,13 +123,13 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     item => ['energy', 'love', 'business', 'library', 'events'].includes(item.id),
   );
 
-  // Courses is now a primary tab. Keep Temple Insights and My Coach discoverable.
+  // Courses is now a primary tab. Keep dedicated Temple Insights and Services discoverable.
   extraMenuItems.push(
     // Direct bridge from the marketing home to the approved six-tab Practice
     // without replacing the existing Holistic Support catalogue.
     { id: 'practice', label: text.practice, href: '/' + activeLocale + '/holistic-support/mobile', ariaLabel: text.practice, external: false },
     { id: 'insights', label: text.insights, href: '/' + activeLocale + '/temple-insights', ariaLabel: text.insights, external: false },
-    { id: 'my-coach', label: myCoachMenuCopy[activeLocale], href: '/' + activeLocale + '/masters', ariaLabel: myCoachMenuCopy[activeLocale], external: false },
+    { id: 'services', label: text.services, href: '/' + activeLocale + '/services', ariaLabel: text.services, external: false },
   );
 
   return <nav aria-label={text.navigation} className="site-navigation">
@@ -209,7 +208,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
               data-nav-item={item.id}
               href={item.href}
               prefetch={false}
-              aria-current={(current === item.id || (item.id === 'my-coach' && /^\/(?:ru|en|es)\/masters(?:\/|$)/.test(pathname))) ? 'page' : undefined}
+              aria-current={current === item.id && !(menuCurrent === 'alchemy' && item.id === 'services') ? 'page' : undefined}
               onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
             >{item.label}</Link>
           ))}
