@@ -16,9 +16,14 @@ const saveCopy={
   es:{review:'Revisa cada acción',choose:'Elige una opción',accepted:'Aceptar',deferred:'Posponer',declined:'Rechazar',consent:'Acepto guardar este informe revisado de forma privada en mi cuenta.',save:'Guardar informe',saving:'Guardando…',retry:'Reintentar guardado',saved:'Tu informe revisado está guardado. No se añadieron acciones a tu plan.',error:'No se pudo confirmar el guardado. Reintenta la misma solicitud.',locked:'Tus decisiones quedan fijadas mientras se resuelve el guardado.'},
 }
 const archiveCopy={
-  en:{view:'View saved report',all:'View saved reports',title:'Saved reports',pick:'Choose a report',empty:'No saved report for this session.',emptyAll:'No saved reports.',exists:'A report for this session is already saved.',confirm:'Delete this saved report. Your coaching session will remain.',remove:'Delete saved report',deleted:'Saved report deleted.',failed:'Could not load or delete the saved report. Try again.'},
-  ru:{view:'Открыть сохранённый отчёт',all:'Открыть сохранённые отчёты',title:'Сохранённые отчёты',pick:'Выберите отчёт',empty:'Для этой сессии нет сохранённого отчёта.',emptyAll:'Сохранённых отчётов нет.',exists:'Отчёт для этой сессии уже сохранён.',confirm:'Удалить этот сохранённый отчёт. Коучинговая сессия останется.',remove:'Удалить сохранённый отчёт',deleted:'Сохранённый отчёт удалён.',failed:'Не удалось загрузить или удалить отчёт. Попробуйте снова.'},
-  es:{view:'Ver informe guardado',all:'Ver informes guardados',title:'Informes guardados',pick:'Elige un informe',empty:'No hay informe guardado para esta sesión.',emptyAll:'No hay informes guardados.',exists:'Ya hay un informe guardado para esta sesión.',confirm:'Eliminar este informe guardado. Tu sesión de coaching permanecerá.',remove:'Eliminar informe guardado',deleted:'Informe guardado eliminado.',failed:'No se pudo cargar o eliminar el informe. Inténtalo de nuevo.'},
+  en:{view:'View saved report',all:'View saved reports',title:'Saved reports',pick:'Choose a report',empty:'No saved report for this session.',emptyAll:'No saved reports.',exists:'A report for this session is already saved.',confirm:'Delete this saved report. Your coaching session will remain.',remove:'Delete saved report',deleted:'Saved report deleted.',failed:'Could not load or delete the saved report. Try again.',plan:'Add confirmed actions to My Coaching Plan',area:'Life area',importActions:'Add to plan',imported:'Added to My Coaching Plan.',alreadyImported:'These actions are already in My Coaching Plan.',noAccepted:'No confirmed actions to add.',importFailed:'Could not add actions to your plan. Try again.'},
+  ru:{view:'Открыть сохранённый отчёт',all:'Открыть сохранённые отчёты',title:'Сохранённые отчёты',pick:'Выберите отчёт',empty:'Для этой сессии нет сохранённого отчёта.',emptyAll:'Сохранённых отчётов нет.',exists:'Отчёт для этой сессии уже сохранён.',confirm:'Удалить этот сохранённый отчёт. Коучинговая сессия останется.',remove:'Удалить сохранённый отчёт',deleted:'Сохранённый отчёт удалён.',failed:'Не удалось загрузить или удалить отчёт. Попробуйте снова.',plan:'Добавить подтверждённые действия в My Coaching Plan',area:'Сфера жизни',importActions:'Добавить в план',imported:'Добавлено в My Coaching Plan.',alreadyImported:'Эти действия уже находятся в My Coaching Plan.',noAccepted:'Нет подтверждённых действий для добавления.',importFailed:'Не удалось добавить действия в план. Попробуйте снова.'},
+  es:{view:'Ver informe guardado',all:'Ver informes guardados',title:'Informes guardados',pick:'Elige un informe',empty:'No hay informe guardado para esta sesión.',emptyAll:'No hay informes guardados.',exists:'Ya hay un informe guardado para esta sesión.',confirm:'Eliminar este informe guardado. Tu sesión de coaching permanecerá.',remove:'Eliminar informe guardado',deleted:'Informe guardado eliminado.',failed:'No se pudo cargar o eliminar el informe. Inténtalo de nuevo.',plan:'Añadir acciones confirmadas a Mi Plan de Coaching',area:'Área de vida',importActions:'Añadir al plan',imported:'Añadido a Mi Plan de Coaching.',alreadyImported:'Estas acciones ya están en tu plan.',noAccepted:'No hay acciones confirmadas para añadir.',importFailed:'No se pudieron añadir las acciones. Inténtalo de nuevo.'},
+}
+const areaOptions={
+  en:[['body_health','Body & Health'],['emotional_wellbeing','Emotional Wellbeing'],['relationships','Relationships'],['career_business','Career & Business'],['finance','Finance'],['personal_growth','Personal Growth'],['lifestyle','Lifestyle'],['meaning_purpose','Meaning & Purpose']],
+  ru:[['body_health','Тело и здоровье'],['emotional_wellbeing','Эмоциональное благополучие'],['relationships','Отношения'],['career_business','Карьера и бизнес'],['finance','Финансы'],['personal_growth','Личностный рост'],['lifestyle','Образ жизни'],['meaning_purpose','Смысл и предназначение']],
+  es:[['body_health','Cuerpo y salud'],['emotional_wellbeing','Bienestar emocional'],['relationships','Relaciones'],['career_business','Carrera y negocio'],['finance','Finanzas'],['personal_growth','Crecimiento personal'],['lifestyle','Estilo de vida'],['meaning_purpose','Sentido y propósito']],
 }
 const saveFailureCopy={
   en:{legacy:'This older session can be previewed, but cannot yet be saved as a report.',exists:'A report for this session already exists. Open the saved report below.'},
@@ -40,12 +45,13 @@ export default function CoachingReportPreview({accountId,sessionId,revision,loca
   const pending=useRef(false),locked=useRef(null)
   const [choices,setChoices]=useState({}),[consent,setConsent]=useState(false),[intent,setIntent]=useState(null),[saved,setSaved]=useState(false),[saveError,setSaveError]=useState(false)
   const [archiveState,setArchive]=useState(null),[deleteConfirmed,setDeleteConfirmed]=useState(false),[archiveError,setArchiveError]=useState(false)
+  const [planAreaKey,setPlanAreaKey]=useState('personal_growth'),[planImportBusy,setPlanImportBusy]=useState(false),[planImportState,setPlanImportState]=useState('')
   const archive=archiveState?.key===key?archiveState:null
   const st=saveCopy[lang],at=archiveCopy[lang]
   useEffect(()=>{
     controller.current?.abort();controller.current=null;setResult(null);setBusy(false);setError('')
     pending.current=false;locked.current=null;setChoices({});setConsent(false);setIntent(null);setSaved(false);setSaveError(false)
-    setArchive(null);setDeleteConfirmed(false);setArchiveError(false)
+    setArchive(null);setDeleteConfirmed(false);setArchiveError(false);setPlanAreaKey('personal_growth');setPlanImportBusy(false);setPlanImportState('')
     return()=>{controller.current?.abort();controller.current=null}
   },[key])
   async function load(){
@@ -105,6 +111,18 @@ export default function CoachingReportPreview({accountId,sessionId,revision,loca
     }catch{if(!active.signal.aborted)setArchiveError(true)}
     finally{if(controller.current===active){controller.current=null;pending.current=false;setBusy(false)}}
   }
+  async function addAcceptedActionsToPlan(){
+    if(planImportBusy||!archive?.id||!archive.rows?.actions?.some(item=>item.status==='accepted'))return
+    setPlanImportBusy(true);setPlanImportState('')
+    try{
+      const response=await appFetch(`personal-coaching-reports/${archive.id}/import`,{areaKey:planAreaKey,confirmed:true},'POST',{accountId})
+      if(response?.imported===true)setPlanImportState('imported')
+      else if(response?.alreadyImported===true)setPlanImportState('alreadyImported')
+      else if(response?.reason==='NO_ACCEPTED_ACTIONS')setPlanImportState('noAccepted')
+      else throw new Error('COACHING_PLAN_IMPORT_UNCONFIRMED')
+    }catch{setPlanImportState('importFailed')}
+    finally{setPlanImportBusy(false)}
+  }
   async function deleteSaved(){
     if(pending.current||!archive?.id||!deleteConfirmed)return
     const active=new AbortController();controller.current=active;pending.current=true;setBusy(true);setArchiveError(false)
@@ -142,6 +160,14 @@ export default function CoachingReportPreview({accountId,sessionId,revision,loca
     {archive?.rows&&<div className={styles.review}>
       {archiveOnly&&<label>{at.pick}<select value={archive.id} disabled={busy} onChange={event=>{const selected=archive.items.find(item=>item.id===event.target.value);if(selected){setArchive({...selected,items:archive.items,key});setDeleteConfirmed(false)}}}>{archive.items.map((item,index)=><option key={item.id} value={item.id}>{index+1} · {new Date(item.createdAt).toLocaleDateString(lang)}</option>)}</select></label>}
       <CoachingReportPreviewResult rows={archive.rows} locale={lang}/>
+      {archive.rows.actions.some(item=>item.status==='accepted')&&<div className={styles.planImport}>
+        <strong>{at.plan}</strong>
+        <label>{at.area}<select value={planAreaKey} disabled={planImportBusy||busy||planImportState==='imported'||planImportState==='alreadyImported'} onChange={event=>{setPlanAreaKey(event.target.value);setPlanImportState('')}}>
+          {areaOptions[lang].map(([value,label])=><option key={value} value={value}>{label}</option>)}
+        </select></label>
+        <button type="button" className={styles.button} disabled={planImportBusy||busy||planImportState==='imported'||planImportState==='alreadyImported'} onClick={addAcceptedActionsToPlan}>{planImportBusy?(lang==='ru'?'Добавляем…':lang==='es'?'Añadiendo…':'Adding…'):at.importActions}</button>
+        {planImportState&&<p role={planImportState==='importFailed'?'alert':'status'} className={planImportState==='importFailed'?styles.error:styles.success}>{at[planImportState]}</p>}
+      </div>}
       <label><input type="checkbox" checked={deleteConfirmed} disabled={busy} onChange={event=>setDeleteConfirmed(event.target.checked)}/> {at.confirm}</label>
       <button type="button" className={styles.button} disabled={busy||!deleteConfirmed} onClick={deleteSaved}>{at.remove}</button>
     </div>}
