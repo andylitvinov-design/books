@@ -420,11 +420,12 @@ test("browser stale-audio check removes the spoken phrase through the visible Mo
   assert.match(source,/the old WAV may remain attached, but must be unusable until narration is regenerated/);
 });
 
-test('browser checks phrase consent before switching to the separate montage workspace',()=>{
-  const start=source.indexOf('the old WAV may remain attached, but must be unusable until narration is regenerated');
-  const consent=source.indexOf('await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked',start);
-  const montage=source.indexOf('data-video-quick-control="editor"',start);
-  assert.ok(start>=0&&consent>start&&montage>consent,'the phrase consent control must be checked while its workspace is mounted');
+test('dedicated Voice workspace keeps explicit consent opt-in and separate from Montage',()=>{
+  const voice=read("components/mandala-affirmation-voice.tsx");
+  assert.match(voice,/const \[consent,setConsent\]=useState\(false\)/);
+  assert.match(voice,/data-video-affirmation-voice-consent type="checkbox" checked=\{consent\}/);
+  assert.match(source,/data-video-narration-reapproval/);
+  assert.match(source,/await expect\(page\.locator\('\[data-video-quick-generate\]'\)\)\.toBeDisabled/);
 });
 
 test('stale narration safety remains checked after the phrase warning unmounts',()=>{
