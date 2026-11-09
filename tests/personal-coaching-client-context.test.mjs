@@ -30,3 +30,11 @@ test('normalizer bounds every field and rejects arbitrary coaching style',()=>{
  assert.throws(()=>normalizeClientCoachingContext({...draft,active_goals:Array(9).fill('x')},{clientConfirmed:true}),/COACHING_CONTEXT_LIMIT/)
  assert.throws(()=>normalizeClientCoachingContext({...draft,preferred_coaching_style:'diagnostician'},{clientConfirmed:true}),/COACHING_CONTEXT_STYLE_INVALID/)
 })
+
+test('sensitive items remain owner-visible but are excluded from a future model projection',()=>{
+ const draft=buildClientCoachingContext([{status:'completed',clientQuestion:'Protect personal time',
+   reflections:{q1:{text:'I am receiving trauma therapy and medication support'}}}])
+ const confirmed=normalizeClientCoachingContext(draft,{clientConfirmed:true})
+ assert.equal(confirmedModelContext(confirmed).previous_insights.length,0)
+ assert.equal(confirmed.previous_insights.length,1)
+})
