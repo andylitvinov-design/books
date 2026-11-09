@@ -92,3 +92,30 @@ test('watchdog direct-handoff condition must be balanced',()=>{
  }
  assert.equal(depth,0,'GitHub Actions if expression has no unclosed parentheses');
 });
+
+test('independent required PR workflow failures wake the same serialized Watchdog immediately',()=>{
+ const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
+ const trigger=watchdog.split('  workflow_run:\\n')[1]?.split('  push:\\n')[0];
+ assert.ok(trigger,'workflow_run trigger exists');
+ for(const name of [
+  'HH PR Sweep Guard tests',
+  'HH workflow syntax — actionlint',
+  'HH PR watchdog contract',
+  'Holistic Support mandala release checks',
+  'Holistic House public services production acceptance',
+  'Holistic House CRM source checks',
+  'Website video browser verification',
+  'Practitioner visual service editor',
+  'HH First Video LIVE · encoded file acceptance',
+  'Video publication safety and legacy private preflight',
+  'Holistic House nightly public URL / media crawl',
+  'Native CI'
+ ]) assert.ok(trigger.includes("'"+name+"'"),'missing event wake for '+name);
+ const reconcile=watchdog.split('  reconcile:\\n')[1]?.split('    runs-on:')[0];
+ assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'failure'"));
+ assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'timed_out'"));
+ assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'startup_failure'"));
+ assert.ok(reconcile.includes("contains(fromJSON("));
+ assert.ok(reconcile.includes("github.event.workflow_run.event == 'pull_request'"));
+ assert.ok(reconcile.includes("group: hh-control-tower-single-writer"));
+});
