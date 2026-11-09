@@ -59,7 +59,8 @@ test('allowlisted quality workflow failures fast-path only their exact associate
  const fork=structuredClone(good);fork.payload.workflow_run.head_repository.full_name='fork/books';
  assert.equal(isTrustedQualityFailureEvent(fork),false);
 });
-\ntest('only a trusted completed failed Core event can wake source repair',()=>{
+
+test('only a trusted completed failed Core event can wake source repair',()=>{
  const good=event();
  assert.equal(confirmedCoreEvent(good),true);
  for(const fields of [
