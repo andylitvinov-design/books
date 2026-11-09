@@ -56,3 +56,5 @@
 .inlineError{margin:0;color:#993e32;font-size:12px}
 @media(max-width:720px){.root{padding:14px 12px 90px}.domainGrid{grid-template-columns:minmax(0,1fr);gap:11px}.domainCard,.reportCard{padding:15px;border-radius:16px}.header h1{font-size:28px}.tabs{width:100%}.tabs button{flex:1;justify-content:center;padding:0 9px;font-size:13px}.empty{padding:21px 15px}}
 @media(max-width:360px){.domainHeading h2{font-size:16px}.domainCard,.reportCard{padding:13px}.tab,.tabActive{font-size:12px}}
+
+.planConsent{display:flex;align-items:flex-start;gap:9px;padding:11px;border:1px solid #bbd3c8;border-radius:12px;background:#f1f8f4;color:#426456;font-size:12px;line-height:1.45}.planConsent input{width:17px;height:17px;flex:none;margin:1px 0 0;accent-color:#26765b}.planConsent span{display:block}
