@@ -474,7 +474,7 @@ test('Core Mandala fast contracts run only as fallback when the BASE/HEAD Specia
     "matchesTrigger",
     "specialist_owns_mandala=",
   ]) assert.ok(owner.includes(marker),'owner router must verify '+marker);
-  assert.match(fast,/steps\\.mandala_owner\\.outputs\\.specialist_owns_mandala != 'true'/);
+  assert.ok(fast.includes("steps.mandala_owner.outputs.specialist_owns_mandala != 'true'"));
 
   const specialistOwns=(baseSource,headSource,changed)=>{
     const triggers=[
@@ -494,11 +494,12 @@ test('Core Mandala fast contracts run only as fallback when the BASE/HEAD Specia
   assert.equal(specialistOwns(mandala,mandala,['scripts/benchmarking/first-video-live-export.mjs']),false,
     'the first-video benchmark keeps the Core fallback unless its specialist path is explicitly added');
 
-  const narrowed=mandala.replace("      - 'components/mandala-*'\\n",'');
+  const newline = String.fromCharCode(10);
+  const narrowed=mandala.replace("      - 'components/mandala-*'"+newline,'');
   assert.equal(specialistOwns(mandala,narrowed,['components/mandala-free-video-studio.tsx']),true,
     'candidate narrowing cannot remove BASE-owned specialist coverage');
-  const extended=mandala.replace("      - 'tests/affirmation-voice.test.mjs'\\n",
-    "      - 'tests/affirmation-voice.test.mjs'\\n      - 'tests/mandala-audio-attach.test.mjs'\\n");
+  const extended=mandala.replace("      - 'tests/affirmation-voice.test.mjs'"+newline,
+    "      - 'tests/affirmation-voice.test.mjs'"+newline+"      - 'tests/mandala-audio-attach.test.mjs'"+newline);
   assert.equal(specialistOwns(mandala,extended,['tests/mandala-audio-attach.test.mjs']),true,
     'a HEAD-only owner addition is also considered by the same BASE/HEAD union');
   assert.throws(()=>specialistOwns(mandala,'not a supported workflow',['components/mandala-free-video-studio.tsx']),
