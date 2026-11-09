@@ -12,6 +12,7 @@ import {nextManualSlot,findManualTimeConflicts,buildManualCalendarIcs} from '@/l
 import GrowthStudioConnections from './growth-studio-connections'
 import {CHANNEL_CAPABILITIES,reviewGrowthPublication,publicationStatusLabel} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {GROWTH_BRANDS,GROWTH_CHANNELS,GROWTH_LANGUAGES,publicCampaignLink,orderGrowthPosts} from '@/lib/growth-studio/model.mjs'
+import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 import styles from './growth-studio.module.css'
 
 const BRANDS={holistic_house:'Holistic House',toronto_tantra:'TorontoTantra',psitrends:'PsiTrends'}
@@ -37,6 +38,7 @@ const COPY={
     unavailable:'Durable storage is not available. Editing is disabled to prevent losing your work.',
     reload:'Refresh',new:'New post',compose:'Editor',calendar:'Calendar',library:'Media',bulk:'Bulk / CSV',export:'Export CSV',
     brand:'Brand',channel:'Channel',language:'Post language',title:'Internal title',caption:'Caption / post text',media:'Public photo/video URL',mediaAlt:'Image description (alt text)',mediaHint:'Use a public JPG, PNG, WEBP, GIF or MP4 file on the selected brand website. Never use private client files.',
+    instagramAccount:'Instagram account',instagramAccountHint:'Saved per account as a separate draft destination. Publishing is not enabled.',
     source:'Public landing URL',campaign:'Campaign code (optional)',schedule:'Planned time',scheduleNote:'Input uses your device timezone; calendar is shown in Toronto time.',
     sourceHint:'Use public site URLs only; never include client information in these posts or links.',
     captionHint:'Write platform-specific copy. AI drafting and translation will be added after approvals and account setup.',characterLabel:'Characters for selected channel',characterWithLink:'Includes appended UTM link · draft advisory only',characterWithoutLink:'No campaign link appended · draft advisory only',
@@ -78,6 +80,7 @@ const COPY={
     unavailable:'Серверное хранилище недоступно. Редактор отключён, чтобы не потерять изменения.',
     reload:'Обновить',new:'Новая публикация',compose:'Редактор',calendar:'Календарь',library:'Медиа',bulk:'Массово / CSV',export:'Экспорт CSV',
     brand:'Проект',channel:'Площадка',language:'Язык публикации',title:'Внутреннее название',caption:'Текст публикации',media:'Публичная ссылка на фото/видео',mediaAlt:'Описание изображения (alt)',mediaHint:'Публичный JPG, PNG, WEBP, GIF или MP4 на сайте выбранного проекта. Не используйте личные файлы клиентов.',
+    instagramAccount:'Аккаунт Instagram',instagramAccountHint:'Сохраняется как отдельное направление черновика. Публикация пока отключена.',
     source:'Публичная ссылка',campaign:'Код кампании (необязательно)',schedule:'Планируемое время',scheduleNote:'Ввод времени по часовому поясу устройства; календарь — по Торонто.',
     sourceHint:'Только открытые страницы сайта. Никаких личных данных клиентов в публикации и ссылке.',
     captionHint:'Пишите текст для конкретной соцсети. AI-генерацию и переводы добавим после настройки аккаунтов.',characterLabel:'Символы для площадки',characterWithLink:'С учётом UTM-ссылки · только проверка черновика',characterWithoutLink:'Без UTM-ссылки · только проверка черновика',
@@ -113,7 +116,7 @@ const CHANNEL_WARNINGS={
 const METHOD_LABELS={en:{telegram_opt_in:'Telegram · separate owner approval',existing_uploader:'Separate YouTube uploader, OAuth not verified',manual:'Manual posting; no API connected',event_adapter:'Event publisher / manual event listing'},ru:{telegram_opt_in:'Telegram · отдельное подтверждение',existing_uploader:'Загрузчик YouTube, OAuth ещё не подтверждён',manual:'Ручное размещение; API не подключён',event_adapter:'Модуль событий / ручное размещение'}}
 const empty = () => ({
   brand:'holistic_house',channel:'manual',locale:'en',title:'',caption:'',
-  sourceUrl:'',campaign:'',scheduledAt:'',mediaUrl:'',mediaAlt:'',
+  sourceUrl:'',campaign:'',scheduledAt:'',mediaUrl:'',mediaAlt:'',instagramAccountId:'',
 })
 const isoFromLocal = input => {
   if (!input) return ''
@@ -246,6 +249,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
     }))
   }
   const set=field=>event=>setForm(old=>({...old,[field]:event.target.value}))
+  const setChannel=event=>{const channel=event.target.value;setForm(old=>({...old,channel,instagramAccountId:channel==='instagram'?(old.instagramAccountId||'wizards_secrets'):''}))}
   const reset=()=>{setEditing(null);setForm({...empty(),locale});setNotice('');setTab('compose')}
   const edit=post=>{
     setEditing({id:post.id,revision:post.revision})
@@ -273,7 +277,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       const result=await updateGrowthStudioPostAction(action==='save'
         ? {action:'save',id:editing?.id??null,expectedRevision:editing?.revision??0,
           fields:{brand:form.brand,channel:form.channel,locale:form.locale,title:form.title,
-            caption:form.caption,sourceUrl:form.sourceUrl,campaign:form.campaign,
+            caption:form.caption,sourceUrl:form.sourceUrl,campaign:form.campaign,instagramAccountId:form.instagramAccountId,
             scheduledAt:isoFromLocal(form.scheduledAt),mediaUrl:form.mediaUrl,mediaAlt:form.mediaAlt}}
         : {action,id:post.id,expectedRevision:post.revision,
             ...(action==='complete_manual'?{confirmed:true}:{})})
@@ -410,8 +414,12 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           <button type="button" onClick={reset}><Plus size={15}/>{t.new}</button></div>
         <p className={styles.hint}>{t.quickGuide}</p>
         <div className={styles.quickComposerFields}>
-          <label>{t.channel}<select disabled={!ready||!storageVerified||busy} value={form.channel} onChange={set('channel')}>
+          <label>{t.channel}<select disabled={!ready||!storageVerified||busy} value={form.channel} onChange={setChannel}>
             {GROWTH_CHANNELS.map(channel=><option key={channel} value={channel}>{CHANNELS[channel]}</option>)}</select></label>
+          {form.channel==='instagram'&&<label>{t.instagramAccount}<select disabled={!ready||!storageVerified||busy} required value={form.instagramAccountId||''} onChange={set('instagramAccountId')}>
+            <option value="">{locale==='ru'?'Выберите аккаунт':'Select account'}</option>
+            {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=><option key={account.id} value={account.id}>{account.label}</option>)}
+          </select><small className={styles.hint}>{t.instagramAccountHint}</small></label>}
           <label>{t.title}<input disabled={!ready||!storageVerified||busy} type="text" maxLength={120} required
             placeholder={locale==='ru'?'Название публикации':'Post title'}
             value={form.title} onChange={set('title')}/></label>
@@ -524,7 +532,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           const items=scheduledByDay.get(key)||[]
           return <div className={key===today?styles.today:styles.day} key={key}>
             <span>{i+1}</span>
-            {items.slice(0,3).map(post=><button key={post.id} title={post.title} onClick={()=>edit(post)} type="button">{CHANNELS[post.channel]} · {post.title}</button>)}
+            {items.slice(0,3).map(post=><button key={post.id} title={post.title} onClick={()=>edit(post)} type="button">{CHANNELS[post.channel]}{post.channel==='instagram'&&post.instagramAccountId?` · ${GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(account=>account.id===post.instagramAccountId)?.label||post.instagramAccountId}`:''} · {post.title}</button>)}
             {items.length>3&&<small>+{items.length-3}</small>}
           </div>
         })}
@@ -544,7 +552,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       {!visible.length&&<p className={styles.empty}>{t.noPosts}</p>}
       {visible.map(post=><article key={post.id} className={styles.post}>
         <div className={styles.postHeading}><div><span className={styles.status} data-state={post.status}>{publicationStatusLabel(post.status,locale)}</span>
-          <h3>{post.title}</h3><p>{BRANDS[post.brand]} · {CHANNELS[post.channel]} · {post.locale.toUpperCase()}</p>
+          <h3>{post.title}</h3><p>{BRANDS[post.brand]} · {CHANNELS[post.channel]}{post.channel==='instagram'&&post.instagramAccountId?` · ${GROWTH_INSTAGRAM_ACCOUNT_TARGETS.find(account=>account.id===post.instagramAccountId)?.label||post.instagramAccountId}`:''} · {post.locale.toUpperCase()}</p>
           {post.scheduledAt&&<small>{formatTime(post.scheduledAt,locale)} · {t.localTime}</small>}</div>
           {!['sending','published','delivery_unknown','manual_done'].includes(post.status)
             && <button type="button" disabled={busy} onClick={()=>edit(post)}><Edit3 size={15}/>{t.edit}</button>}</div>
