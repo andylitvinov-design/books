@@ -92,3 +92,14 @@ test("Spanish sino-sobre correction selects the final explicit topic",()=>{
  assert.equal(reply.understanding.topic,"work_money");
  assert.match(reply.reply,/trabajo y el dinero/);
 });
+test("explicit video-to-meditation switches stay on the existing domain route",()=>{
+ for(const [message,locale,id] of [
+  ["Not video but meditation","en","meditation_start"],
+  ["No quiero video sino meditacion","es","meditation_start"],
+  ["Нет, не медитацию, а видео","ru","video_start"],
+ ]){
+  const result=ruleConversationReply({message,locale});
+  assert.equal(result.id,id,message);
+  assert.equal(result.source,"reviewed-rules",message);
+ }
+});
