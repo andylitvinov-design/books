@@ -717,6 +717,105 @@ jobs:
             const {wakeAfterWorker}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-control-tower-wakeup.cjs');
             core.info('HH_REPAIR_COMPLETION_WAKE '+await wakeAfterWorker({github,context,kind:'repair',status:result.status,dryRun:false,log:core.warning}));
 
+      # A source commit is not a completed repair until the next real
+      # pull_request Core run is visible for this exact PR and new source SHA.
+      # If the PAT push event is delayed or suppressed, enqueue the existing
+      # signed CI bootstrap lane instead of waiting for the next scheduled sweep.
+      - name: Verify and recover the next exact-HEAD Core CI wave
+        id: verify_next_ci
+        if: steps.publish_source.outputs.publish_status == 'committed'
+        timeout-minutes: 3
+        uses: actions/github-script@v7
+        env:
+          HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
+          HH_PUBLISHED_SHA: ${{ steps.publish_source.outputs.publish_sha }}
+          HH_BASE_REF: codex/public-book-library
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const proof=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-next-wave-proof.cjs');
+            const owner=context.repo.owner,repo=context.repo.repo;
+            const number=Number(process.env.HH_REPAIR_PR);
+            const sha=String(process.env.HH_PUBLISHED_SHA||'');
+            const baseRef=process.env.HH_BASE_REF;
+            if(owner+'/'+repo!==proof.REPO||!Number.isSafeInteger(number)||number<1||
+               !/^[a-f0-9]{40}$/i.test(sha))throw Error('HH_NEXT_CI_INVALID_PUBLISHED_IDENTITY');
+            const firstSeen=Date.now();
+            const identity={prNumber:number,branch:'',sha,baseRef,publishedAt:firstSeen};
+            const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+            const find=async()=>{
+              const pr=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+              if(pr.state!=='open'||pr.draft||pr.base?.ref!==baseRef||
+                 pr.head?.repo?.full_name!==proof.REPO)
+                return {state:'BLOCKED',reason:'PR_CLOSED_DRAFT_OR_FOREIGN'};
+              if(pr.head?.sha!==sha)
+                return {state:'SUPERSEDED',current_sha:pr.head?.sha||null};
+              identity.branch=pr.head.ref;
+              const response=await github.rest.actions.listWorkflowRuns({
+                owner,repo,workflow_id:'hh-pr-core-release.yml',
+                event:'pull_request',branch:identity.branch,per_page:100
+              });
+              const match=proof.findExactHeadCoreRun(response.data?.workflow_runs,identity);
+              return match?{state:'CONFIRMED',run_id:match.id,url:match.html_url,
+                status:match.status,conclusion:match.conclusion}:{state:'PENDING'};
+            };
+            let outcome={state:'PENDING'};
+            // Give the PAT-authenticated PR synchronize event a short chance to
+            // create the ordinary mandatory Core run.
+            for(let i=0;i<6;i++){
+              outcome=await find();
+              if(outcome.state!=='PENDING')break;
+              if(i<5)await wait(5000);
+            }
+            if(outcome.state==='PENDING'){
+              // Durable queue hint + existing serialized Watchdog is the
+              // no-new-service fallback. The CI worker creates a genuine
+              // PR synchronization event; it never marks checks green.
+              let live=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+              if(live.state==='open'&&!live.draft&&live.head?.sha===sha&&
+                 live.base?.ref===baseRef){
+                const hasHint=(live.labels||[]).some(label=>label.name==='hh:ci-needed');
+                if(!hasHint){
+                  try{
+                    await github.rest.issues.addLabels({owner,repo,issue_number:number,labels:['hh:ci-needed']});
+                  }catch(error){
+                    if(![404,422].includes(Number(error.status)))throw error;
+                    try{
+                      await github.rest.issues.createLabel({owner,repo,name:'hh:ci-needed',
+                        color:'1d76db',description:'Verified current PR HEAD needs a real Core CI wake'});
+                    }catch(createError){if(Number(createError.status)!==422)throw createError;}
+                    await github.rest.issues.addLabels({owner,repo,issue_number:number,labels:['hh:ci-needed']});
+                  }
+                }
+                await github.rest.actions.createWorkflowDispatch({
+                  owner,repo,workflow_id:'hh-pr-ten-minute-watchdog.yml',
+                  ref:'codex/bootstrap-books',inputs:{dry_run:'false',direct_dispatch:'true'}
+                });
+                core.info('HH_NEXT_CI_FALLBACK_DISPATCHED '+JSON.stringify({pr:number,sha}));
+                for(let i=0;i<18;i++){
+                  await wait(5000);
+                  outcome=await find();
+                  if(outcome.state!=='PENDING')break;
+                }
+              }else outcome={state:'SUPERSEDED',current_sha:live.head?.sha||null};
+            }
+            core.setOutput('next_ci_status',outcome.state);
+            core.info('HH_NEXT_CI_WAVE '+JSON.stringify({pr:number,sha,...outcome}));
+            if(outcome.state==='CONFIRMED'){
+              await core.summary.addHeading('Next exact-HEAD Core CI wave confirmed')
+                .addLink(outcome.url,'Open verified Core run')
+                .addRaw('\n\nSource SHA: '+sha).write();
+            }else if(outcome.state==='SUPERSEDED'){
+              await core.summary.addHeading('Published repair superseded by a newer owner HEAD')
+                .addRaw('\n\nNewer HEAD: '+String(outcome.current_sha)).write();
+            }else{
+              try{
+                await github.rest.issues.createComment({owner,repo,issue_number:number,
+                  body:'HH Repair Worker: source commit `'+sha+'` was published, but a new exact-HEAD Core CI run was not confirmed after automatic recovery. The `hh:ci-needed` queue and existing Watchdog were woken. This is not a GREEN or merge receipt.'});
+              }catch(error){core.warning('HH_NEXT_CI_FAILURE_RECEIPT_UNAVAILABLE '+String(error.message||error).slice(0,120));}
+              core.setFailed('HH_NEXT_CI_NOT_CONFIRMED: no mandatory Core run observed for published SHA '+sha);
+            }
+
       # Logical finalization on the same trusted runner, not the isolated fix.
       # HH_AUTOMERGE_TOKEN is step-scoped above and absent from this step.
       - name: Finalize on publisher runner
