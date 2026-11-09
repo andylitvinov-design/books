@@ -189,7 +189,14 @@ test('one core TS/build per production Ready PR; specialist validation remains i
     for(const step of stepNames){
       assert.ok(src.includes('- name: '+step+'\n        '+ifLine+'\n        run:'),workflow+' must reuse core '+step+' only on production PR');
     }
-    assert.match(src,/run: npm ci --no-audit --no-fund/);
+    if(workflow==='hh-energywork-ai.yml'){
+      assert.match(src,/uses: \.\/\.github\/actions\/ci-ffmpeg-static/);
+      assert.match(src,/npm ci --ignore-scripts --no-audit --no-fund/);
+      assert.match(src,/stage: materialize/);
+      assert.doesNotMatch(src,/run: npm ci --no-audit --no-fund/);
+    }else{
+      assert.match(src,/run: npm ci --no-audit --no-fund/);
+    }
     assert.match(src,/node --test/);
     assert.match(src,/eslint/);
     assert.match(src,/run: npm run build/);
