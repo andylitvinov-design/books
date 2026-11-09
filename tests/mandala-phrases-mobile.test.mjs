@@ -227,7 +227,9 @@ test("choosing Ready preserves private audio state while the current Ideas edito
 
 test("ten-phrase limit and stale spoken-audio guard use the current visible Montage Text editor",()=>{
  const script=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.ok(ideas.includes("else if(chosen.length>=10)setFeedback(t.max)"));
+ assert.ok(ideas.includes("else if(chosen.length>=10){"),"ten-phrase cap stays explicit");
+  assert.ok(ideas.includes("apply(options,[...chosen.slice(0,-1),index])"),"choosing at the cap replaces the last selected phrase");
+  assert.ok(ideas.includes("setFeedback(t.savedReplaced)"),"the replacement is communicated to the visitor");
  assert.ok(ideas.includes("Choose up to 10 phrases for your video."));
  assert.ok(ideas.includes("The maximum remains ten"));
  assert.match(script,/const unselectedToggle=phraseEditor\.locator\('\[data-video-idea-select\]\[aria-pressed="false"\]'\)\.first\(\)/);
