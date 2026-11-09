@@ -1,7 +1,7 @@
 name: HH full open-PR production coordinator
 on:
   schedule:
-    - cron: '25 * * * *'
+    - cron: '27 * * * *'
   workflow_dispatch:
   # Vercel's existing integration emits deployment completion on default.
   # Only LIVE verifier can respond; the merge coordinator remains quiet.
