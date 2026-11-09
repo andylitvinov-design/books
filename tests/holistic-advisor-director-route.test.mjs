@@ -24,6 +24,7 @@ test('service identity is fixed, audience-bound and request body is bounded', ()
 test('advisor uses only reviewed deterministic logic and never reads client profile or executes tools', () => {
   assert.match(source, /planJudgmentTurn/);
   assert.match(source, /ruleConversationReply/);
+  assert.match(source, /history\.some\(turn => turn\.role === "user" && riskyCue\.test\(turn\.text\)\)/);
   assert.match(source, /consumeRate/);
   assert.match(source, /modelUsed: false/);
   assert.match(source, /reportType: "ADVISORY_ONLY"/);
