@@ -65,7 +65,8 @@ for (const browserType of [chromium, webkit]) {
             assert.equal(target.hostname, hosts[i], label);
             assert.match(target.searchParams.get("text") || "", /Temple Studies/, label + ": service preserved");
             const message = target.searchParams.get("text") || "";
-            assert.match(message, /holistichouse\\.vercel\\.app\\/(?:en\\/|ru\\/|es\\/)?academy\\/mysteries/, label + ": active Academy page retained");\n            assert.doesNotMatch(message, /\\/academy\\/reiki\\/kundalini-reiki/i, label + ": no stale course URL");
+            assert.match(message, /holistichouse\.vercel\.app\/(?:en\/|ru\/|es\/)?academy\/mysteries/, label + ": active Academy page retained");
+            assert.doesNotMatch(message, /\/academy\/reiki\/kundalini-reiki/i, label + ": no stale course URL");
             assert.doesNotMatch(message, /token=|password|private-selector|\/client\//i, label + ": no private data");
           }
           bounds = await card.boundingBox();
