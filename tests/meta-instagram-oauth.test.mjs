@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createMetaOAuthState,verifyMetaOAuthState,encryptMetaCredentials,decryptMetaCredentials,META_REQUIRED_SCOPES,META_ACCOUNT_TARGETS} from '../lib/growth-studio/meta-instagram.mjs'
+import {isValidInstagramInsightDate,isValidInstagramInsightRange,normalizeInstagramInsightMetrics} from '../lib/growth-studio/instagram-insights.mjs'
 
 const secret='synthetic-test-secret-only-never-a-real-production-secret'
 test('Meta OAuth state is signed, target-bound and expires',()=>{
@@ -34,4 +35,23 @@ test('Meta credentials are authenticated-encrypted and decrypt only with the cor
 test('OAuth scope set is restricted to publishing and insights essentials',()=>{
   assert.deepEqual(META_REQUIRED_SCOPES,['pages_show_list','pages_read_engagement','instagram_basic','instagram_content_publish','instagram_manage_insights'])
   assert.ok(!META_REQUIRED_SCOPES.some(x=>x.includes('messages')||x.includes('ads')))
+})
+
+test('Instagram Insights date ranges are canonical and bounded to 90 days',()=>{
+  assert.equal(isValidInstagramInsightDate('2026-11-09'),true)
+  assert.equal(isValidInstagramInsightDate('2026-02-30'),false)
+  assert.equal(isValidInstagramInsightDate('2026-2-09'),false)
+  assert.equal(isValidInstagramInsightRange('2026-10-01','2026-11-09'),true)
+  assert.equal(isValidInstagramInsightRange('2026-08-01','2026-11-09'),false)
+  assert.equal(isValidInstagramInsightRange('2026-11-10','2026-11-09'),false)
+})
+test('Instagram Insights normalization keeps only allowlisted numeric aggregate metrics',()=>{
+  const metrics=normalizeInstagramInsightMetrics({data:[
+    {name:'views',total_value:{value:123}},
+    {name:'reach',values:[{value:12},{value:8}]},
+    {name:'saves',values:[]},
+    {name:'profile_links_taps',total_value:{value:'5'}},
+    {name:'follower_demographics',total_value:{value:{age:'25-34'}}},
+  ]})
+  assert.deepEqual(metrics,{views:123,reach:20,saves:null,profile_links_taps:null})
 })

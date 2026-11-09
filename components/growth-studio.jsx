@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import {useEffect, useMemo, useState} from 'react'
 import {CalendarClock, CalendarDays, Check, CheckCheck, CircleAlert, Copy, Download, Edit3, FileText, Megaphone, Plus, RefreshCcw, Send, ShieldCheck, Trash2} from 'lucide-react'
-import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction,publishGrowthInstagramNowAction} from '@/app/admin/growth-studio/actions'
+import {listGrowthStudioPostsAction,updateGrowthStudioPostAction,publishGrowthTelegramNowAction,publishGrowthInstagramNowAction,getGrowthInstagramInsightsAction} from '@/app/admin/growth-studio/actions'
 import GrowthStudioBulk from './growth-studio-bulk'
 import GrowthStudioManualInbox from './growth-studio-manual-inbox'
 import GrowthStudioEvergreen from './growth-studio-evergreen'
@@ -184,6 +184,8 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
   const [brandFilter,setBrandFilter]=useState('all')
   const [accountFilter,setAccountFilter]=useState('all')
   const [month,setMonth]=useState(()=>torontoKey(new Date().toISOString()).slice(0,7))
+  const [insights,setInsights]=useState(null)
+  const [insightsBusy,setInsightsBusy]=useState(false)
   useEffect(()=>{
     const onLocale=event=>{
       const nextLocale=event.detail==='ru'?'ru':'en'
@@ -361,6 +363,16 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       setNotice(t.copyOk)
     } catch {setNotice(t.copyFail)}
   }
+  async function refreshInsights(){
+    if(insightsBusy)return
+    setInsightsBusy(true)
+    try{
+      const result=await getGrowthInstagramInsightsAction({})
+      if(result.ok)setInsights(result)
+      else setInsights({error:result.error,accounts:[]})
+    }catch{setInsights({error:'insights_unavailable',accounts:[]})}
+    finally{setInsightsBusy(false)}
+  }
   const [year,number]=month.split('-').map(Number)
   const firstDay=new Date(Date.UTC(year,number-1,1,12))
   const offset=(firstDay.getUTCDay()+6)%7
@@ -419,6 +431,30 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
       <div><span>{t.planCount}</span><strong>{counts.planned_manual}</strong></div>
       <div><span>{t.publishedCount}</span><strong>{records.filter(x=>x.status==='published'&&x.delivery?.messageId).length}</strong></div>
     </div>
+    <section className={styles.quickLaunch} aria-label="Instagram insights">
+      <div className={styles.quickLaunchCopy}>
+        <h3>{locale==='ru'?'Instagram · аналитика аккаунтов':'Instagram · account insights'}</h3>
+        <p>{locale==='ru'?'Только агрегированные показатели Meta. Данные отдельно по каждому аккаунту; отсутствие доступа не заменяется нулями.':'Aggregated Meta metrics only. Each account is isolated; unavailable data is never represented as zero.'}</p>
+        {insights?.period&&<small>{insights.period.since} — {insights.period.until}</small>}
+      </div>
+      <div className={styles.quickLaunchActions}>
+        <button type="button" className={styles.quickLaunchSecondary} onClick={refreshInsights} disabled={insightsBusy}>
+          <RefreshCcw size={16} aria-hidden="true"/>{insightsBusy?(locale==='ru'?'Загрузка…':'Loading…'):(locale==='ru'?'Обновить аналитику':'Refresh insights')}
+        </button>
+      </div>
+    </section>
+    {insights?.accounts?.length>0&&<div className={styles.metrics}>
+      {insights.accounts.map(account=><div key={account.accountId} style={{minWidth:0}}>
+        <span>@{account.handle} · {account.status==='available'?(locale==='ru'?'Доступно':'Available'):(locale==='ru'?'Нет доступа':'Unavailable')}</span>
+        {account.status==='available'
+          ?<strong>{['views','reach','total_interactions','saves'].map(key=>{
+            const label={views:locale==='ru'?'Просмотры':'Views',reach:locale==='ru'?'Охват':'Reach',total_interactions:locale==='ru'?'Взаимодействия':'Interactions',saves:locale==='ru'?'Сохранения':'Saves'}[key]
+            return label+': '+(account.metrics?.[key]??'—')
+          }).join(' · ')}</strong>
+          :<strong>{account.error||'unavailable'}</strong>}
+      </div>)}
+    </div>}
+    {insights?.error&&<p className={styles.warning} role="status">{locale==='ru'?'Не удалось получить аналитику Meta: ':'Meta insights unavailable: '}{insights.error}</p>}
     <div className={styles.toolbar}>
       <div className={styles.tabs} role="group" aria-label={t.filter}>
         <button type="button" aria-pressed={tab==='compose'} onClick={()=>setTab('compose')}><Edit3 size={17}/>{t.compose}</button>
