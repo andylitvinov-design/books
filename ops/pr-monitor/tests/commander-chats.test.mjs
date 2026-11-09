@@ -72,3 +72,13 @@ test('linked PR chats automatically sync signed CI/Repair reports with stable pr
  assert.match(html,/CI \/ Repair/);
  assert.match(html,/2 минуты/);
 });
+
+test('server chat refresh is retryable and never silently switches to a local archive',()=>{
+ const js=src('commander-chats.js');
+ assert.match(js,/13000/);
+ assert.match(js,/AbortError/);
+ assert.match(js,/if\(remote\)\{await listRemote\(\)/);
+ assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
+ assert.match(js,/A transient API failure must not silently replace server chats/);
+ assert.match(js,/Серверное хранилище временно недоступно/);
+});
