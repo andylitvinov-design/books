@@ -9,7 +9,7 @@ import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingContextReview from '@/components/coaching-context-review'
-import { buildClientCoachingContext } from '@/lib/personal-coaching/client-context.mjs'
+import { buildClientCoachingContext, developmentGoalsContextItems } from '@/lib/personal-coaching/client-context.mjs'
 import { reconcileCoachingDraft, reconcileCoachingPlan, coachingPlansEqual, reconcileFollowupDraft } from '@/lib/personal-coaching/reconnect.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
@@ -326,13 +326,21 @@ export default function PersonalCoaching({locale='en',accountId}){
       setNotice(lang==='ru'?'Сессия обновлена; черновик плана сохранён на экране.':lang==='es'?'Sesión actualizada; tu borrador permanece en pantalla.':'Session refreshed; your plan draft remains on screen.')
     }catch{setError(t.loadError)}finally{busyRef.current=false;setBusy(false)}
   }
-  function prepare(choice,clientQuestion,adultConfirmed){
+  async function prepare(choice,clientQuestion,adultConfirmed){
+    // Read only saved, owner-authored Life Plan targets. Failure to read this
+    // optional source must not block a new coaching session.
+    let lifePlanChanges=[]
+    if(accountId){
+      try{
+        const savedPlan=await appFetch('development-goals',undefined,'GET',{accountId})
+        lifePlanChanges=developmentGoalsContextItems(savedPlan,lang)
+      }catch{}
+    }
     // The picker only prepares a choice. No private record is created until
     // the visitor has seen the session briefing and selected a request topic.
     const previousSessions=[...(course?.history||[]),...(course?.current?.status==='completed'?[course.current]:[])]
-    const candidate=previousSessions.length?buildClientCoachingContext(previousSessions):null
-    const clientContext=candidate&&['active_goals','previous_commitments','completed_actions','open_topics','previous_insights','linked_reports','life_plan_changes']
-      .some(key=>candidate[key]?.length)?candidate:null
+    const clientContext=previousSessions.length||lifePlanChanges.length
+      ?buildClientCoachingContext(previousSessions,{lifePlanChanges}):null
     setEntry({choice,clientQuestion,adultConfirmed:adultConfirmed===true,
       topicAdultConfirmed:adultConfirmed===true,clientTopic:'',checkin:'',step:'intro',
       clientContext,contextReviewed:!clientContext})
@@ -784,4 +792,3 @@ export default function PersonalCoaching({locale='en',accountId}){
     </div>
   </main>
 }
-

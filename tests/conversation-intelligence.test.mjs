@@ -83,3 +83,23 @@ test("question punctuation is accepted for short follow-up turns",()=>{
  assert.equal(understandConversationTurn({message:"А почему?",locale:"ru"}).act,"follow_up");
  assert.equal(understandConversationTurn({message:"Why?",locale:"en"}).act,"follow_up");
 });
+test("Spanish sino-sobre correction selects the final explicit topic",()=>{
+ const x=understandConversationTurn({message:"No sobre amor sino sobre trabajo",locale:"es"});
+ assert.equal(x.act,"correction");
+ assert.equal(x.topic,"work_money");
+ const reply=ruleConversationReply({message:"No sobre amor sino sobre trabajo",locale:"es"});
+ assert.equal(reply.source,"conversation-intelligence");
+ assert.equal(reply.understanding.topic,"work_money");
+ assert.match(reply.reply,/trabajo y el dinero/);
+});
+test("explicit video-to-meditation switches stay on the existing domain route",()=>{
+ for(const [message,locale,id] of [
+  ["Not video but meditation","en","meditation_start"],
+  ["No quiero video sino meditacion","es","meditation_start"],
+  ["Нет, не медитацию, а видео","ru","video_start"],
+ ]){
+  const result=ruleConversationReply({message,locale});
+  assert.equal(result.id,id,message);
+  assert.equal(result.source,"reviewed-rules",message);
+ }
+});
