@@ -5,6 +5,7 @@ import {CheckCircle2, AlertCircle, CircleHelp, RefreshCcw, ShieldCheck} from 'lu
 import {GROWTH_PUBLICATION_NETWORKS,CHANNEL_CAPABILITIES} from '@/lib/growth-studio/channel-capabilities.mjs'
 import {checkGrowthTelegramPublisherAction,checkGrowthStudioStorageAction,checkGrowthStudioProviderReadinessAction} from '@/app/admin/growth-studio/actions'
 import styles from './growth-studio.module.css'
+import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 
 const messages={
   ru:{
@@ -338,6 +339,26 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
         </section>
       </div>
       <p className={styles.growthSetupPrivacy}><ShieldCheck size={15} aria-hidden="true"/>{t.setupNoSecrets}</p>
+    </div>
+    <div className={styles.connectionBox}>
+      <div className={styles.connectionBoxTitle}>
+        <strong>{locale==='ru'?'Instagram · аккаунты назначения':'Instagram · account destinations'}</strong>
+        <span className={styles.notVerifiedText}>{locale==='ru'?'Ожидают авторизации':'Awaiting authorization'}</span>
+      </div>
+      <p>{locale==='ru'
+        ?'Аккаунты заведены отдельно от брендов сайта. Каждый профиль подключается владельцем через Meta; пока разрешения не подтверждены, публикация отключена.'
+        :'Accounts are separate from website brands. Each profile must be authorized by its owner through Meta; publishing stays disabled until permissions are verified.'}</p>
+      <div className={styles.growthSetupSteps}>
+        {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=><section key={account.id}>
+          <h4>{account.label}</h4>
+          <p>{locale==='ru'?account.ruPurpose:account.enPurpose}</p>
+          <small>{locale==='ru'?'Статус: ожидает подключения Meta OAuth · публикация выключена':'Status: awaiting Meta OAuth · publishing disabled'}</small>
+        </section>)}
+      </div>
+      <div className={styles.connectionNav}>
+        <a href="https://app.metricool.com/" target="_blank" rel="noopener noreferrer">{t.setupMetricool} ↗</a>
+        <a href="https://business.facebook.com/" target="_blank" rel="noopener noreferrer">{t.setupMeta} ↗</a>
+      </div>
     </div>
     <div className={styles.connectionScroller}>
       <table className={styles.connectionTable}>
