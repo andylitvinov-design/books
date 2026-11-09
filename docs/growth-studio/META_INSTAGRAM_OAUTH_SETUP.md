@@ -8,13 +8,14 @@ This implementation uses **Instagram Graph API with Facebook Login** because the
 
 The owner-only Connections panel manages exactly two independent profiles:
 
-| Internal target | Role | Instagram handle | Brand |
+| Internal target | Role | Instagram handle | Editorial brand |
 |---|---|---|---|
 | `wizards_secrets` | Work | `@wizards.secrets` | Wizards Secrets · Holistic House |
 | `andy_therapist` | Personal | `@andy.therapist` | Andy Therapist |
 
-Each account has separate OAuth credentials, provider IDs, approvals, performance snapshots and Content DNA. The former `@my.coach.ai` and `@my.couch.ai` targets are no longer in the active allowlist.
+The work and personal profiles use separate OAuth credentials, account IDs, approvals, content variants, calendars and performance snapshots. The former `my.coach.ai` and `my.couch.ai` destinations are not in the active Instagram allowlist.
 
+The OAuth callback binds each login to the selected target and requires an exact case-insensitive handle match. A login for one profile can never silently satisfy another target.
 
 ## Meta app configuration
 
@@ -43,7 +44,7 @@ Set these as server-only secrets, then deploy:
 2. Click Connect beside one target account. Complete Facebook login and grant the requested scopes.
 3. Callback reads granted permissions, managed Pages and linked professional Instagram account metadata.
 4. The callback matches the exact expected username, requires a Page content-creation task, and stores encrypted credentials in the existing Redis service. It rejects missing/ambiguous matches.
-5. Repeat separately for the work profile `@wizards.secrets` and the personal profile `@andy.therapist`.
+5. Repeat separately for both targets: first work profile `@wizards.secrets`, then personal profile `@andy.therapist`.
 6. Check status at `/api/admin/growth-studio/meta/status`. Only non-secret metadata is returned.
 
 Requested scopes:
