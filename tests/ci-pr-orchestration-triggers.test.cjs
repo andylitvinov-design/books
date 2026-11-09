@@ -29,7 +29,7 @@ test('allowlisted failed quality workflows use exact-PR event fast path, not ano
  const dispatcher=read('hh-pr-queue-dispatcher');
  const contract=read('hh-pr-watchdog-contract-ci');
  assert.ok(watchdog.includes('isTrustedQualityFailureEvent(context)'));
- assert.ok(watchdog.includes('eventFastPath}));
+ assert.ok(watchdog.includes("eventFastPath}));");
  assert.ok(watchdog.includes("'scripts/ci-pr-quality-event.cjs'"));
  assert.ok(dispatcher.includes('...Object.keys(QUALITY_EVENT_PATHS)'));
  assert.ok(dispatcher.includes('verifiedQualityFailure'));
