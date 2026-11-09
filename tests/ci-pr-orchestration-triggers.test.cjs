@@ -84,7 +84,10 @@ test('single scheduled Watchdog shares a writer lease with targeted Core and con
   assert.ok(s.includes('    concurrency:\n      group: hh-control-tower-single-writer'));
   assert.ok(!s.includes('concurrency:\n  group: hh-control-tower-single-writer'));
   const reconcile=s.split('\n  completion-wait:\n')[0];
-  assert.ok(!reconcile.includes("github.event.workflow_run.status == 'completed'"));
+  assert.ok(reconcile.includes("github.event.workflow_run.status == 'completed'"));
+  assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'failure'"));
+  assert.ok(reconcile.includes("github.event.workflow_run.event == 'pull_request'"));
+  assert.ok(reconcile.includes("contains(fromJSON("));
   assert.ok(read('hh-native-auto-merge').includes("github.event.workflow_run.conclusion == 'success'"));
 });
 

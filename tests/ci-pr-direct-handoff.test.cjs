@@ -95,7 +95,7 @@ test('watchdog direct-handoff condition must be balanced',()=>{
 
 test('independent required PR workflow failures wake the same serialized Watchdog immediately',()=>{
  const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
- const trigger=watchdog.split('  workflow_run:\\n')[1]?.split('  push:\\n')[0];
+ const trigger=watchdog.split('  workflow_run:\n')[1]?.split('  push:\n')[0];
  assert.ok(trigger,'workflow_run trigger exists');
  for(const name of [
   'HH PR Sweep Guard tests',
@@ -111,7 +111,7 @@ test('independent required PR workflow failures wake the same serialized Watchdo
   'Holistic House nightly public URL / media crawl',
   'Native CI'
  ]) assert.ok(trigger.includes("'"+name+"'"),'missing event wake for '+name);
- const reconcile=watchdog.split('  reconcile:\\n')[1]?.split('    runs-on:')[0];
+ const reconcile=watchdog.split('  reconcile:\n')[1]?.split('    runs-on:')[0];
  assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'failure'"));
  assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'timed_out'"));
  assert.ok(reconcile.includes("github.event.workflow_run.conclusion == 'startup_failure'"));
