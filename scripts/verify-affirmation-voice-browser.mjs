@@ -1235,19 +1235,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The exact approved text remains the safety boundary; no silent reuse is allowed.
       await spokenToggle.click();
       await expect(spokenToggle).toHaveAttribute('aria-pressed','false');
-      await page.waitForFunction(() => {
-        const warning=document.querySelector('[data-video-narration-stale]');
-        const attached=document.querySelector('[data-video-live-audio]');
-        return Boolean(warning)||!attached;
-      },null,{timeout:15000});
-      assert.ok(await page.locator('[data-video-narration-stale]').isVisible() ||
-        await page.locator('[data-video-live-audio]').count()===0,
-        "removing the spoken phrase must block stale WAV reuse or detach it");
+      // Montage Text owns phrase selection. Its current, visible release
+      // contract is a reapproval notice plus a disabled Create action; the
+      // legacy Voice-only [data-video-narration-stale] node is not mounted here.
+      await expect(page.locator('[data-video-narration-reapproval]')).toBeVisible({timeout:15000});
+      await expect(page.locator('[data-video-quick-generate]')).toBeDisabled({timeout:15000});
+      assert.equal(await page.locator('[data-video-live-audio]').count(),1,
+        "the old WAV may remain attached, but must be unusable until narration is regenerated");
       // Phrase narration belongs to this workspace; verify revoked consent
       // before switching to the separate cloud voice controls in Montage.
       await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
-      if(!await page.locator("[data-video-narration-stale]").isVisible())
-        await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
+      await expect(page.locator("[data-video-narration-reapproval]")).toBeVisible();
+      await expect(page.locator('[data-video-quick-generate]')).toBeDisabled();
       await page.locator('[data-video-quick-control="editor"]').click();
       await page.locator('[data-video-montage-tab="settings"]').click();
       const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
