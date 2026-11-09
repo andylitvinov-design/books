@@ -30,6 +30,7 @@ on:
       - 'Holistic House public services production acceptance'
       - 'Holistic House CRM source checks'
       - 'Website video browser verification'
+      - 'Practice reference design — Chromium and WebKit screenshots'
       - 'Practitioner visual service editor'
       - 'HH First Video LIVE · encoded file acceptance'
       - 'Video publication safety and legacy private preflight'
