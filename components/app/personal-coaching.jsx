@@ -207,7 +207,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const lastApprovedPlan=[session,...(course?.history||[])]
     .find(item=>item?.actionPlan?.approvedAt&&typeof item.actionPlan.actionText==='string')?.actionPlan||null
   function turnFor(action,revision,fields={}){
-    if((action==='start'?fields.schemeKey:session?.schemeKey)!=='grow_overload_20_v1'||!['start','answer','reflection','complete','finish_without_plan','pause','resume','plan'].includes(action))return null
+    if((action==='start'?fields.schemeKey:session?.schemeKey)!=='grow_overload_20_v1'||!['start','answer','reflection','skip_followup','complete','finish_without_plan','pause','resume','plan'].includes(action))return null
     const key=JSON.stringify([action,revision,fields])
     if(pendingTurn.current?.key!==key)pendingTurn.current={key,id:crypto.randomUUID()}
     return pendingTurn.current.id
@@ -225,6 +225,15 @@ export default function PersonalCoaching({locale='en',accountId}){
     setNotice('')
     setError('')
   }
+  function openServerFollowup(current,items){
+    if(current?.dialogueProtocol!==1||current.status!=='active'||!current.pendingFollowup)return false
+    const next=items.findIndex(item=>item.id===current.pendingFollowup.questionId)
+    const item=next<0?null:authoredFollowupFor(items[next],current.answers?.[items[next].id],current.reflections)
+    if(!item||item.key!==current.pendingFollowup.key){setError(t.loadError);return true}
+    visit(next,current.answers,items)
+    setPendingFollowup(item)
+    return true
+  }
   async function reload(){
     if(!accountId||busyRef.current)return
     if(pendingFollowup&&reflectionDraft.trim()&&!window.confirm(t.unsaved))return
@@ -239,6 +248,7 @@ export default function PersonalCoaching({locale='en',accountId}){
       if(dirty&&!restored.retained&&value.course?.current?.status!=='safety_hold'&&!window.confirm(t.unsaved))return
       setState(value);setCatalog(loadedCatalog)
       visit(restored.index,value.course?.current?.answers,list)
+      openServerFollowup(value.course?.current,list)
       if(restored.retained){
         setDraft(restored.draft)
         setConflictingAnswer(restored.changedAnswer)
@@ -262,6 +272,7 @@ export default function PersonalCoaching({locale='en',accountId}){
       const answer=value.course?.current?.answers?.[list[next]?.id]
       setDraft(typeof answer==='string'?answer:'')
       setError('')
+      openServerFollowup(value.course?.current,list)
     }).catch(()=>{if(live)setError(t.loadError)})
       .finally(()=>{if(live)setLoading(false)})
     return()=>{live=false}
@@ -336,6 +347,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     }
   }
   function offerFollowup(current,answer){
+    if(current?.dialogueProtocol===1)return openServerFollowup(current,activeQuestions)
     if(index>=activeQuestions.length-1)return false
     const item=authoredFollowupFor(question,answer,current?.reflections)
     if(!item)return false
@@ -354,7 +366,11 @@ export default function PersonalCoaching({locale='en',accountId}){
       if(saved.course?.current?.status==='safety_hold')return
       visit(index+1,saved.course?.current?.answers)
     }else{
-      visit(index+1,session?.answers)
+      if(session?.dialogueProtocol===1){
+        const saved=await command('skip_followup',{questionId:pendingFollowup.questionId,followupKey:pendingFollowup.key})
+        if(!saved)return
+        visit(firstUnanswered(activeQuestions,saved.course?.current?.answers),saved.course?.current?.answers)
+      }else visit(index+1,session?.answers)
     }
   }
   async function next(skip=false){
@@ -476,7 +492,7 @@ export default function PersonalCoaching({locale='en',accountId}){
         : session?.status==='paused' ? <div className={styles.summary} data-coaching-paused>
           <h1>{lang==='ru'?'Сессия на паузе':lang==='es'?'Sesión en pausa':'Session paused'}</h1>
           <p>{lang==='ru'?'Сохранённые ответы останутся доступны, когда вы вернётесь.':lang==='es'?'Tus respuestas guardadas estarán disponibles cuando vuelvas.':'Your saved answers will be here when you return.'}</p>
-          <button type="button" className={styles.primary} disabled={busy} onClick={()=>command('resume')}>
+          <button type="button" className={styles.primary} disabled={busy} onClick={async()=>{const saved=await command('resume');if(saved)openServerFollowup(saved.course?.current,activeQuestions)}}>
             {lang==='ru'?'Продолжить сессию':lang==='es'?'Continuar sesión':'Resume session'}
           </button>
           <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.close}</Link>
@@ -637,6 +653,14 @@ export default function PersonalCoaching({locale='en',accountId}){
             </div>
             <button className={styles.skip} type="button" disabled={busy||dictating}
               onClick={()=>saveFollowup(true)}>{followupCopy[lang].skip}</button>
+            {session?.dialogueProtocol===1&&<button className={styles.skip} type="button" disabled={busy||dictating}
+              onClick={()=>{if(!reflectionDraft.trim()||window.confirm(t.unsaved))command('pause')}}>
+              {lang==='ru'?'Поставить на паузу':lang==='es'?'Pausar sesión':'Pause session'}
+            </button>}
+            {session?.dialogueProtocol===1&&<button className={styles.skip} type="button" disabled={busy||dictating}
+              onClick={()=>{if(!reflectionDraft.trim()||window.confirm(t.unsaved))command('finish_without_plan')}}>
+              {lang==='ru'?'Завершить без плана':lang==='es'?'Terminar sin un plan':'Finish without a plan'}
+            </button>}
           </footer>
         </div>
         : !question ? <div className={styles.center} role="alert">

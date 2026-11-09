@@ -61,6 +61,72 @@ function fixture(){
  return {api:factory(deps),store}
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
+async function skipPilotFollowup(api,s,n){
+ const followup=s.course.current.pendingFollowup
+ if(!followup)return s
+ return api.savePersonalCoaching({},a,{action:'skip_followup',revision:s.revision,questionId:followup.questionId,followupKey:followup.key,turnId:`70000000-0000-4000-8000-${String(n).padStart(12,'0')}`})
+}
+
+test('pilot persists the active follow-up until it is answered or explicitly skipped',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:'60000000-0000-4000-8000-000000000001'})
+ assert.equal(s.course.current.dialogueProtocol,1)
+ assert.equal(s.course.current.pendingFollowup.questionId,'real')
+ assert.equal((await api.readPersonalCoaching({},a)).course.current.pendingFollowup.key,'reality_choice_v1')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'options',answer:'choice:try',turnId:'60000000-0000-4000-8000-000000000002'}),err=>err.code==='PERSONAL_COACH_FOLLOWUP_PENDING')
+ const skip={action:'skip_followup',revision:s.revision,questionId:'real',followupKey:'reality_choice_v1',turnId:'60000000-0000-4000-8000-000000000003'}
+ s=await api.savePersonalCoaching({},a,skip)
+ assert.equal(s.course.current.pendingFollowup,undefined)
+ assert.equal((await api.savePersonalCoaching({},a,skip)).revision,s.revision)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'options',answer:'choice:try',turnId:'60000000-0000-4000-8000-000000000004'})
+ assert.equal(s.course.current.pendingFollowup.questionId,'options')
+})
+
+test('pilot follow-up survives pause and is cleared by a saved reflection',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:'60000000-0000-4000-8000-000000000005'})
+ s=await api.savePersonalCoaching({},a,{action:'pause',revision:s.revision,turnId:'60000000-0000-4000-8000-000000000006'})
+ s=await api.savePersonalCoaching({},a,{action:'resume',revision:s.revision,turnId:'60000000-0000-4000-8000-000000000007'})
+ assert.equal(s.course.current.pendingFollowup.questionId,'real')
+ s=await api.savePersonalCoaching({},a,{action:'reflection',revision:s.revision,questionId:'real',followupKey:'reality_choice_v1',note:'A personal observation',turnId:'60000000-0000-4000-8000-000000000008'})
+ assert.equal(s.course.current.pendingFollowup,undefined)
+ assert.equal(s.course.current.reflections.real.text,'A personal observation')
+})
+
+test('pending follow-up cannot be skipped with a forged key and urgent answers take precedence',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:'60000000-0000-4000-8000-000000000009'})
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'skip_followup',revision:s.revision,questionId:'real',followupKey:'forged',turnId:'60000000-0000-4000-8000-000000000010'}),err=>err.code==='PERSONAL_COACH_REFLECTION_UNAVAILABLE')
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'suicidio'})
+ assert.equal(s.course.current.status,'safety_hold')
+ assert.equal(s.course.current.pendingFollowup,undefined)
+})
+
+test('client can finish for reflection while a follow-up is pending',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:'60000000-0000-4000-8000-000000000013'})
+ s=await api.savePersonalCoaching({},a,{action:'finish_without_plan',revision:s.revision,turnId:'60000000-0000-4000-8000-000000000014'})
+ assert.equal(s.course.current.status,'completed')
+ assert.equal(s.course.current.outcome,'reflection_only')
+ assert.equal(s.course.current.pendingFollowup,undefined)
+ assert.equal(s.course.current.answers.real,'choice:time')
+})
+
+test('existing pilot sessions without the new protocol retain their legacy progression',async()=>{
+ const {api,store}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ const row=store.get(a.id),course=JSON.parse(row.payload_ciphertext)
+ delete course.current.dialogueProtocol
+ row.payload_ciphertext=JSON.stringify(course)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:'60000000-0000-4000-8000-000000000011'})
+ assert.equal(s.course.current.pendingFollowup,undefined)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'options',answer:'choice:try',turnId:'60000000-0000-4000-8000-000000000012'})
+ assert.equal(s.course.current.answers.options,'choice:try')
+})
 
 test('pilot persists a reviewed low-confidence plan and idempotently rejects altered review',async()=>{
  const {api}=fixture()
@@ -254,6 +320,7 @@ test('overload pilot rejects jumping ahead and requires explicit intent to edit 
  await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time'}),err=>err.code==='PERSONAL_COACH_INVALID_TURN_ID')
  await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'A premature step',turnId:id(1)}),err=>err.code==='PERSONAL_COACH_QUESTION_OUT_OF_ORDER')
  s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:id(2)})
+ s=await skipPilotFollowup(api,s,1)
  s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'options',answer:null,turnId:id(3)})
  await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'Updated context',turnId:id(4)}),err=>err.code==='PERSONAL_COACH_EXPLICIT_EDIT_REQUIRED')
  await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'A chosen step',edit:true,turnId:id(6)}),err=>err.code==='PERSONAL_COACH_EDIT_UNAVAILABLE')
@@ -261,6 +328,7 @@ test('overload pilot rejects jumping ahead and requires explicit intent to edit 
  s=await api.savePersonalCoaching({},a,edit)
  assert.equal((await api.savePersonalCoaching({},a,edit)).revision,s.revision)
  await assert.rejects(()=>api.savePersonalCoaching({},a,{...edit,edit:false}),err=>err.code==='PERSONAL_COACH_TURN_ID_REUSED')
+ s=await skipPilotFollowup(api,s,2)
  s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'A chosen step',turnId:id(5)})
  assert.equal(s.course.current.answers.action,'A chosen step')
 })
@@ -281,8 +349,10 @@ test('pilot validates written action at will and permits the review rating at th
  const {api}=fixture()
  let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
  const id=n=>`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`
- for(const [n,questionId,answer] of [[1,'real','choice:time'],[2,'options',null],[3,'action','Write a concrete first step'],[4,'review','choice:useful']])
+ for(const [n,questionId,answer] of [[1,'real','choice:time'],[2,'options',null],[3,'action','Write a concrete first step'],[4,'review','choice:useful']]){
   s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId,answer,turnId:id(n)})
+  s=await skipPilotFollowup(api,s,n)
+ }
  s=await api.savePersonalCoaching({},a,{action:'complete',revision:s.revision})
  assert.equal(s.course.current.status,'completed')
  assert.equal(s.course.current.answers.review,'choice:useful')
@@ -315,8 +385,10 @@ test('pilot cannot substitute a rating for an unwritten action',async()=>{
  const {api}=fixture()
  let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
  const id=n=>`30000000-0000-4000-8000-${String(n).padStart(12,'0')}`
- for(const [n,questionId,answer] of [[1,'real','choice:time'],[2,'options',null],[3,'action','short'],[4,'review','choice:useful']])
+ for(const [n,questionId,answer] of [[1,'real','choice:time'],[2,'options',null],[3,'action','short'],[4,'review','choice:useful']]){
   s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId,answer,turnId:id(n)})
+  s=await skipPilotFollowup(api,s,n)
+ }
  await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'complete',revision:s.revision}),err=>err.code==='PERSONAL_COACH_WOOP_PLAN_REQUIRED')
 })
 
