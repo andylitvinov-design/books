@@ -34,6 +34,8 @@ on:
       - 'app/api/app/personal-coaching/**'
       - 'app/**/app/coaching/**'
       - 'app/**/app/personal-coaching/**'
+      - 'tests/coaching-session-onboarding.test.mjs'
+      - 'tests/tantric-intimacy-coaching.test.mjs'
       - 'tests/personal-coaching-session.test.mjs'
       - 'tests/personal-coaching-voice.test.mjs'
       - 'tests/personal-coaching-model-selection.test.mjs'
