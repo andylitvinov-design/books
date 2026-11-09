@@ -31,7 +31,7 @@ function makeReport(status='accepted'){
 function buildService({report=makeReport(),ownerId=owner.id}={}){
  const source=readFileSync(new URL('../lib/app/coaching-life-plan.js',import.meta.url),'utf8')
   .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
- const state={plan:null,area:null,goal:null,actions:new Map(),changes:[],queries:[],planVersion:1}
+ const state={plan:null,area:null,goal:null,actions:new Map(),changes:[],consents:[],queries:[],planVersion:1}
  const reportRecord={id:reportId,session_id:sessionId,status:'confirmed',current_revision:1,content_hash:operationHash(report,config)}
  const db={query:async(sql,args=[])=>{
   state.queries.push({sql,args})
@@ -75,6 +75,9 @@ function buildService({report=makeReport(),ownerId=owner.id}={}){
   if(sql.includes('select id,goal_id,status,client_confirmed_at from app_private.coaching_action_items')){
    const row=state.actions.get(args[2])
    return {rows:row?[{id:row.id,goal_id:row.goal_id,status:row.status,client_confirmed_at:row.client_confirmed_at}]:[]}
+  }
+  if(sql.includes('insert into app_private.coaching_session_consents')){
+   state.consents.push(args);return {rows:[]}
   }
   if(sql.includes('insert into app_private.coaching_life_plan_changes')){
    state.changes.push(args);return {rows:[]}
@@ -152,7 +155,7 @@ test('import uses only accepted, evidence-backed action IDs and client-selected 
  const {service,state,report}=buildService()
  const candidate=report.actionCandidates[0]
  const result=await service.importCoachingReportActions(config,owner,{
-  reportId,reportRevision:1,areaKey:'career_business',candidateIds:[candidate.candidateId],
+  reportId,reportRevision:1,areaKey:'career_business',candidateIds:[candidate.candidateId],planConsent:true,
  })
  assert.equal(result.areaKey,'career_business')
  assert.equal(result.goalCreated,true)
@@ -161,6 +164,10 @@ test('import uses only accepted, evidence-backed action IDs and client-selected 
  assert.equal(state.actions.get(candidate.candidateId).status,'accepted')
  assert.equal(state.actions.get(candidate.candidateId).client_confirmed_at,candidate.acceptedAt)
  assert.equal(state.changes.length,2,'one encrypted audit record for goal and action')
+ assert.equal(state.consents.length,1,'the cross-session consent is stored atomically')
+ assert.equal(state.consents[0][3],'cross_session_context')
+ assert.equal(state.consents[0][4],true)
+ assert.equal(state.consents[0][6],'life_plan_continuity')
  const title=openSealed(state.goal.title_ciphertext,{accountId:owner.id,recordId:state.goal.id,field:'coaching.life_plan.goal.title'},config)
  assert.equal(title,'Choose one practical next step')
  const action=openSealed(state.actions.get(candidate.candidateId).description_ciphertext,
@@ -169,12 +176,25 @@ test('import uses only accepted, evidence-backed action IDs and client-selected 
  assert.equal(result.planVersion,2)
 })
 
+test('cross-session consent is mandatory and missing consent causes no Life Plan writes',async()=>{
+ const {service,state,report}=buildService()
+ const candidate=report.actionCandidates[0]
+ await assert.rejects(()=>service.importCoachingReportActions(config,owner,{
+  reportId,reportRevision:1,areaKey:'career_business',candidateIds:[candidate.candidateId],
+ }),err=>err.code==='COACHING_PLAN_CONSENT_REQUIRED')
+ assert.equal(state.plan,null)
+ assert.equal(state.goal,null)
+ assert.equal(state.actions.size,0)
+ assert.equal(state.consents.length,0)
+ assert.equal(state.changes.length,0)
+})
+
 test('deferred or declined actions cannot enter My Coaching Plan',async()=>{
  for(const status of ['deferred','declined']){
   const {service,state,report}=buildService({report:makeReport(status)})
   const id=report.actionCandidates[0].candidateId
   await assert.rejects(()=>service.importCoachingReportActions(config,owner,{
-   reportId,reportRevision:1,areaKey:'career_business',candidateIds:[id],
+   reportId,reportRevision:1,areaKey:'career_business',candidateIds:[id],planConsent:true,
   }),err=>err.code==='COACHING_PLAN_ACTION_NOT_ACCEPTED')
   assert.equal(state.goal,null)
   assert.equal(state.actions.size,0)
@@ -183,7 +203,7 @@ test('deferred or declined actions cannot enter My Coaching Plan',async()=>{
 
 test('import rejects caller-supplied report content, unknown fields, invalid area and duplicate candidate IDs',async()=>{
  const {service}=buildService()
- const base={reportId,reportRevision:1,areaKey:'career_business',candidateIds:['candidate']}
+ const base={reportId,reportRevision:1,areaKey:'career_business',candidateIds:['candidate'],planConsent:true}
  for(const input of [
   {...base,report:{actions:['forged']}},
   {...base,accountId:owner.id},
@@ -196,7 +216,7 @@ test('import rejects caller-supplied report content, unknown fields, invalid are
 test('wrong account cannot access the private report or create a Life Plan row',async()=>{
  const {service,state}=buildService({ownerId:'10000000-0000-4000-8000-000000000002'})
  await assert.rejects(()=>service.importCoachingReportActions(config,{id:'10000000-0000-4000-8000-000000000002'},{
-  reportId,reportRevision:1,areaKey:'career_business',candidateIds:['candidate'],
+  reportId,reportRevision:1,areaKey:'career_business',candidateIds:['candidate'],planConsent:true,
  }),err=>err.code==='COACHING_REPORT_NOT_FOUND')
  assert.equal(state.plan,null)
 })
@@ -204,7 +224,7 @@ test('wrong account cannot access the private report or create a Life Plan row',
 test('report import is retry-safe and does not duplicate goal, action or audit events',async()=>{
  const {service,state,report}=buildService()
  const candidate=report.actionCandidates[0]
- const input={reportId,reportRevision:1,areaKey:'career_business',candidateIds:[candidate.candidateId]}
+ const input={reportId,reportRevision:1,areaKey:'career_business',candidateIds:[candidate.candidateId],planConsent:true}
  const first=await service.importCoachingReportActions(config,owner,input)
  const second=await service.importCoachingReportActions(config,owner,input)
  assert.equal(first.goalId,second.goalId)
@@ -212,6 +232,7 @@ test('report import is retry-safe and does not duplicate goal, action or audit e
  assert.equal(second.imported,0)
  assert.equal(state.actions.size,1)
  assert.equal(state.changes.length,2)
+ assert.equal(state.consents.length,1,'retry does not duplicate the consent event')
  assert.equal(second.planVersion,2)
 })
 
