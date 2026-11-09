@@ -1,3 +1,5 @@
+[Reading 268 lines from start (total: 268 lines, 0 remaining)]
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -265,5 +267,3 @@ test('provider-call count must be a non-negative integer', () => {
   assert.throws(() => calculateSessionEconomics({ providerCalls: -1 }), /non-negative integer/);
   assert.throws(() => calculateSessionEconomics({ providerCalls: 1.5 }), /non-negative integer/);
 });
-
-[executed on device: MacBook-Air-Andrii-3.local (5a68b85e-3490-4ac3-a77e-81c382fe4c77)]
