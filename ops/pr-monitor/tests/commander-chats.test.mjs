@@ -91,7 +91,7 @@ test('monitor-side owner token handoff is bounded, retryable and removes bearer 
  assert.match(auth,/fetchWithTimeout/);
  assert.match(auth,/11000/);
  assert.match(auth,/history\.replaceState\(null,'',location\.pathname\+location\.search\)/);
- assert.match(auth,/sessionToken=\$\{?''\}?/);
+ assert.match(auth,/sessionToken=''/);
  assert.match(auth,/retryAction\(message,\(\)=>exchangeToken\(next\)\)/);
  assert.match(auth,/sessionToken=''[\s\S]{0,100}location\.replace\(next\)/);
  assert.match(auth,/if\(response\.status===401\|\|response\.status===403\)sessionToken=''/);
