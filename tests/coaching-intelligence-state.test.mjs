@@ -53,7 +53,7 @@ function fixture(){
   personalCoachQuestion:()=>null,TRADITION_COURSES:[],
   traditionCourse:()=>null,traditionEndcaps:()=>[],
   loadSchemeQuestions:async(_db,schemeKey)=>['grow_quick_v1','grow_overload_20_v1'].includes(schemeKey)
-   ?{schemeKey,modelKey:'grow_v1',questions,requiredCustomPlan:false}:null,
+   ?{schemeKey,modelKey:'grow_v1',questions:schemeKey==='grow_overload_20_v1'?questions.map(q=>q.id==='action'?{...q,stepKey:'will'}:q):questions,requiredCustomPlan:schemeKey==='grow_overload_20_v1'}:null,
   authoredFollowupFor,isCoachingSafetyConcern,createHash,
  }
  const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor,isCoachingSafetyConcern}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
@@ -125,6 +125,26 @@ test('duplicate answer turn returns the committed revision and rejects reuse wit
  assert.equal(replay.course.current.answers.real,'choice:time')
  await assert.rejects(()=>api.savePersonalCoaching({},a,{...turn,answer:'changed'}),err=>err.code==='PERSONAL_COACH_TURN_ID_REUSED')
  await assert.rejects(()=>api.savePersonalCoaching({},b,turn),err=>err.code==='PERSONAL_COACH_REVISION_CONFLICT')
+})
+
+test('pilot validates written action at will and permits the review rating at the end',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ const id=n=>`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`
+ for(const [n,questionId,answer] of [[1,'real','choice:time'],[2,'options',null],[3,'action','Write a concrete first step'],[4,'review','choice:useful']])
+  s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId,answer,turnId:id(n)})
+ s=await api.savePersonalCoaching({},a,{action:'complete',revision:s.revision})
+ assert.equal(s.course.current.status,'completed')
+ assert.equal(s.course.current.answers.review,'choice:useful')
+})
+
+test('pilot cannot substitute a rating for an unwritten action',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ const id=n=>`30000000-0000-4000-8000-${String(n).padStart(12,'0')}`
+ for(const [n,questionId,answer] of [[1,'real','choice:time'],[2,'options',null],[3,'action','short'],[4,'review','choice:useful']])
+  s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId,answer,turnId:id(n)})
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'complete',revision:s.revision}),err=>err.code==='PERSONAL_COACH_WOOP_PLAN_REQUIRED')
 })
 
 test('urgent answer interrupts even when sent for a later valid question',async()=>{

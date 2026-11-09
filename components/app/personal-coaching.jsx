@@ -171,6 +171,9 @@ export default function PersonalCoaching({locale='en',accountId}){
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
   const activeQuestions=questionsFor(course,catalog)
   const question=activeQuestions[index]||activeQuestions[0]
+  const isOverload=session?.schemeKey==='grow_overload_20_v1'
+  const requiresWrittenPlan=Boolean(scheme?.requiredCustomPlan && (isOverload?question?.stepKey==='will':index===activeQuestions.length-1))
+  const planHint=isOverload?(lang==='ru'?'Опишите свой конкретный первый шаг.':lang==='es'?'Describe tu primer paso concreto.':'Describe your own concrete first step.'):langCopy.woop
   const quickChoices=coachingQuickChoicesAllowed(question,index)
   const previousQuestion=activeQuestions[index-1]
   const conversationTurn=coachingConversationTurn({
@@ -187,7 +190,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const finished=session?.status==='completed'
   const safetyHold=session?.status==='safety_hold'
   const adaptive=coachingAdaptivePrompt({question,questions:activeQuestions,index,
-    answers:session?.answers||{},locale:lang,requiredCustomPlan:Boolean(scheme?.requiredCustomPlan)})
+    answers:session?.answers||{},locale:lang,requiredCustomPlan:Boolean(scheme?.requiredCustomPlan&&!isOverload)})
   const standardPrompt=translated(question?.prompt||question?.question,lang)
   const visiblePrompt=adaptive&&!useStandardPrompt?adaptive.prompt:standardPrompt
   const recapRows=finished?buildCoachingRecap(session,activeQuestions,lang):[]
@@ -322,9 +325,9 @@ export default function PersonalCoaching({locale='en',accountId}){
     if((question.required&&!answer)||(question.required&&!question.type&&answer.length<3)){
       setError(t.required);return
     }
-    if(scheme?.requiredCustomPlan && index===activeQuestions.length-1 &&
+    if(requiresWrittenPlan &&
       (answer?.startsWith('choice:')||!answer||answer.length<10)){
-      setError(langCopy.woop);return
+      setError(planHint);return
     }
     if(!skip&&typeof persisted==='string'&&persisted===answer && Object.prototype.hasOwnProperty.call(session.answers,question.id)){
       if(index===activeQuestions.length-1)await command('complete')
@@ -590,7 +593,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 </button>
               </div>
             </details>}
-            {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
+            {quickChoices&&question.type&&!requiresWrittenPlan&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
                 {(question.type==='scale_0_10'
@@ -601,8 +604,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                   {translated(option.label,lang)}</button>)}
               </div>
             </>}
-            {scheme?.requiredCustomPlan&&index===activeQuestions.length-1&&
-              <p className={styles.requiredPlan}>{langCopy.woop}</p>}
+            {requiresWrittenPlan&&<p className={styles.requiredPlan}>{planHint}</p>}
             {quickChoices&&!question.type&&<div className={styles.suggestions} role="group" aria-label={langCopy.choice}>
               {(question.examples?.[lang]||[]).map(option=><button type="button" key={option} disabled={busy||dictating}
                 className={draft.trim()===option?styles.chosen:undefined} aria-pressed={draft.trim()===option}
