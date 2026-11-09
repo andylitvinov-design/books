@@ -9,6 +9,7 @@ import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-readiness.mjs'
 import {isInstagramPublisherEnabled,publishApprovedInstagramImage} from '@/lib/growth-studio/instagram-publisher.mjs'
 import {createMetaInstagramPublisherClient} from '@/lib/growth-studio/meta-instagram.mjs'
+import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
@@ -76,11 +77,12 @@ export async function updateGrowthStudioPostAction(input) {
     const current = newRecord ? null : await store.get(id)
     if ((current?.revision ?? 0) !== input.expectedRevision || (!current && !newRecord))
       return {ok:false,error:current ? 'conflict' : 'not_found'}
+    const isRegisteredInstagramAccount=id=>GROWTH_INSTAGRAM_ACCOUNT_TARGETS.some(account=>account.id===id)
     if(input.action==='save' && input.fields?.channel==='instagram' &&
-       (typeof input.fields.socialAccountId!=='string' || !input.fields.socialAccountId.trim()))
+       !isRegisteredInstagramAccount(input.fields.socialAccountId))
       return {ok:false,error:'instagram_account_required'}
     if((input.action==='approve'||input.action==='plan') && current?.channel==='instagram' &&
-       (typeof current.socialAccountId!=='string' || !current.socialAccountId.trim()))
+       !isRegisteredInstagramAccount(current.socialAccountId))
       return {ok:false,error:'instagram_account_required'}
     const post = nextGrowthPost({current,fields:input.fields,action:input.action,id})
     await store.save(post,input.expectedRevision)
