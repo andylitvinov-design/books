@@ -83,3 +83,12 @@ test("question punctuation is accepted for short follow-up turns",()=>{
  assert.equal(understandConversationTurn({message:"А почему?",locale:"ru"}).act,"follow_up");
  assert.equal(understandConversationTurn({message:"Why?",locale:"en"}).act,"follow_up");
 });
+test("Spanish sino-sobre correction selects the final explicit topic",()=>{
+ const x=understandConversationTurn({message:"No sobre amor sino sobre trabajo",locale:"es"});
+ assert.equal(x.act,"correction");
+ assert.equal(x.topic,"work_money");
+ const reply=ruleConversationReply({message:"No sobre amor sino sobre trabajo",locale:"es"});
+ assert.equal(reply.source,"conversation-intelligence");
+ assert.equal(reply.understanding.topic,"work_money");
+ assert.match(reply.reply,/trabajo y el dinero/);
+});
