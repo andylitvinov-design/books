@@ -3,9 +3,10 @@
 (function(){
  if(typeof document==='undefined'||window.__HH_COMMANDER_SHELL_V1)return;
  window.__HH_COMMANDER_SHELL_V1=true;
- const paths={home:'/',tasks:'/project-management-public.html',agents:'/agents.html',projects:'/projects.html',monitor:'/pr-monitor.html',chats:'/chats.html'};
+ const paths={home:'/',tasks:'/project-management-public.html',agents:'/agents.html',projects:'/projects.html',monitor:'/pr-monitor.html',chats:'/chats.html',automations:'/automations.html'};
  const glyphs={home:'<path d="m3 10 9-7 9 7v11H3z"/><path d="M9 21v-7h6v7"/>',tasks:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 12 3 3 5-6"/>',agents:'<rect x="5" y="7" width="14" height="13" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01M9 17h6"/>',projects:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>'};
- glyphs.monitor='<path d="M3 18V5"/><path d="M3 18h18"/><path d="m6 14 5-5 4 3 5-6"/><path d="M15 6h5v5"/>';
+ glyphs.automations='<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2M8 3l-1 2M16 3l1 2"/>';
+  glyphs.monitor='<path d="M3 18V5"/><path d="M3 18h18"/><path d="m6 14 5-5 4 3 5-6"/><path d="M15 6h5v5"/>';
  glyphs.chats='<path d="M20 11.5a8 8 0 0 1-8 8 8 8 0 0 1-3.5-.8L3 21l2.3-5.5a8 8 0 0 1-.8-3.5 8 8 0 1 1 15.5-.5z"/>';
  const svg=name=>'<svg aria-hidden="true" viewBox="0 0 24 24">'+glyphs[name]+'</svg>';
  function make(tag,cls,txt){const el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el}
@@ -19,7 +20,7 @@
   const refresh=make('button','hh-cc-iconbtn','⟳');refresh.type='button';refresh.title='Обновить страницу';refresh.setAttribute('aria-label','Обновить страницу');refresh.addEventListener('click',()=>location.reload());head.append(refresh);
   const more=make('button','hh-cc-iconbtn','⋮');more.type='button';more.title='Разделы мониторинга';more.setAttribute('aria-label','Разделы мониторинга');more.setAttribute('aria-expanded','false');head.append(more);
   const menu=make('div','hh-cc-menu');menu.hidden=true;
-  [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Библиотека навыков','/skills.html'],['Рабочие чаты','/chats.html'],['Защищённый редактор задач','/task-editor.html']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
+  [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Автоматизации · Cron Jobs',paths.automations],['Библиотека навыков','/skills.html'],['Рабочие чаты','/chats.html'],['Защищённый редактор задач','/task-editor.html']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
   const brainLink=make('a',null,'🧠 Память проектов · AI Projects Brain');brainLink.href='/memory.html';menu.append(brainLink);
   head.append(menu);more.addEventListener('click',()=>{menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden))});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
@@ -27,10 +28,10 @@
   document.body.prepend(head);
   const nav=make('nav');nav.id='hh-cc-dock';nav.setAttribute('aria-label','Agent Commander · основные разделы');
   const active=(location.pathname===paths.tasks||location.pathname==='/task-editor.html')?'tasks':
-   location.pathname===paths.agents?'agents':location.pathname===paths.projects?'projects':
+   location.pathname===paths.agents?'agents':location.pathname===paths.automations?'automations':location.pathname===paths.projects?'projects':
    location.pathname===paths.monitor?'monitor':location.pathname===paths.chats?'chats':
    (location.pathname==='/'||location.pathname==='/index.html')?'home':null;
-  [['home','Главная'],['monitor','PR'],['tasks','Задачи'],['add','Создать'],['agents','Агенты'],['chats','Чат'],['projects','Проекты']].forEach(([name,label])=>{
+  [['home','Главная'],['monitor','PR'],['tasks','Задачи'],['add','Создать'],['agents','Агенты'],['automations','Авто'],['chats','Чат'],['projects','Проекты']].forEach(([name,label])=>{
    const e=make(name==='add'?'button':'a');if(name==='add'){
     e.type='button';e.setAttribute('aria-label','Создать задачу');e.append(make('span','hh-cc-add','+'));
     e.title='Нажмите для новой задачи, удерживайте для голосовой';
