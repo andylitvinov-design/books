@@ -167,6 +167,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
+  const [conflictingAnswer,setConflictingAnswer]=useState(undefined)
   const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
   const titleRef=useRef(null),busyRef=useRef(false)
   const pendingTurn=useRef(null)
@@ -215,6 +216,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     setDraft(typeof saved==='string'?saved:'')
     setDictating(false)
     setPendingFollowup(null);setReflectionDraft('')
+    setConflictingAnswer(undefined)
     setUseStandardPrompt(false)
     setClipboardState('')
     setNotice('')
@@ -230,12 +232,13 @@ export default function PersonalCoaching({locale='en',accountId}){
         appFetch('personal-coaching-catalog',undefined,'GET',{accountId}),
       ])
       const list=questionsFor(value.course,loadedCatalog)
-      const restored=reconcileCoachingDraft({prior:session,current:value.course?.current,questions:list,questionId:question?.id,draft,dirty,fallbackIndex:firstUnanswered(list,value.course?.current?.answers)})
+      const restored=reconcileCoachingDraft({prior:session,current:value.course?.current,questions:list,questionId:question?.id,draft,dirty,unresolvedAnswer:conflictingAnswer,fallbackIndex:firstUnanswered(list,value.course?.current?.answers)})
       if(dirty&&!restored.retained&&value.course?.current?.status!=='safety_hold'&&!window.confirm(t.unsaved))return
       setState(value);setCatalog(loadedCatalog)
       visit(restored.index,value.course?.current?.answers,list)
       if(restored.retained){
         setDraft(restored.draft)
+        setConflictingAnswer(restored.changedAnswer)
         setNotice(lang==='ru'?'Загружена актуальная сессия. Ваш черновик сохранён на экране; проверьте его перед отправкой.':lang==='es'?'Sesión actualizada. Tu borrador sigue en pantalla; revísalo antes de enviarlo.':'Session refreshed. Your draft remains on screen; review it before sending.')
       }
     }catch{setError(t.loadError)}
@@ -340,6 +343,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     if(busyRef.current||!session)return
     if(dictating){setError(t.stopMic);return}
     const answer=skip?null:draft.trim()
+    if(conflictingAnswer!==undefined&&answer!==conflictingAnswer&&!window.confirm(lang==='ru'?'Заменить ответ, сохранённый в другой вкладке, вашим черновиком?':lang==='es'?'¿Reemplazar la respuesta guardada en otra pestaña con tu borrador?':'Replace the answer saved in another tab with your draft?'))return
     if((question.required&&!answer)||(question.required&&!question.type&&answer.length<3)){
       setError(t.required);return
     }
@@ -655,6 +659,10 @@ export default function PersonalCoaching({locale='en',accountId}){
                       </div>
           <footer className={styles.footer} data-coaching-messenger-footer>
             {notice&&<p className={styles.footerMessage} role="status"><Check size={15}/>{notice}</p>}
+            {conflictingAnswer!==undefined&&<div className={styles.footerMessage} data-coaching-conflicting-answer>
+              <strong>{lang==='ru'?'Ответ из другой вкладки:':lang==='es'?'Respuesta de otra pestaña:':'Answer from another tab:'}</strong>{' '}
+              {conflictingAnswer===null?(lang==='ru'?'Пропущено':lang==='es'?'Omitida':'Skipped'):prettyAnswer(conflictingAnswer,question,lang,t.noAnswer)}
+            </div>}
             {error&&<p className={styles.footerMessage} role="alert">{error} <button type="button" disabled={busy||dictating} onClick={reload}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
