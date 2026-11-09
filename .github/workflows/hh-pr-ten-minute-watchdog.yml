@@ -22,6 +22,7 @@ on:
     # failure, instead of waiting for the next ten-minute inventory sweep.
     workflows:
       - 'HH PR source Repair Worker'
+      - 'HH PR core release gate'
       - 'HH zero-cost PR CI worker'
       - 'HH PR Sweep Guard tests'
       - 'HH workflow syntax — actionlint'
@@ -163,7 +164,7 @@ jobs:
           # High-frequency reads use GITHUB_TOKEN, not the scarce merge PAT.
           github-token: ${{ github.token }}
           script: |
-            const {run,isTrustedQualityFailureEvent} = require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-ten-minute-watchdog.cjs');
+            const {run,isTrustedCoreFailureEvent,isTrustedQualityFailureEvent} = require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-ten-minute-watchdog.cjs');
             const token=process.env.HH_AUTOMERGE_TOKEN;
             // Only one trusted GitHub API mutation uses the existing dedicated token.
             // Its events can start CI; a GITHUB_TOKEN base update cannot do that.
@@ -197,7 +198,7 @@ jobs:
             }} : null;
             const dryRun=context.eventName==='push'||
               String(context.payload.inputs?.dry_run??'false')==='true';
-            const eventFastPath=isTrustedQualityFailureEvent(context);
+            const eventFastPath=isTrustedCoreFailureEvent(context)||isTrustedQualityFailureEvent(context);
             const report=await run({github,core,context,repairGithub,
               hasMergeToken:Boolean(token),dryRun,directHandoffLocal:true,eventFastPath});
             // A code push is ALREADY an inspection-only Watchdog run; capture
