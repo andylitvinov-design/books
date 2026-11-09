@@ -80,7 +80,6 @@ test('OAuth code exchange requires exact granted scopes, long-lived token and ma
   assert.equal(new URL(calls[1].url).searchParams.get('grant_type'),'ig_exchange_token')
   assert.equal(calls[2].options.headers.Authorization,'Bearer long-lived-token-that-is-secret')
   assert.ok(!JSON.stringify(result.permissions).includes('short-token'))
-  assert.throws(()=>{},()=>true)
 })
 
 test('OAuth exchange refuses missing permission and wrong Instagram identity',async()=>{
@@ -128,12 +127,12 @@ test('account Redis store returns safe status only and isolates two encrypted cr
     }else if(verb==='EVAL'){
       const script=args[1]
       if(script.includes("local value=redis.call('GET'")){
-        const key=args[4];result=values.get(key)??null;values.delete(key)
+        const key=args[3];result=values.get(key)??null;values.delete(key)
       }else if(script.includes("redis.call('HSET'")){
-        const metaKey=args[4],credentialKey=args[5],accountId=args[6]
-        hash.set(accountId,args[7]);values.set(credentialKey,args[8]);result=1
+        const metaKey=args[3],credentialKey=args[4],accountId=args[5]
+        hash.set(accountId,args[6]);values.set(credentialKey,args[7]);result=1
       }else if(script.includes("redis.call('HDEL'")){
-        hash.delete(args[6]);values.delete(args[5]);result=1
+        hash.delete(args[5]);values.delete(args[4]);result=1
       }
     }
     return new Response(JSON.stringify({result}),{status:200,headers:{'content-type':'application/json'}})
