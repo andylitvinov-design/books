@@ -454,7 +454,7 @@ test("real WebKit selects Settings duration, then Audio and real voice before re
 });
 
 test("post-export stale narration refusal reopens mounted Audio and consented Voice",()=>{
- const start=source.indexOf("removed spoken phrase must block stale WAV reuse or detach it");
+ const start=source.indexOf('the old WAV may remain attached, but must be unusable until narration is regenerated');
  const audio=source.indexOf("const montageAudioAfterExport=page.locator",start);
  const tap=source.indexOf("await montageAudioAfterExport.click()",audio);
  const selected=source.indexOf("await expect(page.locator('[data-video-montage-audio]')).toBeVisible()",tap);
