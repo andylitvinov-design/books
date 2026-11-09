@@ -31,3 +31,11 @@ Focused test: `node --test tests/mandala-ideas-personalization-concept.test.mjs 
 Dependencies reconciled against the current protected production code: #3939 compact Concept, #3943 Love/Goal phrases, the later Style/Text/Effects/Settings Montage and PRO Standard shared timeline, Voice/My Voice. Do not merge older #3782 Goal-only questions into Goal or overwrite current Montage or payment changes. No cost-incurring video generation in tests.
 
 **Release is not proved by this specification.** Final acceptance needs exact-head Core + Specialist, protected merge, Vercel READY/ancestry and real mobile interactive screenshots on the canonical domain. No paid render or provider call for testing.
+
+
+## Implementation correction — 2026-11-09
+
+- At the ten-selected-phrase cap, explicitly choosing another phrase replaces the last selected phrase instead of silently refusing the click. The hard maximum remains ten and the existing localized replacement message is shown.
+- WebKit acceptance retains the chosen phrase's stable source index across the state change; it no longer re-evaluates a dynamic `aria-pressed=false` locator after the click.
+- The same rule applies to the single Ideas/Montage Text editor; audio approval and stale-spoken-audio protection remain unchanged.
+- A new exact-head release wave is required after the latest production-base advance. A base-change rejection is fail-closed and is not treated as product-test success.
