@@ -2,7 +2,8 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {confirmedCoreEvent,run}=require('../scripts/ci-pr-event-handoff.cjs');\nconst {PATHS,isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('../scripts/ci-pr-quality-event.cjs');
+const {confirmedCoreEvent,run}=require('../scripts/ci-pr-event-handoff.cjs');
+const {PATHS,isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('../scripts/ci-pr-quality-event.cjs');
 const event=()=>({
  repo:{owner:'andylitvinov-design',repo:'books'},
  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_run',
