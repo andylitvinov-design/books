@@ -39,10 +39,13 @@ test('event link is revalidated against live exact-head PR', async () => {
 
 test('empty GitHub PR association resolves only one branch-and-SHA exact live PR', async () => {
   const pr = makePR();
+  const run = makeRun([]);
+  run.head_sha = HEAD;
   const github = { rest: { pulls: { list: async () => ({ data: [pr] }) } } };
-  const result = await resolveExactPR({ github, owner: 'andylitvinov-design', repo: 'books', workflowRun: makeRun([]) });
+  const result = await resolveExactPR({ github, owner: 'andylitvinov-design', repo: 'books', workflowRun: run });
   assert.equal(result.ok, true);
   assert.equal(result.pullRequest.number, 44);
+  assert.equal(result.pullRequest.head.sha, HEAD);
 });
 
 test('stale, ambiguous and moved associations fail closed', async () => {
@@ -107,4 +110,12 @@ test('bridge sends authenticated JSON and reports only a safe receipt', async ()
   assert.equal(result.accepted, true);
   assert.equal(result.prNumber, 44);
   assert.equal(info.length, 1);
+});
+
+test('empty association with a synthetic or stale run SHA does not guess the PR source HEAD', async () => {
+  const pr = makePR();
+  const github = { rest: { pulls: { list: async () => ({ data: [pr] }) } } };
+  const result = await resolveExactPR({ github, owner: 'andylitvinov-design', repo: 'books', workflowRun: makeRun([]) });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'NO_UNIQUE_EXACT_HEAD_PR');
 });
