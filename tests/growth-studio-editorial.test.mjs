@@ -85,6 +85,7 @@ test('Instagram account target is persisted independently and legacy drafts rema
   const actions=readFileSync(new URL('../app/admin/growth-studio/actions.js',import.meta.url),'utf8')
   assert.match(actions,/input\.action==='save' && input\.fields\?\.channel==='instagram'/)
   assert.match(actions,/instagram_account_required/)
+  assert.match(actions,/input\.action==='approve'\|\|input\.action==='plan'/)
 })
 
 test('private URLs, off-brand destinations, query data and encoded private routes are forbidden',() => {
