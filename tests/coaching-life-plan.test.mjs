@@ -181,3 +181,14 @@ test('empty Life Plan reads do not create plan/domain records and still return a
  assert.ok(result.domains.every(area=>area.status==='not_started'&&area.selfRating===null))
  assert.equal(calls.some(sql=>sql.startsWith('insert')),false)
 })
+
+
+test('Life Plan endpoints use the existing authenticated catch-all route and account switch guard',()=>{
+ const route=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8')
+ assert.match(route,/import \{ readCoachingLifePlan, importCoachingReportActions \} from '@\/lib\/app\/coaching-life-plan'/)
+ assert.match(route,/path\[0\] === 'coaching-life-plan'/)
+ assert.match(route,/readCoachingLifePlan\(config,actor,\{locale\}\)/)
+ assert.match(route,/importCoachingReportActions\(config,actor,await readBody\(request,2048\)\)/)
+ const block=route.slice(route.indexOf("if (path[0] === 'coaching-life-plan')"),route.indexOf("if (joined === 'tradition-coaching-summary')"))
+ assert.match(block,/request\.headers\.get\('x-hh-account-id'\) !== actor\.id/)
+})
