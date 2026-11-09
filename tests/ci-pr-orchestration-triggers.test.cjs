@@ -6,7 +6,7 @@ const read=name=>readFileSync('.github/workflows/'+name+'.yml','utf8');
 test('watchdog has independent cron; failed Core is a direct event workflow',()=>{
   const s=read('hh-pr-ten-minute-watchdog');
   const direct=read('hh-pr-direct-core-failure');
-  assert.ok(s.includes("cron: '6,16,26,36,46,56 * * * *'"));
+  assert.ok(s.includes("cron: '7,17,27,37,47,57 * * * *'"));
   for(const tag of ['HH watchdog / dry run','HH watchdog / completion wake',
     'HH watchdog / direct handoff','HH watchdog / reconcile'])
     assert.ok(s.includes(tag),'Watchdog must distinguish real reconcile from no-op dispatch '+tag);
@@ -50,7 +50,7 @@ test('source Repair Worker is addressed only; no empty cron consumes its publish
 });
 test('CI scheduled recovery retains cron but cannot reserve addressed worker lease',()=>{
  const s=read('hh-pr-ci-worker');
- assert.ok(s.includes("cron: '4,14,24,34,44,54 * * * *'"));
+ assert.ok(s.includes("cron: '3,13,23,33,43,53 * * * *'"));
  assert.ok(s.includes('workflow_dispatch:'));
  assert.ok(s.includes('cancel-in-progress: false'));
  assert.ok(s.includes("github.event_name == 'workflow_dispatch' && inputs.pr_number != '0'"));
@@ -60,7 +60,7 @@ test('CI scheduled recovery retains cron but cannot reserve addressed worker lea
  assert.ok(s.includes('HH_CI_SCHEDULE_FALLBACK'));
 });
 test('full inventory retains independent hourly recovery',()=>{
-  assert.ok(read('hh-pr-full-inventory').includes("cron: '25 * * * *'"));
+  assert.ok(read('hh-pr-full-inventory').includes("cron: '27 * * * *'"));
 });
 
 test('trusted default push re-enables schedules and dispatches one live watchdog',()=>{
