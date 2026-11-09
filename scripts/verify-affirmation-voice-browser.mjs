@@ -597,10 +597,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // fine-tuning the visitor returns to Text and opens its visible advanced
       // shortcut: never click controls hidden beneath another tab.
       await personalTab.click();
-      await voiceModeButton.click();
-      await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
+      await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
+      // Re-resolve the current visible control after the workspace round-trip.
+      // On native WebKit use a tap so the state change is a real user gesture.
+      const returnToStandardVoice=advancedVoice.locator('[data-video-ideas-voice-mode="voice"]');
+      await expect(returnToStandardVoice).toBeVisible();
+      if(await returnToStandardVoice.getAttribute("aria-pressed")!=="true"){
+        if(engine==="webkit")await returnToStandardVoice.tap();
+        else await returnToStandardVoice.click();
+      }
+      await expect(returnToStandardVoice).toHaveAttribute("aria-pressed","true",{timeout:10000});
       // Reuse the visible Personalization voice shortcut.
       await expect(advancedText).toBeVisible();
       await advancedText.click();
