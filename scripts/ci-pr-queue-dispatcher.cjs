@@ -78,6 +78,7 @@ function trustedContext(context){
   const verifiedCoreFailure=w?.name==='HH PR core release gate' &&
     w.event==='pull_request' &&
     ['failure','timed_out','startup_failure'].includes(w.conclusion);
+  const verifiedQualityFailure=isTrustedQualityFailureEvent(context);
   const trustedWorker=w?.name!=='HH PR core release gate' &&
     ['workflow_dispatch','schedule'].includes(w?.event);
   return !!(w&&RELEVANT.has(w.name)&&w.status==='completed'&&
