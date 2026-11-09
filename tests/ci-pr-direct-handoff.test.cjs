@@ -17,7 +17,7 @@ test('Control Tower cannot dispatch while Watchdog holds sole guarded writer',()
  assert.doesNotMatch(reconcile,/HH PR core release gate/);
  const directJob=watchdog.split('  direct-handoff:\n')[1]?.split('    runs-on:')[0];
  assert.ok(directJob,'direct-handoff job exists');
- assert.ok(directJob.includes("'HH PR core release gate'"),'Core is explicitly excluded from generic handoff');
+ assert.ok(directJob.includes('"HH PR core release gate"'),'Core is explicitly excluded from generic handoff');
  assert.match(direct,/HH PR core release gate/);
  assert.match(direct,/  workflow_run:/);
  assert.match(direct,/types: \[completed\]/);
@@ -134,9 +134,9 @@ test('failed independent PR workflow runs dispatch the durable queue after Watch
  for(const conclusion of ['failure','timed_out','startup_failure'])
    assert.ok(job.includes("github.event.workflow_run.conclusion == '"+conclusion+"'"));
  assert.ok(job.includes("!contains(fromJSON("));
- assert.ok(job.includes("'HH PR core release gate'"));
- assert.ok(job.includes("'HH PR source Repair Worker'"));
- assert.ok(job.includes("'HH zero-cost PR CI worker'"));
+ assert.ok(job.includes('"HH PR core release gate"'));
+ assert.ok(job.includes('"HH PR source Repair Worker"'));
+ assert.ok(job.includes('"HH zero-cost PR CI worker"'));
  assert.ok(job.includes('needs: reconcile'));
  assert.ok(job.includes('group: hh-control-tower-single-writer'));
 });
