@@ -33,7 +33,7 @@ test('the Instagram caption limit includes the campaign link before provider req
   await assert.rejects(publishApprovedInstagramImage({post,expectedRevision:3,confirmed:true,environment,providerClient:client,fetchFn}),/instagram_media_preflight_failed/)
   assert.equal(calls.length,0)
 })
-function fakeProvider({publishFailure=false,statusCode='FINISHED',targetId='wizards_secrets',username=META_ACCOUNT_TARGETS[targetId]?.handle||'wizards.secrets'}={}){
+function fakeProvider({publishFailure=false,statusCode='FINISHED',timestamp='2026-11-09T16:30:00+0000',targetId='wizards_secrets',username=META_ACCOUNT_TARGETS[targetId]?.handle||'wizards.secrets'}={}){
   const calls=[]
   const client={
     targetId,username,
@@ -42,7 +42,7 @@ function fakeProvider({publishFailure=false,statusCode='FINISHED',targetId='wiza
     async publishContainer(id){calls.push({method:'publish',id});if(publishFailure)throw new Error('ambiguous timeout');return {id:'media-test-200'}},
     async getPublishedMedia(id){calls.push({method:'readback',id});return {
       id:'media-test-200',permalink:'https://www.instagram.com/p/AbCdEf123/',
-      timestamp:'2026-11-09T16:30:00+0000',media_type:'IMAGE',
+      ...(timestamp===undefined?{}:{timestamp}),media_type:'IMAGE',
     }},
   }
   const fetchFn=async(url,options={})=>{
@@ -137,6 +137,17 @@ test('ambiguous media_publish response returns delivery_unknown and is never lab
   assert.equal(result.containerId,'container-test-100')
   assert.equal(calls.filter(x=>x.method==='publish').length,1)
   assert.equal(calls.some(x=>x.method==='readback'),false)
+})
+
+test('missing or invalid Meta provider timestamp never creates a confirmed published receipt',async()=>{
+  for(const timestamp of [undefined,'not-a-date']){
+    const {client,calls,fetchFn}=fakeProvider({timestamp})
+    const result=await publishApprovedInstagramImage({post:approvedPost(),expectedRevision:3,confirmed:true,environment,providerClient:client,fetchFn,now})
+    assert.equal(result.state,'delivery_unknown')
+    assert.equal(calls.filter(x=>x.method==='publish').length,1)
+    assert.equal(calls.filter(x=>x.method==='readback').length,1)
+    assert.equal(result.publishedAt,undefined)
+  }
 })
 
 test('container not ready is returned as provider_processing without publish',async()=>{
