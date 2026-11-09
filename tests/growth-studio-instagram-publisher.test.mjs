@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {META_ACCOUNT_TARGETS} from '../lib/growth-studio/meta-instagram.mjs'
+import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '../lib/growth-studio/instagram-accounts.mjs'
 import {publishApprovedInstagramImage,isInstagramPublisherEnabled} from '../lib/growth-studio/instagram-publisher.mjs'
 
 const now=new Date('2026-11-09T16:30:00.000Z')
@@ -120,8 +121,14 @@ test('container not ready is returned as provider_processing without publish',as
   assert.equal(calls.some(x=>x.method==='publish'),false)
 })
 
-test('only registered account IDs are accepted by the official Meta account mapping',()=>{
-  assert.deepEqual(Object.keys(META_ACCOUNT_TARGETS),['my_coach_ai','my_couch_ai'])
-  assert.equal(META_ACCOUNT_TARGETS.my_coach_ai.handle,'my.coach.ai')
-  assert.equal(META_ACCOUNT_TARGETS.my_couch_ai.handle,'my.couch.ai')
+test('Meta OAuth and publishing allowlist matches all four independent UI destinations',()=>{
+  assert.deepEqual(Object.keys(META_ACCOUNT_TARGETS),GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=>account.id))
+  assert.deepEqual(Object.values(META_ACCOUNT_TARGETS).map(account=>account.handle),
+    ['my.coach.ai','my.couch.ai','wizards.secrets','andy.therapist'])
+  for(const account of GROWTH_INSTAGRAM_ACCOUNT_TARGETS){
+    assert.equal(META_ACCOUNT_TARGETS[account.id]?.handle,account.label.slice(1))
+    assert.equal(account.connectionState,'pending_authorization')
+    assert.equal(account.providerAccountId,null)
+    assert.equal(account.publishEnabled,false)
+  }
 })

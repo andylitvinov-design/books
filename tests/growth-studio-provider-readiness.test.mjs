@@ -138,11 +138,12 @@ test('owner-only UI shows separate local, external, and manual states without fa
 })
 
 
-test('Instagram destination registry includes the two distinct requested brands without duplicate entries',async()=>{
+test('Instagram destination registry includes four distinct requested profiles without duplicate entries',async()=>{
   const {GROWTH_INSTAGRAM_ACCOUNT_TARGETS}=await import('../lib/growth-studio/instagram-accounts.mjs')
   const labels=GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.label)
-  assert.deepEqual(labels,['@my.coach.ai','@my.couch.ai'])
-  assert.equal(new Set(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.id)).size,2)
+  assert.deepEqual(labels,['@my.coach.ai','@my.couch.ai','@wizards.secrets','@andy.therapist'])
+  assert.deepEqual(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.id),['my_coach_ai','my_couch_ai','wizards_secrets','andy_therapist'])
+  assert.equal(new Set(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.id)).size,4)
   for(const account of GROWTH_INSTAGRAM_ACCOUNT_TARGETS){
     assert.equal(account.network,'instagram')
     assert.equal(account.connectionState,'pending_authorization')
