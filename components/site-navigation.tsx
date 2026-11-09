@@ -209,7 +209,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
               data-nav-item={item.id}
               href={item.href}
               prefetch={false}
-              aria-current={(current === item.id || (item.id === 'my-coach' && /^\/(?:ru|en|es)\/masters(?:\/|$)/.test(pathname))) ? 'page' : undefined}
+              aria-current={(current === item.id || (item.id === 'my-coach' && /^\/(?:ru|en|es)\/(?:my-coach|masters)(?:\/|$)/.test(pathname))) ? 'page' : undefined}
               onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
             >{item.label}</Link>
           ))}
