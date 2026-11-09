@@ -4,6 +4,16 @@ Date: 2026-11-09
 
 This implementation uses **Instagram Graph API with Facebook Login** because the commissioning requirement explicitly needs the linked Facebook Page and its Page ID. This is distinct from Instagram Login, which uses the Instagram-specific permission family and does not supply the same Page-link workflow.
 
+## Owner-approved Instagram destinations
+
+| Internal target | Role | Handle | Editorial profile |
+|---|---|---|---|
+| `wizards_secrets` | Work | `@wizards.secrets` | Wizards Secrets · Holistic House |
+| `andy_therapist` | Personal | `@andy.therapist` | Andy Therapist |
+
+Each destination has separate Meta OAuth state, encrypted credentials, Instagram/Page IDs, publish approval and performance history. Former targets are no longer active.
+
+
 ## Meta app configuration
 
 1. Use/create a Meta Business app in the Meta for Developers account controlled by the business owner.
@@ -31,7 +41,7 @@ Set these as server-only secrets, then deploy:
 2. Click Connect beside one target account. Complete Facebook login and grant the requested scopes.
 3. Callback reads granted permissions, managed Pages and linked professional Instagram account metadata.
 4. The callback matches the exact expected username, requires a Page content-creation task, and stores encrypted credentials in the existing Redis service. It rejects missing/ambiguous matches.
-5. Repeat separately for the second target.
+5. Repeat separately for the work profile `@wizards.secrets` and the personal profile `@andy.therapist`.
 6. Check status at `/api/admin/growth-studio/meta/status`. Only non-secret metadata is returned.
 
 Requested scopes:
