@@ -630,7 +630,7 @@ jobs:
       - name: Build exact voice release candidate
         run: |
           # Same macOS runner; increase only the build worker's V8 heap, not the CI scope.
-          NODE_OPTIONS=--max-old-space-size=3072 npm run build
+          HH_FFMPEG_EXTERNAL_PATH="$(command -v ffmpeg)" NODE_OPTIONS=--max-old-space-size=3072 npm run build
       # Reuse Playwright's version-pinned WebKit payload; encoded-media tests still execute.
       - name: Restore pinned Playwright WebKit browser
         uses: actions/cache@v4
