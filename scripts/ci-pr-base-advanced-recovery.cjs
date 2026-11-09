@@ -7,7 +7,11 @@ const REPO='andylitvinov-design/books',PROD='codex/public-book-library';
 const SHA=/^[0-9a-f]{40}$/i;
 const CORE_PATH='.github/workflows/hh-pr-core-release.yml';
 const ERROR='PR_HEAD_BASE_OR_RELEASE_STATE_CHANGED:PRODUCTION_BASE_CHANGED';
-const HOLDS=new Set(['hh:hold','hh:blocked','hh:repair-manual','hh:worker-claimed','hh:direction-override:invalid']);
+// A stale repair-manual marker is informational for this narrow recovery:
+// only an exact, trusted BASE_ADVANCED Core failure can enter this module, and
+// the complete live source lease history is checked again before update-branch.
+// Real owner activity remains protected by the lease check and hard holds below.
+const HOLDS=new Set(['hh:hold','hh:blocked','hh:worker-claimed','hh:direction-override:invalid']);
 
 function isTrustedFailure(context,now=Date.now()){
  const e=context?.payload?.workflow_run;
