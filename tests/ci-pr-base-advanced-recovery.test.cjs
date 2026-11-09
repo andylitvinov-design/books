@@ -148,6 +148,25 @@ test('synthetic Core merge SHA proves source HEAD and historical tested BASE bef
  assert.equal(r.status,'UPDATED');
  assert.equal(w.updated(),1,'one native update for exact PR source SHA');
 });
+
+test('stale manual source-repair marker does not block exact BASE_ADVANCED recovery, but a live lease still does',async()=>{
+ const manual=world({pr:{labels:[{name:'hh:repair-manual'}]}});
+ const manualResult=await run(manual);
+ assert.equal(manualResult.status,'UPDATED');
+ assert.equal(manual.updated(),1);
+ const activeLease={schema:'HH_PR_SWEEP_LEASE_V1',owner:'another-source-writer',
+  lease_id:'active-lease-3948',head_sha:HEAD,state:'claim',
+  created_at:'2026-11-04T21:00:00.000Z',expires_at:'2026-11-04T21:10:00.000Z'};
+ const held=world({pr:{labels:[{name:'hh:repair-manual'}]},
+  comments:[{id:9001,user:{login:'another-owner'},body:
+   '<!-- HH_PR_SWEEP_LEASE_V1 -->\\n```json\\n'+
+   JSON.stringify(activeLease)+'\\n```'}]});
+ const heldResult=await run(held);
+ assert.equal(heldResult.status,'SKIPPED');
+ assert.equal(heldResult.reason,'ACTIVE_OR_UNVERIFIED_SOURCE_LEASE');
+ assert.equal(held.updated(),0);
+});
+
 test('synthetic Core association rejects any missing or false merge-parent evidence',async()=>{
  const synthetic='d'.repeat(40);
  for(const bad of [
