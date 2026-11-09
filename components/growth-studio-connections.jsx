@@ -386,7 +386,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
               </a>
               {connected&&<button type="button" onClick={()=>disconnectMetaAccount(account.id)}>{locale==='ru'?'Отключить':'Disconnect'}</button>}
             </div>
-            <small>{locale==='ru'?'Публикация выключена до первого тестового поста':'Publishing disabled until the first test post'}</small>
+            <small>{locale==='ru'?'Публикация выключена до первого тестового поста':'publishing disabled until the first test post'}</small>
           </section>
         })}
       </div>
