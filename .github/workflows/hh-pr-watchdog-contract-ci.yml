@@ -38,6 +38,7 @@ on:
       - 'ops/pr-monitor/pr-two-screen-boot.js'
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
       - 'scripts/ci-pr-event-handoff.cjs'
+      - 'scripts/ci-pr-quality-event.cjs'
       - 'scripts/ci-pr-conflict-event-handoff.cjs'
       - 'scripts/ci-pr-direction-event-label.cjs'
       - 'tests/ci-pr-conflict-event-handoff.test.cjs'
@@ -204,6 +205,7 @@ jobs:
           node --check tests/ci-pr-direction-watcher.test.cjs
           node --check tests/ci-pr-priority.test.cjs
           node --check scripts/ci-pr-ten-minute-watchdog.cjs
+          node --check scripts/ci-pr-quality-event.cjs
           node --check scripts/ci-pr-pm-agent-inbox.cjs
           node --check tests/ci-pr-pm-agent-inbox.test.cjs
           node --check scripts/ci-pr-event-handoff.cjs

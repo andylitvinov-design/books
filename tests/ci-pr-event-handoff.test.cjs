@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {confirmedCoreEvent,run}=require('../scripts/ci-pr-event-handoff.cjs');
+const {confirmedCoreEvent,run}=require('../scripts/ci-pr-event-handoff.cjs');\nconst {PATHS,isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('../scripts/ci-pr-quality-event.cjs');
 const event=()=>({
  repo:{owner:'andylitvinov-design',repo:'books'},
  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_run',
@@ -16,7 +16,49 @@ const event=()=>({
   pull_requests:[{number:3162}]
  }}
 });
-test('only a trusted completed failed Core event can wake source repair',()=>{
+
+test('allowlisted quality workflow failures fast-path only their exact associated PR HEAD',()=>{
+ const good={
+  repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_run',
+  payload:{workflow_run:{
+   id:200,run_attempt:1,name:'HH First Video LIVE · encoded file acceptance',
+   path:PATHS['HH First Video LIVE · encoded file acceptance']+'@refs/pull/3946/merge',
+   head_sha:'f'.repeat(40),head_branch:'codex/audio-source',
+   event:'pull_request',status:'completed',conclusion:'failure',
+   repository:{full_name:'andylitvinov-design/books'},
+   head_repository:{full_name:'andylitvinov-design/books'},
+   pull_requests:[{number:3946,head:{sha:'a'.repeat(40)},
+    base:{ref:'codex/public-book-library',sha:'b'.repeat(40)}}]
+  }}
+ };
+ const pr={number:3946,state:'open',draft:false,
+  base:{ref:'codex/public-book-library',sha:'b'.repeat(40)},
+  head:{ref:'codex/audio-source',sha:'a'.repeat(40),
+   repo:{full_name:'andylitvinov-design/books'}}};
+ assert.equal(isTrustedQualityFailureEvent(good),true);
+ assert.equal(qualityEventMatchesPR(good.payload.workflow_run,pr),true);
+ for(const mutate of [
+  e=>{e.name='Unlisted workflow';},
+  e=>{e.path='.github/workflows/untrusted.yml@refs/pull/3946/merge';},
+  e=>{e.conclusion='success';},
+  e=>{e.event='push';},
+  e=>{e.head_repository.full_name='outside/books';},
+  e=>{e.repository.full_name='outside/books';},
+  e=>{e.pull_requests=[];},
+  e=>{e.pull_requests.push({...e.pull_requests[0],number:3947});},
+  e=>{e.pull_requests[0].head.sha='c'.repeat(40);},
+  e=>{e.pull_requests[0].base.ref='codex/bootstrap-books';}
+ ]){
+  const bad=structuredClone(good);mutate(bad.payload.workflow_run);
+  assert.equal(isTrustedQualityFailureEvent(bad),false);
+ }
+ const stale={...pr,head:{...pr.head,sha:'c'.repeat(40)}};
+ assert.equal(qualityEventMatchesPR(good.payload.workflow_run,stale),false);
+ const fork=structuredClone(good);fork.payload.workflow_run.head_repository.full_name='fork/books';
+ assert.equal(isTrustedQualityFailureEvent(fork),false);
+});
+\ntest('only a trusted completed failed Core event can wake source repair',()=>{
  const good=event();
  assert.equal(confirmedCoreEvent(good),true);
  for(const fields of [

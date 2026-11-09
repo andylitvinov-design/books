@@ -8,10 +8,11 @@ const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=re
 const {verifiedRunnerReceipt}=require('./ci-pr-runner-evidence.cjs');
 const {reconcileCiWake,recoverVerifiedCiManualHold}=require('./ci-pr-ci-wake-reconcile.cjs');
 const {classifyIndependentSpecialistChecks,latestByName}=require('./ci-pr-ten-minute-watchdog.cjs');
+const {PATHS:QUALITY_EVENT_PATHS,isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
 const WORKER_PATH={repair:'hh-pr-repair-worker.yml',legacy:'hh-pr-repair-worker.yml',
  conflict:'hh-pr-repair-worker.yml',ci:'hh-pr-ci-worker.yml'};
 const MAX_DISPATCH=2, MAX_MANUAL_CONFLICT_HANDOFFS=2, MAX_INSPECT=16, MAX_CONFLICT_ONLY_INSPECT=6, MAX_API=55, MIN_RATE=250;
-const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate']);
+const RELEVANT=new Set(['HH PR 10-minute watchdog','HH PR source Repair Worker','HH zero-cost PR CI worker','HH PR core release gate',...Object.keys(QUALITY_EVENT_PATHS)]);
 function validOwnerRepairTarget(context,target){
  return !!(target&&typeof target==='object'&&!Array.isArray(target)&&
   context?.repo?.owner==='andylitvinov-design'&&context.repo.repo==='books'&&
@@ -80,7 +81,7 @@ function trustedContext(context){
   const trustedWorker=w?.name!=='HH PR core release gate' &&
     ['workflow_dispatch','schedule'].includes(w?.event);
   return !!(w&&RELEVANT.has(w.name)&&w.status==='completed'&&
-    (verifiedCoreFailure||trustedWorker)&&
+    (verifiedCoreFailure||verifiedQualityFailure||trustedWorker)&&
     w.repository?.full_name===REPO&&
     (!w.head_repository?.full_name||w.head_repository.full_name===REPO));
  }
@@ -443,13 +444,18 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
    }
   }else{
    const event=context.payload?.workflow_run,associated=event?.pull_requests;
+   const coreEvent=context.eventName==='workflow_run'&&
+      event?.name==='HH PR core release gate'&&
+      event?.status==='completed'&&event?.event==='pull_request'&&
+      ['failure','timed_out','startup_failure'].includes(event?.conclusion)&&
+      event?.repository?.full_name===REPO&&event?.head_repository?.full_name===REPO;
+   const qualityEvent=selected.length===1&&qualityEventMatchesPR(event,selected[0]);
    if(!Number.isSafeInteger(focusPrNumber)||focusPrNumber<1||
-      context.eventName!=='workflow_run'||event?.name!=='HH PR core release gate'||
-      event?.status!=='completed'||event?.event!=='pull_request'||
-      !['failure','timed_out','startup_failure'].includes(event?.conclusion)||
+      context.eventName!=='workflow_run'||(!coreEvent&&!qualityEvent)||
       selected.length!==1||event.head_branch!==selected[0].head?.ref||
-      (Array.isArray(associated)&&associated.length>0&&
-       !associated.some(link=>link.number===focusPrNumber))){
+      (coreEvent&&Array.isArray(associated)&&associated.length>0&&
+       !associated.some(link=>link.number===focusPrNumber&&
+        (!link.head?.sha||link.head.sha===selected[0].head?.sha)))){
     summary.reason='EVENT_FOCUS_UNVERIFIED';return finish();
    }
   }

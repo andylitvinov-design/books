@@ -47,6 +47,7 @@ on:
       - '.github/workflows/hh-pr-ten-minute-watchdog.yml'
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
       - 'scripts/ci-pr-event-handoff.cjs'
+      - 'scripts/ci-pr-quality-event.cjs'
       - 'tests/ci-pr-event-handoff.test.cjs'
       - 'scripts/ci-pr-control-tower-wakeup.cjs'
       - 'tests/ci-pr-control-tower-wakeup.test.cjs'
@@ -162,7 +163,7 @@ jobs:
           # High-frequency reads use GITHUB_TOKEN, not the scarce merge PAT.
           github-token: ${{ github.token }}
           script: |
-            const {run} = require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-ten-minute-watchdog.cjs');
+            const {run,isTrustedQualityFailureEvent} = require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-ten-minute-watchdog.cjs');
             const token=process.env.HH_AUTOMERGE_TOKEN;
             // Only one trusted GitHub API mutation uses the existing dedicated token.
             // Its events can start CI; a GITHUB_TOKEN base update cannot do that.

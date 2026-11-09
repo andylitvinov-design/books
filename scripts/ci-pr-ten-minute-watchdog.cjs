@@ -38,6 +38,7 @@ const {readCompleteIssueComments,externalOwnerLeaseStatus}=require('./ci-pr-task
 const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const {classifyRedCiError}=require('./ci-pr-red-ci-classifier.cjs');
+const {isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
 
 /**
  * One GraphQL read obtains mergeability for all selected PRs instead of one
@@ -323,18 +324,22 @@ function needsFailedCoreCronBackstop(state) {
 // Match the authenticated run to exactly one live same-repo production PR.
 // This lookup does NOT prove a code failure: the normal exact-HEAD Core/job
 // verifier below must still authorize every Repair handoff.
+// A failed Core or allowlisted specialist/browser workflow callback concerns
+// one PR, not the complete 100+ PR inventory. The quality path additionally
+// requires the signed event's sole PR association to match the live exact HEAD.
 async function eventOnlyPR(github,owner,repo,limited,context) {
   const run=context?.payload?.workflow_run;
   const full=owner+'/'+repo;
-  if(context?.eventName!=='workflow_run'||run?.name!==CORE_NAME||
-     run?.event!=='pull_request'||run?.status!=='completed'||
-     !['failure','timed_out','startup_failure'].includes(run.conclusion)||
-     run?.repository?.full_name!==full||run?.head_repository?.full_name!==full||
-     !Number.isSafeInteger(run.id)||run.id<1||
-     !/^[a-f0-9]{40}$/i.test(run.head_sha||'')||
-     typeof run.head_branch!=='string'||!run.head_branch||
-     run.head_branch.length>255)return null;
-  const {data}=await limited('failed-core-exact-branch',()=>
+  const coreEvent=context?.eventName==='workflow_run'&&run?.name===CORE_NAME&&
+    run?.path?.split('@')[0]==='.github/workflows/hh-pr-core-release.yml'&&
+    run?.event==='pull_request'&&run?.status==='completed'&&
+    ['failure','timed_out','startup_failure'].includes(run.conclusion)&&
+    run?.repository?.full_name===full&&run?.head_repository?.full_name===full&&
+    Number.isSafeInteger(run.id)&&run.id>0&&SHA.test(run.head_sha||'')&&
+    typeof run.head_branch==='string'&&run.head_branch.length>0&&run.head_branch.length<=255;
+  const qualityEvent=isTrustedQualityFailureEvent(context);
+  if(!coreEvent&&!qualityEvent)return null;
+  const {data}=await limited('failed-workflow-exact-branch',()=>
     github.rest.pulls.list({owner,repo,state:'open',head:owner+':'+run.head_branch,
       per_page:100}));
   // A shared source branch is ambiguous. Never choose a candidate speculatively.
@@ -342,11 +347,13 @@ async function eventOnlyPR(github,owner,repo,limited,context) {
   const pr=data[0];
   if(pr?.state!=='open'||pr.draft||pr.base?.ref!==PROD||
      pr.head?.ref!==run.head_branch||pr.head?.repo?.full_name!==full||
-     !/^[a-f0-9]{40}$/i.test(pr.head?.sha||''))return null;
+     !SHA.test(pr.head?.sha||''))return null;
+  if(qualityEvent&&!qualityEventMatchesPR(run,pr))return null;
   // GitHub sometimes returns pull_requests: [] for genuine Core events.
-  // A nonempty association must, however, agree with the selected PR.
-  if(!Array.isArray(run.pull_requests)||
-     (run.pull_requests.length>0&&!run.pull_requests.some(link=>link?.number===pr.number)))
+  // A nonempty Core association must, however, agree with the selected PR.
+  if(coreEvent&&(!Array.isArray(run.pull_requests)||
+     (run.pull_requests.length>0&&!run.pull_requests.some(link=>
+       link?.number===pr.number&&(!link.head?.sha||link.head.sha===pr.head.sha)))))
     return null;
   return [pr];
 }
@@ -688,7 +695,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   }).join(' | ');
   const summary = {open:eventFastPath?null:all.length,
     production:eventFastPath?null:prod.length,
-    inventoryScope:eventFastPath?'VERIFIED_SINGLE_CORE_EVENT_PR':'ALL_OPEN_PRS',
+    inventoryScope:eventFastPath?(context.payload?.workflow_run?.name===CORE_NAME?'VERIFIED_SINGLE_CORE_EVENT_PR':'VERIFIED_SINGLE_QUALITY_EVENT_PR'):'ALL_OPEN_PRS',
     inventoryComplete:true,
     eligibleToInspect:review.length,inspected:0,
     priorityTop,priorityAmbiguous:review.filter(pr=>priorityFor(pr,now).conflicted).length,
@@ -1334,4 +1341,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {eventOnlyPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
+module.exports = {eventOnlyPR,isTrustedQualityFailureEvent,qualityEventMatchesPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
