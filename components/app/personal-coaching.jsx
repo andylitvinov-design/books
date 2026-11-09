@@ -269,7 +269,9 @@ export default function PersonalCoaching({locale='en',accountId}){
     // The picker only prepares a choice. No private record is created until
     // the visitor has seen the session briefing and selected a request topic.
     const previousSessions=[...(course?.history||[]),...(course?.current?.status==='completed'?[course.current]:[])]
-    const clientContext=previousSessions.length?buildClientCoachingContext(previousSessions):null
+    const candidate=previousSessions.length?buildClientCoachingContext(previousSessions):null
+    const clientContext=candidate&&['active_goals','previous_commitments','completed_actions','open_topics','previous_insights','linked_reports','life_plan_changes']
+      .some(key=>candidate[key]?.length)?candidate:null
     setEntry({choice,clientQuestion,adultConfirmed:adultConfirmed===true,
       topicAdultConfirmed:adultConfirmed===true,clientTopic:'',checkin:'',step:'intro',
       clientContext,contextReviewed:!clientContext})
