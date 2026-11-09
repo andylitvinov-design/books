@@ -117,7 +117,6 @@ test("editorial RU/EN/ES response reflects corrections and refuses ambiguous cho
     ["Не хочу видео","coherent_reject_video"],
     ["Не хочу медитацию","coherent_reject_meditation"],
     ["Видео или медитация","coherent_ambiguous"],
-    ["Нет, не про любовь, а про работу","coherent_topic"],
     ["Not video but meditation","meditation_start","en"],
     ["No quiero video sino meditacion","meditation_start","es"],
   ]){
@@ -126,6 +125,14 @@ test("editorial RU/EN/ES response reflects corrections and refuses ambiguous cho
     assert.ok(r.reply.length>=20&&r.reply.length<500);
     assert.equal(r.source,"reviewed-rules");
   }
+});
+
+test("explicit Russian topic correction uses dialogue intelligence before broad editorial rules",()=>{
+  const r=ruleConversationReply({message:"Нет, не про любовь, а про работу",locale:"ru"});
+  assert.equal(r?.id,"conversation_correction");
+  assert.equal(r?.source,"conversation-intelligence");
+  assert.equal(r?.understanding?.topic,"work_money");
+  assert.match(r.reply,/работа|деньг/i);
 });
 
 test("safe approval semantics: no corrections produce renderer, payment, access, or booking",()=>{
