@@ -89,7 +89,8 @@
 <div id="cc-pr-proof"></div></div>
 <div id="cc-messages" class="cc-messages" role="log" aria-live="polite"></div>
 <form id="cc-chat-form">
-<label>Исполнитель диалога<select id="cc-mode"><option value="local">Локальный PM Advisor</option><option value="openrouter">OpenRouter · бесплатная модель</option></select></label>
+<label>Источник ответа<select id="cc-mode"><option value="holistic-advisor">Holistic House AI Advisor</option><option value="local">Локальный PM Advisor</option><option value="openrouter">OpenRouter · бесплатная модель</option></select></label>
+<p class="cc-help">Совет ИИ отвечает через существующий Holistic House Advisor. В запрос передаётся только ваше сообщение и последние реплики этого чата — без закрытых отчётов и данных профиля.</p>
 <label id="cc-model-label" hidden>Модель<select id="cc-model"></select></label>
 <label>Сообщение<textarea id="cc-message" rows="3" maxlength="1800" placeholder="Обсудить задание, следующий шаг или результат"></textarea></label>
 <div class="cc-chat-buttons"><button type="submit" class="cc-primary" id="cc-send">Отправить и получить ответ</button><button type="button" id="cc-note">Добавить как заметку</button></div></form>
