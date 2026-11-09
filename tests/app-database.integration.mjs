@@ -141,6 +141,32 @@ before(async () => {
   }
 })
 after(closeDatabase)
+test('coaching report preview reads only the authenticated owner session without writing',async()=>{
+  const db=await adminClient()
+  try{
+    const {readFile}=await import('node:fs/promises')
+    await db.query(await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8'))
+    const {savePersonalCoaching}=await import('../lib/app/personal-coaching.js')
+    const {readCoachingReportDraft}=await import('../lib/app/coaching-report-v2.js')
+    let state=await savePersonalCoaching(config,a,{action:'start',revision:0})
+    state=await savePersonalCoaching(config,a,{action:'answer',revision:state.revision,questionId:'topic',answer:'Make room for rest'})
+    state=await savePersonalCoaching(config,a,{action:'answer',revision:state.revision,questionId:'first_step',answer:'Take a short walk'})
+    state=await savePersonalCoaching(config,a,{action:'complete',revision:state.revision})
+    const request={sessionId:state.course.current.id,revision:state.revision,locale:'en'}
+    const before=(await db.query('select payload_ciphertext,revision from app_private.personal_coaching_sessions where account_id=$1',[A])).rows[0]
+    const preview=await readCoachingReportDraft(config,a,request)
+    assert.equal(preview.report.sessionId,request.sessionId)
+    assert.equal(preview.report.generation.sourceRevision,state.revision)
+    assert.ok(preview.report.evidence.some(item=>item.value==='Make room for rest'))
+    assert.equal(preview.report.actionCandidates[0].status,'draft')
+    await assert.rejects(()=>readCoachingReportDraft(config,b,{...request,revision:0}),err=>err.code==='COACHING_REPORT_SESSION_NOT_FOUND')
+    await assert.rejects(()=>readCoachingReportDraft(config,a,{...request,revision:state.revision-1}),err=>err.code==='PERSONAL_COACH_REVISION_CONFLICT')
+    await assert.rejects(()=>readCoachingReportDraft(config,a,{...request,answers:{topic:'forged'}}),err=>err.code==='UNKNOWN_FIELD')
+    const after=(await db.query('select payload_ciphertext,revision from app_private.personal_coaching_sessions where account_id=$1',[A])).rows[0]
+    assert.deepEqual(after,before)
+    assert.equal(after.payload_ciphertext.includes('Make room for rest'),false)
+  }finally{await db.end()}
+})
 test('snapshot SQL uses exact definition-scale identity and retains source security', async t => {
   const db = await adminClient()
   try {

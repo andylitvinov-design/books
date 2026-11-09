@@ -75,12 +75,14 @@ jobs:
           node --check lib/growth-studio/telegram.mjs
           node --check lib/growth-studio/provider-readiness.mjs
           node --check lib/growth-studio/dry-run-queue.mjs
+          node --check lib/growth-studio/dry-run-worker.mjs
           node --check app/admin/growth-studio/dry-run-actions.js
           node --check lib/growth-studio/store.js
           node --check lib/growth-studio/source-preview.mjs
           node --check lib/growth-studio/evergreen.mjs
           node --check lib/growth-studio/manual-inbox.mjs
           node --check lib/growth-studio/meta-instagram.mjs
+          node --check lib/growth-studio/instagram-insights.mjs
           node --check lib/growth-studio/instagram-publisher.mjs
           node --check app/api/admin/growth-studio/meta/connect/route.js
           node --check app/api/admin/growth-studio/meta/callback/route.js
