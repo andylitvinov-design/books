@@ -76,8 +76,8 @@ test("Holistic House Home and Free Analysis share exactly one fixed seven-button
  assert.ok(review.includes('FreeEntryLanding locale={locale} kind="situation"'));
  assert.ok(model.includes("compactNavigationIds = ['home', 'analysis', 'courses', 'profile', 'alchemy', 'pro', 'temple']"));
  assert.ok(menu.includes("id: 'practice', label: text.practice, href: '/' + activeLocale + '/holistic-support/mobile'"));
- assert.ok(menu.includes("id: 'my-coach', label: myCoachMenuCopy[activeLocale], href: '/' + activeLocale + '/masters'"));
- assert.ok(!menu.includes("id: 'services', label: text.services"));
+ assert.ok(menu.includes("id: 'services', label: text.services, href: '/' + activeLocale + '/services'"));
+ assert.ok(dock.includes('coach: "My Coach"'));
  for(const language of ["Practice","Практика","Práctica"])assert.ok(model.includes(language));
 });
 
