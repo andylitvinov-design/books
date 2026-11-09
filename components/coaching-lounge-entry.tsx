@@ -120,11 +120,9 @@ const copy = {
 
 // The parent owns this selection so its bottom "Request session" CTA and the
 // three photo cards always open the SAME consented enquiry, never the free form.
-export function CoachingLoungeEntry({ locale, selected, onSelect }: {
-  locale: Locale; selected: Choice; onSelect: (next: Choice) => void;
-}) {
+function offersFor(locale: Locale) {
   const t = copy[locale];
-  const offers = [
+  return [
     { id: "free", image: "/images/holistic-house/video-posters/constellations-en-v1.webp", badge: t.freeBadge,
       title: t.freeTitle, body: t.freeBody, detail: t.freeDetail },
     { id: "session", image: "/images/holistic-house/andy-about.png", badge: t.sessionBadge,
@@ -132,31 +130,44 @@ export function CoachingLoungeEntry({ locale, selected, onSelect }: {
     { id: "deep", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp", badge: t.deepBadge,
       title: t.deepTitle, body: t.deepBody, detail: t.deepDetail },
   ] as const;
+}
 
-  return <div className={styles.root} data-coaching-three-paths lang={locale}>
+export function CoachingLoungeEntry({ locale, selected, onSelect }: {
+  locale: Locale; selected: Choice; onSelect: (next: Choice) => void;
+}) {
+  const t = copy[locale];
+  return <div className={styles.root} data-coaching-lounge-hero lang={locale}>
     <section className={styles.hero} data-coaching-first-screen aria-labelledby="coaching-entry-title">
-      <Image src="/images/holistic-house/hero-olive-incense.webp" alt="" fill priority
+      <Image src="/images/holistic-house/ideas-pine-sharp.avif" alt="" fill priority
         className={styles.heroImage} sizes="(max-width: 650px) 100vw, 1080px" />
       <div className={styles.heroOverlay} aria-hidden="true" />
       <div className={styles.heroCopy}>
         <p className={styles.eyebrow}>{t.eyebrow}</p>
-        <h1 id="coaching-entry-title">{t.title}</h1>
-        <p className={styles.heroHeadline}>{t.headline}</p>
-        <p className={styles.heroLead}>{t.lead}</p>
+        <h1 id="coaching-entry-title">{locale === "ru" ? "Гостиная коучинга" : locale === "es" ? "Salón de coaching" : "Coaching Lounge"}</h1>
+        <p className={styles.heroHeadline}>{locale === "ru" ? "Выбери тему и подходящий формат личной работы" : locale === "es" ? "Elige tu tema y una forma de trabajar contigo" : "Choose a topic and the support that fits you"}</p>
+        <p className={styles.heroLead}>{t.leadCompact}</p>
         <nav className={styles.heroChoices} aria-label={t.choose}>
           <a href="#coaching-intake" onClick={() => onSelect("free")} data-coaching-hero-choice="free">
-            <Sparkles size={20} aria-hidden="true"/><span>{t.freeAction}</span><ArrowRight size={19} aria-hidden="true"/>
+            <Sparkles size={19} aria-hidden="true"/><span>{t.freeAction}</span><ArrowRight size={17} aria-hidden="true"/>
           </a>
           <a href="#coaching-intake" onClick={() => onSelect("session")} data-coaching-hero-choice="session">
-            <HeartHandshake size={20} aria-hidden="true"/><span>{t.sessionAction}</span><ArrowRight size={19} aria-hidden="true"/>
+            <HeartHandshake size={19} aria-hidden="true"/><span>{t.sessionAction}</span><ArrowRight size={17} aria-hidden="true"/>
           </a>
           <Link href={"/" + locale + "/services/imagery-therapy#request-session"} prefetch={false} data-coaching-hero-choice="deep">
-            <Flower2 size={20} aria-hidden="true"/><span>{t.deepAction}</span><ArrowRight size={19} aria-hidden="true"/>
+            <Flower2 size={19} aria-hidden="true"/><span>{t.deepAction}</span><ArrowRight size={17} aria-hidden="true"/>
           </Link>
         </nav>
       </div>
     </section>
+  </div>;
+}
 
+export function CoachingLoungeOffers({ locale, selected, onSelect }: {
+  locale: Locale; selected: Choice; onSelect: (next: Choice) => void;
+}) {
+  const t = copy[locale];
+  const offers = offersFor(locale);
+  return <div className={styles.root} data-coaching-three-paths lang={locale}>
     <section className={styles.offersSection} aria-labelledby="coaching-three-paths-heading">
       <header className={styles.sectionHeading}>
         <h2 id="coaching-three-paths-heading">{t.offersHeading}</h2>
