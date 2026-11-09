@@ -76,6 +76,8 @@ test('preview route uses the existing authenticated same-origin and private resp
  assert.match(section,/x-hh-account-id/)
  assert.match(section,/method === 'POST'/)
  assert.match(section,/readCoachingReportDraft\(config,actor,await readBody\(request,2048\)\)/)
+ assert.match(section,/personal-coaching-reports/)
+ assert.match(section,/importAcceptedReportActions\(config,actor,path\[1\],await readBody\(request,1024\)\)/)
  assert.doesNotMatch(section,/method === 'GET'/)
 })
 
