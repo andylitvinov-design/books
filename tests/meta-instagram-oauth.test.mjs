@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createMetaOAuthState,verifyMetaOAuthState,encryptMetaCredentials,decryptMetaCredentials,META_REQUIRED_SCOPES} from '../lib/growth-studio/meta-instagram.mjs'
+import {createMetaOAuthState,verifyMetaOAuthState,encryptMetaCredentials,decryptMetaCredentials,META_REQUIRED_SCOPES,META_ACCOUNT_TARGETS} from '../lib/growth-studio/meta-instagram.mjs'
 
 const secret='synthetic-test-secret-only-never-a-real-production-secret'
 test('Meta OAuth state is signed, target-bound and expires',()=>{
@@ -11,6 +11,11 @@ test('Meta OAuth state is signed, target-bound and expires',()=>{
   assert.equal(verifyMetaOAuthState(cookieValue,state,{secret:'wrong-secret',now}),null)
   assert.equal(verifyMetaOAuthState(cookieValue,state,{secret,now:now+601_000}),null)
   assert.equal(verifyMetaOAuthState(cookieValue+'.tamper',state,{secret,now}),null)
+})
+test('Meta OAuth binds the Wizards Secrets profile to its exact handle',()=>{
+  assert.deepEqual(META_ACCOUNT_TARGETS.wizards_secrets,{handle:'wizards.secrets',label:'Wizards Secrets'})
+  const {state,cookieValue}=createMetaOAuthState('wizards_secrets',{secret,now:1_800_000_000_000,nonce:'wizard-state'})
+  assert.deepEqual(verifyMetaOAuthState(cookieValue,state,{secret,now:1_800_000_000_000}),{targetId:'wizards_secrets'})
 })
 test('Meta OAuth refuses unknown target ids',()=>{
   assert.throws(()=>createMetaOAuthState('someone-else',{secret}),/meta_invalid_target/)
