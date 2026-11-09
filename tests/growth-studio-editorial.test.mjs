@@ -86,6 +86,9 @@ test('Instagram account target is persisted independently and legacy drafts rema
   assert.match(actions,/input\.action==='save' && input\.fields\?\.channel==='instagram'/)
   assert.match(actions,/instagram_account_required/)
   assert.match(actions,/input\.action==='approve'\|\|input\.action==='plan'/)
+  const composer=readFileSync(new URL('../components/growth-studio.jsx',import.meta.url),'utf8')
+  assert.match(composer,/channel==='instagram'&&old\.channel==='instagram'\?old\.instagramAccountId:''/)
+  assert.doesNotMatch(composer,/old\.instagramAccountId\|\|'wizards_secrets'/)
 })
 
 test('private URLs, off-brand destinations, query data and encoded private routes are forbidden',() => {
