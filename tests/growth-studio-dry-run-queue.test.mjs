@@ -36,6 +36,30 @@ test('dry-run queue produces validated hashed metadata and never pretends an act
  assert.equal(GROWTH_DRY_RUN_FLAG,'HH_GROWTH_QUEUE_DRY_RUN_ENABLED')
  assert.deepEqual(makeJob(source),job)
 })
+test('Instagram dry-run jobs are destination-specific and cannot be queued without an approved account',()=>{
+ const postId=randomUUID()
+ const makeInstagramSource=instagramAccountId=>{
+  const draft=nextGrowthPost({action:'save',id:postId,fields:{
+   ...sourceFields,channel:'instagram',instagramAccountId,
+  },now})
+  return nextGrowthPost({action:'approve',current:draft,now})
+ }
+ const workSource=makeInstagramSource('wizards_secrets')
+ const personalSource=makeInstagramSource('andy_therapist')
+ const workJob=makeJob(workSource)
+ const personalJob=makeJob(personalSource)
+ assert.equal(workJob.instagramAccountId,'wizards_secrets')
+ assert.equal(personalJob.instagramAccountId,'andy_therapist')
+ assert.notEqual(workJob.id,personalJob.id)
+ assert.notEqual(workJob.payloadHash,personalJob.payloadHash)
+ assert.equal(isValidDryRunJob(workJob),true)
+ assert.equal(isValidDryRunJob(personalJob),true)
+ const missingDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram'},now})
+ const missingSource=nextGrowthPost({action:'approve',current:missingDraft,now})
+ assert.throws(()=>makeJob(missingSource),/invalid_queue_request/)
+ assert.equal(isValidDryRunJob({...workJob,instagramAccountId:'some_other_account'}),false)
+})
+
 test('unapproved, expired revisions, invalid clock and impossible future dates fail closed',()=>{
  const src=approvedSource()
  assert.throws(()=>makeJob({...src,status:'draft'}),/invalid_queue_request/)
