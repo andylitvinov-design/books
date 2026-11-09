@@ -31,7 +31,7 @@ Set these as server-only secrets, then deploy:
 2. Click Connect beside one target account. Complete Facebook login and grant the requested scopes.
 3. Callback reads granted permissions, managed Pages and linked professional Instagram account metadata.
 4. The callback matches the exact expected username, requires a Page content-creation task, and stores encrypted credentials in the existing Redis service. It rejects missing/ambiguous matches.
-5. Repeat separately for the second target.
+5. Repeat separately for each target, including `@wizards.secrets`.
 6. Check status at `/api/admin/growth-studio/meta/status`. Only non-secret metadata is returned.
 
 Requested scopes:
