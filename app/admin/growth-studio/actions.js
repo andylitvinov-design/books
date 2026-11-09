@@ -41,6 +41,7 @@ export async function getGrowthInstagramInsightsAction(input={}){
      Object.keys(input).some(key=>!['since','until'].includes(key)))
     return {ok:false,error:'invalid_insights_request'}
   const end=input.until||new Date().toISOString().slice(0,10)
+  if(!isValidInstagramInsightDate(end))return {ok:false,error:'invalid_insights_request'}
   const start=input.since||new Date(Date.parse(end+'T00:00:00.000Z')-29*86_400_000).toISOString().slice(0,10)
   if(!isValidInstagramInsightDate(start)||!isValidInstagramInsightDate(end)||!isValidInstagramInsightRange(start,end))
     return {ok:false,error:'invalid_insights_request'}
