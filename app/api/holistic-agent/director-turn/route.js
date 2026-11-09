@@ -74,8 +74,9 @@ export async function POST(request) {
     await consumeRate(config, { op: "director-advisor-daily", actorId: "verified-director-owner" }, 100, 86400);
 
     const locale = detectConversationLocale(body.message, body.locale);
-    const risky = /(?:боль в груди|не могу дышать|трудно дышать|меня бьют|физическое насилие|chest pain|cannot breathe|can't breathe|trouble breathing|domestic violence|dolor en el pecho|no puedo respirar|violencia domestica)/iu.test(body.message);
-    if (risky) {
+    const riskyCue = /(?:боль в груди|не могу дышать|трудно дышать|меня бьют|физическое насилие|не хочу жить|хочу умереть|суицид|самоубийств|chest pain|cannot breathe|can't breathe|trouble breathing|domestic violence|i want to die|kill myself|suicide|dolor en el pecho|no puedo respirar|violencia domestica|quiero morir|suicidarme)/iu;
+    const recentUnsafe = history.some(turn => turn.role === "user" && riskyCue.test(turn.text));
+    if (riskyCue.test(body.message) || recentUnsafe) {
       return NextResponse.json({
         schemaVersion: 1, requestId, status: "safety_handoff", reply: handoff(locale),
         source: "holistic-house-safety-gate", modelUsed: false, reportType: "ADVISORY_ONLY",
