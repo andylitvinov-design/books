@@ -2332,14 +2332,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [courseMeditationDraft,setCourseMeditationDraft] = useState("");
   // A deferred opener must never override a later explicit "Do not add" choice.
   const meditationDisclosureEpochRef=useRef(0);
+  const [courseMeditationIncluded,setCourseMeditationIncluded]=useState(false);
   const [courseMeditationOmitted,setCourseMeditationOmitted]=useState(false);
-  // A native <details> can be reopened by an earlier WebKit animation frame
-  // after the visitor opts out. Enforce the revocation after React commits.
+  // Commit native <details> after React has committed the corresponding script
+  // choice. WebKit can drop an rAF opener when the parent state rerenders.
+  // Include and omit share one deterministic, post-commit disclosure owner.
   useLayoutEffect(()=>{
-    if(!courseMeditationOmitted)return;
     const details=document.querySelector("[data-video-therapy-meditation-audio]");
-    if(details instanceof HTMLDetailsElement)details.open=false;
-  },[courseMeditationOmitted,courseMeditationDraft]);
+    if(!(details instanceof HTMLDetailsElement))return;
+    if(courseMeditationOmitted)details.open=false;
+    else if(courseMeditationIncluded&&courseMeditationDraft)details.open=true;
+  },[courseMeditationIncluded,courseMeditationOmitted,courseMeditationDraft]);
   const [meditationFocus,setMeditationFocus] = useState<GuidedMeditationFocus>({
     difficulty:"",goal:"",goals:[],details:[]
   });
@@ -7593,19 +7596,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <MandalaGuidedCourse locale={locale} theme={theme}
         onContextChange={updateMeditationFocus}
         onAddMeditation={script=>{
-          const epoch=++meditationDisclosureEpochRef.current;
+          meditationDisclosureEpochRef.current++;
           setCourseMeditationOmitted(false);
+          setCourseMeditationIncluded(true);
           setCourseMeditationDraft(script);
-          window.requestAnimationFrame(()=>{
-            if(epoch!==meditationDisclosureEpochRef.current)return;
-            const details=document.querySelector("[data-video-therapy-meditation-audio]");
-            if(details instanceof HTMLDetailsElement){
-              details.open=true;
-              details.scrollIntoView({behavior:"instant",block:"center"});
-            }
-          });
         }}
         onOmitMeditation={()=>{
+          setCourseMeditationIncluded(false);
           const epoch=++meditationDisclosureEpochRef.current;
           setCourseMeditationOmitted(true);
           // Explicit omission always revokes the parent's seed and transient narration.
