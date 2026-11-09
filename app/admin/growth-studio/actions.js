@@ -10,6 +10,7 @@ import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-re
 import {isInstagramPublisherEnabled,publishApprovedInstagramImage} from '@/lib/growth-studio/instagram-publisher.mjs'
 import {createMetaInstagramPublisherClient} from '@/lib/growth-studio/meta-instagram.mjs'
 import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
+import {isValidInstagramInsightDate,isValidInstagramInsightRange,normalizeInstagramInsightMetrics} from '@/lib/growth-studio/instagram-insights.mjs'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
@@ -32,19 +33,6 @@ export async function previewPublicGrowthSourceAction(input) {
 }
 
 
-const GROWTH_INSIGHT_METRICS=new Set([
-  'views','reach','accounts_engaged','total_interactions','likes','comments',
-  'shares','saves','profile_links_taps','follows_and_unfollows',
-])
-function safeInsightValue(metric){
-  const value=metric?.total_value?.value
-  if(typeof value==='number'&&Number.isFinite(value))return value
-  if(Array.isArray(metric?.values)){
-    const values=metric.values.map(x=>x?.value).filter(x=>typeof x==='number'&&Number.isFinite(x))
-    return values.length?values.reduce((sum,item)=>sum+item,0):null
-  }
-  return null
-}
 // Read-only, account-separated Instagram metrics. Never returns comments, captions,
 // audience identities, tokens or customer/therapy data.
 export async function getGrowthInstagramInsightsAction(input={}){
@@ -52,22 +40,15 @@ export async function getGrowthInstagramInsightsAction(input={}){
   if(!input||typeof input!=='object'||Array.isArray(input)||
      Object.keys(input).some(key=>!['since','until'].includes(key)))
     return {ok:false,error:'invalid_insights_request'}
-  const validDate=value=>typeof value==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(value)&&
-    Number.isFinite(Date.parse(value+'T00:00:00.000Z'))&&
-    new Date(value+'T00:00:00.000Z').toISOString().slice(0,10)===value
   const end=input.until||new Date().toISOString().slice(0,10)
   const start=input.since||new Date(Date.parse(end+'T00:00:00.000Z')-29*86_400_000).toISOString().slice(0,10)
-  if(!validDate(start)||!validDate(end)||start>end||
-     Date.parse(end+'T00:00:00Z')-Date.parse(start+'T00:00:00Z')>90*86_400_000)
+  if(!isValidInstagramInsightDate(start)||!isValidInstagramInsightDate(end)||!isValidInstagramInsightRange(start,end))
     return {ok:false,error:'invalid_insights_request'}
   const accounts=await Promise.all(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(async target=>{
     try{
       const client=await createMetaInstagramPublisherClient(target.id)
       const response=await client.getAccountInsights({since:start,until:end})
-      const metrics={}
-      for(const item of Array.isArray(response?.data)?response.data:[]){
-        if(GROWTH_INSIGHT_METRICS.has(item?.name))metrics[item.name]=safeInsightValue(item)
-      }
+      const metrics=normalizeInstagramInsightMetrics(response)
       return {accountId:target.id,handle:target.handle,status:'available',
         period:{since:start,until:end},capturedAt:new Date().toISOString(),metrics}
     }catch(error){
