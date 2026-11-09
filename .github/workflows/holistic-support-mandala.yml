@@ -255,8 +255,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      - name: Prepare verified upstream FFmpeg for full Mandala runtime
         if: steps.policy.outputs.policy_only != 'true'
+        uses: ./.github/actions/ci-ffmpeg-static
+      - name: Install lockfile dependencies without networked FFmpeg postinstall
+        if: steps.policy.outputs.policy_only != 'true'
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Materialize SHA-verified FFmpeg for Mandala runtime and Next trace
+        if: steps.policy.outputs.policy_only != 'true'
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Verify focused Mandala and CI scope contracts without app install
         if: steps.policy.outputs.policy_only == 'true'
         run: node --test tests/ci-heavy-impact.test.mjs tests/ci-workflow-globs.test.mjs
@@ -568,7 +577,7 @@ jobs:
           # Actual WebKit MP4/audio release acceptance still runs unchanged.
           node --test tests/video-studio-question-registry.test.mjs tests/mandala-video-goal-media-coverage.test.mjs tests/mandala-approved-mobile-studio.test.mjs
   voice-webkit-macos:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || github.head_ref == 'codex/ready-signed-video-resumable-20261107' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-') || startsWith(github.head_ref, 'feat/voice-timed-storyboard-') || startsWith(github.head_ref, 'feat/mytube-unified-six-bottom-') || startsWith(github.head_ref, 'feat/mytube-six-dock-production-') || github.head_ref == 'fix/mandala-compact-goals-montage-20261103' || github.head_ref == 'codex/professional-growth-templates-20261031') }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && (startsWith(github.head_ref, 'codex/voice-studio-') || startsWith(github.head_ref, 'codex/voice-mix-') || startsWith(github.head_ref, 'feat/meditation-writer-') || startsWith(github.head_ref, 'fix/video-') || github.head_ref == 'codex/ready-signed-video-resumable-20261107' || startsWith(github.head_ref, 'fix/voice-picker-') || startsWith(github.head_ref, 'fix/webkit-') || startsWith(github.head_ref, 'feat/video-120-scenario-media-bindings-') || startsWith(github.head_ref, 'feat/video-phrase-catalog-') || startsWith(github.head_ref, 'codex/perf-video-studio-') || startsWith(github.head_ref, 'codex/hypno-third-workspace-') || startsWith(github.head_ref, 'codex/mandala-cancel-stale-head-cache-') || startsWith(github.head_ref, 'feat/video-chat-context-understanding-') || startsWith(github.head_ref, 'feat/hh-goal-tree-') || startsWith(github.head_ref, 'feat/video-') || github.head_ref == 'feat/ideas-personalization-concept-20261108' || startsWith(github.head_ref, 'feat/voice-timed-storyboard-') || startsWith(github.head_ref, 'feat/mytube-unified-six-bottom-') || startsWith(github.head_ref, 'feat/mytube-six-dock-production-') || github.head_ref == 'fix/mandala-compact-goals-montage-20261103' || github.head_ref == 'codex/professional-growth-templates-20261031') }}
     needs: [webkit_preflight]
     runs-on: macos-15
     timeout-minutes: 25
@@ -599,9 +608,27 @@ jobs:
           key: hh-holistic-mandala-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
           restore-keys: |
             hh-holistic-mandala-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
-      - name: Install and build exact voice release candidate
+      - name: Install pinned dependencies without networked FFmpeg postinstall
         run: |
-          npm ci --no-audit --no-fund
+          # ffmpeg-static's optional upstream binary endpoint intermittently returns HTTP 504.
+          # Install the already-used native Homebrew decoder first, then link it only into
+          # this ephemeral macOS CI workspace. Production npm/Vercel installs are unchanged.
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            brew install ffmpeg
+          fi
+          npm ci --ignore-scripts --no-audit --no-fund
+          test -f node_modules/ffmpeg-static/package.json
+          test "$(node -p "require('./node_modules/ffmpeg-static/package.json').version")" = "5.3.0"
+          ffmpeg_bin="$(command -v ffmpeg)"
+          test -x "$ffmpeg_bin"
+          ln -sfn "$ffmpeg_bin" node_modules/ffmpeg-static/ffmpeg
+          resolved_ffmpeg="$(node -p "require('ffmpeg-static')")"
+          test "$resolved_ffmpeg" = "$PWD/node_modules/ffmpeg-static/ffmpeg"
+          test -x "$resolved_ffmpeg"
+          "$resolved_ffmpeg" -hide_banner -version | head -n 1
+          ffprobe -hide_banner -version | head -n 1
+      - name: Build exact voice release candidate
+        run: |
           # Same macOS runner; increase only the build worker's V8 heap, not the CI scope.
           NODE_OPTIONS=--max-old-space-size=3072 npm run build
       # Reuse Playwright's version-pinned WebKit payload; encoded-media tests still execute.

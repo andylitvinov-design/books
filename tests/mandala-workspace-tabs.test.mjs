@@ -221,7 +221,12 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  assert.match(section,/data-video-ideas-open-montage-text/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
- assert.match(section,/data-video-legacy-phrase-editor data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}\s+hidden=\{activeWorkspace!=="phrases"\} aria-hidden=\{activeWorkspace!=="phrases"\}/);
+ assert.match(section,/data-video-legacy-phrase-editor/);
+ assert.match(section,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
+ assert.match(section,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
+ assert.match(section,/aria-hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
+ assert.equal((section.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.equal((section.match(/<MandalaVideoConcept /g)||[]).length,1);
  assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);

@@ -49,11 +49,13 @@ test("Concept never claims video exists; unsupported IDs are rejected",()=>{
   assert.equal(videoConceptIsValid({...p,scenarioId:"invented"}),false);
   assert.equal(videoConceptIsValid({...p,motifId:"invented"}),false);
 });
-test("Montage still owns the original single editor and verifies guest approval UX",()=>{
+test("Ideas Concept owns the single editor and Montage retains its real timeline and guest gate",()=>{
   const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const concept=readFileSync(new URL("../components/mandala-video-concept.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-video-concept.module.css",import.meta.url),"utf8");
-  assert.match(source,/data-video-montage-concept/);
+  assert.match(source,/data-video-ideas-concept-panel/);
+  assert.doesNotMatch(source,/data-video-montage-concept/);
+  assert.equal((source.match(/<MandalaVideoConcept /g)||[]).length,1);
   assert.match(source,/\{id:"effects",Icon:Sparkles\},\{id:"text",Icon:Type\}/);
   assert.match(source,/\{id:"visual",Icon:Zap\},\{id:"settings",Icon:SlidersHorizontal\}/);
   assert.match(source,/data-video-montage-open-concept/);
@@ -85,7 +87,7 @@ test("macOS WebKit opens Style by default and still allows reviewed Concept",()=
   assert.ok(start>0&&end>start);
   const route=source.slice(start,end);
   assert.match(route,/\[data-video-montage-tab="effects"\]/);
-  assert.match(source,/\[data-video-montage-open-concept\]/);
+  assert.match(source,/\[data-video-ideas-concept-panel\]/);
   assert.match(route,/await montageStyleTab\.click\(\)/);
   assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);

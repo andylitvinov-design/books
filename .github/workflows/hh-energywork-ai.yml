@@ -95,7 +95,14 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      - name: Prepare SHA-verified FFmpeg (official upstream asset)
+        uses: ./.github/actions/ci-ffmpeg-static
+      - name: Install lockfile dependencies without networked FFmpeg postinstall
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Materialize verified FFmpeg in the package-local runtime path
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Source, media, security and route contracts
         run: node --test tests/reiki-private-jpeg.test.mjs tests/reiki-initiation-photo-private.test.mjs tests/energywork-kundalini-ygg-study.test.mjs tests/energywork-lesson-progress.test.mjs tests/reiki-lesson-tomorrow-choice.test.mjs tests/energywork-ai-course-preview.test.mjs tests/energywork-tantra-study-questions.test.mjs tests/reiki-scenic-course-design.test.mjs tests/reiki-practitioner-portrait-v3.test.mjs tests/energywork-ai-course-private-save.test.mjs tests/reiki-initiation-request-form.test.mjs tests/reiki-crm-leads.test.mjs tests/reiki-course-reviews-public.test.mjs tests/cabinet-free-energy-courses.test.mjs tests/academy-free-course-dropdown.test.mjs tests/tantra-reiki-brand-symbol.test.mjs tests/tantra-reiki-promo-landing.test.mjs tests/reiki-referral-landing.test.mjs tests/reiki-course-referral-share.test.mjs tests/reiki-free-course-cta-routing.test.mjs tests/reiki-lesson-intro-audio.test.mjs tests/reiki-audio-intro-slides.test.mjs tests/reiki-practitioner-lesson-videos.test.mjs tests/reiki-lesson5-trim-p10.test.mjs tests/reiki-practice-final-slide-order.test.mjs tests/reiki-final-receipt-and-contact.test.mjs tests/reiki-audio-library-v3.test.mjs tests/reiki-ios-keyboard-cta.test.mjs tests/reiki-ios-viewport-anchor.test.mjs tests/reiki-mobile-text-question-one-screen.test.mjs tests/reiki-review-owner-lifetime.test.mjs
       - name: Targeted ESLint
