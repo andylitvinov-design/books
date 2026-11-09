@@ -271,6 +271,8 @@ test('owner approval action requires selected Instagram account for newly edited
   assert.match(actions,/input\.action==='save' && input\.fields\?\.channel==='instagram'/)
   assert.match(actions,/input\.action==='approve'\|\|input\.action==='plan'/)
   assert.match(actions,/instagram_account_required/)
+  assert.match(actions,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS/)
+  assert.match(actions,/isRegisteredInstagramAccount/)
   const composer=readFileSync(new URL('../components/growth-studio.jsx',import.meta.url),'utf8')
   assert.match(composer,/value=\{form\.socialAccountId\|\|''\}/)
   assert.match(composer,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS\.map\(account/)
