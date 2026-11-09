@@ -168,3 +168,28 @@ test('account Redis store returns safe status only and isolates two encrypted cr
   assert.equal((await store.listAccounts()).find(x=>x.id==='my_coach_ai').connectionState,'pending_authorization')
   assert.equal((await store.listAccounts()).find(x=>x.id==='my_couch_ai').connectionState,'connected')
 })
+
+
+test('expired or near-expiry Instagram credentials report reauthorization instead of connected',async()=>{
+  const values=new Map(),hash=new Map()
+  const fetchFn=async(url,options)=>{
+    const args=JSON.parse(options.body);let result=null
+    if(args[0]==='EVAL'&&args[1].includes("redis.call('HSET'")){
+      hash.set(args[5],args[6]);values.set(args[4],args[7]);result=1
+    }else if(args[0]==='HGETALL')result=Object.fromEntries(hash)
+    else if(args[0]==='GET')result=values.get(args[1])??null
+    return new Response(JSON.stringify({result}),{status:200})
+  }
+  const store=createGrowthInstagramAccountStore({environment:{
+    PRESCRIPTIONS_KV_REST_API_URL:'https://redis.example.com',
+    PRESCRIPTIONS_KV_REST_API_TOKEN:'synthetic-redis-token',
+  },fetchFn})
+  await store.saveConnected({
+    accountId:'my_coach_ai',providerAccountId:'ig-expiring',username:'my.coach.ai',
+    permissions:[...INSTAGRAM_LOGIN_SCOPES],expiresAt:new Date(Date.now()+60_000).toISOString(),
+    encryptedCredential:encryptInstagramAccessToken('expiring-private-credential-token',encryptionKey),
+  })
+  const accounts=await store.listAccounts()
+  assert.equal(accounts.find(x=>x.id==='my_coach_ai').connectionState,'reauthorization_required')
+  assert.equal(accounts.find(x=>x.id==='my_coach_ai').publishingEnabled,false)
+})
