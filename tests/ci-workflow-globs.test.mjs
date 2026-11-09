@@ -465,8 +465,8 @@ test('Core Mandala fast contracts run only as fallback when the BASE/HEAD Specia
   assert.ok(owner,'Core resolves ownership before considering the duplicate test suite');
   assert.ok(fast,'Core keeps its bounded fallback release suite');
   for(const marker of [
-    "git rev-parse', 'HEAD^1",
-    "git rev-parse', 'HEAD^2",
+    "execFileSync", "HEAD^1",
+    "execFileSync", "HEAD^2",
     "HH_EVENT_HEAD_SHA",
     "git show",
     "lib/ci/specialist-aggregate.mjs",
