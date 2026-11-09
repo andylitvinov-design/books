@@ -161,6 +161,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const [instagramAccounts,setInstagramAccounts]=useState(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=>({...account,connectionState:'pending_authorization',publishingEnabled:false})))
   const [instagramConnectAvailable,setInstagramConnectAvailable]=useState(false)
   const [instagramAccountsFailed,setInstagramAccountsFailed]=useState(false)
+  const [instagramConnectNotice,setInstagramConnectNotice]=useState('')
   const all=useMemo(()=>GROWTH_PUBLICATION_NETWORKS.map(id=>({id,...CHANNEL_CAPABILITIES[id]})),[])
   async function verify(){
     if(!telegram.ready||checking)return
@@ -226,6 +227,29 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
     }catch{setInstagramAccountsFailed(true)}
   },[])
   useEffect(()=>{void refreshInstagramAccounts()},[refreshInstagramAccounts])
+  useEffect(()=>{
+    const url=new URL(window.location.href)
+    const state=url.searchParams.get('instagram_connect')
+    const account=url.searchParams.get('instagram_account')
+    if(!state)return
+    const messages={
+      connected:locale==='ru'?'Instagram-профиль авторизован и проверен. Автопубликация пока выключена.':'Instagram account authorized and verified. Auto-publishing remains disabled.',
+      oauth_not_configured:locale==='ru'?'Сначала настройте Meta App и серверные секреты в Vercel.':'Configure the Meta App and server-side secrets in Vercel first.',
+      storage_unavailable:locale==='ru'?'Не удалось сохранить проверенное подключение.':'Could not persist the verified connection.',
+      invalid_oauth_state:locale==='ru'?'Сессия Meta устарела или не прошла проверку. Запустите подключение заново.':'Meta authorization state expired or failed validation. Start the connection again.',
+      access_denied:locale==='ru'?'Вы отменили авторизацию Meta.':'Meta authorization was declined.',
+      instagram_permissions_missing:locale==='ru'?'Meta не выдал необходимые разрешения публикации.':'Meta did not grant the required publishing permissions.',
+      instagram_identity_unverified:locale==='ru'?'Meta не подтвердил Instagram-профиль.':'Meta did not verify the Instagram profile.',
+      instagram_handle_mismatch:locale==='ru'?'Авторизованный профиль не совпадает с выбранным аккаунтом.':'The authorized profile does not match the selected destination.',
+      instagram_credential_unavailable:locale==='ru'?'Не удалось проверить защищённое сохранение токена.':'Encrypted token persistence could not be verified.',
+      provider_exchange_failed:locale==='ru'?'Не удалось завершить обмен с Meta. Проверьте настройки приложения и повторите вход.':'Meta authorization could not be completed. Check the app setup and try again.',
+    }
+    setInstagramConnectNotice(messages[state]||(locale==='ru'?'Подключение Instagram не завершено.':'Instagram connection did not complete.'))
+    if(account)void refreshInstagramAccounts()
+    url.searchParams.delete('instagram_connect');url.searchParams.delete('instagram_account')
+    window.history.replaceState({},'',url.pathname+url.search+url.hash)
+  },[locale,refreshInstagramAccounts])
+
   useEffect(()=>{void checkProviders()},[checkProviders])
   return <details className={styles.connectionPanel}>
     <summary><ShieldCheck size={19} aria-hidden="true"/><span>{t.summary}</span>
@@ -362,6 +386,7 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       <p>{locale==='ru'
         ?'Аккаунты заведены отдельно от брендов сайта. Каждый профиль подключается владельцем через Meta; пока разрешения не подтверждены, публикация отключена.'
         :'Accounts are separate from website brands. Each profile must be authorized by its owner through Meta; publishing stays disabled until permissions are verified.'}</p>
+      {instagramConnectNotice&&<p className={instagramConnectNotice.startsWith('Instagram account authorized')||instagramConnectNotice.startsWith('Instagram-профиль')?styles.verifiedText:styles.connectionError} role="status">{instagramConnectNotice}</p>}
       {instagramAccountsFailed&&<p className={styles.connectionError} role="alert">{locale==='ru'?'Не удалось проверить аккаунты Instagram.':'Could not read Instagram account status.'}</p>}
       <div className={styles.growthSetupSteps}>
         {instagramAccounts.map(account=><section key={account.id}>
