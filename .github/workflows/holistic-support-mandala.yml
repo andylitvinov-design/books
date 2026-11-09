@@ -599,9 +599,27 @@ jobs:
           key: hh-holistic-mandala-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
           restore-keys: |
             hh-holistic-mandala-next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
-      - name: Install and build exact voice release candidate
+      - name: Install pinned dependencies without networked FFmpeg postinstall
         run: |
-          npm ci --no-audit --no-fund
+          # ffmpeg-static's optional upstream binary endpoint intermittently returns HTTP 504.
+          # Install the already-used native Homebrew decoder first, then link it only into
+          # this ephemeral macOS CI workspace. Production npm/Vercel installs are unchanged.
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            brew install ffmpeg
+          fi
+          npm ci --ignore-scripts --no-audit --no-fund
+          test -f node_modules/ffmpeg-static/package.json
+          test "$(node -p "require('./node_modules/ffmpeg-static/package.json').version")" = "5.3.0"
+          ffmpeg_bin="$(command -v ffmpeg)"
+          test -x "$ffmpeg_bin"
+          ln -sfn "$ffmpeg_bin" node_modules/ffmpeg-static/ffmpeg
+          resolved_ffmpeg="$(node -p "require('ffmpeg-static')")"
+          test "$resolved_ffmpeg" = "$PWD/node_modules/ffmpeg-static/ffmpeg"
+          test -x "$resolved_ffmpeg"
+          "$resolved_ffmpeg" -hide_banner -version | head -n 1
+          ffprobe -hide_banner -version | head -n 1
+      - name: Build exact voice release candidate
+        run: |
           # Same macOS runner; increase only the build worker's V8 heap, not the CI scope.
           NODE_OPTIONS=--max-old-space-size=3072 npm run build
       # Reuse Playwright's version-pinned WebKit payload; encoded-media tests still execute.
