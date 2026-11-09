@@ -6,7 +6,7 @@ const SHA = /^[a-f0-9]{40}$/;
 
 function safeText(value, limit = 255) {
   return typeof value === 'string'
-    ? value.replace(/[\\u0000-\\u001f\\u007f]/g, ' ').trim().slice(0, limit)
+    ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, limit)
     : '';
 }
 
