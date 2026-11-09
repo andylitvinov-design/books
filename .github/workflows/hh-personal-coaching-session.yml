@@ -1,7 +1,7 @@
 name: HH Personal Coaching Session
 on:
   pull_request:
-    branches: [codex/public-book-library]
+    branches: [codex/public-book-library, codex/coaching-platform-foundation-v1]
     paths:
       - 'lib/personal-coaching/**'
       - 'components/coaching-context-review*'
