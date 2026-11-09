@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {runInNewContext} from 'node:vm'
-import {createHash} from 'node:crypto'
+import {createHash,randomBytes} from 'node:crypto'
+import {seal as actualSeal,openSealed as actualOpenSealed} from '../lib/app/crypto.js'
 import {authoredFollowupFor} from '../lib/personal-coaching/offline-intelligence.js'
 import {isCoachingSafetyConcern} from '../lib/personal-coaching/model-matcher.js'
 import {normalizeClientCoachingContext} from '../lib/personal-coaching/client-context.mjs'
@@ -12,7 +13,7 @@ const server=source.replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
 const a={id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'}
 const b={id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}
 
-function fixture(){
+function fixture({secure=false}={}){
  const store=new Map()
  const questions=[
   {id:'real',stepKey:'reality',type:'single_choice',required:false,choices:[{id:'time'}]},
@@ -46,7 +47,7 @@ function fixture(){
  }})
  const deps={
   randomUUID:()=>String(++counter).padStart(36,'0'),
-  transaction,seal:value=>JSON.stringify(value),openSealed:value=>JSON.parse(value),
+  transaction,seal:secure?actualSeal:value=>JSON.stringify(value),openSealed:secure?actualOpenSealed:value=>JSON.parse(value),
   AppError:error,onlyKeys:(value,keys)=>{
    if(Object.keys(value).some(key=>!keys.includes(key)))throw error('UNKNOWN_FIELD',400)
   },
@@ -61,11 +62,59 @@ function fixture(){
  return {api:factory(deps),store}
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
+
+test('tampered ciphertext and cross-account ciphertext fail closed without replacing data',async()=>{
+ const {api,store}=fixture({secure:true})
+ const config={encryptionKey:randomBytes(32),encryptionKeyId:'test-v1'}
+ const s=await api.savePersonalCoaching(config,a,start)
+ const original=store.get(a.id).payload_ciphertext
+ store.set(b.id,{...store.get(a.id)})
+ await assert.rejects(()=>api.readPersonalCoaching(config,b),err=>err.code==='PRIVATE_DATA_UNAVAILABLE')
+ const envelope=JSON.parse(original)
+ envelope.tag=Buffer.alloc(16).toString('base64')
+ const tampered=JSON.stringify(envelope)
+ store.get(a.id).payload_ciphertext=tampered
+ await assert.rejects(()=>api.readPersonalCoaching(config,a),err=>err.code==='PRIVATE_DATA_UNAVAILABLE')
+ await assert.rejects(()=>api.savePersonalCoaching(config,a,{action:'delete',revision:s.revision,confirmed:true}),err=>err.code==='PRIVATE_DATA_UNAVAILABLE')
+ assert.equal(store.get(a.id).payload_ciphertext,tampered)
+ assert.equal(store.get(a.id).revision,s.revision)
+})
 async function skipPilotFollowup(api,s,n){
  const followup=s.course.current.pendingFollowup
  if(!followup)return s
  return api.savePersonalCoaching({},a,{action:'skip_followup',revision:s.revision,questionId:followup.questionId,followupKey:followup.key,turnId:`70000000-0000-4000-8000-${String(n).padStart(12,'0')}`})
 }
+
+test('unknown pilot dialogue protocols fail closed without changing encrypted state',async()=>{
+ const {api,store}=fixture()
+ const s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ const row=store.get(a.id),course=JSON.parse(row.payload_ciphertext)
+ course.current.dialogueProtocol=2
+ row.payload_ciphertext=JSON.stringify(course)
+ const original=row.payload_ciphertext
+ await assert.rejects(()=>api.readPersonalCoaching({},a),err=>err.code==='PERSONAL_COACH_VERSION_UNAVAILABLE')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'finish_without_plan',revision:s.revision}),err=>err.code==='PERSONAL_COACH_VERSION_UNAVAILABLE')
+ assert.equal(row.payload_ciphertext,original)
+ assert.equal(row.revision,s.revision)
+})
+
+test('malformed or impossible pending follow-up state is never silently bypassed',async()=>{
+ for(const pending of [{questionId:'',key:'reality_text_v1'},{questionId:'real',key:42},['real'],{questionId:'real',key:'reality_text_v1',extra:true}]){
+  const {api,store}=fixture()
+  await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+  const row=store.get(a.id),course=JSON.parse(row.payload_ciphertext)
+  course.current.pendingFollowup=pending
+  row.payload_ciphertext=JSON.stringify(course)
+  await assert.rejects(()=>api.readPersonalCoaching({},a),err=>err.code==='PERSONAL_COACH_VERSION_UNAVAILABLE')
+ }
+ const {api,store}=fixture()
+ await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ const row=store.get(a.id),course=JSON.parse(row.payload_ciphertext)
+ course.current.status='completed'
+ course.current.pendingFollowup={questionId:'real',key:'reality_choice_v1'}
+ row.payload_ciphertext=JSON.stringify(course)
+ await assert.rejects(()=>api.readPersonalCoaching({},a),err=>err.code==='PERSONAL_COACH_VERSION_UNAVAILABLE')
+})
 
 test('pilot persists the active follow-up until it is answered or explicitly skipped',async()=>{
  const {api}=fixture()
