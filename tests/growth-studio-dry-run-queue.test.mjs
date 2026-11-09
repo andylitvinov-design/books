@@ -56,6 +56,38 @@ test('dry-run job identity is account-specific for work and personal Instagram p
  assert.equal(isValidDryRunJob(personal),true)
 })
 
+test('historical retired-account jobs remain readable but cannot be enqueued again',async()=>{
+ const draft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'wizards_secrets'},now})
+ const source=nextGrowthPost({action:'approve',current:draft,now})
+ const historical={...makeJob(source),socialAccountId:'my_coach_ai'}
+ let writes=0
+ const store=createGrowthDryRunQueueStore({
+  environment:{PRESCRIPTIONS_KV_REST_API_URL:'https://synthetic-redis.example',PRESCRIPTIONS_KV_REST_API_TOKEN:'synthetic'},
+  fetchFn:async(_url,options)=>{
+   const cmd=JSON.parse(options.body)
+   if(cmd[0]==='HGETALL')return {ok:true,json:async()=>({result:[historical.id,JSON.stringify(historical)]})}
+   writes++;return {ok:true,json:async()=>({result:1})}
+  },
+ })
+ assert.equal((await store.list())[0].socialAccountId,'my_coach_ai')
+ await assert.rejects(store.enqueue(historical),/invalid_queue_request/)
+ const memory=createMemoryGrowthDryRunQueueStore({getSource:async()=>source})
+ await assert.rejects(memory.enqueue(historical),/invalid_queue_request/)
+ assert.equal(writes,0)
+})
+
+test('memory queue rejects changed Instagram destinations at enqueue and claim',async()=>{
+ const draft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'wizards_secrets'},now})
+ let source=nextGrowthPost({action:'approve',current:draft,now})
+ const job=makeJob(source)
+ const store=createMemoryGrowthDryRunQueueStore({getSource:async()=>source})
+ await assert.rejects(store.enqueue({...job,socialAccountId:'andy_therapist'}),/source_changed/)
+ await store.enqueue(job)
+ source={...source,socialAccountId:'andy_therapist'}
+ assert.equal(await store.claimDue(new Date(scheduledAt)),null)
+ assert.equal((await store.get(job.id)).state,'needs_review')
+})
+
 test('unapproved, expired revisions, invalid clock and impossible future dates fail closed',()=>{
  const src=approvedSource()
  assert.throws(()=>makeJob({...src,status:'draft'}),/invalid_queue_request/)
@@ -151,6 +183,9 @@ test('Redis queue writes use atomic source-revision checks, isolated keys and no
  assert.equal(sent.command[0],'EVAL')
  assert.equal(sent.command[1].includes("source.revision ~= tonumber(ARGV[2])"),true)
  assert.equal(sent.command[1].includes("source.status ~= 'approved'"),true)
+ assert.equal(sent.command[1].includes("(source.socialAccountId or '') ~= (job.socialAccountId or '')"),true)
+ const queueSource=readFileSync(new URL('../lib/growth-studio/dry-run-queue.mjs',import.meta.url),'utf8')
+ assert.match(queueSource,/source\.socialAccountId or ''\) ~= \(job\.socialAccountId or ''\)/)
  assert.equal(sent.command[1].includes("redis.call('ZADD'"),true)
  assert.equal(sent.command[3],'holistic-house:growth-studio:editorial:v1')
  assert.equal(sent.command[4],'holistic-house:growth-studio:dry-run-queue:v1')
@@ -176,6 +211,8 @@ test('dry-run queue carries the selected Instagram destination and binds it into
  const first=makeJob(firstSource)
  assert.equal(first.socialAccountId,'wizards_secrets')
  assert.equal(isValidDryRunJob(first),true)
+ // Previously stored jobs remain structurally valid; enqueue enforces the active registry.
+ assert.equal(isValidDryRunJob({...first,socialAccountId:'my_coach_ai'}),true)
  const secondDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:'andy_therapist'},now})
  const secondSource=nextGrowthPost({action:'approve',current:secondDraft,now})
  const second=makeJob(secondSource)
@@ -184,4 +221,5 @@ test('dry-run queue carries the selected Instagram destination and binds it into
  const missingDraft=nextGrowthPost({action:'save',id:randomUUID(),fields:{...sourceFields,channel:'instagram',socialAccountId:''},now})
  const missingSource=nextGrowthPost({action:'approve',current:missingDraft,now})
  assert.throws(()=>makeJob(missingSource),/invalid_queue_request/)
+ assert.throws(()=>createDryRunJob({...firstSource,socialAccountId:'my_coach_ai'},{expectedRevision:firstSource.revision,scheduledAt,now}),/invalid_queue_request/)
 })
