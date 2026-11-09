@@ -23,6 +23,20 @@ test('watchdog has independent cron; failed Core is a direct event workflow',()=
   assert.ok(s.includes("context.eventName==='push'"));
   assert.ok(s.includes('default: false'));
 });
+
+test('allowlisted failed quality workflows use exact-PR event fast path, not another inventory scheduler',()=>{
+ const watchdog=read('hh-pr-ten-minute-watchdog');
+ const dispatcher=readFileSync('scripts/ci-pr-queue-dispatcher.cjs','utf8');
+ const contract=read('hh-pr-watchdog-contract-ci');
+ assert.ok(watchdog.includes('isTrustedQualityFailureEvent(context)'));
+ assert.ok(watchdog.includes("directHandoffLocal:true,eventFastPath});"));
+ assert.ok(watchdog.includes("'scripts/ci-pr-quality-event.cjs'"));
+ assert.ok(dispatcher.includes('...Object.keys(QUALITY_EVENT_PATHS)'));
+ assert.ok(dispatcher.includes('verifiedQualityFailure'));
+ assert.ok(contract.includes("'scripts/ci-pr-quality-event.cjs'"));
+ assert.ok(contract.includes('node --check scripts/ci-pr-quality-event.cjs'));
+});
+
 test('source Repair Worker is addressed only; no empty cron consumes its publish lease',()=>{
  const s=read('hh-pr-repair-worker');
  assert.ok(s.includes('workflow_dispatch:'));

@@ -3,6 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {confirmedCoreEvent,run}=require('../scripts/ci-pr-event-handoff.cjs');
+const {PATHS,isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('../scripts/ci-pr-quality-event.cjs');
 const event=()=>({
  repo:{owner:'andylitvinov-design',repo:'books'},
  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_run',
@@ -16,6 +17,51 @@ const event=()=>({
   pull_requests:[{number:3162}]
  }}
 });
+
+test('allowlisted quality workflow failures fast-path only their exact associated PR HEAD',()=>{
+ const good={
+  repo:{owner:'andylitvinov-design',repo:'books'},
+  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_run',
+  payload:{workflow_run:{
+   id:200,run_attempt:1,name:'HH First Video LIVE · encoded file acceptance',
+   path:PATHS['HH First Video LIVE · encoded file acceptance']+'@refs/pull/3946/merge',
+   head_sha:'f'.repeat(40),head_branch:'codex/audio-source',
+   event:'pull_request',status:'completed',conclusion:'failure',
+   repository:{full_name:'andylitvinov-design/books'},
+   head_repository:{full_name:'andylitvinov-design/books'},
+   pull_requests:[{number:3946,head:{sha:'a'.repeat(40)},
+    base:{ref:'codex/public-book-library',sha:'b'.repeat(40)}}]
+  }}
+ };
+ const pr={number:3946,state:'open',draft:false,
+  base:{ref:'codex/public-book-library',sha:'b'.repeat(40)},
+  head:{ref:'codex/audio-source',sha:'a'.repeat(40),
+   repo:{full_name:'andylitvinov-design/books'}}};
+ assert.equal(isTrustedQualityFailureEvent(good),true);
+ assert.equal(qualityEventMatchesPR(good.payload.workflow_run,pr),true);
+ for(const mutate of [
+  e=>{e.name='Unlisted workflow';},
+  e=>{e.path='.github/workflows/untrusted.yml@refs/pull/3946/merge';},
+  e=>{e.conclusion='success';},
+  e=>{e.event='push';},
+  e=>{e.head_repository.full_name='outside/books';},
+  e=>{e.repository.full_name='outside/books';},
+  e=>{e.pull_requests=[];},
+  e=>{e.pull_requests.push({...e.pull_requests[0],number:3947});},
+  e=>{e.pull_requests[0].base.ref='codex/bootstrap-books';}
+ ]){
+  const bad=structuredClone(good);mutate(bad.payload.workflow_run);
+  assert.equal(isTrustedQualityFailureEvent(bad),false);
+ }
+ const stale={...pr,head:{...pr.head,sha:'c'.repeat(40)}};
+ assert.equal(qualityEventMatchesPR(good.payload.workflow_run,stale),false);
+ const wrongAssociation=structuredClone(good.payload.workflow_run);
+ wrongAssociation.pull_requests[0].head.sha='c'.repeat(40);
+ assert.equal(qualityEventMatchesPR(wrongAssociation,pr),false);
+ const fork=structuredClone(good);fork.payload.workflow_run.head_repository.full_name='fork/books';
+ assert.equal(isTrustedQualityFailureEvent(fork),false);
+});
+
 test('only a trusted completed failed Core event can wake source repair',()=>{
  const good=event();
  assert.equal(confirmedCoreEvent(good),true);
@@ -129,5 +175,6 @@ test('ambiguous, stale or foreign failed-Core callbacks never authorize targeted
 test('fast failed-Core handoff cannot wake the full Control Tower as a second hop',()=>{
  const source=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
  assert.ok(source.includes("if (centralDispatch && !eventFastPath && !directHandoffLocal && !budget.exhausted)"));
- assert.ok(source.includes("inventoryScope:eventFastPath?'VERIFIED_SINGLE_CORE_EVENT_PR'"));
+ assert.ok(source.includes('VERIFIED_SINGLE_CORE_EVENT_PR'));
+ assert.ok(source.includes('VERIFIED_SINGLE_QUALITY_EVENT_PR'));
 });
