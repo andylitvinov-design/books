@@ -69,7 +69,7 @@ test('diagnostics are bounded, unique names only and preserve ordinary text', ()
     { name: 'Typecheck', conclusion: 'failure', steps: [{ name: 'tsc', conclusion: 'failure' }, { name: 'checkout', conclusion: 'success' }] },
     { name: 'Typecheck', conclusion: 'failure', steps: [{ name: 'tsc', conclusion: 'failure' }] },
     { name: 'Passed', conclusion: 'success', steps: [{ name: 'ignored', conclusion: 'failure' }] },
-    { name: 'Build\\u0000 Worker', conclusion: 'timed_out', steps: [{ name: 'Run\\nTests', conclusion: 'timed_out' }] }
+    { name: 'Build' + String.fromCharCode(0) + ' Worker', conclusion: 'timed_out', steps: [{ name: 'Run' + String.fromCharCode(10) + 'Tests', conclusion: 'timed_out' }] }
   ]);
   assert.deepEqual(result, {
     category: 'UNKNOWN',
