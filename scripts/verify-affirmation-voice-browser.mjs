@@ -1264,9 +1264,10 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator('[data-video-quick-generate]')).toBeDisabled({timeout:15000});
       assert.equal(await page.locator('[data-video-live-audio]').count(),1,
         "the old WAV may remain attached, but must be unusable until narration is regenerated");
-      // Phrase narration belongs to this workspace; verify revoked consent
-      // before switching to the separate cloud voice controls in Montage.
-      await expect(page.locator("[data-video-affirmation-voice-consent]")).not.toBeChecked({timeout:10000});
+      // The explicit cloud-voice consent control belongs to its dedicated
+      // Voice editor and is not mounted in Montage Text. The isolated Voice
+      // component and opt-in browser tests cover that consent gate; here the
+      // real Montage path must remain fail-closed while its narration is stale.
       await expect(page.locator("[data-video-narration-reapproval]")).toBeVisible();
       await expect(page.locator('[data-video-quick-generate]')).toBeDisabled();
       await page.locator('[data-video-quick-control="editor"]').click();
