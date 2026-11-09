@@ -28,13 +28,14 @@ function makeReport(status='accepted'){
  return reviewCoachingReportDraft(draft,[{candidateId:draft.actionCandidates[0].candidateId,status}],now)
 }
 
-function buildService({report=makeReport(),ownerId=owner.id}={}){
+function buildService({report=makeReport(),ownerId=owner.id,storageConsent={accepted:true,revoked_at:null}}={}){
  const source=readFileSync(new URL('../lib/app/coaching-life-plan.js',import.meta.url),'utf8')
   .replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
  const state={plan:null,area:null,goal:null,actions:new Map(),changes:[],consents:[],queries:[],planVersion:1}
  const reportRecord={id:reportId,session_id:sessionId,status:'confirmed',current_revision:1,content_hash:operationHash(report,config)}
  const db={query:async(sql,args=[])=>{
   state.queries.push({sql,args})
+  if(sql.includes('from app_private.coaching_session_consents')&&sql.trimStart().startsWith('select'))return {rows:storageConsent?[storageConsent]:[]}
   if(sql.includes('select id from app.accounts'))return {rows:[{id:ownerId}]}
   if(sql.includes('select id,session_id,status,current_revision,content_hash from app_private.coaching_reports')){
    return {rows:ownerId===owner.id?[reportRecord]:[]}
@@ -328,4 +329,13 @@ test('My Coaching Plan workspace JSX and route contract parse cleanly',async()=>
  assert.match(planPage,/planConsent/)
  assert.match(planPage,/planConsent:planConsents\[record\.id\]===true/)
  assert.match(planPage,/disabled=\{!selected\.length\|\|planConsents\[record\.id\]!==true/)
+})
+
+test('revoked report storage consent prevents every plan write',async()=>{
+ for(const storageConsent of [null,{accepted:false,revoked_at:null},{accepted:true,revoked_at:now}]){
+  const {service,state,report}=buildService({storageConsent})
+  await assert.rejects(()=>service.importCoachingReportActions(config,owner,{reportId,reportRevision:1,areaKey:'career_business',candidateIds:[report.actionCandidates[0].candidateId],planConsent:true}),err=>err.code==='COACHING_REPORT_CONSENT_REQUIRED')
+  assert.equal(state.queries.some(q=>q.sql.trimStart().startsWith('insert ')),false)
+ }
+
 })
