@@ -52,8 +52,7 @@ export default async function MyTubePage({params}:Props){
       </Link>
     </header>
     <div className={styles.content}>
-      <p className={styles.subline}>{copy.subtitle}</p>
-      <VideoDiscovery locale={locale} videos={publicVideos} variant="mytube"/>
+      <VideoDiscovery locale={locale} videos={publicVideos} variant="mytube" subtitle={copy.subtitle}/>
       <p className={styles.footerNote}>{copy.note}</p>
     </div>
   </main>;

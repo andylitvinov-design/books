@@ -56,7 +56,7 @@ test('Practitioners is compact, and energy support is a separate EN/RU/ES bookin
   assert.match(page, /<MarketplaceMasterFinder practitioners=/)
   // The current Masters page delegates its service CTA to the shared finder.
   assert.match(finder, /service\.slug === "remote-energy-support"/)
-  assert.match(pageCss, /@media \(max-width: 700px\)/)
+  assert.match(pageCss, /@media \(max-width: 430px\)/)
   assert.match(finder, /MASTER_TOPICS/)
   assert.match(finder, /More filters/)
   assert.match(finder, /<div className=\{styles.masterExtra\}>/)

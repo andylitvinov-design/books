@@ -130,17 +130,18 @@ test("Video opens as the only active workspace, advanced first-video remains acc
   assert.match(studio,/<MandalaGuidedCourse/);
   assert.match(studio,/data-video-audio-attach/);
 });
-test("published informational YouTube no longer overlays the original Canvas hero",()=>{
+test("approved Intro/My rail uses only one main video hero and local Canvas",()=>{
   const nav=studio.indexOf('<nav className={videoStyles.quickVideoNav}');
   const start=studio.indexOf('id="video-hero"');
-  const finish=studio.indexOf('{/* Show the introductory film separately',start);
-  assert.ok(nav>0&&start>nav&&finish>start,
-    "tabs precede the Canvas; the informational YouTube overlay follows it");
-  assert.doesNotMatch(studio.slice(start,finish),/data-video-therapy-intro/);
-  assert.match(studio,/className=\{videoStyles\.therapyIntroStandalone\}/);
-  assert.match(studio,/data-workspace-section="practices" data-video-therapy-info/);
-  assert.match(studio,/const activateQuickWorkspace=[\s\S]{0,220}setActiveWorkspace\(id\);[\s\S]{0,130}setIntroPlaying\(false\);[\s\S]{0,90}setStudioMode\("pump"\)/);
+  const rail=studio.indexOf('data-video-intro-my-rail',start);
+  assert.ok(nav>0&&start>nav&&rail>start,"six tabs precede the original Canvas and Intro/My rail");
+  assert.match(studio.slice(start,rail),/data-video-therapy-intro="ready"/);
+  assert.match(studio.slice(start,rail),/data-video-preview-toggle/);
+  assert.match(studio,/const showIntroHero =/);
+  assert.match(studio,/onClick=\{\(\)=>activateQuickWorkspace\(item\.id\)\}/);
   assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
+  assert.equal((studio.match(/data-video-therapy-info/g)||[]).length,1);
+  assert.doesNotMatch(studio,/therapyIntroStandalone|therapyIntroOverlay/);
 });
 test("iPhone music is one scannable rail with distinct Listen and Include controls",()=>{
   assert.match(css,/grid-auto-columns:minmax\(188px,49%\)/);
@@ -216,7 +217,10 @@ test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
  const audio=section.indexOf('data-video-phrase-audio-shortcut');
  assert.ok(editor>0&&audio>editor);
  assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
- assert.match(section,/<MandalaVideoIdeas/);
+ assert.doesNotMatch(section,/<MandalaVideoIdeas/);
+ assert.match(section,/data-video-ideas-open-montage-text/);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+ assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
  assert.match(section,/data-video-legacy-phrase-editor data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}\s+hidden=\{activeWorkspace!=="phrases"\} aria-hidden=\{activeWorkspace!=="phrases"\}/);
  assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
  assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
@@ -336,7 +340,7 @@ test("Ideas → Montage cancels stale scroll on a genuine quick-tab action",()=>
   const browser=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
   assert.match(browser,/MONTAGE_TAB_MUST_ACTIVATE/);
   assert.match(browser,/data-video-montage-tab="effects"/);
-  assert.match(browser,/MONTAGE_MUST_START_WITH_AUTO_CONCEPT/);
+  assert.match(browser,/MONTAGE_MUST_START_WITH_STYLE/);
   assert.match(browser,/GUEST_APPROVAL_MUST_SURVIVE_TAB_NAVIGATION/);
   assert.match(browser,/CONCEPT_TEXT_TOOLS_DID_NOT_OPEN/);
 });

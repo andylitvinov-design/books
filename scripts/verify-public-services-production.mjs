@@ -1,5 +1,5 @@
 import { assertAlchemyPaymentsExpanded } from './helpers/alchemy-payment-disclosure-verifier.mjs';
-import { openRegisteredContactChannelChooser, openRegisteredCompactPhoneChooser, assertPreparedContactChannels } from './helpers/contact-channel-verifier.mjs';
+import { assertMessengerOnlyCapture } from './helpers/messenger-only-contract.mjs';
 import { captureAlchemyPanelOverflow } from './helpers/alchemy-panel-overflow-diagnostics.mjs';
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
@@ -462,67 +462,23 @@ try {
       // retired ConsultationChoiceCapture/WhatsApp-first paid selector.
       const target = main.locator('section#request-session[data-service-visual-screen="final-capture"]');
       await visible(target);
-      const capture = target.locator('[data-service-lead-capture][data-inline-offer-form]');
+      const capture=target.locator('[data-service-lead-capture][data-inline-offer-form]');
       await visible(capture);
-      const form = capture.locator('form[data-compact-lead-form]');
-      await form.locator('input[name="contact"]').waitFor({state:"visible"});
-      // The form is client-side: reject an SSR click that happened before hydration.
-      await form.locator('input[name="contact"][required]').waitFor({state:"visible"});
-      await page.waitForFunction(() => document.querySelector(
-        'section#request-session [data-compact-lead-form]')?.getAttribute("data-compact-hydrated")==="true",
-        null,{timeout:15000});
-      const choices = capture.locator("select");
-      assert.equal(await choices.count(),1,"One real service-format selector: "+label);
-      assert.equal(await choices.locator("option").count(),2,"30/60-minute paid choices: "+label);
+      const choices=capture.locator('select[data-messenger-offer-format]');
+      await expect(choices).toHaveCount(1);
+      assert.equal(await choices.locator('option').count(),2,"Two original paid formats: "+label);
       assert.ok((await choices.locator('option[value="30-min"]').innerText()).includes("€50"),
-        "The express session must transparently cost €50: "+label);
+        "Express €50 choice retained: "+label);
       assert.ok((await choices.locator('option[value="60-min"]').innerText()).includes("€100"),
-        "The full session must transparently cost €100: "+label);
+        "Full €100 choice retained: "+label);
       await choices.selectOption("30-min");
-      await expect(choices).toHaveValue("30-min");
-      const replyConsent=form.locator('input[type="checkbox"][required]');
-      await expect(replyConsent).toHaveCount(1);
-      await expect(replyConsent).not.toBeChecked();
-      const submit=capture.locator('button[data-compact-channel="whatsapp"]');
-      await expect(submit).toBeVisible();
-      let submissions=0,payload=null;
-      await page.route("**/api/service-enquiries",async route=>{
-        if(route.request().method()!=="POST")return route.continue();
-        submissions++;payload=route.request().postDataJSON();
-        await route.fulfill({status:201,contentType:"application/json",
-          body:JSON.stringify({saved:true,referenceCode:"HH-ABCD1234EF56"})});
-      });
-      // Intercept external popups in the isolated local browser; no provider
-      // request, real client details or live database write can escape this test.
-      await page.evaluate(()=>{
-        window.__testNoExternalHandoff=[];
-        window.open=()=>({opener:null,closed:false,
-          location:{replace:url=>window.__testNoExternalHandoff.push(String(url))},
-          close:()=>{}});
-      });
-      await form.locator('input[name="contact"]').fill("landing-qa@example.test");
-      await submit.click();
-      await expect(form.locator('[role="alert"]')).toBeVisible();
-      assert.equal(submissions,0,"Consent cannot be bypassed: "+label);
-      await replyConsent.check();
-      await submit.click();
-      await expect(capture.locator("[data-lead-saved]")).toBeVisible({timeout:15000});
-      assert.equal(submissions,1,"One consented CRM request: "+label);
-      assert.equal(payload?.contactConsent,true,"Reply consent is recorded: "+label);
-      assert.equal(payload?.contact?.email,"landing-qa@example.test");
-      assert.equal(payload?.sourcePath,"/"+locale+"/services/"+service);
-      assert.ok(payload?.description?.includes("30-min"),"Selected session preserved in CRM: "+label);
-      const whatsapp=capture.locator('a[data-compact-channel="whatsapp"]');
-      const draft=new URL(await whatsapp.getAttribute("href"));
-      assert.equal(draft.origin,"https://wa.me");
-      assert.ok(draft.searchParams.get("text")?.includes("HH-ABCD1234EF56"));
-      assert.ok(draft.searchParams.get("text")?.includes("30-min"),
-        "The same 30-minute offer is included in the draft: "+label);
-      assert.ok(!draft.href.includes("landing-qa%40example.test"),
-        "Visitor contact must never leak to a messenger URL: "+label);
-      const external=await page.evaluate(()=>window.__testNoExternalHandoff);
-      assert.equal(external.length,1,"One intercepted handoff; no external navigation");
-      assert.equal(new URL(external[0]).origin,"https://wa.me");
+      const prepared=await assertMessengerOnlyCapture(capture,expect,{offer:"30-min",locale,label});
+      assert.equal(await capture.locator('form[data-compact-lead-form],input[type="email"],input[type="tel"]').count(),0,
+        "No email/phone bypass or unverified CRM write: "+label);
+      assert.equal(await capture.locator('[data-lead-saved]').count(),0,
+        "No saved receipt just from choosing a messenger: "+label);
+      assert.ok((prepared.whatsappUrl.searchParams.get("text")||"").includes("30-min"),
+        "Selected offer retained in outgoing draft: "+label);
       await assertViewport(page, "personal-request/" + label);
       await page.screenshot({ path: output + "/personal-" + locale + "-" + service + "-request-390.png", fullPage: false, animations: "disabled" });
       await page.close();
@@ -547,10 +503,12 @@ try {
     const href = await free.getAttribute("href");
     assert.equal(href, "/" + locale + "/services/free-situation-review?topic=business",
       "Free Business hero must reach the separate written situation review, not imply a live session");
-    const requestForm = main.locator("[data-business-website-enquiry]");
+    const requestForm=main.locator("[data-business-website-enquiry]");
     await visible(requestForm);
-    assert.equal(await requestForm.locator("select[data-business-field=\"format\"]").count(),1);
-    await expect(requestForm.locator("button[type=submit]")).toBeDisabled();
+    assert.equal(await requestForm.locator('select[data-business-field="format"]').count(),1);
+    assert.equal(await requestForm.locator('input[type="email"],button[type="submit"]').count(),0,
+      "Business enquiries require customer-initiated Telegram or WhatsApp");
+    await assertMessengerOnlyCapture(requestForm,expect,{locale,label});
     const offers = main.locator("#business-offers");
     for (const kind of ["free", "express", "full"]) {
       await visible(offers.locator('[data-business-offer="' + kind + '"]'));
@@ -563,8 +521,8 @@ try {
     await toOffers.click();
     await page.waitForURL(/#business-offers$/);
     const express = offers.locator('[data-business-offer="express"]');
-    const chooser = await openRegisteredContactChannelChooser(express, expect, page);
-    const prepared = await assertPreparedContactChannels(chooser, expect);
+    const prepared=await assertMessengerOnlyCapture(express,expect,
+      {offer:"€50",locale,label:label+"/express"});
     assert.ok((prepared.whatsappUrl.searchParams.get("text") || "").includes("€50"),
       "Business express €50 must survive messenger selection: " + label);
     await assertViewport(page, "business/" + label);
@@ -617,14 +575,16 @@ try {
           if (kind === "alchemy") {
             const form = main.locator('[data-alchemy-lead-form="single"]');
             await form.scrollIntoViewIfNeeded();
-            await visible(form.locator('[data-contact-order]'));
+            await assertMessengerOnlyCapture(form,expect,
+              {locale,label:"alchemy "+locale+" personalised request"});
+            assert.equal(await form.locator('form,input[type="email"],input[type="tel"]').count(),0,
+              "Alchemy cannot accept unverified website-only contact");
             // Two editorial choices plus the separate international phone country selector.
             // Check semantic controls instead of a fragile global select count.
             await expect(form.locator('select[id$="-format"]')).toHaveCount(1);
             await expect(form.locator('select[id$="-topic"]')).toHaveCount(1);
-            const countryCode = form.locator('[data-phone-country-input] select');
-            await expect(countryCode).toHaveCount(1);
-            await expect(countryCode).toHaveAttribute("aria-label", locale === "ru" ? "Код страны" : "Country calling code");
+            assert.equal(await form.locator('[data-phone-country-input]').count(),0,
+              "No phone-only capture while verified messenger identity is mandatory");
             const reviewStack = main.locator('[data-alchemy-review-stack]');
             const positions = await reviewStack.locator('[data-testimonial-video-id]').evaluateAll(nodes =>
               nodes.map(node => {
@@ -660,20 +620,13 @@ try {
               "Monthly support uses its independent service enquiry, not this one-time booking flow");
             await pricing.locator('[data-alchemy-format="30"]').click();
             await assertAlchemyPaymentsExpanded(main, expect, width);
-            const book = pricing.locator('[data-booking-cta="book"]');
-            await expect(book).toHaveCount(1);
-            await book.click();
-            await expect(pricing.locator('[data-booking-step="contact"]')).toBeVisible();
-            // Reply permission is required; source analytics remains independent and optional.
-            const contactStep = pricing.locator('[data-booking-step="contact"]');
-            await expect(contactStep.locator('input[type="checkbox"][required]')).toHaveCount(1);
-            await expect(contactStep.locator('[data-enquiry-attribution-choice] input[type="checkbox"]')).toHaveCount(1);
-            assert.equal(await contactStep.locator('input[type="checkbox"][required]').isChecked(), false,
-              "Contact reply permission must not be preselected");
-            assert.equal(await contactStep.locator('[data-enquiry-attribution-choice] input[type="checkbox"]').isChecked(), false,
-              "Enquiry source attribution must be independently opted into");
-            assert.equal(await pricing.locator('[data-booking-payment-options]').count(), 0,
-              "No cart or payment method before a server-confirmed booking");
+            const booking=pricing.locator('[data-session-booking-flow]');
+            await expect(booking).toHaveCount(1);
+            await expect(booking).toHaveAttribute('data-booking-sku','express-consultation-30');
+            await assertMessengerOnlyCapture(booking,expect,
+              {offer:"€50",locale,label:"alchemy "+locale+" express"});
+            assert.equal(await pricing.locator('[data-booking-payment-options]').count(),0,
+              "No checkout or booking confirmation before verified reply channel");
             await page.screenshot({path: output + "/alchemy-" + locale + "-vertical-reviews-390.png", fullPage: false});
             await page.screenshot({path: output + "/alchemy-" + locale + "-request-390.png", fullPage: false});
           } else {
@@ -683,25 +636,14 @@ try {
             const capture = main.locator('[data-core-visual-screen="final-capture"]');
             await expect(capture).toHaveCount(1);
             await capture.scrollIntoViewIfNeeded();
-            const inline = capture.locator('[data-inline-offer-form]');
+            const inline=capture.locator('[data-inline-offer-form]');
             await expect(inline).toHaveCount(1);
-            const form = inline.locator('form[data-compact-lead-form]');
-            await expect(form).toHaveCount(1);
-            await expect(form.locator('input[name="contact"][required]')).toHaveCount(1);
-            const replyConsent = form.locator('input[type="checkbox"][required]');
-            await expect(replyConsent).toHaveCount(1);
-            await expect(replyConsent).not.toBeChecked();
-            await expect(form.locator('[data-compact-channel]')).toHaveCount(2);
-            // The optional messenger alternative starts collapsed and may
-            // create prepared links only after a synthetic consented local save.
-            const more = capture.locator('details:has([data-contact-channel-chooser])');
-            await expect(more).toHaveCount(1);
-            await expect(more).not.toHaveAttribute('open', '');
-            await more.locator(':scope > summary').click();
-            await expect(more).toHaveAttribute('open', '');
-            const chooser = await openRegisteredContactChannelChooser(more, expect, page);
-            const { whatsappUrl } = await assertPreparedContactChannels(chooser, expect);
-            assert.ok(whatsappUrl.searchParams.get('text').includes(await main.locator('h1').innerText()), 'Prepared request must retain the selected service');
+            const prepared=await assertMessengerOnlyCapture(inline,expect,
+              {locale,label:"hypnotherapy "+locale+" "+width});
+            assert.ok((prepared.whatsappUrl.searchParams.get('text')||'').length>25,
+              "The specific published service must have a concrete request draft");
+            assert.equal(await inline.locator('form,input[type="email"]').count(),0,
+              "No contact-only lead bypass");
             const freeAlternative = capture.locator('a[href="/' + locale + '/services/free-situation-review"]');
             await expect(freeAlternative).toHaveCount(1);
             await visible(freeAlternative);
@@ -739,7 +681,8 @@ try {
           await visible(main.locator('a[href="/' + locale + '/client/tests"]').first());
           const capture = main.locator("#" + captureId + "[data-service-lead-capture]");
           await visible(capture);
-          assert.equal(await capture.locator('input[type="checkbox"][required]').isChecked(), false);
+          await assertMessengerOnlyCapture(capture,expect,
+            {locale,label:"free tests "+locale+" "+width});
         } else if (kind === "dao") {
           await visible(hero.locator("img"));
           await visible(main.locator("#what-you-get"));
@@ -747,11 +690,10 @@ try {
             "The compact Wu Xing journey does not repeat an unused process slide");
           const capture = main.locator("#" + captureId + "[data-service-lead-capture]");
           await visible(capture);
-          assert.equal(await capture.locator('input[type="checkbox"][required]').isChecked(), false,
-            "Reply consent must remain an explicit, unchecked action");
-          const stats=capture.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
-          if(await stats.count())assert.equal(await stats.isChecked(),false,
-            "Source attribution must remain an independent opt-in");
+          await assertMessengerOnlyCapture(capture,expect,
+            {locale,label:"Dao Wu Xing "+locale+" "+width});
+          assert.equal(await capture.locator('form,input[type="email"],input[type="tel"]').count(),0,
+            "A free Dao review does not accept email-only website leads");
         } else {
           // The former three-offer widget was replaced by the express review.
           // Verify the real current funnel without submitting any visitor data.
@@ -769,12 +711,10 @@ try {
           const disclosure = capture.locator("[data-express-inline-disclosure]");
           await visible(disclosure);
           await expect(disclosure.locator("[data-express-focus]")).toHaveCount(2);
-          const chooser = disclosure.locator("[data-contact-channel-chooser]");
-          await expect(chooser).toHaveCount(1);
-          const consent = chooser.locator('input[type="checkbox"][required]');
-          await expect(consent).not.toBeChecked();
-          await expect(chooser.locator('a[data-contact-channel]')).toHaveCount(0);
-          await expect(chooser.locator('[data-lead-saved]')).toHaveCount(0);
+          await assertMessengerOnlyCapture(disclosure,expect,
+            {locale,label:"written situation review "+locale+" "+width});
+          assert.equal(await disclosure.locator('[data-lead-saved]').count(),0,
+            "No provider verification or CRM receipt from opening a link");
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
             "Expanded information must fit the phone width");
 

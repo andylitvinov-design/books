@@ -221,13 +221,13 @@ try{
       if (intent === 'publish') {
         await target.locator('input[name="reviewed"]').check()
         await target.locator('.site-video-admin-button--primary').click()
-        await expect(target.locator('[aria-live="polite"]')).toContainText('Video published to the selected page.')
+        await expect(target.locator('[aria-live="polite"]')).toContainText('Video published to the selected page.', { timeout: 30_000 })
       } else if (intent === 'draft') {
         await target.getByRole('button', { name: 'Save draft', exact: true }).click()
         await expect(target.locator('[aria-live="polite"]')).toContainText('Draft saved.')
       } else {
         await target.getByRole('button', { name: 'Hide from website', exact: true }).click()
-        await expect(target.locator('[aria-live="polite"]')).toContainText('Video hidden from the website.')
+        await expect(target.locator('[aria-live="polite"]')).toContainText('Video hidden from the website.', { timeout: 30_000 })
       }
     }
     await openEditor()

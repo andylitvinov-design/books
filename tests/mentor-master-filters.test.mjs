@@ -67,3 +67,13 @@ test("browser acceptance exercises mobile ordering and real filter interactions"
   assert.match(script, /noHorizontalOverflow\(page, label \+ " expanded filters"\)/);
   assert.match(script, /320, 375, 390, 430/);
 });
+
+test("featured master card uses a real approved profile portrait when no service cover exists", async () => {
+  const finder = await read("components/master-network-explorer.tsx");
+  assert.ok(finder.includes("const serviceFeaturePhoto = firstService?.photos?.[0] || firstService?.imagePath;"));
+  assert.ok(finder.includes("const profileFeaturePhoto = !serviceFeaturePhoto && Boolean(profile.photoPath);"));
+  assert.ok(finder.includes("const featurePhoto = serviceFeaturePhoto || profile.photoPath;"));
+  assert.ok(finder.includes('<img src={featurePhoto} alt="" loading="lazy" />'));
+  assert.ok(finder.includes("{!profileFeaturePhoto ? (profile.photoPath"));
+  assert.doesNotMatch(finder, /FALLBACK_SERVICE_PHOTOS/);
+});

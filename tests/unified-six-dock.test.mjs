@@ -7,22 +7,38 @@ import {rankDiscoveryVideos} from "../lib/video-discovery/ranker.mjs";
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("one seven-button dock reuses six Practice actions and the existing Free Analysis",()=>{
- assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","ai","practice","master","profile","analysis"]);
+ assert.deepEqual(UNIFIED_DOCK_IDS,["mytube","video","master","ai","analysis","practice","profile"]);
  for(const locale of ["en","ru","es"]){
   assert.deepEqual(UNIFIED_DOCK_IDS.map(id=>unifiedMobileDockHref(locale,id)),[
    "/"+locale+"/mytube",
    "/"+locale+"/holistic-support/mandala",
-   "/"+locale+"/app/messages?section=ai",
-   "/"+locale+"/holistic-support/mobile",
    "/"+locale+"/practice",
-   "/"+(locale==="es"?"en":locale)+"/app/portrait",
-   "/"+locale+"/services/free-situation-review"
+   "/"+locale+"/app/messages?section=ai",
+   "/"+locale+"/services/free-situation-review",
+   "/"+locale+"/holistic-support/mobile",
+   "/"+(locale==="es"?"en":locale)+"/app/portrait"
   ]);
   for(const id of UNIFIED_DOCK_IDS)assert.ok(unifiedMobileDockHref(locale,id));
  }
  assert.equal(unifiedMobileDockHref("ru","unknown"),null);
  assert.equal(unifiedMobileDockHref("../../admin","profile"),null);
 });
+test("shared seven-tab dock has the approved labels in every language",()=>{
+ const dock=read("components/unified-mobile-dock.tsx");
+ const expected={
+  en:{mytube:"MyTube",video:"MyVideo",master:"Services",ai:"AI/Chat",analysis:"Hints",practice:"Study",profile:"Profile"},
+  ru:{mytube:"MyTube",video:"MyVideo",master:"Услуги",ai:"ИИ/Чат",analysis:"Подсказки",practice:"Обучение",profile:"Профиль"},
+  es:{mytube:"MyTube",video:"MyVideo",master:"Servicios",ai:"IA/Chat",analysis:"Pistas",practice:"Estudiar",profile:"Perfil"}
+ };
+ for(const [locale,names] of Object.entries(expected)){
+  const row=dock.split("\n").find(line=>line.trimStart().startsWith(locale+": {"));
+  assert.ok(row,locale+" labels exist");
+  for(const id of UNIFIED_DOCK_IDS)
+   assert.ok(row.includes(id+': "'+names[id]+'"'),locale+" label for "+id);
+ }
+ assert.match(dock,/\$\{label\}:.*Free personal express review/);
+});
+
 test("standalone public tabs bypass native link handoff but not private CSP",()=>{
  const dock=read("components/unified-mobile-dock.tsx");
  assert.ok(dock.includes('["mytube", "video", "practice", "master", "analysis"].includes(id)'));
@@ -98,17 +114,18 @@ test("one screenshot-1 style seven-button dock and protected old docks removed v
  assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
  assert.match(css,/position:fixed/);
  assert.match(css,/safe-area-inset-bottom/);
- // Keep the iPhone dock anchored to the viewport; Safari's native bottom
- // controls must never cause an extra JS-computed vertical offset.
- assert.match(css,/translate3d\(-50%,0,0\)/);
+ // Center fixed UI without a translated compositing layer on iPhone Safari.
+ assert.match(css,/left:0;right:0;margin-inline:auto/);
+ assert.doesNotMatch(css,/translate3d/);
  assert.match(css,/position:fixed;z-index:58;bottom:0;/);
  assert.doesNotMatch(css,/--hh-unified-viewport-inset|100vh\s*-\s*100dvh|bottom:max\(/);
  assert.ok(dock.includes('const visualOffsetTop = viewport?.offsetTop ?? 0'));
  assert.match(dock,/visualKeyboardOpen\(/);
+ assert.match(dock,/visualDockBottomOffset\(/);
  assert.doesNotMatch(dock,/visualDockBottomCorrection\(|mobileVisualBottomGap\(|--hh-unified-viewport-inset/);
  assert.doesNotMatch(hide,/--hh-unified-viewport-inset/);
- assert.doesNotMatch(dock,/addEventListener\("scroll", update/);
- assert.doesNotMatch(dock,/removeEventListener\("scroll", update/);
+ assert.match(dock,/viewport\?\.addEventListener\("scroll", update/);
+ assert.match(dock,/viewport\?\.removeEventListener\("scroll", update/);
  assert.match(dock,/hideForKeyboard/);
  assert.match(css,/min-height:52px/);
  for(const former of ["data-support-mobile-bottom-nav","data-mandala-support-bottom-nav",
@@ -218,12 +235,13 @@ test("Video Mandala uses a compact, public mobile header and Reiki filters canno
 });
 
 
-test("MyTube stays dark with a swipeable direction rail and expandable deeper filters",()=>{
+test("MyTube keeps all real directions in one row and expands true subcategories only on demand",()=>{
  const page=read("app/[locale]/mytube/page.tsx");
  const style=read("app/[locale]/mytube/mytube.module.css");
  const discovery=read("components/video-discovery.tsx");
  const css=read("components/video-discovery.module.css");
  const browser=read("scripts/verify-unified-six-dock-browser.mjs");
+ const iHelpCss=read("components/sitewide-ihelp.module.css");
  assert.match(page,/themeColor:"#0f0f0f"/);
  assert.match(style,/--mytube-bg:#0f0f0f/);
  assert.match(discovery,/data-mytube-category-rail/);
@@ -234,10 +252,15 @@ test("MyTube stays dark with a swipeable direction rail and expandable deeper fi
  for(const name of ["data-mytube-categories","data-mytube-subcategories","data-mytube-topics","data-mytube-scenarios"])
   assert.match(discovery,new RegExp(name));
  assert.match(css,/\.mytube \.mytubeCategoryRail\{/);
- assert.match(css,/overflow-x:auto/);
+ assert.match(css,/\.mytube \.mytubeCategoryRail\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+ assert.doesNotMatch(css.slice(css.indexOf("/* MyTube-only compact five-choice editorial taxonomy.")),/overflow-x:auto/);
+ assert.match(discovery,/data-mytube-language-control/);
+ assert.match(discovery,/mytubeCategoryId!=="all"&&<div className=\{styles\.mytubeSubcategoryRail\}/);
  assert.match(css,/\.mytube \.compactMoreButton\{/);
  assert.match(discovery,/data-mytube-format-mode=\{mode\}/);
- assert.match(browser,/rail\.evaluate\(el=>el\.scrollLeft\)/);
+ assert.match(browser,/rail\.evaluate\(el=>el\.scrollWidth<=el\.clientWidth\+2\)/);
+ assert.ok(iHelpCss.includes(":global(body:has([data-mytube-page])) .launcher{"));
+ assert.match(browser,/floating iHelp must not block original-language choices/);
  assert.match(browser,/refined\.isVisible\(\),false/);
 });
 test("Shorts / Study are exclusive editorial shelves and unknown lengths remain available",async()=>{

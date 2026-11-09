@@ -431,6 +431,14 @@ function Filters({
       </div>
       {mode === "masters" ? (
         <>
+          <div className={styles.masterQuickBar} role="group" aria-label={locale === "ru" ? "Основные направления" : locale === "es" ? "Temas principales" : "Main topics"}>
+            <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
+            {topics.map((topic) => (
+              <button key={topic.id} type="button" className={state.area === topic.id ? styles.selected : ""} aria-pressed={state.area === topic.id} onClick={() => set("area", topic.id)}>
+                {topic[locale]}
+              </button>
+            ))}
+          </div>
           <div className={styles.mentorFilterGrid} data-mentor-primary-filters>
             <label>{t.offering}
               <select id="mentor-filter-offering" value={state.offeringType}
@@ -449,14 +457,6 @@ function Filters({
             </label> : null}
             {formatSelect}
             {languageSelect}
-          </div>
-          <div className={styles.masterQuickBar} role="group" aria-label={locale === "ru" ? "Основные направления" : locale === "es" ? "Temas principales" : "Main topics"}>
-            <button type="button" className={!state.area ? styles.selected : ""} aria-pressed={!state.area} onClick={() => set("area", "")}>{t.all}</button>
-            {topics.map((topic) => (
-              <button key={topic.id} type="button" className={state.area === topic.id ? styles.selected : ""} aria-pressed={state.area === topic.id} onClick={() => set("area", topic.id)}>
-                {topic[locale]}
-              </button>
-            ))}
           </div>
           <div className={styles.masterExtra}>
             <button type="button" className={styles.masterExtraToggle}
@@ -771,6 +771,11 @@ export function MarketplaceMasterFinder({
           const queryMatches = state.query ? filteredServices.filter((service) =>
             clean([service.copy.title, service.copy.shortDescription].join(" ")).includes(clean(state.query))) : [];
           const firstService = queryMatches[0] || filteredServices[0];
+          const serviceFeaturePhoto = firstService?.photos?.[0] || firstService?.imagePath;
+          // The already-approved public profile portrait is a safe visual fallback
+          // when no service-specific cover has been published.
+          const profileFeaturePhoto = !serviceFeaturePhoto && Boolean(profile.photoPath);
+          const featurePhoto = serviceFeaturePhoto || profile.photoPath;
           const featuredCourse = matchingMasterCourses(master, state, publishedCourses)[0];
           const filtersActive = Boolean(state.query || state.area || state.offeringType ||
             state.courseKey || state.language || state.format || state.location ||
@@ -779,10 +784,13 @@ export function MarketplaceMasterFinder({
             (!filtersActive && masterServices.some((service) =>
               service.slug === "remote-energy-support" && service.areaKey === "energy_spiritual"));
           return (
-            <article className={`${styles.masterCard} ${styles.compactMaster}`} key={master.id}>
+            <article className={`${styles.masterCard} ${styles.compactMaster}`} key={master.id} data-master-card>
+              {featurePhoto ? <div className={styles.masterFeature} aria-hidden="true">
+                <img src={featurePhoto} alt="" loading="lazy" />
+              </div> : null}
               <div className={styles.masterHeading}>
-                {profile.photoPath ? <img src={profile.photoPath} width={78} height={78} alt={name} className={styles.portrait} loading="lazy" /> :
-                  <div className={styles.portraitInitials} aria-hidden="true">{name.charAt(0).toUpperCase()}</div>}
+                {!profileFeaturePhoto ? (profile.photoPath ? <img src={profile.photoPath} width={78} height={78} alt={name} className={styles.portrait} loading="lazy" /> :
+                  <div className={styles.portraitInitials} aria-hidden="true">{name.charAt(0).toUpperCase()}</div>) : null}
                 <div><p className={styles.area}>{[profile.city, profile.country].filter(Boolean).join(", ") || t.online}</p>
                   <h3>{name}</h3><p className={styles.role}>{profile.professionalTitle || ""}</p></div>
               </div>
