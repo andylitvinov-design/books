@@ -136,3 +136,20 @@ test('owner-only UI shows separate local, external, and manual states without fa
   assert.doesNotMatch(src,/PRESCRIPTIONS_ADMIN_PIN|PRESCRIPTIONS_KV_REST_API_TOKEN|HH_GROWTH_TELEGRAM_BOT_TOKEN\s*=|process\.env/)
   assert.doesNotMatch(src,/createScheduledPost|createCampaign|paidAdsEnabled\s*=\s*true/)
 })
+
+
+test('Instagram destination registry includes the two distinct requested brands without duplicate entries',async()=>{
+  const {GROWTH_INSTAGRAM_ACCOUNT_TARGETS}=await import('../lib/growth-studio/instagram-accounts.mjs')
+  const labels=GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.label)
+  assert.deepEqual(labels,['@my.coach.ai','@my.couch.ai'])
+  assert.equal(new Set(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(x=>x.id)).size,2)
+  for(const account of GROWTH_INSTAGRAM_ACCOUNT_TARGETS){
+    assert.equal(account.network,'instagram')
+    assert.equal(account.connectionState,'pending_authorization')
+    assert.equal(account.publishEnabled,false)
+    assert.equal(account.providerAccountId,null)
+  }
+  const ui=readFileSync(new URL('../components/growth-studio-connections.jsx',import.meta.url),'utf8')
+  assert.match(ui,/GROWTH_INSTAGRAM_ACCOUNT_TARGETS/)
+  assert.match(ui,/publishing disabled|публикация выключена/)
+})
