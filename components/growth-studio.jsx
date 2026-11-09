@@ -589,6 +589,10 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           {!['sending','published','delivery_unknown','manual_done'].includes(post.status)
             && <button type="button" disabled={busy} onClick={()=>edit(post)}><Edit3 size={15}/>{t.edit}</button>}</div>
         <p className={styles.postExcerpt}>{post.caption||'—'}</p>
+        {post.status==='published'&&post.delivery?.provider==='meta_graph_api'&&
+          <p className={styles.verifiedText}><a href={post.delivery.url} target="_blank" rel="noopener noreferrer">
+            {locale==='ru'?'Открыть опубликованный Instagram-пост':'Open published Instagram post'} ↗
+          </a></p>}
         <div className={styles.postButtons}>
           {post.status==='draft'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('approve',post)}><Check size={15}/>{t.approve}</button>}
           {post.status==='approved'&&<button type="button" disabled={busy||!ready||!storageVerified} onClick={()=>execute('plan',post)}><CalendarDays size={15}/>{t.plan}</button>}
