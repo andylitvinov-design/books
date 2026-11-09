@@ -76,7 +76,7 @@ test('confirmed report action imports transactionally into the existing owner Li
  assert.equal(result.areaKey,'career_business')
  assert.equal(captured.goals.length,1)
  assert.equal(captured.actions.length,1)
- assert.equal(captured.changes.length,3)
+ assert.equal(captured.changes.length,5)
  const goalArgs=captured.goals[0].args
  const goalId=goalArgs[0]
  assert.equal(goalArgs[1],areaId)
