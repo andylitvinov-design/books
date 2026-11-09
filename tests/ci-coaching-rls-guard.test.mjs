@@ -26,3 +26,12 @@ test('coaching RLS test and runner changes retain the existing database gate',()
     assert.equal(decideHeavyImpact('app-r1',[{filename,status:'modified'}]).database,true,filename)
   }
 })
+
+test('isolated runner enables the real server module and fails if acceptance is skipped',()=>{
+ const runner=readFileSync(new URL('../scripts/ci-coaching-rls.mjs',import.meta.url),'utf8')
+ const integration=readFileSync(new URL('./personal-coaching-rls-isolated.integration.mjs',import.meta.url),'utf8')
+ assert.match(runner,/--conditions=react-server/)
+ assert.match(runner,/skipped 0/)
+ assert.match(integration,/import\('\.\.\/lib\/app\/personal-coaching\.js'\)/)
+ assert.match(integration,/Promise\.allSettled/)
+})

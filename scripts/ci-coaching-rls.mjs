@@ -11,7 +11,7 @@ try {
   if(existing.rowCount)throw new Error('COACHING_RLS_DB_ALREADY_EXISTS')
   await client.query('create database hh_coaching_rls_test')
 } finally {await client.end()}
-const result=spawnSync(process.execPath,['--test','tests/personal-coaching-rls-isolated.integration.mjs'],{
+const result=spawnSync(process.execPath,['--conditions=react-server','--test','tests/personal-coaching-rls-isolated.integration.mjs'],{
   encoding:'utf8',timeout:120000,env:{...process.env,HH_TEST_ADMIN_DATABASE_URL:urls.test,HH_COACHING_RLS_TEST:'synthetic-only'},
 })
 if(result.stdout)process.stdout.write(result.stdout)
