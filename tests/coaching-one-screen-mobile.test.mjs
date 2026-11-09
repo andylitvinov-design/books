@@ -58,7 +58,7 @@ test('composer controls stay visible and existing encrypted-save behavior is unc
     assert.match(ui, /aria-describedby=/)
     assert.match(ui, /onClick=\{\(\)=>(?:next|advance)\(false\)\}/)
   }
-  assert.match(personal, /command\('answer',\{questionId:question\.id,answer\}\)/)
+  assert.match(personal, /command\('answer',\{questionId:question\.id,answer,/)
   assert.match(tradition, /await send\('answer',\{questionId:question\.id,answer\}\)/)
   assert.match(tradition, /busyRef\.current/)
   assert.match(shared, /\.session\[data-coaching-one-viewport\] \.footer \.reportPop\{/)

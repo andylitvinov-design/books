@@ -33,6 +33,11 @@ test('the prioritisation step is summarized as the current situation, not a chos
   assert.match(source,/actionOrder=\['first_step','plan','action','step','will','destiny'\]/)
 })
 
+test('recognized urgent text is not blocked by the pilot written-plan length hint',()=>{
+  const source=read('components/app/personal-coaching.jsx')
+  assert.match(source,/requiresWrittenPlan\s*&&\s*!isCoachingSafetyConcern\(answer\)/)
+})
+
 test('the prioritisation question may use one authored reality follow-up in the existing offline flow',()=>{
   const source=read('lib/personal-coaching/offline-intelligence.js')
   assert.match(source,/priorities:'reality'/)

@@ -16,6 +16,7 @@ import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
+import { isCoachingSafetyConcern } from '@/lib/personal-coaching/model-matcher'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
@@ -364,7 +365,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     if((question.required&&!answer)||(question.required&&!question.type&&answer.length<3)){
       setError(t.required);return
     }
-    if(requiresWrittenPlan &&
+    if(requiresWrittenPlan && !isCoachingSafetyConcern(answer) &&
       (answer?.startsWith('choice:')||!answer||answer.length<10)){
       setError(planHint);return
     }
@@ -373,7 +374,8 @@ export default function PersonalCoaching({locale='en',accountId}){
       else if(!offerFollowup(session,answer))visit(index+1,session.answers)
       return
     }
-    const saved=await command('answer',{questionId:question.id,answer})
+    const saved=await command('answer',{questionId:question.id,answer,
+      ...(isOverload&&Object.prototype.hasOwnProperty.call(session.answers,question.id)?{edit:true}:{})})
     if(!saved)return
     if(saved.course?.current?.status==='safety_hold'||saved.course?.current?.status==='completed')return
     if(index===activeQuestions.length-1){

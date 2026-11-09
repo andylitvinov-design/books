@@ -247,7 +247,7 @@ test('user may finish the overload pilot without inventing a plan',async()=>{
  assert.equal(s.course.current.actionPlan,undefined)
 })
 
-test('overload pilot rejects jumping ahead but permits editing a previously answered question',async()=>{
+test('overload pilot rejects jumping ahead and requires explicit intent to edit an earlier answer',async()=>{
  const {api}=fixture()
  let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
  const id=n=>`10000000-0000-4000-8000-${String(n).padStart(12,'0')}`
@@ -255,7 +255,12 @@ test('overload pilot rejects jumping ahead but permits editing a previously answ
  await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'A premature step',turnId:id(1)}),err=>err.code==='PERSONAL_COACH_QUESTION_OUT_OF_ORDER')
  s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:id(2)})
  s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'options',answer:null,turnId:id(3)})
- s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'Updated context',turnId:id(4)})
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'Updated context',turnId:id(4)}),err=>err.code==='PERSONAL_COACH_EXPLICIT_EDIT_REQUIRED')
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'A chosen step',edit:true,turnId:id(6)}),err=>err.code==='PERSONAL_COACH_EDIT_UNAVAILABLE')
+ const edit={action:'answer',revision:s.revision,questionId:'real',answer:'Updated context',edit:true,turnId:id(4)}
+ s=await api.savePersonalCoaching({},a,edit)
+ assert.equal((await api.savePersonalCoaching({},a,edit)).revision,s.revision)
+ await assert.rejects(()=>api.savePersonalCoaching({},a,{...edit,edit:false}),err=>err.code==='PERSONAL_COACH_TURN_ID_REUSED')
  s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'A chosen step',turnId:id(5)})
  assert.equal(s.course.current.answers.action,'A chosen step')
 })
@@ -320,6 +325,14 @@ test('urgent answer interrupts even when sent for a later valid question',async(
  let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
  s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'I want to kill myself',turnId:'10000000-0000-4000-8000-000000000001'})
  assert.equal(s.course.current.status,'safety_hold')
+})
+
+test('short recognized urgent text interrupts a later written-plan question',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'action',answer:'suicidio'})
+ assert.equal(s.course.current.status,'safety_hold')
+ assert.equal((await api.readPersonalCoaching({},a)).course.current.status,'safety_hold')
 })
 
 test('actual server-state code validates and persists chosen authored reflection, rejects forged key and duplicate stage',async()=>{
