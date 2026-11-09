@@ -272,7 +272,7 @@ test('stale Life Plan area revisions and invalid self-ratings are rejected',asyn
 
 test('Life Plan endpoints use the existing authenticated catch-all route and account switch guard',()=>{
  const route=readFileSync(new URL('../app/api/app/[...path]/route.js',import.meta.url),'utf8')
- assert.match(route,/import \{ readCoachingLifePlan, importCoachingReportActions \} from '@\/lib\/app\/coaching-life-plan'/)
+ assert.match(route,/import \{ readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions \} from '@\/lib\/app\/coaching-life-plan'/)
  assert.match(route,/path\[0\] === 'coaching-life-plan'/)
  assert.match(route,/readCoachingLifePlan\(config,actor,\{locale\}\)/)
  assert.match(route,/updateCoachingLifePlanArea\(config,actor,\{\.\.\.await readBody\(request,8192\),areaKey:path\[2\]\}\)/)
