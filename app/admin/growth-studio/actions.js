@@ -79,6 +79,9 @@ export async function updateGrowthStudioPostAction(input) {
     if(input.action==='save' && input.fields?.channel==='instagram' &&
        (typeof input.fields.instagramAccountId!=='string' || !input.fields.instagramAccountId.trim()))
       return {ok:false,error:'instagram_account_required'}
+    if((input.action==='approve'||input.action==='plan') && current?.channel==='instagram' &&
+       (typeof current.instagramAccountId!=='string' || !current.instagramAccountId.trim()))
+      return {ok:false,error:'instagram_account_required'}
     const post = nextGrowthPost({current,fields:input.fields,action:input.action,id})
     await store.save(post,input.expectedRevision)
     return {ok:true,record:post}
