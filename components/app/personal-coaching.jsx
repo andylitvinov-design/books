@@ -10,7 +10,7 @@ import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-c
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingContextReview from '@/components/coaching-context-review'
 import { buildClientCoachingContext } from '@/lib/personal-coaching/client-context.mjs'
-import { reconcileCoachingDraft, reconcileCoachingPlan, coachingPlansEqual } from '@/lib/personal-coaching/reconnect.mjs'
+import { reconcileCoachingDraft, reconcileCoachingPlan, coachingPlansEqual, reconcileFollowupDraft } from '@/lib/personal-coaching/reconnect.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
@@ -236,7 +236,6 @@ export default function PersonalCoaching({locale='en',accountId}){
   }
   async function reload(){
     if(!accountId||busyRef.current)return
-    if(pendingFollowup&&reflectionDraft.trim()&&!window.confirm(t.unsaved))return
     setLoading(true);setError('')
     try{
       const [value,loadedCatalog]=await Promise.all([
@@ -245,10 +244,18 @@ export default function PersonalCoaching({locale='en',accountId}){
       ])
       const list=questionsFor(value.course,loadedCatalog)
       const restored=reconcileCoachingDraft({prior:session,current:value.course?.current,questions:list,questionId:question?.id,draft,dirty,unresolvedAnswer:conflictingAnswer,fallbackIndex:firstUnanswered(list,value.course?.current?.answers)})
+      const reflectionRecovery=reconcileFollowupDraft(session,value.course?.current,pendingFollowup,reflectionDraft)
+      if(reflectionRecovery==='confirm_discard'&&!window.confirm(t.unsaved))return
       if(dirty&&!restored.retained&&value.course?.current?.status!=='safety_hold'&&!window.confirm(t.unsaved))return
+      if(dirty&&restored.retained&&value.course?.current?.pendingFollowup&&
+        value.course.current.pendingFollowup.questionId!==question?.id&&!window.confirm(t.unsaved))return
       setState(value);setCatalog(loadedCatalog)
       visit(restored.index,value.course?.current?.answers,list)
       openServerFollowup(value.course?.current,list)
+      if(reflectionRecovery==='retain'){
+        setReflectionDraft(reflectionDraft)
+        setNotice(lang==='ru'?'Сессия обновлена; черновик уточнения сохранён на экране.':lang==='es'?'Sesión actualizada; tu borrador sigue en pantalla.':'Session refreshed; your follow-up draft remains on screen.')
+      }
       if(restored.retained){
         setDraft(restored.draft)
         setConflictingAnswer(restored.changedAnswer)
@@ -364,12 +371,14 @@ export default function PersonalCoaching({locale='en',accountId}){
       })
       if(!saved)return
       if(saved.course?.current?.status==='safety_hold')return
-      visit(index+1,saved.course?.current?.answers)
+      if(saved.course?.current?.dialogueProtocol===1){
+        if(!openServerFollowup(saved.course.current,activeQuestions))visit(firstUnanswered(activeQuestions,saved.course.current.answers),saved.course.current.answers)
+      }else visit(index+1,saved.course?.current?.answers)
     }else{
       if(session?.dialogueProtocol===1){
         const saved=await command('skip_followup',{questionId:pendingFollowup.questionId,followupKey:pendingFollowup.key})
         if(!saved)return
-        visit(firstUnanswered(activeQuestions,saved.course?.current?.answers),saved.course?.current?.answers)
+        if(!openServerFollowup(saved.course?.current,activeQuestions))visit(firstUnanswered(activeQuestions,saved.course?.current?.answers),saved.course?.current?.answers)
       }else visit(index+1,session?.answers)
     }
   }
@@ -394,6 +403,7 @@ export default function PersonalCoaching({locale='en',accountId}){
       ...(isOverload&&Object.prototype.hasOwnProperty.call(session.answers,question.id)?{edit:true}:{})})
     if(!saved)return
     if(saved.course?.current?.status==='safety_hold'||saved.course?.current?.status==='completed')return
+    if(saved.course?.current?.dialogueProtocol===1&&openServerFollowup(saved.course.current,activeQuestions))return
     if(index===activeQuestions.length-1){
       // Completion is reported only after the final answer and status both persisted.
       const completed=await commandAfterSave(saved,'complete')
@@ -623,6 +633,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             <p className={styles.messageTip}>{followupCopy[lang].why}</p>
           </div>
           <footer className={styles.footer} data-coaching-messenger-footer>
+            {notice&&<p className={styles.footerMessage} role="status">{notice}</p>}
             {error&&<p className={styles.footerMessage} role="alert">{error} <button type="button" disabled={busy||dictating} onClick={reload}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>

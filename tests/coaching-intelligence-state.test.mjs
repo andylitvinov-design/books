@@ -144,6 +144,18 @@ test('pilot follow-up survives pause and is cleared by a saved reflection',async
  assert.equal(s.course.current.reflections.real.text,'A personal observation')
 })
 
+test('replayed follow-up acknowledgement returns the latest server phase',async()=>{
+ const {api}=fixture()
+ let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'real',answer:'choice:time',turnId:'80000000-0000-4000-8000-000000000001'})
+ const reflection={action:'reflection',revision:s.revision,questionId:'real',followupKey:'reality_choice_v1',note:'A personal observation',turnId:'80000000-0000-4000-8000-000000000002'}
+ s=await api.savePersonalCoaching({},a,reflection)
+ s=await api.savePersonalCoaching({},a,{action:'answer',revision:s.revision,questionId:'options',answer:'choice:try',turnId:'80000000-0000-4000-8000-000000000003'})
+ const replay=await api.savePersonalCoaching({},a,reflection)
+ assert.equal(replay.revision,s.revision)
+ assert.equal(replay.course.current.pendingFollowup.questionId,'options')
+})
+
 test('pending follow-up cannot be skipped with a forged key and urgent answers take precedence',async()=>{
  const {api}=fixture()
  let s=await api.savePersonalCoaching({},a,{...start,schemeKey:'grow_overload_20_v1'})

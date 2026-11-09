@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {reconcileCoachingDraft,reconcileCoachingPlan,coachingPlansEqual} from '../lib/personal-coaching/reconnect.mjs'
+import {reconcileCoachingDraft,reconcileCoachingPlan,coachingPlansEqual,reconcileFollowupDraft} from '../lib/personal-coaching/reconnect.mjs'
 
 const prior={id:'session-a',status:'active',answers:{one:'old'}}
 const questions=[{id:'one'},{id:'two'}]
@@ -40,6 +40,22 @@ test('plan refresh never carries drafts into a different or held session',()=>{
  assert.equal(reconcileCoachingPlan(prior,{id:'two',status:'completed'}).kind,'changed')
  assert.equal(reconcileCoachingPlan(prior,{id:'one',status:'safety_hold'}).kind,'safety_hold')
  assert.equal(reconcileCoachingPlan(prior,null).kind,'changed')
+})
+test('follow-up refresh preserves unsent text only for the same question and source answer',()=>{
+ const pending={questionId:'one',key:'reality_text_v1'}
+ const prior={id:'one',status:'active',dialogueProtocol:1,answers:{one:'original'},pendingFollowup:pending}
+ assert.equal(reconcileFollowupDraft(prior,prior,pending,'my note'),'retain')
+ assert.equal(reconcileFollowupDraft(prior,{...prior,answers:{one:'changed'}},pending,'my note'),'confirm_discard')
+ assert.equal(reconcileFollowupDraft(prior,{...prior,id:'two'},pending,'my note'),'confirm_discard')
+ assert.equal(reconcileFollowupDraft(prior,{...prior,status:'safety_hold'},pending,'my note'),'safety_hold')
+})
+test('follow-up refresh recognizes a saved acknowledgement without silently discarding a different draft',()=>{
+ const pending={questionId:'one',key:'reality_text_v1'}
+ const prior={id:'one',status:'active',dialogueProtocol:1,answers:{one:'original'},pendingFollowup:pending}
+ const saved={...prior,pendingFollowup:undefined,reflections:{one:{key:'reality_text_v1',text:'my note'}}}
+ assert.equal(reconcileFollowupDraft(prior,saved,pending,' my note '),'saved')
+ assert.equal(reconcileFollowupDraft(prior,saved,pending,'different note'),'confirm_discard')
+ assert.equal(reconcileFollowupDraft(prior,saved,pending,''),'none')
 })
 test('reconnect does not transfer a draft to another or non-active session',()=>{
  for(const current of [{...prior,id:'session-b'}, {...prior,status:'safety_hold'},null]){
