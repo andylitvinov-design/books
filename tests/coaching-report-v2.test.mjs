@@ -89,6 +89,55 @@ test('separate topic and desired outcome answers in the same GROW stage stay dis
   assert.equal(validateCoachingReportV2(report).valid, true)
 })
 
+test('the ten-section report keeps unavailable sections explicit and evidence-linked', () => {
+  const expandedQuestions = [
+    {id:'topic',stage:'goal'},
+    {id:'outcome',stage:'goal'},
+    {id:'reality',stage:'reality'},
+    {id:'obstacle',stage:'reality'},
+    {id:'resources',stage:'resources'},
+    {id:'discovery',stage:'review'},
+    {id:'new_perspective',stage:'review'},
+    {id:'decision',stage:'will'},
+    {id:'first_step',stage:'will'},
+    {id:'when',stage:'when'},
+  ]
+  const report = buildCoachingReportV2Draft({
+    session: completedSession({
+      answers: {
+        topic:'Career change',
+        outcome:'Choose one next direction',
+        reality:'I am considering two roles',
+        obstacle:'I do not have enough information',
+        resources:'A trusted colleague can advise me',
+        discovery:'I need to compare the real requirements',
+        new_perspective:'I can test one option before deciding',
+        decision:'I may speak with my colleague',
+        first_step:'Prepare three questions for my colleague',
+        when:'Friday afternoon',
+      },
+    }),
+    questions: expandedQuestions,
+  })
+
+  assert.deepEqual(Object.keys(report.sections), [
+    'sessionOverview','initialSituation','desiredOutcome','keyDiscoveries','mainObstacles',
+    'strengthsResources','newPerspective','decisions','actionPlan','followUp',
+  ])
+  assert.equal(report.sections.desiredOutcome.text,'Choose one next direction')
+  assert.equal(report.sections.mainObstacles.text,'I do not have enough information')
+  assert.equal(report.sections.strengthsResources.text,'A trusted colleague can advise me')
+  assert.equal(report.sections.keyDiscoveries.text,'I need to compare the real requirements')
+  assert.equal(report.sections.newPerspective.text,'I can test one option before deciding')
+  assert.equal(report.sections.followUp.text,'Friday afternoon')
+  assert.equal(report.sections.decisions.status,'not_captured',
+    'an exploratory answer is not treated as a confirmed decision')
+  for (const section of Object.values(report.sections)) {
+    for (const id of section.evidenceIds) assert.ok(report.evidence.some(item=>item.evidenceId===id))
+  }
+  assert.equal(validateCoachingReportV2(report).valid,true)
+})
+
 test('only an already-approved client action is represented as accepted and confirmed', () => {
   const report = buildCoachingReportV2Draft({
     session: completedSession({
