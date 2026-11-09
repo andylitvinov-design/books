@@ -15,7 +15,7 @@ export default function CoachingContextReview({locale='en',context,onConfirm,onS
  const t=TEXT[locale]||TEXT.en;
  const [values,setValues]=useState(()=>Object.fromEntries(FIELDS.map(key=>[key,lines(context?.[key])])));
  const [style,setStyle]=useState(context?.preferred_coaching_style||'');
- useEffect(()=>{setValues(Object.fromEntries(FIELDS.map(key=>[key,lines(context?.[key])]));setStyle(context?.preferred_coaching_style||'')},[context]);
+ useEffect(()=>{setValues(Object.fromEntries(FIELDS.map(key=>[key,lines(context?.[key])])));setStyle(context?.preferred_coaching_style||'')},[context]);
  if(!context)return null;
  function confirm(){
   const next={version:1,generatedAt:context.generatedAt,reviewStatus:'client_confirmed',
