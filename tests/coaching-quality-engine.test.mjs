@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   COACHING_QA_RUBRIC,
-  aggregateCoachingEconomics,\n  aggregateCoachingQuality,\n  calculateSessionEconomics,
+  aggregateCoachingEconomics,
+  aggregateCoachingQuality,
+  calculateSessionEconomics,
   evaluateCoachingSessionQuality,
   evaluateSessionTimeline,
   listMandatoryCoachingQAScenarios,
