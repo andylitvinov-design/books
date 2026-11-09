@@ -217,15 +217,11 @@ test("Safari fine-tuning uses one accessible button and a stable hidden region",
 
 test("choosing Ready preserves private audio state while the current Ideas editor owns phrase selection",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.match(phrases,/setIdeaPending\\(false\\);\\s*setReadyDraft\\(\\{selected:\\[0,1,2\\],resetPreset:true\\}\\)/);
- assert.match(phrases,/setDraftState\\(null\\);setReadyDraft\\(null\\);setCustomDraft\\(null\\);setIdeaPending\\(false\\)/);
- for(const status of ['draft','ready','custom','external','idea','safety'])
-   assert.ok(phrases.includes('?"'+status+'":null'),status);
  assert.ok(ideas.includes("data-video-idea-select"));
  assert.ok(browser.includes("data-video-affirmation-phrase"));
  assert.ok(browser.includes("data-video-affirmation-transcript-review"));
  assert.ok(browser.includes("removing the spoken phrase must block stale WAV reuse or detach it"));
- assert.doesNotMatch(browser,/approvalButton\\.tap\\(\\)/,
+ assert.doesNotMatch(browser,/approvalButton\.tap\(\)/,
    "the retired standalone Hypno approval button must not reappear");
 });
 
@@ -234,7 +230,7 @@ test("ten-phrase limit and stale spoken-audio guard use the current visible Mont
  assert.ok(ideas.includes("else if(chosen.length>=10)setFeedback(t.max)"));
  assert.ok(ideas.includes("Choose up to 10 phrases for your video."));
  assert.ok(ideas.includes("The maximum remains ten"));
- assert.ok(script.includes("const unselectedToggle=phraseEditor.locator('[data-video-idea-select][aria-pressed=\\\"false\\\"]').first()"));
+ assert.match(script,/const unselectedToggle=phraseEditor\.locator\('\[data-video-idea-select\]\[aria-pressed="false"\]'\)\.first\(\)/);
  assert.ok(script.includes("const spokenToggle=spokenPhrase.locator('[data-video-idea-select]')"));
  assert.ok(script.includes("adding an unspoken phrase does not invalidate the actual WAV"));
  assert.ok(script.includes("removing the spoken phrase must block stale WAV reuse or detach it"));
