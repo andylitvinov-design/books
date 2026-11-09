@@ -31,7 +31,7 @@
       '<script src="/gpt-agent-counter.js?v=20261106-grid-v1" defer><\/script>';
     // HH_CI_VERIFIED_LOAD_V2: one user-requested census; never launches workflows.
     // The two existing jobs cards share the VERIFIED server census, no duplicate graphs.
-    additions += '<script src="/ci-jobs-bridge.js?v=20261108-jobs-sync-v1" defer><\/script>';
+    additions += '<script src="/ci-jobs-bridge.js?v=20261109-workflow-labels-v1" defer><\/script>';
     additions += '<link rel="stylesheet" href="/pr-lifecycle-ribbon.css?v=20261107-journey-v2">'+
       '<script src="/pr-lifecycle-ribbon.js?v=20261107-journey-v2" defer><\/script>';
     // Historical attribution may be missing from legacy.html.
