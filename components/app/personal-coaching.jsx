@@ -174,7 +174,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const isOverload=session?.schemeKey==='grow_overload_20_v1'
   const requiresWrittenPlan=Boolean(scheme?.requiredCustomPlan && (isOverload?question?.stepKey==='will':index===activeQuestions.length-1))
   const planHint=isOverload?(lang==='ru'?'Опишите свой конкретный первый шаг.':lang==='es'?'Describe tu primer paso concreto.':'Describe your own concrete first step.'):langCopy.woop
-  const quickChoices=coachingQuickChoicesAllowed(question,index)
+  const quickChoices=coachingQuickChoicesAllowed(question,index,{allowReview:isOverload})
   const previousQuestion=activeQuestions[index-1]
   const conversationTurn=coachingConversationTurn({
     question,previousQuestion,previousAnswer:session?.answers?.[previousQuestion?.id],
