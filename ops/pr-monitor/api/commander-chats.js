@@ -57,15 +57,20 @@ module.exports=async function(req,res){
    else if(name==='attach'){action='commander_attach_event';body={issueNumber:body.issueNumber,eventId:body.eventId,url:body.url}}
    else if(name==='run'){
     action='commander_start_run';
-    if(body.executor==='hermes'&&(typeof body.modelId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(body.modelId)))return sendJson(res,400,{error:'VERIFIED_FREE_MODEL_REQUIRED'});
+    if(body.executor==='local'&&body.modelId!=='owned-default')
+      return sendJson(res,400,{error:'OWNED_DIRECTOR_MODEL_REQUIRED'});
+    if(body.executor==='hermes'&&(typeof body.modelId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(body.modelId)))
+      return sendJson(res,400,{error:'VERIFIED_FREE_MODEL_REQUIRED'});
     if(body.confirmGitHubWrite!==undefined&&typeof body.confirmGitHubWrite!=='boolean')return sendJson(res,400,{error:'INVALID_GITHUB_WRITE_CONSENT'});
+    if(body.executor==='local'&&body.confirmGitHubWrite===true)
+      return sendJson(res,403,{error:'OWNED_DIRECTOR_SOURCE_WRITE_NOT_AVAILABLE'});
     body={issueNumber:body.issueNumber,runId:body.runId,idempotencyKey:body.idempotencyKey,executor:body.executor,message:body.message,modelId:body.modelId||'',confirmGitHubWrite:body.executor==='hermes'&&body.confirmGitHubWrite===true};
    }
    else return sendJson(res,400,{error:'UNKNOWN_ACTION'});
   }
   const result=await callStore(req,action,body,{method:req.method});
   if(result.status===200&&action==='status')return sendJson(res,200,{schema:'HH_COMMANDER_THREAD_V1',
-   authenticated:true,privateStoreConfigured:true,storage:'SUPABASE_PRIVATE',executorDispatch:result.data.executorDispatch===true,executionRunLedger:result.data.executionRunLedger===true,dispatchReason:result.data.dispatchReason||'NO_VERIFIED_EXECUTOR_RUNTIME',liveVerification:false,
+   authenticated:true,privateStoreConfigured:true,storage:'SUPABASE_PRIVATE',executorDispatch:result.data.executorDispatch===true,dispatchAvailable:result.data.dispatchAvailable===true,dispatchMode:result.data.dispatchMode||null,executionRunLedger:result.data.executionRunLedger===true,dispatchReason:result.data.dispatchReason||'NO_VERIFIED_EXECUTOR_RUNTIME',liveVerification:false,
    observedAt:result.data.checkedAt||new Date().toISOString()});
   return sendJson(res,result.status,result.data);
  }catch(error){return sendJson(res,error.status||503,{error:error.code||'PRIVATE_STORE_UNAVAILABLE'})}
