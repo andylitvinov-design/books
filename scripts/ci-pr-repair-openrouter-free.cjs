@@ -148,7 +148,7 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
     throw Error('FREE_AI_OPENROUTER_BILLING_NONZERO');
   if(completion?.error)throw Error('FREE_AI_OPENROUTER_PROVIDER_ERROR');
   if(!Array.isArray(completion?.choices)||completion.choices.length!==1||
-     !completion.choices[0]?.message||completion.choices[0].message.role!=='assistant')
+     !completion.choices[0]?.message||\n     (completion.choices[0].message.role!==undefined&&completion.choices[0].message.role!=='assistant'))
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
   const choice=completion.choices[0];
   if(choice.finish_reason==='length')
