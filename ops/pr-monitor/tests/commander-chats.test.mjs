@@ -436,7 +436,7 @@ test('free Hermes model catalogue authenticates owner before its read-only publi
  const request=api.indexOf("const response=await fetch('https://openrouter.ai/api/v1/models");
  assert.ok(owner>=0&&request>owner);
  assert.ok(api.includes("if(owner.data?.owner!==true)"));
- assert.ok(api.includes("entry.id.endsWith(':free')")||api.includes("m.id.endsWith(':free')")||api.includes("ZERO_PRICE_MODEL"));
+ assert.ok(api.includes("m?.id!=='string'||!m.id.endsWith(':free')")||api.includes("ZERO_PRICE_MODEL"));
  assert.doesNotMatch(api,/Authorization:\s*'Bearer '|OPENROUTER_API_KEY/);
 });
 test('verified GitHub CI reports carry the top-level source URL consumed by the chat renderer',()=>{
