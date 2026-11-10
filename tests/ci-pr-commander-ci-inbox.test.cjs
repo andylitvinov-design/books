@@ -74,3 +74,31 @@ test('Commander execution verifies live zero pricing before dispatch and rejects
   'current live catalog is checked before any dispatch ledger or remote side effect');
  assert.match(handler,/!modelVerified\?modelVerificationReason/);
 });
+
+const autotaskMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261110140500_commander_ci_autotask_v1.sql'),'utf8');
+
+test('verified CI event creates one active review-only Commander task and linked chat',()=>{
+ assert.match(autotaskMigration,/AFTER INSERT ON business_brain\.commander_ci_event_inbox/);
+ assert.match(autotaskMigration,/oidc_workflow_ref <> 'andylitvinov-design\/books\/\.github\/workflows\/hh-pr-direct-core-failure\.yml@refs\/heads\/codex\/bootstrap-books'/);
+ assert.match(autotaskMigration,/can_read = true AND can_write = true/);
+ assert.match(autotaskMigration,/project_key = 'agent-commander'/);
+ assert.match(autotaskMigration,/\(task_id,owner_id,project_key,title,payload,state,revision\)/);
+ assert.match(autotaskMigration,/'queued_review',1/);
+ assert.match(autotaskMigration,/INSERT INTO business_brain\.commander_chats/);
+ assert.match(autotaskMigration,/'AWAITING_EXECUTOR_NOT_DISPATCHED'/);
+ assert.match(autotaskMigration,/'executionAuthorized',false/);
+ assert.match(autotaskMigration,/'sourceWriteAuthorized',false/);
+ assert.match(autotaskMigration,/'agentStarted',false/);
+});
+
+test('CI task creation is idempotent, preserves existing tasks and blocks ambiguous ownership',()=>{
+ assert.match(autotaskMigration,/CREATE UNIQUE INDEX IF NOT EXISTS commander_ci_one_active_autotask_per_pr/);
+ assert.match(autotaskMigration,/payload->>'ciIncidentKey'/);
+ assert.match(autotaskMigration,/state NOT IN \('completed','superseded'\)/);
+ assert.match(autotaskMigration,/ORDER BY updated_at DESC LIMIT 2/);
+ assert.match(autotaskMigration,/'AMBIGUOUS_TASKS'/);
+ assert.match(autotaskMigration,/ON CONFLICT DO NOTHING/);
+ assert.match(autotaskMigration,/ON CONFLICT \(task_id\) DO NOTHING/);
+ assert.match(autotaskMigration,/associated_task_id=v_task/);
+ assert.doesNotMatch(autotaskMigration,/github\.rest\.|workflow_dispatch|rerun-failed-jobs/);
+});
