@@ -14,6 +14,12 @@ module.exports=async function(req,res){
    else if(name==='list')action='commander_list_chats';
    else if(name==='read'){action='commander_read_chat';body.issueNumber=Number(url.searchParams.get('issue'))}
    else if(name==='proof'){action='commander_pr_proof';body.pr=Number(url.searchParams.get('pr'))}
+   else if(name==='ci_events'){
+    action='commander_list_ci_events';
+    const prValue=url.searchParams.get('pr'),limitValue=url.searchParams.get('limit');
+    if(prValue!==null)body.pr=Number(prValue);
+    if(limitValue!==null)body.limit=Number(limitValue);
+   }
    else return sendJson(res,400,{error:'UNKNOWN_ACTION'});
   }else{
    body=req.body;if(typeof body==='string')try{body=JSON.parse(body)}catch{return sendJson(res,400,{error:'INVALID_JSON'})}

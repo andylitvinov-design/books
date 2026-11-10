@@ -69,20 +69,20 @@ test('failure diagnostics are bounded and classified without logs or source cont
   assert.deepEqual(result.failedSteps, ['typecheck / tsc --noEmit']);
 });
 
-test('bridge does not send when credentials or origin are absent', async () => {
+test('bridge does not send when GitHub OIDC token is absent', async () => {
   let calls = 0;
   const warnings = [];
   const result = await sendWorkflowFailure({
     github: {}, context: {}, core: { warning: (v) => warnings.push(v) },
-    origin: '', sharedSecret: '', fetchImpl: async () => { calls++; }
+    oidcToken: '', fetchImpl: async () => { calls++; }
   });
   assert.equal(result.sent, false);
-  assert.equal(result.outcome, 'BRIDGE_DISABLED_MISSING_SECRET_OR_ORIGIN');
+  assert.equal(result.outcome, 'BRIDGE_DISABLED_MISSING_OIDC_TOKEN');
   assert.equal(calls, 0);
   assert.equal(warnings.length, 1);
 });
 
-test('bridge sends authenticated JSON and reports only a safe receipt', async () => {
+test('bridge sends GitHub OIDC-authenticated event to the fixed Commander inbox endpoint', async () => {
   const pr = makePR();
   const github = {
     rest: {
@@ -98,17 +98,19 @@ test('bridge sends authenticated JSON and reports only a safe receipt', async ()
     github,
     context: { repo: { owner: 'andylitvinov-design', repo: 'books' }, payload: { workflow_run: makeRun() } },
     core: { info: (v) => info.push(v), warning: () => {} },
-    origin: 'https://hermes.example.com', sharedSecret: 'test-secret',
+    oidcToken: 'x'.repeat(180),
     fetchImpl: async (url, options) => {
       request = { url, options };
-      return { ok: true, status: 202, text: async () => JSON.stringify({ accepted: true, outcome: 'RECORDED', pr_number: 44 }) };
+      return { ok: true, status: 202, text: async () => JSON.stringify({ accepted: true, outcome: 'RECORDED', pr_number: 44, inbox_id: 'abc' }) };
     }
   });
-  assert.equal(request.url, 'https://hermes.example.com/webhooks/github/workflow-run');
-  assert.equal(request.options.headers['x-hermes-secret'], 'test-secret');
+  assert.equal(request.url, 'https://shervdixkaxurnaecioe.supabase.co/functions/v1/agent-commander-private-store-v1/webhooks/github-workflow-run');
+  assert.equal(request.options.headers.authorization, 'Bearer ' + 'x'.repeat(180));
+  assert.equal(request.options.headers['x-hermes-secret'], undefined);
   assert.equal(JSON.parse(request.options.body).diagnostics.category, 'TYPESCRIPT');
   assert.equal(result.accepted, true);
   assert.equal(result.prNumber, 44);
+  assert.equal(result.inboxId, 'abc');
   assert.equal(info.length, 1);
 });
 

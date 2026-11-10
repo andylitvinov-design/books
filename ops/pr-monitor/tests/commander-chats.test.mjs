@@ -98,3 +98,16 @@ test('monitor-side owner token handoff is bounded, retryable and removes bearer 
  assert.match(auth,/if\(response\.status===401\|\|response\.status===403\)sessionToken=''/);
  assert.match(auth,/HttpOnly|api\/commander-session/);
 });
+
+test('owner chat API exposes a bounded CI event inbox query through the private store only', async () => {
+ const backend=src('api/commander-chats.js');
+ assert.match(backend,/name==='ci_events'/);
+ assert.match(backend,/commander_list_ci_events/);
+ assert.match(backend,/body\.limit=Number\(limitValue\)/);
+ assert.match(backend,/callStore\(req,action,body/);
+ assert.doesNotMatch(backend,/HERMES_SHARED_SECRET|service_role|SUPABASE_DB_URL/);
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.match(edge,/action==="commander_list_ci_events"/);
+ assert.match(edge,/business_brain\.commander_ci_event_inbox/);
+ assert.match(edge,/Math\.min\(100,Number\(body\.limit\)\|\|30\)/);
+});

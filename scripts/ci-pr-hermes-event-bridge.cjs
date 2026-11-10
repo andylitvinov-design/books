@@ -77,29 +77,29 @@ function buildDiagnostics(jobs) {
 }
 
 async function sendWorkflowFailure({
-  github, context, core, fetchImpl = global.fetch,
-  origin = process.env.HERMES_ORIGIN_URL || '',
-  sharedSecret = process.env.HERMES_SHARED_SECRET || ''
+  github, context, core, oidcToken = '', fetchImpl = global.fetch,
+  endpoint = 'https://shervdixkaxurnaecioe.supabase.co/functions/v1/agent-commander-private-store-v1/webhooks/github-workflow-run'
 }) {
   const workflowRun = context?.payload?.workflow_run;
-  if (!origin || !sharedSecret) {
-    const result = { outcome: 'BRIDGE_DISABLED_MISSING_SECRET_OR_ORIGIN', sent: false };
-    core?.warning?.('HERMES_CI_EVENT_BRIDGE ' + JSON.stringify(result));
+  if (typeof oidcToken !== 'string' || oidcToken.length < 100) {
+    const result = { outcome: 'BRIDGE_DISABLED_MISSING_OIDC_TOKEN', sent: false };
+    core?.warning?.('COMMANDER_CI_EVENT_BRIDGE ' + JSON.stringify(result));
     return result;
   }
-  if (typeof fetchImpl !== 'function') throw new Error('HERMES_CI_EVENT_FETCH_UNAVAILABLE');
-
-  const parsedOrigin = new URL(origin);
-  if (parsedOrigin.protocol !== 'https:' || parsedOrigin.username || parsedOrigin.password ||
-      parsedOrigin.search || parsedOrigin.hash || !['', '/'].includes(parsedOrigin.pathname)) {
-    throw new Error('HERMES_ORIGIN_URL_MUST_BE_HTTPS_ORIGIN_ONLY');
+  if (typeof fetchImpl !== 'function') throw new Error('COMMANDER_CI_EVENT_FETCH_UNAVAILABLE');
+  const parsedEndpoint = new URL(endpoint);
+  if (parsedEndpoint.protocol !== 'https:' ||
+      parsedEndpoint.hostname !== 'shervdixkaxurnaecioe.supabase.co' ||
+      parsedEndpoint.pathname !== '/functions/v1/agent-commander-private-store-v1/webhooks/github-workflow-run' ||
+      parsedEndpoint.username || parsedEndpoint.password || parsedEndpoint.search || parsedEndpoint.hash) {
+    throw new Error('COMMANDER_CI_EVENT_ENDPOINT_NOT_ALLOWLISTED');
   }
 
   const { owner, repo } = context.repo;
   const association = await resolveExactPR({ github, owner, repo, workflowRun });
   if (!association.ok) {
     const result = { outcome: association.reason, sent: false, runId: workflowRun?.id || null };
-    core?.warning?.('HERMES_CI_EVENT_BRIDGE ' + JSON.stringify(result));
+    core?.warning?.('COMMANDER_CI_EVENT_BRIDGE ' + JSON.stringify(result));
     return result;
   }
 
@@ -112,10 +112,9 @@ async function sendWorkflowFailure({
     workflow_run: { ...workflowRun, pull_requests: [association.pullRequest] },
     diagnostics
   };
-  const endpoint = new URL('/webhooks/github/workflow-run', parsedOrigin).toString();
-  const response = await fetchImpl(endpoint, {
+  const response = await fetchImpl(parsedEndpoint.toString(), {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-hermes-secret': sharedSecret },
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + oidcToken },
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(10000)
   });
@@ -123,7 +122,7 @@ async function sendWorkflowFailure({
   let receipt = null;
   try { receipt = JSON.parse(bodyText); } catch { /* never echo a response body into Actions logs */ }
   if (!response.ok || !receipt || typeof receipt.accepted !== 'boolean') {
-    throw new Error('HERMES_CI_EVENT_HTTP_OR_RECEIPT_INVALID status=' + response.status);
+    throw new Error('COMMANDER_CI_EVENT_HTTP_OR_RECEIPT_INVALID status=' + response.status);
   }
   const result = {
     outcome: receipt.outcome || (receipt.accepted ? 'ACCEPTED' : 'REJECTED'),
@@ -131,10 +130,11 @@ async function sendWorkflowFailure({
     prNumber: Number.isSafeInteger(receipt.pr_number) ? receipt.pr_number : association.pullRequest.number,
     headSha: association.pullRequest.head.sha,
     runId: workflowRun.id,
+    inboxId: typeof receipt.inbox_id === 'string' ? receipt.inbox_id : null,
     endpointStatus: response.status
   };
-  if (receipt.accepted) core?.info?.('HERMES_CI_EVENT_BRIDGE ' + JSON.stringify(result));
-  else core?.warning?.('HERMES_CI_EVENT_BRIDGE ' + JSON.stringify(result));
+  if (receipt.accepted) core?.info?.('COMMANDER_CI_EVENT_BRIDGE ' + JSON.stringify(result));
+  else core?.warning?.('COMMANDER_CI_EVENT_BRIDGE ' + JSON.stringify(result));
   return result;
 }
 
