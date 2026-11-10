@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v2'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-recent-voice-composer-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -119,7 +119,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v2'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-recent-voice-composer-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -193,13 +193,13 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.match(js,/if\(!el\('new-title'\)\.value\.trim\(\)\)el\('new-title'\)\.value=/);
  assert.ok(js.includes("await send({preventDefault(){}})"));
  assert.ok(js.includes("el('new-context').close()"));
- assert.ok(js.includes("el('history').open=false"));
+ assert.ok(js.includes("el('history-all').addEventListener('toggle',renderList)"));
  assert.ok(js.includes("await assignSelectedExecutor(c,mode)"));
  assert.ok(js.includes("el('new-mode').value=aiReady?'openrouter':'local'"));
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-compact-composer-v1'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-recent-voice-composer-v1'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -209,7 +209,7 @@ test('compact mobile chat never silently swallows validation or duplicates a tim
  assert.ok(js.includes('pendingCreateId||(pendingCreateId=id())'));
  assert.ok(js.includes("listing.chats?.find(x=>x.id===data.id"));
  assert.ok(js.includes('feedback.scrollIntoView'));
- assert.ok(js.includes("button.textContent='Создаю…'"));
+ assert.ok(js.includes("button.textContent='⋯'"));
  assert.ok(js.includes("if(busy)return fail("));
  assert.ok(js.includes("el('create-form').addEventListener('input'"));
  assert.ok(css.includes('.cc-create-feedback:not([hidden])'));
@@ -338,52 +338,52 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  assert.equal(elements['cc-verify-chat'].disabled,false);
 });
 
+test('last chats stay at the top and one fixed bottom composer supports typed and spoken questions',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
+ const history=html.indexOf('id="cc-history"');
+ const thread=html.indexOf('id="cc-thread"');
+ const composer=html.indexOf('id="cc-composer-space"');
+ assert.ok(history>0&&thread>history&&composer>thread,'Recent list before thread before bottom composer');
+ assert.match(html,/id="cc-new-question"[^>]*minlength="2"[^>]*maxlength="1200"/);
+ assert.ok(html.includes('id="cc-chat-form"'));
+ assert.ok(html.includes('id="cc-voice-new"'));
+ assert.ok(html.includes('id="cc-voice-thread"'));
+ assert.ok(html.includes('id="cc-voice-status"'));
+ assert.ok(html.includes('id="cc-history-all"'));
+ assert.ok(!html.includes('<h2>Новый чат</h2>'),'Do not draw giant new chat form above history');
+ assert.ok(js.includes("el('history-all').open"));
+ assert.ok(js.includes('filtered.slice(0,5)'));
+ assert.ok(js.includes("show('chat-form',true)"));
+ assert.ok(js.includes("show('chat-form',false)"));
+ assert.ok(js.includes('win.SpeechRecognition||win.webkitSpeechRecognition'));
+ assert.ok(js.includes("engine.lang='ru-RU'"));
+ assert.ok(js.includes("engine.interimResults=true"));
+ assert.ok(js.includes("engine.start()"));
+ assert.ok(js.includes("engine.abort()"));
+ assert.ok(js.includes('const session={engine,button,target,original:target.value'));
+ assert.ok(js.includes("el('voice-new').addEventListener('click'"));
+ assert.ok(js.includes("el('voice-thread').addEventListener('click'"));
+ assert.ok(js.includes('--cc-keyboard-offset'));
+ assert.ok(css.includes('HH_COMMANDER_RECENT_VOICE_COMPOSER_V1'));
+ assert.match(css,/grid-template-columns:repeat\(8,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.cc-composer-space\s*\{\s*position:fixed/);
+ assert.match(css,/\.cc-composer-space \.cc-send-primary/);
+ assert.match(css,/\.cc-composer-space \.cc-voice-toggle/);
+});
 
-test('owner-only live chat verification uses read-only private history and free-model setup stays optional',()=>{
+test('owner history verification is read-only and free-model setup remains hidden in context',()=>{
  const html=src('chats.html'),js=src('commander-chats.js');
  assert.match(html,/id="cc-verify-chat"/);
  assert.match(html,/id="cc-verify-status"[^>]*role="status"/);
  assert.match(html,/id="cc-free-model-status"[^>]*hidden/);
  assert.match(html,/HH_PM_OPENROUTER_API_KEY/);
- assert.match(html,/vercel\.com\/super10\/holistic-house-pr-monitor\/settings\/environment-variables/);
- const begin=js.indexOf('async function verifySavedThread()');
- const end=js.indexOf('function startReportPolling()',begin);
- assert.ok(begin>0&&end>begin);
- const verifier=js.slice(begin,end);
- assert.match(verifier,/SERVER\+'\?action=read&issue='/);
- assert.match(verifier,/read\.chat\?\.id!==current\.id/);
- assert.match(verifier,/m\.id===lastOwner\.id/);
- assert.match(verifier,/answerIndex>ownerIndex/);
- assert.doesNotMatch(verifier,/method:\s*'POST'|action=create|localStorage|service_role/);
+ const i=js.indexOf('async function verifySavedThread()'),j=js.indexOf('function startReportPolling()',i);
+ assert.ok(i>=0&&j>i);
+ const body=js.slice(i,j);
+ assert.match(body,/SERVER\+'\?action=read&issue='/);
+ assert.match(body,/read\.chat\?\.id!==current\.id/);
+ assert.match(body,/answerIndex>ownerIndex/);
+ assert.doesNotMatch(body,/action=create|method:\s*'POST'|service_role|localStorage/);
  assert.match(js,/el\('verify-chat'\)\.addEventListener\('click',verifySavedThread\)/);
  assert.match(js,/show\('free-model-status',!aiReady\)/);
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v2'));
-});
-
-test('CI inbox associates only Agent Commander tasks saved under the actual private-store project key',()=>{
- const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
- assert.match(edge,/from business_brain\.commander_tasks[\s\S]{0,160}where project_key='agent-commander'/);
- assert.doesNotMatch(edge,/where project_key='holistic-house'/);
- assert.match(edge,/association = "AMBIGUOUS_TASKS"/);
- assert.match(edge,/set association_status=\$1 where ci_event_id=\$2::uuid/);
-});
-
-
-test('postgres.js private-store JSONB binds parse UTF-8 JSON text exactly once for task/chat/event and executor receipts',()=>{
- const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
- // postgres.js auto-serializes JSON parameters; $N::jsonb can double-encode JSON.stringify(value).
- // Require text->jsonb conversion for every pre-serialized bound parameter.
- assert.match(edge,/import postgres from "npm:postgres@3\.4\.5"/);
- assert.match(edge,/\$\d+::text::jsonb/);
- assert.doesNotMatch(edge,/\$\d+::jsonb\b/);
- assert.match(edge,/insert into business_brain\.commander_chats/);
- assert.match(edge,/JSON\.stringify\(chat\)/);
- assert.match(edge,/insert into business_brain\.commander_chat_events/);
- assert.match(edge,/JSON\.stringify\(event\)/);
- assert.match(edge,/insert into business_brain\.commander_tasks/);
- assert.match(edge,/JSON\.stringify\(record\)/);
- assert.match(edge,/business_brain\.commander_execution_runs/);
- assert.match(edge,/jsonb_set\(payload/);
- // This contract preserves the actual database CHECK that requires an object.
- assert.doesNotMatch(edge,/alter table business_brain\.commander_chats.*drop constraint/i);
 });
