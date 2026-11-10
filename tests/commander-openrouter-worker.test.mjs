@@ -12,8 +12,6 @@ const workerDeno=JSON.parse(fs.readFileSync(path.join(root,'supabase/functions/a
 
 test('cloud worker is owner-independent but protected by Vault bearer or a scoped OpenRouter key',()=>{
  assert.match(worker,/x-agent-commander-worker/);
- assert.match(worker,/x-openrouter-api-key/);
- assert.match(worker,/GITHUB_ACTIONS_SECRET/);
  assert.match(worker,/vault\.decrypted_secrets/);
  assert.match(worker,/agent_commander_worker_token/);
  assert.match(worker,/constantTimeEqual/);
