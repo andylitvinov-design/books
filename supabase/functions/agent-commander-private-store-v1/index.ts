@@ -1,5 +1,4 @@
-// Canonical source synchronized from active Supabase Edge Function v20.
-// Deployed SHA-256: ff6dbb9655392e93ca3d61ef1fb741538ed66d6b9d8d1c606fdaa0dab75c54f5. Owner-protected actions only; do not add client secrets. Keep this repository copy deployable and authoritative.
+// Synced from production Supabase Edge Function v19. Keep this repository copy deployable and authoritative.
 // Agent Commander private task/chat store. A valid Supabase user JWT and
 // business_brain.owner_access row are required for every request.
 import postgres from "npm:postgres@3.4.5";
@@ -387,7 +386,7 @@ function normalizeTrustedCoreFailure(body) {
   let classification = null;
   if (incoming !== undefined && incoming !== null) {
     if (!incoming || incoming.schema !== "HH_CI_ERROR_CLASSIFICATION_V1" ||
-        incoming.ruleset_version !== "1.0.0" || incoming.category !== category ||
+        incoming.ruleset_version !== "1.1.0" || incoming.category !== category ||
         !Number.isFinite(incoming.confidence) || incoming.confidence < 0 || incoming.confidence > 1 ||
         typeof incoming.reason_code !== "string" || !/^[A-Z0-9_]{3,90}$/.test(incoming.reason_code) ||
         typeof incoming.recommended_action !== "string" || incoming.recommended_action.length > 500 ||
@@ -619,11 +618,21 @@ async function handler(req){
       const modelId=typeof body.modelId==="string"?body.modelId:"";
       const validModel=MODEL_ID.test(modelId);
       const writeConfirmed=body.confirmGitHubWrite===true;
+      if(writeConfirmed&&executor!=="hermes")return reply(403,{error:"GITHUB_WRITE_REQUIRES_HERMES_EXECUTOR"},origin);
       const config=hermesConfiguration();
-      const canDispatch=Boolean(canUseHermes&&config&&validModel);
+      let modelVerified=false,modelVerificationReason="OPENROUTER_MODEL_PRICE_UNVERIFIED";
+      if(canUseHermes&&config&&validModel){
+        try{await verifyFreeModel(modelId);modelVerified=true;}
+        catch(error){
+          const code=String(error&&error.message||"");
+          modelVerificationReason=/^OPENROUTER_[A-Z0-9_]+$/.test(code)?code:"OPENROUTER_CATALOG_UNAVAILABLE";
+        }
+      }
+      const canDispatch=Boolean(canUseHermes&&config&&validModel&&modelVerified);
       let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
       if(canUseHermes)reasonCode=!config?"HERMES_RUNTIME_NOT_CONFIGURED":
-        !validModel?"HERMES_FREE_MODEL_NOT_SELECTED":"HERMES_DISPATCH_REQUESTED";
+        !validModel?"HERMES_FREE_MODEL_NOT_SELECTED":
+        !modelVerified?modelVerificationReason:"HERMES_DISPATCH_REQUESTED";
       else if(executor==="codex")reasonCode="CODEX_LOCAL_AGENT_OFFLINE_OR_REMOTE_APPROVAL_DISABLED";
       else if(executor==="repair-worker")reasonCode="REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE";
       else if(executor==="chatgpt-work")reasonCode="CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE";
