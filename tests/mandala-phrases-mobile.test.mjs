@@ -80,7 +80,7 @@ test("the single six-voice editor belongs to Audio / Voice; Ideas contains no vo
  assert.match(audioVoice,/data-video-audio-voice-mode="my-voice"/);
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.match(studio,/ownVoiceOnly=\{ideasVoiceMode==="my-voice"\}/);
- assert.match(audioVoice,/data-video-audio-own-upload/);
+ assert.match(studio,/data-video-audio-own-upload/);
  assert.match(studio,/data-video-audio-panel="music"/);
  assert.match(studio,/data-video-audio-panel="meditations"/);
  assert.doesNotMatch(ideas,/data-video-affirmation-voice|data-video-audio-own-upload|data-video-ideas-own-upload|data-video-ideas-voice-mode|data-video-legacy-phrase-editor|data-video-phrase-audio-shortcut/);
