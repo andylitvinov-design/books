@@ -280,3 +280,40 @@ test('missing signed task, malformed identity and sensitive scope never create a
  assert.throws(()=>promptReceipt(scope,'prompt',{}, {...identity,runAttempt:0}),/INVALID_CONTEXT/);
  assert.throws(()=>promptReceipt({...scope,files:['lib/private/clients.js']},'prompt',{},identity),/INVALID_CONTEXT/);
 });
+
+
+test('complete free source scope checks all changed paths, not a sliced eight-file shortlist',()=>{
+ const {assessCompleteFreeRepairScope,safeSourcePath}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const safe=Array.from({length:8},(_,i)=>({filename:'lib/repair-'+i+'.js',status:'modified'}));
+ const allowed=assessCompleteFreeRepairScope(safe);
+ assert.equal(allowed.allowed,true);
+ assert.equal(allowed.files.length,8);
+ assert.equal(assessCompleteFreeRepairScope([...safe,
+   {filename:'app/admin/growth-studio/actions.js',status:'modified'}]).reason,
+   'SOURCE_SCOPE_UNSAFE_FOR_FREE_AI',
+   'ninth file is checked even if the worker would select only eight');
+ assert.equal(assessCompleteFreeRepairScope([...safe,
+   {filename:'lib/repair-extra.js',status:'modified'}]).allowed,false,
+   'more than eight eligible sources requires a different owner strategy');
+ assert.equal(assessCompleteFreeRepairScope([
+   {filename:'.github/workflows/ci.yml',status:'modified'},safe[0]]).allowed,false);
+ assert.equal(assessCompleteFreeRepairScope([
+   {filename:'package-lock.json',status:'modified'},safe[0]]).allowed,false);
+ assert.equal(assessCompleteFreeRepairScope([
+   safe[0],{filename:'tests/repair-contract.test.cjs',status:'modified'},
+   {filename:'docs/repair-notes.md',status:'modified'}
+ ]).allowed,true,'docs and separate tests remain read-only inputs');
+ for(const filename of [
+   'lib/growth-studio/meta-instagram.mjs','lib/growth-studio/instagram-publisher.mjs',
+   'lib/meta-facebook.mjs','lib/oauth-client.mjs','components/card.test.tsx',
+   'components/card.spec.ts','lib/fixtures/repair-case.js'
+ ])assert.equal(safeSourcePath(filename),false,filename);
+ assert.equal(safeSourcePath('lib/repair-demo.js'),true);
+ assert.equal(safeSourcePath('components/site-navigation.tsx'),true);
+ assert.equal(assessCompleteFreeRepairScope([
+   {filename:'lib/repair-demo.js',status:'renamed'}]).allowed,false,
+   'a moved source is never automatically edited');
+ assert.equal(assessCompleteFreeRepairScope(
+   Array.from({length:100},(_,i)=>({filename:'lib/repair-'+i+'.js',status:'modified'}))
+ ).allowed,false,'incomplete paginated inventory fails closed');
+});

@@ -1693,3 +1693,22 @@ test('owner PM exact dispatch declares UUID and rejects mismatched inputs before
  assert.match(workflow,/let reportResult,report;/);
  assert.match(workflow,/!dryRun && !manualTarget/);
 });
+
+
+test('dispatcher refuses ninth unsafe source BEFORE task reservation, dispatch and model start',async()=>{
+ const current=pr(6432,'repair',{title:'fix: mixed public source and owner-only publisher'});
+ const f=fixture([current],{comments:{6432:[proof()]}});
+ f.github.rest.pulls.listFiles=async()=>({data:[
+   ...Array.from({length:8},(_,i)=>({filename:'lib/repair-'+i+'.js',status:'modified'})),
+   {filename:'lib/growth-studio/meta-instagram.mjs',status:'modified'}
+ ]});
+ f.github.rest.issues.addAssignees=async()=>({data:{}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(result.manualSourceEscalations,1);
+ assert.equal(result.blocked.SOURCE_SCOPE_UNSAFE_FOR_FREE_AI,1);
+ assert.deepEqual(f.calls.dispatched,[]);
+ assert.ok(!f.calls.reserved.some(c=>c.body.includes('"state":"RESERVED"')));
+ assert.ok(f.calls.reserved.some(c=>c.body.includes('"reason_code":"SOURCE_SCOPE_UNSAFE_FOR_FREE_AI"')));
+ assert.ok(f.calls.labels.some(c=>c.labels.includes('hh:repair-manual')));
+});

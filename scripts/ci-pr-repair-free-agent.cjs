@@ -14,11 +14,46 @@ const PROMPT_TEMPLATE_VERSION='HH_PR_FREE_REPAIR_PROMPT_V1';
 const RULESET_VERSION=require('./ci-pr-error-rules.v1.json').version;
 const SOURCE=/^(?:app|components|lib|scripts)\/(?:[A-Za-z0-9_()\[\].-]+\/)*[A-Za-z0-9_.-]+\.(?:cjs|mjs|js|jsx|ts|tsx)$/;
 const SENSITIVE=/(^|[\/_.-])(?:api|auth|security|privacy|private|payment|billing|checkout|rls|secret|token|consent|crm|messenger|messages|client|contact|email|phone|order|booking|consultation|session|storage|health|admin|account|profile|wallet|migration|supabase|ci)(?=$|[\/_.-])/i;
+// Prohibited side-effect integrations and in-tree test fixtures never enter
+// the unprivileged free-model source-fix lane, even when their path is under lib.
+const SOCIAL_PUBLISHING=/(^|[\/_.-])(?:meta|instagram|facebook|publisher|oauth|webhook|growth-studio)(?=$|[\/_.-])/i;
+const COLOCATED_TEST=/(?:^|\/)(?:__tests__|__mocks__|__snapshots__|fixtures)(?:\/|$)|(?:^|\/)[^/]+\.(?:test|spec|stories)\.(?:cjs|mjs|js|jsx|ts|tsx)$/i;
 function safeSourcePath(file){
  return typeof file==='string' && file.length<=230 && SOURCE.test(file) &&
    !file.includes('..') && !file.includes('//') && !SENSITIVE.test(file) &&
+   !SOCIAL_PUBLISHING.test(file) && !COLOCATED_TEST.test(file) &&
    !file.startsWith('components/app/') && !file.startsWith('lib/practitioners/') &&
    (!file.startsWith('scripts/') || file.startsWith('scripts/verify-'));
+}
+/**
+ * Inspect the COMPLETE trusted changed-file inventory, not only the first
+ * eight filtered paths. A ninth sensitive source, changed workflow or config
+ * must never be hidden by safeFiles(). A read-only owner handoff is preferred.
+ * Tests/docs are evidence inputs and are NOT patch targets.
+ */
+function assessCompleteFreeRepairScope(items){
+ const unavailable={allowed:false,reason:'SOURCE_SCOPE_NOT_ACTIONABLE',files:[]};
+ const prohibited={allowed:false,reason:'SOURCE_SCOPE_UNSAFE_FOR_FREE_AI',files:[]};
+ if(!Array.isArray(items)||!items.length||items.length>=100)return unavailable;
+ const files=[];
+ const sourceExt=/\.(?:cjs|mjs|js|jsx|ts|tsx)$/i;
+ const criticalRoot=/^(?:package(?:-lock)?\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|vercel\.json|tsconfig\.json|next\.config\.[cm]?js|\.env(?:\.|$))/i;
+ for(const entry of items){
+   if(!entry||typeof entry.filename!=='string'||!entry.filename||
+     typeof entry.status!=='string')return prohibited;
+   const file=entry.filename;
+   if(file.startsWith('.github/')||file.startsWith('supabase/')||
+     file.startsWith('ops/pr-monitor/api/')||criticalRoot.test(file))
+     return prohibited;
+   if(!sourceExt.test(file))continue;
+   if(file.startsWith('tests/')||file.includes('/__tests__/'))continue;
+   if(!['added','modified'].includes(entry.status)||!safeSourcePath(file))
+     return prohibited;
+   files.push(file);
+ }
+ if(!files.length)return unavailable;
+ if(files.length>MAX_FILES||new Set(files).size!==files.length)return prohibited;
+ return {allowed:true,reason:'SOURCE_SCOPE_SAFE',files};
 }
 function sourceScope(env=process.env){
  let files;try{files=JSON.parse(env.REPAIR_FILES_JSON||'null');}catch{}
@@ -514,6 +549,6 @@ async function main(){
  }
 }
 if(require.main===module)main();
-module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
+module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
  noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch};
