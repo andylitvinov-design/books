@@ -134,7 +134,7 @@ test("topic corrections route through explicit conversation intelligence and ret
     ["No sobre amor sino sobre trabajo","es","work_money",/trabajo y el dinero/iu],
   ]){
     const r=ruleConversationReply({message,locale});
-    assert.equal(r.id,"coherent_topic",message);
+    assert.equal(r.id,"conversation_correction",message);
     assert.equal(r.source,"conversation-intelligence",message);
     assert.equal(r.understanding.act,"correction",message);
     assert.equal(r.understanding.topic,topic,message);
