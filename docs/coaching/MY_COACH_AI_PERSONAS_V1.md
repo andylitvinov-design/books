@@ -46,3 +46,7 @@
 - The existing Services menu remains reachable; My Coach is separate from both Services and the human `/masters` directory.
 - The shared mobile Video Studio acceptance script uses the published Ideas → Personalization → advanced Voice controls; no legacy top-level Voice tab is assumed.
 - **Publication gate:** never claim LIVE from a passed unit test or source commit alone. Verify the exact PR head in GitHub Actions, then merge and check a READY production Vercel deployment for the resulting merge SHA, including `/ru/my-coach`, `/en/my-coach` and `/es/my-coach`.
+
+### Exact-head CI confirmation
+
+The existing release checks run against the *current* pull-request commit, not against an earlier successful revision. In particular, `hh-specialist` rejects a changed PR head, and the Library/IA/Public Services/browser checks remain required until they finish successfully. A GitHub-side commit or auto-merge setting alone is **not** evidence of deployment.
