@@ -132,7 +132,9 @@ async function verifyWorkspaceHydration(browser,locale){
     await ideasConceptTab.tap();
     const concept=page.locator("[data-video-ideas-concept-panel]");
     await expect(concept).toBeVisible();
-    await expect(concept.locator("[data-video-concept-summary]")).toBeVisible();
+    await expect(concept.locator("[data-video-concept-paragraph]")).toBeVisible();
+    await expect(concept.locator("[data-video-concept-all-parameters]")).toBeVisible();
+    await expect(concept.locator("[data-concept-parameter]")).toHaveCount(38);
     await concept.locator("[data-video-concept-edit]").click();
     await expect(page.locator("[data-video-concept-auth-overlay]")).toBeVisible();
     await page.locator("[data-video-concept-auth-close]").click();
