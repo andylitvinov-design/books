@@ -268,7 +268,7 @@ async function inspect(browserType,locale,width){
       ["practice",prefix+"/holistic-support/mobile","practice"],
       ["video",prefix+"/holistic-support/mandala","video"],
       ["ai",prefix+"/app/messages?section=ai","ai"],
-      ["coach",prefix+"/my-coach","coach"],
+      ["coach",prefix+"/masters","coach"],
       ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait","profile"],
       ["services",prefix+"/services","services"],
       ["services-review",prefix+"/services/free-situation-review","services"],
