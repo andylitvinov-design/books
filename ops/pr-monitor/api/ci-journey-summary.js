@@ -134,6 +134,7 @@ function summarizePR(pr,runs){
      waveRows.push({kind:relation,started_at:new Date(prev).toISOString(),
        ended_at:new Date(a).toISOString(),duration_ms:duration,
        prior_conclusion:typeof lastFinished?.conclusion==='string'?lastFinished.conclusion:'unknown',
+       next_run_queued_at:new Date(a).toISOString(),
        after_failure:['failure','timed_out','startup_failure'].includes(lastFinished?.conclusion),
        prior_job_conclusions:Object.fromEntries((lastFinished?.jobs||[])
          .filter(j=>typeof j?.name==='string'&&typeof j?.conclusion==='string')
@@ -279,16 +280,19 @@ function report(store,h,now=Date.now(),offsetHours=0){
  }));
  const gapSamples=periodWaveRows.map(w=>w.duration_ms)
    .filter(n=>Number.isFinite(n)&&n>0);
- const ciRuns=periodRuns.length,repeatWaves=periodWaveRows.length;
+ const periodTransitionRows=periodWaveRows.filter(w=>{
+   const queued=t(w.next_run_queued_at);return queued!==null&&queued>=cutoff&&queued<periodEnd;
+ });
+ const ciRuns=periodRuns.length,repeatWaves=periodTransitionRows.length;
  const periodCounts={
-   new_head:periodWaveRows.filter(w=>w.kind==='new_head').length,
-   same_head:periodWaveRows.filter(w=>w.kind==='same_head').length,
-   unverified_head:periodWaveRows.filter(w=>w.kind==='unverified_head').length
+   new_head:periodTransitionRows.filter(w=>w.kind==='new_head').length,
+   same_head:periodTransitionRows.filter(w=>w.kind==='same_head').length,
+   unverified_head:periodTransitionRows.filter(w=>w.kind==='unverified_head').length
  };
- const afterFailed=periodWaveRows.filter(w=>w.after_failure===true).length;
- const afterCoreFailed=periodWaveRows.filter(w=>w.after_core_failure===true).length;
- const afterSpecialistFailed=periodWaveRows.filter(w=>w.after_specialist_failure===true).length;
- const afterMergeGateFailed=periodWaveRows.filter(w=>w.after_merge_gate_failure===true).length;
+ const afterFailed=periodTransitionRows.filter(w=>w.after_failure===true).length;
+ const afterCoreFailed=periodTransitionRows.filter(w=>w.after_core_failure===true).length;
+ const afterSpecialistFailed=periodTransitionRows.filter(w=>w.after_specialist_failure===true).length;
+ const afterMergeGateFailed=periodTransitionRows.filter(w=>w.after_merge_gate_failure===true).length;
  const clippedAtWindowStart=periodWaveRows.filter(w=>w.clipped_at_window_start).length;
  const clippedAtWindowEnd=periodWaveRows.filter(w=>w.clipped_at_window_end).length;
  const afterSuccess=periodWaveRows.filter(w=>w.kind==='new_head'&&w.prior_conclusion==='success').length;
