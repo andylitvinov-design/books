@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
 test("alternative answers use only the explicitly selected on-device model",()=>{
   const chat=read("components/holistic-agent-chat.tsx");
-  assert.match(chat,/mode==="device"&&data\.browserModelAllowed&&data\.decision/);
+  assert.match(chat,/if\(data\.browserModelAllowed&&data\.decision/);
   assert.match(chat,/async function requestAlternativeAnswer/);
   assert.match(chat,/native\.availability\(caps\)/);
   assert.match(chat,/native\.create\(caps\)/);
@@ -14,7 +14,7 @@ test("alternative answers use only the explicitly selected on-device model",()=>
   assert.match(chat,/channel:"browser"/);
   assert.match(chat,/session\.prompt\(prompt,\{signal:abort\.signal\}\)/);
   assert.match(chat,/session\.destroy\?\.\(\)/);
-  assert.doesNotMatch(chat,/openrouter\/free|gemini-.*free|api\.openrouter\.ai/);
+  assert.doesNotMatch(chat,/openrouter\/free|gemini-.*free|api\.openrouter\.ai/);\n  const route=read("app/api/holistic-agent/turn/route.js");\n  assert.match(route,/browserModelAllowed:experimentalEnabled && body\.mode!==\"owned\" && safety\.status===\"clear\" && !recentUnsafe/);\n  assert.match(route,/if\(body\.mode!==\"rules\"&&!experimentalEnabled\)/);
 });
 
 test("alternative retry preserves the source answer and appends a labelled version",()=>{
