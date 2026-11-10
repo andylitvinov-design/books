@@ -1275,10 +1275,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-narration-reapproval]")).toBeVisible();
       await expect(page.locator('[data-video-quick-generate]')).toBeDisabled();
       await page.locator('[data-video-quick-control="editor"]').click();
-      await page.locator('[data-video-montage-tab="settings"]').click();
-      const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
-      await montageAudioAfterExport.click();
-      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+      const audioWorkspaceAfterExport=page.locator('[data-video-quick-control="effects"]');
+      await expect(audioWorkspaceAfterExport).toBeVisible();
+      await audioWorkspaceAfterExport.click();
+      await expect(page.locator("[data-video-audio-workspace]")).toBeVisible();
+      await page.locator('[data-video-audio-tab="voice"]').click();
+      await expect(page.locator('[data-video-audio-panel="voice"]')).toBeVisible();
       // Compact Audio preserves an explicitly opened cloud Voice Studio,
       // without the retired basic nested tab.
       // The phrase warning is intentionally unmounted in Montage. If the
