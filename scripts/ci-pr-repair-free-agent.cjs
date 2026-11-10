@@ -382,6 +382,28 @@ async function verifyFreeModelPrice({fetchImpl=global.fetch,model=MODEL,timeoutM
  return verifyFreeModelMetadata(payload,model);
 }
 
+/**
+ * Safely recover a model patch whose hunk header line COUNTS are wrong.
+ * --recount recalculates counts while still requiring exact unchanged context.
+ * No --unidiff-zero, -3/--3way, fuzzy/reject applying, or path fallback.
+ * The candidate still passes the unchanged exact-HEAD file allowlist,
+ * diff checks and independent build/test verification before publication.
+ */
+function applyCandidatePatch(root,patchPath){
+ const standard=['apply','--check','--whitespace=error',patchPath];
+ const recount=['apply','--recount','--check','--whitespace=error',patchPath];
+ let flags=[];
+ if(!run('git',standard,{cwd:root,timeout:10000}).ok){
+  if(!run('git',recount,{cwd:root,timeout:10000}).ok)
+   throw Error('FREE_AI_PATCH_APPLY_CHECK_FAILED');
+  flags=['--recount'];
+ }
+ const result=run('git',['apply',...flags,'--whitespace=error',patchPath],
+  {cwd:root,timeout:10000});
+ if(!result.ok)throw Error('FREE_AI_PATCH_APPLY_FAILED');
+ return {recount:flags.includes('--recount')};
+}
+
 async function propose(){
  const provider=String(process.env.HH_OPENROUTER_FREE_API_KEY||'').trim()?'openrouter':'opencode';
  const audit={schema:'HH_FREE_AI_MODEL_RUN_V1',provider,model:null,model_version:null,catalog_model_created:null,
@@ -433,10 +455,8 @@ async function propose(){
   audit.prompt_delivery_status='RESPONSE_OBSERVED';persist();
   const patch=validatePatch(reply,scope),patchPath=path.join(isolated,'candidate.patch');
   fs.writeFileSync(patchPath,patch,{mode:0o600});
-  const checked=run('git',['apply','--check','--whitespace=error',patchPath],{cwd:root,timeout:10000});
-  if(!checked.ok)throw Error('FREE_AI_PATCH_APPLY_CHECK_FAILED');
-  const applied=run('git',['apply','--whitespace=error',patchPath],{cwd:root,timeout:10000});
-  if(!applied.ok)throw Error('FREE_AI_PATCH_APPLY_FAILED');
+  const patchApplied=applyCandidatePatch(root,patchPath);
+  if(patchApplied.recount)console.log('HH_FREE_AI_PATCH_HUNK_COUNTS_RECOUNTED');
   const changed=run('git',['diff','--name-only','-z','HEAD'],{cwd:root,timeout:10000});
   if(!changed.ok)throw Error('FREE_AI_DIFF_UNAVAILABLE');
   const changedPaths=changed.stdout.split('\0').filter(Boolean);
@@ -463,4 +483,4 @@ async function main(){
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt};
+ noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,applyCandidatePatch};
