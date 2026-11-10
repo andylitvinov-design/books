@@ -20,6 +20,7 @@ const copy={
   already:'Already added',select:'Choose a life area',none:'No actions selected',reportError:'Could not load your reports.',
   loadError:'Could not load your Life Plan.',saveError:'Could not save these changes. Your text is still here.',
   importError:'Could not add these actions. Your report remains saved.',
+  contextTitle:'Future session context permissions',contextInfo:'You can withdraw permission for a session without deleting your plan or report.',contextSession:'Session',revokeContext:'Withdraw permission',revokingContext:'Withdrawing…',contextRevoked:'Permission withdrawn',contextError:'Could not withdraw permission. Please try again.',
   overview:'Session overview',initialSituation:'Initial situation',desiredOutcome:'Desired outcome',
   keyDiscoveries:'Key discoveries',mainObstacles:'Main obstacles',strengthsResources:'Strengths & resources',
   newPerspective:'New perspective',decisions:'Decisions',actionPlan:'Action plan',followUp:'Follow-up',
@@ -38,6 +39,7 @@ const copy={
   already:'Уже добавлено',select:'Выберите сферу жизни',none:'Действия не выбраны',reportError:'Не удалось загрузить отчёты.',
   loadError:'Не удалось загрузить план жизни.',saveError:'Не удалось сохранить. Введённый текст остался здесь.',
   importError:'Не удалось добавить действия. Отчёт остался сохранённым.',
+  contextTitle:'Разрешения для будущих сессий',contextInfo:'Вы можете отозвать разрешение для сессии, сохранив план и отчёт.',contextSession:'Сессия',revokeContext:'Отозвать разрешение',revokingContext:'Отзываем…',contextRevoked:'Разрешение отозвано',contextError:'Не удалось отозвать разрешение. Попробуйте ещё раз.',
   overview:'Обзор сессии',initialSituation:'Исходная ситуация',desiredOutcome:'Желаемый результат',
   keyDiscoveries:'Ключевые открытия',mainObstacles:'Основные препятствия',strengthsResources:'Сильные стороны и ресурсы',
   newPerspective:'Новый взгляд',decisions:'Решения',actionPlan:'План действий',followUp:'Продолжение',
@@ -56,6 +58,7 @@ const copy={
   already:'Ya añadido',select:'Elige un área de vida',none:'No hay acciones seleccionadas',reportError:'No se pudieron cargar los informes.',
   loadError:'No se pudo cargar tu plan de vida.',saveError:'No se pudieron guardar los cambios. El texto sigue aquí.',
   importError:'No se pudieron añadir las acciones. El informe sigue guardado.',
+  contextTitle:'Permisos para futuras sesiones',contextInfo:'Puedes retirar el permiso de una sesión sin borrar tu plan ni tu informe.',contextSession:'Sesión',revokeContext:'Retirar permiso',revokingContext:'Retirando…',contextRevoked:'Permiso retirado',contextError:'No se pudo retirar el permiso. Inténtalo de nuevo.',
   overview:'Resumen de la sesión',initialSituation:'Situación inicial',desiredOutcome:'Resultado deseado',
   keyDiscoveries:'Descubrimientos clave',mainObstacles:'Obstáculos principales',strengthsResources:'Fortalezas y recursos',
   newPerspective:'Nueva perspectiva',decisions:'Decisiones',actionPlan:'Plan de acción',followUp:'Seguimiento',
@@ -81,18 +84,19 @@ export default function MyCoachingPlan({accountId,locale='en'}){
  const [tab,setTab]=useState('plan'),[plan,setPlan]=useState(null),[reports,setReports]=useState([])
  const [drafts,setDrafts]=useState({}),[selections,setSelections]=useState({}),[areas,setAreas]=useState({}),[planConsents,setPlanConsents]=useState({})
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState(''),[importing,setImporting]=useState('')
- const [notice,setNotice]=useState(''),[reportError,setReportError]=useState('')
+ const [notice,setNotice]=useState(''),[reportError,setReportError]=useState(''),[revoking,setRevoking]=useState(''),[contextError,setContextError]=useState('')
  const load=useCallback(async()=>{
   if(!accountId)return
   setLoading(true);setError('');setReportError('')
   try{
    const [life,reportsResult]=await Promise.all([
     appFetch('coaching-life-plan?locale='+lang,undefined,'GET',{accountId}),
-    appFetch('personal-coaching-reports',undefined,'GET',{accountId}),
+    appFetch('personal-coaching-reports',undefined,'GET',{accountId}).catch(()=>null),
    ])
    if(!Array.isArray(life?.domains)||life.domains.length!==8)throw new Error('COACHING_PLAN_RESPONSE_INVALID')
    setPlan(life)
    setReports(Array.isArray(reportsResult?.reports)?reportsResult.reports:[])
+   if(!reportsResult)setReportError('load')
    setDrafts(Object.fromEntries(life.domains.map(area=>[area.areaKey,domainState(area)])))
   }catch(e){setError(e?.code||'load');setReportError(e?.code||'load')}
   finally{setLoading(false)}
@@ -132,6 +136,14 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   }catch(e){setReportError(e?.code||t.importError)}
   finally{setImporting('')}
  }
+ async function revokeContext(sessionId){
+  setRevoking(sessionId);setContextError('');setNotice('')
+  try{
+   await appFetch('coaching-life-plan/revoke-context',{sessionId,confirmed:true},'POST',{accountId})
+   await load();setNotice(t.contextRevoked)
+  }catch{setContextError(t.contextError)}
+  finally{setRevoking('')}
+ }
  const sections=[
   ['sessionOverview',t.overview],['initialSituation',t.initialSituation],['desiredOutcome',t.desiredOutcome],
   ['keyDiscoveries',t.keyDiscoveries],['mainObstacles',t.mainObstacles],['strengthsResources',t.strengthsResources],
@@ -151,6 +163,14 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   {error&&<div className={styles.error} role="alert">{t.loadError} <button onClick={load}>{t.retry}</button></div>}
   {notice&&<div className={styles.notice} role="status">{notice}</div>}
   {tab==='plan'&&<>
+   {!!plan?.contextPermissions?.length&&<section className={styles.domainCard} aria-label={t.contextTitle}>
+    <h2>{t.contextTitle}</h2><p>{t.contextInfo}</p>
+    {contextError&&<p role="alert">{contextError}</p>}
+    {plan.contextPermissions.map((permission,index)=><div key={permission.sessionId}>
+     <span>{t.contextSession} {index+1} · {formatDate(permission.completedAt,lang)}</span>{' '}
+     <button type="button" className={styles.saveButton} aria-label={`${t.revokeContext}: ${t.contextSession} ${index+1}`} disabled={!!revoking} onClick={()=>revokeContext(permission.sessionId)}>{revoking===permission.sessionId?t.revokingContext:t.revokeContext}</button>
+    </div>)}
+   </section>}
    {!plan?.plan&&<section className={styles.empty}>
     <div className={styles.emptyIcon}><Sparkles size={24}/></div>
     <h2>{t.emptyTitle}</h2><p>{t.empty}</p>
@@ -187,7 +207,8 @@ export default function MyCoachingPlan({accountId,locale='en'}){
    </section>
   </>}
   {tab==='reports'&&<section className={styles.reports}>
-   {!reports.length&&<div className={styles.empty}><ClipboardList size={24}/><p>{t.reportsEmpty}</p></div>}
+   {reportError&&<p className={styles.inlineError} role="alert">{t.reportError}</p>}
+   {!reports.length&&!reportError&&<div className={styles.empty}><ClipboardList size={24}/><p>{t.reportsEmpty}</p></div>}
    {reports.map(record=>{
     const report=record.report||{},accepted=(report.actionCandidates||[]).filter(item=>item.status==='accepted')
     const available=accepted.filter(item=>!importedKeys.has(record.id+'|'+item.candidateId))

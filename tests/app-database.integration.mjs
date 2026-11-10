@@ -222,6 +222,30 @@ test('coaching report storage enforces owner RLS, immutable versions and deletio
       assert.equal((await db.query('select * from app_private.'+name+' where account_id=$1',[C])).rowCount,0)
   }finally{await db.end()}
 })
+test('cross-session permission remains revocable without a plan and is owner scoped',async()=>{
+  const db=await adminClient()
+  const C=randomUUID(),SC=randomUUID(),session=randomUUID(),c=actor(C,SC)
+  try{
+    await db.query('insert into auth.users(id,email) values($1,$2)',[C,'context-consent@example.invalid'])
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[SC,C])
+    await db.query("insert into app.accounts(id,status,onboarding_state) values($1,'active','active')",[C])
+    await rawAs(c,'hh_app_backend',async client=>{
+      await client.query("insert into app_private.coaching_session_records(id,account_id,scheme_key,model_key,status,current_phase,prompt_version,method_version,persona_version,idempotency_key,completed_at) values($1,$2,'grow_quick_v1','grow_v1','completed','complete','test','test','test',$1,now())",[session,C])
+      await client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'cross_session_context',true,'test','synthetic permission',clock_timestamp()+interval '1 minute')",[session,C])
+    })
+    const {readCoachingLifePlan,revokeCoachingPlanContext}=await import('../lib/app/coaching-life-plan.js')
+    const before=await readCoachingLifePlan(config,c)
+    assert.equal(before.plan,null)
+    assert.equal(before.contextPermissions[0].sessionId,session)
+    await assert.rejects(()=>revokeCoachingPlanContext(config,b,{sessionId:session,confirmed:true}),err=>err.code==='COACHING_PLAN_SESSION_NOT_FOUND')
+    await assert.rejects(()=>revokeCoachingPlanContext(config,c,{sessionId:session,confirmed:false}),err=>err.code==='COACHING_PLAN_CONFIRMATION_REQUIRED')
+    assert.equal((await revokeCoachingPlanContext(config,c,{sessionId:session,confirmed:true})).revoked,true)
+    assert.equal((await revokeCoachingPlanContext(config,c,{sessionId:session,confirmed:true})).revoked,true)
+    assert.equal((await readCoachingLifePlan(config,c)).contextPermissions.length,0)
+    const ledger=(await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='cross_session_context' order by occurred_at,id",[C,session])).rows
+    assert.deepEqual(ledger.map(row=>row.accepted),[true,false])
+  }finally{await db.query('delete from auth.users where id=$1',[C]);await db.end()}
+})
 test('coaching report preview reads only the authenticated owner session without writing',async()=>{
   const db=await adminClient()
   try{
@@ -285,18 +309,22 @@ test('coaching report save requires consent, binds the owner source and survives
     assert.equal(saved.report.actionCandidates[0].status,'accepted')
     assert.equal((await listCoachingReports(config,c)).reports.length,1)
     await assert.rejects(()=>readCoachingReport(config,b,one.id),err=>err.code==='COACHING_REPORT_NOT_FOUND')
-    const {importCoachingReportActions,updateCoachingLifePlanArea,exportCoachingLifePlan}=await import('../lib/app/coaching-life-plan.js')
+    const {importCoachingReportActions,updateCoachingLifePlanArea,exportCoachingLifePlan,revokeCoachingPlanContext}=await import('../lib/app/coaching-life-plan.js')
     const planRequest={reportId:one.id,reportRevision:1,areaKey:'body_health',candidateIds:[request.decisions[0].candidateId],planConsent:true}
     await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'report_storage',false,'test','synthetic revocation',now()+interval '1 second')",[request.sessionId,C]))
     await assert.rejects(()=>importCoachingReportActions(config,c,planRequest),err=>err.code==='COACHING_REPORT_CONSENT_REQUIRED')
     for(const table of ['coaching_life_plans','coaching_life_plan_areas','coaching_goals','coaching_action_items','coaching_life_plan_changes'])assert.equal((await db.query('select count(*)::int as n from app_private.'+table+' where account_id=$1',[C])).rows[0].n,0)
     assert.equal((await db.query("select count(*)::int as n from app_private.coaching_session_consents where account_id=$1 and consent_type='cross_session_context'",[C])).rows[0].n,0)
     await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'report_storage',true,'test','synthetic renewed consent',now()+interval '2 seconds')",[request.sessionId,C]))
+    await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'cross_session_context',false,'test','synthetic past withdrawal',clock_timestamp()+interval '1 minute')",[request.sessionId,C]))
     await assert.rejects(()=>importCoachingReportActions(config,b,planRequest),err=>err.code==='COACHING_REPORT_NOT_FOUND')
     const imported=await importCoachingReportActions(config,c,planRequest)
     assert.equal(imported.imported,1)
+    assert.equal((await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='cross_session_context' order by occurred_at desc,id desc limit 1",[C,request.sessionId])).rows[0].accepted,true)
     assert.equal((await db.query('select count(*)::int as n from app_private.coaching_action_items where account_id=$1',[C])).rows[0].n,1)
+    await revokeCoachingPlanContext(config,c,{sessionId:request.sessionId,confirmed:true})
     assert.equal((await importCoachingReportActions(config,c,planRequest)).imported,0)
+    assert.equal((await db.query("select accepted from app_private.coaching_session_consents where account_id=$1 and session_id=$2 and consent_type='cross_session_context' order by occurred_at desc,id desc limit 1",[C,request.sessionId])).rows[0].accepted,false)
     await updateCoachingLifePlanArea(config,c,{areaKey:'body_health',revision:1,currentState:'Synthetic current state',desiredState:'Synthetic desired state',obstacles:'Synthetic obstacle',selfRating:4})
     const exportedPlan=await exportCoachingLifePlan(config,c)
     assert.equal(exportedPlan.areas[0].currentState,'Synthetic current state')

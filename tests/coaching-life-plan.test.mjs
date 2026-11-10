@@ -112,6 +112,7 @@ function buildAreaEditService({existing=false}={}){
  const db={query:async(sql,args=[])=>{
   state.queries.push({sql,args})
   if(sql.includes('select id from app.accounts'))return {rows:[{id:owner.id}]}
+  if(sql.includes('select latest.session_id,s.completed_at'))return {rows:[]}
   if(sql.includes('insert into app_private.coaching_life_plans')){
    if(!state.plan)state.plan={id:'40000000-0000-4000-8000-000000000001',plan_version:1}
    return {rows:[]}
@@ -172,7 +173,7 @@ test('import uses only accepted, evidence-backed action IDs and client-selected 
  assert.match(consentQuery.sql,/'life_plan_continuity'/)
  assert.equal(consentQuery.args[1],sessionId)
  assert.equal(consentQuery.args[2],owner.id)
- assert.ok(Number.isFinite(Date.parse(consentQuery.args[3])))
+ assert.match(consentQuery.sql,/max\(occurred_at\)\+interval '1 microsecond'/)
  const title=openSealed(state.goal.title_ciphertext,{accountId:owner.id,recordId:state.goal.id,field:'coaching.life_plan.goal.title'},config)
  assert.equal(title,'Choose one practical next step')
  const action=openSealed(state.actions.get(candidate.candidateId).description_ciphertext,
@@ -248,6 +249,7 @@ test('empty Life Plan reads do not create plan/domain records and still return a
  const transaction=async(_config,_actor,fn)=>fn({query:async(sql,args=[])=>{
   calls.push(sql)
   if(sql.includes('select id from app.accounts'))return {rows:[{id:owner.id}]}
+  if(sql.includes('select latest.session_id,s.completed_at'))return {rows:[]}
   if(sql.includes("select id,plan_version,status,created_at,updated_at from app_private.coaching_life_plans"))return {rows:[]}
   throw new Error('Unexpected SQL: '+sql)
  }})
@@ -303,8 +305,17 @@ test('Life Plan endpoints use the existing authenticated catch-all route and acc
  assert.match(route,/readCoachingLifePlan\(config,actor,\{locale\}\)/)
  assert.match(route,/updateCoachingLifePlanArea\(config,actor,\{\.\.\.await readBody\(request,8192\),areaKey:path\[2\]\}\)/)
  assert.match(route,/importCoachingReportActions\(config,actor,await readBody\(request,2048\)\)/)
+ assert.match(route,/revokeCoachingPlanContext\(config,actor,await readBody\(request,1024\)\)/)
  const block=route.slice(route.indexOf("if (path[0] === 'coaching-life-plan')"),route.indexOf("if (joined === 'tradition-coaching-summary')"))
  assert.match(block,/request\.headers\.get\('x-hh-account-id'\) !== actor\.id/)
+})
+
+test('permission controls remain available without an existing plan',()=>{
+ const ui=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.match(ui,/plan\?\.contextPermissions\?\.length/)
+ assert.match(ui,/coaching-life-plan\/revoke-context/)
+ assert.match(ui,/sessionId,confirmed:true/)
+ for(const text of ['Withdraw permission','Отозвать разрешение','Retirar permiso'])assert.ok(ui.includes(text))
 })
 
 test('My Coaching Plan workspace JSX and route contract parse cleanly',async()=>{
