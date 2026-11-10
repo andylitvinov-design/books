@@ -39,3 +39,10 @@
 - Мобильный док на 320/390/430 px и клавиатурная доступность карточек, select/range, избранного и CTA.
 
 **Не считать LIVE** до зелёных обязательных CI, merge в \`codex/public-book-library\` и production-deployment READY.
+
+## Integration release checkpoint (2026-11-10)
+
+- PR #4069 was reconciled with the latest `codex/public-book-library` release base, keeping the independently shipped Coaching Brain and its release tests.
+- The existing Services menu remains reachable; My Coach is separate from both Services and the human `/masters` directory.
+- The shared mobile Video Studio acceptance script uses the published Ideas → Personalization → advanced Voice controls; no legacy top-level Voice tab is assumed.
+- **Publication gate:** never claim LIVE from a passed unit test or source commit alone. Verify the exact PR head in GitHub Actions, then merge and check a READY production Vercel deployment for the resulting merge SHA, including `/ru/my-coach`, `/en/my-coach` and `/es/my-coach`.
