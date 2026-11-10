@@ -306,7 +306,7 @@ test('repair uses one text-only free request and makes the patch contract explic
  const payload=JSON.parse(calls[1].body);
  assert.deepEqual(payload.modalities,['text']);
  assert.equal(payload.reasoning,undefined,
-   'mandatory-reasoning free models must not get unsupported reasoning:false');
+   'never force reasoning:false for mandatory-reasoning free models');
  assert.equal(payload.messages[0].role,'system');
  assert.match(payload.messages[0].content,/unified git diff/);
  assert.equal(payload.messages[1].content,'safe-source-only');
@@ -395,4 +395,64 @@ test('bounded response diagnostics contain only response categories and no provi
   reasoning_present:true,tool_calls_present:false
  });
  assert.doesNotMatch(JSON.stringify(shape),/SECRET_TEXT|SECRET_CHAIN|SECRET_SOURCE|SECRET_REASON/);
+});
+
+
+test('explicit $0 free router uses proven portable request and independently proves actual model',async()=>{
+ const {FREE_ROUTER_MODEL}=require('../scripts/ci-pr-repair-openrouter-free.cjs');
+ const patch='diff --git a/components/a.tsx b/components/a.tsx\n';
+ const {calls,fetchImpl}=mocked(response({data:[entry()]}),response({
+  model:DEFAULT_MODEL,usage:{cost:0,is_byok:false,cost_details:{upstream_inference_cost:0}},
+  choices:[{finish_reason:'stop',message:{role:'assistant',content:patch}}]}));
+ const selected=[];
+ assert.equal(await requestFreePatch({prompt:'one safe line',key:'fixture',
+  model:FREE_ROUTER_MODEL,fetchImpl,onVerifiedModel:x=>selected.push(x)}),patch);
+ assert.equal(calls.length,2,'never fan out inference calls');
+ assert.equal(selected.length,1);
+ assert.equal(selected[0].model,FREE_ROUTER_MODEL);
+ assert.equal(selected[0].zeroCost,true);
+ const req=JSON.parse(calls[1].body);
+ assert.equal(req.model,FREE_ROUTER_MODEL);
+ assert.equal(req.max_tokens,2200);
+ for(const field of ['modalities','reasoning','n','tools','models'])
+  assert.equal(req[field],undefined,'router must use portable text chat');
+ assert.deepEqual(req.provider,{allow_fallbacks:false,
+  max_price:{prompt:0,completion:0},data_collection:'deny'});
+ assert.deepEqual(req.usage,{include:true});
+ assert.equal(calls[1].headers.Authorization,'Bearer fixture');
+ assert.doesNotMatch(calls[1].body,/fixture/);
+});
+
+test('free router rejects unknown, paid or mismatched runtime models and billing',async()=>{
+ const {FREE_ROUTER_MODEL}=require('../scripts/ci-pr-repair-openrouter-free.cjs');
+ const catalog=response({data:[entry()]});
+ for(const completion of [
+  {model:'openai/gpt-6',usage:{cost:0},choices:[{message:{content:'patch'}}]},
+  {model:'openrouter/free',usage:{cost:0},choices:[{message:{content:'patch'}}]},
+  {model:DEFAULT_MODEL,usage:{cost:0.01},choices:[{message:{content:'patch'}}]},
+  {model:DEFAULT_MODEL,usage:{},choices:[{message:{content:'patch'}}]},
+  {model:DEFAULT_MODEL,usage:{cost:0,is_byok:true},choices:[{message:{content:'patch'}}]}
+ ]){
+  let calls=0;
+  const fetchImpl=async()=>++calls===1?catalog:response(completion);
+  await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',
+   model:FREE_ROUTER_MODEL,fetchImpl}),/FREE_ROUTER_MODEL_UNVERIFIED|BILLING_NONZERO|BILLING_UNVERIFIED/);
+  assert.equal(calls,2,'no retry after a failed actual-model or price proof');
+ }
+ let calls=0;
+ const fetchImpl=async()=>{calls++;return response({data:[]});};
+ await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',model:FREE_ROUTER_MODEL,
+  fetchImpl}),/NO_VERIFIED_FREE_MODEL/);
+ assert.equal(calls,1,'no inference when free catalog preflight is empty');
+});
+
+test('router HTTP 400 is diagnosed precisely and never falls back to a paid model',async()=>{
+ const {FREE_ROUTER_MODEL}=require('../scripts/ci-pr-repair-openrouter-free.cjs');
+ let calls=0;
+ const fetchImpl=async()=>++calls===1
+  ?response({data:[entry()]})
+  :response({private:'provider body must not leak'},400);
+ await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',
+  model:FREE_ROUTER_MODEL,fetchImpl}),/FREE_AI_OPENROUTER_HTTP_400/);
+ assert.equal(calls,2);
 });
