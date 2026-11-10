@@ -206,8 +206,9 @@ test("four canonical goal pills, exclusive subcategories and real scenario/audio
  assert.match(director,/onContinue\?\.\(\)/);
  assert.match(studio,/onContinue=\{\(\)=>\{/);
  assert.match(studio,/setActiveWorkspace\("phrases"\)/);
- assert.match(studio,/data-video-phrase-audio-shortcut/);
- assert.ok(studio.includes("data-video-phrase-audio-shortcut") && studio.includes("setPhraseAudioExpanded(true)") && studio.includes("data-video-ideas-advanced-voice"), "the visible Ideas shortcut opens the current advanced voice disclosure");
+ assert.match(studio,/data-video-audio-panel="voice"/);
+ assert.doesNotMatch(studio,/data-video-legacy-phrase-editor|data-video-phrase-audio-shortcut|data-video-ideas-advanced-voice/);
+ assert.match(studio,/data-video-audio-own-upload/);
  assert.equal((director.match(/data-auto-video-input value=\{requestDraft\}/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-advanced-toggle/);
@@ -243,7 +244,7 @@ test("audio guidance remains actionable from both the compact Video screen and S
  assert.equal((studio.match(/\{deepAudioPane\}/g)||[]).length,1,
    "full audio controls are centralized in the dedicated Audio workspace");
  assert.match(style,/data-active-workspace="phrases"[\s\S]*?data-video-quick-audio-choices/);
- assert.match(studio,/data-video-phrase-audio-shortcut/);
+ assert.doesNotMatch(studio,/data-video-phrase-audio-shortcut/);
  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
 });
 
