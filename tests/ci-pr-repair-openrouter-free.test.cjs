@@ -66,7 +66,7 @@ test('priced catalog, 429, wrong model, paid usage and invalid reply fail closed
     [response({data:[entry()]}),response({model:'paid/model',choices:[{message:{content:'patch'}}]}),/MODEL_MISMATCH/,2],
     [response({data:[entry()]}),response({model:DEFAULT_MODEL,usage:{cost:0.01},choices:[{message:{content:'patch'}}]}),/BILLING_NONZERO/,2],
     [response({data:[entry()]}),response({model:DEFAULT_MODEL,usage:{cost:null},choices:[{message:{content:'patch'}}]}),/BILLING_UNVERIFIED/,2],
-    [response({data:[entry()]}),response({model:DEFAULT_MODEL,usage:{cost:0},choices:[]}),/PATCH_RESPONSE_INVALID/,2],
+    [response({data:[entry()]}),response({model:DEFAULT_MODEL,usage:{cost:0},choices:[]}),/RESPONSE_CHOICE_COUNT_INVALID/,2],
   ];
   for(const [catalog,completion,re,expected] of cases){
     const {calls,fetchImpl}=mocked(catalog,completion);
@@ -100,7 +100,8 @@ test('one preflight catalog selects next verified free code model; one inference
   fetchImpl,onVerifiedModel:item=>picked.push(item)});
  assert.match(patch,/diff --git/);
  assert.equal(calls.length,2);
- assert.deepEqual(picked,[{model:second,zeroCost:true,role:'repair',selection:'ranked_catalog'}]);
+ assert.deepEqual(picked,[{model:second,zeroCost:true,role:'repair',selection:'ranked_catalog',
+   provider:'openrouter',model_version:null,catalog_created:null}]);
  const body=JSON.parse(calls[1].args.body);
  assert.equal(body.model,second);
  assert.deepEqual(body.usage,{include:true});
@@ -230,4 +231,23 @@ test('single structured text object is normalized while unsupported block object
   'diff --git a/a.js b/a.js');
  assert.throws(()=>extractAssistantText({type:'image',url:'redacted'}),
   /PATCH_RESPONSE_INVALID/);
+});
+
+test('verified model receipt precedes inference and malformed replies get precise failure reasons',async()=>{
+ const catalog=response({data:[{...entry(),created:1794260000,version:'catalog-v1'}]});
+ const events=[];let calls=0;
+ const fetchImpl=async()=>{if(++calls===1)return catalog;events.push('inference');
+  return response({model:DEFAULT_MODEL,usage:{cost:0},choices:[{finish_reason:'stop',message:{role:'assistant',content:'patch'}}]});};
+ assert.equal(await requestFreePatch({prompt:'p',key:'fixture',fetchImpl,onVerifiedModel:r=>events.push(r)}),'patch');
+ assert.equal(events[0].model,DEFAULT_MODEL);assert.equal(events[0].provider,'openrouter');
+ assert.equal(events[0].model_version,'catalog-v1');assert.equal(events[0].catalog_created,1794260000);
+ assert.equal(events[1],'inference');
+ for(const [body,reason] of [
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[]},/CHOICE_COUNT_INVALID/],
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[{message:null}]},/MESSAGE_INVALID/],
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[{finish_reason:'max_tokens',message:{content:'partial'}}]},/TRUNCATED/],
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[{finish_reason:'content_filter',message:{content:''}}]},/MODEL_REFUSED/],
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[{finish_reason:'tool_calls',message:{tool_calls:[{}]}}]},/TOOL_CALL_NOT_ALLOWED/]
+ ]){let n=0;const fetch=async()=>++n===1?catalog:response(body);
+  await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',fetchImpl:fetch}),reason);assert.equal(n,2);}
 });

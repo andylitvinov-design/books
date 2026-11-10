@@ -359,66 +359,63 @@ async function verifyFreeModelPrice({fetchImpl=global.fetch,model=MODEL,timeoutM
 }
 
 async function propose(){
- const root=process.cwd(),scope=narrowFailedSourceScope(root,sourceScope());
- const sources=checkScopeFiles(root,scope);
- const signals=collectDiagnostics(root,scope);
- const prompt=promptFor(scope,sources,signals);
- if(prompt.length>92000)throw Error('FREE_AI_PROMPT_TOO_LARGE');
- const routerKey=process.env.HH_OPENROUTER_FREE_API_KEY||'';
- const router=typeof routerKey==='string'&&routerKey.trim().length>0;
- const cli=process.env.HH_OPENCODE_BIN;
- if(!router&&(!cli||!fs.existsSync(cli)||!fs.statSync(cli).isFile()))
-   throw Error('FREE_AI_CLI_NOT_INSTALLED');
- const isolated=fs.mkdtempSync(path.join(os.tmpdir(),'hh-ci-free-repair-'));
- const env=isolatedEnvironment(isolated,process.env.HH_OPENCODE_FREE_API_KEY||'');
- if(!router&&!env.OPENCODE_API_KEY)throw Error('FREE_AI_FREE_OPENCODE_CREDENTIAL_NOT_CONFIGURED');
+ const provider=String(process.env.HH_OPENROUTER_FREE_API_KEY||'').trim()?'openrouter':'opencode';
+ const audit={schema:'HH_FREE_AI_MODEL_RUN_V1',provider,model:null,model_version:null,catalog_model_created:null,
+  executor_type:'free_ci_patch_proposer',pr_number:Number(process.env.REPAIR_PR)||null,
+  source_head:String(process.env.REPAIR_SHA||''),run_id:String(process.env.GITHUB_RUN_ID||''),
+  run_attempt:Number(process.env.GITHUB_RUN_ATTEMPT||0)||null,started_at:new Date().toISOString(),
+  model_call_started_at:null,response_received_at:null,attempt_count:0,result:'PREPARING',
+  failure_reason:null,patch_present:false,candidate_paths:[],verification_result:'NOT_RUN',published_commit_sha:null};
+ const auditPath=path.join(os.tmpdir(),'hh-free-ai-model-audit.json');
+ const persist=()=>{fs.writeFileSync(auditPath,JSON.stringify(audit),{mode:0o600});console.log('HH_FREE_AI_MODEL_AUDIT '+JSON.stringify(audit));};
+ let isolated=null;persist();
  try{
-   let reply,modelUsed=MODEL;
-   if(router){
-     const openrouter=require('./ci-pr-repair-openrouter-free.cjs');
-     // A manual exact :free pin is respected; "auto" chooses the first
-     // currently zero-priced coding model from the bounded verified roster.
-     const requested=process.env.HH_OPENROUTER_FREE_MODEL||'auto';
-     reply=await openrouter.requestFreePatch({prompt,key:routerKey,model:requested,
-       role:'repair',onVerifiedModel:receipt=>{modelUsed=receipt.model;}});
-
-     console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify({
-       model:modelUsed,provider:'openrouter',zeroCost:true}));
-   }else{
-     const priceCheck=await verifyFreeModelPrice();
-     console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(priceCheck));
-     const acl=run(cli,['debug','agents'],{cwd:isolated,env,timeout:45000});
-     if(!acl.ok)throw Error('FREE_AI_AGENT_ACL_PROBE_FAILED');
-     validateAgentAcl(acl.stdout);
-     const response=run(cli,['run','--standalone','--model',MODEL,'--agent',
-       'hh-ci-free-repair','--format','json',prompt],
-       {cwd:isolated,env,timeout:170000});
-     if(!response.ok){
-       if(/(?:429|free.limit|quota|rate.limit)/i.test(response.output))
-         throw Error('FREE_AI_FREE_TIER_QUOTA_EXHAUSTED');
-       throw Error('FREE_AI_MODEL_UNAVAILABLE');
-     }
-     reply=extractTextEvents(response.stdout);
-   }
-   const patch=validatePatch(reply,scope);
-   const patchPath=path.join(isolated,'candidate.patch');
-   fs.writeFileSync(patchPath,patch,{mode:0o600});
-   const checked=run('git',['apply','--check','--whitespace=error',patchPath],
-     {cwd:root,timeout:10000});
-   if(!checked.ok)throw Error('FREE_AI_PATCH_APPLY_CHECK_FAILED');
-   const applied=run('git',['apply','--whitespace=error',patchPath],
-     {cwd:root,timeout:10000});
-   if(!applied.ok)throw Error('FREE_AI_PATCH_APPLY_FAILED');
-   const changed=run('git',['diff','--name-only','-z','HEAD'],{cwd:root,timeout:10000});
-   if(!changed.ok)throw Error('FREE_AI_DIFF_UNAVAILABLE');
-   const paths=changed.stdout.split('\0').filter(Boolean);
-   if(!paths.length||paths.some(p=>!scope.files.includes(p)))
-     throw Error('FREE_AI_PATCH_CHANGED_UNAPPROVED_FILE');
-   const diffCheck=run('git',['diff','--check'],{cwd:root,timeout:10000});
-   if(!diffCheck.ok)throw Error('FREE_AI_DIFF_WHITESPACE_ERROR');
-   console.log('HH_FREE_AI_PATCH_PROPOSED '+JSON.stringify({model:modelUsed,files:paths}));
-   return paths;
- }finally{fs.rmSync(isolated,{recursive:true,force:true});}
+  const root=process.cwd(),scope=narrowFailedSourceScope(root,sourceScope());audit.source_head=scope.sha;
+  const sources=checkScopeFiles(root,scope),signals=collectDiagnostics(root,scope),prompt=promptFor(scope,sources,signals);
+  if(prompt.length>92000)throw Error('FREE_AI_PROMPT_TOO_LARGE');
+  const key=process.env.HH_OPENROUTER_FREE_API_KEY||'',router=!!key.trim(),cli=process.env.HH_OPENCODE_BIN;
+  if(!router&&(!cli||!fs.existsSync(cli)||!fs.statSync(cli).isFile()))throw Error('FREE_AI_CLI_NOT_INSTALLED');
+  isolated=fs.mkdtempSync(path.join(os.tmpdir(),'hh-ci-free-repair-'));
+  const env=isolatedEnvironment(isolated,process.env.HH_OPENCODE_FREE_API_KEY||'');
+  if(!router&&!env.OPENCODE_API_KEY)throw Error('FREE_AI_FREE_OPENCODE_CREDENTIAL_NOT_CONFIGURED');
+  let reply,modelUsed=MODEL;
+  if(router){
+   const openrouter=require('./ci-pr-repair-openrouter-free.cjs');
+   reply=await openrouter.requestFreePatch({prompt,key,model:process.env.HH_OPENROUTER_FREE_MODEL||'auto',role:'repair',
+    onVerifiedModel:r=>{modelUsed=r.model;audit.provider='openrouter';audit.model=r.model;
+     audit.model_version=r.model_version||null;audit.catalog_model_created=r.catalog_created||null;
+     audit.model_call_started_at=new Date().toISOString();audit.attempt_count=1;audit.result='MODEL_CALL_STARTED';persist();}});
+  }else{
+   const price=await verifyFreeModelPrice();audit.provider='opencode';audit.model=MODEL;
+   console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(price));
+   const acl=run(cli,['debug','agents'],{cwd:isolated,env,timeout:45000});
+   if(!acl.ok)throw Error('FREE_AI_AGENT_ACL_PROBE_FAILED');validateAgentAcl(acl.stdout);
+   audit.model_call_started_at=new Date().toISOString();audit.attempt_count=1;audit.result='MODEL_CALL_STARTED';persist();
+   const response=run(cli,['run','--standalone','--model',MODEL,'--agent','hh-ci-free-repair','--format','json',prompt],
+    {cwd:isolated,env,timeout:170000});
+   if(!response.ok){if(/(?:429|free.limit|quota|rate.limit)/i.test(response.output))throw Error('FREE_AI_FREE_TIER_QUOTA_EXHAUSTED');throw Error('FREE_AI_MODEL_UNAVAILABLE');}
+   reply=extractTextEvents(response.stdout);
+  }
+  audit.response_received_at=new Date().toISOString();audit.result='MODEL_RESPONSE_RECEIVED';persist();
+  const patch=validatePatch(reply,scope),patchPath=path.join(isolated,'candidate.patch');
+  fs.writeFileSync(patchPath,patch,{mode:0o600});
+  const checked=run('git',['apply','--check','--whitespace=error',patchPath],{cwd:root,timeout:10000});
+  if(!checked.ok)throw Error('FREE_AI_PATCH_APPLY_CHECK_FAILED');
+  const applied=run('git',['apply','--whitespace=error',patchPath],{cwd:root,timeout:10000});
+  if(!applied.ok)throw Error('FREE_AI_PATCH_APPLY_FAILED');
+  const changed=run('git',['diff','--name-only','-z','HEAD'],{cwd:root,timeout:10000});
+  if(!changed.ok)throw Error('FREE_AI_DIFF_UNAVAILABLE');
+  const changedPaths=changed.stdout.split('\0').filter(Boolean);
+  if(!changedPaths.length||changedPaths.some(x=>!scope.files.includes(x)))throw Error('FREE_AI_PATCH_CHANGED_UNAPPROVED_FILE');
+  if(!run('git',['diff','--check'],{cwd:root,timeout:10000}).ok)throw Error('FREE_AI_DIFF_WHITESPACE_ERROR');
+  audit.result='PATCH_PROPOSED';audit.patch_present=true;audit.candidate_paths=changedPaths;
+  audit.verification_result='UNPRIVILEGED_APPLY_AND_DIFF_CHECK_PASSED';persist();
+  console.log('HH_FREE_AI_PATCH_PROPOSED '+JSON.stringify({model:modelUsed,files:changedPaths}));return changedPaths;
+ }catch(error){
+  audit.result=audit.attempt_count?'MODEL_CALL_FAILED_OR_OUTPUT_REJECTED':'PRE_INFERENCE_FAILED';
+  audit.failure_reason=String(error?.message||error).split(/[\r\n]/)[0].replace(/[^A-Za-z0-9_:.-]/g,'_').slice(0,120);
+  audit.patch_present=false;audit.candidate_paths=[];persist();throw error;
+ }finally{if(isolated)fs.rmSync(isolated,{recursive:true,force:true});}
 }
 async function main(){
  try{await propose();}

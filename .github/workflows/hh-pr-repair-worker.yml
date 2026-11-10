@@ -490,8 +490,10 @@ jobs:
     outputs:
       candidate_status: ${{ steps.capture.outputs.candidate_status }}
       candidate_detail: ${{ steps.capture.outputs.candidate_detail }}
+      model_audit: ${{ steps.capture.outputs.model_audit }}
     env:
       REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+      REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
       REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
     steps:
       - name: Checkout exact PR HEAD with no persisted credentials
@@ -845,6 +847,7 @@ jobs:
           HH_CODE_RESULT: ${{ needs.code_fix.result }}
           HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
           HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
+          HH_MODEL_AUDIT: ${{ needs.code_fix.outputs.model_audit }}
           HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
           HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
           HH_CODE_VERIFY_DETAIL: ${{ needs.code_verify.outputs.candidate_detail }}
@@ -875,6 +878,7 @@ jobs:
               codeResult:process.env.HH_CODE_RESULT,
               codeStatus:process.env.HH_CODE_STATUS,
               codeDetail:process.env.HH_CODE_DETAIL,
+              modelAuditRaw:process.env.HH_MODEL_AUDIT,
               codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
               codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
               codeVerifyDetail:process.env.HH_CODE_VERIFY_DETAIL,

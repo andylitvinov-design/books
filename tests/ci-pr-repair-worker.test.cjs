@@ -1218,3 +1218,17 @@ test('outcome validation rejects terminal claims without independent source proo
  assert.equal(validateTaskOutcome({...valid,verified_source:false}),false);
  assert.equal(validateTaskOutcome({...valid,next_action:''}),false);
 });
+
+\ntest('free model audit preserves numeric GitHub Actions run IDs and rejects wrong PR/HEAD',()=>{
+ const {normalizeModelAudit}=require('../scripts/ci-pr-repair-worker.cjs');
+ const raw={schema:'HH_FREE_AI_MODEL_RUN_V1',provider:'openrouter',model:'cohere/north-mini-code:free',
+  model_version:'catalog-v1',catalog_model_created:1794260000,executor_type:'free_ci_patch_proposer',
+  pr_number:42,source_head:sha,run_id:'123456',run_attempt:1,started_at:'2026-11-09T00:00:00.000Z',
+  model_call_started_at:'2026-11-09T00:00:01.000Z',response_received_at:null,attempt_count:1,
+  result:'MODEL_CALL_FAILED_OR_OUTPUT_REJECTED',failure_reason:'FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED',
+  patch_present:false,candidate_paths:[],verification_result:'NOT_RUN'};
+ const audit=normalizeModelAudit(raw,{number:42,expectedSha:sha});
+ assert.equal(audit.run_id,'123456');
+ assert.equal(normalizeModelAudit(raw,{number:43,expectedSha:sha}),null);
+ assert.equal(normalizeModelAudit({...raw,source_head:newSha},{number:42,expectedSha:sha}),null);
+});
