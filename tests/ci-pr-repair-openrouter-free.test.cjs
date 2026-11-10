@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {DEFAULT_MODEL,MODEL_PROFILES,chooseVerifiedFreeModel,selectedModel,verifyZeroPrice,extractAssistantText,requestFreePatch}=
+const {DEFAULT_MODEL,MODEL_PROFILES,chooseVerifiedFreeModel,selectedModel,verifyZeroPrice,responseShape,extractAssistantText,requestFreePatch}=
   require('../scripts/ci-pr-repair-openrouter-free.cjs');
 const entry=(pricing={prompt:'0',completion:'0'})=>({id:DEFAULT_MODEL,pricing,
   architecture:{input_modalities:['text'],output_modalities:['text']}});
@@ -174,4 +174,35 @@ test('one zero-cost OpenRouter inference accepts structured text and rejects tru
    /TRUNCATED|TOOL_CALL_NOT_ALLOWED/);
   assert.equal(calls,2,'never retries a refused or unsupported completion');
  }
+});
+
+
+test('provider error envelopes are classified before choices and billing validation',async()=>{
+ const catalog=response({data:[entry()]});
+ let calls=0;
+ const fetchImpl=async()=>++calls===1?catalog:response({
+  model:DEFAULT_MODEL,error:{code:'provider_rejected',message:'redacted'}
+ });
+ await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',fetchImpl}),
+  /FREE_AI_OPENROUTER_PROVIDER_ERROR/);
+ assert.equal(calls,2,'one catalog request and one inference; never retry');
+});
+
+test('response diagnostics expose shape only, never completion or prompt content',()=>{
+ const completion={id:'opaque',model:DEFAULT_MODEL,usage:{cost:0},
+  choices:[{finish_reason:'stop',message:{role:'assistant',content:null,refusal:null}}]};
+ const shape=responseShape(completion);
+ assert.deepEqual(shape.top_level_keys,['choices','id','model','usage']);
+ assert.equal(shape.choices_count,1);
+ assert.equal(shape.finish_reason,'stop');
+ assert.deepEqual(shape.message_keys,['content','refusal','role']);
+ assert.equal(shape.content_type,'null');
+ assert.doesNotHaveProperty(shape,'content');
+ assert.doesNotHaveProperty(shape,'prompt');
+});
+
+test('single structured text object is accepted but refusals and unsupported output stay blocked',()=>{
+ assert.equal(extractAssistantText({type:'text',text:'diff --git a/a.js b/a.js'}),
+  'diff --git a/a.js b/a.js');
+ assert.throws(()=>extractAssistantText({type:'image',url:'private'}),/PATCH_RESPONSE_INVALID/);
 });
