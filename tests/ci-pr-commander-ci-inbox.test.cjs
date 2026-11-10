@@ -62,20 +62,24 @@ test('OIDC event bridge uses the same versioned classifier and carries its diagn
 });
 
 
-test('Commander dispatch uses only first-party owned Director with verified read-only receipts',()=>{
+test('Commander dispatch creates one owner-scoped first-party worker ledger row and never claims execution early',()=>{
  const start=edge.indexOf('if(action==="commander_start_run")');
  const end=edge.indexOf('if(action==="commander_list_ci_events")',start);
  assert.ok(start>=0&&end>start,'dispatcher block exists');
  const handler=edge.slice(start,end);
- assert.match(handler,/const canDispatch=executor==="local"&&!writeConfirmed/);
- assert.match(handler,/await ownedDirectorCall\(req,/);
- assert.match(handler,/trustedOwnedDirectorReceipt\(remote,/);
+ assert.match(handler,/const openRouterReady=Boolean\(Deno\.env\.get\("HH_PM_OPENROUTER_API_KEY"\)\|\|Deno\.env\.get\("OPENROUTER_API_KEY"\)\)/);
+ assert.match(handler,/const canDispatch=executor==="local"&&!writeConfirmed&&openRouterReady/);
+ assert.match(handler,/OPENROUTER_API_KEY_NOT_CONFIGURED/);
+ assert.match(handler,/firstStatus=canDispatch\?"QUEUED":"BLOCKED"/);
+ assert.match(handler,/on conflict\(owner_id,chat_id,idempotency_key\) do nothing/);
+ assert.match(handler,/IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST/);
+ assert.match(handler,/OPENROUTER_WORKER_QUEUED/);
+ assert.match(handler,/dispatchAttempted:false,agentStarted:false,executionVerified:false/);
  assert.match(handler,/EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/);
- assert.match(handler,/AGENT_DIRECTOR_DISPATCH_UNCONFIRMED/);
- assert.match(edge,/value\.sourceWrite!==null/);
- assert.doesNotMatch(handler,/await verifyFreeModel\(modelId\)|hermesCall\(/);
+ assert.doesNotMatch(handler,/ownedDirectorCall|trustedOwnedDirectorReceipt|AGENT_DIRECTOR_DISPATCH_UNCONFIRMED/);
  assert.doesNotMatch(edge,/HERMES_SHARED_SECRET|HERMES_RUN_SCHEMA/);
 });
+
 
 const autotaskMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261110140500_commander_ci_autotask_v1.sql'),'utf8');
 
