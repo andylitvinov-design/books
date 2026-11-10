@@ -9,12 +9,12 @@
  const KEY='hh.commander.chat-vault.v1',SCHEMA='HH_COMMANDER_LOCAL_CHATS_V1';
  const EXEC={local:'Локальный советник',openrouter:'OpenRouter Free',codex:'Codex · передача',
   'chatgpt-work':'ChatGPT Work · передача','repair-worker':'GitHub Repair Worker · передача',
-  hermes:'Hermes · передача',manual:'Ручной исполнитель'};
+  hermes:'Hermes · OpenRouter Free',manual:'Ручной исполнитель'};
  const STATES={planned:'Запланировано',assigned:'Назначено · не запущено',working:'В работе · по заявлению',
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
  let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null,ciInboxTimer=null,ciInboxBusy=false;
- let executorModels=[],executorModelReady=false,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
+ let executorModels=null,executorModelsPromise=null,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
  const COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app';
  const COUNCIL_PROTOCOL='HH_AI_COUNCIL_BRIDGE_V1';
  let councilFrameReady=false,councilPending=null;
@@ -74,17 +74,8 @@
  }
  async function loadExecutorModels(){
   if(!remote)return;
-  try{
-   const result=await request(SERVER+'?action=free_models');
-   executorModels=Array.isArray(result.models)?result.models.filter(m=>typeof m?.id==='string'&&m.id.endsWith(':free')&&m.pricing==='$0 verified by live catalog'):[];
-   executorModelReady=executorModels.length>0;
-   const select=el('model'),selected=select.value;
-   for(const model of executorModels)if(![...select.options].some(o=>o.value===model.id)){
-    const option=make('option',null,model.name+' · '+model.id+' · $0');option.value=model.id;select.append(option);
-   }
-   if(executorModels.some(m=>m.id===selected))select.value=selected;
-   else if(executorModelReady)select.value=executorModels[0].id;
-  }catch{executorModels=[];executorModelReady=false;}
+  try{await ensureExecutorModels();configureModels('new');configureModels('thread');}
+  catch(error){info('Каталог бесплатных моделей Hermes недоступен: '+String(error.message||error));}
  }
  async function refreshExecutionRuns(){
   if(!remote||!thread||!authorized||executionPollBusy)return null;
@@ -320,6 +311,7 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
    c.append(make('div','cc-message-by',author),make('p',null,msg.text||''),
     make('small',null,time(msg.createdAt)+(msg.kind==='github_report'?' · отчёт, не доказательство LIVE':'')));
    if(msg.kind==='github_report')htmlLink(c,'Источник GitHub',msg.url);
+   if(msg.kind==='agent_final'&&msg.sourceWrite?.verified===true)htmlLink(c,'Проверенный Draft PR #'+msg.sourceWrite.prNumber,msg.sourceWrite.prUrl);
    box.append(c);
   }
   box.scrollTop=box.scrollHeight;
@@ -336,7 +328,7 @@ function renderThread(){
   const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
   if(el('mode').value==='council-free'||!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
-  show('model-label',['openrouter','hermes'].includes(el('mode').value));
+  configureModels('thread');
   el('chat-feedback').textContent='';show('chat-feedback',false);
   el('pr-proof').replaceChildren();el('report-list').replaceChildren();
   show('create',false);show('chat-form',true);show('thread',true);
@@ -401,6 +393,7 @@ function renderThread(){
   };
   if(busy)return fail('Другая операция ещё выполняется. Повторите нажатие.');
   const question=el('new-question').value.trim(),mode=el('new-mode').value;
+  let selectedModel=mode==='hermes'?el('new-model').value:'',selectedWrite=mode==='hermes'&&el('new-github-write').checked===true;
   stopVoice();
   busy=true;button.disabled=true;
   const buttonLabel=button.textContent;button.textContent='⋯';button.setAttribute('aria-label','Создаю чат…');
@@ -409,6 +402,11 @@ function renderThread(){
   try{
    if(question.length<2||question.length>1200)throw Error('Вопрос должен содержать 2–1200 символов.');
    if(mode==='openrouter'&&!aiReady)throw Error('Бесплатная модель OpenRouter сейчас недоступна. Выберите локального советника.');
+   if(mode==='hermes'){
+    const free=await ensureExecutorModels();
+    if(!free.length)throw Error('Каталог не подтвердил бесплатные текстовые модели Hermes.');
+    if(!free.some(x=>x.id===selectedModel))selectedModel=free[0].id;
+   }
    if(!el('new-title').value.trim())el('new-title').value=('Вопрос: '+question.replace(/\s+/g,' ')).slice(0,110);
    if(el('new-title').value.trim().length<4)el('new-title').value='Вопрос: '+question.slice(0,95);
    const data={...formValues('new-'),id:pendingCreateId||(pendingCreateId=id())};let c;
@@ -443,7 +441,8 @@ function renderThread(){
    thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});
    el('create-form').reset();el('new-mode').value=aiReady?'openrouter':'local';pendingCreateId=null;
    if(el('new-context').open)el('new-context').close();
-   el('mode').value=mode;show('model-label',['openrouter','hermes'].includes(mode));
+   el('mode').value=mode;configureModels('thread');
+   if(mode==='hermes'){el('model').value=selectedModel;el('github-write').checked=selectedWrite;}
    el('message').value=question;
    created=true;
    info('Отправляю вопрос…');
@@ -579,12 +578,43 @@ async function update(e){
   await persist();renderList();
   return c;
  }
+ async function ensureExecutorModels(){
+  if(executorModels!==null)return executorModels;
+  if(executorModelsPromise)return executorModelsPromise;
+  executorModelsPromise=request(SERVER+'?action=executor_models').then(result=>{
+   if(result.schema!=='HH_COMMANDER_EXECUTOR_FREE_MODELS_V1'||!Array.isArray(result.models))
+    throw Error('Не удалось проверить каталог бесплатных моделей.');
+   const free=result.models.filter(m=>typeof m?.id==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(m.id)&&
+    typeof m.name==='string'&&m.name.length>0&&m.name.length<=120);
+   executorModels=free;
+   configureModels('new');configureModels('thread');
+   return free;
+  }).finally(()=>{executorModelsPromise=null;});
+  return executorModelsPromise;
+ }
+ function configureModels(scope){
+  const isNew=scope==='new',mode=el(isNew?'new-mode':'mode').value;
+  const selection=el(isNew?'new-model':'model'),current=selection.value;
+  const options=mode==='hermes'?(executorModels||[]):models;
+  selection.replaceChildren();
+  if(mode==='hermes'&&!executorModels){
+   const placeholder=make('option',null,'Проверка бесплатных моделей…');placeholder.value='';
+   selection.append(placeholder);
+  }else for(const model of options){
+   const item=make('option',null,model.name+' · '+model.id);item.value=model.id;selection.append(item);
+  }
+  if(options.some(item=>item.id===current))selection.value=current;
+  show(isNew?'new-model-label':'model-label',mode==='hermes'||(!isNew&&mode==='openrouter'));
+  show(isNew?'new-github-write-wrap':'github-write-wrap',mode==='hermes');
+  if(mode!=='hermes')el(isNew?'new-github-write':'github-write').checked=false;
+ }
  async function send(e){
   e.preventDefault();if(!thread||busy)return;
   const text=el('message').value.trim(),mode=el('mode').value,model=el('model').value;
   stopVoice();
   if(text.length<2||text.length>1200)return info('Сообщение должно содержать 2–1200 символов.');
   if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
+  if(mode==='hermes'&&!(executorModels||[]).some(x=>x.id===model))return info('Выберите проверенную бесплатную модель для Hermes.');
   let c=thread;
   if(mode!=='council-free'&&!thread.executors.includes(mode)){
    busy=true;el('send').disabled=true;
@@ -613,10 +643,11 @@ async function update(e){
    try{
     await append(c,'owner',text,'');el('message').value='';
     const runId=id(),idempotencyKey=id();
-    const selectedModel=executorModels.find(m=>m.id===el('model').value)?.id||executorModels[0]?.id||'';
-    if(!selectedModel)throw Error('Нет модели с подтверждённой нулевой стоимостью в текущем каталоге OpenRouter.');
+    const writeApproved=mode==='hermes'&&el('github-write').checked===true;
+    if(mode==='hermes')el('github-write').checked=false; // one-shot consent, even if transport fails
     const result=await request(SERVER+'?action=run','POST',{
-     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text,modelId:selectedModel,confirmGitHubWrite:false
+     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text,
+     ...(mode==='hermes'?{modelId:model,confirmGitHubWrite:writeApproved}:{})
     });
     try{
      const latest=await request(SERVER+'?action=read&issue='+c.issueNumber);
@@ -624,6 +655,8 @@ async function update(e){
     }catch{}
     const reasons={
      HERMES_RUNTIME_NOT_CONFIGURED:'Hermes HTTPS runtime и секрет не настроены',
+     HERMES_FREE_MODEL_NOT_SELECTED:'Нет проверенной бесплатной модели для исполнителя',
+     HERMES_DISPATCH_UNCONFIRMED_RECONCILE:'Запуск не подтверждён; состояние следует сверить с Hermes, не отправлять повторно',
      HERMES_EXECUTOR_DISPATCH_CONTRACT_NOT_VERIFIED:'Нет проверенного Hermes executor endpoint',
      CODEX_LOCAL_AGENT_OFFLINE_OR_REMOTE_APPROVAL_DISABLED:'Локальный Codex agent Offline или remote approval выключен',
      REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE:'Нужны точный PR HEAD и активная lease',
@@ -631,7 +664,7 @@ async function update(e){
      MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF:'Требуется ручная передача владельцем'
     };
     if(result.status==='BLOCKED'){
-     info('Запрос сохранён. Исполнитель НЕ запущен: '+(reasons[result.reasonCode]||result.reasonCode)+'. Код: '+result.reasonCode+'.');
+     info('Запрос и попытка сохранены. Запуск НЕ подтверждён: '+(reasons[result.reasonCode]||result.reasonCode)+'. Код: '+result.reasonCode+'.');
      await refreshExecutionRuns();
     }else{
      info(result.agentStarted===true?'Исполнитель действительно начал работу. Ожидаю результат.':'Задача принята; фактический запуск ещё не подтверждён.');
@@ -903,7 +936,15 @@ async function update(e){
   finally{busy=false;el('refresh').disabled=false;}
  });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
- el('mode').addEventListener('change',()=>{show('model-label',['openrouter','hermes'].includes(el('mode').value));if(el('mode').value!=='council-free')show('council-panel',false)});
+ el('mode').addEventListener('change',()=>{
+  const mode=el('mode').value;configureModels('thread');
+  if(mode==='hermes')void ensureExecutorModels().catch(err=>info('Каталог Hermes недоступен: '+String(err.message||err)));
+  if(mode!=='council-free')show('council-panel',false);
+ });
+ el('new-mode').addEventListener('change',()=>{
+  configureModels('new');
+  if(el('new-mode').value==='hermes')void ensureExecutorModels().catch(err=>info('Каталог Hermes недоступен: '+String(err.message||err)));
+ });
  
  // Speech recognition is user-initiated and stays on device/browser voice services.
  // Never send raw audio. Only the edited transcript joins the chat on Send.
