@@ -157,3 +157,13 @@ test('review requires a client-authored action and time anchor',()=>{
  assert.equal(y.phase,'review')
  assert.equal(y.completion.review,true)
 })
+
+test('explicit client correction overrides earlier lexical hypotheses',()=>{
+ const x=analyzeCoachingProtocol({
+  locale:'en',
+  turns:[{role:'user',content:'I want to start; yesterday at work I froze because I was afraid.'}],
+  message:'No, I am not afraid; I want to look at workload instead.'
+ })
+ assert.equal(x.signals.obstacle_or_pattern,false)
+ assert.equal(x.phase,'discovery')
+})
