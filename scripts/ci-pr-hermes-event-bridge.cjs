@@ -73,9 +73,7 @@ function buildDiagnostics(jobs, pr) {
     .map((step) => String(job.name || 'unnamed-job').slice(0, 90) + ' / ' +
       String(step.name || 'unnamed-step').slice(0, 90))).slice(0, 10);
   const decision = classifyRedCiError({ pr, jobs });
-  const strategy=strategyFor(decision.category,
-    decision.reason_code==='SPECIALIST_GATE_FAILED_REQUIRES_TRIAGE'?'SPECIALIST_FAILED':'UNVERIFIED',
-    decision.retry.allowed===true);
+  const strategy=strategyFor(decision.category,'UNVERIFIED',decision.retry.allowed===true);
   return {
     category: decision.category,
     failedJobs: failedJobs.slice(0, 10),
