@@ -149,3 +149,29 @@ test('queued OpenRouter execution never writes a non-CHECK chat status and prese
  assert.ok(edge.includes('p.workerTaskKey'));
  assert.ok(edge.includes('p.errorTaskId'));
 });
+
+
+const triageMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261110182500_commander_ci_triage_disposition_backfill_v1.sql'),'utf8');
+test('every authenticated Core error retains a separate durable classification disposition',()=>{
+ assert.match(triageMigration,/CREATE TRIGGER commander_ci_triage_on_insert_v1/);
+ assert.match(triageMigration,/BEFORE INSERT ON business_brain\.commander_ci_event_inbox/);
+ assert.match(triageMigration,/UPDATE business_brain\.commander_ci_event_inbox/);
+ assert.match(triageMigration,/triage_receipt IS NULL/);
+ assert.match(triageMigration,/EXISTING_AUTHENTICATED_INBOX_BACKFILL/);
+ assert.match(triageMigration,/OIDC_TRUSTED_CI_INBOX_INSERT/);
+ assert.match(triageMigration,/RECORDED_CI_CLASSIFICATION_ONLY_NOT_DISPATCH/);
+ assert.match(triageMigration,/'dispatchVerified',false/);
+ assert.match(triageMigration,/'workerStartVerified',false/);
+ assert.match(triageMigration,/'sourceCommitVerified',false/);
+ assert.match(triageMigration,/'liveVerified',false/);
+ assert.doesNotMatch(triageMigration,/createWorkflowDispatch|actions\/runs\/\{run_id\}\/rerun|source_published',true/);
+});
+test('classification is present for all 13 error families, including UNKNOWN, without executor claims',()=>{
+ for(const cat of categories){
+  assert.match(triageMigration,new RegExp("'"+cat+"'"));
+ }
+ const edge=fs.readFileSync(path.join(root,'supabase/functions/agent-commander-private-store-v1/index.ts'),'utf8');
+ assert.match(edge,/triage_receipt,triage_recorded_at,historical_pr_readback/);
+ assert.match(edge,/where inbox_owner_id=\$3::uuid/);
+ assert.match(edge,/route_receipt,route_recorded_at,triage_receipt/);
+});
