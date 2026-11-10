@@ -16,12 +16,19 @@ const CATEGORIES=new Set(Object.keys(rules.categories));
 const SAFE_SOURCE=new Set(['SOURCE_CODE','TYPESCRIPT']);
 const HUMAN_HOLD=new Set(['SECURITY','ACCESS_CONFIG','MERGE_CONFLICT','UNKNOWN']);
 const REVIEW_ONLY=new Set(['BASE_OR_CI_ROUTING','TEST_FAILURE','INTEGRATION','AI_EXECUTOR','AUTOMATION_PROCESS']);
+// The private store may create a deterministic task/chat when the PR has none.
+// All three values require a verified, owner-scoped persisted task receipt.
+const PERSISTED_TASK_ASSOCIATIONS=new Set([
+ 'MATCHED_CHAT_EVENT_RECORDED',
+ 'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED',
+ 'AUTO_TASK_CREATED_NOT_DISPATCHED'
+]);
 
 function receiptProof(receipt,context){
   if(!confirmedCoreEvent(context))return 'UNTRUSTED_CORE_EVENT';
   const run=context.payload.workflow_run;
   if(receipt?.accepted!==true||!UUID.test(receipt.inboxId||'')||
-     receipt.association!=='MATCHED_CHAT_EVENT_RECORDED')
+     !PERSISTED_TASK_ASSOCIATIONS.has(receipt.association))
     return 'CI_TASK_NOT_PROVEN_AND_LINKED';
   if(!Number.isSafeInteger(receipt.prNumber)||receipt.prNumber<1||
      receipt.runId!==run.id||!SHA.test(receipt.headSha||'')||

@@ -138,3 +138,20 @@ test('the existing workflow executes OIDC task association BEFORE source dispatc
  assert.match(bridge,/association: typeof receipt\.association === 'string'/);
  assert.match(bridge,/classification: diagnostics\.classification/);
 });
+
+
+test('existing or auto-created private incident task can be routed, but not claimed as worker-started',async()=>{
+ for(const association of ['MATCHED_CHAT_EVENT_RECORDED',
+  'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED','AUTO_TASK_CREATED_NOT_DISPATCHED']){
+  let calls=0;
+  const r=await route({receipt:{...receipt(),association},context:context(),
+   existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
+  assert.equal(r.state,'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',association);
+  assert.equal(r.workerStarted,false);
+  assert.equal(r.liveVerified,false);
+  assert.equal(calls,1);
+ }
+ for(const association of ['UNMATCHED','AMBIGUOUS_TASKS','MATCHED_TASK_NO_CHAT']){
+  assert.ok(receiptProof({...receipt(),association},context()));
+ }
+});

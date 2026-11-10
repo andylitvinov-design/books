@@ -5,6 +5,7 @@ const BASE = 'codex/public-book-library';
 const FAILURES = new Set(['failure', 'timed_out', 'startup_failure']);
 const SHA = /^[a-f0-9]{40}$/i;
 const { classifyRedCiError } = require('./ci-pr-red-ci-classifier.cjs');
+const { strategyFor } = require('./ci-pr-error-task.cjs');
 
 function exactPullRequestLink(pr) {
   if (!pr || pr.state !== 'open' || pr.draft ||
@@ -72,6 +73,7 @@ function buildDiagnostics(jobs, pr) {
     .map((step) => String(job.name || 'unnamed-job').slice(0, 90) + ' / ' +
       String(step.name || 'unnamed-step').slice(0, 90))).slice(0, 10);
   const decision = classifyRedCiError({ pr, jobs });
+  const strategy=strategyFor(decision.category,'UNVERIFIED',decision.retry.allowed===true);
   return {
     category: decision.category,
     failedJobs: failedJobs.slice(0, 10),
@@ -82,6 +84,8 @@ function buildDiagnostics(jobs, pr) {
       category: decision.category,
       confidence: decision.confidence,
       reason_code: decision.reason_code,
+      strategy_code:strategy.code,
+      next_action:strategy.action,
       evidence_code: decision.evidence_code,
       recommended_action: decision.recommended_action,
       recommended_status: decision.recommended_status,
