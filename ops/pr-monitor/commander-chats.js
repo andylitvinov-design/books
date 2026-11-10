@@ -383,6 +383,35 @@
    finally{busy=false;el('send').disabled=false}
    return;
   }
+  const dispatchModes=new Set(['hermes','codex','chatgpt-work','repair-worker','manual']);
+  if(dispatchModes.has(mode)){
+   if(!remote)return info('Запуск доступен только для чата в защищённом серверном хранилище. Локальная копия не может запускать исполнителей.');
+   busy=true;el('send').disabled=true;
+   try{
+    await append(c,'owner',text,'');el('message').value='';
+    const runId=id(),idempotencyKey=id();
+    const result=await request(SERVER+'?action=run','POST',{
+     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text
+    });
+    try{
+     const latest=await request(SERVER+'?action=read&issue='+c.issueNumber);
+     if(thread?.id===c.id){thread=latest.chat;messages=latest.messages;renderThread();}
+    }catch{}
+    const reasons={
+     HERMES_RUNTIME_NOT_CONFIGURED:'Hermes HTTPS runtime и секрет не настроены',
+     HERMES_EXECUTOR_DISPATCH_CONTRACT_NOT_VERIFIED:'Нет проверенного Hermes executor endpoint',
+     CODEX_LOCAL_AGENT_OFFLINE_OR_REMOTE_APPROVAL_DISABLED:'Локальный Codex agent Offline или remote approval выключен',
+     REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE:'Нужны точный PR HEAD и активная lease',
+     CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE:'Нет поддерживаемого транспорта ChatGPT Work',
+     MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF:'Требуется ручная передача владельцем'
+    };
+    info(result.status==='BLOCKED'
+     ?'Запрос и попытка сохранены. Исполнитель НЕ запущен: '+(reasons[result.reasonCode]||result.reasonCode)+'. Код: '+result.reasonCode+'.'
+     :'Запрос отправлен; дождитесь отдельного подтверждения запуска исполнителя.');
+   }catch(err){info('Сообщение сохранено, но запуск не подтверждён: '+String(err.message||err))}
+   finally{busy=false;el('send').disabled=false}
+   return;
+  }
   const context=messages.slice(-8).filter(x=>['owner','assistant_unverified'].includes(x.kind))
    .map(x=>({role:x.kind==='owner'?'user':'assistant',content:x.text.slice(0,800)}));
   busy=true;el('send').disabled=true;
