@@ -449,7 +449,7 @@ async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'r
       await alchemy.click()
       await expect(page).toHaveURL(origin + '/' + locale + '/services/alchemy-of-soul')
       await expect(page.locator('[data-alchemy-soul-landing]')).toHaveCount(1)
-      await expect(page.locator('.mobile-bottom-navigation [data-nav-item="alchemy"]')).toHaveAttribute('aria-current', 'page')
+      await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/alchemy/390',active:'services'})
     }
   await resizePublicViewport(page, originalViewport)
   pass(engine + ': public client and client/tests discovery retain seven-slot navigation with My Profile active on free tests, keyboard order, responsive bounds and private headers in ' + locales.join('/'))
