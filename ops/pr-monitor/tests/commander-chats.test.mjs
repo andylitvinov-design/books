@@ -480,3 +480,20 @@ test('owner-only global CI Inbox is visible and polls independently of opening o
  const poll=js.slice(js.indexOf('function startCIInboxPolling'),js.indexOf('const from64='));
  assert.doesNotMatch(poll,/startReportPolling/);
 });
+
+
+test('new chat sends bounded acceptance criteria and Skill IDs as references only',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),api=src('api/commander-chats.js');
+ assert.match(html,/id="cc-new-acceptance"/);
+ assert.match(html,/id="cc-new-skill-ids"/);
+ assert.match(html,/Skill IDs сами по себе не выдают доступ/);
+ assert.match(js,/const rawCriteria=value\('acceptance'\)\.split\(/);
+ assert.match(js,/if\(rawCriteria\.length>5/);
+ assert.match(js,/rawSkills=value\('skill-ids'\)\.split\(','\)/);
+ assert.match(js,/r\.acceptanceCriteria=rawCriteria/);
+ assert.match(js,/r\.skillIds=rawSkills/);
+ assert.match(api,/body=\{issueNumber:body\.issueNumber,expectedRevision:body\.expectedRevision,chat:body\.chat\}/);
+ assert.doesNotMatch(js,/grantCapabilities|autoGrantSkills|skillIds.*capabilit/i);
+});
+
+
