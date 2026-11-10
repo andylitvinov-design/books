@@ -55,37 +55,32 @@ test("actual browser route checks speaker consent, fragment invitation, and no p
  assert.ok(browser.includes('toHaveAttribute("data-guest-voice-hydrated","true"'),"real WebKit must wait for React hydration");
 });
 
-test("macOS WebKit hydration follows visible Goals → Ideas → Montage without legacy clicks",()=>{
+test("macOS WebKit hydration follows Ideas → Montage, then opens the top-level Audio workspace",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
  const studio=read("components/mandala-free-video-studio.tsx");
- const style=read("components/mandala-video-mobile.module.css");
+ const practice=read("scripts/verify-mandala-practices-browser.mjs");
  const first=browser.indexOf("async function verifyWorkspaceHydration");
  const last=browser.indexOf("// Real guest route browser acceptance",first);
  const flow=browser.slice(first,last);
- const click=flow.indexOf("await continueToIdeas.click()");
- const ideas=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',click);
- const refinement=flow.indexOf('const refinement=page.locator',ideas);
- const open=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
- const verify=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',open);
- const montage=flow.indexOf("await montage.tap()",verify);
- assert.ok(first>=0&&last>first&&click>=0&&ideas>click&&refinement>ideas&&open>refinement&&verify>open&&montage>verify,
-   "one real visitor click reaches Ideas, native topic disclosure, then Montage");
- assert.match(flow,/data-video-continue-scenarios/);
- assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
- assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
- assert.match(studio,/data-video-scenario-open=\{videoScenarioOpen\?"true":"false"\}/);
- assert.match(studio,/onClick=\{continueToIdeas\}/);
- assert.match(style,/\[data-video-scenario-open="false"\]/);
- // The live Style controls are direct buttons, not the removed legacy wrapper.
- assert.ok(flow.includes('const styleTab=page.locator(\'[data-video-montage-tab="effects"]\')'));
- assert.ok(flow.includes('await styleTab.tap()'));
- assert.ok(flow.includes('const styles=page.locator("[data-video-montage-style]")'));
- assert.ok(flow.includes('await expect(styles).toHaveCount(6)'));
- assert.ok(flow.includes('await minimal.tap()'));
- assert.ok(flow.includes('await expect(minimal).toHaveAttribute("aria-pressed","true")'));
- assert.ok(flow.includes('toBeHidden()'),"legacy Director filter is not the active style picker");
+ const ideasClick=flow.indexOf("await continueToIdeas.click()");
+ const ideasState=flow.indexOf('toHaveAttribute("data-active-workspace","phrases")',ideasClick);
+ const refinement=flow.indexOf("const refinement=page.locator",ideasState);
+ const montage=flow.indexOf("await montage.tap()",refinement);
+ const storyboard=flow.indexOf("const montageStoryboardTab=page.locator",montage);
+ const concept=flow.indexOf("const montageVideoConcept=page.locator",storyboard);
+ const audio=browser.indexOf("const audioWorkspaceAfterExport=page.locator");
+ const audioClick=browser.indexOf("await audioWorkspaceAfterExport.click()",audio);
+ const voice=browser.indexOf('await page.locator(\'[data-video-audio-tab="voice"]\').click()',audioClick);
+ assert.ok(first>=0&&last>first&&ideasClick>=0&&ideasState>ideasClick&&refinement>ideasState&&
+   montage>refinement&&storyboard>montage&&concept>storyboard&&audio>concept&&audioClick>audio&&voice>audioClick,
+   "Ideas → Montage and the separate post-export Audio → Voice journey are real and ordered");
+ assert.match(studio,/data-video-audio-panel="music"/);
+ assert.match(studio,/data-video-audio-panel="voice"/);
+ assert.match(studio,/data-video-audio-panel="meditations"/);
+ assert.match(practice,/data-guided-add-meditation/);
+ assert.match(practice,/data-guided-skip-meditation/);
+ assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\)/);
 });
-
 test("macOS WebKit exercises explicit accessible adult consent and revocation",()=>{
  const source=read("scripts/verify-affirmation-voice-browser.mjs");
  const ui=read("components/mandala-guest-voice-message.tsx");
@@ -124,43 +119,44 @@ test("macOS WebKit exercises explicit accessible adult consent and revocation",(
   "no original-tab interaction should depend on restoring focus after another tab");
 });
 
-test("Ideas Personalization and Concept retain a single opt-in Voice/My Voice WebKit path",()=>{
+test("Ideas keeps Personalization and Concept; Voice / My Voice live only in Audio",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.match(studio,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
- assert.match(studio,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
  assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
- for(const marker of ['data-video-ideas-tab="personalization"','data-video-ideas-tab="concept"',
-  'data-video-ideas-voice-mode="voice"','data-video-ideas-voice-mode="my-voice"',
-  'data-video-phrase-audio-shortcut','data-video-ideas-own-upload'])
-  assert.ok(studio.includes(marker),marker);
- assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
- const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
- const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
- const concept=browser.indexOf('await conceptTab.click()',personal);
- const back=browser.indexOf('await personalTab.click()',concept);
- const disclosure=browser.indexOf('await advancedText.click()',back);
- const voice=browser.indexOf('await voiceModeButton.click()',disclosure);
- const my=browser.indexOf('await myVoiceModeButton.click()',voice);
- const consent=browser.indexOf('await narrationConsent.check()',my);
- assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
-   disclosure>back&&voice>disclosure&&my>voice&&consent>my,
-   "actual user opens Personalization and the protected voice editor before consenting");
+ assert.match(studio,/data-video-ideas-tab="personalization"/);
+ assert.match(studio,/data-video-ideas-tab="concept"/);
+ assert.match(studio,/data-video-audio-voice-mode="voice"/);
+ assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
+ assert.match(studio,/data-video-audio-panel="voice"[\s\S]*?hypnoVoiceEditor/);
+ assert.match(studio,/ownVoiceOnly=\{ideasVoiceMode==="my-voice"\}/);
+ const legacy=studio.indexOf("data-video-legacy-phrase-editor");
+ assert.ok(legacy>0);
+ assert.match(studio.slice(legacy,legacy+600),/hidden=\{true\}/,
+   "old voice controls in Ideas are preserved but not displayed");
+ assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\)/);
+ const audio=browser.indexOf("const audioWorkspaceAfterExport=page.locator");
+ const open=browser.indexOf("await audioWorkspaceAfterExport.click()",audio);
+ const panel=browser.indexOf('await expect(page.locator(\'[data-video-audio-panel="voice"]\')).toBeVisible()',open);
+ const voice=browser.indexOf('const standardAudioMode=page.locator',panel);
+ const my=browser.indexOf('await myVoiceAudioMode.click()',voice);
+ const consent=browser.indexOf('await narrationConsent.check()');
+ assert.ok(audio>=0&&open>audio&&panel>open&&voice>panel&&my>voice&&consent>=0,
+   "real WebKit opens Audio Voice / My Voice mode controls and retains explicit narration consent");
+ assert.match(browser,/data-video-audio-voice-mode="voice"/);
+ assert.match(browser,/data-video-audio-voice-mode="my-voice"/);
  assert.match(browser,/data-video-affirmation-transcript-review/);
  assert.match(browser,/spawnSync\("ffprobe"/);
- assert.doesNotMatch(browser,/advancedVoice\.click\(\{force:true\}\)/);
- const css=read("components/mandala-video-mobile.module.css");
- assert.ok(css.includes('[data-ideas-subtab="voice"] [data-video-legacy-phrase-editor][data-video-ideas-recording-open="true"]{display:block!important}'), "the voice editor is exposed only inside its selected Voice/My Voice submode");
- assert.match(css,/data-video-phrase-audio-shortcut\]:not\(\[hidden\]\)/);
 });
-
-
-test("guided meditation include/omit commits native narration disclosure after React state",()=>{
+test("guided meditation Add opens the single Audio / Meditations composer; Skip revokes its seed",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
- assert.match(studio,/const \[courseMeditationIncluded,setCourseMeditationIncluded\]=useState\(false\)/);
- assert.match(studio,/else if\(courseMeditationIncluded&&courseMeditationDraft\)details\.open=true/);
- assert.match(studio,/if\(courseMeditationOmitted\)details\.open=false/);
- assert.match(studio,/setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\);/);
- assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);/);
- assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
+ const audio=studio.indexOf('data-video-audio-panel="meditations"');
+ const composer=studio.indexOf("<MandalaPersonalMeditation",audio);
+ assert.ok(audio>0&&composer>audio,"one dedicated Audio / Meditations panel owns the composer");
+ assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationDraft\(script\);[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("meditations"\)/);
+ assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationDraft\(""\);[\s\S]*?setAttachedAudio\(current=>/);
+ assert.match(studio,/coursePreview=\{Boolean\(courseMeditationDraft\)\} seedScript=\{courseMeditationDraft\}/);
+ assert.equal((studio.match(/<MandalaPersonalMeditation\b/g)||[]).length,1,
+   "there is one composer, not another one in Ready or Practices");
+ assert.doesNotMatch(studio,/courseMeditationIncluded|courseMeditationOmitted|<details[^>]*data-video-therapy-meditation-audio/,
+   "the obsolete inline-details composer state is not reintroduced");
 });
