@@ -138,6 +138,9 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
       provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
         data_collection:'deny'}})
   },170000);
+  // Provider error envelopes are diagnostic outcomes, never patch candidates.
+  // Check before model/billing fields because error bodies may omit both.
+  if(completion?.error)throw Error('FREE_AI_OPENROUTER_PROVIDER_ERROR');
   if(completion?.model!==selected)throw Error('FREE_AI_OPENROUTER_MODEL_MISMATCH');
   const cost=completion?.usage?.cost;
   if(typeof cost!=='number'||!Number.isFinite(cost))
@@ -146,16 +149,16 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
      Object.values(completion?.usage?.cost_details||{}).some(value=>
        value!==null&&value!==undefined&&(!Number.isFinite(Number(value))||Number(value)!==0)))
     throw Error('FREE_AI_OPENROUTER_BILLING_NONZERO');
-  if(completion?.error)throw Error('FREE_AI_OPENROUTER_PROVIDER_ERROR');
   if(!Array.isArray(completion?.choices)||completion.choices.length!==1||
      !completion.choices[0]?.message|| (completion.choices[0].message.role!==undefined&&completion.choices[0].message.role!=='assistant'))
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
   const choice=completion.choices[0];
   if(choice.finish_reason==='length')
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED');
-  if(choice.finish_reason==='content_filter')
+  if(choice.finish_reason==='content_filter'||choice.message.refusal)
     throw Error('FREE_AI_OPENROUTER_MODEL_REFUSED');
-  if(choice.message.tool_calls?.length||choice.message.function_call)
+  if(['tool_calls','function_call','error'].includes(choice.finish_reason)||
+     choice.message.tool_calls?.length||choice.message.function_call)
     throw Error('FREE_AI_OPENROUTER_TOOL_CALL_NOT_ALLOWED');
   return extractAssistantText(choice.message.content);
 }
