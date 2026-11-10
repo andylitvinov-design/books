@@ -46,7 +46,7 @@ test('chat adapter uses only the owner-verified Supabase private store',()=>{
  assert.match(helper,/HH_PM_SUPABASE_PUBLISHABLE_KEY/);
  assert.match(session,/HttpOnly/);assert.match(session,/SameSite=Strict/);
  assert.match(session,/REFRESH_COOKIE/);
- assert.match(session,/auth\\/v1\\/token\\?grant_type=refresh_token/);
+ assert.ok(session.includes('/auth/v1/token?grant_type=refresh_token'));
  assert.match(session,/callStore/);
 });
 test('chat UI keeps encrypted local recovery and does not claim assignment is execution',()=>{
