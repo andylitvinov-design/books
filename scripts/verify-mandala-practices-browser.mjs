@@ -129,10 +129,17 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await expect(audioPanel).toBeVisible({timeout:15000});
       await page.evaluate(()=>{window.location.hash="guided-video-series";});
       await expect(course).toBeVisible({timeout:15000});
-      // Re-entering the course starts a fresh local session. Open Personal
-      // Meditation through its real action instead of expecting ephemeral
-      // local UI state to survive workspace unmount/remount.
-      await course.locator("[data-guided-open-personal-meditation]").click();
+      // Re-entering the course starts a fresh local session. The user must
+      // explicitly choose a focus again before Personal Meditation unlocks.
+      // Exercise the real selection and assert its committed state; never
+      // bypass the disabled/consent guard with a forced click.
+      const freshFocus=course.locator('[data-guided-focus-state="calm"]');
+      await freshFocus.click();
+      await expect(freshFocus).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await expect(course).toHaveAttribute("data-guided-focus-ready","true",{timeout:15000});
+      const personal=course.locator("[data-guided-open-personal-meditation]");
+      await expect(personal).toBeEnabled({timeout:15000});
+      await personal.click();
       await expect(course).toHaveAttribute("data-guided-personal-opened","true",{timeout:15000});
 
       await course.locator("[data-guided-create-plan]").click();
