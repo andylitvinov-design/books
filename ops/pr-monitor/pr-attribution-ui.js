@@ -189,9 +189,15 @@
       if(run){if(links.childNodes.length)links.append(' · ');const a=elt('a',null,'Запуск Worker');a.href=run;a.target='_blank';a.rel='noopener noreferrer';links.append(a);}
       if(commit){if(links.childNodes.length)links.append(' · ');const a=elt('a',null,'Опубликованный commit');a.href=commit;a.target='_blank';a.rel='noopener noreferrer';links.append(a);}
       wrap.append(list,links);
-      if(row.status==='FIXED'){
+      if(row.recorded_status==='FIXED'&&row.status==='VERIFIED'){
+        const note=elt('p','hh-pr-audit-foot',
+          'Проверено: текущий HEAD совпадает с опубликованным SHA, а Core, Specialist и Merge Gate прошли в одной успешной CI-попытке.');
+        const verified=link(row.verification_url);
+        if(verified){const a=elt('a',null,' · Проверка exact HEAD');a.href=verified;a.target='_blank';a.rel='noopener noreferrer';note.append(a);}
+        wrap.append(note);
+      }else if(row.recorded_status==='FIXED'){
         wrap.append(elt('p','hh-pr-audit-foot',
-          'Новый source SHA проверен на PR. Это ещё не статус VERIFIED: требуется независимая зелёная проверка обязательного CI на точном HEAD.'));
+          'Новый source SHA подтверждён на PR, но VERIFIED ещё не присвоен: ожидается независимая зелёная проверка обязательных gates на точном HEAD.'));
       }
       section.append(wrap);
     }
