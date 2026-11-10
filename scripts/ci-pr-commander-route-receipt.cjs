@@ -22,8 +22,7 @@ function normalizedPayload(routeResult,receipt){
    routeResult.liveVerified!==false||!Number.isSafeInteger(routeResult.dispatchAccepted)||
    routeResult.dispatchAccepted<0||routeResult.dispatchAccepted>2||
    (routeResult.state==='DISPATCH_ACCEPTED_NOT_WORKER_STARTED')!==(routeResult.dispatchAccepted>0)||
-   typeof routeResult.reason!=='string'||routeResult.reason.length<3||
-   routeResult.reason.length>120||
+   typeof routeResult.reason!=='string'||!/^[A-Z0-9_]{3,120}$/.test(routeResult.reason)||
    typeof routeResult.strategy!=='string'||!/^[A-Z0-9_]{3,90}$/.test(routeResult.strategy))
   throw Error('COMMANDER_CI_ROUTE_RECEIPT_UNVERIFIED');
  const blocked=Object.fromEntries(Object.entries(routeResult.blocked||{})
