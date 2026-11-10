@@ -13,7 +13,7 @@ import { buildClientCoachingContext, developmentGoalsContextItems } from '@/lib/
 import CoachingQuestionVoice from './coaching-question-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
-import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
+import { authoredFollowupFor, coachingControlForAnswer, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import CoachingBrainPanel from '@/components/coaching-brain-panel'
@@ -329,7 +329,15 @@ export default function PersonalCoaching({locale='en',accountId}){
       setNewSelection(false)
     }
   }
+  function offerSessionControl(answer){
+    const control=coachingControlForAnswer(answer,lang)
+    if(!control)return false
+    setSessionControl(control)
+    setPendingFollowup(null);setReflectionDraft('')
+    return true
+  }
   function offerFollowup(current,answer){
+    if(offerSessionControl(answer))return true
     if(index>=activeQuestions.length-1)return false
     const item=authoredFollowupFor(question,answer,current?.reflections)
     if(!item)return false
@@ -368,12 +376,14 @@ export default function PersonalCoaching({locale='en',accountId}){
       setError(langCopy.woop);return
     }
     if(!skip&&typeof persisted==='string'&&persisted===answer && Object.prototype.hasOwnProperty.call(session.answers,question.id)){
+      if(offerSessionControl(answer))return
       if(index===activeQuestions.length-1)await command('complete')
       else if(!offerFollowup(session,answer))visit(index+1,session.answers)
       return
     }
     const saved=await command('answer',{questionId:question.id,answer})
     if(!saved)return
+    if(!skip&&offerSessionControl(answer))return
     if(index===activeQuestions.length-1){
       // Completion is reported only after the final answer and status both persisted.
       const completed=await commandAfterSave(saved,'complete')
