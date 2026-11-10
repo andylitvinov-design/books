@@ -1,6 +1,16 @@
 name: Agent Director owned runtime contracts
 
 on:
+  push:
+    branches: ['feat/agent-director-owned-runtime-20261110']
+    paths:
+      - 'app/api/agent-director/commander-run/route.js'
+      - 'lib/agent-director/**'
+      - 'lib/holistic-support/owned-ollama.mjs'
+      - 'supabase/functions/agent-commander-private-store-v1/**'
+      - 'tests/agent-director-owned-runtime.test.mjs'
+      - 'tests/agent-commander-private-store.test.mjs'
+      - '.github/workflows/hh-agent-director-owned-runtime.yml'
   pull_request:
     branches: ['codex/public-book-library']
     paths:
