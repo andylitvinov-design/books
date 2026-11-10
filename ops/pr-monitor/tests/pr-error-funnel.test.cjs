@@ -129,3 +129,13 @@ test('no inline-width CSP violations in the funnel and stages remain visible whe
  assert.equal(src.includes("el('progress','hh-error-progress')"),true);
  assert.equal(src.includes('renderSkeleton();'),true);
 });
+
+test('GitHub proof comment anchors open while foreign or unsafe URLs are rejected',()=>{
+ const correct='https://github.com/andylitvinov-design/books/pull/4232#issuecomment-6775793168';
+ assert.equal(m.safeLink(correct),true);
+ assert.equal(m.safeLink('https://github.com/andylitvinov-design/books/issues/4232#issuecomment-123'),true);
+ assert.equal(m.safeLink('https://github.com/andylitvinov-design/books/pull/4232'),true);
+ assert.equal(m.safeLink('https://github.com/attacker/repo/pull/4232#issuecomment-6775793168'),false);
+ assert.equal(m.safeLink('javascript:alert(1)'),false);
+ assert.equal(m.safeLink(correct+'?redirect=https://example.com'),false);
+});
