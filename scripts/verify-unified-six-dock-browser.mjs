@@ -422,8 +422,8 @@ async function inspect(browserType,locale,width){
     for(const [tab,path] of [
       ["video","/ru/holistic-support/mandala"],
       ["mytube","/ru/mytube"],
-      ["master","/ru/practice"],
-      ["analysis","/ru/services/free-situation-review"],
+      ["coach","/ru/my-coach"],
+      ["services","/ru/services"],
       ["practice","/ru/holistic-support/mobile"],
     ]){
       await page.locator('[data-unified-dock-item="'+tab+'"]').click();
@@ -432,7 +432,7 @@ async function inspect(browserType,locale,width){
         tab+" standalone public navigation must stay in the same document");
     }
     assert.equal(popups,0,"standalone public tabs must not open another page");
-    results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → Master → Free Analysis → Practice",sameDocument:true});
+    results.push({journey:"Simulated iOS standalone Practice → Video → MyTube → My Coach → Services → Practice",sameDocument:true});
   }
  }finally{
   // WebKit may dispose a context as part of a crash/teardown race after the
@@ -736,7 +736,7 @@ try{
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
  results.push({journey:"MyTube → Video → six real iChat choices → one protected transcript → private Orders/Clients → Practice",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
- // with one seventh link to the REAL free express-review page.
+ // with canonical Services and My Coach destinations.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
  const homeDock=page.locator("[data-hh-unified-dock]");
  await homeDock.waitFor({state:"visible",timeout:30000});
@@ -759,17 +759,17 @@ try{
  }
 
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
- await homeDock.locator('[data-unified-dock-item="analysis"]').click();
- await page.waitForURL(/\/ru\/services\/free-situation-review\/?$/,{timeout:45000});
- await page.locator('[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator('[data-unified-dock-item="analysis"][aria-current="page"]').count(),1);
+ await homeDock.locator('[data-unified-dock-item="services"]').click();
+ await page.waitForURL(/\/ru\/services\/?$/,{timeout:45000});
+ await page.locator('[data-unified-dock-item="services"][aria-current="page"]').waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator('[data-unified-dock-item="services"][aria-current="page"]').count(),1);
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
  await page.locator("[data-support-practice-tabs]").waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item]').count(),7);
- results.push({journey:"Holistic House Home → original Free Analysis → Practice with one seven-tab dock",passed:true});
+ results.push({journey:"Holistic House Home → Services → Practice with one seven-tab dock",passed:true});
 
  // Profile unification: both Home and Practice open the existing private hub.
  // The protected CSP transition must remain a full server-authorized reload.
