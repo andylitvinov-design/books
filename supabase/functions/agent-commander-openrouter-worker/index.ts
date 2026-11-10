@@ -65,7 +65,7 @@ async function requeueExpired(db) {
 async function claim(db) {
   return await db.begin(async tx => {
     const rows = await tx.unsafe(
-      "select run_id,owner_id,chat_id,request_payload,worker_attempt_count from business_brain.commander_execution_runs where status='QUEUED' and worker_next_attempt_at<=now() order by created_at asc for update skip locked limit 1");
+      "select run_id,owner_id,chat_id,request_payload,worker_attempt_count from business_brain.commander_execution_runs where status='QUEUED' and executor in ('local','openrouter') and coalesce((request_payload->>'confirmGitHubWrite')::boolean,false)=false and worker_next_attempt_at<=now() order by created_at asc for update skip locked limit 1");
     if (!rows.length) return null;
     const row = rows[0], token = crypto.randomUUID();
     const updated = await tx.unsafe(
