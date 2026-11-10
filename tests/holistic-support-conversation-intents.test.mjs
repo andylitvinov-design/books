@@ -156,7 +156,25 @@ test("Judgment Mind carries a compact reasoning decision, not a chain-of-thought
     message: "Не про любовь, а про деньги", locale: "ru", safety: { status: "clear" },
   });
   assert.equal(result.state, "reframed");
-  assert.equal(result.reasoning.rationaleCode, "CURRENT_CORRECTION_WINS");
-  assert.equal(result.reasoning.nextMove, "accept_correction_and_reframe");
+  // Reasoning remains an internal decision aid; the public Judgment schema is unchanged.
+  assert.equal("reasoning" in result, false);
   assert.equal("chainOfThought" in result, false);
+});
+
+test("owned-language-model prompt receives a bounded reasoning brief, never private deliberation", async () => {
+  const { prepareNaturalDialogue } = await import("../lib/holistic-support/natural-dialogue.mjs");
+  const envelope = prepareNaturalDialogue({
+    message: "А почему?", locale: "ru",
+    history: [{ role: "user", text: "Мне сложно в отношениях" }],
+    decision: { status: "no_match", message: "Уточните вопрос", suggestions: [] },
+    access: { authenticated: true, ownerScoped: true },
+    consent: { ownedInference: true, agentMemory: false },
+    channel: "owned",
+  });
+  assert.equal(envelope.modelAllowed, true);
+  const serialized = envelope.modelRequest.messages.map(row => row.content || "").join("\n");
+  assert.match(serialized, /FOLLOW_UP_GROUNDED_IN_USER_CONTEXT/);
+  assert.match(serialized, /answer_in_recent_user_context/);
+  assert.match(serialized, /recent_user_turn_context/);
+  assert.doesNotMatch(serialized, /chainOfThought|privateReasoning/);
 });
