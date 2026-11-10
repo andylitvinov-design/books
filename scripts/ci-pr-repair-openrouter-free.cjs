@@ -105,44 +105,87 @@ function responseShape(completion){
       ?Object.keys(completion.usage).sort().slice(0,16):[]
   };
 }
-function extractAssistantText(content){
-  let text;
+// Only fixed metadata crosses the model boundary into CI diagnostics.
+ // Never persist response text, provider-controlled keys, source, or reasoning.
+function safeResponseDiagnostics(completion){
+  const choice=Array.isArray(completion?.choices)?completion.choices[0]:null;
+  const message=choice?.message;
+  const content=message?.content;
+  const reason=typeof choice?.finish_reason==='string'?choice.finish_reason:'';
+  const finishReason=new Set(['stop','length','max_tokens','max_output_tokens',
+    'content_filter','refusal','tool_calls','function_call','error']).has(reason)?reason:'other';
+  const parts=Array.isArray(content)?content:[];
+  const isText=part=>part&&typeof part==='object'&&!Array.isArray(part)&&
+    ['text','output_text'].includes(part.type)&&
+    (typeof part.text==='string'||(part.text&&!Array.isArray(part.text)&&
+      typeof part.text.value==='string'));
+  return {
+    schema:'HH_OPENROUTER_RESPONSE_SHAPE_V1',
+    choices_count:Array.isArray(completion?.choices)?Math.min(completion.choices.length,100):0,
+    finish_reason:finishReason,
+    content_type:content===null?'null':Array.isArray(content)?'array':typeof content,
+    content_parts:Math.min(parts.length,100),
+    text_parts:Math.min(parts.filter(isText).length,100),
+    reasoning_present:typeof message?.reasoning==='string'&&message.reasoning.trim()!==''||
+      Array.isArray(message?.reasoning_details)&&message.reasoning_details.length>0||
+      parts.some(part=>part?.type==='reasoning'||part?.type==='reasoning_details'),
+    tool_calls_present:Boolean(message?.function_call)||
+      Array.isArray(message?.tool_calls)&&message.tool_calls.length>0
+  };
+}
+function textValue(part){
+  if(typeof part?.text==='string')return part.text;
+  // A few Chat-compatible providers wrap the text in a text-value object.
+  // No other object member is ever interpreted as code.
+  if(part?.text&&typeof part.text==='object'&&!Array.isArray(part.text)&&
+    typeof part.text.value==='string')return part.text.value;
+  return null;
+}
+function extractAssistantText(content,{hasReasoning=false}={}){
+  let value,onlyReasoning=false;
+  if(content===null||content===undefined){
+    throw Error(hasReasoning?'FREE_AI_OPENROUTER_REASONING_ONLY':
+      'FREE_AI_OPENROUTER_PATCH_RESPONSE_NULL');
+  }
   if(typeof content==='string'){
-    text=content;
+    value=content;
   }else if(content&&typeof content==='object'&&!Array.isArray(content)&&
-    (content.type==='text'||content.type==='output_text'||content.type===undefined)&&
-    typeof content.text==='string'){
-    text=content.text;
+    (content.type==='text'||content.type==='output_text'||content.type===undefined)){
+    value=textValue(content);
+    if(value===null)throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
   }else if(Array.isArray(content)){
     const parts=[];
     for(const part of content){
       if(!part||typeof part!=='object'||Array.isArray(part))
         throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
-      if((part.type==='text'||part.type==='output_text'||part.type===undefined)&&
-         typeof part.text==='string'){
-        parts.push(part.text);
+      if(part.type==='reasoning'||part.type==='reasoning_details'){
+        onlyReasoning=true;
         continue;
       }
-      // Reasoning is a separate non-user-facing channel, never patch material.
-      // Ignore it only when a valid text block is also present; reasoning-only
-      // responses remain empty and are rejected below.
-      if(part.type==='reasoning'||part.type==='reasoning_details')continue;
-      // Refusals, images, tool payloads and unknown blocks are not source patches.
+      if(part.type==='text'||part.type==='output_text'||part.type===undefined){
+        const fragment=textValue(part);
+        if(fragment===null)throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
+        parts.push(fragment);
+        continue;
+      }
+      // Refusals, images, tool payloads and unknown blocks cannot become source.
       throw Error(part.type==='refusal'
         ?'FREE_AI_OPENROUTER_MODEL_REFUSED'
         :'FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
     }
-    text=parts.join('\n');
+    value=parts.join('\n');
   }else{
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
   }
-  if(!text.trim())throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_EMPTY');
-  if(Buffer.byteLength(text,'utf8')>MAX_REPLY)
+  if(!value.trim())throw Error((onlyReasoning||hasReasoning)&&
+    (!Array.isArray(content)||!content.some(x=>x?.type==='text'||x?.type==='output_text'))?
+    'FREE_AI_OPENROUTER_REASONING_ONLY':'FREE_AI_OPENROUTER_PATCH_RESPONSE_EMPTY');
+  if(Buffer.byteLength(value,'utf8')>MAX_REPLY)
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_TOO_LARGE');
-  return text;
+  return value;
 }
 async function requestFreePatch({prompt,key,model='auto',role='repair',
-  fetchImpl=global.fetch,onVerifiedModel=undefined}={}){
+  fetchImpl=global.fetch,onVerifiedModel=undefined,onResponseShape=undefined}={}){
   if(model!=='auto')selectedModel(model); // reject malformed manual overrides before any API call
   if(typeof key!=='string'||!key.trim())
     throw Error('FREE_AI_OPENROUTER_KEY_NOT_CONFIGURED');
@@ -164,11 +207,16 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
   const completion=await getJson(fetchImpl,BASE+'/chat/completions',{
     method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json',
       Accept:'application/json'},
-    body:JSON.stringify({model:selected,messages:[{role:'user',content:prompt}],
+    body:JSON.stringify({model:selected,
+      messages:[{role:'system',content:'Return ONLY a valid unified git diff for the allowed source files. No reasoning, prose, tool calls, JSON or markdown fences. If no safe diff is possible, return an empty answer.'},
+        {role:'user',content:prompt}],
+      modalities:['text'],reasoning:{enabled:false},
       max_tokens:5500,n:1,stream:false,usage:{include:true},
       provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
         data_collection:'deny'}})
   },170000);
+  // Persist bounded shape-only diagnostics before any response-shape rejection.
+  if(typeof onResponseShape==='function')onResponseShape(safeResponseDiagnostics(completion));
   // Provider error envelopes are diagnostic outcomes, never patch candidates.
   // Check before model/billing fields because error bodies may omit both.
   if(completion?.error)throw Error('FREE_AI_OPENROUTER_PROVIDER_ERROR');
@@ -193,7 +241,9 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
   if(['tool_calls','function_call','error'].includes(finish)||
      message.tool_calls?.length||message.function_call)
     throw Error('FREE_AI_OPENROUTER_TOOL_CALL_NOT_ALLOWED');
-  return extractAssistantText(message.content);
+  const metadata=safeResponseDiagnostics(completion);
+  return extractAssistantText(message.content,{hasReasoning:metadata.reasoning_present});
 }
 module.exports={BASE,CHAT_ENDPOINT,CHAT_CATALOG,DEFAULT_MODEL,MODEL_PROFILES,
-  selectedModel,verifyZeroPrice,chooseVerifiedFreeModel,responseShape,extractAssistantText,requestFreePatch};
+  selectedModel,verifyZeroPrice,chooseVerifiedFreeModel,responseShape,safeResponseDiagnostics,
+  extractAssistantText,requestFreePatch};
