@@ -69,9 +69,14 @@ function buildDiagnostics(jobs) {
     .map((step) => String(job.name || 'unnamed-job').slice(0, 90) + ' / ' +
       String(step.name || 'unnamed-step').slice(0, 90))).slice(0, 10);
   const joined = [...failedJobs, ...failedSteps].join(' ').toLowerCase();
+  const tokens = new Set(joined.split(/[^a-z0-9]+/).filter(Boolean));
+  const hasTypeScript = tokens.has('typescript') || tokens.has('tsc') ||
+    (tokens.has('type') && tokens.has('check'));
+  const hasTest = ['test', 'tests', 'testing', 'spec', 'specs',
+    'playwright', 'vitest', 'jest'].some(token => tokens.has(token));
   const category = /security|secret|sast|dependency audit/.test(joined) ? 'SECURITY'
-    : /typescript|type.?check|tsc/.test(joined) ? 'TYPESCRIPT'
-    : /test|spec|playwright|vitest|jest/.test(joined) ? 'TEST_FAILURE'
+    : hasTypeScript ? 'TYPESCRIPT'
+    : hasTest ? 'TEST_FAILURE'
     : 'UNKNOWN';
   return { category, failedJobs: failedJobs.slice(0, 10), failedSteps };
 }
