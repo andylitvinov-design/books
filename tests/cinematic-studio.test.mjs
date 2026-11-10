@@ -87,7 +87,7 @@ test("long-running cinematic preview loops actual scene times and synchronized a
     "encoded frame clock must be bounded by the requested movie duration");
   assert.match(studio,/const stockFrame=freeFilmVideoAt\(frameTime,true\)/,
     "the selected stock shot advances on the very same export timeline");
-  assert.match(studio,/if\(usingFreeFilmCompilation&&!stockFrame\)[\s\S]*?stockGapSince>500[\s\S]*?stopJob\(job,true\)/,
+  assert.match(studio,/if\(usingFreeFilmCompilation&&!stockFrame&&!hasStoryboardPhotoAt\(frameTime\)\)[\s\S]*?stockGapSince>500[\s\S]*?stopJob\(job,true\)/,
     "brief buffering keeps the real frame; a missing shot cancels rather than substituting procedural footage");
   assert.match(studio,/paintSingleVideoTextOverlay\(ctx,frameTime,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/,
     "encoded captions must use the same clock as the real video frame");
