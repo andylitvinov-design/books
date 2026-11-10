@@ -334,3 +334,16 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  assert.equal(elements['cc-messages'].children.length,2);
  assert.ok(network.some(x=>x.action==='read'&&x.method==='GET'));
 });
+
+
+test('Director silently refreshes the existing Google owner session before asking for another login',()=>{
+ const js=src('commander-chats.js');
+ const start=js.lastIndexOf("request('/api/commander-session')");
+ assert.ok(start>=0,'startup checks the existing monitor session first');
+ const boot=js.slice(start,start+900);
+ assert.match(boot,/request\\(AI\\+'\\?action=status'\\)/);
+ assert.match(js,/async function refreshOwnerSession\\(\\)/);
+ assert.match(js,/r\\.status===401&&!retried/);
+ assert.match(js,/return request\\(url,method,body,true\\)/);
+ assert.match(js,/ownerRefreshPromise/);
+});
