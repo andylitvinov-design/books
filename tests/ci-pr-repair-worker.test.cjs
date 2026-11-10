@@ -1146,3 +1146,36 @@ test('read-only legacy finalization remains PREPARED and emits no-source deliver
  assert.equal(result.next_action,'HANDOFF_EXISTING_SOURCE_OWNER');
  assert.equal(f.log.commit,0);
 });
+
+
+test('finalizer records the actual verified free model instead of hard-coding OpenCode',async()=>{
+ const f=fixture();
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'success',strategy:'code',codeAvailable:true,
+  codeResult:'success',codeStatus:'no_change',
+  codeDetail:'FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID_CHOICE_COUNT',
+  codeBackend:'openrouter',codeModel:'cohere/north-mini-code:free',
+  candidateStatus:'manual_required',publishResult:'skipped'});
+ assert.equal(result.state,'MANUAL');
+ assert.equal(result.source_published,false);
+ assert.equal(result.code_provider,'cohere/north-mini-code:free');
+ assert.equal(result.code_backend,'openrouter');
+ assert.equal(result.code_model,'cohere/north-mini-code:free');
+ assert.equal(result.code_model_verified,true);
+ assert.match(f.log.commentBodies.at(-1),/cohere\\/north-mini-code:free/);
+});
+
+test('finalizer never reports an invalid or non-free model as verified provenance',async()=>{
+ const f=fixture();
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'success',strategy:'code',codeAvailable:true,
+  codeResult:'success',codeStatus:'no_change',codeBackend:'openrouter',
+  codeModel:'openai/paid-model',candidateStatus:'manual_required',publishResult:'skipped'});
+ assert.equal(result.code_provider,null);
+ assert.equal(result.code_backend,null);
+ assert.equal(result.code_model,null);
+ assert.equal(result.code_model_verified,false);
+ assert.equal(result.source_published,false);
+});
