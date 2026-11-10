@@ -50,3 +50,16 @@ test('private tables are forced-RLS and direct privileges are revoked', () => {
     assert.match(migration,new RegExp('revoke all on business_brain\\.'+table+' from public,anon,authenticated,service_role'))
   }
 })
+
+
+test('blocked execution event kind matches the private database constraint', () => {
+  const edge = read('supabase/functions/agent-commander-private-store-v1/index.ts')
+  const migration = read('supabase/migrations/20261110044000_commander_execution_blocked_event_kind.sql')
+  assert.match(edge, /kind:"execution_blocked"/)
+  assert.match(edge, /sourceVerified:false/)
+  assert.match(migration, /DROP CONSTRAINT IF EXISTS commander_chat_events_kind_check/)
+  assert.match(migration, /ADD CONSTRAINT commander_chat_events_kind_check/)
+  assert.match(migration, /'execution_blocked'/)
+  assert.match(migration, /'github_report'/)
+  assert.doesNotMatch(migration, /'executor_started'|'executor_completed'|'source_verified'/)
+})
