@@ -1150,7 +1150,7 @@ test('read-only legacy finalization remains PREPARED and emits no-source deliver
 
 test('repair finalizer emits an owned FIXED receipt only for an exact published source commit',()=>{
  const outcome=buildTaskOutcome({task_key:'1'.repeat(32),pr_number:11,
-  head_sha:sha,newSha, state:'PUBLISHED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+  head_sha:sha,new_sha:newSha, state:'PUBLISHED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
   source_published:true,head_matches:true,claim_status:'claimed',
   owner_run_id:'12345',now:'2026-11-10T01:00:00.000Z'});
  assert.equal(outcome.status,'FIXED');
@@ -1164,10 +1164,10 @@ test('unverified or stale published claims cannot become FIXED',()=>{
  for(const input of [
   {source_published:false,head_matches:true},
   {source_published:true,head_matches:false},
-  {source_published:true,head_matches:true,newSha:sha}
+  {source_published:true,head_matches:true,new_sha:sha}
  ]){
   assert.throws(()=>buildTaskOutcome({task_key:'1'.repeat(32),pr_number:11,
-   head_sha:sha,newSha:input.newSha||newSha,state:'PUBLISHED',
+   head_sha:sha,new_sha:input.new_sha||newSha,state:'PUBLISHED',
    reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
    source_published:input.source_published,head_matches:input.head_matches,
    owner_run_id:'12345',now:'2026-11-10T01:00:00.000Z'}));
@@ -1210,7 +1210,7 @@ test('retry receipt must have a future bounded timestamp and remains exact-head 
 
 test('outcome validation rejects terminal claims without independent source proof',()=>{
  const valid=buildTaskOutcome({task_key:'4'.repeat(32),pr_number:11,head_sha:sha,
-  newSha,state:'PUBLISHED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+  new_sha:newSha,state:'PUBLISHED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
   source_published:true,head_matches:true,owner_run_id:'12345',
   now:'2026-11-10T01:00:00.000Z'});
  assert.equal(validateTaskOutcome(valid),true);
