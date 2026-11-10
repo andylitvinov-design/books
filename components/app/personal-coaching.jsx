@@ -610,7 +610,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           {isOverload&&session.actionPlan?.approvedAt&&<p className={styles.subtle} data-coaching-grow-actions>
             {growCopy[lang].confirmed}: {1+(Array.isArray(session.actionPlan.nextActions)?session.actionPlan.nextActions.length:0)}/3
           </p>}
-          {notice&&<p role="status">{notice}</p>
+          {notice&&<p role="status">{notice}</p>}
           {error&&<p role="alert">{error} <button type="button" disabled={busy} onClick={refreshPlan}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
           {conflictingPlan!==undefined&&<div className={styles.answer} data-coaching-conflicting-plan>
             <strong>{lang==='ru'?'План из другой вкладки:':lang==='es'?'Plan de otra pestaña:':'Plan from another tab:'}</strong>
