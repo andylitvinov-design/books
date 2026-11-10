@@ -1162,6 +1162,14 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
         c.root_code==='CORE_REQUIRED_CHECK_FAILED');
       if(blocker){
         blocker.ci_error_category=diagnosis.category;
+        blocker.ci_error_ruleset_version=diagnosis.ruleset_version||null;
+        blocker.ci_error_confidence=Number.isFinite(diagnosis.confidence)?diagnosis.confidence:null;
+        blocker.ci_error_reason_code=diagnosis.reason_code||null;
+        blocker.ci_error_evidence_code=diagnosis.evidence_code||null;
+        blocker.ci_error_recommended_status=diagnosis.recommended_status||'UNCLASSIFIED';
+        blocker.ci_error_responsible_role=diagnosis.responsible_role||'ci-diagnostic-triage';
+        blocker.ci_error_next_action=diagnosis.recommended_action||'Preserve evidence and continue bounded diagnostics.';
+        blocker.ci_error_retry_policy=diagnosis.retry||{allowed:false,max_attempts:0};
         if(diagnosis.failed_job)blocker.failed_job=diagnosis.failed_job;
         if(diagnosis.failed_step)blocker.failed_step=diagnosis.failed_step;
       }
