@@ -32,8 +32,9 @@
   }
   function classified(e){var c=e.classification;return !!(c&&
     c.schema==='HH_CI_ERROR_CLASSIFICATION_V1'&&c.status==='DIAGNOSTIC_ONLY'&&
-    c.category===e.category&&typeof c.strategy_code==='string'&&
-    typeof c.responsible_role==='string'&&c.responsible_role.length>0);}
+    c.category===e.category&&typeof c.reason_code==='string'&&
+    c.reason_code.length>0&&typeof c.responsible_role==='string'&&
+    c.responsible_role.length>0);}
   function taskLinked(e){return classified(e)&&ASSOCIATIONS.has(e.association_status);}
   function routeFor(e){
     var r=e.route_receipt;
