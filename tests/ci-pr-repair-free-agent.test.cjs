@@ -96,13 +96,15 @@ test('exact one-line model replacement salvages faulty context only with unique 
  const model='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n'+
   '@@ -500,6 +500,6 @@\n'+' unrelated hallucinated context\n'+'-'+before+'\n+'+after+'\n';
  const expected='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n'+
-  '@@ -2,1 +2,1 @@\n-'+before+'\n+'+after+'\n';
+  '@@ -1,3 +1,3 @@\n other code\n-'+before+'\n+'+after+'\n more code\n';
  assert.equal(exactSingleLineReplacementPatch(model,scope,()=>source),expected);
  assert.equal(exactSingleLineReplacementPatch(model,scope,()=>source+source),null);
  assert.equal(exactSingleLineReplacementPatch(model,scope,()=>source.replace('hhRepair','other')),null);
  assert.equal(exactSingleLineReplacementPatch(model,{files:['components/other.tsx']},()=>source),null);
  assert.equal(exactSingleLineReplacementPatch(model,{files:['app/api/secret.ts']},()=>source),null);
  assert.equal(exactSingleLineReplacementPatch(model,scope,()=>'no trailing newline'),null);
+ assert.equal(exactSingleLineReplacementPatch(model,scope,()=>before+'\n'),null,
+  'strict Git requires at least one real unchanged source context line');
  assert.equal(exactSingleLineReplacementPatch(model.replace('-'+before,'-className={hhRepairCanaryMissingSymbolV2}'),scope,()=>source),null,
   'shortened token within a line must never be matched fuzzily');
  assert.equal(exactSingleLineReplacementPatch(model+'@@ -5 +5 @@\n-another\n+replacement\n',scope,()=>source),null);
@@ -111,6 +113,35 @@ test('exact one-line model replacement salvages faulty context only with unique 
  assert.equal(exactSingleLineReplacementPatch(model.replace('+'+after,'+'+after+'\n+another'),scope,()=>source),null);
  assert.equal(exactSingleLineReplacementPatch(model.replace('-'+before,'-'+before+'\n-'+before),scope,()=>source),null);
  assert.equal(exactSingleLineReplacementPatch(model.replace('@@ -500,6 +500,6 @@','@@ not-valid'),scope,()=>source),null);
+});
+
+test('unique exact-line model fallback produces a normal strictly applicable git patch',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const cp=require('node:child_process');
+ const {exactSingleLineReplacementPatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'hh-one-line-git-'));
+ const rel='components/public-card.tsx';
+ const original='const first = true;\nconst state = badUnknown;\nconst last = 3;\n';
+ try{
+  fs.mkdirSync(path.join(root,'components'));
+  fs.writeFileSync(path.join(root,rel),original);
+  const git=(...args)=>cp.execFileSync('git',args,{cwd:root});
+  git('init','-q');git('add','--',rel);
+  git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','base');
+  const wrong='diff --git a/'+rel+' b/'+rel+'\n--- a/'+rel+'\n+++ b/'+rel+'\n'+
+   '@@ -999,7 +999,7 @@\n model invented context\n-const state = badUnknown;\n+const state = "correct";\n';
+  const p=path.join(root,'candidate.patch');
+  fs.writeFileSync(p,wrong);
+  assert.notEqual(cp.spawnSync('git',['apply','--check','--whitespace=error',p],{cwd:root}).status,0);
+  const exact=exactSingleLineReplacementPatch(wrong,{files:[rel]},f=>fs.readFileSync(path.join(root,f),'utf8'));
+  assert.ok(exact);
+  assert.match(exact,/\n@@ -1,3 \+1,3 @@\n const first = true;/);
+  fs.writeFileSync(p,exact);
+  assert.equal(cp.spawnSync('git',['apply','--check','--whitespace=error',p],{cwd:root}).status,0);
+  git('apply','--whitespace=error',p);
+  assert.equal(fs.readFileSync(path.join(root,rel),'utf8'),original.replace('badUnknown','"correct"'));
+  assert.equal(cp.spawnSync('git',['diff','--check'],{cwd:root}).status,0);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
 });
 
 test('model patch must be bounded unified diff only changing allowlist',()=>{

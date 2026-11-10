@@ -472,14 +472,24 @@ function exactSingleLineReplacementPatch(patch,scope,readSource){
     !minus[0]||!plus[0]||minus[0].length>4000||plus[0].length>4000)
    return null;
  const source=readSource(file);
- if(typeof source!=='string'||!source.endsWith('\n'))return null;
+ if(typeof source!=='string'||!source.endsWith('\n')||
+   source.includes('\r')||source.includes('\0'))return null;
  const target=minus[0]+'\n',at=source.indexOf(target);
  if(at<0||source.indexOf(target,at+1)>=0||(at>0&&source[at-1]!=='\n'))
    return null;
+ // Strict Git rejects zero-context hunks. Rebuild up to three unchanged,
+ // trusted ORIGINAL source lines either side, never model-invented context.
+ const original=source.split('\n').slice(0,-1);
  const lineNo=1+(source.slice(0,at).match(/\n/g)||[]).length;
+ const idx=lineNo-1,from=Math.max(0,idx-3),end=Math.min(original.length,idx+4);
+ const count=end-from;
+ if(count<2)return null;
+ const unchangedBefore=original.slice(from,idx).map(x=>' '+x);
+ const unchangedAfter=original.slice(idx+1,end).map(x=>' '+x);
+ const body=[...unchangedBefore,'-'+minus[0],'+'+plus[0],...unchangedAfter].join('\n');
  const canonical='diff --git a/'+file+' b/'+file+'\n'+
    '--- a/'+file+'\n+++ b/'+file+'\n'+
-   '@@ -'+lineNo+',1 +'+lineNo+',1 @@\n-'+minus[0]+'\n+'+plus[0]+'\n';
+   '@@ -'+(from+1)+','+count+' +'+(from+1)+','+count+' @@\n'+body+'\n';
  return Buffer.byteLength(canonical,'utf8')<=MAX_PATCH?canonical:null;
 }
 function isolatedEnvironment(dir,freeApiKey=process.env.HH_OPENCODE_FREE_API_KEY||''){
