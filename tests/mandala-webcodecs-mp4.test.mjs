@@ -316,33 +316,34 @@ test("guest real encoded video must keep Save behind sign-in and preserve physic
 });
 
 
-test("WebKit traverses Ideas Personalization and Concept before consented Voice/My Voice",()=>{
+test("WebKit verifies the two Ideas tabs then opens Audio Voice / My Voice via Montage Text",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
  const concept=browser.indexOf('await conceptTab.click()',personal);
  const back=browser.indexOf('await personalTab.click()',concept);
- const opened=browser.indexOf('await advancedText.click()',back);
- const voice=browser.indexOf('await voiceModeButton.click()',opened);
- const my=browser.indexOf('await myVoiceModeButton.click()',voice);
+ const openAudio=browser.indexOf("const openAudioVoice=async()=>",back);
+ const voice=browser.indexOf("await openAudioVoice()",openAudio);
+ const my=browser.indexOf('const myVoiceModeButton=voicePanel.locator',voice);
  const record=browser.indexOf('const recordEntry=page.locator',my);
  const tap=browser.indexOf('await recordEntry.click()',record);
  const phrase=browser.indexOf('const phraseSelector=page.locator',tap);
  const consent=browser.indexOf('await narrationConsent.check()',phrase);
- assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&
-   opened>back&&voice>opened&&my>voice&&record>my&&tap>record&&
-   phrase>tap&&consent>phrase,"real WebKit route must use visible controls before TTS consent");
+ assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&openAudio>back&&
+   voice>openAudio&&my>voice&&record>my&&tap>record&&phrase>tap&&consent>phrase,
+   "real WebKit route must use visible Ideas, Montage Text, and Audio Voice controls before TTS consent");
  const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
  assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
- assert.match(studio,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
- assert.match(studio,/data-video-ideas-voice-mode="my-voice"/);
- assert.doesNotMatch(browser,/await advancedVoice\.locator\(":scope > summary"\)\.click\(\)/);
- for(const required of ["data-video-affirmation-voice-preview","data-hypno-approve",
+ assert.match(studio,/data-video-ideas-tab="personalization"/);
+ assert.match(studio,/data-video-ideas-tab="concept"/);
+ assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
+ assert.doesNotMatch(studio,/data-video-ideas-recording-open|data-video-ideas-voice-mode|data-video-legacy-phrase-editor/);
+ assert.doesNotMatch(browser,/data-video-ideas-voice-mode|data-video-ideas-advanced-voice|advancedText|advancedVoice/);
+ for(const required of ["data-video-affirmation-voice-preview","data-video-audio-voice-mode=\"my-voice\"",
   "voice-wav-ready","hypno-audio-effects-rendered","encoded-audio-verified",
   'spawnSync("ffprobe"','spawnSync("ffmpeg"'])
   assert.ok(browser.includes(required),"do not lose real media, rights and consent proof: "+required);
 });
-
 test("failed Safari output hides guest Watch and labels the result as a playback failure",()=>{
   const result=studio.slice(studio.indexOf('id="personal-video-result"'));
   assert.match(result,/playbackStatus==="failed"\?\(locale==="ru"\?"Ошибка воспроизведения видео"/);
