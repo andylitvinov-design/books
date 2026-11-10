@@ -194,7 +194,8 @@ test("final approved six tabs lead to exactly one real workspace each",()=>{
   assert.match(studio,/data-video-topic-section/);
   assert.match(studio,/data-video-director-goal-controls/);
   assert.match(studio,/data-video-director-topic-controls/);
-  assert.match(studio,/data-video-phrase-audio-shortcut/);
+assert.doesNotMatch(studio,/data-video-phrase-audio-shortcut|data-video-legacy-phrase-editor/);
+assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
   assert.match(studio,/data-video-final-editor/);
   assert.match(studio,/data-video-audio-details/);
 });
