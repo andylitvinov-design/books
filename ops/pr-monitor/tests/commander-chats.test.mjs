@@ -392,7 +392,7 @@ test('private Commander writes raw JSON text through text-to-jsonb casts, not JS
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
  assert.doesNotMatch(edge,/\$\d+::jsonb\b/);
  const jsonbParams=[...edge.matchAll(/\$\d+::text::jsonb\b/g)];
- assert.equal(jsonbParams.length,0);
+ assert.equal(jsonbParams.length,14);
  for(const field of ['failed_jobs','failed_steps','commander_tasks','commander_chats','commander_chat_events'])
   assert.ok(edge.includes(field));
  assert.match(edge,/JSON\.stringify\(event\.failed_jobs\)/);
