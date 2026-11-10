@@ -54,6 +54,7 @@ test('only one $0 pinned inference, without fallbacks or write tools',async()=>{
   assert.deepEqual(body.provider,{allow_fallbacks:false,max_price:{prompt:0,completion:0},
     data_collection:'deny'});
   assert.equal(body.model,DEFAULT_MODEL);
+  assert.equal(body.n,1,'exactly one completion choice is requested');
   assert.equal(body.tools,undefined);
   assert.equal(body.models,undefined);
   assert.equal(calls[1].headers.Authorization,'Bearer test-key');
@@ -250,4 +251,19 @@ test('verified model receipt precedes inference and malformed replies get precis
   [{model:DEFAULT_MODEL,usage:{cost:0},choices:[{finish_reason:'tool_calls',message:{tool_calls:[{}]}}]},/TOOL_CALL_NOT_ALLOWED/]
  ]){let n=0;const fetch=async()=>++n===1?catalog:response(body);
   await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',fetchImpl:fetch}),reason);assert.equal(n,2);}
+});
+
+
+test('reasoning blocks are excluded while actual patch text remains usable',()=>{
+ const patch='diff --git a/a.js b/a.js\\n@@ -1 +1 @@\\n-old\\n+new';
+ assert.equal(extractAssistantText([
+  {type:'reasoning',text:'internal reasoning must not become a patch'},
+  {type:'text',text:patch}
+ ]),patch);
+ assert.throws(()=>extractAssistantText([
+  {type:'reasoning',text:'reasoning only'}
+ ]),/PATCH_RESPONSE_EMPTY/);
+ assert.throws(()=>extractAssistantText([
+  {type:'image_url',image_url:{url:'https://invalid.example/image'}}
+ ]),/PATCH_RESPONSE_INVALID/);
 });
