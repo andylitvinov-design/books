@@ -542,7 +542,7 @@ jobs:
           HH_OPENROUTER_FREE_API_KEY: ${{ needs.claim.outputs.code_provider == 'openrouter' && secrets.HH_OPENROUTER_FREE_API_KEY || '' }}
           # Free model resolved in the trusted adapter from the live zero-price catalog.
           # A profile change never bypasses repair leases, isolation or exact-HEAD CI.
-          HH_OPENROUTER_FREE_MODEL: auto
+          HH_OPENROUTER_FREE_MODEL: openrouter/free
         run: |
           set -euo pipefail
           # Proposer runs OpenCode in an empty temporary cwd, with an empty
