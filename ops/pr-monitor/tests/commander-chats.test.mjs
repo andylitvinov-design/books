@@ -132,7 +132,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(js.includes('eventId:eventIdOverride||id()'));
  assert.ok(js.includes('councilChunkEventId(data.requestId,index)'));
  assert.ok(js.includes('AI Council Free · часть'));
- assert.ok(js.includes("mode!=='council-free'&&!thread.executors.includes(mode)"));
+ assert.ok(js.includes("mode!=='council-free'&&!thread.executors.includes(mode==='director'?'local':mode)"));
  assert.match(css,/cc-council-panel/);
  assert.match(css,/min-height:600px/);
  assert.ok(csp.includes('frame-src https://accounts.google.com/gsi/ https://ai-council-free-super10.vercel.app;'));
