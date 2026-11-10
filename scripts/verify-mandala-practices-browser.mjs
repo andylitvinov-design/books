@@ -107,6 +107,17 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await expect(audioPanel).toBeVisible({timeout:15000});
       await page.evaluate(()=>{window.location.hash="guided-video-series";});
       await expect(course).toBeVisible({timeout:15000});
+      // Guided Practices is a separate workspace and is intentionally
+      // unmounted while Audio is active. Its local, uncommitted result is not
+      // expected to survive that navigation. Generate a fresh local result
+      // after returning, then exercise Skip as a distinct revocation path.
+      const skipState=course.locator('[data-guided-focus-state="calm"]');
+      await skipState.click();
+      await expect(skipState).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      const skipGenerate=course.locator("[data-guided-generate-meditation]");
+      await expect(skipGenerate).toBeEnabled();
+      await skipGenerate.click();
+      await result.waitFor({state:"visible",timeout:15000});
       await result.locator("[data-guided-skip-meditation]").click();
       await expect(result.locator("[data-guided-skip-meditation]"))
         .toHaveAttribute("aria-pressed","true",{timeout:15000});
