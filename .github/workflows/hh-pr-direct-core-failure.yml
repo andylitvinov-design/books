@@ -90,8 +90,14 @@ jobs:
       (github.event.workflow_run.conclusion == 'failure' ||
        github.event.workflow_run.conclusion == 'timed_out' ||
        github.event.workflow_run.conclusion == 'startup_failure')
+    # GitHub Actions retains only ONE pending job per concurrency group.
+    # A global group silently cancelled unrelated PR error handoffs after
+    # their independent OIDC intake (for example PR #4288, run 42915425114).
+    # Serialize by trusted source branch; source edits remain protected by
+    # the existing exact-HEAD reservation, independent worker claim and PR
+    # source writer lease. Other PRs must not replace pending work.
     concurrency:
-      group: hh-control-tower-single-writer
+      group: hh-direct-core-pr-${{ github.event.workflow_run.head_branch || github.event.workflow_run.id }}
       cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 10

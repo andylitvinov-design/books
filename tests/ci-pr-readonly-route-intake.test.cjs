@@ -93,7 +93,7 @@ test('lost or rejected OIDC callback fails visibly without blind retry',async()=
  /CI_READONLY_ROUTE_RECEIPT_NOT_CONFIRMED/);
  assert.equal(calls,1);
 });
-test('read-only callback runs before unchanged single-writer source stage in same workflow',()=>{
+test('read-only callback precedes branch-isolated guarded source stage in same workflow',()=>{
  const yml=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
  const intake=yml.split('  ci_event_intake:\n')[1]?.split('  direct-core-failure:\n')[0];
  const writer=yml.split('  direct-core-failure:\n')[1]?.split('  core-slot-wakeup:\n')[0];
@@ -101,7 +101,10 @@ test('read-only callback runs before unchanged single-writer source stage in sam
  assert.match(intake,/persistReadOnlyRoute\(/);
  assert.match(intake,/ci-pr-readonly-route-intake\.cjs/);
  assert.doesNotMatch(intake,/createWorkflowDispatch|hh-control-tower-single-writer/);
- assert.match(writer,/group: hh-control-tower-single-writer/);
+ assert.match(writer,/group: hh-direct-core-pr-/);
+ assert.match(writer,/github\.event\.workflow_run\.head_branch/);
+ assert.match(writer,/cancel-in-progress: false/);
+ assert.doesNotMatch(writer,/group: hh-control-tower-single-writer/);
  assert.match(writer,/ci-pr-event-handoff\.cjs/);
  assert.match(writer,/sendCommanderCiRoute/);
 });

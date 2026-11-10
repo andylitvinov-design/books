@@ -2,7 +2,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-test('Control Tower cannot dispatch while Watchdog holds sole guarded writer',()=>{
+test('Watchdog retains guarded writer while direct Core handoff isolates pending PR branches',()=>{
  const watchdog=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
  const observer=fs.readFileSync('.github/workflows/hh-pr-queue-dispatcher.yml','utf8');
  assert.match(watchdog,/  direct-handoff:/);
@@ -21,7 +21,8 @@ test('Control Tower cannot dispatch while Watchdog holds sole guarded writer',()
  assert.match(direct,/HH PR core release gate/);
  assert.match(direct,/  workflow_run:/);
  assert.match(direct,/types: \[completed\]/);
- assert.match(direct,/group: hh-control-tower-single-writer/);
+ assert.match(direct,/group: hh-direct-core-pr-\$\{\{ github\.event\.workflow_run\.head_branch/);
+ assert.doesNotMatch(direct,/group: hh-control-tower-single-writer/);
  assert.ok(direct.includes('ci-pr-event-handoff.cjs'));
  assert.match(direct,/HH_DIRECT_CORE_HANDOFF/);
  assert.match(watchdog,/HH PR source Repair Worker/);

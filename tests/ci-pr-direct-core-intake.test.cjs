@@ -35,10 +35,12 @@ test('unknown or unmatched association is never treated as successful task intak
  assert.doesNotMatch(source,/association\s*===\s*['"]UNMATCHED/);
 });
 
-test('repair stage still serializes every source write, only after verified task intake',()=>{
+test('repair handoff is branch-scoped, preserving exact-HEAD writer protection without cross-PR pending replacement',()=>{
  assert.match(worker,/needs: ci_event_intake/);
  assert.match(worker,/needs\.ci_event_intake\.result == 'success'/);
- assert.match(worker,/group: hh-control-tower-single-writer/);
+ assert.match(worker,/group: hh-direct-core-pr-\$\{\{ github\.event\.workflow_run\.head_branch \|\| github\.event\.workflow_run\.id \}\}/);
+ assert.doesNotMatch(worker,/group: hh-control-tower-single-writer/);
+ assert.match(worker,/ci-pr-event-handoff\.cjs/);
  assert.match(worker,/cancel-in-progress: false/);
  assert.match(worker,/HH_COMMANDER_CI_RECEIPT: \$\{\{ needs\.ci_event_intake\.outputs\.receipt_json \}\}/);
  assert.match(worker,/ci-pr-commander-strategy-router\.cjs/);
@@ -50,4 +52,14 @@ test('repair stage still serializes every source write, only after verified task
 test('existing success-side slot wakeup remains independent',()=>{
  assert.match(full,/  core-slot-wakeup:/);
  assert.match(full,/github\.event\.workflow_run\.conclusion == 'success'/);
+});
+
+test('GitHub pending concurrency slot cannot cross-cancel different source branches',()=>{
+ const workflow=fs.readFileSync(path.join(__dirname,'../.github/workflows/hh-pr-direct-core-failure.yml'),'utf8');
+ const direct=workflow.split('  direct-core-failure:\n')[1]?.split('  core-slot-wakeup:\n')[0];
+ assert.match(direct,/hh-direct-core-pr-/);
+ assert.match(direct,/github\.event\.workflow_run\.head_branch/);
+ assert.match(direct,/cancel-in-progress: false/);
+ assert.doesNotMatch(direct,/group: hh-control-tower-single-writer/);
+ assert.doesNotMatch(intake,/concurrency:/);
 });
