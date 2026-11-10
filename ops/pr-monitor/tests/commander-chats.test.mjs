@@ -188,7 +188,7 @@ test('Commander execution run snapshots a bounded revision-pinned task context a
  assert.ok(edge.includes('HH_COMMANDER_TASK_CONTEXT_V1'));
  assert.ok(edge.includes('chatRevision:Number.isSafeInteger(chat.revision)?chat.revision:0'));
  assert.ok(edge.includes('linkedPrHintsVerified:false'));
- assert.ok(edge.includes('Resolve each linked PR against live GitHub metadata and exact current HEAD'));
+ assert.ok(edge.includes('Resolve live GitHub PR and exact current HEAD'));
  assert.ok(edge.includes('JSON.stringify({message,contextCapsule})'));
  assert.ok(edge.includes('String(contextCapsule.chatRevision)'));
 });
@@ -407,8 +407,8 @@ test('private Commander writes raw JSON text through text-to-jsonb casts, not JS
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
  assert.doesNotMatch(edge,/\$\d+::jsonb\b/);
  const jsonbParams=[...edge.matchAll(/\$\d+::text::jsonb\b/g)];
- assert.equal(jsonbParams.length,14);
- for(const field of ['failed_jobs','failed_steps','commander_tasks','commander_chats','commander_chat_events'])
+ assert.equal(jsonbParams.length,18);
+ for(const field of ['failed_jobs','failed_steps','commander_tasks','commander_chats','commander_chat_events','commander_execution_runs'])
   assert.ok(edge.includes(field));
  assert.match(edge,/JSON\.stringify\(event\.failed_jobs\)/);
  assert.match(edge,/JSON\.stringify\(event\.failed_steps\)/);
@@ -497,3 +497,15 @@ test('new chat sends bounded acceptance criteria and Skill IDs as references onl
 });
 
 
+
+
+test('Hermes dispatch independently verifies live zero-price catalog and rejects write approvals for non-Hermes executor',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ const begin=edge.indexOf('if(action==="commander_start_run")');
+ const end=edge.indexOf('if(action==="commander_list_ci_events")',begin);
+ const handler=edge.slice(begin,end);
+ assert.match(handler,/if\(writeConfirmed&&executor!==\"hermes\"\)return reply\(403/);
+ assert.match(handler,/await verifyFreeModel\(modelId\)/);
+ assert.match(handler,/modelVerified\)/);
+ assert.ok(handler.indexOf('await verifyFreeModel(modelId)')<handler.indexOf('await db.begin'));
+});
