@@ -894,6 +894,8 @@ test('direct Core failures reach deterministic checks and then free AI without p
  assert.match(wf,/  code_fix:\n[\s\S]*?ci-pr-repair-free-agent\.cjs/);
  assert.match(wf,/  code_verify:\n[\s\S]*?ci-pr-repair-code-candidate\.cjs verify/);
  assert.ok(wf.includes('HH_AUTOMERGE_TOKEN'));
+ assert.doesNotMatch(require('node:fs').readFileSync('scripts/ci-pr-repair-worker.cjs','utf8'),/free OpenCode\\/GLM source repair/);
+ assert.match(require('node:fs').readFileSync('scripts/ci-pr-repair-worker.cjs','utf8'),/free \+codeBackend\+ ' model '/);
  assert.ok(wf.includes('HH_FREE_AI_METADATA_PATH: ${{ runner.temp }}/hh-free-ai-model.json'));
  assert.ok(wf.includes('code_model: ${{ steps.capture.outputs.code_model }}'));
  assert.ok(wf.includes('HH_CODE_BACKEND: ${{ needs.code_fix.outputs.code_backend }}'));
