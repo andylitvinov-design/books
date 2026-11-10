@@ -13,7 +13,7 @@
  const STATES={planned:'Запланировано',assigned:'Назначено · не запущено',working:'В работе · по заявлению',
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
- let reportRefreshTimer=null,reportSyncBusy=false;
+ let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null;
  const COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app';
  const COUNCIL_PROTOCOL='HH_AI_COUNCIL_BRIDGE_V1';
  let councilFrameReady=false,councilPending=null;
@@ -256,34 +256,61 @@ function renderThread(){
   }catch(err){info('Ошибка открытия чата: '+String(err.message||err))}
  }
  async function create(e){
-  e.preventDefault();if(busy)return;
+  e.preventDefault();
+  const button=el('create-send'),feedback=el('create-feedback');
+  const fail=message=>{
+   info(message);feedback.textContent=String(message);feedback.hidden=false;
+   feedback.scrollIntoView({block:'nearest'});feedback.focus({preventScroll:true});
+  };
+  if(busy)return fail('Другая операция ещё выполняется. Повторите нажатие.');
   const question=el('new-question').value.trim(),mode=el('new-mode').value;
-  if(question.length<2||question.length>1200)return info('Вопрос должен содержать 2–1200 символов.');
-  busy=true;el('create-send').disabled=true;
+  busy=true;button.disabled=true;
+  const buttonLabel=button.textContent;button.textContent='Создаю…';
+  feedback.hidden=true;feedback.textContent='';
   let created=false;
   try{
-   if(!el('new-title').value.trim())el('new-title').value=('Вопрос: '+question.replace(/\s+/g,' ')).slice(0,110);
-   const data={...formValues('new-'),id:id()};let c;
+   if(question.length<2||question.length>1200)throw Error('Вопрос должен содержать 2–1200 символов.');
+   if(mode==='openrouter'&&!aiReady)throw Error('Бесплатная модель OpenRouter сейчас недоступна. Выберите локального советника.');
+   if(!el('new-title').value.trim())el('new-title').value=('Вопрос: '+question.replace(/\\s+/g,' ')).slice(0,110);
+   if(el('new-title').value.trim().length<4)el('new-title').value='Вопрос: '+question.slice(0,95);
+   const data={...formValues('new-'),id:pendingCreateId||(pendingCreateId=id())};let c;
    if(remote){
-    const v=await request(SERVER+'?action=create','POST',{chat:data});
-    c={...v.chat,issueNumber:v.issueNumber};
-    if(!v.chat){const read=await request(SERVER+'?action=read&issue='+v.issueNumber);c={...read.chat,issueNumber:v.issueNumber};}
+    try{
+     const v=await request(SERVER+'?action=create','POST',{chat:data});
+     c=v.chat?{...v.chat,issueNumber:v.issueNumber}:null;
+     if(!c){const read=await request(SERVER+'?action=read&issue='+v.issueNumber);c={...read.chat,issueNumber:v.issueNumber};}
+    }catch(error){
+     // A timed-out response may hide a successful insert. Resolve by the same
+     // private chat UUID, never silently create a second conversation.
+     try{
+      const listing=await request(SERVER+'?action=list');
+      const existing=listing.chats?.find(x=>x.id===data.id&&Number.isSafeInteger(x.issueNumber));
+      if(!existing)throw error;
+      const read=await request(SERVER+'?action=read&issue='+existing.issueNumber);
+      c={...read.chat,issueNumber:existing.issueNumber};
+     }catch{throw error}
+    }
    }else{
-    if(chats.length>=80)throw Error('Лимит 80 локальных чатов; сохраните копию.');
-    c={...data,revision:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
-     liveVerified:false,executionState:'UNVERIFIED_ASSIGNMENT_ONLY',messages:[]};
-    chats.unshift(c);await persist();
+    if(chats.length>=80&&!chats.some(x=>x.id===data.id))throw Error('Лимит 80 локальных чатов; сохраните копию.');
+    c=chats.find(x=>x.id===data.id);
+    if(!c){
+     c={...data,revision:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
+      liveVerified:false,executionState:'UNVERIFIED_ASSIGNMENT_ONLY',messages:[]};
+     chats.unshift(c);
+    }
+    await persist();
    }
-   if(remote){chats.unshift(c);messages=[];}else messages=c.messages;
+   if(!c?.id)throw Error('Сервер не подтвердил создание чата.');
+   if(remote){chats=[c,...chats.filter(x=>x.id!==c.id)];messages=[];}else messages=c.messages;
    thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});
-   el('create-form').reset();el('new-mode').value=aiReady?'openrouter':'local';
+   el('create-form').reset();el('new-mode').value=aiReady?'openrouter':'local';pendingCreateId=null;
    if(el('new-context').open)el('new-context').close();
    el('mode').value=mode;show('model-label',mode==='openrouter');
    el('message').value=question;
    created=true;
    info('Отправляю вопрос…');
-  }catch(err){info('Не удалось создать чат: '+String(err.message||err))}
-  finally{busy=false;el('create-send').disabled=false;}
+  }catch(err){fail('Не удалось создать чат: '+String(err.message||err))}
+  finally{busy=false;button.disabled=false;button.textContent=buttonLabel;}
   if(created){
    await send({preventDefault(){}});
    el('thread').scrollIntoView({block:'start',behavior:'smooth'});
@@ -684,7 +711,7 @@ async function update(e){
  function showNewChat(){
   if(busy)return;
   if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
-  reportRefreshTimer=null;thread=null;messages=[];el('history').open=false;
+  reportRefreshTimer=null;thread=null;messages=[];pendingCreateId=null;el('history').open=false;
   show('thread',false);show('create',true);renderList();
   el('create-feedback').textContent='';show('create-feedback',false);
   el('create').scrollIntoView({block:'start',behavior:'smooth'});
@@ -696,6 +723,8 @@ async function update(e){
  el('context-close').addEventListener('click',()=>{
   const dialog=el('new-context');if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');
  });
+ el('create-form').addEventListener('input',()=>{pendingCreateId=null;el('create-feedback').hidden=true;});
+ el('create-form').addEventListener('change',()=>{pendingCreateId=null;el('create-feedback').hidden=true;});
  el('create-form').addEventListener('submit',create);el('metadata-form').addEventListener('submit',update);
  el('chat-form').addEventListener('submit',send);el('note').addEventListener('click',addNote);
  el('check-prs').addEventListener('click',checkPRs);el('load-reports').addEventListener('click',reportList);
