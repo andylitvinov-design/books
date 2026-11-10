@@ -35,6 +35,7 @@ function buildService({report=makeReport(),ownerId=owner.id,storageConsent={acce
  const reportRecord={id:reportId,session_id:sessionId,status:'confirmed',current_revision:1,content_hash:operationHash(report,config)}
  const db={query:async(sql,args=[])=>{
   state.queries.push({sql,args})
+  if(sql.includes('select 1 from app_private.coaching_erased_action_receipts'))return {rows:[]}
   if(sql.includes('from app_private.coaching_session_consents')&&sql.trimStart().startsWith('select'))return {rows:storageConsent?[storageConsent]:[]}
   if(sql.includes('select id from app.accounts'))return {rows:[{id:ownerId}]}
   if(sql.includes('select id,session_id,status,current_revision,content_hash from app_private.coaching_reports')){
@@ -306,6 +307,7 @@ test('Life Plan endpoints use the existing authenticated catch-all route and acc
  assert.match(route,/updateCoachingLifePlanArea\(config,actor,\{\.\.\.await readBody\(request,8192\),areaKey:path\[2\]\}\)/)
  assert.match(route,/importCoachingReportActions\(config,actor,await readBody\(request,2048\)\)/)
  assert.match(route,/revokeCoachingPlanContext\(config,actor,await readBody\(request,1024\)\)/)
+ assert.match(route,/deleteCoachingPlanAction\(config,actor,path\[2\],await readBody\(request,1024\)\)/)
  const block=route.slice(route.indexOf("if (path[0] === 'coaching-life-plan')"),route.indexOf("if (joined === 'tradition-coaching-summary')"))
  assert.match(block,/request\.headers\.get\('x-hh-account-id'\) !== actor\.id/)
 })
@@ -316,6 +318,12 @@ test('permission controls remain available without an existing plan',()=>{
  assert.match(ui,/coaching-life-plan\/revoke-context/)
  assert.match(ui,/sessionId,confirmed:true/)
  for(const text of ['Withdraw permission','Отозвать разрешение','Retirar permiso'])assert.ok(ui.includes(text))
+})
+test('action removal requires confirmation and uses the authenticated endpoint',()=>{
+ const ui=readFileSync(new URL('../components/app/my-coaching-plan.jsx',import.meta.url),'utf8')
+ assert.match(ui,/window\.confirm\(t\.confirmDeleteAction\)/)
+ assert.match(ui,/coaching-life-plan\/actions\//)
+ for(const text of ['Delete action','Удалить действие','Eliminar acción'])assert.ok(ui.includes(text))
 })
 
 test('My Coaching Plan workspace JSX and route contract parse cleanly',async()=>{

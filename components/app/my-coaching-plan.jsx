@@ -21,6 +21,7 @@ const copy={
   loadError:'Could not load your Life Plan.',saveError:'Could not save these changes. Your text is still here.',
   importError:'Could not add these actions. Your report remains saved.',
   contextTitle:'Future session context permissions',contextInfo:'You can withdraw permission for a session without deleting your plan or report.',contextSession:'Session',revokeContext:'Withdraw permission',revokingContext:'Withdrawing…',contextRevoked:'Permission withdrawn',contextError:'Could not withdraw permission. Please try again.',
+  deleteAction:'Delete action',confirmDeleteAction:'Delete this action and its plan history? The original report and goal will remain.',deletingAction:'Deleting…',actionDeleted:'Action deleted',deleteActionError:'Could not delete this action. Please try again.',
   overview:'Session overview',initialSituation:'Initial situation',desiredOutcome:'Desired outcome',
   keyDiscoveries:'Key discoveries',mainObstacles:'Main obstacles',strengthsResources:'Strengths & resources',
   newPerspective:'New perspective',decisions:'Decisions',actionPlan:'Action plan',followUp:'Follow-up',
@@ -40,6 +41,7 @@ const copy={
   loadError:'Не удалось загрузить план жизни.',saveError:'Не удалось сохранить. Введённый текст остался здесь.',
   importError:'Не удалось добавить действия. Отчёт остался сохранённым.',
   contextTitle:'Разрешения для будущих сессий',contextInfo:'Вы можете отозвать разрешение для сессии, сохранив план и отчёт.',contextSession:'Сессия',revokeContext:'Отозвать разрешение',revokingContext:'Отзываем…',contextRevoked:'Разрешение отозвано',contextError:'Не удалось отозвать разрешение. Попробуйте ещё раз.',
+  deleteAction:'Удалить действие',confirmDeleteAction:'Удалить действие и его историю в плане? Исходный отчёт и цель сохранятся.',deletingAction:'Удаляем…',actionDeleted:'Действие удалено',deleteActionError:'Не удалось удалить действие. Попробуйте ещё раз.',
   overview:'Обзор сессии',initialSituation:'Исходная ситуация',desiredOutcome:'Желаемый результат',
   keyDiscoveries:'Ключевые открытия',mainObstacles:'Основные препятствия',strengthsResources:'Сильные стороны и ресурсы',
   newPerspective:'Новый взгляд',decisions:'Решения',actionPlan:'План действий',followUp:'Продолжение',
@@ -59,6 +61,7 @@ const copy={
   loadError:'No se pudo cargar tu plan de vida.',saveError:'No se pudieron guardar los cambios. El texto sigue aquí.',
   importError:'No se pudieron añadir las acciones. El informe sigue guardado.',
   contextTitle:'Permisos para futuras sesiones',contextInfo:'Puedes retirar el permiso de una sesión sin borrar tu plan ni tu informe.',contextSession:'Sesión',revokeContext:'Retirar permiso',revokingContext:'Retirando…',contextRevoked:'Permiso retirado',contextError:'No se pudo retirar el permiso. Inténtalo de nuevo.',
+  deleteAction:'Eliminar acción',confirmDeleteAction:'¿Eliminar esta acción y su historial del plan? El informe original y la meta se conservarán.',deletingAction:'Eliminando…',actionDeleted:'Acción eliminada',deleteActionError:'No se pudo eliminar la acción. Inténtalo de nuevo.',
   overview:'Resumen de la sesión',initialSituation:'Situación inicial',desiredOutcome:'Resultado deseado',
   keyDiscoveries:'Descubrimientos clave',mainObstacles:'Obstáculos principales',strengthsResources:'Fortalezas y recursos',
   newPerspective:'Nueva perspectiva',decisions:'Decisiones',actionPlan:'Plan de acción',followUp:'Seguimiento',
@@ -84,7 +87,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
  const [tab,setTab]=useState('plan'),[plan,setPlan]=useState(null),[reports,setReports]=useState([])
  const [drafts,setDrafts]=useState({}),[selections,setSelections]=useState({}),[areas,setAreas]=useState({}),[planConsents,setPlanConsents]=useState({})
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[saving,setSaving]=useState(''),[importing,setImporting]=useState('')
- const [notice,setNotice]=useState(''),[reportError,setReportError]=useState(''),[revoking,setRevoking]=useState(''),[contextError,setContextError]=useState('')
+ const [notice,setNotice]=useState(''),[reportError,setReportError]=useState(''),[revoking,setRevoking]=useState(''),[contextError,setContextError]=useState(''),[deleting,setDeleting]=useState(''),[deleteError,setDeleteError]=useState('')
  const load=useCallback(async()=>{
   if(!accountId)return
   setLoading(true);setError('');setReportError('')
@@ -144,6 +147,15 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   }catch{setContextError(t.contextError)}
   finally{setRevoking('')}
  }
+ async function deleteAction(action){
+  if(!window.confirm(t.confirmDeleteAction))return
+  setDeleting(action.id);setDeleteError('');setNotice('')
+  try{
+   await appFetch('coaching-life-plan/actions/'+encodeURIComponent(action.id)+'/delete',{confirmed:true},'POST',{accountId})
+   await load();setNotice(t.actionDeleted)
+  }catch{setDeleteError(t.deleteActionError)}
+  finally{setDeleting('')}
+ }
  const sections=[
   ['sessionOverview',t.overview],['initialSituation',t.initialSituation],['desiredOutcome',t.desiredOutcome],
   ['keyDiscoveries',t.keyDiscoveries],['mainObstacles',t.mainObstacles],['strengthsResources',t.strengthsResources],
@@ -162,6 +174,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
   </header>
   {error&&<div className={styles.error} role="alert">{t.loadError} <button onClick={load}>{t.retry}</button></div>}
   {notice&&<div className={styles.notice} role="status">{notice}</div>}
+  {deleteError&&<div className={styles.error} role="alert">{deleteError}</div>}
   {tab==='plan'&&<>
    {!!plan?.contextPermissions?.length&&<section className={styles.domainCard} aria-label={t.contextTitle}>
     <h2>{t.contextTitle}</h2><p>{t.contextInfo}</p>
@@ -199,7 +212,7 @@ export default function MyCoachingPlan({accountId,locale='en'}){
        {(area.goals||[]).map(goal=><div className={styles.goal} key={goal.id}>
         <b>{goal.title}</b>{goal.desiredOutcome&&<p>{goal.desiredOutcome}</p>}
         <span>{goal.status}</span>
-        {(goal.actions||[]).map(action=><div className={styles.action} key={action.id}><Check size={13}/>{action.description}<small>{action.status}</small></div>)}
+        {(goal.actions||[]).map(action=><div className={styles.action} key={action.id}><Check size={13}/>{action.description}<small>{action.status}</small><button type="button" disabled={!!deleting} aria-label={`${t.deleteAction}: ${action.description}`} onClick={()=>deleteAction(action)}>{deleting===action.id?t.deletingAction:t.deleteAction}</button></div>)}
        </div>)}
       </div>
      </article>
