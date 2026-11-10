@@ -105,3 +105,24 @@ test('Watchdog contract path-filters, syntax-checks and executes this exact clas
  assert.ok(decision.includes('tests/ci-pr-red-ci-classifier.test.cjs'),
   'classifier test file must actually execute in the decision suite');
 });
+
+test('exact failed Core source-preflight step becomes safe reproduction-only source candidate',()=>{
+ const step='Source Preflight — syntax and TypeScript before costly Next build';
+ const result=check([job('core-lint-types-build',step),
+   job('hh-merge-check','Require real Core and specialist results from this workflow')]);
+ assert.equal(result.category,'SOURCE_CODE');
+ assert.equal(result.reason_code,'CORE_SOURCE_PREFLIGHT_REPRODUCTION_REQUIRED');
+ assert.equal(result.evidence_code,'EXACT_FAILED_CORE_SOURCE_PREFLIGHT_STEP');
+ assert.equal(result.confidence,0.82);
+ assert.equal(result.source_write_authorized,false);
+ assert.equal(result.execution_authorized,false);
+ assert.equal(result.retry.allowed,true);
+ assert.notEqual(result.status,'EXECUTION_AUTHORIZED');
+});
+test('source preflight cannot be inferred from near-match, mixed failures or security events',()=>{
+ const step='Source Preflight — syntax and TypeScript before costly Next build';
+ assert.equal(check([job('core-lint-types-build','Source Preflight summary')]).category,'UNKNOWN');
+ assert.equal(check([job('unit-tests',step)]).category,'TEST_FAILURE');
+ assert.equal(check([job('core-lint-types-build',step),job('Unit tests','Run unit tests')]).category,'UNKNOWN');
+ assert.equal(check([job('core-lint-types-build',step),job('guard','Security / dependency scan')]).category,'SECURITY');
+});

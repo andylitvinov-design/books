@@ -29,6 +29,7 @@ const SIGNALS = Object.freeze({
   CI_WORKFLOW_BUDGET: /(?:workflow budget exceeded|workflow count (?:exceeded|limit)|too many (?:github actions )?workflows|workflow (?:graph|fan.out) budget|CI[- ]policy changes|specialist ownership|Messenger isolation)/i,
   SPECIALIST_PROOF_GATE: /^(?:validate exact-head risk and required specialist workflows)$/i,
   SOURCE_CODE: /(?:eslint|syntax error|cannot find module|module not found|missing import|build failed|compilation failed|type error|referenceerror|syntaxerror|cannot resolve|dependency conflict)/i,
+  CORE_SOURCE_PREFLIGHT: /^Source Preflight — syntax and TypeScript before costly Next build$/,
   INFRA_STEP: /^(?:set ?up job|run actions\/(?:checkout|setup-node)@|checkout|install dependencies|download|fetch|restore cache|prepare runner)/i
 });
 
@@ -196,6 +197,20 @@ function classifyRedCiError({
 
   if (SIGNALS.SOURCE_CODE.test(text)) {
     return makeResult('SOURCE_CODE', evidence, 0.86, { evidenceCode: 'SOURCE_BUILD_OR_LINT_FAILURE' });
+  }
+
+  // An exact failed trusted Core source-preflight step is a bounded source
+  // candidate, not proof of the underlying TypeScript diagnostic. The Worker
+  // must reproduce a failure on one allowlisted exact-HEAD file before it
+  // may request any zero-cost model patch. Unrelated or mixed jobs are held.
+  if (evidence.length===1&&
+      evidence[0].job==='core-lint-types-build'&&
+      evidence[0].conclusion==='failure'&&
+      SIGNALS.CORE_SOURCE_PREFLIGHT.test(evidence[0].step)) {
+    return makeResult('SOURCE_CODE',evidence,0.82,{
+      reasonCode:'CORE_SOURCE_PREFLIGHT_REPRODUCTION_REQUIRED',
+      evidenceCode:'EXACT_FAILED_CORE_SOURCE_PREFLIGHT_STEP'
+    });
   }
 
   // A partially interpretable or mixed failure is never silently discarded.
