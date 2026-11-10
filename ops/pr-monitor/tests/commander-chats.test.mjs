@@ -122,6 +122,7 @@ test('Council is direct in-chat; no nested iframe or second settings form',()=>{
  assert.doesNotMatch(js,/ensureCouncilFrame|receiveCouncilMessage|COUNCIL_ORIGIN|postMessage/);
  assert.doesNotMatch(css,/#cc-council-frame|\.cc-council-panel/);
  assert.match(js,/Совет ИИ думает…/);
+ assert.ok(js.includes(String.raw`answer.reply.match(/[\s\S]{1,1500}/g)`),'Council must split all Unicode text, not only literal backslashes');
  assert.match(js,/request\(AI\+'\?action=council','POST',\{message:text\}\)/);
  assert.match(js,/await append\(c,'owner',text,''\)/);
  assert.match(js,/await append\(c,'ai',part,'Совет ИИ/);
