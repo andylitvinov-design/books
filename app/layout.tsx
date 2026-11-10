@@ -80,7 +80,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
         <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       </head>
-      <body className={standaloneCommander ? "" : "font-sans"} data-csp-class={cspClass}>{standaloneCommander ? children : <><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCapture /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /><UnifiedMobileDock initialLocale={lang} /><SitewideIHelp /></>}</body>
+      <body className="font-sans" data-csp-class={cspClass}>{standaloneCommander ? children : <><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCapture /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /><UnifiedMobileDock initialLocale={lang} /><SitewideIHelp /></>}</body>
     </html>
   );
 }
