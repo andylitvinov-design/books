@@ -87,6 +87,34 @@ async function getJson(fetchImpl,url,options,timeoutMs){
   }catch{throw Error('FREE_AI_OPENROUTER_RESPONSE_INVALID');}
   return body;
 }
+function extractAssistantText(content){
+  let text;
+  if(typeof content==='string'){
+    text=content;
+  }else if(Array.isArray(content)){
+    const parts=[];
+    for(const part of content){
+      if(!part||typeof part!=='object'||Array.isArray(part))
+        throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
+      if((part.type==='text'||part.type==='output_text'||part.type===undefined)&&
+         typeof part.text==='string'){
+        parts.push(part.text);
+        continue;
+      }
+      // Refusals, images, tool payloads and unknown blocks are not source patches.
+      throw Error(part.type==='refusal'
+        ?'FREE_AI_OPENROUTER_MODEL_REFUSED'
+        :'FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
+    }
+    text=parts.join('\n');
+  }else{
+    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
+  }
+  if(!text.trim())throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_EMPTY');
+  if(Buffer.byteLength(text,'utf8')>MAX_REPLY)
+    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_TOO_LARGE');
+  return text;
+}
 async function requestFreePatch({prompt,key,model='auto',role='repair',
   fetchImpl=global.fetch,onVerifiedModel=undefined}={}){
   if(model!=='auto')selectedModel(model); // reject malformed manual overrides before any API call
@@ -118,12 +146,18 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
      Object.values(completion?.usage?.cost_details||{}).some(value=>
        value!==null&&value!==undefined&&(!Number.isFinite(Number(value))||Number(value)!==0)))
     throw Error('FREE_AI_OPENROUTER_BILLING_NONZERO');
-  if(completion?.choices?.length!==1||
-    typeof completion.choices[0]?.message?.content!=='string'||
-    !completion.choices[0].message.content.trim()||
-    completion.choices[0].message.content.length>MAX_REPLY)
+  if(completion?.error)throw Error('FREE_AI_OPENROUTER_PROVIDER_ERROR');
+  if(!Array.isArray(completion?.choices)||completion.choices.length!==1||
+     !completion.choices[0]?.message|| (completion.choices[0].message.role!==undefined&&completion.choices[0].message.role!=='assistant'))
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
-  return completion.choices[0].message.content;
+  const choice=completion.choices[0];
+  if(choice.finish_reason==='length')
+    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED');
+  if(choice.finish_reason==='content_filter')
+    throw Error('FREE_AI_OPENROUTER_MODEL_REFUSED');
+  if(choice.message.tool_calls?.length||choice.message.function_call)
+    throw Error('FREE_AI_OPENROUTER_TOOL_CALL_NOT_ALLOWED');
+  return extractAssistantText(choice.message.content);
 }
 module.exports={BASE,CHAT_ENDPOINT,CHAT_CATALOG,DEFAULT_MODEL,MODEL_PROFILES,
-  selectedModel,verifyZeroPrice,chooseVerifiedFreeModel,requestFreePatch};
+  selectedModel,verifyZeroPrice,chooseVerifiedFreeModel,extractAssistantText,requestFreePatch};
