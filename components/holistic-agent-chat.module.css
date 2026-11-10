@@ -606,3 +606,11 @@
 .root[data-compact] .projectOptions button:focus-visible{outline:3px solid #148069;outline-offset:2px}
 .root[data-compact] .projectOptions button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:355px){.root[data-compact][data-chat-skin="messenger"] :global([data-hh-messenger-six-projects]){margin-top:0}.root[data-compact] .projectOptions{gap:6px}.root[data-compact] .projectOptions button{min-height:64px;padding:8px 7px}.root[data-compact] .projectOptions button strong{font-size:12px}.root[data-compact] .projectOptions button small{font-size:10px;line-height:1.22}}
+
+/* Free on-device alternative answers; original assistant output remains in the thread. */
+.answerActions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0;padding:10px 12px;border:1px solid #d9cfbf;border-radius:12px;background:#fffdf9;color:#443c32;font:500 13px/1.45 system-ui}
+.answerActions strong,.answerActions small{flex-basis:100%}
+.answerActions button{min-height:42px;padding:8px 12px;border:1px solid #bda98e;border-radius:9px;background:#fff;color:#443a2d;font:650 13px/1.2 system-ui;cursor:pointer}
+.answerActions button:disabled{opacity:.5;cursor:not-allowed}
+.answerActions small{color:#6e6255;font-size:12px}
+.alternativeLabel{display:block;margin-bottom:5px;color:#285e57;font-size:12px}
