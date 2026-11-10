@@ -12,7 +12,7 @@ test('commander OAuth continuation is fixed and owner-verified', () => {
   assert.match(session, /requireSameOrigin/)
   assert.match(session, /auth\.verified\(\)/)
   assert.match(session, /AGENT_COMMANDER_PRIVATE_STORE_V1/)
-  assert.match(session, /data\?\.owner!==true/)
+  assert.match(session, /data\?\.owner\s*!==\s*true/)
 })
 
 test('one-time owner token is carried in a URL fragment, not query or browser storage', () => {
@@ -38,7 +38,7 @@ test('private store source requires a verified Supabase user and owner ACL', () 
 test('GET read endpoints preserve only the approved query arguments', () => {
   const edge = read('supabase/functions/agent-commander-private-store-v1/index.ts')
   assert.match(edge, /const params=new URL\(req\.url\)\.searchParams/)
-  assert.match(edge, /\["issueNumber","pr"\]\.includes\(key\)/)
+  assert.match(edge, /\["issueNumber","pr","limit"\]\.includes\(key\)/)
   assert.match(edge, /DUPLICATE_QUERY_PARAMETER/)
 })
 
