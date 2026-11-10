@@ -11,6 +11,7 @@ import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingContextReview from '@/components/coaching-context-review'
 import { buildClientCoachingContext, developmentGoalsContextItems } from '@/lib/personal-coaching/client-context.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
+import CoachingLiveVoice from './coaching-live-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
@@ -572,6 +573,9 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.progressHeader}>
             <span className={styles.eyebrow}>{t.title}</span>
             <strong>{t.question} {index+1} {t.of} {activeQuestions.length}</strong>
+            {process.env.NEXT_PUBLIC_HH_COACHING_LIVE_VOICE_UI==='true'&&
+              <CoachingLiveVoice key={session?.id} locale={lang} sessionId={session?.id} accountId={accountId}
+                disabled={busy||dictating}/>}
           </div>
           <div className={styles.progressTrack} role="progressbar" aria-label={t.question} aria-valuemin={0} aria-valuemax={activeQuestions.length} aria-valuenow={index+1}>
             <span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/>
