@@ -6,6 +6,7 @@
 (function(win,doc){
  if(!doc.getElementById('cc-chat-root'))return;
  const el=id=>doc.getElementById('cc-'+id),SERVER='/api/commander-chats',AI='/api/pm-agent-chat';
+ const MAIN='https://holistichouse.vercel.app';
  const KEY='hh.commander.chat-vault.v1',SCHEMA='HH_COMMANDER_LOCAL_CHATS_V1';
  const EXEC={local:'Локальный советник',openrouter:'OpenRouter Free',codex:'Codex · передача',
   'chatgpt-work':'ChatGPT Work · передача','repair-worker':'GitHub Repair Worker · передача',
@@ -70,7 +71,7 @@
    return request(url,method,body,true);
   }
   let j;try{j=await r.json()}catch{throw Error('Не удалось прочитать ответ сервера')}
-  if(!r.ok)throw Error(j.error||'HTTP '+r.status);return j;
+  if(!r.ok){const error=Error(j.error||'HTTP '+r.status);error.status=r.status;throw error;}return j;
  }
  async function loadExecutorModels(){
   if(!remote)return;
@@ -1044,8 +1045,21 @@ async function update(e){
  request('/api/commander-session').then(s=>{
   if(s.authenticated!==true||s.owner!==true)throw Error('OWNER_SESSION_REQUIRED');
   return request(AI+'?action=status');
- }).then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
-  authorized=false;show('login',true);info('Продолжите через существующий Google-вход Holistic House. Повторный вход не потребуется, пока сессия владельца действительна.');
+ }).then(s=>s.authenticated?authenticated():Promise.reject()).catch(error=>{
+  authorized=false;
+  if(error?.status===401||error?.message==='OWNER_SESSION_REQUIRED'){
+   // The main Holistic House origin owns the existing Google/Supabase browser
+   // session. Bounce there silently once; its connect page checks that session
+   // and returns here through the fragment handoff without another OAuth login.
+   const requestedTask=new URLSearchParams(win.location.search||'').get('task');
+   const continuation=typeof requestedTask==='string'&&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedTask)?
+    '/chats.html?task='+encodeURIComponent(requestedTask):'/chats.html';
+   win.location.replace(MAIN+'/commander-connect.html?next='+encodeURIComponent(continuation));
+   return;
+  }
+  show('login',true);
+  info('Не удалось проверить защищённую сессию. Повторите проверку; Google-вход не запускается из-за временной ошибки сервера.');
   win.HHGoogleOwnerSSO?.mount(el('google-owner'),s=>info(s));
  });
 })(window,document);
