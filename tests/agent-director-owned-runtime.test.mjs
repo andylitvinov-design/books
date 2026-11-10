@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normalizeOwnedCommanderRun,ownedModelConfig,executeOwnedCommanderRun}
+import {normalizeOwnedCommanderRun,ownedModelConfig,executeOwnedCommanderRun,verifiedFreeReply}
   from '../lib/agent-director/commander-owned-runtime.mjs';
 
 const run={
@@ -165,3 +165,25 @@ test('native GitHub App source publisher remains server-only and disabled withou
  await assert.rejects(publishOwnedDraftSource(example,{env:{},fetchImpl:async()=>{calls++;throw Error('network forbidden')}}),/APP_NOT_CONFIGURED/);
  assert.equal(calls,0);
 });
+
+
+test('coaching free gateway enforces zero data retention without changing Agent Director requests',async()=>{
+  const track=[]
+  const selected=ownedModelConfig(configured)
+  const reply=await verifiedFreeReply(selected,{privacyMode:'zdr',messages:[{role:'user',content:'I want to plan one small step.'}]},fetchMock({track}),AbortSignal.timeout(2000))
+  assert.equal(reply.model,FREE)
+  assert.equal(track.length,2)
+  assert.match(track[0].url,/&zdr=true$/)
+  const request=JSON.parse(track[1].options.body)
+  assert.equal(request.provider.zdr,true)
+  assert.deepEqual(request.provider.max_price,{prompt:0,completion:0})
+  assert.equal(request.provider.allow_fallbacks,false)
+  assert.deepEqual(request.usage,{include:true})
+  assert.equal(JSON.parse(track[1].options.body).messages.length,1)
+  const offline=[]
+  await assert.rejects(()=>verifiedFreeReply(selected,{privacyMode:'zdr',messages:[]},fetchMock({models:[],track:offline}),AbortSignal.timeout(2000)),/OWNED_MODEL_NO_VERIFIED_ZDR_FREE_MODELS/)
+  assert.equal(offline.length,1)
+  let calls=0
+  await assert.rejects(()=>verifiedFreeReply(selected,{privacyMode:'non_zdr',messages:[]},async()=>{calls++;throw Error('SHOULD_NOT_CALL')},AbortSignal.timeout(2000)),/OWNED_MODEL_PRIVACY_POLICY_INVALID/)
+  assert.equal(calls,0)
+})
