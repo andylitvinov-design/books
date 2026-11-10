@@ -195,9 +195,6 @@ Deno.serve(async req => {
   if (!dbUrl) return json(503, { error: "PRIVATE_DATABASE_NOT_CONFIGURED" });
   const db = postgres(dbUrl, { max: 1, connect_timeout: 6, idle_timeout: 4, ssl: "require", prepare: false });
   try {
-    const supplied = req.headers.get("x-agent-commander-worker") || "";
-    if (supplied.length < 40 || supplied.length > 256) return json(401, { error: "WORKER_AUTH_REJECTED" });
-    const secret = await query(db, "select decrypted_secret from vault.decrypted_secrets where name=$1 limit 1", [WORKER_SECRET_NAME]);
     const auth = await authorized(req, db);
     if (!auth.ok) return json(401, { error: "WORKER_AUTH_REJECTED" });
     const result = await executeOne(db, auth.apiKey);
