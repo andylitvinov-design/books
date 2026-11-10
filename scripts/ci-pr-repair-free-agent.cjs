@@ -352,6 +352,43 @@ function reanchorSingleHunkPatch(patch,scope,readSource){
  const proposal=corrected.join('\n')+'\n';
  return Buffer.byteLength(proposal,'utf8')<=MAX_PATCH&&proposal!==patch?proposal:null;
 }
+// A model may supply a one-line replacement but inaccurate context/hunk
+// positions. Accept only ONE exact whole-line deletion and ONE addition in
+// ONE allowlisted source file, with the deleted full line occurring exactly
+// once at a real line boundary. Rebuild the unified diff deterministically
+// from the current unprivileged checkout; git apply and clean verification
+// must still pass. Never use fuzzy substring matching or touch extra files.
+function exactSingleLineReplacementPatch(patch,scope,readSource){
+ if(typeof patch!=='string'||typeof readSource!=='function'||!scope||
+    !Array.isArray(scope.files)||Buffer.byteLength(patch,'utf8')>MAX_PATCH)return null;
+ const headers=[...patch.matchAll(/^diff --git a\/([^\n]+) b\/([^\n]+)$/gm)];
+ if(headers.length!==1||headers[0][1]!==headers[0][2]||
+    !scope.files.includes(headers[0][1])||!safeSourcePath(headers[0][1]))return null;
+ const file=headers[0][1],lines=patch.split('\n');
+ if(lines.at(-1)==='')lines.pop();
+ const hunks=lines.map((s,i)=>/^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@/.test(s)?i:-1).filter(i=>i>=0);
+ if(hunks.length!==1)return null;
+ const minus=[],plus=[];
+ for(const line of lines.slice(hunks[0]+1)){
+   if(line.startsWith('-'))minus.push(line.slice(1));
+   else if(line.startsWith('+'))plus.push(line.slice(1));
+   else if(line.startsWith(' '))continue;
+   else return null;
+ }
+ if(minus.length!==1||plus.length!==1||minus[0]===plus[0]||
+    !minus[0]||!plus[0]||minus[0].length>4000||plus[0].length>4000)
+   return null;
+ const source=readSource(file);
+ if(typeof source!=='string'||!source.endsWith('\n'))return null;
+ const target=minus[0]+'\n',at=source.indexOf(target);
+ if(at<0||source.indexOf(target,at+1)>=0||(at>0&&source[at-1]!=='\n'))
+   return null;
+ const lineNo=1+(source.slice(0,at).match(/\n/g)||[]).length;
+ const canonical='diff --git a/'+file+' b/'+file+'\n'+
+   '--- a/'+file+'\n+++ b/'+file+'\n'+
+   '@@ -'+lineNo+',1 +'+lineNo+',1 @@\n-'+minus[0]+'\n+'+plus[0]+'\n';
+ return Buffer.byteLength(canonical,'utf8')<=MAX_PATCH?canonical:null;
+}
 function isolatedEnvironment(dir,freeApiKey=process.env.HH_OPENCODE_FREE_API_KEY||''){
  const config=path.join(dir,'config'),home=path.join(dir,'home');
  for(const p of [config,home,path.join(dir,'data'),path.join(dir,'cache'),
@@ -487,6 +524,17 @@ async function propose(){
     if(checked.ok)console.log('HH_FREE_AI_EXACT_SOURCE_ANCHOR_RECOUNT_VERIFIED');
    }
   }
+  if(!checked.ok){
+   // One further structurally restricted exact-line proposal: no added model
+   // call, no inexact source match, and no verifier or publisher bypass.
+   const replacement=exactSingleLineReplacementPatch(patch,scope,
+     file=>fs.readFileSync(path.resolve(root,file),'utf8'));
+   if(replacement){
+    fs.writeFileSync(patchPath,replacement,{mode:0o600});
+    checked=run('git',['apply','--check','--whitespace=error',patchPath],{cwd:root,timeout:10000});
+    if(checked.ok)console.log('HH_FREE_AI_EXACT_SINGLE_LINE_REPLACEMENT_VERIFIED');
+   }
+  }
   if(!checked.ok)throw Error('FREE_AI_PATCH_APPLY_CHECK_FAILED');
   const applied=run('git',['apply','--whitespace=error',patchPath],{cwd:root,timeout:10000});
   if(!applied.ok)throw Error('FREE_AI_PATCH_APPLY_FAILED');
@@ -516,4 +564,4 @@ async function main(){
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch};
+ noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,exactSingleLineReplacementPatch};
