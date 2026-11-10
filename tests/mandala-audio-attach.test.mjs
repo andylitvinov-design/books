@@ -135,8 +135,9 @@ test("approved compact audio mock has one real player/microphone and no duplicat
   assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>=0 && fullEnd>fullStart,
     "the single detailed audio editor may be hoisted before JSX to serve the active workspace");
   assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
-  assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
-  assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
+  assert.match(studio,/data-video-audio-panel="music"/);
+  assert.match(studio,/data-video-audio-panel="voice"/);
+  assert.match(studio,/data-video-audio-tab=\{tab.id\}/);
   assert.doesNotMatch(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/,
     "only the active workspace mounts the shared native audio editor");
   const quick=studio.slice(quickStart,quickEnd);
@@ -254,15 +255,15 @@ test("local music mixer reads at most three static site-owned WAVs and emits one
 });
 
 
-test("quick music rail and shared native player are simultaneously mounted on Audio workspace",()=>{
-  // The old production CSS hid the quick selector exactly when the native player existed.
+test("quick music rail and the one shared native player are available through Audio",()=>{
   assert.doesNotMatch(styles,/\.studio\[data-active-workspace="audio"\] \.quickMusicRail/);
-  assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
-  assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
-  assert.doesNotMatch(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/,
-    "only the active workspace mounts the shared native audio editor");
-  assert.match(studio,/flushSync\(\(\)=>\{if\(activeWorkspace!=="phrases"\)\{setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\);\}setSamplePreviewId\(choice\);\}\)/,
-    "playing a track synchronously mounts the one real native player in fifth Montage");
+  assert.match(studio,/\{activeWorkspace==="video" \? <section className=\{videoStyles\.quickMusicSection/);
+  assert.match(studio,/data-video-audio-panel="music"/);
+  assert.match(studio,/data-video-audio-panel="voice"/);
+  assert.match(studio,/data-video-audio-tab=\{tab.id\}/);
+  assert.equal((studio.match(/\{deepAudioPane\}/g)||[]).length,1,
+    "only the dedicated Audio music panel mounts the full shared audio controls");
+  assert.match(studio,/setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("music"\)/);
   assert.match(studio,/const player=audioPreviewRef\.current/);
   assert.equal((studio.match(/<audio\b/g)||[]).length,1);
 });
