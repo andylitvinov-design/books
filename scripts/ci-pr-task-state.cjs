@@ -27,16 +27,24 @@ function validPR(pr){
   !ls.has('hh:direction-override:invalid'));
 }
 function laneOf(pr){
+ const l=labels(pr);
+ // A currently verified DIRTY conflict always outranks the historical
+ // manual-preflight lane. Manual status must never turn a real conflict into
+ // a harmless cloud preflight or hide it from the semantic-conflict owner.
+ // This route is triage-only; it never authorizes a source write.
+ const dirtyConflict=Boolean(pr&&pr.state==='open'&&!pr.draft&&
+  pr.base?.ref===PROD&&pr.head?.repo?.full_name===REPO&&
+  pr.user?.login===REPO.split('/')[0]&&SHA.test(pr.head?.sha||'')&&
+  l.has('hh:conflict-repair-needed')&&pr.mergeable===false&&
+  pr.mergeable_state==='dirty');
+ if(dirtyConflict)return 'conflict';
+ // Manual status blocks source writes, but keeps the bounded read-only legacy
+ // preflight lane for non-conflict historical tasks.
  if(validLegacyPrep(pr))return 'legacy';
  if(!validPR(pr))return null;
- const l=labels(pr);
  // Retain a recovery lane only while stale CI queue hint still exists.
  // A confirmed undelivered wake can finish its two-label cleanup later.
  if(l.has('hh:ci-wake-unverified'))return l.has('hh:ci-needed')?'ci':null;
- // A verified DIRTY merge conflict wins over stale source-repair labels.
- // This classification permits conflict triage, never source writes.
- if(l.has('hh:conflict-repair-needed')&&pr.mergeable===false&&
-    pr.mergeable_state==='dirty')return 'conflict';
  if(l.has('hh:repair-needed'))return 'repair';
  if(l.has('hh:ci-needed')&&!l.has('hh:ci-bootstrap-attempted'))return 'ci';
  if(l.has('hh:conflict-repair-needed'))return 'conflict';
