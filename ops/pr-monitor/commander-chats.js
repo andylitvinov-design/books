@@ -7,7 +7,7 @@
  if(!doc.getElementById('cc-chat-root'))return;
  const el=id=>doc.getElementById('cc-'+id),SERVER='/api/commander-chats',AI='/api/pm-agent-chat';
  const KEY='hh.commander.chat-vault.v1',SCHEMA='HH_COMMANDER_LOCAL_CHATS_V1';
- const EXEC={local:'Локальный советник',openrouter:'OpenRouter Free',codex:'Codex · передача',
+ const EXEC={local:'Agent Director · собственная модель',openrouter:'OpenRouter Free',codex:'Codex · передача',
   'chatgpt-work':'ChatGPT Work · передача','repair-worker':'GitHub Repair Worker · передача',
   hermes:'Hermes · OpenRouter Free',manual:'Ручной исполнитель'};
  const STATES={planned:'Запланировано',assigned:'Назначено · не запущено',working:'В работе · по заявлению',
@@ -337,8 +337,8 @@ function renderThread(){
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
   el('thread-advanced').open=false;el('chat-extra').open=false;el('verify-status').textContent='';
   const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
-  if(el('mode').value==='council-free'||!available.includes(el('mode').value))
-   el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
+  if(el('mode').value==='council-free'||el('mode').value==='hermes'||!available.includes(el('mode').value))
+   el('mode').value=available.includes('openrouter')?'openrouter':available.includes('local')?'local':available[0]||'local';
   configureModels('thread');
   el('chat-feedback').textContent='';show('chat-feedback',false);
   el('pr-proof').replaceChildren();el('report-list').replaceChildren();
@@ -625,6 +625,7 @@ async function update(e){
   stopVoice();
   if(text.length<2||text.length>1200)return info('Сообщение должно содержать 2–1200 символов.');
   if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
+  if(mode==='hermes')return info('Внешний Hermes отключён. Используйте Agent Director — собственный runtime Holistic House.');
   if(mode==='hermes'&&!(executorModels||[]).some(x=>x.id===model))return info('Выберите проверенную бесплатную модель для Hermes.');
   let c=thread;
   if(mode!=='council-free'&&!thread.executors.includes(mode)){
@@ -647,7 +648,7 @@ async function update(e){
   }
   const context=messages.slice(-8).filter(x=>['owner','assistant_unverified'].includes(x.kind))
    .map(x=>({role:x.kind==='owner'?'user':'assistant',content:x.text.slice(0,800)}));
-  const dispatchModes=new Set(['hermes','codex','chatgpt-work','repair-worker','manual']);
+  const dispatchModes=new Set(['local','codex','chatgpt-work','repair-worker','manual']);
   if(dispatchModes.has(mode)){
    if(!remote)return info('Запуск доступен только для чата в защищённом серверном хранилище. Локальная копия не может запускать исполнителей.');
    busy=true;el('send').disabled=true;
@@ -658,14 +659,21 @@ async function update(e){
     if(mode==='hermes')el('github-write').checked=false; // one-shot consent, even if transport fails
     const result=await request(SERVER+'?action=run','POST',{
      issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text,
-     ...(mode==='hermes'?{modelId:model,confirmGitHubWrite:writeApproved}:{})
+     ...(mode==='local'?{modelId:'owned-default',confirmGitHubWrite:false}:
+       mode==='hermes'?{modelId:model,confirmGitHubWrite:writeApproved}:{})
     });
     try{
      const latest=await request(SERVER+'?action=read&issue='+c.issueNumber);
      if(thread?.id===c.id){thread=latest.chat;messages=latest.messages;renderThread();}
     }catch{}
     const reasons={
-     HERMES_RUNTIME_NOT_CONFIGURED:'Hermes HTTPS runtime и секрет не настроены',
+     OWNED_MODEL_RUNTIME_NOT_CONFIGURED:'Собственная модель Agent Director пока не подключена. Нужен owner-hosted Ollama HTTPS endpoint и защищённый токен.',
+     OWNED_MODEL_ID_MISMATCH:'Выбранная модель не совпадает с установленной собственной моделью.',
+     OWNED_MODEL_REQUEST_FAILED:'Собственный runtime временно недоступен.',
+     OWNED_MODEL_RESPONSE_NOT_ACCEPTED:'Ответ модели не прошёл проверку безопасности.',
+     AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED:'Запись в GitHub заблокирована до настройки собственного защищённого GitHub App writer.',
+     AGENT_DIRECTOR_DISPATCH_UNCONFIRMED:'Запуск Agent Director не подтверждён; повторите проверку статуса, не создавая новую задачу.',
+     HERMES_RUNTIME_NOT_CONFIGURED:'Внешний Hermes отключён; используйте собственный Agent Director.',
      HERMES_FREE_MODEL_NOT_SELECTED:'Нет проверенной бесплатной модели для исполнителя',
      HERMES_DISPATCH_UNCONFIRMED_RECONCILE:'Запуск не подтверждён; состояние следует сверить с Hermes, не отправлять повторно',
      HERMES_EXECUTOR_DISPATCH_CONTRACT_NOT_VERIFIED:'Нет проверенного Hermes executor endpoint',
