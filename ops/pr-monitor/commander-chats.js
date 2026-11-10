@@ -338,6 +338,7 @@ function renderThread(){
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
   el('thread-advanced').open=false;el('chat-extra').open=false;el('verify-status').textContent='';
   const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
+  if(el('mode').value==='hermes')el('mode').value='local'; // legacy external executor is retired
   if(el('mode').value==='council-free'||!(el('mode').value==='director'&&available.includes('local'))&&!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
   configureModels('thread');
@@ -860,7 +861,8 @@ async function update(e){
    const director=select.querySelector('option[value=director]');
    if(director)director.disabled=!ownedDirectorAvailable;
    const legacy=select.querySelector('option[value=hermes]');
-   if(legacy&&ownedDirectorAvailable)legacy.disabled=true;
+   if(legacy)legacy.disabled=true;
+   if(select.value==='hermes')select.value='local';
   }
   if(statusError){
    show('vault',false);show('board',false);

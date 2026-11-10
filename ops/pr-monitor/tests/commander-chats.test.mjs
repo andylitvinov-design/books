@@ -509,3 +509,19 @@ test('Hermes dispatch independently verifies live zero-price catalog and rejects
  assert.match(handler,/modelVerified\)/);
  assert.ok(handler.indexOf('await verifyFreeModel(modelId)')<handler.indexOf('await db.begin'));
 });
+
+
+test('legacy external Hermes code executor is disabled in UI and rejected before private-store dispatch',async()=>{
+ const html=src('chats.html'),ui=src('commander-chats.js'),backend=src('api/commander-chats.js');
+ assert.equal((html.match(/option value="hermes" disabled/g)||[]).length,2);
+ assert.match(ui,/if\(legacy\)legacy\.disabled=true/);
+ assert.match(ui,/if\(el\('mode'\)\.value==='hermes'\)el\('mode'\)\.value='local'/);
+ assert.match(backend,/body\.executor==='hermes'\)return sendJson\(res,410,\{error:'EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY'\}\)/);
+ const out=response();
+ await api({method:'POST',url:'/api/commander-chats?action=run',headers:{
+   host:'holistic-house-pr-monitor.vercel.app',origin:'https://holistic-house-pr-monitor.vercel.app',
+   'sec-fetch-site':'same-origin'
+  },body:{executor:'hermes',modelId:'provider/model:free',confirmGitHubWrite:false}},out);
+ assert.equal(out.statusCode,410);
+ assert.equal(out.body.error,'EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY');
+});
