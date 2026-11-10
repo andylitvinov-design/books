@@ -159,14 +159,15 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
   const [providerChecking,setProviderChecking]=useState(false)
   const [providerFailed,setProviderFailed]=useState(false)
   const [metaAccounts,setMetaAccounts]=useState([])
+  const [metaSetup,setMetaSetup]=useState(null)
   const [metaError,setMetaError]=useState('')
   const loadMetaAccounts=useCallback(async()=>{
     try{
       const response=await fetch('/api/admin/growth-studio/meta/status',{cache:'no-store',credentials:'same-origin'})
       const result=await response.json()
       if(!response.ok||result?.ok!==true)throw new Error('status')
-      setMetaAccounts(result.accounts||[]);setMetaError('')
-    }catch{setMetaError(locale==='ru'?'Не удалось проверить Meta OAuth':'Meta connection status unavailable')}
+      setMetaAccounts(result.accounts||[]);setMetaSetup(result.configuration||null);setMetaError('')
+    }catch{setMetaSetup(null);setMetaError(locale==='ru'?'Не удалось проверить Meta OAuth':'Meta connection status unavailable')}
   },[locale])
   async function disconnectMetaAccount(account){
     try{
@@ -369,6 +370,20 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       </div>
       <p>{locale==='ru'?'Каждый профиль авторизуется отдельно через официальное окно Meta. Система проверяет точный handle, связанную Facebook Page и разрешения. Публикация остаётся выключенной до отдельного теста доставки.':'Authorize each profile separately through Meta. The server verifies the exact handle, linked Facebook Page and permissions. Publishing remains disabled until a separate delivery test.'}</p>
       {metaError&&<p className={styles.connectionError} role="alert">{metaError}</p>}
+      {metaSetup&&!metaSetup.authorizationReady&&<p className={styles.connectionError} role="status">
+        {locale==='ru'
+          ?'Сервер Meta ещё не готов к подключению. Добавьте в Vercel Production настройки: '
+          :'Meta setup is incomplete. Configure these Vercel Production settings: '}
+        <code>{metaSetup.missingSettings.join(' · ')}</code>
+        {' · '}<a href="https://vercel.com/super10/codex-public-book-library/settings/environment-variables"
+          target="_blank" rel="noopener noreferrer">{locale==='ru'?'Открыть Vercel':'Open Vercel'}</a>
+        {locale==='ru'?'. Затем обновите статус и пройдите официальную авторизацию Meta.':'. Then refresh this status and complete the official Meta login.'}
+      </p>}
+      {metaSetup?.authorizationReady&&!metaSetup.publishFlagEnabled&&<p className={styles.connectionNote}>
+        {locale==='ru'?'OAuth можно подключить. Отправка Stories выключена до подтверждения аккаунта и тестовой публикации.'
+          :'OAuth can be connected. Story publishing remains off until verified authorization and an approved test.'}
+      </p>}
+
       <div className={styles.growthSetupSteps}>
         {GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(account=>{
           const status=metaAccounts.find(item=>item.targetId===account.id)
@@ -378,12 +393,18 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
             <small>{account.label}</small>
             <p>{connected
               ?(locale==='ru'?'Подключён: ':'Connected: ')+status.handle+' · '+(status.pageName||'Facebook Page')+' · Page ID '+status.pageId
-              :(locale==='ru'?'Ожидает авторизации владельца через Meta':'Waiting for owner authorization through Meta')}</p>
+              :(metaSetup&&!metaSetup.authorizationReady
+                ?(locale==='ru'?'Не настроено приложение Meta':'Meta app not configured')
+                :(locale==='ru'?'Ожидает авторизации владельца через Meta':'Waiting for owner authorization through Meta'))}</p>
             {connected&&<small>{locale==='ru'?'Instagram ID: ':'Instagram ID: '}{status.instagramAccountId} · {status.scopes?.length||0} {locale==='ru'?'разрешений':'permissions'}</small>}
             <div className={styles.connectionNav}>
-              <a href={'/api/admin/growth-studio/meta/connect?account='+encodeURIComponent(account.id)}>
-                {connected?(locale==='ru'?'Переподключить':'Reconnect'):(locale==='ru'?'Подключить через Meta':'Connect with Meta')} ↗
-              </a>
+              {metaSetup?.authorizationReady
+                ?<a href={'/api/admin/growth-studio/meta/connect?account='+encodeURIComponent(account.id)}>
+                  {connected?(locale==='ru'?'Переподключить':'Reconnect'):(locale==='ru'?'Подключить через Meta':'Connect with Meta')} ↗
+                </a>
+                :<button type="button" disabled title={locale==='ru'?'Сначала настройте Meta в Vercel':'Set up Meta in Vercel first'}>
+                  {locale==='ru'?'Подключить через Meta':'Connect with Meta'}
+                </button>}
               {connected&&<button type="button" onClick={()=>disconnectMetaAccount(account.id)}>{locale==='ru'?'Отключить':'Disconnect'}</button>}
             </div>
             <small>{locale==='ru'?'Публикация выключена до первого тестового поста':'publishing disabled until the first test post'}</small>

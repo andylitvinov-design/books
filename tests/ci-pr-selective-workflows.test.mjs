@@ -21,7 +21,6 @@ const ownerWorkflows = [
   "hh-ideas-coaching-public.yml",
   "hh-live-seo-audit.yml",
   "hh-live-audio-ci.yml",
-  "hh-personal-coaching-session.yml",
   "hh-public-performance-audit.yml",
   "hh-support-guided-recommendations.yml",
   "holistic-house-native.yml",
@@ -38,7 +37,10 @@ const ownerWorkflows = [
   "practice-visual-browser.yml",
   "practice-google-browser.yml"
 ];
-const highRiskSelfChecks = ["opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml"];
+// The private Coaching Brain workflow must self-trigger on changes to its own
+// validation policy; Core, Guard and actionlint still verify that YAML.
+// It is a required security/privacy owner, unlike the optional fan-out jobs.
+const highRiskSelfChecks = ["hh-personal-coaching-session.yml","opora-module-ci.yml","hh-public-test-collections.yml","hh-kling-video.yml","practitioner-presentations.yml","pro-reiki-master-paths.yml","hh-reports-development-program.yml","hh-support-mobile-mock-browser.yml","hh-public-journey-wave1.yml"];
 const contractFile = 'docs/operations/CI_OWNER_ROUTE_MIGRATION_20261104.md';
 const legacyTrigger = 'tests/ci-pr-selective-workflows.test.mjs';
 const source = name => readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
