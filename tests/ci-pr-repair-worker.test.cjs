@@ -348,7 +348,7 @@ test('Repair Worker records claim and true source publish as distinct signed HEA
    expectedSha:sha,candidate,writer:f.writer});
  assert.equal(pub.status,'committed');
  assert.match(f.log.commentBodies.at(-1),/"state":"PUBLISHED"/);
- assert.match(f.log.commentBodies.at(-1),/"newSha":"d{40}"/);
+ assert.match(f.log.commentBodies.at(-1),/"new_sha":"d{40}"/);
  assert.match(f.log.commentBodies.at(-1),/"outcome":"VERIFIED_SOURCE_COMMIT"/);
  assert.match(f.log.commentBodies.at(-1),/actions\/runs\/41350000001/);
 });
@@ -487,7 +487,7 @@ test('finalizer verifies a real parented source commit on the PR HEAD',async()=>
   publishStatus:'committed',publishSha:newSha});
  assert.equal(result.state,'PUBLISHED');
  assert.equal(result.source_published,true);
- assert.equal(result.newSha,newSha);
+ assert.equal(result.new_sha,newSha);
  assert.equal(f.log.labels,0);
  assert.match(f.log.commentBodies.at(-1),/SOURCE_COMMIT_VERIFIED_ON_PR_HEAD/);
  assert.match(f.log.commentBodies.at(-1),/HH_PR_REPAIR_OUTCOME_V1/);
@@ -707,7 +707,7 @@ test('empty ESLint candidate skips privileged publisher and finalizer routes to 
  assert.equal(outcome.reason_code,'FREE_AI_EXECUTOR_NOT_CONFIGURED');
  assert.equal(outcome.detail_code,'ESLINT_SCOPE_NOT_CONFIGURED');
  assert.equal(outcome.source_published,false);
- assert.equal(outcome.newSha,null);
+ assert.equal(outcome.new_sha,null);
  assert.equal(f.log.labels,1);
  assert.deepEqual(f.log.removed,['hh:repair-needed']);
  assert.match(f.log.commentBodies.at(-1),/"state":"MANUAL"/);
@@ -792,7 +792,7 @@ test('Codex failures report NO source commit while unverified proposals cannot p
    candidateStatus:'manual_required',publishResult:'skipped',...props});
   assert.equal(result.reason_code,expected);
   assert.equal(result.source_published,false);
-  assert.equal(result.newSha,null);
+  assert.equal(result.new_sha,null);
   assert.notEqual(result.state,'PUBLISHED');
   assert.equal(f.log.commit,0);
  }
@@ -875,7 +875,7 @@ test('direct code publisher requires verified parent commit on current PR HEAD',
   publishResult:'success',publishStatus:'committed',publishSha:newSha});
  assert.equal(r.state,'PUBLISHED');
  assert.equal(r.repair_kind,'free_ai');
- assert.equal(r.newSha,newSha);
+ assert.equal(r.new_sha,newSha);
 });
 
 test('direct Core failures reach deterministic checks and then free AI without paid fallback',()=>{
@@ -955,7 +955,7 @@ test('stacked parent does not auto-repair with a destructive squash/rebase metho
 test('stage receipts bind trusted bot, PR, old/new HEAD and real UTC time',()=>{
  const time='2026-11-03T21:00:00Z',key='b'.repeat(32),fresh='f'.repeat(40);
  const body=stageLine({stage:'source_published',pr_number:11,head_sha:sha,
-  run_id:41700000001,task_key:key,newSha:fresh,at:time,source:'verified_git_ref'});
+  run_id:41700000001,task_key:key,new_sha:fresh,at:time,source:'verified_git_ref'});
  const comment={body,created_at:'2026-11-03T21:00:05Z',
   user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
   performed_via_github_app:{id:15368,slug:'github-actions'}};
@@ -1046,7 +1046,7 @@ test('failed legacy cloud preflight stays FAILED and never publishes an unverifi
  assert.equal(r.lane,'legacy');
  assert.equal(r.reason_code,'LEGACY_PREFLIGHT_INCOMPLETE');
  assert.equal(r.source_published,false);
- assert.equal(r.newSha,null);
+ assert.equal(r.new_sha,null);
 });
 
 test('Repair Worker stops an ownership claim when PR HEAD changes before receipt',async()=>{
@@ -1147,7 +1147,6 @@ test('read-only legacy finalization remains PREPARED and emits no-source deliver
  assert.equal(result.next_action,'HANDOFF_EXISTING_SOURCE_OWNER');
  assert.equal(f.log.commit,0);
 });
-
 
 test('repair finalizer emits an owned FIXED receipt only for an exact published source commit',()=>{
  const outcome=buildTaskOutcome({task_key:'1'.repeat(32),pr_number:11,
