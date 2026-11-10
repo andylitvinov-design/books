@@ -50,7 +50,7 @@ const voicePreferences={}
 
 export default function CoachingQuestionVoice({
   text,locale='en',onTranscript,onInterim,onListeningChange,disabled=false,mode='note',
-  speechConsent=false,onConsent,compact=false,
+  speechConsent=false,onConsent,compact=false,onSpeechChange,
 }){
   const lang=['en','ru','es'].includes(locale)?locale:'en'
   const t=copy[lang]
@@ -73,10 +73,13 @@ export default function CoachingQuestionVoice({
   const interimCallback=useRef(onInterim)
   const listeningCallback=useRef(onListeningChange)
   const consentCallback=useRef(onConsent)
+  const speechCallback=useRef(onSpeechChange)
+  const emitSpeech=(phase,beat=0)=>speechCallback.current?.({phase,beat})
   savedCallback.current=onTranscript
   interimCallback.current=onInterim
   listeningCallback.current=onListeningChange
   consentCallback.current=onConsent
+  speechCallback.current=onSpeechChange
 
   useEffect(()=>{
     setSupport({
@@ -90,7 +93,7 @@ export default function CoachingQuestionVoice({
       recognition.current=null
       try{capture?.abort()}catch{/* permission prompt may already have ended */}
       utterance.current=null
-      setSpeaking(false);setPreviewing(false);setListening(false);setInterim('')
+      setSpeaking(false);setPreviewing(false);setListening(false);setInterim('');emitSpeech('idle')
       interimCallback.current?.('')
       listeningCallback.current?.(false)
     }
@@ -129,7 +132,7 @@ export default function CoachingQuestionVoice({
     recognition.current=null
     capture?.abort()
     utterance.current=null
-    setSpeaking(false);setPreviewing(false);setListening(false);setError('');setInterim('')
+    setSpeaking(false);setPreviewing(false);setListening(false);setError('');setInterim('');emitSpeech('idle')
     interimCallback.current?.('')
     listeningCallback.current?.(false)
   },[text,spoken])
@@ -142,7 +145,7 @@ export default function CoachingQuestionVoice({
     recognition.current=null
     capture?.abort()
     utterance.current=null
-    setSpeaking(false);setPreviewing(false);setListening(false);setInterim('')
+    setSpeaking(false);setPreviewing(false);setListening(false);setInterim('');emitSpeech('idle')
     interimCallback.current?.('')
     listeningCallback.current?.(false)
   },[disabled])
@@ -153,6 +156,8 @@ export default function CoachingQuestionVoice({
     if(!support.tts||disabled||listening)return
     try{
       const synth=window.speechSynthesis
+      utterance.current=null
+      emitSpeech('idle')
       synth.cancel()
       const item=new window.SpeechSynthesisUtterance(String(value||'').trim())
       item.lang=spoken
@@ -161,22 +166,45 @@ export default function CoachingQuestionVoice({
       const selected=chooseCoachingVoice(available.length?available:voices,spoken,voiceChoice)
       if(selected)item.voice=selected
       setError('')
+      let started=false
+      let paused=false
+      let wordBeat=0
+      item.onstart=()=>{
+        if(utterance.current!==item)return
+        started=true
+        emitSpeech('speaking',0)
+      }
+      item.onpause=()=>{
+        if(utterance.current!==item||!started)return
+        paused=true
+        emitSpeech('paused',wordBeat)
+      }
+      item.onresume=()=>{
+        if(utterance.current!==item||!started)return
+        paused=false
+        emitSpeech('speaking',wordBeat)
+      }
+      item.onboundary=()=>{
+        if(utterance.current!==item||!started||paused)return
+        wordBeat+=1
+        emitSpeech('speaking',wordBeat)
+      }
       item.onend=()=>{
         if(utterance.current!==item)return
         utterance.current=null
-        setSpeaking(false);setPreviewing(false)
+        setSpeaking(false);setPreviewing(false);emitSpeech('idle')
       }
       item.onerror=()=>{
         if(utterance.current!==item)return
         utterance.current=null
-        setSpeaking(false);setPreviewing(false);setError(t.audioError)
+        setSpeaking(false);setPreviewing(false);setError(t.audioError);emitSpeech('idle')
       }
       utterance.current=item
       setSpeaking(!preview);setPreviewing(preview)
       synth.speak(item)
     }catch{
       utterance.current=null
-      setSpeaking(false);setPreviewing(false);setError(t.audioError)
+      setSpeaking(false);setPreviewing(false);setError(t.audioError);emitSpeech('idle')
     }
   }
 
@@ -185,6 +213,7 @@ export default function CoachingQuestionVoice({
     if(window.speechSynthesis)window.speechSynthesis.cancel()
     utterance.current=null
     setSpeaking(false);setPreviewing(false)
+    emitSpeech('idle')
   }
 
   function toggleVoice(){

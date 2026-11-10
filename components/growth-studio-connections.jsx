@@ -145,7 +145,8 @@ const modes={telegram_opt_in:'telegramOptIn',existing_uploader:'existingUploader
 // A stable no-op prevents the owner-only Redis probe effect from looping if this
 // component is ever mounted without a parent readiness callback.
 const NOOP_STORAGE_VERIFICATION=()=>{}
-export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},onTelegramVerified=()=>{},onStorageVerified=NOOP_STORAGE_VERIFICATION}){
+const NOOP_META_STATUS=()=>{}
+export default function GrowthStudioConnections({locale='en',telegram={ready:false,channel:null},onTelegramVerified=()=>{},onStorageVerified=NOOP_STORAGE_VERIFICATION,onMetaStatus=NOOP_META_STATUS}){
   const t=messages[locale==='ru'?'ru':'en']
   const [tested,setTested]=useState(false)
   const [verified,setVerified]=useState(false)
@@ -166,9 +167,13 @@ export default function GrowthStudioConnections({locale='en',telegram={ready:fal
       const response=await fetch('/api/admin/growth-studio/meta/status',{cache:'no-store',credentials:'same-origin'})
       const result=await response.json()
       if(!response.ok||result?.ok!==true)throw new Error('status')
-      setMetaAccounts(result.accounts||[]);setMetaSetup(result.configuration||null);setMetaError('')
-    }catch{setMetaSetup(null);setMetaError(locale==='ru'?'Не удалось проверить Meta OAuth':'Meta connection status unavailable')}
-  },[locale])
+      const accounts=Array.isArray(result.accounts)?result.accounts:[]
+      const configuration=result.configuration||null
+      setMetaAccounts(accounts);setMetaSetup(configuration)
+      onMetaStatus({accounts,configuration})
+      setMetaError('')
+    }catch{setMetaAccounts([]);setMetaSetup(null);onMetaStatus(null);setMetaError(locale==='ru'?'Не удалось проверить Meta OAuth':'Meta connection status unavailable')}
+  },[locale,onMetaStatus])
   async function disconnectMetaAccount(account){
     try{
       const response=await fetch('/api/admin/growth-studio/meta/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({account})})
