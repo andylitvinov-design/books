@@ -2,7 +2,7 @@
 const OWNER_RATE_RESERVE=100;
 const JOB_RATE_RESERVE=24; // max 8 source blobs and bounded ref/tree calls
 function eligible(probe,reserve){
- return probe?.ok===true && probe?.push===true &&
+ return probe?.ok===true && probe?.canPush===true &&
    Number.isSafeInteger(probe.remaining) && probe.remaining>=reserve;
 }
 function chooseRepairWriter({owner,job}={}){
