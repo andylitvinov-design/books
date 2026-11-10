@@ -766,23 +766,23 @@ test('free model is activated only after deterministic failure and never sees wr
  assert.match(pub,/HH_AUTOMERGE_TOKEN/);
  for(const isolated of [codeFix,codeVerify])assert.doesNotMatch(isolated,/HH_AUTOMERGE_TOKEN/);
 });
-test('Codex failures report NO source commit while unverified proposals cannot publish',async()=>{
+test('free-model failures report NO source commit while unverified proposals cannot publish',async()=>{
  const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
    performed_via_github_app:{id:15368,slug:'github-actions'}};
  const owned=commentBody({...taskFor(pr(),{tier:'P1'}),
    state:'CLAIMED',owner_run_id:String(outcomeContext.runId),task_key:receiptKey});
  for(const variant of [
-  {codeAvailable:true,codeResult:'failure',expected:'CODEX_JOB_FAILED_NO_SOURCE_COMMIT'},
+  {codeAvailable:true,codeResult:'failure',expected:'FREE_AI_JOB_FAILED_NO_SOURCE_COMMIT'},
   {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
-    codeVerifyResult:'failure',expected:'CODEX_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT'},
+    codeVerifyResult:'failure',expected:'FREE_AI_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT'},
   {codeAvailable:true,codeResult:'success',codeStatus:'no_change',
-    expected:'CODEX_NO_VERIFIED_SOURCE_CHANGE'},
+    expected:'FREE_AI_NO_VERIFIED_SOURCE_CHANGE'},
   {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
     codeVerifyResult:'success',codeVerifyStatus:'manual_required',
-    codeVerifyDetail:'CODEX_CANDIDATE_OUT_OF_SCOPE',expected:'CODEX_CANDIDATE_REJECTED'},
+    codeVerifyDetail:'FREE_AI_CANDIDATE_OUT_OF_SCOPE',expected:'FREE_AI_CANDIDATE_REJECTED'},
   {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
     codeVerifyResult:'success',codeVerifyStatus:'ready',
-    expected:'CODEX_VERIFIED_BUT_NOT_PUBLISHED_SKIPPED'}
+    expected:'FREE_AI_VERIFIED_BUT_NOT_PUBLISHED_SKIPPED'}
  ]){
   const f=fixture({comments:[{...bot,body:'<!-- '+MARKER+' '+sha+' -->\n'+owned}]});
   const {expected,...props}=variant;
