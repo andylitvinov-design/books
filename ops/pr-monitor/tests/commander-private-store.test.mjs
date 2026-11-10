@@ -19,8 +19,8 @@ test('session endpoint is fail-closed for guests and cross-origin POST',async()=
 });
 test('monitor session uses HttpOnly access and refresh cookies with silent refresh',()=>{
  const fs=require('node:fs'),source=fs.readFileSync(new URL('../api/commander-session.js',import.meta.url),'utf8');
- assert.match(source,/HttpOnly/);assert.match(source,/Secure/);assert.match(source,/SameSite=Lax/);
- assert.match(source,/Math\.min\(900/);
+ assert.match(source,/HttpOnly/);assert.match(source,/Secure/);assert.match(source,/SameSite=Strict/);
+ assert.doesNotMatch(source,/Math\.min\(900/);
  assert.doesNotMatch(source,/localStorage|sessionStorage/);
 });
 test('GET read parameters are forwarded with the action and never require a POST body',()=>{
