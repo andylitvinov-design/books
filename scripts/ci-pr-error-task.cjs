@@ -111,17 +111,25 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
      !CODE.test(reason_code||'')||(detail_code!==null&&!CODE.test(detail_code))||
      !Number.isFinite(now)||now<=0)throw Error('UNVERIFIED_WORKER_ERROR_TASK');
   const cause=detail_code||reason_code;
-  const cat=/^(?:FREE_AI_|CODEX_)/.test(cause)||/^FREE_AI_/.test(reason_code)?'AI_EXECUTOR':
+  // A verified sensitive/unsupported file was rejected BEFORE model
+  // inference. Do not route it to AI_EXECUTOR or retry the free provider.
+  const unsafeSourceScope=cause==='FREE_AI_UNSAFE_SOURCE_SCOPE';
+  const cat=unsafeSourceScope?'SOURCE_CODE':
+    /^(?:FREE_AI_|CODEX_)/.test(cause)||/^FREE_AI_/.test(reason_code)?'AI_EXECUTOR':
     /(?:MERGE_CONFLICT|CONFLICT_REQUIRES_SOURCE_RESOLUTION|UNMERGED_PATHS)/i.test(cause+' '+reason_code)?
     'MERGE_CONFLICT':
     /^(?:CLAIM_|NO_CLAIM_|DISPATCH_|RESERVATION_|FINALIZER_)/.test(cause)?
     'AUTOMATION_PROCESS':'UNKNOWN';
-  const st=strategyFor(cat,'UNVERIFIED',false);
+  const st=unsafeSourceScope?
+    {code:'MANUAL_SOURCE_SCOPE_REVIEW',
+      action:'ASSIGN_OWNER_FOR_SENSITIVE_OR_UNSUPPORTED_SOURCE',minutes:30}:
+    strategyFor(cat,'UNVERIFIED',false);
   return Object.freeze({schema:SCHEMA,event_kind:'REPAIR_WORKER_FAILED',
     task_id:key([REPO,pr_number,head_sha.toLowerCase(),task_key,owner_run_id,'WORKER']),
     pr_number,head_sha:head_sha.toLowerCase(),parent_task_key:task_key,
     owner_run_id:String(owner_run_id),category:cat,ruleset_version:rules.version,
-    reason_code:cause,strategy_code:st.code,responsible_role:rules.categories[cat].responsible_role,
+    reason_code:cause,strategy_code:st.code,
+    responsible_role:unsafeSourceScope?'source-repair-owner':rules.categories[cat].responsible_role,
     executor_id:OWNER_EXECUTOR,executor_kind:'owner_review',
     assignment_status:'OWNER_REVIEW_REQUIRED',
     next_action:st.action,recommended_status:cat==='UNKNOWN'?'UNCLASSIFIED':'MANUAL_REQUIRED',
