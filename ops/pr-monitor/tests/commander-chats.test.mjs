@@ -164,7 +164,7 @@ test('execution API is owner-gated, idempotent and reports blocked instead of fa
  assert.ok(edge.includes("agentStarted:false"));
  assert.ok(edge.includes("NOT_STARTED_NO_EXECUTION_RECEIPT"));
  assert.ok(ui.includes("SERVER+'?action=run'"));
- assert.ok(ui.includes("Запрос и попытка сохранены. Исполнитель НЕ запущен"));
+ assert.ok(ui.includes("Запрос и попытка сохранены. Запуск НЕ подтверждён"));
  assert.ok(ui.includes("Локальная копия не может запускать исполнителей"));
 });
 
@@ -400,4 +400,40 @@ test('private Commander writes raw JSON text through text-to-jsonb casts, not JS
  assert.match(edge,/JSON\.stringify\(record\)/);
  assert.match(edge,/JSON\.stringify\(chat\)/);
  assert.match(edge,/JSON\.stringify\(event\)/);
+});
+
+test('Hermes write from mobile is an explicit consented free-model code path',()=>{
+ const html=src('chats.html'),ui=src('commander-chats.js'),api=src('api/commander-chats.js'),css=src('commander-chats.css');
+ for(const suffix of ['new-model','model','new-github-write','github-write'])
+  assert.ok(html.includes('id="cc-'+suffix+'"'),suffix);
+ assert.ok(html.includes('type="checkbox" id="cc-github-write"'));
+ assert.ok(ui.includes("mode==='hermes'&&el('github-write').checked===true"));
+ assert.ok(ui.includes('modelId:model,confirmGitHubWrite:writeApproved'));
+ assert.ok(ui.includes("el('github-write').checked=false"));
+ assert.ok(ui.includes("msg.kind==='agent_final'&&msg.sourceWrite?.verified===true"));
+ assert.ok(ui.includes("SERVER+'?action=executor_models'"));
+ assert.ok(ui.includes("if(mode==='hermes')"));
+ assert.ok(ui.includes('selectedModel=free[0].id'));
+ assert.ok(api.includes("if(name==='executor_models')return await serveFreeExecutorModels(req,res)"));
+ assert.ok(api.includes("modelId:typeof body.modelId==='string'?body.modelId:''"));
+ assert.ok(api.includes("confirmGitHubWrite:body.confirmGitHubWrite===true"));
+ assert.ok(css.includes('.cc-github-write-wrap[hidden]'));
+ assert.doesNotMatch(ui,/HERMES_SHARED_SECRET|GITHUB_TOKEN|service_role/);
+});
+
+test('free executor catalog is owner-only and does not request paid inference',async()=>{
+ const apiSrc=src('api/commander-chats.js');
+ assert.ok(apiSrc.indexOf("const owner=await callStore(req,'status'")<
+           apiSrc.indexOf("const response=await fetch(catalogUrl"));
+ assert.ok(apiSrc.includes('ZERO_PRICE_MODEL.test(entry.id)'));
+ assert.ok(apiSrc.includes("Object.hasOwn(p,'prompt')"));
+ assert.ok(apiSrc.includes("Object.hasOwn(p,'completion')"));
+ assert.ok(apiSrc.includes('Number(v)!==0'));
+ assert.ok(apiSrc.includes("actualRequestCostMustBeVerifiedByHermes:true"));
+ assert.doesNotMatch(apiSrc,/Authorization:'Bearer '|OPENROUTER_API_KEY/);
+ const guest=response();
+ await api({method:'GET',url:'/api/commander-chats?action=executor_models',
+   headers:{host:'holistic-house-pr-monitor.vercel.app'}},guest);
+ assert.equal(guest.statusCode,401);
+ assert.equal(guest.body.error,'OWNER_SESSION_REQUIRED');
 });
