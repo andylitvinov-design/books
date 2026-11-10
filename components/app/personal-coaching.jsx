@@ -140,6 +140,35 @@ const intelligenceCopy={
 }
 const entryCopyContinue=locale=>({en:'Continue coaching session',ru:'Продолжить коучинг-сессию',es:'Continuar sesión de coaching'})[locale]||'Continue coaching session'
 const entryCopyBegin=locale=>({en:'Continue to questions',ru:'Перейти к вопросам',es:'Continuar con preguntas'})[locale]||'Continue to questions'
+const controlCopy={
+  en:{
+    safetyTitle:'Let’s pause here',
+    safetyBody:'This may need support beyond self guided coaching. If anyone is in immediate danger, contact local emergency services now or reach someone you trust. This coaching flow is paused.',
+    pausedTitle:'Your session is paused',
+    pausedBody:'Take the time you need. Your saved answer remains in your private session. You can continue when you feel ready.',
+    stoppedTitle:'We’ll stop here',
+    stoppedBody:'Your request to stop is respected. Your saved answers remain in your private session.',
+    resume:'Continue session',home:'Return to My Courses',
+  },
+  ru:{
+    safetyTitle:'Давайте остановимся здесь',
+    safetyBody:'В этой ситуации может понадобиться поддержка за пределами самостоятельного коучинга. Если кому-либо угрожает непосредственная опасность, обратитесь в местную экстренную службу или к человеку, которому доверяете. Коучинговая сессия приостановлена.',
+    pausedTitle:'Сессия приостановлена',
+    pausedBody:'Возьмите столько времени, сколько нужно. Ваш сохранённый ответ остаётся в личной сессии. Вы сможете продолжить, когда будете готовы.',
+    stoppedTitle:'На этом остановимся',
+    stoppedBody:'Ваше желание завершить разговор принято. Сохранённые ответы останутся в личной сессии.',
+    resume:'Продолжить сессию',home:'Вернуться в Мои курсы',
+  },
+  es:{
+    safetyTitle:'Hagamos una pausa aquí',
+    safetyBody:'Esto puede requerir apoyo más allá del coaching autónomo. Si alguien está en peligro inmediato, contacta con los servicios locales de emergencia o con una persona de confianza. Esta sesión queda pausada.',
+    pausedTitle:'Tu sesión está en pausa',
+    pausedBody:'Tómate el tiempo que necesites. Tu respuesta guardada permanece en tu sesión privada. Puedes continuar cuando estés preparado/a.',
+    stoppedTitle:'Terminamos aquí',
+    stoppedBody:'Respetamos tu decisión de parar. Tus respuestas guardadas permanecen en tu sesión privada.',
+    resume:'Continuar sesión',home:'Volver a Mis cursos',
+  },
+}
 const translated=(value,lang)=>value?.[lang]||value?.en||''
 const questionsFor=(course,catalog)=>{
   const key=course?.current?.schemeKey
@@ -167,6 +196,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
+  const [sessionControl,setSessionControl]=useState(null)
   const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
   const titleRef=useRef(null),busyRef=useRef(false)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
@@ -203,7 +233,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     const saved=values?.[items[next]?.id]
     setDraft(typeof saved==='string'?saved:'')
     setDictating(false)
-    setPendingFollowup(null);setReflectionDraft('')
+    setPendingFollowup(null);setReflectionDraft('');setSessionControl(null)
     setUseStandardPrompt(false)
     setClipboardState('')
     setNotice('')
@@ -303,6 +333,12 @@ export default function PersonalCoaching({locale='en',accountId}){
     if(index>=activeQuestions.length-1)return false
     const item=authoredFollowupFor(question,answer,current?.reflections)
     if(!item)return false
+    if(item.controlStatus){
+      setSessionControl(item)
+      setPendingFollowup(null);setReflectionDraft('')
+      return true
+    }
+    setSessionControl(null)
     setPendingFollowup(item);setReflectionDraft('')
     return true
   }
@@ -518,6 +554,26 @@ export default function PersonalCoaching({locale='en',accountId}){
           <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.home}</Link>
           <button type="button" className={styles.delete} disabled={busy} onClick={erase}><Trash2 size={15}/>{t.delete}</button>
           <small className={styles.disclaimer}>{t.completeNote}</small>
+        </div>
+        : sessionControl ? <div className={styles.session} data-coaching-control={sessionControl.controlStatus} data-coaching-one-viewport>
+          <div className={styles.questionArea}>
+            <span className={styles.eyebrow}>HOLISTIC HOUSE · COACHING</span>
+            <h1 ref={titleRef} tabIndex={-1}>
+              {sessionControl.controlStatus==='safety_hold'?controlCopy[lang].safetyTitle:
+               sessionControl.controlStatus==='paused'?controlCopy[lang].pausedTitle:controlCopy[lang].stoppedTitle}
+            </h1>
+            <p className={styles.messageTip}>
+              {sessionControl.controlStatus==='safety_hold'?controlCopy[lang].safetyBody:
+               sessionControl.controlStatus==='paused'?controlCopy[lang].pausedBody:controlCopy[lang].stoppedBody}
+            </p>
+          </div>
+          <footer className={styles.footer} data-coaching-messenger-footer>
+            {sessionControl.controlStatus==='paused'&&<button type="button" className={styles.primary}
+              onClick={()=>visit(index+1,session?.answers)}>{controlCopy[lang].resume}<ArrowRight size={18}/></button>}
+            <Link href={root+'/course?view=courses'} className={styles.secondary} onClick={()=>setSessionControl(null)}>
+              {controlCopy[lang].home}
+            </Link>
+          </footer>
         </div>
         : pendingFollowup ? <div className={styles.session} data-coaching-authored-followup data-coaching-one-viewport>
           <div className={styles.progressHeader}>
