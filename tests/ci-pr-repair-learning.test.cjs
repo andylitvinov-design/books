@@ -17,6 +17,8 @@ const case1=buildPublishedCase(record);
 test('no case unless source commit independently verified',()=>{
  assert.equal(case1.schema,'HH_REPAIR_CASE_V1');assert.equal(validCase(case1),true);
  assert.equal(case1.ci_proof,'NOT_VERIFIED');assert.equal(case1.auto_reuse,false);
+ // Existing lint records without model metadata remain valid; old free-AI records do not.
+ assert.equal(validCase(({code_backend,code_model,code_model_verified,...legacy})=>legacy)(case1),true);
  for(const p of [{state:'MANUAL'},{source_published:false},{verified_source_fix:false},
   {new_sha:a},{reason_code:'PATCH_PREPARED'},{strategy:'legacy'},
   {run_url:'https://evil.example/'},{repair_kind:'codex'}]){
