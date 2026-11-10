@@ -50,6 +50,7 @@ test('Public discovery reuses photo assets and existing catalog routes', async (
   assert.ok(more.includes('"energy-confidence": "energy"'), 'Legacy energy landing route stays reachable')
   assert.ok(more.includes('"goals-money": "business"'), 'Legacy business landing route stays reachable')
   assert.ok(site.includes("id: 'my-coach'"), 'My Coach stays in the site menu')
+   assert.ok(site.includes('data-nav-item="services"'), 'Services remains directly reachable in the site menu')
    const dock = await readFile('lib/unified-mobile-dock.mjs', 'utf8')
    assert.ok(dock.includes('case "services": return prefix+"/services"'), 'Services remains directly accessible in the mobile dock')
   // The old hard-coded Academy nav item was replaced by the canonical
