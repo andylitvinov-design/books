@@ -70,9 +70,7 @@ async function route({
   const violation=receiptProof(receipt,context);
   if(violation){result.reason=violation;return result;}
   const c=receipt.classification;
-  const strategy=strategyFor(c.category,
-     c.reason_code==='SPECIALIST_GATE_FAILED_REQUIRES_TRIAGE'?'SPECIALIST_FAILED':'UNVERIFIED',
-     c.retry.allowed);
+  const strategy=strategyFor(c.category,'UNVERIFIED',c.retry.allowed);
   result.prNumber=receipt.prNumber;
   result.runId=receipt.runId;
   result.category=c.category;
