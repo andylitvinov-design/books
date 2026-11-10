@@ -6,9 +6,12 @@ const fs=require('node:fs');
 const path=require('node:path');
 const os=require('node:os');
 const cp=require('node:child_process');
+const crypto=require('node:crypto');
 
 const MODEL='opencode/glm-5.3-flash-free';
 const MAX_FILES=8, MAX_SOURCE=18000, MAX_DISK_SOURCE=150000, MAX_CONTEXT=58000, MAX_PATCH=35000;
+const PROMPT_TEMPLATE_VERSION='HH_PR_FREE_REPAIR_PROMPT_V1';
+const RULESET_VERSION=require('./ci-pr-error-rules.v1.json').version;
 const SOURCE=/^(?:app|components|lib|scripts)\/(?:[A-Za-z0-9_()\[\].-]+\/)*[A-Za-z0-9_.-]+\.(?:cjs|mjs|js|jsx|ts|tsx)$/;
 const SENSITIVE=/(^|[\/_.-])(?:api|auth|security|privacy|private|payment|billing|checkout|rls|secret|token|consent|crm|messenger|messages|client|contact|email|phone|order|booking|consultation|session|storage|health|admin|account|profile|wallet|migration|supabase|ci)(?=$|[\/_.-])/i;
 function safeSourcePath(file){
@@ -215,6 +218,24 @@ function promptFor(scope,sources,signals){
   ...sources.map(s=>'FILE '+s.file+(s.bounded?' (bounded beginning/end excerpts, NOT full source)':' (full contents)')+':\n'+s.content),
  ].join('\n\n');
 }
+// Durable, redacted provenance only. Raw prompts, source excerpts, diagnostics,
+// credentials and model responses never enter a GitHub receipt.
+function promptReceipt(scope,prompt,signals,{taskKey,runId,runAttempt}={}){
+ const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+ if(!scope||!/^[a-f0-9]{40}$/i.test(scope.sha||'')||
+   !Array.isArray(scope.files)||!scope.files.length||scope.files.length>MAX_FILES||
+   !scope.files.every(safeSourcePath)||typeof prompt!=='string'||!prompt||
+   !/^[a-f0-9]{32}$/i.test(taskKey||'')||
+   !/^[1-9][0-9]{0,18}$/.test(String(runId||''))||
+   !Number.isSafeInteger(runAttempt)||runAttempt<1)throw Error('FREE_AI_PROMPT_RECEIPT_INVALID_CONTEXT');
+ const promptSha=hash(prompt);
+ const contextHash=hash(JSON.stringify({head:scope.sha,paths:scope.files,
+   diagnostic_hash:hash(safeDiagnostic(JSON.stringify(signals||{}),12000))}));
+ return {schema:'HH_PR_PROMPT_RECEIPT_V1',
+   prompt_id:hash([taskKey,runId,runAttempt,scope.sha,promptSha].join(':')).slice(0,32),
+   task_key:taskKey,template_version:PROMPT_TEMPLATE_VERSION,
+   ruleset_version:RULESET_VERSION,context_hash:contextHash,prompt_sha256:promptSha};
+}
 function validateAgentAcl(stdout){
  let raw;try{raw=JSON.parse(stdout);}catch{throw Error('FREE_AI_AGENT_ACL_UNREADABLE');}
  const agents=Array.isArray(raw)?raw:Object.entries(raw.agents||raw)
@@ -365,7 +386,8 @@ async function propose(){
   source_head:String(process.env.REPAIR_SHA||''),run_id:String(process.env.GITHUB_RUN_ID||''),
   run_attempt:Number(process.env.GITHUB_RUN_ATTEMPT||0)||null,started_at:new Date().toISOString(),
   model_call_started_at:null,response_received_at:null,attempt_count:0,result:'PREPARING',
-  failure_reason:null,patch_present:false,candidate_paths:[],verification_result:'NOT_RUN',published_commit_sha:null};
+  failure_reason:null,patch_present:false,candidate_paths:[],verification_result:'NOT_RUN',published_commit_sha:null,
+  prompt_receipt:null,prompt_prepared_at:null,prompt_delivery_status:'NOT_PREPARED'};
  const auditPath=path.join(os.tmpdir(),'hh-free-ai-model-audit.json');
  const persist=()=>{fs.writeFileSync(auditPath,JSON.stringify(audit),{mode:0o600});console.log('HH_FREE_AI_MODEL_AUDIT '+JSON.stringify(audit));};
  let isolated=null;persist();
@@ -373,6 +395,10 @@ async function propose(){
   const root=process.cwd(),scope=narrowFailedSourceScope(root,sourceScope());audit.source_head=scope.sha;
   const sources=checkScopeFiles(root,scope),signals=collectDiagnostics(root,scope),prompt=promptFor(scope,sources,signals);
   if(prompt.length>92000)throw Error('FREE_AI_PROMPT_TOO_LARGE');
+  audit.prompt_receipt=promptReceipt(scope,prompt,signals,{
+   taskKey:process.env.REPAIR_TASK_KEY,runId:audit.run_id,runAttempt:audit.run_attempt});
+  audit.prompt_prepared_at=new Date().toISOString();
+  audit.prompt_delivery_status='PREPARED';persist();
   const key=process.env.HH_OPENROUTER_FREE_API_KEY||'',router=!!key.trim(),cli=process.env.HH_OPENCODE_BIN;
   if(!router&&(!cli||!fs.existsSync(cli)||!fs.statSync(cli).isFile()))throw Error('FREE_AI_CLI_NOT_INSTALLED');
   isolated=fs.mkdtempSync(path.join(os.tmpdir(),'hh-ci-free-repair-'));
@@ -384,19 +410,22 @@ async function propose(){
    reply=await openrouter.requestFreePatch({prompt,key,model:process.env.HH_OPENROUTER_FREE_MODEL||'auto',role:'repair',
     onVerifiedModel:r=>{modelUsed=r.model;audit.provider='openrouter';audit.model=r.model;
      audit.model_version=r.model_version||null;audit.catalog_model_created=r.catalog_created||null;
-     audit.model_call_started_at=new Date().toISOString();audit.attempt_count=1;audit.result='MODEL_CALL_STARTED';persist();}});
+     audit.model_call_started_at=new Date().toISOString();audit.attempt_count=1;
+      audit.prompt_delivery_status='ATTEMPTED_UNCONFIRMED';audit.result='MODEL_CALL_STARTED';persist();}});
   }else{
    const price=await verifyFreeModelPrice();audit.provider='opencode';audit.model=MODEL;
    console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(price));
    const acl=run(cli,['debug','agents'],{cwd:isolated,env,timeout:45000});
    if(!acl.ok)throw Error('FREE_AI_AGENT_ACL_PROBE_FAILED');validateAgentAcl(acl.stdout);
-   audit.model_call_started_at=new Date().toISOString();audit.attempt_count=1;audit.result='MODEL_CALL_STARTED';persist();
+   audit.model_call_started_at=new Date().toISOString();audit.attempt_count=1;
+   audit.prompt_delivery_status='ATTEMPTED_UNCONFIRMED';audit.result='MODEL_CALL_STARTED';persist();
    const response=run(cli,['run','--standalone','--model',MODEL,'--agent','hh-ci-free-repair','--format','json',prompt],
     {cwd:isolated,env,timeout:170000});
    if(!response.ok){if(/(?:429|free.limit|quota|rate.limit)/i.test(response.output))throw Error('FREE_AI_FREE_TIER_QUOTA_EXHAUSTED');throw Error('FREE_AI_MODEL_UNAVAILABLE');}
    reply=extractTextEvents(response.stdout);
   }
-  audit.response_received_at=new Date().toISOString();audit.result='MODEL_RESPONSE_RECEIVED';persist();
+  audit.response_received_at=new Date().toISOString();audit.result='MODEL_RESPONSE_RECEIVED';
+  audit.prompt_delivery_status='RESPONSE_OBSERVED';persist();
   const patch=validatePatch(reply,scope),patchPath=path.join(isolated,'candidate.patch');
   fs.writeFileSync(patchPath,patch,{mode:0o600});
   const checked=run('git',['apply','--check','--whitespace=error',patchPath],{cwd:root,timeout:10000});
@@ -429,4 +458,4 @@ async function main(){
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope};
+ noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt};
