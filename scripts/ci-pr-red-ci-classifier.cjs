@@ -101,6 +101,18 @@ function classifyRedCiError({
     return makeResult('MERGE_CONFLICT', evidence, 0.99, { evidenceCode: 'LIVE_PR_IS_DIRTY' });
   }
 
+  // The GitHub mergeability field can be null while the failed job still
+  // reports a concrete conflict (for example, a merge-tree or unmerged-path
+  // diagnostic). Keep that separate from a stale conflict label: only the
+  // authenticated failed-job evidence is used here, and this remains
+  // diagnostic-only with no source-write authority.
+  if (SIGNALS.MERGE_CONFLICT.test(text)) {
+    return makeResult('MERGE_CONFLICT', evidence, 0.94, {
+      reasonCode: 'MERGE_CONFLICT_DIAGNOSTIC_MARKER',
+      evidenceCode: 'FAILED_JOB_REPORTED_CONFLICT'
+    });
+  }
+
   if (SIGNALS.BASE_ADVANCED.test(text)) {
     return makeResult('BASE_ADVANCED', evidence, 0.97, { evidenceCode: 'EXPLICIT_BASE_FAILURE' });
   }
