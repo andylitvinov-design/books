@@ -544,7 +544,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await openAudioVoice(); await myVoiceModeButton.click();
       await expect(myVoiceModeButton).toHaveAttribute("aria-pressed","true");
       await expect(voicePanel.locator("[data-video-audio-own-upload]")).toHaveCount(1);
-      await expect(voicePanel.locator("[data-video-audio-record-voice]")).toHaveCount(1);
+      await expect(voicePanel.locator("[data-video-own-voice-record]")).toHaveCount(1);
       await expect(voicePanel.locator("[data-video-own-voice-record]")).toBeVisible();
       await expect(phrases.locator("[data-video-generate-affirmation-audio]")).toHaveCount(0);
       await expect(phrases.locator('[data-video-affirmation-voice-card="maya"]')).toBeHidden();
