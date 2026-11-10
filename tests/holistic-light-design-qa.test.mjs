@@ -101,13 +101,12 @@ test('Ideas Voice warm-peach palette is scoped and meets readable emerald contra
   assert.match(panel,/:global\(\[data-ideas-subtab="voice"\]\) \.panel \.selectedPhrase/);
   assert.match(panel,/:global\(\[data-ideas-subtab="voice"\]\) \.panel \.voiceCardSelect\[aria-pressed="true"\]/);
   assert.match(panel,/:global\(\[data-ideas-subtab="voice"\]\) \.panel \.action/);
-  assert.match(runtime,/data-ideas-subtab=\{ideasSubtab===\"my-voice\"\?\"voice\":ideasSubtab\}/,
-    'my-voice remains on the existing voice pane and shares its scoped design contract');
+  assert.ok(runtime.includes('<div data-ideas-subtab="voice" data-ideas-voice-mode={ideasVoiceMode}>'),
+    'voice modes remain inside the existing voice pane and keep their own scoped design contract');
   assert.ok(runtime.includes('data-ideas-active-tab={ideasSubtab}'),
-    'keep the actual selected Ideas subtab separately available');
+    'Ideas navigation state remains separately available for Personalization and Concept');
   assert.ok(runtime.includes('<MandalaAffirmationVoice locale={locale}'),
-    'retain the same provider-backed affirmation voice component');
-  assert.ok(runtime.includes('<MandalaAffirmationVoice locale={locale}'), 'retain real provider/voice state');
+    'retain the single provider-backed affirmation voice component and its real state');
   assert.ok(solidContrast('rgb(255, 255, 255)','rgb(8, 126, 97)') >= 4.5,
     'white CTA text on deep emerald must meet WCAG AA');
   assert.ok(solidContrast('rgb(255, 255, 255)','rgb(2, 160, 101)') < 4.5,
