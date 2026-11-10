@@ -666,6 +666,8 @@ jobs:
         uses: actions/github-script@v7
         env:
           HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+          HH_CODE_BACKEND: ${{ needs.code_fix.outputs.code_backend }}
+          HH_CODE_MODEL: ${{ needs.code_fix.outputs.code_model }}
           HH_REPAIR_SHA: ${{ needs.claim.outputs.sha }}
           HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
         with:
@@ -720,7 +722,8 @@ jobs:
             try {
               result=await worker.publish({github,core,context,
                 prNumber:Number(process.env.HH_REPAIR_PR),
-                expectedSha:process.env.HH_REPAIR_SHA,candidate,writer});
+                expectedSha:process.env.HH_REPAIR_SHA,candidate,
+                codeBackend:process.env.HH_CODE_BACKEND,codeModel:process.env.HH_CODE_MODEL,writer});
             } catch (error) {
               if (error?.message !== 'HH_REPAIR_PUBLISH_STALE_HEAD') throw error;
               // Changed HEAD is a correct fail-closed abort, not a code repair.
