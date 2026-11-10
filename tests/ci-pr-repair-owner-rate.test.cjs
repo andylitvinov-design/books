@@ -2,7 +2,8 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode}=
+const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,
+ eligibleScopedActionsWriter,chooseWriterMode}=
  require('../scripts/ci-pr-repair-owner-rate.cjs');
 const hdr=value=>({get:name=>{
  assert.equal(name,'x-ratelimit-remaining');return value;
@@ -38,6 +39,23 @@ test('job-scoped GitHub token is preferred only with verified repository write a
  }
  assert.throws(()=>chooseWriterMode({job:good(5000)},18),/INVALID_BUDGET/);
 });
+test('trusted job token with Contents: write is preferred even when repository push field is false',()=>{
+ const scoped={ok:true,canPush:false,remaining:4000};
+ const owner={ok:true,canPush:true,remaining:4000};
+ assert.equal(eligibleWriter(scoped,10),false,'owner PAT must still prove push');
+ assert.equal(eligibleScopedActionsWriter(scoped,10),true);
+ assert.equal(chooseWriterMode({job:scoped,owner,scopedActionsWrite:true},10),'job',
+  'the protected publish job may use its own explicitly write-scoped token');
+ assert.equal(chooseWriterMode({job:scoped,owner},10),'owner',
+  'without a trusted job grant, absent push cannot authorize job');
+ assert.equal(chooseWriterMode({job:scoped,owner:null,scopedActionsWrite:true},10),'job');
+ for(const invalid of [null,{ok:false,canPush:false,remaining:4000},
+  {ok:true,canPush:false,remaining:9},{ok:true,canPush:false,remaining:null}]){
+  assert.equal(eligibleScopedActionsWriter(invalid,10),false);
+  assert.throws(()=>chooseWriterMode({job:invalid,owner:null,
+   scopedActionsWrite:true},10),/NO_VERIFIED_WRITER/);
+ }
+});
 test('existing issuer remains credential isolated and branch/head guarded',()=>{
  const flow=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(flow,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
@@ -45,11 +63,15 @@ test('existing issuer remains credential isolated and branch/head guarded',()=>{
  const publish=flow.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
  assert.match(publish,/permissions:\n      contents: write/);
  assert.match(publish,/rateGuard\.chooseWriterMode/);
+ assert.match(publish,/scopedActionsWrite:true/);
+ assert.match(publish,/rateGuard\.eligibleScopedActionsWriter\(jobProbe,required\)/);
+ assert.match(publish,/HH_REPAIR_WRITER_UNTRUSTED_JOB_CONTEXT/);
  assert.match(publish,/mode==='job'\?jobToken:ownerToken/);
  assert.match(flow,/rateGuard\.requiredOwnerBudget\(files\.length\)/);
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
- assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH/);
- assert.match(flow,/repository\.permissions\?\.push!==true/);
+ assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_AND_RATE/);
+ assert.match(flow,/mode==='owner'&&repository\.permissions\?\.push!==true/);
+ assert.doesNotMatch(flow,/mode==='job'&&repository\.permissions\?\.push!==true/);
  assert.match(flow,/force:false/);
  assert.match(flow,/Source branch moved before repair commit/);
  assert.match(flow,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);

@@ -27,11 +27,21 @@ function eligibleWriter(probe,required){
  return !!(probe?.ok===true&&probe?.canPush===true&&
   Number.isSafeInteger(probe.remaining)&&probe.remaining>=required);
 }
-function chooseWriterMode({job,owner}={},required){
+// GitHub's repository permissions.push field describes repository access, not
+// reliably the job-scoped GITHUB_TOKEN contents:write grant. Only the trusted
+// publish job may explicitly attest this grant; it is never inferred from an
+// untrusted API body, PR input, or an owner PAT.
+function eligibleScopedActionsWriter(probe,required){
+ return probe?.ok===true&&Number.isSafeInteger(probe.remaining)&&
+  probe.remaining>=required;
+}
+function chooseWriterMode({job,owner,scopedActionsWrite=false}={},required){
  if(!Number.isSafeInteger(required)||required<10||required>17)
   throw Error('HH_REPAIR_OWNER_RATE_INVALID_BUDGET');
+ if(scopedActionsWrite===true&&eligibleScopedActionsWriter(job,required))return 'job';
  if(eligibleWriter(job,required))return 'job';
  if(eligibleWriter(owner,required))return 'owner';
  throw Error('HH_REPAIR_NO_VERIFIED_WRITER_CREDENTIAL_OR_RATE');
 }
-module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode};
+module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,
+ eligibleScopedActionsWriter,chooseWriterMode};

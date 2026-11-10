@@ -716,15 +716,28 @@ jobs:
               // GitHub-token ref updates require the EXISTING next-Core wake
               // fallback; do not fabricate a pull_request synchronization.
               const required=rateGuard.requiredOwnerBudget(files.length);
+              // This signed control-branch job explicitly grants contents:write.
+              // A GitHub Actions job token may omit permissions.push in GET /repos
+              // even though that job's Contents grant is write (real #4279).
+              // Never infer scoped authority from untrusted PR/model input.
+              if(context.repo.owner!=='andylitvinov-design'||
+                 context.repo.repo!=='books'||
+                 context.ref!=='refs/heads/codex/bootstrap-books')
+                throw Error('HH_REPAIR_WRITER_UNTRUSTED_JOB_CONTEXT');
               const jobProbe=await probe(jobToken);
-              const ownerProbe=rateGuard.eligibleWriter(jobProbe,required)?
+              const ownerProbe=rateGuard.eligibleScopedActionsWriter(jobProbe,required)?
                 null:await probe(ownerToken);
-              const mode=rateGuard.chooseWriterMode({job:jobProbe,owner:ownerProbe},required);
+              const mode=rateGuard.chooseWriterMode({
+                job:jobProbe,owner:ownerProbe,scopedActionsWrite:true},required);
               token=mode==='job'?jobToken:ownerToken;
               const repository=await call('GET',base,undefined,required);
-              if(repository?.full_name!==owner+'/'+repo||repository.permissions?.push!==true)
+              // PATs still require reported owner push. The trusted scoped
+              // job token is authenticated, rate-proven and server-enforced
+              // when Git Data writes occur; any denied mutation fails closed.
+              if(repository?.full_name!==owner+'/'+repo||
+                 (mode==='owner'&&repository.permissions?.push!==true))
                 throw Error('HH_REPAIR_WRITER_REPO_WRITE_PERMISSION_MISSING');
-              core.info('HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH mode='+mode);
+              core.info('HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_AND_RATE mode='+mode);
               const current=await call('GET',base+ref);
               if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)
                 throw Error('Source branch moved before repair commit');
