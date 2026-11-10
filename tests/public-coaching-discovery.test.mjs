@@ -24,7 +24,7 @@ test('Ideas offers the public model chooser first and keeps local Tao insight',(
  for(const cta of ['Get free coaching session','Пройти бесплатную коуч-сессию','Sesión gratuita de coaching'])assert.ok(ui.includes(cta))
 })
 test('public coaching page reuses reviewed DB reference data without account session',()=>{
- const page=read('app/[locale]/coaching/page.jsx')
+ const page=read('app/[locale]/coaching/sessions/page.jsx')
  const data=read('lib/app/personal-coaching-catalog.js')
  const db=read('lib/app/database.js')
  const shared=read('lib/coaching/public-coaching-catalog.js')
@@ -56,7 +56,7 @@ test('public models and private questions never leave memory or go to marketing 
  assert.match(booking,/€100/)
  assert.match(booking,/\/services\/free-situation-review/)
  for(const locale of ['en','ru','es'])assert.match(ui,new RegExp('\\b'+locale+':\\{'))
- assert.match(css,/@media\(max-width:360px\)/)
+  assert.match(shell,/@media\(max-width:360px\)/)
  assert.match(css,/:focus-visible/)
  assert.match(css,/ideas-pine-sharp\.avif/)
 })
@@ -110,7 +110,7 @@ test('guest lounge shows different forms and author tracks with real actions and
 test('coaching lounge displays all formats by default and uses shared wish field and filters',()=>{
  const ui=read('components/public-coaching-discovery.jsx')
  const css=read('components/public-coaching-discovery.module.css')
- const page=read('app/[locale]/coaching/page.jsx')
+ const page=read('app/[locale]/coaching/sessions/page.jsx')
  assert.match(ui,/useState\('all'\)/)
  assert.match(ui,/format==='all'\?styles\.active/)
  assert.match(ui,/format==='self'\?styles\.active/)
@@ -189,8 +189,8 @@ test('public model cards include only known first-party photographs with mobile-
   'public/images/holistic-house/books-library.webp',
  ])assert.ok(existsSync(new URL('../'+path,import.meta.url)),path)
  assert.match(ui,/import Image from 'next\/image'/)
- assert.match(ui,/className=\{styles\.loungeRow\}/)
- assert.match(ui,/className=\{styles\.loungePhoto\}/)
+  assert.match(shell,/\.bottomNav/)
+  assert.match(shell,/\.hero/)
  assert.match(css,/\.loungeRow\{display:grid/)
  assert.match(css,/\.loungePhoto\{/)
  assert.match(css,/@media\(max-width:360px\)/)
@@ -201,6 +201,7 @@ test('the public Coaching Lounge, Ideas and entry page all parse as JSX before a
    ['components/public-coaching-discovery.jsx',ts.ScriptKind.JSX],
    ['components/coaching-lounge-entry.tsx',ts.ScriptKind.TSX],
    ['components/ideas-discovery.tsx',ts.ScriptKind.TSX],
+    ['app/[locale]/coaching/sessions/page.jsx',ts.ScriptKind.JSX],
    ['app/[locale]/coaching/page.jsx',ts.ScriptKind.JSX],
    ['app/[locale]/coaching/session/[sessionId]/page.jsx',ts.ScriptKind.JSX],
  ]){
@@ -221,7 +222,7 @@ test('Academy guest coaching entry and localized metadata agree on the public lo
  assert.match(card,/href: "\/" \+ locale \+ "\/coaching"/)
  assert.match(card,/courseHref: "\/" \+ locale \+ "\/coaching"/)
  assert.doesNotMatch(card,/\/app\/coaching/)
- for(const title of ['Coaching Lounge · Find your session','Гостиная коучинга · Выберите свою сессию','Salón de coaching · Elige tu sesión'])assert.ok(page.includes(title),title)
+ for(const title of ['My Coach · Find your personal coach','My Coach · Подберите личного коуча','Mi coach · Encuentra tu coach personal'])assert.ok(page.includes(title),title)
  assert.match(read('lib/coaching/public-coaching-catalog.js'),/readPersonalCoachingCatalog\(getAppConfig\(\),null,\{server:true\}\)/)
  assert.doesNotMatch(page,/localStorage|sessionStorage|\bclientQuestion\b/)
 })
@@ -232,7 +233,7 @@ test('public lounge uses horizontal photo-left cards, filtered offers and origin
  const css=read('components/public-coaching-discovery.module.css')
  const academy=read('components/academy-hub.tsx')
  const alias=read('app/[locale]/coaching/lounge/page.tsx')
- const route=read('app/[locale]/coaching/page.jsx')
+ const route=read('app/[locale]/coaching/sessions/page.jsx')
  assert.match(ui,/shown\.map\(s=>/)
  assert.match(ui,/schemeKey=\{s\.schemeKey\}/)
  assert.match(ui,/onPrimary=\{\(\)=>start\(s\)\}/)
@@ -266,20 +267,20 @@ test('public lounge uses horizontal photo-left cards, filtered offers and origin
  assert.equal(parsed.parseDiagnostics.length,0,'no broken JSX in public coaching room')
 })
 
-test('full-bleed mobile lounge leaves site navigation intact but removes the double container inset',()=>{
+test('My Coach mobile page hides the global promo and legacy seven-item footer',()=>{
  const page=read('app/[locale]/coaching/page.jsx')
  const shell=read('app/[locale]/coaching/page.module.css')
  const ui=read('components/public-coaching-discovery.jsx')
  const css=read('components/public-coaching-discovery.module.css')
- assert.doesNotMatch(page,/className="homeopathy-shell remedies-landing"/)
- assert.match(page,/data-coaching-full-width/)
- assert.match(shell,/\.fullWidth\{width:100%;max-width:none/)
- assert.match(css,/\.loungeRow\{display:grid;grid-template-columns:/)
- assert.match(css,/\.loungePhoto\{display:block;position:relative/)
- assert.match(css,/\.loungeDetails,.loungePrimary\{[\s\S]*?min-height:44px/)
- assert.match(css,/@media\(max-width:700px\)\{[\s\S]*?\.root\{padding:0 0 calc\(116px/)
- assert.match(ui,/data-coaching-compact-card/)
- assert.match(ui,/data-coaching-item=\{id\}/)
+  assert.match(page,/data-coaching-hub/)
+  assert.match(page,/MarketplaceMasterFinder/)
+  assert.match(shell,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/)
+  assert.match(shell,/:global\(body:has\(\[data-coaching-hub\]\) \[data-sitewide-antistress-banner\]\)/)
+  assert.match(shell,/:global\(body:has\(\[data-coaching-hub\]\) \.mobile-bottom-navigation\)/)
+  assert.match(shell,/:global\(body:has\(\[data-coaching-hub\]\) \[data-hh-ihelp-trigger\]\)/)
+  assert.match(shell,/@media\(max-width:600px\)/)
+  assert.match(page,/data-coaching-hub/)
+  assert.match(page,/MarketplaceMasterFinder/)
  assert.match(ui,/className=\{styles\.loungeRow\}/)
  assert.match(ui,/className=\{styles\.loungePhoto\}/)
  assert.match(css,/@media\(max-width:360px\)/)
