@@ -392,7 +392,8 @@ test('existing mobile PR monitor renders signed repair task outcomes and next ac
  assert.match(src,/Следующая проверка/);
  assert.match(src,/row\.recorded_status==='FIXED'/);
  assert.match(src,/row\.status==='VERIFIED'/);
- assert.match(src,/EXACT_CURRENT_HEAD_CORE_SPECIALIST_MERGE_GATES/);
+ const apiSrc=fs.readFileSync('ops/pr-monitor/api/pr-attribution.js','utf8');
+ assert.match(apiSrc,/EXACT_CURRENT_HEAD_CORE_SPECIALIST_MERGE_GATES/);
 });
 
 
