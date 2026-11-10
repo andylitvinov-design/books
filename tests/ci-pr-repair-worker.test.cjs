@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const {eligible,safeFiles,claim,publish,finalize,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,validBranch,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,MARKER}=require('../scripts/ci-pr-repair-worker.cjs');
 const {taskFor,commentBody,reservation,reservationStatus,externalOwnerLeaseStatus}=require('../scripts/ci-pr-task-state.cjs');
 const {stageLine,parseComment,timelineStages}=require('../scripts/ci-pr-stage-receipts.cjs');
+const {buildTaskOutcome,validateTaskOutcome}=require('../scripts/ci-pr-task-outcome.cjs');
 const sha='a'.repeat(40), newSha='b'.repeat(40), owner='andylitvinov-design', repo='books';
 const context={repo:{owner,repo}};
 const core={info:()=>{},outputs:{},setOutput(k,v){this.outputs[k]=v;}};
@@ -1145,4 +1146,75 @@ test('read-only legacy finalization remains PREPARED and emits no-source deliver
  assert.equal(result.delivery_status,'READ_ONLY_PREFLIGHT_NO_SOURCE');
  assert.equal(result.next_action,'HANDOFF_EXISTING_SOURCE_OWNER');
  assert.equal(f.log.commit,0);
+});
+
+test('repair finalizer emits an owned FIXED receipt only for an exact published source commit',()=>{
+ const outcome=buildTaskOutcome({task_key:'1'.repeat(32),pr_number:11,
+  head_sha:sha,new_sha:newSha, state:'PUBLISHED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+  source_published:true,head_matches:true,claim_status:'claimed',
+  owner_run_id:'12345',now:'2026-11-10T01:00:00.000Z'});
+ assert.equal(outcome.status,'FIXED');
+ assert.equal(outcome.verified_source,true);
+ assert.equal(outcome.next_action,'VERIFY_EXACT_HEAD_REQUIRED_CI');
+ assert.equal(outcome.responsible_role,'exact-head-ci-verifier');
+ assert.equal(validateTaskOutcome(outcome),true);
+});
+
+test('unverified or stale published claims cannot become FIXED',()=>{
+ for(const input of [
+  {source_published:false,head_matches:true},
+  {source_published:true,head_matches:false},
+  {source_published:true,head_matches:true,new_sha:sha}
+ ]){
+  assert.throws(()=>buildTaskOutcome({task_key:'1'.repeat(32),pr_number:11,
+   head_sha:sha,new_sha:input.new_sha||newSha,state:'PUBLISHED',
+   reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+   source_published:input.source_published,head_matches:input.head_matches,
+   owner_run_id:'12345',now:'2026-11-10T01:00:00.000Z'}));
+ }
+});
+
+test('manual, rerouted, waiting and retry outcomes always have an owner and next check',()=>{
+ const now='2026-11-10T01:00:00.000Z';
+ const base={task_key:'2'.repeat(32),pr_number:11,head_sha:sha,
+  reason_code:'TEST_REASON',owner_run_id:'12345',now};
+ const cases=[
+  ['MANUAL','MANUAL_REQUIRED','repository-owner'],
+  ['SUPERSEDED','REROUTED','pr-head-reconciler'],
+  ['REJECTED','WAITING_INPUT','repository-owner'],
+  ['FAILED','REROUTED','agents-director-maintainer','unknown'],
+  ['FAILED','MANUAL_REQUIRED','repository-owner','claimed'],
+  ['PREPARED','REROUTED','source-repair-owner'],
+  ['UNKNOWN_STATE','UNCLASSIFIED','ci-diagnostic-triage']
+ ];
+ for(const [state,status,role,claim_status='unknown'] of cases){
+  const result=buildTaskOutcome({...base,state,claim_status});
+  assert.equal(result.status,status);
+  assert.equal(result.responsible_role,role);
+  assert.ok(result.next_action);
+  assert.ok(Number.isFinite(Date.parse(result.next_check_at)));
+  assert.equal(validateTaskOutcome(result),true);
+ }
+});
+
+test('retry receipt must have a future bounded timestamp and remains exact-head scoped',()=>{
+ const now='2026-11-10T01:00:00.000Z';
+ const result=buildTaskOutcome({task_key:'3'.repeat(32),pr_number:11,head_sha:sha,
+  state:'NO_CLAIM_RETRYABLE',reason_code:'NO_CLAIM_RETRYABLE',
+  owner_run_id:'12345',retry_after:'2026-11-10T01:15:00.000Z',now});
+ assert.equal(result.status,'RETRY_SCHEDULED');
+ assert.equal(result.next_check_at,'2026-11-10T01:15:00.000Z');
+ assert.throws(()=>buildTaskOutcome({task_key:'3'.repeat(32),pr_number:11,head_sha:sha,
+  state:'NO_CLAIM_RETRYABLE',reason_code:'NO_CLAIM_RETRYABLE',
+  owner_run_id:'12345',retry_after:'2026-11-10T00:59:00.000Z',now}));
+});
+
+test('outcome validation rejects terminal claims without independent source proof',()=>{
+ const valid=buildTaskOutcome({task_key:'4'.repeat(32),pr_number:11,head_sha:sha,
+  new_sha:newSha,state:'PUBLISHED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+  source_published:true,head_matches:true,owner_run_id:'12345',
+  now:'2026-11-10T01:00:00.000Z'});
+ assert.equal(validateTaskOutcome(valid),true);
+ assert.equal(validateTaskOutcome({...valid,verified_source:false}),false);
+ assert.equal(validateTaskOutcome({...valid,next_action:''}),false);
 });
