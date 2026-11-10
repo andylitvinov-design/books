@@ -115,6 +115,15 @@ test('counts unique PR rather than conflating independent failed CI attempts',()
  assert.equal(s.unique_prs,1);assert.equal(s.unique_events,2);
  assert.equal(s.counts.failed,1);assert.equal(s.counts.assigned,1);
 });
+test('one-hour cohort includes only failures recorded within the last hour',()=>{
+ const recent=event({created_at:'2026-11-10T18:31:00Z'});
+ const older=event({pr_number:63,created_at:'2026-11-10T17:59:00Z'});
+ const current=m.summarize([older,recent],{},1,NOW,true);
+ assert.equal(current.period_hours,1);
+ assert.equal(current.unique_prs,1);
+ assert.equal(current.unique_events,1);
+ assert.equal(m.summarize([older,recent],{},24,NOW,true).unique_prs,2);
+});
 test('window and incomplete source never claim exact totals',()=>{
  const e=event(),early=event({pr_number:99,created_at:'2026-11-01T00:00:00Z'});
  const s=m.summarize([early,e],{},24,NOW,false);
