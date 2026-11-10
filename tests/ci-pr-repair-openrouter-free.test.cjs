@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {DEFAULT_MODEL,MODEL_PROFILES,chooseVerifiedFreeModel,selectedModel,verifyZeroPrice,extractAssistantText,requestFreePatch}=
+const {DEFAULT_MODEL,MODEL_PROFILES,chooseVerifiedFreeModel,selectedModel,verifyZeroPrice,responseShape,extractAssistantText,requestFreePatch}=
   require('../scripts/ci-pr-repair-openrouter-free.cjs');
 const entry=(pricing={prompt:'0',completion:'0'})=>({id:DEFAULT_MODEL,pricing,
   architecture:{input_modalities:['text'],output_modalities:['text']}});
@@ -209,4 +209,25 @@ test('completion refusal and tool-routing finish reasons are never treated as te
    /MODEL_REFUSED|TOOL_CALL_NOT_ALLOWED/);
   assert.equal(calls,2,'no retry after an unsupported completion');
  }
+});
+
+
+test('response diagnostics expose shape only, without prompt, completion or source values',()=>{
+ const completion={id:'opaque',model:DEFAULT_MODEL,usage:{cost:0},
+  choices:[{finish_reason:'stop',message:{role:'assistant',content:null}}]};
+ const shape=responseShape(completion);
+ assert.deepEqual(shape.top_level_keys,['choices','id','model','usage']);
+ assert.equal(shape.choices_count,1);
+ assert.equal(shape.finish_reason,'stop');
+ assert.deepEqual(shape.message_keys,['content','role']);
+ assert.equal(shape.content_type,'null');
+ assert.equal(Object.hasOwn(shape,'content'),false);
+ assert.equal(Object.hasOwn(shape,'prompt'),false);
+});
+
+test('single structured text object is normalized while unsupported block objects fail closed',()=>{
+ assert.equal(extractAssistantText({type:'text',text:'diff --git a/a.js b/a.js'}),
+  'diff --git a/a.js b/a.js');
+ assert.throws(()=>extractAssistantText({type:'image',url:'redacted'}),
+  /PATCH_RESPONSE_INVALID/);
 });
