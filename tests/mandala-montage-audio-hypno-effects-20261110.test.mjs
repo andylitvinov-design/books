@@ -33,6 +33,21 @@ test("Hypno adds a third exclusive Effects tab to the original shared Canvas",()
   assert.equal((studio.match(/paintHypnoLightOverlay\(ctx,/g)||[]).length,5);
 });
 
+test("macOS WebKit E2E verifies all three Hypno subtabs and live visual presets",()=>{
+  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+  for(const required of [
+    'hypnoTabs.getByRole("tab")).toHaveCount(3)',
+    'const effectsTab=hypnoTabs.locator',
+    'await effectsTab.click();',
+    'await expect(effectsGroup).toBeVisible();',
+    'data-hypno-visual-effect="sunlight"',
+    'video-hypno-effect-strength',
+    'await expect(effectsGroup).toBeHidden();'
+  ])assert.ok(browser.includes(required),required);
+  assert.ok(!browser.includes('hypnoTabs.getByRole("tab")).toHaveCount(2)'),
+    "the previous two-tab expectation is obsolete");
+});
+
 test("Selecting music and moving to effects never renders or charges by itself",()=>{
   const block=studio.slice(studio.indexOf("const continueMontageOrGenerate="),
     studio.indexOf("// First mobile step is only",studio.indexOf("const continueMontageOrGenerate=")));

@@ -922,20 +922,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The approved TTS track is already attached; both effects must render
       // locally into a real stereo WAV before the movie export starts.
       await page.locator('[data-video-quick-control="effects"]').click();
-      // Approved Hypno UI has two real panels. Check the new visual controls
-      // in headed WebKit before moving to the existing narration/effect mixer.
+      // Hypno has three exclusive subtabs: Visual, Audio effects and Effects.
+      // Verify the relocated effect presets in macOS WebKit before the audio mixer.
       const hypnoTabs=page.locator('[data-hypno-tabs]');
       await hypnoTabs.waitFor({state:"visible",timeout:10000});
       const visualTab=hypnoTabs.locator('[data-hypno-tab="visual"]');
       const audioTab=hypnoTabs.locator('[data-hypno-tab="audio"]');
-      await expect(hypnoTabs.getByRole("tab")).toHaveCount(2);
+      const effectsTab=hypnoTabs.locator('[data-hypno-tab="effects"]');
+      await expect(hypnoTabs.getByRole("tab")).toHaveCount(3);
       await expect(visualTab).toBeVisible();
       await expect(audioTab).toBeVisible();
+      await expect(effectsTab).toBeVisible();
       await expect(visualTab).toHaveAttribute("aria-selected","true");
       const visualGroup=page.locator('[data-hypno-group="visual"]');
       const audioGroup=page.locator('[data-hypno-group="audio"]');
+      const effectsGroup=page.locator('[data-hypno-group="effects"]');
       await expect(visualGroup).toBeVisible();
       await expect(audioGroup).toBeHidden();
+      await expect(effectsGroup).toBeHidden();
       const lightPresets=visualGroup.locator('[data-hypno-light-preset]');
       await expect(lightPresets).toHaveCount(3);
       const balancedLight=lightPresets.nth(1);
@@ -957,7 +961,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(briefFrame).toHaveAttribute("aria-checked","true");
       await briefFrame.click();
       await expect(briefFrame).toHaveAttribute("aria-checked","false");
+      // Exercise the new Effects tab and its original no-flash Canvas presets.
+      await effectsTab.click();
+      await expect(effectsTab).toHaveAttribute("aria-selected","true");
+      await expect(visualGroup).toBeHidden();
+      await expect(effectsGroup).toBeVisible();
+      const sunlight=effectsGroup.locator('[data-hypno-visual-effect="sunlight"]');
+      await sunlight.click();
+      await expect(sunlight).toHaveAttribute("aria-pressed","true");
+      await expect(effectsGroup.locator("#video-hypno-effect-strength")).toBeEnabled();
+      const waves=effectsGroup.locator('[data-hypno-visual-effect="waves"]');
+      await waves.click();
+      await expect(waves).toHaveAttribute("aria-pressed","true");
       await audioTab.click();
+      await expect(effectsGroup).toBeHidden();
       await expect(audioTab).toHaveAttribute("aria-selected","true");
       await expect(visualGroup).toBeHidden();
       await expect(audioGroup).toBeVisible();
