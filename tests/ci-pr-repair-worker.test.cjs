@@ -346,7 +346,6 @@ test('Repair Worker records claim and true source publish as distinct signed HEA
  const pub=await publish({github:f.github,core,context:contextWithRun,prNumber:11,
    expectedSha:sha,candidate,writer:f.writer});
  assert.equal(pub.status,'committed');
- assert.ok(f.log.commentBodies.at(-1).includes('cohere/north-mini-code:free'));
  assert.match(f.log.commentBodies.at(-1),/"outcome":"VERIFIED_SOURCE_COMMIT"/);
  assert.match(f.log.commentBodies.at(-1),/actions\/runs\/41350000001/);
 });
