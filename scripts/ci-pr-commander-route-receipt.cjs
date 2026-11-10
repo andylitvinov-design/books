@@ -4,6 +4,11 @@
 const ENDPOINT='https://shervdixkaxurnaecioe.supabase.co/functions/v1/agent-commander-private-store-v1/webhooks/github-ci-route';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SHA=/^[0-9a-f]{40}$/i;
+const PERSISTED_TASK_ASSOCIATIONS=new Set([
+ 'MATCHED_CHAT_EVENT_RECORDED',
+ 'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED',
+ 'AUTO_TASK_CREATED_NOT_DISPATCHED'
+]);
 const STATES=new Set([
  'TASK_REQUIRES_REVIEW','TASK_ROUTED_TO_REVIEW','TASK_AWAITING_EXISTING_RECOVERY',
  'EXISTING_RECOVERY_ACCEPTED','DISPATCH_ACCEPTED_NOT_WORKER_STARTED',
@@ -11,7 +16,7 @@ const STATES=new Set([
 ]);
 function normalizedPayload(routeResult,receipt){
  if(!routeResult||!receipt||receipt.accepted!==true||
-   receipt.association!=='MATCHED_CHAT_EVENT_RECORDED'||
+   !PERSISTED_TASK_ASSOCIATIONS.has(receipt.association)||
    !UUID.test(receipt.inboxId||'')||!SHA.test(receipt.headSha||'')||
    !Number.isSafeInteger(receipt.prNumber)||receipt.prNumber<1||
    !Number.isSafeInteger(receipt.runId)||receipt.runId<1||
