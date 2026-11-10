@@ -11,6 +11,9 @@ import { createPractitionerCourseRepository } from "@/lib/practitioners/course-r
 import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
 import styles from "./page.module.css";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const meta = {
   en: { title: "My Coach · Find your personal coach | Holistic House", description: "Find a verified public Holistic House practitioner by topic, language, method and session format." },
   ru: { title: "My Coach · Подберите личного коуча | Holistic House", description: "Подберите специалиста по теме, методу, языку и формату. Профили и отзывы показываются только из опубликованного каталога." },
