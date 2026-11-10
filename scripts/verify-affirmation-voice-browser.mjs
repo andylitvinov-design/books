@@ -134,7 +134,9 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(concept).toBeVisible();
     await expect(concept.locator("[data-video-concept-paragraph]")).toBeVisible();
     await expect(concept.locator("[data-video-concept-all-parameters]")).toBeVisible();
-    await expect(concept.locator("[data-concept-parameter]")).toHaveCount(38);
+    const visibleConceptParameters=await concept.locator("[data-concept-parameter]").count();
+    assert.ok(visibleConceptParameters>=6&&visibleConceptParameters<=26,
+      "Only the relevant creative fields appear, in one vertical column");
     await concept.locator("[data-video-concept-edit]").click();
     await expect(page.locator("[data-video-concept-auth-overlay]")).toBeVisible();
     await page.locator("[data-video-concept-auth-close]").click();

@@ -19,7 +19,7 @@
 | 3 | Context row + short headline | Replace with readable 2–3 sentence, generated RU/EN/ES prose; edit in place |
 | 4 | Four small summary tiles in 2×2 | Remove duplicated cards; canonical values appear once in one-column parameter list |
 | 5 | Four emotional tiles in 2×2 | Show inside parameter row as one vertical numbered sequence |
-| 6 | 38 details hidden behind disclosure | Display all 38 rows by default, one per full-width card with label, value, source state |
+| 6 | 38 details hidden behind disclosure | Display all meaningful creative fields by default, one per full-width card with label, value, source state |
 | 7 | Sticky approve/edit footer above site dock | Preserve both genuine handlers and safe-area position |
 | 8 | Four story stages and editorial caveats | Preserve existing disclosure and notes |
 
@@ -38,3 +38,9 @@
 - \`git diff --check\`: PASS.
 - Local Next build / browser pixel overlay / private signed-in E2E: **not verified**, isolated Mac did not have installed \`next\`, \`tsc\`, \`eslint\` dependencies; disk too low to safely add dependencies. Mandatory protected PR CI still required.
 - UI on iPhone Safari and Vercel LIVE: **not verified until actual deployed SHA + mobile smoke**.
+
+## Merge resolution (2026-11-10)
+- Preserve production's confirmed goal-personalization routing, low-confidence topic safeguards and 30-second six-shot creative sketch.
+- Keep legacy 38-parameter storage compatibility but display only actual, nonempty, decision-relevant fields, including main idea, meaning, style, motif, scenario and emotional journey, in one column.
+- Avoid showing placeholders for missing data; preserve a separate storyboard disclosure and the existing Montage handoff.
+- The rendered UI and served production SHA must be independently checked after protected merge.
