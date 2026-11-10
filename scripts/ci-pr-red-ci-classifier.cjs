@@ -18,7 +18,7 @@ const SHA = /^[0-9a-f]{40}$/i;
 const SIGNALS = Object.freeze({
   SECURITY: /(?:\bsecurity\b|secret[- ]?scan|codeql|sast|vulnerabilit|dependency[- ]?audit|trivy|semgrep|gitleaks|policy violation)/i,
   ACCESS_CONFIG: /(?:missing secret|secret .*not found|resource not accessible|permission denied|insufficient permissions|unauthorized|\b401\b|\b403\b|invalid credentials|token.*missing|environment variable.*missing|cloudflare_api_token|vercel.*credential|github.*write.*permission)/i,
-  INFRASTRUCTURE: /(?:\btimeout\b|timed out|startup_failure|runner unavailable|runner lost|out of disk|no space left|resource temporarily unavailable|service unavailable|\b502\b|\b503\b|\b504\b|rate limit|api rate limit)/i,
+  INFRASTRUCTURE: /(?:\btimeout\b|timed out|startup_failure|runner unavailable|runner lost|disk quota|out of disk|no space left|resource temporarily unavailable|service unavailable|\b502\b|\b503\b|\b504\b|rate limit|api rate limit)/i,
   MERGE_CONFLICT: /(?:merge conflict|conflict markers|unmerged paths|cannot be merged|mergeable_state.*dirty)/i,
   BASE_ADVANCED: /(?:BASE_ADVANCED|production[- ]base (?:advanced|moved)|stale[- ]base|base[- ]ancestry|base[- ]sha mismatch|behind base)/i,
   TYPESCRIPT: /(?:^TypeScript (?:build|check|compile)\b|\btypecheck\b|\btsc\b|^Run TypeScript\b|typescript error)/i,
