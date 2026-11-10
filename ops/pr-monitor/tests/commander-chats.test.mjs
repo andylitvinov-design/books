@@ -532,3 +532,17 @@ test('CI inbox task association uses the same project key as the private task in
  assert.match(source,/from business_brain\.commander_tasks[\s\S]{0,150}where project_key='agent-commander'/);
  assert.doesNotMatch(source,/where project_key='holistic-house'/);
 });
+
+test('CI inbox OIDC events and owner list are scoped to the single authorized owner',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ const migration=src('../../supabase/migrations/20261110134000_commander_ci_inbox_owner_scope_v1.sql');
+ assert.match(edge,/select user_id from business_brain\.owner_access where can_read=true[\s\S]{0,120}limit 2/);
+ assert.match(edge,/readableOwners\.length!==1/);
+ assert.match(edge,/inbox_owner_id\)/);
+ assert.match(edge,/where project_key='agent-commander' and owner_id=\$1::uuid/);
+ assert.match(edge,/where inbox_owner_id=\$3::uuid/);
+ assert.match(migration,/add column if not exists inbox_owner_id uuid references auth\.users\(id\)/);
+ assert.match(migration,/alter column inbox_owner_id set not null/);
+ assert.match(migration,/readable_count <> 1/);
+ assert.match(migration,/revoke all on business_brain\.commander_ci_event_inbox from public, anon, authenticated/);
+});
