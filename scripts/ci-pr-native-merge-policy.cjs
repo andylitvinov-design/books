@@ -26,6 +26,11 @@ query HHNativeMergeReview($owner:String!,$repo:String!,$number:Int!,$after:Strin
     }
   }
 }`;
+function repairCanary(pr){
+ return !!(pr&&(typeof pr.head?.ref==='string'&&
+   /^test\/pr-repair-/.test(pr.head.ref)||
+   typeof pr.title==='string'&&/^test\(repair\):/i.test(pr.title)));
+}
 function sameHead(pr,{owner,repo,number,expectedHead,expectedBase}){
  return pr?.number===number&&pr.state==='open'&&pr.draft===false&&
   pr.base?.ref===PROD&&pr.base?.sha===expectedBase&&
@@ -113,6 +118,7 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
  try{
   const identity={owner,repo,number,expectedHead,expectedBase};
   const first=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+  if(repairCanary(first))return deny('REPAIR_CANARY_NEVER_MERGE');
   if(!sameHead(first,identity))return deny('PR_HEAD_BASE_OR_STATE_CHANGED');
   if(held(first))return deny(held(first)==='hh:repair-manual'?
     'LEGACY_MANUAL_SOURCE_NOT_RELEASED':'MANUAL_OR_OWNER_HOLD');
@@ -151,6 +157,7 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
   if(!critical.ok)return critical;
   // Last fresh read before GitHub's --match-head-commit atomic enforcement.
   const final=(await github.rest.pulls.get({owner,repo,pull_number:number})).data;
+  if(repairCanary(final))return deny('REPAIR_CANARY_NEVER_MERGE');
   if(!sameHead(final,identity))return deny('PR_CHANGED_BEFORE_ARM');
   if(held(final))return deny(held(final)==='hh:repair-manual'?
     'LEGACY_MANUAL_SOURCE_NOT_RELEASED':'HOLD_ADDED_BEFORE_ARM');
@@ -164,4 +171,4 @@ async function auditNativeMerge({github,owner,repo,number,expectedHead,expectedB
    'MERGE_PREFLIGHT_EVIDENCE_UNAVAILABLE');
  }
 }
-module.exports={PROD,HOLDS,REVIEW_QUERY,sameHead,mergeable,held,inspectReviews,auditNativeMerge,auditIndependentDomainChecks,CRITICAL_DOMAIN_CHECKS};
+module.exports={PROD,HOLDS,REVIEW_QUERY,sameHead,repairCanary,mergeable,held,inspectReviews,auditNativeMerge,auditIndependentDomainChecks,CRITICAL_DOMAIN_CHECKS};
