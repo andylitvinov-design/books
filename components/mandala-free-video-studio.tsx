@@ -5696,7 +5696,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ?.scrollIntoView({block:"nearest",behavior:"smooth"}));
           }}/> : null}
       </details>
-      {activeWorkspace==="phrases"&&ideasSubtab!=="text" ? hypnoVoiceEditor : null}
+      {/* Voice is mounted once, only in Audio / Voice. */}
       <section className={videoStyles.phraseMusicSection} data-hypno-music>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Music2 size={23} aria-hidden="true"/></span>
