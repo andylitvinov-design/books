@@ -8,7 +8,9 @@ const CHAT_CATALOG=BASE+'/models?endpoints='+encodeURIComponent(CHAT_ENDPOINT);
 // Ordered CANDIDATES, not proven winners. Live catalog + zero-price validation wins.
 const DEFAULT_MODEL='cohere/north-mini-code:free';
 const MODEL_PROFILES=Object.freeze({
-  repair:Object.freeze(['cohere/north-mini-code:free','recursive/flint-v1.0:free',
+// Rotate verified-free repair preference after two actual non-applicable Cohere diffs.
+  // Flint is an existing candidate; catalog zero-price verification still gates use.
+  repair:Object.freeze(['recursive/flint-v1.0:free','cohere/north-mini-code:free',
     'nvidia/nemotron-3-ultra-550b-a55b:free','xingchen-agi/xing4.0-29b-a4b:free']),
   feature:Object.freeze(['cohere/north-mini-code:free','nvidia/nemotron-3-ultra-550b-a55b:free',
     'recursive/flint-v1.0:free','google/gemma-4-31b-it:free']),
