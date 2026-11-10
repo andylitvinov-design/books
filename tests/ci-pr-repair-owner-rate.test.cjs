@@ -50,7 +50,10 @@ test('existing issuer remains credential isolated and branch/head guarded',()=>{
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
  assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_IDENTITY_RATE/);
  assert.match(flow,/mode==='owner'&&repository\.permissions\?\.push!==true/);
- assert.match(flow,/force:false/);
+ assert.match(flow,/verifiedAtomicCommitRequest/);
+ assert.match(fs.readFileSync('scripts/ci-pr-repair-graphql-commit.cjs','utf8'),
+   /expectedHeadOid:expectedSha/);
+ assert.doesNotMatch(flow,/await call\('PATCH',base\+'\/git\/refs\/heads/);
  assert.match(flow,/Source branch moved before repair commit/);
  assert.match(flow,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
  assert.doesNotMatch(flow,/remaining<100/);
@@ -123,9 +126,7 @@ test('trusted publisher emits bounded operation-specific 403 receipts without ra
  assert.doesNotMatch(pub,/core\.error\([^)]*JSON\.stringify\(data\)/);
  assert.match(pub,/HH_REPAIR_REMOTE_REF VERIFIED /);
  assert.match(pub,/verifiedAtomicCommitRequest/);
- assert.match(pub,/current\.object\?\.sha!==expectedSha/);
- assert.match(fs.readFileSync('scripts/ci-pr-repair-graphql-commit.cjs','utf8'),
-  /expectedHeadOid:expectedSha/);
+ assert.match(pub,/verifiedAtomicCommitResponse/);
  assert.doesNotMatch(pub,/await call\('PATCH',base\+'\/git\/refs\/heads/);
  // Publication authority remains only in the trusted existing publisher.
  assert.match(pub,/permissions:\n      contents: write/);
