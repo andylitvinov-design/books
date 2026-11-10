@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {requiredOwnerBudget,requireOwnerRateBudget}=
+const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode}=
  require('../scripts/ci-pr-repair-owner-rate.cjs');
 const hdr=value=>({get:name=>{
  assert.equal(name,'x-ratelimit-remaining');return value;
@@ -24,9 +24,28 @@ test('actual low, missing or invalid rate header fails closed before any write',
   ()=>requireOwnerRateBudget(hdr('100'),n),/INVALID_BUDGET/);
  assert.throws(()=>requireOwnerRateBudget(null,10),/RATE_NOT_VERIFIED/);
 });
+test('job-scoped GitHub token is preferred only with verified repository write and rate budget',()=>{
+ const good=remaining=>({ok:true,canPush:true,remaining});
+ assert.equal(chooseWriterMode({job:good(10),owner:good(5000)},10),'job');
+ assert.equal(chooseWriterMode({job:good(18),owner:good(5000)},17),'job');
+ assert.equal(chooseWriterMode({job:good(9),owner:good(5000)},10),'owner');
+ assert.equal(chooseWriterMode({job:null,owner:good(10)},10),'owner');
+ for(const invalid of [null,{ok:true,canPush:false,remaining:999},
+   {ok:false,canPush:true,remaining:999},{ok:true,canPush:true,remaining:null}]){
+  assert.equal(eligibleWriter(invalid,10),false);
+  assert.throws(()=>chooseWriterMode({job:invalid,owner:invalid},10),
+   /NO_VERIFIED_WRITER/);
+ }
+ assert.throws(()=>chooseWriterMode({job:good(5000)},18),/INVALID_BUDGET/);
+});
 test('existing issuer remains credential isolated and branch/head guarded',()=>{
  const flow=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(flow,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
+ assert.match(flow,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
+ const publish=flow.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
+ assert.match(publish,/permissions:\n      contents: write/);
+ assert.match(publish,/rateGuard\.chooseWriterMode/);
+ assert.match(publish,/mode==='job'\?jobToken:ownerToken/);
  assert.match(flow,/rateGuard\.requiredOwnerBudget\(files\.length\)/);
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
  assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH/);
