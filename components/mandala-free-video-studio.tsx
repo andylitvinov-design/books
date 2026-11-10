@@ -101,6 +101,7 @@ import videoStyles from "./mandala-video-mobile.module.css";
 const MandalaHypnocorrectionMobile = dynamic(() => import("./mandala-hypnocorrection-mobile").then(module => module.MandalaHypnocorrectionMobile));
 const MandalaGuidedCourse = dynamic(() => import("./mandala-guided-course").then(module => module.MandalaGuidedCourse));
 const MandalaCinematicDirector = dynamic(() => import("./mandala-cinematic-director").then(module => module.MandalaCinematicDirector));
+const MandalaAutomaticStoryboard = dynamic(() => import("./mandala-automatic-storyboard").then(module => module.MandalaAutomaticStoryboard));
 const MandalaVideoDirectorChat = dynamic(() => import("./mandala-video-director-chat").then(module => module.MandalaVideoDirectorChat));
 const MandalaFirstVideoStart = dynamic(() => import("./mandala-first-video-start").then(module => module.MandalaFirstVideoStart));
 const MandalaStoriesCharacters = dynamic(() => import("./mandala-stories-characters").then(module => module.MandalaStoriesCharacters));
@@ -7879,7 +7880,47 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   locale==="es"?"Ordena las escenas y elige el material visual de cada toma. El concepto textual permanece en Ideas.":
                   "Build a sequence of scenes and choose the visual source for each shot. The written concept remains separately in Ideas."}</p></div>
             </div>
-            {deepVideoDirectorPane}
+            <MandalaAutomaticStoryboard
+              locale={locale} goal={wish} theme={theme} durationSeconds={duration}
+              aspect={aspect} styleIndex={quickStyleIndex} phrases={affirmationLines}
+              transcript={voiceTranscript} approvedConcept={approvedVideoConcept}
+              scenes={FREE_FILM_CATALOG}
+              appliedShots={cinematicPlan?.shots.map(shot=>({
+                sceneId:shot.sceneId,startSeconds:shot.startSeconds,
+                durationSeconds:shot.durationSeconds
+              }))??null}
+              resolveMedia={id=>{
+                const source=FREE_FILM_CATALOG_BY_ID.get(id);
+                const sceneTheme=FREE_FILM_CLIP_THEMES[id]||theme;
+                return {poster:firstPartyFilmFor(sceneTheme,id)?.poster||null,
+                  title:source?.label?.[locale]||freeFilmClipLabel(id)};
+              }}
+              disabled={recording||preparing}
+              onPreview={second=>{
+                seekTimeline(second);
+                document.getElementById("video-hero")?.scrollIntoView({
+                  behavior:"smooth",block:"start"
+                });
+              }}
+              onApply={(shots,concept)=>{
+                const preset=aspectFilmPresets.find(option=>option.theme===theme);
+                if(!preset)return;
+                const edit:FreeFilmCompilationEdit={
+                  clipIds:shots.map(shot=>shot.sceneId),
+                  durationSecondsByStage:shots.map(shot=>shot.durationMs/1000),
+                  captionTexts:shots.map(()=>""),
+                };
+                if(applyAutoFilm(preset.id,duration,edit,"portrait",true)){
+                  setMontageScriptText(concept.sceneOutline.join("\n"));
+                  setNotice(locale==="ru"
+                    ?"Раскадровка применена. Проверьте сцены и нажмите «Создать видео»."
+                    :locale==="es"
+                    ?"Guion visual aplicado. Revisa las escenas antes de crear el vídeo."
+                    :"Storyboard applied. Review the scenes before creating the video.");
+                }
+              }}
+              onOpenIdeas={()=>{setActiveWorkspace("phrases");setIdeasSubtab("concept");}}
+            />
           </section> : null}
           {montagePanel==="settings" ? <div className={videoStyles.montagePreferences} data-video-montage-preferences>
             <div className={videoStyles.montagePreferencesHeader}>
