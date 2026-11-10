@@ -9,6 +9,26 @@ const cp=require('node:child_process');
 
 const MODEL='opencode/glm-5.3-flash-free';
 const MAX_FILES=8, MAX_SOURCE=18000, MAX_DISK_SOURCE=150000, MAX_CONTEXT=58000, MAX_PATCH=35000;
+const FREE_MODEL_ID=/^[A-Za-z0-9][A-Za-z0-9_.-]*\\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/;
+function recordFreeModelEvidence({provider,model,zeroCost}={},{
+  filePath=process.env.HH_FREE_AI_METADATA_PATH,
+  runnerTemp=process.env.RUNNER_TEMP
+}={}){
+  if(!['openrouter','opencode'].includes(provider)||typeof model!=='string'||
+     !FREE_MODEL_ID.test(model)||zeroCost!==true)
+    throw Error('FREE_AI_MODEL_EVIDENCE_INVALID');
+  if(typeof filePath!=='string'||!filePath||typeof runnerTemp!=='string'||!runnerTemp)
+    throw Error('FREE_AI_MODEL_EVIDENCE_PATH_NOT_CONFIGURED');
+  const target=path.resolve(filePath),temp=path.resolve(runnerTemp);
+  if(path.dirname(target)!==temp)
+    throw Error('FREE_AI_MODEL_EVIDENCE_PATH_OUTSIDE_RUNNER_TEMP');
+  const proof={schema:'HH_FREE_MODEL_PROOF_V1',provider,model,
+    zero_cost:true,catalog_verified:true};
+  try{fs.writeFileSync(target,JSON.stringify(proof),{flag:'wx',mode:0o600});}
+  catch{throw Error('FREE_AI_MODEL_EVIDENCE_WRITE_FAILED');}
+  return proof;
+}
+
 const SOURCE=/^(?:app|components|lib|scripts)\/(?:[A-Za-z0-9_()\[\].-]+\/)*[A-Za-z0-9_.-]+\.(?:cjs|mjs|js|jsx|ts|tsx)$/;
 const SENSITIVE=/(^|[\/_.-])(?:api|auth|security|privacy|private|payment|billing|checkout|rls|secret|token|consent|crm|messenger|messages|client|contact|email|phone|order|booking|consultation|session|storage|health|admin|account|profile|wallet|migration|supabase|ci)(?=$|[\/_.-])/i;
 function safeSourcePath(file){
@@ -380,12 +400,16 @@ async function propose(){
      // currently zero-priced coding model from the bounded verified roster.
      const requested=process.env.HH_OPENROUTER_FREE_MODEL||'auto';
      reply=await openrouter.requestFreePatch({prompt,key:routerKey,model:requested,
-       role:'repair',onVerifiedModel:receipt=>{modelUsed=receipt.model;}});
+       role:'repair',onVerifiedModel:receipt=>{
+         modelUsed=receipt.model;
+         recordFreeModelEvidence({provider:'openrouter',model:receipt.model,zeroCost:receipt.zeroCost});
+       }});
 
      console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify({
        model:modelUsed,provider:'openrouter',zeroCost:true}));
    }else{
      const priceCheck=await verifyFreeModelPrice();
+     recordFreeModelEvidence({provider:'opencode',model:priceCheck.model,zeroCost:priceCheck.zeroCost});
      console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(priceCheck));
      const acl=run(cli,['debug','agents'],{cwd:isolated,env,timeout:45000});
      if(!acl.ok)throw Error('FREE_AI_AGENT_ACL_PROBE_FAILED');
@@ -432,4 +456,4 @@ async function main(){
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope};
+ noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,recordFreeModelEvidence};
