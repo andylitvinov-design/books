@@ -50,6 +50,43 @@ test('extract JSON stream only from text events, reject provider errors',()=>{
  assert.throws(()=>extractTextEvents(JSON.stringify({type:'error',error:'429'})));
  assert.throws(()=>extractTextEvents('garbled'));
 });
+test('one wrong-position free-model hunk is anchored ONLY by unique exact source',()=>{
+ const {reanchorSingleHunkPatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const scope={files:['components/public-card.tsx']};
+ const prefix='diff --git a/components/public-card.tsx b/components/public-card.tsx\n'+
+  '--- a/components/public-card.tsx\n+++ b/components/public-card.tsx\n';
+ const wrong=prefix+'@@ -999,99 +999,99 @@\n'+
+  '  const nav = "safe";\n- const value = "broken";\n+ const value = "fixed";\n';
+ const body='const preceding = 42;\n const nav = "safe";\n const value = "broken";\nconst ending = 7;\n';
+ const matched=reanchorSingleHunkPatch(wrong,scope,()=>body);
+ assert.equal(matched,prefix+'@@ -2,2 +2,2 @@\n'+
+  '  const nav = "safe";\n- const value = "broken";\n+ const value = "fixed";\n');
+ assert.equal(reanchorSingleHunkPatch(matched,scope,()=>body),null,
+  'already exactly anchored patch cannot be changed again');
+ assert.equal(reanchorSingleHunkPatch(wrong,scope,()=>body+body),null,
+  'non-unique exact original source is never patched');
+ assert.equal(reanchorSingleHunkPatch(wrong,scope,()=>body.replace('broken','other')),null);
+ assert.equal(reanchorSingleHunkPatch(wrong,{files:['components/another.tsx']},()=>body),null);
+ assert.equal(reanchorSingleHunkPatch(wrong,{files:['app/api/private.ts']},()=>body),null);
+ assert.equal(reanchorSingleHunkPatch(wrong,scope,()=>'without-final-newline'),null);
+ assert.equal(reanchorSingleHunkPatch(wrong.replace('@@ -999,99 +999,99 @@','@@ malformed'),scope,()=>body),null);
+ assert.equal(reanchorSingleHunkPatch(prefix+'@@ -999,1 +999,1 @@\n+unsafe insertion\n',scope,()=>body),null);
+ assert.equal(reanchorSingleHunkPatch(wrong+prefix+'@@ -999,1 +999,1 @@\n-other\n+new\n',scope,()=>body),null);
+ assert.equal(reanchorSingleHunkPatch(wrong+'@@ -20 +20 @@\n-other\n+new\n',scope,()=>body),null);
+ assert.equal(reanchorSingleHunkPatch(wrong+'\\ No newline at end of file\n',scope,()=>body),null);
+});
+
+test('one exact source anchor does not permit altered content or whitespace bypass',()=>{
+ const {reanchorSingleHunkPatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const scope={files:['components/public-card.tsx']};
+ const prefix='diff --git a/components/public-card.tsx b/components/public-card.tsx\n'+
+  '--- a/components/public-card.tsx\n+++ b/components/public-card.tsx\n';
+ const patch=prefix+'@@ -450 +450 @@\n-  let result="old";\n+  let result="new";\n';
+ const source='start\n  let result="old";\nend\n';
+ assert.equal(reanchorSingleHunkPatch(patch,scope,()=>source),
+  prefix+'@@ -2,1 +2,1 @@\n-  let result="old";\n+  let result="new";\n');
+ assert.equal(reanchorSingleHunkPatch(patch,scope,()=>source.replace('  let',' let')),null);
+});
 test('model patch must be bounded unified diff only changing allowlist',()=>{
  const scope={files:['components/a.tsx'],sha:SHA};
  const patch='diff --git a/components/a.tsx b/components/a.tsx\n'+
