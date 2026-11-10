@@ -213,7 +213,14 @@ test("guided meditation routes through Audio / Meditations and Skip revokes the 
    "the course Personal Meditation action delegates to its shared workspace");
  assert.match(stage,/onOpenMeditation=\{\(\)=>\{[\s\S]*?setActiveWorkspace\("effects"\);[\s\S]*?setAudioWorkspaceTab\("meditations"\)/);
  assert.match(stage,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationDraft\(script\);[\s\S]*?setActiveWorkspace\("effects"\);[\s\S]*?setAudioWorkspaceTab\("meditations"\)/);
- assert.match(stage,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationDraft\("");[\s\S]*?setAttachedAudio/);
+ const omitStart=stage.indexOf("onOmitMeditation={()=>{");
+ assert.ok(omitStart>=0,"the parent wires an explicit meditation opt-out");
+ const omitEnd=stage.indexOf("}}",omitStart);
+ const omitBlock=stage.slice(omitStart,omitEnd<0?undefined:omitEnd);
+ assert.ok(omitBlock.includes('setCourseMeditationDraft("");'),
+   "omitting meditation revokes the seeded script");
+ assert.ok(omitBlock.includes("setAttachedAudio("),
+   "omitting meditation also revokes attached transient narration");
  assert.match(browser,/await expect\(audioPanel\)\.toBeVisible/);
  assert.match(browser,/data-video-quick-control="ready"/);
  assert.match(browser,/data-video-quick-control="effects"/);
