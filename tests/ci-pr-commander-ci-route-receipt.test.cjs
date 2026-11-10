@@ -151,7 +151,8 @@ test('Commander fallback constructs one deterministic private task and chat per 
 test('CI route outcomes cannot violate the existing Commander chat execution_state CHECK',()=>{
  const source=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
  const from=source.indexOf('function commanderCiChatExecutionState(routeState: string): string {');
- const to=source.indexOf('async function receiveCommanderCiRoute(req,origin){',from);
+ const next=source.indexOf('function normalizeLegacyZeroDispatchCiRoute(p: any): any {',from);
+ const to=next>from?next:source.indexOf('async function receiveCommanderCiRoute(req,origin){',from);
  a.ok(from>=0&&to>from,'mapping exists before authenticated route receiver');
  const body=source.slice(from,to)
    .replace('routeState: string','routeState').replace('): string {',') {');
@@ -176,4 +177,34 @@ test('CI route outcomes cannot violate the existing Commander chat execution_sta
  a.equal(mapping('UNEXPECTED'),'BLOCKED');
  a.match(source,/\[commanderCiChatExecutionState\(p\.state\),chats\[0\]\.chat_id,e\.inbox_owner_id\]/);
  a.doesNotMatch(source,/\[p\.state,chats\[0\]\.chat_id,e\.inbox_owner_id\]/);
+});
+
+
+test('legacy zero-dispatch route receipts are upgraded without granting an executor ACK',()=>{
+ const edge=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
+ const first=edge.indexOf('function normalizeLegacyZeroDispatchCiRoute(p: any): any {');
+ const last=edge.indexOf('async function receiveCommanderCiRoute(req,origin){',first);
+ a.ok(first>0&&last>first);
+ const vm=require('node:vm');
+ const fn=vm.runInNewContext(edge.slice(first,last).replace('p: any): any','p)')+
+   '\nnormalizeLegacyZeroDispatchCiRoute',Object.create(null));
+ const legacy={schema:'HH_COMMANDER_CI_ROUTE_RECEIPT_V1',
+   state:'TASK_ROUTED_TO_REVIEW',dispatchAccepted:0,workerStarted:false,
+   sourceWriteVerified:false,liveVerified:false};
+ const safe=fn(legacy);
+ a.equal(safe.dispatchAccepted,0);
+ a.equal(safe.dispatchAcknowledged,false);
+ a.equal(safe.executorId,null);
+ a.equal(safe.workerTaskKey,null);
+ a.equal(safe.errorTaskId,null);
+ a.equal(legacy.dispatchAcknowledged,undefined,'does not mutate original input');
+ const positive={...legacy,dispatchAccepted:1};
+ a.equal(fn(positive),positive,'never fills a missing positive dispatch ACK');
+ const partial={...legacy,executorId:'some-agent'};
+ a.equal(fn(partial),partial,'partial negative evidence still fails strict validation');
+ const spoofed={...legacy,dispatchAcknowledged:true};
+ a.equal(fn(spoofed),spoofed,'cannot downgrade a claimed positive ACK');
+ a.match(edge,/p=normalizeLegacyZeroDispatchCiRoute\(p\);/);
+ a.ok(edge.includes("p.dispatchAcknowledged!==(p.dispatchAccepted===1)"));
+ a.ok(edge.includes('p.executorId!=="github-actions:hh-pr-repair-worker.yml"'));
 });
