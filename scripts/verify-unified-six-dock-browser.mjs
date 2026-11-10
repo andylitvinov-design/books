@@ -10,11 +10,11 @@ if(!["localhost","127.0.0.1"].includes(url.hostname)||
 const folder="artifacts/unified-six-dock";
 mkdirSync(folder,{recursive:true});
 const results=[];
-const ids=["mytube","video","master","ai","analysis","practice","profile"];
+const ids=["mytube","video","coach","ai","services","practice","profile"];
 const labels={
-  en:["MyTube","MyVideo","Services","AI/Chat","Hints","Study","Profile"],
-  ru:["MyTube","MyVideo","Услуги","ИИ/Чат","Подсказки","Обучение","Профиль"],
-  es:["MyTube","MyVideo","Servicios","IA/Chat","Pistas","Estudiar","Perfil"],
+  en:["MyTube","MyVideo","My Coach","AI/Chat","Services","Study","Profile"],
+  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Услуги","Обучение","Профиль"],
+  es:["MyTube","MyVideo","Mi coach","IA/Chat","Servicios","Estudiar","Perfil"],
 };
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
@@ -265,15 +265,16 @@ async function inspect(browserType,locale,width){
   if(locale==="ru" || width===390){
     const prefix="/"+locale;
     const routeCases=[
-      ["practice",prefix+"/holistic-support/mobile"],
-      ["video",prefix+"/holistic-support/mandala"],
-      ["ai",prefix+"/app/messages?section=ai"],
-      ["master",prefix+"/practice"],
-      ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait"],
-      ["analysis",prefix+"/services/free-situation-review"],
+      ["practice",prefix+"/holistic-support/mobile","practice"],
+      ["video",prefix+"/holistic-support/mandala","video"],
+      ["ai",prefix+"/app/messages?section=ai","ai"],
+      ["coach",prefix+"/my-coach","coach"],
+      ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait","profile"],
+      ["services",prefix+"/services","services"],
+      ["services-review",prefix+"/services/free-situation-review","services"],
     ];
-    for(const [active,path] of routeCases){
-      const marker=id+":"+active;
+    for(const [caseName,path,active] of routeCases){
+      const marker=id+":"+caseName;
       await page.goto(origin+path,{waitUntil:"domcontentloaded",timeout:75000});
       await assertPinnedSixDock(page,marker,active);
       if(browserType===webkit && locale==="ru" && width===390)
@@ -294,9 +295,20 @@ async function inspect(browserType,locale,width){
       return link&&Object.keys(link).some(k=>k.startsWith("__reactProps$"));
     },null,{timeout:20000});
     await ideaButton.click();
-    const voiceButton=page.locator('[data-video-ideas-tab="voice"]');
+    const personalizationTab=page.locator('[data-video-ideas-tab="personalization"]');
+    await personalizationTab.waitFor({state:"visible",timeout:30000});
+    assert.equal(await personalizationTab.getAttribute("aria-pressed"),"true",
+      id+" Ideas opens on the current Personalization tab");
+    const advancedVoice=page.locator('details[data-video-ideas-advanced-voice]');
+    await advancedVoice.waitFor({state:"visible",timeout:30000});
+    await advancedVoice.locator("summary").click();
+    assert.equal(await advancedVoice.getAttribute("open"),"",
+      id+" advanced Voice opens by an actual user click");
+    const voiceButton=advancedVoice.locator('[data-video-ideas-voice-mode="voice"]');
     await voiceButton.waitFor({state:"visible",timeout:30000});
     await voiceButton.click();
+    assert.equal(await voiceButton.getAttribute("aria-pressed"),"true",
+      id+" real Voice mode is selected");
     const voice=page.locator('[data-ideas-subtab="voice"] [data-hypno-voice]');
     await voice.waitFor({state:"visible",timeout:30000});
     const palette=await page.evaluate(()=>{
@@ -304,7 +316,7 @@ async function inspect(browserType,locale,width){
       const card=document.querySelector('[data-ideas-subtab="voice"] [data-hypno-voice]');
       const picker=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-voice]');
       const phrase=document.querySelector('[data-ideas-subtab="voice"] [data-video-affirmation-phrase]');
-      const selected=document.querySelector('[data-video-ideas-tab="voice"]');
+      const selected=document.querySelector('[data-video-ideas-tab="personalization"]');
       const c=node=>node?getComputedStyle(node):null;
       return {background:c(root)?.backgroundImage||"",card:c(card)?.backgroundColor||"",
         border:c(card)?.borderTopColor||"",ink:c(picker)?.color||"",
@@ -330,8 +342,8 @@ async function inspect(browserType,locale,width){
       id+" TTS picker neutral border is warm not green");
     assert.equal(palette.phrase,"rgb(255, 249, 245)",
       id+" phrase inset stays warm, not green");
-    assert.match(palette.selected,/rgb\(8,\s*126,\s*97\)/,
-      id+" active Voice tab uses accessible emerald");
+    assert.match(palette.selected,/rgb\((?:18,\s*169,\s*135|3,\s*121,\s*96)\)/,
+      id+" active Ideas Personalization tab preserves accessible emerald");
     assert.ok(palette.width<=palette.viewport+2,
       id+" Ideas Voice has no horizontal document overflow");
     assert.equal(palette.dockCount,1,id+" one fixed Holistic House dock");
