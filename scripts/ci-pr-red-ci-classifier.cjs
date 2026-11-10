@@ -185,6 +185,24 @@ function classifyRedCiError({
     return makeResult('SOURCE_CODE', evidence, 0.86, { evidenceCode: 'SOURCE_BUILD_OR_LINT_FAILURE' });
   }
 
+  // Independent required Specialist failure after a green Core is a real
+  // product/test triage task, NOT an unknown error or a source-write grant.
+  // A red hh-merge-check is normally its downstream consequence. Never
+  // interpret this fingerprint as permission to re-run an unchanged HEAD.
+  const coreGreen=jobs.some(job=>job?.name==='core-lint-types-build'&&
+    job.conclusion==='success');
+  const specialistRed=failed.some(job=>job.name==='hh-specialist');
+  const specialistOnly=failed.every(job=>
+    ['hh-specialist','hh-merge-check','hh-specialists-verified','release-ready'].includes(job.name));
+  if(coreGreen&&specialistRed&&specialistOnly){
+    return makeResult('TEST_FAILURE',evidence,0.96,{
+      reasonCode:'SPECIALIST_GATE_FAILED_REQUIRES_TRIAGE',
+      evidenceCode:'CORE_GREEN_SPECIALIST_RED',
+      recommendedStatus:'REROUTED',
+      retryOverride:{allowed:false,max_attempts:0}
+    });
+  }
+
   // A partially interpretable or mixed failure is never silently discarded.
   if (causal.length && evidence.length) {
     return makeResult('UNKNOWN', evidence, 0.2, { evidenceCode: 'MIXED_OR_UNRECOGNIZED_FAILURE' });
