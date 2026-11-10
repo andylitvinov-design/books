@@ -8,12 +8,12 @@ function refreshFromRequest(req){
   const raw=String(req.headers?.cookie||'').split(';').map(v=>v.trim()).find(v=>v.startsWith(REFRESH_COOKIE+'='));
   if(!raw)return '';
   const value=raw.slice(REFRESH_COOKIE.length+1);
-  return value.length>=20&&value.length<=4096&&/^[A-Za-z0-9._~-]+$/.test(value)?value:'';
+  return value.length>=12&&value.length<=4096&&/^[A-Za-z0-9._~-]+$/.test(value)?value:'';
 }
 function accessClaims(token){
   try{
     if(typeof token!=='string'||token.length<120||token.length>8192||
-       !/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/.test(token))return null;
+       !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token))return null;
     const claims=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8'));
     if(!claims||!UUID.test(claims.sub||'')||!Number.isSafeInteger(claims.exp)||
        claims.exp<=Math.floor(Date.now()/1000))return null;
@@ -60,7 +60,7 @@ async function refreshWithSupabase(req,refreshToken){
     if(!response.ok||typeof data?.access_token!=='string'||typeof data?.refresh_token!=='string')
       throw Object.assign(Error('OWNER_REFRESH_REJECTED'),{status:response.status===400||response.status===401?401:503});
     const claims=accessClaims(data.access_token);
-    if(!claims||data.refresh_token.length<20||data.refresh_token.length>4096)
+    if(!claims||data.refresh_token.length<12||data.refresh_token.length>4096)
       throw Object.assign(Error('OWNER_REFRESH_INVALID'),{status:401});
     const owner=await verifyOwner(req,data.access_token);
     if(!owner.ok)throw Object.assign(Error('OWNER_ACCESS_DENIED'),{status:owner.status});
@@ -121,7 +121,7 @@ module.exports=async function(req,res) {
      typeof body.token!=='string'||typeof body.refreshToken!=='string')
     return sendJson(res,400,{error:'INVALID_BODY'});
   const claims=accessClaims(body.token);
-  if(!claims||body.refreshToken.length<20||body.refreshToken.length>4096||
+  if(!claims||body.refreshToken.length<12||body.refreshToken.length>4096||
      !/^[A-Za-z0-9._~-]+$/.test(body.refreshToken))
     return sendJson(res,401,{error:'INVALID_OWNER_SESSION'});
   try{

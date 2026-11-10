@@ -74,3 +74,22 @@ test('first-party GitHub App publisher fails closed before touching GitHub witho
 
 // Run the full native GitHub App contract in the existing watchdog job, without adding a workflow.
 await import('../../../tests/agent-director-github-app-source-publisher.test.mjs');
+
+test('Commander correctly parses real JWT dot separators and legacy 12-char Supabase refresh tokens', () => {
+ const claims={sub:'123e4567-e89b-42d3-a456-426614174000',exp:Math.floor(Date.now()/1000)+600};
+ const token='eyJhbGciOiJIUzI1NiJ9.'+Buffer.from(JSON.stringify(claims)).toString('base64url')+'.'+'a'.repeat(64);
+ assert.equal(session.__test.accessClaims(token)?.sub,claims.sub,'three real dot-separated JWT segments are recognized');
+ assert.equal(session.__test.accessClaims(token.replaceAll('.', '\\.')),null,'forged separator is rejected');
+ assert.equal(session.__test.accessClaims('not-a-jwt'),null);
+ assert.equal(session.__test.accessClaims(token.replace('a'.repeat(64),'!!!')),null);
+ const req=value=>({headers:{cookie:session.__test.REFRESH_COOKIE+'='+value}});
+ assert.equal(session.__test.refreshFromRequest(req('abcdefgh1234')),'abcdefgh1234');
+ assert.equal(session.__test.refreshFromRequest(req('abcdefgh123')),'','underlength cookie denied');
+ assert.equal(session.__test.refreshFromRequest(req('abc;invalid=1')),'','cookie injection denied');
+ const source=require('node:fs').readFileSync(new URL('../api/commander-session.js',import.meta.url),'utf8');
+ assert.match(source,/body\.refreshToken\.length<12\|\|body\.refreshToken\.length>4096/);
+ assert.match(source,/data\.refresh_token\.length<12\|\|data\.refresh_token\.length>4096/);
+ assert.match(source,/verifyOwner\(req,body\.token\)/,'length change does not bypass owner proof');
+ assert.match(source,/verifyOwner\(req,data\.access_token\)/,'rotation still verifies owner');
+ assert.match(source,/HttpOnly; Secure; SameSite=Strict/);
+});
