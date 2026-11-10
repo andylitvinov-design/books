@@ -812,7 +812,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     owner_run_id:runId,run_url:'https://github.com/'+fullRepo+'/actions/runs/'+runId};
   result.outcome=buildTaskOutcome({task_key:taskKey,pr_number:number,
     head_sha:expectedSha,new_sha:newSha,state,reason_code:reason,
-    source_published:sourcePublished,head_matches:sameHead,
+    source_published:sourcePublished,head_matches:state==='PUBLISHED'&&pr.head?.sha===newSha,
     claim_status:claimStatus,retry_after:retryAfter,owner_run_id:runId,
     now:result.created_at});
   // Learning is strictly advisory: only the already verified remote source
