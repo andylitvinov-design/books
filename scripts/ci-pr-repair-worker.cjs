@@ -18,6 +18,7 @@ const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
 const {safeSourcePath: safeFreeSourcePath}=require('./ci-pr-repair-free-agent.cjs');
 const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment,reservationStatus}=require('./ci-pr-task-state.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
+const {buildTaskOutcome}=require('./ci-pr-task-outcome.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -809,6 +810,11 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     created_at:new Date().toISOString(),fix_result:fixResult||'unknown',
     publish_result:publishResult||'unknown',publish_status:publishStatus||'unknown',
     owner_run_id:runId,run_url:'https://github.com/'+fullRepo+'/actions/runs/'+runId};
+  result.outcome=buildTaskOutcome({task_key:taskKey,pr_number:number,
+    head_sha:expectedSha,new_sha:newSha,state,reason_code:reason,
+    source_published:sourcePublished,head_matches:sameHead,
+    claim_status:claimStatus,retry_after:retryAfter,owner_run_id:runId,
+    now:result.created_at});
   // Learning is strictly advisory: only the already verified remote source
   // commit earns a case. The SAME existing finalizer comment carries it.
   // No additional GitHub write, provider call, CI run or source permission.
