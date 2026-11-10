@@ -489,7 +489,9 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(phrases.locator("[data-personalization-kind]")).toHaveCount(3);
       await conceptTab.click();
       await expect(phrases.locator("[data-video-ideas-concept-panel]")).toBeVisible();
-      await openIdeas(); await personalTab.click();
+      await page.locator('[data-video-quick-control="phrases"]').click();
+      await expect(phrases).toBeVisible();
+      await personalTab.click();
       // Ideas contains only Personalization and Concept. Audio owns narration.
       const voicePanel=page.locator('[data-video-audio-panel="voice"]');
       const voiceModeButton=voicePanel.locator('[data-video-audio-voice-mode="voice"]');
