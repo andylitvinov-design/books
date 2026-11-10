@@ -365,11 +365,17 @@ function normalizeTrustedCoreFailure(body) {
         !incoming.retry || typeof incoming.retry.allowed !== "boolean" ||
         !Number.isInteger(incoming.retry.max_attempts) || incoming.retry.max_attempts < 0 ||
         incoming.retry.max_attempts > 2 ||
+        (incoming.strategy_code!==undefined &&
+          (typeof incoming.strategy_code!=="string" || !/^[A-Z0-9_]{3,90}$/.test(incoming.strategy_code))) ||
+        (incoming.next_action!==undefined &&
+          (typeof incoming.next_action!=="string" || !/^[A-Z0-9_]{3,90}$/.test(incoming.next_action))) ||
         typeof incoming.retry.condition !== "string" || incoming.retry.condition.length > 300) return null;
     classification = {
       schema: incoming.schema, ruleset_version: incoming.ruleset_version,
       category: incoming.category, confidence: incoming.confidence,
       reason_code: incoming.reason_code,
+      strategy_code: typeof incoming.strategy_code==="string"?incoming.strategy_code:null,
+      next_action: typeof incoming.next_action==="string"?incoming.next_action:null,
       evidence_code: typeof incoming.evidence_code === "string" ? clean(incoming.evidence_code, 90) : null,
       recommended_action: clean(incoming.recommended_action, 500),
       recommended_status: clean(incoming.recommended_status, 48),
@@ -404,6 +410,74 @@ function normalizeTrustedCoreFailure(body) {
     run_url: "https://github.com/" + repo + "/actions/runs/" + run.id,
     source_run_created_at: run.created_at || null
   };
+}
+
+
+// Never drop an owner-scoped Core failure for lack of a pre-existing task.
+// Task/chat are idempotent per PR+HEAD; this is NOT a worker dispatch.
+async function ensureCiIncidentTask(db,ownerId,e){
+ const scope="github-ci:"+e.repository+":"+e.pr_number+":"+e.head_sha;
+ const id=await stableScopeId(ownerId,scope),at=new Date().toISOString();
+ const strategy=e.classification?.strategy_code||"SECONDARY_DIAGNOSIS";
+ const next=e.classification?.next_action||"INSPECT_CAUSAL_JOB_AND_CLASSIFY_AGAIN";
+ const role=e.classification?.responsible_role||"ci-diagnostic-triage";
+ const title=clean("CI PR #"+e.pr_number+" · "+e.category,110);
+ const desc=clean("Core CI failed: "+e.category+"; "+
+  (e.classification?.reason_code||"UNCLASSIFIED_FAILURE")+"; HEAD "+e.head_sha+
+  "; evidence "+e.run_url,3000);
+ const incident={schema:"HH_CI_INCIDENT_TASK_V1",repository:e.repository,
+  pr_number:e.pr_number,head_sha:e.head_sha,category:e.category,
+  ruleset_version:e.classification?.ruleset_version||"UNCLASSIFIED",
+  reason_code:e.classification?.reason_code||"UNCLASSIFIED_FAILURE",
+  strategy_code:strategy,responsible_role:role,next_action:next,
+  next_check_at:new Date(Date.now()+900000).toISOString(),first_run_id:e.workflow_run_id,
+  run_url:e.run_url,state:"CLASSIFIED_NOT_DISPATCHED",
+  executor_started:false,source_verified:false,live_verified:false};
+ const payload={schema:"HH_COMMANDER_TASK_V1",taskId:id,title,project:"commander",
+  priority:"1",area:"PR CI repair",source:e.run_url,summary:desc,
+  plan:"Verify exact HEAD and strategy "+strategy+". Owner "+role+
+   ". Next: "+next+". Use only the guarded dispatcher; independently verify new SHA and required checks.",
+  prompt:"Diagnose PR #"+e.pr_number+" HEAD "+e.head_sha+
+   "; strategy "+strategy+"; next "+next+"; proof "+e.run_url+
+   ". This task is NOT authorization for writes, retries, merge, or deployment.",
+  executor:"manual",mode:"analysis",relatedPr:[e.pr_number],
+  restrictions:{noCost:true,noDuplicate:true,verifyLive:true},ciIncident:incident};
+ const inserted=await q(db,
+  "insert into business_brain.commander_tasks(task_id,owner_id,project_key,title,payload,state,revision) "+
+  "values($1::uuid,$2::uuid,'agent-commander',$3,$4::text::jsonb,'queued_review',1) "+
+  "on conflict(task_id) do nothing returning task_id",[id,ownerId,title,jsonbText(payload)]);
+ const tasks=await q(db,
+  "select task_number,owner_id,project_key,payload from business_brain.commander_tasks "+
+  "where task_id=$1::uuid limit 2",[id]);
+ if(tasks.length!==1||tasks[0].owner_id!==ownerId||tasks[0].project_key!=="agent-commander"||
+    tasks[0].payload?.ciIncident?.repository!==e.repository||
+    tasks[0].payload?.ciIncident?.pr_number!==e.pr_number||
+    tasks[0].payload?.ciIncident?.head_sha!==e.head_sha)throw Error("CI_TASK_IDENTITY_UNVERIFIED");
+ const chat={schema:"HH_COMMANDER_THREAD_V1",id,title,project:"commander",
+  description:desc,taskId:id,taskIssueNumber:Number(tasks[0].task_number),
+  taskScope:scope,tasks:[],executors:["manual"],prs:[e.pr_number],
+  status:"assigned",revision:1,createdAt:at,updatedAt:at,
+  executionState:"AWAITING_EXECUTOR_NOT_DISPATCHED",liveVerified:false};
+ await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,task_id,title,payload,status,execution_state,revision) "+
+  "values($1::uuid,$2::uuid,$1::uuid,$3,$4::text::jsonb,'assigned','AWAITING_EXECUTOR_NOT_DISPATCHED',1) "+
+  "on conflict(task_id) do nothing",[id,ownerId,title,jsonbText(chat)]);
+ const chats=await q(db,"select chat_id,owner_id from business_brain.commander_chats "+
+  "where task_id=$1::uuid and owner_id=$2::uuid limit 2",[id,ownerId]);
+ if(chats.length!==1||chats[0].owner_id!==ownerId)throw Error("CI_TASK_CHAT_UNVERIFIED");
+ const eventId=await stableScopeId(ownerId,
+  "github-ci:"+e.workflow_run_id+":"+e.run_attempt+":"+e.pr_number+":"+e.head_sha);
+ const report={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"github_report",
+  author:"GitHub Actions · verified CI",
+  text:"Core failure PR #"+e.pr_number+": "+e.category+
+   "; strategy "+strategy+"; owner "+role+"; next "+next+
+   ". Task recorded; executor NOT started.",
+  source:{repository:e.repository,workflow_run_id:e.workflow_run_id,
+   run_attempt:e.run_attempt,head_sha:e.head_sha,run_url:e.run_url},
+  sourceVerified:true,proofLevel:"GITHUB_OIDC_AND_EXACT_PR_HEAD",createdAt:at};
+ await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) "+
+  "values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,true) "+
+  "on conflict(event_id) do nothing",[eventId,chats[0].chat_id,ownerId,jsonbText(report)]);
+ return {taskId:id,created:inserted.length===1};
 }
 
 async function receiveGitHubWorkflowRun(req, origin) {
@@ -494,6 +568,13 @@ async function receiveGitHubWorkflowRun(req, origin) {
       else association = "MATCHED_TASK_NO_CHAT";
     } else if (matches.length > 1) association = "AMBIGUOUS_TASKS";
 
+    // Every verified failure must have a durable task and associated chat.
+    if(association!=="MATCHED_CHAT_EVENT_RECORDED"){
+      const incident=await ensureCiIncidentTask(db,inboxOwnerId,event);
+      associatedTaskId=incident.taskId;associatedOwnerId=inboxOwnerId;
+      association=incident.created?"AUTO_TASK_CREATED_NOT_DISPATCHED":
+        "TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED";
+    }
     await q(db, `update business_brain.commander_ci_event_inbox
       set associated_task_id=$1::uuid,associated_owner_id=$2::uuid,association_status=$3
       where ci_event_id=$4::uuid and inbox_owner_id=$5::uuid`,
@@ -557,7 +638,7 @@ async function receiveCommanderCiRoute(req,origin){
         e.oidc_workflow_ref!==claims.workflow_ref||
         String(e.workflow_run_id)!==String(p.runId)||e.pr_number!==p.prNumber||
         e.head_sha!==p.headSha||e.category!==p.category||
-        !["MATCHED_CHAT_EVENT_RECORDED","TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED"].includes(e.association_status)||
+        !["MATCHED_CHAT_EVENT_RECORDED","TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED","AUTO_TASK_CREATED_NOT_DISPATCHED"].includes(e.association_status)||
         !uuid(e.associated_task_id)||!c||
         c.schema!=="HH_CI_ERROR_CLASSIFICATION_V1"||
         c.category!==p.category||c.responsible_role!==p.responsibleRole||
