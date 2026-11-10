@@ -387,3 +387,46 @@ test('owner history verification is read-only and free-model setup remains hidde
  assert.match(js,/el\('verify-chat'\)\.addEventListener\('click',verifySavedThread\)/);
  assert.match(js,/show\('free-model-status',!aiReady\)/);
 });
+
+test('private Commander writes raw JSON text through text-to-jsonb casts, not JSONB scalar double-encoding',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.doesNotMatch(edge,/\$\d+::jsonb\b/);
+ const jsonbParams=[...edge.matchAll(/\$\d+::text::jsonb\b/g)];
+ assert.equal(jsonbParams.length,14);
+ for(const field of ['failed_jobs','failed_steps','commander_tasks','commander_chats','commander_chat_events'])
+  assert.ok(edge.includes(field));
+ assert.match(edge,/JSON\.stringify\(event\.failed_jobs\)/);
+ assert.match(edge,/JSON\.stringify\(event\.failed_steps\)/);
+ assert.match(edge,/JSON\.stringify\(record\)/);
+ assert.match(edge,/JSON\.stringify\(chat\)/);
+ assert.match(edge,/JSON\.stringify\(event\)/);
+});
+
+
+test('Hermes runs through the fixed voice composer with a live free model and one-run GitHub write opt-in',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),api=src('api/commander-chats.js'),
+  edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ for(const id of ['cc-new-model-label','cc-new-model','cc-new-hermes-write-label','cc-new-hermes-write','cc-model-label','cc-model','cc-hermes-write-label','cc-hermes-write'])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ assert.ok(html.includes('cc-composer-space'));
+ assert.match(js,/modelId:mode==='hermes'\?model:undefined/);
+ assert.match(js,/confirmGitHubWrite/);
+ assert.match(js,/el\('hermes-write'\)\.checked/);
+ assert.match(api,/modelId:body\.modelId/);
+ assert.match(api,/confirmGitHubWrite:body\.confirmGitHubWrite===true/);
+ assert.match(edge,/const canUseHermes=executor==="hermes"/);
+ assert.match(edge,/GITHUB_WRITE_REQUIRES_HERMES_EXECUTOR/);
+ assert.match(edge,/HERMES_FREE_MODEL_NOT_SELECTED/);
+});
+
+test('Hermes dispatch reads bounded owner-only prior chat history and reconciles real run receipts without retrying work',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts'),js=src('commander-chats.js');
+ assert.match(edge,/select payload from business_brain\.commander_chat_events/);
+ assert.match(edge,/history:priorHistory\.slice\(-4\)/);
+ assert.match(edge,/linkedPrHintsVerified:false/);
+ assert.match(js,/function startExecutionPolling\(\)/);
+ assert.match(js,/action=runs&issue=/);
+ assert.match(js,/receipt\?\.dispatchAttempted===true/);
+ assert.match(js,/executionPollCount>=180/);
+ assert.match(js,/Повторный запуск не выполнялся/);
+});
