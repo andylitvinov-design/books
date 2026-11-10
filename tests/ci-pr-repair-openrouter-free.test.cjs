@@ -140,11 +140,11 @@ test('429 and missing or nonzero real response cost stop without retry',async()=
 
 test('structured OpenRouter text blocks normalize to a bounded patch while unsupported blocks fail closed',()=>{
  const blocks=[
-  {type:'text',text:'diff --git a/a.js b/a.js\\n'},
-  {type:'output_text',text:'@@ -1 +1 @@\\n-old\\n+new'}
+  {type:'text',text:'diff --git a/a.js b/a.js\n'},
+  {type:'output_text',text:'@@ -1 +1 @@\n-old\n+new'}
  ];
  assert.equal(extractAssistantText(blocks),
-  'diff --git a/a.js b/a.js\\n\\n@@ -1 +1 @@\\n-old\\n+new');
+  'diff --git a/a.js b/a.js\n\n@@ -1 +1 @@\n-old\n+new');
  assert.equal(extractAssistantText('plain patch'),'plain patch');
  assert.throws(()=>extractAssistantText([{type:'refusal',text:'declined'}]),/MODEL_REFUSED/);
  assert.throws(()=>extractAssistantText([{type:'image_url',image_url:{}}]),/PATCH_RESPONSE_INVALID/);
@@ -156,13 +156,13 @@ test('one zero-cost OpenRouter inference accepts structured text and rejects tru
  const catalog=response({data:[entry()]});
  const structured=response({model:DEFAULT_MODEL,usage:{cost:0},
   choices:[{finish_reason:'stop',message:{role:'assistant',content:[
-   {type:'text',text:'diff --git a/a.js b/a.js\\n'},
-   {type:'text',text:'@@ -1 +1 @@\\n-old\\n+new'}
+   {type:'text',text:'diff --git a/a.js b/a.js\n'},
+   {type:'text',text:'@@ -1 +1 @@\n-old\n+new'}
   ]}}]});
  let count=0;
  const fetchImpl=async()=>++count===1?catalog:structured;
  const patch=await requestFreePatch({prompt:'safe bounded repair',key:'fixture',fetchImpl});
- assert.equal(patch,'diff --git a/a.js b/a.js\\n\\n@@ -1 +1 @@\\n-old\\n+new');
+ assert.equal(patch,'diff --git a/a.js b/a.js\n\n@@ -1 +1 @@\n-old\n+new');
  assert.equal(count,2,'catalog plus exactly one inference request');
  for(const choice of [
   {finish_reason:'length',message:{role:'assistant',content:'partial'}},
