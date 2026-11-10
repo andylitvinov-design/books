@@ -62,19 +62,20 @@ test('OIDC event bridge uses the same versioned classifier and carries its diagn
 });
 
 
-test('Commander dispatch uses only first-party owned Director with verified read-only receipts',()=>{
+test('Commander dispatch queues first-party cloud OpenRouter runs read-only with no false execution receipt',()=>{
  const start=edge.indexOf('if(action==="commander_start_run")');
  const end=edge.indexOf('if(action==="commander_list_ci_events")',start);
  assert.ok(start>=0&&end>start,'dispatcher block exists');
  const handler=edge.slice(start,end);
  assert.match(handler,/const canDispatch=executor==="local"&&!writeConfirmed/);
- assert.match(handler,/await ownedDirectorCall\(req,/);
- assert.match(handler,/trustedOwnedDirectorReceipt\(remote,/);
+ assert.match(handler,/OPENROUTER_WORKER_QUEUED/);
+ assert.match(handler,/status:"QUEUED"/);
+ assert.match(handler,/dispatchAttempted:false,agentStarted:false,executionVerified:false/);
+ assert.match(handler,/GITHUB_WRITE_REQUIRES_SEPARATE_APPROVAL/);
  assert.match(handler,/EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/);
- assert.match(handler,/AGENT_DIRECTOR_DISPATCH_UNCONFIRMED/);
  assert.match(edge,/value\.sourceWrite!==null/);
- assert.doesNotMatch(handler,/await verifyFreeModel\(modelId\)|hermesCall\(/);
- assert.doesNotMatch(edge,/HERMES_SHARED_SECRET|HERMES_RUN_SCHEMA/);
+ assert.doesNotMatch(handler,/ownedDirectorCall\(req|trustedOwnedDirectorReceipt\(remote/);
+ assert.doesNotMatch(handler,/confirmGitHubWrite:true|sourceWriteAuthorized:true/);
 });
 
 const autotaskMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261110140500_commander_ci_autotask_v1.sql'),'utf8');
