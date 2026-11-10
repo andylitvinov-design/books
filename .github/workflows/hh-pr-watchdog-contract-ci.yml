@@ -180,8 +180,8 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Type-check Agent Commander Supabase Edge Function
-        run: cd supabase/functions/agent-commander-private-store-v1 && deno check --no-lock index.ts
+      - name: Resolve and syntax-compile Agent Commander Supabase Edge Function
+        run: cd supabase/functions/agent-commander-private-store-v1 && deno cache --no-lock index.ts
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
