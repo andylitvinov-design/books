@@ -302,7 +302,7 @@ test("all six workspaces use the same in-flow navigation and one real export",()
 test("guided meditation Add opens the single Audio/Meditations composer and Skip revokes its seed",()=>{
   assert.ok(studio.includes('const [courseMeditationDraft,setCourseMeditationDraft] = useState("");'));
   assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationDraft\(script\);[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("meditations"\);/);
-  assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationDraft\("");[\s\S]*?setAttachedAudio\(current=>current\?\.kind==="file"&&current\.nonLoop\?null:current\)/);
+  assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationDraft\(""\);[\s\S]*?setAttachedAudio\(current=>current\?\.kind==="file"&&current\.nonLoop\?null:current\)/);
   assert.match(studio,/data-video-audio-panel="meditations"[\s\S]*?<MandalaPersonalMeditation[\s\S]*?seedScript=\{courseMeditationDraft\}/,
     "the one canonical meditation composer is seeded only inside Audio / Meditations");
   assert.doesNotMatch(studio,/courseMeditationOmitted|data-meditation-details/,
