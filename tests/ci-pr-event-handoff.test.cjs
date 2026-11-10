@@ -139,7 +139,7 @@ test('no speculative dispatch for policy, incomplete evidence or stale associati
   assert.notEqual(r.outcome,'DISPATCH_ACCEPTED');
  }
 });
-test('cron remains independent while failed Core uses a separate trusted event runner and same lease',()=>{
+test('cron remains independent while failed Core handoffs isolate pending branches under exact-HEAD leases',()=>{
  const yaml=fs.readFileSync('.github/workflows/hh-pr-ten-minute-watchdog.yml','utf8');
  const direct=fs.readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
  const contract=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
@@ -148,7 +148,9 @@ test('cron remains independent while failed Core uses a separate trusted event r
  assert.ok(!yaml.includes("      - 'HH PR core release gate'"));
  assert.ok(direct.includes("      - 'HH PR core release gate'"));
  assert.ok(direct.includes("types: [completed]"));
- assert.ok(direct.includes("group: hh-control-tower-single-writer"));
+ assert.ok(direct.includes("group: hh-direct-core-pr-"));
+ assert.ok(direct.includes("github.event.workflow_run.head_branch"));
+ assert.ok(!direct.includes("group: hh-control-tower-single-writer"));
  assert.ok(direct.includes("ci-pr-event-handoff.cjs"));
  assert.ok(direct.includes("HH_DIRECT_CORE_HANDOFF"));
  assert.ok(yaml.includes("group: hh-control-tower-single-writer"));
