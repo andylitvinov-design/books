@@ -29,7 +29,7 @@ test('official atomic createCommitOnBranch uses the exact ref CAS and verified f
  assert.deepEqual(request.variables.input,{
    branch:{repositoryNameWithOwner:'andylitvinov-design/books',branchName:branch},
    expectedHeadOid:expectedSha,
-   fileChanges:{additions:files},
+   fileChanges:{additions:files.map(f=>({path:f.path,contents:f.content}))},
    message:{headline:'fix(ci): verified deterministic source repair for PR #4288'}
  });
  assert.doesNotMatch(JSON.stringify(request),/token|secret|github_pat/i);
