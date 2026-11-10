@@ -86,7 +86,7 @@
    const run=Array.isArray(result.runs)?result.runs[0]:null;if(!run)return null;
    const labels={STARTING:'Исполнитель запускается…',RUNNING:'Исполнитель работает…',WAITING_FOR_APPROVAL:'Ожидается подтверждение владельца.',COMPLETED:'Исполнение завершено. Ответ добавлен в чат.',FAILED:'Исполнение завершилось ошибкой.',CANCELLED:'Исполнение отменено.',BLOCKED:'Исполнитель не запущен или выполнение заблокировано.'};
    el('executor-state').textContent=(labels[run.status]||run.status||'Статус неизвестен')+(run.reason_code?' Причина: '+run.reason_code+'.':'')+(run.hermes_job_id?' · Job '+run.hermes_job_id:'');
-   if(['COMPLETED','FAILED'].includes(run.status)){
+   if(['COMPLETED','FAILED','BLOCKED'].includes(run.status)){
     const latest=await request(SERVER+'?action=read&issue='+thread.issueNumber);
     if(thread?.id===latest.chat?.id){thread=latest.chat;messages=latest.messages;renderMessages();}
    }

@@ -557,3 +557,17 @@ test('owner chat accurately labels first-party OpenRouter Free and translates ev
   assert.ok(js.includes(code+':'),code);
  assert.doesNotMatch(js,/OWNED_MODEL_RUNTIME_NOT_CONFIGURED:'Собственная модель/);
 });
+
+
+test('terminal BLOCKED run reloads its persisted private chat event just like COMPLETED and FAILED',()=>{
+ const js=src('commander-chats.js');
+ const start=js.indexOf('async function refreshExecutionRuns()');
+ const end=js.indexOf('function startExecutionPolling()',start);
+ assert.ok(start>=0&&end>start);
+ const refresh=js.slice(start,end);
+ assert.match(refresh,/if\(\['COMPLETED','FAILED','BLOCKED'\]\.includes\(run\.status\)\)/);
+ assert.match(refresh,/const latest=await request\(SERVER\+'\?action=read&issue='\+thread\.issueNumber\)/);
+ assert.match(refresh,/renderMessages\(\)/);
+ // A terminal blocker is never portrayed as an executing model; polling ends.
+ assert.match(js,/!\['STARTING','RUNNING'\]\.includes\(run\.status\)/);
+});
