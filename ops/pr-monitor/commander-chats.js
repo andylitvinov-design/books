@@ -876,7 +876,7 @@ async function update(e){
   el('new-mode').value=aiReady?'openrouter':'local';
   show('free-model-status',!aiReady);
   if(remote){
-   await loadExecutorModels();
+   configureModels('new');configureModels('thread');
    show('board',true);startCIInboxPolling();
    try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
    catch(e){
