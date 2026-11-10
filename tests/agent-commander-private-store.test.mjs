@@ -99,10 +99,13 @@ test('Agent Director owns its run path and the Supabase store does not depend on
   assert.match(route,/consumeRate\(config/);
   assert.match(edge,/canWrite:writable/);
   assert.match(edge,/requestSha256,ownerId,projectKey:/);
-  assert.match(runtime,/HH_AGENT_OLLAMA_ENABLED!=='true'/);
+  const adapter=read('lib/holistic-support/owned-openrouter.mjs');
+  assert.match(runtime,/HH_AGENT_OPENROUTER_API_KEY/);
+  assert.match(adapter,/openrouter\/free/);
+  assert.match(adapter,/OPENROUTER_COST_NOT_VERIFIED_ZERO/);
   assert.match(runtime,/AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED/);
   assert.match(runtime,/AGENT_DIRECTOR_READ_ONLY_RESPONSE/);
-  assert.doesNotMatch(runtime,/OPENROUTER_API_KEY|GITHUB_TOKEN/);
+  assert.doesNotMatch(runtime,/HH_AGENT_OLLAMA|generateOwnedOllama|GITHUB_TOKEN/);
   assert.match(edge,/executorDispatch:false,dispatchAvailable:true/);
 });
 
