@@ -386,7 +386,7 @@ function normalizeTrustedCoreFailure(body) {
   let classification = null;
   if (incoming !== undefined && incoming !== null) {
     if (!incoming || incoming.schema !== "HH_CI_ERROR_CLASSIFICATION_V1" ||
-        incoming.ruleset_version !== "1.0.0" || incoming.category !== category ||
+        incoming.ruleset_version !== "1.1.0" || incoming.category !== category ||
         !Number.isFinite(incoming.confidence) || incoming.confidence < 0 || incoming.confidence > 1 ||
         typeof incoming.reason_code !== "string" || !/^[A-Z0-9_]{3,90}$/.test(incoming.reason_code) ||
         typeof incoming.recommended_action !== "string" || incoming.recommended_action.length > 500 ||
