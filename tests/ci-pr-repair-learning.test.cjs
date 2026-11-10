@@ -77,3 +77,17 @@ test('published free-model cases require and retain the exact zero-cost model pr
   code_model_verified:true,code_backend:'openrouter',code_model:'vendor/paid-model'}),null);
  assert.equal(validCase({...free,code_model:'vendor/paid-model'}),false);
 });
+
+
+test('published free-model cases require and retain the exact verified zero-cost model',()=>{
+ const free=buildPublishedCase({...record,strategy:'code',repair_kind:'free_ai',
+  code_model_verified:true,code_backend:'openrouter',code_model:'cohere/north-mini-code:free'});
+ assert.equal(free.skill_id,'bounded-free-ai');
+ assert.equal(free.code_backend,'openrouter');
+ assert.equal(free.code_model,'cohere/north-mini-code:free');
+ assert.equal(validCase(free),true);
+ assert.equal(buildPublishedCase({...record,strategy:'code',repair_kind:'free_ai'}),null);
+ assert.equal(buildPublishedCase({...record,strategy:'code',repair_kind:'free_ai',
+  code_model_verified:true,code_backend:'openrouter',code_model:'vendor/paid-model'}),null);
+ assert.equal(validCase({...free,code_model:'vendor/paid-model'}),false);
+});
