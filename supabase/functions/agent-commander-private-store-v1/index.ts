@@ -557,7 +557,7 @@ async function handler(req){
       const runsSql="select run_id,executor,status,reason_code,request_sha256,hermes_job_id,executor_session_id,receipt,started_at,completed_at,worker_attempt_count,worker_lease_expires_at,actual_model_id,cost_usd,worker_last_error_code,created_at,updated_at from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid order by created_at desc limit 30";
       let runs=await q(db,runsSql,[ownerId,chats[0].chat_id]);
       return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUNS_V1",chatId:chats[0].chat_id,runs,storage:"SUPABASE_PRIVATE",
-        dispatchEnabled:Boolean(Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY")),dispatchAvailable:Boolean(Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY")),dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",liveVerified:false,observedAt:new Date().toISOString()},origin);
+        dispatchEnabled:false,dispatchAvailable:true,workerMode:"SUPABASE_OPENROUTER_CLOUD_WORKER",dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",liveVerified:false,observedAt:new Date().toISOString()},origin);
     }
     if(action==="commander_start_run"){
       const chatNumber=number(body.issueNumber);
@@ -586,10 +586,9 @@ async function handler(req){
       };
       const modelId=typeof body.modelId==="string"&&body.modelId.length?clean(body.modelId,120):"owned-default";
       const writeConfirmed=body.confirmGitHubWrite===true;
-      const openRouterReady=Boolean(Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY"));
-      const canDispatch=executor==="local"&&!writeConfirmed&&openRouterReady;
+      const canDispatch=(executor==="local"||executor==="openrouter")&&!writeConfirmed;
       let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
-      if(executor==="local")reasonCode=writeConfirmed?"GITHUB_WRITE_REQUIRES_SEPARATE_APPROVAL":openRouterReady?"OPENROUTER_WORKER_QUEUED":"OPENROUTER_API_KEY_NOT_CONFIGURED";
+      if(executor==="local"||executor==="openrouter")reasonCode=writeConfirmed?"GITHUB_WRITE_REQUIRES_SEPARATE_APPROVAL":"OPENROUTER_WORKER_QUEUED";
       else if(executor==="hermes"||executor==="openrouter")reasonCode="EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY";
       else if(executor==="codex")reasonCode="CODEX_LOCAL_AGENT_NOT_CONNECTED";
       else if(executor==="repair-worker")reasonCode="REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE";
@@ -680,7 +679,7 @@ async function handler(req){
         modelName:row.model_name,verifiedAt:row.catalog_verified_at,updatedAt:row.updated_at,
         storage:"SUPABASE_PRIVATE",preferenceOnly:true,agentStarted:false},origin);
     }
-    if(action==="status"){const openRouterReady=Boolean(Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY"));return reply(200,{ok:true,service:"AGENT_COMMANDER_PRIVATE_STORE_V1",owner:true,canWrite:writable,authenticated:true,privateStoreConfigured:true,executorDispatch:openRouterReady,dispatchEnabled:openRouterReady,dispatchAvailable:openRouterReady,openRouterConfigured:openRouterReady,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:openRouterReady?"OPENROUTER_FREE_WORKER_READY":"OPENROUTER_API_KEY_NOT_CONFIGURED",liveVerification:false,checkedAt:new Date().toISOString()},origin);}
+    if(action==="status")return reply(200,{ok:true,service:"AGENT_COMMANDER_PRIVATE_STORE_V1",owner:true,canWrite:writable,authenticated:true,privateStoreConfigured:true,executorDispatch:false,dispatchEnabled:false,dispatchAvailable:true,workerMode:"SUPABASE_OPENROUTER_CLOUD_WORKER",executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OPENROUTER_WORKER_WAKEUP_REQUIRED",liveVerification:false,checkedAt:new Date().toISOString()},origin);
 
     if(action==="commander_list_tasks"){
       const rows=await q(db,"select task_number,task_id,title,state,revision,updated_at,payload from business_brain.commander_tasks where owner_id=$1::uuid order by updated_at desc limit 40",[ownerId]);
