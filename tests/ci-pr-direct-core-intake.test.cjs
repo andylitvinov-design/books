@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const full=fs.readFileSync(path.join(__dirname,'../.github/workflows/hh-pr-direct-core-failure.yml'),'utf8');
+// This contract runs with the same pull_request revision as the production workflow.
 const intake=full.split('  ci_event_intake:\n')[1]?.split('  direct-core-failure:\n')[0];
 const worker=full.split('  direct-core-failure:\n')[1]?.split('  core-slot-wakeup:\n')[0];
 test('every eligible Core error gets its own independent OIDC ingestion without a shared pending slot',()=>{
