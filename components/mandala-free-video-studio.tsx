@@ -92,6 +92,7 @@ import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedS
 import type { PublicLocale } from "@/lib/public-locales";
 import {fetchVideoCreditCatalog,fetchVideoCreditStatus,
   postVideoCreditAction,releaseVideoCreditOnExit} from "@/lib/video-credits/client.mjs";
+import {readyBasicVideoAccess} from "@/lib/video-credits/ready-basic-eligibility.mjs";
 import { SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import styles from "./mandala-meditation.module.css";
 import videoStyles from "./mandala-video-mobile.module.css";
@@ -1943,6 +1944,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"concept">("personalization");
   const [ideasVoiceMode,setIdeasVoiceMode] = useState<"voice"|"my-voice">("voice");
   const [ideasProfile,setIdeasProfile] = useState<VideoGoalProfile>(DEFAULT_VIDEO_GOAL_PROFILE);
+  // Do not misread initial preselected chips as answers until the visitor
+  // actually confirms the Personalization step.
+  const [ideasProfileConfirmed,setIdeasProfileConfirmed] = useState(false);
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
@@ -2388,6 +2392,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setCreditSession(error instanceof Error&&error.message==="SIGN_IN_REQUIRED"?"guest":"unavailable");
     }
   },[]);
+  // Preview-only eligibility: the original server ledger still authorizes every debit.
+  const basicVideoAccess=readyBasicVideoAccess({
+    catalog:creditCatalog,session:creditSession,balanceCredits:creditBalance,guestFirstVideoUsed
+  });
   const [creditConfirmed,setCreditConfirmed]=useState(true);
   const [creditRetry,setCreditRetry]=useState(false);
   const creditOpRef=useRef<string|null>(null);
@@ -6155,6 +6163,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // for every mode; portal relocation previously changed geometry and focus.
   return (
     <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
+      data-video-preview-playing={previewPlaying?"true":undefined}
       data-hh-video-ihelp-open={videoIHelpOpen||undefined}
       data-mandala-free-video data-video-studio-mode={studioMode}
       data-video-advanced-open={showAdvancedVideo?"true":"false"}
@@ -6800,9 +6809,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         disabled={recording||preparing}
         onRefreshLogin={()=>void refreshCreditSession()}
         onReturnToPro={()=>{setActiveWorkspace("pro");setStudioMode("pump");}}
-        basicFreeAvailable={Boolean(creditCatalog&&!creditCatalog.blocked&&
-          (!creditCatalog.chargeRequired||
-            (creditSession==="guest"&&!guestFirstVideoUsed)))}
+        basicFreeAvailable={basicVideoAccess.allowed}
+        basicFreeIssue={basicVideoAccess.reason}
+        basicCreditCost={basicVideoAccess.chargeCredits}
         onGenerateBasicVideo={()=>{
           // Never substitute a credit-charged or paid render for the FREE offer.
           if(!freeVideoSelected){
@@ -6962,7 +6971,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <MandalaVideoPersonalization locale={locale} value={ideasProfile}
             onChange={setIdeasProfile} disabled={recording||preparing}
             onBack={()=>setActiveWorkspace("video")}
-            onContinue={()=>setIdeasSubtab("concept")}/>
+            onContinue={()=>{setIdeasProfileConfirmed(true);setIdeasSubtab("concept");}}/>
           <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выбор фраз — в Монтаже → Текст.":locale==="es"?"Las frases están en Montaje → Texto.":"Choose phrases in Montage → Text."}</p>
           <button type="button" className={videoStyles.montageStepNext} data-video-ideas-open-montage-text
             disabled={recording||preparing} onClick={goToMontageFromIdeas}>
@@ -7002,6 +7011,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.ideasConceptPane} id="video-ideas-concept-panel"
           data-video-ideas-concept-panel hidden={ideasSubtab!=="concept"}>
           <MandalaVideoConcept locale={locale} goal={wish} theme={theme}
+            profile={ideasProfileConfirmed?ideasProfile:null} durationSeconds={duration}
             speechTranscript={voiceTranscript} approvedConcept={approvedVideoConcept}
             ownerFields={{
               references:photoUrl?(locale==="ru"?"Фото добавлено":locale==="es"?"Foto adjuntada":"Photo attached"):null,
