@@ -390,8 +390,9 @@ test('existing mobile PR monitor renders signed repair task outcomes and next ac
  assert.match(src,/data\.task_outcomes/);
  assert.match(src,/Следующее действие/);
  assert.match(src,/Следующая проверка/);
- assert.match(src,/status==='FIXED'/);
- assert.match(src,/не статус VERIFIED/);
+ assert.match(src,/row\.recorded_status==='FIXED'/);
+ assert.match(src,/row\.status==='VERIFIED'/);
+ assert.match(src,/EXACT_CURRENT_HEAD_CORE_SPECIALIST_MERGE_GATES/);
 });
 
 
