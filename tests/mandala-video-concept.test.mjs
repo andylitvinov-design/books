@@ -63,7 +63,7 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
   assert.match(source,/setMontagePanel\("concept"\)/);
   assert.match(source,/data-video-pro-open-montage-storyboard/);
   assert.match(source,/\{id:"effects",Icon:Sparkles\},\{id:"text",Icon:Type\}/);
-  assert.match(source,/\{id:"visual",Icon:Zap\},\{id:"settings",Icon:SlidersHorizontal\}/);
+  assert.match(source,/\{id:"audio",Icon:Music2\},\{id:"settings",Icon:SlidersHorizontal\}/);
   assert.match(source,/data-video-montage-open-concept/);
   assert.match(source,/data-video-concept-text-tools/);
   assert.match(source,/data-video-montage-text/);
@@ -99,11 +99,13 @@ test("macOS WebKit opens Style by default and still allows reviewed Concept",()=
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
 });
 
-test("required Hypno two tabs and guided kind click remain browser-tested after Concept",()=>{
+test("required Hypno three tabs, relocated effects and guided kind remain browser-tested after Concept",()=>{
   const webkit=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const guided=readFileSync(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
   const exportFlow=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
-  assert.match(webkit,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
+  assert.match(webkit,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(3\)/);
+  assert.match(webkit,/await effectsTab\.click\(\)/);
+  assert.match(webkit,/data-hypno-visual-effect="sunlight"/);
   assert.match(webkit,/await expect\(briefFrame\)\.toHaveAttribute\("aria-checked","false"\)/);
   assert.match(guided,/await expect\(kind\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
   assert.match(guided,/GUIDED_KIND_DID_NOT_COMMIT/);
