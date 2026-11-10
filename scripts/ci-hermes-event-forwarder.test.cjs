@@ -6,25 +6,30 @@ const { validateCoreFailureEvent, diagnosticsFromJobs, CORE_WORKFLOW_PATH } = re
 
 const SHA = 'a'.repeat(40);
 function fixture(overrides = {}) {
+  const baseRun = {
+    id: 12345,
+    run_attempt: 1,
+    name: 'HH PR core release gate',
+    path: CORE_WORKFLOW_PATH + '@refs/heads/codex/bootstrap-books',
+    event: 'pull_request',
+    status: 'completed',
+    conclusion: 'failure',
+    head_branch: 'feature/fix',
+    repository: { full_name: 'andylitvinov-design/books' },
+    head_repository: { full_name: 'andylitvinov-design/books' },
+    pull_requests: [{
+      number: 4049,
+      head: { sha: SHA, ref: 'feature/fix', repo: { full_name: 'andylitvinov-design/books' } },
+      base: { ref: 'codex/bootstrap-books', repo: { full_name: 'andylitvinov-design/books' } }
+    }]
+  };
   return {
     action: 'completed',
     workflow_run: {
-      id: 12345,
-      run_attempt: 1,
-      name: 'HH PR core release gate',
-      path: CORE_WORKFLOW_PATH + '@refs/heads/codex/bootstrap-books',
-      event: 'pull_request',
-      status: 'completed',
-      conclusion: 'failure',
-      head_branch: 'feature/fix',
-      repository: { full_name: 'andylitvinov-design/books' },
-      head_repository: { full_name: 'andylitvinov-design/books' },
-      pull_requests: [{
-        number: 4049,
-        head: { sha: SHA, ref: 'feature/fix', repo: { full_name: 'andylitvinov-design/books' } },
-        base: { ref: 'codex/bootstrap-books', repo: { full_name: 'andylitvinov-design/books' } }
-      }],
-      ...overrides
+      ...baseRun,
+      ...overrides,
+      repository: { ...baseRun.repository, ...(overrides.repository || {}) },
+      head_repository: { ...baseRun.head_repository, ...(overrides.head_repository || {}) }
     }
   };
 }
