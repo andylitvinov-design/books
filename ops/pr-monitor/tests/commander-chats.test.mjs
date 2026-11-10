@@ -462,6 +462,20 @@ test('Director silently refreshes the existing Google owner session before askin
  assert.match(js,/ownerRefreshPromise/);
 });
 
+test('Supabase private store dispatches Hermes over protected HTTPS and verifies its execution receipt',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.match(edge,/HERMES_ORIGIN_URL/);
+ assert.match(edge,/HERMES_SHARED_SECRET/);
+ assert.match(edge,/hermesCall\(config,"\/commander\/runs","POST"/);
+ assert.match(edge,/hermesCall\(config,"\/commander\/runs\/"\+runId\)/);
+ assert.match(edge,/trustedHermesReceipt\(remote,runId,null,modelId\)/);
+ assert.match(edge,/const canDispatch=Boolean\(canUseHermes&&config&&validModel\)/);
+ assert.match(edge,/confirmGitHubWrite:writeConfirmed/);
+ assert.match(edge,/executorDispatch:Boolean\(hermesConfiguration\(\)\)/);
+ assert.match(edge,/refreshHermesRun\(db,ownerId,rows\[0\]\.chat_id,unfinished\.run_id\)/);
+ assert.match(edge,/DRAFT_PR_COMMIT_VERIFIED_NOT_LIVE/);
+ assert.doesNotMatch(edge,/executorDispatch:false/);
+});
 test('owner-only global CI Inbox is visible and polls independently of opening or closing chats',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),api=src('api/commander-chats.js');
  for(const id of ['cc-ci-inbox','cc-ci-meta','cc-ci-list','cc-ci-refresh'])assert.ok(html.includes('id="'+id+'"'),id);
