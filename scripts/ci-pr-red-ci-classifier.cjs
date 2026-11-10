@@ -25,7 +25,7 @@ const SIGNALS = Object.freeze({
   TEST_FAILURE: /(?:\btests?\b|\bunit\b|\b(?:vitest|jest|mocha|ava|uvu|tap|pytest)\b|\bcontracts?\b|\be2e\b|\bplaywright\b|\bwebkit\b|\bspecs?\b|\bassertions?\b|snapshot mismatch|test failed)/i,
   INTEGRATION: /(?:\bapi\b|supabase|vercel|github api|\bmcp\b|oauth|webhook|integration|database connection|schema mismatch|http client)/i,
   AI_EXECUTOR: /(?:openrouter|model response|completion response|invalid patch|patch response|free_model|free model|provider quota|model timeout|empty model|non[- ]text response|unexpected model identity|inference)/i,
-  AUTOMATION_PROCESS: /(?:dispatcher|dispatch(?:er)?|task queue|queue reservation|lease|prompt missing|missing prompt|no executor|executor not invoked|finalizer|finalization|task state|task capsule|handoff|idempotency|duplicate task|lost context|worker claim)/i,
+  AUTOMATION_PROCESS: /(?:dispatcher|dispatch(?:er)?|task queue|queue reservation|\blease\b|prompt missing|missing prompt|no executor|executor not invoked|finalizer|finalization|task state|task capsule|handoff|idempotency|duplicate task|lost context|worker claim)/i,
   CI_WORKFLOW_BUDGET: /(?:workflow budget exceeded|workflow count (?:exceeded|limit)|too many (?:github actions )?workflows|workflow (?:graph|fan.out) budget|CI[- ]policy changes|specialist ownership|Messenger isolation)/i,
   SPECIALIST_PROOF_GATE: /^(?:validate exact-head risk and required specialist workflows)$/i,
   SOURCE_CODE: /(?:eslint|syntax error|cannot find module|module not found|missing import|build failed|compilation failed|type error|referenceerror|syntaxerror|cannot resolve|dependency conflict)/i,
