@@ -1,6 +1,34 @@
 'use strict';
 /* Private Agent Commander chat API. All chat headers and events are owner-scoped in Supabase. */
 const {callStore,sendJson,isOriginAllowed}=require('../lib/commander-private-store');
+async function freeModels(req,res){
+ const owner=await callStore(req,'status',{}, {method:'GET'});
+ if(owner.status!==200||owner.data?.owner!==true||owner.data?.privateStoreConfigured!==true)
+  return sendJson(res,owner.status===401?401:403,{error:'OWNER_SESSION_REQUIRED'});
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),7000);
+ try{
+  const response=await fetch('https://openrouter.ai/api/v1/models?endpoints='+encodeURIComponent('/api/v1/chat/completions'),{
+   method:'GET',cache:'no-store',redirect:'error',signal:controller.signal,
+   headers:{Accept:'application/json'}
+  });
+  if(!response.ok)return sendJson(res,503,{error:'FREE_MODEL_CATALOG_UNAVAILABLE'});
+  const raw=await response.text();if(raw.length>8*1024*1024)return sendJson(res,502,{error:'FREE_MODEL_CATALOG_TOO_LARGE'});
+  const data=JSON.parse(raw);
+  if(!Array.isArray(data.data))return sendJson(res,502,{error:'FREE_MODEL_CATALOG_INVALID'});
+  const models=data.data.filter(m=>{
+   if(typeof m?.id!=='string'||!m.id.endsWith(':free'))return false;
+   const p=m.pricing;
+   if(!p||typeof p!=='object'||p.prompt===undefined||p.completion===undefined)return false;
+   if(!Object.values(p).every(v=>(typeof v==='number'||typeof v==='string')&&String(v).trim()!==''&&Number.isFinite(Number(v))&&Number(v)===0))return false;
+   return Array.isArray(m.architecture?.input_modalities)&&m.architecture.input_modalities.includes('text')&&
+    Array.isArray(m.architecture?.output_modalities)&&m.architecture.output_modalities.includes('text')&&
+    (!Array.isArray(m.endpoints)||m.endpoints.includes('/api/v1/chat/completions'));
+  }).slice(0,40).map(m=>({id:m.id,name:String(m.name||m.id).slice(0,100),pricing:'$0 verified by live catalog'}));
+  return sendJson(res,200,{models,verifiedAt:new Date().toISOString(),pricing:'zero_only',source:'OPENROUTER_LIVE_CATALOG'});
+ }catch(error){
+  return sendJson(res,503,{error:error?.name==='AbortError'?'FREE_MODEL_CATALOG_TIMEOUT':'FREE_MODEL_CATALOG_UNAVAILABLE'});
+ }finally{clearTimeout(timer);}
+}
 module.exports=async function(req,res){
  res.setHeader('Cache-Control','private, no-store, max-age=0');res.setHeader('Vary','Cookie, Origin');
  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
@@ -11,6 +39,7 @@ module.exports=async function(req,res){
   let action,body={};
   if(req.method==='GET'){
    if(name==='status')action='status';
+   else if(name==='free_models')return await freeModels(req,res);
    else if(name==='list')action='commander_list_chats';
    else if(name==='read'){action='commander_read_chat';body.issueNumber=Number(url.searchParams.get('issue'))}
    else if(name==='proof'){action='commander_pr_proof';body.pr=Number(url.searchParams.get('pr'))}
@@ -30,7 +59,11 @@ module.exports=async function(req,res){
    else if(name==='update'){action='commander_update_chat';body={issueNumber:body.issueNumber,expectedRevision:body.expectedRevision,chat:body.chat}}
    else if(name==='event'){action='commander_append_event';body={issueNumber:body.issueNumber,eventId:body.eventId,kind:body.kind,text:body.text,model:body.model}}
    else if(name==='attach'){action='commander_attach_event';body={issueNumber:body.issueNumber,eventId:body.eventId,url:body.url}}
-   else if(name==='run'){action='commander_start_run';body={issueNumber:body.issueNumber,runId:body.runId,idempotencyKey:body.idempotencyKey,executor:body.executor,message:body.message}}
+   else if(name==='run'){
+    action='commander_start_run';
+    if(typeof body.modelId!=='string'||typeof body.confirmGitHubWrite!=='boolean')return sendJson(res,400,{error:'MODEL_AND_WRITE_POLICY_REQUIRED'});
+    body={issueNumber:body.issueNumber,runId:body.runId,idempotencyKey:body.idempotencyKey,executor:body.executor,message:body.message,modelId:body.modelId,confirmGitHubWrite:body.confirmGitHubWrite};
+   }
    else return sendJson(res,400,{error:'UNKNOWN_ACTION'});
   }
   const result=await callStore(req,action,body,{method:req.method});
