@@ -16,12 +16,16 @@ const CATEGORIES=new Set(Object.keys(rules.categories));
 const SAFE_SOURCE=new Set(['SOURCE_CODE','TYPESCRIPT']);
 const HUMAN_HOLD=new Set(['SECURITY','ACCESS_CONFIG','MERGE_CONFLICT','UNKNOWN']);
 const REVIEW_ONLY=new Set(['BASE_OR_CI_ROUTING','TEST_FAILURE','INTEGRATION','AI_EXECUTOR','AUTOMATION_PROCESS']);
+const INBOX_ASSOCIATIONS=new Set(['MATCHED_CHAT_EVENT_RECORDED',
+  'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED','AUTO_TASK_CREATED_NOT_DISPATCHED']);
+const REPAIR_EXECUTOR='github-actions:hh-pr-repair-worker.yml';
+const TASK_KEY=/^[a-f0-9]{32}$/i;
 
 function receiptProof(receipt,context){
   if(!confirmedCoreEvent(context))return 'UNTRUSTED_CORE_EVENT';
   const run=context.payload.workflow_run;
   if(receipt?.accepted!==true||!UUID.test(receipt.inboxId||'')||
-     receipt.association!=='MATCHED_CHAT_EVENT_RECORDED')
+     !INBOX_ASSOCIATIONS.has(receipt.association))
     return 'CI_TASK_NOT_PROVEN_AND_LINKED';
   if(!Number.isSafeInteger(receipt.prNumber)||receipt.prNumber<1||
      receipt.runId!==run.id||!SHA.test(receipt.headSha||'')||
@@ -58,6 +62,7 @@ async function route({
     schema:'HH_COMMANDER_CI_STRATEGY_ROUTE_V1',
     state:'BLOCKED',reason:'UNVERIFIED',prNumber:null,runId:null,
     category:null,strategy:null,responsibleRole:null,
+    executorId:null,workerTaskKey:null,dispatchAcknowledged:false,
     dispatchAccepted:0,workerStarted:false,sourceWriteVerified:false,liveVerified:false
   };
   const violation=receiptProof(receipt,context);
@@ -118,11 +123,21 @@ async function route({
   }
   try{
     const handoff=await existingCoreHandoff({github,core,context,dryRun:false});
-    result.dispatchAccepted=Number.isSafeInteger(handoff?.dispatchAccepted)&&
-      handoff.dispatchAccepted>0?handoff.dispatchAccepted:0;
-    if(result.dispatchAccepted>0){
+    const accepted=handoff?.dispatchAccepted===1&&handoff?.dispatchAcknowledged===true&&
+      handoff?.prNumber===receipt.prNumber&&handoff?.headSha===receipt.headSha&&
+      handoff?.executorId===REPAIR_EXECUTOR&&TASK_KEY.test(handoff?.workerTaskKey||'');
+    if(accepted){
+      result.dispatchAccepted=1;
+      result.dispatchAcknowledged=true;
+      result.executorId=REPAIR_EXECUTOR;
+      result.workerTaskKey=handoff.workerTaskKey;
       result.state='DISPATCH_ACCEPTED_NOT_WORKER_STARTED';
-      result.reason='EXISTING_DISPATCHER_ACCEPTED';
+      result.reason='EXACT_HEAD_DISPATCH_RECEIPT_CONFIRMED';
+    }else if(Number(handoff?.dispatchAccepted||0)>0||
+      handoff?.outcome==='DISPATCH_ACCEPTANCE_UNVERIFIED'){
+      result.state='DISPATCH_UNCONFIRMED_RECONCILE';
+      result.reason='EXACT_HEAD_DISPATCH_ACK_NOT_PROVEN';
+      result.blocked=handoff?.blocked||{};
     }else{
       result.state='TASK_WAITING_FOR_DISPATCH';
       result.reason=typeof handoff?.outcome==='string'?handoff.outcome:
