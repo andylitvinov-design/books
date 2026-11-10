@@ -62,7 +62,7 @@ module.exports=async function(req,res){
    else if(name==='attach'){action='commander_attach_event';body={issueNumber:body.issueNumber,eventId:body.eventId,url:body.url}}
    else if(name==='run'){
     action='commander_start_run';
-    if(body.executor==='hermes'&&(typeof body.modelId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.-]*\\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(body.modelId)))return sendJson(res,400,{error:'VERIFIED_FREE_MODEL_REQUIRED'});
+    if(body.executor==='hermes'&&(typeof body.modelId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(body.modelId)))return sendJson(res,400,{error:'VERIFIED_FREE_MODEL_REQUIRED'});
     if(body.confirmGitHubWrite!==undefined&&body.confirmGitHubWrite!==false)return sendJson(res,403,{error:'GITHUB_WRITE_CONFIRMATION_UI_NOT_AVAILABLE'});
     body={issueNumber:body.issueNumber,runId:body.runId,idempotencyKey:body.idempotencyKey,executor:body.executor,message:body.message,modelId:body.modelId||'',confirmGitHubWrite:false};
    }
