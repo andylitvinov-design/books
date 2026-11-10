@@ -773,7 +773,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             {!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>
               <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
             </p>}
-            {!quickChoices&&question.type==='scale_0_10'&&!isOverload&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>
+            {!quickChoices&&question.type==='scale_0_10'&&!isOverload&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 

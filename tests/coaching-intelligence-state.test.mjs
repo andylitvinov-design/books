@@ -7,6 +7,7 @@ import {seal as actualSeal,openSealed as actualOpenSealed} from '../lib/app/cryp
 import {authoredFollowupFor} from '../lib/personal-coaching/offline-intelligence.js'
 import {isCoachingSafetyConcern} from '../lib/personal-coaching/model-matcher.js'
 import {normalizeClientCoachingContext} from '../lib/personal-coaching/client-context.mjs'
+import {isGrowClarityQuestion,normalizeGrowPlanExtras} from '../lib/personal-coaching/grow-20.mjs'
 
 const source=readFileSync(new URL('../lib/app/personal-coaching.js',import.meta.url),'utf8')
 const server=source.replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'')
@@ -56,9 +57,9 @@ function fixture({secure=false}={}){
   traditionCourse:()=>null,traditionEndcaps:()=>[],
   loadSchemeQuestions:async(_db,schemeKey)=>['grow_quick_v1','grow_overload_20_v1'].includes(schemeKey)
    ?{schemeKey,modelKey:'grow_v1',questions:schemeKey==='grow_overload_20_v1'?questions.map(q=>q.id==='action'?{...q,stepKey:'will'}:q):questions,requiredCustomPlan:schemeKey==='grow_overload_20_v1'}:null,
-  authoredFollowupFor,isCoachingSafetyConcern,normalizeClientCoachingContext,createHash,
+  authoredFollowupFor,isCoachingSafetyConcern,normalizeClientCoachingContext,isGrowClarityQuestion,normalizeGrowPlanExtras,createHash,
  }
- const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor,isCoachingSafetyConcern,normalizeClientCoachingContext}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
+ const factory=runInNewContext('(deps)=>{const {randomUUID,createHash,transaction,seal,openSealed,AppError,onlyKeys,PERSONAL_COACH_VERSION,PERSONAL_COACH_TEMPLATE,personalCoachQuestion,TRADITION_COURSES,traditionCourse,traditionEndcaps,loadSchemeQuestions,authoredFollowupFor,isCoachingSafetyConcern,normalizeClientCoachingContext,isGrowClarityQuestion,normalizeGrowPlanExtras}=deps;'+server+';return {readPersonalCoaching,savePersonalCoaching}}')
  return {api:factory(deps),store}
 }
 const start={action:'start',revision:0,schemeKey:'grow_quick_v1',clientQuestion:'How can I plan my new project?'}
