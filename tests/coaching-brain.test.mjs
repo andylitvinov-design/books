@@ -337,3 +337,19 @@ test('explicit client method preference is validated and overrides heuristics wi
   assert.match(panel,/methodChoice:'Методика'/)
   assert.match(panel,/methodChoice:'Método'/)
 })
+
+
+test('production Coaching Brain uses ZDR-only free routing and explains offline without leaking client text',()=>{
+  const service=source('lib/app/coaching-brain.js')
+  const gateway=source('lib/agent-director/commander-owned-runtime.mjs')
+  const panel=source('components/coaching-brain-panel.jsx')
+  assert.match(service,/privacyMode:'zdr'/)
+  assert.match(service,/HH_COACHING_BRAIN_ENABLED/)
+  assert.match(service,/offlineReason/)
+  assert.match(service,/privacy_model_unavailable/)
+  assert.match(gateway,/zdrOnly\?\{zdr:true\}/)
+  assert.match(gateway,/CATALOG\+'&zdr=true'/)
+  assert.match(panel,/offlineReasons/)
+  assert.match(panel,/turn\.offlineReason/)
+  assert.doesNotMatch(service,/console\.(?:log|warn|error)/)
+})
