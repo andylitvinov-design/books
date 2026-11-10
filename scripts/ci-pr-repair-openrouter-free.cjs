@@ -8,8 +8,8 @@ const CHAT_CATALOG=BASE+'/models?endpoints='+encodeURIComponent(CHAT_ENDPOINT);
 // Ordered CANDIDATES, not proven winners. Live catalog + zero-price validation wins.
 const DEFAULT_MODEL='cohere/north-mini-code:free';
 const MODEL_PROFILES=Object.freeze({
-  repair:Object.freeze(['nvidia/nemotron-3-ultra-550b-a55b:free',
-    'recursive/flint-v1.0:free','cohere/north-mini-code:free',
+  repair:Object.freeze(['recursive/flint-v1.0:free',
+    'nvidia/nemotron-3-ultra-550b-a55b:free','cohere/north-mini-code:free',
     'xingchen-agi/xing4.0-29b-a4b:free']),
   feature:Object.freeze(['cohere/north-mini-code:free','nvidia/nemotron-3-ultra-550b-a55b:free',
     'recursive/flint-v1.0:free','google/gemma-4-31b-it:free']),
@@ -79,7 +79,14 @@ async function getJson(fetchImpl,url,options,timeoutMs){
   try{response=await fetchImpl(url,{...options,signal:AbortSignal.timeout(timeoutMs)});}
   catch{throw Error('FREE_AI_OPENROUTER_NETWORK_UNAVAILABLE');}
   if(response?.status===429)throw Error('FREE_AI_FREE_TIER_QUOTA_EXHAUSTED');
-  if(!response?.ok)throw Error('FREE_AI_OPENROUTER_REQUEST_REJECTED');
+  if(!response?.ok){
+    // Retain numeric status only; no remote body, provider header, secret or
+    // model text enters our logs. Never retry another free/paid model here.
+    const status=Number(response?.status);
+    if(Number.isSafeInteger(status)&&status>=400&&status<=599)
+      throw Error('FREE_AI_OPENROUTER_HTTP_'+status);
+    throw Error('FREE_AI_OPENROUTER_REQUEST_REJECTED');
+  }
   let body;
   try{
     const raw=await response.text();

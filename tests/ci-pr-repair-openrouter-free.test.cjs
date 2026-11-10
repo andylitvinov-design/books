@@ -80,7 +80,7 @@ test('priced catalog, 429, wrong model, paid usage and invalid reply fail closed
 test('named free coding routes prioritize specialization, not catalog usage popularity',()=>{
  assert.equal(DEFAULT_MODEL,'cohere/north-mini-code:free');
  assert.deepEqual(MODEL_PROFILES.repair.slice(0,3),
-  ['nvidia/nemotron-3-ultra-550b-a55b:free','recursive/flint-v1.0:free',
+  ['recursive/flint-v1.0:free','nvidia/nemotron-3-ultra-550b-a55b:free',
    'cohere/north-mini-code:free']);
  assert.equal(MODEL_PROFILES.architecture[0],'nvidia/nemotron-3-ultra-550b-a55b:free');
  assert.equal(MODEL_PROFILES.visual[0],'nvidia/nemotron-3.5-super-vl:free');
@@ -141,6 +141,29 @@ test('429 and missing or nonzero real response cost stop without retry',async()=
 });
 
 
+test('one rejected provider HTTP response remains classified without retry or leaking body',async()=>{
+ const model=MODEL_PROFILES.repair[0],catalog=response({data:[{...entry(),id:model}]});
+ for(const status of [400,401,402,403,404,422,500,503]){
+  let count=0;
+  const fetchImpl=async()=>++count===1?catalog:response({secret:'PRIVATE_PROVIDER_BODY'},status);
+  await assert.rejects(requestFreePatch({prompt:'safe-source',key:'fixture',fetchImpl}),
+   new RegExp('FREE_AI_OPENROUTER_HTTP_'+status));
+  assert.equal(count,2,'one catalog read and one attempted free inference; no retries');
+ }
+});
+test('repair picks catalog-confirmed free Flint before rejected Nvidia, still caps pricing at zero',async()=>{
+ const names=MODEL_PROFILES.repair;
+ assert.equal(names[0],'recursive/flint-v1.0:free');
+ const catalog={data:[
+  {...entry(),id:names[1]},
+  {...entry(),id:names[0]}
+ ]};
+ assert.equal(chooseVerifiedFreeModel(catalog,{role:'repair',model:'auto'}).model,names[0]);
+ const priced={data:[{...entry({prompt:'0.1',completion:'0'}),id:names[0]},
+   {...entry(),id:names[1]}]};
+ assert.equal(chooseVerifiedFreeModel(priced,{role:'repair',model:'auto'}).model,names[1],
+  'only verified zero-price choices can be selected before inference');
+});
 test('structured OpenRouter text blocks normalize to a bounded patch while unsupported blocks fail closed',()=>{
  const blocks=[
   {type:'text',text:'diff --git a/a.js b/a.js\n'},
