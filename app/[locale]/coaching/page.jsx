@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowRight, Ellipsis, Heart, Headset, House, Clapperboard, Leaf, UserRound } from "lucide-react";
 import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
@@ -9,6 +9,7 @@ import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import { createServiceReviewRepository } from "@/lib/practitioners/reviews";
 import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
 import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
+import { resolveCoachSelection, coachSessionHref } from "@/lib/coaching/persona-registry.mjs";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -157,9 +158,17 @@ function Hero({ locale }) {
   );
 }
 
-export default async function PublicCoachingPage({ params }) {
+export default async function PublicCoachingPage({ params, searchParams }) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
+  // Preserve old persona links and approved guest scheme deep links after moving
+  // the human directory to this route. Only bounded first-party identifiers pass.
+  const query = await searchParams;
+  const personaSelection = resolveCoachSelection(query);
+  if (personaSelection) redirect(coachSessionHref(locale, personaSelection.personaId, personaSelection.settings));
+  if (typeof query?.start === "string" && /^[a-z0-9_-]{1,80}$/.test(query.start)) {
+    redirect("/" + locale + "/coaching/sessions?start=" + encodeURIComponent(query.start));
+  }
   const t = copy(locale);
 
   let practitioners = [];
