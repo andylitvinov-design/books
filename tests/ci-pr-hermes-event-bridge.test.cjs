@@ -63,8 +63,12 @@ test('stale, ambiguous and moved associations fail closed', async () => {
 test('failure diagnostics are bounded and classified without logs or source contents', () => {
   const result = buildDiagnostics([{ name: 'typecheck', conclusion: 'failure', steps: [
     { name: 'tsc --noEmit', conclusion: 'failure' }, { name: 'build', conclusion: 'success' }
-  ] }]);
+  ] }], makePR());
   assert.equal(result.category, 'TYPESCRIPT');
+  assert.equal(result.classification.schema, 'HH_CI_ERROR_CLASSIFICATION_V1');
+  assert.equal(result.classification.reason_code, 'FAILED_TYPESCRIPT_STEP');
+  assert.equal(result.classification.source_write_authorized, false);
+  assert.equal(result.classification.execution_authorized, false);
   assert.deepEqual(result.failedJobs, ['typecheck']);
   assert.deepEqual(result.failedSteps, ['typecheck / tsc --noEmit']);
 });
@@ -108,6 +112,7 @@ test('bridge sends GitHub OIDC-authenticated event to the fixed Commander inbox 
   assert.equal(request.options.headers.authorization, 'Bearer ' + 'x'.repeat(180));
   assert.equal(request.options.headers['x-hermes-secret'], undefined);
   assert.equal(JSON.parse(request.options.body).diagnostics.category, 'TYPESCRIPT');
+  assert.equal(JSON.parse(request.options.body).diagnostics.classification.ruleset_version, '1.1.0');
   assert.equal(result.accepted, true);
   assert.equal(result.prNumber, 44);
   assert.equal(result.inboxId, 'abc');
@@ -133,7 +138,58 @@ test('specialist gate failures are not misclassified as test failures by the sub
   ]);
   assert.equal(result.category, 'UNKNOWN');
   assert.deepEqual(result.failedJobs, ['hh-specialist', 'hh-merge-check']);
-  assert.equal(buildDiagnostics([{name:'unit-tests',conclusion:'failure'}]).category,'TEST_FAILURE');
-  assert.equal(buildDiagnostics([{name:'vitest',conclusion:'failure'}]).category,'TEST_FAILURE');
-  assert.equal(buildDiagnostics([{name:'typescript-check',conclusion:'failure'}]).category,'TYPESCRIPT');
+  assert.equal(buildDiagnostics([{name:'unit-tests',conclusion:'failure'}],makePR()).category,'TEST_FAILURE');
+  assert.equal(buildDiagnostics([{name:'vitest',conclusion:'failure'}],makePR()).category,'TEST_FAILURE');
+  assert.equal(buildDiagnostics([{name:'jest',conclusion:'failure'}],makePR()).category,'TEST_FAILURE');
+  assert.equal(buildDiagnostics([{name:'typescript-check',conclusion:'failure'}],makePR()).category,'TYPESCRIPT');
+  assert.equal(buildDiagnostics([{name:'typescript_build',conclusion:'failure'}],makePR()).category,'TYPESCRIPT');
+  assert.equal(buildDiagnostics([{name:'TypeScript compile',conclusion:'failure'}],makePR()).category,'TYPESCRIPT');
+});
+
+
+test('event bridge uses the shared 13-family classifier and keeps policy precedence diagnostic-only',()=>{
+ const cases=[
+  {step:'Secret scan failed',category:'SECURITY',status:'MANUAL_REQUIRED'},
+  {step:'Resource not accessible by integration',category:'ACCESS_CONFIG',status:'WAITING_INPUT'},
+  {step:'Unmerged paths detected',category:'MERGE_CONFLICT',status:'MANUAL_REQUIRED'},
+  {step:'BASE_ADVANCED production-base mismatch',category:'BASE_ADVANCED',status:'REROUTED'},
+  {step:'Runner startup_failure',conclusion:'startup_failure',category:'INFRASTRUCTURE',status:'RETRY_SCHEDULED'},
+  {step:'Prompt missing; executor not invoked',category:'AUTOMATION_PROCESS',status:'REROUTED'},
+  {step:'OpenRouter model response invalid',category:'AI_EXECUTOR',status:'REROUTED'},
+  {step:'Supabase schema mismatch',category:'INTEGRATION',status:'REROUTED'},
+  {step:'TypeScript check',category:'TYPESCRIPT',status:'REROUTED'},
+  {step:'Run WebKit E2E tests',category:'TEST_FAILURE',status:'REROUTED'},
+  {step:'Cannot find module ./missing',category:'SOURCE_CODE',status:'REROUTED'},
+  {step:'Opaque proprietary action',category:'UNKNOWN',status:'UNCLASSIFIED'}
+ ];
+ for(const item of cases){
+  const diagnostics=buildDiagnostics([{name:'diagnostic',conclusion:item.conclusion||'failure',
+    steps:[{name:item.step,conclusion:item.conclusion||'failure'}]}],makePR());
+  assert.equal(diagnostics.category,item.category,item.step);
+  assert.equal(diagnostics.classification.recommended_status,item.status,item.step);
+  assert.equal(diagnostics.classification.status,'DIAGNOSTIC_ONLY',item.step);
+  assert.equal(diagnostics.classification.source_write_authorized,false,item.step);
+  assert.equal(diagnostics.classification.execution_authorized,false,item.step);
+  assert.ok(diagnostics.classification.responsible_role,item.step);
+ }
+});
+
+test('event bridge cannot infer conflict from green jobs or stale labels',()=>{
+ const green=buildDiagnostics([{name:'merge-tree',conclusion:'success',steps:[
+   {name:'Unmerged paths',conclusion:'success'}]}],makePR({labels:[{name:'hh:conflict-repair-needed'}]}));
+ assert.equal(green.category,'UNKNOWN');
+ assert.equal(green.classification.retry.allowed,false);
+});
+
+test('event bridge preserves exact live dirty mergeability for conflict classification',()=>{
+ const liveDirty=makePR({mergeable:false,mergeable_state:'dirty'});
+ const exact=JSON.parse(JSON.stringify(liveDirty));
+ const { exactPullRequestLink }=require('../scripts/ci-pr-hermes-event-bridge.cjs');
+ const snapshot=exactPullRequestLink(exact);
+ assert.equal(snapshot.mergeable,false);
+ assert.equal(snapshot.mergeable_state,'dirty');
+ const result=buildDiagnostics([{name:'merge-check',conclusion:'failure',steps:[]}],snapshot);
+ assert.equal(result.category,'MERGE_CONFLICT');
+ assert.equal(result.classification.responsible_role,'semantic-conflict-resolver');
+ assert.equal(result.classification.retry.allowed,false);
 });
