@@ -7,7 +7,7 @@
 const crypto=require('node:crypto');
 const SHA=/^[a-f0-9]{40}$/i;
 const TASK=/^[a-f0-9]{32}$/i;
-const FREE_MODEL_ID=/^[A-Za-z0-9][A-Za-z0-9_.-]*\\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/;
+const FREE_MODEL_ID=/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/;
 const POLICY='HH_PR_AUTOMATION_CANONICAL_V1';
 const REPO='andylitvinov-design/books';
 const SKILLS=Object.freeze({
