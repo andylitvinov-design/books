@@ -1246,7 +1246,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const optionCountBeforeAddition=await phraseRows.count();
       assert.ok(countBeforeAddition>=5,"approved phrase selection remains above the five-phrase minimum");
       assert.ok(countBeforeAddition<10,"an additional phrase can be selected below the hard maximum");
-      await unselectedToggle.click();
+      if(engine==="webkit")await unselectedToggle.tap();else await unselectedToggle.click();
       await expect(phraseEditor.locator(`[data-video-idea-select="${unselectedIndex}"]`)).toHaveAttribute('aria-pressed','true');
       await expect(montageCountLabel).toContainText(`${countBeforeAddition+1} / ${optionCountBeforeAddition}`);
       assert.ok(countBeforeAddition+1<=10,"adding a phrase never exceeds the ten-phrase export limit");
@@ -1255,7 +1255,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator('[data-video-live-audio]')).toContainText("holistic-house-hypno-audio.wav");
       // A removed spoken phrase must block stale WAV reuse or detach it before export.
       // The exact approved text remains the safety boundary; no silent reuse is allowed.
-      await spokenToggle.click();
+      if(engine==="webkit")await spokenToggle.tap();else await spokenToggle.click();
       await expect(spokenToggle).toHaveAttribute('aria-pressed','false');
       // Montage Text owns phrase selection. Its current, visible release
       // contract is a reapproval notice plus a disabled Create action; the
