@@ -190,6 +190,8 @@ test('coaching report storage enforces owner RLS, immutable versions and deletio
     await db.query('insert into auth.users(id,email) values($1,$2)',[C,'coaching-storage@example.invalid'])
     await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[SC,C])
     await db.query("insert into app.accounts(id,status,onboarding_state) values($1,'active','active')",[C])
+    await assert.rejects(()=>rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_action_items(id,goal_id,account_id,description_ciphertext) values($1,$2,$3,'synthetic-cipher')",[randomUUID(),randomUUID(),C])),err=>err.code==='23503')
+    let ownedAreaId,ownedGoalId
     await rawAs(c,'hh_app_backend',async client=>{
       const cSession='30000000-0000-4000-8000-000000000009'
       await client.query("insert into app_private.coaching_session_records(id,account_id,scheme_key,model_key,status,current_phase,prompt_version,method_version,persona_version,idempotency_key,completed_at) values($1,$2,'grow_quick_v1','grow_v1','completed','complete','unknown','unknown','unknown',$1,now())",[cSession,C])
@@ -197,9 +199,26 @@ test('coaching report storage enforces owner RLS, immutable versions and deletio
       await client.query("insert into app_private.coaching_reports(id,account_id,session_id,authorship,schema_version,locale,status,report_ciphertext,evidence_manifest_ciphertext,content_hash,current_revision,confirmed_at) values($1,$2,$3,'ai','test','en','confirmed',$4,$4,$5,1,now())",[reportId,C,cSession,'x'.repeat(128),'a'.repeat(64)])
       await client.query("insert into app_private.coaching_report_versions(id,report_id,account_id,revision,report_ciphertext,evidence_manifest_ciphertext,content_hash,change_reason,editor_kind) values($1,$2,$3,1,$4,$4,$5,'client_confirmation','client')",[versionId,reportId,C,'x'.repeat(128),'a'.repeat(64)])
       await client.query("insert into app_private.coaching_report_receipts(account_id,operation_id,report_id,report_revision,request_fingerprint,state) values($1,$2,$3,1,$4,'saved')",[C,operationId,reportId,'a'.repeat(64)])
+      const planId=randomUUID(),areaId=randomUUID(),goalId=randomUUID(),actionId=randomUUID()
+      ownedAreaId=areaId;ownedGoalId=goalId
+      await client.query('insert into app_private.coaching_life_plans(id,account_id) values($1,$2)',[planId,C])
+      await client.query("insert into app_private.coaching_life_plan_areas(id,plan_id,account_id,area_key,source_report_id) values($1,$2,$3,'body_health',$4)",[areaId,planId,C,reportId])
+      await client.query("insert into app_private.coaching_goals(id,area_id,account_id,source_session_id,source_report_id,title_ciphertext,idempotency_key) values($1,$2,$3,$4,$5,'synthetic-cipher',$1)",[goalId,areaId,C,cSession,reportId])
+      await client.query("insert into app_private.coaching_action_items(id,goal_id,account_id,source_session_id,source_report_id,description_ciphertext) values($1,$2,$3,$4,$5,'synthetic-cipher')",[actionId,goalId,C,cSession,reportId])
     })
+    // Privileged writes still cannot commit child references owned by another account.
+    for(const [sql,params] of [
+      ["insert into app_private.coaching_goals(id,area_id,account_id,title_ciphertext,idempotency_key) values($1,$2,$3,'synthetic-cipher',$1)",[randomUUID(),ownedAreaId,A]],
+      ["insert into app_private.coaching_action_items(id,goal_id,account_id,description_ciphertext) values($1,$2,$3,'synthetic-cipher')",[randomUUID(),ownedGoalId,A]],
+    ]){
+      await db.query('begin')
+      try{
+        await db.query(sql,params)
+        await assert.rejects(db.query('commit'),err=>err.code==='23503')
+      }finally{await db.query('rollback')}
+    }
     await db.query('delete from auth.users where id=$1',[C])
-    for(const name of ['coaching_reports','coaching_report_versions','coaching_report_receipts'])
+    for(const name of ['coaching_reports','coaching_report_versions','coaching_report_receipts','coaching_life_plans','coaching_life_plan_areas','coaching_goals','coaching_action_items'])
       assert.equal((await db.query('select * from app_private.'+name+' where account_id=$1',[C])).rowCount,0)
   }finally{await db.end()}
 })
