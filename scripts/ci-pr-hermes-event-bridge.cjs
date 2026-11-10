@@ -4,6 +4,7 @@ const REPO = 'andylitvinov-design/books';
 const BASE = 'codex/public-book-library';
 const FAILURES = new Set(['failure', 'timed_out', 'startup_failure']);
 const SHA = /^[a-f0-9]{40}$/i;
+const { classifyRedCiError } = require('./ci-pr-red-ci-classifier.cjs');
 
 function exactPullRequestLink(pr) {
   if (!pr || pr.state !== 'open' || pr.draft ||
@@ -60,7 +61,7 @@ async function resolveExactPR({ github, owner, repo, workflowRun }) {
   return { ok: true, pullRequest: exact[0] };
 }
 
-function buildDiagnostics(jobs) {
+function buildDiagnostics(jobs, pr) {
   const failed = (Array.isArray(jobs) ? jobs : []).filter((job) =>
     FAILURES.has(job?.conclusion));
   const failedJobs = failed.map((job) => String(job.name || 'unnamed-job').slice(0, 160));
@@ -68,19 +69,29 @@ function buildDiagnostics(jobs) {
     .filter((step) => FAILURES.has(step?.conclusion))
     .map((step) => String(job.name || 'unnamed-job').slice(0, 90) + ' / ' +
       String(step.name || 'unnamed-step').slice(0, 90))).slice(0, 10);
-  const joined = [...failedJobs, ...failedSteps].join(' ').toLowerCase();
-  const tokens = new Set(joined.split(/[^a-z0-9]+/).filter(Boolean));
-  const hasTypeScript = tokens.has('typescript') || tokens.has('tsc') ||
-    (tokens.has('type') && tokens.has('check'));
-  const hasTest = ['test', 'tests', 'testing', 'spec', 'specs',
-    'playwright', 'vitest', 'jest'].some(token => tokens.has(token));
-  const category = /security|secret|sast|dependency audit/.test(joined) ? 'SECURITY'
-    : hasTypeScript ? 'TYPESCRIPT'
-    : hasTest ? 'TEST_FAILURE'
-    : 'UNKNOWN';
-  return { category, failedJobs: failedJobs.slice(0, 10), failedSteps };
+  const decision = classifyRedCiError({ pr, jobs });
+  return {
+    category: decision.category,
+    failedJobs: failedJobs.slice(0, 10),
+    failedSteps,
+    classification: {
+      schema: 'HH_CI_ERROR_CLASSIFICATION_V1',
+      ruleset_version: decision.ruleset_version,
+      category: decision.category,
+      confidence: decision.confidence,
+      reason_code: decision.reason_code,
+      evidence_code: decision.evidence_code,
+      recommended_action: decision.recommended_action,
+      recommended_status: decision.recommended_status,
+      responsible_role: decision.responsible_role,
+      retry: decision.retry,
+      requires_human: decision.requires_human,
+      status: decision.status,
+      source_write_authorized: decision.source_write_authorized,
+      execution_authorized: decision.execution_authorized
+    }
+  };
 }
-
 async function sendWorkflowFailure({
   github, context, core, oidcToken = '', fetchImpl = global.fetch,
   endpoint = 'https://shervdixkaxurnaecioe.supabase.co/functions/v1/agent-commander-private-store-v1/webhooks/github-workflow-run'
@@ -111,7 +122,7 @@ async function sendWorkflowFailure({
   const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
     owner, repo, run_id: workflowRun.id, per_page: 100, filter: 'latest'
   });
-  const diagnostics = buildDiagnostics(jobsResponse.data?.jobs);
+  const diagnostics = buildDiagnostics(jobsResponse.data?.jobs, association.pullRequest);
   const payload = {
     action: 'completed',
     workflow_run: { ...workflowRun, pull_requests: [association.pullRequest] },
