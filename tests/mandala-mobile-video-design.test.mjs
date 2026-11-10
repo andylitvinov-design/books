@@ -523,7 +523,8 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/const activateQuickWorkspace=[\s\S]{0,190}setActiveWorkspace\(id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
-  assert.match(studio,/\{deepHypnoPane\}/);
+  assert.doesNotMatch(studio,/\{deepHypnoPane\}/, "the retired Hypno/Ideas editor is not mounted beside the new Audio workspace");
+  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
   assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
   assert.match(studio,/onPhraseChoose=\{phrase=>\{[\s\S]{0,240}setCatalogPhraseDraft\(phrase\)/,
     "a catalog phrase is staged in the existing editor before affecting the film");
