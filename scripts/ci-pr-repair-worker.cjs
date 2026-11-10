@@ -490,7 +490,7 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
       run_id:context.runId,task_key:receipt.task_key,source:'verified_git_ref',
       new_sha:created.sha,at:new Date().toISOString()}):'';
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
-    'HH Repair Worker: committed verified '+(repairKind==='free_ai'?'free OpenCode/GLM source repair':repairKind==='codex'?'legacy source repair':'targeted ESLint autofix')+' ' + created.sha +
+    'HH Repair Worker: committed verified '+(repairKind==='free_ai'?'free-model source repair':repairKind==='codex'?'legacy source repair':'targeted ESLint autofix')+' ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
     'AutoMerge is allowed only after exact-HEAD required checks pass.'+
     (receipt?'\n'+commentBody({...receipt,state:'PUBLISHED',
