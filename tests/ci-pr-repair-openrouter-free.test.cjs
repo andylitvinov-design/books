@@ -54,6 +54,7 @@ test('only one $0 pinned inference, without fallbacks or write tools',async()=>{
   assert.deepEqual(body.provider,{allow_fallbacks:false,max_price:{prompt:0,completion:0},
     data_collection:'deny'});
   assert.equal(body.model,DEFAULT_MODEL);
+  assert.equal(body.n,1,'one completion choice is requested explicitly');
   assert.equal(body.tools,undefined);
   assert.equal(body.models,undefined);
   assert.equal(calls[1].headers.Authorization,'Bearer test-key');
@@ -173,5 +174,34 @@ test('one zero-cost OpenRouter inference accepts structured text and rejects tru
   await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',fetchImpl:fetch}),
    /TRUNCATED|TOOL_CALL_NOT_ALLOWED/);
   assert.equal(calls,2,'never retries a refused or unsupported completion');
+ }
+});
+
+
+test('OpenRouter text normalizer accepts bounded text envelopes but excludes reasoning and all non-text blocks',()=>{
+ const expected='diff --git a/a.js b/a.js\\n@@ -1 +1 @@\\n-old\\n+new';
+ assert.equal(extractAssistantText({type:'text',text:expected}),expected);
+ assert.equal(extractAssistantText([{type:'reasoning',text:'private reasoning'},
+  {type:'text',text:expected}]),expected);
+ assert.throws(()=>extractAssistantText([{type:'reasoning',text:'only reasoning'}]),/PATCH_RESPONSE_EMPTY/);
+ assert.throws(()=>extractAssistantText({type:'image_url',image_url:{}}),/PATCH_RESPONSE_INVALID_CONTENT/);
+ assert.throws(()=>extractAssistantText([{type:'image_url',image_url:{}}]),/PATCH_RESPONSE_INVALID_BLOCK/);
+});
+
+test('OpenRouter response diagnostics distinguish invalid choices/messages/roles and still fail closed',async()=>{
+ const catalog=response({data:[entry()]});
+ const cases=[
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[]},/PATCH_RESPONSE_INVALID_CHOICE_COUNT/],
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[{}]},/PATCH_RESPONSE_INVALID_MESSAGE/],
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[{message:{role:'user',content:'patch'}}]},/PATCH_RESPONSE_INVALID_ROLE/],
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[{message:{role:'assistant',refusal:'no',content:'patch'}}]},/MODEL_REFUSED/],
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[{finish_reason:'error',message:{role:'assistant',content:'patch'}}]},/PROVIDER_ERROR/],
+  [{model:DEFAULT_MODEL,usage:{cost:0},choices:[{finish_reason:'tool_calls',message:{role:'assistant',content:null}}]},/TOOL_CALL_NOT_ALLOWED/]
+ ];
+ for(const [body,pattern] of cases){
+  let count=0;
+  const fetchImpl=async()=>++count===1?catalog:response(body);
+  await assert.rejects(requestFreePatch({prompt:'safe bounded repair',key:'fixture',fetchImpl}),pattern);
+  assert.equal(count,2,'one catalog and one inference call only');
  }
 });
