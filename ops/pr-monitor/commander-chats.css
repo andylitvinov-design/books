@@ -305,3 +305,23 @@ body.hh-cc-shell.cc-keyboard-active .cc-composer-space{
 @media(prefers-reduced-motion:reduce){
  .cc-composer-space,.cc-voice-toggle{transition:none!important}
 }
+
+.cc-ci-inbox{margin:0 0 14px}
+.cc-ci-inbox .cc-report{padding:12px;margin:8px 0;border:1px solid var(--cc-line,rgba(255,255,255,.12));border-radius:13px}
+.cc-ci-inbox .cc-report p{margin:6px 0;overflow-wrap:anywhere}
+.cc-ci-inbox .cc-report small{display:block;margin-top:7px}
+.cc-ci-inbox .cc-report a{display:inline-block;margin-top:8px}
+.cc-ci-inbox #cc-ci-refresh{min-width:38px;min-height:38px}
+
+/* Unlinked verified CI failures are visible without duplicating reports already in a chat. */
+.cc-ci-inbox{margin:10px 0 13px;padding:11px;border:1px solid #866b8d;border-radius:13px;background:#201d31}
+.cc-ci-inbox-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}
+.cc-ci-inbox-head h3{font-size:13px;margin:0;color:#f3e7ff}
+.cc-ci-inbox-head small{font-size:10px;color:#c8b8d7;text-align:right}
+.cc-ci-events{display:grid;gap:7px}
+.cc-ci-event{padding:10px;border:1px solid #5e5673;border-radius:10px;background:#171a2b}
+.cc-ci-event-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.cc-ci-event-head strong{font-size:12px;color:#f4edff}
+.cc-ci-event-head small,.cc-ci-event-state{font-size:10px;color:#b9b2c7}
+.cc-ci-event-detail{margin:5px 0 0;font-size:11px;line-height:1.4;color:#d4cede;overflow-wrap:anywhere}
+.cc-ci-event a{display:inline-flex;align-items:center;min-height:34px;padding-top:5px;color:#e1c1ff;font-size:11px}

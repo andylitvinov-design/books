@@ -13,8 +13,8 @@
  const STATES={planned:'Запланировано',assigned:'Назначено · не запущено',working:'В работе · по заявлению',
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
- let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null;
- let executorModels=[],executorModelReady=false,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
+ let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null,ciInboxTimer=null,ciInboxBusy=false;
+ let executorModels=[],executorModelReady=false,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false,ciEvents=[];
  const COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app';
  const COUNCIL_PROTOCOL='HH_AI_COUNCIL_BRIDGE_V1';
  let councilFrameReady=false,councilPending=null;
@@ -32,10 +32,29 @@
  const time=s=>{try{return new Date(s).toLocaleString('ru-RU',{dateStyle:'short',timeStyle:'short'})}catch{return '—'}};
  const id=()=>win.crypto.randomUUID();
  const htmlLink=(box,label,url)=>{
-  if(!/^https:\/\/github\.com\/andylitvinov-design\/books\/(?:pull\/\d+|issues\/(?:1419|3128|3890)#issuecomment-\d+)$/.test(url))return;
+  if(!/^https:\/\/github\.com\/andylitvinov-design\/books\/(?:pull\/\d+|actions\/runs\/\d+|issues\/(?:1419|3128|3890)#issuecomment-\d+)$/.test(url))return;
   const a=make('a',null,label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';box.append(a);
  };
- async function request(url,method='GET',body){
+ let ownerRefreshPromise=null;
+ async function refreshOwnerSession(){
+  if(ownerRefreshPromise)return ownerRefreshPromise;
+  ownerRefreshPromise=(async()=>{
+   const controller=new AbortController(),timer=win.setTimeout(()=>controller.abort(),10000);
+   try{
+    const response=await win.fetch('/api/commander-session',{credentials:'same-origin',cache:'no-store',
+     headers:{Accept:'application/json'},signal:controller.signal});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||data.authenticated!==true||data.owner!==true)
+     throw Error(data.error||'Сессия владельца истекла. Войдите через Google повторно.');
+    return data;
+   }catch(error){
+    if(error?.name==='AbortError')throw Error('Не удалось продлить сессию владельца. Повторите проверку.');
+    throw error;
+   }finally{win.clearTimeout(timer)}
+  })();
+  try{return await ownerRefreshPromise}finally{ownerRefreshPromise=null}
+ }
+ async function request(url,method='GET',body,retried=false){
   const controller=new AbortController(),timer=win.setTimeout(()=>controller.abort(),13000);
   let r;
   try{
@@ -46,6 +65,10 @@
    if(error?.name==='AbortError')throw Error('Сервер не ответил за 13 секунд. Повторите проверку соединения.');
    throw error;
   }finally{win.clearTimeout(timer)}
+  if(r.status===401&&!retried&&url!=='/api/commander-session'){
+   await refreshOwnerSession();
+   return request(url,method,body,true);
+  }
   let j;try{j=await r.json()}catch{throw Error('Не удалось прочитать ответ сервера')}
   if(!r.ok)throw Error(j.error||'HTTP '+r.status);return j;
  }
@@ -88,7 +111,40 @@
    if(!run||!['STARTING','RUNNING'].includes(run.status)){win.clearInterval(executionRefreshTimer);executionRefreshTimer=null;}
   },10000);
  }
- const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
+   async function loadCIInbox({silent=false}={}){
+   if(!remote||!authorized||ciInboxBusy)return;
+   ciInboxBusy=true;const box=el('ci-list'),meta=el('ci-meta');
+   if(!silent){box.replaceChildren(make('p','cc-help','Получаю подтверждённые CI-события…'));show('ci-inbox',true);}
+   try{
+    const data=await request(SERVER+'?action=ci_events&limit=30');
+    if(!Array.isArray(data.events))throw Error('Некорректный ответ CI Inbox');
+    const events=data.events.slice(0,30);show('ci-inbox',true);meta.textContent=events.length+' · последние события';box.replaceChildren();
+    if(!events.length){box.append(make('p','cc-help','Подтверждённых CI-событий пока нет.'));return;}
+    for(const event of events){
+     const item=make('article','cc-report'),state=String(event.association_status||'UNMATCHED');
+     const label=state==='MATCHED_CHAT_EVENT_RECORDED'?'Прикреплено к чату':
+      state==='MATCHED_TASK_NO_CHAT'?'Задача найдена · чат не создан':
+      state.startsWith('AMBIGUOUS')?'Неоднозначная привязка · требуется проверка':'Не привязано к чату';
+     item.append(make('strong',null,'PR #'+event.pr_number+' · '+String(event.category||'UNKNOWN')),
+      make('p','cc-help','HEAD '+String(event.head_sha||'').slice(0,12)+' · '+time(event.created_at)),
+      make('p',null,'Упавшие задачи: '+(Array.isArray(event.failed_jobs)?event.failed_jobs.join(', '):'—')),
+      make('p',null,'Упавшие этапы: '+(Array.isArray(event.failed_steps)?event.failed_steps.join('; '):'—')),
+      make('small','cc-help',label+' · '+String(event.conclusion||'failure')));
+     if(typeof event.run_url==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+$/.test(event.run_url)){
+      const a=make('a',null,'Открыть CI run ↗');a.href=event.run_url;a.target='_blank';a.rel='noopener noreferrer';item.append(a);
+     }
+     box.append(item);
+    }
+   }catch(error){if(!silent||!box.childElementCount){show('ci-inbox',true);box.replaceChildren(make('p','cc-help','Inbox временно недоступен: '+String(error.message||error)));}}
+   finally{ciInboxBusy=false;}
+  }
+  function startCIInboxPolling(){
+   if(ciInboxTimer!==null)win.clearInterval(ciInboxTimer);ciInboxTimer=null;
+   if(!remote||!authorized)return;
+   void loadCIInbox({silent:true});
+   ciInboxTimer=win.setInterval(()=>{if(doc.visibilityState!=='hidden')void loadCIInbox({silent:true});},120000);
+  }
+const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
  const to64=a=>{let s='';for(let i=0;i<a.length;i+=8192)s+=String.fromCharCode(...a.subarray(i,i+8192));return win.btoa(s)};
  /* Non-extractable on-device key; all chat APIs still require verified owner session. */
  const DEVICE_DB='hh.commander.device-key.v1';
@@ -735,11 +791,45 @@ async function update(e){
    info('Открыт один чат сохранённой задачи. Исполнитель ещё не запущен.');
   }catch(err){info('Не удалось связать задачу с чатом: '+String(err.message||err))}
  }
+ function renderCiEvents(){
+  const section=el('ci-inbox'),box=el('ci-events');
+  if(!section||!box)return;
+  const visible=ciEvents.filter(item=>item.association_status!=='MATCHED_CHAT_EVENT_RECORDED').slice(0,5);
+  section.hidden=!visible.length;box.replaceChildren();
+  const categories={TYPESCRIPT:'TypeScript',TEST_FAILURE:'Тесты',SECURITY:'Безопасность',
+   INFRASTRUCTURE:'Инфраструктура',MERGE_CONFLICT:'Конфликт',BASE_ADVANCED:'Обновление базы',UNKNOWN:'Требует классификации'};
+  for(const item of visible){
+   const card=make('article','cc-ci-event');
+   const heading=make('div','cc-ci-event-head');
+   heading.append(make('strong',null,'PR #'+item.pr_number+' · '+(categories[item.category]||item.category||'CI failure')),
+    make('small',null,time(item.created_at)));
+   card.append(heading);
+   const jobs=Array.isArray(item.failed_jobs)?item.failed_jobs:[];
+   const steps=Array.isArray(item.failed_steps)?item.failed_steps:[];
+   if(jobs.length)card.append(make('p','cc-ci-event-detail','Проверки: '+jobs.join(', ')));
+   if(steps.length)card.append(make('p','cc-ci-event-detail','Этапы: '+steps.slice(0,4).join('; ')));
+   const state=item.association_status==='AMBIGUOUS_TASKS'||item.association_status==='AMBIGUOUS_TASK_CHATS'
+    ?'Нужно уточнить привязку' : item.association_status==='MATCHED_TASK_NO_CHAT'
+     ?'Задача есть, чат ещё не создан' : 'Не найден связанный рабочий чат';
+   card.append(make('small','cc-ci-event-state',state+' · не является подтверждением исправления'));
+   htmlLink(card,'Открыть CI run',item.run_url);
+   box.append(card);
+  }
+ }
+ async function loadCiEvents(){
+  if(!remote||!authorized)return;
+  try{
+   const result=await request(SERVER+'?action=ci_events&limit=10');
+   ciEvents=Array.isArray(result.events)?result.events:[];
+  }catch{ciEvents=[];}
+  renderCiEvents();
+ }
  async function listRemote(){
   const r=await request(SERVER+'?action=list');
   if(!Array.isArray(r.chats))throw Error('Сервер вернул некорректный список рабочих чатов.');
   chats=r.chats;
   renderList();if(r.incomplete)info('Индекс серверных чатов неполон: лимит GitHub API.');
+  await loadCiEvents();
   return r;
  }
  async function authenticated(){
@@ -769,7 +859,7 @@ async function update(e){
   show('free-model-status',!aiReady);
   if(remote){
    await loadExecutorModels();
-   show('board',true);
+   show('board',true);startCIInboxPolling();
    try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
    catch(e){
     // A transient API failure must not silently replace server chats with a local vault.
@@ -821,6 +911,7 @@ async function update(e){
  el('create-form').addEventListener('submit',create);el('metadata-form').addEventListener('submit',update);
  el('chat-form').addEventListener('submit',send);el('note').addEventListener('click',addNote);
  el('check-prs').addEventListener('click',checkPRs);el('load-reports').addEventListener('click',reportList);
+ el('ci-refresh').addEventListener('click',()=>void loadCIInbox());
  el('handoff').addEventListener('click',handoff);
  el('verify-chat').addEventListener('click',verifySavedThread);
  el('search').addEventListener('input',renderList);el('filter').addEventListener('change',renderList);
@@ -932,8 +1023,11 @@ async function update(e){
  }
 
  win.addEventListener('message',event=>{void receiveCouncilMessage(event)});
- request(AI+'?action=status').then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
-  authorized=false;show('login',true);info('Продолжите через Google — отдельный код PR Monitor не нужен.');
-   win.HHGoogleOwnerSSO?.mount(el('google-owner'),s=>info(s));
+ request('/api/commander-session').then(s=>{
+  if(s.authenticated!==true||s.owner!==true)throw Error('OWNER_SESSION_REQUIRED');
+  return request(AI+'?action=status');
+ }).then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
+  authorized=false;show('login',true);info('Продолжите через существующий Google-вход Holistic House. Повторный вход не потребуется, пока сессия владельца действительна.');
+  win.HHGoogleOwnerSSO?.mount(el('google-owner'),s=>info(s));
  });
 })(window,document);

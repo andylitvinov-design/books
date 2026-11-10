@@ -4,12 +4,12 @@
 <meta name="robots" content="noindex,nofollow,noarchive"><meta name="color-scheme" content="dark">
 <title>Рабочие чаты · Agent Commander · Holistic House</title>
 <link rel="stylesheet" href="/commander-shell.css?v=20261107-cc-v1">
-<link rel="stylesheet" href="/commander-chats.css?v=20261110-recent-voice-composer-v1">
+<link rel="stylesheet" href="/commander-chats.css?v=20261110-ci-inbox-v1">
 <link rel="stylesheet" href="/commander-codex.css?v=20261108-v2">
 <link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
 <script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
 <script src="/owner-google-signin.js?v=20261107-v1" defer></script>
-<script src="/commander-chats.js?v=20261110-recent-voice-composer-v1" defer></script>
+<script src="/commander-chats.js?v=20261110-ci-inbox-v1" defer></script>
 <script src="/commander-codex.js?v=20261108-v2" defer></script>
 </head><body class="hh-cc-shell">
 <main id="cc-chat-root" class="cc-chats-page">
@@ -38,11 +38,20 @@
 <div class="cc-hidden-stats" hidden aria-hidden="true">
   <span id="cc-count">0</span><span id="cc-active-count">0</span><span id="cc-blocked-count">0</span>
 </div>
+<section id="cc-ci-inbox" class="cc-reports cc-ci-inbox" aria-label="CI Inbox" hidden>
+  <div class="cc-heading"><h2>CI Inbox <small id="cc-ci-meta">Ошибки PR и Repair</small></h2><button type="button" id="cc-ci-refresh" aria-label="Обновить события CI">⟳</button></div>
+  <p class="cc-help">Подтверждённые события GitHub Actions. Неоднозначные события остаются здесь и не прикрепляются к случайному чату.</p>
+  <div id="cc-ci-list"></div>
+</section>
 <section id="cc-history" class="cc-history" aria-label="Последние чаты">
   <div class="cc-history-toolbar">
     <h2>Недавние чаты <small id="cc-list-meta"></small></h2>
     <button type="button" id="cc-refresh" aria-label="Обновить список чатов" title="Обновить">⟳</button>
   </div>
+  <section id="cc-ci-inbox" class="cc-ci-inbox" hidden aria-label="Ошибки CI без рабочего чата">
+    <div class="cc-ci-inbox-head"><h3>Ошибки CI</h3><small>Требуют привязки к рабочей задаче</small></div>
+    <div id="cc-ci-events" class="cc-ci-events"></div>
+  </section>
   <div id="cc-chat-list" class="cc-chat-list"></div>
   <details id="cc-history-all" class="cc-history-all">
     <summary>Все чаты и поиск</summary>

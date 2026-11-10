@@ -44,7 +44,9 @@ test('chat adapter uses only the owner-verified Supabase private store',()=>{
  assert.doesNotMatch(drafts,/api\.github\.com|HH_PM_GITHUB_WRITE_TOKEN/);
  assert.match(helper,/agent-commander-private-store-v1/);
  assert.match(helper,/HH_PM_SUPABASE_PUBLISHABLE_KEY/);
- assert.match(session,/HttpOnly/);assert.match(session,/SameSite=Lax/);
+ assert.match(session,/HttpOnly/);assert.match(session,/SameSite=Strict/);
+ assert.match(session,/REFRESH_COOKIE/);
+ assert.ok(session.includes('/auth/v1/token?grant_type=refresh_token'));
  assert.match(session,/callStore/);
 });
 test('chat UI keeps encrypted local recovery and does not claim assignment is execution',()=>{
@@ -81,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-recent-voice-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-ci-inbox-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -119,7 +121,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-recent-voice-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-ci-inbox-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -208,7 +210,7 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-recent-voice-composer-v1'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-ci-inbox-v1'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -283,6 +285,7 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
    const action=target.searchParams.get('action');
    const body=options.body?JSON.parse(options.body):{};
    network.push({path:target.pathname,action,method:options.method||'GET'});
+   if(target.pathname==='/api/commander-session')return response({authenticated:true,owner:true,privateStoreConfigured:true,expiresAt:2000000000});
    if(target.pathname==='/api/pm-agent-chat'){
     if(action==='status')return response({authenticated:true,modes:{local:true,openrouter:false}});
     if(action==='chat')return response({reply:'Синтетический ответ советника',model:'local'});
@@ -416,4 +419,47 @@ test('verified GitHub CI reports carry the top-level source URL consumed by the 
  const render=src('commander-chats.js');
  assert.match(edge,/kind: "github_report"[\s\S]{0,1200}url: event\.run_url/);
  assert.match(render,/if\(msg\.kind==='github_report'\)htmlLink\(c,'Источник GitHub',msg\.url\)/);
+});
+
+
+
+test('Director silently refreshes the existing Google owner session before asking for another login',()=>{
+ const js=src('commander-chats.js');
+ const start=js.lastIndexOf("request('/api/commander-session')");
+ assert.ok(start>=0,'startup checks the existing monitor session first');
+ const boot=js.slice(start,start+900);
+ assert.match(boot,/request\(AI\+'\?action=status'\)/);
+ assert.match(js,/async function refreshOwnerSession\(\)/);
+ assert.match(js,/r\.status===401&&!retried/);
+ assert.match(js,/return request\(url,method,body,true\)/);
+ assert.match(js,/ownerRefreshPromise/);
+});
+
+test('owner-only global CI Inbox is visible and polls independently of opening or closing chats',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),api=src('api/commander-chats.js');
+ for(const id of ['cc-ci-inbox','cc-ci-meta','cc-ci-list','cc-ci-refresh'])assert.ok(html.includes('id="'+id+'"'),id);
+ assert.match(js,/SERVER\+'\?action=ci_events&limit=30'/);
+ assert.match(js,/function startCIInboxPolling\(\)/);
+ assert.match(js,/120000\)/);
+ assert.match(js,/doc\.visibilityState!=='hidden'/);
+ assert.match(js,/association_status/);
+ assert.match(js,/event\.head_sha/);assert.match(js,/event\.failed_jobs/);assert.match(js,/event\.failed_steps/);
+ assert.match(api,/name==='ci_events'/);assert.match(api,/commander_list_ci_events/);
+ assert.match(api,/callStore\(req,action,body/);
+ assert.doesNotMatch(api,/service_role|SUPABASE_DB_URL|HERMES_SHARED_SECRET/);
+ const poll=js.slice(js.indexOf('function startCIInboxPolling'),js.indexOf('const from64='));
+ assert.doesNotMatch(poll,/startReportPolling/);
+});
+
+test('unlinked verified CI events have a compact chat-board inbox and open the exact GitHub run',()=>{
+ const js=src('commander-chats.js'),html=src('chats.html'),css=src('commander-chats.css');
+ assert.match(js,/async function loadCiEvents\(\)/);
+ assert.match(js,/action=ci_events&limit=10/);
+ assert.match(js,/association_status!=='MATCHED_CHAT_EVENT_RECORDED'/);
+ assert.match(js,/htmlLink\(card,'Открыть CI run',item\.run_url\)/);
+ assert.match(js,/actions\\/runs\\/\\d\+/);
+ assert.match(html,/id="cc-ci-inbox"/);
+ assert.match(html,/id="cc-ci-events"/);
+ assert.match(css,/\.cc-ci-inbox/);
+ assert.match(js,/await loadCiEvents\(\)/);
 });
