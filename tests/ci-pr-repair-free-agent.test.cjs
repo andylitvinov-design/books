@@ -404,3 +404,59 @@ test('typecheck targets exact-HEAD changed source only and rejects ambiguous or 
  assert.match(excerpt.content,/longLine499/);
  assert.ok(Buffer.byteLength(excerpt.content,'utf8')<18000);
 });
+
+test('exact JSON line proposal constructs only a trusted single-file git-applicable patch',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const cp=require('node:child_process');
+ const {exactJsonSingleLinePatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'hh-json-line-patch-'));
+ const file='components/site-navigation.tsx';
+ const original='const first = true;\n  const value = brokenReference;\nconst last = 3;\n';
+ try{
+  fs.mkdirSync(path.join(root,'components'));
+  fs.writeFileSync(path.join(root,file),original);
+  const git=(...args)=>cp.execFileSync('git',args,{cwd:root});
+  git('init','-q');git('add','--',file);
+  git('-c','user.name=Fixture','-c','user.email=test@invalid.example','commit','-qm','base');
+  const scope={files:[file],sha:'a'.repeat(40)};
+  const proposed=JSON.stringify({file,old:'  const value = brokenReference;',
+    new:'  const value = "fixed";'});
+  const patch=exactJsonSingleLinePatch(proposed,scope,f=>fs.readFileSync(path.join(root,f),'utf8'));
+  assert.match(patch,/^diff --git a\/components\/site-navigation.tsx b\/components\/site-navigation.tsx/);
+  assert.match(patch,/\n@@ -1,3 \+1,3 @@\n const first = true;/);
+  const patchFile=path.join(root,'proposed.patch');
+  fs.writeFileSync(patchFile,patch);
+  assert.equal(cp.spawnSync('git',['apply','--check','--whitespace=error',patchFile],{cwd:root}).status,0);
+  git('apply','--whitespace=error',patchFile);
+  assert.equal(fs.readFileSync(path.join(root,file),'utf8'),
+    original.replace('brokenReference','"fixed"'));
+  assert.equal(cp.spawnSync('git',['diff','--check'],{cwd:root}).status,0);
+ }finally{fs.rmSync(root,{force:true,recursive:true});}
+});
+test('JSON proposal never accepts fuzzy old content, multiple files or privileged paths',()=>{
+ const {exactJsonSingleLinePatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const file='components/site-navigation.tsx',scope={files:[file]};
+ const old='const result = unsafeReference;';
+ const source='const before = true;\n'+old+'\nconst after = false;\n';
+ const read=()=>source;
+ const base={file,old,new:'const result = "safe";'};
+ const patch=obj=>exactJsonSingleLinePatch(JSON.stringify(obj),scope,read);
+ assert.ok(patch(base));
+ for(const invalid of [
+  {...base,file:'components/other.tsx'},
+  {...base,file:'app/api/private.ts'},
+  {...base,old:'result = unsafeReference;'},
+  {...base,old:old+' '},
+  {...base,old,extra:true},
+  {...base,new:'const result = "safe";\nconsole.log("extra")'},
+  {...base,new:old},
+  {...base,old:'const result = missing;'},
+ ])assert.equal(patch(invalid),null);
+ assert.equal(exactJsonSingleLinePatch(String.fromCharCode(96).repeat(3)+'json\n'+JSON.stringify(base)+'\n'+String.fromCharCode(96).repeat(3),scope,read),null);
+ assert.equal(exactJsonSingleLinePatch(JSON.stringify(base),
+  {files:[file,'components/public-card.tsx']},read),null);
+ assert.equal(exactJsonSingleLinePatch(JSON.stringify(base),scope,
+  ()=>source+source),null);
+ assert.equal(exactJsonSingleLinePatch(JSON.stringify(base),scope,
+  ()=>'no newline'),null);
+});
