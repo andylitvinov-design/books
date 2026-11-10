@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.match(html,/commander-chats\.js\?v=20261109-retry-v1/);
+ assert.ok(html.includes('commander-chats.js?v=20261110-ai-council-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
