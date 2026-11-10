@@ -1,4 +1,4 @@
-// Synced from production Supabase Edge Function v19. Keep this repository copy deployable and authoritative.
+// Canonical first-party private store. OpenRouter jobs are queued in the existing owner-scoped ledger.
 // Agent Commander private task/chat store. A valid Supabase user JWT and
 // business_brain.owner_access row are required for every request.
 import postgres from "npm:postgres@3.4.5";
@@ -15,58 +15,6 @@ const uuid = v => typeof v==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]
 const clean = (v,n) => typeof v==="string" ? v.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,n) : "";
 const number = v => Number.isSafeInteger(Number(v)) && Number(v)>0 && Number(v)<100000 ? Number(v) : null;
 
-const DIRECTOR_RUN_SCHEMA="HH_AGENT_DIRECTOR_RUN_V1";
-const DIRECTOR_STATES=new Set(["COMPLETED","BLOCKED"]);
-const DIRECTOR_ORIGIN="https://holistichouse.vercel.app";
-async function ownedDirectorCall(req,data){
- const authorization=req.headers.get("authorization")||"";
- if(!/^Bearer [A-Za-z0-9._-]{120,8000}$/.test(authorization))throw Error("OWNER_TOKEN_NOT_AVAILABLE");
- const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),27000);
- try{
-  const response=await fetch(DIRECTOR_ORIGIN+"/api/agent-director/commander-run",{
-   method:"POST",redirect:"error",cache:"no-store",signal:ctl.signal,
-   headers:{authorization,"content-type":"application/json","accept":"application/json"},body:JSON.stringify(data)});
-  const raw=await response.text();if(raw.length>8000)throw Error("AGENT_DIRECTOR_RECEIPT_TOO_LARGE");
-  let value;try{value=JSON.parse(raw)}catch{throw Error("AGENT_DIRECTOR_RECEIPT_INVALID_JSON")}
-  if(!response.ok)throw Error("AGENT_DIRECTOR_HTTP_"+response.status);
-  return value;
- }finally{clearTimeout(timer)}
-}
-function trustedOwnedDirectorReceipt(value,run){
- if(!value||value.schema!==DIRECTOR_RUN_SCHEMA||value.runId!==run.run_id||value.chatId!==run.chat_id||
-  value.ownerId!==run.owner_id||!DIRECTOR_STATES.has(value.status)||
-  typeof value.agentStarted!=="boolean"||typeof value.executionVerified!=="boolean"||
-  (value.status==="COMPLETED"&&(!value.agentStarted||!value.executionVerified||
-    typeof value.result!=="string"||!value.result.trim()))||
-  (value.status==="BLOCKED"&&(value.executionVerified||value.agentStarted))||value.sourceWrite!==null||
-  value.proofLevel!==(value.status==="COMPLETED"?"AGENT_DIRECTOR_READ_ONLY_RESPONSE":"NOT_STARTED"))
-  throw Error("AGENT_DIRECTOR_RECEIPT_NOT_VERIFIED");
- return {status:value.status,reasonCode:clean(value.reasonCode,110)||null,
-  agentStarted:value.agentStarted,executionVerified:value.executionVerified,model:clean(value.model,120)||null,
-  result:value.status==="COMPLETED"?clean(value.result,1800):"",sourceWrite:null,proofLevel:value.proofLevel};
-}
-async function saveOwnedDirectorReceipt(db,ownerId,chatId,runId,report){
- const selected=await q(db,"select request_payload from business_brain.commander_execution_runs where run_id=$1::uuid and owner_id=$2::uuid and chat_id=$3::uuid limit 1",[runId,ownerId,chatId]);
- if(!selected.length||selected[0].request_payload?.confirmGitHubWrite===true)throw Error("AGENT_DIRECTOR_RUN_PROVENANCE_MISMATCH");
- const done=report.status==="COMPLETED";
- const receipt={schema:DIRECTOR_RUN_SCHEMA,dispatchAttempted:true,agentStarted:report.agentStarted,
-  executionVerified:report.executionVerified,model:report.model,status:report.status,sourceWrite:null,
-  result:report.result,proofLevel:report.proofLevel,checkedAt:new Date().toISOString()};
- const rows=await q(db,"update business_brain.commander_execution_runs set status=$1,reason_code=$2,receipt=$3::text::jsonb,started_at=case when $4::boolean then coalesce(started_at,now()) else started_at end,completed_at=case when $5::boolean then coalesce(completed_at,now()) else completed_at end,updated_at=now() where run_id=$6::uuid and owner_id=$7::uuid and chat_id=$8::uuid and status not in ('COMPLETED','FAILED','CANCELLED') returning run_id",
-  [report.status,report.reasonCode||"AGENT_DIRECTOR_"+report.status,jsonbText(receipt),report.agentStarted,done,runId,ownerId,chatId]);
- if(!rows.length)return report;
- const eventId=await stableScopeId(ownerId,"agent-director:"+runId+":final");
- const text=done?"Ответ Agent Director (собственная модель, read-only): "+report.result+"\nИсходный код не менялся. GitHub PR, CI и LIVE не подтверждены.":
-  "Запуск Agent Director заблокирован: "+(report.reasonCode||"OWNED_MODEL_RUNTIME_NOT_CONFIGURED")+".";
- const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"agent_final",author:"Agent Director",
-  text:clean(text,1800),status:report.status,model:report.model,sourceWrite:null,sourceVerified:false,
-  proofLevel:report.proofLevel,createdAt:new Date().toISOString()};
- await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false) on conflict(event_id) do nothing",
-  [eventId,chatId,ownerId,jsonbText(event)]);
- await q(db,"update business_brain.commander_chats set execution_state=$1,updated_at=now() where owner_id=$2::uuid and chat_id=$3::uuid",
-  [done?"COMPLETED_UNVERIFIED":"BLOCKED",ownerId,chatId]);
- return report;
-}
 const reply = (status,body,origin) => new Response(JSON.stringify(body),{
   status,headers:{
     "content-type":"application/json; charset=utf-8",
@@ -586,22 +534,22 @@ async function handler(req){
       };
       const modelId=typeof body.modelId==="string"&&body.modelId.length?clean(body.modelId,120):"owned-default";
       const writeConfirmed=body.confirmGitHubWrite===true;
-      const canDispatch=executor==="local"&&!writeConfirmed;
+      const openRouterReady=Boolean(Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY"));
+      const canDispatch=executor==="local"&&!writeConfirmed&&openRouterReady;
       let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
-      if(executor==="local")reasonCode=writeConfirmed?"AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED":"AGENT_DIRECTOR_DISPATCH_REQUESTED";
+      if(executor==="local")reasonCode=writeConfirmed?"GITHUB_WRITE_REQUIRES_SEPARATE_APPROVAL":openRouterReady?"OPENROUTER_WORKER_QUEUED":"OPENROUTER_API_KEY_NOT_CONFIGURED";
       else if(executor==="hermes"||executor==="openrouter")reasonCode="EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY";
       else if(executor==="codex")reasonCode="CODEX_LOCAL_AGENT_NOT_CONNECTED";
       else if(executor==="repair-worker")reasonCode="REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE";
       else if(executor==="chatgpt-work")reasonCode="CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE";
-
       else if(executor==="manual")reasonCode="MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF";
-      const firstStatus=canDispatch?"STARTING":"BLOCKED";
+      const firstStatus=canDispatch?"QUEUED":"BLOCKED";
       const hashInput=[chat.chat_id,executor,String(contextCapsule.chatRevision),message,modelId,String(writeConfirmed),goal,JSON.stringify(acceptanceCriteria),JSON.stringify(skillIds),parentTaskId||""].join(String.fromCharCode(31));
       const hashed=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(hashInput)));
       const requestSha256=Array.from(hashed,x=>x.toString(16).padStart(2,"0")).join("");
       const initialReceipt={dispatchAttempted:false,agentStarted:false,executionVerified:false,
-        status:firstStatus,sourceWrite:null,model:modelId};
-      const pendingText=canDispatch?"Задача зарегистрирована; Agent Director проверяет доступность собственной модели.":
+        status:firstStatus,sourceWrite:null,model:modelId==="owned-default"?"openrouter/free":modelId};
+      const pendingText=canDispatch?"Задача зарегистрирована; OpenRouter Free worker заберёт её из защищённой очереди.":
         "Задача сохранена, но запуск не подтверждён. Причина: "+reasonCode+".";
       const result=await db.begin(async tx=>{
         const inserted=await tx.unsafe("insert into business_brain.commander_execution_runs (run_id,owner_id,chat_id,task_id,idempotency_key,request_sha256,executor,status,reason_code,request_payload,receipt) values($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8,$9,$10::text::jsonb,$11::text::jsonb) on conflict(owner_id,chat_id,idempotency_key) do nothing returning run_id,status,reason_code,request_sha256,executor,hermes_job_id,receipt,created_at",
@@ -619,7 +567,6 @@ async function handler(req){
             kind:canDispatch?"execution_requested":"execution_blocked",
             author:"Agent Director",text:pendingText,executor,status:firstStatus,reasonCode,
             sourceVerified:false,proofLevel:"NOT_STARTED_NO_EXECUTION_RECEIPT",createdAt:new Date().toISOString()};
-          // Physical DB kind CHECK permits 'note', not custom payload event kinds.
           await tx.unsafe("insert into business_brain.commander_chat_events (event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false) on conflict(event_id) do nothing",
            [runId,chat.chat_id,ownerId,jsonbText(eventPayload)]);
           await tx.unsafe("update business_brain.commander_chats set execution_state=$1,updated_at=now() where owner_id=$2::uuid and chat_id=$3::uuid",
@@ -637,30 +584,11 @@ async function handler(req){
       if(!canDispatch)return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",run:result.run,
         duplicate:false,dispatchAttempted:false,agentStarted:false,liveVerified:false,
         status:"BLOCKED",reasonCode,storage:"SUPABASE_PRIVATE"},origin);
-      try{
-        const remote=await ownedDirectorCall(req,{schemaVersion:1,runId,chatId:chat.chat_id,issueNumber:chatNumber,
-          requestSha256,ownerId,projectKey:"holistic-house",message,modelId,confirmGitHubWrite:false,contextCapsule});
-        const verified=trustedOwnedDirectorReceipt(remote,{run_id:runId,chat_id:chat.chat_id,owner_id:ownerId});
-        await saveOwnedDirectorReceipt(db,ownerId,chat.chat_id,runId,verified);
-        return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",
-          run:{...result.run,status:verified.status,reason_code:verified.reasonCode,receipt:{
-            dispatchAttempted:true,agentStarted:verified.agentStarted,executionVerified:verified.executionVerified,
-            model:verified.model,sourceWrite:null,proofLevel:verified.proofLevel}},
-          duplicate:false,dispatchAttempted:true,agentStarted:verified.agentStarted,
-          executionVerified:verified.executionVerified,liveVerified:false,status:verified.status,
-          reasonCode:verified.reasonCode,model:verified.model,sourceWrite:null,
-          proofLevel:verified.proofLevel,storage:"SUPABASE_PRIVATE"},origin);
-      }catch(error){
-        console.error("COMMANDER_AGENT_DIRECTOR_DISPATCH_UNCONFIRMED",error&&error.name||"Error");
-        const reason="AGENT_DIRECTOR_DISPATCH_UNCONFIRMED";
-        await q(db,"update business_brain.commander_execution_runs set status='BLOCKED',reason_code=$1,receipt=$2::text::jsonb,updated_at=now() where run_id=$3::uuid and owner_id=$4::uuid and chat_id=$5::uuid and status='STARTING'",
-          [reason,jsonbText({dispatchAttempted:true,agentStarted:false,executionVerified:false,status:"BLOCKED",
-            sourceWrite:null,model:modelId,proofLevel:"DISPATCH_UNCONFIRMED"}),runId,ownerId,chat.chat_id]);
-        await q(db,"update business_brain.commander_chats set execution_state='BLOCKED',updated_at=now() where owner_id=$1::uuid and chat_id=$2::uuid",[ownerId,chat.chat_id]);
-        return reply(202,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",run:{...result.run,status:"BLOCKED",reason_code:reason},
-          duplicate:false,dispatchAttempted:true,agentStarted:false,liveVerified:false,status:"BLOCKED",
-          reasonCode:reason,storage:"SUPABASE_PRIVATE"},origin);
-      }
+      return reply(202,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",
+        run:{...result.run,status:"QUEUED",reason_code:"OPENROUTER_WORKER_QUEUED",receipt:initialReceipt},
+        duplicate:false,dispatchAttempted:false,agentStarted:false,executionVerified:false,
+        liveVerified:false,status:"QUEUED",reasonCode:"OPENROUTER_WORKER_QUEUED",
+        model:"openrouter/free",sourceWrite:null,storage:"SUPABASE_PRIVATE"},origin);
     }
     if(action==="commander_list_ci_events"){
       const limit=Math.max(1,Math.min(100,Number(body.limit)||30));
@@ -698,8 +626,15 @@ async function handler(req){
         modelName:row.model_name,verifiedAt:row.catalog_verified_at,updatedAt:row.updated_at,
         storage:"SUPABASE_PRIVATE",preferenceOnly:true,agentStarted:false},origin);
     }
-    if(action==="status")return reply(200,{ok:true,service:"AGENT_COMMANDER_PRIVATE_STORE_V1",
-      owner:true,canWrite:writable,authenticated:true,privateStoreConfigured:true,executorDispatch:false,dispatchAvailable:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OWNED_MODEL_CONFIG_REQUIRED",liveVerification:false,
+    if(action==="status"){
+      const openRouterReady=Boolean(Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY"));
+      return reply(200,{ok:true,service:"AGENT_COMMANDER_PRIVATE_STORE_V1",owner:true,canWrite:writable,
+        authenticated:true,privateStoreConfigured:true,executorDispatch:openRouterReady,
+        dispatchEnabled:openRouterReady,dispatchAvailable:openRouterReady,openRouterConfigured:openRouterReady,
+        executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",
+        dispatchReason:openRouterReady?"OPENROUTER_FREE_WORKER_READY":"OPENROUTER_API_KEY_NOT_CONFIGURED",
+        liveVerification:false,checkedAt:new Date().toISOString()},origin);
+    }      owner:true,canWrite:writable,authenticated:true,privateStoreConfigured:true,executorDispatch:false,dispatchAvailable:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OWNED_MODEL_CONFIG_REQUIRED",liveVerification:false,
       liveVerification:false,checkedAt:new Date().toISOString()},origin);
 
     if(action==="commander_list_tasks"){
