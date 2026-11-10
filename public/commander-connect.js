@@ -70,14 +70,18 @@
     }, 10000, 'Проверка владельца')
     const data = await json(response)
     if (data.owner !== true || data.privateStoreConfigured !== true ||
-        typeof data.accessToken !== 'string' || data.accessToken.length < 120) {
+        typeof data.accessToken !== 'string' || data.accessToken.length < 120 ||
+        typeof data.refreshToken !== 'string' || data.refreshToken.length < 20 || data.refreshToken.length > 4096) {
       throw Error('У этого аккаунта нет подтверждённых прав владельца Agent Commander.')
     }
     const target = new URL(MONITOR + '/commander-auth.html')
     target.searchParams.set('next', nextPath())
     // The short-lived JWT is in the URL fragment only: it is not sent to servers
     // in HTTP requests or Referer headers. The monitor page removes it immediately.
-    target.hash = 'token=' + encodeURIComponent(data.accessToken)
+    target.hash = new URLSearchParams({
+      token: data.accessToken,
+      refresh_token: data.refreshToken,
+    }).toString()
     try { sessionStorage.removeItem(KEY) } catch {}
     location.replace(target.href)
   }
