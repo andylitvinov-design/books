@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v2'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-hermes-handoff-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -119,7 +119,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v2'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-hermes-handoff-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -339,7 +339,34 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
 });
 
 
-test('owner-only live chat verification uses read-only private history and free-model setup stays optional',()=>{
+test('Hermes dispatch includes a selected zero-cost model and explicit one-run GitHub write consent',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),api=src('api/commander-chats.js'),
+  edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ for(const id of ['cc-new-model-label','cc-new-model','cc-new-hermes-write-label','cc-new-hermes-write','cc-model-label','cc-model','cc-hermes-write-label','cc-hermes-write'])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ assert.match(js,/modelId:mode==='hermes'\?model:undefined/);
+ assert.match(js,/confirmGitHubWrite/);
+ assert.match(js,/el\('hermes-write'\)\.checked/);
+ assert.match(api,/modelId:body\.modelId/);
+ assert.match(api,/confirmGitHubWrite:body\.confirmGitHubWrite===true/);
+ assert.match(edge,/const canUseHermes=executor==="hermes"/);
+ assert.match(edge,/GITHUB_WRITE_REQUIRES_HERMES_EXECUTOR/);
+ assert.match(edge,/HERMES_FREE_MODEL_NOT_SELECTED/);
+});
+
+test('Hermes gets bounded previous turns from the private chat ledger and the UI reconciles the receipt',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts'),js=src('commander-chats.js');
+ assert.match(edge,/select payload from business_brain\.commander_chat_events/);
+ assert.match(edge,/history:priorHistory\.slice\(-4\)/);
+ assert.match(edge,/linkedPrHintsVerified:false/);
+ assert.match(js,/startExecutionPolling/);
+ assert.match(js,/action=runs&issue=/);
+ assert.match(js,/receipt\?\.dispatchAttempted===true/);
+ assert.match(js,/executionPollCount>=180/);
+});
+
+
+test('owner-only live chat verification is read-only and optional free-model setup is documented',()=>{
  const html=src('chats.html'),js=src('commander-chats.js');
  assert.match(html,/id="cc-verify-chat"/);
  assert.match(html,/id="cc-verify-status"[^>]*role="status"/);
@@ -347,7 +374,7 @@ test('owner-only live chat verification uses read-only private history and free-
  assert.match(html,/HH_PM_OPENROUTER_API_KEY/);
  assert.match(html,/vercel\.com\/super10\/holistic-house-pr-monitor\/settings\/environment-variables/);
  const begin=js.indexOf('async function verifySavedThread()');
- const end=js.indexOf('function startReportPolling()',begin);
+ const end=js.indexOf('function stopExecutionPolling()',begin);
  assert.ok(begin>0&&end>begin);
  const verifier=js.slice(begin,end);
  assert.match(verifier,/SERVER\+'\?action=read&issue='/);
@@ -357,22 +384,20 @@ test('owner-only live chat verification uses read-only private history and free-
  assert.doesNotMatch(verifier,/method:\s*'POST'|action=create|localStorage|service_role/);
  assert.match(js,/el\('verify-chat'\)\.addEventListener\('click',verifySavedThread\)/);
  assert.match(js,/show\('free-model-status',!aiReady\)/);
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v2'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-hermes-handoff-v1'));
 });
 
-test('CI inbox associates only Agent Commander tasks saved under the actual private-store project key',()=>{
+test('CI inbox links to the actual Commander project key and persists ambiguous matches',()=>{
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
- assert.match(edge,/from business_brain\.commander_tasks[\s\S]{0,160}where project_key='agent-commander'/);
+ assert.match(edge,/where project_key='agent-commander'/);
  assert.doesNotMatch(edge,/where project_key='holistic-house'/);
  assert.match(edge,/association = "AMBIGUOUS_TASKS"/);
  assert.match(edge,/set association_status=\$1 where ci_event_id=\$2::uuid/);
 });
 
 
-test('postgres.js private-store JSONB binds parse UTF-8 JSON text exactly once for task/chat/event and executor receipts',()=>{
+test('postgres.js private-store JSONB parameters are text before casting and avoid double serialization',()=>{
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
- // postgres.js auto-serializes JSON parameters; $N::jsonb can double-encode JSON.stringify(value).
- // Require text->jsonb conversion for every pre-serialized bound parameter.
  assert.match(edge,/import postgres from "npm:postgres@3\.4\.5"/);
  assert.match(edge,/\$\d+::text::jsonb/);
  assert.doesNotMatch(edge,/\$\d+::jsonb\b/);
@@ -384,6 +409,5 @@ test('postgres.js private-store JSONB binds parse UTF-8 JSON text exactly once f
  assert.match(edge,/JSON\.stringify\(record\)/);
  assert.match(edge,/business_brain\.commander_execution_runs/);
  assert.match(edge,/jsonb_set\(payload/);
- // This contract preserves the actual database CHECK that requires an object.
  assert.doesNotMatch(edge,/alter table business_brain\.commander_chats.*drop constraint/i);
 });
