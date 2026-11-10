@@ -14,7 +14,7 @@ test('private chat normalizer persists bounded goal, acceptance criteria and ski
   assert.match(edge, /acceptanceCriteria:criteria\.map\(v=>clean\(v,500\)\),skillIds:\[\.\.\.skills\]/);
 });
 
-test('Hermes dispatch derives task context from the persisted owner chat and includes it in the idempotency hash', () => {
+test('Agent Director dispatch derives task context from the persisted owner chat and includes it in the idempotency hash', () => {
   assert.match(edge, /const goal=clean\(rawChat\.goal\|\|rawChat\.description\|\|rawChat\.title\|\|message,2000\)/);
   assert.match(edge, /const acceptanceCriteria=Array\.isArray\(rawChat\.acceptanceCriteria\)/);
   assert.match(edge, /const skillIds=Array\.isArray\(rawChat\.skillIds\)/);
@@ -24,8 +24,8 @@ test('Hermes dispatch derives task context from the persisted owner chat and inc
   assert.match(edge, /linkedPrHintsVerified:false/);
 });
 
-test('parent Hermes job is selected only from a completed run in the same owner and chat', () => {
-  assert.match(edge, /where owner_id=\$1::uuid and chat_id=\$2::uuid and executor='hermes' and status='COMPLETED'/);
+test('parent Agent Director run is selected only from a completed run in the same owner and chat', () => {
+  assert.match(edge, /where owner_id=\$1::uuid and chat_id=\$2::uuid and executor='local' and status='COMPLETED'/);
   assert.match(edge, /\[ownerId,chat\.chat_id\]/);
   assert.match(edge, /parentTaskId=prior\[0\]\?\.hermes_job_id\|\|null/);
 });
