@@ -868,12 +868,12 @@ test('trusted Repair finalization fast paths preserve independent Codex verifica
  assert.match(codeFix,/permissions:\n      contents: read/);
  assert.match(codeVerify,/permissions:\n      contents: read/);
  for(const untrusted of [fix,codeFix,codeVerify]) assert.doesNotMatch(untrusted,/HH_AUTOMERGE_TOKEN/);
- assert.match(pub,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
+ assert.doesNotMatch(pub,/HH_AUTOMERGE_TOKEN|ownerToken/);
  // Only the trusted publisher needs scoped contents:write after independent
  // patch verification. Isolated untrusted jobs MUST stay read-only.
  assert.match(pub,/permissions:\n      contents: write/);
  assert.match(pub,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
- assert.match(pub,/rateGuard\.chooseWriterMode/);
+ assert.match(pub,/rateGuard\.requireScopedJobWriter/);
  for(const untrusted of [claim,fix,codeFix,codeVerify]){
   assert.doesNotMatch(untrusted,/contents: write/);
   assert.doesNotMatch(untrusted,/HH_REPAIR_JOB_TOKEN/);
