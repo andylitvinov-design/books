@@ -5602,11 +5602,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           compact={audioWorkspaceTab==="voice"}
           ownVoiceOnly={ideasVoiceMode==="my-voice"}
           extraActions={<>
-        <div className={videoStyles.ideasVoiceActions} data-video-ideas-voice-actions>
+        <div className={videoStyles.ideasVoiceActions} data-video-audio-voice-actions>
           <label className={videoStyles.ideasVoiceUpload}>
             <Paperclip size={19} aria-hidden="true"/>
             {locale==="ru"?"Загрузить мой голос":locale==="es"?"Subir mi voz":"Upload my voice"}
-            <input type="file" data-video-ideas-own-upload
+            <input type="file" data-video-audio-own-upload
               accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.webm"
               disabled={recording||preparing}
               onChange={event=>{
@@ -5616,7 +5616,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }}/>
           </label>
         </div>
-        {uploadedAudio?<p className={videoStyles.ideasVoiceUploadNotice} data-video-ideas-own-notice role="status">
+        {uploadedAudio?<p className={videoStyles.ideasVoiceUploadNotice} data-video-audio-own-notice role="status">
           {locale==="ru"?"Файл выбран. Подтвердите права и прикрепите дорожку ниже.":
             locale==="es"?"Archivo elegido. Confirma los derechos y añade la pista abajo.":
               "File selected. Confirm rights and attach the track below."}
