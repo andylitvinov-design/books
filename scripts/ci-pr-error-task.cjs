@@ -154,14 +154,15 @@ function taskLifecycle(comments,task){
   const trusted=comments.filter(trustedControlComment);
   const records=parseRecords(trusted);
   if(!records)return {state:'HISTORY_UNVERIFIED',next_action:'RECHECK_SIGNED_HISTORY'};
+  // An existing dispatcher task on the same PR/HEAD is NOT necessarily
+  // causally linked to this exact Core failure (run ID + attempt). Only an
+  // explicit error_task_id binding can establish delivery/execution proof.
   const same=records.filter(x=>x.pr_number===task.pr_number&&
-    x.head_sha?.toLowerCase()===task.head_sha&&KEY.test(x.task_key||''));
-  // Existing task lanes are source, CI bootstrap and conflict. A classifier
-  // record does not grant access to these lanes or invent a dispatch.
+    x.head_sha?.toLowerCase()===task.head_sha&&KEY.test(x.task_key||'')&&
+    x.error_task_id===task.task_id);
   const latest=same.at(-1);
   if(!latest)return {state:'CLASSIFIED_NOT_DELIVERED',next_action:'RECONCILE_EXISTING_DISPATCHER'};
   if(['PUBLISHED','REPAIRED','DONE'].includes(latest.state)){
-    // A source commit is not VERIFIED until independent exact-HEAD checks.
     return {state:'SOURCE_PUBLISHED_VERIFY_PENDING',next_action:'VERIFY_NEW_HEAD_REQUIRED_CHECKS',
       worker_task_key:latest.task_key};
   }
