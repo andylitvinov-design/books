@@ -13,7 +13,7 @@
  const STATES={planned:'Запланировано',assigned:'Назначено · не запущено',working:'В работе · по заявлению',
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
- let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null;
+ let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null,ciInboxTimer=null,ciInboxBusy=false;
  let executorModels=[],executorModelReady=false,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
  const COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app';
  const COUNCIL_PROTOCOL='HH_AI_COUNCIL_BRIDGE_V1';
@@ -111,7 +111,40 @@
    if(!run||!['STARTING','RUNNING'].includes(run.status)){win.clearInterval(executionRefreshTimer);executionRefreshTimer=null;}
   },10000);
  }
- const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
+   async function loadCIInbox({silent=false}={}){
+   if(!remote||!authorized||ciInboxBusy)return;
+   ciInboxBusy=true;const box=el('ci-list'),meta=el('ci-meta');
+   if(!silent){box.replaceChildren(make('p','cc-help','Получаю подтверждённые CI-события…'));show('ci-inbox',true);}
+   try{
+    const data=await request(SERVER+'?action=ci_events&limit=30');
+    if(!Array.isArray(data.events))throw Error('Некорректный ответ CI Inbox');
+    const events=data.events.slice(0,30);show('ci-inbox',true);meta.textContent=events.length+' · последние события';box.replaceChildren();
+    if(!events.length){box.append(make('p','cc-help','Подтверждённых CI-событий пока нет.'));return;}
+    for(const event of events){
+     const item=make('article','cc-report'),state=String(event.association_status||'UNMATCHED');
+     const label=state==='MATCHED_CHAT_EVENT_RECORDED'?'Прикреплено к чату':
+      state==='MATCHED_TASK_NO_CHAT'?'Задача найдена · чат не создан':
+      state.startsWith('AMBIGUOUS')?'Неоднозначная привязка · требуется проверка':'Не привязано к чату';
+     item.append(make('strong',null,'PR #'+event.pr_number+' · '+String(event.category||'UNKNOWN')),
+      make('p','cc-help','HEAD '+String(event.head_sha||'').slice(0,12)+' · '+time(event.created_at)),
+      make('p',null,'Упавшие задачи: '+(Array.isArray(event.failed_jobs)?event.failed_jobs.join(', '):'—')),
+      make('p',null,'Упавшие этапы: '+(Array.isArray(event.failed_steps)?event.failed_steps.join('; '):'—')),
+      make('small','cc-help',label+' · '+String(event.conclusion||'failure')));
+     if(typeof event.run_url==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+$/.test(event.run_url)){
+      const a=make('a',null,'Открыть CI run ↗');a.href=event.run_url;a.target='_blank';a.rel='noopener noreferrer';item.append(a);
+     }
+     box.append(item);
+    }
+   }catch(error){if(!silent||!box.childElementCount){show('ci-inbox',true);box.replaceChildren(make('p','cc-help','Inbox временно недоступен: '+String(error.message||error)));}}
+   finally{ciInboxBusy=false;}
+  }
+  function startCIInboxPolling(){
+   if(ciInboxTimer!==null)win.clearInterval(ciInboxTimer);ciInboxTimer=null;
+   if(!remote||!authorized)return;
+   void loadCIInbox({silent:true});
+   ciInboxTimer=win.setInterval(()=>{if(doc.visibilityState!=='hidden')void loadCIInbox({silent:true});},120000);
+  }
+const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
  const to64=a=>{let s='';for(let i=0;i<a.length;i+=8192)s+=String.fromCharCode(...a.subarray(i,i+8192));return win.btoa(s)};
  /* Non-extractable on-device key; all chat APIs still require verified owner session. */
  const DEVICE_DB='hh.commander.device-key.v1';
@@ -762,7 +795,7 @@ async function update(e){
   const r=await request(SERVER+'?action=list');
   if(!Array.isArray(r.chats))throw Error('Сервер вернул некорректный список рабочих чатов.');
   chats=r.chats;
-  renderList();if(r.incomplete)info('Индекс серверных чатов неполон: лимит GitHub API.');
+  renderList();void loadCIInbox({silent:true});if(r.incomplete)info('Индекс серверных чатов неполон: лимит GitHub API.');
   return r;
  }
  async function authenticated(){
@@ -792,7 +825,7 @@ async function update(e){
   show('free-model-status',!aiReady);
   if(remote){
    await loadExecutorModels();
-   show('board',true);
+   show('board',true);startCIInboxPolling();
    try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
    catch(e){
     // A transient API failure must not silently replace server chats with a local vault.
@@ -844,6 +877,7 @@ async function update(e){
  el('create-form').addEventListener('submit',create);el('metadata-form').addEventListener('submit',update);
  el('chat-form').addEventListener('submit',send);el('note').addEventListener('click',addNote);
  el('check-prs').addEventListener('click',checkPRs);el('load-reports').addEventListener('click',reportList);
+ el('ci-refresh').addEventListener('click',()=>void loadCIInbox());
  el('handoff').addEventListener('click',handoff);
  el('verify-chat').addEventListener('click',verifySavedThread);
  el('search').addEventListener('input',renderList);el('filter').addEventListener('change',renderList);
