@@ -301,6 +301,7 @@ jobs:
           for f in scripts/ci-pr-kpi*.cjs tests/ci-pr-kpi*.test.cjs; do node --check "$f"; done
           node --check scripts/ci-pr-red-ci-classifier.cjs
           node --check tests/ci-pr-unified-error-classifier.test.cjs
+          node --check scripts/ci-pr-task-outcome.cjs
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs
           node --check scripts/ci-pr-next-wave-proof.cjs
