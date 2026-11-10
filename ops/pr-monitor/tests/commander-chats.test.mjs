@@ -150,6 +150,15 @@ test('Director Council flow records only the explicit owner question before ifra
 });
 
 
+test('Commander Hermes adapter passes only verified free models and keeps source writes disabled',()=>{
+ const api=src('api/commander-chats.js'),ui=src('commander-chats.js');
+ assert.match(api,/name==='free_models'/);assert.match(api,/m\.id\.endsWith\(':free'\)/);
+ assert.match(api,/GITHUB_WRITE_CONFIRMATION_UI_NOT_AVAILABLE/);
+ assert.match(api,/modelId:body\.modelId,confirmGitHubWrite:false/);
+ assert.match(ui,/SERVER\+'\?action=free_models'/);
+ assert.match(ui,/modelId:selectedModel,confirmGitHubWrite:false/);
+ assert.match(ui,/executorModelReady/);assert.match(ui,/refreshExecutionRuns/);assert.match(ui,/startExecutionPolling/);
+});
 test('execution API is owner-gated, idempotent and reports blocked instead of fake executor start',()=>{
  const backend=src('api/commander-chats.js');
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
