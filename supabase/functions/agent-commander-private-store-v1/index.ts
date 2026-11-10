@@ -598,6 +598,17 @@ const CI_ROUTE_STATES = new Set([
   "EXISTING_RECOVERY_ACCEPTED","DISPATCH_ACCEPTED_NOT_WORKER_STARTED",
   "TASK_WAITING_FOR_DISPATCH","DISPATCH_UNCONFIRMED_RECONCILE"
 ]);
+ // Persist the precise route state in route_receipt, not in the constrained chat
+ // lifecycle enum. Postgres 23514 was rolling the entire OIDC receipt back.
+ const CI_ROUTE_CHAT_STATE=Object.freeze({
+   "TASK_REQUIRES_REVIEW":"BLOCKED",
+   "TASK_ROUTED_TO_REVIEW":"BLOCKED",
+   "TASK_AWAITING_EXISTING_RECOVERY":"AWAITING_EXECUTOR_NOT_DISPATCHED",
+   "EXISTING_RECOVERY_ACCEPTED":"DISPATCHED_UNVERIFIED",
+   "DISPATCH_ACCEPTED_NOT_WORKER_STARTED":"DISPATCHED_UNVERIFIED",
+   "TASK_WAITING_FOR_DISPATCH":"AWAITING_EXECUTOR_NOT_DISPATCHED",
+   "DISPATCH_UNCONFIRMED_RECONCILE":"BLOCKED"
+ });
 async function exactCoreFailureTaskId(e: {pr_number:number;head_sha:string;
     workflow_run_id:string|number;run_attempt:number}):Promise<string> {
   const identity=["andylitvinov-design/books",e.pr_number,e.head_sha.toLowerCase(),
@@ -715,8 +726,8 @@ async function receiveCommanderCiRoute(req,origin){
         "insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,true) on conflict(event_id) do nothing",
         [chatEventId,chats[0].chat_id,e.inbox_owner_id,jsonbText(event)]);
       await tx.unsafe(
-        "update business_brain.commander_chats set execution_state=$1,updated_at=now() where chat_id=$2::uuid and owner_id=$3::uuid",
-        [p.state,chats[0].chat_id,e.inbox_owner_id]);
+        "update business_brain.commander_chats set execution_state=case when execution_state in ('COMPLETED_UNVERIFIED','SOURCE_VERIFIED') then execution_state else $1 end,updated_at=now() where chat_id=$2::uuid and owner_id=$3::uuid",
+        [CI_ROUTE_CHAT_STATE[p.state],chats[0].chat_id,e.inbox_owner_id]);
       return {code:202,outcome:"RECORDED"};
     });
     return reply(result.code,{recorded:result.code===200||result.code===202,
@@ -889,7 +900,7 @@ async function handler(req){
       if(body.pr!==undefined&&!pr)return reply(400,{error:"INVALID_PR_NUMBER"},origin);
       const rows=await q(db,
         `select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,
-          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,route_receipt,route_recorded_at,created_at
+          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,route_receipt,assignment_receipt,route_recorded_at,created_at
          from business_brain.commander_ci_event_inbox
          where inbox_owner_id=$3::uuid and ($1::int is null or pr_number=$1)
          order by created_at desc limit $2`,[pr,limit,ownerId]);
