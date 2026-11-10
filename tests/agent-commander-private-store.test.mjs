@@ -68,8 +68,8 @@ test('private store preserves native JSONB objects and arrays when persisting pa
   assert.match(edge,/function jsonbText\(value\)/);
   assert.match(edge,/payload=\$\d+::text::jsonb/);
   assert.match(edge,/payload=\$\d+::text::jsonb/);
-  assert.match(edge,/failed_jobs[\s\S]{0,300}\$15::text::jsonb/);
-  assert.match(edge,/failed_steps[\s\S]{0,100}\$16::text::jsonb/);
+  assert.match(edge,/jsonbText\(event\.failed_jobs\)/);
+  assert.match(edge,/jsonbText\(event\.failed_steps\)/);
   assert.match(edge,/receipt=\$\d+::text::jsonb/);
   assert.doesNotMatch(edge,/\$[0-9]+::jsonb/);
   assert.doesNotMatch(edge,/jsonb_set\(payload,'\{executionState\}'/);
