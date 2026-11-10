@@ -489,25 +489,21 @@ test('new chat sends bounded acceptance criteria and Skill IDs as references onl
 
 
 
-test('first-party Agent Director handles owner-scoped read-only dispatch with verifiable receipts and no Hermes Cloud transport',()=>{
+test('first-party cloud Director queues owner-scoped OpenRouter Free work read-only',()=>{
   const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
   const begin=edge.indexOf('if(action==="commander_start_run")');
   const end=edge.indexOf('if(action==="commander_list_ci_events")',begin);
   assert.ok(begin>=0&&end>begin);
   const handler=edge.slice(begin,end);
-  assert.match(edge,/const DIRECTOR_RUN_SCHEMA="HH_AGENT_DIRECTOR_RUN_V1"/);
-  assert.match(edge,/const DIRECTOR_ORIGIN="https:\/\/holistichouse\.vercel\.app"/);
-  assert.match(edge,/async function ownedDirectorCall\(req,data\)/);
-  assert.match(edge,/function trustedOwnedDirectorReceipt\(value,run\)/);
   assert.match(handler,/const canDispatch=executor==="local"&&!writeConfirmed/);
-  assert.match(handler,/await ownedDirectorCall\(req,/);
-  assert.match(handler,/trustedOwnedDirectorReceipt\(remote,/);
-  assert.match(handler,/AGENT_DIRECTOR_DISPATCH_UNCONFIRMED/);
+  assert.match(handler,/OPENROUTER_WORKER_QUEUED/);
+  assert.match(handler,/status:"QUEUED"/);
+  assert.match(handler,/dispatchAttempted:false,agentStarted:false,executionVerified:false/);
+  assert.match(handler,/GITHUB_WRITE_REQUIRES_SEPARATE_APPROVAL/);
   assert.match(handler,/EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/);
-  assert.doesNotMatch(handler,/hermesCall\(|HERMES_DISPATCH_REQUESTED|await verifyFreeModel\(/);
+  assert.doesNotMatch(handler,/ownedDirectorCall\(req|trustedOwnedDirectorReceipt\(remote/);
+  assert.doesNotMatch(handler,/confirmGitHubWrite:true|sourceWriteAuthorized:true/);
   assert.match(edge,/value\.sourceWrite!==null/);
-  assert.match(edge,/value\.proofLevel!==/);
-  assert.doesNotMatch(edge,/HERMES_RUN_SCHEMA|HERMES_SHARED_SECRET/);
 });
 
 test('legacy external Hermes code executor is disabled in UI and rejected before private-store dispatch',async()=>{
