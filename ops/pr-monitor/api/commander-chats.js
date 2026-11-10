@@ -1,6 +1,6 @@
 'use strict';
 /* Private Agent Commander chat API. All chat headers and events are owner-scoped in Supabase. */
-const {callStore,sendJson,isOriginAllowed}=require('../lib/commander-private-store');
+const {callStore,sendJson,isOriginAllowed,tokenFromRequest}=require('../lib/commander-private-store');
 async function freeModels(req,res){
  const owner=await callStore(req,'status',{}, {method:'GET'});
  if(owner.status!==200||owner.data?.owner!==true||owner.data?.privateStoreConfigured!==true)
@@ -25,6 +25,35 @@ async function freeModels(req,res){
  }catch(error){return sendJson(res,503,{error:error?.name==='AbortError'?'FREE_MODEL_CATALOG_TIMEOUT':'FREE_MODEL_CATALOG_UNAVAILABLE'});}
  finally{clearTimeout(timer);}
 }
+// Owner-only status proxy, never a model invocation or key-value lookup.
+async function providerStatus(req,res){
+ const owner=await callStore(req,'status',{}, {method:'GET'});
+ if(owner.status!==200||owner.data?.owner!==true||owner.data?.canWrite!==true||
+    owner.data?.privateStoreConfigured!==true)
+  return sendJson(res,owner.status===401?401:403,{error:'OWNER_SESSION_REQUIRED'});
+ const token=tokenFromRequest(req);
+ if(!token)return sendJson(res,401,{error:'OWNER_SESSION_REQUIRED'});
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8500);
+ try{
+  const response=await fetch('https://holistichouse.vercel.app/api/agent-director/commander-run',{
+   method:'GET',cache:'no-store',redirect:'error',signal:controller.signal,
+   headers:{Authorization:'Bearer '+token,Accept:'application/json'}
+  });
+  const raw=await response.text();
+  if(raw.length>4000)throw Error('INVALID_DIRECTOR_STATUS');
+  const data=JSON.parse(raw);
+  if(!response.ok||data?.schema!=='HH_AGENT_DIRECTOR_PROVIDER_STATUS_V1'||
+     data?.provider!=='OPENROUTER_FREE'||typeof data?.configured!=='boolean'||
+     data?.providerVerified!==false)
+   return sendJson(res,503,{error:'DIRECTOR_CONNECTION_STATUS_UNAVAILABLE'});
+  return sendJson(res,200,{
+   schema:'HH_AGENT_DIRECTOR_PROVIDER_STATUS_V1',
+   provider:'OPENROUTER_FREE',configured:data.configured,
+   providerVerified:false,reasonCode:String(data.reasonCode||'OPENROUTER_UNVERIFIED').slice(0,90)
+  });
+ }catch{return sendJson(res,503,{error:'DIRECTOR_CONNECTION_STATUS_UNAVAILABLE'});}
+ finally{clearTimeout(timer);}
+}
 module.exports=async function(req,res){
  res.setHeader('Cache-Control','private, no-store, max-age=0');res.setHeader('Vary','Cookie, Origin');
  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');
@@ -36,6 +65,7 @@ module.exports=async function(req,res){
   if(req.method==='GET'){
    if(name==='status')action='status';
    else if(name==='free_models'||name==='executor_models')return await freeModels(req,res);
+   else if(name==='provider_status')return await providerStatus(req,res);
    else if(name==='list')action='commander_list_chats';
    else if(name==='read'){action='commander_read_chat';body.issueNumber=Number(url.searchParams.get('issue'))}
    else if(name==='proof'){action='commander_pr_proof';body.pr=Number(url.searchParams.get('pr'))}
