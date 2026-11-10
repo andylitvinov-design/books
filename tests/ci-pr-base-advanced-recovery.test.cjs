@@ -197,12 +197,12 @@ test('synthetic Core source lease is checked on PR SHA, never synthetic merge SH
 });
 test('every independent failed-Core intake and writer checkout pins the triggering control SHA',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-direct-core-failure.yml','utf8');
- const checkouts=[...wf.matchAll(/uses: actions\\/checkout@v4([\\s\\S]{0,220})/g)];
+ const checkouts=[...wf.matchAll(/uses: actions\/checkout@v4([\s\S]{0,220})/g)];
  assert.equal(checkouts.length,3,'independent intake, serialized failed-Core writer and success-side wakeup each checkout once');
  for(const checkout of checkouts){
-  assert.match(checkout[1],/ref: \\$\\{\\{ github\\.sha \\}\\}/,
+  assert.match(checkout[1],/ref: \$\{\{ github\.sha \}\}/,
    'each workflow job stays on the exact control SHA that received the event');
   assert.match(checkout[1],/persist-credentials: false/);
  }
- assert.doesNotMatch(wf,/ref: codex\\/bootstrap-books/);
+ assert.doesNotMatch(wf,/ref: codex\/bootstrap-books/);
 });
