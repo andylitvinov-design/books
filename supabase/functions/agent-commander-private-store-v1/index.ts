@@ -378,7 +378,41 @@ function normalizeTrustedCoreFailure(body) {
       pr.head?.repo?.full_name !== repo || pr.head?.ref !== run.head_branch ||
       !/^[a-f0-9]{40}$/i.test(pr.head?.sha || "")) return null;
   const category = String(body.diagnostics?.category || "UNKNOWN");
-  if (!new Set(["SECURITY","ACCESS_CONFIG","MERGE_CONFLICT","BASE_ADVANCED","BASE_OR_CI_ROUTING","INFRASTRUCTURE","AUTOMATION_PROCESS","AI_EXECUTOR","INTEGRATION","TYPESCRIPT","TEST_FAILURE","SOURCE_CODE","UNKNOWN"]).has(category)) return null;
+  const categories = new Set(["SECURITY","ACCESS_CONFIG","MERGE_CONFLICT","BASE_ADVANCED",
+    "BASE_OR_CI_ROUTING","INFRASTRUCTURE","AUTOMATION_PROCESS","AI_EXECUTOR","INTEGRATION",
+    "TYPESCRIPT","TEST_FAILURE","SOURCE_CODE","UNKNOWN"]);
+  if (!categories.has(category)) return null;
+  const incoming = body.diagnostics?.classification;
+  let classification = null;
+  if (incoming !== undefined && incoming !== null) {
+    if (!incoming || incoming.schema !== "HH_CI_ERROR_CLASSIFICATION_V1" ||
+        incoming.ruleset_version !== "1.0.0" || incoming.category !== category ||
+        !Number.isFinite(incoming.confidence) || incoming.confidence < 0 || incoming.confidence > 1 ||
+        typeof incoming.reason_code !== "string" || !/^[A-Z0-9_]{3,90}$/.test(incoming.reason_code) ||
+        typeof incoming.recommended_action !== "string" || incoming.recommended_action.length > 500 ||
+        typeof incoming.recommended_status !== "string" || incoming.recommended_status.length > 48 ||
+        typeof incoming.responsible_role !== "string" || incoming.responsible_role.length > 80 ||
+        typeof incoming.requires_human !== "boolean" || incoming.status !== "DIAGNOSTIC_ONLY" ||
+        incoming.source_write_authorized !== false || incoming.execution_authorized !== false ||
+        !incoming.retry || typeof incoming.retry.allowed !== "boolean" ||
+        !Number.isInteger(incoming.retry.max_attempts) || incoming.retry.max_attempts < 0 ||
+        incoming.retry.max_attempts > 2 ||
+        typeof incoming.retry.condition !== "string" || incoming.retry.condition.length > 300) return null;
+    classification = {
+      schema: incoming.schema, ruleset_version: incoming.ruleset_version,
+      category: incoming.category, confidence: incoming.confidence,
+      reason_code: incoming.reason_code,
+      evidence_code: typeof incoming.evidence_code === "string" ? clean(incoming.evidence_code, 90) : null,
+      recommended_action: clean(incoming.recommended_action, 500),
+      recommended_status: clean(incoming.recommended_status, 48),
+      responsible_role: clean(incoming.responsible_role, 80),
+      retry: { allowed: incoming.retry.allowed, max_attempts: incoming.retry.max_attempts,
+        condition: clean(incoming.retry.condition, 300) },
+      requires_human: incoming.requires_human,
+      status: incoming.status,
+      source_write_authorized: false, execution_authorized: false
+    };
+  }
   const safeList = (value) => Array.isArray(value)
     ? value.slice(0, 10).map((x) => clean(String(x || ""), 160)).filter(Boolean) : [];
   return {
@@ -396,6 +430,7 @@ function normalizeTrustedCoreFailure(body) {
     head_sha: pr.head.sha.toLowerCase(),
     conclusion: run.conclusion,
     category,
+    classification,
     failed_jobs: safeList(body.diagnostics?.failedJobs),
     failed_steps: safeList(body.diagnostics?.failedSteps),
     run_url: "https://github.com/" + repo + "/actions/runs/" + run.id,
@@ -421,15 +456,17 @@ async function receiveGitHubWorkflowRun(req, origin) {
       `insert into business_brain.commander_ci_event_inbox(
         repository, workflow_name, workflow_path, workflow_run_id, run_attempt,
         workflow_run_head_sha, head_branch, pr_number, base_ref, base_sha,
-        head_ref, head_sha, conclusion, category, failed_jobs, failed_steps,
+        head_ref, head_sha, conclusion, category, classification, failed_jobs, failed_steps,
         run_url, source_run_created_at, oidc_workflow_ref
-      ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::text::jsonb,$16::text::jsonb,$17,$18::timestamptz,$19)
+      ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::text::jsonb,$16::text::jsonb,$17::text::jsonb,$18,$19::timestamptz,$20)
       on conflict(repository,workflow_run_id,run_attempt,pr_number,head_sha) do nothing
       returning ci_event_id`,
       [event.repository,event.workflow_name,event.workflow_path,event.workflow_run_id,event.run_attempt,
        event.workflow_run_head_sha,event.head_branch,event.pr_number,event.base_ref,event.base_sha,
-       event.head_ref,event.head_sha,event.conclusion,event.category,jsonbText(event.failed_jobs),
-       jsonbText(event.failed_steps),event.run_url,event.source_run_created_at,claims.workflow_ref]);
+       event.head_ref,event.head_sha,event.conclusion,event.category,
+       event.classification ? jsonbText(event.classification) : null,
+       jsonbText(event.failed_jobs),jsonbText(event.failed_steps),event.run_url,
+       event.source_run_created_at,claims.workflow_ref]);
     let inboxId=inserted[0]?.ci_event_id||null,duplicate=false;
     if (!inboxId) {
       duplicate=true;
@@ -665,7 +702,7 @@ async function handler(req){
       if(body.pr!==undefined&&!pr)return reply(400,{error:"INVALID_PR_NUMBER"},origin);
       const rows=await q(db,
         `select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,
-          conclusion,category,failed_jobs,failed_steps,run_url,association_status,created_at
+          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,created_at
          from business_brain.commander_ci_event_inbox
          where ($1::int is null or pr_number=$1)
          order by created_at desc limit $2`,[pr,limit]);
