@@ -30,7 +30,7 @@ module.exports=async function(req,res){
    else if(name==='update'){action='commander_update_chat';body={issueNumber:body.issueNumber,expectedRevision:body.expectedRevision,chat:body.chat}}
    else if(name==='event'){action='commander_append_event';body={issueNumber:body.issueNumber,eventId:body.eventId,kind:body.kind,text:body.text,model:body.model}}
    else if(name==='attach'){action='commander_attach_event';body={issueNumber:body.issueNumber,eventId:body.eventId,url:body.url}}
-   else if(name==='run'){action='commander_start_run';body={issueNumber:body.issueNumber,runId:body.runId,idempotencyKey:body.idempotencyKey,executor:body.executor,message:body.message}}
+   else if(name==='run'){action='commander_start_run';body={issueNumber:body.issueNumber,runId:body.runId,idempotencyKey:body.idempotencyKey,executor:body.executor,message:body.message,modelId:body.modelId,confirmGitHubWrite:body.confirmGitHubWrite===true}}
    else return sendJson(res,400,{error:'UNKNOWN_ACTION'});
   }
   const result=await callStore(req,action,body,{method:req.method});
