@@ -54,7 +54,7 @@
     c.created_at===c.updated_at&&goodTime(c.created_at)!==null&&
     typeof c.body==='string'&&c.body.length<65000);}
   function commentUrl(c){
-    return /^https:\/\/github\.com\/andylitvinov-design\/books\/issues\/\d+#issuecomment-\d+$/.test(c?.html_url||'')?
+    return /^https:\/\/github\.com\/andylitvinov-design\/books\/(?:issues|pull)\/\d+#issuecomment-\d+$/.test(c?.html_url||'')?
       c.html_url:null;
   }
   function taskRecords(c){
@@ -135,7 +135,8 @@
       result.outcome.verified_source===true&&
       result.outcome.new_sha===result.new_sha&&
       result.outcome.task_key===route.workerTaskKey&&
-      stagePublished(answer.comment,e,route.workerTaskKey,runId,result.new_sha))
+      comments.some(function(c){return trustedComment(c)&&
+        stagePublished(c,e,route.workerTaskKey,runId,result.new_sha);}))
       empty.candidate_sha=result.new_sha;
     return empty;
   }
