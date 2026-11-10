@@ -146,3 +146,34 @@ test('Commander fallback constructs one deterministic private task and chat per 
  a.match(code,/ensureCiIncidentTask\(db,inboxOwnerId,event\)/);
  a.match(code,/AUTO_TASK_CREATED_NOT_DISPATCHED/);
 });
+
+
+test('CI route outcomes cannot violate the existing Commander chat execution_state CHECK',()=>{
+ const source=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
+ const from=source.indexOf('function commanderCiChatExecutionState(routeState: string): string {');
+ const to=source.indexOf('async function receiveCommanderCiRoute(req,origin){',from);
+ a.ok(from>=0&&to>from,'mapping exists before authenticated route receiver');
+ const body=source.slice(from,to)
+   .replace('routeState: string','routeState').replace('): string {',') {');
+ const vm=require('node:vm');
+ const mapping=vm.runInNewContext(body+'\ncommanderCiChatExecutionState',Object.create(null));
+ const allowed=new Set(['UNVERIFIED_ASSIGNMENT_ONLY','AWAITING_EXECUTOR_NOT_DISPATCHED',
+  'DISPATCHED_UNVERIFIED','WORKING_UNVERIFIED','BLOCKED',
+  'SOURCE_VERIFIED','COMPLETED_UNVERIFIED']);
+ const categories=new Map([
+  ['TASK_REQUIRES_REVIEW','BLOCKED'],
+  ['TASK_ROUTED_TO_REVIEW','BLOCKED'],
+  ['TASK_AWAITING_EXISTING_RECOVERY','AWAITING_EXECUTOR_NOT_DISPATCHED'],
+  ['TASK_WAITING_FOR_DISPATCH','AWAITING_EXECUTOR_NOT_DISPATCHED'],
+  ['EXISTING_RECOVERY_ACCEPTED','DISPATCHED_UNVERIFIED'],
+  ['DISPATCH_ACCEPTED_NOT_WORKER_STARTED','DISPATCHED_UNVERIFIED'],
+  ['DISPATCH_UNCONFIRMED_RECONCILE','DISPATCHED_UNVERIFIED']
+ ]);
+ for(const [status,expected] of categories){
+  a.equal(mapping(status),expected,status);
+  a.ok(allowed.has(mapping(status)),status+' not in CHECK allowlist');
+ }
+ a.equal(mapping('UNEXPECTED'),'BLOCKED');
+ a.match(source,/\[commanderCiChatExecutionState\(p\.state\),chats\[0\]\.chat_id,e\.inbox_owner_id\]/);
+ a.doesNotMatch(source,/\[p\.state,chats\[0\]\.chat_id,e\.inbox_owner_id\]/);
+});
