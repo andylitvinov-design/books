@@ -525,3 +525,14 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
  assert.equal(out.statusCode,410);
  assert.equal(out.body.error,'EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY');
 });
+
+test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
+ assert.match(html,/commander-chats\.js\?v=20261110-ci-classification-v1/);
+ assert.match(html,/commander-chats\.css\?v=20261110-ci-classification-v1/);
+ assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
+ for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
+  assert.ok(js.includes('classification.'+field)||js.includes('classification?.'+field),field);
+ assert.match(js,/Классификатор не разрешает запись в GitHub, retry, merge или deploy автоматически/);
+ assert.match(css,/\.cc-ci-classification-action/);
+});
