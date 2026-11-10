@@ -584,7 +584,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Ideas offers a compact set of five phrases by default. The original
       // consented voice editor is an opt-in advanced section, not a missing
       // Phrases control or a forced hidden test-only shortcut.
-      // Reuse the same persistent advancedVoice disclosure.
+      // Reopen the real Audio voice panel through its visible workspace navigation.
       // Text mode deliberately collapses the advanced editor. The actual
       // visitor taps Record a phrase to reveal it; this does not request mic access.
       await expect(advancedVoice).toHaveAttribute("open","");
