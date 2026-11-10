@@ -422,6 +422,34 @@ async function exercise(engine, browserType, width) {
           const capture = paidPage.locator('[data-service-visual-screen="final-capture"]');
           await expect(capture).toHaveCount(1);
           const form = capture.locator('form[data-compact-lead-form]');
+          // Production may intentionally run the owner-approved messenger-only
+          // intake mode. In that mode no email/phone form is rendered: require
+          // the visible session-format selector and explicit WhatsApp/Telegram
+          // links instead. Never force-enable legacy contact collection in CI.
+          const messengerOnly = await capture.getAttribute('data-messenger-only-intake') !== null;
+          if (messengerOnly) {
+            await expect(form).toHaveCount(0);
+            await expect(capture.locator('input, textarea')).toHaveCount(0);
+            const messengerFormats = capture.locator('select[data-messenger-offer-format]');
+            await expect(messengerFormats).toHaveCount(1);
+            await expect(messengerFormats.locator('option[value="30-min"]')).toContainText('€50');
+            await expect(messengerFormats.locator('option[value="60-min"]')).toContainText('€100');
+            await messengerFormats.selectOption('60-min');
+            await expect(messengerFormats).toHaveValue('60-min');
+            await messengerFormats.selectOption('30-min');
+            await expect(messengerFormats).toHaveValue('30-min');
+            const actions = capture.locator('[data-messenger-only-contact]');
+            await expect(actions).toHaveCount(1);
+            const whatsapp = actions.locator('a[data-messenger-only-channel="whatsapp"]');
+            const telegram = actions.locator('a[data-messenger-only-channel="telegram"]');
+            await expect(whatsapp).toHaveAttribute('target', '_blank');
+            await expect(telegram).toHaveAttribute('target', '_blank');
+            await expect(whatsapp).toHaveAttribute('rel', /noopener/);
+            await expect(telegram).toHaveAttribute('rel', /noopener/);
+            assert.equal(new URL(await whatsapp.getAttribute('href')).origin, 'https://wa.me');
+            assert.equal(new URL(await telegram.getAttribute('href')).origin, 'https://t.me');
+            return { messengerOnly: true, paidPricesVerified: true, explicitChannelsVerified: true, noContactCollection: true };
+          }
           await expect(form).toHaveAttribute('data-compact-hydrated', 'true');
           const formats = capture.locator('select');
           await expect(formats).toHaveCount(1);
