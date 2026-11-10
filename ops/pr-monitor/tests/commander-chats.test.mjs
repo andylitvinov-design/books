@@ -414,6 +414,33 @@ test('private Commander writes raw JSON text through text-to-jsonb casts, not JS
  assert.match(edge,/JSON\.stringify\(event\)/);
 });
 
+test('Hermes source writes require one-shot owner consent and use only a verified zero-price model',()=>{
+ const html=src('chats.html'),ui=src('commander-chats.js'),api=src('api/commander-chats.js'),css=src('commander-chats.css');
+ for(const id of ['new-model-label','new-model','new-github-write-wrap','new-github-write','github-write-wrap','github-write'])
+  assert.ok(html.includes('id="cc-'+id+'"'),id);
+ assert.ok(html.includes('type="checkbox" id="cc-github-write"'));
+ assert.ok(api.includes("name==='executor_models'"));
+ assert.ok(api.includes('HH_COMMANDER_EXECUTOR_FREE_MODELS_V1'));
+ assert.ok(api.includes('Number(v)!==0'));
+ assert.ok(api.includes("confirmGitHubWrite:body.executor==='hermes'&&body.confirmGitHubWrite===true"));
+ assert.ok(ui.includes("SERVER+'?action=executor_models'"));
+ assert.ok(ui.includes("mode==='hermes'&&el('github-write').checked===true"));
+ assert.ok(ui.includes('modelId:model,confirmGitHubWrite:writeApproved'));
+ assert.ok(ui.includes("el('github-write').checked=false"));
+ assert.ok(ui.includes("configureModels('new')"));
+ assert.ok(ui.includes("configureModels('thread')"));
+ assert.ok(ui.includes("msg.kind==='agent_final'&&msg.sourceWrite?.verified===true"));
+ assert.ok(css.includes('.cc-github-write-wrap[hidden]'));
+ assert.doesNotMatch(ui,/HERMES_SHARED_SECRET|GITHUB_TOKEN|service_role/);
+});
+test('free Hermes model catalogue authenticates owner before its read-only public request',()=>{
+ const api=src('api/commander-chats.js');
+ const owner=api.indexOf("const owner=await callStore(req,'status'");
+ const request=api.indexOf("const response=await fetch('https://openrouter.ai/api/v1/models");
+ assert.ok(owner>=0&&request>owner);
+ assert.ok(api.includes("m.id.endsWith(':free')"));
+ assert.doesNotMatch(api,/Authorization:\s*'Bearer '|OPENROUTER_API_KEY/);
+});
 test('verified GitHub CI reports carry the top-level source URL consumed by the chat renderer',()=>{
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
  const render=src('commander-chats.js');
