@@ -112,7 +112,7 @@ test('bridge sends GitHub OIDC-authenticated event to the fixed Commander inbox 
   assert.equal(request.options.headers.authorization, 'Bearer ' + 'x'.repeat(180));
   assert.equal(request.options.headers['x-hermes-secret'], undefined);
   assert.equal(JSON.parse(request.options.body).diagnostics.category, 'TYPESCRIPT');
-  assert.equal(JSON.parse(request.options.body).diagnostics.classification.ruleset_version, '1.0.0');
+  assert.equal(JSON.parse(request.options.body).diagnostics.classification.ruleset_version, '1.1.0');
   assert.equal(result.accepted, true);
   assert.equal(result.prNumber, 44);
   assert.equal(result.inboxId, 'abc');
