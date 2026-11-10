@@ -23,18 +23,14 @@ function constantTimeEqual(a, b) {
   return diff === 0;
 }
 async function authorized(req, db) {
-  const suppliedKey = req.headers.get("x-openrouter-api-key") || "";
-  if (suppliedKey.startsWith("sk-or-") && suppliedKey.length >= 30 && suppliedKey.length <= 512)
-    return { ok: true, apiKey: suppliedKey, authMode: "GITHUB_ACTIONS_SECRET" };
   const supplied = req.headers.get("x-agent-commander-worker") || "";
-  if (supplied.length < 40 || supplied.length > 256) return { ok: false, apiKey: "" };
+  if (supplied.length < 40 || supplied.length > 256) return false;
   const rows = await query(db,
     "select decrypted_secret from vault.decrypted_secrets where name=$1 limit 1",
     [WORKER_SECRET_NAME]);
-  return rows.length === 1 && constantTimeEqual(supplied, rows[0].decrypted_secret)
-    ? { ok: true, apiKey: Deno.env.get("HH_PM_OPENROUTER_API_KEY") || Deno.env.get("OPENROUTER_API_KEY") || "", authMode: "SUPABASE_VAULT" }
-    : { ok: false, apiKey: "" };
+  return rows.length === 1 && constantTimeEqual(supplied, rows[0].decrypted_secret);
 }
+
 async function stableEventId(ownerId, scope) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ownerId + ":" + scope));
   const bytes = Array.from(new Uint8Array(digest).slice(0, 16));
@@ -90,8 +86,8 @@ async function failClaim(db, run, token, error) {
   }
   return { status, reasonCode: code, retryable };
 }
-async function executeOne(db, suppliedApiKey = "") {
-  const apiKey = suppliedApiKey || Deno.env.get("HH_PM_OPENROUTER_API_KEY") || Deno.env.get("OPENROUTER_API_KEY") || "";
+async function executeOne(db) {
+  const apiKey = Deno.env.get("HH_PM_OPENROUTER_API_KEY") || Deno.env.get("OPENROUTER_API_KEY") || "";
   if (!apiKey) {
     await query(db,
       "update business_brain.commander_execution_runs set reason_code='OPENROUTER_API_KEY_NOT_CONFIGURED',worker_last_error_code='OPENROUTER_API_KEY_NOT_CONFIGURED',updated_at=now() where status='QUEUED'");
@@ -195,10 +191,8 @@ Deno.serve(async req => {
   if (!dbUrl) return json(503, { error: "PRIVATE_DATABASE_NOT_CONFIGURED" });
   const db = postgres(dbUrl, { max: 1, connect_timeout: 6, idle_timeout: 4, ssl: "require", prepare: false });
   try {
-    const auth = await authorized(req, db);
-    if (!auth.ok) return json(401, { error: "WORKER_AUTH_REJECTED" });
-    const result = await executeOne(db, auth.apiKey);
-    return json(200, { ...result, authMode: auth.authMode });
+    if (!await authorized(req, db)) return json(401, { error: "WORKER_AUTH_REJECTED" });
+    return json(200, await executeOne(db));
   } catch (error) {
     console.error("AGENT_COMMANDER_OPENROUTER_WORKER_ERROR", String(error?.name || "unknown"));
     return json(503, { error: "WORKER_UNAVAILABLE" });
