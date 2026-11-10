@@ -140,6 +140,7 @@ test('specialist gate failures are not misclassified as test failures by the sub
   assert.deepEqual(result.failedJobs, ['hh-specialist', 'hh-merge-check']);
   assert.equal(buildDiagnostics([{name:'unit-tests',conclusion:'failure'}],makePR()).category,'TEST_FAILURE');
   assert.equal(buildDiagnostics([{name:'vitest',conclusion:'failure'}],makePR()).category,'TEST_FAILURE');
+  assert.equal(buildDiagnostics([{name:'jest',conclusion:'failure'}],makePR()).category,'TEST_FAILURE');
   assert.equal(buildDiagnostics([{name:'typescript-check',conclusion:'failure'}],makePR()).category,'TYPESCRIPT');
 });
 
