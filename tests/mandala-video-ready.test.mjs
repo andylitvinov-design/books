@@ -201,7 +201,12 @@ test("Free uses the original generator; paid Ready tiers reuse the fixed-SKU man
   assert.match(ready,/onGenerateBasicVideo\(\)/);
   assert.doesNotMatch(ready,/fetch\(.*pay|fetch\(.*billing|window\.location\s*=/);
   assert.doesNotMatch(ready,/createVideoCartSelection\(id,\s*(wish|focus|anchor)/);
-  assert.match(studio,/basicFreeAvailable=\{Boolean\(creditCatalog/);
+  assert.match(studio,/basicFreeAvailable=\{basicVideoAccess\.allowed\}/);
+  assert.match(studio,/basicFreeIssue=\{basicVideoAccess\.reason\}/);
+  assert.match(studio,/basicCreditCost=\{basicVideoAccess\.chargeCredits\}/);
+  assert.match(studio,/readyBasicVideoAccess\(/);
+  assert.match(ready,/data-ready-video-credit-cost/);
+  assert.match(ready,/data-ready-sign-in-credits/);
   assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
   assert.match(studio,/if\(!freeVideoSelected\)\{/);
   assert.match(studio,/return createQuickVideo\(\)/);
@@ -225,4 +230,19 @@ test("WebKit voice advanced settings use native one-tap disclosure without a dou
   assert.doesNotMatch(disclosure,/node\.open\s*=\s*!node\.open/,
     "a synchronous manual toggle can be reversed by WebKit's native click");
   assert.match(disclosure,/onToggle=\{event=>\{/);
+});
+
+test("Ready Basic auto-attaches suggested music before Generate without bypassing manual audio rights",()=>{
+  const start=studio.indexOf("// Auto-music must be ATTACHED before the Montage Generate tap");
+  const end=studio.indexOf("// A paused film",start);
+  assert.ok(start>0&&end>start,"the original shared audio effect remains in the studio");
+  const effect=studio.slice(start,end);
+  assert.match(effect,/if\(!audioAuto\|\|uploadedAudio\|\|attachedAudio\?\.kind==="file"\|\|/);
+  assert.match(effect,/attachedAudio\?\.kind==="presets"\)return/);
+  assert.match(effect,/activeWorkspace!=="editor"&&activeWorkspace!=="ready"/);
+  assert.match(effect,/setAttachedAudio\(current=>/);
+  assert.match(studio,/const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey/);
+  assert.match(studio,/if\(audioNeedsAttachment\)\{\s*setNotice\(audioUi\.needsAttach\)/);
+  assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
+  assert.match(studio,/return createQuickVideo\(\)/);
 });

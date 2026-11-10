@@ -994,10 +994,13 @@ const runEngine = async ([engine, browserType]) => {
           await captureSyntheticOverview(page,effects,
             process.env.HH_HYPNO_SCREENSHOT_DIR+"/"+engine+"-"+locale+"-"+width+"-third-workspace.png");
         }
-        await workspaceQuick.locator('[data-video-quick-control="editor"]').click();
-        const conceptPanel=page.locator("[data-video-montage-concept]");
+        await workspaceQuick.locator('[data-video-quick-control="phrases"]').click();
+        await page.locator('[data-video-ideas-tab="concept"]').click();
+        const conceptPanel=page.locator("[data-video-ideas-concept-panel]");
         await expect(conceptPanel).toBeVisible({timeout:15000});
         await expect(conceptPanel.locator("[data-video-concept-approve]")).toBeVisible();
+        await workspaceQuick.locator('[data-video-quick-control="editor"]').click();
+        await page.locator('[data-video-montage-tab="settings"]').click();
         const conceptTextTools=page.locator("[data-video-concept-text-tools]");
         if(!(await conceptTextTools.evaluate(node=>node.open)))
           await conceptTextTools.locator(":scope > summary").click();

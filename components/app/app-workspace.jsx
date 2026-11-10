@@ -71,6 +71,7 @@ import CabinetGuestOverview from '@/components/app/cabinet-guest-overview'
 import { ProfileHubTabs, ProfileResultsArchive } from '@/components/app/profile-hub-tabs'
 import ProfileSettingsDisclosure from '@/components/app/profile-settings-disclosure'
 import CabinetToday from '@/components/app/cabinet-today'
+import MyCoachingPlan from '@/components/app/my-coaching-plan'
 import { DownloadPractitionerReport, PersonalAnalysisPanel } from '@/components/app/personal-analysis-panel'
 import { formatReportDate, getPortraitNextStep, latestCompatibleChange, reportTimeline } from '@/lib/app/cabinet-ux'
 
@@ -678,6 +679,7 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'tests', label: locale === 'ru' ? 'Тесты' : 'Tests', href: root + '/tests', icon: ClipboardList },
     { id: 'portfolio', label: locale === 'ru' ? 'Отчёты' : 'Reports', href: root + '/portfolio', icon: BarChart3 },
     { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My Progress', href: root + '/progress', icon: Activity },
+    { id: 'my-coaching-plan', label: locale === 'ru' ? 'Мой план' : locale === 'es' ? 'Mi plan' : 'My Coaching Plan', href: root + '/my-coaching-plan', icon: Target },
     { id: 'course', label: locale === 'ru' ? 'Курсы' : 'Courses', href: root + '/course?view=courses', icon: BookOpen },
     { id: 'practice', label: locale === 'ru' ? 'Практика' : 'Practice', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : 'Messages', href: root + '/messages', icon: MessageCircle },
@@ -688,7 +690,8 @@ export default function AppWorkspace({ locale, path = [] }) {
     { id: 'practice', label: locale === 'ru' ? 'Мои практики' : locale === 'es' ? 'Mis prácticas' : 'My practices', href: '/' + locale + '/practice', icon: Users },
     { id: 'messages', label: locale === 'ru' ? 'Сообщения' : locale === 'es' ? 'Mensajes' : 'Messages', href: root + '/messages', icon: MessageCircle },
     { id: 'progress', label: locale === 'ru' ? 'Мой прогресс' : locale === 'es' ? 'Mi progreso' : 'My progress', href: root + '/progress', icon: BarChart3 },
-    { id: 'settings', label: locale === 'ru' ? 'Настройки' : locale === 'es' ? 'Ajustes' : 'Settings', href: root + '/settings', icon: SlidersHorizontal },
+    { id: 'my-coaching-plan', label: locale === 'ru' ? 'Мой план' : locale === 'es' ? 'Mi plan' : 'My plan', href: root + '/my-coaching-plan', icon: Target },
+    // Settings remains available from the account menu; the bottom dock keeps My Plan visible.
   ]
   const navIsActive = (id) => page === id ||
     (id === 'portrait' && page === 'labs') ||
@@ -794,6 +797,7 @@ export default function AppWorkspace({ locale, path = [] }) {
            {page === 'labs' && <LabResults key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'portfolio' && <PortfolioPage data={data} locale={locale} />}
            {page === 'progress' && <MyProgress key={data.account.id} data={data} locale={locale} />}
+          {page === 'my-coaching-plan' && <MyCoachingPlan key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'course' && <MyCourse data={data} locale={locale} />}
           {page === 'business' && <BusinessCoaching key={data.account.id} accountId={data.account.id} locale={locale} />}
           {page === 'coaching' && (['egyptian','greek'].includes(recordId)

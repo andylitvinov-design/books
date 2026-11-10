@@ -887,6 +887,7 @@ test('Public Services ancestry proof uses exact merge parents and authenticated 
     ?.split('      - uses: actions/setup-node@v4')[0];
   assert.ok(preflight, 'Public Services must validate the real synthetic merge before routing');
   const required = [
+    'fetch-depth: 2',
     'EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}',
     'PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}',
     'EXPECTED_MERGE_SHA: ${{ github.sha }}',
@@ -900,10 +901,13 @@ test('Public Services ancestry proof uses exact merge parents and authenticated 
     'https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${EVENT_BASE_SHA}...${tested_base}',
     '[[ "$relation" == "ahead" || "$relation" == "identical" ]]',
   ];
-  for (const item of required) assert.ok(preflight.includes(item),
+  for (const item of required) assert.ok((item === 'fetch-depth: 2' ? workflow : preflight).includes(item),
     'Missing fail-closed exact merge / ancestry proof: ' + item);
+  assert.ok(preflight.indexOf('mapfile -t tested_parents') < preflight.indexOf('compare_json=') &&
+    preflight.indexOf('compare_json=') < preflight.indexOf('[[ "$relation" == "ahead" || "$relation" == "identical" ]]'),
+    'Exact merge parents must be checked before authenticated ancestry acceptance');
   assert.doesNotMatch(preflight, /fetch-depth: 0|git fetch .*--unshallow|continue-on-error:\s*true|git merge-base --is-ancestor/,
-    'No unbounded clone, ignored failures, or shallow local ancestry assumption allowed');
+    'No full clone or ignored failures allowed');
   assert.ok(workflow.includes("  public-services:\n    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}"),
     'Ready PR real browser source/security gating must remain enabled');
 });

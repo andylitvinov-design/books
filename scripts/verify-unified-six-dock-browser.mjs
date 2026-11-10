@@ -10,11 +10,11 @@ if(!["localhost","127.0.0.1"].includes(url.hostname)||
 const folder="artifacts/unified-six-dock";
 mkdirSync(folder,{recursive:true});
 const results=[];
-const ids=["mytube","video","coach","ai","services","practice","profile"];
+const ids=["mytube","video","master","ai","analysis","practice","profile"];
 const labels={
-  en:["MyTube","MyVideo","My Coach","AI/Chat","Services","Study","Profile"],
-  ru:["MyTube","MyVideo","Мой коуч","ИИ/Чат","Услуги","Обучение","Профиль"],
-  es:["MyTube","MyVideo","Mi coach","IA/Chat","Servicios","Estudiar","Perfil"],
+  en:["MyTube","MyVideo","Services","AI/Chat","Hints","Study","Profile"],
+  ru:["MyTube","MyVideo","Услуги","ИИ/Чат","Подсказки","Обучение","Профиль"],
+  es:["MyTube","MyVideo","Servicios","IA/Chat","Pistas","Estudiar","Perfil"],
 };
 
 // The fixed dock belongs to the ROOT shell, not to individual pages. Check
@@ -268,9 +268,9 @@ async function inspect(browserType,locale,width){
       ["practice",prefix+"/holistic-support/mobile"],
       ["video",prefix+"/holistic-support/mandala"],
       ["ai",prefix+"/app/messages?section=ai"],
-      ["coach",prefix+"/masters"],
+      ["master",prefix+"/practice"],
       ["profile","/"+(locale==="es"?"en":locale)+"/app/portrait"],
-      ["services",prefix+"/services"],
+      ["analysis",prefix+"/services/free-situation-review"],
     ];
     for(const [active,path] of routeCases){
       const marker=id+":"+active;
@@ -406,8 +406,8 @@ async function inspect(browserType,locale,width){
     for(const [tab,path] of [
       ["video","/ru/holistic-support/mandala"],
       ["mytube","/ru/mytube"],
-      ["coach","/ru/masters"],
-      ["services","/ru/services"],
+      ["master","/ru/practice"],
+      ["analysis","/ru/services/free-situation-review"],
       ["practice","/ru/holistic-support/mobile"],
     ]){
       await page.locator('[data-unified-dock-item="'+tab+'"]').click();
@@ -720,7 +720,7 @@ try{
  assert.equal(await page.locator('[data-support-practice-tabs] button').nth(1).getAttribute("aria-pressed"),"true");
  results.push({journey:"MyTube → Video → six real iChat choices → one protected transcript → private Orders/Clients → Practice",passed:true});
  // Both Home and Practice now share the original Practice visual dock,
- // with one seventh link to the existing Services page.
+ // with one seventh link to the REAL free express-review page.
  await page.goto(origin+"/ru",{waitUntil:"domcontentloaded",timeout:75000});
  const homeDock=page.locator("[data-hh-unified-dock]");
  await homeDock.waitFor({state:"visible",timeout:30000});
@@ -743,17 +743,17 @@ try{
  }
 
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
- await homeDock.locator('[data-unified-dock-item="services"]').click();
- await page.waitForURL(/\/ru\/services\/?$/,{timeout:45000});
- await page.locator('main.services-shell').waitFor({state:"visible",timeout:30000});
- assert.equal(await page.locator('[data-unified-dock-item="services"][aria-current="page"]').count(),1);
+ await homeDock.locator('[data-unified-dock-item="analysis"]').click();
+ await page.waitForURL(/\/ru\/services\/free-situation-review\/?$/,{timeout:45000});
+ await page.locator('[data-free-entry-landing="situation"]').waitFor({state:"visible",timeout:30000});
+ assert.equal(await page.locator('[data-unified-dock-item="analysis"][aria-current="page"]').count(),1);
  assert.equal(await page.locator(".mobile-bottom-navigation:visible").count(),0);
  await homeDock.locator('[data-unified-dock-item="practice"]').click();
  await page.waitForURL(/\/ru\/holistic-support\/mobile\/?$/,{timeout:45000});
  await page.locator("[data-support-practice-tabs]").waitFor({state:"visible",timeout:30000});
  assert.equal(await page.locator("[data-hh-unified-dock]:visible").count(),1);
  assert.equal(await page.locator('[data-hh-unified-dock] [data-unified-dock-item]').count(),7);
- results.push({journey:"Holistic House Home → Services → Practice with one seven-tab dock",passed:true});
+ results.push({journey:"Holistic House Home → original Free Analysis → Practice with one seven-tab dock",passed:true});
 
  // Profile unification: both Home and Practice open the existing private hub.
  // The protected CSP transition must remain a full server-authorized reload.

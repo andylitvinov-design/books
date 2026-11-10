@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createMetaOAuthState,verifyMetaOAuthState,encryptMetaCredentials,decryptMetaCredentials,META_REQUIRED_SCOPES,META_ACCOUNT_TARGETS} from '../lib/growth-studio/meta-instagram.mjs'
+import {createMetaOAuthState,verifyMetaOAuthState,encryptMetaCredentials,decryptMetaCredentials,META_REQUIRED_SCOPES,META_ACCOUNT_TARGETS,metaInstagramConfigurationStatus} from '../lib/growth-studio/meta-instagram.mjs'
 import {isValidInstagramInsightDate,isValidInstagramInsightRange,instagramInsightUnixRange,normalizeInstagramInsightMetrics} from '../lib/growth-studio/instagram-insights.mjs'
 
 const secret='synthetic-test-secret-only-never-a-real-production-secret'
@@ -60,4 +60,55 @@ test('Instagram Insights normalization keeps only allowlisted numeric aggregate 
     {name:'follower_demographics',total_value:{value:{age:'25-34'}}},
   ]})
   assert.deepEqual(metrics,{views:123,reach:20,saves:null,profile_links_taps:null})
+})
+
+
+test('Meta configuration setup reports safe missing names, never secret values or fake publishing proof',()=>{
+  const incomplete=metaInstagramConfigurationStatus({
+    META_REDIRECT_URI:'https://holistichouse.vercel.app/api/admin/growth-studio/meta/callback',
+    META_GRAPH_API_VERSION:'v27.0',
+    META_TOKEN_ENCRYPTION_KEY:'private-cryptographic-key',
+    PRESCRIPTIONS_KV_REST_API_URL:'https://example-redis.test',
+    PRESCRIPTIONS_KV_REST_API_TOKEN:'private-redis-token',
+  })
+  assert.equal(incomplete.authorizationReady,false)
+  assert.deepEqual(incomplete.missingSettings,['META_APP_ID','META_APP_SECRET'])
+  assert.equal(incomplete.publishFlagEnabled,false)
+  assert.equal(JSON.stringify(incomplete).includes('private-cryptographic-key'),false)
+  assert.equal(JSON.stringify(incomplete).includes('private-redis-token'),false)
+  const ready=metaInstagramConfigurationStatus({
+    META_APP_ID:'synthetic-app-id',META_APP_SECRET:'synthetic-app-secret',
+    META_REDIRECT_URI:'https://holistichouse.vercel.app/api/admin/growth-studio/meta/callback',
+    META_GRAPH_API_VERSION:'v27.0',META_TOKEN_ENCRYPTION_KEY:'secret-key',
+    PRESCRIPTIONS_KV_REST_API_URL:'https://redis.example.test',
+    PRESCRIPTIONS_KV_REST_API_TOKEN:'secret-redis',
+    HH_GROWTH_INSTAGRAM_PUBLISH_ENABLED:'true',
+  })
+  assert.equal(ready.authorizationReady,true)
+  assert.equal(ready.publishFlagEnabled,true)
+  assert.deepEqual(ready.missingSettings,[])
+  assert.equal(JSON.stringify(ready).includes('synthetic-app-secret'),false)
+  const malformed=metaInstagramConfigurationStatus({
+    ...{META_APP_ID:'1',META_APP_SECRET:'x',META_TOKEN_ENCRYPTION_KEY:'x',
+      PRESCRIPTIONS_KV_REST_API_URL:'http://127.0.0.1',
+      PRESCRIPTIONS_KV_REST_API_TOKEN:'x'},META_REDIRECT_URI:'http://untrusted.example.test',
+    META_GRAPH_API_VERSION:'bad',
+  })
+  for(const name of ['META_GRAPH_API_VERSION','META_REDIRECT_URI','PRESCRIPTIONS_KV_REST_API_URL'])
+    assert.ok(malformed.missingSettings.includes(name))
+})
+
+test('Meta setup route is owner-only and UI disables OAuth when environment is not ready',async()=>{
+  const {readFileSync}=await import('node:fs')
+  const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8')
+  const route=read('app/api/admin/growth-studio/meta/status/route.js')
+  const ui=read('components/growth-studio-connections.jsx')
+  assert.match(route,/requireAdminRequest\(\)/)
+  assert.match(route,/metaInstagramConfigurationStatus\(\)/)
+  assert.match(ui,/metaSetup\?\.authorizationReady/)
+  assert.match(ui,/metaSetup\.missingSettings\.join/)
+  assert.match(ui,/<button type="button" disabled title=/)
+  assert.match(ui,/const configuration=result\.configuration\|\|null/)
+  assert.match(ui,/setMetaSetup\(configuration\)/)
+  assert.match(ui,/onMetaStatus\(\{accounts,configuration\}\)/)
 })

@@ -11,6 +11,7 @@ import originalMotionLibrary from "@/data/video-catalog/original-motion-scenes-v
 import extraFreeFilmPresets from "@/data/video-catalog/free-film-presets-v2.json";
 import { MandalaHypnoCompact } from "./mandala-hypno-compact";
 import { MandalaVideoIdeas } from "./mandala-video-ideas";
+import {MandalaVideoPersonalization,DEFAULT_VIDEO_GOAL_PROFILE,type VideoGoalProfile} from "./mandala-video-personalization";
 import { MandalaVideoConcept, type ApprovedVideoConcept } from "./mandala-video-concept";
 
 import type { HypnoLightSettings } from "./mandala-hypnocorrection-mobile";
@@ -91,6 +92,7 @@ import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedS
 import type { PublicLocale } from "@/lib/public-locales";
 import {fetchVideoCreditCatalog,fetchVideoCreditStatus,
   postVideoCreditAction,releaseVideoCreditOnExit} from "@/lib/video-credits/client.mjs";
+import {readyBasicVideoAccess} from "@/lib/video-credits/ready-basic-eligibility.mjs";
 import { SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import styles from "./mandala-meditation.module.css";
 import videoStyles from "./mandala-video-mobile.module.css";
@@ -100,6 +102,7 @@ import videoStyles from "./mandala-video-mobile.module.css";
 const MandalaHypnocorrectionMobile = dynamic(() => import("./mandala-hypnocorrection-mobile").then(module => module.MandalaHypnocorrectionMobile));
 const MandalaGuidedCourse = dynamic(() => import("./mandala-guided-course").then(module => module.MandalaGuidedCourse));
 const MandalaCinematicDirector = dynamic(() => import("./mandala-cinematic-director").then(module => module.MandalaCinematicDirector));
+const MandalaAutomaticStoryboard = dynamic(() => import("./mandala-automatic-storyboard").then(module => module.MandalaAutomaticStoryboard));
 const MandalaVideoDirectorChat = dynamic(() => import("./mandala-video-director-chat").then(module => module.MandalaVideoDirectorChat));
 const MandalaFirstVideoStart = dynamic(() => import("./mandala-first-video-start").then(module => module.MandalaFirstVideoStart));
 const MandalaStoriesCharacters = dynamic(() => import("./mandala-stories-characters").then(module => module.MandalaStoriesCharacters));
@@ -1938,12 +1941,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
-  const [ideasSubtab,setIdeasSubtab] = useState<"text"|"voice"|"my-voice">("text");
+  const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"concept">("personalization");
+  const [ideasVoiceMode,setIdeasVoiceMode] = useState<"voice"|"my-voice">("voice");
+  const [ideasProfile,setIdeasProfile] = useState<VideoGoalProfile>(DEFAULT_VIDEO_GOAL_PROFILE);
+  // Do not misread initial preselected chips as answers until the visitor
+  // actually confirms the Personalization step.
+  const [ideasProfileConfirmed,setIdeasProfileConfirmed] = useState(false);
   const [basicPanelTab,setBasicPanelTab] = useState<"style"|"photo"|"voice"|"music">("style");
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
-  const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"visual"|"concept"|"audio">("effects");
+  const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio">("effects");
+  const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"effects">("visual");
   const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
   const audioLibraryCloseRef=useRef<HTMLButtonElement>(null);
@@ -2329,14 +2338,17 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [courseMeditationDraft,setCourseMeditationDraft] = useState("");
   // A deferred opener must never override a later explicit "Do not add" choice.
   const meditationDisclosureEpochRef=useRef(0);
+  const [courseMeditationIncluded,setCourseMeditationIncluded]=useState(false);
   const [courseMeditationOmitted,setCourseMeditationOmitted]=useState(false);
-  // A native <details> can be reopened by an earlier WebKit animation frame
-  // after the visitor opts out. Enforce the revocation after React commits.
+  // Commit native <details> after React has committed the corresponding script
+  // choice. WebKit can drop an rAF opener when the parent state rerenders.
+  // Include and omit share one deterministic, post-commit disclosure owner.
   useLayoutEffect(()=>{
-    if(!courseMeditationOmitted)return;
     const details=document.querySelector("[data-video-therapy-meditation-audio]");
-    if(details instanceof HTMLDetailsElement)details.open=false;
-  },[courseMeditationOmitted,courseMeditationDraft]);
+    if(!(details instanceof HTMLDetailsElement))return;
+    if(courseMeditationOmitted)details.open=false;
+    else if(courseMeditationIncluded&&courseMeditationDraft)details.open=true;
+  },[courseMeditationIncluded,courseMeditationOmitted,courseMeditationDraft]);
   const [meditationFocus,setMeditationFocus] = useState<GuidedMeditationFocus>({
     difficulty:"",goal:"",goals:[],details:[]
   });
@@ -2381,6 +2393,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setCreditSession(error instanceof Error&&error.message==="SIGN_IN_REQUIRED"?"guest":"unavailable");
     }
   },[]);
+  // Preview-only eligibility: the original server ledger still authorizes every debit.
+  const basicVideoAccess=readyBasicVideoAccess({
+    catalog:creditCatalog,session:creditSession,balanceCredits:creditBalance,guestFirstVideoUsed
+  });
   const [creditConfirmed,setCreditConfirmed]=useState(true);
   const [creditRetry,setCreditRetry]=useState(false);
   const creditOpRef=useRef<string|null>(null);
@@ -2759,14 +2775,18 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const affirmationLines = linesForVideoAffirmations(locale,theme,affirmations);
   // Authored setup clips suppress the original transient duplicate overlays.
   const currentAffirmationSpeech=affirmations.enabled?affirmationNarrationText(affirmationLines):"";
-  // Preserve approved narration during pending edits; invalidate only when the actual spoken selection or duration changes.
+  // Phrase selection is part of the approved narration itself: removing a spoken
+  // line invalidates its WAV immediately, even while the phrase editor is pending.
+  // Other changes (duration/voice preferences) wait until pending edits are approved.
+  const narrationPhraseMismatch=attachedAudio?.kind==="file"&&attachedAudio.narration&&
+    !isApprovedAffirmationNarration(affirmationLines,attachedAudio.spokenText,affirmations.enabled);
   const narrationDurationMismatch=attachedAudio?.kind==="file"&&attachedAudio.narration&&
     Math.abs((attachedAudio.mixSeconds??0)-duration)>0.35;
-  const narrationInvalid=Boolean(!phrasePending&&attachedAudio?.kind==="file"&&attachedAudio.narration&&
-    (!isApprovedAffirmationNarration(affirmationLines,attachedAudio.spokenText,affirmations.enabled) || narrationDurationMismatch ||
+  const narrationInvalid=Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration&&
+    (narrationPhraseMismatch || (!phrasePending&&(narrationDurationMismatch ||
       attachedAudio.voiceId!==voicePreferences.voiceId || attachedAudio.language!==voicePreferences.language ||
       attachedAudio.bed!==voicePreferences.bed ||
-      (attachedAudio.speechSeconds||0)>duration-effectiveAudioStartSeconds-0.35));
+      (attachedAudio.speechSeconds||0)>duration-effectiveAudioStartSeconds-0.35))));
   // Select one client-appropriate text source before any Canvas frame is drawn.
   // Explicit edits and already-approved speech are protected from replacement.
   const singleTextSource=pickSingleVideoTextSource({
@@ -3010,16 +3030,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
     return () => { window.cancelAnimationFrame(firstFrame); window.cancelAnimationFrame(nextFrame); };
   }, [result]);
-  // Auto-music must be ATTACHED before the Montage Generate tap. The earlier
-  // suggestion-only effect changed music without attachedAudio, so the real
-  // recorder's rights guard redirected Generate into the large Audio gallery.
-  // Keep manual silence, uploaded tracks and narration fully authoritative.
+  // Auto-music must be ATTACHED before the Montage Generate tap and Ready Basic.
+  // Previously Ready suggested a track but left it unattached; Create then
+  // opened the large Audio overlay instead of rendering. Uploaded tracks,
+  // manual choices, silence and rights checks retain their existing gates.
   useEffect(() => {
     if(!audioAuto||uploadedAudio||attachedAudio?.kind==="file"||
        attachedAudio?.kind==="presets")return;
     const recommended=recommendedAudioId||"none";
     setMusic(current=>current===recommended?current:recommended);
-    if(activeWorkspace!=="editor")return;
+    if(activeWorkspace!=="editor"&&activeWorkspace!=="ready")return;
     setAttachedAudio(current=>{
       if(current?.kind==="file"||current?.kind==="presets")return current;
       if(recommended==="none")return null;
@@ -4774,7 +4794,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setVoiceVisualPlan(plan);setAudioPlanApplied(false);
     if(!plan.canExport||!plan.edit){
       // Editorial Concept can be reviewed even before licensed media is available.
-      setActiveWorkspace("editor");setMontagePanel("concept");
+      setActiveWorkspace("phrases");setIdeasSubtab("concept");
       setNotice(locale==="ru"?"Концепция речи готова; видеосцены ещё требуют проверки.":
         locale==="es"?"Concepto listo; las escenas aún requieren verificación.":
         "Speech concept ready; footage still requires verification.");
@@ -4801,7 +4821,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setAudioAuto(false);setSoundVolume(100);setMusic("none");
     setWish(transcript.text.slice(0,800));setVideoScenarioOpen(true);
     if(automatic){
-      setActiveWorkspace("editor");setMontagePanel("concept");
+      setActiveWorkspace("phrases");setIdeasSubtab("concept");
       setShowAdvancedVideo(true);
     }
     setSttError("");
@@ -5184,13 +5204,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return;
     }
     if(montagePanel==="text"){
-      setMontagePanel("visual");setNotice("");setPreviewPlaying(false);
+      setMontagePanel("audio");setBasicPanelTab("music");setNotice("");setPreviewPlaying(false);
       window.requestAnimationFrame(()=>
         document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
       return;
     }
-    // Legacy manual audio editor remains available until the separate Audio migration.
-    setMontagePanel("audio");setBasicPanelTab("music");setNotice("");
+    // Soundtrack remains in Montage; visual effect presets move to Hypno > Effects.
+    setHypnoEntryGroup("effects");setActiveWorkspace("effects");setNotice("");setPreviewPlaying(false);
   };
 
   // First mobile step is only the short goal, category and optional request.
@@ -5575,14 +5595,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Mic size={23} aria-hidden="true"/></span>
-          <div><h3>{activeWorkspace==="phrases"&&ideasSubtab==="my-voice"?
+          <div><h3>{activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen?
               (locale==="ru"?"Мой голос для видео":locale==="es"?"Mi voz para el vídeo":"My voice for your video"):
-              activeWorkspace==="phrases"&&ideasSubtab==="voice"?
+              activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen?
               (locale==="ru"?"Голос для вашего видео":locale==="es"?"Voz para tu vídeo":"Voice for your video"):
               (locale==="ru"?"Голос для озвучки фраз":locale==="es"?"Voz para las frases":"Voice for phrases")}</h3>
-            <p>{activeWorkspace==="phrases"&&ideasSubtab==="my-voice"?
+            <p>{activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen?
               (locale==="ru"?"Загрузите или запишите собственный голос.":locale==="es"?"Sube o graba tu propia voz.":"Upload or record your own voice."):
-              activeWorkspace==="phrases"&&ideasSubtab==="voice"?
+              activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen?
               (locale==="ru"?"Выберите фразу и голос для её озвучивания.":locale==="es"?"Elige una frase y una voz para narrarla.":"Choose a phrase and a voice to narrate it."):
               (locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases")}</p></div>
         </div>
@@ -5600,8 +5620,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             previousHypnoAudioRef.current=null;
             if(staleHypnoTrack){clearUploadedAudio();setAttachedAudio(null);}
           }}
-          compact={activeWorkspace==="phrases"&&ideasSubtab!=="text"}
-          ownVoiceOnly={activeWorkspace==="phrases"&&ideasSubtab==="my-voice"}
+          compact={activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen}
+          ownVoiceOnly={activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen}
           extraActions={<>
         <div className={videoStyles.ideasVoiceActions} data-video-ideas-voice-actions>
           <label className={videoStyles.ideasVoiceUpload}>
@@ -5653,7 +5673,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
           <p>{layout.hypnosisHelp}</p></div>
       <MandalaHypnoCompact locale={locale} theme={theme} settings={affirmations} requestText={wish}
-        autoExpandIdea={activeWorkspace==="phrases"&&ideasSubtab==="text"&&ideasVoiceAdvancedOpen}
+        autoExpandIdea={activeWorkspace==="phrases"&&ideasSubtab==="personalization"&&ideasVoiceAdvancedOpen}
         onPendingChange={setPhrasePending} externalPhraseDraft={catalogPhraseDraft}
         onExternalPhraseClear={()=>setCatalogPhraseDraft(null)}
         onChange={setAffirmations} disabled={recording||preparing}
@@ -6054,6 +6074,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     quickNavTokenRef.current++;
     setActiveWorkspace(id);
     if(id==="editor")setMontagePanel("effects");
+    if(id==="effects")setHypnoEntryGroup("visual");
     setIntroPlaying(false);
     setStudioMode("pump");
     setTherapyJumpRequested(false);
@@ -6144,6 +6165,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   // for every mode; portal relocation previously changed geometry and focus.
   return (
     <section className={videoStyles.studio} data-active-workspace={activeWorkspace||undefined} id="free-personal-video"
+      data-video-preview-playing={previewPlaying?"true":undefined}
       data-hh-video-ihelp-open={videoIHelpOpen||undefined}
       data-mandala-free-video data-video-studio-mode={studioMode}
       data-video-advanced-open={showAdvancedVideo?"true":"false"}
@@ -6789,9 +6811,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         disabled={recording||preparing}
         onRefreshLogin={()=>void refreshCreditSession()}
         onReturnToPro={()=>{setActiveWorkspace("pro");setStudioMode("pump");}}
-        basicFreeAvailable={Boolean(creditCatalog&&!creditCatalog.blocked&&
-          (!creditCatalog.chargeRequired||
-            (creditSession==="guest"&&!guestFirstVideoUsed)))}
+        basicFreeAvailable={basicVideoAccess.allowed}
+        basicFreeIssue={basicVideoAccess.reason}
+        basicCreditCost={basicVideoAccess.chargeCredits}
         onGenerateBasicVideo={()=>{
           // Never substitute a credit-charged or paid render for the FREE offer.
           if(!freeVideoSelected){
@@ -6917,23 +6939,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
 
 
 
-      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab==="my-voice"?"voice":ideasSubtab} data-ideas-active-tab={ideasSubtab}>
+      <section className={videoStyles.quickPhraseSection} data-workspace-section="phrases" data-video-quick-phrases aria-label={workspaceCopy[locale].phrases.title} data-ideas-subtab={ideasSubtab} data-ideas-active-tab={ideasSubtab}>
         <div className={videoStyles.ideasSubtabs} data-video-ideas-tabs role="group"
-          aria-label={locale==="ru"?"Идеи: текст, голос или мой голос":locale==="es"?"Ideas: texto, voz o mi voz":"Ideas: text, voice or my voice"}>
-          <button type="button" data-video-ideas-tab="text" aria-pressed={ideasSubtab==="text"}
-            onClick={()=>{setIdeasSubtab("text");setIdeasVoiceAdvancedOpen(false);}}>
-            <span className={videoStyles.ideasTabLetters} aria-hidden="true">Aa</span>
-            {locale==="ru"?"Текст":locale==="es"?"Texto":"Text"}
+          aria-label={locale==="ru"?"Идеи: персонализация и концепция":
+            locale==="es"?"Ideas: personalización y concepto":"Ideas: personalization and concept"}>
+          <button type="button" data-video-ideas-tab="personalization" aria-pressed={ideasSubtab==="personalization"}
+            onClick={()=>setIdeasSubtab("personalization")}>
+            <Heart size={19} aria-hidden="true"/>
+            {locale==="ru"?"Персонализация":locale==="es"?"Personalización":"Personalization"}
           </button>
-          <button type="button" data-video-ideas-tab="voice" aria-pressed={ideasSubtab==="voice"}
-            onClick={()=>{setIdeasSubtab("voice");setIdeasVoiceAdvancedOpen(true);}}>
-            <Mic size={20} aria-hidden="true"/>
-            {locale==="ru"?"Голос":locale==="es"?"Voz":"Voice"}
-          </button>
-          <button type="button" data-video-ideas-tab="my-voice" aria-pressed={ideasSubtab==="my-voice"}
-            onClick={()=>{setIdeasSubtab("my-voice");setIdeasVoiceAdvancedOpen(true);}}>
-            <AudioLines size={20} aria-hidden="true"/>
-            {locale==="ru"?"Мой голос":locale==="es"?"Mi voz":"My Voice"}
+          <button type="button" data-video-ideas-tab="concept" aria-pressed={ideasSubtab==="concept"}
+            onClick={()=>setIdeasSubtab("concept")}>
+            <Brain size={20} aria-hidden="true"/>
+            {locale==="ru"?"Концепция":locale==="es"?"Concepto":"Concept"}
           </button>
         </div>
         <div className={videoStyles.quickSectionHeading}>
@@ -6943,27 +6961,31 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                // The old native details is now a real accessible button/region.
                // Open Text's visible settings; never synthesize a hidden click
                // or access private test results without another user action.
-               setIdeasSubtab("text");
+               setIdeasSubtab("personalization");
                setIdeasVoiceAdvancedOpen(true);
                window.requestAnimationFrame(()=>document.querySelector<HTMLElement>('[data-video-ideas-advanced-voice]')?.scrollIntoView({block:"nearest",behavior:"smooth"}));
              }}><Sparkles size={15} aria-hidden="true"/>
             {locale==="ru"?"Индивидуальный подбор":locale==="es"?"Personalizar":"Personalize"}</button>
         </div>
-        {/* Same approved Hypno editor. Request/phrases first; voice and sound stay optional. */}
+        {/* Personalization questions and local phrases share one renderer; voice stays optional. */}
         <div className={videoStyles.phraseEditorLead} data-video-phrase-editor-first>
-          <div id="video-ideas-text-panel" data-video-ideas-text-panel hidden={ideasSubtab!=="text"}>
-          <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выбор фраз теперь находится в Монтаже → Текст.":locale==="es"?"Las frases están ahora en Montaje → Texto.":"Choose and edit your phrases in Montage → Text."}</p>
+          <div id="video-ideas-personalization-panel" data-video-ideas-personalization-panel hidden={ideasSubtab!=="personalization"}>
+          <MandalaVideoPersonalization locale={locale} value={ideasProfile}
+            onChange={setIdeasProfile} disabled={recording||preparing}
+            onBack={()=>setActiveWorkspace("video")}
+            onContinue={()=>{setIdeasProfileConfirmed(true);setIdeasSubtab("concept");}}/>
+          <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выбор фраз — в Монтаже → Текст.":locale==="es"?"Las frases están en Montaje → Texto.":"Choose phrases in Montage → Text."}</p>
           <button type="button" className={videoStyles.montageStepNext} data-video-ideas-open-montage-text
-            disabled={recording||preparing} onClick={()=>{setActiveWorkspace("editor");setMontagePanel("text");}}>
-            <Type size={18} aria-hidden="true"/>
-            <span>{locale==="ru"?"Открыть выбор фраз":locale==="es"?"Elegir frases":"Choose phrases"}</span>
+            disabled={recording||preparing} onClick={goToMontageFromIdeas}>
+            <Type size={18} aria-hidden="true"/>{locale==="ru"?"Выбрать фразы":locale==="es"?"Elegir frases":"Choose phrases"}
             <ArrowRight size={18} aria-hidden="true"/>
           </button>
           </div>
           {/* One persistent editor instance; collapsed by default in Ideas.
               Do not unmount it between workspaces or duplicate audio state. */}
           <div id="video-ideas-voice-panel" data-video-legacy-phrase-editor data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}
-            hidden={activeWorkspace!=="phrases"} aria-hidden={activeWorkspace!=="phrases"}>
+            hidden={activeWorkspace!=="phrases"||ideasSubtab!=="personalization"}
+            aria-hidden={activeWorkspace!=="phrases"||ideasSubtab!=="personalization"}>
             <details className={videoStyles.phraseAudioSettings}
               data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}
               onToggle={event=>setIdeasVoiceAdvancedOpen(event.currentTarget.open)}>
@@ -6973,20 +6995,75 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                     "Advanced phrase and voice settings"}
                 <ChevronDown size={18} aria-hidden="true"/>
               </summary>
-              {deepHypnoPane}
+              <div role="group" data-ideas-voice-modes
+                aria-label={locale==="ru"?"Выберите тип голоса":locale==="es"?"Elige voz":"Select voice mode"}>
+                <button type="button" data-video-ideas-voice-mode="voice" aria-pressed={ideasVoiceMode==="voice"}
+                  onClick={()=>setIdeasVoiceMode("voice")} disabled={recording||preparing}>
+                  {locale==="ru"?"Голос":locale==="es"?"Voz":"Voice"}
+                </button>
+                <button type="button" data-video-ideas-voice-mode="my-voice" aria-pressed={ideasVoiceMode==="my-voice"}
+                  onClick={()=>setIdeasVoiceMode("my-voice")} disabled={recording||preparing}>
+                  {locale==="ru"?"Мой голос":locale==="es"?"Mi voz":"My Voice"}
+                </button>
+              </div>
+              <div data-ideas-subtab="voice" data-ideas-voice-mode={ideasVoiceMode}>{deepHypnoPane}</div>
             </details>
           </div>
         </div>
-        <div data-video-director-idea-controls />
+        <div className={videoStyles.ideasConceptPane} id="video-ideas-concept-panel"
+          data-video-ideas-concept-panel hidden={ideasSubtab!=="concept"}>
+          <MandalaVideoConcept locale={locale} goal={wish} theme={theme}
+            profile={ideasProfileConfirmed?ideasProfile:null} durationSeconds={duration}
+            speechTranscript={voiceTranscript} approvedConcept={approvedVideoConcept}
+            ownerFields={{
+              references:photoUrl?(locale==="ru"?"Фото добавлено":locale==="es"?"Foto adjuntada":"Photo attached"):null,
+              delivery:`${aspect} · ${duration}s · ${locale.toUpperCase()}`,
+              wordsAndVoice:`${affirmationLines.length} ${locale==="ru"?"фраз":locale==="es"?"frases":"phrases"} · ${voiceTranscript?"voice transcript":"text/voice settings"}`,
+              soundtrack:attachedAudio?appliedAudioName:(locale==="ru"?"Без музыки":locale==="es"?"Sin música":"No music"),
+              timelineBinding:voiceVisualPlan?.canExport?`${voiceVisualPlan.shots.length} ${locale==="ru"?"проверенных кадров":locale==="es"?"tomas verificadas":"verified shots"}`:
+                cinematicPlan?`${cinematicPlan.shots.length} ${locale==="ru"?"кадров на проверке":locale==="es"?"tomas en revisión":"shots to review"}`:null,
+              creationMode:creationMode
+            }}
+            styleIndex={quickStyleIndex} phrases={affirmationLines}
+            signedIn={creditSession==="signed_in"}
+            loginUnavailable={creditSession==="unavailable"}
+            disabled={recording||preparing}
+            onRefreshLogin={()=>void refreshCreditSession()}
+            onOpenGoal={()=>{setActiveWorkspace("video");}}
+            onOpenStyle={()=>{setActiveWorkspace("editor");setMontagePanel("effects");}}
+            onApprove={approved=>{
+              setApprovedVideoConcept(approved);
+              // Approval is local and free: only unedited storyboard overlays may change.
+              // Existing manually edited text clips, voice, music and media are retained.
+              if(!timelineTextClips?.length){
+                setMontageScriptText(approved.sceneOutline.join("\n"));
+                if(cinematicPlan?.version===FREE_FILM_PLAN_VERSION&&
+                  cinematicPlan.shots.length>=4&&captionMode!=="custom"){
+                  setCinematicPlan(current=>current?.version===FREE_FILM_PLAN_VERSION
+                    ? {...current,shots:current.shots.map((shot,index)=>({
+                      ...shot,overlayText:normalizeStageCaption(approved.sceneOutline[index%4]||"")
+                    }))} as CinematicStoryboard:current);
+                }
+              }
+              setPreviewPlaying(false);
+              setNotice(locale==="ru"?"Концепция одобрена. Выберите стиль и аудио в разделе «Монтаж».":
+                locale==="es"?"Concepto aprobado. Elige el estilo y audio en Montaje.":
+                "Concept approved. Choose style and audio in Montage before making the video.");
+              setActiveWorkspace("editor");setMontagePanel("effects");
+            }}/>
+        </div>
+        <div data-video-director-idea-controls hidden={ideasSubtab!=="personalization"} />
         <button type="button" className={videoStyles.phraseAudioNext}
-          data-video-phrase-audio-shortcut disabled={recording||preparing}
+          data-video-phrase-audio-shortcut hidden={ideasSubtab!=="personalization"}
+          disabled={recording||preparing}
           onClick={()=>{
             // The advanced voice editor lives in Ideas. Reveal it on an actual
             // visitor action before trying to focus the nested audio settings.
+            setIdeasSubtab("personalization");
             setIdeasVoiceAdvancedOpen(true);
             setPhraseAudioExpanded(true);
             window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-              document.getElementById("phrase-audio-settings")?.scrollIntoView({behavior:"smooth",block:"nearest"})));
+              document.querySelector("[data-video-ideas-advanced-voice]")?.scrollIntoView({behavior:"smooth",block:"nearest"})));
           }}>
           <Music2 size={19} aria-hidden="true"/>
           {locale==="ru"?"Настроить аудиогид, музыку и голос":
@@ -6997,9 +7074,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
         {activeWorkspace==="effects" ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
-          <MandalaHypnocorrectionMobile locale={locale} disabled={recording||preparing||hypnoAudioBusy}
+          <MandalaHypnocorrectionMobile locale={locale} initialGroup={hypnoEntryGroup} disabled={recording||preparing||hypnoAudioBusy}
             affirmations={affirmations} onAffirmationsChange={setAffirmations}
-            light={hypnoLight} onLightChange={setHypnoLight}
+            light={hypnoLight} onLightChange={next=>{setHypnoLight(next);setPreviewPlaying(false);}}
             posters={{
               phrases:activeFilm?.poster||quickCanvasPoster(otherVideoScenes.energy[0].id),
               audio:"/images/holistic-house/support-reference-avatar.webp",
@@ -7532,19 +7609,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <MandalaGuidedCourse locale={locale} theme={theme}
         onContextChange={updateMeditationFocus}
         onAddMeditation={script=>{
-          const epoch=++meditationDisclosureEpochRef.current;
+          meditationDisclosureEpochRef.current++;
           setCourseMeditationOmitted(false);
+          setCourseMeditationIncluded(true);
           setCourseMeditationDraft(script);
-          window.requestAnimationFrame(()=>{
-            if(epoch!==meditationDisclosureEpochRef.current)return;
-            const details=document.querySelector("[data-video-therapy-meditation-audio]");
-            if(details instanceof HTMLDetailsElement){
-              details.open=true;
-              details.scrollIntoView({behavior:"instant",block:"center"});
-            }
-          });
         }}
         onOmitMeditation={()=>{
+          setCourseMeditationIncluded(false);
           const epoch=++meditationDisclosureEpochRef.current;
           setCourseMeditationOmitted(true);
           // Explicit omission always revokes the parent's seed and transient narration.
@@ -7791,24 +7862,79 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <nav className={videoStyles.montageQuickTools} data-video-montage-tools
             aria-label={locale==="ru"?"Разделы монтажа":locale==="es"?"Secciones de montaje":"Montage sections"}>
             {([{id:"effects",Icon:Sparkles},{id:"text",Icon:Type},
-              {id:"visual",Icon:Zap},{id:"settings",Icon:SlidersHorizontal}] as const).map(item=>
+              {id:"audio",Icon:Music2},{id:"settings",Icon:SlidersHorizontal},
+              {id:"concept",Icon:Film}] as const).map(item=>
               <button type="button" key={item.id} data-video-montage-tab={item.id}
                 aria-pressed={montagePanel===item.id} aria-controls="video-montage-active-panel"
                 disabled={recording||preparing}
                 onClick={()=>{
                   setMontagePanel(item.id);
+                  if(item.id==="audio")setBasicPanelTab("music");
                 }}>
                 <item.Icon size={19} aria-hidden="true"/>
                 <span>{({
                   settings:{ru:"Настройки",en:"Settings",es:"Ajustes"},
                   effects:{ru:"Стиль",en:"Style",es:"Estilo"},
                   text:{ru:"Текст",en:"Text",es:"Texto"},
-                  visual:{ru:"Эффекты",en:"Effects",es:"Efectos"}
+                  audio:{ru:"Аудио",en:"Audio",es:"Audio"},
+                  concept:{ru:"Сюжет",en:"Story",es:"Guion"}
                 } as const)[item.id][locale]}</span>
               </button>)}
           </nav>
           <div data-video-director-style-controls hidden={montagePanel!=="effects"} />
           <div id="video-montage-active-panel" className={videoStyles.montageActivePanel}>
+          {montagePanel==="concept" ? <section className={videoStyles.montagePane}
+            data-video-montage-concept aria-label={locale==="ru"?"Видеоконцепт и раскадровка":
+              locale==="es"?"Concepto visual y storyboard":"Video concept and storyboard"}>
+            <div className={videoStyles.quickSectionHeading}>
+              <div><h3>{locale==="ru"?"Видеоконцепт и раскадровка":
+                locale==="es"?"Concepto visual y storyboard":"Video concept & storyboard"}</h3>
+                <p>{locale==="ru"?"Соберите последовательность сцен и выберите визуальный материал для каждого кадра. Текстовый концепт остаётся отдельно в разделе «Идеи».":
+                  locale==="es"?"Ordena las escenas y elige el material visual de cada toma. El concepto textual permanece en Ideas.":
+                  "Build a sequence of scenes and choose the visual source for each shot. The written concept remains separately in Ideas."}</p></div>
+            </div>
+            <MandalaAutomaticStoryboard
+              locale={locale} goal={wish} theme={theme} durationSeconds={duration}
+              aspect={aspect} styleIndex={quickStyleIndex} phrases={affirmationLines}
+              transcript={voiceTranscript} approvedConcept={approvedVideoConcept}
+              scenes={FREE_FILM_CATALOG}
+              appliedShots={cinematicPlan?.shots.map(shot=>({
+                sceneId:shot.sceneId,startSeconds:shot.startSeconds,
+                durationSeconds:shot.durationSeconds
+              }))??null}
+              resolveMedia={id=>{
+                const source=FREE_FILM_CATALOG_BY_ID.get(id);
+                const sceneTheme=FREE_FILM_CLIP_THEMES[id]||theme;
+                return {poster:firstPartyFilmFor(sceneTheme,id)?.poster||null,
+                  title:source?.label?.[locale]||freeFilmClipLabel(id)};
+              }}
+              disabled={recording||preparing}
+              onPreview={second=>{
+                seekTimeline(second);
+                document.getElementById("video-hero")?.scrollIntoView({
+                  behavior:"smooth",block:"start"
+                });
+              }}
+              onApply={(shots,concept)=>{
+                const preset=aspectFilmPresets.find(option=>option.theme===theme);
+                if(!preset)return;
+                const edit:FreeFilmCompilationEdit={
+                  clipIds:shots.map(shot=>shot.sceneId),
+                  durationSecondsByStage:shots.map(shot=>shot.durationMs/1000),
+                  captionTexts:shots.map(()=>""),
+                };
+                if(applyAutoFilm(preset.id,duration,edit,"portrait",true)){
+                  setMontageScriptText(concept.sceneOutline.join("\n"));
+                  setNotice(locale==="ru"
+                    ?"Раскадровка применена. Проверьте сцены и нажмите «Создать видео»."
+                    :locale==="es"
+                    ?"Guion visual aplicado. Revisa las escenas antes de crear el vídeo."
+                    :"Storyboard applied. Review the scenes before creating the video.");
+                }
+              }}
+              onOpenIdeas={()=>{setActiveWorkspace("phrases");setIdeasSubtab("concept");}}
+            />
+          </section> : null}
           {montagePanel==="settings" ? <div className={videoStyles.montagePreferences} data-video-montage-preferences>
             <div className={videoStyles.montagePreferencesHeader}>
               <SlidersHorizontal size={22} aria-hidden="true"/>
@@ -7898,9 +8024,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </details>
             <div className={videoStyles.montageAdvancedShortcuts}>
               <button type="button" data-video-montage-open-concept
-                disabled={recording||preparing} onClick={()=>setMontagePanel("concept")}>
-                <Brain size={17} aria-hidden="true"/>
-                {locale==="ru"?"Сценарий и концепция":locale==="es"?"Concepto y guion":"Concept and storyboard"}
+                data-video-montage-open-storyboard disabled={recording||preparing}
+                onClick={()=>{setActiveWorkspace("editor");setMontagePanel("concept");}}>
+                <Film size={17} aria-hidden="true"/>
+                {locale==="ru"?"Видеоконцепт и раскадровка":locale==="es"?"Concepto visual y guion":"Video concept & storyboard"}
               </button>
               <button type="button" data-video-montage-open-audio
                 disabled={recording||preparing} onClick={()=>{setMontagePanel("audio");setBasicPanelTab("music");}}>
@@ -7912,7 +8039,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <div className={videoStyles.montagePane} data-video-montage-text hidden={montagePanel!=="text"}>
             <h3>{locale==="ru"?"Фразы в вашем видео":locale==="es"?"Frases de tu vídeo":"Text for your video"}</h3>
             <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выберите, измените или добавьте свои фразы. Они сразу используются в предпросмотре и экспорте.":locale==="es"?"Elige o edita tus frases. Aparecen en la vista previa y el vídeo final.":"Select or edit phrases. Your choices appear in the preview and final video."}</p>
-          <MandalaVideoIdeas locale={locale} theme={theme} requestText={wish}
+          <MandalaVideoIdeas locale={locale} theme={theme} requestText={wish} profile={ideasProfile}
             active={activeWorkspace==="editor"&&montagePanel==="text"} disabled={recording||preparing}
             settings={affirmations}
             generating={recording||preparing} onChange={setAffirmations}
@@ -7921,52 +8048,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onRecord={()=>{
               setActiveWorkspace("phrases");
               // Reuse the one protected local voice recorder; no extra MediaRecorder.
-              setIdeasSubtab("my-voice");
+              setIdeasSubtab("personalization");setIdeasVoiceMode("my-voice");
               setIdeasVoiceAdvancedOpen(true);
               window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
                 document.querySelector<HTMLElement>('[data-video-own-voice-record]')?.scrollIntoView({behavior:"smooth",block:"center"})));
             }}
-            onCreate={()=>{setMontagePanel("visual");setPreviewPlaying(false);}} onGenerate={createQuickVideo} status={notice}/>
+            onCreate={()=>{setMontagePanel("audio");setBasicPanelTab("music");setPreviewPlaying(false);}} onGenerate={createQuickVideo} status={notice}/>
           </div>
-          {montagePanel==="concept" ? <div className={videoStyles.montagePane} data-video-montage-concept>
-          <MandalaVideoConcept locale={locale} goal={wish} theme={theme}
-            speechTranscript={voiceTranscript} approvedConcept={approvedVideoConcept}
-            ownerFields={{
-              references:photoUrl?(locale==="ru"?"Фото добавлено":locale==="es"?"Foto adjuntada":"Photo attached"):null,
-              delivery:`${aspect} · ${duration}s · ${locale.toUpperCase()}`,
-              wordsAndVoice:`${affirmationLines.length} ${locale==="ru"?"фраз":locale==="es"?"frases":"phrases"} · ${voiceTranscript?"voice transcript":"text/voice settings"}`,
-              soundtrack:attachedAudio?appliedAudioName:(locale==="ru"?"Без музыки":locale==="es"?"Sin música":"No music"),
-              timelineBinding:voiceVisualPlan?.canExport?`${voiceVisualPlan.shots.length} ${locale==="ru"?"проверенных кадров":locale==="es"?"tomas verificadas":"verified shots"}`:
-                cinematicPlan?`${cinematicPlan.shots.length} ${locale==="ru"?"кадров на проверке":locale==="es"?"tomas en revisión":"shots to review"}`:null,
-              creationMode:creationMode
-            }}
-            styleIndex={quickStyleIndex} phrases={affirmationLines}
-            signedIn={creditSession==="signed_in"}
-            loginUnavailable={creditSession==="unavailable"}
-            disabled={recording||preparing}
-            onRefreshLogin={()=>void refreshCreditSession()}
-            onOpenGoal={()=>{setActiveWorkspace("video");}}
-            onOpenStyle={()=>setMontagePanel("effects")}
-            onApprove={approved=>{
-              setApprovedVideoConcept(approved);
-              // Approval is local and free: only unedited storyboard overlays may change.
-              // Existing manually edited text clips, voice, music and media are retained.
-              if(!timelineTextClips?.length){
-                setMontageScriptText(approved.sceneOutline.join("\n"));
-                if(cinematicPlan?.version===FREE_FILM_PLAN_VERSION&&
-                  cinematicPlan.shots.length>=4&&captionMode!=="custom"){
-                  setCinematicPlan(current=>current?.version===FREE_FILM_PLAN_VERSION
-                    ? {...current,shots:current.shots.map((shot,index)=>({
-                      ...shot,overlayText:normalizeStageCaption(approved.sceneOutline[index%4]||"")
-                    }))} as CinematicStoryboard:current);
-                }
-              }
-              setPreviewPlaying(false);
-              setNotice(locale==="ru"?"Концепция одобрена. Настройте звук и проверьте кадры перед созданием видео.":
-                locale==="es"?"Concepto aprobado. Ajusta el audio y verifica los clips antes de crear el vídeo.":
-                "Concept approved. Set audio and verify footage before making the video.");
-              setMontagePanel("audio");
-            }}/>
+          {montagePanel==="settings" ? <div className={videoStyles.montagePane} data-video-montage-text-tools>
           <details className={videoStyles.montageAdvancedTools} data-video-concept-text-tools>
           <summary>{locale==="ru"?"Текст, титры и монтажная лента":
             locale==="es"?"Texto, subtítulos y línea de tiempo":"Text, captions & timeline"}</summary>
@@ -8128,42 +8217,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <ArrowRight size={20} aria-hidden="true"/>
             </button>
           </div> : null}
-          {montagePanel==="visual" ? <div className={videoStyles.montagePane} data-video-montage-visual>
-            <h3>{locale==="ru"?"Визуальные эффекты":locale==="es"?"Efectos visuales":"Visual effects"}</h3>
-            <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выбранный эффект сразу виден в видеоплеере выше и сохранится в готовом ролике.":locale==="es"?"El efecto aparece de inmediato en la vista previa y en el vídeo exportado.":"Your choice appears immediately in the preview and in the exported film."}</p>
-            <div className={videoStyles.montageVisualGrid} role="group"
-              aria-label={locale==="ru"?"Выберите визуальный эффект":locale==="es"?"Elige efecto visual":"Choose visual effect"}>
-              {([
-                {id:"none",icon:"○",ru:"Без эффекта",en:"None",es:"Sin efecto"},
-                {id:"sunlight",icon:"☀",ru:"Свет солнца",en:"Sunlight",es:"Luz solar"},
-                {id:"glow",icon:"✧",ru:"Мягкое сияние",en:"Soft glow",es:"Brillo suave"},
-                {id:"waves",icon:"〰",ru:"Волны сияния",en:"Radiant waves",es:"Ondas de luz"}
-              ] as const).map(item=><button type="button" key={item.id}
-                data-video-montage-visual-effect={item.id} disabled={recording||preparing}
-                aria-pressed={item.id==="none"?!hypnoLight.enabled:
-                  hypnoLight.enabled&&(hypnoLight.mode??"waves")===item.id}
-                onClick={()=>{setHypnoLight(current=>({...current,
-                  enabled:item.id!=="none",mode:item.id==="none"?"waves":item.id
-                }));setPreviewPlaying(false);}}>
-                <span aria-hidden="true">{item.icon}</span><strong>{item[locale]}</strong>
-                {(item.id==="none"?!hypnoLight.enabled:
-                  hypnoLight.enabled&&(hypnoLight.mode??"waves")===item.id)?<Check size={18} aria-hidden="true"/>:null}
-              </button>)}
-            </div>
-            <label className={videoStyles.montageEffectIntensity} htmlFor="video-montage-effect-strength">
-              {locale==="ru"?"Интенсивность":locale==="es"?"Intensidad":"Intensity"}
-              <strong>{Math.round(hypnoLight.opacity*100)}%</strong>
-              <input id="video-montage-effect-strength" type="range" min="5" max="35" step="5"
-                value={Math.round(hypnoLight.opacity*100)} disabled={!hypnoLight.enabled||recording||preparing}
-                onChange={event=>setHypnoLight(current=>({...current,opacity:Number(event.currentTarget.value)/100}))}/>
-            </label>
-            <p role="status" className={videoStyles.montageMovedNote} data-video-montage-effect-status>
-              {hypnoLight.enabled
-                ?locale==="ru"?"Эффект добавлен · без вспышек · бесплатно до экспорта":locale==="es"?"Efecto aplicado · sin destellos · sin cargos hasta exportar":"Effect applied · no flashes · no charge until export"
-                :locale==="ru"?"Без визуального эффекта":locale==="es"?"Sin efecto visual":"No visual effect"}
-            </p>
-          </div> : null}
           {montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact} data-video-montage-audio>
+            <h3>{locale==="ru"?"Фоновая композиция":locale==="es"?"Música de fondo":"Background music"}</h3>
             <div className={videoStyles.montageAudioMode} role="group"
               aria-label={locale==="ru"?"Источник аудио":locale==="es"?"Fuente de audio":"Audio source"}>
               <button type="button" data-video-audio-mode="library"
@@ -8480,7 +8535,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             : guestFirstVideoUsed
               ? (locale==="ru"?"Создать следующее видео":locale==="es"?"Crear otro vídeo":"Create another video")
               : undefined}
-          proTools={activeWorkspace==="pro"?deepVideoDirectorPane:null}
+          proTools={activeWorkspace==="pro"?<button type="button" data-video-pro-open-montage-storyboard
+            onClick={()=>{setActiveWorkspace("editor");setMontagePanel("concept");}}>
+            <Film size={17} aria-hidden="true"/>{locale==="ru"?"Открыть видеоконцепт в Монтаже":
+              locale==="es"?"Abrir el storyboard en Montaje":"Open video storyboard in Montage"}
+            <ArrowRight size={16} aria-hidden="true"/>
+          </button>:null}
           standardEditor={<section className={videoStyles.quickSection}
             data-workspace-section="pro" data-video-final-editor
             aria-label={locale==="ru"?"Монтаж сцен":locale==="es"?"Montaje de escenas":"Scene editor"}>
@@ -8602,14 +8662,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
             </button>
             <button type="button" className={videoStyles.stageAddButton}
-              data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"visual":"audio"}
+              data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":"hypno"}
               disabled={!studioHydrated||recording||preparing} onClick={continueMontageOrGenerate}>
               <Sparkles size={19} aria-hidden="true"/>
               {montagePanel==="effects"?
                 (locale==="ru"?"Добавить текст":locale==="es"?"Añadir texto":"Add Text"):
                 montagePanel==="text"?
-                (locale==="ru"?"Добавить эффекты":locale==="es"?"Añadir efectos":"Add Effects"):
-                (locale==="ru"?"Настроить аудио":locale==="es"?"Configurar audio":"Set up audio")}
+                (locale==="ru"?"Выбрать музыку":locale==="es"?"Elegir música":"Choose music"):
+                (locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipno":"Hypno effects")}
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
           </div>

@@ -467,7 +467,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const reviewed=ruleConversationReply({message:text,locale:language,history:prior});
     const goal=publicVideoGoalForMessage(text);
     if(goal)setVideoGoal(goal as PublicVideoGoal);
-    if(!reviewed){setGuidedTrack(null);return messengerStarter[language].safety;}
+    if(!reviewed||!reviewed.id){setGuidedTrack(null);return messengerStarter[language].safety;}
     if(reviewed.id.startsWith("video")){
       setGuidedTrack("video");setVideoStep("category");videoUndo.current=null;
       setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);

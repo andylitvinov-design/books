@@ -78,15 +78,20 @@ try {
     ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
   assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
     'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
+  await page.locator('[data-video-quick-control="phrases"]').click();
+  await page.locator('[data-video-ideas-tab="concept"]').click();
+  const conceptPanel=page.locator('[data-video-ideas-concept-panel]');
+  await conceptPanel.waitFor({state:'visible',timeout:15000});
+  await conceptPanel.locator('[data-video-concept-approve]').click();
+  await page.locator('[data-video-quick-control="editor"]').click();
   const settingsTab=page.locator('[data-video-montage-tab="settings"]');
   await settingsTab.click();
-  await page.locator('[data-video-montage-open-concept]').click();
-  await page.locator('[data-video-concept-approve]').click();
-  await page.locator('[data-video-montage-audio]').waitFor({state:'visible',timeout:15000});
-  await settingsTab.click();
-  await page.locator('[data-video-montage-open-concept]').click();
+  await page.locator('[data-video-quick-control="phrases"]').click();
+  await page.locator('[data-video-ideas-tab="concept"]').click();
   assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
     'true','APPROVED_CONCEPT_MUST_PERSIST');
+  await page.locator('[data-video-quick-control="editor"]').click();
+  await settingsTab.click();
   const textTools=page.locator('[data-video-concept-text-tools]');
   await textTools.locator(':scope > summary').click();
   assert.equal(await textTools.getAttribute('open'),'','TIMELINE_DISCLOSURE_MUST_OPEN');

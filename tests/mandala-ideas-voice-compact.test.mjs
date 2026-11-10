@@ -10,13 +10,13 @@ const b=read("scripts/verify-affirmation-voice-browser.mjs");
 test("one compact Ideas voice flow retains consent and original renderer",()=>{
  for(const key of ["data-voice-layout","data-video-affirmation-phrase-count","consentBrief","privacyDetails","data-video-generate-affirmation-audio","data-video-affirmation-voice-consent","data-video-affirmation-voice-advanced","data-video-affirmation-voice-preview"])
   assert.ok(v.includes(key),key);
- assert.ok(s.includes('compact={activeWorkspace==="phrases"&&ideasSubtab!=="text"}'));
- assert.ok(s.includes('ownVoiceOnly={activeWorkspace==="phrases"&&ideasSubtab==="my-voice"}'));
- assert.ok(s.includes('data-video-ideas-tab="my-voice"'));
+ assert.ok(s.includes('compact={activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen}'));
+ assert.ok(s.includes('ownVoiceOnly={activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen}'));
+ assert.ok(s.includes('data-video-ideas-voice-mode="my-voice"'));
  assert.ok(s.includes('data-ideas-active-tab={ideasSubtab}'));
  assert.ok(v.includes('uploadAction={ownVoiceOnly?extraActions:null}'));
  assert.ok(l.includes('data-video-ideas-record-voice={compact?"":undefined}'));
- for(const key of ["data-video-ideas-own-upload","chooseAudioFile(file)","data-video-ideas-tab=\"my-voice\""])assert.ok(s.includes(key),key);
+ for(const key of ["data-video-ideas-own-upload","chooseAudioFile(file)","data-video-ideas-voice-mode=\"my-voice\""])assert.ok(s.includes(key),key);
  assert.equal((v.match(/data-video-affirmation-voice-consent/g)||[]).length,1);
  assert.equal((s.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.match(v,/!speechText\|\|!consent\|\|voiceRequestInFlight/);
@@ -34,26 +34,28 @@ test("real browser covers mobile geometry 320-430, original Text, and explicit c
  assert.ok(b.includes("for(const width of [320,354,390,430])"));
  assert.ok(b.includes("generation follows voice sample"));
  assert.ok(b.includes("no horizontal overflow"));
- assert.ok(b.includes('data-video-ideas-tab="text"'));
+ assert.ok(b.includes('data-video-ideas-tab="personalization"'));
 });
 
 test("My Voice owns real recorder/upload; cloud consent and apply remain Voice-only",()=>{
- assert.ok(s.includes('data-video-ideas-tab="my-voice"'));
+ assert.ok(s.includes('data-video-ideas-voice-mode="my-voice"'));
  assert.ok(v.includes('hidden={!ownVoiceOnly&&voiceGender!=="own"}'));
  assert.ok(v.includes('!ownVoiceOnly&&voiceGender!=="own" ? <>'));
  assert.ok(l.includes('getUserMedia({audio:true})'));
  assert.equal((s.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  const mobile=read("components/mandala-video-mobile.module.css");
- assert.ok(mobile.includes('ideasSubtabs{grid-template-columns:repeat(3,minmax(0,1fr))}'));
+ assert.match(mobile,/\.ideasSubtabs\{\s*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
  assert.ok(c.includes('>.voiceChoices{order:4;margin-bottom:0}'));
  assert.ok(c.includes('>.action{order:5}'));
 });
 
-test("Text exposes genuine advanced phrase controls without leaking them into My Voice",()=>{
+test("Personalization exposes real Voice/My Voice consent through a visible action",()=>{
  const css=read("components/mandala-video-mobile.module.css");
  const script=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.ok(css.includes('[data-ideas-subtab="text"] >button[data-video-phrase-audio-shortcut]'));
+ assert.ok(css.includes('[data-video-quick-phrases][data-ideas-subtab="personalization"]>button[data-video-phrase-audio-shortcut]:not([hidden])'));
  assert.ok(script.includes("const advancedText=phrases.locator('[data-video-phrase-audio-shortcut]')"));
- assert.ok(script.includes('await advancedText.click();'));
- assert.ok(script.includes('await ideasModes.locator(\'[data-video-ideas-tab="text"]\').click();'));
+ assert.ok(script.includes("await advancedText.click()"));
+ assert.ok(script.includes("await personalTab.click()"));
+ assert.ok(script.includes("await myVoiceModeButton.click()"));
+ assert.ok(script.includes("await narrationConsent.check()"));
 });
