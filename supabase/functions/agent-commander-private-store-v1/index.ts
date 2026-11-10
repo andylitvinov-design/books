@@ -618,11 +618,21 @@ async function handler(req){
       const modelId=typeof body.modelId==="string"?body.modelId:"";
       const validModel=MODEL_ID.test(modelId);
       const writeConfirmed=body.confirmGitHubWrite===true;
+      if(writeConfirmed&&executor!=="hermes")return reply(403,{error:"GITHUB_WRITE_REQUIRES_HERMES_EXECUTOR"},origin);
       const config=hermesConfiguration();
-      const canDispatch=Boolean(canUseHermes&&config&&validModel);
+      let modelVerified=false,modelVerificationReason="OPENROUTER_MODEL_PRICE_UNVERIFIED";
+      if(canUseHermes&&config&&validModel){
+        try{await verifyFreeModel(modelId);modelVerified=true;}
+        catch(error){
+          const code=String(error&&error.message||"");
+          modelVerificationReason=/^OPENROUTER_[A-Z0-9_]+$/.test(code)?code:"OPENROUTER_CATALOG_UNAVAILABLE";
+        }
+      }
+      const canDispatch=Boolean(canUseHermes&&config&&validModel&&modelVerified);
       let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
       if(canUseHermes)reasonCode=!config?"HERMES_RUNTIME_NOT_CONFIGURED":
-        !validModel?"HERMES_FREE_MODEL_NOT_SELECTED":"HERMES_DISPATCH_REQUESTED";
+        !validModel?"HERMES_FREE_MODEL_NOT_SELECTED":
+        !modelVerified?modelVerificationReason:"HERMES_DISPATCH_REQUESTED";
       else if(executor==="codex")reasonCode="CODEX_LOCAL_AGENT_OFFLINE_OR_REMOTE_APPROVAL_DISABLED";
       else if(executor==="repair-worker")reasonCode="REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE";
       else if(executor==="chatgpt-work")reasonCode="CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE";
