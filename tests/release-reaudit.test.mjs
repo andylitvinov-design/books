@@ -310,7 +310,7 @@ test('release re-audit follows the guest test-first Profile and explicit private
   assert.ok(!['appFetch', 'fetch(', 'bootstrap', 'useEffect', 'sessionStorage', 'localStorage', 'signIn', 'auth/start'].some(token => guest.includes(token)), 'Guest Profile must not start private account bootstrap');
   assert.ok(hub.includes('publicEntry = false') && hub.includes('publicEntry ?'));
   assert.ok(builder.includes('data-profile-direct-tests'), 'Builder preserves the public tests destination');
-  const start = source.indexOf('// Anonymous Profile now exposes the approved public test-first entry.');
+  const start = source.indexOf('// The unified Profile dock now opens the PRIVATE Cabinet first.');
   const finish = source.indexOf('const discoveryBottom = cspPage.locator(');
   assert.ok(start > 0 && finish > start + 1000, 'The real CSP journey is present');
   const flow = source.slice(start, finish);
