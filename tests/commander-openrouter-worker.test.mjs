@@ -44,9 +44,9 @@ test('OpenRouter execution uses only the free router and verifies zero price bef
 });
 
 test('private store queues owner-authorized read-only local/OpenRouter runs independently of worker secret placement',()=>{
- assert.match(store,/const canDispatch=\\(executor===\"local\"\\|\\|executor===\"openrouter\"\\)&&!writeConfirmed/);
+ assert.ok(store.includes('const canDispatch=(executor==="local"||executor==="openrouter")&&!writeConfirmed'));
  assert.match(store,/OPENROUTER_WORKER_QUEUED/);
- assert.match(store,/firstStatus=canDispatch\\?\"QUEUED\":\"BLOCKED\"/);
+ assert.ok(store.includes('const firstStatus=canDispatch?"QUEUED":"BLOCKED"'));
  assert.match(store,/dispatchAvailable:true/);
 });
 
