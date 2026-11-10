@@ -205,3 +205,24 @@ test('model output is rejected when it uses coercive language or stacks question
   assert.throws(()=>parseCoachingBrainReply(JSON.stringify({...base,
     question:'You must stop making excuses.'}),input,'grow','explore'),/COACHING_BRAIN_RESPONSE_INVALID/)
 })
+
+
+test('explicit stop is respected in Russian and Spanish without entering model logic',()=>{
+  for(const [locale,message] of [
+    ['ru','Давайте закончим разговор'],
+    ['es','Por favor, terminemos esta conversación'],
+  ]){
+    const input=normalizeCoachingBrainInput(req({locale,message}))
+    const result=coachingBrainBoundary(input)
+    assert.equal(result.mode,'boundary')
+    assert.equal(result.method,'client_choice')
+    assert.equal(result.planSuggestion,'')
+  }
+})
+
+test('a short or neutral answer is not automatically treated as resistance',()=>{
+  for(const message of ['ok','yes','да','понятно','gracias']){
+    const input=normalizeCoachingBrainInput(req({message}))
+    assert.equal(classifyCoachingResistance(input).type,'none',message)
+  }
+})
