@@ -21,7 +21,7 @@ async function freeModels(req,res){
     Array.isArray(m.architecture?.output_modalities)&&m.architecture.output_modalities.includes('text')&&
     (!Array.isArray(m.endpoints)||m.endpoints.includes('/api/v1/chat/completions'));
   }).slice(0,40).map(m=>({id:m.id,name:String(m.name||m.id).slice(0,100),pricing:'$0 verified by live catalog'}));
-  return sendJson(res,200,{models,verifiedAt:new Date().toISOString(),pricing:'zero_only',source:'OPENROUTER_LIVE_CATALOG'});
+  return sendJson(res,200,{schema:'HH_COMMANDER_EXECUTOR_FREE_MODELS_V1',models,verifiedAt:new Date().toISOString(),pricing:'zero_only',source:'OPENROUTER_LIVE_CATALOG',actualRequestCostMustBeVerifiedByHermes:true});
  }catch(error){return sendJson(res,503,{error:error?.name==='AbortError'?'FREE_MODEL_CATALOG_TIMEOUT':'FREE_MODEL_CATALOG_UNAVAILABLE'});}
  finally{clearTimeout(timer);}
 }
