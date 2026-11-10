@@ -7,7 +7,7 @@ const path=require('node:path');
 const root=path.join(__dirname,'..');
 const edge=fs.readFileSync(path.join(root,'supabase/functions/agent-commander-private-store-v1/index.ts'),'utf8');
 const bridge=fs.readFileSync(path.join(root,'scripts/ci-pr-hermes-event-bridge.cjs'),'utf8');
-const inboxMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261110002257_commander_github_oidc_ci_event_inbox_20261109.sql'),'utf8');
+const inboxMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261109200000_commander_ci_event_inbox.sql'),'utf8');
 const taxonomyMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261110124500_commander_ci_inbox_classifier_taxonomy_v2_20261110.sql'),'utf8');
 const receiptMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261110125000_commander_ci_inbox_classification_receipt_v1_20261110.sql'),'utf8');
 
