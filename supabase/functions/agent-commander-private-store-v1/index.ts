@@ -444,11 +444,25 @@ async function handler(req){
       const message=clean(body.message,6000);
       if(!uuid(runId)||!uuid(idempotencyKey)||!EXECUTORS.has(executor)||message.length<2||
          String(body.message||"").length>6000)return reply(400,{error:"INVALID_EXECUTION_REQUEST"},origin);
-      const chats=await q(db,`select chat_id,task_id,payload from business_brain.commander_chats
+      const chats=await q(db,`select chat_id,task_id,payload,revision from business_brain.commander_chats
         where owner_id=$1::uuid and chat_number=$2 limit 1`,[ownerId,chatNumber]);
       if(!chats.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
       const chat=chats[0];
-      const digestInput=[chat.chat_id,executor,message].join(String.fromCharCode(31));
+      const rawChat=chat.payload&&typeof chat.payload==="object"?chat.payload:{};
+      const contextCapsule={
+        schema:"HH_COMMANDER_TASK_CONTEXT_V1",
+        chatId:chat.chat_id,
+        taskId:chat.task_id||null,
+        chatRevision:Number.isSafeInteger(chat.revision)?chat.revision:0,
+        title:clean(rawChat.title,160),
+        project:clean(rawChat.project,80),
+        description:clean(rawChat.description,1200),
+        tasks:Array.isArray(rawChat.tasks)?rawChat.tasks.slice(0,12).map(x=>clean(x,180)).filter(Boolean):[],
+        linkedPrHints:Array.isArray(rawChat.prs)?rawChat.prs.filter(x=>Number.isSafeInteger(x)&&x>0&&x<100000).slice(0,15):[],
+        linkedPrHintsVerified:false,
+        requiredBeforeSourceChange:"Resolve each linked PR against live GitHub metadata and exact current HEAD; hints are not execution or source evidence."
+      };
+      const digestInput=[chat.chat_id,executor,String(contextCapsule.chatRevision),message].join(String.fromCharCode(31));
       const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(digestInput)));
       const requestSha256=Array.from(digest,x=>x.toString(16).padStart(2,"0")).join("");
       let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
@@ -480,7 +494,7 @@ async function handler(req){
           on conflict(owner_id,chat_id,idempotency_key) do nothing
           returning run_id,status,reason_code,request_sha256,executor,created_at`,
           [runId,ownerId,chat.chat_id,chat.task_id||null,idempotencyKey,requestSha256,executor,reasonCode,
-           JSON.stringify({message}),JSON.stringify({dispatchAttempted:false,agentStarted:false,liveVerified:false})]);
+           JSON.stringify({message,contextCapsule}),JSON.stringify({dispatchAttempted:false,agentStarted:false,liveVerified:false})]);
         let run=inserted[0],duplicate=false;
         if(!run){
           const prior=await tx.unsafe(`select run_id,status,reason_code,request_sha256,executor,created_at
