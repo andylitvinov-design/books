@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v2'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -119,7 +119,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v2'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
