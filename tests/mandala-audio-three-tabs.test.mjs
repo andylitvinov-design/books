@@ -64,6 +64,9 @@ test("Ideas has only Personalization and Concept; Audio owns Voice and My Voice"
   assert.match(studio,/audioWorkspaceTab==="voice" \? hypnoVoiceEditor : null/);
   assert.match(studio,/ownVoiceOnly=\{ideasVoiceMode==="my-voice"\}/);
   assert.match(studio,/setActiveWorkspace\("effects"\);\s*setAudioWorkspaceTab\("voice"\);\s*setVoiceStudioActivated\(true\)/);
+  assert.match(studio,/data-video-audio-own-upload/);
+  assert.match(studio,/data-video-own-voice-record/);
+  assert.doesNotMatch(studio,/data-video-ideas-own-upload|data-video-ideas-record-voice/);
   assert.match(local,/data-video-own-voice-record/);
   assert.equal((studio.match(/<MandalaAffirmationVoice locale=/g)||[]).length,1);
   assert.match(studio,/\{supplementaryCloudVoicePanel\}/);
