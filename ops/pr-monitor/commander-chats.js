@@ -122,19 +122,26 @@
       make('p',null,'Упавшие задачи: '+(Array.isArray(event.failed_jobs)?event.failed_jobs.join(', '):'—')),
       make('p',null,'Упавшие этапы: '+(Array.isArray(event.failed_steps)?event.failed_steps.join('; '):'—')),
       make('small','cc-help',label+' · '+String(event.conclusion||'failure')));
-      const classification=event.classification&&typeof event.classification==='object'?event.classification:null;
-      if(classification){
-       if(typeof classification.recommended_action==='string')
-        item.append(make('p','cc-help','Рекомендация: '+classification.recommended_action.slice(0,300)));
-       if(typeof classification.responsible_role==='string')
-        item.append(make('small','cc-help','Ответственная роль: '+classification.responsible_role+' · '+String(classification.recommended_status||'DIAGNOSTIC_ONLY')));
-       item.append(make('small','cc-help',classification.source_write_authorized===false&&classification.execution_authorized===false
-        ?'Только диагностика: автоматическое изменение исходников и запуск исполнителя не разрешены.'
-        :'Требуется отдельная проверка полномочий перед действием.'));
-      }
      if(typeof event.run_url==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+$/.test(event.run_url)){
       const a=make('a',null,'Открыть CI run ↗');a.href=event.run_url;a.target='_blank';a.rel='noopener noreferrer';item.append(a);
      }
+     const classification=event.classification&&typeof event.classification==='object'?event.classification:null;
+     const recommendation=classification?.recommended_action;
+     if(classification){
+      const role=String(classification.responsible_role||'ci-diagnostic-triage');
+      const status=String(classification.recommended_status||'UNCLASSIFIED');
+      const retry=classification.retry&&typeof classification.retry==='object'?classification.retry:null;
+      item.append(make('p','cc-ci-classification-label','Общая классификация · '+String(classification.ruleset_version||'ruleset')+
+       ' · '+String(classification.confidence??'—')+' confidence'),
+       make('p','cc-help','Решение: '+String(classification.reason_code||'UNCLASSIFIED')+
+        ' · статус: '+status+' · роль: '+role));
+      if(typeof recommendation==='string'&&recommendation.length)
+       item.append(make('p','cc-ci-classification-action','Рекомендация: '+recommendation.slice(0,700)));
+      if(retry)item.append(make('small','cc-help','Повтор: '+(retry.allowed===true?'разрешён':'не разрешён')+
+       ' · максимум: '+String(Number.isSafeInteger(retry.max_attempts)?retry.max_attempts:0)+
+       ' · требуется человек: '+(classification.requires_human===true?'да':'нет')));
+     }else item.append(make('p','cc-help','Классификация не получена; событие остаётся диагностическим.'));
+     item.append(make('small','cc-help','Классификатор не разрешает запись в GitHub, retry, merge или deploy автоматически.'));
      box.append(item);
     }
    }catch(error){if(!silent||!box.childElementCount){show('ci-inbox',true);box.replaceChildren(make('p','cc-help','Inbox временно недоступен: '+String(error.message||error)));}}
