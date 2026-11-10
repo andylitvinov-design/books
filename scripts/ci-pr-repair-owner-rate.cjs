@@ -20,11 +20,29 @@ function requireOwnerRateBudget(headers,required){
   throw Error('HH_REPAIR_OWNER_RATE_RESERVE_LOW remaining='+remaining+' required='+required);
  return {remaining,required,source:'GITHUB_AUTHENTICATED_RESPONSE_HEADER'};
 }
-// A repository-scoped Actions credential is preferred over a broad owner
-// PAT after the PAT was proven to return 403 on the Git Data write endpoint.
-// No credential is chosen merely from its existence, a UI flag or unknown quota.
+// A malformed, NON-WRITING Git blob request is used to establish the
+// actual token's Git Data API access rather than trusting repository metadata
+// permissions.push, which can disagree with fine-grained token enforcement.
+// Exactly 422 with a missing/invalid content/encoding error counts as proof.
+// Never treat a 403, 429, generic 422/abuse message or 201 as permission.
+function verifiedInvalidGitBlobProbe(status,data){
+ if(status!==422||!data||typeof data!=='object'||Array.isArray(data))return false;
+ const errors=Array.isArray(data.errors)?data.errors:[];
+ if(errors.some(item=>item&&typeof item==='object'&&
+   ['content','encoding'].includes(item.field)&&
+   ['missing','missing_field','invalid','unprocessable'].includes(item.code)))
+   return true;
+ // GitHub also uses an Invalid request message with no errors array.
+ return typeof data.message==='string'&&
+   /^Invalid request\\./.test(data.message)&&
+   /(?:\\\"content\\\"|\\\"encoding\\\").{0,100}(?:wasn.t supplied|required|invalid|must be)/i.test(data.message);
+}
+// Repo identity + real Git Data validation + bounded remaining quota are
+// mandatory for every credential, including broad owner PATs.
+// A GitHub Actions job may have contents:write even when its public
+// repository metadata omits the user-oriented permissions.push property.
 function eligibleWriter(probe,required){
- return !!(probe?.ok===true&&probe?.canPush===true&&
+ return !!(probe?.ok===true&&probe?.gitDataWriteVerified===true&&
   Number.isSafeInteger(probe.remaining)&&probe.remaining>=required);
 }
 function chooseWriterMode({job,owner}={},required){
@@ -34,4 +52,4 @@ function chooseWriterMode({job,owner}={},required){
  if(eligibleWriter(owner,required))return 'owner';
  throw Error('HH_REPAIR_NO_VERIFIED_WRITER_CREDENTIAL_OR_RATE');
 }
-module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode};
+module.exports={requiredOwnerBudget,requireOwnerRateBudget,verifiedInvalidGitBlobProbe,eligibleWriter,chooseWriterMode};
