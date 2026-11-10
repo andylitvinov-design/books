@@ -19,6 +19,11 @@ const {pickQueueCandidates,priorityFor} = require('./ci-pr-priority.cjs');
 const {safeSourcePath: safeFreeSourcePath}=require('./ci-pr-repair-free-agent.cjs');
 const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment,reservationStatus}=require('./ci-pr-task-state.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
+function validFreeModelProof(codeBackend,codeModel){
+  return ['openrouter','opencode'].includes(codeBackend)&&
+    typeof codeModel==='string'&&FREE_MODEL_ID.test(codeModel);
+}
+
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -380,7 +385,7 @@ function validCandidate(candidate, sha) {
       typeof f.base64 === 'string' && f.base64.length <= 200_000 &&
       /^[A-Za-z0-9+/]*={0,2}$/.test(f.base64)));
 }
-async function publish({github,core,context,prNumber,expectedSha,candidate,writer=null}) {
+async function publish({github,core,context,prNumber,expectedSha,candidate,codeBackend='',codeModel='',writer=null}) {
   const {owner,repo} = context.repo, fullRepo=owner+'/'+repo;
   if (fullRepo !== 'andylitvinov-design/books' || !Number.isSafeInteger(prNumber) || prNumber<1 ||
       !SHA.test(expectedSha || '') || !validCandidate(candidate,expectedSha))
@@ -485,12 +490,16 @@ async function publish({github,core,context,prNumber,expectedSha,candidate,write
     throw Error('HH_REPAIR_PUBLISH_PARENT_UNVERIFIED');
   const repairKind=candidate.repair_kind==='free_ai'?'free_ai':
      candidate.repair_kind==='codex'?'codex':'lint';
+  const modelLabel=repairKind==='free_ai'?
+    (validFreeModelProof(codeBackend,codeModel)?
+      'free '+codeBackend+' model '+codeModel:'free model (model attribution unavailable)'):'';
+
   const publishedStage=Number.isSafeInteger(context.runId)&&receipt?.task_key?
     stageLine({stage:'source_published',pr_number:prNumber,head_sha:expectedSha,
       run_id:context.runId,task_key:receipt.task_key,source:'verified_git_ref',
       new_sha:created.sha,at:new Date().toISOString()}):'';
   await github.rest.issues.createComment({owner,repo,issue_number:prNumber,body:
-    'HH Repair Worker: committed verified '+(repairKind==='free_ai'?'free OpenCode/GLM source repair':repairKind==='codex'?'legacy source repair':'targeted ESLint autofix')+' ' + created.sha +
+    'HH Repair Worker: committed verified '+(repairKind==='free_ai'?modelLabel+' source repair':repairKind==='codex'?'legacy source repair':'targeted ESLint autofix')+' ' + created.sha +
     ' for previous HEAD ' + expectedSha + '. Genuine PR synchronize should trigger Core CI; '+
     'AutoMerge is allowed only after exact-HEAD required checks pass.'+
     (receipt?'\n'+commentBody({...receipt,state:'PUBLISHED',
@@ -790,8 +799,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state==='MANUAL'||state==='FAILED'?
       agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const delivery=sourceDeliveryStatus({state,sourcePublished,codeAvailable});
-  const codeModelVerified=['openrouter','opencode'].includes(codeBackend)&&
-    typeof codeModel==='string'&&FREE_MODEL_ID.test(codeModel);
+  const codeModelVerified=validFreeModelProof(codeBackend,codeModel);
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     ...delivery,verified_source_fix:state==='PUBLISHED'&&sourcePublished===true,
     head_sha:expectedSha,lane:strategy==='legacy'?'legacy':'repair',
