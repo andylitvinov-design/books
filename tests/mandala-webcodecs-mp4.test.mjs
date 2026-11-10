@@ -184,16 +184,18 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   assert.match(flow,/data-active-workspace/);
 });
 
-test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs and Voice",()=>{
+test("physical voice WebKit checks real Settings, independent Audio workspace, exclusive Hypno tabs and Voice",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const settings=browser.indexOf('const montageSettingsTab=page.locator');
  const selectDuration=browser.indexOf('await durationSelect.selectOption("10")',settings);
- const openAudio=browser.indexOf('await montageAudio.click()',selectDuration);
- const phrases=browser.indexOf("const phrases=page.locator",openAudio);
- const reenter=browser.indexOf('await montageAudioAfterExport.click()',phrases);
+ const openAudio=browser.indexOf('const audioWorkspace=page.locator',selectDuration);
+ const clickAudio=browser.indexOf('await audioWorkspace.click()',openAudio);
+ const music=browser.indexOf('await expect(page.locator("[data-video-audio-workspace]")).toBeVisible()',clickAudio);
+ const phrases=browser.indexOf("const phrases=page.locator",music);
+ const reenter=browser.indexOf('const audioWorkspaceAfterExport=page.locator',phrases);
  const voice=browser.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")',reenter);
- assert.ok(settings>=0&&selectDuration>settings&&openAudio>selectDuration&&phrases>openAudio&&reenter>phrases&&voice>reenter,
-   "visitor must use the actual Settings, Audio and Voice before recording the real MP4");
+ assert.ok(settings>=0&&selectDuration>settings&&openAudio>selectDuration&&clickAudio>openAudio&&music>clickAudio&&phrases>music&&reenter>phrases&&voice>reenter,
+   "visitor sets duration, enters Audio, and reopens consented Voice before MP4 recording");
  assert.match(browser,/const hypnoTabs=page\.locator\('\[data-hypno-tabs\]'\)/);
  assert.match(browser,/const visualTab=hypnoTabs\.locator\('\[data-hypno-tab="visual"\]'\)/);
  assert.match(browser,/const audioTab=hypnoTabs\.locator\('\[data-hypno-tab="audio"\]'\)/);

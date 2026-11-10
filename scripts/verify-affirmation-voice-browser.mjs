@@ -468,11 +468,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await durationSelect.waitFor({state:"visible",timeout:25000});
       await durationSelect.selectOption("10");
       await expect(durationSelect).toHaveValue("10");
-      const montageAudio=page.locator('[data-video-montage-open-audio]');
-      await montageAudio.click();
-      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
-      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
-      await expect(page.locator('[data-video-audio-mode="library"]')).toBeVisible();
+      // Switch to the dedicated Audio workspace rather than the retired
+      // Montage shortcut or its duplicate compact music panel.
+      const audioWorkspace=page.locator('[data-video-quick-control="effects"]');
+      await expect(audioWorkspace).toBeVisible();
+      await audioWorkspace.click();
+      await expect(page.locator("[data-video-audio-workspace]")).toBeVisible();
+      await expect(page.locator('[data-video-audio-panel="music"]')).toBeVisible();
+      await expect(page.locator('[data-video-audio-tab="music"]')).toHaveAttribute("aria-selected","true");
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -747,12 +750,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Confirm the chosen recorded track survives the ACTUAL local MP4/WebM
         // export. Reading a selection badge or blob URL is not E2E evidence.
         await page.locator('[data-video-quick-control="editor"]').click();
-        // The original recorder's export button is available in the real
-        // Montage Audio step, never in the intentionally hidden Style footer.
-        await page.locator('[data-video-montage-tab="settings"]').click();
-        const ownAudioStep=page.locator('[data-video-montage-open-audio]');
-        await ownAudioStep.click();
-        await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+        // Audio is a top-level workspace; use its real visible mobile route.
+        const ownAudioTab=page.locator('[data-video-quick-control="effects"]');
+        await expect(ownAudioTab).toBeVisible();
+        await ownAudioTab.click();
+        await expect(page.locator("[data-video-audio-workspace]")).toBeVisible();
+        await expect(page.locator('[data-video-audio-panel="music"]')).toBeVisible();
         const ownCreate=page.locator("[data-video-quick-generate]");
         await expect(ownCreate).toBeEnabled({timeout:30000});
         await ownCreate.click();
@@ -991,11 +994,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(creationStyleTab).toBeVisible();
       await creationStyleTab.click();
       await expect(creationStyleTab).toHaveAttribute("aria-pressed","true");
-      await page.locator('[data-video-montage-tab="settings"]').click();
-      const montageAudioTab=page.locator('[data-video-montage-open-audio]');
-      await expect(montageAudioTab).toBeVisible();
-      await montageAudioTab.click();
-      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+      const audioWorkspaceTab=page.locator('[data-video-quick-control="effects"]');
+      await expect(audioWorkspaceTab).toBeVisible();
+      await audioWorkspaceTab.click();
+      await expect(page.locator("[data-video-audio-workspace]")).toBeVisible();
+      await expect(page.locator('[data-video-audio-panel="music"]')).toBeVisible();
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
       await expect(generate).not.toHaveAttribute("data-video-montage-next",/./);
@@ -1199,6 +1202,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const streams=JSON.parse(probe.stdout).streams;
         const tracks=streams.map(row=>row.codec_type);
         assert.ok(tracks.includes("video"),"real video stream present");
+        assert.ok(tracks.includes("audio"),"real audible audio stream present");
         const audioTrack=streams.find(row=>row.codec_type==="audio");
         assert.ok(audioTrack,"generated affirmation WAV survived into exported video");
         assert.equal(Number(audioTrack.channels),2,"real encoded audio track must remain stereo");

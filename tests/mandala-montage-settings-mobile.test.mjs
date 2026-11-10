@@ -36,10 +36,10 @@ test("The editable timeline, script, audio and draft tools are preserved, but no
   assert.match(studio,/<MandalaMultiTrackTimeline/);
   assert.match(studio,/data-video-montage-script-update/);
   assert.match(studio,/data-video-editor-draft-save/);
-  assert.match(studio,/montagePanel==="audio" \? <div[^>]+data-video-montage-audio/);
+  assert.match(studio,/const soundtrackWorkspacePanel = \([\s\S]*?data-video-montage-audio/);
   assert.match(studio,/data-video-audio-bed-panel/);
   assert.match(studio,/data-video-music-editor/);
-  const audio=studio.slice(studio.indexOf('montagePanel==="audio" ? <div'),
+  const audio=studio.slice(studio.indexOf('const soundtrackWorkspacePanel = ('),
     studio.indexOf('data-video-audio-bed-panel'));
   assert.doesNotMatch(audio,/data-video-basic-tab|data-video-basic-duration|data-video-basic-format|data-video-editor-style-settings/);
   assert.match(audio,/\{deepAudioPane\}/);

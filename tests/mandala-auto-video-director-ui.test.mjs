@@ -131,9 +131,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
 
 test("mobile six workspaces use short locale labels without changing full panel titles",()=>{
  const labels={
-  ru:["Цель","Идеи","Гипноэффект","Курс практик","Монтаж","PRO"],
-  en:["Goal","Ideas","Hypno effect","Practice course","Montage","PRO"],
-  es:["Objetivo","Ideas","Efecto hipno","Curso práctico","Montaje","PRO"],
+  ru:["Цель","Идеи","Аудио","Курс практик","Монтаж","PRO"],
+  en:["Goal","Ideas","Audio","Practice course","Montage","PRO"],
+  es:["Objetivo","Ideas","Audio","Curso práctico","Montaje","PRO"],
  };
  const source=studio.slice(studio.indexOf("const workspaceCopy ="),studio.indexOf("const workspaceTabs="));
  for(const language of Object.keys(labels)){
@@ -236,8 +236,12 @@ test("audio guidance remains actionable from both the compact Video screen and S
  const style=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
  assert.match(studio,/if\(anchor==="video-audio"\|\|anchor==="voice-studio"\|\|anchor==="video-templates"\)\s+setShowAdvancedVideo\(true\)/);
  assert.match(studio,/if\(hash==="video-audio"\|\|hash==="voice-studio"\|\|hash==="video-templates"\)\s+setShowAdvancedVideo\(true\)/);
- assert.match(studio,/activeWorkspace==="video" \? deepAudioPane : null/);
- assert.match(studio,/activeWorkspace==="phrases" \? deepAudioPane : null/);
+ assert.match(studio,/data-video-audio-panel="music"/);
+ assert.match(studio,/data-video-audio-panel="voice"/);
+ assert.match(studio,/openQuickDetailed\("video-audio"\)/);
+ assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setActiveWorkspace\("effects"\);[\s\S]*?setAudioWorkspaceTab\("voice"\)/);
+ assert.equal((studio.match(/\{deepAudioPane\}/g)||[]).length,1,
+   "full audio controls are centralized in the dedicated Audio workspace");
  assert.match(style,/data-active-workspace="phrases"[\s\S]*?data-video-quick-audio-choices/);
  assert.match(studio,/data-video-phrase-audio-shortcut/);
  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);

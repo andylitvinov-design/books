@@ -24,8 +24,9 @@ test('Add Effects only navigates; direct Generate still applies paid and consent
  assert.ok(handler.includes('if(montagePanel==="effects"){'));
  assert.ok(handler.includes('setMontagePanel("text")'));
  assert.ok(handler.includes('setMontagePanel("visual")'));
- assert.ok(handler.includes('setMontagePanel("audio")'));
- assert.ok(!handler.includes('setActiveWorkspace("effects")'));
+ assert.ok(handler.includes('setActiveWorkspace("effects")'));
+ assert.ok(handler.includes('setAudioWorkspaceTab("music")'));
+
  assert.ok(!handler.includes('startFromHero()'));
  assert.ok(!handler.includes('createQuickVideo()'),"Add Effects must never encode or charge credits");
  const direct=studio.slice(studio.indexOf('data-video-quick-generate'),studio.indexOf('</button>',studio.indexOf('data-video-quick-generate')));

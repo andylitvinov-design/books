@@ -83,22 +83,19 @@ test("real button uses selected runtime affirmations and attaches WAV to existin
   assert.match(browser,/page\.route/);
 });
 
-test("six-voice affirmation editor is mounted in the approved Phrases workspace rather than legacy extras",()=>{
+test("six-voice affirmation editor is shared between Ideas Voice and Audio Voice",()=>{
   const page=read("components/mandala-free-video-studio.tsx");
   const voiceEditor=page.indexOf("const hypnoVoiceEditor = (");
   const deepPane=page.indexOf("const deepHypnoPane = (");
-  const phraseMount=page.indexOf('{activeWorkspace==="phrases" ? hypnoVoiceEditor : null}',deepPane);
-  const music=page.indexOf("data-hypno-music",phraseMount);
-  const hidden=page.indexOf("data-video-quick-legacy");
-  assert.ok(voiceEditor>0 && deepPane>voiceEditor && phraseMount>deepPane && music>phraseMount && hidden>music,
-    "the single consented voice editor is mounted after the phrase catalog and before music in Phrases");
+  const ideasMount=page.indexOf('{activeWorkspace==="phrases"&&ideasSubtab!=="text" ? hypnoVoiceEditor : null}');
+  const audioMount=page.indexOf('{audioWorkspaceTab==="voice" ? hypnoVoiceEditor : null}');
+  assert.ok(voiceEditor>0&&deepPane>voiceEditor&&ideasMount>deepPane&&audioMount>ideasMount,
+    "one existing voice editor is reused by Ideas Voice and Audio Voice");
   assert.match(page.slice(voiceEditor,deepPane),/data-hypno-voice[\s\S]*data-video-narration-stale/);
   assert.equal((page.match(/<MandalaAffirmationVoice locale/g)||[]).length,1,
     "do not duplicate the voice editor or API requests");
-  assert.match(page.slice(voiceEditor,deepPane),/data-video-narration-stale/,
-    "the stale narration warning stays inside the visible voice editor");
-});;
-
+  assert.match(page,/ownVoiceOnly=\{activeWorkspace==="phrases"&&ideasSubtab==="my-voice"\}/);
+});
 test("three women and three men use original voices, never autoplay on selection",()=>{
  const ui=read("components/mandala-affirmation-voice.tsx");
  const styles=read("components/mandala-affirmation-voice.module.css");
@@ -156,24 +153,26 @@ test("all six voices can be selected and their real samples requested before phr
 });
 
 
-test("voice browser opens Ideas and applies six visible Montage styles with decoded playback",()=>{
+test("mobile browser navigates Ideas → Montage → Audio and exposes Music / Voice / Meditations",()=>{
  const start=source.indexOf("async function verifyWorkspaceHydration");
  const end=source.indexOf("// Real guest route browser acceptance",start);
  const flow=source.slice(start,end);
- const click=flow.indexOf("await continueToIdeas.click()");
- const ideas=flow.indexOf('data-active-workspace","phrases"',click);
- const refinement=flow.indexOf('const refinement=page.locator',ideas);
- const tap=flow.indexOf('await refinement.locator(":scope > summary").click()',refinement);
- const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',tap);
- const topic=flow.indexOf('data-auto-video-topic-panel',open);
- const montage=flow.indexOf('await montage.tap()',topic);
- const style=flow.indexOf('const styles=page.locator("[data-video-montage-style]")',montage);
- const six=flow.indexOf('await expect(styles).toHaveCount(6)',style);
- const selected=flow.indexOf('await minimal.tap()',six);
- const reflected=flow.indexOf('data-video-preview-style","minimal"',selected);
- const decoded=flow.indexOf('video.readyState>=2&&video.videoWidth>0',reflected);
- assert.ok(start>=0&&end>start&&click>=0&&ideas>click&&refinement>ideas&&tap>refinement&&open>tap&&topic>open&&montage>topic&&style>montage&&six>style&&selected>six&&reflected>selected&&decoded>reflected,
-   "real visitor must open Ideas refinement, select one of six visible Montage styles and decode an MP4");
+ const ideas=flow.indexOf("await continueToIdeas.click()");
+ const refinement=flow.indexOf("const refinement=page.locator",ideas);
+ const open=flow.indexOf('await expect(refinement).toHaveAttribute("open","")',refinement);
+ const montage=flow.indexOf("const montage=page.locator('[data-video-quick-control=\"editor\"]')",open);
+ const montageTap=flow.indexOf("await montage.tap()",montage);
+ const audio=flow.indexOf("const audioTab=page.locator('[data-video-quick-control=\"effects\"]')",montageTap);
+ const audioTap=flow.indexOf("await audioTab.tap()",audio);
+ const workspace=flow.indexOf('const audioWorkspace=page.locator("[data-video-audio-workspace]")',audioTap);
+ const voice=flow.indexOf("const voiceTab=page.locator(",workspace);
+ const meditation=flow.indexOf("const meditationsTab=page.locator(",voice);
+ assert.ok(start>=0&&end>start&&ideas>=0&&refinement>ideas&&open>refinement&&montage>open&&
+   montageTap>montage&&audio>montageTap&&audioTap>audio&&workspace>audioTap&&voice>workspace&&meditation>voice,
+   "real visitor follows Ideas → Montage → Audio");
+ assert.match(flow,/data-video-audio-panel="music"/);
+ assert.match(flow,/data-video-audio-panel="voice"/);
+ assert.match(flow,/data-video-audio-panel="meditations"/);
  assert.match(flow,/await expect\(allStories\)\.toBeHidden\(\)/);
  assert.doesNotMatch(flow,/await allStories\.click\(\)|\.click\(\{force:true\}\)/);
  assert.match(source,/voiceOptions\.locator\(":scope > summary"\)\.click\(\)[\s\S]*?data-video-affirmation-bed/);
@@ -530,15 +529,16 @@ test("headed WebKit narration uses a real short touch without duplicate provider
   assert.ok(browser.includes('pcm.stdout.some(value=>value!==0)'));
 });
 
-test("voice export uses visible Audio-stage Generate, never the hidden Style-stage CTA",()=>{
-  const effects=source.indexOf('phase(engine,"hypno-audio-effects-rendered")');
-  const audio=source.indexOf('const montageAudioTab=page.locator',effects);
-  const click=source.indexOf('await montageAudioTab.click()',audio);
-  const pressed=source.indexOf("await expect(page.locator('[data-video-montage-audio]')).toBeVisible()",click);
-  const generate=source.indexOf('const generate=page.locator("[data-video-quick-generate]")',pressed);
-  assert.ok(effects>=0&&audio>effects&&click>audio&&pressed>click&&generate>pressed,
-    "video with consented narration must use a real visible Audio-tab export button");
-  assert.doesNotMatch(source.slice(effects,generate),/click\(\{force:true\}\)/);
+test("voice export uses the dedicated Audio workspace's visible Generate action",()=>{
+ const effects=source.indexOf('phase(engine,"hypno-audio-effects-rendered")');
+ const audio=source.indexOf("const audioWorkspaceTab=page.locator",effects);
+ const click=source.indexOf("await audioWorkspaceTab.click()",audio);
+ const workspace=source.indexOf('await expect(page.locator("[data-video-audio-workspace]")).toBeVisible()',click);
+ const music=source.indexOf('await expect(page.locator(\'[data-video-audio-panel="music"]\')).toBeVisible()',workspace);
+ const generate=source.indexOf('const generate=page.locator("[data-video-quick-generate]")',music);
+ assert.ok(effects>=0&&audio>effects&&click>audio&&workspace>click&&music>workspace&&generate>music,
+   "consented narration exports through the visible Audio workspace Generate action");
+ assert.doesNotMatch(source.slice(effects,generate),/click\(\{force:true\}\)/);
 });
 
 test("WebKit cached voice replay invokes one native play() per real tap, never a second TTS request",()=>{
