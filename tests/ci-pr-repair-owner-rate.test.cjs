@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode}=
+const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode,requireScopedJobWriter}=
  require('../scripts/ci-pr-repair-owner-rate.cjs');
 const hdr=value=>({get:name=>{
  assert.equal(name,'x-ratelimit-remaining');return value;
@@ -38,20 +38,51 @@ test('job-scoped GitHub token is preferred only with verified repository write a
  }
  assert.throws(()=>chooseWriterMode({job:good(5000)},18),/INVALID_BUDGET/);
 });
-test('existing issuer remains credential isolated and branch/head guarded',()=>{
+test('publisher remains credential isolated and branch/head guarded',()=>{
  const flow=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
- assert.match(flow,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
- assert.match(flow,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
- const publish=flow.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
- assert.match(publish,/permissions:\n      contents: write/);
- assert.match(publish,/rateGuard\.chooseWriterMode/);
- assert.match(publish,/mode==='job'\?jobToken:ownerToken/);
- assert.match(flow,/rateGuard\.requiredOwnerBudget\(files\.length\)/);
- assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
- assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH/);
- assert.match(flow,/repository\.permissions\?\.push!==true/);
- assert.match(flow,/force:false/);
- assert.match(flow,/Source branch moved before repair commit/);
- assert.match(flow,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
- assert.doesNotMatch(flow,/remaining<100/);
+ const pub=flow.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
+ assert.match(pub,/permissions:\n      contents: write/);
+ assert.match(pub,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
+ assert.match(pub,/rateGuard\.requireScopedJobWriter/);
+ assert.match(pub,/token=jobToken/);
+ assert.doesNotMatch(pub,/HH_AUTOMERGE_TOKEN|ownerToken/);
+ assert.match(pub,/HH_REPAIR_WRITER_SCOPED_JOB_METADATA_OK/);
+ assert.match(pub,/HH_REPAIR_WRITER_REPOSITORY_IDENTITY_MISMATCH/);
+ assert.match(pub,/rateGuard\.requiredOwnerBudget\(files\.length\)/);
+ assert.match(pub,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
+ assert.match(pub,/force:false/);
+ assert.match(pub,/Source branch moved before repair commit/);
+ assert.match(pub,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
+ assert.match(pub,/Verify and recover the next exact-HEAD Core CI wave/);
+});
+test('scoped Actions credential selection uses trusted workflow and API quota, not misleading push metadata',()=>{
+ const identity={repository:'andylitvinov-design/books',
+  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch'};
+ assert.equal(requireScopedJobWriter({identity,required:10,
+  probe:{ok:true,remaining:10,canPush:false}}),'job');
+ assert.equal(requireScopedJobWriter({identity,required:17,
+  probe:{ok:true,remaining:17}}),'job');
+ for(const invalid of [null,{}, {ok:false,remaining:900},
+   {ok:true,remaining:NaN},{ok:true,remaining:undefined},{ok:true,remaining:9},
+   {ok:true,remaining:10.5}]){
+   assert.throws(()=>requireScopedJobWriter({identity,required:10,probe:invalid}),
+    /API_PROOF_OR_RATE_MISSING/);
+ }
+});
+test('foreign, untrusted or pull_request context cannot publish even with enough quota',()=>{
+ const probe={ok:true,remaining:800};
+ const identity={repository:'andylitvinov-design/books',
+  ref:'refs/heads/codex/bootstrap-books',eventName:'workflow_dispatch'};
+ for(const bad of [
+  {...identity,repository:'other/repo'},
+  {...identity,ref:'refs/heads/test/canary'},
+  {...identity,eventName:'pull_request'},
+  {...identity,eventName:'workflow_run'},null,{}]){
+   assert.throws(()=>requireScopedJobWriter({probe,required:10,identity:bad}),
+    /UNTRUSTED_WORKFLOW_CONTEXT/);
+ }
+ for(const required of [0,9,18,-1,'10',10.5]){
+  assert.throws(()=>requireScopedJobWriter({probe,required,identity}),
+   /INVALID_BUDGET/);
+ }
 });
