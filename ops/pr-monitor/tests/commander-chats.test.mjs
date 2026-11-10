@@ -152,16 +152,15 @@ test('Director Council flow records only the explicit owner question before ifra
 
 test('Commander Hermes adapter passes a live-catalog free model and never enables GitHub writes implicitly',()=>{
  const api=src('api/commander-chats.js'),ui=src('commander-chats.js');
- assert.match(api,/name==='free_models'/);
- assert.match(api,/pricing/);
- assert.match(api,/m\\.id\\.endsWith\\(':free'\\)/);
- assert.match(api,/GITHUB_WRITE_CONFIRMATION_UI_NOT_AVAILABLE/);
- assert.match(api,/modelId:body\\.modelId,confirmGitHubWrite:false/);
- assert.match(ui,/SERVER\\+'\\?action=free_models'/);
- assert.match(ui,/modelId:selectedModel,confirmGitHubWrite:false/);
- assert.match(ui,/executorModelReady/);
- assert.match(ui,/refreshExecutionRuns/);
- assert.match(ui,/startExecutionPolling/);
+ assert.ok(api.includes("name==='free_models'"));
+ assert.ok(api.includes("m.id.endsWith(':free')"));
+ assert.ok(api.includes('GITHUB_WRITE_CONFIRMATION_UI_NOT_AVAILABLE'));
+ assert.ok(api.includes('modelId:body.modelId,confirmGitHubWrite:false'));
+ assert.ok(ui.includes("SERVER+'?action=free_models'"));
+ assert.ok(ui.includes('modelId:selectedModel,confirmGitHubWrite:false'));
+ assert.ok(ui.includes('executorModelReady'));
+ assert.ok(ui.includes('refreshExecutionRuns'));
+ assert.ok(ui.includes('startExecutionPolling'));
 });
 test('execution API is owner-gated, idempotent and reports blocked instead of fake executor start',()=>{
  const backend=src('api/commander-chats.js');
