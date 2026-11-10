@@ -1401,7 +1401,12 @@ test('existing failed-Core handler retries an isolated infra job without extra r
  assert.ok(handler.includes('id: infra_recovery'));
  assert.ok(handler.includes('selectInterruptedMandatoryJob'));
  assert.ok(handler.includes('github.rest.actions.reRunJobForWorkflowRun'));
- assert.ok(handler.includes("steps.base_recovery.outputs.updated != 'true' && steps.infra_recovery.outputs.infra_hold != 'true'"));
+ const router=readFileSync('scripts/ci-pr-commander-strategy-router.cjs','utf8');
+ assert.ok(router.includes('if(baseUpdated||infraRerun)'));
+ assert.ok(router.includes('if(infraHold)'));
+ assert.ok(handler.includes("infraHold:process.env.HH_INFRA_HOLD==='true'"));
+ assert.ok(handler.indexOf('id: commander_ci_event')<handler.indexOf('id: base_recovery'),
+  'persist failure task before protected base update can move the PR HEAD');
  assert.ok(!handler.includes('github.rest.actions.reRunWorkflow('));
 });
 
