@@ -333,4 +333,29 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  assert.equal(elements['cc-thread'].hidden,false);
  assert.equal(elements['cc-messages'].children.length,2);
  assert.ok(network.some(x=>x.action==='read'&&x.method==='GET'));
+ await elements['cc-verify-chat'].fire('click');
+ assert.match(elements['cc-verify-status'].textContent,/вопрос и ответ сохранены в Supabase/);
+ assert.equal(elements['cc-verify-chat'].disabled,false);
+});
+
+
+test('owner-only live chat verification uses read-only private history and free-model setup stays optional',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js');
+ assert.match(html,/id="cc-verify-chat"/);
+ assert.match(html,/id="cc-verify-status"[^>]*role="status"/);
+ assert.match(html,/id="cc-free-model-status"[^>]*hidden/);
+ assert.match(html,/HH_PM_OPENROUTER_API_KEY/);
+ assert.match(html,/vercel\.com\/super10\/holistic-house-pr-monitor\/settings\/environment-variables/);
+ const begin=js.indexOf('async function verifySavedThread()');
+ const end=js.indexOf('function startReportPolling()',begin);
+ assert.ok(begin>0&&end>begin);
+ const verifier=js.slice(begin,end);
+ assert.match(verifier,/SERVER\+'\?action=read&issue='/);
+ assert.match(verifier,/read\.chat\?\.id!==current\.id/);
+ assert.match(verifier,/m\.id===lastOwner\.id/);
+ assert.match(verifier,/answerIndex>ownerIndex/);
+ assert.doesNotMatch(verifier,/method:\s*'POST'|action=create|localStorage|service_role/);
+ assert.match(js,/el\('verify-chat'\)\.addEventListener\('click',verifySavedThread\)/);
+ assert.match(js,/show\('free-model-status',!aiReady\)/);
+ assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v2'));
 });

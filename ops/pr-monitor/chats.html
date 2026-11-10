@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
 <script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
 <script src="/owner-google-signin.js?v=20261107-v1" defer></script>
-<script src="/commander-chats.js?v=20261110-compact-composer-v1" defer></script>
+<script src="/commander-chats.js?v=20261110-compact-composer-v2" defer></script>
 <script src="/commander-codex.js?v=20261108-v2" defer></script>
 </head><body class="hh-cc-shell">
 <main id="cc-chat-root" class="cc-chats-page">
@@ -69,6 +69,7 @@
       <button type="button" id="cc-context-close" aria-label="Закрыть настройки">Готово ✓</button>
     </div>
     <p class="cc-help">Эти поля нужны только для работы с проектом или PR. Для обычного вопроса оставьте их пустыми.</p>
+    <p id="cc-free-model-status" class="cc-help" role="status" hidden>OpenRouter Free пока недоступен. Чтобы включить только проверенные бесплатные модели, добавьте <code>HH_PM_OPENROUTER_API_KEY</code> в Production-переменные <a href="https://vercel.com/super10/holistic-house-pr-monitor/settings/environment-variables" target="_blank" rel="noopener noreferrer">проекта PR Monitor в Vercel</a> и опубликуйте новый деплой. Ключ вводится только в Vercel, не в чат. Платные модели запрещены сервером.</p>
     <label>Название чата<input id="cc-new-title" maxlength="110" autocomplete="off" placeholder="Автоматически из вопроса"></label>
     <label>Проект<select id="cc-new-project"><option value="commander">Agent Commander / PR Monitor</option><option value="video">Video Studio</option><option value="holistic">Holistic House</option><option value="other">Другой</option></select></label>
     <label>Задачи (необязательно)<input id="cc-new-tasks" autocomplete="off" placeholder="ci-head:A01, ai-commits:B02"></label>
@@ -126,6 +127,8 @@
 <details id="cc-thread-advanced" class="cc-advanced">
   <summary>Контекст и проверки</summary>
   <p id="cc-executor-state" class="cc-help" role="status">Назначение не означает запуск исполнителя.</p>
+  <button type="button" id="cc-verify-chat">Проверить сохранение вопроса и ответа</button>
+  <p id="cc-verify-status" class="cc-help" role="status" aria-live="polite"></p>
 <details id="cc-thread-details"><summary>Команда, задачи, статус и PR</summary>
 <form id="cc-metadata-form">
 <label>Название<input id="cc-title" maxlength="110" required></label>

@@ -230,9 +230,33 @@ function renderThread(){
   if(el('mode').value==='council-free'||!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
   show('model-label',el('mode').value==='openrouter');
-  el('chat-feedback').textContent='';show('chat-feedback',false);
+  el('chat-feedback').textContent='';show('chat-feedback',false);el('verify-status').textContent='';
   el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('create',false);show('thread',true);
   renderMessages();renderList();
+ }
+ async function verifySavedThread(){
+  const current=thread,button=el('verify-chat'),status=el('verify-status');
+  if(!current){status.textContent='Откройте рабочий чат.';return;}
+  if(!remote){status.textContent='История зашифрована на этом устройстве. Серверная синхронизация для этого чата не включена.';return;}
+  if(!authorized){status.textContent='Сессия владельца не подтверждена. Войдите через Google.';return;}
+  if(button.disabled)return;
+  button.disabled=true;status.textContent='Сверяю сохранение с защищённым сервером…';
+  try{
+   const read=await request(SERVER+'?action=read&issue='+current.issueNumber);
+   if(read.chat?.id!==current.id||!Array.isArray(read.messages))
+    throw Error('Сервер не подтвердил идентификатор и историю чата');
+   const lastOwner=[...messages].reverse().find(m=>m.kind==='owner');
+   if(!lastOwner){status.textContent='Сессия и чтение чата работают. Отправьте вопрос, чтобы проверить запись.';return;}
+   const ownerIndex=read.messages.findIndex(m=>m.id===lastOwner.id&&m.kind==='owner');
+   if(ownerIndex<0){status.textContent='Чат открывается, но последний вопрос не найден в серверной истории.';return;}
+   const lastAnswer=[...messages].reverse().find(m=>['assistant_unverified','ai'].includes(m.kind));
+   const answerIndex=lastAnswer?read.messages.findIndex(m=>m.id===lastAnswer.id&&
+    ['assistant_unverified','ai'].includes(m.kind)):-1;
+   status.textContent=answerIndex>ownerIndex
+    ?'Подтверждено: вход владельца, чтение чата, последний вопрос и ответ сохранены в Supabase.'
+    :'Подтверждено: вход владельца и последний вопрос сохранены. Ответ на этот вопрос ещё не подтверждён.';
+  }catch(err){status.textContent='Сохранение не подтверждено: '+String(err.message||err)+'. Проверьте сессию и повторите.';}
+  finally{button.disabled=false;}
  }
  function startReportPolling(){
   if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
@@ -677,6 +701,7 @@ async function update(e){
   for(const select of [el('mode'),el('new-mode')])
    select.querySelector('option[value=openrouter]').disabled=!aiReady;
   el('new-mode').value=aiReady?'openrouter':'local';
+  show('free-model-status',!aiReady);
   if(remote){
    show('board',true);
    try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
@@ -729,6 +754,7 @@ async function update(e){
  el('chat-form').addEventListener('submit',send);el('note').addEventListener('click',addNote);
  el('check-prs').addEventListener('click',checkPRs);el('load-reports').addEventListener('click',reportList);
  el('handoff').addEventListener('click',handoff);
+ el('verify-chat').addEventListener('click',verifySavedThread);
  el('search').addEventListener('input',renderList);el('filter').addEventListener('change',renderList);
  el('close-thread').addEventListener('click',showNewChat);
  el('refresh').addEventListener('click',async()=>{
