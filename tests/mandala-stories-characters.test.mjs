@@ -76,8 +76,10 @@ test("one original video preview and export share the selected symbolic layer",(
     "WebCodecs exported frames must preserve approved story layers");
   assert.match(s,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|"",\s*shot\.transitionIn\|\|"soft",shot\.colorLook\|\|"original",shot\.motion\?\?null,\s*shot\.sourcePhasePercent\?\?0,shot\.sourceSpeed\?\?1\]\),appliedStory,\s*creationMode,activeMontageStyleId,currentFreeVideoPlan\?\.seed/,
     "film scene, cut positions, transition, color treatment and character overlay invalidate the previous export");
-  assert.match(s,/cinematicPlan,\s*usingFreeFilmCompilation,\s*freeFilmReady,\s*appliedStory,\s*timelineTextClips,stopMovieSound,duration,previewFrameRevision,\s*creationMode,currentFreeVideoPlan,activeMontageStyleId,selectedStyleFilm\?\.src,styleFilmReady,backgroundOnly,photoConsent,photoUrl,activeWorkspace\]\);/,
+  assert.match(s,/cinematicPlan,\s*usingFreeFilmCompilation,\s*freeFilmReady,\s*appliedStory,\s*timelineTextClips,stopMovieSound,duration,previewFrameRevision,\s*creationMode,currentFreeVideoPlan,activeMontageStyleId,selectedStyleFilm\?\.src,styleFilmReady,backgroundOnly,photoConsent,photoUrl,activeWorkspace,storyboardPhotoRevision\]\);/,
      "video and text/audio timing changes must invalidate the same Canvas preview and exported output");
+  assert.equal((s.match(/setStoryboardPhotoRevision\(value=>value\+1\)/g)||[]).length,2,
+    "adding, replacing and removing scene photos must invalidate the shared Canvas preview/export");
   assert.equal((s.match(/data-video-mandala-hero/g)||[]).length,1);
   assert.match(c,/data-story-addon-capability=\{item\.capability\}/);
   assert.match(c,/disabled=\{disabled\|\|hasPending\}/);
