@@ -16,6 +16,11 @@ test("Montage Story shows automatic film storyboard, not a questionnaire",()=>{
  assert.match(tab,/data-video-auto-storyboard-list/);
  assert.match(tab,/data-video-story-scene/);
  assert.match(studio,/applyAutoFilm\(preset.id,duration,edit,"portrait",true\)/);
+ const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
+ assert.match(browser,/automaticStoryboard=montageVideoConcept\.locator/);
+ assert.match(browser,/data-video-story-scene/);
+ assert.doesNotMatch(browser,/data-cinematic-director/,
+   "WebKit acceptance must not call the retired manual scene editor");
 });
 test("30-second relationship concept yields six unique real five-second shots",()=>{
  const c=suggestVideoConcept({locale:"ru",goal:"любовь и отношения",theme:"relationships"});

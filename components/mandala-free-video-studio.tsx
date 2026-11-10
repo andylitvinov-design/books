@@ -1951,7 +1951,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [showAdvancedVideo,setShowAdvancedVideo] = useState(false);
   const [montageStyleSettingsOpen,setMontageStyleSettingsOpen] = useState(false);
   // Montage is a preference-first wizard: detailed timeline is available only under Text.
-  const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"visual"|"concept"|"audio">("effects");
+  const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio">("effects");
+  const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"effects">("visual");
   const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
   const audioLibraryCloseRef=useRef<HTMLButtonElement>(null);
@@ -5203,13 +5204,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return;
     }
     if(montagePanel==="text"){
-      setMontagePanel("visual");setNotice("");setPreviewPlaying(false);
+      setMontagePanel("audio");setBasicPanelTab("music");setNotice("");setPreviewPlaying(false);
       window.requestAnimationFrame(()=>
         document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
       return;
     }
-    // Legacy manual audio editor remains available until the separate Audio migration.
-    setMontagePanel("audio");setBasicPanelTab("music");setNotice("");
+    // Soundtrack remains in Montage; visual effect presets move to Hypno > Effects.
+    setHypnoEntryGroup("effects");setActiveWorkspace("effects");setNotice("");setPreviewPlaying(false);
   };
 
   // First mobile step is only the short goal, category and optional request.
@@ -6073,6 +6074,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     quickNavTokenRef.current++;
     setActiveWorkspace(id);
     if(id==="editor")setMontagePanel("effects");
+    if(id==="effects")setHypnoEntryGroup("visual");
     setIntroPlaying(false);
     setStudioMode("pump");
     setTherapyJumpRequested(false);
@@ -7072,9 +7074,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
         {activeWorkspace==="effects" ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
-          <MandalaHypnocorrectionMobile locale={locale} disabled={recording||preparing||hypnoAudioBusy}
+          <MandalaHypnocorrectionMobile locale={locale} initialGroup={hypnoEntryGroup} disabled={recording||preparing||hypnoAudioBusy}
             affirmations={affirmations} onAffirmationsChange={setAffirmations}
-            light={hypnoLight} onLightChange={setHypnoLight}
+            light={hypnoLight} onLightChange={next=>{setHypnoLight(next);setPreviewPlaying(false);}}
             posters={{
               phrases:activeFilm?.poster||quickCanvasPoster(otherVideoScenes.energy[0].id),
               audio:"/images/holistic-house/support-reference-avatar.webp",
@@ -7860,20 +7862,21 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <nav className={videoStyles.montageQuickTools} data-video-montage-tools
             aria-label={locale==="ru"?"Разделы монтажа":locale==="es"?"Secciones de montaje":"Montage sections"}>
             {([{id:"effects",Icon:Sparkles},{id:"text",Icon:Type},
-              {id:"visual",Icon:Zap},{id:"settings",Icon:SlidersHorizontal},
+              {id:"audio",Icon:Music2},{id:"settings",Icon:SlidersHorizontal},
               {id:"concept",Icon:Film}] as const).map(item=>
               <button type="button" key={item.id} data-video-montage-tab={item.id}
                 aria-pressed={montagePanel===item.id} aria-controls="video-montage-active-panel"
                 disabled={recording||preparing}
                 onClick={()=>{
                   setMontagePanel(item.id);
+                  if(item.id==="audio")setBasicPanelTab("music");
                 }}>
                 <item.Icon size={19} aria-hidden="true"/>
                 <span>{({
                   settings:{ru:"Настройки",en:"Settings",es:"Ajustes"},
                   effects:{ru:"Стиль",en:"Style",es:"Estilo"},
                   text:{ru:"Текст",en:"Text",es:"Texto"},
-                  visual:{ru:"Эффекты",en:"Effects",es:"Efectos"},
+                  audio:{ru:"Аудио",en:"Audio",es:"Audio"},
                   concept:{ru:"Сюжет",en:"Story",es:"Guion"}
                 } as const)[item.id][locale]}</span>
               </button>)}
@@ -8050,7 +8053,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
                 document.querySelector<HTMLElement>('[data-video-own-voice-record]')?.scrollIntoView({behavior:"smooth",block:"center"})));
             }}
-            onCreate={()=>{setMontagePanel("visual");setPreviewPlaying(false);}} onGenerate={createQuickVideo} status={notice}/>
+            onCreate={()=>{setMontagePanel("audio");setBasicPanelTab("music");setPreviewPlaying(false);}} onGenerate={createQuickVideo} status={notice}/>
           </div>
           {montagePanel==="settings" ? <div className={videoStyles.montagePane} data-video-montage-text-tools>
           <details className={videoStyles.montageAdvancedTools} data-video-concept-text-tools>
@@ -8214,42 +8217,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <ArrowRight size={20} aria-hidden="true"/>
             </button>
           </div> : null}
-          {montagePanel==="visual" ? <div className={videoStyles.montagePane} data-video-montage-visual>
-            <h3>{locale==="ru"?"Визуальные эффекты":locale==="es"?"Efectos visuales":"Visual effects"}</h3>
-            <p className={videoStyles.montageMovedNote}>{locale==="ru"?"Выбранный эффект сразу виден в видеоплеере выше и сохранится в готовом ролике.":locale==="es"?"El efecto aparece de inmediato en la vista previa y en el vídeo exportado.":"Your choice appears immediately in the preview and in the exported film."}</p>
-            <div className={videoStyles.montageVisualGrid} role="group"
-              aria-label={locale==="ru"?"Выберите визуальный эффект":locale==="es"?"Elige efecto visual":"Choose visual effect"}>
-              {([
-                {id:"none",icon:"○",ru:"Без эффекта",en:"None",es:"Sin efecto"},
-                {id:"sunlight",icon:"☀",ru:"Свет солнца",en:"Sunlight",es:"Luz solar"},
-                {id:"glow",icon:"✧",ru:"Мягкое сияние",en:"Soft glow",es:"Brillo suave"},
-                {id:"waves",icon:"〰",ru:"Волны сияния",en:"Radiant waves",es:"Ondas de luz"}
-              ] as const).map(item=><button type="button" key={item.id}
-                data-video-montage-visual-effect={item.id} disabled={recording||preparing}
-                aria-pressed={item.id==="none"?!hypnoLight.enabled:
-                  hypnoLight.enabled&&(hypnoLight.mode??"waves")===item.id}
-                onClick={()=>{setHypnoLight(current=>({...current,
-                  enabled:item.id!=="none",mode:item.id==="none"?"waves":item.id
-                }));setPreviewPlaying(false);}}>
-                <span aria-hidden="true">{item.icon}</span><strong>{item[locale]}</strong>
-                {(item.id==="none"?!hypnoLight.enabled:
-                  hypnoLight.enabled&&(hypnoLight.mode??"waves")===item.id)?<Check size={18} aria-hidden="true"/>:null}
-              </button>)}
-            </div>
-            <label className={videoStyles.montageEffectIntensity} htmlFor="video-montage-effect-strength">
-              {locale==="ru"?"Интенсивность":locale==="es"?"Intensidad":"Intensity"}
-              <strong>{Math.round(hypnoLight.opacity*100)}%</strong>
-              <input id="video-montage-effect-strength" type="range" min="5" max="35" step="5"
-                value={Math.round(hypnoLight.opacity*100)} disabled={!hypnoLight.enabled||recording||preparing}
-                onChange={event=>setHypnoLight(current=>({...current,opacity:Number(event.currentTarget.value)/100}))}/>
-            </label>
-            <p role="status" className={videoStyles.montageMovedNote} data-video-montage-effect-status>
-              {hypnoLight.enabled
-                ?locale==="ru"?"Эффект добавлен · без вспышек · бесплатно до экспорта":locale==="es"?"Efecto aplicado · sin destellos · sin cargos hasta exportar":"Effect applied · no flashes · no charge until export"
-                :locale==="ru"?"Без визуального эффекта":locale==="es"?"Sin efecto visual":"No visual effect"}
-            </p>
-          </div> : null}
           {montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact} data-video-montage-audio>
+            <h3>{locale==="ru"?"Фоновая композиция":locale==="es"?"Música de fondo":"Background music"}</h3>
             <div className={videoStyles.montageAudioMode} role="group"
               aria-label={locale==="ru"?"Источник аудио":locale==="es"?"Fuente de audio":"Audio source"}>
               <button type="button" data-video-audio-mode="library"
@@ -8693,14 +8662,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
             </button>
             <button type="button" className={videoStyles.stageAddButton}
-              data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"visual":"audio"}
+              data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":"hypno"}
               disabled={!studioHydrated||recording||preparing} onClick={continueMontageOrGenerate}>
               <Sparkles size={19} aria-hidden="true"/>
               {montagePanel==="effects"?
                 (locale==="ru"?"Добавить текст":locale==="es"?"Añadir texto":"Add Text"):
                 montagePanel==="text"?
-                (locale==="ru"?"Добавить эффекты":locale==="es"?"Añadir efectos":"Add Effects"):
-                (locale==="ru"?"Настроить аудио":locale==="es"?"Configurar audio":"Set up audio")}
+                (locale==="ru"?"Выбрать музыку":locale==="es"?"Elegir música":"Choose music"):
+                (locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipno":"Hypno effects")}
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
           </div>
