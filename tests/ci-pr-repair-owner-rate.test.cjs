@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,eligibleScopedJobWriter,chooseWriterMode}=
+const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,eligibleScopedJobWriter,chooseWriterMode,writerOperation,errorKind,allowedPermissions}=
  require('../scripts/ci-pr-repair-owner-rate.cjs');
 const hdr=value=>({get:name=>{
  assert.equal(name,'x-ratelimit-remaining');return value;
@@ -50,8 +50,7 @@ test('existing issuer remains credential isolated and branch/head guarded',()=>{
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
  assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_IDENTITY_RATE/);
  assert.match(flow,/mode==='owner'&&repository\.permissions\?\.push!==true/);
- assert.match(flow,/verifiedAtomicCommitRequest/);
- assert.doesNotMatch(flow,/await call\('PATCH',base\+'\/git\/refs\/heads/);
+ assert.match(flow,/force:false/);
  assert.match(flow,/Source branch moved before repair commit/);
  assert.match(flow,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
  assert.doesNotMatch(flow,/remaining<100/);
@@ -79,4 +78,57 @@ test('scoped Actions publisher tolerates absent push field only with trusted wri
  assert.match(publisher,/context\.ref==='refs\/heads\/codex\/bootstrap-books'/);
  assert.match(publisher,/github\.token/);
  assert.match(publisher,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
+});
+
+
+test('publisher denies include fixed Git Data operation, not raw provider content',()=>{
+ const base='/repos/andylitvinov-design/books';
+ const op=writerOperation;
+ assert.equal(op('GET',base),'REPOSITORY_READ');
+ assert.equal(op('GET',base+'/git/ref/heads/test/pr-repair-safe'),'READ_REF');
+ assert.equal(op('PATCH',base+'/git/refs/heads/test/pr-repair-safe'),'UPDATE_REF');
+ assert.equal(op('POST',base+'/git/blobs'),'CREATE_BLOB');
+ assert.equal(op('POST',base+'/git/trees'),'CREATE_TREE');
+ assert.equal(op('POST',base+'/git/commits'),'CREATE_COMMIT');
+ assert.equal(op('DELETE',base+'/git/refs/heads/test/pr-repair-safe'),'UNKNOWN');
+ assert.equal(op('GET',base+'/git/blobs/secret'),'UNKNOWN');
+ assert.equal(op('POST','/repos/other/private/git/blobs'),'OUTSIDE_REPO');
+ assert.equal(op('POST',base+'/git/blobs?token=SECRET'),'UNKNOWN');
+ assert.equal(op('POST',base+'/git/refs/heads/secret'),'UNKNOWN');
+ assert.equal(op('PATCH',base+'/git/refs/heads/%2e%2e'),'UNKNOWN');
+ assert.equal(op('',null),'UNKNOWN');
+ assert.equal(errorKind(403,'Resource not accessible by integration'),'INTEGRATION_PERMISSION_DENIED');
+ assert.equal(errorKind(403,'Resource not accessible by personal access token'),'PERSONAL_TOKEN_PERMISSION_DENIED');
+ assert.equal(errorKind(429,'You have exceeded a secondary rate limit'),'PROVIDER_RATE_LIMIT');
+ assert.equal(errorKind(403,'SECRET_SOURCE_HERE'),'HTTP_REJECTED');
+ assert.equal(errorKind(422,'Resource not accessible by integration'),'HTTP_REJECTED');
+ assert.deepEqual(allowedPermissions('contents=write, pull_requests=read; issues=write'),[
+  'contents=write','pull_requests=read','issues=write'
+ ]);
+ assert.deepEqual(allowedPermissions('contents=write,contents=write;creds=SECRET;billing=admin'),['contents=write']);
+ assert.deepEqual(allowedPermissions('token=SECRET'),[]);
+ assert.deepEqual(allowedPermissions('x'.repeat(1025)),[]);
+ assert.deepEqual(allowedPermissions(null),[]);
+});
+
+test('trusted publisher emits bounded operation-specific 403 receipts without raw source leakage',()=>{
+ const flow=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const pub=flow.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
+ assert.match(pub,/HH_REPAIR_GIT_DATA_DENIED_V1/);
+ assert.match(pub,/rateGuard\.writerOperation\(method,path\)/);
+ assert.match(pub,/rateGuard\.errorKind\(response\.status/);
+ assert.match(pub,/rateGuard\.allowedPermissions/);
+ assert.match(pub,/x-accepted-github-permissions/);
+ assert.match(pub,/throw Error\('HH_REPAIR_GIT_DATA_'\+operation\+'_HTTP_'\+response\.status\)/);
+ assert.doesNotMatch(pub,/core\.error\([^)]*JSON\.stringify\(data\)/);
+ assert.match(pub,/HH_REPAIR_REMOTE_REF VERIFIED /);
+ assert.match(pub,/verifiedAtomicCommitRequest/);
+ assert.match(pub,/current\.object\?\.sha!==expectedSha/);
+ assert.match(fs.readFileSync('scripts/ci-pr-repair-graphql-commit.cjs','utf8'),
+  /expectedHeadOid:expectedSha/);
+ assert.doesNotMatch(pub,/await call\('PATCH',base\+'\/git\/refs\/heads/);
+ // Publication authority remains only in the trusted existing publisher.
+ assert.match(pub,/permissions:\n      contents: write/);
+ const isolated=flow.slice(flow.indexOf('\n  code_fix:\n'),flow.indexOf('\n  publish:\n'));
+ assert.doesNotMatch(isolated,/contents: write/);
 });
