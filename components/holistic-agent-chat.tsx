@@ -897,7 +897,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         data.judgment:null);
       setEvidenceUsed(data.usedSavedTestEvidence===true);
       setHistoryUsed(data.usedSavedVideoHistory===true);
-      if(mode==="device"&&data.browserModelAllowed&&data.decision&&!requiresProtectedReply(text,turnLocale)){
+      if(data.browserModelAllowed&&data.decision&&!requiresProtectedReply(text,turnLocale)){
         lastAnswerRef.current={message:text,history:prior,decision:data.decision,locale:turnLocale};
       }
       setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
