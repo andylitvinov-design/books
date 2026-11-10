@@ -435,8 +435,9 @@ async function exercise(engine, browserType, width) {
           await expect(formats).toHaveValue('30-min');
           const channels = intake.locator('a[data-messenger-only-channel]');
           await expect(channels).toHaveCount(2);
-          const whatsapp = channels.locator('[data-messenger-only-channel="whatsapp"]');
-          const telegram = channels.locator('[data-messenger-only-channel="telegram"]');
+          // Each channel attribute is on the anchor itself, not a nested child.
+          const whatsapp = intake.locator('a[data-messenger-only-channel="whatsapp"]');
+          const telegram = intake.locator('a[data-messenger-only-channel="telegram"]');
           for (const link of [whatsapp, telegram]) {
             await expect(link).toHaveAttribute('target', '_blank');
             await expect(link).toHaveAttribute('rel', /noopener/);
