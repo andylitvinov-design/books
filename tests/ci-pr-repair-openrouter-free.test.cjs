@@ -150,7 +150,7 @@ test('structured OpenRouter text blocks normalize to a bounded patch while unsup
  assert.equal(extractAssistantText('plain patch'),'plain patch');
  assert.throws(()=>extractAssistantText([{type:'refusal',text:'declined'}]),/MODEL_REFUSED/);
  assert.throws(()=>extractAssistantText([{type:'image_url',image_url:{}}]),/PATCH_RESPONSE_INVALID/);
- assert.throws(()=>extractAssistantText([{type:'text',text:'  '} ]),/REASONING_ONLY/);
+ assert.throws(()=>extractAssistantText([{type:'text',text:'  '}]),/PATCH_RESPONSE_EMPTY/);
  assert.throws(()=>extractAssistantText('x'.repeat(40001)),/PATCH_RESPONSE_TOO_LARGE/);
 });
 
@@ -262,7 +262,7 @@ test('reasoning blocks are excluded while actual patch text remains usable',()=>
  ]),patch);
  assert.throws(()=>extractAssistantText([
   {type:'reasoning',text:'reasoning only'}
- ]),/PATCH_RESPONSE_EMPTY/);
+ ]),/REASONING_ONLY/);
  assert.throws(()=>extractAssistantText([
   {type:'image_url',image_url:{url:'https://invalid.example/image'}}
  ]),/PATCH_RESPONSE_INVALID/);
@@ -271,8 +271,8 @@ test('reasoning blocks are excluded while actual patch text remains usable',()=>
 
 test('repair uses one text-only free request and makes the patch contract explicit',async()=>{
  const catalog=response({data:[entry()]});
- const patch='diff --git a/components/a.tsx b/components/a.tsx\\n'+
-  '--- a/components/a.tsx\\n+++ b/components/a.tsx\\n@@ -1 +1 @@\\n-old\\n+new\\n';
+ const patch='diff --git a/components/a.tsx b/components/a.tsx\n'+
+  '--- a/components/a.tsx\n+++ b/components/a.tsx\n@@ -1 +1 @@\n-old\n+new\n';
  const {calls,fetchImpl}=mocked(catalog,response({
   model:DEFAULT_MODEL,usage:{cost:0},choices:[{finish_reason:'stop',message:{role:'assistant',content:patch}}]
  }));
