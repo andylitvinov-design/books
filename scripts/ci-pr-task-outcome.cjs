@@ -37,6 +37,9 @@ function buildTaskOutcome(input={}){
       status='FIXED';responsible_role='exact-head-ci-verifier';
       next_action='VERIFY_EXACT_HEAD_REQUIRED_CI';next_check_at=plusMinutes(now,10);
       verified_source=true;break;
+    case 'MANUAL':
+      status='MANUAL_REQUIRED';responsible_role='repository-owner';
+      next_action='REVIEW_MANUAL_REPAIR_REASON_AND_ASSIGN_OWNER';next_check_at=plusMinutes(now,60);break;
     case 'VERIFY_REQUIRED':
       status='BLOCKED';responsible_role='repair-finalizer';
       next_action='VERIFY_SOURCE_COMMIT_AND_PR_HEAD';next_check_at=plusMinutes(now,5);break;
