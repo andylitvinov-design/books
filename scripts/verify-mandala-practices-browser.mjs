@@ -129,6 +129,10 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await expect(audioPanel).toBeVisible({timeout:15000});
       await page.evaluate(()=>{window.location.hash="guided-video-series";});
       await expect(course).toBeVisible({timeout:15000});
+      // Re-entering the course starts a fresh local session. Open Personal
+      // Meditation through its real action instead of expecting ephemeral
+      // local UI state to survive workspace unmount/remount.
+      await course.locator("[data-guided-open-personal-meditation]").click();
       await expect(course).toHaveAttribute("data-guided-personal-opened","true",{timeout:15000});
 
       await course.locator("[data-guided-create-plan]").click();
