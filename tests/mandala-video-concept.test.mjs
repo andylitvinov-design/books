@@ -115,6 +115,8 @@ test("required Hypno two tabs and guided kind click remain browser-tested after 
 test("macOS same-runner heap permits the existing real WebKit movie and voice gate",()=>{
   const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
   assert.match(workflow,/voice-webkit-macos:[\s\S]*?runs-on: macos-15/);
+  assert.match(workflow,/startsWith\(github\.head_ref, 'codex\/video-concept-'\)/,
+    "Concept PRs must execute required macOS WebKit instead of returning skipped");
   assert.match(workflow,/NODE_OPTIONS=--max-old-space-size=3072 npm run build/);
   assert.match(workflow,/node scripts\/verify-affirmation-voice-browser\.mjs/);
   assert.match(workflow,/node scripts\/benchmarking\/first-video-live-export\.mjs/);
