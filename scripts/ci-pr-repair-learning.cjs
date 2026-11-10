@@ -7,6 +7,7 @@
 const crypto=require('node:crypto');
 const SHA=/^[a-f0-9]{40}$/i;
 const TASK=/^[a-f0-9]{32}$/i;
+const FREE_MODEL_ID=/^[A-Za-z0-9][A-Za-z0-9_.-]*\\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/;
 const POLICY='HH_PR_AUTOMATION_CANONICAL_V1';
 const REPO='andylitvinov-design/books';
 const SKILLS=Object.freeze({
@@ -36,6 +37,9 @@ function buildPublishedCase(record){
    !TASK.test(record.task_key||'')||!/^\d{1,19}$/.test(String(record.owner_run_id||''))||
    !isTime(record.created_at)||!['lint','code'].includes(record.strategy)||
    !['lint','free_ai'].includes(record.repair_kind)||
+   (record.repair_kind==='free_ai'&&!(record.code_model_verified===true&&
+     ['openrouter','opencode'].includes(record.code_backend)&&
+     typeof record.code_model==='string'&&FREE_MODEL_ID.test(record.code_model)))||
    !/^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/[1-9]\d*$/.test(record.run_url||''))
    return null;
  // No diagnostic signature is fabricated from a successful source commit.
@@ -54,10 +58,16 @@ function buildPublishedCase(record){
   source_proof:'VERIFIED_COMMIT_PARENT_AND_REMOTE_PR_REF',
   ci_proof:'NOT_VERIFIED',merge_proof:'NOT_VERIFIED',live_proof:'NOT_VERIFIED',
   diagnostic_signature:null,auto_reuse:false,
+  code_backend:record.repair_kind==='free_ai'?record.code_backend:null,
+  code_model:record.repair_kind==='free_ai'?record.code_model:null,
   run_url:record.run_url,pr_url:`https://github.com/${REPO}/pull/${record.pr_number}`});
 }
 function validCase(c){
- return !!c&&c.schema==='HH_REPAIR_CASE_V1'&&
+ const modelProofValid=c?.skill_id==='bounded-free-ai'?
+  (['openrouter','opencode'].includes(c.code_backend)&&
+   typeof c.code_model==='string'&&FREE_MODEL_ID.test(c.code_model)):
+  c?.code_backend===null&&c?.code_model===null;
+ return !!c&&modelProofValid&&c.schema==='HH_REPAIR_CASE_V1'&&
   typeof c.case_id==='string'&&/^[a-f0-9]{32}$/.test(c.case_id)&&
   c.repo===REPO&&Number.isSafeInteger(c.pr_number)&&c.pr_number>0&&c.pr_number<=99999999&&
   isSha(c.previous_head)&&isSha(c.published_head)&&c.previous_head!==c.published_head&&
