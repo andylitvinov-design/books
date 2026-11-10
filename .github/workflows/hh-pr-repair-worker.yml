@@ -717,14 +717,29 @@ jobs:
               // fallback; do not fabricate a pull_request synchronization.
               const required=rateGuard.requiredOwnerBudget(files.length);
               const jobProbe=await probe(jobToken);
-              const ownerProbe=rateGuard.eligibleWriter(jobProbe,required)?
+              // This trusted publisher job declares contents:write; the GitHub
+              // repository API may not expose permissions.push for GITHUB_TOKEN.
+              // The true write proof is the subsequent Git Data commit/ref.
+              const writeJobAuthorized=context.repo.owner==='andylitvinov-design'&&
+                context.repo.repo==='books'&&
+                context.ref==='refs/heads/codex/bootstrap-books'&&
+                context.eventName==='workflow_dispatch';
+              const ownerProbe=rateGuard.eligibleScopedJobWriter(jobProbe,required,writeJobAuthorized)?
                 null:await probe(ownerToken);
-              const mode=rateGuard.chooseWriterMode({job:jobProbe,owner:ownerProbe},required);
+              const mode=rateGuard.chooseWriterMode({job:jobProbe,owner:ownerProbe},required,
+                {writeJobAuthorized});
+              core.info('HH_REPAIR_SCOPED_WRITER_SELECTION '+JSON.stringify({
+                mode,job_identity_verified:jobProbe?.ok===true,
+                job_push_field:jobProbe?.canPush===true?'true':'not_true',
+                budget_verified:Number.isSafeInteger(jobProbe?.remaining)&&jobProbe.remaining>=required
+              }));
               token=mode==='job'?jobToken:ownerToken;
               const repository=await call('GET',base,undefined,required);
-              if(repository?.full_name!==owner+'/'+repo||repository.permissions?.push!==true)
+              if(repository?.full_name!==owner+'/'+repo||
+                (mode==='owner'&&repository.permissions?.push!==true))
                 throw Error('HH_REPAIR_WRITER_REPO_WRITE_PERMISSION_MISSING');
-              core.info('HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH mode='+mode);
+              core.info('HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_IDENTITY_RATE mode='+mode+
+                ' remote_write_unverified_until_ref_readback');
               const current=await call('GET',base+ref);
               if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)
                 throw Error('Source branch moved before repair commit');

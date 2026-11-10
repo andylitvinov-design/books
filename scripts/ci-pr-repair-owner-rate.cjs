@@ -27,11 +27,22 @@ function eligibleWriter(probe,required){
  return !!(probe?.ok===true&&probe?.canPush===true&&
   Number.isSafeInteger(probe.remaining)&&probe.remaining>=required);
 }
-function chooseWriterMode({job,owner}={},required){
+// The Actions job explicitly declares contents:write in the trusted
+// default-branch workflow. GET /repos may omit permissions.push for its scoped
+// GITHUB_TOKEN; that read-only field is not an authoritative write probe.
+// Only the known *job credential* may use this metadata path. GitHub still
+// enforces the actual Git Data write, and publication remains unverified
+// until the new remote ref and parent SHA are read back.
+function eligibleScopedJobWriter(probe,required,writeJobAuthorized=false){
+ return writeJobAuthorized===true&&probe?.ok===true&&
+  Number.isSafeInteger(probe.remaining)&&probe.remaining>=required;
+}
+function chooseWriterMode({job,owner}={},required,{writeJobAuthorized=false}={}){
  if(!Number.isSafeInteger(required)||required<10||required>17)
   throw Error('HH_REPAIR_OWNER_RATE_INVALID_BUDGET');
- if(eligibleWriter(job,required))return 'job';
+ if(eligibleWriter(job,required)||eligibleScopedJobWriter(job,required,writeJobAuthorized))
+   return 'job';
  if(eligibleWriter(owner,required))return 'owner';
  throw Error('HH_REPAIR_NO_VERIFIED_WRITER_CREDENTIAL_OR_RATE');
 }
-module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode};
+module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,eligibleScopedJobWriter,chooseWriterMode};
