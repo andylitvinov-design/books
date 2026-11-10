@@ -624,7 +624,7 @@ function sourceDeliveryStatus({state,sourcePublished,codeAvailable}) {
     next_action:'DIAGNOSE_EXACT_HEAD_FAILED_STEP'};
 }
 
-function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt}={}){
+function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt,taskKey}={}){
  let v=raw;if(typeof raw==='string'){if(raw.length>8000)return null;try{v=JSON.parse(raw);}catch{return null;}}
  if(!v||typeof v!=='object'||Array.isArray(v)||v.schema!=='HH_FREE_AI_MODEL_RUN_V1'||v.pr_number!==number||
  v.source_head!==expectedSha||v.executor_type!=='free_ci_patch_proposer'||!['openrouter','opencode'].includes(v.provider)||
@@ -636,6 +636,27 @@ function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt}={}){
  if(model&&!(v.provider==='openrouter'?/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(model):
  /^opencode\/[A-Za-z0-9][A-Za-z0-9_.-]*-free$/.test(model)))return null;
  if(v.attempt_count===1&&(!model||typeof v.model_call_started_at!=='string'||!Number.isFinite(Date.parse(v.model_call_started_at))))return null;
+ // Untrusted free-model job metadata is audit-only, never publication authority.
+ // A forged, cross-task or partial prompt receipt is excluded fail-closed.
+ const prompt=v.prompt_receipt;
+ const delivery=v.prompt_delivery_status;
+ if(prompt!=null){
+  if(!prompt||prompt.schema!=='HH_PR_PROMPT_RECEIPT_V1'||
+     !/^[a-f0-9]{32}$/i.test(prompt.prompt_id||'')||
+     !/^[a-f0-9]{32}$/i.test(prompt.task_key||'')||
+     prompt.task_key!==taskKey||
+     prompt.template_version!=='HH_PR_FREE_REPAIR_PROMPT_V1'||
+     prompt.ruleset_version!==require('./ci-pr-error-rules.v1.json').version||
+     !/^[a-f0-9]{64}$/i.test(prompt.context_hash||'')||
+     !/^[a-f0-9]{64}$/i.test(prompt.prompt_sha256||'')||
+     typeof v.prompt_prepared_at!=='string'||
+     !Number.isFinite(Date.parse(v.prompt_prepared_at))||
+     !['PREPARED','ATTEMPTED_UNCONFIRMED','RESPONSE_OBSERVED'].includes(delivery)||
+     (delivery!=='PREPARED'&&v.attempt_count!==1)||
+     (delivery==='RESPONSE_OBSERVED'&&
+       (!v.response_received_at||!Number.isFinite(Date.parse(v.response_received_at))))||
+     (delivery==='PREPARED'&&v.attempt_count!==0))return null;
+ }else if(delivery&&delivery!=='NOT_PREPARED')return null;
  const failure=typeof v.failure_reason==='string'&&/^FREE_AI_[A-Z0-9_:-]{4,120}$/.test(v.failure_reason)?v.failure_reason:null;
  return {schema:v.schema,provider:v.provider,model,model_version:typeof v.model_version==='string'?v.model_version.slice(0,120):null,
  catalog_model_created:Number.isSafeInteger(v.catalog_model_created)?v.catalog_model_created:null,executor_type:v.executor_type,
@@ -644,7 +665,13 @@ function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt}={}){
  model_call_started_at:v.model_call_started_at||null,response_received_at:v.response_received_at||null,
  attempt_count:v.attempt_count,result:v.result,failure_reason:failure,patch_present:v.patch_present===true,
  candidate_paths:Array.isArray(v.candidate_paths)?v.candidate_paths.slice(0,8):[],
- verification_result:typeof v.verification_result==='string'?v.verification_result.slice(0,80):'NOT_REPORTED'};
+ verification_result:typeof v.verification_result==='string'?v.verification_result.slice(0,80):'NOT_REPORTED',
+ prompt_receipt:prompt?{schema:prompt.schema,prompt_id:prompt.prompt_id,
+   task_key:prompt.task_key,template_version:prompt.template_version,
+   ruleset_version:prompt.ruleset_version,context_hash:prompt.context_hash,
+   prompt_sha256:prompt.prompt_sha256}:null,
+ prompt_prepared_at:prompt?v.prompt_prepared_at:null,
+ prompt_delivery_status:prompt?delivery:'NOT_RECORDED'};
 }
 
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
@@ -813,7 +840,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
       agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const delivery=sourceDeliveryStatus({state,sourcePublished,codeAvailable});
   const modelAudit=normalizeModelAudit(modelAuditRaw,{number,expectedSha,
-    runId:context.runId,runAttempt:modelAuditRunAttempt});
+    runId:context.runId,runAttempt:modelAuditRunAttempt,taskKey});
   const modelRun=modelAudit?{...modelAudit,patch_present:codeStatus==='proposed'||modelAudit.patch_present,
    verification_result:codeVerifyStatus==='ready'&&codeVerifyResult==='success'?'PASSED':
     codeVerifyStatus==='manual_required'?'REJECTED':codeVerifyStatus||'NOT_RUN',
