@@ -317,3 +317,6 @@ body.hh-cc-shell.cc-keyboard-active .cc-composer-space{
 .cc-chats-page .cc-github-write-wrap{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;margin:2px 0;background:#211e32;border:1px solid #665777;border-radius:11px;font-size:12px;line-height:1.45;color:#e2d6ee}
 .cc-chats-page .cc-github-write-wrap input[type=checkbox]{height:18px;width:18px;flex:0 0 18px;margin:0;accent-color:#af93de}
 .cc-chats-page .cc-github-write-wrap[hidden]{display:none!important}
+
+.cc-ci-classification-label{font-weight:700;margin-top:12px!important}
+.cc-ci-classification-action{margin:6px 0;padding:10px 12px;border-left:2px solid var(--cc-line,rgba(255,255,255,.25));border-radius:6px;overflow-wrap:anywhere}
