@@ -110,3 +110,53 @@ test("judgment turn orchestration uses conversation cues before broad emotion ma
   assert.equal(concrete.state, "awaiting_choice");
   assert.equal(concrete.situationCode, "starting");
 });
+
+test("Reasoning Mind separates current evidence, user context, uncertainty and next move", async () => {
+  const { reasonAboutConversationTurn, REASONING_MIND_VERSION } =
+    await import("../lib/holistic-support/reasoning-mind.mjs");
+  const history = [
+    { role: "user", text: "Мне сложно в отношениях" },
+    { role: "assistant", text: "Что именно вы хотите понять?" },
+  ];
+  const follow = reasonAboutConversationTurn({ message: "А почему?", locale: "ru", history });
+  assert.equal(follow.act, "follow_up");
+  assert.equal(follow.contextTopic, "relationships");
+  assert.equal(follow.nextMove, "answer_in_recent_user_context");
+  assert.ok(follow.evidence.includes("recent_user_turn_context"));
+
+  const correction = reasonAboutConversationTurn({
+    message: "Не про любовь, а про деньги", locale: "ru", history,
+  });
+  assert.equal(correction.currentTopic, "work_money");
+  assert.equal(correction.rationaleCode, "CURRENT_CORRECTION_WINS");
+  assert.ok(correction.contradictionSignals.includes("explicit_user_correction"));
+
+  const mixed = reasonAboutConversationTurn({
+    message: "Я хочу сменить работу, но боюсь подвести команду", locale: "ru",
+  });
+  assert.equal(mixed.confidence, "low");
+  assert.equal(mixed.nextMove, "reflect_tradeoff_then_clarify");
+  assert.ok(mixed.uncertainty.includes("competing_motivations"));
+
+  const disclosure = reasonAboutConversationTurn({
+    message: "Сегодня был тяжелый день", locale: "ru",
+  });
+  assert.equal(disclosure.nextMove, "acknowledge_before_advice");
+
+  const noContext = reasonAboutConversationTurn({ message: "Why?", locale: "en" });
+  assert.equal(noContext.contextTopic, null);
+  assert.equal(noContext.nextMove, "ask_what_to_clarify");
+  assert.equal(REASONING_MIND_VERSION, "hh-reasoning-mind-v1");
+  assert.ok(!("chainOfThought" in follow));
+  assert.ok(!("privateReasoning" in follow));
+});
+
+test("Judgment Mind carries a compact reasoning decision, not a chain-of-thought trace", async () => {
+  const result = planJudgmentTurn({
+    message: "Не про любовь, а про деньги", locale: "ru", safety: { status: "clear" },
+  });
+  assert.equal(result.state, "reframed");
+  assert.equal(result.reasoning.rationaleCode, "CURRENT_CORRECTION_WINS");
+  assert.equal(result.reasoning.nextMove, "accept_correction_and_reframe");
+  assert.equal("chainOfThought" in result, false);
+});
