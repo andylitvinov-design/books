@@ -76,3 +76,28 @@ test('all categories have bounded deterministic strategy',()=>{
     const x=strategyFor(cat);a.match(x.code,/^[A-Z0-9_]+$/);a.ok(x.minutes<=60);
   }
 });
+
+
+test('delivery/execution reconciliation never equates classification with worker execution',()=>{
+ const {taskLifecycle}=require('../scripts/ci-pr-error-task.cjs');
+ const x=task('TypeScript check');
+ a.deepEqual(taskLifecycle([],x),{state:'TASK_MISSING',next_action:'CREATE_IDEMPOTENT_TASK'});
+ a.equal(taskLifecycle([bot(taskBody(x))],x).state,'CLASSIFIED_NOT_DELIVERED');
+ const key='b'.repeat(32);
+ const receipt=state=>bot('<!-- HH_PR_TASK_V1 -->\n'+
+  String.fromCharCode(96).repeat(3)+'json\n'+
+  JSON.stringify({schema:'HH_PR_TASK_V1',task_key:key,pr_number:x.pr_number,
+    head_sha:x.head_sha,state})+'\n'+String.fromCharCode(96).repeat(3));
+ a.equal(taskLifecycle([bot(taskBody(x)),receipt('RESERVED')],x).state,'RESERVED_DELIVERY_UNVERIFIED');
+ a.equal(taskLifecycle([bot(taskBody(x)),receipt('CLAIMED')],x).state,'EXECUTOR_CLAIMED_NOT_COMPLETED');
+ a.equal(taskLifecycle([bot(taskBody(x)),receipt('FAILED')],x).state,'REPAIR_FAILED_REDIAGNOSE');
+ a.equal(taskLifecycle([bot(taskBody(x)),receipt('PUBLISHED')],x).state,'SOURCE_PUBLISHED_VERIFY_PENDING');
+ a.equal(taskLifecycle([bot(taskBody(x)),{body:receipt('CLAIMED').body}],x).state,'CLASSIFIED_NOT_DELIVERED');
+});
+test('watchdog requires signed task readback before allowing a real transient retry',()=>{
+ const fs=require('node:fs');
+ const src=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+ a.match(src,/taskStatus\(verified,task\)!=='ALREADY_RECORDED'/);
+ a.match(src,/\(dryRun\|\|errorTaskDurable\) && shouldRetryTransientCoreFailure/);
+ a.match(src,/HH_CI_ERROR_TASK_LIFECYCLE/);
+});
