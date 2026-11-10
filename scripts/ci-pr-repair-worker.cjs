@@ -820,7 +820,11 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
       const jobs=(await github.rest.actions.listJobsForWorkflowRun({
         owner,repo,run_id:Number(context.runId),per_page:100})).data?.jobs||[];
       if(['FAILED','REJECTED'].includes(state)){
-        const failed=jobs.find(j=>j.conclusion==='failure');
+        // Prefer the failed isolated code job to a later failing publisher:
+        // publisher failure is an expected consequence, not the causal defect.
+        const failed=(strategy==='code'&&codeResult==='failure'?
+          jobs.find(j=>j.name==='code_fix'&&j.conclusion==='failure'):null)||
+          jobs.find(j=>j.conclusion==='failure');
         failedStep=failed?.steps?.find(x=>x.conclusion==='failure')?.name||
           failed?.name||null;
       }
@@ -868,8 +872,15 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     'SHALLOW_ANCESTRY_UNAVAILABLE','PRODUCTION_FETCH_UNAVAILABLE',
     'MERGE_TREE_NOT_VERIFIED'
   ]);
-  const detailCode=state==='PREPARED'&&strategy==='legacy'?
-    (allowedLegacyDetails.has(candidateDetail)?candidateDetail:'PREFLIGHT_DETAIL_UNVERIFIED'):
+  // Exact trusted workflow step failed before any model inference.
+  // A previous deterministic lint result must not replace its true cause
+  // with NO_AUTOFIXABLE_ESLINT_CHANGE or suggest an AI-provider problem.
+  const unsafeScopeFailure=state==='FAILED'&&strategy==='code'&&
+    codeResult==='failure'&&
+    failedStep==='Fail early on unsupported or sensitive free-model source scope';
+  const detailCode=unsafeScopeFailure?'FREE_AI_UNSAFE_SOURCE_SCOPE':
+    state==='PREPARED'&&strategy==='legacy'?
+      (allowedLegacyDetails.has(candidateDetail)?candidateDetail:'PREFLIGHT_DETAIL_UNVERIFIED'):
     state==='MANUAL'||state==='FAILED'?
       agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const delivery=sourceDeliveryStatus({state,sourcePublished,codeAvailable});
