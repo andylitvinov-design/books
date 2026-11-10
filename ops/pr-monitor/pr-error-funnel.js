@@ -48,7 +48,8 @@
       r.dispatchAccepted===1&&r.dispatchAcknowledged===true&&
       r.state==='DISPATCH_ACCEPTED_NOT_WORKER_STARTED'?r:null;
   }
-  function trustedComment(c){return !!(c&&c.user?.login==='github-actions[bot]'&&
+  function trustedComment(c){return !!(c&&Number.isSafeInteger(c.id)&&c.id>0&&
+    c.user?.login==='github-actions[bot]'&&
     c.user.id===41898282&&c.user.type==='Bot'&&
     c.performed_via_github_app?.id===15368&&
     c.performed_via_github_app.slug==='github-actions'&&
