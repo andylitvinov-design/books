@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-ci-inbox-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-hermes-consent-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -121,7 +121,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-ci-inbox-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-hermes-consent-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -152,15 +152,18 @@ test('Director Council flow records only the explicit owner question before ifra
 });
 
 
-test('Commander Hermes adapter passes only verified free models and keeps source writes disabled',()=>{
+test('Commander Hermes adapter exposes only owner-authenticated free models and consented writes',()=>{
  const api=src('api/commander-chats.js'),ui=src('commander-chats.js');
- assert.match(api,/name==='free_models'/);assert.match(api,/m\.id\.endsWith\(':free'\)/);
- assert.match(api,/GITHUB_WRITE_CONFIRMATION_UI_NOT_AVAILABLE/);
- assert.match(api,/modelId:body\.modelId,confirmGitHubWrite:false/);
- assert.match(ui,/SERVER\+'\?action=free_models'/);
- assert.match(ui,/modelId:selectedModel,confirmGitHubWrite:false/);
- assert.match(ui,/executorModelReady/);assert.match(ui,/refreshExecutionRuns/);assert.match(ui,/startExecutionPolling/);
+ assert.match(api,/name==='free_models'\|\|name==='executor_models'/);
+ assert.match(api,/HH_COMMANDER_EXECUTOR_FREE_MODELS_V1/);
+ assert.match(api,/VERIFIED_FREE_MODEL_REQUIRED/);
+ assert.match(api,/confirmGitHubWrite:body\.executor==='hermes'&&body\.confirmGitHubWrite===true/);
+ assert.match(ui,/SERVER\+'\?action=executor_models'/);
+ assert.match(ui,/modelId:model,confirmGitHubWrite:writeApproved/);
+ assert.match(ui,/refreshExecutionRuns/);
+ assert.match(ui,/startExecutionPolling/);
 });
+
 test('execution API is owner-gated, idempotent and reports blocked instead of fake executor start',()=>{
  const backend=src('api/commander-chats.js');
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
@@ -175,7 +178,7 @@ test('execution API is owner-gated, idempotent and reports blocked instead of fa
  assert.ok(edge.includes("agentStarted:false"));
  assert.ok(edge.includes("NOT_STARTED_NO_EXECUTION_RECEIPT"));
  assert.ok(ui.includes("SERVER+'?action=run'"));
- assert.ok(ui.includes("Запрос сохранён. Исполнитель НЕ запущен"));
+ assert.ok(ui.includes("Запрос и попытка сохранены. Запуск НЕ подтверждён"));
  assert.ok(ui.includes("Локальная копия не может запускать исполнителей"));
 });
 
@@ -210,7 +213,7 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-ci-inbox-v1'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-ci-inbox-hermes-consent-v1'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -421,7 +424,7 @@ test('Hermes source writes require one-shot owner consent and use only a verifie
  assert.ok(html.includes('type="checkbox" id="cc-github-write"'));
  assert.ok(api.includes("name==='executor_models'"));
  assert.ok(api.includes('HH_COMMANDER_EXECUTOR_FREE_MODELS_V1'));
- assert.ok(api.includes('Number(v)!==0'));
+ assert.ok(api.includes('Number(v)===0'));
  assert.ok(api.includes("confirmGitHubWrite:body.executor==='hermes'&&body.confirmGitHubWrite===true"));
  assert.ok(ui.includes("SERVER+'?action=executor_models'"));
  assert.ok(ui.includes("mode==='hermes'&&el('github-write').checked===true"));
