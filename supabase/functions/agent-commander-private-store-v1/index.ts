@@ -625,6 +625,20 @@ function commanderCiChatExecutionState(routeState: string): string {
       return "BLOCKED";
   }
 }
+// Backward-compatible, no-write receipt for verified older workflow runs.
+// Only the all-absent optional ACK fields and ZERO accepted dispatches are
+// normalized. Any positive or partially specified dispatch still requires the
+// complete modern signed causal ACK (executor, task key and error task ID).
+function normalizeLegacyZeroDispatchCiRoute(p: any): any {
+  if(p && typeof p==="object" && !Array.isArray(p) &&
+     p.dispatchAccepted===0 && p.dispatchAcknowledged===undefined &&
+     !Object.hasOwn(p,"executorId") && !Object.hasOwn(p,"workerTaskKey") &&
+     !Object.hasOwn(p,"errorTaskId")) {
+    return {...p,dispatchAcknowledged:false,executorId:null,
+      workerTaskKey:null,errorTaskId:null};
+  }
+  return p;
+}
 async function receiveCommanderCiRoute(req,origin){
   const claims=await verifyGitHubActionsOidc(req);
   if(!claims)return reply(401,{recorded:false,outcome:"GITHUB_OIDC_IDENTITY_REJECTED"},origin);
@@ -632,6 +646,7 @@ async function receiveCommanderCiRoute(req,origin){
   const raw=await req.text();
   if(raw.length>6000)return reply(413,{recorded:false,outcome:"BODY_TOO_LARGE"},origin);
   let p;try{p=JSON.parse(raw);}catch{return reply(400,{recorded:false,outcome:"INVALID_JSON"},origin);}
+  p=normalizeLegacyZeroDispatchCiRoute(p);
   if(!p||p.schema!=="HH_COMMANDER_CI_ROUTE_RECEIPT_V1"||
     !uuid(p.inboxId)||!number(p.prNumber)||!Number.isSafeInteger(p.runId)||p.runId<1||
     !/^[a-f0-9]{40}$/.test(p.headSha||"")||
