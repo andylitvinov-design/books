@@ -186,7 +186,7 @@ test('legacy zero-dispatch route receipts are upgraded without granting an execu
  a.ok(first>0&&last>first);
  const vm=require('node:vm');
  const fn=vm.runInNewContext(edge.slice(first,last).replace('p: any): any','p)')+
-   '\\nnormalizeLegacyZeroDispatchCiRoute',Object.create(null));
+   '\nnormalizeLegacyZeroDispatchCiRoute',Object.create(null));
  const legacy={schema:'HH_COMMANDER_CI_ROUTE_RECEIPT_V1',
    state:'TASK_ROUTED_TO_REVIEW',dispatchAccepted:0,workerStarted:false,
    sourceWriteVerified:false,liveVerified:false};
@@ -203,7 +203,7 @@ test('legacy zero-dispatch route receipts are upgraded without granting an execu
  a.equal(fn(partial),partial,'partial negative evidence still fails strict validation');
  const spoofed={...legacy,dispatchAcknowledged:true};
  a.equal(fn(spoofed),spoofed,'cannot downgrade a claimed positive ACK');
- a.match(edge,/p=normalizeLegacyZeroDispatchCiRoute\\(p\\);/);
- a.match(edge,/p\\.dispatchAcknowledged!==(p\\.dispatchAccepted===1)/);
- a.match(edge,/p\\.executorId!=="github-actions:hh-pr-repair-worker.yml"/);
+ a.match(edge,/p=normalizeLegacyZeroDispatchCiRoute\(p\);/);
+ a.ok(edge.includes("p.dispatchAcknowledged!==(p.dispatchAccepted===1)"));
+ a.ok(edge.includes('p.executorId!=="github-actions:hh-pr-repair-worker.yml"'));
 });
