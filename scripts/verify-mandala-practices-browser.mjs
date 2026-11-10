@@ -210,11 +210,21 @@ export async function verifyGuidedPractices({browser,base,engine}){
         const rect=el.getBoundingClientRect();
         const selectors=["[data-guided-create-plan]","[data-guided-generate-meditation]","[data-guided-skip-meditation]"];
         return {right:rect.right,left:rect.left,overflow:el.scrollWidth-el.clientWidth,
-          hits:selectors.map(sel=>el.querySelector(sel)?.getBoundingClientRect().height||0)};
+          hits:selectors.map(sel=>{
+            const button=el.querySelector(sel);
+            const height=button?.getBoundingClientRect().height||0;
+            return {selector:sel,present:Boolean(button),height};
+          })};
       });
       assert.ok(geometry.left>=-3&&geometry.right<=width+3,engine+" "+locale+" course fits "+width+"px viewport");
       assert.ok(geometry.overflow<=3,engine+" "+locale+" has no horizontal overflow");
-      assert.ok(geometry.hits.every(height=>height>=44),engine+" "+locale+" buttons have >=44px hit targets");
+      // Skip is conditional on a generated meditation result. After course
+      // remount it is correctly absent; never treat an absent conditional
+      // action as a zero-height button. The two persistent actions must exist.
+      assert.ok(geometry.hits.slice(0,2).every(hit=>hit.present),
+        engine+" "+locale+" persistent buttons exist "+JSON.stringify(geometry.hits));
+      assert.ok(geometry.hits.filter(hit=>hit.present).every(hit=>hit.height>=44),
+        engine+" "+locale+" rendered buttons have >=44px hit targets "+JSON.stringify(geometry.hits));
       const screenshotDir=process.env.HH_HYPNO_SCREENSHOT_DIR;
       if(screenshotDir){
         mkdirSync(screenshotDir,{recursive:true});
