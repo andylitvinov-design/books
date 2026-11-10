@@ -236,7 +236,7 @@ function renderThread(){
   for(const field of ['title','project','description','status'])el(field).value=thread[field]||'';
   el('tasks').value=(thread.tasks||[]).join(', ');el('prs').value=(thread.prs||[]).join(', ');
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
-  el('thread-advanced').open=false;el('chat-extra').open=false;
+  el('thread-advanced').open=false;el('chat-extra').open=false;el('verify-status').textContent='';
   const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
   if(el('mode').value==='council-free'||!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
@@ -245,6 +245,31 @@ function renderThread(){
   el('pr-proof').replaceChildren();el('report-list').replaceChildren();
   show('create',false);show('chat-form',true);show('thread',true);
   renderMessages();renderList();
+ }
+
+ async function verifySavedThread(){
+  const current=thread,button=el('verify-chat'),status=el('verify-status');
+  if(!current){status.textContent='Откройте чат.';return}
+  if(!remote){status.textContent='История зашифрована на устройстве; серверная проверка здесь недоступна.';return}
+  if(!authorized){status.textContent='Войдите через Google для проверки сохранения.';return}
+  if(button.disabled)return;
+  button.disabled=true;status.textContent='Проверяю сохранение на защищённом сервере…';
+  try{
+   const read=await request(SERVER+'?action=read&issue='+current.issueNumber);
+   if(read.chat?.id!==current.id||!Array.isArray(read.messages))
+    throw Error('Сервер не подтвердил идентификатор и историю чата');
+   const lastOwner=[...messages].reverse().find(m=>m.kind==='owner');
+   if(!lastOwner){status.textContent='Чтение чата работает. Отправьте вопрос для проверки записи.';return}
+   const ownerIndex=read.messages.findIndex(m=>m.id===lastOwner.id&&m.kind==='owner');
+   if(ownerIndex<0){status.textContent='Последний вопрос не найден в серверной истории.';return}
+   const lastAnswer=[...messages].reverse().find(m=>['assistant_unverified','ai'].includes(m.kind));
+   const answerIndex=lastAnswer?read.messages.findIndex(m=>m.id===lastAnswer.id&&
+    ['assistant_unverified','ai'].includes(m.kind)):-1;
+   status.textContent=answerIndex>ownerIndex
+    ?'Подтверждено: вопрос и ответ сохранены в Supabase.'
+    :'Подтверждено: вопрос сохранён. Ответ на этот вопрос ещё не подтверждён.';
+  }catch(error){status.textContent='Сохранение не подтверждено: '+String(error.message||error)}
+  finally{button.disabled=false}
  }
  function startReportPolling(){
   if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
@@ -279,6 +304,7 @@ function renderThread(){
   };
   if(busy)return fail('Другая операция ещё выполняется. Повторите нажатие.');
   const question=el('new-question').value.trim(),mode=el('new-mode').value;
+  stopVoice();
   busy=true;button.disabled=true;
   const buttonLabel=button.textContent;button.textContent='⋯';button.setAttribute('aria-label','Создаю чат…');
   feedback.hidden=true;feedback.textContent='';
@@ -459,6 +485,7 @@ async function update(e){
  async function send(e){
   e.preventDefault();if(!thread||busy)return;
   const text=el('message').value.trim(),mode=el('mode').value,model=el('model').value;
+  stopVoice();
   if(text.length<2||text.length>1200)return info('Сообщение должно содержать 2–1200 символов.');
   if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
   let c=thread;
@@ -692,6 +719,7 @@ async function update(e){
   for(const select of [el('mode'),el('new-mode')])
    select.querySelector('option[value=openrouter]').disabled=!aiReady;
   el('new-mode').value=aiReady?'openrouter':'local';
+  show('free-model-status',!aiReady);
   if(remote){
    show('board',true);
    try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
@@ -746,6 +774,7 @@ async function update(e){
  el('chat-form').addEventListener('submit',send);el('note').addEventListener('click',addNote);
  el('check-prs').addEventListener('click',checkPRs);el('load-reports').addEventListener('click',reportList);
  el('handoff').addEventListener('click',handoff);
+ el('verify-chat').addEventListener('click',verifySavedThread);
  el('search').addEventListener('input',renderList);el('filter').addEventListener('change',renderList);
  el('close-thread').addEventListener('click',showNewChat);
  el('thread-context-toggle').addEventListener('click',()=>{
