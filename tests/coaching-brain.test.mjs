@@ -221,7 +221,7 @@ test('explicit stop is respected in Russian and Spanish without entering model l
 })
 
 test('a short or neutral answer is not automatically treated as resistance',()=>{
-  for(const message of ['ok','yes','да','понятно','gracias']){
+  for(const message of ['ok.','yes','да!','понятно','gracias','listo']){
     const input=normalizeCoachingBrainInput(req({message}))
     assert.equal(classifyCoachingResistance(input).type,'none',message)
   }
