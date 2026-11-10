@@ -54,7 +54,7 @@ test('existing success-side slot wakeup remains independent',()=>{
  assert.match(full,/github\.event\.workflow_run\.conclusion == 'success'/);
 });
 
-test('GitHub's one pending concurrency slot cannot cross-cancel different source branches',()=>{
+test('GitHub pending concurrency slot cannot cross-cancel different source branches',()=>{
  const workflow=fs.readFileSync(path.join(__dirname,'../.github/workflows/hh-pr-direct-core-failure.yml'),'utf8');
  const direct=workflow.split('  direct-core-failure:\n')[1]?.split('  core-slot-wakeup:\n')[0];
  assert.match(direct,/hh-direct-core-pr-/);
