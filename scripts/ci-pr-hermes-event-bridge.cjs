@@ -147,8 +147,12 @@ async function sendWorkflowFailure({
     accepted: receipt.accepted,
     prNumber: Number.isSafeInteger(receipt.pr_number) ? receipt.pr_number : association.pullRequest.number,
     headSha: association.pullRequest.head.sha,
+    headRef: association.pullRequest.head.ref,
     runId: workflowRun.id,
     inboxId: typeof receipt.inbox_id === 'string' ? receipt.inbox_id : null,
+    association: typeof receipt.association === 'string' ? receipt.association : null,
+    category: diagnostics.category,
+    classification: diagnostics.classification,
     endpointStatus: response.status
   };
   if (receipt.accepted) core?.info?.('COMMANDER_CI_EVENT_BRIDGE ' + JSON.stringify(result));
