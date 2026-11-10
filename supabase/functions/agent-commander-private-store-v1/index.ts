@@ -517,6 +517,14 @@ const CI_ROUTE_STATES = new Set([
   "EXISTING_RECOVERY_ACCEPTED","DISPATCH_ACCEPTED_NOT_WORKER_STARTED",
   "TASK_WAITING_FOR_DISPATCH","DISPATCH_UNCONFIRMED_RECONCILE"
 ]);
+async function exactCoreFailureTaskId(e: {pr_number:number;head_sha:string;
+    workflow_run_id:string|number;run_attempt:number}):Promise<string> {
+  const identity=["andylitvinov-design/books",e.pr_number,e.head_sha.toLowerCase(),
+    e.workflow_run_id,e.run_attempt,"CORE"].join(":");
+  const bytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(identity));
+  return Array.from(new Uint8Array(bytes)).slice(0,16)
+    .map((value)=>value.toString(16).padStart(2,"0")).join("");
+}
 async function receiveCommanderCiRoute(req,origin){
   const claims=await verifyGitHubActionsOidc(req);
   if(!claims)return reply(401,{recorded:false,outcome:"GITHUB_OIDC_IDENTITY_REJECTED"},origin);
@@ -538,8 +546,9 @@ async function receiveCommanderCiRoute(req,origin){
     p.dispatchAcknowledged!==(p.dispatchAccepted===1)||
     (p.dispatchAccepted===1?(
       p.executorId!=="github-actions:hh-pr-repair-worker.yml"||
-      !/^[a-f0-9]{32}$/.test(p.workerTaskKey||"")):
-      (p.executorId!==null||p.workerTaskKey!==null))||
+      !/^[a-f0-9]{32}$/.test(p.workerTaskKey||"")||
+      !/^[a-f0-9]{32}$/.test(p.errorTaskId||"")):
+      (p.executorId!==null||p.workerTaskKey!==null||p.errorTaskId!==null))||
     !p.blocked||typeof p.blocked!=="object"||Array.isArray(p.blocked)||
     Object.entries(p.blocked).length>12||
     Object.entries(p.blocked).some(([k,v])=>!/^[A-Z0-9_]{3,80}$/.test(k)||
@@ -553,7 +562,7 @@ async function receiveCommanderCiRoute(req,origin){
   try{
     const result=await db.begin(async tx=>{
       const rows=await tx.unsafe(
-        "select ci_event_id,repository,workflow_run_id,pr_number,head_sha,head_ref,category,classification,association_status,associated_task_id,inbox_owner_id,oidc_workflow_ref,route_receipt from business_brain.commander_ci_event_inbox where ci_event_id=$1::uuid for update",
+        "select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,head_ref,category,classification,association_status,associated_task_id,inbox_owner_id,oidc_workflow_ref,route_receipt from business_brain.commander_ci_event_inbox where ci_event_id=$1::uuid for update",
         [p.inboxId]);
       const e=rows[0];
       if(!e)return {code:404,outcome:"CI_EVENT_NOT_FOUND"};
@@ -573,11 +582,16 @@ async function receiveCommanderCiRoute(req,origin){
           c.requires_human!==false||c.retry?.allowed!==true||
           c.recommended_status!=="REROUTED")))
         return {code:409,outcome:"CI_ROUTE_SOURCE_NOT_VERIFIED"};
+      if(p.dispatchAccepted===1&&(
+        !Number.isInteger(e.run_attempt)||e.run_attempt<1||
+        p.errorTaskId!==await exactCoreFailureTaskId(e)))
+        return {code:409,outcome:"CI_ROUTE_CAUSAL_TASK_MISMATCH"};
       const record={schema:p.schema,inboxId:p.inboxId,prNumber:p.prNumber,
         headSha:p.headSha,runId:p.runId,category:p.category,router:p.router,
         responsibleRole:p.responsibleRole,state:p.state,reason:p.reason,
         dispatchAccepted:p.dispatchAccepted,blocked:p.blocked,
         executorId:p.executorId,workerTaskKey:p.workerTaskKey,
+        errorTaskId:p.errorTaskId,
         dispatchAcknowledged:p.dispatchAcknowledged,
         workerStarted:false,sourceWriteVerified:false,liveVerified:false,
         proofLevel:"GITHUB_OIDC_ROUTE_ONLY_NOT_EXECUTION"};
@@ -611,7 +625,8 @@ async function receiveCommanderCiRoute(req,origin){
           "; route state "+p.state+"; "+p.reason+
           "; dispatch accepted "+p.dispatchAccepted+
           (p.executorId?"; selected executor "+p.executorId+
-            "; exact worker task "+p.workerTaskKey:"; assigned owner review, no worker dispatch")+
+            "; exact worker task "+p.workerTaskKey+
+            "; error task "+p.errorTaskId:"; assigned owner review, no worker dispatch")+
           ". Worker start, source commit, CI and LIVE are NOT verified.",1800),
         ciRoute:record,sourceVerified:true,
         proofLevel:"GITHUB_OIDC_ROUTE_ONLY_NOT_EXECUTION",
