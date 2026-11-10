@@ -178,12 +178,12 @@ WITH due AS (
    AND f.state IN ('queued_review','blocked')
 )
 UPDATE business_brain.commander_tasks f
- SET title=left('[Executor] '||due.decision->>'category'||' · '||
-   due.decision->>'reason_code',180),
+ SET title=left('[Executor] '||(due.decision->>'category')||' · '||
+   (due.decision->>'reason_code'),180),
  state='blocked',
  payload=f.payload||jsonb_build_object(
-   'title',left('[Executor] '||due.decision->>'category'||' · '||
-    due.decision->>'reason_code',180),
+   'title',left('[Executor] '||(due.decision->>'category')||' · '||
+    (due.decision->>'reason_code'),180),
    'errorCategory',due.decision->>'category',
    'strategy',due.decision->>'strategy',
    'responsibleRole',due.decision->>'responsible_role',
