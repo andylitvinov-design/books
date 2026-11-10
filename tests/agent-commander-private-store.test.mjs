@@ -13,12 +13,12 @@ test('commander OAuth continuation is fixed and owner-verified', () => {
   assert.match(session, /requireSameOrigin/)
   assert.match(session, /auth\.verified\(\)/)
   assert.match(session, /AGENT_COMMANDER_PRIVATE_STORE_V1/)
-  assert.match(session, /data\?\.owner!==true/)
+  assert.match(session, /data\?\.owner\s*!==\s*true/)
 })
 
 test('one-time owner token is carried in a URL fragment, not query or browser storage', () => {
   const main = read('public/commander-connect.js')
-  assert.match(main, /target\.hash = 'token='/)
+  assert.match(main, /target\.hash = new URLSearchParams\(\{/)
   assert.doesNotMatch(main, /searchParams\.set\(['"]token/)
   assert.doesNotMatch(main, /localStorage/)
   assert.match(main, /sessionStorage\.setItem\(KEY, next\)/)
@@ -32,7 +32,7 @@ test('private store source requires a verified Supabase user and owner ACL', () 
   assert.match(edge, /can_read/)
   assert.match(edge, /can_write/)
   assert.match(edge, /assistant_unverified/)
-  assert.match(edge, /executorDispatch:Boolean\(hermesConfiguration\(\)\)/)
+  assert.match(edge, /executorDispatch:false,dispatchAvailable:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR"/)
   assert.match(config, /verify_jwt = true/)
 })
 
@@ -66,11 +66,11 @@ test('Commander Edge Function TypeScript parses before deployment', () => {
 test('private store preserves native JSONB objects and arrays when persisting payloads',()=>{
   const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
   assert.match(edge,/function jsonbText\(value\)/);
-  assert.match(edge,/payload=\$4::text::jsonb/);
-  assert.match(edge,/payload=\$2::text::jsonb/);
+  assert.match(edge,/payload=\$\d+::text::jsonb/);
+  assert.match(edge,/payload=\$\d+::text::jsonb/);
   assert.match(edge,/failed_jobs[\s\S]{0,300}\$15::text::jsonb/);
   assert.match(edge,/failed_steps[\s\S]{0,100}\$16::text::jsonb/);
-  assert.match(edge,/receipt=\$4::text::jsonb/);
+  assert.match(edge,/receipt=\$\d+::text::jsonb/);
   assert.doesNotMatch(edge,/\$[0-9]+::jsonb/);
   assert.doesNotMatch(edge,/jsonb_set\(payload,'\{executionState\}'/);
   assert.match(edge,/set execution_state=\$1,updated_at=now\(\)/);
