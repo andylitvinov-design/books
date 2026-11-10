@@ -50,18 +50,23 @@ test("one existing music picker is moved from Montage, preserving original attac
   assert.doesNotMatch(studio,/\{id:"audio",Icon:Music2\}/);
 });
 
-test("Ideas and Audio share the single consented voice editor",()=>{
+test("Ideas has only Personalization and Concept; Audio owns Voice and My Voice",()=>{
   const local=read("components/mandala-local-voice-tracks.tsx");
-  for(const tab of ["text","voice","my-voice"])assert.match(studio,new RegExp('data-video-ideas-tab="'+tab+'"'));
-  assert.match(studio,/setIdeasSubtab\("voice"\)/);
-  assert.match(studio,/setIdeasSubtab\("my-voice"\)/);
-  assert.match(studio,/data-video-ideas-text-panel/);
-  assert.match(studio,/data-video-ideas-own-upload/);
+  assert.match(studio,/data-video-ideas-tab="personalization"/);
+  assert.match(studio,/data-video-ideas-tab="concept"/);
+  assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
+  assert.doesNotMatch(studio,/data-video-legacy-phrase-editor|data-video-ideas-voice-mode|data-video-phrase-audio-shortcut/);
+  assert.doesNotMatch(studio,/setIdeasSubtab\("(?:text|voice|my-voice)"\)/);
+  assert.match(studio,/data-video-audio-voice-modes/);
+  assert.match(studio,/data-video-audio-voice-mode="voice"/);
+  assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
+  assert.match(studio,/audioWorkspaceTab==="voice" \? hypnoVoiceEditor : null/);
+  assert.match(studio,/ownVoiceOnly=\{ideasVoiceMode==="my-voice"\}/);
+  assert.match(studio,/setActiveWorkspace\("effects"\);\s*setAudioWorkspaceTab\("voice"\);\s*setVoiceStudioActivated\(true\)/);
+  assert.match(studio,/data-video-audio-own-upload/);
+  assert.match(studio,/data-video-own-voice-record/);
   assert.match(local,/data-video-own-voice-record/);
   assert.equal((studio.match(/<MandalaAffirmationVoice locale=/g)||[]).length,1);
-  assert.match(studio,/ownVoiceOnly=\{activeWorkspace==="phrases"&&ideasSubtab==="my-voice"\}/);
-  assert.match(studio,/activeWorkspace==="phrases"&&ideasSubtab!=="text" \? hypnoVoiceEditor : null/);
-  assert.match(studio,/audioWorkspaceTab==="voice" \? hypnoVoiceEditor : null/);
   assert.match(studio,/\{supplementaryCloudVoicePanel\}/);
   assert.match(studio,/voiceEditor=\{null\}/);
 });
