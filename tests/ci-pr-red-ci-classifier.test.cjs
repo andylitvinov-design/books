@@ -11,6 +11,24 @@ test('trusted red-CI taxonomy: TypeScript is diagnostic, not source-write permis
  assert.equal(r.category,'TYPESCRIPT'); assert.equal(r.source_write_authorized,false);
  assert.equal(r.failed_step,'TypeScript check');
 });
+test('release build is TypeScript, not a lease/automation failure',()=>{
+ const r=check([job('core-lint-types-build','Exact proposed release production build and TypeScript check'),
+   job('hh-merge-check','Require real Core and specialist results from this workflow')]);
+ assert.equal(r.category,'TYPESCRIPT');
+ assert.equal(r.reason_code,'FAILED_TYPESCRIPT_STEP');
+ assert.equal(r.failed_step,'Exact proposed release production build and TypeScript check');
+ assert.equal(r.responsible_role,'free-code-repair-worker');
+ assert.equal(r.source_write_authorized,false);
+ assert.equal(r.execution_authorized,false);
+ assert.equal(r.status,'DIAGNOSTIC_ONLY');
+});
+test('actual lease failure still routes to automation owner, never source writer',()=>{
+ const r=check([job('owner-dispatcher','Repair worker lease expired')]);
+ assert.equal(r.category,'AUTOMATION_PROCESS');
+ assert.equal(r.responsible_role,'agents-director-maintainer');
+ assert.equal(r.source_write_authorized,false);
+ assert.equal(r.execution_authorized,false);
+});
 test('trusted red-CI taxonomy: test failures are separate from TypeScript',()=>{
  assert.equal(check([job('core-lint-types-build','Mobile Dock Core geometry and iPhone keyboard contracts')]).category,'TEST_FAILURE');
  assert.equal(check([job('focused-unit-types-build','Run unit tests')]).category,'TEST_FAILURE');
