@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import PublicCoachingDiscovery from '@/components/public-coaching-discovery'
 import { getPublicCoachingCatalog } from '@/lib/coaching/public-coaching-catalog'
-import styles from '../page.module.css'
+import styles from './page.module.css'
 import { metadataBaseFor } from '@/data/site-metadata'
 
 export const dynamic='force-dynamic'
