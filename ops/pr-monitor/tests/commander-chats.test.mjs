@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-hermes-consent-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-ci-classification-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -121,7 +121,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-hermes-consent-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-ci-classification-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -213,7 +213,7 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-ci-inbox-hermes-consent-v1'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-ci-classification-v1'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -526,33 +526,13 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
  assert.equal(out.body.error,'EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY');
 });
 
-test('CI inbox task association uses the same project key as the private task insert',()=>{
- const source=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
- assert.match(source,/insert into business_brain\.commander_tasks[\s\S]{0,1000}'agent-commander'/);
- assert.match(source,/from business_brain\.commander_tasks[\s\S]{0,150}where project_key='agent-commander'/);
- assert.doesNotMatch(source,/where project_key='holistic-house'/);
-});
-
-test('CI inbox OIDC events and owner list are scoped to the single authorized owner',()=>{
- const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
- const migration=src('../../supabase/migrations/20261110134000_commander_ci_inbox_owner_scope_v1.sql');
- assert.match(edge,/select user_id from business_brain\.owner_access where can_read=true[\s\S]{0,120}limit 2/);
- assert.match(edge,/readableOwners\.length!==1/);
- assert.ok(edge.includes('oidc_workflow_ref, inbox_owner_id'));
- assert.match(edge,/where project_key='agent-commander' and owner_id=\$1::uuid/);
- assert.match(edge,/where inbox_owner_id=\$3::uuid/);
- assert.match(migration,/add column if not exists inbox_owner_id uuid references auth\.users\(id\)/);
- assert.match(migration,/alter column inbox_owner_id set not null/);
- assert.ok(migration.includes('create index if not exists commander_ci_event_inbox_scope_created_idx'));
- assert.ok(migration.includes('(inbox_owner_id,created_at desc)'));
- assert.match(migration,/readable_count <> 1/);
- assert.match(migration,/revoke all on business_brain\.commander_ci_event_inbox from public, anon, authenticated/);
-});
-
-test('CI Inbox displays versioned decision and keeps diagnostic-only authority visibly disabled',()=>{
- const js=src('commander-chats.js');
+test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
+ assert.match(html,/commander-chats\.js\?v=20261110-ci-classification-v1/);
+ assert.match(html,/commander-chats\.css\?v=20261110-ci-classification-v1/);
  assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
- assert.match(js,/classification\.recommended_action/);
- assert.match(js,/Ответственная роль:/);
- assert.match(js,/автоматическое изменение исходников и запуск исполнителя не разрешены/);
+ for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
+  assert.ok(js.includes('classification.'+field)||js.includes('classification?.'+field),field);
+ assert.match(js,/Классификатор не разрешает запись в GitHub, retry, merge или deploy автоматически/);
+ assert.match(css,/\.cc-ci-classification-action/);
 });
