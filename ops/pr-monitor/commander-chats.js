@@ -20,8 +20,11 @@
  const councilCompleted=new Set(),councilSaving=new Set();
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
  const show=(id,yes)=>{el(id).hidden=!yes};
- const info=s=>{const message=String(s);el('alert').textContent=message;
-  if(thread&&!el('thread').hidden)el('thread-feedback').textContent=message;
+ const info=s=>{
+  const message=String(s);
+  el('alert').textContent=message;
+  const target=thread&&!el('thread').hidden?el('chat-feedback'):el('create-feedback');
+  if(target){target.textContent=message;target.hidden=!message;}
  };
  const time=s=>{try{return new Date(s).toLocaleString('ru-RU',{dateStyle:'short',timeStyle:'short'})}catch{return '—'}};
  const id=()=>win.crypto.randomUUID();
@@ -171,8 +174,9 @@
  function formValues(prefix){
   const value=k=>el(prefix+k).value;
   const r={title:value('title').trim(),project:value('project'),description:value('description').trim(),
-   tasks:tasks(value('tasks')),prs:prs(value('prs')),executors:picks(prefix+'executors'),
+   tasks:tasks(value('tasks')),prs:prs(value('prs')),executors:prefix==='new-'?(value('mode')==='council-free'?['local']:[value('mode')]):picks('executors'),
    status:prefix==='new-'?'planned':value('status')};
+  if(prefix==='new-'&&value('mode')!=='council-free'&&!EXEC[value('mode')])throw Error('Неизвестный исполнитель');
   if(r.title.length<4||r.title.length>110||r.description.length>1000)throw Error('Название: 4–110 символов; цель до 1000');
   return r;
  }
@@ -184,40 +188,36 @@
   });
  }
  function renderList(){
-  el('count').textContent=chats.length;
-  el('active-count').textContent=chats.filter(c=>['assigned','working','review'].includes(c.status)).length;
-  el('blocked-count').textContent=chats.filter(c=>c.status==='blocked').length;
-  el('list-meta').textContent=chats.length+' всего';
-  const q=el('search').value.trim().toLowerCase(),status=el('filter').value,box=el('chat-list');
-  doc.querySelectorAll('[data-cc-status]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ccStatus===status)));
-  box.replaceChildren();
+  el('count').textContent=chats.length;el('active-count').textContent=chats.filter(c=>['assigned','working','review'].includes(c.status)).length;
+  el('blocked-count').textContent=chats.filter(c=>c.status==='blocked').length;el('list-meta').textContent=chats.length+' всего';
+  const q=el('search').value.toLowerCase(),status=el('filter').value,box=el('chat-list');box.replaceChildren();
   let count=0;
   for(const c of chats.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))){
-   if(status==='working'? !['assigned','working','review'].includes(c.status) : status!=='all'&&c.status!==status)continue;
+   if(status!=='all'&&c.status!==status)continue;
    const value=[c.title,c.description,c.project,...(c.tasks||[]),...(c.prs||[])].join(' ').toLowerCase();
-   if(q&&!value.includes(q))continue;
-   count++;
+   if(q&&!value.includes(q))continue;count++;
    const b=make('button','cc-chat-card');b.type='button';b.setAttribute('aria-current',String(thread?.id===c.id));
-   const title=make('strong',null,c.title||'Рабочий чат');
-   const state=make('span','cc-state',STATES[c.status]||'Без статуса');state.dataset.state=c.status||'planned';
-   const summary=[c.project==='commander'?'Agent Commander':c.project||'',...(c.prs?.length?['PR #'+c.prs.join(', #')]:[])].filter(Boolean).join(' · ');
-   b.append(title,state,make('span','cc-chat-meta',summary||time(c.updatedAt)));
+   b.append(make('strong',null,c.title),
+    make('span',null,time(c.updatedAt)+(c.status==='blocked'?' · Требует внимания':'')));
    b.addEventListener('click',()=>openChat(c));box.append(b);
   }
-  if(!count)box.append(make('p','cc-empty',chats.length?'Нет чатов с такими фильтрами.':'Чатов пока нет. Нажмите «Новый чат» и напишите вопрос.'));
+  if(!count)box.append(make('p','cc-empty',chats.length?'Нет совпадений по фильтру.':'Чатов нет. Создайте первый.'));
  }
  function renderMessages(){
   const box=el('messages');box.replaceChildren();
-  if(!messages.length)box.append(make('p','cc-empty','Пока сообщений нет. Начните диалог или добавьте заметку.'));
+  if(!messages.length)box.append(make('p','cc-empty','Напишите вопрос, чтобы начать диалог.'));
   for(const msg of messages){
    const c=make('div','cc-message-item cc-from-'+msg.kind);
-   c.append(make('div','cc-message-by',msg.author||'Сообщение'),make('p',null,msg.text||''),
-    make('small',null,time(msg.createdAt)+(msg.model?' · '+msg.model:'')+' · '+(msg.kind==='github_report'?'отчёт, НЕ коммит':'не доказательство LIVE')));
-   if(msg.kind==='github_report')htmlLink(c,'Источник GitHub',msg.url);box.append(c);
+   const author=msg.kind==='owner'?'Вы':msg.kind==='assistant_unverified'?'Ассистент':
+    msg.kind==='note'?'Заметка':msg.author||'Сообщение';
+   c.append(make('div','cc-message-by',author),make('p',null,msg.text||''),
+    make('small',null,time(msg.createdAt)+(msg.kind==='github_report'?' · отчёт, не доказательство LIVE':'')));
+   if(msg.kind==='github_report')htmlLink(c,'Источник GitHub',msg.url);
+   box.append(c);
   }
   box.scrollTop=box.scrollHeight;
  }
- function renderThread(){
+function renderThread(){
   el('thread-title').textContent=thread.title;
   el('thread-updated').textContent=time(thread.updatedAt)+' · '+(remote?'приватное серверное хранилище':'зашифровано на устройстве');
   el('executor-state').textContent=(thread.taskId?'Чат привязан к защищённой задаче. ':'')+
@@ -225,7 +225,13 @@
   for(const field of ['title','project','description','status'])el(field).value=thread[field]||'';
   el('tasks').value=(thread.tasks||[]).join(', ');el('prs').value=(thread.prs||[]).join(', ');
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
-  el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('thread',true);el('board').dataset.view='thread';
+  el('thread-advanced').open=false;el('chat-extra').open=false;el('history').open=false;
+  const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
+  if(el('mode').value==='council-free'||!available.includes(el('mode').value))
+   el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
+  show('model-label',el('mode').value==='openrouter');
+  el('chat-feedback').textContent='';show('chat-feedback',false);
+  el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('create',false);show('thread',true);
   renderMessages();renderList();
  }
  function startReportPolling(){
@@ -250,55 +256,67 @@
   }catch(err){info('Ошибка открытия чата: '+String(err.message||err))}
  }
  async function create(e){
-   e.preventDefault();
-   const feedback=el('create-feedback'),button=el('create-submit');
-   const fail=message=>{
-    feedback.textContent=message;feedback.hidden=false;info(message);
-    feedback.scrollIntoView({block:'nearest'});feedback.focus({preventScroll:true});
-   };
-   if(busy)return fail('Другая операция ещё выполняется. Повторите нажатие.');
-   busy=true;button.disabled=true;button.textContent='Создаю…';
-   feedback.hidden=true;feedback.textContent='';
-   let created=false;
-   try{
-    const question=el('new-prompt').value.trim();
-    if(question.length<2||question.length>1200)throw Error('Напишите вопрос длиной 2–1200 символов.');
-    if(!el('new-title').value.trim()){
-     const title=question.split('\n')[0].trim().slice(0,110);
-     el('new-title').value=title.length>=4?title:'Вопрос: '+question.slice(0,95);
-    }
-    if(el('new-title').value.trim().length<4)el('new-title').value='Вопрос: '+question.slice(0,95);
-    const data={...formValues('new-'),id:pendingCreateId||(pendingCreateId=id())};let c;
-    if(data.executors[0]==='openrouter'&&!aiReady)
-     throw Error('OpenRouter Free сейчас недоступен. Выберите «Советник» или другого исполнителя.');
-    if(remote){
+  e.preventDefault();
+  const button=el('create-send'),feedback=el('create-feedback');
+  const fail=message=>{
+   info(message);feedback.textContent=String(message);feedback.hidden=false;
+   feedback.scrollIntoView({block:'nearest'});feedback.focus({preventScroll:true});
+  };
+  if(busy)return fail('Другая операция ещё выполняется. Повторите нажатие.');
+  const question=el('new-question').value.trim(),mode=el('new-mode').value;
+  busy=true;button.disabled=true;
+  const buttonLabel=button.textContent;button.textContent='Создаю…';
+  feedback.hidden=true;feedback.textContent='';
+  let created=false;
+  try{
+   if(question.length<2||question.length>1200)throw Error('Вопрос должен содержать 2–1200 символов.');
+   if(mode==='openrouter'&&!aiReady)throw Error('Бесплатная модель OpenRouter сейчас недоступна. Выберите локального советника.');
+   if(!el('new-title').value.trim())el('new-title').value=('Вопрос: '+question.replace(/\s+/g,' ')).slice(0,110);
+   if(el('new-title').value.trim().length<4)el('new-title').value='Вопрос: '+question.slice(0,95);
+   const data={...formValues('new-'),id:pendingCreateId||(pendingCreateId=id())};let c;
+   if(remote){
+    try{
      const v=await request(SERVER+'?action=create','POST',{chat:data});
      c=v.chat?{...v.chat,issueNumber:v.issueNumber}:null;
      if(!c){const read=await request(SERVER+'?action=read&issue='+v.issueNumber);c={...read.chat,issueNumber:v.issueNumber};}
-    }else{
-     if(chats.length>=80)throw Error('Лимит 80 локальных чатов; сохраните копию.');
+    }catch(error){
+     // A timed-out response may hide a successful insert. Resolve by the same
+     // private chat UUID, never silently create a second conversation.
+     try{
+      const listing=await request(SERVER+'?action=list');
+      const existing=listing.chats?.find(x=>x.id===data.id&&Number.isSafeInteger(x.issueNumber));
+      if(!existing)throw error;
+      const read=await request(SERVER+'?action=read&issue='+existing.issueNumber);
+      c={...read.chat,issueNumber:existing.issueNumber};
+     }catch{throw error}
+    }
+   }else{
+    if(chats.length>=80&&!chats.some(x=>x.id===data.id))throw Error('Лимит 80 локальных чатов; сохраните копию.');
+    c=chats.find(x=>x.id===data.id);
+    if(!c){
      c={...data,revision:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
       liveVerified:false,executionState:'UNVERIFIED_ASSIGNMENT_ONLY',messages:[]};
-     chats.unshift(c);await persist();
+     chats.unshift(c);
     }
-    if(!c?.id)throw Error('Сервер не подтвердил создание чата.');
-    if(remote){chats.unshift(c);messages=[];}else messages=c.messages;
-    thread=c;renderThread();startReportPolling();
-    closeCreate();el('create-form').reset();pendingCreateId=null;
-    el('mode').value=data.executors[0];
-    el('mode').dispatchEvent(new Event('change'));
-    el('message').value=question;
-    info('Чат создан. Отправляю вопрос выбранному исполнителю…');
-    created=true;
-   }catch(err){fail('Чат не создан: '+String(err.message||err));}
-   finally{busy=false;button.disabled=false;button.textContent='Отправить';}
-   if(created){
-    el('thread').scrollIntoView({block:'start',behavior:'smooth'});
-    await send({preventDefault(){}});
-    void reportList({automatic:true,silent:true});
+    await persist();
    }
+   if(!c?.id)throw Error('Сервер не подтвердил создание чата.');
+   if(remote){chats=[c,...chats.filter(x=>x.id!==c.id)];messages=[];}else messages=c.messages;
+   thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});
+   el('create-form').reset();el('new-mode').value=aiReady?'openrouter':'local';pendingCreateId=null;
+   if(el('new-context').open)el('new-context').close();
+   el('mode').value=mode;show('model-label',mode==='openrouter');
+   el('message').value=question;
+   created=true;
+   info('Отправляю вопрос…');
+  }catch(err){fail('Не удалось создать чат: '+String(err.message||err))}
+  finally{busy=false;button.disabled=false;button.textContent=buttonLabel;}
+  if(created){
+   await send({preventDefault(){}});
+   el('thread').scrollIntoView({block:'start',behavior:'smooth'});
   }
-  async function update(e){
+ }
+async function update(e){
   e.preventDefault();if(!thread||busy)return;busy=true;
   try{
    const data={...formValues(''),id:thread.id};
@@ -401,13 +419,40 @@
    info('Отчёт сохранён частично или не сохранён: '+String(error.message||error)+'. Повторная передача продолжит с недостающей части.');
   }finally{councilSaving.delete(data.requestId);}
  }
+ async function assignSelectedExecutor(c,mode){
+  if(mode==='council-free'||c.executors.includes(mode))return c;
+  if(!EXEC[mode])throw Error('Неизвестный исполнитель');
+  const current=c.executors||[];
+  if(current.length>=6)throw Error('В чате уже назначено шесть исполнителей. Измените список в разделе «Контекст и проверки».');
+  const chosen=[...current,mode];
+  if(remote){
+   const data={id:c.id,title:c.title,project:c.project,description:c.description||'',
+    tasks:c.tasks||[],prs:c.prs||[],executors:chosen,status:c.status};
+   const r=await request(SERVER+'?action=update','POST',{
+    issueNumber:c.issueNumber,expectedRevision:c.revision,chat:data
+   });
+   const changed={...r.chat,issueNumber:c.issueNumber};
+   chats=chats.map(x=>x.id===changed.id?changed:x);
+   if(thread?.id===c.id)thread=changed;
+   renderList();
+   return changed;
+  }
+  c.executors=chosen;c.revision=(c.revision||0)+1;c.updatedAt=new Date().toISOString();
+  await persist();renderList();
+  return c;
+ }
  async function send(e){
   e.preventDefault();if(!thread||busy)return;
   const text=el('message').value.trim(),mode=el('mode').value,model=el('model').value;
   if(text.length<2||text.length>1200)return info('Сообщение должно содержать 2–1200 символов.');
-  if(mode!=='council-free'&&!thread.executors.includes(mode))return info('Сначала назначьте этого исполнителя в настройках чата.');
   if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
-  const c=thread;
+  let c=thread;
+  if(mode!=='council-free'&&!thread.executors.includes(mode)){
+   busy=true;el('send').disabled=true;
+   try{c=await assignSelectedExecutor(c,mode);}
+   catch(err){info('Не удалось выбрать исполнителя: '+String(err.message||err));return;}
+   finally{busy=false;el('send').disabled=false;}
+  }
   if(mode==='council-free'){
    if(councilPending)return info('Уже ожидается ответ Совета ИИ. Заверши текущий вопрос или переключись на него.');
    busy=true;el('send').disabled=true;
@@ -629,7 +674,9 @@
   }catch{aiReady=false;models=[]}
   el('model').replaceChildren();
   for(const m of models){const o=make('option',null,m.name+' · '+m.id);o.value=m.id;el('model').append(o)}
-  el('mode').querySelector('option[value=openrouter]').disabled=!aiReady;
+  for(const select of [el('mode'),el('new-mode')])
+   select.querySelector('option[value=openrouter]').disabled=!aiReady;
+  el('new-mode').value=aiReady?'openrouter':'local';
   if(remote){
    show('board',true);
    try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
@@ -661,26 +708,29 @@
    show('vault',false);show('board',true);renderList();info('Чаты открыты. Повторный пароль больше не требуется.')}
   catch(err){info('Хранилище не открыто: '+String(err.message||err))}
  });
- function closeCreate(){show('create',false);show('create-backdrop',false);}
- function openCreate(){
-  show('create',true);show('create-backdrop',true);
-  win.setTimeout(()=>el('new-prompt').focus(),0);
+ function showNewChat(){
+  if(busy)return;
+  if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
+  reportRefreshTimer=null;thread=null;messages=[];pendingCreateId=null;el('history').open=false;
+  show('thread',false);show('create',true);renderList();
+  el('create-feedback').textContent='';show('create-feedback',false);
+  el('create').scrollIntoView({block:'start',behavior:'smooth'});
  }
- el('new-toggle').addEventListener('click',()=>el('create').hidden?openCreate():closeCreate());
- el('create-close').addEventListener('click',closeCreate);
- el('create-backdrop').addEventListener('click',closeCreate);
- doc.addEventListener('keydown',e=>{if(e.key==='Escape'&&!el('create').hidden)closeCreate();});
- doc.querySelectorAll('[data-cc-status]').forEach(b=>b.addEventListener('click',()=>{
-  el('filter').value=b.dataset.ccStatus;renderList();
- }));
+ el('new-toggle').addEventListener('click',showNewChat);
+ el('context-toggle').addEventListener('click',()=>{
+  const dialog=el('new-context');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+ });
+ el('context-close').addEventListener('click',()=>{
+  const dialog=el('new-context');if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');
+ });
  el('create-form').addEventListener('input',()=>{pendingCreateId=null;el('create-feedback').hidden=true;});
-  el('create-form').addEventListener('change',()=>{pendingCreateId=null;el('create-feedback').hidden=true;});
-  el('create-form').addEventListener('submit',create);el('metadata-form').addEventListener('submit',update);
+ el('create-form').addEventListener('change',()=>{pendingCreateId=null;el('create-feedback').hidden=true;});
+ el('create-form').addEventListener('submit',create);el('metadata-form').addEventListener('submit',update);
  el('chat-form').addEventListener('submit',send);el('note').addEventListener('click',addNote);
  el('check-prs').addEventListener('click',checkPRs);el('load-reports').addEventListener('click',reportList);
  el('handoff').addEventListener('click',handoff);
  el('search').addEventListener('input',renderList);el('filter').addEventListener('change',renderList);
- el('close-thread').addEventListener('click',()=>{if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);reportRefreshTimer=null;thread=null;messages=[];show('thread',false);el('board').dataset.view='list';renderList()});
+ el('close-thread').addEventListener('click',showNewChat);
  el('refresh').addEventListener('click',async()=>{
   if(busy)return;
   busy=true;el('refresh').disabled=true;
@@ -696,7 +746,7 @@
   finally{busy=false;el('refresh').disabled=false;}
  });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
- el('mode').addEventListener('change',()=>{show('model-label',el('mode').value==='openrouter');if(el('mode').value==='council-free')ensureCouncilFrame();else show('council-panel',false)});
+ el('mode').addEventListener('change',()=>{show('model-label',el('mode').value==='openrouter');if(el('mode').value!=='council-free')show('council-panel',false)});
  win.addEventListener('message',event=>{void receiveCouncilMessage(event)});
  request(AI+'?action=status').then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
   authorized=false;show('login',true);info('Продолжите через Google — отдельный код PR Monitor не нужен.');
