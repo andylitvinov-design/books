@@ -211,8 +211,8 @@ BEGIN
   SELECT NOT EXISTS(
     SELECT 1 FROM business_brain.commander_ci_event_inbox newer
      WHERE newer.associated_task_id=t.task_id
-       AND (newer.created_at,e.ci_event_id)<(newer.created_at,newer.ci_event_id)
-       AND newer.created_at>e.created_at
+       AND (newer.created_at>e.created_at OR
+         (newer.created_at=e.created_at AND newer.ci_event_id>e.ci_event_id))
   ) INTO v_latest;
   IF v_latest THEN
     UPDATE business_brain.commander_tasks
