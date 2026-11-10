@@ -271,7 +271,7 @@ function renderThread(){
   try{
    if(question.length<2||question.length>1200)throw Error('Вопрос должен содержать 2–1200 символов.');
    if(mode==='openrouter'&&!aiReady)throw Error('Бесплатная модель OpenRouter сейчас недоступна. Выберите локального советника.');
-   if(!el('new-title').value.trim())el('new-title').value=('Вопрос: '+question.replace(/\\s+/g,' ')).slice(0,110);
+   if(!el('new-title').value.trim())el('new-title').value=('Вопрос: '+question.replace(/\s+/g,' ')).slice(0,110);
    if(el('new-title').value.trim().length<4)el('new-title').value='Вопрос: '+question.slice(0,95);
    const data={...formValues('new-'),id:pendingCreateId||(pendingCreateId=id())};let c;
    if(remote){
