@@ -38,22 +38,24 @@ async function verifyOwner(request,body,fetcher){
   }
   if(origin.protocol!=='https:'||origin.username||origin.password||origin.pathname!=='/'||origin.search||origin.hash||!publicKeyValid)
     throw Object.assign(Error('OWNER_AUTH_NOT_CONFIGURED'),{status:503});
-  const userResponse=await fetcher(origin.origin+'/auth/v1/user',{
-    method:'GET',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(7000),
-    headers:{apikey:publishableKey,Authorization:authorization,Accept:'application/json'}
-  });
+  // Both requests use the same owner JWT; parallel checks keep the local model budget bounded.
+  const [userResponse,storeResponse]=await Promise.all([
+    fetcher(origin.origin+'/auth/v1/user',{
+      method:'GET',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(5000),
+      headers:{apikey:publishableKey,Authorization:authorization,Accept:'application/json'}
+    }),
+    fetcher(origin.origin+'/functions/v1/'+EDGE_FUNCTION,{
+      method:'POST',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(5000),
+      headers:{apikey:publishableKey,Authorization:authorization,'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify({action:'status'})
+    })
+  ]);
   if(!userResponse.ok)throw Object.assign(Error('OWNER_SESSION_INVALID'),{status:401});
-  const user=await userResponse.json().catch(()=>null);
+  const [user,store]=await Promise.all([
+    userResponse.json().catch(()=>null),storeResponse.json().catch(()=>null)
+  ]);
   if(!user||!UUID.test(user.id||'')||!user.email_confirmed_at||body.ownerId!==user.id)
     throw Object.assign(Error('OWNER_IDENTITY_MISMATCH'),{status:403});
-
-  // The existing private store remains the authority for owner access and write ACL.
-  const storeResponse=await fetcher(origin.origin+'/functions/v1/'+EDGE_FUNCTION,{
-    method:'POST',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(7000),
-    headers:{apikey:publishableKey,Authorization:authorization,'Content-Type':'application/json',Accept:'application/json'},
-    body:JSON.stringify({action:'status'})
-  });
-  const store=await storeResponse.json().catch(()=>null);
   if(!storeResponse.ok||store?.ok!==true||store?.owner!==true||
     store?.privateStoreConfigured!==true||store?.service!=='AGENT_COMMANDER_PRIVATE_STORE_V1')
     throw Object.assign(Error('OWNER_PRIVATE_STORE_DENIED'),{status:403});
@@ -75,7 +77,7 @@ export async function POST(request){
       runId:body.runId,chatId:body.chatId,ownerId:identity.ownerId,
       projectKey:body.projectKey,message:body.message,modelId:body.modelId,
       confirmGitHubWrite:body.confirmGitHubWrite,contextCapsule:body.contextCapsule
-    },{env:process.env,fetcher,signal:AbortSignal.timeout(25000)});
+    },{env:process.env,fetcher,signal:AbortSignal.timeout(18000)});
     return json(200,receipt);
   }catch(error){
     const status=Number.isInteger(error?.status)?error.status:503;
