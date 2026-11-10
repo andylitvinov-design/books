@@ -74,3 +74,8 @@ test('Commander execution verifies live zero pricing before dispatch and rejects
   'current live catalog is checked before any dispatch ledger or remote side effect');
  assert.match(handler,/!modelVerified\?modelVerificationReason/);
 });
+
+test('CI inbox associates to the real Agent Commander task project key, never the legacy Holistic House key',()=>{
+ assert.match(edge,/where project_key='agent-commander' and state not in/);
+ assert.doesNotMatch(edge,/where project_key='holistic-house'/);
+});

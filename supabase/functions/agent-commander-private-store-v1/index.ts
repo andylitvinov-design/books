@@ -482,7 +482,7 @@ async function receiveGitHubWorkflowRun(req, origin) {
     // partial write is recoverable. Deterministic event IDs prevent duplicates.
     const matches = await q(db,
       `select task_id, owner_id from business_brain.commander_tasks
-       where project_key='holistic-house' and state not in ('completed','superseded')
+       where project_key='agent-commander' and state not in ('completed','superseded')
          and coalesce(payload->'relatedPr','[]'::jsonb) @> to_jsonb($1::int)
        order by updated_at desc limit 2`, [event.pr_number]);
     let association = "UNMATCHED",associatedTaskId=null,associatedOwnerId=null;
