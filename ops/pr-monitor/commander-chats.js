@@ -267,7 +267,7 @@ function renderThread(){
    if(remote){
     const v=await request(SERVER+'?action=create','POST',{chat:data});
     c={...v.chat,issueNumber:v.issueNumber};
-    if(!v.chat){const read=await request(SERVER+'?action=read&issue='+v.issueNumber);c=read.chat;}
+    if(!v.chat){const read=await request(SERVER+'?action=read&issue='+v.issueNumber);c={...read.chat,issueNumber:v.issueNumber};}
    }else{
     if(chats.length>=80)throw Error('Лимит 80 локальных чатов; сохраните копию.');
     c={...data,revision:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
@@ -682,6 +682,7 @@ async function update(e){
   catch(err){info('Хранилище не открыто: '+String(err.message||err))}
  });
  function showNewChat(){
+  if(busy)return;
   if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
   reportRefreshTimer=null;thread=null;messages=[];el('history').open=false;
   show('thread',false);show('create',true);renderList();
