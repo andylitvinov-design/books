@@ -1,5 +1,7 @@
 name: HH PR watchdog contract
 on:
+  push:
+    branches: ['feat/commander-openrouter-worker-v1-rebased']
   pull_request:
     branches: ['codex/bootstrap-books']
     paths:
