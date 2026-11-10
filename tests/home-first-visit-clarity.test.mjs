@@ -11,11 +11,11 @@ test("EN RU ES show free-first offers and paid requests with distinct CTA and de
   for (const token of ["Пройти курс Рейки бесплатно","Заказать бесплатный письменный разбор",
     "Пройти коуч-сессию бесплатно","Request a session · from €50","Solicitar revisión escrita gratis"])
     assert.ok(offers.includes(token), token);
-  assert.match(css, /\.offerPrimary \{ background: #742c42/);
+  assert.match(css, /\.offerPrimary\s*\{[^}]*background:\s*#742c42/s);
   assert.match(css, /min-height: 44px/);
 });
 
-test("five early topic filters replace duplicated offer, test and My Space sections", () => {
+test("four current topic directions plus visible legacy catalogues replace duplicated sections", () => {
   const home = read("components/holistic-house-home.tsx");
   const es = read("app/es/page.tsx");
   const more = read("components/home-more-disclosure.tsx");
@@ -27,13 +27,17 @@ test("five early topic filters replace duplicated offer, test and My Space secti
     assert.ok(source.indexOf("<HomeMoreDisclosure") < source.indexOf("<HomeFeaturedWorkspace"), "Topic choices belong immediately after the hero");
     assert.equal((source.match(/<HomeMoreDisclosure/g) || []).length, 1, "One topic picker, no duplicate footer section");
   }
-  for (const key of ["energy","love","business","services","courses"])
-    assert.ok(more.includes('data-home-topic-filter="' + key + '"'));
+  for (const key of ["goals-money","love-relationships","energy-confidence","stress-anxiety"])
+    assert.ok(more.includes('"' + key + '":'), 'Current topic route is present: ' + key);
+  assert.match(more, /data-home-topic-filter=\{category\.id\}/);
+  for (const key of ["temple","services","courses"])
+    assert.ok(more.includes('data-home-topic-filter="' + key + '"'), 'Legacy catalogue remains accessible: ' + key);
   assert.match(more, /\{expanded \? <HomeConversationGuide locale=\{locale\} \/> : null\}/);
   const style = read("components/home-more-disclosure.module.css");
-  assert.match(style, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(style, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(style, /@media \(max-width: 640px\)/);
-  assert.match(style, /\.filters \.chip:nth-child\(3\) \{ grid-column: 1 \/ -1; \}/);
+  assert.match(style, /grid-template-columns: minmax\(0, \.82fr\) minmax\(0, 1\.18fr\)/);
+  assert.match(style, /\.filters \.chip:nth-child\(3\) \{ grid-column: auto; \}/);
   assert.match(style, /overflow-wrap: anywhere/);
   assert.match(style, /:focus-visible/);
   for (const phrase of ["Explore by topic", "Выберите тему", "Explora por tema"]) assert.ok(more.includes(phrase));
@@ -45,7 +49,9 @@ test("main menu prioritizes Energy Love Business and retains full legacy catalog
   assert.match(nav, /getCompactNavigation\(activeLocale\)/);
   assert.match(nav, /\['energy', 'love', 'business'\]/);
   assert.match(nav, /id: 'services'/);
-  assert.match(nav, /id: 'academy'/);
+  const model = read("lib/site-navigation-model.js");
+  assert.match(model, /compactNavigationIds = \[[^\]]*'courses'/);
+  assert.doesNotMatch(nav, /id: 'academy'/);
   assert.match(nav, /site-nav-about-entry/);
   assert.match(nav, /site-main-menu-more/);
   assert.match(nav, /mainMenuItems\.map/);

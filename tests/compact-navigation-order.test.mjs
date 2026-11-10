@@ -6,13 +6,17 @@ const read = path => readFileSync(new URL('../'+path,import.meta.url),'utf8')
 const order = ['home','analysis','courses','profile','alchemy','pro','temple']
 test('seven accessible public tabs lead to distinct routes in EN/RU/ES', () => {
   assert.deepEqual(compactNavigationIds, order)
-  const routes = {analysis:'services/free-situation-review',courses:'academy',profile:'personality-profiles',alchemy:'services/alchemy-of-soul',pro:'pro',temple:'holistic-support'}
+  const routes = {analysis:'services/free-situation-review',courses:'academy',profile:'app/portrait',alchemy:'services/alchemy-of-soul',pro:'pro',temple:'holistic-support'}
   for (const locale of ['en','ru','es']) {
     const items = getCompactNavigation(locale)
     assert.deepEqual(items.map(x=>x.id), order)
     assert.equal(new Set(items.map(x=>x.href)).size,7)
     assert.equal(items[0].href, locale==='en'?'/':'/'+locale)
-    for (const item of items.slice(1)) assert.equal(item.href, '/'+locale+'/'+routes[item.id])
+    for (const item of items.slice(1)) {
+      const targetLocale = item.id === 'profile' && locale === 'es' ? 'en' : locale
+      assert.equal(item.href, '/' + targetLocale + '/' + routes[item.id])
+    }
+    assert.equal(activeCompactNavigationId('/' + (locale === 'es' ? 'en' : locale) + '/app/portrait'), 'profile')
     for (const item of items) {
       assert.equal(item.label, navigationCopy[locale][item.id])
       assert.equal(item.ariaLabel,item.label)
@@ -76,6 +80,7 @@ test('My Profile guest tests and separate support journeys are all localized and
     assert.doesNotMatch(page,/createLead\(|checkout\(|localStorage|sessionStorage/)
   }
   assert.ok(read('app/[locale]/temple-insights/page.tsx').includes('<IdeasDiscovery locale={language} variant="temple"'))
-  assert.ok(read('app/[locale]/holistic-support/page.tsx').includes('/services/remote-energy-support'))
-  assert.ok(read('app/[locale]/holistic-support/page.tsx').includes('/services/alchemy-of-soul'))
+  const support = read('app/[locale]/holistic-support/page.tsx')
+  for (const route of ['/holistic-support/mandala', '/coaching', '/academy'])
+    assert.ok(support.includes(route), 'Public Holistic Support route must remain discoverable: ' + route)
 })
