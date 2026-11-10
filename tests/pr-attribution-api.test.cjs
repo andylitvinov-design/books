@@ -307,3 +307,77 @@ test('historical LIVE durations preserve original millisecond precision',async()
  assert.equal(proof.merge_to_live_ms,466273);
  assert.equal(proof.created_to_live_ms,48369273);
 });
+
+
+test('signed Repair Worker outcome receipts are surfaced only when PR, HEAD, task and run match',()=>{
+ const old='a'.repeat(40),next='b'.repeat(40),task='f'.repeat(32),run='912345';
+ const now='2026-11-10T00:50:00.000Z';
+ const record={schema:'HH_PR_TASK_V1',task_key:task,pr_number:3390,head_sha:old,
+  state:'PUBLISHED',source_published:true,new_sha:next,owner_run_id:run,
+  run_url:'https://github.com/'+repo+'/actions/runs/'+run,
+  outcome:{schema:'HH_TASK_OUTCOME_V1',task_key:task,pr_number:3390,head_sha:old,
+   status:'FIXED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+   responsible_role:'exact-head-ci-verifier',next_action:'VERIFY_EXACT_HEAD_REQUIRED_CI',
+   next_check_at:'2026-11-10T01:00:00.000Z',created_at:now,owner_run_id:run,
+   source_published:true,verified_source:true,new_sha:next,terminal:false}};
+ const body='<!-- HH_PR_REPAIR_OUTCOME_V1 '+old+' '+run+' -->\n'+
+  '<!-- HH_PR_TASK_V1 -->\n\x60\x60\x60json\n'+JSON.stringify(record)+'\n\x60\x60\x60';
+ const comment={id:9001,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},created_at:now,updated_at:now,
+  html_url:'https://github.com/'+repo+'/pull/3390#issuecomment-9001',body};
+ const rows=api.extractTaskOutcomes([comment],3390,next);
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].status,'FIXED');
+ assert.equal(rows[0].head_sha,old);
+ assert.equal(rows[0].new_sha,next);
+ assert.equal(rows[0].current_head,false);
+ assert.equal(rows[0].responsible_role,'exact-head-ci-verifier');
+ assert.equal(rows[0].source,'SIGNED_GITHUB_ACTIONS_REPAIR_FINALIZER');
+});
+
+test('task outcome monitor rejects edited, untrusted, mismatched and falsely fixed receipts',()=>{
+ const old='a'.repeat(40),next='b'.repeat(40),task='f'.repeat(32),run='912346';
+ const now='2026-11-10T00:50:00.000Z';
+ const record={schema:'HH_PR_TASK_V1',task_key:task,pr_number:3390,head_sha:old,
+  state:'PUBLISHED',source_published:true,new_sha:next,owner_run_id:run,
+  outcome:{schema:'HH_TASK_OUTCOME_V1',task_key:task,pr_number:3390,head_sha:old,
+   status:'FIXED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+   responsible_role:'exact-head-ci-verifier',next_action:'VERIFY_EXACT_HEAD_REQUIRED_CI',
+   next_check_at:'2026-11-10T01:00:00.000Z',created_at:now,owner_run_id:run,
+   source_published:true,verified_source:true,new_sha:next}};
+ const body='<!-- HH_PR_REPAIR_OUTCOME_V1 '+old+' '+run+' -->\n'+
+  '<!-- HH_PR_TASK_V1 -->\n\x60\x60\x60json\n'+JSON.stringify(record)+'\n\x60\x60\x60';
+ const signed={id:9002,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},created_at:now,updated_at:now,
+  html_url:'https://github.com/'+repo+'/pull/3390#issuecomment-9002',body};
+ assert.equal(api.extractTaskOutcomes([{...signed,updated_at:'2026-11-10T00:51:00.000Z'}],3390,next).length,0);
+ assert.equal(api.extractTaskOutcomes([{...signed,user:{id:1,login:'someone'}}],3390,next).length,0);
+ assert.equal(api.extractTaskOutcomes([{...signed,body:body.replace('912346','912347')}],3390,next).length,0);
+ const falseFixed={...record,outcome:{...record.outcome,verified_source:false}};
+ const badBody='<!-- HH_PR_REPAIR_OUTCOME_V1 '+old+' '+run+' -->\n'+
+  '<!-- HH_PR_TASK_V1 -->\n\x60\x60\x60json\n'+JSON.stringify(falseFixed)+'\n\x60\x60\x60';
+ assert.equal(api.extractTaskOutcomes([{...signed,body:badBody}],3390,next).length,0);
+});
+
+test('task outcome receipts preserve non-fixed next actions without implying source publication',()=>{
+ const head='a'.repeat(40),task='f'.repeat(32),run='912347';
+ const now='2026-11-10T00:50:00.000Z';
+ const record={schema:'HH_PR_TASK_V1',task_key:task,pr_number:3390,head_sha:head,
+  state:'MANUAL',source_published:false,new_sha:null,owner_run_id:run,
+  run_url:'https://github.com/'+repo+'/actions/runs/'+run,
+  outcome:{schema:'HH_TASK_OUTCOME_V1',task_key:task,pr_number:3390,head_sha:head,
+   status:'MANUAL_REQUIRED',reason_code:'FREE_AI_EXECUTOR_NOT_CONFIGURED',
+   responsible_role:'repository-owner',next_action:'REVIEW_MANUAL_REPAIR_REASON_AND_ASSIGN_OWNER',
+   next_check_at:'2026-11-10T01:50:00.000Z',created_at:now,owner_run_id:run,
+   source_published:false,verified_source:false,new_sha:null}};
+ const body='<!-- HH_PR_REPAIR_OUTCOME_V1 '+head+' '+run+' -->\n'+
+  '<!-- HH_PR_TASK_V1 -->\n\x60\x60\x60json\n'+JSON.stringify(record)+'\n\x60\x60\x60';
+ const comment={id:9003,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},created_at:now,updated_at:now,body};
+ const rows=api.extractTaskOutcomes([comment],3390,head);
+ assert.equal(rows.length,1);
+ assert.equal(rows[0].status,'MANUAL_REQUIRED');
+ assert.equal(rows[0].current_head,true);
+ assert.equal(rows[0].source_published,false);
+ assert.equal(rows[0].new_sha,null);
+});
