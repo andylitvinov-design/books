@@ -113,7 +113,10 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
   const cause=detail_code||reason_code;
   // A verified sensitive/unsupported file was rejected BEFORE model
   // inference. Do not route it to AI_EXECUTOR or retry the free provider.
-  const unsafeSourceScope=cause==='FREE_AI_UNSAFE_SOURCE_SCOPE';
+  const unsafeSourceScope=new Set([
+    'FREE_AI_UNSAFE_SOURCE_SCOPE','SOURCE_SCOPE_UNSAFE_FOR_FREE_AI',
+    'SOURCE_SCOPE_NOT_ACTIONABLE','NO_AUTOFIXABLE_ESLINT_CHANGE'
+  ]).has(cause);
   const cat=unsafeSourceScope?'SOURCE_CODE':
     /^(?:FREE_AI_|CODEX_)/.test(cause)||/^FREE_AI_/.test(reason_code)?'AI_EXECUTOR':
     /(?:MERGE_CONFLICT|CONFLICT_REQUIRES_SOURCE_RESOLUTION|UNMERGED_PATHS)/i.test(cause+' '+reason_code)?
