@@ -621,7 +621,7 @@ jobs:
   publish:
     needs: [claim,fix,code_fix,code_verify]
     # Do not schedule a separate terminal job for a claimed lint task.
-    # The owner token is injected only into the guarded publish_source step.
+    # Publisher credentials are only available inside guarded publish_source.
     if: >-
       always() &&
       github.repository == 'andylitvinov-design/books' &&
@@ -632,7 +632,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     permissions:
-      contents: read
+      contents: write
       actions: write
       issues: write
       pull-requests: write
@@ -658,6 +658,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+          HH_REPAIR_JOB_TOKEN: ${{ github.token }}
           HH_REPAIR_SHA: ${{ needs.claim.outputs.sha }}
           HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
         with:
@@ -665,8 +666,34 @@ jobs:
           script: |
             const fs=require('node:fs');
             const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
-            const token=process.env.HH_AUTOMERGE_TOKEN;
-            if (!token) throw Error('HH_AUTOMERGE_TOKEN missing: cannot trigger PR synchronize');
+            const {eligible,OWNER_RATE_RESERVE,chooseRepairWriter}=
+              require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-credential-policy.cjs');
+            const ownerToken=process.env.HH_AUTOMERGE_TOKEN||'';
+            const jobToken=process.env.HH_REPAIR_JOB_TOKEN||'';
+            if(!jobToken)throw Error('HH_REPAIR_JOB_TOKEN_NOT_CONFIGURED');
+            // Select credentials before any mutation; reserve the shared PAT
+            // API budget for other owner workflows when its remaining quota is low.
+            const probe=async credential=>{
+              if(!credential)return null;
+              try{
+                const response=await fetch('https://api.github.com/repos/andylitvinov-design/books',{
+                  method:'GET',signal:AbortSignal.timeout(12000),
+                  headers:{Authorization:'Bearer '+credential,Accept:'application/vnd.github+json',
+                    'X-GitHub-Api-Version':'2022-11-28'}});
+                const data=await response.json().catch(()=>({}));
+                const header=response.headers.get('x-ratelimit-remaining');
+                const remaining=typeof header==='string'&&/^\d+$/.test(header)
+                  ?Number(header):null;
+                return {ok:response.ok&&data.full_name==='andylitvinov-design/books',
+                  push:data.permissions?.push===true,remaining};
+              }catch{return null;}
+            };
+            const ownerProbe=await probe(ownerToken);
+            const jobProbe=eligible(ownerProbe,OWNER_RATE_RESERVE)?null:await probe(jobToken);
+            const mode=chooseRepairWriter({owner:ownerProbe,job:jobProbe});
+            const token=mode==='owner'?ownerToken:jobToken;
+            core.info('HH_REPAIR_WRITE_CREDENTIAL_PREFLIGHT '+mode.toUpperCase()+
+              ' VERIFIED_REPO_PUSH_AND_RATE_BUDGET');
             const call=async(method,path,payload)=>{
               const response=await fetch('https://api.github.com'+path,{
                 method,signal:AbortSignal.timeout(20000),
@@ -675,10 +702,8 @@ jobs:
                 ...(payload?{body:JSON.stringify(payload)}:{})
               });
               const data=await response.json().catch(()=>({}));
-              const remaining=Number(response.headers.get('x-ratelimit-remaining'));
-              if(method==='GET' && Number.isFinite(remaining) && remaining<100)
-                throw Error('Dedicated owner token rate reserve too low');
-              if(!response.ok)throw Error('Owner API '+response.status+': '+String(data.message||'denied').slice(0,140));
+              if(!response.ok)throw Error('Repair publisher API '+response.status+': '+
+                String(data.message||'denied').slice(0,140));
               return data;
             };
             const writer={commit:async({owner,repo,branch,expectedSha,treeSha,files,number})=>{
@@ -691,7 +716,7 @@ jobs:
               const repository=await call('GET',base);
               if(repository?.full_name!==owner+'/'+repo||repository.permissions?.push!==true)
                 throw Error('HH_AUTOMERGE_TOKEN_REPO_WRITE_PERMISSION_MISSING');
-              core.info('HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH');
+              core.info('HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH '+mode);
               const current=await call('GET',base+ref);
               if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)
                 throw Error('Source branch moved before repair commit');
