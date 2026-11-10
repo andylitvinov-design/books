@@ -546,3 +546,11 @@ test('CI inbox OIDC events and owner list are scoped to the single authorized ow
  assert.match(migration,/readable_count <> 1/);
  assert.match(migration,/revoke all on business_brain\.commander_ci_event_inbox from public, anon, authenticated/);
 });
+
+test('CI Inbox displays versioned decision and keeps diagnostic-only authority visibly disabled',()=>{
+ const js=src('commander-chats.js');
+ assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
+ assert.match(js,/classification\.recommended_action/);
+ assert.match(js,/Ответственная роль:/);
+ assert.match(js,/автоматическое изменение исходников и запуск исполнителя не разрешены/);
+});
