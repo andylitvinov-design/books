@@ -188,7 +188,7 @@ test('Commander execution run snapshots a bounded revision-pinned task context a
  assert.ok(edge.includes('HH_COMMANDER_TASK_CONTEXT_V1'));
  assert.ok(edge.includes('chatRevision:Number.isSafeInteger(chat.revision)?chat.revision:0'));
  assert.ok(edge.includes('linkedPrHintsVerified:false'));
- assert.ok(edge.includes('Resolve live GitHub PR and exact current HEAD'));
+ assert.ok(edge.includes('requiredBeforeSourceChange:"Resolve live GitHub PR and exact HEAD before any source change."'));
  assert.ok(edge.includes('JSON.stringify({message,contextCapsule})'));
  assert.ok(edge.includes('String(contextCapsule.chatRevision)'));
 });
