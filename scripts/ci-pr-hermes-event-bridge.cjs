@@ -70,8 +70,8 @@ function buildDiagnostics(jobs) {
       String(step.name || 'unnamed-step').slice(0, 90))).slice(0, 10);
   const joined = [...failedJobs, ...failedSteps].join(' ').toLowerCase();
   const category = /security|secret|sast|dependency audit/.test(joined) ? 'SECURITY'
-    : /typescript|type.?check|tsc/.test(joined) ? 'TYPESCRIPT'
-    : /test|spec|playwright|vitest|jest/.test(joined) ? 'TEST_FAILURE'
+    : /\\btypescript\\b|\\btype[\\s_-]?check\\b|\\btsc\\b/.test(joined) ? 'TYPESCRIPT'
+    : /\\btests?\\b|\\btesting\\b|\\bspecs?\\b|\\bplaywright\\b|\\bvitest\\b|\\bjest\\b/.test(joined) ? 'TEST_FAILURE'
     : 'UNKNOWN';
   return { category, failedJobs: failedJobs.slice(0, 10), failedSteps };
 }

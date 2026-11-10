@@ -121,3 +121,19 @@ test('empty association with a synthetic or stale run SHA does not guess the PR 
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'NO_UNIQUE_EXACT_HEAD_PR');
 });
+
+test('specialist gate failures are not misclassified as test failures by the substring spec', () => {
+  const result = buildDiagnostics([
+    { name: 'hh-specialist', conclusion: 'failure', steps: [
+      { name: 'Validate exact-head risk and required specialist workflows', conclusion: 'failure' }
+    ] },
+    { name: 'hh-merge-check', conclusion: 'failure', steps: [
+      { name: 'Require real Core and specialist results from this workflow', conclusion: 'failure' }
+    ] }
+  ]);
+  assert.equal(result.category, 'UNKNOWN');
+  assert.deepEqual(result.failedJobs, ['hh-specialist', 'hh-merge-check']);
+  assert.equal(buildDiagnostics([{name:'unit-tests',conclusion:'failure'}]).category,'TEST_FAILURE');
+  assert.equal(buildDiagnostics([{name:'vitest',conclusion:'failure'}]).category,'TEST_FAILURE');
+  assert.equal(buildDiagnostics([{name:'typescript-check',conclusion:'failure'}]).category,'TYPESCRIPT');
+});
