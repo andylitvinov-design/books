@@ -432,7 +432,13 @@ test('free Hermes model catalogue authenticates owner before its read-only publi
  const request=api.indexOf("const response=await fetch('https://openrouter.ai/api/v1/models");
  assert.ok(owner>=0&&request>owner);
  assert.ok(api.includes("m.id.endsWith(':free')"));
- assert.doesNotMatch(api,/Authorization:\s*'Bearer '|OPENROUTER_API_KEY/);
+ const publicCatalog=api.slice(api.indexOf('async function freeModels(req,res){'),
+  api.indexOf('async function providerStatus(req,res){'));
+ assert.match(publicCatalog,/async function freeModels\(req,res\)/);
+ assert.doesNotMatch(publicCatalog,/Authorization:\s*'Bearer '|OPENROUTER_API_KEY/);
+ // The status proxy forwards an owner-scoped Supabase JWT, never a provider key.
+ assert.match(api,/Authorization:'Bearer '\+token/);
+ assert.doesNotMatch(api,/HH_AGENT_OPENROUTER_API_KEY|OPENROUTER_SECRET/);
 });
 test('verified GitHub CI reports carry the top-level source URL consumed by the chat renderer',()=>{
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
