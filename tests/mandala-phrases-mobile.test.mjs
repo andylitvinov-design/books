@@ -67,26 +67,35 @@ test("approved phrases retain reusable audio but Apply transitions to Montage wi
   assert.match(studioCss,/\.studio\[data-active-workspace="phrases"\] \.quickPhraseSection\{display:block;padding:0/);
 });
 
-test("the six-voice chooser appears once below approved phrases and soundtrack cannot erase TTS",()=>{
- const section=studio.slice(studio.indexOf('data-workspace-section="phrases" data-video-quick-phrases'),studio.indexOf('data-workspace-section="effects"'));
- assert.match(section,/\{deepHypnoPane\}/,"single visible workspace mounts canonical editor");
- const definition=studio.slice(studio.indexOf("const deepHypnoPane = ("),studio.indexOf("const deepVideoPane",studio.indexOf("const deepHypnoPane = (")));
- const voiceEditor=studio.slice(studio.indexOf("const hypnoVoiceEditor = ("),studio.indexOf("const deepHypnoPane = ("));
- assert.match(voiceEditor,/data-hypno-voice/,"the one shared voice editor is real");
- assert.match(definition,/activeWorkspace==="phrases"&&ideasSubtab!=="text" \? hypnoVoiceEditor : null/);
+test("the single six-voice editor belongs to Audio / Voice, while Ideas and Montage keep their own content",()=>{
+ const studio=read("components/mandala-free-video-studio.tsx");
+ const audioStart=studio.indexOf('data-video-audio-panel="voice"');
+ const meditationsStart=studio.indexOf('data-video-audio-panel="meditations"',audioStart);
+ const audioVoice=studio.slice(audioStart,meditationsStart);
+ const ideas=studio.slice(studio.indexOf('data-workspace-section="phrases"'),studio.indexOf('data-workspace-section="effects"'));
+ const montage=studio.slice(studio.indexOf('data-video-montage-text'),studio.indexOf('data-video-montage-text-tools'));
+ assert.ok(audioStart>0&&meditationsStart>audioStart,"one canonical Audio / Voice panel is mounted");
+ assert.match(audioVoice,/hypnoVoiceEditor/);
+ assert.match(audioVoice,/data-video-audio-voice-mode="voice"/);
+ assert.match(audioVoice,/data-video-audio-voice-mode="my-voice"/);
+ assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1,
+   "one TTS editor and no duplicate provider request source");
+ assert.match(studio,/ownVoiceOnly=\{ideasVoiceMode==="my-voice"\}/);
  assert.match(studio,/data-video-audio-panel="music"/);
- assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
- assert.ok(studio.indexOf('data-hypno-voice')<studio.indexOf('<MandalaAffirmationVoice locale='));
- assert.doesNotMatch(studio,/AI voice presets are not yet export-ready/);
- assert.match(studio,/audioWorkspaceTab==="voice" \? hypnoVoiceEditor : null/,
-   "voice is explicitly rendered once in Audio with approved phrase ownership");
- assert.match(studio,/if\(attachedAudio\?\.kind==="file"&&attachedAudio\.narration\)\{/);
- assert.ok(phrases.indexOf('data-hypno-phrases')<phrases.indexOf('{children}'));
- assert.match(phrases,/setReadyDraft\(\{selected,resetPreset:readyDraft\?\.resetPreset\?\?false\}\)/);
- assert.match(phrases,/setCustomDraft\(custom\)/);
- assert.match(phrases,/else if\(readyDraft\|\|customDraft!==null\|\|externalPhraseDraft!==null\)/);
+ assert.match(studio,/data-video-audio-panel="meditations"/);
+ assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\)/,
+   "Ideas offers only a navigation shortcut to the centralized Audio workspace");
+ assert.match(studio,/data-video-legacy-phrase-editor[\s\S]*?hidden=\{true\}/,
+   "legacy phrase and voice subpanel is not displayed inside Ideas");
+ assert.match(studio,/data-video-montage-text[\s\S]*?<MandalaVideoIdeas/,
+   "the one phrase editor remains in Montage Text");
+ assert.match(studio,/if\(attachedAudio\?\.kind==="file"&&attachedAudio\.narration\)\{/,
+   "independent soundtrack changes preserve/revalidate the narration lane");
+ assert.doesNotMatch(ideas,/data-video-affirmation-voice|data-video-ideas-own-upload/,
+   "Ideas does not expose voice upload or narration controls");
+ assert.doesNotMatch(montage,/MandalaAffirmationVoice/,
+   "Montage phrase selection does not duplicate the Voice editor");
 });
-
 test("all phrase changes including catalog and idea are staged until explicit Approve; Create fails closed",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
  const compact=read("components/mandala-hypno-compact.tsx");
