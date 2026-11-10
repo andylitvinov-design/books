@@ -1247,3 +1247,11 @@ test('publisher and fallback finalizers pass the same-run free model audit with 
  assert.match(source,/modelAuditRaw:process\.env\.HH_MODEL_AUDIT/);
  assert.match(source,/modelAuditRunAttempt:Number\(process\.env\.HH_WORKFLOW_ATTEMPT\|\|0\)/);
 });
+
+
+test('free-model publisher receipt is provider-neutral',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync(require.resolve('../scripts/ci-pr-repair-worker.cjs'),'utf8');
+ assert.match(source,/free-model source repair/);
+ assert.doesNotMatch(source,/free OpenCode\\/GLM source repair/);
+});
