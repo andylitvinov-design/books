@@ -71,3 +71,77 @@
 .cc-council-panel .cc-heading a{font-size:11px;color:#dec1ff}
 #cc-council-frame{display:block;width:100%;height:min(82vh,940px);min-height:640px;border:1px solid #726287;border-radius:11px;background:#f8f7f5}
 @media(max-width:480px){#cc-council-frame{height:78vh;min-height:600px}}
+
+
+/* HH_COMMANDER_ONE_BOX_CHAT_V1 · question first, one compact mobile screen.
+   Full task context, proof and reports are preserved behind opt-in controls. */
+.cc-chats-page{max-width:620px;padding-top:5px}
+.cc-chats-hero{margin:4px 0 12px;gap:8px;align-items:center}
+.cc-chats-hero h1{font-size:clamp(23px,5.5vw,28px);margin-bottom:2px}
+.cc-chats-hero p:not(.cc-kicker){font-size:12px}
+.cc-chats-page:has(#cc-board:not([hidden])) > #cc-alert{display:none}
+.cc-visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.cc-quick-compose,.cc-thread-surface{padding:15px;border-radius:19px;background:linear-gradient(145deg,#27223b,#1b1a2d)}
+.cc-quick-compose h2{font-size:17px;margin:0 0 12px}
+.cc-quick-compose form,.cc-thread-composer{display:grid;gap:10px}
+.cc-quick-compose textarea#cc-new-question,
+.cc-thread-surface textarea#cc-message{display:block;width:100%;min-height:100px;font-size:16px;line-height:1.5;border-radius:14px;padding:14px;background:#141626;border:1px solid #78658f;resize:vertical}
+.cc-thread-surface textarea#cc-message{min-height:83px}
+.cc-compose-footer{display:flex;align-items:end;gap:10px;min-width:0}
+.cc-surface .cc-mode-pick{min-width:0;flex:1;display:grid;gap:5px;font-size:11px;color:#cbbdd9}
+.cc-surface .cc-mode-pick select{font-size:15px;min-height:46px;width:100%;padding:8px 29px 8px 10px;overflow:hidden;text-overflow:ellipsis}
+.cc-surface .cc-send-primary{flex:0 0 auto;align-self:end;min-height:46px;padding:11px 14px;border-radius:12px;white-space:nowrap;font-size:14px}
+.cc-send-primary span{font-size:18px;line-height:1;margin-left:5px}
+.cc-surface .cc-context-link{justify-self:start;background:transparent!important;border:0!important;min-height:35px;padding:5px 0!important;font-size:12px;color:#ceb0ff;font-weight:600}
+.cc-context-dialog{inset:auto 0 0;box-sizing:border-box;position:fixed;margin:0 auto;width:min(100%,620px);max-width:100%;max-height:85dvh;overflow-y:auto;overscroll-behavior:contain;border:1px solid #a88ac8;border-radius:20px 20px 0 0;background:linear-gradient(#302840,#191b30);box-shadow:0 -10px 70px #000a;padding:18px 17px calc(24px + env(safe-area-inset-bottom,0px));color:#f8f2ff}
+.cc-context-dialog::backdrop{background:rgba(3,4,16,.76)}
+.cc-context-dialog .cc-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.cc-context-dialog .cc-dialog-head h3{font-size:17px;margin:0}
+.cc-context-dialog .cc-dialog-head button{min-height:42px;padding:7px 11px}
+.cc-context-dialog label{display:grid;gap:6px;margin:11px 0;font-size:12px;color:#dcd0eb}
+.cc-context-dialog :is(input,select,textarea){font-size:16px!important}
+.cc-thread-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.cc-thread-top button{font-size:12px;padding:8px 12px;min-height:39px}
+.cc-thread-surface h2#cc-thread-title{font-size:17px;line-height:1.3;margin:0 0 3px;overflow-wrap:anywhere}
+.cc-thread-stamp{font-size:10px;color:#9999b4;margin:0 0 8px}
+.cc-thread-surface .cc-messages{display:flex;flex-direction:column;gap:9px;max-height:55dvh;min-height:34px;padding:8px 0 12px;margin-bottom:2px;overflow-y:auto}
+.cc-message-item{max-width:94%;min-width:0}
+.cc-message-item.cc-from-owner{align-self:flex-end;max-width:87%;border-color:#596989;background:#292e49}
+.cc-message-item.cc-from-assistant_unverified{align-self:flex-start;background:#242036}
+.cc-message-item .cc-message-by{font-size:11px;margin-bottom:4px}
+.cc-message-item p{font-size:14px}
+.cc-message-item small{font-size:10px}
+.cc-chat-feedback{margin:10px 0 2px;font-size:12px;line-height:1.5;color:#dcc8f8;overflow-wrap:anywhere}
+.cc-chat-extra,.cc-advanced{border:1px solid #574d6e;border-radius:12px;background:#19192e;padding:10px;margin:9px 0}
+.cc-chat-extra summary,.cc-advanced summary{cursor:pointer;color:#d9c7ef;font-size:12px;font-weight:650;min-height:28px}
+.cc-chat-extra button{margin-top:8px}
+.cc-advanced{margin-top:18px}
+.cc-advanced .cc-evidence{margin:12px 0}
+.cc-advanced > #cc-handoff{margin:10px 0}
+.cc-history-head{display:flex;justify-content:flex-end;margin:5px 0 8px}
+.cc-history-head button{border:0;background:transparent;color:#afa4ca;padding:6px 9px;font-size:12px;min-height:37px;cursor:pointer}
+.cc-history{border:1px solid #5b516f;border-radius:14px;background:#1a1a2e;padding:11px 12px;margin-bottom:14px}
+.cc-history > summary{font-size:13px;line-height:1.5;min-height:33px;display:list-item;cursor:pointer;font-weight:650;color:#ded1f3}
+.cc-history > summary small{color:#a6a2bf;font-size:11px;font-weight:400;margin-left:6px}
+.cc-history .cc-filter-line{margin:10px 0 12px}
+.cc-history .cc-chat-list{margin-bottom:11px}
+.cc-history .cc-chat-card{min-height:52px;padding:9px 11px}
+.cc-history .cc-chat-card strong{font-size:13px}
+.cc-history .cc-chat-card span{font-size:10px}
+.cc-backup-tools{margin:11px 0 3px;padding-top:10px;border-top:1px solid #574a72}
+.cc-backup-tools summary{font-size:12px;color:#c1b6da}
+.cc-backup-tools button,.cc-backup-tools label{margin-top:10px}
+#cc-board :is(textarea,input,select){font-size:16px}
+body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock,
+body.hh-cc-shell:has(#cc-board input:focus) #hh-cc-dock{display:none!important}
+@media(max-width:480px){
+ .cc-chats-page{padding-left:11px;padding-right:11px}
+ .cc-quick-compose,.cc-thread-surface{padding:13px}
+ .cc-surface .cc-send-primary{padding:10px 12px}
+ .cc-surface .cc-mode-pick select{font-size:14px}
+}
+@media(max-width:355px){
+ .cc-compose-footer{gap:7px}
+ .cc-surface .cc-send-primary{font-size:12px;padding:10px 9px}
+ .cc-send-primary span{margin-left:2px}
+}
