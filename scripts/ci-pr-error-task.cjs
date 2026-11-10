@@ -6,6 +6,22 @@ const {trustedControlComment}=require('./ci-pr-task-state.cjs');
 const REPO='andylitvinov-design/books',PROD='codex/public-book-library';
 const SCHEMA='HH_CI_ERROR_TASK_V1',SHA=/^[a-f0-9]{40}$/i,KEY=/^[a-f0-9]{32}$/i;
 const CODE=/^[A-Z0-9_]{3,120}$/;
+const DISPATCH_SCHEMA='HH_CI_ERROR_DISPATCH_V1';
+const REPAIR_EXECUTOR='github-actions:hh-pr-repair-worker.yml';
+const CI_EXECUTOR='github-actions:hh-pr-ci-worker.yml';
+const OWNER_EXECUTOR='github-owner:andylitvinov-design';
+// A deterministic executor candidate is not an execution authorization.
+// Only a signed exact-HEAD reservation, accepted workflow dispatch and
+// subsequent worker CLAIMED receipt can advance this state.
+function executorPlan(category,root,classification){
+  const eligible=['SOURCE_CODE','TYPESCRIPT'].includes(category)&&
+    root==='SOURCE_OR_PREFLIGHT'&&classification?.requires_human===false&&
+    classification?.retry?.allowed===true&&
+    classification?.recommended_status==='REROUTED';
+  return {executor_id:eligible?REPAIR_EXECUTOR:OWNER_EXECUTOR,
+    executor_kind:eligible?'github_actions':'owner_review',
+    assignment_status:eligible?'SELECTED_NOT_DISPATCHED':'OWNER_REVIEW_REQUIRED'};
+}
 const FAIL=new Set(['failure','timed_out','startup_failure']);
 const ROOTS=new Set(['SOURCE_OR_PREFLIGHT','RELEASE_GATE_ONLY','SPECIALIST_FAILED',
   'CI_PREFLIGHT_OR_ROUTING','CI_CONTRACT_OR_POLICY','CI_INFRA_OR_ENVIRONMENT','UNVERIFIED']);
@@ -25,6 +41,13 @@ const ROUTES=Object.freeze({
   UNKNOWN:['SECONDARY_DIAGNOSIS','INSPECT_CAUSAL_JOB_AND_CLASSIFY_AGAIN',15]
 });
 const key=parts=>crypto.createHash('sha256').update(parts.join(':')).digest('hex').slice(0,32);
+function coreErrorTaskId(prNumber,headSha,runId,attempt){
+  if(!Number.isSafeInteger(prNumber)||prNumber<1||!SHA.test(headSha||'')||
+    !Number.isSafeInteger(runId)||runId<1||
+    !Number.isSafeInteger(attempt)||attempt<1)
+    return null;
+  return key([REPO,prNumber,headSha.toLowerCase(),runId,attempt,'CORE']);
+}
 const iso=s=>typeof s==='string'&&
   /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(s)&&Number.isFinite(Date.parse(s));
 function strategyFor(category,root='UNVERIFIED',canRetry=false){
@@ -62,12 +85,13 @@ function makeCoreTask({pr,run,classification,root='UNVERIFIED',now=Date.now()}={
   const st=strategyFor(classification.category,root,classification.retry?.allowed===true);
   return Object.freeze({
     schema:SCHEMA,event_kind:'CORE_CI_FAILED',
-    task_id:key([REPO,pr.number,pr.head.sha.toLowerCase(),run.id,run.run_attempt,'CORE']),
+    task_id:coreErrorTaskId(pr.number,pr.head.sha,run.id,run.run_attempt),
     pr_number:pr.number,head_sha:pr.head.sha.toLowerCase(),run_id:run.id,
     run_attempt:run.run_attempt,category:classification.category,
     ruleset_version:rules.version,reason_code:classification.reason_code,root_code:root,
     confidence:Number.isFinite(classification.confidence)?classification.confidence:0,
     strategy_code:st.code,responsible_role:rules.categories[classification.category].responsible_role,
+    ...executorPlan(classification.category,root,classification),
     next_action:st.action,recommended_status:classification.recommended_status||'UNCLASSIFIED',
     retry_allowed:classification.retry?.allowed===true,
     max_retry_attempts:Number.isSafeInteger(classification.retry?.max_attempts)?
@@ -98,6 +122,8 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
     pr_number,head_sha:head_sha.toLowerCase(),parent_task_key:task_key,
     owner_run_id:String(owner_run_id),category:cat,ruleset_version:rules.version,
     reason_code:cause,strategy_code:st.code,responsible_role:rules.categories[cat].responsible_role,
+    executor_id:OWNER_EXECUTOR,executor_kind:'owner_review',
+    assignment_status:'OWNER_REVIEW_REQUIRED',
     next_action:st.action,recommended_status:cat==='UNKNOWN'?'UNCLASSIFIED':'MANUAL_REQUIRED',
     created_at:new Date(now).toISOString(),
     next_check_at:new Date(now+st.minutes*60_000).toISOString(),
@@ -111,6 +137,11 @@ function validTask(x){
     CODE.test(x.strategy_code||'')&&CODE.test(x.next_action||'')&&
     typeof x.responsible_role==='string'&&x.responsible_role.length>0&&
     x.responsible_role.length<=64&&iso(x.created_at)&&iso(x.next_check_at)&&
+    (x.executor_id===undefined||(
+      [REPAIR_EXECUTOR,OWNER_EXECUTOR].includes(x.executor_id)&&
+      x.executor_kind===(x.executor_id===REPAIR_EXECUTOR?'github_actions':'owner_review')&&
+      x.assignment_status===(x.executor_id===REPAIR_EXECUTOR?
+        'SELECTED_NOT_DISPATCHED':'OWNER_REVIEW_REQUIRED')))&&
     x.source_write_authorized===false&&x.execution_authorized===false);
 }
 const fence=String.fromCharCode(96).repeat(3);
@@ -119,6 +150,8 @@ function taskBody(x){
   return '<!-- '+SCHEMA+' '+x.task_id+' -->\n'+
     '**CI/PR error task: diagnostic only, not executed.**\n'+
     'Strategy '+x.strategy_code+'; owner '+x.responsible_role+'; next '+x.next_action+'.\n'+
+    'Executor target: '+(x.executor_id||OWNER_EXECUTOR)+
+      ' ('+(x.assignment_status||'NOT_SELECTED')+'); no worker started.\n'+
     fence+'json\n'+JSON.stringify(x)+'\n'+fence;
 }
 function taskStatus(comments,task){
@@ -169,7 +202,65 @@ function latestErrorTaskId(comments,prNumber,headSha){
   }
   return latest;
 }
-function taskLifecycle(comments,task){
+// Persisted on the EXISTING signed reservation comment after GitHub's
+// workflow_dispatch returns successfully. The reservation JSON remains first
+// and still has state RESERVED, so a fast worker can verify the same lease.
+function dispatchAcceptance(claim,acceptedAt=Date.now()){
+  const executor=claim?.assigned_executor_id;
+  const expected=claim?.lane==='ci'?CI_EXECUTOR:REPAIR_EXECUTOR;
+  if(claim?.schema!=='HH_PR_TASK_V1'||claim.state!=='RESERVED'||
+     !KEY.test(claim.task_key||'')||!SHA.test(claim.head_sha||'')||
+     !Number.isSafeInteger(claim.pr_number)||claim.pr_number<1||
+     !['repair','ci','legacy','conflict'].includes(claim.lane)||
+     executor!==expected||!/^[1-9][0-9]{0,18}$/.test(String(claim.owner_run_id||''))||
+     (claim.error_task_id!==undefined&&!KEY.test(claim.error_task_id))||
+     !Number.isFinite(acceptedAt)||acceptedAt<=0)
+     throw Error('UNVERIFIED_DISPATCH_ACCEPTANCE');
+  return Object.freeze({schema:DISPATCH_SCHEMA,state:'DISPATCH_ACCEPTED_NOT_STARTED',
+    task_key:claim.task_key,error_task_id:claim.error_task_id||null,
+    pr_number:claim.pr_number,head_sha:claim.head_sha.toLowerCase(),
+    executor_id:executor,dispatcher_run_id:String(claim.owner_run_id),
+    accepted_at:new Date(acceptedAt).toISOString(),workflow_ref:'codex/bootstrap-books',
+    worker_started:false,source_write_verified:false});
+}
+function dispatchAcceptanceBody(ack){
+  if(!validDispatchAcceptance(ack))throw Error('INVALID_DISPATCH_ACCEPTANCE');
+  return '<!-- '+DISPATCH_SCHEMA+' '+ack.task_key+' -->\n'+
+    fence+'json\n'+JSON.stringify(ack)+'\n'+fence;
+}
+function validDispatchAcceptance(x){
+  return Boolean(x&&x.schema===DISPATCH_SCHEMA&&
+    x.state==='DISPATCH_ACCEPTED_NOT_STARTED'&&KEY.test(x.task_key||'')&&
+    (x.error_task_id===null||KEY.test(x.error_task_id||''))&&
+    Number.isSafeInteger(x.pr_number)&&x.pr_number>0&&SHA.test(x.head_sha||'')&&
+    [REPAIR_EXECUTOR,CI_EXECUTOR].includes(x.executor_id)&&
+    /^[1-9][0-9]{0,18}$/.test(String(x.dispatcher_run_id||''))&&
+    iso(x.accepted_at)&&x.workflow_ref==='codex/bootstrap-books'&&
+    x.worker_started===false&&x.source_write_verified===false);
+}
+function acceptedForTask(comments,task,records,workerTaskKey){
+  const marker='<!-- '+DISPATCH_SCHEMA+' '+workerTaskKey+' -->';
+  const matching=comments.filter(trustedControlComment).filter(c=>
+    String(c.body||'').includes(marker));
+  if(!matching.length)return null;
+  // Ambiguous/overwritten history never upgrades a task to delivered.
+  if(matching.length!==1)return false;
+  const body=String(matching[0].body||'');
+  const tail=body.split(marker)[1];
+  const json=tail?.split(fence+'json\n')[1]?.split('\n'+fence)[0];
+  let ack;try{ack=JSON.parse(json);}catch{return false;}
+  if(!validDispatchAcceptance(ack)||ack.task_key!==workerTaskKey||
+     ack.error_task_id!==task.task_id||ack.pr_number!==task.pr_number||
+     ack.head_sha!==task.head_sha||ack.executor_id!==REPAIR_EXECUTOR||
+     (task.executor_id&&task.executor_id!==ack.executor_id))return false;
+  const reservation=records.find(x=>x.state==='RESERVED'&&
+    x.task_key===ack.task_key&&x.error_task_id===ack.error_task_id&&
+    x.pr_number===ack.pr_number&&x.head_sha===ack.head_sha&&
+    x.owner_run_id===ack.dispatcher_run_id&&
+    x.assigned_executor_id===ack.executor_id);
+  return reservation?ack:false;
+}
+function taskLifecycle(comments,task,now=Date.now()){
   const status=taskStatus(comments,task);
   if(status===null)return {state:'HISTORY_UNVERIFIED',next_action:'RECHECK_SIGNED_HISTORY'};
   if(status==='MISSING')return {state:'TASK_MISSING',next_action:'CREATE_IDEMPOTENT_TASK'};
@@ -195,10 +286,24 @@ function taskLifecycle(comments,task){
   if(latest.state==='CLAIMED')
     return {state:'EXECUTOR_CLAIMED_NOT_COMPLETED',next_action:'CHECK_WORKER_RUN_AND_FINALIZER',
       worker_task_key:latest.task_key};
-  if(latest.state==='RESERVED')
-    return {state:'RESERVED_DELIVERY_UNVERIFIED',next_action:'VERIFY_WORKFLOW_DISPATCH_AND_CLAIM',
-      worker_task_key:latest.task_key};
+  if(latest.state==='RESERVED'){
+    const accepted=acceptedForTask(comments,task,records,latest.task_key);
+    if(accepted===false)
+      return {state:'HISTORY_UNVERIFIED',next_action:'RECHECK_SIGNED_HISTORY'};
+    if(accepted){
+      const overdue=Number.isFinite(now)&&
+        now-Date.parse(accepted.accepted_at)>15*60_000;
+      return {state:overdue?'WORKER_START_UNCONFIRMED_OVERDUE':
+          'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',
+        next_action:overdue?'RECONCILE_WORKFLOW_RUN_NO_BLIND_RETRY':
+          'WAIT_FOR_SIGNED_WORKER_CLAIM',
+        worker_task_key:latest.task_key,executor_id:accepted.executor_id,
+        dispatcher_run_id:accepted.dispatcher_run_id};
+    }
+    return {state:'RESERVED_DELIVERY_UNVERIFIED',
+      next_action:'VERIFY_WORKFLOW_DISPATCH_AND_CLAIM',worker_task_key:latest.task_key};
+  }
   return {state:'CLASSIFIED_NOT_DELIVERED',next_action:'RECONCILE_EXISTING_DISPATCHER'};
 }
 
-module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,latestErrorTaskId,validTask};
+module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,latestErrorTaskId,validTask,executorPlan,coreErrorTaskId,dispatchAcceptance,dispatchAcceptanceBody,validDispatchAcceptance,REPAIR_EXECUTOR,CI_EXECUTOR};

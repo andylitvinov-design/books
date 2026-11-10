@@ -8,7 +8,7 @@
  * Does not create a workflow, queue or another paid provider.
  */
 const {confirmedCoreEvent}=require('./ci-pr-event-handoff.cjs');
-const {strategyFor}=require('./ci-pr-error-task.cjs');
+const {strategyFor,coreErrorTaskId}=require('./ci-pr-error-task.cjs');
 const rules=require('./ci-pr-error-rules.v1.json');
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const SHA=/^[a-f0-9]{40}$/i;
@@ -23,6 +23,8 @@ const PERSISTED_TASK_ASSOCIATIONS=new Set([
  'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED',
  'AUTO_TASK_CREATED_NOT_DISPATCHED'
 ]);
+const REPAIR_EXECUTOR='github-actions:hh-pr-repair-worker.yml';
+const TASK_KEY=/^[a-f0-9]{32}$/i;
 
 function receiptProof(receipt,context){
   if(!confirmedCoreEvent(context))return 'UNTRUSTED_CORE_EVENT';
@@ -65,6 +67,7 @@ async function route({
     schema:'HH_COMMANDER_CI_STRATEGY_ROUTE_V1',
     state:'BLOCKED',reason:'UNVERIFIED',prNumber:null,runId:null,
     category:null,strategy:null,responsibleRole:null,
+    executorId:null,workerTaskKey:null,errorTaskId:null,dispatchAcknowledged:false,
     dispatchAccepted:0,workerStarted:false,sourceWriteVerified:false,liveVerified:false
   };
   const violation=receiptProof(receipt,context);
@@ -125,11 +128,24 @@ async function route({
   }
   try{
     const handoff=await existingCoreHandoff({github,core,context,dryRun:false});
-    result.dispatchAccepted=Number.isSafeInteger(handoff?.dispatchAccepted)&&
-      handoff.dispatchAccepted>0?handoff.dispatchAccepted:0;
-    if(result.dispatchAccepted>0){
+    const accepted=handoff?.dispatchAccepted===1&&handoff?.dispatchAcknowledged===true&&
+      handoff?.prNumber===receipt.prNumber&&handoff?.headSha===receipt.headSha&&
+      handoff?.executorId===REPAIR_EXECUTOR&&TASK_KEY.test(handoff?.workerTaskKey||'')&&
+      handoff?.errorTaskId===coreErrorTaskId(receipt.prNumber,receipt.headSha,
+        receipt.runId,context.payload.workflow_run.run_attempt);
+    if(accepted){
+      result.dispatchAccepted=1;
+      result.dispatchAcknowledged=true;
+      result.executorId=REPAIR_EXECUTOR;
+      result.workerTaskKey=handoff.workerTaskKey;
+      result.errorTaskId=handoff.errorTaskId;
       result.state='DISPATCH_ACCEPTED_NOT_WORKER_STARTED';
-      result.reason='EXISTING_DISPATCHER_ACCEPTED';
+      result.reason='EXACT_HEAD_DISPATCH_RECEIPT_CONFIRMED';
+    }else if(Number(handoff?.dispatchAccepted||0)>0||
+      handoff?.outcome==='DISPATCH_ACCEPTANCE_UNVERIFIED'){
+      result.state='DISPATCH_UNCONFIRMED_RECONCILE';
+      result.reason='EXACT_HEAD_DISPATCH_ACK_NOT_PROVEN';
+      result.blocked=handoff?.blocked||{};
     }else{
       result.state='TASK_WAITING_FOR_DISPATCH';
       result.reason=typeof handoff?.outcome==='string'?handoff.outcome:
