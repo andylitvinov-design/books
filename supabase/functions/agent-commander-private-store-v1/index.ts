@@ -555,9 +555,9 @@ async function receiveCommanderCiRoute(req,origin){
       const c=e.classification;
       if(e.repository!=="andylitvinov-design/books"||
         e.oidc_workflow_ref!==claims.workflow_ref||
-        e.workflow_run_id!==p.runId||e.pr_number!==p.prNumber||
+        String(e.workflow_run_id)!==String(p.runId)||e.pr_number!==p.prNumber||
         e.head_sha!==p.headSha||e.category!==p.category||
-        e.association_status!=="MATCHED_CHAT_EVENT_RECORDED"||
+        !["MATCHED_CHAT_EVENT_RECORDED","TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED"].includes(e.association_status)||
         !uuid(e.associated_task_id)||!c||
         c.schema!=="HH_CI_ERROR_CLASSIFICATION_V1"||
         c.category!==p.category||c.responsible_role!==p.responsibleRole||
