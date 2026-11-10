@@ -186,7 +186,9 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(js.includes("el('new-context').close()"));
  assert.ok(js.includes("el('history-all').addEventListener('toggle',renderList)"));
  assert.ok(js.includes("await assignSelectedExecutor(c,mode)"));
- assert.ok(js.includes("el('new-mode').value=aiReady?'openrouter':'local'"));
+ const preferred="el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local')";
+ assert.equal(js.split(preferred).length-1,2,'authenticated Director default remains set on both initial load and chat creation');
+ assert.ok(js.includes("ownedDirectorAvailable=remote&&status.dispatchAvailable===true&&status.dispatchMode==='FIRST_PARTY_AGENT_DIRECTOR'"));
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
@@ -564,4 +566,17 @@ test('terminal BLOCKED run reloads its persisted private chat event just like CO
  assert.match(refresh,/renderMessages\(\)/);
  // A terminal blocker is never portrayed as an executing model; polling ends.
  assert.match(js,/!\['QUEUED','STARTING','RUNNING'\]\.includes\(run\.status\)/);
+});
+
+
+test('first question defaults to the authenticated cloud Director and its real final answer is verifiable after reload',()=>{
+ const html=src('chats.html'),css=src('commander-chats.css'),js=src('commander-chats.js');
+ assert.match(js,/el\('new-mode'\)\.value=ownedDirectorAvailable\?'director':\(aiReady\?'openrouter':'local'\)/);
+ assert.equal(js.split("el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local')").length-1,2);
+ assert.match(js,/const lastAnswer=\[\.\.\.messages\]\.reverse\(\)\.find\(m=>\['assistant_unverified','agent_final','ai'\]\.includes\(m\.kind\)\)/);
+ assert.match(js,/\['assistant_unverified','agent_final','ai'\]\.includes\(m\.kind\)\)\:-1/);
+ assert.match(js,/MODE[Ll]_RESPONSE_ZERO_COST_VERIFIED_READ_ONLY|OPENROUTER_RESPONSE_VERIFIED|const labels=\{QUEUED:/);
+ assert.match(js,/startExecutionPolling\(\)/);
+ assert.match(html,/id="cc-run-status"/);
+ assert.match(css,/\.cc-run-status/);
 });
