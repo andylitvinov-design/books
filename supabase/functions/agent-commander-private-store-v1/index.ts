@@ -515,7 +515,7 @@ async function handler(req){
             sourceVerified:false,proofLevel:"NOT_STARTED_NO_EXECUTION_RECEIPT",createdAt:now};
           await tx.unsafe(`insert into business_brain.commander_chat_events
             (event_id,chat_id,owner_id,kind,payload,source_verified)
-            values($1::uuid,$2::uuid,$3::uuid,'execution_blocked',$4::text::jsonb,false)
+            values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false)
             on conflict(event_id) do nothing`,[runId,chat.chat_id,ownerId,JSON.stringify(eventPayload)]);
           await tx.unsafe(`update business_brain.commander_chats set execution_state='BLOCKED',
             payload=jsonb_set(payload,'{executionState}','"BLOCKED"'::jsonb,true),updated_at=now()
