@@ -41,3 +41,11 @@ test('GitHub report status is not proof of source commit',()=>{
  assert.match(rows[0].status,/NOT_PROOF_OF_SOURCE_COMMIT/);
  assert.match(rows[0].url,/issuecomment-1/);
 });
+
+test('owner free chat can answer public general questions without implying real-time browsing or paid model use',()=>{
+ const api=read('api/pm-agent-chat.js');
+ assert.ok(api.includes('general non-sensitive questions (including AI trends)'));
+ assert.ok(api.includes('You do not have live browsing or real-time verification'));
+ assert.ok(api.includes('If a prompt contains sensitive content, ask for a redacted version'));
+ assert.ok(api.includes('allow_fallbacks:false,max_price:{prompt:0,completion:0}'));
+});
