@@ -49,9 +49,6 @@ function buildTaskOutcome(input={}){
     case 'PREPARED':
       status='REROUTED';responsible_role='source-repair-owner';
       next_action='HANDOFF_EXISTING_SOURCE_OWNER';next_check_at=plusMinutes(now,15);break;
-    case 'MANUAL':
-      status='MANUAL_REQUIRED';responsible_role='repository-owner';
-      next_action='REVIEW_MANUAL_REPAIR_REASON_AND_ASSIGN_OWNER';next_check_at=plusMinutes(now,60);break;
     case 'REJECTED':
       status='WAITING_INPUT';responsible_role='repository-owner';
       next_action='VERIFY_CLAIM_PERMISSION_AND_LEASE';next_check_at=plusMinutes(now,30);break;
