@@ -34,4 +34,22 @@ function chooseWriterMode({job,owner}={},required){
  if(eligibleWriter(owner,required))return 'owner';
  throw Error('HH_REPAIR_NO_VERIFIED_WRITER_CREDENTIAL_OR_RATE');
 }
-module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode};
+// GitHub's repository "permissions.push" metadata is NOT a reliable probe
+// for the ephemeral Actions token's per-job contents:write permission. Only
+// run this selection from the immutable trusted workflow_dispatch publisher.
+// The Git Data API itself decides whether a source write is authorized.
+function requireScopedJobWriter({probe,required,identity}={}){
+ if(!Number.isSafeInteger(required)||required<10||required>17)
+  throw Error('HH_REPAIR_SCOPED_JOB_INVALID_BUDGET');
+ if(identity?.repository!=='andylitvinov-design/books'||
+    identity.ref!=='refs/heads/codex/bootstrap-books'||
+    identity.eventName!=='workflow_dispatch')
+  throw Error('HH_REPAIR_SCOPED_JOB_UNTRUSTED_WORKFLOW_CONTEXT');
+ if(probe?.ok!==true||
+    !Number.isSafeInteger(probe.remaining)||probe.remaining<required)
+  throw Error('HH_REPAIR_SCOPED_JOB_API_PROOF_OR_RATE_MISSING');
+ // No PAT fallback based on a GET /repos permissions hint. A 403 during
+ // source mutation must be reported as a real publisher failure.
+ return 'job';
+}
+module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode,requireScopedJobWriter};
