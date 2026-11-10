@@ -399,7 +399,7 @@ async function handler(req){
     action=params.get("action")||"status";
     for(const [key,value] of params.entries()){
       if(key==="action")continue;
-      if(!["issueNumber","pr"].includes(key))return reply(400,{error:"UNKNOWN_QUERY_PARAMETER"},origin);
+      if(!["issueNumber","pr","limit"].includes(key))return reply(400,{error:"UNKNOWN_QUERY_PARAMETER"},origin);
       if(Object.prototype.hasOwnProperty.call(body,key))return reply(400,{error:"DUPLICATE_QUERY_PARAMETER"},origin);
       body[key]=value;
     }
