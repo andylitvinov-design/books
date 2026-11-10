@@ -187,8 +187,9 @@ export function MandalaAffirmationVoice({
     originRef.current={speechText,voiceId,language};
     // Consent applies to the exact transcript; a changed spoken phrase revokes it.
     if(textChanged)setConsent(false);
-    // Detach stale consented WAV synchronously before the next WebKit gesture.
-    if(voiceDataRef.current)onInvalidateRef.current?.();
+    // The parent may still own the attached WAV after this panel remounts.
+    // Invalidate on every spoken-input change, even without a local TTS Blob ref.
+    onInvalidateRef.current?.();
     voiceDataRef.current=null;
     playGeneratedAfterRequestRef.current=false;
     const previousAudioUrl=audioUrlRef.current;
