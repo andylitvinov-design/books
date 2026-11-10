@@ -452,13 +452,18 @@ async function receiveGitHubWorkflowRun(req, origin) {
   if (!dbUrl) return reply(503, { accepted: false, outcome: "PRIVATE_DATABASE_NOT_CONFIGURED" }, origin);
   const db = postgres(dbUrl, { max: 1, connect_timeout: 6, idle_timeout: 4, ssl: "require", prepare: false });
   try {
+    const readableOwners=await q(db,
+      "select user_id from business_brain.owner_access where can_read=true order by approved_at desc limit 2");
+    if(readableOwners.length!==1)return reply(503,
+      {accepted:false,outcome:"CI_INBOX_OWNER_SCOPE_AMBIGUOUS"},origin);
+    const inboxOwnerId=readableOwners[0].user_id;
     const inserted = await q(db,
       `insert into business_brain.commander_ci_event_inbox(
         repository, workflow_name, workflow_path, workflow_run_id, run_attempt,
         workflow_run_head_sha, head_branch, pr_number, base_ref, base_sha,
         head_ref, head_sha, conclusion, category, classification, failed_jobs, failed_steps,
-        run_url, source_run_created_at, oidc_workflow_ref
-      ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::text::jsonb,$16::text::jsonb,$17::text::jsonb,$18,$19::timestamptz,$20)
+        run_url, source_run_created_at, oidc_workflow_ref, inbox_owner_id
+      ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::text::jsonb,$16::text::jsonb,$17::text::jsonb,$18,$19::timestamptz,$20,$21::uuid)
       on conflict(repository,workflow_run_id,run_attempt,pr_number,head_sha) do nothing
       returning ci_event_id`,
       [event.repository,event.workflow_name,event.workflow_path,event.workflow_run_id,event.run_attempt,
@@ -466,14 +471,16 @@ async function receiveGitHubWorkflowRun(req, origin) {
        event.head_ref,event.head_sha,event.conclusion,event.category,
        event.classification ? jsonbText(event.classification) : null,
        jsonbText(event.failed_jobs),jsonbText(event.failed_steps),event.run_url,
-       event.source_run_created_at,claims.workflow_ref]);
+       event.source_run_created_at,claims.workflow_ref,inboxOwnerId]);
     let inboxId=inserted[0]?.ci_event_id||null,duplicate=false;
     if (!inboxId) {
       duplicate=true;
       const existing = await q(db,
-        `select ci_event_id from business_brain.commander_ci_event_inbox
+        `select ci_event_id,inbox_owner_id from business_brain.commander_ci_event_inbox
          where repository=$1 and workflow_run_id=$2 and run_attempt=$3 and pr_number=$4 and head_sha=$5 limit 1`,
         [event.repository,event.workflow_run_id,event.run_attempt,event.pr_number,event.head_sha]);
+      if(existing[0]?.inbox_owner_id!==inboxOwnerId)
+        return reply(409,{accepted:false,outcome:"CI_EVENT_OWNER_SCOPE_MISMATCH"},origin);
       inboxId=existing[0]?.ci_event_id||null;
     }
     if(!inboxId)throw Error("CI_EVENT_IDEMPOTENCY_READBACK_MISSING");
@@ -482,9 +489,10 @@ async function receiveGitHubWorkflowRun(req, origin) {
     // partial write is recoverable. Deterministic event IDs prevent duplicates.
     const matches = await q(db,
       `select task_id, owner_id from business_brain.commander_tasks
-       where project_key='holistic-house' and state not in ('completed','superseded')
-         and coalesce(payload->'relatedPr','[]'::jsonb) @> to_jsonb($1::int)
-       order by updated_at desc limit 2`, [event.pr_number]);
+       where project_key='agent-commander' and owner_id=$1::uuid
+         and state not in ('completed','superseded')
+         and coalesce(payload->'relatedPr','[]'::jsonb) @> to_jsonb($2::int)
+       order by updated_at desc limit 2`, [inboxOwnerId,event.pr_number]);
     let association = "UNMATCHED",associatedTaskId=null,associatedOwnerId=null;
     if (matches.length === 1) {
       associatedTaskId=matches[0].task_id;associatedOwnerId=matches[0].owner_id;
@@ -520,8 +528,8 @@ async function receiveGitHubWorkflowRun(req, origin) {
 
     await q(db, `update business_brain.commander_ci_event_inbox
       set associated_task_id=$1::uuid,associated_owner_id=$2::uuid,association_status=$3
-      where ci_event_id=$4::uuid`,
-      [associatedTaskId,associatedOwnerId,association,inboxId]);
+      where ci_event_id=$4::uuid and inbox_owner_id=$5::uuid`,
+      [associatedTaskId,associatedOwnerId,association,inboxId,inboxOwnerId]);
     return reply(202, { accepted: true, outcome: duplicate?"ALREADY_RECORDED":"RECORDED",
       inbox_id: inboxId, association, pr_number: event.pr_number, head_sha: event.head_sha }, origin);
   } catch (error) {
@@ -714,8 +722,8 @@ async function handler(req){
         `select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,
           conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,created_at
          from business_brain.commander_ci_event_inbox
-         where ($1::int is null or pr_number=$1)
-         order by created_at desc limit $2`,[pr,limit]);
+         where inbox_owner_id=$3::uuid and ($1::int is null or pr_number=$1)
+         order by created_at desc limit $2`,[pr,limit,ownerId]);
       return reply(200,{schema:"HH_COMMANDER_CI_EVENT_INBOX_V1",events:rows,
         count:rows.length,sourceVerifiedBy:"GITHUB_OIDC_AND_EXACT_PR_HEAD"},origin);
     }

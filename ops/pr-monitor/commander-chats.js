@@ -122,6 +122,16 @@
       make('p',null,'Упавшие задачи: '+(Array.isArray(event.failed_jobs)?event.failed_jobs.join(', '):'—')),
       make('p',null,'Упавшие этапы: '+(Array.isArray(event.failed_steps)?event.failed_steps.join('; '):'—')),
       make('small','cc-help',label+' · '+String(event.conclusion||'failure')));
+      const classification=event.classification&&typeof event.classification==='object'?event.classification:null;
+      if(classification){
+       if(typeof classification.recommended_action==='string')
+        item.append(make('p','cc-help','Рекомендация: '+classification.recommended_action.slice(0,300)));
+       if(typeof classification.responsible_role==='string')
+        item.append(make('small','cc-help','Ответственная роль: '+classification.responsible_role+' · '+String(classification.recommended_status||'DIAGNOSTIC_ONLY')));
+       item.append(make('small','cc-help',classification.source_write_authorized===false&&classification.execution_authorized===false
+        ?'Только диагностика: автоматическое изменение исходников и запуск исполнителя не разрешены.'
+        :'Требуется отдельная проверка полномочий перед действием.'));
+      }
      if(typeof event.run_url==='string'&&/^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+$/.test(event.run_url)){
       const a=make('a',null,'Открыть CI run ↗');a.href=event.run_url;a.target='_blank';a.rel='noopener noreferrer';item.append(a);
      }
