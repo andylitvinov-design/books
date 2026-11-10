@@ -132,7 +132,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(js.includes('eventId:eventIdOverride||id()'));
  assert.ok(js.includes('councilChunkEventId(data.requestId,index)'));
  assert.ok(js.includes('AI Council Free · часть'));
- assert.ok(js.includes("mode!=='council-free'&&!thread.executors.includes(mode)"));
+ assert.ok(js.includes("if(mode==='council-free'||c.executors.includes(storedMode))return c;"));
  assert.match(css,/cc-council-panel/);
  assert.match(css,/min-height:600px/);
  assert.ok(csp.includes('frame-src https://accounts.google.com/gsi/ https://ai-council-free-super10.vercel.app;'));
@@ -189,7 +189,7 @@ test('Commander execution run snapshots a bounded revision-pinned task context a
  assert.ok(edge.includes('chatRevision:Number.isSafeInteger(chat.revision)?chat.revision:0'));
  assert.ok(edge.includes('linkedPrHintsVerified:false'));
  assert.ok(edge.includes('requiredBeforeSourceChange:"Resolve live GitHub PR and exact HEAD before any source change."'));
- assert.ok(edge.includes('JSON.stringify({message,contextCapsule})'));
+ assert.ok(edge.includes('jsonbText({message,goal,acceptanceCriteria,skillIds,parentTaskId,contextCapsule,modelId,confirmGitHubWrite:writeConfirmed})'));
  assert.ok(edge.includes('String(contextCapsule.chatRevision)'));
 });
 
@@ -410,11 +410,11 @@ test('private Commander writes raw JSON text through text-to-jsonb casts, not JS
  assert.equal(jsonbParams.length,18);
  for(const field of ['failed_jobs','failed_steps','commander_tasks','commander_chats','commander_chat_events','commander_execution_runs'])
   assert.ok(edge.includes(field));
- assert.match(edge,/JSON\.stringify\(event\.failed_jobs\)/);
- assert.match(edge,/JSON\.stringify\(event\.failed_steps\)/);
- assert.match(edge,/JSON\.stringify\(record\)/);
- assert.match(edge,/JSON\.stringify\(chat\)/);
- assert.match(edge,/JSON\.stringify\(event\)/);
+ assert.match(edge,/jsonbText\(event\.failed_jobs\)/);
+ assert.match(edge,/jsonbText\(event\.failed_steps\)/);
+ assert.match(edge,/jsonbText\(record\)/);
+ assert.match(edge,/jsonbText\(chat\)/);
+ assert.match(edge,/jsonbText\(event\)/);
 });
 
 test('Hermes source writes require one-shot owner consent and use only a verified zero-price model',()=>{
