@@ -218,3 +218,25 @@ test('runner renders a blocking control state and resumes only after explicit us
   assert.match(ui,/sessionControl\.controlStatus==='safety_hold'/)
   assert.match(ui,/onClick=\{\(\)=>visit\(index\+1,session\?\.answers\)\}/)
 })
+
+
+test('stop, pause and safety controls are detected independently of question stage or position',()=>{
+  for(const [message,status] of [
+    ['I want to kill myself','safety_hold'],
+    ['покончить с собой','safety_hold'],
+    ['I want to stop now','stopped'],
+    ['Please pause','paused'],
+  ]){
+    const control=coachingControlForAnswer(message,'en')
+    assert.equal(control.controlStatus,status)
+  }
+  assert.equal(coachingControlForAnswer('I have completed my goal','en'),null)
+})
+
+test('final question path checks control intent before completion',()=>{
+  const ui=source('components/app/personal-coaching.jsx')
+  assert.match(ui,/function offerSessionControl\(answer\)/)
+  assert.match(ui,/if\(offerSessionControl\(answer\)\)return/)
+  assert.match(ui,/if\(!skip&&offerSessionControl\(answer\)\)return/)
+  assert.ok(ui.indexOf('if(!skip&&offerSessionControl(answer))return')<ui.indexOf("commandAfterSave(saved,'complete')"))
+})
