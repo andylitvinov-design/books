@@ -52,3 +52,15 @@ test('only explicitly saved Life Plan targets are presented for client review',(
  assert.equal(JSON.stringify(saved).includes('stress'),false)
  assert.deepEqual(developmentGoalsContextItems({revision:1,goals:{version:2,targets:{body:99}}},'en'),[])
 })
+
+test('creates owner-local report references from completed sessions without copying PDFs',()=>{
+ const context=buildClientCoachingContext([
+  {id:'11111111-1111-4111-8111-111111111111',status:'completed',completedAt:'2026-11-08T10:00:00Z',
+   actionPlan:{goal:'More balance',actionText:'Block time'}},
+  {id:'22222222-2222-4222-8222-222222222222',status:'active',startedAt:'2026-11-09T10:00:00Z'}
+ ])
+ assert.equal(context.linked_reports.length,1)
+ assert.equal(context.linked_reports[0].text,'Coaching session report · 2026-11-08')
+ assert.equal(context.linked_reports[0].sourceSessionId,'11111111-1111-4111-8111-111111111111')
+ assert.equal(JSON.stringify(context).includes('PDF bytes'),false)
+})
