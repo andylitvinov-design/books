@@ -319,7 +319,7 @@ async function receiveGitHubWorkflowRun(req, origin) {
         workflow_run_head_sha, head_branch, pr_number, base_ref, base_sha,
         head_ref, head_sha, conclusion, category, failed_jobs, failed_steps,
         run_url, source_run_created_at, oidc_workflow_ref
-      ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb,$17,$18::timestamptz,$19)
+      ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::text::jsonb,$16::text::jsonb,$17,$18::timestamptz,$19)
       on conflict(repository,workflow_run_id,run_attempt,pr_number,head_sha) do nothing
       returning ci_event_id`,
       [event.repository,event.workflow_name,event.workflow_path,event.workflow_run_id,event.run_attempt,
@@ -361,7 +361,7 @@ async function receiveGitHubWorkflowRun(req, origin) {
         };
         await q(db,
           `insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified)
-           values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::jsonb,true)
+           values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,true)
            on conflict(event_id) do nothing`,
           [chatEvent.id,chats[0].chat_id,matches[0].owner_id,JSON.stringify(chatEvent)]);
         await q(db, `update business_brain.commander_chats set updated_at=now()
@@ -495,7 +495,7 @@ async function handler(req){
       const result=await db.begin(async tx=>{
         const inserted=await tx.unsafe(`insert into business_brain.commander_execution_runs
           (run_id,owner_id,chat_id,task_id,idempotency_key,request_sha256,executor,status,reason_code,request_payload,receipt)
-          values($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,'BLOCKED',$8,$9::jsonb,$10::jsonb)
+          values($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,'BLOCKED',$8,$9::text::jsonb,$10::text::jsonb)
           on conflict(owner_id,chat_id,idempotency_key) do nothing
           returning run_id,status,reason_code,request_sha256,executor,created_at`,
           [runId,ownerId,chat.chat_id,chat.task_id||null,idempotencyKey,requestSha256,executor,reasonCode,
@@ -514,7 +514,7 @@ async function handler(req){
             sourceVerified:false,proofLevel:"NOT_STARTED_NO_EXECUTION_RECEIPT",createdAt:now};
           await tx.unsafe(`insert into business_brain.commander_chat_events
             (event_id,chat_id,owner_id,kind,payload,source_verified)
-            values($1::uuid,$2::uuid,$3::uuid,'execution_blocked',$4::jsonb,false)
+            values($1::uuid,$2::uuid,$3::uuid,'execution_blocked',$4::text::jsonb,false)
             on conflict(event_id) do nothing`,[runId,chat.chat_id,ownerId,JSON.stringify(eventPayload)]);
           await tx.unsafe(`update business_brain.commander_chats set execution_state='BLOCKED',
             payload=jsonb_set(payload,'{executionState}','"BLOCKED"'::jsonb,true),updated_at=now()
@@ -589,7 +589,7 @@ async function handler(req){
         if(!prior.length||prior[0].task_id!==record.taskId)return reply(409,{error:"TASK_OWNER_OR_ID_MISMATCH"},origin);
       }else prior=await q(db,"select task_number,task_id,state from business_brain.commander_tasks where owner_id=$1::uuid and task_id=$2::uuid limit 1",[ownerId,record.taskId]);
       const state=prior[0]?.state==="queued_review"?"queued_review":"draft";
-      const saved=await q(db,"insert into business_brain.commander_tasks(task_id,owner_id,project_key,title,payload,state,revision) values($1::uuid,$2::uuid,'agent-commander',$3,$4::jsonb,$5,1) on conflict(task_id) do update set title=excluded.title,payload=excluded.payload,state=case when business_brain.commander_tasks.state='queued_review' then 'queued_review' else 'draft' end,revision=business_brain.commander_tasks.revision+1,updated_at=now() where business_brain.commander_tasks.owner_id=excluded.owner_id returning task_number,task_id,state,revision,updated_at",[record.taskId,ownerId,record.title,JSON.stringify(record),state]);
+      const saved=await q(db,"insert into business_brain.commander_tasks(task_id,owner_id,project_key,title,payload,state,revision) values($1::uuid,$2::uuid,'agent-commander',$3,$4::text::jsonb,$5,1) on conflict(task_id) do update set title=excluded.title,payload=excluded.payload,state=case when business_brain.commander_tasks.state='queued_review' then 'queued_review' else 'draft' end,revision=business_brain.commander_tasks.revision+1,updated_at=now() where business_brain.commander_tasks.owner_id=excluded.owner_id returning task_number,task_id,state,revision,updated_at",[record.taskId,ownerId,record.title,JSON.stringify(record),state]);
       if(!saved.length)return reply(409,{error:"TASK_OWNER_OR_ID_MISMATCH"},origin);
       return reply(200,{saved:true,issueNumber:Number(saved[0].task_number),taskId:saved[0].task_id,
         state:saved[0].state,revision:saved[0].revision,agentStarted:false,storage:"SUPABASE_PRIVATE",
@@ -627,7 +627,7 @@ async function handler(req){
         executor:"manual",mode:"analysis",relatedPr:resolved.relatedPr,
         restrictions:{noCost:true,noDuplicate:true,verifyLive:true},taskScope:body.scope,
         scopePrHintsUnverified:resolved.scopePrHintsUnverified===true};
-      const taskRows=await q(db,"insert into business_brain.commander_tasks(task_id,owner_id,project_key,title,payload,state,revision) values($1::uuid,$2::uuid,'agent-commander',$3,$4::jsonb,'draft',1) on conflict(task_id) do nothing returning task_number",[taskId,ownerId,resolved.title,JSON.stringify(source)]);
+      const taskRows=await q(db,"insert into business_brain.commander_tasks(task_id,owner_id,project_key,title,payload,state,revision) values($1::uuid,$2::uuid,'agent-commander',$3,$4::text::jsonb,'draft',1) on conflict(task_id) do nothing returning task_number",[taskId,ownerId,resolved.title,JSON.stringify(source)]);
       let taskNumber=taskRows.length?Number(taskRows[0].task_number):null;
       if(!taskNumber){
         const priorTask=await q(db,"select task_number,owner_id,payload from business_brain.commander_tasks where task_id=$1::uuid limit 1",[taskId]);
@@ -642,7 +642,7 @@ async function handler(req){
         executors:["manual"],prs:resolved.relatedPr,scopePrHintsUnverified:resolved.scopePrHintsUnverified===true,
         status:"assigned",revision:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
         executionState:"AWAITING_EXECUTOR_NOT_DISPATCHED",liveVerified:false};
-      const inserted=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,task_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$1::uuid,$3,$4::jsonb,'assigned','AWAITING_EXECUTOR_NOT_DISPATCHED',1) on conflict(task_id) do nothing returning chat_number",[taskId,ownerId,resolved.title,JSON.stringify(chat)]);
+      const inserted=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,task_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$1::uuid,$3,$4::text::jsonb,'assigned','AWAITING_EXECUTOR_NOT_DISPATCHED',1) on conflict(task_id) do nothing returning chat_number",[taskId,ownerId,resolved.title,JSON.stringify(chat)]);
       if(!inserted.length){
         const raced=await q(db,"select chat_number,payload from business_brain.commander_chats where owner_id=$1::uuid and task_id=$2::uuid limit 1",[ownerId,taskId]);
         if(!raced.length)return reply(409,{error:"TASK_CHAT_COLLISION_HOLD"},origin);
@@ -665,7 +665,7 @@ async function handler(req){
         executors:EXECUTORS.has(r.executor)?[r.executor]:["manual"],status:"assigned",revision:1,
         createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
         executionState:"AWAITING_EXECUTOR_NOT_DISPATCHED",liveVerified:false};
-      const inserted=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,task_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$1::uuid,$3,$4::jsonb,'assigned','AWAITING_EXECUTOR_NOT_DISPATCHED',1) on conflict(task_id) do nothing returning chat_number",[taskId,ownerId,title,JSON.stringify(chat)]);
+      const inserted=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,task_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$1::uuid,$3,$4::text::jsonb,'assigned','AWAITING_EXECUTOR_NOT_DISPATCHED',1) on conflict(task_id) do nothing returning chat_number",[taskId,ownerId,title,JSON.stringify(chat)]);
       if(!inserted.length){
         const raced=await q(db,"select chat_number,payload from business_brain.commander_chats where owner_id=$1::uuid and task_id=$2::uuid limit 1",[ownerId,taskId]);
         if(!raced.length)return reply(409,{error:"TASK_CHAT_COLLISION_HOLD"},origin);
@@ -678,7 +678,7 @@ async function handler(req){
       const existing=await q(db,"select chat_number,payload from business_brain.commander_chats where owner_id=$1::uuid and chat_id=$2::uuid limit 1",[ownerId,chat.id]);
       if(existing.length)return reply(200,{issueNumber:Number(existing[0].chat_number),created:false,alreadyExists:true,
         chat:{...existing[0].payload,issueNumber:Number(existing[0].chat_number)}},origin);
-      const rows=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$3,$4::jsonb,$5,'UNVERIFIED_ASSIGNMENT_ONLY',$6) on conflict(chat_id) do nothing returning chat_number",[chat.id,ownerId,chat.title,JSON.stringify(chat),chat.status,chat.revision]);
+      const rows=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$3,$4::text::jsonb,$5,'UNVERIFIED_ASSIGNMENT_ONLY',$6) on conflict(chat_id) do nothing returning chat_number",[chat.id,ownerId,chat.title,JSON.stringify(chat),chat.status,chat.revision]);
       if(!rows.length)return reply(409,{error:"CHAT_OWNER_OR_ID_MISMATCH"},origin);
       return reply(201,{issueNumber:Number(rows[0].chat_number),created:true,chat,agentStarted:false},origin);
     }
@@ -690,7 +690,7 @@ async function handler(req){
       const updated=normalizeChat(body.chat,prior[0].payload);
       const payload={...updated,taskId:prior[0].task_id||prior[0].payload.taskId||null,
         taskIssueNumber:prior[0].payload.taskIssueNumber||null};
-      const rows=await q(db,"update business_brain.commander_chats set title=$1,payload=$2::jsonb,status=$3,revision=$4,updated_at=now() where owner_id=$5::uuid and chat_number=$6 and revision=$7 returning chat_number",[payload.title,JSON.stringify(payload),payload.status,payload.revision,ownerId,id,prior[0].revision]);
+      const rows=await q(db,"update business_brain.commander_chats set title=$1,payload=$2::text::jsonb,status=$3,revision=$4,updated_at=now() where owner_id=$5::uuid and chat_number=$6 and revision=$7 returning chat_number",[payload.title,JSON.stringify(payload),payload.status,payload.revision,ownerId,id,prior[0].revision]);
       if(!rows.length)return reply(409,{error:"STALE_CHAT_REVISION"},origin);
       return reply(200,{updated:true,issueNumber:Number(rows[0].chat_number),chat:payload,agentStarted:false},origin);
     }
@@ -703,7 +703,7 @@ async function handler(req){
       if(prior.length)return reply(200,{appended:false,duplicate:true,event:prior[0].payload},origin);
       const count=await q(db,"select count(*)::int as total from business_brain.commander_chat_events where owner_id=$1::uuid and chat_id=$2::uuid",[ownerId,rows[0].chat_id]);
       if(count[0].total>=400)return reply(409,{error:"CHAT_EVENT_LIMIT_REACHED_EXPORT_REQUIRED"},origin);
-      const inserted=await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,$4,$5::jsonb,false) on conflict(event_id) do nothing returning event_id",[event.id,rows[0].chat_id,ownerId,event.kind,JSON.stringify(event)]);
+      const inserted=await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,$4,$5::text::jsonb,false) on conflict(event_id) do nothing returning event_id",[event.id,rows[0].chat_id,ownerId,event.kind,JSON.stringify(event)]);
       if(!inserted.length)return reply(200,{appended:false,duplicate:true,event},origin);
       await q(db,"update business_brain.commander_chats set updated_at=now() where owner_id=$1::uuid and chat_id=$2::uuid",[ownerId,rows[0].chat_id]);
       return reply(201,{appended:true,event,agentStarted:false},origin);
@@ -722,7 +722,7 @@ async function handler(req){
       const text=clean(String(comment.body||"").replace(/<!--[\s\S]*?-->/g,"").replace(/(?:ghp_|gho_|sk-)[A-Za-z0-9_-]{16,}/g,"[REDACTED]"),1600);
       const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"github_report",author:"GitHub report",
         text,url:body.url,sourceVerified:false,proofLevel:"REPORT_ONLY_NOT_COMMIT",createdAt:new Date().toISOString()};
-      const inserted=await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::jsonb,false) on conflict(event_id) do nothing returning event_id",[eventId,rows[0].chat_id,ownerId,JSON.stringify(event)]);
+      const inserted=await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,false) on conflict(event_id) do nothing returning event_id",[eventId,rows[0].chat_id,ownerId,JSON.stringify(event)]);
       if(!inserted.length)return reply(200,{appended:false,duplicate:true,event},origin);
       await q(db,"update business_brain.commander_chats set updated_at=now() where owner_id=$1::uuid and chat_id=$2::uuid",[ownerId,rows[0].chat_id]);
       return reply(201,{appended:true,event,agentStarted:false},origin);
