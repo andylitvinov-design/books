@@ -6,6 +6,7 @@ import {
   selectCoachingBrainMethod,coachingBrainStage,coachingBrainMessages,
   parseCoachingBrainReply,offlineCoachingBrainReply,
 } from '../lib/personal-coaching/coaching-brain.mjs'
+import {analyzeCoachingProtocol,coachingProtocolPrompt} from '../lib/personal-coaching/coaching-session-protocol.mjs'
 
 const uuid='e620286d-62ac-4efb-87e3-e58baa2c71b5'
 const req=(overrides={})=>({sessionId:uuid,locale:'en',consent:true,
@@ -45,21 +46,22 @@ test('reviewed method selection adapts to actual client wording in EN/RU/ES',()=
     assert.equal(selectCoachingBrainMethod(normalizeCoachingBrainInput(req({message}))),method,message)
 })
 
-test('an orderly, bounded dialogue grows without demanding a user commitment',()=>{
-  let input=normalizeCoachingBrainInput(req())
-  assert.equal(coachingBrainStage(input),'clarify')
-  for(const [length,expected] of [[1,'explore'],[2,'options'],[3,'decision'],[4,'review']]){
-    input=normalizeCoachingBrainInput(req({turns:Array.from({length},(_,i)=>({
-      role:'user',content:'My client message '+i,
-    }))}))
-    assert.equal(coachingBrainStage(input),expected)
-  }
-  const messages=coachingBrainMessages(input,'grow','review')
-  assert.deepEqual(messages.map(row=>row.role),['system','user'])
-  assert.match(messages[0].content,/ONE useful open question/)
-  assert.match(messages[0].content,/UNTRUSTED DATA/)
-  assert.doesNotMatch(messages[0].content,/My client message/)
-  assert.match(messages[1].content,/My client message/)
+test('phase progression is based on evidence, never on message count',()=>{
+ let input=normalizeCoachingBrainInput(req({message:'I want to understand why I keep postponing work'}))
+ assert.equal(coachingBrainStage(input),'explore')
+ input=normalizeCoachingBrainInput(req({message:'I want to start the report; yesterday at work I opened it and closed it'}))
+ assert.equal(coachingBrainStage(input),'explore')
+ input=normalizeCoachingBrainInput(req({message:'I want to start the report; yesterday at work I froze because I was afraid of making a mistake'}))
+ assert.equal(coachingBrainStage(input),'options')
+ input=normalizeCoachingBrainInput(req({message:'I want to start the report; yesterday at work I froze because I was afraid; I could try a ten-minute outline'}))
+ assert.equal(coachingBrainStage(input),'decision')
+ input=normalizeCoachingBrainInput(req({message:'I want to start the report; yesterday at work I froze because I was afraid; I could try a ten-minute outline; I will do it tomorrow'}))
+ assert.equal(coachingBrainStage(input),'review')
+ const messages=coachingBrainMessages(input,'grow','review')
+ assert.deepEqual(messages.map(x=>x.role),['system','system','user'])
+ assert.match(messages[1].content,/never advance because of turn count or elapsed time/i)
+ assert.match(messages[0].content,/ONE useful open question/)
+ assert.match(messages[0].content,/UNTRUSTED DATA/)
 })
 
 test('unsupported model output never becomes a confirmed decision',()=>{
@@ -131,4 +133,27 @@ test('server stays owner-scoped, rate-limited and provider gated; UI requires co
   assert.match(saver,/brainDecision=\{actionText,confirmedAt:clock\(\)\}/)
   assert.match(page,/<CoachingBrainPanel/)
   assert.match(page,/session\.brainDecision\?\.confirmedAt/)
+})
+
+test('protocol selects localized next-best action and unresolved milestones',()=>{
+ const x=analyzeCoachingProtocol({locale:'ru',message:'Хочу изменить работу; вчера на встрече я замер, потому что боялся критики',turns:[]})
+ assert.equal(x.phase,'possibilities')
+ assert.equal(x.nextBestAction.type,'open_options')
+ assert.equal(x.nextBestAction.question,'Учитывая то, что вы рассказали, какие возможные пути вы видите?')
+ assert.ok(x.unresolved.includes('possibilities'))
+ assert.match(coachingProtocolPrompt(x),/never advance because of turn count or elapsed time/i)
+})
+test('timeboxes are advisory and cannot force completion',()=>{
+ const x=analyzeCoachingProtocol({locale:'en',message:'I want to start my project',turns:[]})
+ assert.deepEqual(x.timebox,[120,300])
+ assert.equal(x.completion.action,false)
+ assert.equal(x.phase,'discovery')
+})
+test('review requires a client-authored action and time anchor',()=>{
+ const x=analyzeCoachingProtocol({locale:'en',message:'I want to start; yesterday I avoided it because I was afraid; I could try outlining it',turns:[]})
+ assert.equal(x.phase,'action')
+ assert.equal(x.completion.action,false)
+ const y=analyzeCoachingProtocol({locale:'en',message:'I want to start; yesterday I avoided it because I was afraid; I could try outlining it; I will do it tomorrow',turns:[]})
+ assert.equal(y.phase,'review')
+ assert.equal(y.completion.review,true)
 })
