@@ -105,3 +105,19 @@ test('Agent Director owns its run path and the Supabase store does not depend on
   assert.doesNotMatch(runtime,/OPENROUTER_API_KEY|GITHUB_TOKEN/);
   assert.match(edge,/executorDispatch:false,dispatchAvailable:true/);
 });
+
+
+test('CI inbox is scoped to one owner while first-party Director dispatch stays intact',()=>{
+ const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
+ const migration=read('supabase/migrations/20261110134000_commander_ci_inbox_owner_scope_v1.sql');
+ assert.match(edge,/select user_id from business_brain\.owner_access where can_read=true/);
+ assert.match(edge,/readableOwners.length!==1/);
+ assert.ok(edge.includes('oidc_workflow_ref, inbox_owner_id'));
+ assert.ok(edge.includes("where project_key='agent-commander' and owner_id=$1::uuid"));
+ assert.ok(edge.includes('where inbox_owner_id=$3::uuid'));
+ assert.ok(edge.includes('ownedDirectorCall(req,'));
+ assert.ok(edge.includes('FIRST_PARTY_AGENT_DIRECTOR'));
+ assert.doesNotMatch(edge,/HERMES_ORIGIN_URL|HERMES_SHARED_SECRET|hermesCall\(/);
+ assert.match(migration,/alter column inbox_owner_id set not null/);
+ assert.match(migration,/revoke all on business_brain\.commander_ci_event_inbox/);
+});
