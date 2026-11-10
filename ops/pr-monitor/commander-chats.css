@@ -316,3 +316,15 @@ body.hh-cc-shell.cc-keyboard-active .cc-composer-space{
 
 .cc-ci-classification-label{font-weight:700;margin-top:12px!important}
 .cc-ci-classification-action{margin:6px 0;padding:10px 12px;border-left:2px solid var(--cc-line,rgba(255,255,255,.25));border-radius:6px;overflow-wrap:anywhere}
+
+/* Compact, persistent execution status, sourced from the Supabase run ledger. */
+.cc-thread-surface .cc-run-status{display:flex;gap:9px;align-items:center;min-height:36px;padding:8px 10px;margin:5px 0 10px;border:1px solid #5a5270;border-radius:12px;background:#1d1b31;color:#e7def5}
+.cc-thread-surface .cc-run-dot{flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:#9b8eb2}
+.cc-thread-surface .cc-run-status[data-state="pending"] .cc-run-dot{background:#a47de3;animation:cc-run-pulse 1.5s ease-in-out infinite}
+.cc-thread-surface .cc-run-status[data-state="done"] .cc-run-dot{background:#83c9a4}
+.cc-thread-surface .cc-run-status[data-state="warning"] .cc-run-dot,.cc-thread-surface .cc-run-status[data-state="error"] .cc-run-dot{background:#dfaa80}
+.cc-thread-surface .cc-run-text{display:grid;min-width:0;flex:1;gap:2px;line-height:1.25}
+.cc-thread-surface .cc-run-text strong{font-size:12px}.cc-thread-surface .cc-run-text span{font-size:11px;color:#bdb1ce;overflow-wrap:anywhere}
+.cc-thread-surface #cc-retry-run{min-height:32px;padding:6px 9px;border-radius:9px;border:1px solid #9e7ac3;background:#49345a;color:#fff;font-size:12px}
+@keyframes cc-run-pulse{50%{opacity:.4;transform:scale(.8)}}
+@media(prefers-reduced-motion:reduce){.cc-thread-surface .cc-run-status[data-state="pending"] .cc-run-dot{animation:none}}

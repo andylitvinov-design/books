@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-council-inline-v2'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-openrouter-status-v3'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -115,22 +115,20 @@ test('owner chat API exposes a bounded CI event inbox query through the private 
 });
 
 
-test('Council is direct in-chat; no nested iframe or second settings form',()=>{
+test('Council routes through owner-authenticated free worker and exposes a persistent status',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
  assert.match(html,/option value="council-free"/);
+ assert.match(html,/id="cc-run-status"[^>]*role="status"/);
+ assert.match(html,/id="cc-retry-run"/);
  assert.doesNotMatch(html,/<iframe|cc-council-frame|Открыть отдельно/);
- assert.doesNotMatch(js,/ensureCouncilFrame|receiveCouncilMessage|COUNCIL_ORIGIN|postMessage/);
- assert.doesNotMatch(css,/#cc-council-frame|\.cc-council-panel/);
- assert.match(js,/Совет ИИ думает…/);
- assert.ok(js.includes(String.raw`answer.reply.match(/[\s\S]{1,1500}/g)`),'Council must split all Unicode text, not only literal backslashes');
- assert.match(js,/request\(AI\+'\?action=council','POST',\{message:text\}\)/);
- assert.match(js,/await append\(c,'owner',text,''\)/);
- assert.match(js,/await append\(c,'ai',part,'Совет ИИ/);
- assert.match(js,/councilPending=null;renderMessages\(\)/);
- assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v2/);
- const start=js.indexOf("if(mode==='council-free'){",js.indexOf('async function send(e)'));
- assert.doesNotMatch(js.slice(start,js.indexOf('const context=messages.slice(-8)',start)),/history:|tasks:|context:|iframe|window\.open|location\./);
+ assert.doesNotMatch(js,/request\(AI\+'\?action=council','POST'/);
+ assert.match(js,/executor:'openrouter'/);
+ assert.match(js,/request\(SERVER\+'\?action=run','POST'/);
+ assert.match(js,/lastQuestion\(\)/);
+ assert.match(css,/\.cc-run-status/);
+ assert.match(html,/20261110-openrouter-status-v3/);
 });
+
 test('Commander Hermes adapter exposes only owner-authenticated free models and consented writes',()=>{
  const api=src('api/commander-chats.js'),ui=src('commander-chats.js');
  assert.match(api,/name==='free_models'\|\|name==='executor_models'/);
@@ -192,7 +190,7 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-council-inline-v2'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-openrouter-status-v3'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -246,7 +244,7 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  elements['cc-create-send'].textContent='Отправить';
  elements['cc-create'].hidden=true;
  elements['cc-thread'].hidden=true;
- let created=null,createdCount=0,eventRows=[],seq=0;
+ let created=null,createdCount=0,eventRows=[],seq=0,queuedRun=null;
  const network=[];
  const response=(data,status=200)=>({ok:status>=200&&status<400,status,json:async()=>data});
  const doc={
@@ -289,6 +287,11 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
      return response({event});
     }
     if(action==='read')return response({chat:created,messages:eventRows});
+    if(action==='runs')return response({runs:queuedRun?[queuedRun]:[]});
+    if(action==='run'){
+     queuedRun={run_id:body.runId,status:'QUEUED',reason_code:'OPENROUTER_WORKER_QUEUED',created_at:new Date().toISOString(),worker_attempt_count:0};
+     return response({run:queuedRun,status:'QUEUED'},202);
+    }
    }
    throw new Error('Unexpected network call: '+url);
   }
@@ -335,12 +338,13 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  elements['cc-mode'].value='council-free';
  elements['cc-message'].value='Какие тренды ИИ сейчас основные?';
  await elements['cc-chat-form'].fire('submit');
- assert.equal(network.filter(x=>x.action==='council').length,1);
- assert.deepEqual(eventRows.slice(-2).map(e=>e.kind),['owner','assistant_unverified']);
- assert.match(eventRows.at(-1).text,/Синтетический ответ Совета ИИ/);
- assert.equal(elements['cc-messages'].children.length,4);
+ assert.equal(network.filter(x=>x.action==='council').length,0);
+ assert.equal(network.filter(x=>x.action==='run').length,1);
+ assert.equal(eventRows.at(-1).kind,'owner');
+ assert.equal(elements['cc-run-status'].hidden,false);
+ assert.match(elements['cc-run-status-label'].textContent,/в очереди/);
  assert.equal(elements['cc-send'].disabled,false);
- assert.match(elements['cc-chat-feedback'].textContent,/Ответ Совета ИИ сохранён/);
+ assert.match(elements['cc-chat-feedback'].textContent,/очереди OpenRouter/);
 });
 
 test('last chats stay at the top and one fixed bottom composer supports typed and spoken questions',()=>{
@@ -527,8 +531,8 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
 
 test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
- assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v2/);
- assert.match(html,/commander-chats\.css\?v=20261110-council-inline-v2/);
+ assert.match(html,/commander-chats\.js\?v=20261110-openrouter-status-v3/);
+ assert.match(html,/commander-chats\.css\?v=20261110-openrouter-status-v3/);
  assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
  for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
   assert.ok(js.includes('classification.'+field)||js.includes('classification?.'+field),field);
@@ -539,7 +543,7 @@ test('CI Inbox displays the shared diagnostic recommendation and retry policy wi
 test('owner chat accurately labels first-party OpenRouter Free and translates every fail-closed provider reason',()=>{
  const html=src('chats.html'),js=src('commander-chats.js');
  assert.equal((html.match(/Agents Director · OpenRouter Free \(анализ\)/g)||[]).length,2);
- assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v2/);
+ assert.match(html,/commander-chats\.js\?v=20261110-openrouter-status-v3/);
  assert.match(js,/director:'Agents Director · OpenRouter Free'/);
  for(const code of ['OWNED_MODEL_RUNTIME_NOT_CONFIGURED','OWNED_MODEL_FREE_RATE_LIMIT',
    'OWNED_MODEL_NO_VERIFIED_FREE_MODELS','OWNED_MODEL_COST_UNVERIFIED',
@@ -559,5 +563,5 @@ test('terminal BLOCKED run reloads its persisted private chat event just like CO
  assert.match(refresh,/const latest=await request\(SERVER\+'\?action=read&issue='\+thread\.issueNumber\)/);
  assert.match(refresh,/renderMessages\(\)/);
  // A terminal blocker is never portrayed as an executing model; polling ends.
- assert.match(js,/!\['STARTING','RUNNING'\]\.includes\(run\.status\)/);
+ assert.match(js,/!\['QUEUED','STARTING','RUNNING'\]\.includes\(run\.status\)/);
 });
