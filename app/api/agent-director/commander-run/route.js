@@ -32,8 +32,11 @@ async function verifyOwner(request,body,fetcher){
   const publishableKey=process.env.HH_APP_SUPABASE_PUBLISHABLE_KEY||'';
   let origin;
   try{origin=new URL(supabaseUrl)}catch{throw Object.assign(Error('OWNER_AUTH_NOT_CONFIGURED'),{status:503})}
-  if(origin.protocol!=='https:'||origin.username||origin.password||origin.pathname!=='/'||origin.search||origin.hash||
-    !/^(sb_publishable_[A-Za-z0-9_-]{20,}|[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.test(publishableKey))
+  let publicKeyValid=/^sb_publishable_[A-Za-z0-9_-]{20,}$/.test(publishableKey);
+  if(!publicKeyValid&&/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/.test(publishableKey)){
+    try{publicKeyValid=JSON.parse(Buffer.from(publishableKey.split('.')[1],'base64url').toString('utf8')).role==='anon'}catch{}
+  }
+  if(origin.protocol!=='https:'||origin.username||origin.password||origin.pathname!=='/'||origin.search||origin.hash||!publicKeyValid)
     throw Object.assign(Error('OWNER_AUTH_NOT_CONFIGURED'),{status:503});
   const userResponse=await fetcher(origin.origin+'/auth/v1/user',{
     method:'GET',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(7000),
