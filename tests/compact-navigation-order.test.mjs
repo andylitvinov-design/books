@@ -78,6 +78,12 @@ test('My Profile guest tests and separate support journeys are all localized and
     assert.doesNotMatch(page,/createLead\(|checkout\(|localStorage|sessionStorage/)
   }
   assert.ok(read('app/[locale]/temple-insights/page.tsx').includes('<IdeasDiscovery locale={language} variant="temple"'))
-  assert.ok(read('app/[locale]/holistic-support/page.tsx').includes('/services/remote-energy-support'))
-  assert.ok(read('app/[locale]/holistic-support/page.tsx').includes('/services/alchemy-of-soul'))
+  const supportHub=read('app/[locale]/holistic-support/page.tsx')
+  const supportChoices=read('components/holistic-support-choices.tsx')
+  assert.ok(supportHub.includes('<HolisticSupportChoices locale={locale} />'),
+    'public support hub renders the existing reviewed choices')
+  assert.ok(supportChoices.includes('/services/remote-energy-support'),
+    'personal remote energy support remains an explicit choice')
+  assert.ok(read('lib/site-navigation-model.js').includes("alchemy: 'services/alchemy-of-soul'"),
+    'the separate Psychic Alchemy journey remains navigable')
 })
