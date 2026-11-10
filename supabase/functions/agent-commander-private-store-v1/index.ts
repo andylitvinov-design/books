@@ -1,4 +1,4 @@
-// Synced from live Supabase Edge Function v10; deployed SHA fc392030bf8dda2a424f3a2934ffdd00376b035a1281fef04ba95fe25f70c935.
+// Synced from production Supabase Edge Function v19. Keep this repository copy deployable and authoritative.
 // Agent Commander private task/chat store. A valid Supabase user JWT and
 // business_brain.owner_access row are required for every request.
 import postgres from "npm:postgres@3.4.5";
@@ -346,7 +346,41 @@ function normalizeTrustedCoreFailure(body) {
       pr.head?.repo?.full_name !== repo || pr.head?.ref !== run.head_branch ||
       !/^[a-f0-9]{40}$/i.test(pr.head?.sha || "")) return null;
   const category = String(body.diagnostics?.category || "UNKNOWN");
-  if (!new Set(["TYPESCRIPT", "TEST_FAILURE", "SECURITY", "INFRASTRUCTURE", "MERGE_CONFLICT", "BASE_ADVANCED", "UNKNOWN"]).has(category)) return null;
+  const categories = new Set(["SECURITY","ACCESS_CONFIG","MERGE_CONFLICT","BASE_ADVANCED",
+    "BASE_OR_CI_ROUTING","INFRASTRUCTURE","AUTOMATION_PROCESS","AI_EXECUTOR","INTEGRATION",
+    "TYPESCRIPT","TEST_FAILURE","SOURCE_CODE","UNKNOWN"]);
+  if (!categories.has(category)) return null;
+  const incoming = body.diagnostics?.classification;
+  let classification = null;
+  if (incoming !== undefined && incoming !== null) {
+    if (!incoming || incoming.schema !== "HH_CI_ERROR_CLASSIFICATION_V1" ||
+        incoming.ruleset_version !== "1.1.0" || incoming.category !== category ||
+        !Number.isFinite(incoming.confidence) || incoming.confidence < 0 || incoming.confidence > 1 ||
+        typeof incoming.reason_code !== "string" || !/^[A-Z0-9_]{3,90}$/.test(incoming.reason_code) ||
+        typeof incoming.recommended_action !== "string" || incoming.recommended_action.length > 500 ||
+        typeof incoming.recommended_status !== "string" || incoming.recommended_status.length > 48 ||
+        typeof incoming.responsible_role !== "string" || incoming.responsible_role.length > 80 ||
+        typeof incoming.requires_human !== "boolean" || incoming.status !== "DIAGNOSTIC_ONLY" ||
+        incoming.source_write_authorized !== false || incoming.execution_authorized !== false ||
+        !incoming.retry || typeof incoming.retry.allowed !== "boolean" ||
+        !Number.isInteger(incoming.retry.max_attempts) || incoming.retry.max_attempts < 0 ||
+        incoming.retry.max_attempts > 2 ||
+        typeof incoming.retry.condition !== "string" || incoming.retry.condition.length > 300) return null;
+    classification = {
+      schema: incoming.schema, ruleset_version: incoming.ruleset_version,
+      category: incoming.category, confidence: incoming.confidence,
+      reason_code: incoming.reason_code,
+      evidence_code: typeof incoming.evidence_code === "string" ? clean(incoming.evidence_code, 90) : null,
+      recommended_action: clean(incoming.recommended_action, 500),
+      recommended_status: clean(incoming.recommended_status, 48),
+      responsible_role: clean(incoming.responsible_role, 80),
+      retry: { allowed: incoming.retry.allowed, max_attempts: incoming.retry.max_attempts,
+        condition: clean(incoming.retry.condition, 300) },
+      requires_human: incoming.requires_human,
+      status: incoming.status,
+      source_write_authorized: false, execution_authorized: false
+    };
+  }
   const safeList = (value) => Array.isArray(value)
     ? value.slice(0, 10).map((x) => clean(String(x || ""), 160)).filter(Boolean) : [];
   return {
@@ -364,6 +398,7 @@ function normalizeTrustedCoreFailure(body) {
     head_sha: pr.head.sha.toLowerCase(),
     conclusion: run.conclusion,
     category,
+    classification,
     failed_jobs: safeList(body.diagnostics?.failedJobs),
     failed_steps: safeList(body.diagnostics?.failedSteps),
     run_url: "https://github.com/" + repo + "/actions/runs/" + run.id,
@@ -383,46 +418,53 @@ async function receiveGitHubWorkflowRun(req, origin) {
   if (!event) return reply(202, { accepted: false, outcome: "UNTRUSTED_OR_AMBIGUOUS_CORE_EVENT" }, origin);
   const dbUrl = Deno.env.get("SUPABASE_DB_URL");
   if (!dbUrl) return reply(503, { accepted: false, outcome: "PRIVATE_DATABASE_NOT_CONFIGURED" }, origin);
-
   const db = postgres(dbUrl, { max: 1, connect_timeout: 6, idle_timeout: 4, ssl: "require", prepare: false });
   try {
     const inserted = await q(db,
       `insert into business_brain.commander_ci_event_inbox(
         repository, workflow_name, workflow_path, workflow_run_id, run_attempt,
         workflow_run_head_sha, head_branch, pr_number, base_ref, base_sha,
-        head_ref, head_sha, conclusion, category, failed_jobs, failed_steps,
+        head_ref, head_sha, conclusion, category, classification, failed_jobs, failed_steps,
         run_url, source_run_created_at, oidc_workflow_ref
-      ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::text::jsonb,$16::text::jsonb,$17,$18::timestamptz,$19)
+      ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::text::jsonb,$16::text::jsonb,$17::text::jsonb,$18,$19::timestamptz,$20)
       on conflict(repository,workflow_run_id,run_attempt,pr_number,head_sha) do nothing
       returning ci_event_id`,
       [event.repository,event.workflow_name,event.workflow_path,event.workflow_run_id,event.run_attempt,
        event.workflow_run_head_sha,event.head_branch,event.pr_number,event.base_ref,event.base_sha,
-       event.head_ref,event.head_sha,event.conclusion,event.category,jsonbText(event.failed_jobs),
-       jsonbText(event.failed_steps),event.run_url,event.source_run_created_at,claims.workflow_ref]);
-    if (!inserted.length) {
+       event.head_ref,event.head_sha,event.conclusion,event.category,
+       event.classification ? jsonbText(event.classification) : null,
+       jsonbText(event.failed_jobs),jsonbText(event.failed_steps),event.run_url,
+       event.source_run_created_at,claims.workflow_ref]);
+    let inboxId=inserted[0]?.ci_event_id||null,duplicate=false;
+    if (!inboxId) {
+      duplicate=true;
       const existing = await q(db,
-        `select ci_event_id,association_status from business_brain.commander_ci_event_inbox
+        `select ci_event_id from business_brain.commander_ci_event_inbox
          where repository=$1 and workflow_run_id=$2 and run_attempt=$3 and pr_number=$4 and head_sha=$5 limit 1`,
         [event.repository,event.workflow_run_id,event.run_attempt,event.pr_number,event.head_sha]);
-      return reply(202, { accepted: true, outcome: "ALREADY_RECORDED",
-        inbox_id: existing[0]?.ci_event_id || null, association: existing[0]?.association_status || "UNKNOWN",
-        pr_number: event.pr_number, head_sha: event.head_sha }, origin);
+      inboxId=existing[0]?.ci_event_id||null;
     }
+    if(!inboxId)throw Error("CI_EVENT_IDEMPOTENCY_READBACK_MISSING");
 
+    // Re-run task/chat association after an idempotent insert, so a previous
+    // partial write is recoverable. Deterministic event IDs prevent duplicates.
     const matches = await q(db,
       `select task_id, owner_id from business_brain.commander_tasks
        where project_key='holistic-house' and state not in ('completed','superseded')
          and coalesce(payload->'relatedPr','[]'::jsonb) @> to_jsonb($1::int)
        order by updated_at desc limit 2`, [event.pr_number]);
-    let association = "UNMATCHED";
+    let association = "UNMATCHED",associatedTaskId=null,associatedOwnerId=null;
     if (matches.length === 1) {
+      associatedTaskId=matches[0].task_id;associatedOwnerId=matches[0].owner_id;
       const chats = await q(db,
         `select chat_id from business_brain.commander_chats
          where task_id=$1::uuid and owner_id=$2::uuid order by updated_at desc limit 2`,
-        [matches[0].task_id,matches[0].owner_id]);
+        [associatedTaskId,associatedOwnerId]);
       if (chats.length === 1) {
+        const chatEventId=await stableScopeId(associatedOwnerId,
+          "github-ci:"+event.workflow_run_id+":"+event.run_attempt+":"+event.pr_number+":"+event.head_sha);
         const chatEvent = {
-          schema: "HH_COMMANDER_EVENT_V1", id: crypto.randomUUID(),
+          schema: "HH_COMMANDER_EVENT_V1", id: chatEventId,
           kind: "github_report", author: "GitHub Actions · verified CI",
           text: "Core CI failed for PR #" + event.pr_number + " at " + event.head_sha.slice(0,12) +
             ". Category: " + event.category + ". Failed jobs: " + event.failed_jobs.join(", ") +
@@ -436,22 +478,23 @@ async function receiveGitHubWorkflowRun(req, origin) {
           `insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified)
            values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,true)
            on conflict(event_id) do nothing`,
-          [chatEvent.id,chats[0].chat_id,matches[0].owner_id,jsonbText(chatEvent)]);
+          [chatEventId,chats[0].chat_id,associatedOwnerId,jsonbText(chatEvent)]);
         await q(db, `update business_brain.commander_chats set updated_at=now()
-          where chat_id=$1::uuid and owner_id=$2::uuid`, [chats[0].chat_id,matches[0].owner_id]);
+          where chat_id=$1::uuid and owner_id=$2::uuid`, [chats[0].chat_id,associatedOwnerId]);
         association = "MATCHED_CHAT_EVENT_RECORDED";
       } else if (chats.length > 1) association = "AMBIGUOUS_TASK_CHATS";
       else association = "MATCHED_TASK_NO_CHAT";
-      await q(db, `update business_brain.commander_ci_event_inbox
-        set associated_task_id=$1::uuid,associated_owner_id=$2::uuid,association_status=$3
-        where ci_event_id=$4::uuid`,
-        [matches[0].task_id,matches[0].owner_id,association,inserted[0].ci_event_id]);
     } else if (matches.length > 1) association = "AMBIGUOUS_TASKS";
 
-    return reply(202, { accepted: true, outcome: "RECORDED", inbox_id: inserted[0].ci_event_id,
-      association, pr_number: event.pr_number, head_sha: event.head_sha }, origin);
+    await q(db, `update business_brain.commander_ci_event_inbox
+      set associated_task_id=$1::uuid,associated_owner_id=$2::uuid,association_status=$3
+      where ci_event_id=$4::uuid`,
+      [associatedTaskId,associatedOwnerId,association,inboxId]);
+    return reply(202, { accepted: true, outcome: duplicate?"ALREADY_RECORDED":"RECORDED",
+      inbox_id: inboxId, association, pr_number: event.pr_number, head_sha: event.head_sha }, origin);
   } catch (error) {
-    console.error("COMMANDER_GITHUB_CI_INBOX_ERROR", error && error.name || "unknown");
+    console.error("COMMANDER_GITHUB_CI_INBOX_ERROR " + String(error?.name||"unknown") +
+      " code=" + String(error?.code||"unknown"));
     return reply(503, { accepted: false, outcome: "CI_EVENT_STORE_UNAVAILABLE" }, origin);
   } finally {
     await db.end({ timeout: 2 });
@@ -542,6 +585,7 @@ async function handler(req){
       else if(executor==="codex")reasonCode="CODEX_LOCAL_AGENT_NOT_CONNECTED";
       else if(executor==="repair-worker")reasonCode="REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE";
       else if(executor==="chatgpt-work")reasonCode="CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE";
+
       else if(executor==="manual")reasonCode="MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF";
       const firstStatus=canDispatch?"STARTING":"BLOCKED";
       const hashInput=[chat.chat_id,executor,String(contextCapsule.chatRevision),message,modelId,String(writeConfirmed),goal,JSON.stringify(acceptanceCriteria),JSON.stringify(skillIds),parentTaskId||""].join(String.fromCharCode(31));
@@ -616,7 +660,7 @@ async function handler(req){
       if(body.pr!==undefined&&!pr)return reply(400,{error:"INVALID_PR_NUMBER"},origin);
       const rows=await q(db,
         `select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,
-          conclusion,category,failed_jobs,failed_steps,run_url,association_status,created_at
+          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,created_at
          from business_brain.commander_ci_event_inbox
          where ($1::int is null or pr_number=$1)
          order by created_at desc limit $2`,[pr,limit]);
