@@ -7,6 +7,7 @@ const hub=read('components/app/messages-orders-clients.jsx')
 const gate=read('components/app/messenger-guest-gate.jsx')
 const css=read('components/app/messenger-guest-gate.module.css')
 const signin=read('components/app/messenger-sign-in.jsx')
+const messagesHub=read('components/app/messages-hub.jsx')
 test('illustrated guest entry is shared by Orders, Conversations and News, not logged-in screens',()=>{
  assert.match(hub,/import MessengerGuestGate from '.\/messenger-guest-gate'/)
  assert.match(hub,/const guestAccess=aiIdentity.status==='guest'/)
@@ -60,4 +61,22 @@ test('website Telegram login is separate server-gated Supabase OAuth, not bot-ch
   'Acceder al gabinete web con Telegram',
  ])assert.ok(signin.includes(translation),translation)
  assert.doesNotMatch(signin,/window\.localStorage|sessionStorage|loginWithWhatsApp/)
+})
+
+
+test('embedded Messages 401 uses the illustrated messenger-first guest entry without misrouting practitioner requests',()=>{
+ const start=messagesHub.indexOf("if(embedded)return <div className={styles.hub} data-member-direct-fallback>")
+ const end=messagesHub.indexOf("return <div className={styles.hub} data-messages-hub",start)
+ assert.ok(start>=0&&end>start,'embedded fallback is present')
+ const fallback=messagesHub.slice(start,end)
+ assert.ok(messagesHub.includes("import MessengerGuestGate from './messenger-guest-gate'"))
+ assert.ok(fallback.includes('<MessengerGuestGate locale={locale} section="clients"/>'))
+ assert.ok(fallback.includes('directDestination'))
+ assert.ok(fallback.includes('<MessengerSignIn locale={locale} recipientSlug={directDestination} label={t.masterSignIn}/>'))
+ assert.ok(fallback.includes('{t.failure}'),'temporary API failures keep a separate neutral error state')
+ assert.ok(fallback.includes('<DirectMessageInbox locale={locale} embedded compact ownerCrmAvailable={false}/>'))
+ assert.ok(!fallback.includes('t.sessionRequired'),'generic 401 no longer renders the pale text-only sign-in banner')
+ assert.ok(gate.includes('data-hh-guest-telegram'))
+ assert.ok(gate.includes('data-hh-guest-whatsapp'))
+ assert.ok(gate.includes('<MessengerSignIn locale={locale} continueTo="direct-messages" googleOnly/>'))
 })

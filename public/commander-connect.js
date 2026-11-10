@@ -47,7 +47,12 @@
   async function json(response) {
     let data
     try { data = await response.json() } catch { throw Error('Сервер вернул некорректный ответ.') }
-    if (!response.ok) throw Error(data.error || 'Не удалось подтвердить сессию владельца.')
+    if (!response.ok) {
+      const error = Error(data.error || 'Не удалось подтвердить сессию владельца.')
+      error.status = response.status
+      error.code = typeof data.error === 'string' ? data.error : ''
+      throw error
+    }
     return data
   }
 
@@ -57,6 +62,16 @@
     button.disabled = false
     button.textContent = label
     buttonAction = action
+  }
+
+  function recoverHandoff(error) {
+    // A true expired/invalid main-app session needs SSO, not an endless retry loop.
+    if (error?.status === 401 &&
+        ['OWNER_SESSION_INVALID', 'SIGN_IN_REQUIRED', 'OWNER_SIGN_IN_REQUIRED'].includes(error.code)) {
+      showAction('Сессия Holistic House истекла. Продолжите через Google для восстановления входа.', 'google')
+      return
+    }
+    showAction(String(error.message || error) + ' Повторите проверку владельца.', 'handoff', 'Повторить проверку')
   }
 
   async function handoff() {
@@ -70,14 +85,18 @@
     }, 10000, 'Проверка владельца')
     const data = await json(response)
     if (data.owner !== true || data.privateStoreConfigured !== true ||
-        typeof data.accessToken !== 'string' || data.accessToken.length < 120) {
+        typeof data.accessToken !== 'string' || data.accessToken.length < 120 ||
+        typeof data.refreshToken !== 'string' || data.refreshToken.length < 12 || data.refreshToken.length > 4096) {
       throw Error('У этого аккаунта нет подтверждённых прав владельца Agent Commander.')
     }
     const target = new URL(MONITOR + '/commander-auth.html')
     target.searchParams.set('next', nextPath())
     // The short-lived JWT is in the URL fragment only: it is not sent to servers
     // in HTTP requests or Referer headers. The monitor page removes it immediately.
-    target.hash = 'token=' + encodeURIComponent(data.accessToken)
+    target.hash = new URLSearchParams({
+      token: data.accessToken,
+      refresh_token: data.refreshToken,
+    }).toString()
     try { sessionStorage.removeItem(KEY) } catch {}
     location.replace(target.href)
   }
@@ -112,7 +131,7 @@
     try { sessionStorage.setItem(KEY, next) } catch {}
     if (new URLSearchParams(location.search).get('finish') === '1') {
       try { await handoff() } catch (error) {
-        showAction(String(error.message || error) + ' Повторите проверку владельца.', 'handoff', 'Повторить проверку')
+        recoverHandoff(error)
       }
       return
     }
@@ -123,7 +142,7 @@
       const data = await response.json().catch(() => ({}))
       if (response.ok && data.authenticated === true) {
         try { await handoff() } catch (error) {
-          showAction(String(error.message || error) + ' Повторите проверку владельца.', 'handoff', 'Повторить проверку')
+          recoverHandoff(error)
         }
         return
       }
@@ -140,7 +159,7 @@
     if (buttonAction === 'handoff') {
       busy = true
       button.disabled = true
-      handoff().catch(error => showAction(String(error.message || error), 'handoff', 'Повторить проверку'))
+      handoff().catch(error => recoverHandoff(error))
         .finally(() => { busy = false })
       return
     }
