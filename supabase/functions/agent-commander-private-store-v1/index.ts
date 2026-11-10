@@ -1,4 +1,4 @@
-// Synced from production Supabase Edge Function v19. Keep this repository copy deployable and authoritative.
+// Canonical first-party private store. OpenRouter jobs are queued in the existing owner-scoped ledger.
 // Agent Commander private task/chat store. A valid Supabase user JWT and
 // business_brain.owner_access row are required for every request.
 import postgres from "npm:postgres@3.4.5";
@@ -15,58 +15,6 @@ const uuid = v => typeof v==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]
 const clean = (v,n) => typeof v==="string" ? v.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,n) : "";
 const number = v => Number.isSafeInteger(Number(v)) && Number(v)>0 && Number(v)<100000 ? Number(v) : null;
 
-const DIRECTOR_RUN_SCHEMA="HH_AGENT_DIRECTOR_RUN_V1";
-const DIRECTOR_STATES=new Set(["COMPLETED","BLOCKED"]);
-const DIRECTOR_ORIGIN="https://holistichouse.vercel.app";
-async function ownedDirectorCall(req,data){
- const authorization=req.headers.get("authorization")||"";
- if(!/^Bearer [A-Za-z0-9._-]{120,8000}$/.test(authorization))throw Error("OWNER_TOKEN_NOT_AVAILABLE");
- const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),27000);
- try{
-  const response=await fetch(DIRECTOR_ORIGIN+"/api/agent-director/commander-run",{
-   method:"POST",redirect:"error",cache:"no-store",signal:ctl.signal,
-   headers:{authorization,"content-type":"application/json","accept":"application/json"},body:JSON.stringify(data)});
-  const raw=await response.text();if(raw.length>8000)throw Error("AGENT_DIRECTOR_RECEIPT_TOO_LARGE");
-  let value;try{value=JSON.parse(raw)}catch{throw Error("AGENT_DIRECTOR_RECEIPT_INVALID_JSON")}
-  if(!response.ok)throw Error("AGENT_DIRECTOR_HTTP_"+response.status);
-  return value;
- }finally{clearTimeout(timer)}
-}
-function trustedOwnedDirectorReceipt(value,run){
- if(!value||value.schema!==DIRECTOR_RUN_SCHEMA||value.runId!==run.run_id||value.chatId!==run.chat_id||
-  value.ownerId!==run.owner_id||!DIRECTOR_STATES.has(value.status)||
-  typeof value.agentStarted!=="boolean"||typeof value.executionVerified!=="boolean"||
-  (value.status==="COMPLETED"&&(!value.agentStarted||!value.executionVerified||
-    typeof value.result!=="string"||!value.result.trim()))||
-  (value.status==="BLOCKED"&&(value.executionVerified||value.agentStarted))||value.sourceWrite!==null||
-  value.proofLevel!==(value.status==="COMPLETED"?"AGENT_DIRECTOR_READ_ONLY_RESPONSE":"NOT_STARTED"))
-  throw Error("AGENT_DIRECTOR_RECEIPT_NOT_VERIFIED");
- return {status:value.status,reasonCode:clean(value.reasonCode,110)||null,
-  agentStarted:value.agentStarted,executionVerified:value.executionVerified,model:clean(value.model,120)||null,
-  result:value.status==="COMPLETED"?clean(value.result,1800):"",sourceWrite:null,proofLevel:value.proofLevel};
-}
-async function saveOwnedDirectorReceipt(db,ownerId,chatId,runId,report){
- const selected=await q(db,"select request_payload from business_brain.commander_execution_runs where run_id=$1::uuid and owner_id=$2::uuid and chat_id=$3::uuid limit 1",[runId,ownerId,chatId]);
- if(!selected.length||selected[0].request_payload?.confirmGitHubWrite===true)throw Error("AGENT_DIRECTOR_RUN_PROVENANCE_MISMATCH");
- const done=report.status==="COMPLETED";
- const receipt={schema:DIRECTOR_RUN_SCHEMA,dispatchAttempted:true,agentStarted:report.agentStarted,
-  executionVerified:report.executionVerified,model:report.model,status:report.status,sourceWrite:null,
-  result:report.result,proofLevel:report.proofLevel,checkedAt:new Date().toISOString()};
- const rows=await q(db,"update business_brain.commander_execution_runs set status=$1,reason_code=$2,receipt=$3::text::jsonb,started_at=case when $4::boolean then coalesce(started_at,now()) else started_at end,completed_at=case when $5::boolean then coalesce(completed_at,now()) else completed_at end,updated_at=now() where run_id=$6::uuid and owner_id=$7::uuid and chat_id=$8::uuid and status not in ('COMPLETED','FAILED','CANCELLED') returning run_id",
-  [report.status,report.reasonCode||"AGENT_DIRECTOR_"+report.status,jsonbText(receipt),report.agentStarted,done,runId,ownerId,chatId]);
- if(!rows.length)return report;
- const eventId=await stableScopeId(ownerId,"agent-director:"+runId+":final");
- const text=done?"Ответ Agent Director (собственная модель, read-only): "+report.result+"\nИсходный код не менялся. GitHub PR, CI и LIVE не подтверждены.":
-  "Запуск Agent Director заблокирован: "+(report.reasonCode||"OWNED_MODEL_RUNTIME_NOT_CONFIGURED")+".";
- const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"agent_final",author:"Agent Director",
-  text:clean(text,1800),status:report.status,model:report.model,sourceWrite:null,sourceVerified:false,
-  proofLevel:report.proofLevel,createdAt:new Date().toISOString()};
- await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false) on conflict(event_id) do nothing",
-  [eventId,chatId,ownerId,jsonbText(event)]);
- await q(db,"update business_brain.commander_chats set execution_state=$1,updated_at=now() where owner_id=$2::uuid and chat_id=$3::uuid",
-  [done?"COMPLETED_UNVERIFIED":"BLOCKED",ownerId,chatId]);
- return report;
-}
 const reply = (status,body,origin) => new Response(JSON.stringify(body),{
   status,headers:{
     "content-type":"application/json; charset=utf-8",
