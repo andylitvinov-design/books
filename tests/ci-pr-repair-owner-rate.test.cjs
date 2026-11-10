@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode}=
+const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode,requireScopedJobWriterProbe}=
  require('../scripts/ci-pr-repair-owner-rate.cjs');
 const hdr=value=>({get:name=>{
  assert.equal(name,'x-ratelimit-remaining');return value;
@@ -38,18 +38,36 @@ test('job-scoped GitHub token is preferred only with verified repository write a
  }
  assert.throws(()=>chooseWriterMode({job:good(5000)},18),/INVALID_BUDGET/);
 });
+test('scoped Actions job-token is selected on verified repo+budget; role push flag is NOT a job permission',()=>{
+ const p=requireScopedJobWriterProbe({ok:true,canPush:false,remaining:18},10);
+ assert.deepEqual(p,{mode:'job',repositoryVerified:true,remaining:18,required:10,
+   gitDataWriteVerified:false,proofLevel:'REPOSITORY_READ_AND_RATE_NOT_WRITE'});
+ assert.equal(p.gitDataWriteVerified,false,'read-only probe must never claim a commit');
+ for(const invalid of [null,{ok:false,canPush:true,remaining:5000},
+   {ok:true,canPush:false,remaining:9},{ok:true,remaining:null},
+   {ok:true,remaining:-1},{ok:true,remaining:'5000'}]){
+   assert.throws(()=>requireScopedJobWriterProbe(invalid,10),
+     /JOB_TOKEN_REPOSITORY_READ_UNVERIFIED|JOB_TOKEN_RATE_RESERVE_UNVERIFIED/);
+ }
+ assert.throws(()=>requireScopedJobWriterProbe({ok:true,remaining:5000},18),
+   /INVALID_BUDGET/);
+});
 test('existing issuer remains credential isolated and branch/head guarded',()=>{
  const flow=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(flow,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
  assert.match(flow,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
  const publish=flow.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
  assert.match(publish,/permissions:\n      contents: write/);
- assert.match(publish,/rateGuard\.chooseWriterMode/);
- assert.match(publish,/mode==='job'\?jobToken:ownerToken/);
+ assert.match(publish,/rateGuard\.requireScopedJobWriterProbe/);
+ assert.match(publish,/token=jobToken/);
+ assert.doesNotMatch(publish,/ownerToken|mode==='owner'|chooseWriterMode/);
  assert.match(flow,/rateGuard\.requiredOwnerBudget\(files\.length\)/);
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
- assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH/);
- assert.match(flow,/repository\.permissions\?\.push!==true/);
+ assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL /);
+ assert.match(flow,/REPOSITORY_READ_AND_RATE_NOT_WRITE/);
+ assert.match(flow,/HH_REPAIR_REMOTE_REF VERIFIED /);
+ assert.doesNotMatch(publish,/repository\.permissions\?\.push!==true/);
+ assert.doesNotMatch(publish,/HH_AUTOMERGE_TOKEN/);
  assert.match(flow,/force:false/);
  assert.match(flow,/Source branch moved before repair commit/);
  assert.match(flow,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
