@@ -65,6 +65,17 @@ jobs:
             ]);
             if(receipt.accepted!==true||!persistedAssociations.has(receipt.association))
               throw Error('COMMANDER_CI_TASK_INGEST_NOT_VERIFIED');
+            // Durable read-only route is persisted BEFORE the serialized
+            // writer queue; pending CI handoffs can coalesce in that group.
+            // No source/base/infra action runs in this independent intake.
+            const {persistReadOnlyRoute}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-readonly-route-intake.cjs');
+            const routing=await persistReadOnlyRoute({
+              receipt,context,github,core,oidcToken
+            });
+            core.info('HH_CORE_INDEPENDENT_READONLY_ROUTE '+JSON.stringify(routing));
+            await core.summary.addHeading('Independent classified CI route')
+              .addCodeBlock(JSON.stringify(routing,null,2)).write();
   direct-core-failure:
     needs: ci_event_intake
     if: >-
