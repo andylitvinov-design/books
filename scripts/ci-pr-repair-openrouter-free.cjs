@@ -106,7 +106,7 @@ function extractAssistantText(content){
         ?'FREE_AI_OPENROUTER_MODEL_REFUSED'
         :'FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
     }
-    text=parts.join('\\n');
+    text=parts.join('\n');
   }else{
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
   }
