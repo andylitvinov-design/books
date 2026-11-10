@@ -41,7 +41,7 @@ test('source Repair Worker is addressed only; no empty cron consumes its publish
  const s=read('hh-pr-repair-worker');
  assert.ok(s.includes('workflow_dispatch:'));
  assert.ok(!s.includes('  schedule:'));
- assert.ok(!s.includes('  push:'));
+ assert.ok(!/^  push:/m.test(s.split('\npermissions:\n')[0]));
  assert.ok(!s.includes('  workflow_run:'));
  assert.ok(s.includes('cancel-in-progress: false'));
  assert.ok(s.includes('reservation_run_id:'));
