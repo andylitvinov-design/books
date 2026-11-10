@@ -358,7 +358,7 @@
       ['После failed Core job','after_core_failure','шт'],
       ['После failed Specialist job','after_specialist_failure','шт'],
       ['После failed Merge Gate','after_merge_gate_failure','шт'],
-      ['После successful Core workflow','after_success','шт'],
+      ['После successful workflow','after_success','шт'],
       ['Сумма пауз','gap_total_minutes','мин'],['P50 паузы','gap_p50_minutes','мин'],
       ['P95 паузы','gap_p95_minutes','мин']
     ];
