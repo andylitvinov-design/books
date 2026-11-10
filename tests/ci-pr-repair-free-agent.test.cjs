@@ -56,7 +56,7 @@ test('single exact model-source line can be rebuilt when model hunk context is u
  const before='const safe = 1;\n  const label = hhInvalidValue;\nconst after = 2;\n';
  const prefix='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n';
  const bad=prefix+'@@ -900,8 +900,8 @@\n some omitted unrelated source\n-  const label = hhInvalidValue;\n+  const label = "OK";\n';
- const expected=prefix+'@@ -2,1 +2,1 @@\n-  const label = hhInvalidValue;\n+  const label = "OK";\n';
+ const expected=prefix+'@@ -1,3 +1,3 @@\n const safe = 1;\n-  const label = hhInvalidValue;\n+  const label = "OK";\n const after = 2;\n';
  const result=reconstructUniqueSingleLinePatch(bad,scope,()=>before);
  assert.equal(result,expected);
  assert.equal(validatePatch(result,scope),result);
@@ -66,6 +66,8 @@ test('single exact model-source line can be rebuilt when model hunk context is u
  assert.equal(reconstructUniqueSingleLinePatch(bad,{files:['components/other.tsx']},()=>before),null);
  assert.equal(reconstructUniqueSingleLinePatch(bad,{files:['app/api/auth.ts']},()=>before),null);
  assert.equal(reconstructUniqueSingleLinePatch(bad,scope,()=>before.slice(0,-1)),null);
+ assert.equal(reconstructUniqueSingleLinePatch(bad,scope,()=> '  const label = hhInvalidValue;\\n'),null,
+  'strict Git apply requires at least one real adjacent context line');
  assert.equal(reconstructUniqueSingleLinePatch(bad.replace('@@ -900,8 +900,8 @@','@@ broken'),scope,()=>before),null);
  assert.equal(reconstructUniqueSingleLinePatch(bad.replace('+  const label = "OK";','+'),scope,()=>before),null);
  assert.equal(reconstructUniqueSingleLinePatch(bad.replace('  const label = hhInvalidValue;', '  const label = hhInvalidValue;\n-const after = 2;'),scope,()=>before),null);
