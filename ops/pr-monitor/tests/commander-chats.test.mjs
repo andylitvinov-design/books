@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-recent-voice-composer-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -119,7 +119,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-recent-voice-composer-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -193,13 +193,13 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.match(js,/if\(!el\('new-title'\)\.value\.trim\(\)\)el\('new-title'\)\.value=/);
  assert.ok(js.includes("await send({preventDefault(){}})"));
  assert.ok(js.includes("el('new-context').close()"));
- assert.ok(js.includes("el('history').open=false"));
+ assert.ok(js.includes("el('history-all').addEventListener('toggle',renderList)"));
  assert.ok(js.includes("await assignSelectedExecutor(c,mode)"));
  assert.ok(js.includes("el('new-mode').value=aiReady?'openrouter':'local'"));
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-compact-composer-v1'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-recent-voice-composer-v1'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -209,7 +209,7 @@ test('compact mobile chat never silently swallows validation or duplicates a tim
  assert.ok(js.includes('pendingCreateId||(pendingCreateId=id())'));
  assert.ok(js.includes("listing.chats?.find(x=>x.id===data.id"));
  assert.ok(js.includes('feedback.scrollIntoView'));
- assert.ok(js.includes("button.textContent='Создаю…'"));
+ assert.ok(js.includes("button.textContent='⋯'"));
  assert.ok(js.includes("if(busy)return fail("));
  assert.ok(js.includes("el('create-form').addEventListener('input'"));
  assert.ok(css.includes('.cc-create-feedback:not([hidden])'));
@@ -333,4 +333,37 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  assert.equal(elements['cc-thread'].hidden,false);
  assert.equal(elements['cc-messages'].children.length,2);
  assert.ok(network.some(x=>x.action==='read'&&x.method==='GET'));
+});
+
+test('last chats stay at the top and one fixed bottom composer supports typed and spoken questions',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
+ const history=html.indexOf('id="cc-history"');
+ const thread=html.indexOf('id="cc-thread"');
+ const composer=html.indexOf('id="cc-composer-space"');
+ assert.ok(history>0&&thread>history&&composer>thread,'Recent list before thread before bottom composer');
+ assert.match(html,/id="cc-new-question"[^>]*minlength="2"[^>]*maxlength="1200"/);
+ assert.ok(html.includes('id="cc-chat-form"'));
+ assert.ok(html.includes('id="cc-voice-new"'));
+ assert.ok(html.includes('id="cc-voice-thread"'));
+ assert.ok(html.includes('id="cc-voice-status"'));
+ assert.ok(html.includes('id="cc-history-all"'));
+ assert.ok(!html.includes('<h2>Новый чат</h2>'),'Do not draw giant new chat form above history');
+ assert.ok(js.includes("el('history-all').open"));
+ assert.ok(js.includes('filtered.slice(0,5)'));
+ assert.ok(js.includes("show('chat-form',true)"));
+ assert.ok(js.includes("show('chat-form',false)"));
+ assert.ok(js.includes('win.SpeechRecognition||win.webkitSpeechRecognition'));
+ assert.ok(js.includes("engine.lang='ru-RU'"));
+ assert.ok(js.includes("engine.interimResults=true"));
+ assert.ok(js.includes("engine.start()"));
+ assert.ok(js.includes("engine.abort()"));
+ assert.ok(js.includes('const session={engine,button,target,original:target.value'));
+ assert.ok(js.includes("el('voice-new').addEventListener('click'"));
+ assert.ok(js.includes("el('voice-thread').addEventListener('click'"));
+ assert.ok(js.includes('--cc-keyboard-offset'));
+ assert.ok(css.includes('HH_COMMANDER_RECENT_VOICE_COMPOSER_V1'));
+ assert.match(css,/grid-template-columns:repeat\(8,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.cc-composer-space\s*\{\s*position:fixed/);
+ assert.match(css,/\.cc-composer-space \.cc-send-primary/);
+ assert.match(css,/\.cc-composer-space \.cc-voice-toggle/);
 });
