@@ -15,90 +15,58 @@ const uuid = v => typeof v==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]
 const clean = (v,n) => typeof v==="string" ? v.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,n) : "";
 const number = v => Number.isSafeInteger(Number(v)) && Number(v)>0 && Number(v)<100000 ? Number(v) : null;
 
-const HERMES_RUN_SCHEMA="HH_HERMES_COMMANDER_RUN_V1";
-const HERMES_STATES=new Set(["STARTING","RUNNING","COMPLETED","FAILED","CANCELLED","WAITING_FOR_APPROVAL","BLOCKED"]);
-function hermesConfiguration(){
- const origin=Deno.env.get("HERMES_ORIGIN_URL")||"",secret=Deno.env.get("HERMES_SHARED_SECRET")||"";
- if(secret.length<32)return null;
- try{const url=new URL(origin);
-   if(url.protocol!=="https:"||url.username||url.password||url.pathname!=="/"||url.search||url.hash)return null;
-   return {origin:url.origin,secret};
- }catch{return null;}
-}
-async function hermesCall(config,path,method="GET",data){
- if(!config||!/^\/commander\/runs(?:\/[0-9a-f-]{36})?$/.test(path))throw Error("HERMES_INVALID_DESTINATION");
- const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),7000);
+const DIRECTOR_RUN_SCHEMA="HH_AGENT_DIRECTOR_RUN_V1";
+const DIRECTOR_STATES=new Set(["COMPLETED","BLOCKED"]);
+const DIRECTOR_ORIGIN="https://holistichouse.vercel.app";
+async function ownedDirectorCall(req,data){
+ const authorization=req.headers.get("authorization")||"";
+ if(!/^Bearer [A-Za-z0-9._-]{120,8000}$/.test(authorization))throw Error("OWNER_TOKEN_NOT_AVAILABLE");
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),27000);
  try{
-  const response=await fetch(config.origin+path,{method,redirect:"error",cache:"no-store",signal:ctl.signal,
-    headers:{"x-hermes-secret":config.secret,"accept":"application/json",
-     ...(method==="POST"?{"content-type":"application/json"}:{})},
-    ...(method==="POST"?{body:JSON.stringify(data)}:{})});
-  if(!response.ok)throw Error(response.status===404?"HERMES_RUN_NOT_FOUND":"HERMES_HTTP_ERROR");
-  const raw=await response.text();if(raw.length>12000)throw Error("HERMES_RESPONSE_TOO_LARGE");
-  try{return JSON.parse(raw);}catch{throw Error("HERMES_RESPONSE_INVALID");}
- }finally{clearTimeout(timer);}
+  const response=await fetch(DIRECTOR_ORIGIN+"/api/agent-director/commander-run",{
+   method:"POST",redirect:"error",cache:"no-store",signal:ctl.signal,
+   headers:{authorization,"content-type":"application/json","accept":"application/json"},body:JSON.stringify(data)});
+  const raw=await response.text();if(raw.length>8000)throw Error("AGENT_DIRECTOR_RECEIPT_TOO_LARGE");
+  let value;try{value=JSON.parse(raw)}catch{throw Error("AGENT_DIRECTOR_RECEIPT_INVALID_JSON")}
+  if(!response.ok)throw Error("AGENT_DIRECTOR_HTTP_"+response.status);
+  return value;
+ }finally{clearTimeout(timer)}
 }
-function trustedHermesReceipt(value,runId,jobId,modelId){
- if(!value||value.schema!==HERMES_RUN_SCHEMA||value.runId!==runId||
-    typeof value.jobId!=="string"||!/^[A-Za-z0-9_-]{5,120}$/.test(value.jobId)||
-    (jobId&&value.jobId!==jobId)||value.model!==modelId||
-    !HERMES_STATES.has(value.status)||typeof value.agentStarted!=="boolean"||
-    typeof value.executionVerified!=="boolean"||
-    (value.status==="RUNNING"&&!value.agentStarted)||
-    (value.status==="COMPLETED"&&!value.executionVerified))throw Error("HERMES_RECEIPT_NOT_VERIFIED");
- let write=null;
- if(value.sourceWrite!==null&&value.sourceWrite!==undefined){
-  const p=value.sourceWrite;
-  if(value.status!=="COMPLETED"||!value.executionVerified||p.verified!==true||
-     !/^[a-f0-9]{40}$/.test(p.commitSha||"")||!Number.isSafeInteger(p.prNumber)||p.prNumber<1||
-     p.prUrl!=="https://github.com/andylitvinov-design/books/pull/"+p.prNumber)
-    throw Error("HERMES_GITHUB_PROOF_INVALID");
-  write={verified:true,commitSha:p.commitSha,prNumber:p.prNumber,prUrl:p.prUrl};
- }
- return {jobId:value.jobId,status:value.status,reasonCode:clean(value.reasonCode,110)||null,
-   agentStarted:value.agentStarted,executionVerified:value.executionVerified,
-   model:value.model,sourceWrite:write,result:value.status==="COMPLETED"?clean(value.result,1500):""};
+function trustedOwnedDirectorReceipt(value,run){
+ if(!value||value.schema!==DIRECTOR_RUN_SCHEMA||value.runId!==run.run_id||value.chatId!==run.chat_id||
+  value.ownerId!==run.owner_id||!DIRECTOR_STATES.has(value.status)||
+  typeof value.agentStarted!=="boolean"||typeof value.executionVerified!=="boolean"||
+  (value.status==="COMPLETED"&&(!value.agentStarted||!value.executionVerified||
+    typeof value.result!=="string"||!value.result.trim()))||
+  (value.status==="BLOCKED"&&(value.executionVerified||value.agentStarted))||value.sourceWrite!==null||
+  value.proofLevel!==(value.status==="COMPLETED"?"AGENT_DIRECTOR_READ_ONLY_RESPONSE":"NOT_STARTED"))
+  throw Error("AGENT_DIRECTOR_RECEIPT_NOT_VERIFIED");
+ return {status:value.status,reasonCode:clean(value.reasonCode,110)||null,
+  agentStarted:value.agentStarted,executionVerified:value.executionVerified,model:clean(value.model,120)||null,
+  result:value.status==="COMPLETED"?clean(value.result,1800):"",sourceWrite:null,proofLevel:value.proofLevel};
 }
-async function saveHermesReceipt(db,ownerId,chatId,runId,report){
- const selected=await q(db,"select status,request_payload,hermes_job_id from business_brain.commander_execution_runs where run_id=$1::uuid and owner_id=$2::uuid and chat_id=$3::uuid limit 1",[runId,ownerId,chatId]);
- if(!selected.length||selected[0].request_payload?.modelId!==report.model||
-    (selected[0].hermes_job_id&&selected[0].hermes_job_id!==report.jobId))throw Error("HERMES_RUN_PROVENANCE_MISMATCH");
- const done=["COMPLETED","FAILED","CANCELLED"].includes(report.status);
- const receipt={schema:HERMES_RUN_SCHEMA,dispatchAttempted:true,agentStarted:report.agentStarted,
-  executionVerified:report.executionVerified,model:report.model,status:report.status,
-  sourceWrite:report.sourceWrite,result:report.result,checkedAt:new Date().toISOString()};
- const rows=await q(db,"update business_brain.commander_execution_runs set status=$1,reason_code=$2,hermes_job_id=$3,executor_session_id=$3,receipt=$4::text::jsonb,started_at=case when $5::boolean then coalesce(started_at,now()) else started_at end,completed_at=case when $6::boolean then coalesce(completed_at,now()) else completed_at end,updated_at=now() where run_id=$7::uuid and owner_id=$8::uuid and chat_id=$9::uuid and status not in ('COMPLETED','FAILED','CANCELLED') returning run_id",
-  [report.status,report.reasonCode||"HERMES_"+report.status,report.jobId,jsonbText(receipt),report.agentStarted,done,runId,ownerId,chatId]);
+async function saveOwnedDirectorReceipt(db,ownerId,chatId,runId,report){
+ const selected=await q(db,"select request_payload from business_brain.commander_execution_runs where run_id=$1::uuid and owner_id=$2::uuid and chat_id=$3::uuid limit 1",[runId,ownerId,chatId]);
+ if(!selected.length||selected[0].request_payload?.confirmGitHubWrite===true)throw Error("AGENT_DIRECTOR_RUN_PROVENANCE_MISMATCH");
+ const done=report.status==="COMPLETED";
+ const receipt={schema:DIRECTOR_RUN_SCHEMA,dispatchAttempted:true,agentStarted:report.agentStarted,
+  executionVerified:report.executionVerified,model:report.model,status:report.status,sourceWrite:null,
+  result:report.result,proofLevel:report.proofLevel,checkedAt:new Date().toISOString()};
+ const rows=await q(db,"update business_brain.commander_execution_runs set status=$1,reason_code=$2,receipt=$3::text::jsonb,started_at=case when $4::boolean then coalesce(started_at,now()) else started_at end,completed_at=case when $5::boolean then coalesce(completed_at,now()) else completed_at end,updated_at=now() where run_id=$6::uuid and owner_id=$7::uuid and chat_id=$8::uuid and status not in ('COMPLETED','FAILED','CANCELLED') returning run_id",
+  [report.status,report.reasonCode||"AGENT_DIRECTOR_"+report.status,jsonbText(receipt),report.agentStarted,done,runId,ownerId,chatId]);
  if(!rows.length)return report;
- if(done){
-  const eventId=await stableScopeId(ownerId,"hermes:"+runId+":final");
-  const text=report.status==="COMPLETED"?"Ответ исполнителя: "+(report.result||"Нет текстового результата.")+
-    (report.sourceWrite?"\nDraft PR: "+report.sourceWrite.prUrl+"\nCommit: "+report.sourceWrite.commitSha:"")+
-    "\nЭто НЕ означает CI, merge или LIVE.":"Исполнение остановлено: "+report.status+" · "+(report.reasonCode||"не установлена");
-  const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,
-   kind:report.status==="COMPLETED"?"agent_final":"execution_blocked",
-   author:"Hermes · OpenRouter Free",text:clean(text,1800),status:report.status,model:report.model,
-   hermesJobId:report.jobId,sourceWrite:report.sourceWrite,sourceVerified:report.sourceWrite!==null,
-   proofLevel:report.sourceWrite?"DRAFT_PR_COMMIT_VERIFIED_NOT_LIVE":
-    (report.status==="COMPLETED"?"EXECUTOR_VERIFIED_NOT_SOURCE_PROOF":"EXECUTION_UNVERIFIED"),
-   createdAt:new Date().toISOString()};
-  // Database CHECK admits only 'note' for custom event payload kinds.
-  await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,$5::boolean) on conflict(event_id) do nothing",
-   [eventId,chatId,ownerId,jsonbText(event),report.sourceWrite!==null]);
- }
+ const eventId=await stableScopeId(ownerId,"agent-director:"+runId+":final");
+ const text=done?"Ответ Agent Director (собственная модель, read-only): "+report.result+"\nИсходный код не менялся. GitHub PR, CI и LIVE не подтверждены.":
+  "Запуск Agent Director заблокирован: "+(report.reasonCode||"OWNED_MODEL_RUNTIME_NOT_CONFIGURED")+".";
+ const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"agent_final",author:"Agent Director",
+  text:clean(text,1800),status:report.status,model:report.model,sourceWrite:null,sourceVerified:false,
+  proofLevel:report.proofLevel,createdAt:new Date().toISOString()};
+ await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false) on conflict(event_id) do nothing",
+  [eventId,chatId,ownerId,jsonbText(event)]);
  await q(db,"update business_brain.commander_chats set execution_state=$1,updated_at=now() where owner_id=$2::uuid and chat_id=$3::uuid",
-  [report.status,ownerId,chatId]);
+  [done?"COMPLETED_UNVERIFIED":"BLOCKED",ownerId,chatId]);
  return report;
 }
-async function refreshHermesRun(db,ownerId,chatId,runId){
- const rows=await q(db,"select status,hermes_job_id,request_payload,receipt from business_brain.commander_execution_runs where run_id=$1::uuid and owner_id=$2::uuid and chat_id=$3::uuid limit 1",[runId,ownerId,chatId]);
- if(!rows.length||["COMPLETED","FAILED","CANCELLED"].includes(rows[0].status)||
-    rows[0].receipt?.dispatchAttempted!==true)return null;
- const config=hermesConfiguration();if(!config)return null;
- const report=trustedHermesReceipt(await hermesCall(config,"/commander/runs/"+runId),runId,rows[0].hermes_job_id,rows[0].request_payload?.modelId);
- return await saveHermesReceipt(db,ownerId,chatId,runId,report);
-}
-
 const reply = (status,body,origin) => new Response(JSON.stringify(body),{
   status,headers:{
     "content-type":"application/json; charset=utf-8",
