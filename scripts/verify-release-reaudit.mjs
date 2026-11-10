@@ -44,10 +44,16 @@ async function assertAnonymousPrivateNavigation(page) {
   assert.equal(response.status(), 200);
   await expect(page).toHaveURL(origin + '/en/app/portrait');
   await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private');
-  await expect(page.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
+  // /app/portrait is a public test-first Profile entry, even though the
+  // route keeps the private CSP boundary. It must not mount the old account
+  // overview or request a personal bootstrap for an anonymous visitor.
+  const guest = page.locator('[data-profile-tests-first]');
+  await expect(guest).toBeVisible();
+  await expect(guest.locator('[data-guest-test-choice]')).toHaveCount(3);
+  await expect(guest.locator('[data-profile-create-link]')).toHaveAttribute('href', '/en/personality-profiles');
+  await expect(guest.locator('[data-profile-results-link]')).toHaveAttribute('href', '/en/app/portrait?space=reports');
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
-  await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
-  await expect(page.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview] a[href="/en/client"]')).toHaveAttribute('href', '/en/client');
+  await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
 }
 
 async function verifyCspBfcache() {
@@ -588,13 +594,16 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document');
-          await expect(cspPage.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
-          await expect(cspPage.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
+          // Anonymous Profile now exposes the approved public test-first entry.
+          // It stays under the private CSP class but must not request account data.
+          const guestProfile = cspPage.locator('[data-profile-tests-first]');
+          await expect(guestProfile).toBeVisible();
+          await expect(guestProfile.locator('[data-guest-test-choice]')).toHaveCount(3);
+          await expect(guestProfile.locator('[data-profile-create-link]')).toHaveAttribute('href', '/en/personality-profiles');
+          await expect(guestProfile.locator('[data-profile-results-link]')).toHaveAttribute('href', '/en/app/portrait?space=reports');
+          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="tests"]')).toHaveAttribute('aria-current', 'page');
+          await expect(cspPage.locator('[data-profile-domains], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
-          // Current My Space has six PRIVATE tabs, not the retired Create link.
-          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
-          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="tests"]')).toHaveAttribute('href', '/en/app/tests');
-          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="create"]')).toHaveCount(0);
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-builder'; });
           // The builder is now a separate public route. Exercise the real
           // private-to-public CSP boundary with a fresh document navigation.
