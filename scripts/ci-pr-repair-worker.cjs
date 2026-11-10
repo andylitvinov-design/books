@@ -624,12 +624,32 @@ function sourceDeliveryStatus({state,sourcePublished,codeAvailable}) {
     next_action:'DIAGNOSE_EXACT_HEAD_FAILED_STEP'};
 }
 
+function normalizeModelAudit(raw,{number,expectedSha}={}){
+ let v=raw;if(typeof raw==='string'){if(raw.length>8000)return null;try{v=JSON.parse(raw);}catch{return null;}}
+ if(!v||typeof v!=='object'||Array.isArray(v)||v.schema!=='HH_FREE_AI_MODEL_RUN_V1'||v.pr_number!==number||
+ v.source_head!==expectedSha||v.executor_type!=='free_ci_patch_proposer'||!['openrouter','opencode'].includes(v.provider)||
+ !Number.isInteger(v.attempt_count)||v.attempt_count<0||v.attempt_count>1||typeof v.started_at!=='string'||
+ !Number.isFinite(Date.parse(v.started_at))||typeof v.result!=='string'||!/^[A-Z0-9_]{3,60}$/.test(v.result))return null;
+ const model=typeof v.model==='string'?v.model:null;
+ if(model&&!(v.provider==='openrouter'?/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(model):
+ /^opencode\/[A-Za-z0-9][A-Za-z0-9_.-]*-free$/.test(model)))return null;
+ if(v.attempt_count===1&&(!model||typeof v.model_call_started_at!=='string'||!Number.isFinite(Date.parse(v.model_call_started_at))))return null;
+ const failure=typeof v.failure_reason==='string'&&/^FREE_AI_[A-Z0-9_:-]{4,120}$/.test(v.failure_reason)?v.failure_reason:null;
+ return {schema:v.schema,provider:v.provider,model,model_version:typeof v.model_version==='string'?v.model_version.slice(0,120):null,
+ catalog_model_created:Number.isSafeInteger(v.catalog_model_created)?v.catalog_model_created:null,executor_type:v.executor_type,
+ pr_number:number,source_head:expectedSha,run_id:/^[0-9]{1,24}$/.test(String(v.run_id||''))?String(v.run_id):null,
+ run_attempt:Number.isInteger(v.run_attempt)&&v.run_attempt>0?v.run_attempt:null,started_at:v.started_at,
+ model_call_started_at:v.model_call_started_at||null,response_received_at:v.response_received_at||null,
+ attempt_count:v.attempt_count,result:v.result,failure_reason:failure,patch_present:v.patch_present===true,
+ candidate_paths:Array.isArray(v.candidate_paths)?v.candidate_paths.slice(0,8):[],
+ verification_result:typeof v.verification_result==='string'?v.verification_result.slice(0,80):'NOT_REPORTED'};
+}
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   claimStatus='',claimReason='',claimResult='',fixResult='',strategy='lint',
   codeAvailable=false,codeResult='',codeStatus='',codeDetail='',
   codeVerifyResult='',codeVerifyStatus='',codeVerifyDetail='',publishResult='',
   publishStatus='',publishSha='',candidateStatus='',candidateDetail='',
-  candidateSnapshot='',dryRun=false}) {
+  candidateSnapshot='',modelAuditRaw='',dryRun=false}) {
   const {owner,repo}=context.repo || {},fullRepo=owner+'/'+repo;
   const skip=reason=>{core.info('HH_REPAIR_OUTCOME SKIP '+reason);return {status:'skipped',reason};};
   if(dryRun || fullRepo!=='andylitvinov-design/books')return skip('AUDIT_OR_FOREIGN_REPO');
@@ -674,20 +694,20 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   }else if(strategy==='code'&&!codeAvailable){
     state='MANUAL';reason='FREE_AI_EXECUTOR_NOT_CONFIGURED';
   }else if(strategy==='code'&&codeResult==='skipped'){
-    reason='CODEX_JOB_NOT_STARTED_NO_SOURCE_COMMIT';
+    reason='FREE_AI_JOB_NOT_STARTED_NO_SOURCE_COMMIT';
   }else if((strategy==='code'||candidateStatus==='manual_required')&&codeVerifyStatus==='ready'){
-    // A tested Codex candidate existed, but no source commit was proven.
-    reason='CODEX_VERIFIED_BUT_NOT_PUBLISHED_'+String(publishResult||'UNKNOWN').toUpperCase();
+    // A tested free-model candidate existed, but no source commit was proven.
+    reason='FREE_AI_VERIFIED_BUT_NOT_PUBLISHED_'+String(publishResult||'UNKNOWN').toUpperCase();
   }else if((strategy==='code'||candidateStatus==='manual_required')&&codeAvailable&&codeResult==='failure'){
-    reason='CODEX_JOB_FAILED_NO_SOURCE_COMMIT';
+    reason='FREE_AI_JOB_FAILED_NO_SOURCE_COMMIT';
   }else if((strategy==='code'||candidateStatus==='manual_required')&&codeAvailable&&codeStatus==='proposed'&&
       codeVerifyResult!=='success'){
-    reason='CODEX_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT';
+    reason='FREE_AI_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT';
   }else if(publishStatus==='manual_required' || candidateStatus==='manual_required' || strategy==='code'){
     state='MANUAL';
     reason=!codeAvailable?'FREE_AI_EXECUTOR_NOT_CONFIGURED':
-      codeVerifyStatus==='manual_required'?'CODEX_CANDIDATE_REJECTED':
-      'CODEX_NO_VERIFIED_SOURCE_CHANGE';
+      codeVerifyStatus==='manual_required'?'FREE_AI_CANDIDATE_REJECTED':
+      'FREE_AI_NO_VERIFIED_SOURCE_CHANGE';
   }else if(publishResult!=='success'){
     reason='PUBLISH_JOB_'+String(publishResult||'UNKNOWN').toUpperCase();
   }else{
@@ -789,6 +809,11 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state==='MANUAL'||state==='FAILED'?
       agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const delivery=sourceDeliveryStatus({state,sourcePublished,codeAvailable});
+  const modelAudit=normalizeModelAudit(modelAuditRaw,{number,expectedSha});
+  const modelRun=modelAudit?{...modelAudit,patch_present:codeStatus==='proposed'||modelAudit.patch_present,
+   verification_result:codeVerifyStatus==='ready'&&codeVerifyResult==='success'?'PASSED':
+    codeVerifyStatus==='manual_required'?'REJECTED':codeVerifyStatus||'NOT_RUN',
+   published_commit_sha:sourcePublished?newSha:null}:null;
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     ...delivery,verified_source_fix:state==='PUBLISHED'&&sourcePublished===true,
     head_sha:expectedSha,lane:strategy==='legacy'?'legacy':'repair',
@@ -800,8 +825,9 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
       parseLegacySnapshotSummary(candidateSnapshot):null,
     repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'free_ai':
       publishStatus==='committed'?'lint':null,
-    code_agent_configured:codeAvailable,code_provider:codeAvailable?'opencode/glm-5.3-flash-free':null,
-     code_job_result:codeResult||'skipped',
+    code_agent_configured:codeAvailable,code_provider:modelRun?.provider||null,
+    code_model:modelRun?.model||null,code_model_version:modelRun?.model_version||null,
+    model_run:modelRun,code_job_result:codeResult||'skipped',
     code_candidate_status:codeStatus||'skipped',
     code_verify_result:codeVerifyResult||'skipped',
     code_verify_status:codeVerifyStatus||'skipped',
@@ -878,4 +904,4 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   return result;
 }
 
-module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,PROD,SOURCE,CONFLICT,MARKER};
+module.exports={claim,publish,finalize,sourceDeliveryStatus,finalizeFailedFix,prioritizedRepairCandidates,currentRepairHead,eligible,legacyPrepEligible,trustedLegacySourceRetry,validBranch,safeFiles,validCandidate,activeSweepLease,repairMode,hasVerifiedSourceHandoff,verifiedCoreCodeFailure,claimedRepairMissingSourceProof,parseLegacySnapshotSummary,normalizeModelAudit,PROD,SOURCE,CONFLICT,MARKER};

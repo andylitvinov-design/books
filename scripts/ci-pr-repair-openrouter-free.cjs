@@ -149,7 +149,12 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
     {method:'GET',headers:{Accept:'application/json'}},10000);
   const selection=chooseVerifiedFreeModel(catalog,{model,role});
   const selected=selection.model;
-  if(typeof onVerifiedModel==='function')onVerifiedModel(selection);
+  const modelEntry=catalog.data.find(row=>row?.id===selected);
+  const receipt={...selection,provider:'openrouter',
+    model_version:typeof modelEntry?.version==='string'?modelEntry.version:null,
+    catalog_created:Number.isSafeInteger(modelEntry?.created)?modelEntry.created:null};
+  // Persist the exact selected model before inference.
+  if(typeof onVerifiedModel==='function')onVerifiedModel(receipt);
   // Exactly ONE inference attempt: one pre-verified :free model, zero price cap,
   // zero cross-model fallback, no tools, no file operations, no paid retries.
   const completion=await getJson(fetchImpl,BASE+'/chat/completions',{
@@ -171,18 +176,20 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
      Object.values(completion?.usage?.cost_details||{}).some(value=>
        value!==null&&value!==undefined&&(!Number.isFinite(Number(value))||Number(value)!==0)))
     throw Error('FREE_AI_OPENROUTER_BILLING_NONZERO');
-  if(!Array.isArray(completion?.choices)||completion.choices.length!==1||
-     !completion.choices[0]?.message|| (completion.choices[0].message.role!==undefined&&completion.choices[0].message.role!=='assistant'))
-    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID '+JSON.stringify(responseShape(completion)));
-  const choice=completion.choices[0];
-  if(choice.finish_reason==='length')
+  if(!Array.isArray(completion?.choices)||completion.choices.length!==1)
+    throw Error('FREE_AI_OPENROUTER_RESPONSE_CHOICE_COUNT_INVALID '+JSON.stringify(responseShape(completion)));
+  const choice=completion.choices[0],message=choice?.message;
+  if(!message||(message.role!==undefined&&message.role!=='assistant'))
+    throw Error('FREE_AI_OPENROUTER_RESPONSE_MESSAGE_INVALID '+JSON.stringify(responseShape(completion)));
+  const finish=String(choice.finish_reason||'').toLowerCase();
+  if(['length','max_tokens','max_output_tokens'].includes(finish))
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED');
-  if(choice.finish_reason==='content_filter'||choice.message.refusal)
+  if(['content_filter','refusal'].includes(finish)||message.refusal)
     throw Error('FREE_AI_OPENROUTER_MODEL_REFUSED');
-  if(['tool_calls','function_call','error'].includes(choice.finish_reason)||
-     choice.message.tool_calls?.length||choice.message.function_call)
+  if(['tool_calls','function_call','error'].includes(finish)||
+     message.tool_calls?.length||message.function_call)
     throw Error('FREE_AI_OPENROUTER_TOOL_CALL_NOT_ALLOWED');
-  return extractAssistantText(choice.message.content);
+  return extractAssistantText(message.content);
 }
 module.exports={BASE,CHAT_ENDPOINT,CHAT_CATALOG,DEFAULT_MODEL,MODEL_PROFILES,
   selectedModel,verifyZeroPrice,chooseVerifiedFreeModel,responseShape,extractAssistantText,requestFreePatch};
