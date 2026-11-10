@@ -133,7 +133,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
   );
 
   return <nav aria-label={text.navigation} className="site-navigation">
-    <Link className="site-nav-free-entry" href={freeReviewHref} prefetch={false}>{siteMenu.start}</Link>
+    <Link className={hhRepairGraphqlCanaryV11MissingSymbol} href={freeReviewHref} prefetch={false}>{siteMenu.start}</Link>
     {getSiteNavigation(activeLocale).filter(item => ['energy', 'love', 'business'].includes(item.id)).map(item => item.external
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
