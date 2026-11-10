@@ -146,8 +146,13 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
 test("express review WebKit reveal stays immediately below its button throughout the animation", () => {
   const expressCss = read("components/personal-express-enquiry.module.css");
   const express = read("components/personal-express-enquiry.tsx");
-  assert.match(express, /data-express-reveal aria-expanded=\{expanded\}/);
+  assert.match(express, /data-express-reveal[^\n>]*aria-expanded=\{expanded\}/);
   assert.match(express, /data-express-inline-disclosure hidden=\{!expanded\}/);
+  assert.match(express, /const closeDisclosure = useCallback\(\(\) => \{/);
+  assert.match(express, /window\.history\.replaceState\(window\.history\.state/);
+  assert.match(express, /if \(expanded\) closeDisclosure\(\); else setExpanded\(true\)/);
+  assert.match(express, /event\.key === "Escape"[\s\S]*?closeDisclosure\(\)/);
+  assert.match(read("scripts/verify-free-review-live-mobile.mjs"), /closing clears the stale review anchor/);
   assert.match(expressCss, /\.disclosure\[hidden\]\{display:none!important\}/);
   assert.match(expressCss, /@keyframes expressUnfold\{from\{opacity:0\}to\{opacity:1\}\}/);
   assert.doesNotMatch(expressCss, /@keyframes expressUnfold\{[^}]*transform:/,
@@ -161,15 +166,26 @@ test("mobile browser acceptance taps the entire focus card and validates the nat
   assert.match(widget, /<label className=\{styles\.choice\} data-express-focus=\{area\}/);
   assert.match(widget, /type="radio" name="express-review-focus" value=\{area\}/);
   assert.match(widget, /checked=\{focus === area\} onChange=\{\(\) => setFocus\(area\)\}/);
+  // WebKit can skip the nested radio's forwarded change after tapping the
+  // label; a single label click must also update the controlled focus.
+  assert.match(widget, /onClick=\{\(\) => \{ if \(!focusLocked\) setFocus\(area\); \}\}/);
+  // Validate a single real click, not retries or programmatic radio selection.
+  assert.match(script, /async function tapFocusAndVerify\(page, enquiry, focus\)/);
+  assert.match(script, /const card = enquiry\.locator\('\[data-express-focus=/);
+  assert.match(script, /await card\.tap\(\)/, "mobile acceptance must use a native touch tap");
+  assert.doesNotMatch(script, /await card\.click\(/, "mouse click is not a native touch gesture");
+  assert.match(script, /radio instanceof HTMLInputElement && radio\.checked/);
+  assert.match(script, /card\?\.getAttribute\("data-selected"\) === "true"/);
+  assert.match(script, /waitForFunction\(/);
   for (const focus of ["energy", "situation"]) {
-    assert.ok(script.includes("await enquiry.locator('[data-express-focus=\""+focus+"\"]').click()"),
-      "A mobile user taps the wide label card: " + focus);
-    assert.ok(script.includes("await enquiry.locator('input[value=\""+focus+"\"]').isChecked()"),
-      "The selected radio itself must be checked: " + focus);
+    assert.ok(script.includes('await tapFocusAndVerify(page, enquiry, "' + focus + '")'),
+      "One label tap eventually checks the native radio and its selected card: " + focus);
   }
+  assert.match(script, /engine === "webkit" && locale === "es"/);
+  assert.match(script, /width === 320 \|\| width === 430/);
   assert.doesNotMatch(script, /locator\('input\[value="(?:energy|situation)"\]'\)\.check\(\)/,
     "Do not emulate tapping a moving 19px radio dot on WebKit");
-  assert.match(script, /"changing the focus cannot silently opt the user in"/);
-  assert.match(script, /"changing focus is not a lead or booking"/);
+  assert.match(script, /"focus change never creates hidden consent or unverified web submission"/);
+  assert.match(script, /"changing the selected focus never fabricates a CRM lead"/);
   assert.match(css, /\.choice\{[^}]*min-height:94px/);
 });

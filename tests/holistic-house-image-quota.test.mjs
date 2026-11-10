@@ -66,7 +66,7 @@ test("the image optimizer remains available for the book images that benefit fro
   const book = read("components/book-catalog.tsx");
   assert.doesNotMatch(config, /images:\s*\{\s*unoptimized:\s*true/);
   assert.match(book, /bookCoverArtworkUrl\(book\.id, "\/media\/" \+ book\.mediaSeries/);
-  assert.match(book, /unoptimized=\{hasBookCoverArtwork\(book\.id\)\}/);
+  assert.match(book, /unoptimized=\{hasBookCoverArtwork\(book\.id\) \|\| book\.cover\.endsWith\('\.svg'\)\}/);
   assert.match(config, /minimumCacheTTL: 2678400/);
 });
 

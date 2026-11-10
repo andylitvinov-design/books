@@ -48,7 +48,7 @@ in buttons.
 
 **New Telegram conversations use exactly six owner-authored replies from Andrey. The Russian messages follow the owner's supplied wording without paraphrase; no visible `/agree`, `/stop` or topic slash commands.** The old command-based V1 engine is retained exclusively for already-running consented V1 sessions (`flow_version=1`). An intentional new Telegram **Start** begins the V2 intro. The additive production migration `20261026171737_hh_crm_telegram_dialogue_v2_20261026.sql` adds an allowlisted `drawing` stage, version and broad topic, retaining existing encrypted CRM messages, contacts and RLS FORCE.
 
-1. **Greeting + explicit, narrow personal-response consent:** “Приветствую! Спасибо за интерес к экспресс-диагностике.” with one visible button **Да, начинаем**, or **Не сейчас**. Consent mentions Telegram photo processing and no marketing; no CRM lead is written before affirmative choice. No implied health diagnosis.
+1. **Greeting + explicit, narrow personal-response consent:** “Приветствую! Спасибо за интерес к экспресс-диагностике.” with one visible affirmative button **Да, начинаем**. Typed refusal/STOP remains available. The first message ends directly with the question, without the verbose consent/privacy footer. The explicit affirmative click remains mandatory before creating a CRM lead; photo guidance and no-marketing processing rules remain enforced by the existing flow. No implied health diagnosis.
 2. **One topic:** Деньги / работа, Энергия / самочувствие, Отношения, Другое. This is a simple broad category in the private session, not a clinical score.
 3. **Optional recent portrait:** a voluntary Telegram photo (≤5MB JPEG/PNG), or **Пропустить фото**. Telegram as third-party media processor is disclosed. Photo bytes are fetched **only** by an authorized owner through the existing secure image proxy; the Telegram file ID stays encrypted in a private CRM message.
 4. **Goal and difficulty:** one free-text message answering “цель / сложность / любые детали” (max 1200 chars), stored as one new incoming message in the existing owner CRM contact/thread. No symptoms, diagnoses, lab results or test scores should be submitted to Telegram.
@@ -58,7 +58,7 @@ in buttons.
 All text and buttons are mirrored in EN/RU/ES. Server sends only the owner's preapproved text/keyboard, no paid AI, unsolicited outreach or arbitrary external URLs. Legacy Telegram `/agree`, `/skip`, `/stop` remain accepted as safety/backward-compatibility commands **but not shown as the primary user interface**; human-language “Стоп” / “Stop” / “Parar” still suppresses contact. No marketing opt-in is inferred. If no authorized delivery test has taken place, **status remains BLOCKED for external E2E**, even when CI and Vercel READY are green.
 
 **Canonical six Russian text anchors (full verbatim snapshots enforced in `tests/crm-telegram-natural-conversation-v2.test.mjs`):**
-1. `Приветствую! Спасибо за интерес к экспресс-диагностике.` → explanation of work/money/relations/move, what is happening, cause, next steps, three-day personal analysis, `Подходит, начинаем?` and the necessary one-line consent/privacy footer
+1. `Приветствую! Спасибо за интерес к экспресс-диагностике.` → explanation of work/money/relations/move, what is happening, cause, next steps, three-day personal analysis, `Подходит, начинаем?` without a trailing consent/privacy paragraph; the client must still explicitly choose “Да, начинаем” before any CRM intake
 2. `Выбери, пожалуйста, с какой темой сейчас хотелось бы поработать:` → four exact buttons: `деньги/ работа`, `энергия/ здоровье`, `отношения`, `другое`
 3. `Вышли, пожалуйста, свое фото (лучше недавнее ...` → voluntary portrait, up to 5 MB; photo does NOT end the request
 4. `Спасибо. Фото принял. Напиши, пожалуйста, 1) в чем ключевая задача (цель) 2) в чем сложность 3) любые подробности, которые стоило бы добавить.` (skip-photo fallback omits the claim that a photo arrived)
@@ -163,3 +163,48 @@ before releasing.
 → optional photo privately accessible to owner → manual owner reply accepted
 and physically received → /stop → blocked further sends. Only after real
 provider evidence and separate owner approval may public availability be enabled.
+
+## 27 October 2026 · CRM Automations must display the owner's *actual* six Telegram V2 messages
+The owner noticed that CRM → Automations displayed a **generic SalesBot example**
+("Start → Welcome → Choice → Offer") instead of the previously approved personal
+express-diagnostic script. That generic dry-run graph is **not** the customer
+Telegram conversation and cannot represent long text, consent, photo/drawing,
+the optional no-photo branch, or the real per-topic coaching link.
+**Source of truth remains `lib/crm/telegram-diagnostic-v2.mjs` `copy` and the existing transition function**:
+the read-only `telegramDiagnosticV2Script` projects exactly its six outgoing
+message texts and inline button labels, using the same canonical language data.
+In CRM Automations this script is shown **first**, with full original texts
+(EN/RU/ES), four genuine topic selections, both photo branches and the actual
+topic-scoped questionnaire link. "Other CRM scenarios" remains collapsed by
+default and is explicitly labeled **separate preview/internal flows**, never
+the Telegram script. It cannot silently edit or replace the author's live texts.
+No Telegram, Supabase, RLS, CRM contact, dispatch or environment flags changed.
+A physical second-account recipient test is still independent.
+
+## 27 October 2026 · Language-targeted public entry from EN/RU/ES free express-review pages
+The owner-authored English (as well as RU and ES) six-message Telegram V2 script already
+exists; it is **not rewritten here**. The free express-review landing now
+reuses the existing `TelegramDiagnosticEntry` readiness check and displays the
+appropriate **`?start=hhreview_en|ru|es`** public BotFather deep link. The
+Telegram state machine takes this trusted static locale from the start payload,
+not the user's device language; STOP/consent, optional portrait/drawing and
+private intake remain unchanged. If public Telegram is not approved/ready, its
+link is not shown and the page offers the secure website intake.
+
+An existing, distinct **personal WhatsApp wa.me** link is offered with an
+**explicitly manual** label. It carries only the static `HHREVIEW_EN|RU|ES`
+language marker and the publicly safe service page in a customer-reviewed,
+customer-sent first message. The existing Meta signed webhook, if a WhatsApp
+Business account is ever genuinely connected, may recognize that marker **only
+to label an incoming owner CRM enquiry in the source locale**. It does **NOT**
+enroll/run a WhatsApp bot, create messaging consent, install a webhook,
+auto-send, load a photo, replace the Telegram copy, or enable the Meta production
+send gate. This separation is intentional while there is no verified WhatsApp
+Business CRM account. The personal WhatsApp link is not evidence of Cloud API.
+
+Acceptance: static links for EN/RU/ES, actual server-readiness fail closed,
+Meta HMAC signature before processing an incoming locale marker, no wrong-lang
+override or untrusted URL data, protected CRM owner scope; then GitHub focused
+CI/build, live domain SHA and real recipient tests per provider. **Do not
+claim WhatsApp automation or receipt works until the owner connects a real
+Meta Business number, webhook and validates a separate device E2E.**

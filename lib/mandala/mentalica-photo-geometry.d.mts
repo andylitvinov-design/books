@@ -1,0 +1,36 @@
+export type MentalicaGeometry = 2 | 4 | 6 | 8 | 12;
+export type MentalicaStyle = "style-1" | "style-2" | "style-3";
+export type MentalicaPhotoTransform = { x: number; y: number; zoom: number; rotate: number };
+export type MentalicaPhotoAsset = { id: string; name: string; data: string };
+export type MentalicaPhotoProject = {
+  version: number;
+  id: string;
+  title: string;
+  geometry: MentalicaGeometry;
+  style: MentalicaStyle;
+  constructorType: "client" | "altar" | "business" | "zodiac" | "star" | "chess" | "dao" | "dao-layout";
+  variant: string;
+  tone: "mentalica" | "gold" | "forest" | "night" | "fire" | "water";
+  fieldLayout: "square" | "vertical" | "horizontal" | "rectangle";
+  centerShape: "circle" | "square";
+  fieldScale: number;
+  centerFrameScale: number;
+  centerImageScale: number;
+  slotScale: number;
+  visible: { center: boolean; slots: boolean; inner: boolean; outer: boolean };
+  assignments: Record<string, string>;
+  transforms: Record<string, MentalicaPhotoTransform>;
+  assets: MentalicaPhotoAsset[];
+};
+export const MENTALICA_GEOMETRIES: readonly MentalicaGeometry[];
+export const MENTALICA_STYLES: readonly MentalicaStyle[];
+export function mentalicaPhotoSlots(geometry?: number, style?: string): { id: string; label: string; x: number; y: number }[];
+export function clampMentalicaNumber(value: unknown, min: number, max: number, fallback: number): number;
+export function defaultMentalicaPhotoProject(): MentalicaPhotoProject;
+export function sanitizeMentalicaPhotoProject(input: unknown): MentalicaPhotoProject;
+
+export const MENTALICA_CONSTRUCTOR_TYPES: readonly MentalicaPhotoProject["constructorType"][];
+export const MENTALICA_BACKGROUND_TONES: readonly MentalicaPhotoProject["tone"][];
+export const MENTALICA_LAYOUT_VARIANTS: Readonly<Record<MentalicaPhotoProject["constructorType"], readonly string[]>>;
+export type MentalicaPhotoLayoutSlot = {id:string;label:string;x:number;y:number;diameter:number;shape:string};
+export function mentalicaPhotoLayout(project?: Partial<MentalicaPhotoProject>): {type:MentalicaPhotoProject["constructorType"];variant:string;slots:MentalicaPhotoLayoutSlot[];guides:number[][][];fieldShape:string;hasRings:boolean;center:{x:number;y:number;diameter:number}};

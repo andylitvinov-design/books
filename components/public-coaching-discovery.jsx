@@ -16,7 +16,7 @@ import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/
 import { coachingRequestTopicLabel, isCoachingRequestTopic } from '@/lib/coaching/session-onboarding'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingArt, coachingSchemeArt, traditionCoachingArt, coachingWorksheetArt } from '@/lib/coaching/public-session-art'
-import { CoachingLoungeEntry } from '@/components/coaching-lounge-entry'
+import { CoachingLoungeEntry, CoachingLoungeOffers } from '@/components/coaching-lounge-entry'
 import { coachingSessionTitle, coachingSessionSummary } from '@/lib/coaching/session-presentation'
 import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-coaching/session-pdf'
 import { COACHING_TOPIC_GROUPS, COACHING_OUTCOMES, COACHING_SESSION_MODES, COACHING_CATALOG_GROUPS, coachingCatalogGroupId, coachingSchemeMatchesSessionMode, coachingTopicGroup, coachingSchemeInGroup, coachingSignalInGroup, coachingTopicSchemeCount, coachingSchemeRequiresAdultConsent, coachingOutcomeFit } from '@/lib/coaching/coaching-topic-groups'
@@ -564,6 +564,13 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               </button>)}
             </div>
           </fieldset>
+          {format!=='human'&&<div className={styles.discoverySearch} data-coaching-discovery-search>
+            <label className={styles.questionLabel} htmlFor="public-coaching-question">{t.question}</label>
+            <textarea id="public-coaching-question" className={styles.questionInput} rows={1} maxLength={600}
+              value={question} placeholder={t.placeholder} autoComplete="off"
+              onChange={e=>setQuestion(e.target.value)}/>
+            <p className={styles.privacy}><LockKeyhole size={14}/>{t.privateQuestion}</p>
+          </div>}
           <fieldset className={styles.sessionModes} data-coaching-session-mode-first>
             <legend><strong>{t.sessionModeTitle}</strong></legend>
             <div className={styles.sessionModeGrid} role="group" aria-label={t.sessionModeTitle}>
@@ -628,11 +635,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
                 </div>
               </div>
               </div>
-              <label className={styles.questionLabel} htmlFor="public-coaching-question">{t.question}</label>
-            <textarea id="public-coaching-question" className={styles.questionInput} rows={1} maxLength={600}
-              value={question} placeholder={t.placeholder} autoComplete="off"
-              onChange={e=>setQuestion(e.target.value)}/>
-            <p className={styles.privacy}><LockKeyhole size={14}/>{t.privateQuestion}</p>
+
             </>}
           </details>
         </section>
@@ -693,6 +696,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             </Link>
           </p>}
         </section>}
+        <CoachingLoungeOffers locale={lang} selected={coachingChoice} onSelect={setCoachingChoice} />
         {format!=='self'&&<section className={styles.catalog} aria-labelledby="human-coaching-title" data-coaching-session-capture>
           <div className={styles.coachFit} data-coaching-practitioner-checklist>
             <strong>{t.coachFitTitle}</strong>
@@ -704,7 +708,8 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
               onClick={()=>setCoachingChoice("session")}>{t.request}<ArrowRight size={16} aria-hidden="true"/></a>
         </section>}
         
-      </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}>
+      </>:<section className={styles.session} data-public-coaching-session data-intimacy-session={requiresAdult?'true':undefined}
+        data-coaching-one-viewport={entryStep==='questions'&&!finished&&(!requiresAdult||adultAcknowledged)?'true':undefined}>
         <header className={styles.sessionHeader}>
           <button type="button" className={styles.back} disabled={dictating} onClick={backToModels}><ArrowLeft size={18}/>{t.back}</button>
           <div className={styles.sessionHeaderInfo}>
@@ -759,7 +764,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
             <p className={styles.disclaimer}><LockKeyhole size={14}/>{t.memory}</p>
           </div>:pendingFollowup?<div className={styles.questionScreen} data-public-coaching-followup>
             <p className={styles.stage}>{t.clarify}</p>
-            <CoachingChatThread turn={followupTurn} locale={lang}>
+            <CoachingChatThread turn={followupTurn} locale={lang} compact>
               <h1 ref={titleRef} tabIndex={-1}>{tr(pendingFollowup.prompt,lang)}</h1>
             </CoachingChatThread>
             <p className={styles.hint}>{t.clarifyWhy}</p>
@@ -767,8 +772,7 @@ export default function PublicCoachingDiscovery({locale='en',catalog=null}){
           </div>:<div className={styles.questionScreen} data-public-coaching-slide={current.id}>
             <p className={styles.stage}>{tr(current.stageTitle,lang)}</p>
             <div data-public-coaching-gentle-guide>
-              <CoachingChatThread turn={conversationTurn} locale={lang}
-                 draftPreview={quickChoices&&draft.startsWith('choice:')?answerText(draft,current,lang,t):''}>
+              <CoachingChatThread turn={conversationTurn} locale={lang} compact>
                 <h1 ref={titleRef} tabIndex={-1}>{tr(current.prompt,lang)}</h1>
               </CoachingChatThread>
             </div>

@@ -31,21 +31,32 @@ try {
     })
     context.setDefaultTimeout(18000)
     const page = await context.newPage()
-    const failures = []
+    const failures = [], syntheticEnquiries = []
     page.on('pageerror', error => failures.push(error.message))
     // Never send a synthetic browser test to a live PSP, CRM or external site.
     await context.route('**/*', async route => {
       const req = route.request()
       const url = new URL(req.url())
+      // Deterministic local-only CRM success stub. No production lead is created.
+      if (url.origin === origin && url.pathname === '/api/service-enquiries' && req.method() === 'POST') {
+        syntheticEnquiries.push(req.postDataJSON())
+        return route.fulfill({ status: 201, contentType: 'application/json',
+          body: JSON.stringify({ saved: true, referenceCode: 'HH-A1B2C3D4E5F6' }) })
+      }
       if (url.origin !== origin || !['GET','HEAD'].includes(req.method())) return route.abort('blockedbyclient')
       return route.continue()
     })
     const location = origin + '/' + locale + '/shop'
     try {
-      const response = await page.goto(location, { waitUntil: 'networkidle', timeout: 30000 })
+      const response = await page.goto(location, { waitUntil: 'domcontentloaded', timeout: 30000 })
       assert.equal(response?.status(), 200, locale + ': shop route HTTP')
       const shop = page.locator('[data-service-storefront]')
-      await shop.waitFor({ state: 'visible' })
+      await shop.waitFor({ state: 'visible', timeout: 15000 })
+      // Await the real React filter before checkout and consent assertions.
+      await page.waitForFunction(() => {
+        const button = document.querySelector('[data-shop-filter="program"]');
+        return !!button && Object.keys(button).some(key => key.startsWith('__reactProps$'));
+      }, null, { timeout: 15000 });
       assert.equal(await page.locator('[data-shop-product]').count(), 7)
       assert.equal(await page.locator('[data-shop-filter]').count(), 4)
       assert.equal(await page.locator('[data-shop-add]').count(), 2)
@@ -97,17 +108,35 @@ try {
         const element = document.querySelector('[data-personal-service-cart]')
         return element && /50/.test(element.textContent || '')
       })
-      // No provider navigation: inspect only that the canonical payee/price are retained.
-      const manual = page.locator('[data-cart-paypal-personal]')
-      if (await manual.count()) {
-        assert.equal(await manual.getAttribute('href'), 'https://paypal.me/psitrends/50EUR')
-      }
-      assert.equal(await page.locator('[data-cart-square-payment-link]').count(), 0,
-        'Unapproved Square link must stay hidden')
-      assert.equal(await page.locator('[data-cart-paypal-hosted]').count(), 0,
-        'Unapproved PayPal hosted link must stay hidden')
-      assert.equal(await page.locator('[data-cart-verified-paypal-checkout]').count(), 0,
-        'Merchant Orders v2 must stay disabled without financial ledger')
+      // The cart is now a two-step flow: no payment controls before a saved,
+      // reply-consented CRM order. Inspect only; never submit a synthetic lead.
+      assert.equal(await cart.locator('[data-cart-order-registration][data-cart-order-ready="false"]').count(), 1)
+      assert.equal(await cart.locator('[data-cart-start-order]').count(), 1)
+      assert.equal(await cart.locator('[data-cart-payment-step]').count(), 0)
+      await cart.locator('[data-cart-start-order]').click()
+      const contactForm = cart.locator('[data-cart-contact-form]')
+      await contactForm.waitFor({ state: 'visible' })
+      // In messenger-only mode the website must not accept a typed
+      // phone/Google-only order or fabricate a CRM receipt.
+      const card=contactForm.locator('[data-messenger-only-contact]');
+      await card.waitFor({state:'visible',timeout:20000});
+      const details=card.locator('details');
+      if(await details.count())await details.locator(':scope > summary').click();
+      const wa=card.locator('a[data-messenger-only-channel="whatsapp"]');
+      const tg=card.locator('a[data-messenger-only-channel="telegram"]');
+      await wa.waitFor({state:'visible',timeout:15000});
+      await tg.waitFor({state:'visible',timeout:15000});
+      const draft=new URL(await wa.getAttribute('href'));
+      assert.equal(draft.origin,'https://wa.me','Only customer-initiated WhatsApp');
+      assert.ok((draft.searchParams.get('text')||'').includes('30'),
+        'The selected 30-minute service is retained in the draft');
+      assert.equal(await contactForm.locator('form,input[type="tel"],input[type="email"],button[type="submit"]').count(),0,
+        'An unverified phone or Google session cannot create an order');
+      assert.equal(syntheticEnquiries.length,0,'No synthetic CRM save before provider confirmation');
+      assert.equal(await cart.locator('[data-cart-order-saved],[data-cart-payment-step]').count(),0,
+        'Opening messenger options does not imply booking, order or payment');
+      assert.equal(await cart.locator('fieldset input[type="radio"]').count(),0,
+        'Payment options remain gated until an authorized verified order');
       const cartSize = await reportOverflow()
       assert.ok(cartSize.scrollWidth <= cartSize.viewport + 1,
         locale + '/' + width + ': cart horizontal overflow ' + JSON.stringify(cartSize))

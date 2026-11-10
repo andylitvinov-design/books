@@ -1,0 +1,1718 @@
+{
+  "legacyRule": [
+    [
+      "Привет Ау",
+      "en",
+      "hello",
+      "ru"
+    ],
+    [
+      "Ау",
+      "ru",
+      "hello"
+    ],
+    [
+      "Hello there",
+      "en",
+      "hello"
+    ],
+    [
+      "Hola",
+      "en",
+      "hello",
+      "es"
+    ],
+    [
+      "Спасибо",
+      "ru",
+      "thanks"
+    ],
+    [
+      "Нет",
+      "ru",
+      "no"
+    ],
+    [
+      "Начать сначала",
+      "ru",
+      "restart"
+    ],
+    [
+      "Кто ты?",
+      "ru",
+      "identity"
+    ],
+    [
+      "Ты человек?",
+      "ru",
+      "identity"
+    ],
+    [
+      "Что умеешь?",
+      "ru",
+      "capabilities"
+    ],
+    [
+      "Можно по-русски?",
+      "en",
+      "language",
+      "ru"
+    ],
+    [
+      "Сколько стоит видео?",
+      "ru",
+      "price"
+    ],
+    [
+      "Это бесплатно?",
+      "ru",
+      "price"
+    ],
+    [
+      "Конфиденциальность переписки",
+      "ru",
+      "privacy"
+    ],
+    [
+      "Как войти в кабинет?",
+      "ru",
+      "login"
+    ],
+    [
+      "Не работает чат",
+      "ru",
+      "technical"
+    ],
+    [
+      "Не отвечает бот",
+      "ru",
+      "technical"
+    ],
+    [
+      "Хочу создать видео про отношения",
+      "ru",
+      "video_start"
+    ],
+    [
+      "Как построить сценарий ролика?",
+      "ru",
+      "video_story"
+    ],
+    [
+      "Что такое видеотерапия?",
+      "ru",
+      "video_definition"
+    ],
+    [
+      "Сколько сцен нужно в видео?",
+      "ru",
+      "video_scenes"
+    ],
+    [
+      "Можно видео без музыки?",
+      "ru",
+      "video_audio"
+    ],
+    [
+      "Сколько минут должно длиться видео?",
+      "ru",
+      "video_length"
+    ],
+    [
+      "Где моё видео?",
+      "ru",
+      "video_status"
+    ],
+    [
+      "Отправь ролик в Telegram",
+      "ru",
+      "video_delivery"
+    ],
+    [
+      "Как скачать видео?",
+      "ru",
+      "video_download"
+    ],
+    [
+      "Помоги подобрать медитацию",
+      "ru",
+      "meditation_start"
+    ],
+    [
+      "Хочу свою личную медитацию",
+      "ru",
+      "meditation_custom"
+    ],
+    [
+      "Как послушать медитацию",
+      "ru",
+      "meditation_listen"
+    ],
+    [
+      "Голос в медитации",
+      "ru",
+      "meditation_voice"
+    ],
+    [
+      "Сколько минут для медитации?",
+      "ru",
+      "meditation_duration"
+    ],
+    [
+      "Хочу спать",
+      "ru",
+      "sleep"
+    ],
+    [
+      "Меня тревожит работа",
+      "ru",
+      "stress"
+    ],
+    [
+      "Мало энергии",
+      "ru",
+      "tired"
+    ],
+    [
+      "Мне одиноко",
+      "ru",
+      "relationship"
+    ],
+    [
+      "Не хватает уверенности",
+      "ru",
+      "confidence"
+    ],
+    [
+      "Хочу попробовать Рейки",
+      "ru",
+      "reiki"
+    ],
+    [
+      "Нужен ритуал",
+      "ru",
+      "ritual"
+    ],
+    [
+      "Найди курс",
+      "ru",
+      "course"
+    ],
+    [
+      "Хочу пройти тест",
+      "ru",
+      "test"
+    ],
+    [
+      "Как понять баллы теста?",
+      "ru",
+      "results"
+    ],
+    [
+      "Нужен личный разбор ситуации",
+      "ru",
+      "analysis"
+    ],
+    [
+      "Где мой заказ?",
+      "ru",
+      "orders"
+    ],
+    [
+      "Поговорить с мастером",
+      "ru",
+      "human_help"
+    ],
+    [
+      "Как записаться на сессию?",
+      "ru",
+      "booking"
+    ],
+    [
+      "Мне нужен план для работы",
+      "ru",
+      "work"
+    ],
+    [
+      "Не вижу смысла жизни",
+      "ru",
+      "purpose"
+    ],
+    [
+      "Что посоветуешь?",
+      "ru",
+      "uncertain"
+    ],
+    [
+      "Не понимаю",
+      "ru",
+      "confused"
+    ],
+    [
+      "I'd like a meditation",
+      "en",
+      "meditation_start",
+      "en"
+    ],
+    [
+      "Where is my video render?",
+      "en",
+      "video_status",
+      "en"
+    ],
+    [
+      "How many scenes for a video?",
+      "en",
+      "video_scenes",
+      "en"
+    ],
+    [
+      "What can you do?",
+      "en",
+      "capabilities",
+      "en"
+    ],
+    [
+      "I am lonely",
+      "en",
+      "relationship",
+      "en"
+    ],
+    [
+      "I feel stressed",
+      "en",
+      "stress",
+      "en"
+    ],
+    [
+      "Quiero crear un video",
+      "es",
+      "video_start",
+      "es"
+    ],
+    [
+      "Como descargar el video",
+      "es",
+      "video_download",
+      "es"
+    ],
+    [
+      "Me siento cansada",
+      "es",
+      "tired",
+      "es"
+    ],
+    [
+      "Necesito una meditacion",
+      "es",
+      "meditation_start",
+      "es"
+    ],
+    [
+      "Cuanto cuesta?",
+      "es",
+      "price",
+      "es"
+    ],
+    [
+      "Hola",
+      "es",
+      "hello",
+      "es"
+    ],
+    [
+      "10 минут",
+      "ru",
+      "video_minutes",
+      null,
+      [
+        {
+          "role": "user",
+          "text": "Хочу создать видео"
+        }
+      ]
+    ],
+    [
+      "10 минут",
+      "ru",
+      "meditation_minutes",
+      null,
+      [
+        {
+          "role": "user",
+          "text": "Помоги подобрать медитацию"
+        }
+      ]
+    ],
+    [
+      "Про любовь",
+      "ru",
+      "video_topic",
+      null,
+      [
+        {
+          "role": "user",
+          "text": "Хочу видео"
+        }
+      ]
+    ],
+    [
+      "Да",
+      "ru",
+      "video_context",
+      null,
+      [
+        {
+          "role": "user",
+          "text": "Хочу видео"
+        }
+      ]
+    ],
+    [
+      "Да",
+      "ru",
+      "meditation_context",
+      null,
+      [
+        {
+          "role": "user",
+          "text": "Хочу медитацию"
+        }
+      ]
+    ],
+    [
+      "Спокойствие",
+      "ru",
+      "video_emotion",
+      null,
+      [
+        {
+          "role": "user",
+          "text": "Хочу видео"
+        }
+      ]
+    ],
+    [
+      "Спокойствие",
+      "ru",
+      "meditation_emotion",
+      null,
+      [
+        {
+          "role": "user",
+          "text": "Хочу медитацию"
+        }
+      ]
+    ],
+    [
+      "Медитацию",
+      "ru",
+      "meditation_start",
+      null,
+      [
+        {
+          "role": "user",
+          "text": "Хочу видео"
+        }
+      ]
+    ]
+  ],
+  "legacyVideo": [
+    [
+      "Для Инстаграма, секунд на двадцать",
+      "category",
+      "settings_only",
+      {
+        "aspect": "portrait",
+        "duration": 20
+      }
+    ],
+    [
+      "Для тиктока, 20 секунд",
+      "review",
+      "edit",
+      {
+        "aspect": "portrait",
+        "duration": 20
+      }
+    ],
+    [
+      "Хочу спокойный вертикальный ролик о любви на 30 секунд",
+      "category",
+      "goal",
+      {
+        "aspect": "portrait",
+        "mood": "slow",
+        "duration": 30
+      }
+    ],
+    [
+      "Пусть будет про любовь, но без музыки",
+      "review",
+      "goal",
+      {
+        "music": "none"
+      }
+    ],
+    [
+      "Нет, лучше про уверенность, вертикально",
+      "review",
+      "goal",
+      {
+        "aspect": "portrait"
+      }
+    ],
+    [
+      "Без надписей, только музыка",
+      "review",
+      "edit",
+      {
+        "phrases": false,
+        "music": "harmony"
+      }
+    ],
+    [
+      "Не вертикальный, а горизонтальный",
+      "review",
+      "edit",
+      {
+        "aspect": "landscape"
+      }
+    ],
+    [
+      "Полминуты",
+      "duration",
+      "edit",
+      {
+        "duration": 30
+      }
+    ],
+    [
+      "Четверть минуты",
+      "duration",
+      "edit",
+      {
+        "duration": 15
+      }
+    ],
+    [
+      "Sin música, horizontal, 20 segundos",
+      "review",
+      "edit",
+      {
+        "music": "none",
+        "aspect": "landscape",
+        "duration": 20
+      }
+    ],
+    [
+      "Without captions or music, landscape 15 seconds",
+      "review",
+      "edit",
+      {
+        "phrases": false,
+        "music": "none",
+        "aspect": "landscape",
+        "duration": 15
+      }
+    ],
+    [
+      "романтическая музыка",
+      "music",
+      "edit",
+      {
+        "music": "love"
+      }
+    ],
+    [
+      "медитативная музыка",
+      "music",
+      "edit",
+      {
+        "music": "meditation"
+      }
+    ],
+    [
+      "Фразы не надо, музыку оставь",
+      "review",
+      "edit",
+      {
+        "phrases": false
+      }
+    ],
+    [
+      "добавь горы",
+      "review",
+      "append_goal",
+      {}
+    ],
+    [
+      "хочу озвучку голосом",
+      "review",
+      "audio",
+      {}
+    ],
+    [
+      "Сделай видео",
+      "category",
+      "clarify",
+      {}
+    ],
+    [
+      "Без фраз",
+      "phrase",
+      "edit",
+      {
+        "phrases": false
+      }
+    ]
+  ],
+  "coherence": [
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "Не хочу видео, хочу медитацию"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "Нет, не видео, а медитацию"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "Видео не хочу, медитацию"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "Мне нужна не видеоистория, а медитация"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "Не видео, а медитация"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "Не надо видеоролик, лучше медитацию"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "С видео передумала, лучше медитация"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "I don't want video, I want meditation"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "Not video but meditation"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "I don't need a film, but meditation"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "No quiero video, sino meditacion"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "No quiero un video, mejor meditacion"
+    },
+    {
+      "act": "switch",
+      "medium": "meditation",
+      "message": "Sin video, mejor meditacion"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "Не медитацию, а видео"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "Не хочу медитацию, хочу видео"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "Медитацию не хочу, видео"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "Нет, не медитация, лучше видео"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "Не нужна медитация, а видео"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "Вместо медитации хочу видео"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "I don't want meditation, I want video"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "Not meditation but video"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "I meant video, not meditation"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "No quiero meditacion, sino video"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "Sin meditacion, mejor video"
+    },
+    {
+      "act": "switch",
+      "medium": "video",
+      "message": "Mejor video, no meditacion"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "Видео или медитация"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "Хочу видео и медитацию"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "Видео или медитацию?"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "Можно видео или медитацию"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "Сначала видео, потом медитацию"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "Видео и медитация"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "video or meditation"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "video and meditation"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "Should I choose video or meditation"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "I'd like video and meditation"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "meditation or video"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "quiero video o meditacion"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "video y meditacion"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "meditacion o video"
+    },
+    {
+      "act": "ambiguous",
+      "medium": null,
+      "message": "video y luego meditacion"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "Не хочу видео"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "Видео не хочу"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "Без видео"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "Не надо видео"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "Не нужна видеозапись"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "Not video"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "No video"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "Without video"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "I don't want video"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "No quiero video"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "Sin video"
+    },
+    {
+      "act": "reject",
+      "medium": "video",
+      "message": "No necesito video"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "Не хочу медитацию"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "Мне не нужна медитация"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "Медитацию не хочу"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "Без медитации"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "Не надо медитации"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "Not meditation"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "No meditation"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "Without meditation"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "I don't want meditation"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "No quiero meditacion"
+    },
+    {
+      "act": "reject",
+      "medium": "meditation",
+      "message": "Sin meditacion"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "Нет, не про любовь, а про работу"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "Не про любовь, а про работу"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "Нет, не про отношения, а про работу"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "Не про работу, а про отношения"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "Не про стресс, а про смысл"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "Не о любви, а про работу"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "Not about love but about work"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "Not about relationships but about work"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "Not about energy but about love"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "No sobre amor sino sobre trabajo"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "No sobre trabajo sino sobre amor"
+    },
+    {
+      "act": "correct_topic",
+      "medium": null,
+      "message": "No sobre dinero sino sobre amor"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Привет"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Хочу видео"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Мне нужна медитация"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Привет Ау"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Сколько стоит?"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Как дела"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Хочу умереть"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Я хочу умереть"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Where is my order"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "A video"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "I want meditation"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Quiero video"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "hola"
+    },
+    {
+      "act": "none",
+      "medium": null,
+      "message": "Спасибо"
+    }
+  ],
+  "video": [
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "не вертикально, а горизонтально"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "не надо вертикально, а горизонтально"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "вертикально не хочу, горизонтально"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "9:16, нет, 16:9"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "сделай горизонтальное видео"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "не 9:16, а 16:9"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "not vertical but horizontal"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "no portrait, landscape please"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "not 9:16 but 16:9"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "no vertical, horizontal"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "sin vertical, horizontal"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "Музыку оставь, но формат поменяй на горизонтальный"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape"
+      },
+      "message": "keep music, change aspect to landscape"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "portrait"
+      },
+      "message": "не горизонтально, а вертикально"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "portrait"
+      },
+      "message": "16:9, точнее 9:16"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "portrait"
+      },
+      "message": "хочу вертикально"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "portrait"
+      },
+      "message": "not landscape, portrait"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "portrait"
+      },
+      "message": "horizontal no, vertical please"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "portrait"
+      },
+      "message": "no horizontal, vertical"
+    },
+    {
+      "stage": "duration",
+      "kind": "edit",
+      "filters": {
+        "duration": 30
+      },
+      "message": "20 секунд, точнее 30 секунд"
+    },
+    {
+      "stage": "duration",
+      "kind": "edit",
+      "filters": {
+        "duration": 30
+      },
+      "message": "20 секунд, нет, 30 секунд"
+    },
+    {
+      "stage": "duration",
+      "kind": "edit",
+      "filters": {
+        "duration": 30
+      },
+      "message": "не 20 секунд, а 30 секунд"
+    },
+    {
+      "stage": "duration",
+      "kind": "edit",
+      "filters": {
+        "duration": 30
+      },
+      "message": "30 секунд"
+    },
+    {
+      "stage": "duration",
+      "kind": "edit",
+      "filters": {
+        "duration": 30
+      },
+      "message": "Полминуты"
+    },
+    {
+      "stage": "duration",
+      "kind": "edit",
+      "filters": {
+        "duration": 30
+      },
+      "message": "half a minute"
+    },
+    {
+      "stage": "duration",
+      "kind": "edit",
+      "filters": {
+        "duration": 30
+      },
+      "message": "30 seconds"
+    },
+    {
+      "stage": "duration",
+      "kind": "edit",
+      "filters": {
+        "duration": 30
+      },
+      "message": "treinta segundos"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "duration": 15
+      },
+      "message": "не 30 секунд, а 15 секунд"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "duration": 15
+      },
+      "message": "30 секунд, точнее 15 секунд"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "duration": 15
+      },
+      "message": "15 секунд"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "duration": 15
+      },
+      "message": "15 seconds"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "duration": 15
+      },
+      "message": "quince segundos"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "slow"
+      },
+      "message": "не динамично, а спокойно"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "slow"
+      },
+      "message": "не быстро, а плавно"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "slow"
+      },
+      "message": "not dynamic but calm"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "slow"
+      },
+      "message": "dynamic? no, soft"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "slow"
+      },
+      "message": "no dinámico sino suave"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "slow"
+      },
+      "message": "спокойное видео"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "dynamic"
+      },
+      "message": "не медленно, а динамично"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "dynamic"
+      },
+      "message": "не спокойно, а энергично"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "dynamic"
+      },
+      "message": "not slow but dynamic"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "dynamic"
+      },
+      "message": "slow? no, upbeat"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "mood": "dynamic"
+      },
+      "message": "no suave sino rapido"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "music": "none"
+      },
+      "message": "без музыки"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "music": "none"
+      },
+      "message": "no music"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "music": "none"
+      },
+      "message": "sin música"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "music": "none"
+      },
+      "message": "убери музыку"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "music": "none"
+      },
+      "message": "музыка не нужна"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "music": "none"
+      },
+      "message": "да, но без музыки"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "music": "none"
+      },
+      "message": "without music"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "phrases": false
+      },
+      "message": "без фраз"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "phrases": false
+      },
+      "message": "без надписей"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "phrases": false
+      },
+      "message": "no captions"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "phrases": false
+      },
+      "message": "without text"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "phrases": false
+      },
+      "message": "sin frases"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "phrases": false
+      },
+      "message": "no subtitles"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "9:16 или 16:9"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "вертикально или горизонтально"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "portrait or landscape"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "vertical or horizontal"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "15 или 30 секунд"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "20-30 секунд"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "20 секунд и 30 секунд"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "без музыки и с музыкой"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "оставь музыку, но без музыки"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "don't change music, but no music"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "ambiguous",
+      "message": "sin música o con música"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape",
+        "music": "none"
+      },
+      "message": "без музыки и горизонтально"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape",
+        "music": "none"
+      },
+      "message": "горизонтально, без музыки"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape",
+        "music": "none"
+      },
+      "message": "landscape without music"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape",
+        "music": "none"
+      },
+      "message": "horizontal sin música"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape",
+        "duration": 20,
+        "music": "none"
+      },
+      "message": "sin música, horizontal, 20 segundos"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape",
+        "duration": 20,
+        "music": "none"
+      },
+      "message": "20 секунд горизонтально без музыки"
+    },
+    {
+      "stage": "review",
+      "kind": "edit",
+      "filters": {
+        "aspect": "landscape",
+        "duration": 20,
+        "music": "none"
+      },
+      "message": "landscape 20 seconds, no music"
+    },
+    {
+      "stage": "review",
+      "kind": "undo",
+      "message": "Верни как было"
+    },
+    {
+      "stage": "review",
+      "kind": "undo",
+      "message": "отмени последнее изменение"
+    },
+    {
+      "stage": "review",
+      "kind": "undo",
+      "message": "undo"
+    },
+    {
+      "stage": "review",
+      "kind": "undo",
+      "message": "revert that"
+    },
+    {
+      "stage": "review",
+      "kind": "undo",
+      "message": "deshacer"
+    },
+    {
+      "stage": "review",
+      "kind": "reject",
+      "message": "Это не то"
+    },
+    {
+      "stage": "review",
+      "kind": "reject",
+      "message": "не этот вариант"
+    },
+    {
+      "stage": "review",
+      "kind": "reject",
+      "message": "not this one"
+    },
+    {
+      "stage": "review",
+      "kind": "reject",
+      "message": "no es eso"
+    },
+    {
+      "stage": "idea",
+      "kind": "suggest",
+      "message": "не знаю"
+    },
+    {
+      "stage": "idea",
+      "kind": "suggest",
+      "message": "затрудняюсь"
+    },
+    {
+      "stage": "idea",
+      "kind": "suggest",
+      "message": "what do you suggest"
+    },
+    {
+      "stage": "idea",
+      "kind": "suggest",
+      "message": "no puedo elegir"
+    },
+    {
+      "stage": "review",
+      "kind": "relative_duration",
+      "direction": -1,
+      "message": "покороче"
+    },
+    {
+      "stage": "review",
+      "kind": "relative_duration",
+      "direction": -1,
+      "message": "shorter"
+    },
+    {
+      "stage": "review",
+      "kind": "relative_duration",
+      "direction": -1,
+      "message": "más corto"
+    },
+    {
+      "stage": "review",
+      "kind": "relative_duration",
+      "direction": 1,
+      "message": "подлиннее"
+    },
+    {
+      "stage": "review",
+      "kind": "relative_duration",
+      "direction": 1,
+      "message": "longer"
+    },
+    {
+      "stage": "review",
+      "kind": "relative_duration",
+      "direction": 1,
+      "message": "más largo"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "approval_needed",
+      "message": "создавай"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "approval_needed",
+      "message": "сделай видео"
+    },
+    {
+      "stage": "review",
+      "kind": "clarify",
+      "reason": "approval_needed",
+      "message": "render the video"
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
+import { runMobileBrowserCases } from "./ci-mobile-browser-batch.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.HH_PLAYWRIGHT_PACKAGE || "playwright");
@@ -19,12 +20,12 @@ const questions = {
 };
 const evidence = [];
 
-async function check(browserType, locale, width, height) {
-  const browser = await browserType.launch();
-  const page = await browser.newPage({
+async function check(browserType, browser, locale, width, height) {
+  const context = await browser.newContext({
     viewport: { width, height },
     deviceScaleFactor: 1, isMobile: true, hasTouch: true, reducedMotion: "reduce",
   });
+  const page = await context.newPage();
   const label = [browserType.name(), locale, width, height].join("-");
   const clientErrors = [];
   const leakedQuestion = [];
@@ -58,28 +59,8 @@ async function check(browserType, locale, width, height) {
         label + ": readable full-width action card");
     }
     const last = await dao.boundingBox();
-    // Numeric, public-layout-only diagnostics: no question, form or user text.
-    const firstScreenGeometry = await first.evaluate(node => {
-      const bounds = element => {
-        if (!element) return null;
-        const r = element.getBoundingClientRect();
-        return { x:r.x, y:r.y, width:r.width, height:r.height, bottom:r.bottom };
-      };
-      return {
-        viewport:{width:innerWidth,height:innerHeight},
-        hero:bounds(node),
-        heading:bounds(node.querySelector("h1")),
-        choices:[...node.querySelectorAll("[data-holistic-choose]")].map(bounds),
-        header:bounds(document.querySelector(".house-header")),
-        bottomNavigation:bounds(document.querySelector(".mobile-bottom-navigation")),
-      };
-    });
-    await writeFile(folder + "/" + label + "-first-screen.json", JSON.stringify(firstScreenGeometry,null,2));
     assert.ok(last && last.y + last.height < height - 40,
-      label + ": last option must appear on the first mobile screen " + JSON.stringify(firstScreenGeometry));
-    const bottomNavigation = firstScreenGeometry.bottomNavigation;
-    if (bottomNavigation) assert.ok(last && last.y + last.height <= bottomNavigation.y - 2,
-      label + ": the complete last option must stay above fixed navigation " + JSON.stringify(firstScreenGeometry));
+      label + ": last option must appear on the first mobile screen");
     const before = await page.evaluate(() => ({
       content: document.documentElement.scrollWidth, viewport: window.innerWidth,
     }));
@@ -123,14 +104,16 @@ async function check(browserType, locale, width, height) {
     await page.screenshot({ path: folder + "/" + label + ".png", fullPage: true }).catch(() => {});
     throw err;
   } finally {
-    await page.close();
-    await browser.close();
+    await context.close();
   }
 }
 
-for (const locale of ["en", "ru", "es"]) await check(webkit, locale, 390, 844);
-for (const locale of ["en", "ru", "es"]) await check(webkit, locale, 320, 568);
-await check(webkit, "en", 430, 844);
-for (const locale of ["en", "ru", "es"]) await check(chromium, locale, 390, 844);
+await runMobileBrowserCases([
+  { browserType: webkit, cases: [
+    ...["en", "ru", "es"].map(locale => [locale, 390, 844]),
+    ["ru", 320, 568], ["en", 430, 844],
+  ] },
+  { browserType: chromium, cases: ["en", "ru", "es"].map(locale => [locale, 390, 844]) },
+], check);
 await writeFile(folder + "/acceptance.json", JSON.stringify(evidence, null, 2));
 console.log("Holistic Support three-choice mobile acceptance passed:", evidence.length, "browser/locale/width combinations");

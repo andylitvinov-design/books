@@ -37,7 +37,7 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   const src = read("components/contact-channel-chooser.tsx");
   const css = read("components/contact-channel-chooser.module.css");
   for (const text of [
-    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!open && !quick}',
+    'aria-expanded={open}', 'aria-controls={panelId}', 'hidden={!interactive || (!open && !quick)}',
     'Оставьте контакт, чтобы записаться или узнать подробности',
     'Leave your contact to enquire or join',
     'Deja tus datos para consultar o inscribirte', 'WhatsApp', 'Telegram',
@@ -46,7 +46,12 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   ]) assert.ok(src.includes(text), text);
   assert.match(src, /<button[\s\S]*?type="button"/);
   assert.match(src, /onClick=\{\(\) => setOpen\(\(value\) => !value\)\}/);
-  assert.match(src, /<details className=\{styles\.optionalNote\}>/);
+  assert.match(src, /<details key=\{resetSignature\} className=\{styles\.optionalName\}>/);
+  assert.match(src, /<summary>\{c\.nameOptional\}<\/summary>/);
+  assert.doesNotMatch(src, /setNameOpen|open=\{nameOpen\}/);
+  assert.match(src, /<details className=\{styles\.optionalNote\} open=\{noteOpen\}>/);
+  assert.match(src, /setNoteOpen\(value => !value\)/);
+  assert.match(src, /setNoteOpen\(false\)/);
   assert.match(src, /<textarea[\s\S]*?maxLength=\{1400\} rows=\{2\}/);
   assert.doesNotMatch(src, /c\.situation \+ ": " \+ description\.trim\(\)/);
   assert.match(src, /originalMessage \+ "\\n\\n" \+ c\.reference/);
@@ -64,6 +69,15 @@ test("contact chooser is a progressive, accessible mobile-friendly component", (
   assert.match(css, /@container \(max-width: 300px\)/);
   assert.match(src, /onChannelClick\?\./);
   assert.match(src, /scrollIntoView/);
+});
+
+test("contact controls wait for the reset associated with the currently selected offer", () => {
+  const src = read("components/contact-channel-chooser.tsx");
+  assert.match(src, /settledResetSignature === resetSignature/);
+  assert.match(src, /JSON\.stringify\(\[enquiryResetKey, quick, compactPhone, cartContact\]\)/);
+  assert.equal((src.match(/setSettledResetSignature\(resetSignature\)/g)||[]).length, 2);
+  assert.match(src, /if \(!interactive \|\| busy \|\| saved\) return/);
+  assert.match(src, /if \(!interactive \|\| googleBusy \|\| busy\) return/);
 });
 
 test("primary capture components render channel chooser after service selection while downloads remain immediate", () => {
@@ -95,4 +109,48 @@ test("primary capture components render channel chooser after service selection 
   assert.match(footer, /<CompactLeadCapture/);
   assert.doesNotMatch(footer, /<ContactChannelChooser/);
 
+});
+
+test("default cart is messenger-only; historical phone/Google form stays gated behind explicit rollback", () => {
+  const ui = read("components/contact-channel-chooser.tsx");
+  const qa = read("scripts/verify-storefront-shop-browser.mjs");
+  assert.match(ui, /data-contact-hydrated=\{cartContact \? String\(cartFormHydrated\)/);
+  assert.match(ui, /cartContact && !cartFormHydrated/);
+  assert.match(ui, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/);
+  assert.match(ui, /\!consent/);
+  assert.match(qa, /data-messenger-only-contact/);
+  assert.match(qa, /No synthetic CRM save before provider confirmation/);
+  assert.match(qa, /data-messenger-only-channel/);
+  assert.match(qa, /syntheticEnquiries.length,0/);
+});
+
+test("WebKit cart consent fallback uses only a real checked click, never implicit consent", () => {
+  const ui = read("components/contact-channel-chooser.tsx");
+  const cart = ui.slice(ui.indexOf('data-contact-hydrated={cartContact ? String(cartFormHydrated)'));
+  assert.ok(cart.length > 0, "cart-only contact form must exist");
+  assert.match(cart, /onClick=\{cartContact \? event => \{[\s\S]*?setConsent\(event\.currentTarget\.checked\)/,
+    "only a native cart checkbox click may reconcile Safari consent");
+  assert.match(cart, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/,
+    "keep normal React change semantics");
+  assert.match(cart, /disabled=\{busy \|\| googleBusy \|\| !interactive \|\| \(cartContact && !cartFormHydrated\) \|\|[\s\S]*?!consent\}/,
+    "submission must still require explicit consent");
+  assert.doesNotMatch(cart, /onClick=\{cartContact \? event => \{\s*setConsent\(true\)/,
+    "never manufacture consent from a generic click");
+  const qa = read("scripts/verify-storefront-shop-browser.mjs");
+  assert.match(qa, /await wa\.waitFor\(/,
+    "real WebKit acceptance must still exercise an actual visitor click");
+  assert.match(qa, /No synthetic CRM save before provider confirmation/);
+  assert.match(qa, /unverified phone or Google session/);
+});
+
+test("optional name disclosure uses one native user click, reset only on changed offer, and never changes consent", () => {
+  const src = read("components/contact-channel-chooser.tsx");
+  assert.match(src, /<details key=\{resetSignature\} className=\{styles\.optionalName\}>/);
+  assert.match(src, /<summary>\{c\.nameOptional\}<\/summary>/);
+  assert.doesNotMatch(src, /nameOpen|setNameOpen/);
+  assert.match(src, /setDisplayName\("?"\)/);
+  assert.match(src, /setConsent\(false\)/);
+  assert.match(src, /checked=\{consent\}/);
+  assert.match(src, /onChange=\{event => \{ setConsent\(event\.target\.checked\)/);
+  assert.match(src, /resetSignature = JSON\.stringify\(\[enquiryResetKey, quick, compactPhone, cartContact\]\)/);
 });

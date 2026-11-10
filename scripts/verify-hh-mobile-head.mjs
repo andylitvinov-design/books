@@ -6,8 +6,10 @@ const origin=process.argv[2]||'http://127.0.0.1:3098'
 const cases=[
   ['/', '/holistic-house-app.webmanifest'],
   ['/ru', '/holistic-house-app-ru.webmanifest'],
+  ['/es', '/holistic-house-app-es.webmanifest'],
   ['/en/install', '/holistic-house-app.webmanifest'],
   ['/ru/install', '/holistic-house-app-ru.webmanifest'],
+  ['/es/install', '/holistic-house-app-es.webmanifest'],
   ['/en/app/portrait', '/holistic-house-app.webmanifest'],
   ['/ru/app/portrait', '/holistic-house-app-ru.webmanifest'],
   ['/ru/homeopathy', '/manifest.webmanifest'],
@@ -28,13 +30,30 @@ for(const [route,expected] of cases){
     failures.push(route+': '+String(error?.message||error))
   }
 }
-for(const path of ['/holistic-house-app.webmanifest','/holistic-house-app-ru.webmanifest','/manifest.webmanifest']){
+for(const path of ['/holistic-house-app.webmanifest','/holistic-house-app-ru.webmanifest','/holistic-house-app-es.webmanifest','/manifest.webmanifest']){
   try{
     const response=await fetch(new URL(path,origin))
     assert.equal(response.status,200,path+' status')
     const manifest=await response.json()
     assert.equal(manifest.display,'standalone',path)
     assert.equal(manifest.name,path==='/manifest.webmanifest'?'PsiAlchemy':'Holistic House',path)
+    if(path!=='/manifest.webmanifest'){
+      const locale=path.includes('-ru.')?'ru':path.includes('-es.')?'es':'en'
+      assert.equal(manifest.start_url,'/'+locale,path+' must start on public unified Home')
+      assert.equal(manifest.id,'/en/app',path+' must preserve installed app identity')
+      assert.equal(manifest.scope,'/',path+' must cover all seven app destinations')
+    }
+  }catch(error){failures.push(path+': '+String(error?.message||error))}
+}
+for(const locale of ['ru','en','es']){
+  const path='/holistic-house-offline-'+locale+'.html'
+  try{
+    const response=await fetch(new URL(path,origin))
+    assert.equal(response.status,200,path+' status')
+    assert.match(response.headers.get('content-type')||'',/text\/html/i,path+' content-type')
+    const html=await response.text()
+    assert.match(html,/noindex,nofollow/,path+' must not be indexed')
+    assert.match(html,/Holistic House/,path+' must not be an empty fallback')
   }catch(error){failures.push(path+': '+String(error?.message||error))}
 }
 if(failures.length){

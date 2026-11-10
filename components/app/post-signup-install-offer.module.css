@@ -70,3 +70,15 @@
  .phone{top:13px;width:142px;height:227px}.intro{font-size:13px;margin-bottom:13px}
  .content h2{font-size:25px}.art{margin-bottom:15px}}
 @media(prefers-reduced-motion:reduce){.backdrop *, .backdrop{animation:none!important;transition:none!important}}
+
+/* Only after completed Google/Cabinet onboarding; not an automatic marketing popup. */
+.whatsappCard{border:1px solid #c8e5d5;background:#f2faf4;border-radius:18px;
+ padding:16px 13px;margin:0 auto 17px;max-width:435px}
+.whatsappAction{display:flex;justify-content:center;align-items:center;width:100%;
+ min-height:52px;padding:12px 18px;border-radius:999px;
+ background:#176b46;color:#fff;text-decoration:none;font:750 15px/1.25 system-ui,sans-serif;
+ border:1px solid #176b46}
+.whatsappAction:hover{background:#12583a;color:#fff}
+.whatsappAction:focus-visible{outline:3px solid #22735c;outline-offset:3px}
+.whatsappHelp{margin:10px auto 0;color:#496255;
+ font:400 12px/1.5 system-ui,sans-serif;max-width:390px}

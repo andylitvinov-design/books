@@ -1,0 +1,118 @@
+/*
+ * Holistic House — Holistic Light / Warm & Alive design tokens (v1.1).
+ * Semantic tokens are opt-in: importing them must NOT recolor existing
+ * approved My Course, Business, CRM, or Video Studio surfaces automatically.
+ */
+:root {
+  --hh-light-canvas: #fbf5e9;
+  --hh-light-surface: #fffcf7;
+  --hh-light-surface-soft: #f5ecdc;
+  --hh-light-ink: #143d3a;
+  --hh-light-editorial-ink: #17334b;
+  --hh-light-muted: #5d6a71;
+  --hh-light-border: #e9dfd1;
+  --hh-light-divider: #eee4d7;
+  --hh-light-primary: #067a67;
+  --hh-light-primary-hover: #006e60;
+  --hh-light-primary-soft: #e6f6f1;
+  --hh-light-focus: #176e6e;
+  --hh-light-shadow: 0 6px 24px rgb(78 53 30 / 7%);
+  --hh-light-radius-chip: 14px;
+  --hh-light-radius-control: 18px;
+  --hh-light-radius-card: 22px;
+  --hh-light-radius-hero: 28px;
+  --hh-light-touch-min: 44px;
+  --hh-light-cta-height: 56px;
+  --hh-light-space-section: 24px;
+  --hh-light-category-energy: #eaf7f7;
+  --hh-light-category-energy-ink: #176e6e;
+  --hh-light-category-money: #fbf2de;
+  --hh-light-category-money-ink: #966a1f;
+  --hh-light-category-love: #fcecf2;
+  --hh-light-category-love-ink: #aa4068;
+  --hh-light-category-confidence: #f2ecfb;
+  --hh-light-category-confidence-ink: #7753b1;
+  --hh-light-category-antistress: #eaf8ef;
+  --hh-light-category-antistress-ink: #08736b;
+  --hh-design-canvas: var(--hh-light-canvas);
+  --hh-design-surface: var(--hh-light-surface);
+  --hh-design-ink: var(--hh-light-ink);
+  --hh-design-primary: var(--hh-light-primary);
+  --hh-design-primary-hover: var(--hh-light-primary-hover);
+  --hh-design-selected: var(--hh-light-primary-soft);
+}
+
+[data-hh-design="warm-sunrise"] {
+  --hh-design-canvas: #fff9f3;
+  --hh-design-surface: #fffcf9;
+  --hh-design-ink: #10231f;
+  --hh-design-primary: #02774b;
+  --hh-design-primary-hover: #006c45;
+  --hh-design-selected: #e8f6ea;
+}
+
+/* Opt-in primitives only. Existing classes and flows remain unchanged. */
+.hh-design-surface {
+  background: var(--hh-design-canvas);
+  color: var(--hh-design-ink);
+}
+.hh-design-card {
+  border: 1px solid var(--hh-light-border);
+  border-radius: var(--hh-light-radius-card);
+  background: var(--hh-design-surface);
+  box-shadow: var(--hh-light-shadow);
+}
+.hh-design-primary-action {
+  display: inline-flex;
+  min-height: var(--hh-light-cta-height);
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--hh-light-radius-control);
+  padding: 12px 20px;
+  background: var(--hh-design-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+  cursor: pointer;
+}
+.hh-design-primary-action:hover { background: var(--hh-design-primary-hover); }
+.hh-design-primary-action:disabled,
+.hh-design-primary-action[aria-disabled="true"] { opacity: .6; cursor: not-allowed; }
+.hh-design-option {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--hh-light-border);
+  border-radius: var(--hh-light-radius-control);
+  padding: 12px;
+  background: var(--hh-design-surface);
+  color: var(--hh-design-ink);
+}
+.hh-design-option[aria-selected="true"],
+.hh-design-option[aria-pressed="true"],
+.hh-design-option[data-selected="true"] {
+  border: 2px solid var(--hh-design-primary);
+  background: var(--hh-design-selected);
+}
+.hh-design-primary-action:focus-visible,
+.hh-design-option:focus-visible {
+  outline: 3px solid var(--hh-light-focus);
+  outline-offset: 3px;
+}
+.hh-design-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 350px) {
+  .hh-design-choice-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hh-design-primary-action, .hh-design-option { transition: none; }
+}

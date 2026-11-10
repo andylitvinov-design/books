@@ -2,11 +2,33 @@ name: Holistic House isolated billing database verification
 on:
   pull_request:
     branches: ['codex/public-book-library']
+    paths:
+      - 'tests/talisman-google-checkout.test.mjs'
+      - 'app/**/cart/**'
+      - 'app/api/payments/**'
+      - 'app/api/billing/**'
+      - 'app/api/services/**'
+      - 'components/commerce/**'
+      - 'components/*cart*'
+      - 'lib/commerce/**'
+      - 'lib/billing/**'
+      - 'lib/checkout/**'
+      - 'tests/billing-*.mjs'
+      - 'tests/square-*.mjs'
+      - 'tests/service-*.mjs'
+      - 'tests/paypal-*.mjs'
+      - 'tests/consultation-cart*.mjs'
+      - 'tests/personal-cart*.mjs'
+      - 'supabase/migrations/**'
+      - 'middleware.ts'
+      - 'next.config.*'
+      - 'package.json'
+      - 'package-lock.json'
 permissions:
   contents: read
 concurrency:
-  group: hh-billing-database-${{ github.ref }}
-  cancel-in-progress: true
+  group: hh-billing-database-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   billing-database:
     runs-on: ubuntu-latest
@@ -33,8 +55,14 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
-      - name: Square checkout syntax, TypeScript and focused lint
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
+      - name: Square checkout syntax and focused lint (Core owns full TypeScript)
         run: |
           node --check lib/commerce/square-payment-links.js
           node --check lib/commerce/square-gateway.js
@@ -42,13 +70,23 @@ jobs:
           node --check app/api/payments/square/checkout/route.js
           node --check app/api/payments/square/status/route.js
           node --check app/api/payments/square/webhook/route.js
-          npx tsc --noEmit --pretty false
+          node --check lib/commerce/talisman-checkout.js
+          node --check app/api/payments/talismans/checkout/route.js
+          # Required exact-HEAD Core already performs full-app TypeScript checking.
+          # Never repeat it here: one unrelated TS error produced two RED jobs
+          # while all isolated payment, provider and PostgreSQL/RLS tests stayed protected.
           npx eslint lib/commerce/square-payment-links.js lib/commerce/square-gateway.js lib/commerce/square-cart-service.js app/api/payments/square components/commerce/personal-cart.tsx app/'[locale]'/cart/page.tsx
+      - name: Active PayPal.Me EUR manual fallback, kill switch and no fake paid status
+        run: node --test tests/paypal-personal-payments.test.mjs
       - name: Square dynamic checkout signature, CAD price and provider-readback contracts
         run: node --test tests/service-square-api-cart.test.mjs
+      - name: Talisman fixed-price provider checkout gate and Google account return
+        run: node --test tests/talisman-google-checkout.test.mjs
+      - name: Video XP RLS, grants and terminal ledger on fresh PostgreSQL 17
+        run: node --test tests/video-credits-postgres.integration.mjs
       - name: Square isolated payment-ledger FORCE RLS on PostgreSQL 17
         run: node --test tests/square-ledger-isolated.integration.mjs
       - name: ZEN checkout signatures, IPN, merchant readback and legacy Stripe regression
-        run: node --test tests/service-zen-transfer-inquiry.test.mjs tests/service-commerce-zen.test.mjs tests/service-cart.test.mjs tests/service-commerce-flow.test.mjs tests/service-commerce-stripe.test.mjs tests/service-commerce-paypal.test.mjs tests/service-paypal-hosted-links.test.mjs tests/service-paypal-auto-public-flow.test.mjs tests/service-commerce-repository.test.mjs tests/service-commerce-account-binding.test.mjs tests/service-individual-checkout-methods.test.mjs tests/service-square-individual-payments.test.mjs tests/service-square-api-cart.test.mjs tests/service-personal-payment-entry.test.mjs tests/consultation-cart-experience.test.mjs tests/service-storefront-shop.test.mjs
+        run: node --test tests/service-zen-transfer-inquiry.test.mjs tests/service-commerce-zen.test.mjs tests/service-cart.test.mjs tests/service-commerce-flow.test.mjs tests/service-commerce-stripe.test.mjs tests/service-commerce-paypal.test.mjs tests/service-paypal-hosted-links.test.mjs tests/service-paypal-auto-public-flow.test.mjs tests/service-commerce-repository.test.mjs tests/service-commerce-account-binding.test.mjs tests/service-individual-checkout-methods.test.mjs tests/service-square-individual-payments.test.mjs tests/service-square-api-cart.test.mjs tests/service-personal-payment-entry.test.mjs tests/consultation-cart-experience.test.mjs tests/personal-cart-photo-order.test.mjs tests/service-storefront-shop.test.mjs
       - name: Billing, commerce, CRM and push SQL/RLS with real concurrent transactions
         run: npm run test:billing:db

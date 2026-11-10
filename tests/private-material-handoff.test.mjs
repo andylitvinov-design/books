@@ -11,9 +11,21 @@ for(const locale of ['en','ru','es'])test(locale+': free drawing entry keeps mat
  assert.match(source,/\/coaching\/intake/)
  assert.ok(source.includes(locale+':'))
 })
-test('all three locales explicitly prohibit private material messenger transport',()=>{
+test('EN/RU/ES protect clinical answers while acknowledging optional consented Telegram photos and drawings',()=>{
  const landing=read('components/free-entry-landing.tsx'),capture=read('components/consultation-choice-capture.tsx')
- for(const phrase of ['Do not send private answers','Не отправляйте личные ответы','No envíes respuestas privadas'])assert.ok(landing.includes(phrase)&&capture.includes(phrase),phrase)
+ // The manual consultation and the full questionnaire still prohibit sending
+ // sensitive private answers, drawings and scores through WhatsApp.
+ for(const phrase of ['Do not send private answers','Не отправляйте личные ответы','No envíes respuestas privadas'])
+   assert.ok(capture.includes(phrase),phrase)
+ // Previously approved Telegram V2 invites an optional non-clinical photo and
+ // drawing after explicit consent. The public instructions must not contradict it.
+ for(const phrase of ['After consent, the Telegram dialogue may ask',
+   'После согласия Telegram-бот может','Tras dar tu consentimiento, Telegram puede pedir'])
+   assert.ok(landing.includes(phrase),phrase)
+ for(const phrase of ['medical records, test results and sensitive details in the protected website form',
+   'Медицинские документы, результаты тестов и чувствительные сведения передавайте только через защищённую форму сайта',
+   'Envía expedientes médicos, pruebas y datos sensibles solo por el formulario protegido'])
+   assert.ok(landing.includes(phrase),phrase)
  assert.doesNotMatch(landing,/Use WhatsApp or Telegram to share your answers|Пришлите анкету и фото рисунка в WhatsApp|Comparte las respuestas y la foto por WhatsApp/)
 })
 test('canonical draft is owner-only, consented and has no public analytics or messenger transport',()=>{

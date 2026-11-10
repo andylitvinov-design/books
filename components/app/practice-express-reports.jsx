@@ -17,6 +17,11 @@ const COPY = {
     new: 'New express report', archived: 'Saved express reports',
     client: 'Verified client request', noClient: 'No eligible requests yet. For a free guest enquiry, the client must securely save their request to a verified Google account.',
     selectClient: 'Choose a verified request',
+    editor: 'Private report draft', readyToStart: 'Select New express report to prepare a report for a verified request.',
+    noClientTitle: 'First, connect a verified client request',
+    noClientNext: 'You can prepare the text now, but saving and sending require an actual client request linked to their own account.',
+    viewRequests: 'View client requests', clientForm: 'Open client intake form',
+    unsavedWarning: 'Not saved. A verified client request is required before you can save this draft.',
     reportLanguage: 'Report language', reportDate: 'Review date',
     titleField: 'Report title', situation: 'Situation and question',
     findings: 'What we observed / discovered', resources: 'Strengths and possibilities',
@@ -44,6 +49,11 @@ const COPY = {
     new: 'Новый экспресс-отчёт', archived: 'Сохранённые экспресс-отчёты',
     client: 'Подтверждённая заявка клиента', noClient: 'Нет заявок с подтверждённым аккаунтом. Для бесплатной заявки клиент должен сохранить её в аккаунт через Google.',
     selectClient: 'Выберите заявку клиента',
+    editor: 'Черновик приватного отчёта', readyToStart: 'Нажмите «Новый экспресс-отчёт», чтобы подготовить отчёт для подтверждённого клиента.',
+    noClientTitle: 'Сначала нужна подтверждённая заявка клиента',
+    noClientNext: 'Текст можно подготовить сейчас, но сохранить и отправить его получится только после привязки заявки к аккаунту самого клиента.',
+    viewRequests: 'Посмотреть заявки', clientForm: 'Открыть анкету клиента',
+    unsavedWarning: 'Не сохранено. Для сохранения черновика нужна подтверждённая заявка клиента.',
     reportLanguage: 'Язык отчёта', reportDate: 'Дата разбора',
     titleField: 'Название отчёта', situation: 'Ситуация и запрос',
     findings: 'Что обнаружили / выяснили', resources: 'Ресурсы и возможности',
@@ -70,7 +80,13 @@ const COPY = {
     owner: 'El informe completo con homeopatía solo está disponible para el propietario.',
     new: 'Nuevo informe exprés', archived: 'Informes guardados',
     client: 'Solicitud de un cliente verificado', noClient: 'No hay solicitudes elegibles. El cliente debe guardar la solicitud gratuita en su cuenta Google verificada.',
-    selectClient: 'Elige una solicitud', reportLanguage: 'Idioma del informe', reportDate: 'Fecha',
+    selectClient: 'Elige una solicitud',
+    editor: 'Borrador de informe privado', readyToStart: 'Pulsa Nuevo informe exprés para preparar el informe de un cliente verificado.',
+    noClientTitle: 'Primero necesitas una solicitud verificada',
+    noClientNext: 'Puedes preparar el texto ahora, pero solo se puede guardar y enviar tras vincular la solicitud a la cuenta del propio cliente.',
+    viewRequests: 'Ver solicitudes', clientForm: 'Abrir formulario del cliente',
+    unsavedWarning: 'Sin guardar. Se necesita una solicitud verificada para guardar el borrador.',
+    reportLanguage: 'Idioma del informe', reportDate: 'Fecha',
     titleField: 'Título', situation: 'Situación y pregunta',
     findings: 'Observaciones', resources: 'Recursos y posibilidades',
     steps: 'Próximos pasos', followUp: 'Seguimiento',
@@ -144,7 +160,7 @@ function ExpressReportCard({ item, locale, client = false }) {
   </article>
 }
 
-export default function PracticeExpressReports({ locale = 'en', accountId, requests = [], owner = false, initialRequestId = '' }) {
+export default function PracticeExpressReports({ locale = 'en', accountId, requests = [], owner = false, initialRequestId = '', onOpenRequests }) {
   const t = COPY[locale] || COPY.en
   const eligible = useMemo(() => requests.filter(item => item.accountRequest === true || item.reportEligible === true), [requests])
   const [items,setItems] = useState([])
@@ -153,6 +169,9 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
   const [error,setError] = useState('')
   const [notice,setNotice] = useState('')
   const [selectedId,setSelectedId] = useState('')
+  const [composing,setComposing] = useState(false)
+  const [editorActivation,setEditorActivation] = useState(0)
+  const editorHeadingRef = useRef(null)
   const pendingOperation = useRef(null) // Stable across network retries: never double-create a report.
   const [requestId,setRequestId] = useState('')
   const [language,setLanguage] = useState(['ru','es'].includes(locale) ? locale : 'en')
@@ -177,16 +196,26 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
     return () => { live = false }
   },[accountId,t.error])
   useEffect(() => {
-    if (initialRequestId && eligible.some(item => item.id === initialRequestId))
+    if (initialRequestId && eligible.some(item => item.id === initialRequestId)) {
       setRequestId(initialRequestId)
+      setComposing(true)
+    }
   },[eligible,initialRequestId])
   useEffect(() => {
     if (!requestId && eligible.length) setRequestId(eligible[0].id)
   },[eligible,requestId])
 
+  useEffect(() => {
+    if (composing && editorActivation > 0 && !loading) editorHeadingRef.current?.focus()
+  },[composing,editorActivation,loading])
+
   function startNew() {
     pendingOperation.current = null
     setSelectedId('')
+    setComposing(true)
+    setEditorActivation(value => value+1)
+    // Do not retain a stale request from an older report or practitioner.
+    setRequestId(previous => eligible.some(item => item.id === previous) ? previous : (eligible[0]?.id || ''))
     setLanguage(['ru','es'].includes(locale) ? locale : 'en')
     setIssuedOn(new Date().toISOString().slice(0,10))
     setContent({ ...EMPTY, title: locale === 'ru' ? 'Экспресс-разбор ситуации' : locale === 'es' ? 'Análisis exprés de situación' : 'Express situation review' })
@@ -195,6 +224,8 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
   }
   function open(item) {
     pendingOperation.current = null
+    setComposing(true)
+    setEditorActivation(value => value+1)
     setSelectedId(item.id)
     setRequestId(item.requestId)
     setLanguage(item.language)
@@ -233,15 +264,25 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
   return <section className={styles.shell} aria-label={t.title} data-practitioner-express-reports>
     <div className={styles.heading}>
       <div><p className={styles.eyebrow}>MY PRACTICE · PRIVATE</p><h2>{t.title}</h2><p>{t.subtitle}</p></div>
-      <button type="button" onClick={startNew} className={styles.newButton}><Plus size={17} aria-hidden="true" />{t.new}</button>
+      <button type="button" onClick={startNew} aria-expanded={composing} className={styles.newButton}><Plus size={17} aria-hidden="true" />{t.new}</button>
     </div>
     {owner && <p className={styles.owner}>{t.owner}</p>}
     <p className={styles.privacy}><ShieldCheck size={16} aria-hidden="true" />{t.privacy}</p>
     {loading ? <p role="status">{t.refreshing}</p> : <>
-      {eligible.length ? <form className={styles.form} onSubmit={event => {event.preventDefault();perform('save')}} autoComplete="off">
+      {!eligible.length && <div className={styles.prerequisite} role="status" data-express-client-prerequisite>
+        <strong>{t.noClientTitle}</strong>
+        <p>{t.noClientNext}</p>
+        <div className={styles.prerequisiteActions}>
+          {onOpenRequests && <button type="button" onClick={onOpenRequests}>{t.viewRequests}</button>}
+          <Link href={`/${locale}/services/free-situation-review`} prefetch={false}>{t.clientForm}</Link>
+        </div>
+      </div>}
+      {eligible.length > 0 && !composing && !current && <p className={styles.hint}>{t.readyToStart}</p>}
+      {(composing || current) && <form className={styles.form} onSubmit={event => {event.preventDefault();perform('save')}} autoComplete="off" data-express-report-editor>
+        <h3 className={styles.editorTitle} ref={editorHeadingRef} tabIndex={-1}>{t.editor}</h3>
         <div className={styles.row}>
           <label>{t.client}
-            <select value={requestId} disabled={Boolean(current) || busy}
+            <select value={requestId} disabled={Boolean(current) || busy || !eligible.length}
               onChange={event => setRequestId(event.target.value)} required>
               <option value="">{t.selectClient}</option>
               {eligible.map(item => <option key={item.id} value={item.id}>
@@ -298,9 +339,10 @@ export default function PracticeExpressReports({ locale = 'en', accountId, reque
             <button type="button" disabled={busy} onClick={() => perform('revoke')} className={styles.revoke}>{t.revoke}</button>
           </>}
         </div>
+        {!requestId && <p className={styles.hint} role="status">{t.unsavedWarning}</p>}
         {current?.status === 'draft' && (dirty || !canPublish) && <p className={styles.hint}>{dirty ? t.dirty : t.ready}</p>}
         {current && current.status !== 'draft' && <p className={styles.hint}>{t.locked}</p>}
-      </form> : <p className={styles.hint}>{t.noClient}</p>}
+      </form>}
       {current && <ExpressReportCard item={current} locale={language}/>}
       <div className={styles.archive}>
         <h3>{t.archived}</h3>

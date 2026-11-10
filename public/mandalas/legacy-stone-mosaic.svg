@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-label="Каменная мандала 1">
+  <defs>
+    <radialGradient id="paper" cx="50%" cy="45%" r="70%">
+      <stop offset="0%" stop-color="#f7f1e5"/>
+      <stop offset="70%" stop-color="#e4dccf"/>
+      <stop offset="100%" stop-color="#cfc7bc"/>
+    </radialGradient>
+    <pattern id="pebbles" width="72" height="72" patternUnits="userSpaceOnUse">
+      <rect width="72" height="72" fill="transparent"/>
+      <ellipse cx="14" cy="20" rx="10" ry="7" fill="#f5f1ea" stroke="#b8b1a7" stroke-width="1.6" transform="rotate(-18 14 20)"/>
+      <ellipse cx="41" cy="16" rx="13" ry="8" fill="#ddd8ce" stroke="#aaa39a" stroke-width="1.4" transform="rotate(20 41 16)"/>
+      <ellipse cx="57" cy="43" rx="9" ry="13" fill="#eee8de" stroke="#b5ada2" stroke-width="1.3" transform="rotate(38 57 43)"/>
+      <ellipse cx="25" cy="53" rx="14" ry="8" fill="#d8d3ca" stroke="#a8a196" stroke-width="1.5" transform="rotate(-10 25 53)"/>
+    </pattern>
+    <g id="leafChain">
+      <path d="M0 0 C22 -18 44 -18 66 0 C44 18 22 18 0 0Z" fill="#2d2d2b"/>
+      <path d="M7 0 H59" stroke="#7c7b76" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <g id="flower">
+      <circle r="20" fill="#2d2d2b"/>
+      <g fill="#2d2d2b" stroke="#f4efe4" stroke-width="7">
+        <path d="M0 -122 C30 -82 30 -43 0 -22 C-30 -43 -30 -82 0 -122Z"/>
+        <path d="M0 122 C30 82 30 43 0 22 C-30 43 -30 82 0 122Z"/>
+        <path d="M-122 0 C-82 -30 -43 -30 -22 0 C-43 30 -82 30 -122 0Z"/>
+        <path d="M122 0 C82 -30 43 -30 22 0 C43 30 82 30 122 0Z"/>
+        <path d="M-86 -86 C-36 -76 -16 -48 -16 -16 C-48 -16 -76 -36 -86 -86Z"/>
+        <path d="M86 -86 C36 -76 16 -48 16 -16 C48 -16 76 -36 86 -86Z"/>
+        <path d="M-86 86 C-36 76 -16 48 -16 16 C-48 16 -76 36 -86 86Z"/>
+        <path d="M86 86 C36 76 16 48 16 16 C48 16 76 36 86 86Z"/>
+      </g>
+    </g>
+    <g id="beadCircle">
+      <circle r="38" fill="#3b3934"/>
+      <circle r="72" fill="none" stroke="#2d2d2b" stroke-width="0"/>
+      <g fill="#2d2d2b">
+        <circle cx="0" cy="-74" r="8"/><circle cx="37" cy="-64" r="8"/><circle cx="64" cy="-37" r="8"/>
+        <circle cx="74" cy="0" r="8"/><circle cx="64" cy="37" r="8"/><circle cx="37" cy="64" r="8"/>
+        <circle cx="0" cy="74" r="8"/><circle cx="-37" cy="64" r="8"/><circle cx="-64" cy="37" r="8"/>
+        <circle cx="-74" cy="0" r="8"/><circle cx="-64" cy="-37" r="8"/><circle cx="-37" cy="-64" r="8"/>
+      </g>
+    </g>
+  </defs>
+  <rect width="1200" height="1200" fill="url(#paper)"/>
+  <circle cx="600" cy="600" r="520" fill="url(#pebbles)" stroke="#2f302d" stroke-width="8"/>
+  <circle cx="600" cy="600" r="560" fill="none" stroke="#2f302d" stroke-width="6"/>
+  <circle cx="600" cy="600" r="500" fill="none" stroke="#f3ede3" stroke-width="12" opacity="0.9"/>
+  <g stroke="#2d2d2b" stroke-width="34" fill="none" stroke-linejoin="round" opacity="0.96">
+    <path d="M600 130 L1070 600 L600 1070 L130 600Z"/>
+    <path d="M600 240 L960 600 L600 960 L240 600Z"/>
+    <path d="M600 350 L850 600 L600 850 L350 600Z"/>
+  </g>
+  <g stroke="#eee8dc" stroke-width="8" fill="none" stroke-linejoin="round">
+    <path d="M600 130 L1070 600 L600 1070 L130 600Z"/>
+    <path d="M600 240 L960 600 L600 960 L240 600Z"/>
+    <path d="M600 350 L850 600 L600 850 L350 600Z"/>
+  </g>
+  <g transform="translate(600 600) scale(.78)"><use href="#flower"/></g>
+  <g transform="translate(350 350) scale(.72)"><use href="#flower"/></g>
+  <g transform="translate(850 350) scale(.72)"><use href="#flower"/></g>
+  <g transform="translate(350 850) scale(.72)"><use href="#flower"/></g>
+  <g transform="translate(850 850) scale(.72)"><use href="#flower"/></g>
+  <g transform="translate(600 275) scale(.6)"><use href="#beadCircle"/></g>
+  <g transform="translate(925 600) scale(.6)"><use href="#beadCircle"/></g>
+  <g transform="translate(600 925) scale(.6)"><use href="#beadCircle"/></g>
+  <g transform="translate(275 600) scale(.6)"><use href="#beadCircle"/></g>
+  <g fill="#2d2d2b" opacity="0.92">
+    <circle cx="600" cy="70" r="18"/><circle cx="600" cy="1130" r="18"/><circle cx="70" cy="600" r="18"/><circle cx="1130" cy="600" r="18"/>
+    <path d="M600 20 L628 48 L600 76 L572 48Z"/><path d="M600 1124 L628 1152 L600 1180 L572 1152Z"/>
+    <path d="M20 600 L48 572 L76 600 L48 628Z"/><path d="M1124 600 L1152 572 L1180 600 L1152 628Z"/>
+  </g>
+</svg>

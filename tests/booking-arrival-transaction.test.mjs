@@ -29,6 +29,13 @@ function database({failNotice=false,ordinary=false}={}){
   const transaction=async(_config,_actor,fn)=>{
     const pendingRequests=new Map(requests),pendingMessages=new Map(messages)
     const db={async query(sql,args){
+      // Fixture for the already released consultation messenger identity
+      // gate: a real request is verified only after it is created. Keep the
+      // production fail-closed check, do not disable or mock it away.
+      if(sql.includes("to_regprocedure('app_private.hh_consultation_messenger_verified(uuid)')"))
+        return {rows:[{ready:true}]}
+      if(sql.includes('select app_private.hh_consultation_messenger_verified($1)'))
+        return {rows:[{verified:pendingRequests.has(args[0])}]}
       if(sql.includes('from app.accounts'))return {rows:[{id:client.id,status:'active',onboarding_state:'active'}]}
       if(sql.includes('where account_id=$1 and operation_id=$2'))return {rows:[...pendingRequests.values()]
         .filter(row=>row.account_id===args[0]&&row.operation_id===args[1])}
@@ -105,4 +112,36 @@ test('an unrelated account knowing the UUID cannot send; only the actual assigne
   const own=await messages.send(master,{requestId:created.id,
     operationId:'10000000-0000-4000-8000-000000000007',text:'Please confirm the time.'})
   assert.equal(own.notifyClient,true)
+})
+
+test('talisman enquiry commits one private request and one neutral master notice, without session price or appointment',async()=>{
+  const db=database(),repo=createAppRepository(config,{transaction:db.transaction})
+  const body={...input(false),message:'I would like to discuss a talisman',
+    talismanRequest:{version:1,goal:'Work and money'}}
+  const created=await repo.createRequest(client,body)
+  assert.equal(db.requests.size,1)
+  assert.equal(db.messages.size,1)
+  assert.equal(created.enquiryNotice,true)
+  assert.equal(created.bookingNotice,undefined)
+  const row=[...db.requests.values()][0]
+  assert.equal(row.remote_booking,undefined)
+  const saved=openSealed(row.message_ciphertext,
+    {accountId:client.id,recordId:row.id,field:'request.message'},config)
+  assert.match(saved,/TALISMAN ENQUIRY/)
+  assert.match(saved,/NOT ORDERED OR PAID/)
+  assert.match(saved,/I would like to discuss a talisman/)
+  const message=[...db.messages.values()][0]
+  const notice=openSealed(message.body_ciphertext,{
+    accountId:client.id,recordId:message.id,field:'practice.request.message'},config).text
+  assert.match(notice,/new Holistic House service enquiry/)
+  assert.doesNotMatch(notice,/Work and money|talisman|PRIVATE_CONTACT/i)
+  const replay=await repo.createRequest(client,body)
+  assert.equal(replay.id,created.id)
+  assert.equal(replay.enquiryNotice,undefined)
+  assert.equal(db.messages.size,1)
+  await assert.rejects(repo.createRequest(client,{
+    ...body,operationId:'10000000-0000-4000-8000-000000000099',remoteBooking:input().remoteBooking
+  }),error=>error.code==='INVALID_REQUEST_KIND')
+  assert.equal(db.requests.size,1)
+  assert.equal(db.messages.size,1)
 })

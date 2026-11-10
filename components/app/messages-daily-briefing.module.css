@@ -1,0 +1,142 @@
+.root{display:flex;flex-direction:column;gap:14px;max-width:860px;margin:0 auto 22px;padding:1px 1px 25px;color:#214239;min-width:0}
+.heading{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 4px 4px}
+.heading h2{margin:3px 0 2px;font-size:clamp(23px,4vw,29px);line-height:1.15;letter-spacing:-.03em}
+.heading p{margin:0;color:#768077;font-size:13px}
+.eyebrow{display:flex;align-items:center;gap:6px;color:#688d7e;font-size:10px;letter-spacing:.09em;font-weight:700}
+.refresh{border:1px solid #dce6d9;border-radius:99px;background:white;color:#11765e;width:43px;height:43px;flex:none;display:grid;place-items:center;cursor:pointer}
+.refresh:disabled{opacity:.5;cursor:wait}
+.status{margin:0;border:1px solid #efe3c8;background:#fff8e8;padding:11px 13px;border-radius:12px;color:#80663a;font-size:12px}
+.hero{border:1px solid #dfecd9;border-radius:20px;padding:20px 21px 17px;background:linear-gradient(132deg,#edf7ed 0%,#fcfff8 65%,#fffaee 100%);box-shadow:0 6px 16px #56745313}
+.sectionLabel{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#238162}
+.hero h3{font-size:clamp(19px,3.4vw,23px);line-height:1.23;margin:10px 0 6px}
+.hero p{font-size:14px;line-height:1.5;color:#526658;margin:0 0 17px}
+.heroButtons{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.heroButtons a,.heroButtons button,.actions a,.actions button{min-height:39px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:99px;font-weight:700;text-decoration:none;font-size:12px;cursor:pointer}
+.heroButtons a{padding:10px 17px;background:#137b61;color:white}
+.heroButtons button{padding:8px 13px;border:1px solid #cae0cd;color:#226f55;background:#ffffffea}
+.heroButtons button:last-child{width:40px;padding:8px}
+.sectionHeading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.sectionHeading strong{font-size:14px;font-weight:790;color:#244c3c}
+.sectionHeading a{display:inline-flex;align-items:center;gap:2px;color:#198065;font-size:12px;text-decoration:none;font-weight:700}
+.stats{border:1px solid #eee6dc;background:#fffdf8;padding:16px;border-radius:19px}
+.metricGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.metricGrid div{min-height:86px;padding:13px 8px;border-radius:14px;background:#f1f8f0;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.metricGrid strong{font-size:clamp(21px,4vw,29px);font-weight:820;line-height:1.1;font-variant-numeric:tabular-nums}
+.metricGrid span{color:#668073;font-size:11px;line-height:1.2}
+.meta,.muted{font-size:11px;line-height:1.5;color:#777b71;margin:10px 0 0}
+.smallStats{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.smallStats span{display:inline-flex;align-items:center;gap:5px;border-radius:10px;background:#faf4ea;color:#6c6655;font-size:11px;padding:7px 9px}
+.smallStats b{color:#2e5b49}
+.cards{display:flex;flex-direction:column;gap:9px}
+.cards .sectionHeading{margin:2px 2px 0}
+.advice{padding:15px 17px;border:1px solid #eee4da;border-radius:16px;background:#fffefa;box-shadow:0 2px 10px #6b54340b}
+.advice h3{font-size:15px;line-height:1.32;margin:7px 0 5px;color:#294637}
+.advice p{font-size:13px;line-height:1.48;color:#67746a;margin:0 0 10px}
+.category{color:#826132;font-size:10px;font-weight:770;text-transform:uppercase;letter-spacing:.04em}
+.category[data-category="client"]{color:#bd6b39}
+.category[data-category="personal"]{color:#24836f}
+.category[data-category="profile"]{color:#8d5d9c}
+.actions{display:flex;align-items:center;gap:9px}
+.actions a{padding:8px 15px;background:#f0f6ee;color:#186b53;border:1px solid #dce8db}
+.actions button{width:37px;height:37px;border:1px solid #e3e9e0;background:white;color:#6c8373}
+.personal{padding:15px;border:1px solid #e4e5d7;border-radius:17px;background:#fafaf3}
+.switch{display:flex;align-items:center;gap:11px;cursor:pointer}
+.switch input{appearance:auto;accent-color:#14876c;width:19px;height:19px;flex:none;margin:0;cursor:pointer}
+.switch span{display:flex;flex-direction:column;gap:5px}
+.switch strong{font-size:14px;display:inline-flex;align-items:center;gap:7px;color:#275844}
+.switch small{color:#6f7e71;font-size:12px;line-height:1.4}
+.personal p{font-size:11px;color:#798078;margin:9px 0 0}
+.settingsLink{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#158267;font-weight:730;font-size:13px;padding:5px 2px}
+.root footer{display:flex;align-items:flex-start;gap:5px;color:#8a8e83;font-size:10px;line-height:1.55;padding:6px 4px}
+.root footer svg{flex:none;margin-top:1px}
+.member{display:flex;gap:8px;align-items:flex-start;padding:13px;background:#f2f5f2;border-radius:13px;font-size:12px;color:#66786c}
+.member svg{flex:none}
+.empty{display:flex;gap:10px;align-items:center;background:#eff7f0;border-radius:14px;padding:15px;color:#47765c}
+.empty p{font-size:13px;margin:0}
+.guest{display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 18px;text-align:center;min-height:160px;color:#58766b}
+.guest p{margin:0}
+.guest a{display:inline-flex;align-items:center;gap:7px;color:#117b63}
+.root button:focus-visible,.root a:focus-visible{outline:3px solid #198967;outline-offset:3px}
+@media(max-width:760px){
+  .root{padding:0 0 60px;gap:12px}
+  .heading{padding:6px 4px 2px}
+  .heading h2{font-size:24px}
+  .hero{padding:16px;border-radius:17px}
+  .hero h3{font-size:20px}
+  .hero p{font-size:13px}
+  .stats{padding:12px;border-radius:17px}
+  .metricGrid div{min-height:80px;padding:11px 4px}
+  .metricGrid strong{font-size:23px}
+  .metricGrid span{font-size:10px}
+  .smallStats span{font-size:10px}
+  .advice{padding:13px 14px}
+}
+@media(max-width:350px){
+  .heroButtons{gap:6px}.heroButtons a{padding:9px 12px}
+  .heroButtons button{padding:8px 10px;font-size:11px}
+  .metricGrid{gap:5px}
+}
+
+
+/* Briefing carousel: first-party imagery + real account data. Do not create a second page shell. */
+.headingTools{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;min-width:0}
+.datePill{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:43px;max-width:100%;padding:8px 12px;border:1px solid #e9dfd1;border-radius:99px;background:#fffcf7;color:#143d3a;font-size:12px;font-weight:750;line-height:1.3}
+.datePill svg{flex:none;color:#067a67}
+.feed{min-width:0;max-width:100%;overflow:hidden;display:flex;flex-direction:column;gap:12px}
+.feedHeading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 4px}
+.feedHeading strong{font-size:17px;line-height:1.25;color:#143d3a}
+.feedHeading span{color:#5d6a71;font-size:12px}
+.feedFilters{display:flex;gap:8px;overflow-x:auto;max-width:100%;padding:2px 4px 8px;scrollbar-width:thin;scrollbar-color:#c4d9cb transparent}
+.feedFilters button{flex:none;min-height:44px;border:1px solid #e9dfd1;border-radius:99px;background:#fffcf7;color:#314d46;font:700 13px/1.2 system-ui,sans-serif;padding:9px 15px;cursor:pointer}
+.feedFilters button[aria-pressed="true"]{background:#067a67;border-color:#067a67;color:#fff;box-shadow:0 3px 9px #067a6720}
+.feedContentBlock{display:flex;flex-direction:column;gap:7px;min-width:0}
+.feedRail{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-inline:4px;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;min-width:0;width:100%;padding:3px 4px 13px;scrollbar-width:none}
+.feedRail::-webkit-scrollbar{display:none}
+.feedCard{flex:0 0 min(81%,370px);display:flex;flex-direction:column;min-width:0;max-width:100%;border-radius:24px;overflow:hidden;background:#fffcf7;border:1px solid #e9dfd1;box-shadow:0 8px 21px #45372516;scroll-snap-align:start;scroll-snap-stop:always}
+.feedArtwork{height:128px;flex:none;background-image:linear-gradient(180deg,transparent 36%,#143d3a1a),url('/images/holistic-house/reiki-approved-sunrise-v3.webp');background-size:cover;background-position:center 47%;background-color:#fae5bb}
+.feedCard[data-tone="analytics"] .feedArtwork{background-image:linear-gradient(180deg,transparent 36%,#17334b25),url('/images/holistic-house/messenger-zen-stones.svg');background-color:#f2ecfb}
+.feedCard[data-tone="news"] .feedArtwork{background-image:linear-gradient(180deg,transparent 30%,#143d3a1a),url('/images/holistic-house/ideas-zen-landscape.svg');background-color:#f5ecdc}
+.feedCard[data-tone="personal"] .feedArtwork{background-image:linear-gradient(180deg,transparent 30%,#143d3a1a),url('/images/holistic-house/course-journey-landscape.svg');background-color:#eaf7f7}
+.feedCard[data-tone="messages"] .feedArtwork{background-image:linear-gradient(180deg,transparent 30%,#143d3a1a),url('/images/holistic-house/reiki-practitioner-sunrise.webp');background-color:#fae8de}
+.feedCardBody{display:flex;flex-direction:column;flex:1;align-items:flex-start;gap:8px;padding:16px;min-width:0;background:linear-gradient(155deg,#fffcf7,#fbf5e9)}
+.feedCard[data-tone="analytics"] .feedCardBody{background:linear-gradient(135deg,#fffdfc,#f2ecfb)}
+.feedCard[data-tone="tasks"] .feedCardBody{background:linear-gradient(135deg,#fffcf7,#eaf8ef)}
+.feedCard[data-tone="personal"] .feedCardBody{background:linear-gradient(135deg,#fffcf7,#eaf7f7)}
+.feedCategory{display:inline-flex;align-items:center;background:#e6f6f1;color:#067a67;border-radius:99px;padding:5px 10px;font-size:11px;font-weight:800}
+.feedCard[data-tone="analytics"] .feedCategory{background:#f2ecfb;color:#7753b1}
+.feedCard[data-tone="messages"] .feedCategory{background:#fcecf2;color:#aa4068}
+.feedCard[data-tone="news"] .feedCategory{background:#fbf2de;color:#966a1f}
+.feedTime{display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:11px;line-height:1.35;color:#586961}
+.feedTime svg{flex:none}
+.feedCardBody h3{font:500 clamp(21px,3vw,27px)/1.16 Georgia,serif;color:#143d3a;letter-spacing:-.025em;margin:2px 0 0;overflow-wrap:anywhere}
+.feedCardBody p{font-size:13px;line-height:1.47;color:#53665c;margin:0;overflow-wrap:anywhere}
+.feedMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;width:100%;margin:3px 0 2px}
+.feedMetrics span{display:flex;flex-direction:column;gap:2px;align-items:center;text-align:center;min-width:0;padding:9px 4px;background:#ffffffa9;border-radius:12px}
+.feedMetrics strong{font-size:22px;line-height:1.2;color:#143d3a;font-variant-numeric:tabular-nums}
+.feedMetrics small{font-size:10px;line-height:1.25;color:#5d6a71;overflow-wrap:anywhere}
+.feedActions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;width:100%;margin-top:auto;padding-top:7px}
+.feedActions a,.feedActions button{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:99px;font:750 12px/1.3 system-ui,sans-serif;cursor:pointer;text-decoration:none}
+.feedActions a{padding:10px 17px;background:#067a67;color:white}
+.feedActions button{min-width:44px;padding:8px;border:1px solid #d9d4c6;background:#fff;color:#143d3a}
+.feedPager{display:flex;align-items:center;justify-content:center;gap:14px;padding:0 5px}
+.feedPager>button{width:44px;height:44px;display:grid;place-items:center;border:1px solid #e9dfd1;border-radius:50%;background:#fffcf7;color:#143d3a;cursor:pointer}
+.feedPager>button:disabled{opacity:.38;cursor:not-allowed}
+.feedDots{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap}
+.feedDots button{height:12px;width:12px;border:0;border-radius:100%;background:#d7d6cd;padding:0;cursor:pointer}
+.feedDots button[aria-current="true"]{background:#067a67}
+.feedEmpty{border:1px solid #e9dfd1;border-radius:19px;background:#fffcf7;padding:19px;color:#5d6a71;font-size:13px}
+@media(max-width:760px){
+ .heading{align-items:flex-start;flex-wrap:wrap}
+ .headingTools{width:100%;justify-content:space-between}
+ .heading h2{font-size:29px}
+ .feedCard{flex-basis:min(84%,330px)}
+ .feedArtwork{height:116px}
+ .feedCardBody{padding:14px}
+}
+@media(max-width:350px){
+ .feedCard{flex-basis:min(90%,290px)}
+ .feedCardBody h3{font-size:21px}
+ .feedMetrics strong{font-size:18px}
+ .datePill{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.feedRail{scroll-behavior:auto}}

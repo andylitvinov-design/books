@@ -1,34 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, ChevronDown, MessageCircle, Send, ShoppingBag } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { classifyPublicLead, courseTopicForPath } from "@/lib/public-lead-capture";
+import { useEffect, useId, useState } from "react";
+import { classifyPublicLead, courseTopicForPath, trainingEnquiryUrl } from "@/lib/public-lead-capture";
+import { telegramEnquiryUrlFromWhatsApp } from "@/lib/whatsapp-enquiry";
+import { AcquisitionEventLink } from "@/components/acquisition-event-link";
 import { coreOfferDetailData, type DetailKind } from "@/components/core-service-detail";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import styles from "./sitewide-lead-capture.module.css";
 
 const copy = {
   en: {
-    personal: { title: "Let’s find your next step", lead: "Leave a reply contact and choose WhatsApp or Telegram. Andrey will answer personally." },
-    reading: { title: "Have a question after reading?", lead: "Leave a contact for a free written starting point." },
-    training: { title: "Interested in this course?", lead: "Leave a contact to ask about the programme and current availability." },
-    core: { title: "Interested in this personal service?", lead: "Leave a contact — Andrey will explain the next step." },
+    personal: { title: "Let’s find your next step", lead: "Choose WhatsApp or Telegram and send your message. Andrey will answer personally." },
+    reading: { title: "Have a question after reading?", lead: "Ask for a written starting point in Telegram or WhatsApp." },
+    training: { title: "Ready to begin?", lead: "Ask Andrey about the programme, next start and how to join.", order: "Order", note: "You send the message yourself. No booking or payment is made automatically." },
+    core: { title: "Interested in this personal service?", lead: "Write to Andrey in Telegram or WhatsApp." },
     network: { title: "Ask this practitioner", lead: "Choose an offer and send a request to its practitioner.", action: "View request options" },
   },
   ru: {
-    personal: { title: "Обсудим ваш следующий шаг?", lead: "Оставьте контакт для ответа и выберите WhatsApp или Telegram — Андрей ответит лично." },
-    reading: { title: "Появился вопрос после чтения?", lead: "Оставьте контакт — подскажем бесплатный письменный первый шаг." },
-    training: { title: "Интересует этот курс?", lead: "Оставьте контакт — уточним программу и доступность записи." },
-    core: { title: "Интересует эта услуга?", lead: "Оставьте контакт — Андрей подскажет следующий шаг." },
+    personal: { title: "Обсудим ваш следующий шаг?", lead: "Напишите в Telegram или WhatsApp — Андрей ответит лично." },
+    reading: { title: "Появился вопрос после чтения?", lead: "Напишите в Telegram или WhatsApp — подскажем первый шаг." },
+    training: { title: "Готовы начать?", lead: "Спросите Андрея о программе, ближайшем старте и записи.", order: "Заказать", note: "Сообщение отправляете вы сами. Запись и оплата не оформляются автоматически." },
+    core: { title: "Интересует эта услуга?", lead: "Напишите в Telegram или WhatsApp — Андрей подскажет следующий шаг." },
     network: { title: "Свяжитесь с этим мастером", lead: "Выберите услугу и отправьте запрос непосредственно её автору.", action: "Выбрать услугу" },
   },
   es: {
-    personal: { title: "Hablemos de tu siguiente paso", lead: "Deja un contacto para la respuesta y elige WhatsApp o Telegram. Andrey responderá personalmente." },
-    reading: { title: "¿Tienes preguntas después de leer?", lead: "Deja tu contacto para recibir orientación inicial gratuita por escrito." },
-    training: { title: "¿Te interesa este curso?", lead: "Deja tu contacto para preguntar por el programa y las plazas." },
-    core: { title: "¿Te interesa este servicio?", lead: "Deja tu contacto y Andrey te explicará cómo seguir." },
+    personal: { title: "Hablemos de tu siguiente paso", lead: "Elige Telegram o WhatsApp para escribirnos. Andrey responderá personalmente." },
+    reading: { title: "¿Tienes preguntas después de leer?", lead: "Escribe por Telegram o WhatsApp para recibir orientación." },
+    training: { title: "¿Listo para empezar?", lead: "Pregunta a Andrey por el programa, las próximas fechas y cómo unirte.", order: "Solicitar", note: "Tú decides si envías el mensaje. No se reserva ni cobra nada automáticamente." },
+    core: { title: "¿Te interesa este servicio?", lead: "Escribe por Telegram o WhatsApp para consultar los próximos pasos." },
     network: { title: "Consulta con este profesional", lead: "Elige una oferta y envía la solicitud directamente al profesional.", action: "Ver servicios" },
   },
 } as const;
@@ -37,9 +40,12 @@ export function SitewideLeadCapture() {
   const pathname = usePathname();
   // Avoid a hydration mismatch on rewritten public routes; classify after mount.
   const [clientPath, setClientPath] = useState<string | null>(null);
+  const [messengerOpen, setMessengerOpen] = useState(false);
+  const messengerPanelId = useId();
   const [legacyBookLocale, setLegacyBookLocale] = useState<"en" | "ru">("ru");
   useEffect(() => {
     setClientPath(pathname);
+    setMessengerOpen(false);
     if (/^\/books\/[^/]+/.test(pathname)) {
       setLegacyBookLocale(new URLSearchParams(window.location.search).get("lang") === "en" ? "en" : "ru");
     }
@@ -77,10 +83,58 @@ export function SitewideLeadCapture() {
     );
   }
 
+  // A single course order action opens an explicit messenger choice.
+  // No email/phone collection, automatic message sending or false CRM lead.
+  // Inbound contacts are created only by a connected official CRM webhook.
+  if (kind === "training") {
+    const t = copy[locale].training;
+    const whatsappHref = trainingEnquiryUrl(locale, pathname);
+    const telegramHref = telegramEnquiryUrlFromWhatsApp(whatsappHref);
+    return (
+      <aside className={styles.training} data-sitewide-capture="training"
+        data-academy-messenger-order lang={locale} aria-label={t.title}>
+        <Image className={styles.trainingPortrait}
+          src="/images/holistic-house/andy-about.png"
+          alt="" width={72} height={72} loading="lazy" unoptimized />
+        <div className={styles.trainingCopy}>
+          <span className={styles.trainingEyebrow}>HOLISTIC HOUSE · ACADEMY</span>
+          <h2>{t.title}</h2>
+          <p className={styles.trainingCourse}>{courseTopicForPath(pathname)}</p>
+          <p className={styles.trainingLead}>{t.lead}</p>
+        </div>
+        <div className={styles.trainingAction}>
+          <button type="button" className={styles.trainingOrder}
+            data-academy-order-button aria-expanded={messengerOpen}
+            aria-controls={messengerPanelId}
+            onClick={() => setMessengerOpen(value => !value)}>
+            <ShoppingBag size={19} aria-hidden="true" />
+            {t.order}
+            <ChevronDown className={styles.trainingChevron} size={17} aria-hidden="true" />
+          </button>
+          <div id={messengerPanelId} className={styles.trainingChannels} hidden={!messengerOpen}>
+            <AcquisitionEventLink href={whatsappHref} target="_blank"
+              rel="noopener noreferrer" prefetch={false}
+              event="academy_course_enquiry_click" analyticsEvent="whatsapp_handoff_click"
+              attributes={{"data-messenger-channel":"whatsapp"}}>
+              <MessageCircle size={18} aria-hidden="true" /> WhatsApp <ArrowRight size={17} aria-hidden="true" />
+            </AcquisitionEventLink>
+            <AcquisitionEventLink href={telegramHref} target="_blank"
+              rel="noopener noreferrer" prefetch={false}
+              event="academy_course_enquiry_click"
+              attributes={{"data-messenger-channel":"telegram"}}>
+              <Send size={18} aria-hidden="true" /> Telegram <ArrowRight size={17} aria-hidden="true" />
+            </AcquisitionEventLink>
+            <p className={styles.trainingNote}>{t.note}</p>
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
   const offer = coreKind ? coreOfferDetailData(locale, coreKind) : null;
-  const serviceTitle = offer?.title || (kind === "training" ? courseTopicForPath(pathname)
-    : kind === "reading" ? "Free written Situation Review"
-      : "Personal session with Andrey Litvinov");
+  const serviceTitle = offer?.title || (kind === "reading"
+    ? "Free written Situation Review"
+    : "Personal session with Andrey Litvinov");
   const t = offer ? copy[locale].core : copy[locale][kind];
   return (
     <div data-sitewide-capture={offer ? "core-service" : kind}

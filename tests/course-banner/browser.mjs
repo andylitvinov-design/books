@@ -29,6 +29,7 @@ const { FreeCourseBanner } = loadComponent('components/app/free-course-banner.js
 })
 const { CompactAssessmentReport } = loadComponent('components/app/compact-assessment-report.jsx', {
   './free-course-banner': { FreeCourseBanner },
+  './motivator-mind': { MotivatorMind: () => null },
   './assessment-gauge': { ScoreGauge: () => null, ScoreTrend: () => null },
   '@/lib/assessments/scale-guides': { getTestScaleGuide: () => null },
   '@/lib/assessments/dashboard-gauges': { gaugeModel: () => null },

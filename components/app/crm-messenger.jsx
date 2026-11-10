@@ -1,8 +1,10 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {ArrowLeft, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
+import {ArrowLeft, BellRing, CheckCheck, RefreshCw, Search, Send, Settings2, SlidersHorizontal, X} from 'lucide-react'
 import styles from './crm-messenger.module.css'
 import CrmTelegramPhoto from './crm-telegram-photo'
+import MessagesContactCard from './messages-contact-card'
+import CrmSalesbotAssist from './crm-salesbot-assist'
 const copy={
   en:{title:'Messages',sub:'Telegram, WhatsApp, Instagram & Messenger — one private inbox',all:'All',
     empty:'No conversations yet. Incoming conversations appear after a verified channel is connected and customers message you.',
@@ -32,13 +34,15 @@ const copy={
     channels:'Canales',customers:'Mensajes de clientes',waiting:'Esperando respuesta',sendError:'No se envió el mensaje.',
     loadThreads:'Más conversaciones',loadMessages:'Mensajes anteriores',historyError:'No se pudo cargar el historial. Inténtalo de nuevo.'},
 }
-const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram',messenger:'Facebook Messenger'}
+const names={telegram:'Telegram',whatsapp:'WhatsApp',instagram:'Instagram · @tao.ideas',messenger:'Facebook Messenger'}
+const verifiedGoogleLabel={en:'Verified Google account',ru:'Google-аккаунт подтверждён',es:'Cuenta Google verificada'}
 const setupText={
   en:{
     intro:'No channels are connected yet. You can prepare them here without sending a message.',
     instructions:'Connect an account',missing:'Missing server settings',configured:'Credentials present — verify the provider first',
     disabled:'Channel activation is off',approval:'Public sending is off until the test is approved',
     pilot:'Pilot mode: only the allowlisted Telegram chat can send or receive messages',
+    waPilotRegistered:'WhatsApp verified for identity-link pilot · sending still disabled',
     testHint:'Do one controlled test conversation before enabling live client replies.',
     channelKeys:'Server settings in Vercel Production',copyUrl:'Copy webhook URL',
     copied:'Webhook URL copied',copyError:'Copy failed; use the URL shown below.',
@@ -47,12 +51,14 @@ const setupText={
     pilotKeys:'For a safe Telegram pilot also set',
     globalKeys:'For real-client sending after testing, explicitly review',
     connectReady:'After setup, select Connect to verify your account.',
+    instagramSetup:'@tao.ideas only · switch to Professional, enable Connected Tools message access, authorize the Meta Instagram Business Login messaging permission, subscribe messages on the official app, then Connect. DMs and story replies are not Instagram comments. Older chats are not guaranteed to sync.',
   },
   ru:{
     intro:'Пока нет подключённых каналов. Подготовьте их здесь — сообщения клиентам не отправляются.',
     instructions:'Как подключить',missing:'Не хватает настроек сервера',configured:'Ключи добавлены — проверьте доступ провайдера',
     disabled:'Активация канала выключена',approval:'Отправка клиентам отключена до подтверждённого теста',
     pilot:'Пилот: Telegram доступен только одному разрешённому тестовому аккаунту',
+    waPilotRegistered:'WhatsApp подключён для подтверждения личности · отправка выключена',
     testHint:'Сначала проведите одну тестовую переписку и проверьте получение ответа.',
     channelKeys:'Переменные в Vercel Production',copyUrl:'Копировать адрес webhook',
     copied:'Адрес webhook скопирован',copyError:'Не удалось скопировать. Адрес указан ниже.',
@@ -61,12 +67,14 @@ const setupText={
     pilotKeys:'Для безопасного Telegram-теста дополнительно задайте',
     globalKeys:'Для отправки клиентам после теста отдельно согласуйте',
     connectReady:'После настройки нажмите «Подключить» для проверки аккаунта.',
+    instagramSetup:'Только @tao.ideas · профессиональный аккаунт, доступ к сообщениям для Connected Tools, разрешение Meta Instagram Business Login на Direct, подписка приложения на messages. Затем «Подключить». Комментарии не являются Direct; история старых переписок не гарантирована.',
   },
   es:{
     intro:'Aún no hay canales conectados. Prepáralos aquí sin enviar mensajes a clientes.',
     instructions:'Cómo conectar',missing:'Falta configuración del servidor',configured:'Credenciales cargadas; verifica el proveedor',
     disabled:'La activación del canal está deshabilitada',approval:'El envío público está desactivado hasta completar la prueba',
     pilot:'Piloto: solo una cuenta de prueba autorizada puede usar Telegram',
+    waPilotRegistered:'WhatsApp conectado para verificar identidad · envío desactivado',
     testHint:'Realiza una conversación de prueba controlada antes de activar respuestas reales.',
     channelKeys:'Variables del servidor en Vercel Production',copyUrl:'Copiar URL del webhook',
     copied:'URL copiada',copyError:'No se pudo copiar. Usa la URL mostrada.',
@@ -75,6 +83,7 @@ const setupText={
     pilotKeys:'Para un piloto seguro en Telegram configura también',
     globalKeys:'Para clientes reales, revisa por separado',
     connectReady:'Después de configurar, pulsa Conectar para verificar la cuenta.',
+    instagramSetup:'Solo @tao.ideas · cuenta profesional, acceso a mensajes para Connected Tools, permiso de mensajes de Instagram Business Login y suscripción a messages. Después pulsa Conectar. Los comentarios no son DMs y el historial antiguo no está garantizado.',
   },
 }
 const officialPortal={
@@ -96,6 +105,8 @@ const messageStatuses={
   unknown:{en:'Unconfirmed — do not resend',ru:'Не подтверждено — не повторяйте',es:'Sin confirmar — no reenviar'},
 }
 const statusLabel=(status,locale)=>messageStatuses[status]?.[locale]||status
+// Photo-only Telegram events carry a private attachment, not display text.
+const photoOnlyMessage=/^\[(?:Voluntary photo attached for private review|Additional voluntary photo|Client portrait photo, shared voluntarily for private review|ME-GOAL-OBSTACLE drawing, shared voluntarily for private review|Additional voluntary drawing\/photo)\]$/
 function mergeThreadPages(older=[],fresh=[]){
   const index=new Map(older.map(thread=>[thread.id,thread]))
   for(const thread of fresh)index.set(thread.id,thread)
@@ -174,6 +185,8 @@ const workflowErrors={
   INVALID_FOLLOWUP:{en:'Check the task type and date.',ru:'Проверьте вид действия и дату.',es:'Comprueba el tipo de tarea y la fecha.'},
   INVALID_MESSAGE:{en:'Check the text and length.',ru:'Проверьте текст и его длину.',es:'Comprueba el texto y la longitud.'},
   CRM_CONTACT_ARCHIVED:{en:'This contact is archived.',ru:'Контакт находится в архиве.',es:'Contacto archivado.'},
+  INSTAGRAM_ACCOUNT_MISMATCH:{en:'The token is not for the verified @tao.ideas professional account.',ru:'Токен не принадлежит подтверждённому профессиональному аккаунту @tao.ideas.',es:'El token no corresponde a la cuenta profesional @tao.ideas.'},
+  INSTAGRAM_MESSAGES_NOT_SUBSCRIBED:{en:'Subscribe the Instagram account to messages in Meta developer settings.',ru:'Подпишите аккаунт Instagram на события messages в Meta Developers.',es:'Suscribe la cuenta de Instagram a messages en Meta Developers.'},
   MESSENGER_DAILY_LIMIT:{en:'Daily message limit reached.',ru:'Достигнут суточный лимит сообщений.',es:'Límite diario de mensajes alcanzado.'},
 }
 function torontoTomorrow(now=new Date()){
@@ -190,16 +203,24 @@ function replyReason(reason,lang){
     REPLY_WINDOW_CLOSED:{en:'Response window closed',ru:'Окно ответа закрыто',es:'Ventana de respuesta cerrada'},
     CONTACT_BLOCKED:{en:'Contact opted out',ru:'Контакт заблокировал сообщения',es:'Contacto bloqueado'},
     CHANNEL_NOT_CONNECTED:{en:'Provider not connected',ru:'Канал ещё не подключён',es:'Canal no conectado'},
+    CONSENT_REQUIRED:{en:'Client must confirm /agree in Telegram. Refresh this chat afterward.',ru:'Клиенту нужно подтвердить /agree в Telegram. Затем обновите чат.',es:'El cliente debe confirmar /agree en Telegram. Actualiza el chat después.'},
+    REPLY_BLOCKED:{en:'Reply blocked. Check consent and channel status.',ru:'Отправка заблокирована. Проверьте согласие и канал.',es:'Respuesta bloqueada. Revisa el consentimiento y el canal.'},
+    PROVIDER_REJECTED:{en:'Provider rejected this message; check the channel.',ru:'Провайдер отклонил сообщение. Проверьте канал.',es:'El proveedor rechazó el mensaje. Revisa el canal.'},
+    PROVIDER_STATUS_UNKNOWN:{en:'Delivery result unknown. Do not resend automatically.',ru:'Результат отправки неизвестен. Не повторяйте автоматически.',es:'Resultado desconocido. No reenvíes automáticamente.'},
+    TEST_RECIPIENT_ONLY:{en:'This channel is limited to approved test recipients.',ru:'Канал ограничен разрешёнными тестовыми получателями.',es:'El canal está limitado a destinatarios de prueba autorizados.'},
   }
   return labels[reason]?.[lang]||reason||''
 }
-export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId='',initialThreadSequence=0,compact=false,onOpenChange}){
+export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onThreadsLoaded,initialThreadId='',initialThreadSequence=0,compact=false,onOpenChange,conversationOnly=false,onPortraitFound}){
   const lang=copy[locale]?locale:'en',t=copy[lang],w=workflowCopy[lang]
   const [data,setData]=useState(null),[active,setActive]=useState(''),[text,setText]=useState('')
   const [status,setStatus]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const [botCheck,setBotCheck]=useState(null)
+  const [noticeBusy,setNoticeBusy]=useState(false)
+  const [noticeFeedback,setNoticeFeedback]=useState('')
   const [copiedChannel,setCopiedChannel]=useState('')
   const pendingRequest=useRef(null)
+  const focusRefreshAt=useRef(0)
   const pendingNote=useRef(null)
   const pendingFollowup=useRef(null)
   const activeRef=useRef('')
@@ -217,6 +238,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
   const [showFilters,setShowFilters]=useState(false)
   const [showTools,setShowTools]=useState(false)
   const [showQuickReplies,setShowQuickReplies]=useState(false)
+  const [showContactCard,setShowContactCard]=useState(false)
   useEffect(()=>{onOpenChange?.(Boolean(active))},[active,onOpenChange])
   useEffect(()=>{
     if(!showSettings)return
@@ -247,7 +269,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     pendingFollowup.current=null
     activeRef.current=''
     setData(null);setActive('');setText('');setNoteText('');setError('');setStatus('');setCopiedChannel('');setBotCheck(null)
-    setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false)
+    setSearch('');setChannelFilter('all');setUnreadOnly(false);setNeedsReplyOnly(false);setShowContactCard(false)
     setThreadsBusy(false);setMessagesBusy(false)
     load('',ctrl.signal).then(result=>{
       if(ctrl.signal.aborted)return
@@ -269,6 +291,23 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     })
     return ()=>ctrl.abort()
   },[accountId,load,initialThreadId,initialThreadSequence,onThreadsLoaded])
+  // One read on returning from Telegram, no background poll or paid service.
+  useEffect(()=>{
+    if(!accountId)return
+    const onVisible=()=>{
+      if(document.visibilityState!=='visible')return
+      const now=Date.now()
+      if(now-focusRefreshAt.current<4000)return
+      focusRefreshAt.current=now
+      void refresh(activeRef.current)
+    }
+    document.addEventListener('visibilitychange',onVisible)
+    window.addEventListener('focus',onVisible)
+    return()=>{
+      document.removeEventListener('visibilitychange',onVisible)
+      window.removeEventListener('focus',onVisible)
+    }
+  },[accountId,load])
   async function copyWebhook(channel){
     const url=data?.channels?.find(item=>item.channel===channel)?.callbackUrl
     if(!url)return
@@ -302,7 +341,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     pendingNote.current=null
     pendingFollowup.current=null
     setActive(id);setText('');setNoteText('');setStatus('');setError('')
-    setShowTools(false);setShowQuickReplies(false)
+    setShowTools(false);setShowQuickReplies(false);setShowContactCard(false)
     setThreadLoading(true)
     // Never display messages belonging to the previous client while B is loading.
     setData(previous=>previous?{...previous,messages:[],followups:[],nextMessagesCursor:null}:previous)
@@ -315,6 +354,10 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           nextThreadsCursor:previous?.nextThreadsCursor===undefined
             ?result.nextThreadsCursor:previous.nextThreadsCursor,
         }))
+        // Portraits remain behind the existing authenticated CRM photo proxy.
+        const portrait=[...(result.messages||[])].reverse().find(m=>m.photo&&m.photoPurpose==='portrait')
+        if(portrait&&result.threads?.some(thread=>thread.id===id&&thread.channel==='telegram'))
+          onPortraitFound?.({threadId:id,messageId:portrait.id})
         setError('')
       }
     }catch{if(activeRef.current===id)setError('unavailable')}
@@ -396,7 +439,10 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
       pendingRequest.current=null
       setStatus(t.accepted)
     }else if(result.status==='failed'||result.status==='blocked'){
-      setStatus(t.sendError)
+      // A terminal result can be retried with a new ID after the cause is fixed.
+      // Uncertain/queued results keep their ID to prevent duplicate delivery.
+      pendingRequest.current=null
+      setStatus(result.status==='blocked'?replyReason(result.reason,lang)||t.sendError:t.sendError)
     }else setStatus(t.unknown)
   }
 
@@ -440,6 +486,38 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     })
     if(result&&activeRef.current===threadId)setStatus(w.completed)
   }
+  const noticeActions={
+    en:{button:'Recover missed enquiry alerts',busy:'Checking…',none:'No unattempted enquiry alerts.',
+      off:'Pending enquiries cannot be delivered through Telegram currently.',
+      result:(accepted,attempted)=>'Telegram accepted '+accepted+' of '+attempted+
+        ' attempts. This does not confirm delivery or reading.',error:'Could not check missed alerts.'},
+    ru:{button:'Проверить пропущенные уведомления',busy:'Проверка…',none:'Пропущенных попыток уведомления нет.',
+      off:'Есть заявки, но отправка через Telegram сейчас недоступна.',
+      result:(accepted,attempted)=>'Telegram принял '+accepted+' из '+attempted+
+        ' попыток. Это не подтверждает доставку или прочтение.',error:'Не удалось проверить уведомления.'},
+    es:{button:'Revisar avisos no enviados',busy:'Comprobando…',none:'No hay avisos pendientes sin intento.',
+      off:'Hay solicitudes pero el envío por Telegram no está disponible.',
+      result:(accepted,attempted)=>'Telegram aceptó '+accepted+' de '+attempted+
+        ' intentos. No confirma entrega ni lectura.',error:'No se pudieron revisar los avisos.'},
+  }[lang]
+  async function recoverPendingNotices(){
+    if(busy||noticeBusy||!accountId||!data)return
+    setNoticeBusy(true);setNoticeFeedback('')
+    try{
+      const response=await fetch('/api/app/crm/notification-recovery',{
+        method:'POST',credentials:'same-origin',cache:'no-store',
+        headers:{'X-HH-Account-Id':accountId},
+      })
+      if(!response.ok)throw new Error('NOTICE_RECOVERY_UNAVAILABLE')
+      const report=await response.json()
+      if(report?.mode!=='manual_missing_claims_only'||
+        !Number.isInteger(report.scanned)||!Number.isInteger(report.attempted)||
+        !Number.isInteger(report.accepted))throw new Error('INVALID_NOTICE_RECOVERY')
+      setNoticeFeedback(report.scanned===0?noticeActions.none:report.attempted===0?
+        noticeActions.off:noticeActions.result(report.accepted,report.attempted))
+    }catch{setNoticeFeedback(noticeActions.error)}
+    finally{setNoticeBusy(false)}
+  }
   const threads=data?.threads||[]
   const selected=threads.find(item=>item.id===active)
   const unread=threads.filter(item=>item.unreadCount>0).length
@@ -450,9 +528,9 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     &&(!needsReplyOnly||item.needsReply)
     &&(!search.trim()||item.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
   )
-  return <section className={styles.panel} aria-label={t.title}
+  return <section className={conversationOnly?styles.detailOnly:styles.panel} aria-label={t.title}
     data-compact={compact||undefined}>
-    <header className={styles.top}>
+    {!conversationOnly&&<header className={styles.top}>
       {!compact&&<div><h3 id="crm-messenger-title">{t.title}</h3><p>{t.sub}</p></div>}
       <div className={styles.topActions}>
         {compact&&<button type="button" className={styles.settingsButton}
@@ -461,15 +539,22 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           <Settings2 size={16} aria-hidden="true"/>{t.channels}
           <span>{data?.accounts?.filter(item=>item.connected).length||0}/4</span>
         </button>}
+        <button type="button" className={styles.plainButton}
+          aria-label={noticeActions.button} title={noticeActions.button}
+          disabled={busy||noticeBusy||!data} onClick={()=>void recoverPendingNotices()}>
+          {compact?<BellRing size={17} aria-hidden="true"/>:
+            noticeBusy?noticeActions.busy:noticeActions.button}
+        </button>
         <button type="button" aria-label={t.refresh} className={styles.plainButton}
           disabled={busy} onClick={()=>refresh()}>
           {compact?<RefreshCw size={17} aria-hidden="true"/>:t.refresh}
         </button>
       </div>
-    </header>
-    {data&&data.accounts?.length===0&&
+    </header>}
+    {!conversationOnly&&noticeFeedback&&<p className={styles.notice} role="status">{noticeFeedback}</p>}
+    {!conversationOnly&&data&&data.accounts?.length===0&&
       <p className={styles.setupIntro}>{setupText[lang].intro}</p>}
-    {(!compact||showSettings)&&<div id="hh-crm-channel-settings" className={styles.settingsHost}>
+    {!conversationOnly&&(!compact||showSettings)&&<div id="hh-crm-channel-settings" className={styles.settingsHost}>
       {compact&&<button type="button" className={styles.closeSettings}
         onClick={()=>setShowSettings(false)} aria-label={lang==='ru'?'Закрыть настройки':lang==='es'?'Cerrar ajustes':'Close settings'}>
         <X size={18} aria-hidden="true"/></button>}
@@ -482,7 +567,8 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           const ok=registered?.connected===true
           const missing=channel.missingKeys||[]
           const isPilot=channel.channel==='telegram'&&channel.pilot
-          const statusLabel=ok?t.connected:missing.length?guide.missing:isPilot?guide.pilot:
+          const waRegistered=channel.channel==='whatsapp'&&channel.pilotConnectReady&&registered?.registered===true
+          const statusLabel=ok?t.connected:waRegistered?guide.waPilotRegistered:missing.length?guide.missing:isPilot?guide.pilot:
             !channel.enabled?guide.disabled:
             !channel.liveApproved?guide.approval:guide.configured
           return <div className={styles.channel} key={channel.channel}>
@@ -524,13 +610,14 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
               {' '}{t.botStates[botCheck.webhookState]||t.botStates.unknown}
               {botCheck.webhookDeliveryError?' · '+t.botStates.unknown:''}
             </p>}
-            {!ok&&<button type="button" disabled={busy||!channel.providerConfigured}
+            {!ok&&!waRegistered&&<button type="button" disabled={busy||!channel.providerConfigured}
               onClick={()=>action('connect',{channel:channel.channel})}>{t.connect}</button>}
             <details className={styles.channelGuide}>
               <summary>{guide.instructions}</summary>
               <div className={styles.guideBody}>
                 <a href={officialPortal[channel.channel]} target="_blank" rel="noopener noreferrer">{guide.openPortal}</a>
                 {channel.channel==='telegram'&&<p>{guide.telegramCaution}</p>}
+                {channel.channel==='instagram'&&<p>{guide.instagramSetup} <a href="https://www.instagram.com/tao.ideas/" target="_blank" rel="noopener noreferrer">@tao.ideas</a></p>}
                 <p>{guide.notVerified}</p>
                 <strong>{guide.channelKeys}</strong>
                 {missing.length?<ul>{missing.map(key=><li key={key}><code>{key}</code></li>)}</ul>:
@@ -541,7 +628,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                   <code>HH_CRM_MSG_TELEGRAM_PILOT_ENABLED=true</code>
                   <code>HH_CRM_MSG_TELEGRAM_PILOT_CHAT_ID</code>
                 </div>}
-                {!channel.liveApproved&&<p>{guide.globalKeys} <code>HH_CRM_MSG_PRODUCTION_APPROVED=true</code>.</p>}
+                {!channel.liveApproved&&<p>{guide.globalKeys} <code>{channel.channel==='instagram'?'HH_CRM_MSG_INSTAGRAM_INBOX_APPROVED=true':'HH_CRM_MSG_PRODUCTION_APPROVED=true'}</code>.</p>}
                 <span>{guide.testHint}</span>
                 <code className={styles.callbackUrl}>{channel.callbackUrl||'https://holistichouse.vercel.app/api/app/crm/messenger/webhook/'+channel.channel}</code>
                 <button type="button" className={styles.copyButton} onClick={()=>copyWebhook(channel.channel)}>
@@ -557,8 +644,9 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
     </div>}
     {!data&&!error&&<p role="status" className={styles.notice}>{t.loading}</p>}
     {error&&<p role="alert" className={styles.notice}>{t.failed}</p>}
-    {data&&<div className={styles.layout} data-chat-open={Boolean(selected)}>
-      <div className={styles.list} aria-label={t.customers}>
+    {data&&<div className={conversationOnly?styles.detailLayout:styles.layout}
+      data-chat-open={Boolean(selected)}>
+      {!conversationOnly&&<div className={styles.list} aria-label={t.customers}>
         <div className={styles.listHead}>
           <strong>{t.customers} <span className={styles.listCount}>{threads.length}</span></strong>
           {compact?<button type="button" className={styles.filterButton}
@@ -592,7 +680,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           className={active===thread.id?styles.threadActive:styles.thread} onClick={()=>selectThread(thread.id)}>
           <span className={styles.avatar} aria-hidden="true">{thread.name?.slice(0,1).toUpperCase()||'?'}</span>
           <span className={styles.threadInfo}><strong>{thread.name}</strong>
-            <small>{names[thread.channel]} · {thread.lifecycle}</small>
+            <small>{names[thread.channel]} · {thread.lifecycle}{thread.linkedGoogleAccount?' · '+verifiedGoogleLabel[lang]:''}</small>
             {thread.needsReply&&<small className={styles.replyIndicator}>
               {lang==='ru'?'Нужно ответить':lang==='es'?'Responder':'Needs reply'}</small>}
           </span>
@@ -602,21 +690,28 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
           disabled={threadsBusy||busy} onClick={loadMoreThreads}>
           {threadsBusy?t.loading:t.loadThreads}
         </button>}
-      </div>
-      <div className={styles.conversation}>
-        {!selected?<p className={styles.empty}>{t.select}</p>:<>
-          <div className={styles.chatHeader}>
-            {compact&&<button type="button" className={styles.backButton} onClick={backToList}
+      </div>}
+      <div className={conversationOnly?styles.detailConversation:styles.conversation}>
+        {!selected?<p className={styles.empty}>{t.select}</p>:showContactCard&&!conversationOnly?
+          <MessagesContactCard key={accountId+':'+selected.id} accountId={accountId} locale={lang}
+            item={{key:'crm:'+selected.id,kind:'crm',id:selected.id,contactId:selected.contactId,
+              name:selected.name,source:names[selected.channel]}} onBack={()=>setShowContactCard(false)}/>:<>
+          {(!conversationOnly||selected.unreadCount>0)&&<div className={styles.chatHeader}>
+            {compact&&!conversationOnly&&<button type="button" className={styles.backButton} onClick={backToList}
               aria-label={lang==='ru'?'К списку переписок':lang==='es'?'Volver a conversaciones':'Back to conversations'}>
               <ArrowLeft size={19} aria-hidden="true"/></button>}
-            <div className={styles.chatIdentity}>
+            {!conversationOnly&&<div className={styles.chatIdentity}>
               <strong>{selected.name}</strong>
               <span>{names[selected.channel]} · {selected.reply.ok?(lang==='ru'?'Ответ доступен':lang==='es'?'Respuesta disponible':'Reply available'):replyReason(selected.reply.reason,lang)}</span>
-            </div>
-            {selected.unreadCount>0&&<button disabled={busy} type="button" className={styles.plainButton}
-              onClick={()=>action('read',{threadId:selected.id})}>{t.read}</button>}
-          </div>
-          <div className={styles.contactActions}>
+            </div>}
+            {selected.unreadCount>0&&<button disabled={busy} type="button"
+              className={styles.plainButton} aria-label={t.read} title={t.read}
+              onClick={()=>action('read',{threadId:selected.id})}>
+              <CheckCheck size={18} aria-hidden="true"/>
+              <span className={styles.readLabel}>{t.read}</span>
+            </button>}
+          </div>}
+          {!conversationOnly&&<div className={styles.contactActions}>
             <label>{w.stage}
               <select value={selected.lifecycle} disabled={busy||threadLoading}
                 onChange={event=>changeStage(event.target.value)}>
@@ -625,6 +720,9 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
                 <option value="archived">{w.archived}</option>
               </select>
             </label>
+            <button type="button" className={styles.profileAction} onClick={()=>setShowContactCard(true)}>
+              {lang==='ru'?'Карточка':lang==='es'?'Ficha':'Client card'}
+            </button>
             {compact&&<button type="button" className={styles.toolsButton}
               aria-expanded={showTools} aria-controls="hh-crm-conversation-tools"
               onClick={()=>setShowTools(value=>!value)}>
@@ -633,7 +731,7 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             {!compact&&<span className={styles.smallHint}>{selected.suppressed?
               (lang==='ru'?'Общение заблокировано':lang==='es'?'Contacto bloqueado':'Contact blocked'):
               w.overview}</span>}
-          </div>
+          </div>}
           <div className={styles.messages} role="log" aria-live="polite" aria-busy={threadLoading}>
             {threadLoading&&<p className={styles.empty}>{w.loadingThread}</p>}
             {!threadLoading&&data?.nextMessagesCursor&&<button type="button"
@@ -642,15 +740,16 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             {!threadLoading&&(data?.messages||[]).map(m=><div key={m.id}
               className={m.direction==='note'?styles.internalNote:m.direction==='out'?styles.outbound:styles.inbound}>
               {m.direction==='note'&&<strong className={styles.noteBadge}>{w.notesBadge}</strong>}
-              <p>{m.text}</p>
-              {m.photo&&selected.channel==='telegram'&&<CrmTelegramPhoto
+              {(!m.photo||!photoOnlyMessage.test(String(m.text||'').trim()))&&<p>{m.text}</p>}
+              {m.photo&&['telegram','whatsapp'].includes(selected.channel)&&<CrmTelegramPhoto
                 accountId={accountId} threadId={selected.id} messageId={m.id} locale={lang}
                 purpose={m.photoPurpose==='drawing'?'drawing':'portrait'}/>}
               <small>{new Intl.DateTimeFormat(lang,{dateStyle:'short',timeStyle:'short',timeZone:'America/Toronto'}).format(new Date(m.createdAt))}
                 {m.direction==='note'?'': ' · '+statusLabel(m.status,lang)}</small>
+              {m.failure?.code&&<small>{replyReason(m.failure.code,lang)||t.sendError}</small>}
             </div>)}
           </div>
-          {(!compact||showTools)&&<div className={styles.workflowActions} id="hh-crm-conversation-tools">
+          {!conversationOnly&&(!compact||showTools)&&<div className={styles.workflowActions} id="hh-crm-conversation-tools">
             <details className={styles.actionDetails}>
               <summary>{w.followups} · {(data?.followups||[]).length}</summary>
               <div className={styles.actionBody}>
@@ -694,34 +793,49 @@ export default function CrmMessengerPanel({accountId,locale='en',onCrmChange,onT
             </details>
           </div>}
           <div className={styles.compose}>
-            <label htmlFor="crm-messenger-compose">{t.reply}</label>
-            {compact&&<button type="button" className={styles.repliesToggle}
+            <label className={conversationOnly?styles.srOnly:undefined} htmlFor="crm-messenger-compose">{t.reply}</label>
+            {compact&&!conversationOnly&&<button type="button" className={styles.repliesToggle}
               aria-expanded={showQuickReplies} aria-controls="hh-crm-quick-replies"
               onClick={()=>setShowQuickReplies(value=>!value)}>
               {lang==='ru'?'Шаблоны':lang==='es'?'Respuestas rápidas':'Quick replies'}
             </button>}
-            {(!compact||showQuickReplies)&&<div id="hh-crm-quick-replies" className={styles.quickReplies}
+            {!conversationOnly&&(!compact||showQuickReplies)&&<div id="hh-crm-quick-replies" className={styles.quickReplies}
               role="group" aria-label={lang==='ru'?'Быстрые ответы':lang==='es'?'Respuestas rápidas':'Quick replies'}>
               {quickReplies[lang].map(item=><button type="button" key={item.label}
                 disabled={busy||threadLoading||!selected.reply.ok}
                 onClick={()=>{pendingRequest.current=null;setText(item.text);setShowQuickReplies(false)}}>{item.label}</button>)}
             </div>}
+            {(conversationOnly||compact)&&status&&<p className={styles.composeNotice} role="status">{status}</p>}
             <textarea id="crm-messenger-compose" value={text} disabled={!selected.reply.ok||busy||threadLoading}
-              maxLength={1200} rows={compact?1:3} onChange={e=>{
+              maxLength={1200} rows={conversationOnly?2:compact?1:3} onChange={e=>{
                 if(pendingRequest.current&&pendingRequest.current.text!==e.target.value.trim())
                   pendingRequest.current=null
                 setText(e.target.value)
-              }} placeholder={t.manual}/>
+              }} placeholder={conversationOnly||compact?(lang==='ru'?'Написать сообщение…':lang==='es'?'Escribe un mensaje…':'Write a message…'):t.manual}/>
             <button disabled={busy||threadLoading||!selected.reply.ok||!text.trim()}
               type="button" onClick={send} aria-label={t.send}>
-              {compact?<Send size={18} aria-hidden="true"/>:t.send}
+              {conversationOnly||compact?<Send size={20} aria-hidden="true"/>:t.send}
             </button>
             {!selected.reply.ok&&<small>{replyReason(selected.reply.reason,lang)}</small>}
+            {selected.reply.ok&&<div className={styles.salesbotAssistSlot}>
+              <CrmSalesbotAssist key={`${accountId}:${selected.id}`} accountId={accountId}
+                threadId={selected.id} locale={lang} disabled={busy||threadLoading}
+                iconOnly={conversationOnly}
+                onInsert={draft=>{
+                  // Nothing is sent here; the owner must review and press Send.
+                  if(activeRef.current!==selected.id||busy||threadLoading||!selected.reply.ok)return false
+                  if(text.trim()&&!window.confirm(lang==='ru'?'Заменить текущий черновик?':
+                    lang==='es'?'¿Reemplazar el borrador actual?':'Replace your current draft?'))return false
+                  pendingRequest.current=null
+                  setText(draft)
+                  return true
+                }}/>
+            </div>}
           </div>
         </>}
       </div>
     </div>}
-    {status&&<p role="status" className={styles.notice}>{status}</p>}
-    {!compact&&<p className={styles.disclaimer}>{t.manual}</p>}
+    {!conversationOnly&&!compact&&status&&<p role="status" className={styles.notice}>{status}</p>}
+    {!compact&&!conversationOnly&&<p className={styles.disclaimer}>{t.manual}</p>}
   </section>
 }

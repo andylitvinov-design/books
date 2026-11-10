@@ -1,0 +1,895 @@
+/* Compact goal-first recommendation above the manual Video Studio editor. */
+.root{border:1px solid rgba(175,136,65,.42);border-radius:20px;background:linear-gradient(135deg,#fffdf7 0%,#f5f1e5 100%);padding:15px 17px;margin:16px 0;color:#233b31;box-shadow:0 8px 26px rgba(66,76,48,.055)}
+.head{display:flex;align-items:flex-start;gap:10px}
+.head svg{flex:none;margin-top:3px;color:#ae8941}
+.head h3{font-size:clamp(1.08rem,2vw,1.32rem);margin:0 0 3px;color:#1e4438}
+.head p{font-size:.92rem;line-height:1.45;margin:0;color:#596b60}
+.goalsTitle{font-size:.9rem;font-weight:700;color:#274637;margin:13px 0 7px}
+.goalChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.goalChoices button{min-width:0;min-height:44px;border:1px solid #c5d5bf;border-radius:12px;background:#fff;color:#24493a;padding:9px;font:inherit;font-weight:600;font-size:.87rem;line-height:1.25;cursor:pointer;text-align:center}
+.goalChoices button:hover{border-color:#b18a45}
+.goalChoices button[aria-pressed="true"]{border-color:#a9823c;background:#fff1cf;box-shadow:0 0 0 1px #ccac68}
+.goalChoices button:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
+.goalChoices button:disabled{opacity:.5;cursor:not-allowed}
+.entry{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:13px}
+.goal{min-width:180px;flex:1;display:block}
+.goal input{width:100%;border-radius:12px;background:#fff;border:1px solid #bbcabc;color:#263e33;padding:12px 14px;font:inherit;min-height:44px}
+.entry button,.confirm{border:0;border-radius:12px;background:#23634b;color:#fff;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer;min-height:44px}
+.entry button:disabled,.confirm:disabled{opacity:.45;cursor:not-allowed}
+.entry button:focus-visible,.confirm:focus-visible,.details button:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
+.result{margin-top:13px;padding-top:13px;border-top:1px solid #d6d6c5}
+.result h4{margin:0 0 4px;font-size:1.04rem;color:#204b3a}
+.meta{font-size:.84rem;color:#657369;margin:0 0 9px}
+.shots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;list-style:none;padding:0;margin:10px 0 12px}
+.shots li{padding:8px;background:#fff;border:1px solid #e3e5d6;border-radius:10px;min-width:0}
+.shots b{display:block;font-size:.78rem;color:#9c7a3e;margin-bottom:3px}
+.shots span{display:block;font-size:.84rem;line-height:1.3;overflow-wrap:anywhere}
+.details{margin-bottom:11px;color:#345747;font-size:.88rem}
+.details summary{cursor:pointer;font-weight:600}
+.adjust{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;align-items:center}
+.adjust button{border:1px solid #c7d3c6;background:#fff;color:#23483b;border-radius:999px;padding:7px 10px;cursor:pointer;font:inherit}
+.adjust button[aria-pressed="true"]{border-color:#af8a44;background:#fff2ce}
+.confirm{width:100%;box-shadow:0 0 0 2px rgba(209,169,85,.2)}
+.notice{font-size:.84rem;line-height:1.4;color:#536658;margin:8px 0 0}
+.warning{font-size:.86rem;color:#875c28;margin:7px 0}
+@media(max-width:570px){.root{padding:12px;margin:10px 0;border-radius:16px}.head p{font-size:.86rem}.entry{display:block}.goal{margin-bottom:9px}.entry button{width:100%}.goalChoices{grid-template-columns:repeat(2,minmax(0,1fr))}.shots{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+.clipDescription{display:block;margin-top:4px;font-size:.77rem;line-height:1.35;color:#536b5b}
+.clipTags{display:block;margin-top:5px;font-size:.7rem;line-height:1.35;color:#8b6b3e;overflow-wrap:anywhere}
+
+/* iPhone keyboard must not zoom the page or expand a content-box input past its card. */
+.root{box-sizing:border-box;min-width:0;max-width:100%;overflow-wrap:anywhere}
+.root *{box-sizing:border-box}
+.entry,.goal{min-width:0;max-width:100%}
+.goal input{min-width:0;max-width:100%;font-size:16px;line-height:1.35}
+.variantsTitle{margin:12px 0 6px;font-size:.87rem;font-weight:750;color:#274637}
+.storyChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 12px}
+.storyChoices button{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-width:0;min-height:66px;border:1px solid #c5d5bf;border-radius:12px;padding:9px 11px;background:#fff;color:#24493a;font:inherit;line-height:1.3;text-align:left;cursor:pointer}
+.storyChoices button span{display:flex;align-items:center;gap:3px;color:#8b6b3e;font-size:.8rem;font-weight:750}
+.storyChoices button strong{display:block;font-size:.89rem;overflow-wrap:anywhere}
+.storyChoices button[aria-pressed="true"]{background:#e7f5ec;border-color:#176c54;box-shadow:inset 0 0 0 2px #176c54}
+.storyChoices button:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
+.storyChoices button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:570px){.goal input{font-size:16px}.storyChoices{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Owner-approved one-screen mock: the same goal state is shown in the theme
+   card via a React portal; the Director below Music shows real licensed films. */
+.goalPanel{display:grid;gap:9px;min-width:0}
+.goalPanel .goalsTitle{margin:0;font-size:12px;font-weight:700;color:#5c6d62}
+.goalPanel .goalChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.goalPanel .goalChoices button{min-height:45px;max-width:none;padding:8px 7px;border-radius:10px;
+  font-size:12px;line-height:1.2;color:#274b3d;background:#fff}
+.goalPanel .goalChoices button[aria-pressed="true"]{background:#eaf5ec;border-color:#216c51;
+  color:#15533e;box-shadow:inset 0 0 0 1px #297d60}
+.extraGoals{border:0;margin:0;font-size:11px;color:#3b7861}
+.extraGoals summary{min-height:24px;cursor:pointer;display:inline-flex;align-items:center}
+.extraGoals[open] .goalChoices{margin-top:5px}
+/* The six goals remain selectable, but only the primary four belong to the
+   compact first screen. Author CSS grid must not override the browser's
+   closed-<details> hiding rule in Chromium or WebKit. */
+.extraGoals:not([open]) > .goalChoices{display:none}
+.goalPanel .entry{display:block;margin-top:0;min-width:0}
+.goalPanel .goal{display:block;min-width:0;margin:0}
+.goalPanel .notice{margin:0 0 4px;font-size:11px}
+.goalPanel .goal input{width:100%;min-width:0;height:44px;min-height:44px;padding:9px 11px;
+  border-radius:10px;border:1px solid #cad8cf;background:#fff;
+  font:500 16px/1.25 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.goalActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:8px}
+.goalPanel .goalActions button{display:flex;justify-content:center;align-items:center;gap:6px;
+  min-width:0;min-height:43px;width:100%;margin:0;padding:9px 5px;border:1px solid #17684f;
+  background:#17684f;color:#fff;border-radius:10px;font:750 12px/1.15 Arial,sans-serif}
+.goalPanel .goalActions .clarifyButton{background:#f7faf4;color:#17684f}
+.goalPanel .goalActions button:disabled{opacity:.55}
+.refinePanel{display:grid;gap:6px;min-width:0;margin:4px 0;padding:10px;border:1px solid #d3e3d5;
+  border-radius:10px;background:#f5faf6}
+.refinePanel label{font:650 11px/1.4 Arial,sans-serif;color:#315848}
+.refinePanel textarea{width:100%;min-width:0;min-height:57px;resize:vertical;
+  border:1px solid #cbd8cf;border-radius:8px;padding:9px;font:500 16px/1.35 Arial,sans-serif}
+.refinePanel button{display:inline-flex;justify-content:center;align-items:center;gap:5px;
+  width:100%;min-height:39px;border:1px solid #17684f;border-radius:8px;background:#fff;
+  color:#17684f;font:750 12px/1.2 Arial,sans-serif}
+.root{margin:0;min-width:0;max-width:100%;padding:13px;border-radius:15px;border-color:#e1e7db;
+  background:linear-gradient(145deg,#fffefa,#fbfaf5);box-shadow:0 4px 14px #2945310e}
+.head{gap:7px;align-items:center}
+.head svg{width:18px;height:18px;margin:0;color:#0d7056}
+.head h3{font-size:17px;margin:0}
+.head p{margin:2px 0 0;font-size:11px}
+.result{margin-top:10px;padding-top:9px;border-color:#e0e6dd}
+.result h4{font-size:12px;line-height:1.28;margin:0 0 4px}
+.meta{font-size:10.5px;line-height:1.35;margin:0 0 5px}
+.variantsTitle{margin:9px 0 6px;font-size:12px;color:#244b3c}
+.storyChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:4px 0 11px}
+.storyChoices button{position:relative;display:flex;flex-direction:column;align-items:flex-start;
+  justify-content:flex-start;gap:2px;min-width:0;min-height:129px;max-width:100%;
+  overflow:hidden;padding:4px 4px 7px;border:1px solid #e4e7dd;border-radius:10px;
+  background:#fff;color:#254639;text-align:left}
+.storyChoices button[aria-pressed="true"]{background:#f1f9f1;border:2px solid #17775c;
+  box-shadow:0 0 0 1px #cae6d4}
+.storyPoster{display:block;width:100%;height:auto;aspect-ratio:1.28;object-fit:cover;border-radius:6px}
+.storyChoices button .storyNumber{position:absolute;right:7px;top:7px;z-index:1;
+  display:grid;place-items:center;min-width:21px;height:21px;padding:0 3px;border-radius:12px;
+  background:#155f4c;color:#fff;font-size:10px;font-weight:850}
+.storyChoices button strong{font:750 10.5px/1.2 Arial,sans-serif;overflow-wrap:anywhere}
+.storyChoices button small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;color:#69796e;font:500 10px/1.25 Arial,sans-serif}
+.shots{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:4px 0 11px;list-style:none}
+.shots li{position:relative;display:flex;flex-direction:column;gap:3px;min-width:0;padding:0;
+  border:0;border-radius:7px;background:transparent}
+.shots li:not(:last-child)::after{content:"→";position:absolute;right:-10px;top:27px;
+  z-index:1;color:#6d8577;font-size:13px}
+.shotPoster{display:block;width:100%;aspect-ratio:1.45;object-fit:cover;border-radius:7px}
+.shots b{display:block;font-size:10px;line-height:1.2;margin:0;color:#315843}
+.shots span{font-size:10px;line-height:1.2}
+.clipDescription{font-size:9px;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:2;overflow:hidden}
+.clipTags{display:none}
+.details{margin:6px 0 9px;font-size:11px}
+.confirm{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  min-height:46px;border-radius:10px;padding:10px;font-size:13px;background:#17694d}
+.appliedActions{display:grid;gap:5px;margin-top:8px}
+.create{display:flex;justify-content:center;align-items:center;gap:7px;width:100%;
+  min-height:46px;border:1px solid #176e52;border-radius:10px;background:#ecf6ec;
+  color:#165c47;font:800 13px/1.2 Arial,sans-serif}
+.create:disabled{opacity:.6;cursor:wait}
+@media(max-width:570px){
+ .root{padding:10px 9px;border-radius:14px}
+ .head h3{font-size:15px}
+ .head p{font-size:10px}
+ .storyChoices{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+ .storyChoices button{min-height:122px;padding:3px 3px 6px}
+ .shots{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+}
+@media(max-width:355px){
+ .storyChoices button strong{font-size:9px}
+ .storyChoices button small,.shots span{font-size:9px}
+ .goalPanel .goalChoices button{font-size:11px}
+}
+
+/* Owner goal pictograms remain inline, aligned and visible at 320px. */
+.goalPanel .goalChoices button{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px}
+.goalPanel .goalChoices button svg{flex:none;width:17px;height:17px}
+@media(max-width:759px){.goalPanel .goalsTitle{display:none}}
+
+
+/* Adaptive montage remains optional beneath the existing compact 4-stage storyboard. */
+.timelineTrack{display:flex;align-items:stretch;gap:3px;min-height:47px;width:100%;
+  margin:8px 0 9px;border-radius:9px;overflow:hidden}
+.timelineSegment{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:0;flex-basis:0;padding:5px 2px;color:#243d32;background:#d7eadb;text-align:center}
+.timelineSegment:nth-child(2){background:#c9e1ed}
+.timelineSegment:nth-child(3){background:#eadbbd}
+.timelineSegment:nth-child(4){background:#e0d4ec}
+.timelineSegment strong{font-size:12px;line-height:1.1}
+.timelineSegment span{font-size:11px;font-weight:600;white-space:nowrap}
+.montageDetails{margin:7px 0 12px;border:1px solid #d8e4d8;border-radius:12px;
+  background:#fafcf8;padding:9px;color:#2b5343}
+.montageDetails summary{min-height:34px;display:list-item;cursor:pointer;
+  font:700 12px/1.5 Arial,sans-serif;padding:6px 2px}
+.montageRows{display:grid;gap:7px;margin:8px 0}
+.montageRow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
+  gap:8px;border:1px solid #e2e7dc;border-radius:10px;padding:8px;background:#fff}
+.montageName{display:grid;gap:3px;min-width:0}
+.montageName strong{font-size:12px}
+.montageName small{font-size:10px;line-height:1.3;color:#63776b;
+  overflow:hidden;text-overflow:ellipsis}
+.montageActions{display:flex;gap:4px;align-items:center}
+.montageActions button{border:1px solid #bfd3c4;border-radius:8px;background:#edf6ef;
+  color:#1c5642;min-height:38px;min-width:37px;padding:5px;cursor:pointer;
+  font:700 11px/1.2 Arial,sans-serif}
+.montageActions button:disabled{opacity:.35;cursor:not-allowed}
+.montageActions button:focus-visible,.montageDetails summary:focus-visible{
+  outline:3px solid #d0a950;outline-offset:2px}
+@media(max-width:440px){
+ .montageRow{grid-template-columns:minmax(0,1fr)}
+ .montageActions{justify-content:space-between}
+ .montageActions button{flex:1;min-height:44px;min-width:0}
+ .montageName strong{font-size:13px}
+}
+
+
+/* One owner-approved video/audio/text workspace, not a second recorder. */
+.trackSection{display:grid;gap:8px;padding:9px;border:1px solid #e1e8dc;
+  border-radius:12px;background:#fff;min-width:0;margin-top:10px}
+.trackLabel{font:750 12px/1.35 system-ui,sans-serif;color:#205441}
+.textSegments{display:flex;gap:3px;min-height:25px;overflow:hidden;width:100%}
+.textSegment{min-width:0;flex-basis:0;display:grid;place-items:center;
+  background:#e9eee9;border-radius:5px;color:#697a6e;font:750 11px/1.2 system-ui,sans-serif}
+.textSegment[data-caption-active="true"]{background:#bce9df;color:#145c4b}
+.stageCaptionFields{display:grid;gap:9px}
+.stageCaptionFields>.notice{margin:0;font-size:11px}
+.captionInput{display:grid;gap:3px;min-width:0}
+.captionInput span{font:650 12px/1.25 system-ui,sans-serif;color:#315848}
+.captionInput input{min-width:0;width:100%;max-width:100%;height:44px;
+  padding:9px 11px;background:#fffdf8;border:1px solid #c1d5ca;
+  border-radius:9px;color:#243b33;font:500 16px/1.25 system-ui,sans-serif}
+.captionInput input:focus-visible{outline:2px solid #1d7860;outline-offset:2px}
+.soundTrack{display:flex;gap:9px;align-items:center;justify-content:space-between;
+  min-width:0;border-top:1px solid #dbe6df;padding-top:9px}
+.soundTrackLabel{display:grid;min-width:0;gap:2px}
+.soundTrackLabel strong{font:750 12px/1.3 system-ui,sans-serif;color:#24503e}
+.soundTrackLabel small{font:500 11px/1.35 system-ui,sans-serif;color:#63756a;
+  word-break:break-word}
+.soundTrack[data-attached="true"] .soundTrackLabel small{color:#147657}
+.soundTrack button{flex:none;min-height:44px;padding:8px 11px;
+  background:#edf8ef;border:1px solid #acc7b6;border-radius:9px;
+  color:#165e46;font:750 12px/1.2 system-ui,sans-serif;cursor:pointer}
+.soundTrack button:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
+.soundTrack button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:390px){
+ .trackSection{padding:7px}
+ .soundTrack{flex-wrap:wrap}
+ .soundTrack button{width:100%}
+}
+
+
+/* Source-backed scene replacement is part of the existing optional montage. */
+.montageRow{grid-template-columns:minmax(0,1fr) minmax(145px,1fr) auto}
+.montageReplace{display:grid;gap:3px;min-width:0;color:#2b5743}
+.montageReplace span{font-size:11px;font-weight:700;line-height:1.3}
+.montageReplace select{box-sizing:border-box;display:block;width:100%;min-width:0;
+  min-height:44px;padding:8px;border:1px solid #bbd5c4;border-radius:9px;
+  background:#f9fdf9;color:#1b4534;font:600 16px/1.3 system-ui,-apple-system,sans-serif}
+.montageReplace select:disabled{color:#8a998d;background:#f4f6f4}
+.montageReplace select:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
+@media(max-width:730px){.montageRow{grid-template-columns:minmax(0,1fr)}}
+
+/* Real four-scene sample remains visibly distinct from a completed render. */
+.demoNote{margin:0 0 6px;color:#678074;font:700 11px/1.25 Arial,sans-serif}
+@media(max-width:570px){
+ .root{padding:10px 9px;box-shadow:0 3px 12px #2b503017}
+ .head{display:flex;align-items:center;gap:7px}
+ .head h3{font-size:15px}
+ .head p{font-size:10px;line-height:1.3}
+ .result{margin-top:7px;padding-top:7px}
+ .storyChoices{gap:5px;margin:5px 0 8px}
+ .storyChoices button{min-height:116px}
+ .storyPoster{aspect-ratio:1.3}
+ .shots{gap:6px;margin:4px 0 7px}
+ .shots li:not(:last-child)::after{right:-8px}
+ .goalPanel .goalChoices{gap:6px}
+ .goalPanel .goalChoices button{min-height:44px;font-size:clamp(11px,3vw,13px)}
+ .goalPanel .goalActions button{min-height:44px}
+}
+
+
+/* Owner-approved Video Studio: ONE picture-based objective row, ONE 3x2 topic
+   selector and ONE real four-story Director. No duplicated goal input. */
+.srOnly{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);
+ white-space:nowrap}
+.goalPanel{display:grid;gap:0;min-width:0}
+.goalPanel .goalChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.goalPanel .goalChoices button{position:relative;display:flex;flex-direction:column;
+ justify-content:flex-start;align-items:stretch;gap:4px;min-width:0;min-height:128px;
+ padding:4px 4px 7px;overflow:hidden;border:1px solid #e0e5da;border-radius:12px;
+ background:#fffefa;color:#173c32;cursor:pointer;text-align:left}
+.goalPanel .goalChoices button[aria-pressed="true"]{border:2px solid #128568;
+ background:#f1faf4;box-shadow:0 0 0 1px #bce4d1}
+.categoryPoster{display:block;width:100%;height:auto;aspect-ratio:1.6;min-height:42px;
+ object-fit:cover;border-radius:8px}
+.categoryIcon{position:absolute;left:10px;top:13px;display:grid;place-items:center;
+ width:34px;height:34px;border-radius:50%;background:#fffef9ec;color:#08705a;
+ box-shadow:0 1px 5px #1637292c}
+.goalPanel .goalChoices button strong{font:750 11px/1.2 Arial,Helvetica,sans-serif;
+ overflow-wrap:anywhere;hyphens:auto}
+.categorySelected{position:absolute;right:5px;top:5px;display:grid;place-items:center;
+ width:22px;height:22px;background:#086a50;color:#fff;border-radius:50%}
+.topicPanel{display:grid;gap:8px;min-width:0}
+.topicHead{display:grid;grid-template-columns:minmax(0,1fr) minmax(140px,46%);
+ align-items:center;gap:8px;min-width:0}
+.topicHead h3{display:flex;align-items:center;gap:6px;font:800 17px/1.2 Arial,Helvetica,sans-serif;
+ letter-spacing:-.02em;color:#153f36;margin:0}
+.topicHead h3 svg{flex:none;color:#1c795d}
+.topicHead>button{display:flex;align-items:center;justify-content:center;
+ min-width:0;min-height:44px;gap:5px;padding:6px 8px;border:1px solid #d0e8d8;
+ border-radius:13px;background:#ecf7ef;color:#24614e;cursor:pointer;
+ font:650 10.5px/1.25 Arial,Helvetica,sans-serif;text-align:left}
+.topicHead>button svg{flex:none;width:15px;height:15px}
+.topicHead>button span{min-width:0}
+.topicInput{display:block;min-width:0}
+.topicInput input{display:block;width:100%;height:46px;min-width:0;max-width:100%;
+ border-radius:11px;border:1px solid #cbd8d3;background:#fff;
+ padding:10px 12px;color:#193e34;font:500 16px/1.25 system-ui,-apple-system,sans-serif}
+.popularHeading{margin:0;color:#385e4e;font:750 11.5px/1.2 Arial,Helvetica,sans-serif}
+.topicChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.topicChoices button{display:flex;align-items:center;justify-content:flex-start;
+ min-width:0;min-height:48px;gap:6px;padding:8px 7px;border:1px solid #dde4dc;
+ border-radius:11px;background:#fff;color:#20473b;cursor:pointer;
+ font:650 11px/1.22 Arial,Helvetica,sans-serif;text-align:left}
+.topicChoices button svg{width:19px;height:19px;flex:none;color:#1b735b}
+.topicChoices button span{min-width:0;overflow-wrap:anywhere;hyphens:auto}
+.topicChoices button[aria-pressed="true"]{border-color:#138164;
+ background:#eaf5ee;box-shadow:inset 0 0 0 1px #bde0cb}
+.topicChoices :is(button,input):focus-visible,.goalChoices button:focus-visible,
+.allScenes:focus-visible{outline:3px solid #c39b56;outline-offset:2px}
+.allScenes{display:inline-flex;align-items:center;gap:3px;justify-content:flex-end;
+ flex:none;min-height:40px;margin-left:auto;padding:5px 2px;
+ border:0;background:transparent;color:#206b50;cursor:pointer;
+ font:700 11px/1.15 Arial,Helvetica,sans-serif}
+.allScenes svg{flex:none}
+.storyboardDisclosure{min-width:0;margin:6px 0 7px;padding:0 2px;color:#325a47}
+.storyboardDisclosure>summary{display:flex;align-items:center;min-height:35px;cursor:pointer;
+ color:#2b7058;font:700 11px/1.2 Arial,Helvetica,sans-serif}
+.storyboardDisclosure[open]{padding:7px;border:1px solid #d9e8dc;border-radius:11px;
+ background:#f7faf6}
+@media(max-width:759px){
+ .goalPanel .goalChoices{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+ .goalPanel .goalChoices button{min-height:116px;padding:3px 3px 6px;gap:3px}
+ .categoryPoster{aspect-ratio:1.4;min-height:38px;border-radius:7px}
+ .categoryIcon{left:6px;top:9px;width:31px;height:31px}
+ .categoryIcon svg{width:19px;height:19px}
+ .goalPanel .goalChoices button strong{font-size:clamp(9px,2.65vw,11px)}
+ .topicHead h3{font-size:clamp(14px,3.8vw,17px)}
+ .topicHead>button{font-size:clamp(9px,2.45vw,10.5px)}
+ .topicChoices{gap:6px}
+ .topicChoices button{font-size:clamp(9.8px,2.7vw,11px);min-height:48px;padding:6px 5px}
+ .topicChoices button svg{width:17px;height:17px}
+ .root{padding:9px 8px 10px;margin:0;border-radius:15px;background:#fffdfa}
+ .head{display:flex;align-items:center;gap:6px;min-width:0}
+ .head>div{min-width:0;flex:1}
+ .head svg{flex:none}
+ .head h3{font:800 clamp(13px,3.7vw,17px)/1.2 Arial,Helvetica,sans-serif}
+ .head p{display:none}
+ .result{border-top:0;padding-top:1px;margin-top:3px}
+ .result h4,.result>.meta,.result>div>.meta,.result .demoNote{display:none}
+ .result .variantsTitle{font-size:11px}
+ .result>div>.variantsTitle:first-of-type{display:none}
+ .storyChoices{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:4px 0 3px}
+ .storyChoices button{min-height:0;padding:3px 3px 6px}
+ .storyPoster{aspect-ratio:1.45}
+ .storyChoices button strong{font-size:clamp(9px,2.5vw,11px)}
+ .storyChoices button small{font-size:clamp(9px,2.45vw,10px)}
+ .confirm{display:flex;justify-content:center;align-items:center;gap:9px;
+    min-height:57px;margin-top:7px;padding:9px 12px;border-radius:11px;
+    background:linear-gradient(105deg,#075b45,#087657);font-size:clamp(12px,3.3vw,15px);
+    line-height:1.22;text-align:center}
+ .confirm span{flex:1;max-width:360px}
+ .confirm svg{flex:none}
+ .appliedActions .create{min-height:48px}
+}
+@media(max-width:355px){
+ .topicHead{grid-template-columns:minmax(0,1fr) minmax(129px,45%);gap:5px}
+ .topicHead>button{padding:5px}
+ .topicHead>button svg:first-child{display:none}
+ .topicChoices button{gap:3px}
+ .topicChoices button svg{width:15px;height:15px}
+ .goalPanel .goalChoices button strong{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.goalPanel *,.topicPanel *{transition:none!important}}
+
+
+/* Holistic Light mobile journey — real portaled goal/topic and real scenario
+   selection, visually matched to the approved large-card concept (02 Nov). */
+@media(max-width:759px){
+  /* Step 1: four visual goals are 2 × 2, never four cramped thumbnails. */
+  .goalPanel .goalChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .goalPanel .goalChoices button{
+    min-width:0;min-height:184px;gap:9px;padding:8px 8px 13px;
+    border:1px solid #ece5d9;border-radius:21px;
+    background:linear-gradient(150deg,#e9f8ec,#fffdf8);
+    box-shadow:0 5px 14px #31492f12}
+  .goalPanel .goalChoices button:nth-child(2){background:linear-gradient(140deg,#fff5e8,#fffaf3)}
+  .goalPanel .goalChoices button:nth-child(3){background:linear-gradient(140deg,#fcebee,#fff9f7)}
+  .goalPanel .goalChoices button:nth-child(4){background:linear-gradient(140deg,#fff2d6,#fffcf3)}
+  .goalPanel .goalChoices button[aria-pressed="true"]{
+    border:2px solid #0b8964;background:#e9f7ec;
+    box-shadow:0 0 0 2px #b9e4cc,0 7px 15px #1c73432a}
+  .categoryPoster{display:block;aspect-ratio:1.65;min-height:0;width:100%;height:auto;
+    object-fit:cover;border-radius:14px}
+  .categoryIcon{left:16px;top:16px;width:40px;height:40px;
+    background:#fffdf5f0;color:#08785d;box-shadow:0 2px 9px #0f51351a}
+  .categoryIcon svg{width:23px;height:23px}
+  .categorySelected{top:9px;right:9px;width:31px;height:31px;background:#0d8262}
+  .goalPanel .goalChoices button strong{
+    font:800 clamp(14px,3.85vw,18px)/1.18 Arial,Helvetica,sans-serif;
+    color:#193f32;overflow-wrap:normal;hyphens:auto}
+
+  /* Step 2: full-size editable input and readable quick intentions. */
+  .topicPanel{gap:14px}
+  .topicHead{display:grid;grid-template-columns:minmax(0,1fr);gap:11px}
+  .topicHead h3{font:850 clamp(22px,6.1vw,27px)/1.15 Arial,Helvetica,sans-serif;
+    color:#163f35;letter-spacing:-.025em}
+  .topicHead h3 svg{width:25px;height:25px}
+  .topicHead>button{
+    justify-content:flex-start;gap:10px;min-height:56px;padding:11px 13px;
+    border-radius:16px;background:#edf8f0;color:#145f48;
+    font:750 clamp(13px,3.75vw,15px)/1.3 Arial,Helvetica,sans-serif}
+  .topicHead>button svg:first-child{display:block;width:19px;height:19px}
+  .topicHead>button svg:last-child{margin-left:auto;width:18px;height:18px}
+  .topicInput input{
+    height:60px;min-height:60px;padding:12px 16px;
+    border:1px solid #d2dcd5;border-radius:17px;background:#fff;
+    font:500 16px/1.3 system-ui,-apple-system,sans-serif;
+    box-shadow:inset 0 1px 2px #244b3010}
+  .popularHeading{font:750 clamp(13px,3.5vw,15px)/1.3 Arial,Helvetica,sans-serif;color:#375c4c}
+  .topicChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .topicChoices button{
+    gap:8px;min-height:58px;padding:10px 10px;
+    border:1px solid #e5e5dc;border-radius:17px;background:#fffefa;
+    font:700 clamp(13px,3.55vw,15px)/1.23 Arial,Helvetica,sans-serif;
+    color:#244c3f;box-shadow:0 3px 11px #3b513211}
+  .topicChoices button svg{width:22px;height:22px;flex:none}
+  .topicChoices button[aria-pressed="true"]{
+    border-color:#128363;background:#e9f6ed;box-shadow:inset 0 0 0 1px #b5dcc5}
+
+  /* Step 3: large photo-first cards and a real, guarded next action. */
+  .root{
+    min-width:0;padding:18px 15px 20px;margin:0;
+    border:1px solid #eee4d5;border-radius:25px;
+    background:linear-gradient(145deg,#fffefa,#fff9f2);
+    box-shadow:0 9px 25px #5c493014}
+  .head{flex-wrap:wrap;gap:9px;align-items:center}
+  .head>svg{width:24px;height:24px;color:#087c60}
+  .head>div{flex:1;min-width:0}
+  .head h3{font:850 clamp(21px,5.85vw,27px)/1.14 Arial,Helvetica,sans-serif;
+    color:#163f35;letter-spacing:-.025em}
+  .head p{display:block;margin:8px 0 0;color:#8d6945;
+    font:550 clamp(13px,3.45vw,15px)/1.3 Arial,Helvetica,sans-serif}
+  .allScenes{min-height:44px;font-size:14px;font-weight:750;padding:6px 2px}
+  .result{margin-top:13px;padding:0;border:0}
+  .result .variantsTitle{font-size:14px}
+  .storyChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0 16px}
+  .storyChoices button{
+    gap:7px;min-height:194px;min-width:0;padding:7px 7px 12px;
+    border:1px solid #e7e3d9;border-radius:20px;
+    background:#fffdfa;box-shadow:0 4px 15px #34503814}
+  .storyChoices button[aria-pressed="true"]{
+    border:2px solid #0c8664;background:#ecf7ed;
+    box-shadow:0 0 0 2px #c2e7d0,0 7px 17px #13563c1a}
+  .storyPoster{aspect-ratio:1.6;width:100%;height:auto;object-fit:cover;border-radius:13px}
+  .storyChoices button .storyNumber{
+    top:11px;right:11px;min-width:29px;height:29px;padding:0 6px;
+    border-radius:999px;font-size:13px;background:#0f7458}
+  .storyChoices button strong{
+    color:#1d4437;font:800 clamp(14px,3.85vw,17px)/1.2 Arial,Helvetica,sans-serif;
+    overflow-wrap:normal;hyphens:auto}
+  .storyChoices button small{
+    font:500 clamp(12px,3.4vw,14px)/1.3 Arial,Helvetica,sans-serif;
+    color:#718075;-webkit-line-clamp:2}
+  .storyboardDisclosure>summary{min-height:44px;font-size:14px}
+  .confirm{
+    width:100%;min-height:70px;padding:13px 15px;margin-top:13px;
+    border:1px solid #2b9f7b;border-radius:20px;
+    background:linear-gradient(110deg,#0c6f50,#069b72);
+    font:850 clamp(15px,4.15vw,18px)/1.22 Arial,Helvetica,sans-serif;
+    box-shadow:0 7px 19px #07644532}
+  .confirm svg{width:23px;height:23px}
+  .appliedActions{gap:9px;margin-top:11px}
+  .appliedActions .create{
+    min-height:62px;border-radius:19px;
+    background:linear-gradient(110deg,#0a805c,#22aa7c);color:#fff;
+    font:850 clamp(15px,4vw,18px)/1.2 Arial,Helvetica,sans-serif}
+  .notice,.warning{font-size:13px;line-height:1.4}
+}
+@media(max-width:355px){
+  .goalPanel .goalChoices{gap:9px}
+  .goalPanel .goalChoices button{min-height:174px;padding:7px 7px 11px}
+  .goalPanel .goalChoices button strong{font-size:14px}
+  .topicChoices{gap:7px}
+  .topicChoices button{padding:9px 8px;font-size:13px}
+  .storyChoices{gap:9px}
+  .storyChoices button{min-height:185px}
+  .storyChoices button strong{font-size:13.5px}
+}
+.melodyPanel{margin:10px 0 12px}
+.melodyChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.melodyChoices button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:42px;
+  padding:8px 6px;border:1px solid #b8cfbf;border-radius:10px;background:#fff;color:#254b3b;
+  font:600 12px/1.3 system-ui,-apple-system,sans-serif;cursor:pointer;overflow-wrap:anywhere}
+.melodyChoices button[aria-pressed="true"]{border-color:#a58036;background:#fff0c9}
+.melodyChoices button:focus-visible{outline:3px solid #d0a950;outline-offset:2px}
+.melodyChoices button:disabled{opacity:.56;cursor:not-allowed}
+.melodyHint{font:500 11px/1.4 system-ui,-apple-system,sans-serif;color:#61766a;margin:5px 0 0}
+@media(max-width:570px){.melodyChoices{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Fourth hierarchy level: plot title must span the 4-card grid, and the logline stays legible. */
+[data-mytube-plot-choices] > .variantsTitle{grid-column:1/-1;margin:5px 0 3px}
+.storyChoices[data-mytube-plot-choices] button small:last-child{-webkit-line-clamp:4;line-clamp:4}
+/* 03 Nov owner correction: four compact text-only goals, with an inline
+   two-selection subcategory disclosure; keep the source-backed story cards. */
+.goalPanel .goalChoices{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.goalPanel .goalChoices button{
+  min-height:77px;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  gap:5px;padding:8px 5px;border-radius:14px;text-align:center;
+}
+.goalPanel .goalChoices .categoryIcon{
+  position:static;display:grid;place-items:center;width:27px;height:27px;flex:none;
+  border-radius:50%;background:#fffdf7aa;box-shadow:none;
+}
+.goalPanel .goalChoices .categoryIcon svg{width:20px;height:20px}
+.goalPanel .goalChoices button strong{
+  font:750 clamp(10px,1.15vw,14px)/1.17 Arial,Helvetica,sans-serif;
+  overflow-wrap:anywhere;hyphens:auto;
+}
+.goalPanel .goalChoices .categorySelected{top:4px;right:4px;width:19px;height:19px}
+.goalPanel .goalChoices .categorySelected svg{width:12px;height:12px}
+.subcategories{
+  min-width:0;display:grid;gap:9px;margin-top:11px;padding-top:10px;
+  border-top:1px solid #e7e6da;
+}
+.subcategories .popularHeading{font-size:13px;color:#355b50}
+.subcategories .topicChoices{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.subcategories .topicChoices button:disabled:not([aria-pressed="true"]){opacity:.45;cursor:not-allowed}
+@media(max-width:759px){
+  .goalPanel .goalChoices{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+  .goalPanel .goalChoices button{
+    min-height:83px;min-width:0;padding:7px 3px 6px;gap:5px;border-radius:13px;
+    box-shadow:0 2px 6px #274f3810;
+  }
+  .goalPanel .goalChoices .categoryIcon{width:27px;height:27px}
+  .goalPanel .goalChoices .categoryIcon svg{width:19px;height:19px}
+  .goalPanel .goalChoices button strong{
+    font:750 clamp(9.3px,2.55vw,12px)/1.14 Arial,Helvetica,sans-serif;
+    overflow-wrap:anywhere;hyphens:auto;
+  }
+  .subcategories .topicChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .subcategories .topicChoices button{
+    min-height:44px;gap:5px;padding:7px 8px;border-radius:12px;
+    font:650 clamp(11px,2.9vw,13px)/1.23 Arial,Helvetica,sans-serif;
+  }
+  .subcategories .topicChoices button svg{width:17px;height:17px}
+  .topicPanel{gap:11px}
+  .topicPanel .topicInput input{height:52px;min-height:52px}
+}
+@media(max-width:355px){
+  .goalPanel .goalChoices button{min-height:86px;padding:6px 2px 5px}
+  .goalPanel .goalChoices button strong{font-size:9.1px}
+  .goalPanel .goalChoices .categorySelected{width:16px;height:16px;top:2px;right:2px}
+}
+
+/* Owner-approved 03 Nov Video Studio first screen: warm-light, readable,
+   compact SWIPEABLE goal/category row, immediately visible subthemes,
+   popular suggestions BEFORE the custom text field, one row of four stories.
+   No separate player, no new video generation and no hidden actions. */
+@media(max-width:759px){
+  .goalPanel{gap:8px;min-width:0}
+  .goalPanel .goalChoices{
+    display:flex;flex-wrap:nowrap;gap:7px;grid-template-columns:none;
+    width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;
+    padding:3px 2px 7px;scroll-snap-type:x proximity;scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain
+  }
+  .goalPanel .goalChoices::-webkit-scrollbar,
+  .subcategories .topicChoices::-webkit-scrollbar,
+  .storyChoices::-webkit-scrollbar{display:none}
+  .goalPanel .goalChoices button{
+    flex:0 0 clamp(70px,19.1vw,94px);width:auto;max-width:94px;
+    min-width:0;min-height:84px;max-height:none;scroll-snap-align:start;
+    gap:5px;padding:10px 4px 8px;border-radius:16px;
+    background:linear-gradient(150deg,#eaf8e8,#fbfff9);
+    border:1px solid #e4ebdd;box-shadow:0 4px 9px #304b3616;
+    justify-content:center;align-items:center;text-align:center
+  }
+  .goalPanel .goalChoices button:nth-child(2){background:linear-gradient(145deg,#e6f6fc,#f5fbff)}
+  .goalPanel .goalChoices button:nth-child(3){background:linear-gradient(145deg,#fceaf3,#fff6f9)}
+  .goalPanel .goalChoices button:nth-child(4){background:linear-gradient(145deg,#fff2d1,#fff9ec)}
+  .goalPanel .goalChoices button:nth-child(5){background:linear-gradient(145deg,#f2eafb,#f9f4ff)}
+  .goalPanel .goalChoices button[aria-pressed="true"]{
+    border:2px solid #078b65;background:linear-gradient(145deg,#dff5e2,#f6fff4);
+    box-shadow:0 0 0 1px #b4e1c4,0 5px 11px #1f604026
+  }
+  .goalPanel .goalChoices .categoryIcon{width:30px;height:30px;flex:none;background:transparent}
+  .goalPanel .goalChoices .categoryIcon svg{width:24px;height:24px}
+  .goalPanel .goalChoices button strong{
+    font:800 clamp(12px,3.15vw,14px)/1.15 Arial,Helvetica,sans-serif;
+    color:#183e36;hyphens:auto;overflow-wrap:normal
+  }
+  .goalPanel .goalChoices .categorySelected{top:2px;right:2px;width:17px;height:17px}
+  .subcategories{
+    gap:8px;margin-top:2px;padding:8px 0 0;border-top:1px solid #e9e8dd
+  }
+  .subcategories .popularHeading{
+    font:750 clamp(13px,3.35vw,15px)/1.3 Arial,Helvetica,sans-serif;color:#715430
+  }
+  .subcategories .topicChoices{
+    display:flex;flex-wrap:nowrap;grid-template-columns:none;gap:7px;
+    max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;
+    scroll-snap-type:x proximity;scrollbar-width:none;padding:2px 2px 6px
+  }
+  .subcategories .topicChoices button{
+    flex:0 0 auto;min-width:108px;max-width:210px;min-height:44px;
+    gap:6px;padding:8px 11px;scroll-snap-align:start;
+    border-radius:14px;background:#eaf7e8;border-color:#e1eedb;
+    font:750 clamp(12.5px,3.25vw,14px)/1.15 Arial,Helvetica,sans-serif
+  }
+  .subcategories .topicChoices button svg{width:19px;height:19px}
+  .topicPanel{gap:10px}
+  .topicHead h3{
+    font:850 clamp(22px,5.5vw,26px)/1.13 Arial,Helvetica,sans-serif;
+    color:#163f35;letter-spacing:-.02em
+  }
+  .topicHead>button{
+    font:750 clamp(14px,3.65vw,16px)/1.3 Arial,Helvetica,sans-serif;
+    min-height:58px;padding:11px 13px;border-radius:16px;
+    background:#e8f7ed
+  }
+  .popularRecommendations{display:grid;gap:9px;min-width:0}
+  .popularRecommendations .popularHeading{
+    font:750 clamp(14px,3.65vw,16px)/1.32 Arial,Helvetica,sans-serif;
+    color:#224f42
+  }
+  .popularTopics{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:7px;min-width:0
+  }
+  .popularTopics button{
+    display:flex;align-items:center;justify-content:flex-start;gap:7px;
+    min-width:0;min-height:58px;padding:9px 7px;
+    border:1px solid #e7e8df;border-radius:15px;background:#fffefa;
+    color:#174538;text-align:left;cursor:pointer;
+    font:750 clamp(12.5px,3.23vw,14px)/1.19 Arial,Helvetica,sans-serif;
+    box-shadow:0 3px 10px #7158380e
+  }
+  .popularTopics button span{min-width:0;overflow-wrap:break-word;hyphens:auto}
+  .popularTopics button svg{width:20px;height:20px;flex:none;color:#087d60}
+  .popularTopics button[aria-pressed="true"]{
+    background:#e7f6ec;border-color:#0e8c69;box-shadow:inset 0 0 0 1px #a6ddbd
+  }
+  .popularTopics button:disabled:not([aria-pressed="true"]){opacity:.45}
+  .popularTopics button:focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+  .topicPanel .topicInput{order:4}
+  .topicPanel .topicInput input{
+    min-height:56px;height:56px;border-radius:16px;
+    font:500 16px/1.35 system-ui,-apple-system,sans-serif;
+    color:#173d35;padding:12px 14px
+  }
+  .head{gap:7px;flex-wrap:wrap}
+  .head h3{font:850 clamp(20px,5.25vw,25px)/1.16 Arial,Helvetica,sans-serif}
+  .head p{font-size:clamp(12.5px,3.35vw,14px)}
+  .allScenes{font:750 clamp(12px,3.15vw,14px)/1.15 Arial,Helvetica,sans-serif}
+  .storyChoices{
+    display:grid;grid-template-columns:none;grid-auto-flow:column;
+    grid-auto-columns:minmax(81px,calc((100% - 24px)/4));
+    gap:8px;min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x proximity;scrollbar-width:none;
+    overscroll-behavior-x:contain;padding:3px 2px 8px;margin:10px 0 7px
+  }
+  .storyChoices button{
+    min-width:0;min-height:0;width:100%;max-width:none;display:flex;
+    flex-direction:column;gap:5px;padding:5px 5px 8px;border-radius:15px;
+    scroll-snap-align:start;box-shadow:0 4px 12px #2b473b16
+  }
+  .storyPoster{width:100%;aspect-ratio:1.22;object-fit:cover;border-radius:10px}
+  .storyChoices button .storyNumber{top:6px;right:6px;min-width:23px;height:23px;font-size:12px}
+  .storyChoices button strong{
+    font:800 clamp(11.5px,3.05vw,13px)/1.18 Arial,Helvetica,sans-serif;
+    color:#193f35;hyphens:auto;overflow-wrap:normal
+  }
+  .storyChoices button small{display:none}
+  .confirm{
+    min-height:65px;padding:11px 13px;border-radius:18px;
+    font:850 clamp(15px,3.9vw,18px)/1.2 Arial,Helvetica,sans-serif
+  }
+  .storyboardDisclosure>summary{font-size:14px}
+}
+@media(max-width:359px){
+  .goalPanel .goalChoices button{flex-basis:74px;min-height:82px}
+  .goalPanel .goalChoices button strong{font-size:12px}
+  .popularTopics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .storyChoices{grid-auto-columns:minmax(83px,calc((100% - 16px)/3))}
+}
+@media(prefers-reduced-motion:reduce){
+  .goalPanel .goalChoices,.subcategories .topicChoices,.storyChoices{scroll-behavior:auto}
+}
+
+
+/* Approved profile-first flow: one real request field, optional in-page questionnaire,
+   no modal, no second profile store and no client data sent off-device. */
+.profilePanel{min-width:0;padding:9px 10px;border-radius:16px;
+ background:linear-gradient(125deg,#eaf7e8,#f4f4e1);border:1px solid #d4e9cc}
+.profileSummary{display:flex;align-items:center;justify-content:space-between;
+ flex-wrap:wrap;gap:8px;min-width:0}
+.profileSummary>span{display:inline-flex;align-items:center;gap:6px;min-width:0;
+ color:#214c3b;font:750 13px/1.2 Arial,Helvetica,sans-serif}
+.profileSummary>span svg{flex:none;color:#078762}
+.profileActions{display:flex;gap:6px;flex-wrap:wrap;min-width:0}
+.profileActions button{min-height:42px;padding:7px 9px;border:1px solid #c3dbca;
+ border-radius:13px;background:#fffdf7;color:#225a42;cursor:pointer;
+ font:750 12px/1.12 Arial,Helvetica,sans-serif}
+.profileActions button[aria-expanded="true"]{border-color:#067a67;
+ background:#067a67;color:#fff}
+.profileActions button:focus-visible,.profileSubmit:focus-visible,
+.profileForm select:focus-visible,.profileForm textarea:focus-visible{
+ outline:3px solid #176e6e;outline-offset:2px}
+.profileForm{display:grid;gap:9px;margin-top:12px;padding:11px;
+ border:1px solid #d6e8d7;border-radius:13px;background:#fffefb}
+.profileForm label{display:grid;gap:4px;min-width:0;color:#244d40;
+ font:700 13px/1.3 Arial,Helvetica,sans-serif}
+.profileForm select,.profileForm textarea{box-sizing:border-box;width:100%;
+ min-width:0;min-height:44px;padding:8px 11px;border:1px solid #bbd4c7;
+ border-radius:11px;background:#fff;color:#1d4436;font:500 16px/1.35 Arial,Helvetica,sans-serif}
+.profileForm textarea{resize:vertical}
+.profileForm .profileSubmit{display:flex;align-items:center;justify-content:center;
+ gap:8px;min-height:49px;border:1px solid #067a67;border-radius:13px;
+ background:#067a67;color:#fff;font:800 15px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.profileForm small{color:#536b63;font:500 12px/1.35 Arial,Helvetica,sans-serif}
+@media(max-width:759px){
+ .profileSummary>span{font-size:13px}
+ .profileActions{flex:1 1 auto;justify-content:flex-end}
+ .profileActions button{font-size:12px}
+}
+@media(max-width:380px){
+ .profileSummary>span{width:100%}
+ .profileActions{justify-content:stretch}
+ .profileActions button{flex:1;min-width:0}
+}
+
+
+/* 04 Nov visual parity: all five real goal handlers in ONE fully visible
+   compact line at 320-430px; never hide the last goal under a carousel.
+   Other story/media rails retain their licensed preview and selection state. */
+@media (max-width:759px) {
+  .goalPanel .goalChoices {
+    display:flex;
+    flex-wrap:nowrap;
+    gap:5px;
+    padding:2px 0 3px;
+    overflow:visible;
+    scroll-snap-type:none;
+  }
+  .goalPanel .goalChoices button {
+    flex:0 0 calc((100% - 20px)/5);
+    width:auto;
+    max-width:none;
+    min-width:0;
+    min-height:66px;
+    padding:6px 2px;
+    gap:3px;
+    border-radius:13px;
+    scroll-snap-align:none;
+  }
+  .goalPanel .goalChoices .categoryIcon {
+    position:static;
+    width:25px;
+    height:25px;
+    flex:none;
+    border-radius:8px;
+    background:transparent;
+    box-shadow:none;
+  }
+  .goalPanel .goalChoices .categoryIcon svg {width:21px;height:21px}
+  .goalPanel .goalChoices button strong {
+    font-size:clamp(9.5px,2.55vw,11.5px);
+    line-height:1.13;
+    text-align:center;
+  }
+  .goalPanel .goalChoices .categorySelected {
+    width:16px;height:16px;top:2px;right:2px;
+  }
+  .topicHead h3 {font-size:clamp(18px,4.7vw,22px)}
+  .topicHead>button {min-height:44px;padding:7px 9px;font-size:13px}
+  .popularTopics button {min-height:48px;padding:7px 6px;border-radius:12px;
+    font-size:clamp(11px,2.9vw,13px)}
+  .confirm {min-height:54px;padding:9px 12px;border-radius:14px;
+    font-size:clamp(14px,3.6vw,16px)}
+}
+
+
+/* First-screen brief → canonical taxonomy → existing video storyboard. */
+.requestComposer{display:grid;gap:8px;min-width:0;width:100%}
+.designRequest{display:flex;align-items:center;justify-content:center;gap:9px;
+ width:100%;min-height:46px;border:0;border-radius:13px;padding:10px 12px;
+ background:#087b62;color:#fff;font:750 14px/1.2 system-ui,-apple-system,sans-serif;
+ cursor:pointer;box-shadow:0 2px 7px rgba(0,90,65,.12)}
+.designRequest:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}
+.designRequest:focus-visible,.requestJump:focus-visible{outline:3px solid #d9a853;outline-offset:2px}
+.designRequest span{flex:1;text-align:center}
+.requestAnalysis{display:grid;gap:3px;min-width:0;padding:9px 11px;
+ border:1px solid #c5decf;border-radius:12px;background:#f1faf4;
+ color:#245442;font:500 12px/1.4 system-ui,-apple-system,sans-serif}
+.requestAnalysis[data-confidence="low"],.requestAnalysis[data-confidence="unresolved"]{
+ background:#fffaf0;border-color:#e6d4af}
+.requestAnalysis strong{font-size:12px}
+.requestAnalysis span{overflow-wrap:anywhere}
+.requestAnalysis p{margin:0}
+.requestJump{display:inline-flex;align-items:center;gap:5px;justify-self:start;
+ padding:3px 0;border:0;background:transparent;color:#087b62;
+ font:750 12px/1.4 system-ui,-apple-system,sans-serif;text-decoration:underline;cursor:pointer}
+@media(max-width:430px){.designRequest{min-height:44px;font-size:13px}.requestAnalysis{padding:8px 9px}}
+
+/* Goal intake stays short; director planning and visual styling live in Ideas and Montage. */
+:global([data-active-workspace="video"]) .root,:global([data-active-workspace="video"]) .profilePanel{display:none!important}
+:global([data-active-workspace="video"]) .requestComposer>.designRequest,
+:global([data-active-workspace="video"]) .requestComposer>.requestAnalysis{display:none!important}
+.optionalTopic{display:grid;gap:7px;min-width:0}
+.optionalTopic>span{font:750 14px/1.3 Arial,Helvetica,sans-serif;color:#215443}
+.optionalTopic select{display:block;box-sizing:border-box;width:100%;min-width:0;min-height:46px;padding:10px 12px;border:1px solid #cfddce;border-radius:12px;background:#fffefa;color:#214b3d;font:500 16px/1.3 system-ui,-apple-system,sans-serif}
+.optionalTopic select:focus-visible,.montageStyle button:focus-visible,.ideaRefinement>summary:focus-visible{outline:3px solid #b79554;outline-offset:2px}
+.optionalTopic select:disabled{opacity:.65}
+.ideaRefinement{margin:9px 0;min-width:0;border:1px solid #d9e8d9;border-radius:15px;background:#fffdfa;padding:4px 11px}
+.ideaRefinement>summary{min-height:46px;display:flex;align-items:center;cursor:pointer;font:750 14px/1.35 Arial,Helvetica,sans-serif;color:#176a50;padding:9px 0}
+.ideaRefinement[open]>summary{margin-bottom:9px;border-bottom:1px solid #d9e8d9}
+.montageStyle{display:grid;gap:7px;min-width:0;padding:11px;border:1px solid #d8e3d8;border-radius:14px;background:#fffefa}
+.montageStyle>strong{font:800 15px/1.25 Arial,Helvetica,sans-serif;color:#174b3a}
+.montageStyle>p{margin:0;font:500 12px/1.4 Arial,Helvetica,sans-serif;color:#556b5c}
+.montageStyleChoices{display:flex;flex-wrap:wrap;gap:6px}
+.montageStyleChoices button{min-height:44px;min-width:75px;padding:7px 12px;border:1px solid #cbdacf;border-radius:11px;background:#fff;color:#20473b;font:700 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.montageStyleChoices button[aria-pressed="true"]{background:#e7f5ea;border-color:#078665;box-shadow:inset 0 0 0 1px #078665}
+.montageStyleChoices button:disabled{opacity:.55;cursor:not-allowed}
+
+
+/* Recipient-aware first Goal screen (2026-11-07).
+   Scoped to the new "For others" branch; keep the original self category
+   cards, taxonomy hierarchy and route-scoped mobile Goal overrides intact. */
+.audienceBar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-width:0;width:100%;margin-bottom:7px}
+.audienceBar>span{flex:none;color:#31584a;font:750 13px/1.2 Arial,Helvetica,sans-serif}
+.audienceToggle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;
+  min-width:0;padding:3px;border:1px solid #cfdfd3;background:#f3f8f2;
+  border-radius:12px}
+.audienceToggle button{min-width:0;min-height:42px;padding:7px 12px;
+  border:0;border-radius:9px;background:transparent;color:#4d695b;
+  font:800 13px/1.2 Arial,Helvetica,sans-serif;cursor:pointer;white-space:nowrap}
+.audienceToggle button[aria-pressed="true"]{background:#116e55;color:#fff;
+  box-shadow:0 2px 7px rgba(25,75,55,.14)}
+.audienceToggle button:disabled{opacity:.55;cursor:not-allowed}
+.audienceToggle button:focus-visible,.recipientKinds button:focus-visible,
+.recipientOptionChoices button:focus-visible{outline:3px solid #b79554;outline-offset:2px}
+.recipientCatalog{display:grid;gap:8px;min-width:0;width:100%}
+.recipientKinds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  min-width:0;gap:8px}
+.recipientKinds button{display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:7px;min-width:0;min-height:98px;padding:12px 5px;
+  border:1px solid #d9e5dc;border-radius:15px;background:#fffdf8;color:#255445;
+  font:750 13px/1.16 Arial,Helvetica,sans-serif;cursor:pointer;text-align:center}
+.recipientKinds button:nth-child(1){background:#fff3f5}
+.recipientKinds button:nth-child(2){background:#f3f3ff}
+.recipientKinds button:nth-child(3){background:#eef8f1}
+.recipientKinds button svg{flex:none;width:25px;height:25px;color:#137054}
+.recipientKinds button strong{font:inherit;overflow-wrap:anywhere;hyphens:auto}
+.recipientKinds button[aria-pressed="true"]{border:2px solid #087f69;
+  box-shadow:0 0 0 2px rgba(8,127,105,.12);background:#e9f7f0}
+.recipientKinds button:disabled{opacity:.55;cursor:not-allowed}
+.recipientOccasions{display:grid;gap:7px;min-width:0;
+  padding-top:9px;border-top:1px solid #e7ede7}
+.recipientOptionChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  min-width:0;gap:7px}
+.recipientOptionChoices button{min-width:0;min-height:44px;padding:9px 8px;
+  border:1px solid #d1e0d5;border-radius:11px;background:#fffefa;color:#235542;
+  font:750 13px/1.2 Arial,Helvetica,sans-serif;text-align:center;cursor:pointer}
+.recipientOptionChoices button[aria-pressed="true"]{background:#e5f4e9;
+  border:2px solid #0b8566;color:#145740}
+.recipientOptionChoices button:disabled{opacity:.55;cursor:not-allowed}
+.recipientHint{margin:1px 0 0;color:#698276;
+  font:500 12px/1.4 Arial,Helvetica,sans-serif}
+.recipientTopicSummary{display:grid;gap:6px;min-width:0;
+  padding:12px;border:1px solid #d7e7d9;border-radius:12px;background:#f6fbf6}
+.recipientTopicSummary span{font:750 14px/1.2 Arial,Helvetica,sans-serif;color:#295b46}
+.recipientTopicSummary strong{font:750 14px/1.35 Arial,Helvetica,sans-serif;color:#19654d}
+@media(max-width:759px){
+ .audienceBar{gap:6px}
+ .audienceBar>span{font-size:clamp(11px,3.2vw,13px)}
+ .audienceToggle button{min-height:40px;padding:6px 9px;font-size:clamp(11px,3.15vw,13px)}
+ .recipientKinds{gap:7px}
+ .recipientKinds button{min-height:92px;padding:10px 5px;border-radius:14px}
+ .recipientKinds button strong{font-size:clamp(11px,3.2vw,13px)}
+ .recipientOptionChoices button{font-size:clamp(12px,3.25vw,14px)}
+}
+@media(max-width:350px){
+ .audienceBar>span{font-size:11px}
+ .audienceToggle button{padding:6px;font-size:11px}
+ .recipientKinds button{min-height:86px;padding:8px 3px}
+ .recipientKinds button strong{font-size:11px}
+}
+
+/* Approved warm, photo-led “For others” Goal formats. */
+.recipientFormatTitle{font:850 clamp(17px,4.5vw,22px)/1.2 system-ui,sans-serif;margin:0;color:#143d3a}
+.recipientKinds button{position:relative;justify-content:flex-start;align-items:stretch;gap:0;
+  min-height:0;padding:5px;overflow:hidden;background:#fffcf7!important;border-radius:18px}
+.recipientKinds button[aria-pressed=true]{background:#e6f6f1!important;border:2px solid #07885f}
+.recipientKinds button .recipientFormatArt{display:block;width:100%;aspect-ratio:1.25;object-fit:cover;border-radius:13px}
+.recipientFormatBody{display:grid;grid-template-columns:19px 1fr;gap:4px;padding:9px 5px;align-content:start}
+.recipientFormatBody svg{height:18px!important;width:18px!important;color:#087a62}
+.recipientKinds button .recipientFormatBody strong{color:#143d3a;font:850 clamp(12px,3.3vw,15px)/1.18 system-ui,sans-serif}
+.recipientFormatBody small{grid-column:1/-1;font:500 clamp(11px,2.9vw,13px)/1.26 system-ui,sans-serif;color:#5d6a71}
+.recipientFormatSelected{position:absolute;top:8px;right:8px;display:grid;place-items:center;
+  width:26px;height:26px;border-radius:50%;background:#07885f;color:#fff}
+.recipientKinds button .recipientFormatSelected svg{color:#fff;width:16px!important;height:16px!important}
+.recipientPurposeSwitch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.recipientPurposeSwitch button{min-height:44px;border:1px solid #c0d8cc;border-radius:12px;
+  padding:9px;background:#fffcf7;color:#14523f;font:750 13px/1.2 system-ui,sans-serif}
+.recipientPurposeSwitch button[aria-pressed=true]{background:#e6f6f1;border:2px solid #07885f}
+.recipientPurposeSwitch button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:370px){.recipientKinds{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .recipientKinds button:last-child{grid-column:1/-1;display:grid;grid-template-columns:35% minmax(0,1fr)}
+  .recipientKinds button:last-child .recipientFormatArt{height:100%;min-height:95px;aspect-ratio:auto}}

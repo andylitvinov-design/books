@@ -40,25 +40,43 @@ test("personal express diagnosis unfolds inside the same landing, without a moda
   const enquiry = source("components/personal-express-enquiry.tsx");
   const enquiryCss = source("components/personal-express-enquiry.module.css");
   assert.match(landing, /<PersonalExpressEnquiry locale=\{locale\} intro=\{/);
-  assert.match(enquiry, /data-express-reveal aria-expanded=\{expanded\}/);
+  assert.match(enquiry, /data-express-reveal[^\n>]*aria-expanded=\{expanded\}/);
   assert.match(enquiry, /aria-controls="express-request-form"/);
   assert.match(enquiry, /data-express-inline-disclosure hidden=\{!expanded\}/);
   assert.match(enquiry, /role="region" aria-label=\{t\.title\}/);
   assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
   assert.match(enquiry, /document\.addEventListener\("click", openFromAnchor\)/);
-  assert.match(enquiry, /onClick=\{\(\) => setExpanded\(open => !open\)\}/);
+  assert.match(enquiry, /if \(expanded\) closeDisclosure\(\); else setExpanded\(true\)/);
+  assert.match(enquiry, /window\.history\.replaceState\(window\.history\.state/);
+  assert.match(enquiry, /window\.location\.hash === "#request-free-review"/);
   assert.match(enquiry, /useEffect\(\(\) => \{/);
   assert.match(enquiry, /setExpanded\(false\)/);
   assert.match(enquiry, /revealRef\.current\?\.focus\(\)/);
   assert.match(enquiry, /<ContactChannelChooser key=\{focus\}/);
   assert.match(enquiry, /compactPhone stayAfterSave resetKey=\{focus\}/);
   assert.match(enquiry, /"situation" \| "energy"/);
-  for (const localized of ["Request my free review", "Заказать бесплатную диагностику", "Solicitar mi revisión gratuita"]) {
-    assert.ok(enquiry.includes(localized), localized);
-  }
+  // Messenger cards now carry the request CTA; the inline form stays available
+  // as a smaller, accessible alternative rather than a duplicate primary button.
+  for (const localized of [
+    "Choose Telegram or WhatsApp",
+    "Выбрать Telegram или WhatsApp",
+    "Elegir Telegram o WhatsApp",
+  ]) assert.ok(enquiry.includes(localized), localized);
+  const messenger = source("components/telegram-diagnostic-entry.tsx");
+  for (const localized of [
+    "Request my free review via Telegram", "Request my free review via WhatsApp",
+    "Запросить бесплатный разбор через Telegram", "Запросить бесплатный разбор через WhatsApp",
+    "Solicitar mi revisión gratis por Telegram", "Solicitar mi revisión gratis por WhatsApp",
+  ]) assert.ok(messenger.includes(localized), localized);
+  assert.ok(enquiry.indexOf("<TelegramDiagnosticEntry locale={locale} />") <
+    enquiry.indexOf("<button ref={revealRef}"), "messenger actions precede the optional handoff information");
+  assert.doesNotMatch(enquiry, /reveal: "Request my free review"/);
   assert.match(enquiryCss, /\.disclosure\[hidden\]\{display:none!important\}/);
   assert.match(enquiryCss, /animation:expressUnfold/);
   assert.match(enquiryCss, /@media\(max-width:720px\)/);
+  // All of the focus-card surface, not just its tiny radio, is a fast touch
+  // target in Safari; native form radio and consent remain unchanged.
+  assert.match(enquiryCss, /touch-action:manipulation/);
   assert.match(enquiryCss, /@media\(prefers-reduced-motion:reduce\)/);
   assert.doesNotMatch(enquiry, /role="dialog"|aria-modal|style\.overflow|fetch\(|booking_confirmed|payment_received/);
   assert.doesNotMatch(enquiryCss, /position:fixed|\.scrim/);

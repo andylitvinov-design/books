@@ -1,0 +1,97 @@
+name: HH CI prune superseded queued runs
+
+# Elevated cleanup runs only on trusted production PUSH or base-owned
+# pull_request_target synchronize. PR HEAD code is NEVER executed with
+# actions:write. The production branch is NOT GitHub default.
+on:
+  pull_request:
+    branches: ['codex/public-book-library']
+    paths:
+      - '.github/workflows/hh-ci-stale-run-prune.yml'
+      - 'scripts/ci-prune-stale-runs.mjs'
+      - 'tests/ci-prune-stale-runs.test.mjs'
+      - 'lib/ci/pr-loss-metrics.mjs'
+      - 'lib/ci/pr-repair-cycle.mjs'
+      - 'scripts/ci-pr-loss-report.mjs'
+      - 'scripts/ci-pr-repair-start.mjs'
+      - 'tests/ci-pr-loss-metrics.test.mjs'
+      - 'tests/ci-pr-repair-start.test.mjs'
+  push:
+    branches: ['codex/public-book-library']
+
+permissions: {}
+concurrency:
+  group: hh-ci-prune-${{ github.event_name == 'push' && 'production' || format('{0}-pr-{1}', github.event_name, github.event.pull_request.number) }}
+  cancel-in-progress: false
+
+jobs:
+  policy:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/ci-prune-stale-runs.test.mjs tests/ci-pr-loss-metrics.test.mjs tests/ci-pr-repair-start.test.mjs
+  prune:
+    if: github.repository == 'andylitvinov-design/books' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      statuses: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # Exact event commit was already merged into production.
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify fail-closed stale-run policy
+        run: node --test tests/ci-prune-stale-runs.test.mjs tests/ci-pr-loss-metrics.test.mjs tests/ci-pr-repair-start.test.mjs
+      - name: Batch prune superseded queued PR runs and report CI metrics
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HH_CI_PRUNE_LIMIT: '300'
+          HH_CI_WINDOW_MINUTES: '60'
+          HH_CI_JOB_SAMPLE: '20'
+          HH_CI_RELEASE_BRANCH: codex/public-book-library
+        run: node scripts/ci-prune-stale-runs.mjs
+      # P1 evidence is advisory, bounded and read-only; it reuses this runner
+      # and never starts a new cron, runner or paid provider.
+      - name: P1 PR-minute loss report — verified time stamps and TOP-3 sample
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HH_PR_LOSS_COHORT_HOURS: '24'
+          HH_PR_LOSS_PR_LIMIT: '6'
+          HH_PR_LOSS_RUN_LIMIT: '12'
+        run: node scripts/ci-pr-loss-report.mjs
+      # Read-only conflict grouping is advisory. A transient GitHub API JSON
+      # response must not turn a successful, exact-head-safe CI prune into RED.
+      # Keep the diagnostic outcome visible while the mutating prune stays fatal.
+      - name: Group unresolved PR merge-conflict candidates (read-only)
+        id: conflict_diagnostic
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/pr-sweep-guard.mjs route-conflicts "$GITHUB_REPOSITORY"
+      - name: Record partial conflict diagnostics without denying CI prune
+        if: steps.conflict_diagnostic.outcome == 'failure'
+        run: |
+          echo '::warning::Read-only PR conflict grouping is unavailable; successful queued-run prune remains valid.'
+          echo '- Conflict grouping: PARTIAL (read-only diagnostic failed); inspect this job log. CI prune outcome remains independently enforced.' >> "$GITHUB_STEP_SUMMARY"
+

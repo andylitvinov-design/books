@@ -82,16 +82,25 @@ test('message send uses real server session, exact request participant and immut
   assert.match(server,/r\.account_id/)
   assert.match(server,/p\.trusted_auth_user_id/)
   assert.match(server,/const scope=await participant\(db,actor,input\.requestId,\{lock:true\}\)/)
-  assert.match(server,/old!==text/)
+  assert.match(server,/old\.text!==text/)
   assert.match(server,/original\.visibility!==visibility/)
   assert.match(server,/openSealed\(row\.body_ciphertext,bodyContext/)
-  assert.match(server,/seal\(\{text\},bodyContext/)
+  // Encrypted message bodies now bind optional private media to this same
+  // verified requester/operation context; never send an unsealed asset ID.
+  assert.match(server,/const cipher=seal\(\{text,\.\.\.\(assetId\?\{assetId\}:\{\}\)\},\s*bodyContext\(scope\.requester,input\.operationId\),config\)/)
+  assert.match(server,/old\.assetId\|\|null\)!==assetId/)
+  // Retain #2543's private media invariants within the consolidated Messages PR.
+  assert.match(server,/if\(assetId!==null\)requireUUID\(assetId\)/)
+  assert.match(server,/if\(assetId&&visibility!=='participants'\)throw new AppError\('INVALID_MESSAGE',400\)/)
+  assert.match(server,/where id=\$1 and request_id=\$2 and uploader_account_id=\$3\s+and status='ready' and message_id is null/)
+  assert.match(server,/if\(linked\.rowCount!==1\)throw new AppError\('ATTACHMENT_NOT_READY',409\)/)
+  assert.match(server,/uploader_account_id=\$3[\s\S]*?status='ready'/)
   assert.match(server,/PRACTICE_MESSAGE_DAILY_LIMIT/)
   assert.doesNotMatch(server,/sendOneMessengerMessage|Telegram|WhatsApp|service_role/i)
   assert.match(route,/requireSameOrigin\(request,config\)/)
   assert.match(route,/auth\.verified\(\)/)
   assert.match(route,/x-hh-account-id/)
-  assert.match(route,/onlyKeys\(body,\['requestId','operationId','text','visibility'\]\)/)
+  assert.match(route,/onlyKeys\(body,\['requestId','operationId','text','visibility','assetId'\]\)/)
 })
 test('only active participant correspondence, not closed requests, may create shared replies',()=>{
   const sql=src('supabase/migrations/20261019121144_hh_practitioner_request_messages_20261019.sql')

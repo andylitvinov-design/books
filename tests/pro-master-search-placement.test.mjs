@@ -9,8 +9,17 @@ const finder = source("components/master-network-explorer.tsx");
 const css = source("components/master-network-explorer.module.css");
 test("Approved practitioners are searchable directly in Pro, not Holistic Support", () => {
   assert.doesNotMatch(holistic, /MarketplaceMasterFinder|data-holistic-practitioners|createPractitionerRepository/);
-  assert.match(holistic, /data-holistic-offer="energy"/);
-  assert.match(holistic, /data-holistic-offer="alchemy"/);
+  assert.match(holistic, /<HolisticSupportTopicFilter locale=\{locale\} \/>/);
+  // The previous external remote-support link was replaced with a genuine inline
+  // energy/talisman order; preserve explicit click, expanded state and real form.
+  const topicFilter = source("components/holistic-support-topic-filter.tsx");
+  assert.match(topicFilter, /data-holistic-order-trigger=\{id\}/);
+  assert.match(topicFilter, /onClick=\{\(\) => openOrder\(id === "talisman" \? "talisman" : "energy"\)\}/);
+  assert.match(topicFilter, /aria-controls="holistic-inline-order"/);
+  assert.match(topicFilter, /\{orderKind && \(/);
+  assert.match(topicFilter, /<HolisticInlineSupportOrder locale=\{locale\} kind=\{orderKind\}/);
+  assert.match(source("components/holistic-inline-support-order.tsx"), /mode="inline" selectedKind=\{choice\} initialGoal=\{topic\}/);
+  assert.doesNotMatch(holistic, /data-holistic-offer=/);
   assert.match(pro, /listPublicPractitioners\(locale\)/);
   assert.match(pro, /createPractitionerCourseRepository\(config\)\.catalog\(\)/);
   assert.match(pro, /approvedSlugs\.has\(row\.practitionerSlug\)/);

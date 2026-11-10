@@ -1,0 +1,171 @@
+/* Owner-approved 07 Nov Hypno Effects: one existing Studio player above,
+   one warm workspace card below, two tabs and real renderer-backed controls. */
+.panel{--ink:#143d3a;--accent:#067a67;--edge:#e9dfd1;
+  color:var(--ink);width:100%;max-width:780px;min-width:0;margin:10px auto 0;
+  padding:clamp(10px,2.9vw,18px);border:1px solid var(--edge);border-radius:24px;
+  background:#fffcf7;box-shadow:0 7px 22px #3b493016;font-family:Arial,Helvetica,sans-serif}
+.panel *{box-sizing:border-box}
+.panel button{cursor:pointer;font-family:inherit}
+.panel button:disabled{cursor:not-allowed;opacity:.58}
+.panel :is(button,input):focus-visible{outline:3px solid #176e6e;outline-offset:3px}
+.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.intro{display:grid;gap:9px;min-width:0;margin-bottom:12px}
+.heading{display:flex;align-items:center;gap:11px;min-width:0}
+.heading>div{min-width:0}
+.sectionIcon{display:grid;place-items:center;flex:none;width:51px;height:51px;
+  border-radius:16px;background:linear-gradient(145deg,#fff0cd,#e9f3e1);color:#047361}
+.heading h3{margin:0;color:#17334b;font:800 clamp(20px,5.3vw,27px)/1.14 Arial,Helvetica,sans-serif;letter-spacing:-.02em}
+.heading p{margin:5px 0 0;color:#5d6a71;font:500 clamp(12px,3.35vw,15px)/1.34 Arial,sans-serif}
+.wave{min-width:0}
+.wave>button{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:44px;max-width:100%;padding:7px 12px;border:1px solid #c4dccc;
+  border-radius:14px;background:#f5faf2;color:#086f59;
+  font:800 clamp(12px,3.35vw,14px)/1.2 Arial,sans-serif}
+.wave>button svg{flex:none}
+.wave>.note{margin:7px 0 0}
+.groupTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;
+  padding:4px;margin-bottom:12px;border:1px solid #e9dfd1;border-radius:19px;background:#f5ecdc}
+.groupTabs button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;
+  min-width:0;min-height:54px;padding:6px 3px;border:0;border-radius:15px;
+  background:transparent;color:#164a42;font:800 clamp(11px,3vw,14px)/1.16 Arial,sans-serif;
+  text-align:center;white-space:normal}
+.groupTabs button svg{flex:none;width:18px;height:18px}
+.groupTabs button[aria-selected="true"]{color:white;
+  background:linear-gradient(110deg,#15a584,#067a67);
+  box-shadow:0 3px 10px #06694e2c}
+.groupTabs button:not([aria-selected="true"]):hover{background:#fffaf2}
+.group{min-width:0}
+.group[hidden]{display:none!important}
+.groupContent{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
+.feature{display:grid;grid-template-columns:48px minmax(0,1fr) 44px;
+  grid-template-rows:auto;align-items:center;gap:6px 10px;min-width:0;min-height:72px;
+  padding:9px 10px;border:1px solid #e9dfd1;border-radius:17px;background:#fff;
+  box-shadow:0 2px 9px #3b493011}
+.featureIcon{display:grid;place-items:center;width:45px;height:45px;
+  border-radius:13px;background:#e9f5ef;color:#087b60}
+.featureIcon svg{width:25px;height:25px;stroke-width:1.8}
+.featurePoster{display:block;width:47px;height:49px;object-fit:cover;border-radius:11px}
+.featureText{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  min-width:0;min-height:44px;padding:0;border:0;background:transparent;text-align:left;color:#17334b}
+.featureText strong{display:block;color:#17334b;font-size:clamp(14px,3.8vw,18px);
+  font-weight:800;line-height:1.2;overflow-wrap:anywhere}
+.featureText>span:not(.configureLink){display:block;margin-top:3px;color:#5d6a71;
+  font-size:clamp(11px,3vw,13px);line-height:1.25;overflow-wrap:anywhere}
+.configureLink{display:inline-flex;align-items:center;gap:3px;margin-top:4px;
+  font:750 clamp(11px,3vw,12px)/1.25 Arial,sans-serif;color:#067a67}
+.configureLink svg{width:13px;height:13px}
+.featureOptions{grid-column:2/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.effectChip{display:inline-flex;align-items:center;justify-content:center;min-height:35px;
+  min-width:0;padding:5px 10px;border:1px solid #dfd9ce;border-radius:14px;
+  background:#fffaf2;color:#234d43;font:750 12px/1.1 Arial,sans-serif}
+.effectChip[aria-pressed="true"]{border-color:#067a67;background:#067a67;color:#fff}
+.switch{position:relative;display:flex;align-items:center;justify-content:flex-start;
+  justify-self:end;width:44px;height:44px;padding:0;border:0;background:transparent;border-radius:13px}
+.switch::before{position:absolute;content:"";left:0;top:9px;width:44px;height:26px;
+  border-radius:18px;background:#b5c4c1}
+.switch[data-on=true]::before{background:#067a67}
+.switch>span{position:relative;z-index:1;flex:none;width:20px;height:20px;
+  margin-left:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #0002;transition:transform .15s}
+.switch[data-on=true]>span{transform:translateX(18px)}
+.featureArrow{display:grid;place-items:center;justify-self:end;width:44px;height:44px;
+  border:1px solid #dbe4da;border-radius:50%;background:#fffdf7;color:#087b60}
+.settings{grid-column:1/-1;display:grid;gap:8px;margin:0;padding:10px 12px;
+  border:1px solid #dbe8dc;border-radius:15px;background:#f5f9f5}
+.settings label{display:grid;gap:4px;color:#275147;font-size:13px;font-weight:750;line-height:1.3}
+.settings label strong{font-weight:800}
+.settings input{width:100%;min-height:35px;accent-color:#067a67}
+.note{grid-column:1/-1;margin:0;padding:10px 12px;border:1px solid #e9dfd1;
+  border-radius:12px;background:#fff8e9;color:#5d6a71;font-size:12px;line-height:1.35}
+.summary{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:8px;margin:12px 0 8px;padding-top:10px;border-top:1px solid #e9dfd1;
+  color:#174b3f;font-size:13px;font-weight:800}
+.summary>span:first-child{display:inline-flex;align-items:center;gap:6px}
+.modeBadge{display:inline-flex;align-items:center;min-height:29px;padding:4px 10px;
+  border-radius:18px;background:#edf5e9;color:#206d54;font-weight:750;font-size:12px}
+.actions{order:3;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.actions .create,.actions .withoutEffects{display:flex;align-items:center;justify-content:center;
+  gap:9px;width:100%;min-height:54px;padding:9px 12px;border-radius:16px;
+  font:800 clamp(13px,3.6vw,17px)/1.2 Arial,sans-serif;text-align:center}
+.actions strong{font:inherit}
+.actions svg{flex:none;width:20px;height:20px}
+.actions .create{border:1px solid #067a67;background:linear-gradient(115deg,#16a687,#04765f);color:white;box-shadow:0 3px 10px #06694e30}
+.actions .withoutEffects{border:1px solid #add1c3;background:#fffdf7;color:#12684e}
+.privacy{margin:9px 3px 0;color:#5d6a71;font-size:12px;line-height:1.35}
+@media(max-width:359px){
+ .panel{padding:9px;border-radius:19px}
+ .groupTabs{gap:2px;padding:3px}
+ .groupTabs button{gap:2px;font-size:11px}
+ .heading h3{font-size:20px}
+ .sectionIcon{width:43px;height:43px}
+ .feature{grid-template-columns:39px minmax(0,1fr) 44px;gap:5px;padding:8px 7px}
+ .featureIcon{width:38px;height:38px}
+ .featurePoster{width:39px;height:43px}
+ .featureText strong{font-size:14px}
+ .featureOptions{gap:4px}
+ .effectChip{padding:5px 8px;font-size:11.5px}
+}
+@media(prefers-reduced-motion:reduce){.panel *{transition:none!important;animation:none!important}}
+
+/* Design Bible §10.13: Hypno neutral chrome adopts the same warm palette.
+   Effect toggles, selected chips, visual/auditory distinction stay semantic. */
+:global([data-mandala-mode="video"]) .panel{
+  --ink:var(--hh-studio-ink,#142B3D);
+  --accent:var(--hh-studio-primary,#087E61);
+  --edge:var(--hh-studio-border,#EADFD9);
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D);
+  box-shadow:var(--hh-studio-shadow,0 5px 18px rgb(66 42 31 / 7%))
+}
+:global([data-mandala-mode="video"]) .heading h3,
+:global([data-mandala-mode="video"]) .featureText strong{
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .heading p,
+:global([data-mandala-mode="video"]) .featureText>span:not(.configureLink){
+  color:var(--hh-studio-muted,#5D6A71)
+}
+:global([data-mandala-mode="video"]) .groupTabs,
+:global([data-mandala-mode="video"]) .settings{
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9)
+}
+:global([data-mandala-mode="video"]) .feature,
+:global([data-mandala-mode="video"]) .effectChip:not([aria-pressed="true"]){
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9)
+}
+:global([data-mandala-mode="video"]) .groupTabs button[aria-selected="true"],
+:global([data-mandala-mode="video"]) .effectChip[aria-pressed="true"]{
+  background:linear-gradient(120deg,var(--hh-studio-primary,#087E61),
+    var(--hh-studio-deep,#006B4B));
+  border-color:var(--hh-studio-deep,#006B4B);
+  color:#FFFFFF
+}
+
+
+/* Owner 10 Nov: original Canvas visual presets now live in Hypno > Effects. */
+.visualPresets{display:grid;gap:12px;min-width:0}
+.visualPresets h4{margin:0;color:#163e35;font:800 19px/1.2 Arial,Helvetica,sans-serif}
+.visualPresets>p{margin:0;color:#536b62;font:500 13px/1.42 Arial,Helvetica,sans-serif}
+.visualPresetGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0}
+.visualPresetGrid button{display:flex;align-items:center;justify-content:flex-start;gap:7px;
+ min-width:0;min-height:64px;padding:9px 8px;border:1px solid #dfdfd1;border-radius:14px;
+ background:#fffdfa;color:#143d3a;text-align:left;font:750 13px/1.18 Arial,Helvetica,sans-serif}
+.visualPresetGrid button>span{display:grid;place-items:center;flex:none;width:32px;height:32px;
+ border-radius:11px;background:#fbf0d8;color:#ad7628;font:700 23px/1 Arial,Helvetica,sans-serif}
+.visualPresetGrid button>strong{flex:1;min-width:0;overflow-wrap:anywhere}
+.visualPresetGrid button>svg{flex:none;color:#067a67}
+.visualPresetGrid button[aria-pressed="true"]{border:2px solid #067a67;background:#e6f6f1}
+.visualPresetGrid button:disabled{opacity:.6}
+.visualPresetIntensity{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;
+ color:#143d3a;font:750 15px/1.3 Arial,Helvetica,sans-serif}
+.visualPresetIntensity strong{color:#067a67;font-variant-numeric:tabular-nums}
+.visualPresetIntensity input{grid-column:1/-1;width:100%;min-height:44px;accent-color:#067a67}
+.visualPresetGrid button:focus-visible,.visualPresetIntensity input:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:340px){
+ .visualPresetGrid{gap:6px}
+ .visualPresetGrid button{padding:8px 5px;font-size:12px}
+ .visualPresetGrid button>span{width:28px;height:28px;font-size:20px}
+}

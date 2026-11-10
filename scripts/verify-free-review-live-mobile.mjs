@@ -9,6 +9,53 @@ const output = "artifacts/free-review-live-mobile";
 mkdirSync(output, { recursive: true });
 const results = [];
 const cases = [[320, 568], [375, 667], [390, 844], [430, 932]];
+
+// Safari can dispatch a label's forwarded radio change one frame after
+// Playwright's label click completes. Verify the actual native radio AND its
+// React-selected card after ONE tap, rather than retrying a missed click.
+async function tapFocusAndVerify(page, enquiry, focus) {
+  const card = enquiry.locator('[data-express-focus="' + focus + '"]');
+  // The mobile bottom nav is fixed. When expanded content changes height,
+  // WebKit may leave the large label behind that toolbar. A user would scroll
+  // the card into a visible touch position first: do the same, and ASSERT the
+  // real card receives a hit before making exactly ONE native touch tap.
+  // Real touch users scroll before selecting: settle the viewport-aware target
+  // once, without repeating any tap or changing consent on their behalf.
+  await card.evaluate(node => node.scrollIntoView({block:"center",inline:"nearest",behavior:"instant"}));
+  await card.scrollIntoViewIfNeeded({timeout:15000});
+  const targetHit = await card.evaluate(node => {
+    const rect = node.getBoundingClientRect();
+    const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+    const top = document.elementFromPoint(x,y);
+    return {
+      hittable: !!top && (top === node || node.contains(top)),
+      rect: {top:rect.top,bottom:rect.bottom,left:rect.left,right:rect.right},
+      obstruction: top?.closest("nav")?.getAttribute("aria-label") || top?.tagName || null,
+    };
+  });
+  assert.ok(targetHit.hittable, "One-tap focus card remains behind navigation after scroll: " + JSON.stringify(targetHit));
+  await card.tap();
+  // WebKit can briefly delay React's selected-card paint while the mobile
+  // anchor settles. Still require BOTH native radio.checked and the real
+  // rendered selected card after a SINGLE user tap (never retry a lost tap).
+  try {
+    await page.waitForFunction((target) => {
+      const root = document.querySelector('[data-personal-express-enquiry]');
+      const radio = root?.querySelector('input[name="express-review-focus"][value="' + target + '"]');
+      const card = root?.querySelector('[data-express-focus="' + target + '"]');
+      return radio instanceof HTMLInputElement && radio.checked
+        && card?.getAttribute("data-selected") === "true";
+    }, focus, { timeout: 8000 });
+  } catch (error) {
+    const actual = await enquiry.evaluate((root, target) => ({
+      expanded: root.getAttribute("data-expanded"),
+      nativeChecked: root.querySelector('input[name="express-review-focus"][value="' + target + '"]')?.checked ?? null,
+      selectedCard: root.querySelector('[data-express-focus="' + target + '"]')?.getAttribute("data-selected") ?? null,
+      selectedRadio: root.querySelector('input[name="express-review-focus"]:checked')?.value ?? null,
+    }), focus);
+    throw new Error("Single-tap focus was not committed: " + JSON.stringify({focus, actual, reason:String(error)}));
+  }
+}
 // One personal express review, with two focus categories in a single form.
 for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
   const browser = await driver.launch({ headless: true });
@@ -100,8 +147,8 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
           const radios = enquiry.locator('input[name="express-review-focus"]');
           assert.equal(await radios.count(), 2, "exactly two request focuses");
           assert.equal(await enquiry.locator('input[name="express-review-focus"]:checked').count(), 1, "a single selected focus");
-          assert.equal(await enquiry.locator('[data-reiki-phone-enquiry]').count(), 1,
-            "only one CRM-first contact capture");
+          assert.equal(await enquiry.locator('[data-messenger-only-contact]').count(),1,
+            "one customer-initiated messenger handoff; no email-only capture");
           const featured = main.locator("[data-featured-free-review-testimonials]");
           await featured.waitFor({ state: "visible" });
           const featuredGeometry = await featured.evaluate(section => {
@@ -206,71 +253,76 @@ for (const [engine, driver] of [["chromium", chromium], ["webkit", webkit]]) {
             "capture must not block page scrolling");
           assert.equal(await main.locator('[role="dialog"], [aria-modal="true"]').count(), 0,
             "no modal after clicking the hero CTA");
-          assert.equal(await enquiry.locator('input[type="tel"]').count(), 1, "one phone field");
-          assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
-            "opening the form is not contact consent");
-          // The protected v2 wizard and the legacy compact capture are distinct
-          // safe variants. Neither navigation nor form opening creates a lead.
-          const wizardV2 = await enquiry.locator('[data-free-express-lead]').count() === 1;
-          if (wizardV2) {
-            const lead = enquiry.locator('[data-free-express-lead]');
-            assert.equal(await lead.locator('textarea').count(), 1, "one short question");
-            assert.equal(await lead.locator('input[type="checkbox"]').isChecked(), false,
-              "explicit consent remains unchecked");
-            assert.equal(await enquiry.locator('[data-free-express-receipt]').count(), 0,
-              "no CRM receipt from opening the form");
-            const fit = await enquiry.evaluate(root => {
-              const card = root.getBoundingClientRect();
-              const submit = root.querySelector('[data-free-express-lead] button[type="submit"]')?.getBoundingClientRect();
-              const fixedTab = [...document.querySelectorAll('nav')]
-                .filter(nav => getComputedStyle(nav).position === 'fixed')
-                .map(nav => nav.getBoundingClientRect())
-                .find(rect => rect.top > 0 && rect.top < innerHeight);
-              return { cardHeight: card.height, cardTop: card.top, submitBottom: submit?.bottom,
-                tabTop: fixedTab?.top ?? innerHeight,
-                overflow: document.documentElement.scrollWidth - innerWidth };
-            });
-            record.compactLeadFit = fit;
-            assert.ok(fit.cardHeight <= height - 90,
-              "first-contact section is not one mobile screen: " + JSON.stringify(fit));
-            assert.ok(fit.submitBottom <= fit.tabTop - 8,
-              "submit button must sit above fixed bottom tabs: " + JSON.stringify(fit));
-            assert.ok(fit.overflow <= 2, "mobile capture has no horizontal overflow");
-            assert.equal(await page.locator('[data-first-party-consent]').isVisible(), false,
-              "optional visitor analytics prompt cannot cover an open contact form");
-            if (width === 390) await page.screenshot({
-              path: output + "/" + name + "-compact-v2.png",
-              animations: "disabled", timeout: 20000 });
-          } else {
-            assert.equal(await enquiry.locator('[data-contact-channel-submit="whatsapp"]').count(), 1);
-            assert.equal(await enquiry.locator('[data-contact-channel-submit="telegram"]').count(), 1);
-            assert.equal(await enquiry.locator('[role="status"]').count(), 0,
-              "no actual lead saved by navigating");
-          }
+          const widget=enquiry.locator('[data-messenger-only-contact]');
+          await widget.waitFor({state:"visible",timeout:15000});
+          const details=widget.locator('details');
+          if(await details.count()&&await details.getAttribute('open')===null)
+            await details.locator(':scope > summary').click();
+          const wa=widget.locator('a[data-messenger-only-channel="whatsapp"]');
+          const tg=widget.locator('a[data-messenger-only-channel="telegram"]');
+          await wa.waitFor({state:"visible",timeout:10000});
+          await tg.waitFor({state:"visible",timeout:10000});
+          const draft=new URL(await wa.getAttribute('href'));
+          assert.equal(draft.origin,'https://wa.me',"approved WhatsApp contact");
+          assert.ok((draft.searchParams.get('text')||'').length>24,
+            "public review identity and request appear in the messaging draft");
+          assert.equal(await widget.locator('input[type="tel"],input[type="email"],form').count(),0,
+            "email and typed phone cannot be a substitute for verified messenger contact");
+          assert.equal(await enquiry.locator('[data-lead-saved], [data-free-express-receipt]').count(),0,
+            "opening a link does not prove CRM write, booking or delivery");
+          assert.equal(await widget.locator('a[data-messenger-only-channel]').count(),2,
+            "exactly two messenger choices");
+          const fit=await widget.evaluate(node=>({
+            width:node.getBoundingClientRect().width,
+            overflow:document.documentElement.scrollWidth-innerWidth,
+          }));
+          record.compactLeadFit=fit;
+          assert.ok(fit.overflow<=2,"messenger options stay within iPhone width");
+          if(width===390)await page.screenshot({
+            path:output+"/"+name+"-messenger-only.png",animations:"disabled",timeout:20000
+          });
           // Touch users select the full 94px+ labelled card, not the tiny native
           // radio dot. WebKit may still be smoothly scrolling from the hero
           // anchor and a direct input.check() can hit a moving 19px target.
           // Verify the REAL large-card interaction, including native checked
-          // state, selected styling and unchanged one-off contact consent.          await enquiry.locator('[data-express-focus="energy"]').click();
-          assert.equal(await enquiry.locator('input[value="energy"]').isChecked(), true,
-            "tapping the whole energy card checks the native radio");
-          assert.equal(await enquiry.locator('[data-express-focus="energy"]').getAttribute('data-selected'), "true");
-          assert.equal(await enquiry.locator('input[type="checkbox"]').isChecked(), false,
-            "changing the focus cannot silently opt the user in");
-          await enquiry.locator('[data-express-focus="situation"]').click();
-          assert.equal(await enquiry.locator('input[value="situation"]').isChecked(), true,
-            "tapping the whole situation card checks the native radio");
-          assert.equal(await enquiry.locator('[data-express-focus="situation"]').getAttribute('data-selected'), "true");
-          assert.equal(await enquiry.locator('[role="status"]').count(), 0,
-            "changing focus is not a lead or booking");
-          await enquiry.locator('input[type="tel"]').focus();
+          // state, selected styling and unchanged one-off contact consent.
+          // Exercise the two formerly intermittent Spanish WebKit widths
+          // three times. No click retries: each real tap must change the radio.
+          const cycles = engine === "webkit" && locale === "es"
+            && (width === 320 || width === 430) ? 3 : 1;
+          for (let cycle = 0; cycle < cycles; cycle++) {
+            await tapFocusAndVerify(page, enquiry, "energy");
+            assert.equal(await widget.locator('input[type="checkbox"][required]').count(),0,
+              "focus change never creates hidden consent or unverified web submission");
+            await tapFocusAndVerify(page, enquiry, "situation");
+          }
+          assert.equal(await enquiry.locator('[data-lead-saved], [data-free-express-receipt]').count(),0,
+            "changing the selected focus never fabricates a CRM lead");
+          if(await details.count())await details.locator(':scope > summary').focus();
           await page.keyboard.press("Escape");
           assert.equal(await reveal.getAttribute("aria-expanded"), "false", "Escape folds the form");
+          assert.equal(new URL(page.url()).hash, "", "closing clears the stale review anchor");
           assert.equal(await disclosure.isVisible(), false);
           await reveal.click();
+          // A single real WebKit touch/click can commit React's aria-expanded
+          // after Playwright's click has resolved. Do not retry the click or
+          // silently accept a lost tap: require the actual React render within
+          // a bounded window, or fail this exact viewport.
+          await page.waitForFunction(() => {
+            const button = document.querySelector("[data-express-reveal]");
+            const panel = document.querySelector("[data-express-inline-disclosure]");
+            return button?.getAttribute("aria-expanded") === "true" &&
+              panel instanceof HTMLElement && !panel.hidden;
+          }, null, { timeout: 4000 });
           assert.equal(await reveal.getAttribute("aria-expanded"), "true", "local CTA unfolds again");
           assert.equal(await disclosure.isVisible(), true);
           await reveal.click();
+          await page.waitForFunction(() => {
+            const button = document.querySelector("[data-express-reveal]");
+            const panel = document.querySelector("[data-express-inline-disclosure]");
+            return button?.getAttribute("aria-expanded") === "false" &&
+              panel instanceof HTMLElement && panel.hidden;
+          }, null, { timeout: 4000 });
           assert.equal(await disclosure.isVisible(), false, "second tap closes in place");
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 2,
             "expanded content still fits viewport");

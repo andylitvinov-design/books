@@ -8,6 +8,7 @@ import ts from 'typescript'
 test('SalesBot EN/RU/ES owner editor and saved drafts are valid JSX syntax', () => {
   for (const path of [
     'components/app/crm-salesbot.jsx',
+    'components/app/crm-telegram-diagnostic-script.jsx',
     'components/app/crm-salesbot-drafts.jsx',
     'components/app/crm-manager.jsx',
   ]) {

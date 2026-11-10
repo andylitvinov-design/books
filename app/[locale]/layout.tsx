@@ -11,7 +11,9 @@ export async function generateMetadata({
   return {
     manifest: locale === "ru"
       ? "/holistic-house-app-ru.webmanifest"
-      : "/holistic-house-app.webmanifest",
+      : locale === "es"
+        ? "/holistic-house-app-es.webmanifest"
+        : "/holistic-house-app.webmanifest",
   };
 }
 

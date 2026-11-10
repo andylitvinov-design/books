@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import { metadataBaseFor } from "@/data/site-metadata";
 import { PwaRegistration } from "@/components/pwa-registration";
 import { MobileBottomNavigation } from "@/components/mobile-bottom-navigation";
+import { UnifiedMobileDock } from "@/components/unified-mobile-dock";
+import { SitewideIHelp } from "@/components/sitewide-ihelp";
 import { HomePersonalSpaceProvider } from "@/components/home-personal-space";
 import { SitewideLeadCapture } from "@/components/sitewide-lead-capture";
 import { SitewideAntistressBanner } from "@/components/sitewide-antistress-banner";
@@ -14,8 +16,10 @@ import { NativeExternalLinks } from "@/components/native-external-links";
 import { CspNavigationBoundary } from "@/components/csp-navigation-boundary";
 import { CSP_PREHYDRATION_SCRIPT } from "@/lib/csp-prehydration";
 import "./globals.css";
+import "./holistic-light-tokens.css";
 import "./holistic-house-home.css";
 import "./site-videos.css";
+import "./unified-mobile-dock.css";
 import "./reader-responsive.css";
 import "./ia-v2.css";
 import "./catalog-showcase.css";
@@ -41,6 +45,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const pageLocale = (await headers()).get("x-public-page-locale");
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   const cspClass = (await headers()).get("x-csp-class") ?? "restricted";
+  const standaloneCommander = (await headers()).get("x-standalone-commander") === "1";
   const lang = pageLocale === "es" || pageLocale === "en" ? pageLocale : "ru";
   const publicOrigin = metadataBaseFor().toString().replace(/\/$/, "");
   // No invented business address, regulated practitioner credentials, or review ratings.
@@ -75,7 +80,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             preserving script.nonce. Keep the CSP nonce and JSON-LD unchanged. */}
         <script nonce={nonce} suppressHydrationWarning type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       </head>
-      <body className="font-sans" data-csp-class={cspClass}><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCapture /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /></body>
+      <body className="font-sans" data-csp-class={cspClass}>{standaloneCommander ? children : <><PwaRegistration /><NativeLinkHandler /><NativeExternalLinks /><CspNavigationBoundary /><Ga4Analytics nonce={nonce} /><SitewideAntistressBanner initialLocale={lang} /><HomePersonalSpaceProvider locale={lang}>{children}</HomePersonalSpaceProvider><SitewideLeadCapture /><AnalyticsConsent /><PublicPageTraffic /><MobileBottomNavigation initialLocale={lang} /><UnifiedMobileDock initialLocale={lang} /><SitewideIHelp /></>}</body>
     </html>
   );
 }

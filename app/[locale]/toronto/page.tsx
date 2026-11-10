@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight, CheckCircle2, MapPin, MessageCircle } from "lucide-react";
 
 import { PublicSiteHeader } from "@/components/public-site-header";
+import { PublicPathwayStrip } from "@/components/public-pathway-strip";
 import { StaticPortrait } from "@/components/static-portrait";
 import { FreeReviewQuickRequest } from "@/components/free-review-quick-request";
 import { isPublicLocale } from "@/data/academy/catalog";
@@ -135,7 +136,7 @@ export default async function TorontoEntryPage({ params }: Props) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
   const t = copy[locale];
-  return <main className={styles.page} lang={locale} data-gbp-toronto-entry>
+  return <main className={styles.page} lang={locale} data-gbp-toronto-entry data-public-design-migration="wave2">
     <PublicSiteHeader locale={locale} />
     <section className={styles.hero} aria-labelledby="toronto-hero-title">
       <div className={styles.heroCopy}>
@@ -156,6 +157,9 @@ export default async function TorontoEntryPage({ params }: Props) {
         <div className={styles.portraitCaption}>Andrey Litvinov · Holistic House</div>
       </div>
     </section>
+    <div className={styles.pathway}>
+      <PublicPathwayStrip locale={locale} />
+    </div>
     <section className={styles.offerSection} aria-labelledby="toronto-directions-title">
       <div className={styles.sectionHead}><h2 id="toronto-directions-title">{t.direction}</h2><p>{t.intro}</p></div>
       <div className={styles.offerGrid}>

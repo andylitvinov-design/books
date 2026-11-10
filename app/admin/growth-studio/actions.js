@@ -7,6 +7,10 @@ import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
 import {prepareEvergreenGrowthDrafts} from '@/lib/growth-studio/evergreen.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-readiness.mjs'
+import {isInstagramPublisherEnabled,publishApprovedInstagramImage,publishApprovedInstagramStory} from '@/lib/growth-studio/instagram-publisher.mjs'
+import {createMetaInstagramPublisherClient} from '@/lib/growth-studio/meta-instagram.mjs'
+import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
+import {isValidInstagramInsightDate,isValidInstagramInsightRange,normalizeInstagramInsightMetrics} from '@/lib/growth-studio/instagram-insights.mjs'
 import {telegramConfig,telegramPayload,verifyTelegramPostingPermissions,sendTelegramPost} from '@/lib/growth-studio/telegram.mjs'
 
 const safeError = error => error instanceof GrowthStudioError &&
@@ -26,6 +30,38 @@ export async function previewPublicGrowthSourceAction(input) {
     return {ok:false,error:error instanceof GrowthStudioError && allowed.has(error.code)
       ?error.code:'source_unavailable'}
   }
+}
+
+
+// Read-only, account-separated Instagram metrics. Never returns comments, captions,
+// audience identities, tokens or customer/therapy data.
+export async function getGrowthInstagramInsightsAction(input={}){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+     Object.keys(input).some(key=>!['since','until'].includes(key)))
+    return {ok:false,error:'invalid_insights_request'}
+  const end=input.until||new Date().toISOString().slice(0,10)
+  if(!isValidInstagramInsightDate(end))return {ok:false,error:'invalid_insights_request'}
+  const start=input.since||new Date(Date.parse(end+'T00:00:00.000Z')-29*86_400_000).toISOString().slice(0,10)
+  if(!isValidInstagramInsightDate(start)||!isValidInstagramInsightDate(end)||!isValidInstagramInsightRange(start,end))
+    return {ok:false,error:'invalid_insights_request'}
+  const accounts=await Promise.all(GROWTH_INSTAGRAM_ACCOUNT_TARGETS.map(async target=>{
+    try{
+      const client=await createMetaInstagramPublisherClient(target.id)
+      const response=await client.getAccountInsights({since:start,until:end})
+      const metrics=normalizeInstagramInsightMetrics(response)
+      return {accountId:target.id,handle:target.handle,status:'available',
+        period:{since:start,until:end},capturedAt:new Date().toISOString(),metrics}
+    }catch(error){
+      const allowed=new Set(['meta_not_configured','meta_storage_unavailable','meta_credential_unavailable',
+        'meta_account_not_connected','meta_token_invalid','meta_permissions_missing',
+        'meta_insights_permission_missing','meta_graph_error'])
+      return {accountId:target.id,handle:target.handle,status:'unavailable',
+        error:allowed.has(error?.code)?error.code:'insights_unavailable',
+        period:{since:start,until:end},capturedAt:new Date().toISOString(),metrics:{}}
+    }
+  }))
+  return {ok:true,period:{since:start,until:end},accounts}
 }
 
 // An explicit owner click verifies the existing Redis REST connection by
@@ -74,6 +110,13 @@ export async function updateGrowthStudioPostAction(input) {
     const current = newRecord ? null : await store.get(id)
     if ((current?.revision ?? 0) !== input.expectedRevision || (!current && !newRecord))
       return {ok:false,error:current ? 'conflict' : 'not_found'}
+    const isRegisteredInstagramAccount=id=>GROWTH_INSTAGRAM_ACCOUNT_TARGETS.some(account=>account.id===id)
+    if(input.action==='save' && input.fields?.channel==='instagram' &&
+       !isRegisteredInstagramAccount(input.fields.socialAccountId))
+      return {ok:false,error:'instagram_account_required'}
+    if((input.action==='approve'||input.action==='plan') && current?.channel==='instagram' &&
+       !isRegisteredInstagramAccount(current.socialAccountId))
+      return {ok:false,error:'instagram_account_required'}
     const post = nextGrowthPost({current,fields:input.fields,action:input.action,id})
     await store.save(post,input.expectedRevision)
     return {ok:true,record:post}
@@ -200,4 +243,96 @@ export async function publishGrowthTelegramNowAction(input){
     // The provider may have delivered. Never auto-retry this ambiguous state.
     return {ok:false,error:'telegram_delivery_unknown'}
   }
+}
+
+
+// One exact, owner-confirmed Instagram Feed or Story. No cron/worker calls this.
+// The global publishing flag is OFF by default; a separate scheduler/receipt worker
+// must be commissioned before enabling unattended publishing.
+export async function publishGrowthInstagramNowAction(input){
+  if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
+  if(!input||typeof input!=='object'||Array.isArray(input)||
+    Object.keys(input).some(key=>!['id','expectedRevision','confirmed','resume'].includes(key))||
+    (input.resume!==undefined&&input.resume!==true)||
+    input.confirmed!==true||typeof input.id!=='string'||!/^[0-9a-f-]{36}$/i.test(input.id)||
+    !Number.isSafeInteger(input.expectedRevision)||input.expectedRevision<1)
+    return {ok:false,error:'invalid_post'}
+  if(!isInstagramPublisherEnabled())return {ok:false,error:'instagram_publishing_disabled'}
+  const store=getGrowthStudioStore()
+  if(!store)return {ok:false,error:'storage_unavailable'}
+  let source
+  let providerClient
+  try{
+    source=await store.get(input.id)
+    if(!source)return {ok:false,error:'not_found'}
+    if(source.revision!==input.expectedRevision)return {ok:false,error:'conflict'}
+    const resume=input.resume===true
+    const validResume=source.status==='delivery_unknown'&&source.placement==='story'&&
+      source.delivery?.provider==='meta_graph_api'&&
+      source.delivery?.providerState==='provider_processing'&&
+      source.delivery?.accountId===source.socialAccountId&&
+      !source.delivery?.providerPostId&&
+      typeof source.delivery?.containerId==='string'&&/^\d{5,40}$/.test(source.delivery.containerId)
+    if(source.channel!=='instagram'||!source.socialAccountId||
+      (resume?!validResume:source.status!=='approved'))
+      return {ok:false,error:'instagram_invalid_approved_post'}
+    // Verify account ↔ Page ↔ Instagram identity before taking a non-repeatable claim.
+    providerClient=await createMetaInstagramPublisherClient(source.socialAccountId)
+  }catch(error){
+    const code=error?.code
+    const allowed=new Set(['meta_not_configured','meta_account_not_connected','meta_page_publish_access_missing',
+      'meta_token_invalid','meta_permissions_missing','meta_identity_mismatch','meta_graph_error',
+      'meta_story_business_required'])
+    return {ok:false,error:allowed.has(code)?code:'instagram_account_not_connected'}
+  }
+  const claimed={...source,status:'sending',revision:source.revision+1,
+    attemptId:randomUUID(),updatedAt:new Date().toISOString()}
+  try{await store.save(claimed,source.revision)}
+  catch{return {ok:false,error:'conflict'}}
+  let result
+  try{
+    result=await (source.placement==='story'?publishApprovedInstagramStory:publishApprovedInstagramImage)({
+      post:source,expectedRevision:source.revision,confirmed:true,providerClient,
+      ...(input.resume===true?{resumeContainerId:source.delivery.containerId}:{}),
+    })
+  }catch(error){
+    const code=error?.code
+    // Deterministic preflight/configuration failures are known to occur before any
+    // provider create/publish operation, so return the post to Approved with a new revision.
+    const beforeWrite=new Set(['instagram_media_preflight_failed','instagram_invalid_approved_post',
+      'instagram_publishing_disabled','instagram_account_not_connected','meta_story_business_required'])
+    if(beforeWrite.has(code)){
+      const reset={...source,revision:claimed.revision+1,updatedAt:new Date().toISOString()}
+      try{await store.save(reset,claimed.revision);return {ok:false,error:code,record:reset}}
+      catch{return {ok:false,error:'instagram_delivery_unknown'}}
+    }
+    const uncertain={...claimed,status:'delivery_unknown',revision:claimed.revision+1,
+      updatedAt:new Date().toISOString(),delivery:{provider:'meta_graph_api',
+        accountId:source.socialAccountId,providerState:'unknown'}}
+    try{await store.save(uncertain,claimed.revision)}catch{}
+    return {ok:false,error:'instagram_delivery_unknown',record:uncertain}
+  }
+  if(result.state==='published'){
+    const delivered={...claimed,status:'published',revision:claimed.revision+1,
+      updatedAt:new Date().toISOString(),
+      delivery:{provider:'meta_graph_api',accountId:result.accountId,
+        providerPostId:result.providerPostId,url:result.permalink,
+        publishedAt:result.publishedAt,
+        containerId:result.containerId,mediaType:result.mediaType,
+        ...(result.mediaProductType?{mediaProductType:result.mediaProductType}:{})}}
+    try{
+      await store.save(delivered,claimed.revision)
+      return {ok:true,record:delivered}
+    }catch{
+      return {ok:false,error:'instagram_delivery_unknown'}
+    }
+  }
+  const uncertain={...claimed,status:'delivery_unknown',revision:claimed.revision+1,
+    updatedAt:new Date().toISOString(),delivery:{provider:'meta_graph_api',
+      accountId:source.socialAccountId,containerId:result.containerId||null,
+      providerPostId:result.providerPostId||null,providerState:result.state}}
+  try{
+    await store.save(uncertain,claimed.revision)
+  }catch{}
+  return {ok:false,error:'instagram_delivery_unknown',record:uncertain}
 }
