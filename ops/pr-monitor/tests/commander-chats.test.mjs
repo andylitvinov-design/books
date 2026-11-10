@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-execution-ledger-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-chat-submit-fix-v2'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -119,7 +119,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-execution-ledger-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-chat-submit-fix-v2'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -194,10 +194,25 @@ test('compact chat UI supports a single question, optional executor and hidden a
  assert.match(css,/cc-create-sheet:not\(\[hidden\]\)/);
  assert.match(css,/cc-executor-chip:has\(input:checked\)/);
  assert.match(js,/if\(!el\('new-title'\)\.value\.trim\(\)\)/);
- assert.match(js,/const data=\{\.\.\.formValues\('new-'\),id:id\(\)\}/);
+ assert.match(js,/const data=\{\.\.\.formValues\('new-'\),id:pendingCreateId\|\|\(pendingCreateId=id\(\)\)\}/);
  assert.match(js,/el\('mode'\)\.value=data\.executors\[0\]/);
  assert.match(js,/await send\(\{preventDefault\(\)\{\}\}\)/);
  assert.match(js,/el\('board'\)\.dataset\.view='thread'/);
  assert.match(js,/el\('board'\)\.dataset\.view='list'/);
  assert.match(js,/closeCreate\(\)/);
+});
+
+test('mobile creation always handles submit and shows errors beside its button',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
+ assert.match(html,/<form id="cc-create-form" novalidate>/);
+ assert.match(html,/id="cc-create-feedback"[^>]*role="alert"/);
+ assert.match(html,/id="cc-thread-feedback"/);
+ assert.match(js,/feedback\.scrollIntoView/);
+ assert.match(js,/button\.disabled=true/);
+ assert.match(js,/if\(busy\)return fail/);
+ assert.match(js,/if\(el\('new-title'\)\.value\.trim\(\)\.length<4\)/);
+ assert.match(js,/pendingCreateId\|\|\(pendingCreateId=id\(\)\)/);
+ assert.match(js,/if\(created\)\{\s*el\('thread'\)\.scrollIntoView[\s\S]*?await send/);
+ assert.match(js,/if\(thread&&!el\('thread'\)\.hidden\)el\('thread-feedback'\)/);
+ assert.match(css,/cc-create-feedback:not\(\[hidden\]\)/);
 });
