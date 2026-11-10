@@ -299,11 +299,15 @@ async function inspect(browserType,locale,width){
     await personalizationTab.waitFor({state:"visible",timeout:30000});
     assert.equal(await personalizationTab.getAttribute("aria-pressed"),"true",
       id+" Ideas opens on the current Personalization tab");
+    // Advanced voice is hidden by design until the visitor opens its visible
+    // audio-guidance shortcut. Do not bypass the UI or force hidden controls.
+    const voiceShortcut=page.locator('[data-video-phrase-audio-shortcut]');
+    await voiceShortcut.waitFor({state:"visible",timeout:30000});
+    await voiceShortcut.click();
     const advancedVoice=page.locator('details[data-video-ideas-advanced-voice]');
     await advancedVoice.waitFor({state:"visible",timeout:30000});
-    await advancedVoice.locator("summary").click();
     assert.equal(await advancedVoice.getAttribute("open"),"",
-      id+" advanced Voice opens by an actual user click");
+      id+" advanced Voice opens from an actual visible audio shortcut");
     const voiceButton=advancedVoice.locator('[data-video-ideas-voice-mode="voice"]');
     await voiceButton.waitFor({state:"visible",timeout:30000});
     await voiceButton.click();
