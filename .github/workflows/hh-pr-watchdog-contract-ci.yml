@@ -173,6 +173,7 @@ on:
       - 'tests/ci-pr-commander-ci-inbox.test.cjs'
       - 'supabase/migrations/20261110124500_commander_ci_inbox_classifier_taxonomy_v2_20261110.sql'
       - 'supabase/migrations/20261110125000_commander_ci_inbox_classification_receipt_v1_20261110.sql'
+      - 'supabase/migrations/20261110152000_commander_ci_autotask_reconcile_v2.sql'
   workflow_dispatch:
 permissions:
   contents: read

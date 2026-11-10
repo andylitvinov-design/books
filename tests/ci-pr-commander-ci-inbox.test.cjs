@@ -104,3 +104,28 @@ test('CI task creation is idempotent, preserves existing tasks and blocks ambigu
  assert.match(autotaskMigration,/associated_task_id=v_task/);
  assert.doesNotMatch(autotaskMigration,/github\.rest\.|workflow_dispatch|rerun-failed-jobs/);
 });
+
+const autotaskV2Migration=fs.readFileSync(path.join(root,'supabase/migrations/20261110152000_commander_ci_autotask_reconcile_v2.sql'),'utf8');
+
+test('CI classification always creates or links one owner-assigned Commander task and chat',()=>{
+ assert.match(autotaskV2Migration,/AFTER INSERT OR UPDATE OF classification,category,pr_number,head_sha/);
+ assert.match(autotaskV2Migration,/commander_ci_event_autotask_v1/);
+ assert.match(autotaskV2Migration,/assignedRole/);
+ assert.match(autotaskV2Migration,/'queued_review'/);
+ assert.match(autotaskV2Migration,/'AWAITING_EXECUTOR_NOT_DISPATCHED'/);
+ assert.match(autotaskV2Migration,/INSERT INTO business_brain\.commander_chat_events/);
+ assert.match(autotaskV2Migration,/md5\('HH_COMMANDER_CI_EVENT_V1:'/);
+ assert.match(autotaskV2Migration,/AUTO_TASK_CREATED_NOT_DISPATCHED/);
+ assert.match(autotaskV2Migration,/TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED/);
+ assert.match(autotaskV2Migration,/executionAuthorized',false/);
+ assert.match(autotaskV2Migration,/sourceWriteAuthorized',false/);
+ assert.match(autotaskV2Migration,/agentStarted',false/);
+});
+test('task/chat reconciliation backfills unmatched legacy inbox rows idempotently',()=>{
+ assert.match(autotaskV2Migration,/WHERE association_status IN \('UNMATCHED','MATCHED_TASK_NO_CHAT','AMBIGUOUS_TASKS'\)/);
+ assert.match(autotaskV2Migration,/ON CONFLICT \(event_id\) DO NOTHING/);
+ assert.match(autotaskV2Migration,/ON CONFLICT \(task_id\) DO NOTHING/);
+ assert.match(autotaskV2Migration,/GITHUB_OIDC_AND_EXACT_PR_HEAD/);
+ assert.match(autotaskV2Migration,/AMBIGUOUS_TASKS/);
+ assert.doesNotMatch(autotaskV2Migration,/workflow_dispatch|rerun-failed-jobs|github\.rest\./);
+});
