@@ -156,8 +156,19 @@ function normalizeChat(input,previous=null){
   if(!Array.isArray(input.prs)||input.prs.length>15||!input.prs.every(v=>Number.isSafeInteger(v)&&v>0&&v<100000))throw Error("INVALID_PR_NUMBERS");
   const description=clean(input.description,1000);
   if(String(input.description||"").length>1000)throw Error("DESCRIPTION_TOO_LONG");
+  const goal=clean(input.goal===undefined?(previous?.goal||description||title):input.goal,2000);
+  if(String(input.goal||"").length>2000||!goal)throw Error("INVALID_CHAT_GOAL");
+  const criteria=input.acceptanceCriteria===undefined?(previous?.acceptanceCriteria||[]):input.acceptanceCriteria;
+  if(!Array.isArray(criteria)||criteria.length>5||
+     criteria.some(v=>typeof v!=="string"||!clean(v,500)||v.length>500)||
+     criteria.reduce((sum,v)=>sum+v.length,0)>2500)throw Error("INVALID_CHAT_ACCEPTANCE_CRITERIA");
+  const skills=input.skillIds===undefined?(previous?.skillIds||[]):input.skillIds;
+  if(!Array.isArray(skills)||skills.length>10||
+     skills.some(v=>typeof v!=="string"||!/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$/.test(v))||
+     new Set(skills).size!==skills.length)throw Error("INVALID_CHAT_SKILL_IDS");
   const now=new Date().toISOString();
-  return {schema:"HH_COMMANDER_THREAD_V1",id,title,project:input.project,description,
+  return {schema:"HH_COMMANDER_THREAD_V1",id,title,project:input.project,description,goal,
+    acceptanceCriteria:criteria.map(v=>clean(v,500)),skillIds:[...skills],
     taskId:previous?.taskId||null,taskIssueNumber:previous?.taskIssueNumber||null,
     tasks:[...new Set(input.tasks)],executors:[...new Set(input.executors)],prs:[...new Set(input.prs)],
     status:input.status,revision:(previous?.revision||0)+1,
@@ -546,11 +557,16 @@ async function handler(req){
       const chats=await q(db,"select chat_id,task_id,payload,revision from business_brain.commander_chats where owner_id=$1::uuid and chat_number=$2 limit 1",[ownerId,chatNumber]);
       if(!chats.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
       const chat=chats[0],rawChat=chat.payload&&typeof chat.payload==="object"?chat.payload:{};
+      const goal=clean(rawChat.goal||rawChat.description||rawChat.title||message,2000);
+      const acceptanceCriteria=Array.isArray(rawChat.acceptanceCriteria)?rawChat.acceptanceCriteria.slice(0,5).map(v=>clean(v,500)).filter(Boolean):[];
+      const skillIds=Array.isArray(rawChat.skillIds)?rawChat.skillIds.slice(0,10):[];
+      const prior=executor==="hermes"?await q(db,"select hermes_job_id from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid and executor='hermes' and status='COMPLETED' and hermes_job_id is not null order by completed_at desc nulls last,created_at desc limit 1",[ownerId,chat.chat_id]):[];
+      const parentTaskId=prior[0]?.hermes_job_id||null;
       const contextCapsule={
         schema:"HH_COMMANDER_TASK_CONTEXT_V1",chatId:chat.chat_id,taskId:chat.task_id||null,
         chatRevision:Number.isSafeInteger(chat.revision)?chat.revision:0,
-        title:clean(rawChat.title,160),project:clean(rawChat.project,80),
-        description:clean(rawChat.description,700),
+        title:clean(rawChat.title,160),project:clean(rawChat.project,80),goal,
+        description:clean(rawChat.description,700),acceptanceCriteria,skillIds,
         linkedPrHints:Array.isArray(rawChat.prs)?rawChat.prs.filter(x=>Number.isSafeInteger(x)&&x>0&&x<100000).slice(0,8):[],
         linkedPrHintsVerified:false,
         requiredBeforeSourceChange:"Resolve live GitHub PR and exact HEAD before any source change."
@@ -570,7 +586,7 @@ async function handler(req){
       else if(executor==="local")reasonCode="LOCAL_ADVISOR_IS_NOT_AN_EXECUTOR";
       else if(executor==="manual")reasonCode="MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF";
       const firstStatus=canDispatch?"STARTING":"BLOCKED";
-      const hashInput=[chat.chat_id,executor,String(contextCapsule.chatRevision),message,modelId,String(writeConfirmed)].join(String.fromCharCode(31));
+      const hashInput=[chat.chat_id,executor,String(contextCapsule.chatRevision),message,modelId,String(writeConfirmed),goal,JSON.stringify(acceptanceCriteria),JSON.stringify(skillIds),parentTaskId||""].join(String.fromCharCode(31));
       const hashed=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(hashInput)));
       const requestSha256=Array.from(hashed,x=>x.toString(16).padStart(2,"0")).join("");
       const initialReceipt={dispatchAttempted:false,agentStarted:false,executionVerified:false,
@@ -580,7 +596,7 @@ async function handler(req){
       const result=await db.begin(async tx=>{
         const inserted=await tx.unsafe("insert into business_brain.commander_execution_runs (run_id,owner_id,chat_id,task_id,idempotency_key,request_sha256,executor,status,reason_code,request_payload,receipt) values($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8,$9,$10::text::jsonb,$11::text::jsonb) on conflict(owner_id,chat_id,idempotency_key) do nothing returning run_id,status,reason_code,request_sha256,executor,hermes_job_id,receipt,created_at",
          [runId,ownerId,chat.chat_id,chat.task_id||null,idempotencyKey,requestSha256,executor,
-          firstStatus,reasonCode,jsonbText({message,contextCapsule,modelId,confirmGitHubWrite:writeConfirmed}),
+          firstStatus,reasonCode,jsonbText({message,goal,acceptanceCriteria,skillIds,parentTaskId,contextCapsule,modelId,confirmGitHubWrite:writeConfirmed}),
           jsonbText(initialReceipt)]);
         let run=inserted[0],duplicate=false;
         if(!run){
@@ -614,6 +630,7 @@ async function handler(req){
       try{
         const remote=await hermesCall(config,"/commander/runs","POST",{
           runId,chatId:chat.chat_id,ownerId,projectKey:"holistic-house",message,model:modelId,
+          goal,acceptanceCriteria,skillIds,parentTaskId,
           confirmGitHubWrite:writeConfirmed,contextCapsule});
         const verified=trustedHermesReceipt(remote,runId,null,modelId);
         await saveHermesReceipt(db,ownerId,chat.chat_id,runId,verified);
