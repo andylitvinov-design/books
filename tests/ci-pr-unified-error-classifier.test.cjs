@@ -70,6 +70,17 @@ test('transient infrastructure may be retried only under a bounded policy', () =
   assert.equal(result.retry.max_attempts, 2);
 });
 
+test('persistent infrastructure and provider quota do not schedule blind retries', () => {
+  const persistent = classify([job('runner', 'Disk quota exceeded')]);
+  assertDiagnosticOnly(persistent, 'INFRASTRUCTURE');
+  assert.equal(persistent.recommended_status, 'MANUAL_REQUIRED');
+  assert.equal(persistent.retry.allowed, false);
+  const quota = classify([job('repair-worker', 'OpenRouter provider quota exceeded')]);
+  assertDiagnosticOnly(quota, 'AI_EXECUTOR');
+  assert.equal(quota.retry.allowed, false);
+  assert.equal(quota.retry.max_attempts, 0);
+});
+
 test('TypeScript and ordinary source build errors are distinguished', () => {
   assertDiagnosticOnly(classify([job('core-lint-types-build', 'TypeScript check')]), 'TYPESCRIPT');
   assertDiagnosticOnly(classify([job('build', 'Cannot find module ./missing-module')]), 'SOURCE_CODE');
