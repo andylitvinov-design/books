@@ -75,7 +75,9 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
  assert.match(renderer,/const textScale = settings\.textScale === "small"/);
  assert.match(studio,/onRecord=\{\(\)=>\{[\s\S]*?setIdeasVoiceMode\("my-voice"\)/);
- assert.match(studio,/data-video-own-voice-record/);
+ const recorder=readFileSync(new URL("../components/mandala-local-voice-tracks.tsx",import.meta.url),"utf8");
+ assert.match(recorder,/data-video-own-voice-record/);
+ assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
 });
 
 
