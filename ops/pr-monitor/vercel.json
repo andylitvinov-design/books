@@ -29,7 +29,7 @@
   "rewrites": [
     {
       "source": "/:path*",
-      "destination": "https://holistic-house-pr-monitor-onx0kqbp2-super10.vercel.app/:path*"
+      "destination": "https://holistic-house-pr-monitor-n9hantcv2-super10.vercel.app/:path*"
     }
   ]
 }
