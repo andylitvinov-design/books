@@ -99,45 +99,35 @@ async function verifyWorkspaceHydration(browser,locale){
       })).catch(()=>({diagnosticsUnavailable:true}));
       throw new Error("WEBKIT_MONTAGE_SINGLE_TAP_NOT_COMMITTED "+JSON.stringify(state),{cause:error});
     }
-    // Montage opens on Style. Review the legacy Concept through the real
-    // Settings action without inventing a fifth primary tab.
-    await expect(page.locator('[data-video-montage-tab="effects"]'))
-      .toHaveAttribute("aria-pressed","true");
-    await page.locator('[data-video-montage-tab="settings"]').tap();
-    await page.locator('[data-video-montage-open-concept]').tap();
-    const concept=page.locator("[data-video-montage-concept]");
-    await expect(concept).toBeVisible();
-    await expect(concept.locator("[data-video-concept-summary]")).toBeVisible();
-    await concept.locator("[data-video-concept-edit]").click();
-    await expect(page.locator("[data-video-concept-auth-overlay]")).toBeVisible();
-    await page.locator("[data-video-concept-auth-close]").click();
-    await expect(page.locator("[data-video-concept-auth-overlay]")).toHaveCount(0);
-    await concept.locator("[data-video-concept-approve]").click();
-    await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
-    await page.locator('[data-video-montage-tab="settings"]').tap();
-    await page.locator('[data-video-montage-open-concept]').tap();
-    await expect(page.locator("[data-video-concept-auto]"))
-      .toHaveAttribute("data-concept-approved","true");
-    // Explicit Style selection remains a real tap, not a render bypass.
-    const styleTab=page.locator('[data-video-montage-tab="effects"]');
-    await expect(styleTab).toBeVisible();
-    await styleTab.tap();
-    await expect(styleTab).toHaveAttribute("aria-pressed","true");
-    const styles=page.locator("[data-video-montage-style]");
-    await expect(styles).toHaveCount(6);
-    const minimal=styles.nth(3);
-    await expect(minimal).toBeVisible();
+    // The old hidden Montage sub-tabs (Settings → Concept) are not an
+    // iPhone navigation contract. Audio is now a real top-level workspace;
+    // exercise its three visible tabs with native WebKit taps instead.
+    const audioTab=page.locator('[data-video-quick-control="effects"]');
+    await expect(audioTab).toBeVisible();
+    await audioTab.tap();
+    await expect(studio).toHaveAttribute("data-active-workspace","effects");
+    const audioWorkspace=page.locator("[data-video-audio-workspace]");
+    await expect(audioWorkspace).toBeVisible();
+    const musicTab=page.locator('[data-video-audio-tab="music"]');
+    const voiceTab=page.locator('[data-video-audio-tab="voice"]');
+    const meditationsTab=page.locator('[data-video-audio-tab="meditations"]');
+    await expect(musicTab).toBeVisible();
+    await expect(voiceTab).toBeVisible();
+    await expect(meditationsTab).toBeVisible();
+    await expect(page.locator('[data-video-audio-panel="music"]')).toBeVisible();
+    await voiceTab.tap();
+    await expect(voiceTab).toHaveAttribute("aria-selected","true");
+    await expect(page.locator('[data-video-audio-panel="voice"]')).toBeVisible();
+    await meditationsTab.tap();
+    await expect(meditationsTab).toHaveAttribute("aria-selected","true");
+    const meditations=page.locator('[data-video-audio-panel="meditations"]');
+    await expect(meditations).toBeVisible();
+    await expect(meditations.locator("[data-meditation-generate]")).toBeVisible();
+    await musicTab.tap();
+    await expect(musicTab).toHaveAttribute("aria-selected","true");
+    await expect(page.locator('[data-video-audio-panel="music"]')).toBeVisible();
     const hero=page.locator("[data-video-mandala-hero]");
     const master=page.locator("[data-mandala-master-mp4]");
-    await minimal.tap();
-    await expect(minimal).toHaveAttribute("aria-pressed","true");
-    await expect(hero).toHaveAttribute("data-video-preview-style","minimal");
-    await expect(hero).toHaveAttribute("data-preview-playing","true");
-    await expect(master).toHaveCount(1);
-    await expect.poll(()=>master.evaluate(video=>video.preload),{timeout:15000}).toBe("auto");
-    await expect.poll(()=>master.evaluate(video=>
-      video.readyState>=2&&video.videoWidth>0&&video.videoHeight>0&&!video.error),
-      {timeout:20000}).toBe(true);
     // Actual route-matched recipient path: ONE header switch, working kind,
     // real occasion and the original Goal→Ideas action. The ordinary visitor
     // must not need a hidden storyboard Confirm to stage these four captions.
@@ -441,11 +431,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await durationSelect.waitFor({state:"visible",timeout:25000});
       await durationSelect.selectOption("10");
       await expect(durationSelect).toHaveValue("10");
-      const montageAudio=page.locator('[data-video-montage-open-audio]');
-      await montageAudio.click();
-      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
-      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
-      await expect(page.locator('[data-video-audio-mode="library"]')).toBeVisible();
+      // Switch to the dedicated Audio workspace rather than the retired
+      // Montage shortcut or its duplicate compact music panel.
+      const audioWorkspace=page.locator('[data-video-quick-control="effects"]');
+      await expect(audioWorkspace).toBeVisible();
+      await audioWorkspace.click();
+      await expect(page.locator("[data-video-audio-workspace]")).toBeVisible();
+      await expect(page.locator('[data-video-audio-panel="music"]')).toBeVisible();
+      await expect(page.locator('[data-video-audio-tab="music"]')).toHaveAttribute("aria-selected","true");
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -721,12 +714,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         // Confirm the chosen recorded track survives the ACTUAL local MP4/WebM
         // export. Reading a selection badge or blob URL is not E2E evidence.
         await page.locator('[data-video-quick-control="editor"]').click();
-        // The original recorder's export button is available in the real
-        // Montage Audio step, never in the intentionally hidden Style footer.
-        await page.locator('[data-video-montage-tab="settings"]').click();
-        const ownAudioStep=page.locator('[data-video-montage-open-audio]');
-        await ownAudioStep.click();
-        await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+        // Audio is a top-level workspace; use its real visible mobile route.
+        const ownAudioTab=page.locator('[data-video-quick-control="effects"]');
+        await expect(ownAudioTab).toBeVisible();
+        await ownAudioTab.click();
+        await expect(page.locator("[data-video-audio-workspace]")).toBeVisible();
+        await expect(page.locator('[data-video-audio-panel="music"]')).toBeVisible();
         const ownCreate=page.locator("[data-video-quick-generate]");
         await expect(ownCreate).toBeEnabled({timeout:30000});
         await ownCreate.click();
@@ -959,11 +952,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(creationStyleTab).toBeVisible();
       await creationStyleTab.click();
       await expect(creationStyleTab).toHaveAttribute("aria-pressed","true");
-      await page.locator('[data-video-montage-tab="settings"]').click();
-      const montageAudioTab=page.locator('[data-video-montage-open-audio]');
-      await expect(montageAudioTab).toBeVisible();
-      await montageAudioTab.click();
-      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+      const audioWorkspaceTab=page.locator('[data-video-quick-control="effects"]');
+      await expect(audioWorkspaceTab).toBeVisible();
+      await audioWorkspaceTab.click();
+      await expect(page.locator("[data-video-audio-workspace]")).toBeVisible();
+      await expect(page.locator('[data-video-audio-panel="music"]')).toBeVisible();
       const generate=page.locator("[data-video-quick-generate]");
       await expect(generate).toBeVisible({timeout:30000});
       await expect(generate).not.toHaveAttribute("data-video-montage-next",/./);
@@ -1167,6 +1160,7 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
         const streams=JSON.parse(probe.stdout).streams;
         const tracks=streams.map(row=>row.codec_type);
         assert.ok(tracks.includes("video"),"real video stream present");
+        assert.ok(tracks.includes("audio"),"real audible audio stream present");
         const audioTrack=streams.find(row=>row.codec_type==="audio");
         assert.ok(audioTrack,"generated affirmation WAV survived into exported video");
         assert.equal(Number(audioTrack.channels),2,"real encoded audio track must remain stereo");
@@ -1253,10 +1247,12 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       if(!await page.locator("[data-video-narration-stale]").isVisible())
         await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0);
       await page.locator('[data-video-quick-control="editor"]').click();
-      await page.locator('[data-video-montage-tab="settings"]').click();
-      const montageAudioAfterExport=page.locator('[data-video-montage-open-audio]');
-      await montageAudioAfterExport.click();
-      await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
+      const audioWorkspaceAfterExport=page.locator('[data-video-quick-control="effects"]');
+      await expect(audioWorkspaceAfterExport).toBeVisible();
+      await audioWorkspaceAfterExport.click();
+      await expect(page.locator("[data-video-audio-workspace]")).toBeVisible();
+      await page.locator('[data-video-audio-tab="voice"]').click();
+      await expect(page.locator('[data-video-audio-panel="voice"]')).toBeVisible();
       // Compact Audio preserves an explicitly opened cloud Voice Studio,
       // without the retired basic nested tab.
       // The phrase warning is intentionally unmounted in Montage. If the

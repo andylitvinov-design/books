@@ -52,7 +52,7 @@ test("Ideas shortcut opens the single Montage Text editor without renderer or pa
   "quick music must only mount in Goal");
  assert.doesNotMatch(css,/\[data-active-workspace="phrases"\]\s*\.quickBuilder>\[data-video-quick-audio-choices\]/,
   "mobile styles must not force Music & Voice into Ideas");
- assert.match(studio,/montagePanel==="audio" \?/,"Montage keeps its real audio editor");
+ assert.match(studio,/data-video-audio-panel="music"/,"dedicated Audio keeps the real music editor");
 });
 
 

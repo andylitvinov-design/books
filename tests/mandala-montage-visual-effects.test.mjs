@@ -73,7 +73,9 @@ test('Live still, playing frames and export share one real effect painter',()=>{
  assert.equal(calls.length,5,'live still, animated preview and recorded export all paint the same effect');
  assert.match(studio,/\[source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, previewSeekSeconds,[\s\S]*?hypnoLight/);
  assert.match(studio,/creationMode,activeMontageStyleId,currentFreeVideoPlan/);
- assert.doesNotMatch(studio.slice(studio.indexOf('data-video-montage-visual-effect='),
-  studio.indexOf('{montagePanel==="audio" ? <div')),/createQuickVideo|postVideoCreditAction|appFetch/,
+ const effectStart=studio.indexOf('data-video-montage-visual-effect=');
+ const effectEnd=studio.indexOf('</button>',effectStart);
+ assert.ok(effectStart>=0&&effectEnd>effectStart);
+ assert.doesNotMatch(studio.slice(effectStart,effectEnd),/createQuickVideo|postVideoCreditAction|appFetch/,
   'a visual selection is a local state update, never a paid render');
 });

@@ -1,7 +1,6 @@
 "use client";
 
 import {useEffect,useMemo,useRef,useState} from "react";
-import type {ReactNode} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {ArrowRight,BookOpen,CheckCircle2,Download,Flower2,FolderOpen,Headphones,LockKeyhole,Play,RefreshCw,Send,ShieldCheck,Sparkles,UserRound} from "lucide-react";
@@ -23,7 +22,7 @@ type CourseText={number:number;title:string;motif:string;script:string};
 type Props={
   locale:PublicLocale;theme:VideoTheme;wish:string;focus:GuidedMeditationFocus;
   video:VideoFile|null;verified:boolean;checking:boolean;signedIn:boolean;
-  loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
+  loginUnavailable:boolean;disabled:boolean;onOpenMeditation:()=>void;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onReturnToPro:()=>void;
   onGenerateBasicVideo:()=>boolean;basicFreeAvailable:boolean;
 };
@@ -143,7 +142,7 @@ const COPY={
 
 export function MandalaVideoReady({
   locale,theme,wish,focus,video,verified,checking,signedIn,loginUnavailable,disabled,
-  meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onReturnToPro,
+  onOpenMeditation,onOpenDelivery,onRefreshLogin,onOpenCourse,onReturnToPro,
   onGenerateBasicVideo,basicFreeAvailable
 }:Props){
   const t=COPY[locale];
@@ -156,7 +155,6 @@ export function MandalaVideoReady({
   const [generatedOffer,setGeneratedOffer]=useState<Offer|null>(null);
   const [meditationScript,setMeditationScript]=useState("");
   const [courseTexts,setCourseTexts]=useState<CourseText[]>([]);
-  const [meditationAdvancedOpen,setMeditationAdvancedOpen]=useState(false);
   const offerRef=useRef<HTMLElement|null>(null);
   const [gateIntent,setGateIntent]=useState<"save"|"download"|"telegram"|"house">("save");
   const gateRef=useRef<HTMLElement|null>(null);
@@ -258,7 +256,6 @@ export function MandalaVideoReady({
     const opening=activeOffer!==next;
     setActiveOffer(opening?next:null);
     setGeneratedOffer(null);setRitualGenerated(false);setNotice("");
-    setMeditationAdvancedOpen(false);
     if(opening)window.requestAnimationFrame(()=>offerRef.current?.scrollIntoView({
       block:"nearest",
       behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"
@@ -458,10 +455,7 @@ export function MandalaVideoReady({
               <pre className={css.scriptText} data-ready-meditation-text>{meditationScript}</pre>
               <p className={css.note}><ShieldCheck size={17} aria-hidden="true"/>{t.medNote}</p>
               <button type="button" className={css.secondary} data-ready-expand-meditation-editor
-                aria-expanded={meditationAdvancedOpen}
-                onClick={()=>setMeditationAdvancedOpen(open=>!open)}>{t.editMeditation}</button>
-              {meditationAdvancedOpen?<div className={css.reused} data-ready-meditation-editor>
-                {meditationEditor}</div>:null}
+                onClick={onOpenMeditation}>{t.editMeditation}</button>
             </>:activeOffer==="ritual"&&ritual.status==="ready"&&ritualGenerated?<>
               <div className={css.ritualResult} data-ready-ritual-result>
                 <h5>{t.ritualResult}: {ritual.title}</h5>

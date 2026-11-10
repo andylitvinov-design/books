@@ -5342,3 +5342,25 @@
 .montageAdvancedShortcuts button{display:flex;align-items:center;justify-content:center;gap:6px;flex:1 1 135px;min-height:44px;padding:8px;border:1px solid #d6e1d5;border-radius:12px;background:#f5f9f3;color:#174a3c;font:700 13px/1.2 Arial,Helvetica,sans-serif}
 .montageAdvancedShortcuts button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
 .montageAdvancedShortcuts button:disabled{opacity:.6}
+
+/* Video Studio: Audio replaces Hypno and hosts ONE music/voice/meditation source.
+   Only one library and player, no duplicate sound engines or billing action. */
+.audioWorkspace{display:grid;gap:12px;min-width:0;width:100%;padding:12px;border:1px solid #e9dfd1;border-radius:22px;background:#fffcf7;box-shadow:0 8px 24px #38534510}
+.audioWorkspaceTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:4px;border:1px solid #e9dfd1;border-radius:17px;background:#f5ecdc;min-width:0}
+.audioWorkspaceTabs button{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:49px;padding:8px 5px;border:1px solid transparent;border-radius:13px;background:#fffcf7;color:#174b3e;font:750 clamp(11px,3vw,15px)/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.audioWorkspaceTabs button[aria-selected="true"]{background:#067a67;border-color:#067a67;color:#fff;box-shadow:0 3px 10px #067a6730}
+.audioWorkspaceTabs button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.audioWorkspaceTabs svg{flex:none}
+.audioWorkspacePanel{min-width:0;display:grid;gap:12px}
+.audioWorkspacePanel[hidden]{display:none!important}
+.audioWorkspacePanel .montageAudioCompact{padding:9px;box-shadow:none;border-color:#e9dfd1;background:#fffcf7}
+.audioWorkspacePanel .phraseVoiceSection{margin:0!important;min-width:0}
+.audioMeditationNote{margin:0;padding:11px 12px;border:1px solid #e7dfce;border-radius:13px;background:#faf6ed;color:#435c54;font:500 13px/1.45 Arial,Helvetica,sans-serif}
+.audioAdditionalEffects{min-width:0;border:1px solid #e9dfd1;border-radius:14px;background:#fffdf9}
+.audioAdditionalEffects>summary{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:9px 12px;color:#1a6452;font:750 13px/1.35 Arial,Helvetica,sans-serif;cursor:pointer;list-style:none}
+.audioAdditionalEffects>summary::-webkit-details-marker{display:none}
+.audioAdditionalEffects>summary svg:last-child{margin-left:auto}
+.audioAdditionalEffects[open]>div{padding:0 6px 10px}
+.studio[data-active-workspace="editor"] .montageQuickTools{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.studio[data-active-workspace="effects"] .quickBuilder>[data-video-effects-panel]{padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important}
+@media(max-width:359px){.audioWorkspace{padding:8px;gap:9px}.audioWorkspaceTabs{gap:3px;padding:3px}.audioWorkspaceTabs button{font-size:10.5px;gap:3px;padding:6px 2px}.audioWorkspaceTabs svg{width:15px;height:15px}.audioWorkspacePanel .montageAudioCompact{padding:6px}}
