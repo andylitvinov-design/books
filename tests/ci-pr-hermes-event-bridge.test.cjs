@@ -142,6 +142,8 @@ test('specialist gate failures are not misclassified as test failures by the sub
   assert.equal(buildDiagnostics([{name:'vitest',conclusion:'failure'}],makePR()).category,'TEST_FAILURE');
   assert.equal(buildDiagnostics([{name:'jest',conclusion:'failure'}],makePR()).category,'TEST_FAILURE');
   assert.equal(buildDiagnostics([{name:'typescript-check',conclusion:'failure'}],makePR()).category,'TYPESCRIPT');
+  assert.equal(buildDiagnostics([{name:'typescript_build',conclusion:'failure'}],makePR()).category,'TYPESCRIPT');
+  assert.equal(buildDiagnostics([{name:'TypeScript compile',conclusion:'failure'}],makePR()).category,'TYPESCRIPT');
 });
 
 

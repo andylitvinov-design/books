@@ -21,7 +21,7 @@ const SIGNALS = Object.freeze({
   INFRASTRUCTURE: /(?:\btimeout\b|timed out|startup_failure|runner unavailable|runner lost|disk quota|quota exceeded|out of disk|no space left|resource temporarily unavailable|service unavailable|\b502\b|\b503\b|\b504\b|rate limit|api rate limit)/i,
   MERGE_CONFLICT: /(?:merge conflict|conflict markers|unmerged paths|cannot be merged|mergeable_state.*dirty)/i,
   BASE_ADVANCED: /(?:BASE_ADVANCED|production[- ]base (?:advanced|moved)|stale[- ]base|base[- ]ancestry|base[- ]sha mismatch|behind base)/i,
-  TYPESCRIPT: /(?:^TypeScript (?:build|check|compile)\b|\btypecheck\b|\btsc\b|^Run TypeScript\b|typescript error)/i,
+  TYPESCRIPT: /(?:\btypescript[-_ ]?(?:build|check|compile)\b|\btypecheck\b|\btsc\b|^Run TypeScript\b|typescript error)/i,
   TEST_FAILURE: /(?:\btests?\b|\bunit\b|\bvitest\b|\bjest\b|\bcontracts?\b|\be2e\b|\bplaywright\b|\bwebkit\b|\bspecs?\b|\bassertions?\b|snapshot mismatch|test failed)/i,
   INTEGRATION: /(?:\bapi\b|supabase|vercel|github api|\bmcp\b|oauth|webhook|integration|database connection|schema mismatch|http client)/i,
   AI_EXECUTOR: /(?:openrouter|model response|completion response|invalid patch|patch response|free_model|free model|provider quota|model timeout|empty model|non[- ]text response|unexpected model identity|inference)/i,
