@@ -231,3 +231,18 @@ test("WebKit voice advanced settings use native one-tap disclosure without a dou
     "a synchronous manual toggle can be reversed by WebKit's native click");
   assert.match(disclosure,/onToggle=\{event=>\{/);
 });
+
+test("Ready Basic auto-attaches suggested music before Generate without bypassing manual audio rights",()=>{
+  const start=studio.indexOf("// Attach approved automatic music in both Montage and Ready");
+  const end=studio.indexOf("// A paused film",start);
+  assert.ok(start>0&&end>start,"the original shared audio effect remains in the studio");
+  const effect=studio.slice(start,end);
+  assert.match(effect,/if\(!audioAuto\|\|uploadedAudio\|\|attachedAudio\?\.kind==="file"\|\|/);
+  assert.match(effect,/attachedAudio\?\.kind==="presets"\)return/);
+  assert.match(effect,/activeWorkspace!=="editor"&&activeWorkspace!=="ready"/);
+  assert.match(effect,/setAttachedAudio\(current=>/);
+  assert.match(studio,/const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey/);
+  assert.match(studio,/if\(audioNeedsAttachment\)\{\s*setNotice\(audioUi\.needsAttach\)/);
+  assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
+  assert.match(studio,/return createQuickVideo\(\)/);
+});
