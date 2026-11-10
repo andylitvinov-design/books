@@ -46,3 +46,28 @@ test('worker returns bounded non-sensitive diagnostics and never logs response b
   assert.match(worker, /console\.error\(["']AGENT_COMMANDER_OPENROUTER_WORKER_ERROR["'],\s*String\(error\?\.name/);
   assert.doesNotMatch(worker, /console\.(?:log|error|warn)\([^\n]*(?:apiKey|decrypted_secret|Authorization|Bearer)/i);
 });
+
+test('private-store queues only the first-party free worker and fails closed when its key is absent', () => {
+  const store = fs.readFileSync(
+    new URL('../supabase/functions/agent-commander-private-store-v1/index.ts', import.meta.url),
+    'utf8'
+  );
+  assert.match(store, /const openRouterReady=Boolean\(Deno\.env\.get\(["']HH_PM_OPENROUTER_API_KEY["']\)\|\|Deno\.env\.get\(["']OPENROUTER_API_KEY["']\)\)/);
+  assert.match(store, /const canDispatch=executor==="local"&&!writeConfirmed&&openRouterReady/);
+  assert.match(store, /OPENROUTER_API_KEY_NOT_CONFIGURED/);
+  assert.match(store, /firstStatus=canDispatch\?"QUEUED":"BLOCKED"/);
+  assert.match(store, /OPENROUTER_WORKER_QUEUED/);
+  assert.match(store, /dispatchAttempted:false,agentStarted:false,executionVerified:false/);
+  assert.match(store, /where owner_id=\$1::uuid and chat_id=\$2::uuid and idempotency_key=\$3/);
+  assert.doesNotMatch(store, /ownedDirectorCall|trustedOwnedDirectorReceipt|AGENT_DIRECTOR_HTTP_/);
+});
+
+test('private-store status reports provider readiness without treating it as live execution', () => {
+  const store = fs.readFileSync(
+    new URL('../supabase/functions/agent-commander-private-store-v1/index.ts', import.meta.url),
+    'utf8'
+  );
+  assert.match(store, /dispatchEnabled:openRouterReady/);
+  assert.match(store, /dispatchReason:openRouterReady\?"OPENROUTER_FREE_WORKER_READY":"OPENROUTER_API_KEY_NOT_CONFIGURED"/);
+  assert.match(store, /liveVerification:false/);
+});
