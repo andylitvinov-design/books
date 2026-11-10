@@ -842,7 +842,25 @@ async function update(e){
   try{status=await request(SERVER+'?action=status')}
   catch(error){statusError=error;status={privateStoreConfigured:false}}
   remote=!!status.privateStoreConfigured;
-  ownedDirectorAvailable=remote&&status.dispatchAvailable===true&&status.dispatchMode==='FIRST_PARTY_AGENT_DIRECTOR';
+  const directorStoreReady=remote&&status.dispatchAvailable===true&&
+    status.dispatchMode==='FIRST_PARTY_AGENT_DIRECTOR';
+   let providerStatus=null;
+   if(directorStoreReady){
+    try{providerStatus=await request(SERVER+'?action=provider_status');}
+    catch{providerStatus={configured:false,reasonCode:'DIRECTOR_CONNECTION_STATUS_UNAVAILABLE'};}
+   }
+   ownedDirectorAvailable=directorStoreReady&&providerStatus?.configured===true;
+   const reason=providerStatus?.reasonCode||'DIRECTOR_CONNECTION_STATUS_UNAVAILABLE';
+   const directorMessages={
+    OPENROUTER_KEY_NOT_CONFIGURED:'OpenRouter Free пока не подключён: добавьте серверный ключ в Vercel Holistic House (Sensitive, Production) и опубликуйте новый деплой.',
+    OPENROUTER_DISABLED:'OpenRouter Free пока отключён в настройках Vercel Holistic House.',
+    DIRECTOR_CONNECTION_STATUS_UNAVAILABLE:'Не удалось проверить подключение OpenRouter Free. Нажмите «Обновить» для повторной проверки.'
+   };
+   el('director-connection-text').textContent=providerStatus?.configured===true?
+    'OpenRouter Free настроен. Реальный ответ модели ещё требует проверки.':
+    (directorMessages[reason]||'Подключение OpenRouter Free пока не подтверждено.');
+   show('director-connection',directorStoreReady);
+   show('director-connect-link',directorStoreReady&&!ownedDirectorAvailable);
   for(const select of [el('mode'),el('new-mode')]){
    const director=select.querySelector('option[value=director]');
    if(director)director.disabled=!ownedDirectorAvailable;
