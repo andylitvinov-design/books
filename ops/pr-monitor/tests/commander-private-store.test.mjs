@@ -93,3 +93,17 @@ test('Commander correctly parses real JWT dot separators and legacy 12-char Supa
  assert.match(source,/verifyOwner\(req,data\.access_token\)/,'rotation still verifies owner');
  assert.match(source,/HttpOnly; Secure; SameSite=Strict/);
 });
+
+
+test('private chat preserves newlines in owner text, reports and first-party Director replies',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync(new URL('../../../supabase/functions/agent-commander-private-store-v1/index.ts',import.meta.url),'utf8');
+ const declaration=source.match(/^const cleanMultiline = .*;$/m)?.[0];
+ assert.ok(declaration);
+ const sanitizer=Function(declaration+'\nreturn cleanMultiline;')();
+ assert.equal(sanitizer('  **Ответ**\r\n\r\n- Шаг\n\nАбзац\t\u0000',1800),'**Ответ**\n\n- Шаг\n\nАбзац');
+ assert.match(source,/const text=cleanMultiline\(body\.text,1800\)/);
+ assert.match(source,/result:value\.status==="COMPLETED"\?cleanMultiline\(value\.result,1800\)/);
+ assert.match(source,/text:cleanMultiline\(text,1800\)/);
+ assert.match(source,/const text=cleanMultiline\(String\(comment\.body/);
+});
