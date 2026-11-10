@@ -9,6 +9,7 @@ on:
       - 'lib/holistic-support/owned-ollama.mjs'
       - 'supabase/functions/agent-commander-private-store-v1/**'
       - 'tests/agent-director-owned-runtime.test.mjs'
+      - 'tests/commander-context-edge.test.mjs'
       - 'tests/agent-commander-private-store.test.mjs'
       - '.github/workflows/hh-agent-director-owned-runtime.yml'
   pull_request:
@@ -48,4 +49,4 @@ jobs:
           node --check lib/agent-director/commander-owned-runtime.mjs
           node --check app/api/agent-director/commander-run/route.js
       - name: Run owned model and private store contracts
-        run: node --test tests/agent-director-owned-runtime.test.mjs tests/agent-commander-private-store.test.mjs
+        run: node --test tests/agent-director-owned-runtime.test.mjs tests/agent-commander-private-store.test.mjs tests/commander-context-edge.test.mjs
