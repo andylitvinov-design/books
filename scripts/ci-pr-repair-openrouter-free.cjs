@@ -89,26 +89,37 @@ async function getJson(fetchImpl,url,options,timeoutMs){
 }
 function extractAssistantText(content){
   let text;
+  const isTextBlock=part=>part&&typeof part==='object'&&!Array.isArray(part)&&
+    (part.type==='text'||part.type==='output_text'||part.type===undefined)&&
+    typeof part.text==='string';
   if(typeof content==='string'){
     text=content;
+  }else if(isTextBlock(content)){
+    // Some compatible providers return a single typed content block instead
+    // of the Chat Completions string. Only its explicit text field is usable.
+    text=content.text;
   }else if(Array.isArray(content)){
     const parts=[];
     for(const part of content){
       if(!part||typeof part!=='object'||Array.isArray(part))
-        throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
-      if((part.type==='text'||part.type==='output_text'||part.type===undefined)&&
-         typeof part.text==='string'){
+        throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID_BLOCK');
+      if(isTextBlock(part)){
         parts.push(part.text);
+        continue;
+      }
+      if(part.type==='reasoning'||part.type==='reasoning_details'){
+        // Reasoning is not user-facing patch content and must never be parsed
+        // or published as source. A reasoning-only response remains empty.
         continue;
       }
       // Refusals, images, tool payloads and unknown blocks are not source patches.
       throw Error(part.type==='refusal'
         ?'FREE_AI_OPENROUTER_MODEL_REFUSED'
-        :'FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
+        :'FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID_BLOCK');
     }
     text=parts.join('\n');
   }else{
-    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
+    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID_CONTENT');
   }
   if(!text.trim())throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_EMPTY');
   if(Buffer.byteLength(text,'utf8')>MAX_REPLY)
@@ -134,7 +145,7 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
     method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json',
       Accept:'application/json'},
     body:JSON.stringify({model:selected,messages:[{role:'user',content:prompt}],
-      max_tokens:5500,stream:false,usage:{include:true},
+      max_tokens:5500,n:1,stream:false,usage:{include:true},
       provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
         data_collection:'deny'}})
   },170000);
@@ -147,17 +158,27 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
        value!==null&&value!==undefined&&(!Number.isFinite(Number(value))||Number(value)!==0)))
     throw Error('FREE_AI_OPENROUTER_BILLING_NONZERO');
   if(completion?.error)throw Error('FREE_AI_OPENROUTER_PROVIDER_ERROR');
-  if(!Array.isArray(completion?.choices)||completion.choices.length!==1||
-     !completion.choices[0]?.message|| (completion.choices[0].message.role!==undefined&&completion.choices[0].message.role!=='assistant'))
-    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
+  if(!Array.isArray(completion?.choices))
+    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID_CHOICES');
+  if(completion.choices.length!==1)
+    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID_CHOICE_COUNT');
   const choice=completion.choices[0];
+  if(!choice?.message||typeof choice.message!=='object'||Array.isArray(choice.message))
+    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID_MESSAGE');
+  const message=choice.message;
+  if(message.role!==undefined&&message.role!=='assistant')
+    throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID_ROLE');
+  if(typeof message.refusal==='string'&&message.refusal.trim())
+    throw Error('FREE_AI_OPENROUTER_MODEL_REFUSED');
   if(choice.finish_reason==='length')
     throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED');
   if(choice.finish_reason==='content_filter')
     throw Error('FREE_AI_OPENROUTER_MODEL_REFUSED');
-  if(choice.message.tool_calls?.length||choice.message.function_call)
+  if(choice.finish_reason==='error')
+    throw Error('FREE_AI_OPENROUTER_PROVIDER_ERROR');
+  if(choice.finish_reason==='tool_calls'||message.tool_calls?.length||message.function_call)
     throw Error('FREE_AI_OPENROUTER_TOOL_CALL_NOT_ALLOWED');
-  return extractAssistantText(choice.message.content);
+  return extractAssistantText(message.content);
 }
 module.exports={BASE,CHAT_ENDPOINT,CHAT_CATALOG,DEFAULT_MODEL,MODEL_PROFILES,
   selectedModel,verifyZeroPrice,chooseVerifiedFreeModel,extractAssistantText,requestFreePatch};
