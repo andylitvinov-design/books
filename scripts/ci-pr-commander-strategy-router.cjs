@@ -52,7 +52,7 @@ function receiptProof(receipt,context){
 
 async function route({
   receipt,context,github,core,dryRun=false,
-  baseUpdated=false,infraRerun=false,existingCoreHandoff
+  baseUpdated=false,infraRerun=false,infraHold=false,existingCoreHandoff
 }={}){
   const result={
     schema:'HH_COMMANDER_CI_STRATEGY_ROUTE_V1',
@@ -74,6 +74,11 @@ async function route({
   if(baseUpdated||infraRerun){
     result.state='EXISTING_RECOVERY_ACCEPTED';
     result.reason=baseUpdated?'BASE_SYNCHRONISATION_UPDATED':'BOUNDED_INFRA_RERUN_ACCEPTED';
+    return result;
+  }
+  if(infraHold){
+    result.state='TASK_AWAITING_EXISTING_RECOVERY';
+    result.reason='INFRA_HOLD_NO_TARGETED_RERUN';
     return result;
   }
   if(HUMAN_HOLD.has(c.category)||c.requires_human===true){

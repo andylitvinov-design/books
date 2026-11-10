@@ -40,6 +40,7 @@ jobs:
         run: |
           node --check scripts/ci-pr-event-handoff.cjs
           node --check scripts/ci-pr-commander-strategy-router.cjs
+          node --check scripts/ci-pr-commander-route-receipt.cjs
           node --check scripts/ci-pr-error-task.cjs
           node --check scripts/ci-pr-ten-minute-watchdog.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
@@ -47,6 +48,21 @@ jobs:
           node --check scripts/ci-pr-selective-core-rerun.cjs
       - name: Validate trusted base recovery contracts
         run: node --test tests/ci-pr-base-advanced-recovery.test.cjs
+      - name: Send trusted failed-Core evidence to Commander via GitHub OIDC
+        id: commander_ci_event
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {sendWorkflowFailure}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-hermes-event-bridge.cjs');
+            const oidcToken=await core.getIDToken('hh-commander-ci');
+            const result=await sendWorkflowFailure({github,context,core,oidcToken});
+            core.setOutput('verified_receipt_json',JSON.stringify(result));
+            await core.summary.addHeading('Commander CI event and task association')
+              .addCodeBlock(JSON.stringify(result,null,2)).write();
+
       - name: Refresh exactly the proven BASE_ADVANCED PR
         id: base_recovery
         if: github.event.workflow_run.conclusion == 'failure'
@@ -146,28 +162,11 @@ jobs:
                 core.warning("FAILED_CORE_TARGETED_RECOVERY denied HTTP "+error.status);
               }else{throw error;}
             }
-      - name: Send trusted failed-Core evidence to Commander via GitHub OIDC
-        id: commander_ci_event
-        if: ${{ always() }}
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const {sendWorkflowFailure}=require(process.env.GITHUB_WORKSPACE+
-              '/scripts/ci-pr-hermes-event-bridge.cjs');
-            const oidcToken=await core.getIDToken('hh-commander-ci');
-            const result=await sendWorkflowFailure({github,context,core,oidcToken});
-            core.setOutput('verified_receipt_json',JSON.stringify(result));
-            await core.summary.addHeading('Commander CI event and task association')
-              .addCodeBlock(JSON.stringify(result,null,2)).write();
-
       # The classified Commander task must exist before the code-writing
       # handoff. The trusted ci-pr-event-handoff.cjs still independently checks
       # causal job evidence, exact PR HEAD, leases, worker slots and labels.
       - name: Route confirmed Commander CI task through guarded dispatcher
-        if: >-
-          always() && steps.base_recovery.outputs.updated != 'true' && steps.infra_recovery.outputs.infra_hold != 'true' &&
-          steps.commander_ci_event.outcome == 'success'
+        if: ${{ always() && steps.commander_ci_event.outcome == 'success' }}
         uses: actions/github-script@v7
         env:
           HH_CONTROL_TOWER_ENABLED: 'true'
@@ -175,6 +174,7 @@ jobs:
           HH_COMMANDER_CI_RECEIPT: ${{ steps.commander_ci_event.outputs.verified_receipt_json }}
           HH_BASE_UPDATED: ${{ steps.base_recovery.outputs.updated }}
           HH_INFRA_RERUN: ${{ steps.infra_recovery.outputs.targeted_rerun }}
+          HH_INFRA_HOLD: ${{ steps.infra_recovery.outputs.infra_hold }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -188,10 +188,17 @@ jobs:
             const result=await route({receipt,github,core,context,dryRun:false,
               baseUpdated:process.env.HH_BASE_UPDATED==='true',
               infraRerun:process.env.HH_INFRA_RERUN==='true',
+              infraHold:process.env.HH_INFRA_HOLD==='true',
               existingCoreHandoff});
             core.info('HH_DIRECT_CORE_HANDOFF '+JSON.stringify(result));
-            await core.summary.addHeading('Commander CI strategy route (not execution proof)')
-              .addCodeBlock(JSON.stringify(result,null,2)).write();
+            const {sendCommanderCiRoute}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-commander-route-receipt.cjs');
+            const oidcToken=await core.getIDToken('hh-commander-ci');
+            const delivery=await sendCommanderCiRoute({
+              routeResult:result,receipt,core,oidcToken});
+            core.info('HH_COMMANDER_CI_ROUTE_RECEIPT '+JSON.stringify(delivery));
+            await core.summary.addHeading('Commander CI strategy and delivery proof')
+              .addCodeBlock(JSON.stringify({route:result,delivery},null,2)).write();
 
       - name: Persist completed Core job timings without another runner
         if: ${{ always() }}
