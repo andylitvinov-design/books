@@ -387,3 +387,17 @@ test('postgres.js private-store JSONB binds parse UTF-8 JSON text exactly once f
  // This contract preserves the actual database CHECK that requires an object.
  assert.doesNotMatch(edge,/alter table business_brain\.commander_chats.*drop constraint/i);
 });
+
+test('private Commander writes raw JSON text through text-to-jsonb casts, not JSONB scalar double-encoding',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.doesNotMatch(edge,/\$\d+::jsonb\b/);
+ const jsonbParams=[...edge.matchAll(/\$\d+::text::jsonb\b/g)];
+ assert.equal(jsonbParams.length,0);
+ for(const field of ['failed_jobs','failed_steps','commander_tasks','commander_chats','commander_chat_events'])
+  assert.ok(edge.includes(field));
+ assert.match(edge,/JSON\.stringify\(event\.failed_jobs\)/);
+ assert.match(edge,/JSON\.stringify\(event\.failed_steps\)/);
+ assert.match(edge,/JSON\.stringify\(record\)/);
+ assert.match(edge,/JSON\.stringify\(chat\)/);
+ assert.match(edge,/JSON\.stringify\(event\)/);
+});
