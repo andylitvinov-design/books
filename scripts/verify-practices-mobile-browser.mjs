@@ -127,10 +127,32 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         await programmeButton.click();
         assert.equal(await course.locator("[data-guided-session]").count(),8);
         assert.equal(await course.locator("[data-guided-free-video]").count(),1);
+        const messengerOnly=course.locator("[data-messenger-only-contact]");
         const order=course.locator("[data-meditation-course-order]");
-        assert.equal(await order.count(),1,"eight-session offer uses one real CRM form");
-        await order.click();
         const form=course.locator("[data-meditation-course-contact]");
+        const send=form.locator("[data-meditation-course-submit]");
+        const consentBox=form.locator('input[name="contactConsent"][type="checkbox"]');
+        if(await messengerOnly.count()===1){
+          // In messenger-only mode the product deliberately does NOT create a
+          // direct CRM form or treat a link open as a submitted lead. The
+          // handoff is collapsed by default; open it with one real visitor click.
+          assert.equal(await course.locator("[data-meditation-course-order]").count(),0);
+          assert.equal(await form.count(),0);
+          const disclosure=messengerOnly.locator("details");
+          assert.equal(await disclosure.count(),1);
+          await disclosure.locator("summary").click();
+          const whatsapp=messengerOnly.locator('[data-messenger-only-channel="whatsapp"]');
+          const telegram=messengerOnly.locator('[data-messenger-only-channel="telegram"]');
+          await expect(whatsapp).toBeVisible();
+          await expect(telegram).toBeVisible();
+          const note=(await messengerOnly.innerText()).toLowerCase();
+          assert.ok(/opening a link|открытие ссылки|abrir el enlace/.test(note),
+            "messenger handoff must explain that opening a link is not a submitted enquiry");
+          assert.ok(/send|отправ|enviar/.test(note),
+            "visitor must explicitly send the message inside the messenger");
+        }else{
+          assert.equal(await order.count(),1,"eight-session offer uses one real CRM form when messenger-only mode is off");
+          await order.click();
         try{
           // A completed Playwright click alone does not prove React committed
           // the form. Verify the real button state and its visible consent form.
@@ -156,7 +178,6 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
           throw new Error(engine+" "+locale+" "+width+"px course form not opened by one genuine click: "+
             JSON.stringify(diagnostic),{cause:error});
         }
-        const send=form.locator("[data-meditation-course-submit]");
         assert.equal(await send.isDisabled(),true,"one-off reply consent is not prechecked");
         await form.locator('input[type="email"]').fill("synthetic@example.invalid");
         assert.equal(await send.isDisabled(),true);
@@ -176,7 +197,6 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
           for(const type of ["pointerdown","pointerup","click","change"])document.addEventListener(type,record,true);
           window.__hhConsentClickDiagnostic={events,record};
         });
-        const consentBox=form.locator('input[name="contactConsent"][type="checkbox"]');
         try{
           await consentLabel.click();
           // Await the actual checkbox AND submit state; no forced click or retry.
@@ -230,6 +250,7 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
           "label tap must actually update the user-controlled consent");
         assert.equal(await send.isEnabled(),true,"explicit consent enables the real request");
         // Deliberately do not submit: no database test account, lead or external delivery.
+        }
         await course.screenshot({
           path:"artifacts/practices-mobile/"+engine+"-"+locale+"-"+width+".png",
           animations:"disabled",timeout:30000
