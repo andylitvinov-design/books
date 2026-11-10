@@ -87,15 +87,37 @@ async function getJson(fetchImpl,url,options,timeoutMs){
   }catch{throw Error('FREE_AI_OPENROUTER_RESPONSE_INVALID');}
   return body;
 }
+function responseShape(completion){
+  const choice=Array.isArray(completion?.choices)?completion.choices[0]:null;
+  const message=choice?.message;
+  return {
+    top_level_keys:completion&&typeof completion==='object'&&!Array.isArray(completion)
+      ?Object.keys(completion).sort().slice(0,24):[],
+    choices_type:Array.isArray(completion?.choices)?'array':typeof completion?.choices,
+    choices_count:Array.isArray(completion?.choices)?completion.choices.length:null,
+    first_choice_keys:choice&&typeof choice==='object'?Object.keys(choice).sort().slice(0,16):[],
+    finish_reason:typeof choice?.finish_reason==='string'?choice.finish_reason:null,
+    message_type:message===null?'null':typeof message,
+    message_keys:message&&typeof message==='object'&&!Array.isArray(message)
+      ?Object.keys(message).sort().slice(0,20):[],
+    content_type:Array.isArray(message?.content)?'array':message?.content===null?'null':typeof message?.content,
+    usage_keys:completion?.usage&&typeof completion.usage==='object'
+      ?Object.keys(completion.usage).sort().slice(0,16):[]
+  };
+}
 function extractAssistantText(content){
   let text;
   if(typeof content==='string'){
     text=content;
+  }else if(content&&typeof content==='object'&&!Array.isArray(content)&&
+    (content.type==='text'||content.type==='output_text'||content.type===undefined)&&
+    typeof content.text==='string'){
+    text=content.text;
   }else if(Array.isArray(content)){
     const parts=[];
     for(const part of content){
       if(!part||typeof part!=='object'||Array.isArray(part))
-        throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID');
+        throw Error('FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID '+JSON.stringify(responseShape(completion)));
       if((part.type==='text'||part.type==='output_text'||part.type===undefined)&&
          typeof part.text==='string'){
         parts.push(part.text);
@@ -163,4 +185,4 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
   return extractAssistantText(choice.message.content);
 }
 module.exports={BASE,CHAT_ENDPOINT,CHAT_CATALOG,DEFAULT_MODEL,MODEL_PROFILES,
-  selectedModel,verifyZeroPrice,chooseVerifiedFreeModel,extractAssistantText,requestFreePatch};
+  selectedModel,verifyZeroPrice,chooseVerifiedFreeModel,responseShape,extractAssistantText,requestFreePatch};
