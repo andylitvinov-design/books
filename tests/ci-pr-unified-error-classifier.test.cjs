@@ -219,3 +219,21 @@ test('failed job evidence is required; a stale conflict label or green job canno
  });
  assert.equal(dirtyLabelOnly.category,'TYPESCRIPT');
 });
+
+
+test('verified Core green + independent Specialist red gets explicit bounded triage, not UNKNOWN',()=>{
+ const jobs=[
+  {name:'core-lint-types-build',conclusion:'success',steps:[]},
+  {name:'hh-specialist',conclusion:'failure',steps:[{name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}]},
+  {name:'hh-merge-check',conclusion:'failure',steps:[{name:'Require real Core and specialist results from this workflow',conclusion:'failure'}]}
+ ];
+ const result=classify(jobs);
+ assertDiagnosticOnly(result,'TEST_FAILURE');
+ assert.equal(result.reason_code,'SPECIALIST_GATE_FAILED_REQUIRES_TRIAGE');
+ assert.equal(result.evidence_code,'CORE_GREEN_SPECIALIST_RED');
+ assert.equal(result.retry.allowed,false);
+ assert.equal(result.retry.max_attempts,0);
+ assert.equal(result.recommended_status,'REROUTED');
+ const unknown=classify(jobs.filter(j=>j.name!=='core-lint-types-build'));
+ assert.equal(unknown.category,'UNKNOWN','no verified green Core must not infer Specialist root');
+});
