@@ -321,7 +321,9 @@ test("WebKit verifies the two Ideas tabs then opens Audio Voice / My Voice via M
  const modes=browser.indexOf('const ideasModes=phrases.locator("[data-video-ideas-tabs]")');
  const personal=browser.indexOf('const personalTab=ideasModes.locator',modes);
  const concept=browser.indexOf('await conceptTab.click()',personal);
- const back=browser.indexOf('await openIdeas(); await personalTab.click()',concept);
+ const back=browser.indexOf("await page.locator('[data-video-quick-control=\"phrases\"]').click()",concept);
+ const backVisible=browser.indexOf('await expect(phrases).toBeVisible()',back);
+ const backPersonal=browser.indexOf('await personalTab.click()',backVisible);
  const voicePanel=browser.indexOf('const voicePanel=page.locator(\'[data-video-audio-panel="voice"]\')',back);
  const myMode=browser.indexOf('const myVoiceModeButton=voicePanel.locator',voicePanel);
  const openAudio=browser.indexOf('const openAudioVoice=async()=>',myMode);
@@ -332,7 +334,7 @@ test("WebKit verifies the two Ideas tabs then opens Audio Voice / My Voice via M
  const tap=browser.indexOf('await recordEntry.click()',record);
  const phrase=browser.indexOf('const phraseSelector=page.locator',tap);
  const consent=browser.indexOf('await narrationConsent.check()',phrase);
- assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&voicePanel>back&&
+ assert.ok(modes>=0&&personal>modes&&concept>personal&&back>concept&&backVisible>back&&backPersonal>backVisible&&voicePanel>backPersonal&&
    myMode>voicePanel&&openAudio>myMode&&opened>openAudio&&voiceClick>opened&&myClick>voiceClick&&
    record>myClick&&tap>record&&phrase>tap&&consent>phrase,
    "real WebKit route must use visible Ideas, Montage Text and Audio Voice controls before TTS consent");
