@@ -15,7 +15,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
  assert.match(studio,/phrases:\{tab:"Идеи",title:"Идеи для видео"/);
- assert.match(studio,/Гипноэффекты/);
+ assert.match(studio,/effects:\{tab:"Аудио",title:"Аудио для видео"/);
  assert.match(studio,/Курс практик/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
  assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
@@ -40,10 +40,12 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
    assert.ok(studio.includes("activeWorkspace"),"local selection retained");
  }
  assert.match(studio,/data-workspace-section="practices"/);
- assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
- assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
- assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
-   "the single phrase editor stays mounted while its workspace is hidden");
+ assert.equal((studio.match(/\{deepAudioPane\}/g)||[]).length,1);
+ assert.match(studio,/\{soundtrackWorkspacePanel\}/);
+ assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1,
+   "the one consented voice editor is mounted only in Audio / Voice");
+ assert.doesNotMatch(studio,/\{deepHypnoPane\}/,
+   "the retired hidden Ideas voice renderer is not mounted in parallel");
  assert.match(studio,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/,
    "second Montage reuses one original photo editor");
  assert.match(studio,/<details className=\{videoStyles\.montageStyleSettings\} data-video-editor-style-settings/,
@@ -81,7 +83,7 @@ function exercise(input,workspace,overrides={}){
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
  runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
-   setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+   setBasicPanelTab:value=>{basicTab=value;},setAudioWorkspaceTab:()=>{},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
  return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
@@ -186,7 +188,7 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
 });
 
 test("final approved six tabs lead to exactly one real workspace each",()=>{
-  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Гипноэффект"',
+  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Аудио"',
     'tab:"Курс практик"','tab:"Монтаж"','tab:"PRO"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
@@ -194,7 +196,8 @@ test("final approved six tabs lead to exactly one real workspace each",()=>{
   assert.match(studio,/data-video-topic-section/);
   assert.match(studio,/data-video-director-goal-controls/);
   assert.match(studio,/data-video-director-topic-controls/);
-  assert.match(studio,/data-video-phrase-audio-shortcut/);
+assert.doesNotMatch(studio,/data-video-phrase-audio-shortcut|data-video-legacy-phrase-editor/);
+assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
   assert.match(studio,/data-video-final-editor/);
   assert.match(studio,/data-video-audio-details/);
 });
@@ -208,32 +211,29 @@ test("pending Phrases selection blocks the actual shared hero handler in every w
   }
 });
 
-test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
+test("Ideas exposes only Personalization and Concept; phrase and voice editors live in Montage and Audio",()=>{
  const start=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="phrases"');
  const end=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="effects"',start);
  assert.ok(start>0 && end>start);
  const section=studio.slice(start,end);
- const editor=section.indexOf('data-video-phrase-editor-first');
- const audio=section.indexOf('data-video-phrase-audio-shortcut');
- assert.ok(editor>0&&audio>editor);
- assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
- assert.doesNotMatch(section,/<MandalaVideoIdeas/);
- assert.match(section,/data-video-ideas-open-montage-text/);
- assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
- assert.match(section,/data-video-legacy-phrase-editor/);
- assert.match(section,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
- assert.match(section,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
- assert.match(section,/aria-hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
  assert.equal((section.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.match(section,/data-video-ideas-tab="personalization"/);
+ assert.match(section,/data-video-ideas-tab="concept"/);
+ assert.match(section,/data-video-ideas-personalization-panel/);
+ assert.match(section,/data-video-ideas-concept-panel/);
+ assert.match(section,/data-video-ideas-open-montage-text/);
+ assert.doesNotMatch(section,/data-video-legacy-phrase-editor|data-video-ideas-advanced-voice|data-video-ideas-voice-mode|data-video-phrase-audio-shortcut/);
  assert.equal((section.match(/<MandalaVideoConcept /g)||[]).length,1);
- assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
- assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!==\"text\"\}/);
+ assert.match(studio,/audioWorkspaceTab===\"voice\" \? hypnoVoiceEditor : null/);
+ assert.match(studio,/data-video-audio-voice-mode=\"my-voice\"/);
+ assert.match(studio,/data-video-audio-own-upload/);
+ assert.match(studio,/setActiveWorkspace\(\"effects\"\);\s*setAudioWorkspaceTab\(\"voice\"\);\s*setVoiceStudioActivated\(true\)/);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);
  assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
- for(const label of ['tab:"Идеи"','tab:"Ideas"'])
-   assert.ok(studio.includes(label),label);
+ for(const label of ['tab:"Идеи"','tab:"Ideas"'])assert.ok(studio.includes(label),label);
  assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.phraseEditorLead\{/);
 });
 test("hydrated Studio gates the first local MP4 test before its first real user click",()=>{
@@ -255,7 +255,7 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
  const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
  const scenario=editor.indexOf('data-video-editor-scenario');
- assert.ok(scenario>=0&&scenario<editor.indexOf('data-video-montage-audio'),"script is available before Audio");
+ assert.ok(scenario>=0&&editor.includes("data-video-montage-script-update"),"Montage retains its actual script editor");
  assert.match(editor,/data-video-montage-script-update/);
  assert.match(editor,/normalizeStageCaption\(lines\[index\]\|\|""\)/,
    "editing a four-shot montage changes the local actual caption track");
@@ -299,16 +299,14 @@ test("all six workspaces use the same in-flow navigation and one real export",()
 });
 
 
-test("guided meditation opt-out is reconciled after React commit without losing explicit reopen",()=>{
-  assert.match(studio,/const \[courseMeditationOmitted,setCourseMeditationOmitted\]=useState\(false\)/);
-  assert.match(studio,/const \[courseMeditationIncluded,setCourseMeditationIncluded\]=useState\(false\)/);
-  assert.match(studio,/useLayoutEffect\(\(\)=>\{/);
-  assert.match(studio,/if\(courseMeditationOmitted\)details\.open=false/);
-  assert.match(studio,/else if\(courseMeditationIncluded&&courseMeditationDraft\)details\.open=true/);
-  assert.match(studio,/\},\[courseMeditationIncluded,courseMeditationOmitted,courseMeditationDraft\]\)/);
-  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationIncluded\(true\);\s*setCourseMeditationDraft\(script\)/);
-  assert.match(studio,/onOmitMeditation=\{\(\)=>\{\s*setCourseMeditationIncluded\(false\);[\s\S]*?setCourseMeditationOmitted\(true\)/);
-  assert.doesNotMatch(studio,/onAddMeditation=\{script=>\{[\s\S]{0,500}requestAnimationFrame/);
+test("guided meditation Add opens the single Audio/Meditations composer and Skip revokes its seed",()=>{
+  assert.ok(studio.includes('const [courseMeditationDraft,setCourseMeditationDraft] = useState("");'));
+  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationDraft\(script\);[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("meditations"\);/);
+  assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationDraft\(""\);[\s\S]*?setAttachedAudio\(current=>current\?\.kind==="file"&&current\.nonLoop\?null:current\)/);
+  assert.match(studio,/data-video-audio-panel="meditations"[\s\S]*?<MandalaPersonalMeditation[\s\S]*?seedScript=\{courseMeditationDraft\}/,
+    "the one canonical meditation composer is seeded only inside Audio / Meditations");
+  assert.doesNotMatch(studio,/courseMeditationOmitted|data-meditation-details/,
+    "the retired inline composer is not restored");
 });
 
 test("validated Messenger video handoff visibly opens the original Studio Director on compact Goals",()=>{

@@ -16,6 +16,7 @@ type PosterGroupId = GroupId | "phrases";
 type Props = {
   locale: PublicLocale;
   disabled: boolean;
+  initialGroup?: GroupId;
   affirmations: AffirmationSettings;
   onAffirmationsChange: (settings: AffirmationSettings) => void;
   light: HypnoLightSettings;
@@ -173,12 +174,12 @@ export function MandalaHypnocorrectionMobile({
   locale,disabled,affirmations,onAffirmationsChange,light,onLightChange,
   onOpenPhraseEditor,onOpenScenes,
   onPickPhoto,onRemovePhoto,onCreate,status,onWavePreset,hasPhoto,hasVoiceFile,voiceActive,posters,
-  voiceEditor,whisperEnabled,binauralEnabled,beatHz,repeatEverySeconds,whisperGain,audioEffectBusy,
+  voiceEditor,initialGroup="visual",whisperEnabled,binauralEnabled,beatHz,repeatEverySeconds,whisperGain,audioEffectBusy,
   onToggleVoice,onToggleWhisper,onToggleBinaural,onBeatHzChange,onRepeatEveryChange,onWhisperGainChange,
 }:Props) {
   const t=copy[locale];
   const extra=compactLabels[locale];
-  const [activeGroup,setActiveGroup]=useState<GroupId>("visual");
+  const [activeGroup,setActiveGroup]=useState<GroupId>(initialGroup);
   const [showLightSettings,setShowLightSettings]=useState(false);
   const [showSpeechSettings,setShowSpeechSettings]=useState(false);
   const [showWhisperSettings,setShowWhisperSettings]=useState(false);
@@ -196,28 +197,29 @@ export function MandalaHypnocorrectionMobile({
     onAffirmationsChange({...affirmations,visibility,enabled:visibility.length>0});
   };
   const showNote=(value:"audio"|"voice"|"frame")=>{setNote(value);};
-  const groups: {id:GroupId;title:string;tab:string;help:string}[]=[
-    {id:"visual",title:t.visual,tab:t.visualTab,help:t.visualHelp},
-    {id:"audio",title:t.audio,tab:t.audioTab,help:t.audioHelp},
-  ];
+  const groups: {id:GroupId;title:string;tab:string;help:string}[]=initialGroup==="audio"
+    ? [{id:"audio",title:t.audio,tab:t.audioTab,help:t.audioHelp},
+       {id:"visual",title:t.visual,tab:t.visualTab,help:t.visualHelp}]
+    : [{id:"visual",title:t.visual,tab:t.visualTab,help:t.visualHelp},
+       {id:"audio",title:t.audio,tab:t.audioTab,help:t.audioHelp}];
   const visualCount=[light.enabled,visible,briefFrame,hasPhoto].filter(Boolean).length;
   const audioCount=[voiceActive,whisperEnabled,binauralEnabled].filter(Boolean).length;
   const intro=<div className={styles.intro} data-hypno-intro>
     <div className={styles.heading}>
       <span className={styles.sectionIcon} aria-hidden="true"><Sparkles size={24}/></span>
-      <div><h3>{t.title}</h3><p>{t.sub}</p></div>
+      <div><h3>{initialGroup==="audio"?t.audioTab:t.title}</h3><p>{initialGroup==="audio"?t.audioHelp:t.sub}</p></div>
     </div>
-    <section className={styles.wave}>
+    {activeGroup==="visual"?<section className={styles.wave}>
       <button type="button" onClick={()=>{
         onWavePreset();setActiveGroup("visual");setShowLightSettings(false);setNote("wave");
       }} disabled={disabled} data-hypno-wave>
         <Sparkles size={17} aria-hidden="true"/>{t.wave}<ArrowRight size={16} aria-hidden="true"/>
       </button>
       {note==="wave"?<p role="status" className={styles.note}>{t.suggested}</p>:null}
-    </section>
+    </section>:null}
   </div>;
   return <section className={styles.panel} data-hypno-compact="true" data-hypno-mobile lang={locale}
-    aria-label={t.title}>
+    aria-label={initialGroup==="audio"?t.audioTab:t.title}>
     {intro}
     <div className={styles.groupTabs} role="tablist" aria-label={t.title} data-hypno-tabs>
       {groups.map(group=><button key={group.id} type="button" id={"hypno-tab-"+group.id}

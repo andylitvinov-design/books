@@ -35,6 +35,8 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
       const studio=page.locator("[data-mandala-free-video]");
       const course=page.locator("[data-video-guided-course]");
+      const audioPanel=page.locator("[data-video-audio-workspace]");
+      const voice=audioPanel.locator('[data-video-audio-panel="meditations"]');
       await course.waitFor({state:"visible",timeout:25000});
       // The six-tab Video Studio intentionally has no obsolete seventh
       // "practices" tab. The existing, public #guided-video-series deep link
@@ -86,51 +88,58 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.notEqual(await practice.locator("h5").innerText(),titles[2],"refresh changes the method");
 
       await result.locator("[data-guided-add-meditation]").click();
-      const voice=page.locator("[data-video-therapy-meditation-audio]");
-      await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===true);
-      await voice.locator("[data-meditation-script]").waitFor({state:"attached"});
-      const seeded=await voice.locator("[data-meditation-script]").inputValue();
-      assert.equal(seeded.trim(),script.trim(),"approved original script reaches the existing narration editor");
+      await expect(audioPanel).toBeVisible({timeout:15000});
+      const scriptField=voice.locator("[data-meditation-script]");
+      await scriptField.waitFor({state:"attached"});
+      const seeded=await scriptField.inputValue();
+      assert.equal(seeded.trim(),script.trim(),
+        "approved original script reaches the one Audio/Meditations composer");
+
+      // Add navigates to Audio. Return to the course for the independent Skip
+      // choice, then reopen Audio and prove the seeded script has been revoked.
+      // Audio is a separate top-level workspace, so the course is not
+      // expected to remain mounted while Ready is selected. Exercise the
+      // supported course deep-link again after returning through Audio; this
+      // verifies the real route rather than asserting a hidden panel stays visible.
+      await page.locator('[data-video-quick-control="ready"]').click();
+      await expect(page.locator("[data-video-ready]")).toBeVisible();
+      await page.evaluate(()=>{window.location.hash="video-audio";});
+      await expect(audioPanel).toBeVisible({timeout:15000});
+      await page.evaluate(()=>{window.location.hash="guided-video-series";});
+      await expect(course).toBeVisible({timeout:15000});
+      // Guided Practices is a separate workspace and is intentionally
+      // unmounted while Audio is active. Its local, uncommitted result is not
+      // expected to survive that navigation. Generate a fresh local result
+      // after returning, then exercise Skip as a distinct revocation path.
+      const skipState=course.locator('[data-guided-focus-state="calm"]');
+      await skipState.click();
+      await expect(skipState).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      const skipGenerate=course.locator("[data-guided-generate-meditation]");
+      await expect(skipGenerate).toBeEnabled();
+      await skipGenerate.click();
+      await result.waitFor({state:"visible",timeout:15000});
       await result.locator("[data-guided-skip-meditation]").click();
-      // WebKit may resolve the DOM click before React commits the reversible
-      // omission. Wait for both verified effects, never a timed sleep.
-      try{
-        await page.waitForFunction(()=>{
-          const skip=document.querySelector("[data-guided-skip-meditation]");
-          const audio=document.querySelector("[data-video-therapy-meditation-audio]");
-          return skip?.getAttribute("aria-pressed")==="true" && audio?.open===false;
-        },null,{timeout:15000});
-      }catch(error){
-        // Evidence only: do not soften the real WebKit fail-closed acceptance.
-        // Read no narration, private goal, DOM input values or client content.
-        const state=await page.evaluate(()=>{
-          const skip=document.querySelector("[data-guided-skip-meditation]");
-          const audio=document.querySelector("[data-video-therapy-meditation-audio]");
-          return {skipPresent:!!skip,skipPressed:skip?.getAttribute("aria-pressed")??null,
-            audioPresent:!!audio,audioOpen:audio?.open??null,
-            coursePresent:!!document.querySelector("[data-video-guided-course]")};
-        }).catch(()=>({browserStateUnavailable:true}));
-        console.error("GUIDED_SKIP_WEBKIT_STATE",JSON.stringify({locale,engine,...state}));
-        throw error;
-      }
-      assert.equal(await result.locator("[data-guided-skip-meditation]").getAttribute("aria-pressed"),"true");
-      // Revoke the seeded narration completely before a visitor reopens the
-      // existing details. A rapid re-open must not race React's seed cleanup.
-      await page.waitForFunction(()=>
-        !document.querySelector("[data-video-therapy-meditation-audio] [data-meditation-script]"),
-        null,{timeout:15000});
-      // Reopen through the real Personal Meditation CTA in step 03, using
-      // the approved visible button instead of a tiny native details summary.
-      // This verifies the one existing editor is usable after the skip.
-      await course.locator("[data-guided-open-personal-meditation]").click();
-      await page.waitForFunction(()=>
-        document.querySelector("[data-video-therapy-meditation-audio]")?.open===true,
-        null,{timeout:15000});
-      assert.equal(await voice.locator("[data-meditation-script]").count(),0,
-        "skipped narration stays absent after the Personal Meditation CTA reopens editor");
-      // The details element opens synchronously, but React may still be
-      // committing the preceding user action on headed iPhone WebKit.
-      // Wait for the REAL rendered step state, never a timer or a second click.
+      await expect(result.locator("[data-guided-skip-meditation]"))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await page.locator('[data-video-quick-control="effects"]').click();
+      await expect(audioPanel).toBeVisible({timeout:15000});
+      await expect(voice.locator("[data-meditation-script]")).toHaveCount(0,
+        "explicit Skip revokes the seeded script in the shared composer");
+      await page.evaluate(()=>{window.location.hash="video-audio";});
+      await expect(audioPanel).toBeVisible({timeout:15000});
+      await page.evaluate(()=>{window.location.hash="guided-video-series";});
+      await expect(course).toBeVisible({timeout:15000});
+      // Re-entering the course starts a fresh local session. The user must
+      // explicitly choose a focus again before Personal Meditation unlocks.
+      // Exercise the real selection and assert its committed state; never
+      // bypass the disabled/consent guard with a forced click.
+      const freshFocus=course.locator('[data-guided-focus-state="calm"]');
+      await freshFocus.click();
+      await expect(freshFocus).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await expect(course).toHaveAttribute("data-guided-focus-ready","true",{timeout:15000});
+      const personal=course.locator("[data-guided-open-personal-meditation]");
+      await expect(personal).toBeEnabled({timeout:15000});
+      await personal.click();
       await expect(course).toHaveAttribute("data-guided-personal-opened","true",{timeout:15000});
 
       await course.locator("[data-guided-create-plan]").click();
@@ -201,11 +210,21 @@ export async function verifyGuidedPractices({browser,base,engine}){
         const rect=el.getBoundingClientRect();
         const selectors=["[data-guided-create-plan]","[data-guided-generate-meditation]","[data-guided-skip-meditation]"];
         return {right:rect.right,left:rect.left,overflow:el.scrollWidth-el.clientWidth,
-          hits:selectors.map(sel=>el.querySelector(sel)?.getBoundingClientRect().height||0)};
+          hits:selectors.map(sel=>{
+            const button=el.querySelector(sel);
+            const height=button?.getBoundingClientRect().height||0;
+            return {selector:sel,present:Boolean(button),height};
+          })};
       });
       assert.ok(geometry.left>=-3&&geometry.right<=width+3,engine+" "+locale+" course fits "+width+"px viewport");
       assert.ok(geometry.overflow<=3,engine+" "+locale+" has no horizontal overflow");
-      assert.ok(geometry.hits.every(height=>height>=44),engine+" "+locale+" buttons have >=44px hit targets");
+      // Skip is conditional on a generated meditation result. After course
+      // remount it is correctly absent; never treat an absent conditional
+      // action as a zero-height button. The two persistent actions must exist.
+      assert.ok(geometry.hits.slice(0,2).every(hit=>hit.present),
+        engine+" "+locale+" persistent buttons exist "+JSON.stringify(geometry.hits));
+      assert.ok(geometry.hits.filter(hit=>hit.present).every(hit=>hit.height>=44),
+        engine+" "+locale+" rendered buttons have >=44px hit targets "+JSON.stringify(geometry.hits));
       const screenshotDir=process.env.HH_HYPNO_SCREENSHOT_DIR;
       if(screenshotDir){
         mkdirSync(screenshotDir,{recursive:true});

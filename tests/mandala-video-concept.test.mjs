@@ -68,7 +68,8 @@ test("Ideas Concept owns the single editor and Montage retains its real timeline
   assert.match(source,/data-video-concept-text-tools/);
   assert.match(source,/data-video-montage-text/);
   assert.match(source,/MandalaMultiTrackTimeline/);
-  assert.match(source,/setMontagePanel\("audio"\)/);
+  assert.match(source,/setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("music"\)/,
+    "the approved concept routes to the dedicated Audio workspace, not a retired Montage pane");
   assert.match(source,/onApprove=\{approved=>/);
   assert.match(source,/approvedConcept=\{approvedVideoConcept\}/);
   assert.match(source,/setApprovedVideoConcept\(approved\)/);

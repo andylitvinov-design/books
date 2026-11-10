@@ -62,7 +62,7 @@ test("disclosure acceptance retains provider privacy, real exported audio and st
     'await expect(page.locator("[data-video-affimations-audio-ready]")).toHaveCount(0)',
   ])assert.ok(source.includes(assertion),assertion);
   const editor=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
-  assert.match(editor,/onInvalidate=\{\(\)=>setAttachedAudio\(current=>\s*current\?\.kind==="file"&&current\.narration\?null:current\)\}/);
+  assert.match(editor,/onInvalidate=\{\(\)=>\{[\s\S]*?clearUploadedAudio\(\);setAttachedAudio\(null\);/);
 });
 
 test("cross-platform voice export acceptance is real Chromium/Linux plus WebKit/macOS",()=>{
@@ -103,7 +103,6 @@ test("approved Phrases geometry and own voice require real mobile/browser export
   for(const width of ["320","390","430"])assert.ok(
     source.includes("for(const width of [320,390,430])")&&source.includes("phrases-geometry-"),
     "real same-row/16:9/overflow checks must run for "+width);
-  assert.match(source,/data-video-affirmation-gender="own"/);
   assert.match(source,/data-video-own-voice-record/);
   assert.match(source,/data-video-own-voice-track/);
   assert.match(source,/data-video-own-voice-attach/);
@@ -123,7 +122,7 @@ test("voice acceptance verifies one workspace click after delayed hydration",()=
   assert.match(source,/expect\.poll\(\(\)=>held/);
   assert.match(source,/tabs\.nth\(i\)\)\.toBeDisabled/);
   assert.match(source,/data-video-studio-hydrated","true"/);
-  assert.match(source,/await phrases\.click\(\)/);
+  assert.match(source,/await page\.locator\('\[data-video-quick-control="phrases"\]'\)\.click\(\)/);
   assert.match(source,/toHaveAttribute\("aria-pressed","true"\)/);
   assert.match(source,/await verifyWorkspaceHydration\(browser,locale\)/);
 });
@@ -186,11 +185,12 @@ test("macOS WebKit voice options persist actual user disclosure across rerenders
     "ref={bindVoiceAdvanced}",
     "voiceAdvancedOpenRef=useRef(false)",
     "node.open=voiceAdvancedOpenRef.current",
-    "event.preventDefault();",
-    "node.open=!node.open;",
-    "voiceAdvancedOpenRef.current=node.open",
+    "voiceAdvancedOpenRef.current=!node.open",
+    "voiceAdvancedOpenRef.current=event.currentTarget.open",
     "data-video-affirmation-bed"
   ])assert.ok(voice.includes(marker),"voice options controlled by real user click: "+marker);
+  assert.doesNotMatch(voice,/event\.preventDefault\(\)/,
+    "native summary default action is the only disclosure toggle in WebKit");
   assert.match(source,/await expect\(voiceOptions\)\.toHaveAttribute\("open","",\{timeout:15000\}\)/);
   assert.match(source,/await expect\(page\.locator\("\[data-video-affirmation-bed\]"\)\)\.toBeVisible/);
 });

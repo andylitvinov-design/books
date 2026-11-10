@@ -87,9 +87,9 @@ test("approved mobile video design is the one canonical Mandala editor with six 
   assert.match(ui,/mandala-gold-reference\.webp/);
   assert.match(ui,/\.toolCompact\{display:none\}/);
   assert.match(ui,/\.referencePortrait\{display:block!important/);
-  assert.match(ui,/@media\(max-width:430px\)/);
+  assert.match(ui,/@media\(max-width:430px\)\{[\s\S]*?\.quickStart \.categoryRail button\{min-height:73px/);
   assert.match(ui,/\.supportTools>\.videoMandalaChoice\{/);
-  assert.match(ui,/@media\(max-width:380px\)/);
+  assert.match(ui,/@media\(max-width:380px\)\{\.studio\{padding:1px 0 66px/);
 });
 
 test("talisman-style video catalog changes real theme, scene, motion and duration state in all locales", () => {
@@ -124,7 +124,7 @@ test("talisman-style video catalog changes real theme, scene, motion and duratio
   assert.match(css,/\.categoryRail\{/);
   assert.match(css,/\.catalogFilters\{/);
   assert.match(css,/\.catalogShell \.heroMain\{/);
-  assert.match(css,/@media\(max-width:390px\)/);
+  assert.match(css,/@media\(max-width:390px\)\{[\s\S]*?\.catalogShell\{padding:10px 8px\}/);
   assert.doesNotMatch(studio,/\bfetch\s*\(|FormData|localStorage|sessionStorage/i);
 });
 
@@ -234,7 +234,7 @@ test("the video mandala hero mirrors Support's 3-part entry, with functional rou
   assert.match(studio,/data-video-theme=\{item\}/);
   assert.match(css,/\.heroCanvas canvas\{display:block/);
   assert.match(css,/\.supportTop\{display:grid/);
-  assert.match(css,/@media\(max-width:390px\)/);
+  assert.match(css,/@media\(max-width:390px\)\{[\s\S]*?\.supportTop\{grid-template-columns:minmax\(0,1fr\) minmax\(0,.84fr\) minmax\(0,1fr\)/);
   assert.match(browser,/data-video-hero-create/);
 });
 
@@ -340,10 +340,15 @@ test("one contextual therapy action keeps the single secure renderer and a visib
     "single original audio editor mounted in either workspace");
   assert.equal((studio.match(/data-video-hypnosis-section/g)||[]).length,1,
     "single original Hypno editor mounted in either workspace");
-  assert.match(studio,/activeWorkspace==="video" \? deepAudioPane/);
-  assert.match(studio,/activeWorkspace==="phrases" \? deepAudioPane/);
-  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
-    "the sole phrase editor remains mounted to preserve its project state");
+  assert.match(studio,/data-video-audio-panel="music"/);
+  assert.match(studio,/data-video-audio-panel="voice"/);
+  assert.equal((studio.match(/\{deepAudioPane\}/g)||[]).length,1,
+    "one canonical full audio player in Audio workspace");
+  assert.match(studio,/openQuickDetailed\("video-audio"\)/);
+  assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
+  assert.match(studio,/setActiveWorkspace\("effects"\);[\s\S]*?setAudioWorkspaceTab\("voice"\);[\s\S]*?setVoiceStudioActivated\(true\)/);
+  assert.doesNotMatch(studio,/data-video-phrase-audio-shortcut|\{deepHypnoPane\}/,
+    "legacy Ideas voice editor and shortcut are not mounted beside Audio / Voice");
   for(const title of ["Видео-терапия","Своё фото / цель",
     "Гипноаффирмации","Video therapy","Videoterapia","Picks of the Day"]){
     assert.ok(studio.includes(title),title);
@@ -519,7 +524,8 @@ test("approved video quick flow keeps one real Canvas, six direct controls and a
   assert.match(studio,/const activateQuickWorkspace=[\s\S]{0,190}setActiveWorkspace\(id\)/);
   assert.doesNotMatch(workspaceNav,/scrollIntoView|openQuickDetailed|pushState/);
   assert.match(studio,/data-video-quick-phrases aria-label=\{workspaceCopy\[locale\]\.phrases\.title\}/);
-  assert.match(studio,/\{deepHypnoPane\}/);
+  assert.doesNotMatch(studio,/\{deepHypnoPane\}/, "the retired Hypno/Ideas editor is not mounted beside the new Audio workspace");
+  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
   assert.doesNotMatch(studio,/data-video-quick-affirmation=\{index\}/);
   assert.match(studio,/onPhraseChoose=\{phrase=>\{[\s\S]{0,240}setCatalogPhraseDraft\(phrase\)/,
     "a catalog phrase is staged in the existing editor before affecting the film");

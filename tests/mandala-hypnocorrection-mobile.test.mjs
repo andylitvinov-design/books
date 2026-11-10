@@ -50,12 +50,12 @@ test("mobile layout reuses one editor, real phrase settings and both frame pipel
   const ui=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.tsx",import.meta.url),"utf8");
   const css=readFileSync(new URL("../components/mandala-hypnocorrection-mobile.module.css",import.meta.url),"utf8");
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
-  assert.match(studio,/effects:\{tab:"Гипноэффект",title:"Гипноэффекты"/);
-  assert.match(studio,/effects:\{tab:"Hypno effect",title:"Hypno effects"/);
-  assert.match(studio,/effects:\{tab:"Efecto hipno",title:"Efectos de hipnosis"/);
+  assert.match(studio,/effects:\{tab:"Аудио",title:"Аудио для видео"/);
+  assert.match(studio,/effects:\{tab:"Audio",title:"Audio for your video"/);
+  assert.match(studio,/effects:\{tab:"Audio",title:"Audio para tu vídeo"/);
   assert.match(studio,/data-workspace-section="effects"/);
   assert.match(studio,/MandalaHypnocorrectionMobile/);
-  assert.match(studio,/voiceEditor=\{activeWorkspace==="effects"\?hypnoVoiceEditor:null\}/);
+  assert.match(studio,/voiceEditor=\{null\}/);
   assert.match(studio,/createHypnoAudioEffectFile/);
   // Private microphone tracks must never be treated as verified generated speech.
   // The hypno mixer receives only the explicit, consented generated narration.
@@ -94,7 +94,9 @@ test("07 Nov Hypno uses two exclusive effect tabs and live visual option chips",
   assert.match(ui,/data-hypno-summary/);
   assert.match(ui,/onOpenPhraseEditor/);
   assert.match(ui,/onLightChange\(\{\.\.\.light,enabled:true,opacity\}\)/);
-  assert.match(ui,/useState<GroupId>\("visual"\)/);
+  assert.match(ui,/initialGroup="visual"/);
+  assert.match(ui,/useState<GroupId>\(initialGroup\)/);
+  assert.match(studio,/<MandalaHypnocorrectionMobile initialGroup="audio"/);
   assert.match(ui,/data-hypno-tabs/);
   assert.match(ui,/role="tablist"/);
   assert.match(ui,/role="tabpanel"/);
@@ -177,7 +179,7 @@ test("hypno audio UI uses the existing consented phrase narrator in-place, not t
   const audioGroup=mobile.slice(mobile.indexOf('{group.id==="audio"?<>'),mobile.indexOf('{group.id==="visual"?<>'));
   assert.ok(audioGroup.length>0,"audio group must exist");
   assert.doesNotMatch(audioGroup,/unavailable|coming soon/);
-  assert.match(studio,/voiceEditor=\{activeWorkspace==="effects"\?hypnoVoiceEditor:null\}/);
+  assert.match(studio,/voiceEditor=\{null\}/);
   assert.match(studio,/createHypnoAudioEffectFile/);
   assert.match(studio,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,nonLoop:true/);
   assert.match(studio,/includesNarration\?\{narration:true,spokenText:effectSpokenText/,
