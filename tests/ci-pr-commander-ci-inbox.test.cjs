@@ -62,17 +62,19 @@ test('OIDC event bridge uses the same versioned classifier and carries its diagn
 });
 
 
-test('Commander execution verifies live zero pricing before dispatch and rejects write approval from non-Hermes executors',()=>{
+test('Commander dispatch uses only first-party owned Director with verified read-only receipts',()=>{
  const start=edge.indexOf('if(action==="commander_start_run")');
  const end=edge.indexOf('if(action==="commander_list_ci_events")',start);
  assert.ok(start>=0&&end>start,'dispatcher block exists');
  const handler=edge.slice(start,end);
- assert.match(handler,/if\(writeConfirmed&&executor!==\"hermes\"\)return reply\(403,\{error:\"GITHUB_WRITE_REQUIRES_HERMES_EXECUTOR\"\}/);
- assert.match(handler,/await verifyFreeModel\(modelId\)/);
- assert.match(handler,/const canDispatch=Boolean\(canUseHermes&&config&&validModel&&modelVerified\)/);
- assert.ok(handler.indexOf('await verifyFreeModel(modelId)')<handler.indexOf('await db.begin'),
-  'current live catalog is checked before any dispatch ledger or remote side effect');
- assert.match(handler,/!modelVerified\?modelVerificationReason/);
+ assert.match(handler,/const canDispatch=executor==="local"&&!writeConfirmed/);
+ assert.match(handler,/await ownedDirectorCall\(req,/);
+ assert.match(handler,/trustedOwnedDirectorReceipt\(remote,/);
+ assert.match(handler,/EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/);
+ assert.match(handler,/AGENT_DIRECTOR_DISPATCH_UNCONFIRMED/);
+ assert.match(edge,/value\.sourceWrite!==null/);
+ assert.doesNotMatch(handler,/await verifyFreeModel\(modelId\)|hermesCall\(/);
+ assert.doesNotMatch(edge,/HERMES_SHARED_SECRET|HERMES_RUN_SCHEMA/);
 });
 
 const autotaskMigration=fs.readFileSync(path.join(root,'supabase/migrations/20261110140500_commander_ci_autotask_v1.sql'),'utf8');

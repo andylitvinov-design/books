@@ -499,17 +499,26 @@ test('new chat sends bounded acceptance criteria and Skill IDs as references onl
 
 
 
-test('Hermes dispatch independently verifies live zero-price catalog and rejects write approvals for non-Hermes executor',()=>{
- const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
- const begin=edge.indexOf('if(action==="commander_start_run")');
- const end=edge.indexOf('if(action==="commander_list_ci_events")',begin);
- const handler=edge.slice(begin,end);
- assert.match(handler,/if\(writeConfirmed&&executor!==\"hermes\"\)return reply\(403/);
- assert.match(handler,/await verifyFreeModel\(modelId\)/);
- assert.match(handler,/modelVerified\)/);
- assert.ok(handler.indexOf('await verifyFreeModel(modelId)')<handler.indexOf('await db.begin'));
+test('first-party Agent Director handles owner-scoped read-only dispatch with verifiable receipts and no Hermes Cloud transport',()=>{
+  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+  const begin=edge.indexOf('if(action==="commander_start_run")');
+  const end=edge.indexOf('if(action==="commander_list_ci_events")',begin);
+  assert.ok(begin>=0&&end>begin);
+  const handler=edge.slice(begin,end);
+  assert.match(edge,/const DIRECTOR_RUN_SCHEMA="HH_AGENT_DIRECTOR_RUN_V1"/);
+  assert.match(edge,/const DIRECTOR_ORIGIN="https:\/\/holistichouse\.vercel\.app"/);
+  assert.match(edge,/async function ownedDirectorCall\(req,data\)/);
+  assert.match(edge,/function trustedOwnedDirectorReceipt\(value,run\)/);
+  assert.match(handler,/const canDispatch=executor==="local"&&!writeConfirmed/);
+  assert.match(handler,/await ownedDirectorCall\(req,/);
+  assert.match(handler,/trustedOwnedDirectorReceipt\(remote,/);
+  assert.match(handler,/AGENT_DIRECTOR_DISPATCH_UNCONFIRMED/);
+  assert.match(handler,/EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/);
+  assert.doesNotMatch(handler,/hermesCall\(|HERMES_DISPATCH_REQUESTED|await verifyFreeModel\(/);
+  assert.match(edge,/value\.sourceWrite!==null/);
+  assert.match(edge,/value\.proofLevel!==/);
+  assert.doesNotMatch(edge,/HERMES_RUN_SCHEMA|HERMES_SHARED_SECRET/);
 });
-
 
 test('legacy external Hermes code executor is disabled in UI and rejected before private-store dispatch',async()=>{
  const html=src('chats.html'),ui=src('commander-chats.js'),backend=src('api/commander-chats.js');
