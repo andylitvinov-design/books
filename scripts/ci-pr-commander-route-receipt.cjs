@@ -28,9 +28,11 @@ function normalizedPayload(routeResult,receipt){
    (routeResult.dispatchAccepted===1?(
      routeResult.dispatchAcknowledged!==true||
      routeResult.executorId!=='github-actions:hh-pr-repair-worker.yml'||
-     !TASK_KEY.test(routeResult.workerTaskKey||'')):
+     !TASK_KEY.test(routeResult.workerTaskKey||'')||
+     !TASK_KEY.test(routeResult.errorTaskId||'')):
      (routeResult.dispatchAcknowledged===true||
-       routeResult.executorId!=null||routeResult.workerTaskKey!=null))||
+       routeResult.executorId!=null||routeResult.workerTaskKey!=null||
+       routeResult.errorTaskId!=null))||
    typeof routeResult.reason!=='string'||!/^[A-Z0-9_]{3,120}$/.test(routeResult.reason)||
    typeof routeResult.strategy!=='string'||!/^[A-Z0-9_]{3,90}$/.test(routeResult.strategy))
   throw Error('COMMANDER_CI_ROUTE_RECEIPT_UNVERIFIED');
@@ -44,6 +46,7 @@ function normalizedPayload(routeResult,receipt){
   reason:routeResult.reason,dispatchAccepted:routeResult.dispatchAccepted,
   dispatchAcknowledged:routeResult.dispatchAccepted===1,
   executorId:routeResult.executorId||null,workerTaskKey:routeResult.workerTaskKey||null,
+  errorTaskId:routeResult.errorTaskId||null,
   workerStarted:false,sourceWriteVerified:false,liveVerified:false,blocked};
 }
 async function sendCommanderCiRoute({
@@ -74,7 +77,8 @@ async function sendCommanderCiRoute({
  }
  return {sent:true,reason:result.outcome,inboxId:receipt.inboxId,
   state:payload.state,prNumber:payload.prNumber,dispatchAccepted:payload.dispatchAccepted,
-  executorId:payload.executorId,dispatchAcknowledged:payload.dispatchAcknowledged,
+  executorId:payload.executorId,errorTaskId:payload.errorTaskId,
+  dispatchAcknowledged:payload.dispatchAcknowledged,
   workerStarted:false,liveVerified:false};
 }
 module.exports={sendCommanderCiRoute,normalizedPayload,STATES,ENDPOINT};
