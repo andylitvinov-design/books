@@ -8,7 +8,7 @@
  const el=id=>doc.getElementById('cc-'+id),SERVER='/api/commander-chats',AI='/api/pm-agent-chat';
  const MAIN='https://holistichouse.vercel.app';
  const KEY='hh.commander.chat-vault.v1',SCHEMA='HH_COMMANDER_LOCAL_CHATS_V1';
- const EXEC={local:'Локальный советник',director:'Agents Director · свой (анализ)',openrouter:'OpenRouter Free',codex:'Codex · передача',
+ const EXEC={local:'Локальный советник',director:'Agents Director · OpenRouter Free',openrouter:'OpenRouter Free',codex:'Codex · передача',
   'chatgpt-work':'ChatGPT Work · передача','repair-worker':'GitHub Repair Worker · передача',
   hermes:'Hermes · OpenRouter Free',manual:'Ручной исполнитель'};
  const STATES={planned:'Запланировано',assigned:'Назначено · не запущено',working:'В работе · по заявлению',
@@ -688,9 +688,22 @@ async function update(e){
     }catch{}
     const reasons={
      HERMES_RUNTIME_NOT_CONFIGURED:'Hermes HTTPS runtime и секрет не настроены',
-     OWNED_MODEL_RUNTIME_NOT_CONFIGURED:'Собственная модель ещё не подключена к Holistic House',
+     OWNED_MODEL_RUNTIME_NOT_CONFIGURED:'OpenRouter Free не настроен: нужен серверный ключ в Vercel Holistic House',
+      OWNED_MODEL_FREE_CATALOG_UNAVAILABLE:'Каталог бесплатных моделей OpenRouter временно недоступен',
+      OWNED_MODEL_FREE_CATALOG_INVALID:'Каталог моделей OpenRouter вернул некорректный формат',
+      OWNED_MODEL_NO_VERIFIED_FREE_MODELS:'Не найдена подтверждённая бесплатная текстовая модель, платные заблокированы',
+      OWNED_MODEL_NOT_FREE_IN_CATALOG:'Указанная модель не подтверждена как бесплатная в актуальном каталоге',
+      OWNED_MODEL_FREE_RATE_LIMIT:'Достигнут лимит запросов бесплатного OpenRouter',
+      OWNED_MODEL_OPENROUTER_KEY_REJECTED:'OpenRouter отклонил серверный ключ',
+      OWNED_MODEL_COST_UNVERIFIED:'Стоимость ответа не подтверждена; результат не засчитан',
+      OWNED_MODEL_BILLABLE_RESPONSE_HOLD:'OpenRouter сообщил ненулевую стоимость; результат заблокирован',
+      OWNED_MODEL_UNEXPECTED_MODEL:'Ответ получен от неподтверждённой модели',
+      OWNED_MODEL_SENSITIVE_CONTENT_REJECTED:'В сообщении возможный секрет. Уберите его перед отправкой',
+      OWNED_MODEL_PROVIDER_UNAVAILABLE:'OpenRouter не ответил; повторный платный вызов не выполнялся',
+      OWNED_MODEL_RESPONSE_NOT_ACCEPTED:'Ответ модели не прошёл проверку безопасности',
+      OWNED_MODEL_ID_MISMATCH:'Модель изменена неавторизованным способом',
      AGENT_DIRECTOR_DISPATCH_UNCONFIRMED:'Запуск собственного исполнителя не подтверждён',
-     EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY:'Выберите собственный Agents Director вместо старого Hermes',
+     EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY:'Выберите Agents Director · OpenRouter Free вместо старого Hermes',
      HERMES_FREE_MODEL_NOT_SELECTED:'Нет проверенной бесплатной модели для исполнителя',
      HERMES_DISPATCH_UNCONFIRMED_RECONCILE:'Запуск не подтверждён; состояние следует сверить с Hermes, не отправлять повторно',
      HERMES_EXECUTOR_DISPATCH_CONTRACT_NOT_VERIFIED:'Нет проверенного Hermes executor endpoint',

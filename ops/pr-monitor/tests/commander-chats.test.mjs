@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-ci-classification-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-openrouter-free-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -121,7 +121,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-ci-classification-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-openrouter-free-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -537,11 +537,23 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
 
 test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
- assert.match(html,/commander-chats\.js\?v=20261110-ci-classification-v1/);
+ assert.match(html,/commander-chats\.js\?v=20261110-openrouter-free-v1/);
  assert.match(html,/commander-chats\.css\?v=20261110-ci-classification-v1/);
  assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
  for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
   assert.ok(js.includes('classification.'+field)||js.includes('classification?.'+field),field);
  assert.match(js,/Классификатор не разрешает запись в GitHub, retry, merge или deploy автоматически/);
  assert.match(css,/\.cc-ci-classification-action/);
+});
+
+test('owner chat accurately labels first-party OpenRouter Free and translates every fail-closed provider reason',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js');
+ assert.equal((html.match(/Agents Director · OpenRouter Free \(анализ\)/g)||[]).length,2);
+ assert.match(html,/commander-chats\.js\?v=20261110-openrouter-free-v1/);
+ assert.match(js,/director:'Agents Director · OpenRouter Free'/);
+ for(const code of ['OWNED_MODEL_RUNTIME_NOT_CONFIGURED','OWNED_MODEL_FREE_RATE_LIMIT',
+   'OWNED_MODEL_NO_VERIFIED_FREE_MODELS','OWNED_MODEL_COST_UNVERIFIED',
+   'OWNED_MODEL_BILLABLE_RESPONSE_HOLD','OWNED_MODEL_OPENROUTER_KEY_REJECTED'])
+  assert.ok(js.includes(code+':'),code);
+ assert.doesNotMatch(js,/OWNED_MODEL_RUNTIME_NOT_CONFIGURED:'Собственная модель/);
 });
