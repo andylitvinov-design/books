@@ -8,8 +8,9 @@ const CHAT_CATALOG=BASE+'/models?endpoints='+encodeURIComponent(CHAT_ENDPOINT);
 // Ordered CANDIDATES, not proven winners. Live catalog + zero-price validation wins.
 const DEFAULT_MODEL='cohere/north-mini-code:free';
 const MODEL_PROFILES=Object.freeze({
-  repair:Object.freeze(['cohere/north-mini-code:free','recursive/flint-v1.0:free',
-    'nvidia/nemotron-3-ultra-550b-a55b:free','xingchen-agi/xing4.0-29b-a4b:free']),
+  repair:Object.freeze(['nvidia/nemotron-3-ultra-550b-a55b:free',
+    'recursive/flint-v1.0:free','cohere/north-mini-code:free',
+    'xingchen-agi/xing4.0-29b-a4b:free']),
   feature:Object.freeze(['cohere/north-mini-code:free','nvidia/nemotron-3-ultra-550b-a55b:free',
     'recursive/flint-v1.0:free','google/gemma-4-31b-it:free']),
   architecture:Object.freeze(['nvidia/nemotron-3-ultra-550b-a55b:free',
