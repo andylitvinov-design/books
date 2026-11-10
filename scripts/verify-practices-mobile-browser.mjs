@@ -69,10 +69,15 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         const personal=course.locator("[data-guided-personal-meditation-step]");
         assert.equal(await personal.count(),1,"personal meditation reuses one existing editor");
         await personal.locator("[data-guided-open-personal-meditation]").click();
-        const existingEditor=page.locator("[data-video-therapy-meditation-audio]");
-        assert.equal(await existingEditor.getAttribute("open"),"",
-          "personal meditation CTA opens the existing editor");
-        await existingEditor.evaluate(el=>{el.open=false;});
+        const audioPanel=page.locator('[data-video-audio-panel="meditations"]');
+        await expect(audioPanel).toBeVisible({timeout:20000});
+        const existingEditor=audioPanel.locator("[data-video-personal-meditation]");
+        await expect(existingEditor).toBeVisible();
+        assert.equal(await existingEditor.locator("[data-meditation-script]").count(),0,
+          "the Personal Meditation CTA opens the one shared composer without adding a script");
+        await page.locator('[data-video-quick-control="ready"]').click();
+        await expect(course).toBeVisible();
+        await expect(course).toHaveAttribute("data-guided-personal-opened","true");
         const practice=course.locator("[data-guided-practice-step]");
         await practice.waitFor({state:"visible"});
         const moments=practice.locator("[data-guided-ritual-moment]");
