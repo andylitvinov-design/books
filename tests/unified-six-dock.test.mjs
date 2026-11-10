@@ -95,7 +95,8 @@ test("route-aware single dock, guest/signed-in consistency and private pages exc
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/practice"),"practice");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/messages"),"ai");
   assert.equal(unifiedMobileDockActive("/"+locale+"/app/portrait"),"profile");
-  assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),"coach");
+  assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),null);
+  assert.equal(unifiedMobileDockActive("/"+locale+"/my-coach"),"coach");
    assert.equal(unifiedMobileDockActive("/"+locale+"/masters"),null);
   assert.equal(unifiedMobileDockActive("/"+locale+"/services"),"services");
   assert.equal(unifiedMobileDockActive("/"+locale+"/services/free-situation-review"),"services");
