@@ -82,6 +82,14 @@ test('existing bounded base and infrastructure recovery is respected, not duplic
   assert.equal(calls,0);
  }
 });
+test('infrastructure hold without proven rerun retains task without starting source repair',async()=>{
+ let calls=0;
+ const r=await route({receipt:receipt('TYPESCRIPT'),context:context(),infraHold:true,
+  existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
+ assert.equal(r.state,'TASK_AWAITING_EXISTING_RECOVERY');
+ assert.equal(r.reason,'INFRA_HOLD_NO_TARGETED_RERUN');
+ assert.equal(calls,0);
+});
 test('missing, ambiguous, moved, or forged task association must fail closed',async()=>{
  const cases=[
   {accepted:false},{association:'UNMATCHED'},{association:'AMBIGUOUS_TASKS'},
