@@ -67,3 +67,7 @@
 @media(max-width:480px){.cc-chats-page{padding-left:11px;padding-right:11px}.cc-surface{padding:12px}.cc-filter-line{grid-template-columns:1fr 140px}.cc-surface fieldset{grid-template-columns:1fr 1fr}.cc-actions button{flex:1 1 130px}}
 @media(max-width:345px){.cc-filter-line{grid-template-columns:1fr}.cc-surface fieldset{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.cc-chats-page *{scroll-behavior:auto!important;transition:none!important}}
+.cc-council-panel{margin:13px 0;padding:12px;border:1px solid #84709d;border-radius:14px;background:#17192c}
+.cc-council-panel .cc-heading a{font-size:11px;color:#dec1ff}
+#cc-council-frame{display:block;width:100%;height:min(82vh,940px);min-height:640px;border:1px solid #726287;border-radius:11px;background:#f8f7f5}
+@media(max-width:480px){#cc-council-frame{height:78vh;min-height:600px}}

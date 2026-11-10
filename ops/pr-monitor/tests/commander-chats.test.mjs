@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.match(html,/commander-chats\.js\?v=20261109-retry-v1/);
+ assert.ok(html.includes('commander-chats.js?v=20261110-ai-council-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -110,4 +110,41 @@ test('owner chat API exposes a bounded CI event inbox query through the private 
  assert.match(edge,/action==="commander_list_ci_events"/);
  assert.match(edge,/business_brain\.commander_ci_event_inbox/);
  assert.match(edge,/Math\.min\(100,Number\(body\.limit\)\|\|30\)/);
+});
+
+
+test('AI Council Free is embedded in a persistent Director chat with strict cross-origin validation and explicit consent',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css'),csp=src('vercel.json');
+ assert.ok(html.includes('option value="council-free"'));
+ assert.ok(html.includes('id="cc-council-frame"'));
+ assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
+ assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-ai-council-v1'));
+ assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
+ assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
+ assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
+ assert.ok(js.includes('HH_AI_COUNCIL_RESULT_V1'));
+ assert.ok(js.includes('data.report.length>18000'));
+ assert.ok(js.includes('HH_AI_COUNCIL_SAVE_ACK_V1'));
+ assert.ok(js.includes('HH_AI_COUNCIL_SAVE_FAILED_V1'));
+ assert.ok(js.includes('eventId:eventIdOverride||id()'));
+ assert.ok(js.includes('councilChunkEventId(data.requestId,index)'));
+ assert.ok(js.includes('AI Council Free · часть'));
+ assert.ok(js.includes("mode!=='council-free'&&!thread.executors.includes(mode)"));
+ assert.match(css,/cc-council-panel/);
+ assert.match(css,/min-height:600px/);
+ assert.ok(csp.includes('frame-src https://accounts.google.com/gsi/ https://ai-council-free-super10.vercel.app;'));
+ assert.ok(html.includes('API-ключ'));
+});
+test('Director Council flow records only the explicit owner question before iframe handoff',()=>{
+ const js=src('commander-chats.js');
+ const start=js.indexOf("if(mode==='council-free'){");
+ const end=js.indexOf('const context=messages.slice',start);
+ const block=js.slice(start,end);
+ assert.ok(block.includes("await append(c,'owner',text,'')"));
+ assert.ok(block.includes('councilPending={requestId:id(),prompt:text,chat:c,sent:false}'));
+ assert.ok(!block.includes('tasks:c.tasks'));
+ assert.ok(!block.includes('history:context'));
+ assert.ok(!block.includes('action=chat'));
+ assert.ok(!block.includes('executor'));
 });

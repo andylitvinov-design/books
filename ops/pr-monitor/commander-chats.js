@@ -14,6 +14,10 @@
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
  let reportRefreshTimer=null,reportSyncBusy=false;
+ const COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app';
+ const COUNCIL_PROTOCOL='HH_AI_COUNCIL_BRIDGE_V1';
+ let councilFrameReady=false,councilPending=null;
+ const councilCompleted=new Set(),councilSaving=new Set();
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
  const show=(id,yes)=>{el(id).hidden=!yes};
  const info=s=>{el('alert').textContent=String(s)};
@@ -274,15 +278,20 @@
   }catch(err){info('Изменения не сохранены: '+String(err.message||err)+'; проверьте версию чата.')}
   finally{busy=false}
  }
- async function append(c,kind,text,model){
+ async function append(c,kind,text,model,eventIdOverride){
   if(remote){
-   const r=await request(SERVER+'?action=event','POST',{issueNumber:c.issueNumber,eventId:id(),kind,text,model});
-   if(thread?.id===c.id){messages.push(r.event);renderMessages();}
+   const r=await request(SERVER+'?action=event','POST',{issueNumber:c.issueNumber,eventId:eventIdOverride||id(),kind,text,model});
+   if(thread?.id===c.id&&!messages.some(item=>item.id===r.event?.id)){messages.push(r.event);renderMessages();}
   }else{
    const target=chats.find(v=>v.id===c.id);
    if(!target)throw Error('CHAT_NOT_FOUND');
+   if(eventIdOverride&&(target.messages||[]).some(item=>item.id===eventIdOverride)){
+    await persist();
+    if(thread?.id===c.id){messages=target.messages;renderMessages();}
+    return;
+   }
    if((target.messages||[]).length>=400)throw Error('Слишком длинная история; сохраните копию');
-   target.messages.push({schema:'HH_COMMANDER_EVENT_V1',id:id(),kind:kind==='ai'?'assistant_unverified':kind,
+   target.messages.push({schema:'HH_COMMANDER_EVENT_V1',id:eventIdOverride||id(),kind:kind==='ai'?'assistant_unverified':kind,
     author:kind==='owner'?'Владелец':kind==='ai'?'AI-ответ · не коммит':'Заметка владельца',
     text,model:model||'',createdAt:new Date().toISOString(),sourceVerified:false});
    target.updatedAt=new Date().toISOString();await persist();
@@ -290,13 +299,91 @@
   }
   renderList();
  }
+ function ensureCouncilFrame(){
+  const frame=el('council-frame');
+  show('council-panel',true);
+  if(!frame.dataset.loaded){
+   frame.dataset.loaded='yes';
+   frame.addEventListener('load',()=>{councilFrameReady=true;sendCouncilPrompt()});
+   frame.src=frame.dataset.src;
+  }
+ }
+ function sendCouncilPrompt(){
+  if(!councilFrameReady||!councilPending)return;
+  try{
+   el('council-frame').contentWindow.postMessage({protocol:COUNCIL_PROTOCOL,
+    type:'HH_AI_COUNCIL_SET_PROMPT_V1',requestId:councilPending.requestId,prompt:councilPending.prompt},COUNCIL_ORIGIN);
+   councilPending.sent=true;
+   info('Вопрос передан в AI Council. Проверь его, выбери модели и подтверди запрос внутри Совета.');
+  }catch(error){info('Не удалось передать вопрос в Совет ИИ: '+String(error.message||error))}
+ }
+ function councilChunkEventId(requestId,index){
+  const parts=requestId.split('-');
+  if(parts.length!==5||!/^[0-9a-f]{8}$/i.test(parts[0])||!/^[0-9a-f]{4}$/i.test(parts[1])||
+   !/^[0-9a-f]{4}$/i.test(parts[2])||!/^[0-9a-f]{4}$/i.test(parts[3])||
+   !/^[0-9a-f]{12}$/i.test(parts[4])||!Number.isSafeInteger(index)||index<0||index>11)
+   throw Error('INVALID_COUNCIL_REQUEST_ID');
+  const tail=parseInt(parts[4],16)+index;
+  if(tail>0xffffffffffff)throw Error('COUNCIL_EVENT_ID_OVERFLOW');
+  parts[4]=tail.toString(16).padStart(12,'0');
+  return parts.join('-');
+ }
+ async function receiveCouncilMessage(event){
+  if(event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow)return;
+  const data=event.data;
+  if(!data||data.protocol!==COUNCIL_PROTOCOL||typeof data.requestId!=='string')return;
+  if(data.type==='HH_AI_COUNCIL_PROMPT_READY_V1'){
+   if(councilPending?.requestId===data.requestId)info('Совет ИИ получил вопрос. Выбери модели, подтверди согласие и запусти анализ.');
+   return;
+  }
+  if(data.type==='HH_AI_COUNCIL_DONE_V1'){
+   if(councilPending?.requestId!==data.requestId)return;
+   councilPending=null;info('Совет завершил ответ. Сохранение в приватный чат не было разрешено; отчёт остался в окне Совета.');
+   return;
+  }
+  if(data.type!=='HH_AI_COUNCIL_RESULT_V1'||councilPending?.requestId!==data.requestId||
+   typeof data.report!=='string'||data.report.length<20||data.report.length>18000||
+   councilCompleted.has(data.requestId)||councilSaving.has(data.requestId))return;
+  const pending=councilPending;
+  councilSaving.add(data.requestId);
+  try{
+   const chunks=data.report.match(/[\s\S]{1,1640}/g)||[];
+   if(!chunks.length||chunks.length>12)throw Error('REPORT_CHUNK_LIMIT');
+   for(let index=0;index<chunks.length;index++){
+    if(pending.savedChunks?.has(index))continue;
+    const part='AI Council Free · часть '+(index+1)+'/'+chunks.length+'\n'+chunks[index];
+    await append(pending.chat,'ai',part,'AI Council Free · бесплатные модели · согласованный отчёт',
+      councilChunkEventId(data.requestId,index));
+    (pending.savedChunks??=new Set()).add(index);
+   }
+   councilCompleted.add(data.requestId);councilPending=null;
+   el('council-frame').contentWindow.postMessage({protocol:COUNCIL_PROTOCOL,type:'HH_AI_COUNCIL_SAVE_ACK_V1',requestId:data.requestId},COUNCIL_ORIGIN);
+   info('Полный отчёт AI Council сохранён в приватном чате частями. Это консультация, не исполнение и не LIVE-доказательство.');
+  }catch(error){
+   el('council-frame').contentWindow.postMessage({protocol:COUNCIL_PROTOCOL,type:'HH_AI_COUNCIL_SAVE_FAILED_V1',requestId:data.requestId},COUNCIL_ORIGIN);
+   info('Отчёт сохранён частично или не сохранён: '+String(error.message||error)+'. Повторная передача продолжит с недостающей части.');
+  }finally{councilSaving.delete(data.requestId);}
+ }
  async function send(e){
   e.preventDefault();if(!thread||busy)return;
   const text=el('message').value.trim(),mode=el('mode').value,model=el('model').value;
   if(text.length<2||text.length>1200)return info('Сообщение должно содержать 2–1200 символов.');
-  if(!thread.executors.includes(mode))return info('Сначала назначьте этого исполнителя в настройках чата.');
+  if(mode!=='council-free'&&!thread.executors.includes(mode))return info('Сначала назначьте этого исполнителя в настройках чата.');
   if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
-  const c=thread,context=messages.slice(-8).filter(x=>['owner','assistant_unverified'].includes(x.kind))
+  const c=thread;
+  if(mode==='council-free'){
+   if(councilPending)return info('Уже ожидается ответ Совета ИИ. Заверши текущий вопрос или переключись на него.');
+   busy=true;el('send').disabled=true;
+   try{
+    await append(c,'owner',text,'');
+    councilPending={requestId:id(),prompt:text,chat:c,sent:false};
+    el('message').value='';ensureCouncilFrame();sendCouncilPrompt();
+    info('Вопрос сохранён в рабочем чате. AI Council ждёт выбора моделей и отдельного согласия на отправку.');
+   }catch(err){councilPending=null;info('Не удалось сохранить вопрос для AI Council: '+String(err.message||err));}
+   finally{busy=false;el('send').disabled=false}
+   return;
+  }
+  const context=messages.slice(-8).filter(x=>['owner','assistant_unverified'].includes(x.kind))
    .map(x=>({role:x.kind==='owner'?'user':'assistant',content:x.text.slice(0,800)}));
   busy=true;el('send').disabled=true;
   try{
@@ -530,7 +617,8 @@
   finally{busy=false;el('refresh').disabled=false;}
  });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
- el('mode').addEventListener('change',()=>show('model-label',el('mode').value==='openrouter'));
+ el('mode').addEventListener('change',()=>{show('model-label',el('mode').value==='openrouter');if(el('mode').value==='council-free')ensureCouncilFrame();else show('council-panel',false)});
+ win.addEventListener('message',event=>{void receiveCouncilMessage(event)});
  request(AI+'?action=status').then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
   authorized=false;show('login',true);info('Продолжите через Google — отдельный код PR Monitor не нужен.');
    win.HHGoogleOwnerSSO?.mount(el('google-owner'),s=>info(s));
