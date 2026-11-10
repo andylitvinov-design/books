@@ -16,6 +16,7 @@
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false,ownedDirectorAvailable=false;
  let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null,ciInboxTimer=null,ciInboxBusy=false;
  let executorModels=null,executorModelsPromise=null,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
+ let runSnapshot=null;
  // One-tap Council via same-origin, owner-verified server.
  let councilPending=null,councilChatIds=new Set();
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
@@ -77,17 +78,61 @@
   try{await ensureExecutorModels();configureModels('new');configureModels('thread');}
   catch(error){info('Каталог бесплатных моделей Hermes недоступен: '+String(error.message||error));}
  }
+
+ function lastQuestion(){
+  for(let i=messages.length-1;i>=0;i--){
+   if(messages[i]?.kind!=='owner')continue;
+   return messages.slice(i+1).some(m=>['assistant_unverified','agent_final','ai'].includes(m.kind))?null:messages[i];
+  }
+  return null;
+ }
+ function showRunState(run){
+  const panel=el('run-status'),label=el('run-status-label'),detail=el('run-status-detail'),button=el('retry-run');
+  if(!panel||!thread)return;
+  const unanswered=lastQuestion();
+  const sec=run?.created_at?Math.max(0,Math.floor((Date.now()-Date.parse(run.created_at))/1000)):0;
+  const elapsed=Number.isFinite(sec)?(sec<60?sec+' с':Math.floor(sec/60)+' мин'):'';
+  let headline='',subtitle='',tone='neutral',retry=false;
+  if(!run){
+   if(remote&&unanswered){headline='Вопрос сохранён · не отправлен';subtitle='Запуск OpenRouter не найден';retry=true;tone='warning';}
+  }else if(run.status==='QUEUED'||run.status==='STARTING'){
+   headline='OpenRouter · в очереди';subtitle='Ожидает Worker · '+elapsed;tone='pending';
+  }else if(run.status==='RUNNING'){
+   headline='OpenRouter · обрабатывает';subtitle=(run.worker_attempt_count>1?'Попытка '+run.worker_attempt_count+' · ':'')+
+    (run.actual_model_id||'Бесплатная модель')+' · '+elapsed;tone='pending';
+  }else if(run.status==='COMPLETED'){
+   const delivered=messages.some(m=>m.kind==='agent_final'&&m.runId===run.run_id);
+   headline=delivered?'Готово · ответ в чате':'Ответ готов · сохраняю в чат';
+   subtitle=(run.actual_model_id||'OpenRouter Free')+(run.cost_usd!=null&&Number(run.cost_usd)===0?' · $0.00':'');
+   tone=delivered?'done':'pending';
+  }else if(run.status==='FAILED'||run.status==='BLOCKED'){
+   headline='OpenRouter · ошибка';subtitle=String(run.worker_last_error_code||run.reason_code||'Ошибка').slice(0,80);
+   tone='error';retry=!!unanswered;
+  }else{
+   headline='Исполнитель · '+String(run.status||'UNKNOWN').slice(0,25);
+   subtitle=String(run.reason_code||'Проверяю').slice(0,80);tone='warning';
+  }
+  panel.hidden=!headline;panel.dataset.state=tone;
+  label.textContent=headline;detail.textContent=subtitle;
+  button.hidden=!retry||!remote||!authorized;button.disabled=busy;
+ }
+
  async function refreshExecutionRuns(){
   if(!remote||!thread||!authorized||executionPollBusy)return null;
   executionPollBusy=true;
   try{
    const result=await request(SERVER+'?action=runs&issue='+thread.issueNumber);
-   const run=Array.isArray(result.runs)?result.runs[0]:null;if(!run)return null;
-   const labels={STARTING:'Исполнитель запускается…',RUNNING:'Исполнитель работает…',WAITING_FOR_APPROVAL:'Ожидается подтверждение владельца.',COMPLETED:'Исполнение завершено. Ответ добавлен в чат.',FAILED:'Исполнение завершилось ошибкой.',CANCELLED:'Исполнение отменено.',BLOCKED:'Исполнитель не запущен или выполнение заблокировано.'};
+   const run=Array.isArray(result.runs)?result.runs[0]:null;
+   runSnapshot={chatId:thread.id,run};showRunState(run);
+   if(!run)return null;
+   const labels={QUEUED:'В очереди OpenRouter.',STARTING:'Исполнитель запускается…',RUNNING:'Исполнитель работает…',WAITING_FOR_APPROVAL:'Ожидается подтверждение владельца.',COMPLETED:'Исполнение завершено. Ответ добавлен в чат.',FAILED:'Исполнение завершилось ошибкой.',CANCELLED:'Исполнение отменено.',BLOCKED:'Исполнитель не запущен или выполнение заблокировано.'};
    el('executor-state').textContent=(labels[run.status]||run.status||'Статус неизвестен')+(run.reason_code?' Причина: '+run.reason_code+'.':'')+(run.hermes_job_id?' · Job '+run.hermes_job_id:'');
    if(['COMPLETED','FAILED','BLOCKED'].includes(run.status)){
     const latest=await request(SERVER+'?action=read&issue='+thread.issueNumber);
-    if(thread?.id===latest.chat?.id){thread=latest.chat;messages=latest.messages;renderMessages();}
+    if(thread?.id===latest.chat?.id){thread=latest.chat;messages=latest.messages;renderMessages();
+     if(run.status==='COMPLETED'&&!messages.some(m=>m.kind==='agent_final'&&m.runId===run.run_id))run.awaitingFinal=true;
+     showRunState(run);
+    }
    }
    return run;
   }catch{return null;}finally{executionPollBusy=false;}
@@ -99,7 +144,9 @@
    if(!thread||doc.visibilityState==='hidden'||executionPollBusy)return;
    if(executionPollCount++>=90){win.clearInterval(executionRefreshTimer);executionRefreshTimer=null;return;}
    const run=await refreshExecutionRuns();
-   if(!run||!['STARTING','RUNNING'].includes(run.status)){win.clearInterval(executionRefreshTimer);executionRefreshTimer=null;}
+   if(!run||(!['QUEUED','STARTING','RUNNING'].includes(run.status)&&run.awaitingFinal!==true)){
+    win.clearInterval(executionRefreshTimer);executionRefreshTimer=null;
+   }
   },10000);
  }
    async function loadCIInbox({silent=false}={}){
@@ -349,6 +396,7 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
    box.append(p);
   }
   box.scrollTop=box.scrollHeight;
+  if(runSnapshot?.chatId===thread?.id)showRunState(runSnapshot.run);
  }
 function renderThread(){
   el('thread-title').textContent=thread.title;
@@ -411,12 +459,12 @@ function renderThread(){
     thread=v.chat;messages=v.messages;if(v.truncated)info('Длинная история GitHub: охват ограничен пятью страницами.');
    }else{thread=chats.find(x=>x.id===c.id);messages=thread?.messages||[];}
    if(!thread)throw Error('Чат не найден');
-   if(messages.some(m=>m.kind==='assistant_unverified'&&String(m.model||'').startsWith('Совет ИИ')))councilChatIds.add(thread.id);
+   if(messages.some(m=>(m.kind==='assistant_unverified'&&String(m.model||'').startsWith('Совет ИИ'))||(m.kind==='execution_requested'&&m.executor==='openrouter')))councilChatIds.add(thread.id);
    stopVoice();
    el('message').value='';
    renderThread();
    startReportPolling();
-   if(remote){void refreshExecutionRuns().then(run=>{if(run&&['STARTING','RUNNING'].includes(run.status))startExecutionPolling();});}
+   if(remote){void refreshExecutionRuns().then(run=>{if(run&&(['QUEUED','STARTING','RUNNING'].includes(run.status)||run.awaitingFinal))startExecutionPolling();});}
    void reportList({automatic:true,silent:true});
    el('thread').scrollIntoView({block:'start',behavior:'smooth'});
   }catch(err){info('Ошибка открытия чата: '+String(err.message||err))}
@@ -613,12 +661,18 @@ async function update(e){
      el('message').value='';
      councilPending={chatId:c.id};renderMessages();
      // Send transfers only this explicit question. Never hidden chat history.
-     const answer=await request(AI+'?action=council','POST',{message:text});
-     if(typeof answer.reply!=='string'||!answer.reply.trim())throw Error('COUNCIL_NO_REPLY');
-     const chunks=answer.reply.match(/[\s\S]{1,1500}/g)||[];
-     if(!chunks.length||chunks.length>10)throw Error('COUNCIL_RESPONSE_TOO_LONG');
-     for(const part of chunks)await append(c,'ai',part,'Совет ИИ · бесплатная модель');
-     info('Ответ Совета ИИ сохранён в переписке.');
+     // Existing authenticated Supabase OpenRouter Worker, no Vercel key required.
+      if(!remote)throw Error('Защищённая очередь OpenRouter недоступна.');
+      const result=await request(SERVER+'?action=run','POST',{
+       issueNumber:c.issueNumber,runId:id(),idempotencyKey:id(),
+       executor:'openrouter',modelId:'openrouter/free',message:text,confirmGitHubWrite:false
+      });
+      runSnapshot={chatId:c.id,run:result.run||{status:result.status,created_at:new Date().toISOString()}};
+      showRunState(runSnapshot.run);
+      await refreshExecutionRuns();
+      if(['QUEUED','STARTING','RUNNING'].includes(result.status))startExecutionPolling();
+      info(result.status==='QUEUED'?'Запрос принят в очередь OpenRouter. Статус обновляется автоматически.':
+       'Статус запуска: '+String(result.status||'UNKNOWN'));
     }catch(error){info((saved?'Вопрос сохранён. ':'')+councilFailure(error));}
     finally{councilPending=null;renderMessages();busy=false;el('send').disabled=false;}
     return;
@@ -911,6 +965,30 @@ async function update(e){
   el('new-question').value='';
   el('create').scrollIntoView({block:'nearest',behavior:'smooth'});
  }
+ 
+ // Resume a saved question only on an explicit click; never duplicate its owner event.
+ el('retry-run').addEventListener('click',async()=>{
+  if(!thread||!remote||!authorized||busy)return;
+  const c=thread,q=lastQuestion(),prior=runSnapshot?.chatId===c.id?runSnapshot.run:null;
+  if(!q||!q.text||prior&&['QUEUED','STARTING','RUNNING','COMPLETED'].includes(prior.status))return;
+  busy=true;el('retry-run').disabled=true;
+  try{
+   const result=await request(SERVER+'?action=run','POST',{
+    issueNumber:c.issueNumber,runId:id(),idempotencyKey:id(),
+    executor:'openrouter',modelId:'openrouter/free',message:q.text,confirmGitHubWrite:false
+   });
+   if(thread?.id!==c.id)return;
+   runSnapshot={chatId:c.id,run:result.run||{status:result.status,created_at:new Date().toISOString()}};
+   showRunState(runSnapshot.run);
+   await refreshExecutionRuns();
+   if(['QUEUED','STARTING','RUNNING'].includes(result.status))startExecutionPolling();
+   info(result.status==='QUEUED'?'Запрос снова в очереди OpenRouter.':'Статус запуска: '+String(result.status||'UNKNOWN'));
+  }catch(error){
+   const known=await refreshExecutionRuns().catch(()=>null);
+   info(known?'Статус проверен в очереди.':'Запуск не подтверждён: '+String(error.message||error));
+  }finally{busy=false;el('retry-run').disabled=false;}
+ });
+
  el('new-toggle').addEventListener('click',showNewChat);
  el('context-toggle').addEventListener('click',()=>{
   const dialog=el('new-context');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
