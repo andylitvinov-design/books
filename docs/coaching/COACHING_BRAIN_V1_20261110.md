@@ -80,3 +80,21 @@ silent Life Plan imports, provider-funded voice/video/avatar generation,
 cross-session memory, AI-written diagnoses, autonomous actions or human bookings.
 Follow-on work for historical context and report v2 remains under #4014/#4067
 with its own explicit user consent and acceptance gates.
+
+
+## Adaptive five-phase protocol v2
+
+The deterministic controller no longer advances by counting messages. It derives a routing
+hint from bounded, explicitly submitted client turns and chooses one next-best action:
+**Contract** (clarify desired outcome), **Discovery** (obtain a concrete recent example),
+**Exploration** (investigate an obstacle or repeated pattern), **Possibilities** (explore
+alternatives only after enough context), and **Action & integration** (shape a client-chosen
+step). Review is a closeout state, not an extra coaching phase.
+
+The 20-minute timeboxes are advisory. Elapsed time never means a milestone is complete.
+A step moves to review only when client-authored wording contains both a chosen action and
+a time anchor. Lexical patterns are routing hints, not psychological facts; the AI must
+invite correction. A partial or unresolved outcome is valid.
+
+The protocol adds one Next Best Action instruction to the existing Brain model prompt.
+It creates no second runtime, persistence layer, provider, consent path or data store.

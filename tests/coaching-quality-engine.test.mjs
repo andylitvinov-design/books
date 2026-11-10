@@ -1,4 +1,6 @@
 import test from 'node:test';
+// Keep Coaching Brain regression coverage in the existing focused coaching CI job.
+import './coaching-brain.test.mjs';
 import assert from 'node:assert/strict';
 import {
   COACHING_QA_RUBRIC,
