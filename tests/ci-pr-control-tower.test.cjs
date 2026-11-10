@@ -34,7 +34,7 @@ function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
  const github={rest:{pulls:{
   list:async({page})=>({data:page===1?items:[],headers:{'x-ratelimit-remaining':'2500'}}),
   get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)}),
-  listFiles:async()=>({data:[{filename:'src/a.js',status:'modified'}]})
+  listFiles:async()=>({data:[{filename:'lib/repair-demo.js',status:'modified'}]})
  },issues:{
   listComments:async({issue_number})=>({data:comments[issue_number]||[]}),
   createComment:async arg=>{calls.reserved.push(arg);return {data:{id:5}};},
@@ -922,6 +922,39 @@ test('source dispatch requires a complete nonempty worker-safe changed-file scop
   assert.ok(!f.calls.reserved.some(c=>c.body.includes('"state":"RESERVED"')));
   assert.equal(f.calls.dispatched.length,0);
  }
+});
+
+test('real Meta Publisher / admin source scope is escalated BEFORE any free AI dispatch',async()=>{
+ const current=pr(4217,'repair',{title:'feat(growth): Instagram Business Stories'});
+ const f=fixture([current],{comments:{4217:[proof()]}});
+ f.github.rest.pulls.listFiles=async()=>({data:[
+  {filename:'app/admin/growth-studio/actions.js',status:'modified'},
+  {filename:'components/growth-studio.jsx',status:'modified'},
+  {filename:'lib/growth-studio/instagram-publisher.mjs',status:'modified'},
+  {filename:'lib/growth-studio/model.mjs',status:'modified'}
+ ]});
+ f.github.rest.issues.addAssignees=async()=>({data:{}});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,0);
+ assert.equal(result.manualSourceEscalations,1);
+ assert.equal(result.blocked.SOURCE_SCOPE_UNSAFE_FOR_FREE_AI,1);
+ assert.equal(f.calls.dispatched.length,0);
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('HH_CONTROL_SCOPE_OWNER_V1')));
+ assert.ok(f.calls.reserved.some(x=>x.body.includes('"state":"MANUAL"')));
+ assert.ok(!f.calls.reserved.some(x=>x.body.includes('"state":"RESERVED"')));
+ assert.ok(f.calls.labels.some(x=>x.labels.includes('hh:repair-manual')));
+});
+test('pure non-sensitive library source remains eligible for guarded worker',async()=>{
+ const f=fixture([pr(4218)],{comments:{4218:[proof()]}});
+ f.github.rest.pulls.listFiles=async()=>({data:[
+   {filename:'lib/repair-demo.js',status:'modified'},
+   {filename:'components/repair-card.tsx',status:'modified'}
+ ]});
+ const result=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(result.dispatchAccepted,1);
+ assert.equal(result.manualSourceEscalations,0);
+ assert.equal(f.calls.dispatched.length,1);
+ assert.equal(f.calls.dispatched[0].inputs.pr_number,'4218');
 });
 
 test('a blocked first source does not give the shared worker to conflict before another source',async()=>{
