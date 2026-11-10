@@ -14,7 +14,10 @@ test("alternative answers use only the explicitly selected on-device model",()=>
   assert.match(chat,/channel:"browser"/);
   assert.match(chat,/session\.prompt\(prompt,\{signal:abort\.signal\}\)/);
   assert.match(chat,/session\.destroy\?\.\(\)/);
-  assert.doesNotMatch(chat,/openrouter\/free|gemini-.*free|api\.openrouter\.ai/);\n  const route=read("app/api/holistic-agent/turn/route.js");\n  assert.match(route,/browserModelAllowed:experimentalEnabled && body\.mode!==\"owned\" && safety\.status===\"clear\" && !recentUnsafe/);\n  assert.match(route,/if\(body\.mode!==\"rules\"&&!experimentalEnabled\)/);
+  assert.doesNotMatch(chat,/openrouter\/free|gemini-.*free|api\.openrouter\.ai/);
+  const route=read("app/api/holistic-agent/turn/route.js");
+  assert.match(route,/browserModelAllowed:experimentalEnabled && body\.mode!==\"owned\" && safety\.status===\"clear\" && !recentUnsafe/);
+  assert.match(route,/if\(body\.mode!==\"rules\"&&!experimentalEnabled\)/);
 });
 
 test("alternative retry preserves the source answer and appends a labelled version",()=>{
