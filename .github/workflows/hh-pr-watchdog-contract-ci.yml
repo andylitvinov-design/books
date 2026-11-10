@@ -164,6 +164,9 @@ on:
       - 'scripts/ci-pr-schedule-fallback.cjs'
       - 'tests/ci-pr-core-metadata-wake.test.cjs'
       - 'tests/ci-pr-ci-worker.test.cjs'
+      - 'scripts/ci-pr-red-ci-classifier.cjs'
+      - 'scripts/ci-pr-error-rules.v1.json'
+      - 'tests/ci-pr-unified-error-classifier.test.cjs'
   workflow_dispatch:
 permissions:
   contents: read

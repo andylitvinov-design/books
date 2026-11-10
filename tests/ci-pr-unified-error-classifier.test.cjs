@@ -135,3 +135,70 @@ test('legacy category contract remains compatible with watchdog consumers', () =
     assert.ok(watchdog.includes(field), field);
   }
 });
+
+
+test('explicit conflict markers in a failed job classify even when GitHub mergeability is unknown',()=>{
+ for(const diagnostic of [
+  'Merge conflict while applying production base',
+  'Unmerged paths detected by merge-tree',
+  'Conflict markers found in source merge'
+ ]){
+  const result=classify([job('base-recovery',diagnostic)]);
+  assertDiagnosticOnly(result,'MERGE_CONFLICT');
+  assert.equal(result.reason_code,'MERGE_CONFLICT_DIAGNOSTIC_MARKER');
+  assert.equal(result.evidence_code,'FAILED_JOB_REPORTED_CONFLICT');
+  assert.equal(result.recommended_status,'MANUAL_REQUIRED');
+  assert.equal(result.responsible_role,'semantic-conflict-resolver');
+  assert.equal(result.retry.allowed,false);
+ }
+});
+
+test('category decision matrix keeps owner waits, no-retry states and bounded retries distinct',()=>{
+ const rows=[
+  {job:'deploy',step:'Missing secret GITHUB_TOKEN',category:'ACCESS_CONFIG',status:'WAITING_INPUT',retry:false},
+  {job:'guard',step:'Secret scan failed',category:'SECURITY',status:'MANUAL_REQUIRED',retry:false},
+  {job:'merge',step:'Unmerged paths',category:'MERGE_CONFLICT',status:'MANUAL_REQUIRED',retry:false},
+  {job:'base',step:'BASE_ADVANCED production-base mismatch',category:'BASE_ADVANCED',status:'REROUTED',retry:true},
+  {job:'runner',step:'Disk quota exceeded',category:'INFRASTRUCTURE',status:'MANUAL_REQUIRED',retry:false},
+  {job:'runner',step:'Runner lost after startup',category:'INFRASTRUCTURE',status:'RETRY_SCHEDULED',retry:true},
+  {job:'openrouter',step:'Provider quota exceeded',category:'AI_EXECUTOR',status:'REROUTED',retry:false},
+  {job:'api',step:'Supabase schema mismatch',category:'INTEGRATION',status:'REROUTED',retry:true},
+  {job:'tsc',step:'TypeScript check',category:'TYPESCRIPT',status:'REROUTED',retry:true},
+  {job:'test',step:'Run WebKit E2E',category:'TEST_FAILURE',status:'REROUTED',retry:true},
+  {job:'build',step:'Cannot find module ./missing',category:'SOURCE_CODE',status:'REROUTED',retry:true},
+  {job:'dispatch',step:'Prompt missing; executor not invoked',category:'AUTOMATION_PROCESS',status:'REROUTED',retry:true},
+  {job:'custom',step:'Opaque runner diagnostic',category:'UNKNOWN',status:'UNCLASSIFIED',retry:false}
+ ];
+ for(const row of rows){
+  const result=classify([job(row.job,row.step)]);
+  assert.equal(result.category,row.category,row.step);
+  assert.equal(result.recommended_status,row.status,row.step);
+  assert.equal(result.retry.allowed,row.retry,row.step);
+  assert.equal(result.source_write_authorized,false,row.step);
+  assert.equal(result.execution_authorized,false,row.step);
+  assert.ok(result.reason_code,row.step);
+  assert.ok(result.responsible_role,row.step);
+ }
+});
+
+test('security and access precedence still win over explicit merge conflict markers',()=>{
+ const security=classify([
+  job('merge-tree','Unmerged paths'),
+  job('secret-scan','Secret scan failed')
+ ]);
+ assert.equal(security.category,'SECURITY');
+ const access=classify([job('merge-tree','Unmerged paths')],{
+  failureMessage:'Resource not accessible by integration: insufficient permissions'
+ });
+ assert.equal(access.category,'ACCESS_CONFIG');
+});
+
+test('failed job evidence is required; a stale conflict label or green job cannot trigger conflict routing',()=>{
+ const green=classify([{name:'merge-tree',conclusion:'success',steps:[
+  {name:'Unmerged paths',conclusion:'success'}]}]);
+ assert.equal(green.category,'UNKNOWN');
+ const dirtyLabelOnly=classify([job('core-lint-types-build','TypeScript check')],{
+  pr:{...PR,labels:[{name:'hh:conflict-repair-needed'}]}
+ });
+ assert.equal(dirtyLabelOnly.category,'TYPESCRIPT');
+});
