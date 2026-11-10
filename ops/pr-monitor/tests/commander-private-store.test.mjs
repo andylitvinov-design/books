@@ -56,3 +56,21 @@ test('session refresh is not exposed through URL, browser storage or query param
  assert.match(source,/HttpOnly; Secure; SameSite=Strict/);
  assert.match(source,/Vary','Cookie, Origin/);
 });
+
+test('first-party GitHub App publisher fails closed before touching GitHub without trusted owner and cost gates',async()=>{
+ const mod=await import('../../../lib/agent-director/github-app-source-publisher.mjs');
+ assert.equal(mod.ownedGithubAppConfigured({}),false);
+ const input={job:{id:'job-test',projectKey:'holistic-house',
+  githubPlan:{repo:'andylitvinov-design/books',baseBranch:'codex/public-book-library'}},
+  project:{repo:'andylitvinov-design/books',productionBranch:'codex/public-book-library'},
+  expectedBaseSha:'a'.repeat(40),filesJson:JSON.stringify([{path:'docs/native-test.md',content:'note',expectedBlobSha:null}]),
+  commitMessage:'docs: bounded test note',confirmWrite:true,ownerAuthorized:false,freeCiBudgetVerified:true};
+ let calls=0;
+ await assert.rejects(mod.publishOwnedDraftSource(input,{env:{},fetchImpl:async()=>{calls++;throw Error('network forbidden')}}),/OWNER_APPROVAL_REQUIRED/);
+ await assert.rejects(mod.publishOwnedDraftSource({...input,ownerAuthorized:true,freeCiBudgetVerified:false},{env:{},fetchImpl:async()=>{calls++;throw Error('network forbidden')}}),/CI_COST_UNVERIFIED/);
+ await assert.rejects(mod.publishOwnedDraftSource({...input,ownerAuthorized:true},{env:{},fetchImpl:async()=>{calls++;throw Error('network forbidden')}}),/APP_NOT_CONFIGURED/);
+ assert.equal(calls,0);
+});
+
+// Run the full native GitHub App contract in the existing watchdog job, without adding a workflow.
+await import('../../../tests/agent-director-github-app-source-publisher.test.mjs');
