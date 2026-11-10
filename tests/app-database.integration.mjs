@@ -266,7 +266,7 @@ test('coaching report save requires consent, binds the owner source and survives
     assert.equal(saved.report.actionCandidates[0].status,'accepted')
     assert.equal((await listCoachingReports(config,c)).reports.length,1)
     await assert.rejects(()=>readCoachingReport(config,b,one.id),err=>err.code==='COACHING_REPORT_NOT_FOUND')
-    const {importCoachingReportActions}=await import('../lib/app/coaching-life-plan.js')
+    const {importCoachingReportActions,updateCoachingLifePlanArea,exportCoachingLifePlan}=await import('../lib/app/coaching-life-plan.js')
     const planRequest={reportId:one.id,reportRevision:1,areaKey:'body_health',candidateIds:[request.decisions[0].candidateId],planConsent:true}
     await rawAs(c,'hh_app_backend',client=>client.query("insert into app_private.coaching_session_consents(session_id,account_id,consent_type,accepted,policy_version,purpose,occurred_at) values($1,$2,'report_storage',false,'test','synthetic revocation',now()+interval '1 second')",[request.sessionId,C]))
     await assert.rejects(()=>importCoachingReportActions(config,c,planRequest),err=>err.code==='COACHING_REPORT_CONSENT_REQUIRED')
@@ -278,6 +278,18 @@ test('coaching report save requires consent, binds the owner source and survives
     assert.equal(imported.imported,1)
     assert.equal((await db.query('select count(*)::int as n from app_private.coaching_action_items where account_id=$1',[C])).rows[0].n,1)
     assert.equal((await importCoachingReportActions(config,c,planRequest)).imported,0)
+    await updateCoachingLifePlanArea(config,c,{areaKey:'body_health',revision:1,currentState:'Synthetic current state',desiredState:'Synthetic desired state',obstacles:'Synthetic obstacle',selfRating:4})
+    const exportedPlan=await exportCoachingLifePlan(config,c)
+    assert.equal(exportedPlan.areas[0].currentState,'Synthetic current state')
+    assert.equal(exportedPlan.actions.length,1)
+    assert.ok(exportedPlan.changes.some(change=>change.snapshot.currentState==='Synthetic current state'))
+    assert.ok(exportedPlan.consents.some(event=>event.consent_type==='cross_session_context'))
+    assert.doesNotMatch(JSON.stringify(exportedPlan),/ciphertext/)
+    assert.equal((await exportCoachingLifePlan(config,b)).plans.some(plan=>plan.account_id===C),false)
+    const actionRow=(await db.query('select id,description_ciphertext from app_private.coaching_action_items where account_id=$1',[C])).rows[0]
+    await db.query('update app_private.coaching_action_items set description_ciphertext=$1 where id=$2',['unknown',actionRow.id])
+    await assert.rejects(()=>exportCoachingLifePlan(config,c),err=>err.code==='PRIVATE_DATA_UNAVAILABLE')
+    await db.query('update app_private.coaching_action_items set description_ciphertext=$1 where id=$2',[actionRow.description_ciphertext,actionRow.id])
     await db.query('delete from app_private.coaching_life_plans where account_id=$1',[C])
     const cipher=(await db.query('select report_ciphertext from app_private.coaching_report_versions where account_id=$1',[C])).rows[0].report_ciphertext
     assert.equal(cipher.includes('Make room for rest'),false)

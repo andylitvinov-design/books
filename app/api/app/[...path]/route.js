@@ -19,6 +19,7 @@ import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, save
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
+import { exportCoachingLifePlan } from '@/lib/app/coaching-life-plan'
 import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
 import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
@@ -1066,6 +1067,7 @@ async function handle(request, { params }) {
       exported.businessCoaching = await readBusinessCoaching(config, actor)
       exported.personalCoaching = await readPersonalCoaching(config, actor)
       exported.coachingReports = (await exportCoachingReports(config, actor)).reports
+      exported.coachingLifePlan = await exportCoachingLifePlan(config, actor)
       exported.egyptianCoaching = await readTraditionCoaching(config, actor, 'hh-egyptian-goal-planning-v1')
       exported.greekCoaching = await readTraditionCoaching(config, actor, 'hh-greek-goal-planning-v1')
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course
