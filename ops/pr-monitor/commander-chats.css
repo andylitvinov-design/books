@@ -149,3 +149,7 @@ body.hh-cc-shell:has(#cc-board input:focus) #hh-cc-dock{display:none!important}
 /* The reply/error belongs to the visible composer, including with iOS keyboard up. */
 .cc-create-feedback:not([hidden]){padding:10px 12px;margin:0;border:1px solid #ab87ca;border-radius:11px;background:#332642;color:#fff1ff;font-size:13px;line-height:1.45}
 .cc-quick-compose #cc-create-send[disabled]{opacity:.62;cursor:progress}
+
+/* HH_COMMANDER_HERMES_HANDOFF_V1 */
+.cc-dispatch-consent{display:flex;align-items:flex-start;gap:8px;margin:7px 0;padding:8px 10px;border:1px solid var(--line,#d9dce3);border-radius:10px;font-size:12px;line-height:1.35;color:var(--muted,#5e6572)}
+.cc-dispatch-consent input{width:auto;flex:0 0 auto;margin:2px 0 0}
