@@ -345,9 +345,10 @@ test("one contextual therapy action keeps the single secure renderer and a visib
   assert.equal((studio.match(/\{deepAudioPane\}/g)||[]).length,1,
     "one canonical full audio player in Audio workspace");
   assert.match(studio,/openQuickDetailed\("video-audio"\)/);
-  assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\)/);
-  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
-    "the sole phrase editor remains mounted to preserve its project state");
+  assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
+  assert.match(studio,/setActiveWorkspace\("effects"\);[\s\S]*?setAudioWorkspaceTab\("voice"\);[\s\S]*?setVoiceStudioActivated\(true\)/);
+  assert.doesNotMatch(studio,/data-video-phrase-audio-shortcut|\{deepHypnoPane\}/,
+    "legacy Ideas voice editor and shortcut are not mounted beside Audio / Voice");
   for(const title of ["Видео-терапия","Своё фото / цель",
     "Гипноаффирмации","Video therapy","Videoterapia","Picks of the Day"]){
     assert.ok(studio.includes(title),title);
