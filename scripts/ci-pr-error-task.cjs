@@ -125,6 +125,9 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
     'FREE_AI_TYPECHECK_FAILURE_OUTSIDE_REPAIR_SCOPE',
     'FREE_AI_TYPECHECK_LINE_NOT_IN_SOURCE'
   ]).has(cause);
+  // Distinguish a provider rejecting the HTTP request from an invalid patch
+  // returned by the model; neither is proof of a repaired source commit.
+  const providerHttpRejected=/^FREE_AI_OPENROUTER_REQUEST_REJECTED(?:_HTTP_[45][0-9]{2})?$/.test(cause);
   const cat=unsafeSourceScope?'SOURCE_CODE':
     reproductionMissing?'TEST_FAILURE':
     /^(?:FREE_AI_|CODEX_)/.test(cause)||/^FREE_AI_/.test(reason_code)?'AI_EXECUTOR':
@@ -138,6 +141,9 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
     reproductionMissing?
     {code:'REPRODUCTION_PROOF_REQUIRED',
       action:'VERIFY_EXACT_HEAD_CORE_TYPESCRIPT_AND_TEST_COVERAGE',minutes:30}:
+    providerHttpRejected?
+    {code:'FREE_PROVIDER_REJECTION_REVIEW',
+      action:'VERIFY_FREE_MODEL_ENDPOINT_AND_POLICY_NO_RETRY',minutes:30}:
     strategyFor(cat,'UNVERIFIED',false);
   return Object.freeze({schema:SCHEMA,event_kind:'REPAIR_WORKER_FAILED',
     task_id:key([REPO,pr_number,head_sha.toLowerCase(),task_key,owner_run_id,'WORKER']),
