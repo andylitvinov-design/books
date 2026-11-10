@@ -80,9 +80,25 @@ test('owner-authenticated Hermes dispatch is opt-in, free-only and idempotent', 
 test('Commander execution events preserve existing database kind CHECK and do not forge LIVE', () => {
   const edge = read('supabase/functions/agent-commander-private-store-v1/index.ts')
   assert.match(edge, /kind:report.status==="COMPLETED"\?"agent_final":"execution_blocked"/)
-  assert.match(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'note',\$4::jsonb,\$5::boolean\)/)
-  assert.match(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'note',\$4::jsonb,false\)/)
+  assert.match(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'note',\$4::text::jsonb,\$5::boolean\)/)
+  assert.match(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'note',\$4::text::jsonb,false\)/)
   assert.doesNotMatch(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'execution_blocked'/)
   assert.match(edge, /"DRAFT_PR_COMMIT_VERIFIED_NOT_LIVE"/)
   assert.match(edge, /runId,chatId:chat.chat_id,ownerId,projectKey:"holistic-house"/)
 })
+
+
+test('private store preserves native JSONB objects and arrays when persisting payloads',()=>{
+  const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
+  assert.match(edge,/function jsonbText\(value\)/);
+  assert.match(edge,/payload=\$4::text::jsonb/);
+  assert.match(edge,/payload=\$2::text::jsonb/);
+  assert.match(edge,/failed_jobs[\s\S]{0,300}\$15::text::jsonb/);
+  assert.match(edge,/failed_steps[\s\S]{0,100}\$16::text::jsonb/);
+  assert.match(edge,/receipt=\$4::text::jsonb/);
+  assert.doesNotMatch(edge,/\$[0-9]+::jsonb/);
+  assert.doesNotMatch(edge,/jsonb_set\(payload,'\{executionState\}'/);
+  assert.match(edge,/set execution_state=\$1,updated_at=now\(\)/);
+  assert.match(edge,/jsonbText\(event\.failed_jobs\)/);
+  assert.match(edge,/jsonbText\(event\.failed_steps\)/);
+});
