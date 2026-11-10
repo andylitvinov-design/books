@@ -7,7 +7,7 @@ import {prepareGrowthBulk,sameGrowthDraft} from '@/lib/growth-studio/bulk.mjs'
 import {prepareEvergreenGrowthDrafts} from '@/lib/growth-studio/evergreen.mjs'
 import {getGrowthStudioStore} from '@/lib/growth-studio/store'
 import {readGrowthStudioProviderReadiness} from '@/lib/growth-studio/provider-readiness.mjs'
-import {isInstagramPublisherEnabled,publishApprovedInstagramImage} from '@/lib/growth-studio/instagram-publisher.mjs'
+import {isInstagramPublisherEnabled,publishApprovedInstagramImage,publishApprovedInstagramStory} from '@/lib/growth-studio/instagram-publisher.mjs'
 import {createMetaInstagramPublisherClient} from '@/lib/growth-studio/meta-instagram.mjs'
 import {GROWTH_INSTAGRAM_ACCOUNT_TARGETS} from '@/lib/growth-studio/instagram-accounts.mjs'
 import {isValidInstagramInsightDate,isValidInstagramInsightRange,normalizeInstagramInsightMetrics} from '@/lib/growth-studio/instagram-insights.mjs'
@@ -246,13 +246,14 @@ export async function publishGrowthTelegramNowAction(input){
 }
 
 
-// One exact, owner-confirmed Instagram JPEG Feed Post. No cron/worker calls this.
+// One exact, owner-confirmed Instagram Feed or Story. No cron/worker calls this.
 // The global publishing flag is OFF by default; a separate scheduler/receipt worker
 // must be commissioned before enabling unattended publishing.
 export async function publishGrowthInstagramNowAction(input){
   if(!await requireAdminRequest())return {ok:false,error:'unauthorized'}
   if(!input||typeof input!=='object'||Array.isArray(input)||
-    Object.keys(input).some(key=>!['id','expectedRevision','confirmed'].includes(key))||
+    Object.keys(input).some(key=>!['id','expectedRevision','confirmed','resume'].includes(key))||
+    (input.resume!==undefined&&input.resume!==true)||
     input.confirmed!==true||typeof input.id!=='string'||!/^[0-9a-f-]{36}$/i.test(input.id)||
     !Number.isSafeInteger(input.expectedRevision)||input.expectedRevision<1)
     return {ok:false,error:'invalid_post'}
@@ -265,14 +266,23 @@ export async function publishGrowthInstagramNowAction(input){
     source=await store.get(input.id)
     if(!source)return {ok:false,error:'not_found'}
     if(source.revision!==input.expectedRevision)return {ok:false,error:'conflict'}
-    if(source.status!=='approved'||source.channel!=='instagram'||!source.socialAccountId)
+    const resume=input.resume===true
+    const validResume=source.status==='delivery_unknown'&&source.placement==='story'&&
+      source.delivery?.provider==='meta_graph_api'&&
+      source.delivery?.providerState==='provider_processing'&&
+      source.delivery?.accountId===source.socialAccountId&&
+      !source.delivery?.providerPostId&&
+      typeof source.delivery?.containerId==='string'&&/^\d{5,40}$/.test(source.delivery.containerId)
+    if(source.channel!=='instagram'||!source.socialAccountId||
+      (resume?!validResume:source.status!=='approved'))
       return {ok:false,error:'instagram_invalid_approved_post'}
     // Verify account ↔ Page ↔ Instagram identity before taking a non-repeatable claim.
     providerClient=await createMetaInstagramPublisherClient(source.socialAccountId)
   }catch(error){
     const code=error?.code
     const allowed=new Set(['meta_not_configured','meta_account_not_connected','meta_page_publish_access_missing',
-      'meta_token_invalid','meta_permissions_missing','meta_identity_mismatch','meta_graph_error'])
+      'meta_token_invalid','meta_permissions_missing','meta_identity_mismatch','meta_graph_error',
+      'meta_story_business_required'])
     return {ok:false,error:allowed.has(code)?code:'instagram_account_not_connected'}
   }
   const claimed={...source,status:'sending',revision:source.revision+1,
@@ -281,16 +291,16 @@ export async function publishGrowthInstagramNowAction(input){
   catch{return {ok:false,error:'conflict'}}
   let result
   try{
-    result=await publishApprovedInstagramImage({
-      post:source,expectedRevision:source.revision,confirmed:true,
-      providerClient,
+    result=await (source.placement==='story'?publishApprovedInstagramStory:publishApprovedInstagramImage)({
+      post:source,expectedRevision:source.revision,confirmed:true,providerClient,
+      ...(input.resume===true?{resumeContainerId:source.delivery.containerId}:{}),
     })
   }catch(error){
     const code=error?.code
     // Deterministic preflight/configuration failures are known to occur before any
     // provider create/publish operation, so return the post to Approved with a new revision.
     const beforeWrite=new Set(['instagram_media_preflight_failed','instagram_invalid_approved_post',
-      'instagram_publishing_disabled','instagram_account_not_connected'])
+      'instagram_publishing_disabled','instagram_account_not_connected','meta_story_business_required'])
     if(beforeWrite.has(code)){
       const reset={...source,revision:claimed.revision+1,updatedAt:new Date().toISOString()}
       try{await store.save(reset,claimed.revision);return {ok:false,error:code,record:reset}}
@@ -308,7 +318,8 @@ export async function publishGrowthInstagramNowAction(input){
       delivery:{provider:'meta_graph_api',accountId:result.accountId,
         providerPostId:result.providerPostId,url:result.permalink,
         publishedAt:result.publishedAt,
-        containerId:result.containerId,mediaType:result.mediaType}}
+        containerId:result.containerId,mediaType:result.mediaType,
+        ...(result.mediaProductType?{mediaProductType:result.mediaProductType}:{})}}
     try{
       await store.save(delivered,claimed.revision)
       return {ok:true,record:delivered}

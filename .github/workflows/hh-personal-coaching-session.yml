@@ -5,6 +5,12 @@ on:
     paths:
       - '.github/workflows/hh-personal-coaching-session.yml'
       - 'lib/personal-coaching/**'
+      # Brain changes must always trigger the private coaching specialist gate.
+      - 'lib/app/coaching-brain.js'
+      - 'lib/agent-director/commander-owned-runtime.mjs'
+      - 'components/coaching-brain-panel*'
+      - 'tests/coaching-brain.test.mjs'
+      - 'tests/agent-director-owned-runtime.test.mjs'
       - 'components/coaching-context-review*'
       - 'components/coaching-report-preview*'
       - 'components/app/coaching-live-voice*'
@@ -61,6 +67,7 @@ on:
       - 'tests/coaching-intelligence-p1.test.mjs'
       - 'tests/coaching-intelligence-offline.test.mjs'
       - 'tests/coaching-intelligence-state.test.mjs'
+      - 'tests/coaching-methodology.test.mjs'
       - 'components/coaching-action-plan.jsx'
       - 'components/coaching-action-plan.module.css'
       - 'supabase/migrations/*coaching_model_fit_comments*'
@@ -113,6 +120,7 @@ jobs:
           node --check lib/personal-coaching/speech-text.js
           node --check lib/personal-coaching/live-voice-contract.mjs
           node --check lib/personal-coaching/model-matcher.js
+          node --check lib/personal-coaching/coaching-methodology.mjs
           for source in tests/coaching-intelligence-*.test.mjs lib/personal-coaching/guided-session.js lib/personal-coaching/offline-intelligence.js; do
             node --check "$source"
           done
@@ -121,13 +129,13 @@ jobs:
           node --check lib/app/coaching-report-v2.js
           node --check lib/app/coaching-life-plan.js
           node --test tests/coaching-life-plan.test.mjs tests/coaching-report-save-intent.test.mjs tests/coaching-report-store.test.mjs tests/coaching-report-review.test.mjs tests/coaching-report-preview.test.mjs tests/coaching-report-source.test.mjs tests/coaching-report-v2.test.mjs
-          node --test tests/coaching-quality-engine.test.mjs tests/coaching-brain.test.mjs tests/coaching-live-voice.test.mjs
+          node --test tests/coaching-quality-engine.test.mjs tests/coaching-brain.test.mjs tests/coaching-live-voice.test.mjs tests/coaching-methodology.test.mjs tests/agent-director-owned-runtime.test.mjs
           node --check lib/personal-coaching/traditions.js
           node --check lib/academy/coaching-audio-model.js
           node --check lib/academy/coaching-audio-store.js
           node --test tests/coaching-overload-session.test.mjs tests/coaching-feasibility.test.mjs tests/coaching-reconnect.test.mjs tests/coaching-one-screen-mobile.test.mjs tests/personal-coaching-client-context.test.mjs tests/personal-coaching-session.test.mjs tests/personal-coaching-voice.test.mjs tests/personal-coaching-model-selection.test.mjs tests/coaching-intelligence-p1.test.mjs tests/coaching-intelligence-offline.test.mjs tests/coaching-intelligence-state.test.mjs tests/coaching-author-audio.test.mjs tests/coaching-author-audio-synthetic.test.mjs tests/coaching-audio-my-materials.test.mjs tests/tradition-coaching-courses.test.mjs tests/tradition-coaching-completion.test.mjs tests/tradition-coaching-persistence.test.mjs tests/business-coaching-90-days.test.mjs tests/academy-discovery-hero.test.mjs tests/reports-development-program.test.mjs
       - name: Scoped eslint
-        run: npx --no-install eslint components/app/coaching-live-voice.jsx app/api/app/coaching/voice/turn/route.js components/coaching-chat-thread.jsx components/app/practice-materials.jsx components/app/practice-workspace.jsx components/practitioner-cabinet.jsx lib/app/practitioner-access.js components/coaching-context-review.jsx components/app/personal-coaching.jsx components/app/personal-coaching-picker.jsx components/app/my-coaching-plan.jsx components/coaching-action-plan.jsx components/app/tradition-coaching.jsx components/app/tradition-coaching-audio.jsx components/admin-coaching-audio.jsx components/app/coaching-question-voice.jsx components/academy-tradition-coaching-landing.tsx components/app/my-course.jsx components/app/app-workspace.jsx components/app/business-coaching.jsx components/app/my-courses-dashboard.jsx components/app/development-program.jsx components/direction-offers.tsx components/academy-hub.tsx lib/personal-coaching/questions.js lib/personal-coaching/speech-text.js lib/personal-coaching/model-matcher.js lib/personal-coaching/guided-session.js lib/personal-coaching/offline-intelligence.js lib/personal-coaching/traditions.js lib/academy/coaching-audio-model.js lib/academy/coaching-audio-store.js app/admin/coaching-audio/data/route.js app/admin/materials/coaching/page.jsx app/admin/materials/coaching/\[tradition\]/page.jsx lib/app/personal-coaching.js lib/app/personal-coaching-catalog.js lib/app/coaching-life-plan.js lib/app/business-coaching.js app/api/app/\[...path\]/route.js
+        run: npx --no-install eslint components/coaching-brain-panel.jsx lib/app/coaching-brain.js lib/agent-director/commander-owned-runtime.mjs components/app/coaching-live-voice.jsx app/api/app/coaching/voice/turn/route.js components/coaching-chat-thread.jsx components/app/practice-materials.jsx components/app/practice-workspace.jsx components/practitioner-cabinet.jsx lib/app/practitioner-access.js components/coaching-context-review.jsx components/app/personal-coaching.jsx components/app/personal-coaching-picker.jsx components/app/my-coaching-plan.jsx components/coaching-action-plan.jsx components/app/tradition-coaching.jsx components/app/tradition-coaching-audio.jsx components/admin-coaching-audio.jsx components/app/coaching-question-voice.jsx components/academy-tradition-coaching-landing.tsx components/app/my-course.jsx components/app/app-workspace.jsx components/app/business-coaching.jsx components/app/my-courses-dashboard.jsx components/app/development-program.jsx components/direction-offers.tsx components/academy-hub.tsx lib/personal-coaching/questions.js lib/personal-coaching/speech-text.js lib/personal-coaching/model-matcher.js lib/personal-coaching/coaching-methodology.mjs lib/personal-coaching/guided-session.js lib/personal-coaching/offline-intelligence.js lib/personal-coaching/traditions.js lib/academy/coaching-audio-model.js lib/academy/coaching-audio-store.js app/admin/coaching-audio/data/route.js app/admin/materials/coaching/page.jsx app/admin/materials/coaching/\[tradition\]/page.jsx lib/app/personal-coaching.js lib/app/personal-coaching-catalog.js lib/app/coaching-life-plan.js lib/app/business-coaching.js app/api/app/\[...path\]/route.js
       # Required production PR Core already performs the exact-HEAD Next build
       # and TypeScript gate; keep standalone validation on manual/nonproduction runs.
       - name: TypeScript noEmit

@@ -29,7 +29,7 @@ test("one phrase editor supplies Montage Text with selected and manually edited 
  assert.match(cmp,/listMeaningAxes\(locale\)/);
  assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("visual"\);setPreviewPlaying\(false\);\}\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("audio"\);setBasicPanelTab\("music"\);setPreviewPlaying\(false\);\}\}/);
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
 });
 
@@ -69,7 +69,7 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/selectedCount<5/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("visual"\);setPreviewPlaying\(false\);\}\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("audio"\);setBasicPanelTab\("music"\);setPreviewPlaying\(false\);\}\}/);
  assert.match(cmp,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
@@ -152,7 +152,7 @@ test("WebKit keeps two Ideas tabs and real opt-in voice while five Montage tabs 
  assert.match(browser,/await advancedText\.click\(\)/);
  assert.match(browser,/await myVoiceModeButton\.click\(\)/);
  assert.match(browser,/data-video-affirmation-voice-consent/);
- for(const tab of ['id:"effects",Icon:Sparkles','id:"text",Icon:Type','id:"visual",Icon:Zap','id:"settings",Icon:SlidersHorizontal'])
+ for(const tab of ['id:"effects",Icon:Sparkles','id:"text",Icon:Type','id:"audio",Icon:Music2','id:"settings",Icon:SlidersHorizontal'])
   assert.ok(studio.includes(tab),tab);
 });
 
