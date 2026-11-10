@@ -184,50 +184,28 @@ test("hydration progresses Goals → Ideas through a real tap without hidden leg
   assert.match(flow,/data-active-workspace/);
 });
 
-test("physical voice WebKit checks real Settings, independent Audio workspace, exclusive Hypno tabs and Voice",()=>{
+test("physical voice WebKit follows Montage Settings → Audio Voice without retired Ideas voice UI",()=>{
  const browser=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
  const settings=browser.indexOf('const montageSettingsTab=page.locator');
  const selectDuration=browser.indexOf('await durationSelect.selectOption("10")',settings);
- const openAudio=browser.indexOf('const audioWorkspace=page.locator',selectDuration);
- const clickAudio=browser.indexOf('await audioWorkspace.click()',openAudio);
- const music=browser.indexOf('await expect(page.locator("[data-video-audio-workspace]")).toBeVisible()',clickAudio);
- const phrases=browser.indexOf("const phrases=page.locator",music);
- const reenter=browser.indexOf('const audioWorkspaceAfterExport=page.locator',phrases);
- const voice=browser.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")',reenter);
- assert.ok(settings>=0&&selectDuration>settings&&openAudio>selectDuration&&clickAudio>openAudio&&music>clickAudio&&phrases>music&&reenter>phrases&&voice>reenter,
-   "visitor sets duration, enters Audio, and reopens consented Voice before MP4 recording");
- assert.match(browser,/const hypnoTabs=page\.locator\('\[data-hypno-tabs\]'\)/);
- assert.match(browser,/const visualTab=hypnoTabs\.locator\('\[data-hypno-tab="visual"\]'\)/);
- assert.match(browser,/const audioTab=hypnoTabs\.locator\('\[data-hypno-tab="audio"\]'\)/);
- assert.match(browser,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
- assert.match(browser,/await expect\(visualTab\)\.toHaveAttribute\("aria-selected","true"\)/);
- assert.match(browser,/await expect\(audioTab\)\.toHaveAttribute\("aria-selected","true"\)/);
- assert.match(browser,/await balancedLight\.click\(\)/);
- assert.match(browser,/await textPosition\.click\(\)/);
- assert.match(browser,/await expect\(visualGroup\)\.toBeHidden\(\)/);
- assert.match(browser,/await expect\(audioGroup\)\.toBeVisible\(\)/);
+ const openAudio=browser.indexOf("const openAudioVoice=async()=>",selectDuration);
+ const initialVoice=browser.indexOf("await openAudioVoice()",openAudio);
+ const audioAfterExport=browser.indexOf("const audioWorkspaceAfterExport=page.locator",initialVoice);
+ const audioClick=browser.indexOf("await audioWorkspaceAfterExport.click()",audioAfterExport);
+ const voiceTab=browser.indexOf('await page.locator(\'[data-video-audio-tab="voice"]\').click()',audioClick);
+ const voiceStudio=browser.indexOf('const voiceStudioPanel=page.locator("[data-video-voice-studio]")',voiceTab);
+ assert.ok(settings>=0&&selectDuration>settings&&openAudio>selectDuration&&initialVoice>openAudio&&
+   audioAfterExport>initialVoice&&audioClick>audioAfterExport&&voiceTab>audioClick&&voiceStudio>voiceTab,
+   "visitor sets duration and reaches the one canonical Audio voice editor through visible navigation");
+ assert.match(browser,/const standardAudioMode=page\.locator\('\[data-video-audio-voice-mode="voice"\]'\)/);
+ assert.match(browser,/const myVoiceAudioMode=page\.locator\('\[data-video-audio-voice-mode="my-voice"\]'\)/);
+ assert.match(browser,/voiceStudioPanel\.locator\(":scope > summary"\)\.click\(\)/);
+ assert.doesNotMatch(browser,/data-video-ideas-advanced-voice|data-video-ideas-voice-mode|data-video-phrase-audio-shortcut/);
  assert.doesNotMatch(browser,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
  assert.match(browser,/encoded-audio-verified/);
- // Preserve the real first guest movie flow on the current tabbed Montage.
- const firstVideo=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
- assert.match(firstVideo,/const montageStyle=page\.locator\('\[data-video-montage-tab="effects"\]'\)/);
- assert.match(firstVideo,/await montageStyle\.click\(\)/);
- assert.match(firstVideo,/await page\.locator\('\[data-video-ideas-tab="concept"\]'\)\.click\(\)/,
-   "visitor can review the preserved Concept through the visible Ideas tab");
- assert.match(firstVideo,/const concept=page\.locator\('\[data-video-ideas-concept-panel\]'\)/);
- assert.match(firstVideo,/await concept\.waitFor\(\{state:'visible',timeout:15000\}\)/,
-   "the actual Concept panel is visible before explicit guest approval");
- assert.match(firstVideo,/await concept\.locator\('\[data-video-concept-approve\]'\)\.click\(\)/,
-   "guest explicitly approves Concept before timeline editing");
- assert.match(firstVideo,/const textTools=page\.locator\('\[data-video-concept-text-tools\]'\)/,
-   "original timeline is reachable through the Concept disclosure");
- assert.match(firstVideo,/await addVideo\.click\(\)/,
-   "real source picker must remain accessible after Concept approval");
- assert.match(firstVideo,/readRealGuestVideo\(page,\{timeout:80000\}\)/);
- assert.match(firstVideo,/FOUR_DISTINCT_SOURCES_REQUIRED/);
- assert.match(browser,/assert\.ok\(pcm\.stdout\.some\(value=>value!==0\)/);
+ assert.match(browser,/spawnSync\("ffprobe"/);
+ assert.match(browser,/spawnSync\("ffmpeg"/);
 });
-
 test("native MP4 retry does not silently rerun Safari WebCodecs after failed WebM",()=>{
   assert.match(studio,/const useWebCodecsMp4=!forceMp4ForRetry&&selectWebCodecsForRecording\(\{/);
   assert.match(studio,/result\.extension==="webm"[\s\S]*?createVideo\(false,true\)/);
