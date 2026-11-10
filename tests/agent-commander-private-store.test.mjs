@@ -106,3 +106,25 @@ test('private store preserves native JSONB objects and arrays when persisting pa
   assert.match(edge,/jsonbText\(event\.failed_jobs\)/);
   assert.match(edge,/jsonbText\(event\.failed_steps\)/);
 });
+
+
+test('Agent Director owns its run path and the Supabase store does not depend on an external Hermes HTTP service',()=>{
+  const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
+  const route=read('app/api/agent-director/commander-run/route.js');
+  const runtime=read('lib/agent-director/commander-owned-runtime.mjs');
+  assert.match(edge,/DIRECTOR_ORIGIN="https:\/\/holistichouse\.vercel\.app"/);
+  assert.match(edge,/ownedDirectorCall\(req,/);
+  assert.match(edge,/const canDispatch=executor==="local"&&!writeConfirmed/);
+  assert.match(edge,/EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/);
+  assert.match(edge,/trustedOwnedDirectorReceipt\(remote,/);
+  assert.match(edge,/saveOwnedDirectorReceipt\(db,ownerId,chat\.chat_id,runId,verified\)/);
+  assert.doesNotMatch(edge,/HERMES_ORIGIN_URL|HERMES_SHARED_SECRET|hermesCall\(|trustedHermesReceipt/);
+  assert.match(route,/auth\/v1\/user/);
+  assert.match(route,/privateStoreConfigured!==true/);
+  assert.match(route,/executeOwnedCommanderRun/);
+  assert.match(runtime,/HH_AGENT_OLLAMA_ENABLED!=='true'/);
+  assert.match(runtime,/AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED/);
+  assert.match(runtime,/AGENT_DIRECTOR_READ_ONLY_RESPONSE/);
+  assert.doesNotMatch(runtime,/OPENROUTER_API_KEY|GITHUB_TOKEN/);
+  assert.match(edge,/executorDispatch:false,dispatchAvailable:true/);
+});
