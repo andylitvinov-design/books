@@ -325,12 +325,18 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
       parseRecords(comments.filter(trustedControlComment))?.filter(r=>
         r.task_key===taskKey&&r.head_sha===pr.head.sha&&
         r.state==='RESERVED'&&r.owner_run_id===reservationRunId).at(-1):null;
-    const receipt=trustedReservation?.error_task_id?
-      {...task,error_task_id:trustedReservation.error_task_id}:task;
+    const receipt=trustedReservation?{...task,
+      ...(trustedReservation.error_task_id?
+        {error_task_id:trustedReservation.error_task_id}:{}),
+      ...(trustedReservation.assigned_executor_id?
+        {assigned_executor_id:trustedReservation.assigned_executor_id}:{}),
+      assignment_status:'WORKER_CLAIMED'}:task;
     const workerRunUrl=Number.isSafeInteger(context.runId)?
       'https://github.com/'+fullRepo+'/actions/runs/'+context.runId:null;
     const claimedReceipt=receipt?commentBody({...receipt,state:'CLAIMED',
       owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl,
+      executor_run_id:String(context.runId||'unknown'),
+      worker_started:true,source_published:false,
       outcome:'CLAIM_ONLY_NO_SOURCE_WRITE'}):'';
     const claimStage=Number.isSafeInteger(context.runId)&&receipt?.task_key?
       stageLine({stage:'claimed',pr_number:pr.number,head_sha:pr.head.sha,
