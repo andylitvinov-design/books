@@ -81,6 +81,23 @@ test('persistent infrastructure and provider quota do not schedule blind retries
   assert.equal(quota.retry.max_attempts, 0);
 });
 
+test('workflow budget guard is classified as CI routing policy, never source repair', () => {
+  const result = classify([
+    job('core-lint-types-build',
+      'Verify specialist ownership and Messenger isolation on CI-policy changes')
+  ], {
+    failureMessage: 'Workflow budget exceeded: reuse an existing domain suite or explicitly review the budget in a CI architecture PR'
+  });
+  assertDiagnosticOnly(result, 'BASE_OR_CI_ROUTING');
+  assert.equal(result.reason_code, 'CI_WORKFLOW_BUDGET_GUARD');
+  assert.equal(result.evidence_code, 'WORKFLOW_BUDGET_GUARD');
+  assert.equal(result.recommended_status, 'REROUTED');
+  assert.equal(result.responsible_role, 'ci-routing-owner');
+  assert.equal(result.retry.allowed, true);
+  assert.equal(result.retry.max_attempts, 1);
+  assert.match(result.recommended_action, /workflow ownership|workflow/i);
+});
+
 test('TypeScript and ordinary source build errors are distinguished', () => {
   assertDiagnosticOnly(classify([job('core-lint-types-build', 'TypeScript check')]), 'TYPESCRIPT');
   assertDiagnosticOnly(classify([job('build', 'Cannot find module ./missing-module')]), 'SOURCE_CODE');

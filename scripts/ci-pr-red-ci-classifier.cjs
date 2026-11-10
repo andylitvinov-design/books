@@ -26,6 +26,7 @@ const SIGNALS = Object.freeze({
   INTEGRATION: /(?:\bapi\b|supabase|vercel|github api|\bmcp\b|oauth|webhook|integration|database connection|schema mismatch|http client)/i,
   AI_EXECUTOR: /(?:openrouter|model response|completion response|invalid patch|patch response|free_model|free model|provider quota|model timeout|empty model|non[- ]text response|unexpected model identity|inference)/i,
   AUTOMATION_PROCESS: /(?:dispatcher|dispatch(?:er)?|task queue|queue reservation|lease|prompt missing|missing prompt|no executor|executor not invoked|finalizer|finalization|task state|task capsule|handoff|idempotency|duplicate task|lost context|worker claim)/i,
+  CI_WORKFLOW_BUDGET: /(?:workflow budget exceeded|workflow count (?:exceeded|limit)|too many (?:github actions )?workflows|workflow (?:graph|fan.out) budget)/i,
   SOURCE_CODE: /(?:eslint|syntax error|cannot find module|module not found|missing import|build failed|compilation failed|type error|referenceerror|syntaxerror|cannot resolve|dependency conflict)/i,
   INFRA_STEP: /^(?:set ?up job|run actions\/(?:checkout|setup-node)@|checkout|install dependencies|download|fetch|restore cache|prepare runner)/i
 });
@@ -115,6 +116,12 @@ function classifyRedCiError({
 
   if (SIGNALS.BASE_ADVANCED.test(text)) {
     return makeResult('BASE_ADVANCED', evidence, 0.97, { evidenceCode: 'EXPLICIT_BASE_FAILURE' });
+  }
+  if (SIGNALS.CI_WORKFLOW_BUDGET.test(text)) {
+    return makeResult('BASE_OR_CI_ROUTING', evidence, 0.97, {
+      reasonCode: 'CI_WORKFLOW_BUDGET_GUARD',
+      evidenceCode: 'WORKFLOW_BUDGET_GUARD'
+    });
   }
   if (coreRoot === 'CI_PREFLIGHT_OR_ROUTING') {
     return makeResult('BASE_OR_CI_ROUTING', evidence, 0.9, { evidenceCode: 'TRUSTED_PREFLIGHT_ROUTING_FAILURE' });
