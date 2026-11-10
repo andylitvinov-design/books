@@ -503,7 +503,8 @@ async function handler(req){
       const runId=body.runId,idempotencyKey=body.idempotencyKey,executor=body.executor;
       const message=clean(body.message,5000);
       if(!uuid(runId)||!uuid(idempotencyKey)||!EXECUTORS.has(executor)||message.length<2||
-         String(body.message||"").length>5000)return reply(400,{error:"INVALID_EXECUTION_REQUEST"},origin);
+         String(body.message||"").length>5000||(executor==="local"&&String(body.message||"").length>3000))
+        return reply(400,{error:"INVALID_EXECUTION_REQUEST"},origin);
       const chats=await q(db,"select chat_id,task_id,payload,revision from business_brain.commander_chats where owner_id=$1::uuid and chat_number=$2 limit 1",[ownerId,chatNumber]);
       if(!chats.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
       const chat=chats[0],rawChat=chat.payload&&typeof chat.payload==="object"?chat.payload:{};
