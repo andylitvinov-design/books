@@ -387,3 +387,17 @@ test('owner history verification is read-only and free-model setup remains hidde
  assert.match(js,/el\('verify-chat'\)\.addEventListener\('click',verifySavedThread\)/);
  assert.match(js,/show\('free-model-status',!aiReady\)/);
 });
+
+test('private Commander writes raw JSON text through text-to-jsonb casts, not JSONB scalar double-encoding',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.doesNotMatch(edge,/\$\d+::jsonb\b/);
+ const jsonbParams=[...edge.matchAll(/\$\d+::text::jsonb\b/g)];
+ assert.equal(jsonbParams.length,14);
+ for(const field of ['failed_jobs','failed_steps','commander_tasks','commander_chats','commander_chat_events'])
+  assert.ok(edge.includes(field));
+ assert.match(edge,/JSON\.stringify\(event\.failed_jobs\)/);
+ assert.match(edge,/JSON\.stringify\(event\.failed_steps\)/);
+ assert.match(edge,/JSON\.stringify\(record\)/);
+ assert.match(edge,/JSON\.stringify\(chat\)/);
+ assert.match(edge,/JSON\.stringify\(event\)/);
+});
