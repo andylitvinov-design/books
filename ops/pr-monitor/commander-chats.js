@@ -16,10 +16,8 @@
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false,ownedDirectorAvailable=false;
  let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null,ciInboxTimer=null,ciInboxBusy=false;
  let executorModels=null,executorModelsPromise=null,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
- const COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app';
- const COUNCIL_PROTOCOL='HH_AI_COUNCIL_BRIDGE_V1';
- let councilFrameReady=false,councilPending=null;
- const councilCompleted=new Set(),councilSaving=new Set();
+ // One-tap Council via same-origin, owner-verified server.
+ let councilPending=null,councilChatIds=new Set();
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
  const show=(id,yes)=>{el(id).hidden=!yes};
  const info=s=>{
@@ -56,7 +54,8 @@
   try{return await ownerRefreshPromise}finally{ownerRefreshPromise=null}
  }
  async function request(url,method='GET',body,retried=false){
-  const controller=new AbortController(),timer=win.setTimeout(()=>controller.abort(),13000);
+  const timeoutMs=url===AI+'?action=council'?45000:13000;
+  const controller=new AbortController(),timer=win.setTimeout(()=>controller.abort(),timeoutMs);
   let r;
   try{
    r=await win.fetch(url,{method,credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal,
@@ -335,13 +334,19 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
   if(!messages.length)box.append(make('p','cc-empty','Напишите вопрос, чтобы начать диалог.'));
   for(const msg of messages){
    const c=make('div','cc-message-item cc-from-'+msg.kind);
-   const author=msg.kind==='owner'?'Вы':msg.kind==='assistant_unverified'?'Ассистент':
+   const author=msg.kind==='owner'?'Вы':msg.kind==='assistant_unverified'?(String(msg.model||'').startsWith('Совет ИИ')?'Совет ИИ':'Ассистент'):
     msg.kind==='note'?'Заметка':msg.author||'Сообщение';
    c.append(make('div','cc-message-by',author),make('p',null,msg.text||''),
     make('small',null,time(msg.createdAt)+(msg.kind==='github_report'?' · отчёт, не доказательство LIVE':'')));
    if(msg.kind==='github_report')htmlLink(c,'Источник GitHub',msg.url);
    if(msg.kind==='agent_final'&&msg.sourceWrite?.verified===true)htmlLink(c,'Проверенный Draft PR #'+msg.sourceWrite.prNumber,msg.sourceWrite.prUrl);
    box.append(c);
+  }
+  if(councilPending?.chatId===thread?.id){
+   const p=make('div','cc-message-item cc-council-thinking');
+   p.setAttribute('role','status');
+   p.append(make('div','cc-message-by','Совет ИИ'),make('p',null,'Совет ИИ думает…'));
+   box.append(p);
   }
   box.scrollTop=box.scrollHeight;
  }
@@ -356,7 +361,8 @@ function renderThread(){
   el('thread-advanced').open=false;el('chat-extra').open=false;el('verify-status').textContent='';
   const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
   if(el('mode').value==='hermes')el('mode').value='local'; // legacy external executor is retired
-  if(el('mode').value==='council-free'||!(el('mode').value==='director'&&available.includes('local'))&&!available.includes(el('mode').value))
+  if(councilChatIds.has(thread.id))el('mode').value='council-free';
+  else if(el('mode').value==='council-free'||!(el('mode').value==='director'&&available.includes('local'))&&!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
   configureModels('thread');
   el('chat-feedback').textContent='';show('chat-feedback',false);
@@ -405,6 +411,7 @@ function renderThread(){
     thread=v.chat;messages=v.messages;if(v.truncated)info('Длинная история GitHub: охват ограничен пятью страницами.');
    }else{thread=chats.find(x=>x.id===c.id);messages=thread?.messages||[];}
    if(!thread)throw Error('Чат не найден');
+   if(messages.some(m=>m.kind==='assistant_unverified'&&String(m.model||'').startsWith('Совет ИИ')))councilChatIds.add(thread.id);
    stopVoice();
    el('message').value='';
    renderThread();
@@ -522,70 +529,12 @@ async function update(e){
   }
   renderList();
  }
- function ensureCouncilFrame(){
-  const frame=el('council-frame');
-  show('council-panel',true);
-  if(!frame.dataset.loaded){
-   frame.dataset.loaded='yes';
-   frame.addEventListener('load',()=>{councilFrameReady=true;sendCouncilPrompt()});
-   frame.src=frame.dataset.src;
-  }
- }
- function sendCouncilPrompt(){
-  if(!councilFrameReady||!councilPending)return;
-  try{
-   el('council-frame').contentWindow.postMessage({protocol:COUNCIL_PROTOCOL,
-    type:'HH_AI_COUNCIL_SET_PROMPT_V1',requestId:councilPending.requestId,prompt:councilPending.prompt},COUNCIL_ORIGIN);
-   councilPending.sent=true;
-   info('Вопрос передан в AI Council. Проверь его, выбери модели и подтверди запрос внутри Совета.');
-  }catch(error){info('Не удалось передать вопрос в Совет ИИ: '+String(error.message||error))}
- }
- function councilChunkEventId(requestId,index){
-  const parts=requestId.split('-');
-  if(parts.length!==5||!/^[0-9a-f]{8}$/i.test(parts[0])||!/^[0-9a-f]{4}$/i.test(parts[1])||
-   !/^[0-9a-f]{4}$/i.test(parts[2])||!/^[0-9a-f]{4}$/i.test(parts[3])||
-   !/^[0-9a-f]{12}$/i.test(parts[4])||!Number.isSafeInteger(index)||index<0||index>11)
-   throw Error('INVALID_COUNCIL_REQUEST_ID');
-  const tail=parseInt(parts[4],16)+index;
-  if(tail>0xffffffffffff)throw Error('COUNCIL_EVENT_ID_OVERFLOW');
-  parts[4]=tail.toString(16).padStart(12,'0');
-  return parts.join('-');
- }
- async function receiveCouncilMessage(event){
-  if(event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow)return;
-  const data=event.data;
-  if(!data||data.protocol!==COUNCIL_PROTOCOL||typeof data.requestId!=='string')return;
-  if(data.type==='HH_AI_COUNCIL_PROMPT_READY_V1'){
-   if(councilPending?.requestId===data.requestId)info('Совет ИИ получил вопрос. Выбери модели, подтверди согласие и запусти анализ.');
-   return;
-  }
-  if(data.type==='HH_AI_COUNCIL_DONE_V1'){
-   if(councilPending?.requestId!==data.requestId)return;
-   councilPending=null;info('Совет завершил ответ. Сохранение в приватный чат не было разрешено; отчёт остался в окне Совета.');
-   return;
-  }
-  if(data.type!=='HH_AI_COUNCIL_RESULT_V1'||councilPending?.requestId!==data.requestId||
-   typeof data.report!=='string'||data.report.length<20||data.report.length>18000||
-   councilCompleted.has(data.requestId)||councilSaving.has(data.requestId))return;
-  const pending=councilPending;
-  councilSaving.add(data.requestId);
-  try{
-   const chunks=data.report.match(/[\s\S]{1,1640}/g)||[];
-   if(!chunks.length||chunks.length>12)throw Error('REPORT_CHUNK_LIMIT');
-   for(let index=0;index<chunks.length;index++){
-    if(pending.savedChunks?.has(index))continue;
-    const part='AI Council Free · часть '+(index+1)+'/'+chunks.length+'\n'+chunks[index];
-    await append(pending.chat,'ai',part,'AI Council Free · бесплатные модели · согласованный отчёт',
-      councilChunkEventId(data.requestId,index));
-    (pending.savedChunks??=new Set()).add(index);
-   }
-   councilCompleted.add(data.requestId);councilPending=null;
-   el('council-frame').contentWindow.postMessage({protocol:COUNCIL_PROTOCOL,type:'HH_AI_COUNCIL_SAVE_ACK_V1',requestId:data.requestId},COUNCIL_ORIGIN);
-   info('Полный отчёт AI Council сохранён в приватном чате частями. Это консультация, не исполнение и не LIVE-доказательство.');
-  }catch(error){
-   el('council-frame').contentWindow.postMessage({protocol:COUNCIL_PROTOCOL,type:'HH_AI_COUNCIL_SAVE_FAILED_V1',requestId:data.requestId},COUNCIL_ORIGIN);
-   info('Отчёт сохранён частично или не сохранён: '+String(error.message||error)+'. Повторная передача продолжит с недостающей части.');
-  }finally{councilSaving.delete(data.requestId);}
+ function councilFailure(error){
+  const code=String(error?.message||error);
+  if(['OPENROUTER_NOT_CONNECTED','OPENROUTER_KEY_NOT_CONFIGURED'].includes(code))
+   return 'Бесплатные модели на сервере пока не подключены. Вопрос сохранён, ответа модели нет.';
+  if(code==='OPENROUTER_FREE_RATE_LIMIT')return 'Лимит бесплатных моделей достигнут. Ответ не получен.';
+  return 'Совет ИИ не ответил: '+code;
  }
  async function assignSelectedExecutor(c,mode){
   const storedMode=mode==='director'?'local':mode;
@@ -656,18 +605,25 @@ async function update(e){
    finally{busy=false;el('send').disabled=false;}
   }
   if(mode==='council-free'){
-   if(councilPending)return info('Уже ожидается ответ Совета ИИ. Заверши текущий вопрос или переключись на него.');
-   busy=true;el('send').disabled=true;
-   try{
-    await append(c,'owner',text,'');
-    councilPending={requestId:id(),prompt:text,chat:c,sent:false};
-    el('message').value='';ensureCouncilFrame();sendCouncilPrompt();
-    info('Вопрос сохранён в рабочем чате. AI Council ждёт выбора моделей и отдельного согласия на отправку.');
-   }catch(err){councilPending=null;info('Не удалось сохранить вопрос для AI Council: '+String(err.message||err));}
-   finally{busy=false;el('send').disabled=false}
-   return;
-  }
-  const context=messages.slice(-8).filter(x=>['owner','assistant_unverified'].includes(x.kind))
+    if(councilPending)return info('Совет ИИ уже думает над вопросом.');
+    busy=true;el('send').disabled=true;
+    let saved=false;
+    try{
+     await append(c,'owner',text,'');saved=true;councilChatIds.add(c.id);
+     el('message').value='';
+     councilPending={chatId:c.id};renderMessages();
+     // Send transfers only this explicit question. Never hidden chat history.
+     const answer=await request(AI+'?action=council','POST',{message:text});
+     if(typeof answer.reply!=='string'||!answer.reply.trim())throw Error('COUNCIL_NO_REPLY');
+     const chunks=answer.reply.match(/[\s\S]{1,1500}/g)||[];
+     if(!chunks.length||chunks.length>10)throw Error('COUNCIL_RESPONSE_TOO_LONG');
+     for(const part of chunks)await append(c,'ai',part,'Совет ИИ · бесплатная модель');
+     info('Ответ Совета ИИ сохранён в переписке.');
+    }catch(error){info((saved?'Вопрос сохранён. ':'')+councilFailure(error));}
+    finally{councilPending=null;renderMessages();busy=false;el('send').disabled=false;}
+    return;
+   }
+   const context=messages.slice(-8).filter(x=>['owner','assistant_unverified'].includes(x.kind))
    .map(x=>({role:x.kind==='owner'?'user':'assistant',content:x.text.slice(0,800)}));
   const dispatchModes=new Set(['director','hermes','codex','chatgpt-work','repair-worker','manual']);
   if(dispatchModes.has(mode)){
@@ -996,7 +952,6 @@ async function update(e){
  el('mode').addEventListener('change',()=>{
   const mode=el('mode').value;configureModels('thread');
   if(mode==='hermes')void ensureExecutorModels().catch(err=>info('Каталог Hermes недоступен: '+String(err.message||err)));
-  if(mode!=='council-free')show('council-panel',false);
  });
  el('new-mode').addEventListener('change',()=>{
   configureModels('new');
@@ -1085,8 +1040,6 @@ async function update(e){
   win.visualViewport.addEventListener('scroll',sync);
   doc.addEventListener('focusin',sync);doc.addEventListener('focusout',sync);
  }
-
- win.addEventListener('message',event=>{void receiveCouncilMessage(event)});
  request('/api/commander-session').then(s=>{
   if(s.authenticated!==true||s.owner!==true)throw Error('OWNER_SESSION_REQUIRED');
   return request(AI+'?action=status');

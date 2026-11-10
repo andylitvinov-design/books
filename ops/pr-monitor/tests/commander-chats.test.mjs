@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-openrouter-free-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-council-inline-v2'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -115,43 +115,22 @@ test('owner chat API exposes a bounded CI event inbox query through the private 
 });
 
 
-test('AI Council Free is embedded in a persistent Director chat with strict cross-origin validation and explicit consent',()=>{
- const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css'),csp=src('vercel.json');
- assert.ok(html.includes('option value="council-free"'));
- assert.ok(html.includes('id="cc-council-frame"'));
- assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
- assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-openrouter-free-v1'));
- assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
- assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
- assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
- assert.ok(js.includes('HH_AI_COUNCIL_RESULT_V1'));
- assert.ok(js.includes('data.report.length>18000'));
- assert.ok(js.includes('HH_AI_COUNCIL_SAVE_ACK_V1'));
- assert.ok(js.includes('HH_AI_COUNCIL_SAVE_FAILED_V1'));
- assert.ok(js.includes('eventId:eventIdOverride||id()'));
- assert.ok(js.includes('councilChunkEventId(data.requestId,index)'));
- assert.ok(js.includes('AI Council Free · часть'));
- assert.ok(js.includes("if(mode==='council-free'||c.executors.includes(storedMode))return c;"));
- assert.match(css,/cc-council-panel/);
- assert.match(css,/min-height:600px/);
- assert.ok(csp.includes('frame-src https://accounts.google.com/gsi/ https://ai-council-free-super10.vercel.app;'));
- assert.ok(html.includes('API-ключ'));
+test('Council is direct in-chat; no nested iframe or second settings form',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
+ assert.match(html,/option value="council-free"/);
+ assert.doesNotMatch(html,/<iframe|cc-council-frame|Открыть отдельно/);
+ assert.doesNotMatch(js,/ensureCouncilFrame|receiveCouncilMessage|COUNCIL_ORIGIN|postMessage/);
+ assert.doesNotMatch(css,/#cc-council-frame|\.cc-council-panel/);
+ assert.match(js,/Совет ИИ думает…/);
+ assert.ok(js.includes(String.raw`answer.reply.match(/[\s\S]{1,1500}/g)`),'Council must split all Unicode text, not only literal backslashes');
+ assert.match(js,/request\(AI\+'\?action=council','POST',\{message:text\}\)/);
+ assert.match(js,/await append\(c,'owner',text,''\)/);
+ assert.match(js,/await append\(c,'ai',part,'Совет ИИ/);
+ assert.match(js,/councilPending=null;renderMessages\(\)/);
+ assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v2/);
+ const start=js.indexOf("if(mode==='council-free'){",js.indexOf('async function send(e)'));
+ assert.doesNotMatch(js.slice(start,js.indexOf('const context=messages.slice(-8)',start)),/history:|tasks:|context:|iframe|window\.open|location\./);
 });
-test('Director Council flow records only the explicit owner question before iframe handoff',()=>{
- const js=src('commander-chats.js');
- const start=js.indexOf("if(mode==='council-free'){");
- const end=js.indexOf('const context=messages.slice',start);
- const block=js.slice(start,end);
- assert.ok(block.includes("await append(c,'owner',text,'')"));
- assert.ok(block.includes('councilPending={requestId:id(),prompt:text,chat:c,sent:false}'));
- assert.ok(!block.includes('tasks:c.tasks'));
- assert.ok(!block.includes('history:context'));
- assert.ok(!block.includes('action=chat'));
- assert.ok(!block.includes('executor'));
-});
-
-
 test('Commander Hermes adapter exposes only owner-authenticated free models and consented writes',()=>{
  const api=src('api/commander-chats.js'),ui=src('commander-chats.js');
  assert.match(api,/name==='free_models'\|\|name==='executor_models'/);
@@ -213,7 +192,7 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-ci-classification-v1'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-council-inline-v2'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -292,6 +271,7 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
    if(target.pathname==='/api/pm-agent-chat'){
     if(action==='status')return response({authenticated:true,modes:{local:true,openrouter:false}});
     if(action==='chat')return response({reply:'Синтетический ответ советника',model:'local'});
+    if(action==='council')return response({reply:'Синтетический ответ Совета ИИ, это проверенный тестовый ответ.',model:'Council free'});
     if(action==='reports')return response({reports:[]});
    }
    if(target.pathname==='/api/commander-chats'){
@@ -351,6 +331,16 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  await elements['cc-verify-chat'].fire('click');
  assert.match(elements['cc-verify-status'].textContent,/вопрос и ответ сохранены в Supabase/);
  assert.equal(elements['cc-verify-chat'].disabled,false);
+ // The exact same owner chat receives the Council answer on ONE Send.
+ elements['cc-mode'].value='council-free';
+ elements['cc-message'].value='Какие тренды ИИ сейчас основные?';
+ await elements['cc-chat-form'].fire('submit');
+ assert.equal(network.filter(x=>x.action==='council').length,1);
+ assert.deepEqual(eventRows.slice(-2).map(e=>e.kind),['owner','assistant_unverified']);
+ assert.match(eventRows.at(-1).text,/Синтетический ответ Совета ИИ/);
+ assert.equal(elements['cc-messages'].children.length,4);
+ assert.equal(elements['cc-send'].disabled,false);
+ assert.match(elements['cc-chat-feedback'].textContent,/Ответ Совета ИИ сохранён/);
 });
 
 test('last chats stay at the top and one fixed bottom composer supports typed and spoken questions',()=>{
@@ -537,8 +527,8 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
 
 test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
- assert.match(html,/commander-chats\.js\?v=20261110-openrouter-free-v1/);
- assert.match(html,/commander-chats\.css\?v=20261110-ci-classification-v1/);
+ assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v2/);
+ assert.match(html,/commander-chats\.css\?v=20261110-council-inline-v2/);
  assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
  for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
   assert.ok(js.includes('classification.'+field)||js.includes('classification?.'+field),field);
@@ -549,7 +539,7 @@ test('CI Inbox displays the shared diagnostic recommendation and retry policy wi
 test('owner chat accurately labels first-party OpenRouter Free and translates every fail-closed provider reason',()=>{
  const html=src('chats.html'),js=src('commander-chats.js');
  assert.equal((html.match(/Agents Director · OpenRouter Free \(анализ\)/g)||[]).length,2);
- assert.match(html,/commander-chats\.js\?v=20261110-openrouter-free-v1/);
+ assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v2/);
  assert.match(js,/director:'Agents Director · OpenRouter Free'/);
  for(const code of ['OWNED_MODEL_RUNTIME_NOT_CONFIGURED','OWNED_MODEL_FREE_RATE_LIMIT',
    'OWNED_MODEL_NO_VERIFIED_FREE_MODELS','OWNED_MODEL_COST_UNVERIFIED',
