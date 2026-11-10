@@ -167,6 +167,7 @@ on:
       - 'scripts/ci-pr-red-ci-classifier.cjs'
       - 'scripts/ci-pr-error-rules.v1.json'
       - 'tests/ci-pr-unified-error-classifier.test.cjs'
+      - 'tests/ci-pr-red-ci-classifier.test.cjs'
 
       - 'tests/ci-pr-commander-ci-inbox.test.cjs'
       - 'supabase/migrations/20261110124500_commander_ci_inbox_classifier_taxonomy_v2_20261110.sql'
