@@ -80,7 +80,7 @@ function extractTaskOutcomes(comments,number,currentHead=null){
      c.updated_at!==c.created_at||parseUTC(c.created_at)===null)continue;
   const matches=[...c.body.matchAll(/<!-- HH_PR_REPAIR_OUTCOME_V1 ([a-f0-9]{40}) ([1-9][0-9]{0,18}) -->/g)];
   if(!matches.length)continue;
-  const match=c.body.match(/<!-- HH_PR_TASK_V1 -->\\s*```json\\s*([\\s\\S]*?)```/);
+  const match=c.body.match(/<!-- HH_PR_TASK_V1 -->\s*```json\s*([\s\S]*?)```/);
   if(!match||match[1].length>12000)continue;
   let record;try{record=JSON.parse(match[1]);}catch{continue;}
   const outcome=record?.outcome;
@@ -116,9 +116,9 @@ function extractTaskOutcomes(comments,number,currentHead=null){
   const key=record.task_key+':'+record.owner_run_id;
   if(seen.has(key))continue;seen.add(key);
   const url=typeof c.html_url==='string'&&
-    /^https:\/\/github\\.com\/andylitvinov-design\/books\/pull\/\\d+#issuecomment-\\d+$/.test(c.html_url)?c.html_url:null;
+    /^https:\/\/github\.com\/andylitvinov-design\/books\/pull\/\d+#issuecomment-\d+$/.test(c.html_url)?c.html_url:null;
   const runUrl=typeof record.run_url==='string'&&
-    /^https:\/\/github\\.com\/andylitvinov-design\/books\/actions\/runs\/\\d+$/.test(record.run_url)?record.run_url:null;
+    /^https:\/\/github\.com\/andylitvinov-design\/books\/actions\/runs\/\d+$/.test(record.run_url)?record.run_url:null;
   rows.push({
     task_key:record.task_key,pr_number:number,head_sha:record.head_sha.toLowerCase(),
     status:outcome.status,reason_code:outcome.reason_code,
