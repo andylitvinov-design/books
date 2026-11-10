@@ -176,7 +176,7 @@ test('existing or auto-created private incident task can be routed, but not clai
   'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED','AUTO_TASK_CREATED_NOT_DISPATCHED']){
   let calls=0;
   const r=await route({receipt:{...receipt(),association},context:context(),
-   existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
+   existingCoreHandoff:async()=>{calls++;return acceptedHandoff();}});
   assert.equal(r.state,'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',association);
   assert.equal(r.workerStarted,false);
   assert.equal(r.liveVerified,false);
