@@ -18,6 +18,13 @@ export async function POST(request) {
     requireSameOrigin(request, config)
     auth = createRequestAuth(request, config)
     const actor = await auth.verified()
+    // Reuse the existing Holistic House Google session in Commander. The
+    // refresh token is handed directly to the sibling monitor origin via a
+    // one-time URL fragment and immediately converted to an HttpOnly cookie.
+    const { data: currentSession, error: sessionError } = await auth.client.auth.getSession()
+    const refreshToken = currentSession?.session?.refresh_token
+    if (sessionError || typeof refreshToken !== 'string' || refreshToken.length < 20 || refreshToken.length > 4096)
+      throw new AppError('OWNER_SESSION_INVALID', 401)
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 7000)
     let edge
@@ -61,6 +68,7 @@ export async function POST(request) {
       owner: true,
       privateStoreConfigured: true,
       accessToken: actor.accessToken,
+      refreshToken,
       expiresAt: claims.exp,
       service: edge.service,
     }, { headers: PRIVATE_HEADERS }))
