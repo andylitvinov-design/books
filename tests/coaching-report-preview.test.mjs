@@ -34,7 +34,7 @@ test('private preview starts closed and identifies itself as an unsaved draft in
  const source=readFileSync(new URL('../components/coaching-report-preview.jsx',import.meta.url),'utf8')
  const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText
  const req=createRequire(import.meta.url)
- const modules={react:React,'react/jsx-runtime':req('react/jsx-runtime'),
+ const modules={'next/link':'a',react:React,'react/jsx-runtime':req('react/jsx-runtime'),
   '@/lib/app/client-fetch':{appFetch:async()=>{throw Error('not called during render')}},
   '@/lib/personal-coaching/report-preview.mjs':{reportPreviewRows},'@/lib/personal-coaching/report-save-intent.mjs':{makeReportSaveIntent},'./coaching-report-preview.module.css':{}}
  const exports={}
@@ -51,7 +51,7 @@ test('rendered report escapes client text and distinguishes unconfirmed from con
  const source=readFileSync(new URL('../components/coaching-report-preview.jsx',import.meta.url),'utf8')
  const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText
  const req=createRequire(import.meta.url),exports={}
- const modules={react:React,'react/jsx-runtime':req('react/jsx-runtime'),'@/lib/app/client-fetch':{appFetch:async()=>{}},'@/lib/personal-coaching/report-preview.mjs':{reportPreviewRows},'@/lib/personal-coaching/report-save-intent.mjs':{makeReportSaveIntent},'./coaching-report-preview.module.css':{}}
+ const modules={'next/link':'a',react:React,'react/jsx-runtime':req('react/jsx-runtime'),'@/lib/app/client-fetch':{appFetch:async()=>{}},'@/lib/personal-coaching/report-preview.mjs':{reportPreviewRows},'@/lib/personal-coaching/report-save-intent.mjs':{makeReportSaveIntent},'./coaching-report-preview.module.css':{}}
  runInNewContext(output,{exports,require:name=>{if(Object.hasOwn(modules,name))return modules[name];throw Error(name)}})
  const rows={sections:[{key:'focus',label:'Your focus',text:'<script>alert(1)</script>'}],actions:[{id:'one',text:'Walk',statusLabel:'For review'},{id:'two',text:'Rest',statusLabel:'Previously confirmed'}]}
  const html=renderToStaticMarkup(React.createElement(exports.CoachingReportPreviewResult,{rows,locale:'en'}))
@@ -67,7 +67,7 @@ test('a lost save response keeps the reviewed request locked and retry reuses it
  const requests=[],hooks=[];let cursor=0,nextFailure=null
  const react={useRef(value){const i=cursor++;return hooks[i]??(hooks[i]={current:value})},useState(value){const i=cursor++;if(!(i in hooks))hooks[i]=value;return [hooks[i],next=>{hooks[i]=typeof next==='function'?next(hooks[i]):next}]},useEffect(){cursor++}}
  const jsx={jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})}
- const modules={react,'react/jsx-runtime':jsx,'@/lib/app/client-fetch':{appFetch:async(path,body,method)=>{if(path==='personal-coaching-report')return {revision:7,report};if(method==='GET')return {reports:[{id:'30000000-0000-4000-8000-000000000001',sessionId:sid,createdAt:'2026-11-09T20:00:00Z',report}]};if(path.endsWith('/delete')){requests.push({delete:body});return {deleted:true}}if(nextFailure){const error=Object.assign(new Error(nextFailure),{code:nextFailure});nextFailure=null;throw error}requests.push(structuredClone(body));if(requests.length===1)throw Error('lost response');return {saved:true,id:'30000000-0000-4000-8000-000000000001',revision:1}}},'@/lib/personal-coaching/report-preview.mjs':{reportPreviewRows},'@/lib/personal-coaching/report-save-intent.mjs':{makeReportSaveIntent},'./coaching-report-preview.module.css':{}}
+ const modules={'next/link':'a',react,'react/jsx-runtime':jsx,'@/lib/app/client-fetch':{appFetch:async(path,body,method)=>{if(path==='personal-coaching-report')return {revision:7,report};if(method==='GET')return {reports:[{id:'30000000-0000-4000-8000-000000000001',sessionId:sid,createdAt:'2026-11-09T20:00:00Z',report}]};if(path.endsWith('/delete')){requests.push({delete:body});return {deleted:true}}if(nextFailure){const error=Object.assign(new Error(nextFailure),{code:nextFailure});nextFailure=null;throw error}requests.push(structuredClone(body));if(requests.length===1)throw Error('lost response');return {saved:true,id:'30000000-0000-4000-8000-000000000001',revision:1}}},'@/lib/personal-coaching/report-preview.mjs':{reportPreviewRows},'@/lib/personal-coaching/report-save-intent.mjs':{makeReportSaveIntent},'./coaching-report-preview.module.css':{}}
  const source=readFileSync(new URL('../components/coaching-report-preview.jsx',import.meta.url),'utf8')
  const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText
  const exports={};runInNewContext(output,{exports,require:name=>modules[name],AbortController,crypto:{randomUUID}})
@@ -118,7 +118,7 @@ test('archive remains available without a session and removes only the selected 
  const calls=[],hooks=[];let cursor=0
  const react={useRef(value){const i=cursor++;return hooks[i]??(hooks[i]={current:value})},useState(value){const i=cursor++;if(!(i in hooks))hooks[i]=value;return [hooks[i],next=>{hooks[i]=typeof next==='function'?next(hooks[i]):next}]},useEffect(){cursor++}}
  const jsx={jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})}
- const modules={react,'react/jsx-runtime':jsx,'@/lib/app/client-fetch':{appFetch:async(path,body,method)=>{calls.push({path,body,method});return method==='GET'?{reports:records}:{deleted:true}}},'@/lib/personal-coaching/report-preview.mjs':{reportPreviewRows},'@/lib/personal-coaching/report-save-intent.mjs':{makeReportSaveIntent},'./coaching-report-preview.module.css':{}}
+ const modules={'next/link':'a',react,'react/jsx-runtime':jsx,'@/lib/app/client-fetch':{appFetch:async(path,body,method)=>{calls.push({path,body,method});return method==='GET'?{reports:records}:{deleted:true}}},'@/lib/personal-coaching/report-preview.mjs':{reportPreviewRows},'@/lib/personal-coaching/report-save-intent.mjs':{makeReportSaveIntent},'./coaching-report-preview.module.css':{}}
  const source=readFileSync(new URL('../components/coaching-report-preview.jsx',import.meta.url),'utf8')
  const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText
  const exports={};runInNewContext(output,{exports,require:name=>modules[name],AbortController,crypto:{randomUUID}})

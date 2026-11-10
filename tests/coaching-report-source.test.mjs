@@ -82,7 +82,7 @@ test('preview route uses the existing authenticated same-origin and private resp
 test('report source and tests route to existing coaching and database gates',()=>{
  const workflow=readFileSync(new URL('../.github/workflows/hh-personal-coaching-session.yml',import.meta.url),'utf8')
  const trigger=parsePrTrigger(workflow,'hh-personal-coaching-session.yml')
- for(const filename of ['lib/app/coaching-report-v2.js','lib/app/coaching-report-store.js','supabase/migrations/20261109210000_hh_coaching_report_storage_v1.sql','tests/coaching-report-source.test.mjs','tests/coaching-report-v2.test.mjs']){
+ for(const filename of ['lib/app/coaching-report-v2.js','lib/app/coaching-report-store.js','supabase/migrations/20261110153118_hh_coaching_report_storage_v1.sql','tests/coaching-report-source.test.mjs','tests/coaching-report-v2.test.mjs']){
   assert.equal(matchesTrigger(trigger,[filename],'codex/public-book-library'),true,filename)
   assert.equal(decideHeavyImpact('app-r1',[{filename,status:'modified'}]).database,true,filename)
  }
