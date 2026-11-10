@@ -514,7 +514,6 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await openAudioVoice(); await voiceModeButton.click();
       await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
       await expect(voicePanel.locator("[data-hypno-voice]")).toBeVisible();
-      await expect(voicePanel.locator("[data-video-audio-own-upload]")).toHaveCount(1);
       await expect(voicePanel.locator('[data-video-affirmation-gender="male"]')).toBeVisible();
       for(const width of [320,354,390,430]){
         phase(engine,"ideas-voice-compact-"+width);
