@@ -505,7 +505,7 @@ async function handler(req){
       if(!chats.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
       const runsSql="select run_id,executor,status,reason_code,request_sha256,hermes_job_id,executor_session_id,receipt,started_at,completed_at,created_at,updated_at from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid order by created_at desc limit 30";
       let runs=await q(db,runsSql,[ownerId,chats[0].chat_id]);
-      return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUNS_V1",runs,storage:"SUPABASE_PRIVATE",
+      return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUNS_V1",chatId:chats[0].chat_id,runs,storage:"SUPABASE_PRIVATE",
         dispatchEnabled:false,dispatchAvailable:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",liveVerified:false,observedAt:new Date().toISOString()},origin);
     }
     if(action==="commander_start_run"){
@@ -586,8 +586,8 @@ async function handler(req){
         duplicate:false,dispatchAttempted:false,agentStarted:false,liveVerified:false,
         status:"BLOCKED",reasonCode,storage:"SUPABASE_PRIVATE"},origin);
       try{
-        const remote=await ownedDirectorCall(req,{schemaVersion:1,runId,chatId:chat.chat_id,
-          ownerId,projectKey:"holistic-house",message,modelId,confirmGitHubWrite:false,contextCapsule});
+        const remote=await ownedDirectorCall(req,{schemaVersion:1,runId,chatId:chat.chat_id,issueNumber:chatNumber,
+          requestSha256,ownerId,projectKey:"holistic-house",message,modelId,confirmGitHubWrite:false,contextCapsule});
         const verified=trustedOwnedDirectorReceipt(remote,{run_id:runId,chat_id:chat.chat_id,owner_id:ownerId});
         await saveOwnedDirectorReceipt(db,ownerId,chat.chat_id,runId,verified);
         return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",
@@ -647,7 +647,7 @@ async function handler(req){
         storage:"SUPABASE_PRIVATE",preferenceOnly:true,agentStarted:false},origin);
     }
     if(action==="status")return reply(200,{ok:true,service:"AGENT_COMMANDER_PRIVATE_STORE_V1",
-      owner:true,authenticated:true,privateStoreConfigured:true,executorDispatch:false,dispatchAvailable:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OWNED_MODEL_CONFIG_REQUIRED",liveVerification:false,
+      owner:true,canWrite:writable,authenticated:true,privateStoreConfigured:true,executorDispatch:false,dispatchAvailable:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OWNED_MODEL_CONFIG_REQUIRED",liveVerification:false,
       liveVerification:false,checkedAt:new Date().toISOString()},origin);
 
     if(action==="commander_list_tasks"){
