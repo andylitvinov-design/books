@@ -5575,14 +5575,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Mic size={23} aria-hidden="true"/></span>
-          <div><h3>{activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen?
+          <div><h3>{ideasVoiceMode==="my-voice"?
               (locale==="ru"?"Мой голос для видео":locale==="es"?"Mi voz para el vídeo":"My voice for your video"):
-              activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen?
+              false?
               (locale==="ru"?"Голос для вашего видео":locale==="es"?"Voz para tu vídeo":"Voice for your video"):
               (locale==="ru"?"Голос для озвучки фраз":locale==="es"?"Voz para las frases":"Voice for phrases")}</h3>
-            <p>{activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen?
+            <p>{ideasVoiceMode==="my-voice"?
               (locale==="ru"?"Загрузите или запишите собственный голос.":locale==="es"?"Sube o graba tu propia voz.":"Upload or record your own voice."):
-              activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen?
+              false?
               (locale==="ru"?"Выберите фразу и голос для её озвучивания.":locale==="es"?"Elige una frase y una voz para narrarla.":"Choose a phrase and a voice to narrate it."):
               (locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases")}</p></div>
         </div>
@@ -5600,8 +5600,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             previousHypnoAudioRef.current=null;
             if(staleHypnoTrack){clearUploadedAudio();setAttachedAudio(null);}
           }}
-          compact={activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen}
-          ownVoiceOnly={activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen}
+          compact={audioWorkspaceTab==="voice"}
+          ownVoiceOnly={ideasVoiceMode==="my-voice"}
           extraActions={<>
         <div className={videoStyles.ideasVoiceActions} data-video-ideas-voice-actions>
           <label className={videoStyles.ideasVoiceUpload}>
@@ -7321,13 +7321,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-video-phrase-audio-shortcut hidden={ideasSubtab!=="personalization"}
           disabled={recording||preparing}
           onClick={()=>{
-            // The advanced voice editor lives in Ideas. Reveal it on an actual
-            // visitor action before trying to focus the nested audio settings.
-            setIdeasSubtab("personalization");
-            setIdeasVoiceAdvancedOpen(true);
-            setPhraseAudioExpanded(true);
-            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-              document.querySelector("[data-video-ideas-advanced-voice]")?.scrollIntoView({behavior:"smooth",block:"nearest"})));
+            // Ideas authors intention; sound controls live in Audio / Voice.
+            setActiveWorkspace("effects");setAudioWorkspaceTab("voice");
           }}>
           <Music2 size={19} aria-hidden="true"/>
           {locale==="ru"?"Настроить аудиогид, музыку и голос":
@@ -7361,6 +7356,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <section className={videoStyles.audioWorkspacePanel} id="video-audio-panel-voice"
             role="tabpanel" aria-labelledby="video-audio-label-voice"
             hidden={audioWorkspaceTab!=="voice"} data-video-audio-panel="voice">
+            <div className={videoStyles.audioWorkspaceTabs} role="group" data-video-audio-voice-modes
+              aria-label={locale==="ru"?"Режим голоса":locale==="es"?"Modo de voz":"Voice mode"}>
+              <button type="button" data-video-audio-voice-mode="voice" aria-pressed={ideasVoiceMode==="voice"}
+                onClick={()=>setIdeasVoiceMode("voice")}>{locale==="ru"?"Голос":locale==="es"?"Voz":"Voice"}</button>
+              <button type="button" data-video-audio-voice-mode="my-voice" aria-pressed={ideasVoiceMode==="my-voice"}
+                onClick={()=>setIdeasVoiceMode("my-voice")}>{locale==="ru"?"Мой голос":locale==="es"?"Mi voz":"My Voice"}</button>
+            </div>
             {audioWorkspaceTab==="voice" ? hypnoVoiceEditor : null}
             {supplementaryCloudVoicePanel}
           </section>

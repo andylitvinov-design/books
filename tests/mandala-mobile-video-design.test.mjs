@@ -345,7 +345,7 @@ test("one contextual therapy action keeps the single secure renderer and a visib
   assert.equal((studio.match(/\{deepAudioPane\}/g)||[]).length,1,
     "one canonical full audio player in Audio workspace");
   assert.match(studio,/openQuickDetailed\("video-audio"\)/);
-  assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setActiveWorkspace\("effects"\);[\s\S]*?setAudioWorkspaceTab\("voice"\)/);
+  assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\)/);
   assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
     "the sole phrase editor remains mounted to preserve its project state");
   for(const title of ["Видео-терапия","Своё фото / цель",
