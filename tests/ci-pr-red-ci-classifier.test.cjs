@@ -53,8 +53,10 @@ test('specialist exact-head/required-workflow gate is CI routing evidence, never
   assert.equal(r.status,'DIAGNOSTIC_ONLY');
  }
  // A similar-looking unrelated failure must not be promoted to this route.
- assert.notEqual(check([job('hh-specialist','Run Specialist functional tests')]).reason_code,
-  'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE');
+ const near=check([job('hh-specialist','Run Specialist functional tests')]);
+ assert.notEqual(near.reason_code,'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE');
+ assert.equal(near.source_write_authorized,false);
+ assert.equal(near.execution_authorized,false);
 });
 
 test('trusted red-CI taxonomy: base advanced requires explicit evidence',()=>{
