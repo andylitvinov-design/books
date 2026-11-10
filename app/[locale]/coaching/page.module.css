@@ -233,3 +233,44 @@
   :global([data-coaching-hub] .embeddedExplorer .compactMaster .masterFeature){width:88px;height:100px}
   :global([data-coaching-hub] .embeddedExplorer .compactMaster .masterHeading h3){font-size:15px}
 }
+
+
+@media(max-width:600px){
+  :global([data-coaching-hub] .embeddedExplorer>.filters){
+    position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;
+    column-gap:8px;row-gap:8px;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .searchRow){grid-column:1;grid-row:1}
+  :global([data-coaching-hub] .embeddedExplorer .masterExtra){
+    grid-column:2;grid-row:1;margin:0;border:0;padding:0;min-width:0;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .masterExtraToggle){
+    min-height:48px;max-width:112px;padding:7px 11px;font-size:10px;line-height:1.15;
+    white-space:normal;text-align:center;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar){
+    grid-column:1/-1;grid-row:2;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;
+    padding:2px 1px 6px;margin:0;scroll-snap-type:x mandatory;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button){
+    display:flex;flex:0 0 103px;flex-direction:column;align-items:center;justify-content:flex-start;
+    gap:5px;min-height:93px;padding:7px 5px;border-radius:16px;white-space:normal;
+    font-size:10.5px;line-height:1.2;text-align:center;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button::before){
+    content:"";display:block;flex:none;width:57px;height:57px;border-radius:50%;
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+    box-shadow:inset 0 0 0 1px #ffffffbb,0 2px 7px #334b361b;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button:nth-child(1)::before){background-image:url("/images/holistic-house/assessment-lotus.svg")}
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button:nth-child(2)::before){background-image:url("/images/holistic-house/report-lighthouse-coast.webp")}
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button:nth-child(3)::before){background-image:url("/images/holistic-house/reiki-approved-sunrise-v3.webp")}
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button:nth-child(4)::before){background-image:url("/images/holistic-house/video-posters/constellations-en-v1.webp")}
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button:nth-child(5)::before){background-image:url("/images/holistic-house/messenger-zen-stones.svg")}
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button:nth-child(6)::before){background-image:url("/images/holistic-house/tao-fu-balance.webp")}
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button:nth-child(7)::before){background-image:url("/images/holistic-house/homeopathy-still-life.svg")}
+  :global([data-coaching-hub] .embeddedExplorer .masterExtraBody:not([hidden])){
+    position:absolute;z-index:45;top:calc(100% + 6px);right:0;width:min(100%,390px);
+    max-height:min(68dvh,560px);overflow-y:auto;box-shadow:0 14px 34px #2c423027;
+  }
+}
