@@ -80,6 +80,8 @@ test("one original video preview and export share the selected symbolic layer",(
      "video and text/audio timing changes must invalidate the same Canvas preview and exported output");
   assert.equal((s.match(/setStoryboardPhotoRevision\(value=>value\+1\)/g)||[]).length,2,
     "adding, replacing and removing scene photos must invalidate the shared Canvas preview/export");
+  assert.match(s,/currentFreeVideoPlan\?\.reducedMotion,professionalMode,storyboardPhotoRevision\]\);/,
+    "a changed local Story photo must invalidate a previously encoded movie, not just its preview");
   assert.equal((s.match(/data-video-mandala-hero/g)||[]).length,1);
   assert.match(c,/data-story-addon-capability=\{item\.capability\}/);
   assert.match(c,/disabled=\{disabled\|\|hasPending\}/);

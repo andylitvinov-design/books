@@ -535,3 +535,15 @@ test('Stories Studio PR must execute real WebKit and four-format acceptance, nev
   const linux=s.slice(s.indexOf('      - name: Build\n'),s.indexOf('  webkit_preflight:'));
   assert.match(linux, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
 });
+
+
+test('Stories physical five-scene MP4 is mandatory in the macOS WebKit release path',()=>{
+  const s=workflow('holistic-support-mandala.yml');
+  assert.match(s,/scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
+  const mac=s.slice(s.indexOf('  voice-webkit-macos:'));
+  assert.match(mac,/if \[\[ "\$\{GITHUB_HEAD_REF:-\}" == codex\/stories-\* \]\]/);
+  assert.match(mac,/HH_STORIES_E2E_ENGINE=webkit/);
+  assert.match(mac,/node scripts\/benchmarking\/verify-five-scene-stories-browser\.mjs/);
+  assert.match(mac,/artifacts\/benchmarking\/five-scene-stories-webkit\.json/);
+  assert.doesNotMatch(mac,/continue-on-error:\s*true/);
+});

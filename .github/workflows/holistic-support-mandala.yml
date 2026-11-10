@@ -112,6 +112,7 @@ on:
       - 'tests/video-quality-evidence.test.mjs'
       - 'tests/hd-published-stock-quality.test.mjs'
       - 'scripts/benchmarking/verify-original-motion-export.mjs'
+      - 'scripts/benchmarking/verify-five-scene-stories-browser.mjs'
       - 'data/video-catalog/free-stock-scenes.json'
       - 'data/video-catalog/dareful-verified-import-20261030.json'
       - 'data/video-catalog/scene-taxonomy.json'
@@ -574,6 +575,7 @@ jobs:
           node --check scripts/verify-affirmation-voice-browser.mjs
           node --check scripts/benchmarking/first-video-live-export.mjs
           node --check scripts/benchmarking/verify-original-motion-export.mjs
+          node --check scripts/benchmarking/verify-five-scene-stories-browser.mjs
           node --check scripts/verify-practices-mobile-browser.mjs
           node --check scripts/ci-pr-readiness.mjs
           # Catch stale compact mobile UI contracts before reserving
@@ -688,11 +690,20 @@ jobs:
             node scripts/benchmarking/first-video-live-export.mjs
           HH_ORIGINAL_MOTION_ENGINE=webkit HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
             node scripts/benchmarking/verify-original-motion-export.mjs
+          # Real five-shot vertical movie, identity and soundtrack gate for Stories PRs.
+          # The guard is strict, local-only and cannot invoke paid AI or publisher POST.
+          if [[ "${GITHUB_HEAD_REF:-}" == codex/stories-* ]]; then
+            HH_STORIES_E2E_ENGINE=webkit \
+              HH_LIVE_VIDEO_PLAYWRIGHT="$RUNNER_TEMP/voice-playwright/node_modules/playwright/index.mjs" \
+              node scripts/benchmarking/verify-five-scene-stories-browser.mjs
+          fi
       - name: Preserve anonymous WebKit encoded video evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: hh-webkit-four-scene-${{ github.sha }}
-          path: artifacts/benchmarking/first-video-live-export.json
+          path: |
+            artifacts/benchmarking/first-video-live-export.json
+            artifacts/benchmarking/five-scene-stories-webkit.json
           if-no-files-found: warn
           retention-days: 7

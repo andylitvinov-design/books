@@ -2874,7 +2874,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
        shot.transitionIn||"soft",shot.colorLook||"original",shot.motion??null,
        shot.sourcePhasePercent??0,shot.sourceSpeed??1]),appliedStory,
     creationMode,activeMontageStyleId,currentFreeVideoPlan?.seed,currentFreeVideoPlan?.family,currentFreeVideoPlan?.palette,
-    currentFreeVideoPlan?.motion,currentFreeVideoPlan?.variation,currentFreeVideoPlan?.reducedMotion,professionalMode]);
+    currentFreeVideoPlan?.motion,currentFreeVideoPlan?.variation,currentFreeVideoPlan?.reducedMotion,professionalMode,storyboardPhotoRevision]);
   const sourceRef = useRef(signature);
   sourceRef.current = signature;
   // Keep the real Create button reachable when user must attach/authorize audio.
@@ -4828,6 +4828,15 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   };
   const createFiveSceneStory=()=>{
     if(recording||preparing)return;
+    // An unavailable paid model must never silently produce a local film labelled AI.
+    if(storyFormat==="ai_cinematic"){
+      setNotice(locale==="ru"
+        ?"AI Cinematic пока выключен. Выберите Visual или Motion для бесплатной локальной Stories."
+        :locale==="es"
+          ?"AI Cinematic está desactivado. Elige Visual o Motion para una Story local gratuita."
+          :"AI Cinematic is disabled. Choose Visual or Motion for a free local Story.");
+      return;
+    }
     if(storyFormat==="talking_character"){
       setProCatalogKind("character");setActiveWorkspace("pro");setPreviewPlaying(false);
       window.requestAnimationFrame(()=>document.querySelector("[data-video-quick-personal]")?.scrollIntoView({block:"start",behavior:"smooth"}));

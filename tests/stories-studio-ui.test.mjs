@@ -61,6 +61,9 @@ test("paid cinematic story never triggers Veo and the owner-only gate remains ex
  const contract=readFileSync(new URL("../lib/mandala/stories-studio.mjs",import.meta.url),"utf8");
  assert.match(studio,/data-video-stories-paid-gate/);
  assert.match(studio,/Платная генерация Veo выключена/);
+ const action=studio.slice(studio.indexOf('const createFiveSceneStory='),studio.indexOf('const replaceStoryboardSource='));
+ assert.match(action,/if\(storyFormat==="ai_cinematic"\)[\s\S]*?return;/,
+  'disabled paid AI must not silently produce a free movie labelled AI');
  assert.match(studio,/paidRenderApproved:false/);
  assert.match(contract,/paidProviderRequests:0/);
  assert.match(contract,/authorizedSceneIds:Object\.freeze\(paidAllowed\?\[quote\.sceneId\]:\[\]\)/);
@@ -69,4 +72,17 @@ test("paid cinematic story never triggers Veo and the owner-only gate remains ex
  assert.match(contract,/quote\.amount<=budgetLimitUsd/);
  assert.match(contract,/existingOperationStatus/);
  assert.match(contract,/autoRetryPaidRequests:false/);
+});
+
+
+test('real five-scene WebKit acceptance uses original UI, local-only requests, distinct MP4 frames and audible H264/AAC',()=>{
+ const script=readFileSync(new URL('../scripts/benchmarking/verify-five-scene-stories-browser.mjs',import.meta.url),'utf8');
+ for(const marker of ['data-video-stories-format','data-video-stories-create','data-video-stories-scene-list',
+  'data-video-quick-generate','readRealGuestVideo','ffprobe','STORIES_H264_REQUIRED',
+  'STORIES_AAC_REQUIRED','STORIES_AUDIO_SILENT','STORIES_SCENE_FRAME_MISMATCH_',
+  'STORIES_DUPLICATE_MEDIA','STORIES_BLACK_SCENE_'])
+   assert.ok(script.includes(marker),marker);
+ assert.match(script,/\['GET','HEAD'\]\.includes\(request\.method\(\)\)/);
+ assert.match(script,/url\.origin===origin/);
+ assert.doesNotMatch(script,/method:\s*['"]POST|api\/instagram|api\/payment/);
 });
