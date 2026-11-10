@@ -14,6 +14,7 @@
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
  let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null;
+ let executorModels=[],executorModelReady=false,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
  const COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app';
  const COUNCIL_PROTOCOL='HH_AI_COUNCIL_BRIDGE_V1';
  let councilFrameReady=false,councilPending=null;
@@ -47,6 +48,54 @@
   }finally{win.clearTimeout(timer)}
   let j;try{j=await r.json()}catch{throw Error('Не удалось прочитать ответ сервера')}
   if(!r.ok)throw Error(j.error||'HTTP '+r.status);return j;
+ }
+ async function loadExecutorModels(){
+  if(!remote)return;
+  try{
+   const result=await request(SERVER+'?action=free_models');
+   executorModels=Array.isArray(result.models)?result.models.filter(m=>typeof m?.id==='string'&&m.id.endsWith(':free')&&m.pricing==='$0 verified by live catalog'):[];
+   executorModelReady=executorModels.length>0;
+   const select=el('model'),selected=select.value;
+   for(const model of executorModels){
+    if(![...select.options].some(option=>option.value===model.id)){
+     const option=make('option',null,model.name+' · '+model.id+' · $0');
+     option.value=model.id;select.append(option);
+    }
+   }
+   if(executorModels.some(m=>m.id===selected))select.value=selected;
+   else if(executorModelReady)select.value=executorModels[0].id;
+  }catch{executorModels=[];executorModelReady=false;}
+ }
+ async function refreshExecutionRuns(){
+  if(!remote||!thread||!authorized||executionPollBusy)return null;
+  executionPollBusy=true;
+  try{
+   const result=await request(SERVER+'?action=runs&issue='+thread.issueNumber);
+   const run=Array.isArray(result.runs)?result.runs[0]:null;
+   if(!run)return null;
+   const labels={STARTING:'Исполнитель запускается…',RUNNING:'Исполнитель работает…',WAITING_FOR_APPROVAL:'Ожидается подтверждение владельца.',COMPLETED:'Исполнение завершено. Ответ добавлен в чат.',FAILED:'Исполнение завершилось ошибкой.',CANCELLED:'Исполнение отменено.',BLOCKED:'Исполнитель не запущен или выполнение заблокировано.'};
+   el('executor-state').textContent=(labels[run.status]||run.status||'Статус неизвестен')+
+    (run.reason_code?' Причина: '+run.reason_code+'.':'')+(run.hermes_job_id?' · Job '+run.hermes_job_id:'');
+   if(['COMPLETED','FAILED'].includes(run.status)){
+    const latest=await request(SERVER+'?action=read&issue='+thread.issueNumber);
+    if(thread?.id===latest.chat?.id){thread=latest.chat;messages=latest.messages;renderMessages();}
+   }
+   return run;
+  }catch{return null;}
+  finally{executionPollBusy=false;}
+ }
+ function startExecutionPolling(){
+  if(executionRefreshTimer!==null)win.clearInterval(executionRefreshTimer);
+  executionRefreshTimer=null;executionPollCount=0;
+  if(!thread||!remote||!authorized)return;
+  executionRefreshTimer=win.setInterval(async()=>{
+   if(!thread||doc.visibilityState==='hidden'||executionPollBusy)return;
+   if(executionPollCount++>=90){win.clearInterval(executionRefreshTimer);executionRefreshTimer=null;return;}
+   const run=await refreshExecutionRuns();
+   if(!run||!['STARTING','RUNNING'].includes(run.status)){
+    win.clearInterval(executionRefreshTimer);executionRefreshTimer=null;
+   }
+  },10000);
  }
  const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
  const to64=a=>{let s='';for(let i=0;i<a.length;i+=8192)s+=String.fromCharCode(...a.subarray(i,i+8192));return win.btoa(s)};
@@ -240,7 +289,7 @@ function renderThread(){
   const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
   if(el('mode').value==='council-free'||!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
-  show('model-label',el('mode').value==='openrouter');
+  show('model-label',['openrouter','hermes'].includes(el('mode').value));
   el('chat-feedback').textContent='';show('chat-feedback',false);
   el('pr-proof').replaceChildren();el('report-list').replaceChildren();
   show('create',false);show('chat-form',true);show('thread',true);
@@ -291,6 +340,7 @@ function renderThread(){
    el('message').value='';
    renderThread();
    startReportPolling();
+   if(remote){void refreshExecutionRuns().then(run=>{if(run&&['STARTING','RUNNING'].includes(run.status))startExecutionPolling();});}
    void reportList({automatic:true,silent:true});
    el('thread').scrollIntoView({block:'start',behavior:'smooth'});
   }catch(err){info('Ошибка открытия чата: '+String(err.message||err))}
@@ -346,7 +396,7 @@ function renderThread(){
    thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});
    el('create-form').reset();el('new-mode').value=aiReady?'openrouter':'local';pendingCreateId=null;
    if(el('new-context').open)el('new-context').close();
-   el('mode').value=mode;show('model-label',mode==='openrouter');
+   el('mode').value=mode;show('model-label',['openrouter','hermes'].includes(mode));
    el('message').value=question;
    created=true;
    info('Отправляю вопрос…');
@@ -516,8 +566,10 @@ async function update(e){
    try{
     await append(c,'owner',text,'');el('message').value='';
     const runId=id(),idempotencyKey=id();
+    const selectedModel=executorModels.find(m=>m.id===el('model').value)?.id||executorModels[0]?.id||'';
+    if(mode==='hermes'&&(!executorModelReady||!selectedModel))throw Error('Нет модели с подтверждённой нулевой стоимостью в текущем каталоге OpenRouter.');
     const result=await request(SERVER+'?action=run','POST',{
-     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text
+     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text,modelId:selectedModel,confirmGitHubWrite:false
     });
     try{
      const latest=await request(SERVER+'?action=read&issue='+c.issueNumber);
@@ -721,6 +773,7 @@ async function update(e){
   el('new-mode').value=aiReady?'openrouter':'local';
   show('free-model-status',!aiReady);
   if(remote){
+   await loadExecutorModels();
    show('board',true);
    try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
    catch(e){
@@ -798,7 +851,7 @@ async function update(e){
   finally{busy=false;el('refresh').disabled=false;}
  });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
- el('mode').addEventListener('change',()=>{show('model-label',el('mode').value==='openrouter');if(el('mode').value!=='council-free')show('council-panel',false)});
+ el('mode').addEventListener('change',()=>{show('model-label',['openrouter','hermes'].includes(el('mode').value));if(el('mode').value!=='council-free')show('council-panel',false)});
  
  // Speech recognition is user-initiated and stays on device/browser voice services.
  // Never send raw audio. Only the edited transcript joins the chat on Send.
