@@ -14,7 +14,7 @@ test('legacy fallback targets the current verified complete immutable standalone
     source: '/:path*',
     destination: 'https://holistic-house-pr-monitor-96se9mpk5-super10.vercel.app/:path*'
   });
-  assert.match(JSON.stringify(cfg.headers), /ai-council-free-super10\\.vercel\\.app/);
+  assert.match(JSON.stringify(cfg.headers), /ai-council-free-super10\.vercel\.app/);
 });
 test('new local Commander owner and Codex routes remain in the current source tree', () => {
   for (const file of [
