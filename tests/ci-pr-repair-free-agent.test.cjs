@@ -317,3 +317,33 @@ test('complete free source scope checks all changed paths, not a sliced eight-fi
    Array.from({length:100},(_,i)=>({filename:'lib/repair-'+i+'.js',status:'modified'}))
  ).allowed,false,'incomplete paginated inventory fails closed');
 });
+
+
+test('typecheck targets exact-HEAD changed source only and rejects ambiguous or unsafe diagnoses',()=>{
+ const {findTypeScriptFailureTarget,boundedSource}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const chosen=['components/mandala-video-concept.tsx','lib/mandala/video-concept-narrative.mjs'];
+ const output='components/mandala-video-concept.tsx(125,5): error TS2322: Type string[] is not assignable to type never[].\n';
+ assert.deepEqual(findTypeScriptFailureTarget(output,chosen),{
+   file:'components/mandala-video-concept.tsx',line:125,column:5,
+   code:'TS2322',source:'typescript_compiler'
+ });
+ assert.equal(findTypeScriptFailureTarget(output,['components/other.tsx']),null);
+ assert.equal(findTypeScriptFailureTarget(
+   'app/api/private/route.ts(1,1): error TS2322: no\n',
+   ['app/api/private/route.ts']),null);
+ assert.equal(findTypeScriptFailureTarget(
+   output+'components/another.tsx(6,3): error TS2322: no\n',
+   ['components/mandala-video-concept.tsx','components/another.tsx']),null,
+   'two equally trusted changed TS files remain ambiguous; do not guess');
+ assert.equal(findTypeScriptFailureTarget(
+   'components/mandala-video-concept.tsx(0,5): error TS2322: bad\n',
+   chosen),null);
+ const content=Array.from({length:1100},(_,i)=>
+   'const longLine'+i+" = 'wide source context to retain distinct exact content';"
+ ).join('\n')+'\n';
+ const excerpt=boundedSource(content,{source:'typescript_compiler',line:500});
+ assert.equal(excerpt.bounded,true);
+ assert.match(excerpt.content,/VERIFIED TYPESCRIPT LINE 500/);
+ assert.match(excerpt.content,/longLine499/);
+ assert.ok(Buffer.byteLength(excerpt.content,'utf8')<18000);
+});
