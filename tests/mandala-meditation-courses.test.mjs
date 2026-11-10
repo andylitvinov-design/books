@@ -6,28 +6,29 @@ import {buildPersonalMeditationScript,isMeditationSafetyResponse} from "../lib/m
 
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("meditation-course workspace opens the existing working composer within the six video tabs",()=>{
+test("meditation-course workspace routes its seeded composer into the dedicated Audio tab",()=>{
   const studio=read("components/mandala-free-video-studio.tsx");
   const composer=read("components/mandala-personal-meditation.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const before=studio.indexOf("data-video-quick-controls");
   const entry=studio.indexOf('activeWorkspace==="practices" ? <section');
-  const panel=studio.indexOf("data-video-meditation-course-panel className");
-  const hypno=studio.indexOf("data-video-effects-panel");
-  assert.ok(before>0&&entry>before&&panel>entry&&hypno>0,
-    "the course composer belongs to the existing six-tab Video Studio");
+  const courseAction=studio.indexOf("data-video-therapy-meditation-audio",entry);
+  const audio=studio.indexOf('data-video-audio-panel="meditations"');
+  const panel=studio.indexOf("<MandalaPersonalMeditation",audio);
+  assert.ok(before>0&&entry>before&&courseAction>entry&&audio>0&&panel>audio,
+    "the course action remains in Practices and opens the shared Audio/Meditations composer");
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
-  assert.match(studio,/<MandalaPersonalMeditation\b[\s\S]*?\bcoursePreview\b[\s\S]*?onNarrationReady=/,
-    "the existing meditation composer receives the generated course preview and narration callback");
-  assert.match(studio,/studioMode==="therapy" && activeWorkspace!=="practices"/,
-    "do not mount two visible personal meditation editors");
+  assert.match(studio,/setAudioWorkspaceTab\("meditations"\)/);
+  assert.match(studio,/<MandalaPersonalMeditation[\s\S]*?coursePreview=\{Boolean\(courseMeditationDraft\)\} seedScript=\{courseMeditationDraft\}[\s\S]*?onNarrationReady=/,
+    "the one composer receives the course draft and narration callback");
+  assert.equal((studio.match(/<MandalaPersonalMeditation\b/g)||[]).length,1,
+    "one shared composer, not a duplicate in Ready or Therapy");
   assert.match(composer,/buildPersonalMeditationScript\(\{/);
   assert.match(composer,/data-meditation-course-request/);
   assert.match(composer,/maxLength=\{160\}/);
   assert.match(composer,/\{script\?\(coursePreview\?course.regenerate:t.regenerate\):t.generate\}/);
   assert.match(css,/\.workspaceCourses\{/);
 });
-
 test("one generated meditation unlocks exactly eight topic previews and an honest service inquiry",()=>{
   const src=read("components/mandala-personal-meditation.tsx");
   const css=read("components/mandala-personal-meditation.module.css");
@@ -144,8 +145,8 @@ test("iPhone guided-course create-plan handler has a one-tap state receipt witho
  assert.match(guided,/data-guided-plan-click-count=\{planActionCount\}/);
  assert.match(guided,/data-guided-plan-signature-match=\{programmeSignature===journeySignature\?"true":"false"\}/);
  assert.match(guided,/setPlanActionCount\(count=>count\+1\);\s*setProgrammeSignature\(journeySignature\);/);
- assert.match(guided,/scrollIntoView\(\{behavior:"instant",block:"start"\}\)/,
-   "personal editor focus must not leave a smooth-scroll animation over the next user click");
+ assert.match(guided,/setPersonalOpened\(true\);\s*onOpenMeditation\?\.\(\);/,
+   "opening a personal meditation uses the immediate Audio/Meditations handoff without a scroll race");
  assert.doesNotMatch(guided.slice(guided.indexOf("function openPersonalMeditation()"),
    guided.indexOf("function createProgramme()")),/requestAnimationFrame/,
    "no deferred scrolling may race the real create-programme tap");
