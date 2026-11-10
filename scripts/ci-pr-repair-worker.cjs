@@ -624,10 +624,12 @@ function sourceDeliveryStatus({state,sourcePublished,codeAvailable}) {
     next_action:'DIAGNOSE_EXACT_HEAD_FAILED_STEP'};
 }
 
-function normalizeModelAudit(raw,{number,expectedSha}={}){
+function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt}={}){
  let v=raw;if(typeof raw==='string'){if(raw.length>8000)return null;try{v=JSON.parse(raw);}catch{return null;}}
  if(!v||typeof v!=='object'||Array.isArray(v)||v.schema!=='HH_FREE_AI_MODEL_RUN_V1'||v.pr_number!==number||
  v.source_head!==expectedSha||v.executor_type!=='free_ci_patch_proposer'||!['openrouter','opencode'].includes(v.provider)||
+ (Number.isSafeInteger(Number(runId))&&Number(runId)>0&&String(v.run_id)!==String(runId))||
+ (Number.isSafeInteger(Number(runAttempt))&&Number(runAttempt)>0&&v.run_attempt!==Number(runAttempt))||
  !Number.isInteger(v.attempt_count)||v.attempt_count<0||v.attempt_count>1||typeof v.started_at!=='string'||
  !Number.isFinite(Date.parse(v.started_at))||typeof v.result!=='string'||!/^[A-Z0-9_]{3,60}$/.test(v.result))return null;
  const model=typeof v.model==='string'?v.model:null;
@@ -650,7 +652,7 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   codeAvailable=false,codeResult='',codeStatus='',codeDetail='',
   codeVerifyResult='',codeVerifyStatus='',codeVerifyDetail='',publishResult='',
   publishStatus='',publishSha='',candidateStatus='',candidateDetail='',
-  candidateSnapshot='',modelAuditRaw='',dryRun=false}) {
+  candidateSnapshot='',modelAuditRaw='',modelAuditRunAttempt=0,dryRun=false}) {
   const {owner,repo}=context.repo || {},fullRepo=owner+'/'+repo;
   const skip=reason=>{core.info('HH_REPAIR_OUTCOME SKIP '+reason);return {status:'skipped',reason};};
   if(dryRun || fullRepo!=='andylitvinov-design/books')return skip('AUDIT_OR_FOREIGN_REPO');
@@ -810,7 +812,8 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state==='MANUAL'||state==='FAILED'?
       agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const delivery=sourceDeliveryStatus({state,sourcePublished,codeAvailable});
-  const modelAudit=normalizeModelAudit(modelAuditRaw,{number,expectedSha});
+  const modelAudit=normalizeModelAudit(modelAuditRaw,{number,expectedSha,
+    runId:context.runId,runAttempt:modelAuditRunAttempt});
   const modelRun=modelAudit?{...modelAudit,patch_present:codeStatus==='proposed'||modelAudit.patch_present,
    verification_result:codeVerifyStatus==='ready'&&codeVerifyResult==='success'?'PASSED':
     codeVerifyStatus==='manual_required'?'REJECTED':codeVerifyStatus||'NOT_RUN',
