@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const {
  MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,boundedSource
+ noSecretEnv,findFailureTarget,boundedSource,recordFreeModelEvidence
 }=require('../scripts/ci-pr-repair-free-agent.cjs');
 const SHA='a'.repeat(40);
 test('free model fixed and no paid model routing',()=>{
