@@ -37,21 +37,22 @@ test('Origin is exact and owner JWT is not accepted from query parameters',()=>{
 });
 
 
-test('Commander handoff accepts only a verified access token plus the paired refresh token',()=>{
+
+test('Commander handoff accepts only a verified access token,()=>{
  const fs=require('node:fs');
  const sessionSource=fs.readFileSync(new URL('../api/commander-session.js',import.meta.url),'utf8');
  const authSource=fs.readFileSync(new URL('../commander-auth.js',import.meta.url),'utf8');
- assert.match(sessionSource,/Object\\.keys\\(body\\)\\.some\\(k=>!\\['token','refreshToken'\\]\\.includes\\(k\\)/);
- assert.match(sessionSource,/verifyOwner\\(req,body\\.token\\)/);
+ assert.match(sessionSource,/Object\.keys\(body\)\.some\(k=>!\['token','refreshToken'\]\.includes\(k\)/);
+ assert.match(sessionSource,/verifyOwner\(req,body\.token\)/);
  assert.match(sessionSource,/REFRESH_COOKIE/);
- assert.match(authSource,/values\\.get\\('refresh_token'\\)/);
+ assert.match(authSource,/values\.get\('refresh_token'\)/);
  assert.match(authSource,/refreshToken:sessionRefreshToken/);
- assert.match(authSource,/history\\.replaceState\\(null,'',location\\.pathname\\+location\\.search\\)/);
+ assert.match(authSource,/history\.replaceState\(null,'',location\.pathname\+location\.search\)/);
 });
 test('session refresh is not exposed through URL, browser storage or query parameters',()=>{
  const fs=require('node:fs');
  const source=fs.readFileSync(new URL('../api/commander-session.js',import.meta.url),'utf8');
- assert.doesNotMatch(source,/req\\.query|localStorage|sessionStorage|location\\.hash/);
+ assert.doesNotMatch(source,/req\.query|localStorage|sessionStorage|location\.hash/);
  assert.match(source,/HttpOnly; Secure; SameSite=Strict/);
  assert.match(source,/Vary','Cookie, Origin/);
 });
