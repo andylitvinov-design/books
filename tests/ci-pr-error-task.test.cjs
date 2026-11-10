@@ -69,6 +69,23 @@ test('invalid free AI patch response creates distinct post-worker task',()=>{
   a.throws(()=>makeWorkerFollowUp({pr_number:4024,head_sha:sha,task_key:'c'.repeat(32),
     owner_run_id:'1',state:'PUBLISHED',reason_code:'SUCCESS'}),/UNVERIFIED_WORKER/);
 });
+test('unsafe source refusal is an owner source-review task, never an AI model retry',()=>{
+ const x=makeWorkerFollowUp({pr_number:4217,head_sha:sha,
+   task_key:'b'.repeat(32),owner_run_id:'42867102351',state:'FAILED',
+   reason_code:'FREE_AI_JOB_FAILED_NO_SOURCE_COMMIT',
+   detail_code:'FREE_AI_UNSAFE_SOURCE_SCOPE',now});
+ assert.equal(x.category,'SOURCE_CODE');
+ assert.equal(x.strategy_code,'MANUAL_SOURCE_SCOPE_REVIEW');
+ assert.equal(x.responsible_role,'source-repair-owner');
+ assert.equal(x.next_action,'ASSIGN_OWNER_FOR_SENSITIVE_OR_UNSUPPORTED_SOURCE');
+ assert.equal(x.executor_kind,'owner_review');
+ assert.equal(x.recommended_status,'MANUAL_REQUIRED');
+ assert.equal(x.source_write_authorized,false);
+ assert.equal(x.execution_authorized,false);
+ assert.equal(taskStatus([],x),'MISSING');
+ assert.equal(taskStatus([bot(taskBody(x))],x),'ALREADY_RECORDED');
+});
+
 test('all categories have bounded deterministic strategy',()=>{
   for(const cat of ['SECURITY','ACCESS_CONFIG','INFRASTRUCTURE','MERGE_CONFLICT','BASE_ADVANCED',
     'BASE_OR_CI_ROUTING','AUTOMATION_PROCESS','AI_EXECUTOR','INTEGRATION',
