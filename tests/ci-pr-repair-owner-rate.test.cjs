@@ -64,7 +64,7 @@ test('existing issuer remains credential isolated and branch/head guarded',()=>{
  assert.match(flow,/rateGuard\.requiredOwnerBudget\(files\.length\)/);
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
  assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL /);
- assert.match(flow,/REPOSITORY_READ_AND_RATE_NOT_WRITE/);
+ assert.match(fs.readFileSync('scripts/ci-pr-repair-owner-rate.cjs','utf8'),/REPOSITORY_READ_AND_RATE_NOT_WRITE/);
  assert.match(flow,/HH_REPAIR_REMOTE_REF VERIFIED /);
  assert.doesNotMatch(publish,/repository\.permissions\?\.push!==true/);
  assert.doesNotMatch(publish,/HH_AUTOMERGE_TOKEN/);
