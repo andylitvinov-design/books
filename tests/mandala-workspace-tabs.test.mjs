@@ -42,8 +42,10 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
  assert.match(studio,/data-workspace-section="practices"/);
  assert.equal((studio.match(/\{deepAudioPane\}/g)||[]).length,1);
  assert.match(studio,/\{soundtrackWorkspacePanel\}/);
- assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
-   "the single phrase editor stays mounted while its workspace is hidden");
+ assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1,
+   "the one consented voice editor is mounted only in Audio / Voice");
+ assert.doesNotMatch(studio,/\{deepHypnoPane\}/,
+   "the retired hidden Ideas voice renderer is not mounted in parallel");
  assert.match(studio,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/,
    "second Montage reuses one original photo editor");
  assert.match(studio,/<details className=\{videoStyles\.montageStyleSettings\} data-video-editor-style-settings/,
