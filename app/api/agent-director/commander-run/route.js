@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { executeOwnedCommanderRun } from '@/lib/agent-director/commander-owned-runtime.mjs';
+import { executeOwnedCommanderRun, ownedModelConfig } from '@/lib/agent-director/commander-owned-runtime.mjs';
 import { getAppConfig } from '@/lib/app/config';
 import { consumeRate } from '@/lib/app/database';
 
@@ -100,5 +100,53 @@ export async function POST(request){
     const status=Number.isInteger(error?.status)?error.status:503;
     const code=/^[A-Z0-9_]{2,80}$/.test(error?.message||'')?error.message:'AGENT_DIRECTOR_RUNTIME_UNAVAILABLE';
     return json(status,{error:code});
+  }
+}
+
+/* Owner-only connection readiness. Never return an API key, prompt or model result.
+ * This is configuration readiness, not proof of a successful provider request.
+ */
+export async function GET(request){
+  try{
+    const origin=request.headers.get('origin');
+    if(origin&&origin!==APP_ORIGIN)return json(403,{error:'ORIGIN_DENIED'});
+    if(request.headers.get('sec-fetch-site')==='cross-site')return json(403,{error:'ORIGIN_DENIED'});
+    const authorization=request.headers.get('authorization')||'';
+    if(!/^Bearer [A-Za-z0-9._-]{120,8000}$/.test(authorization))
+      return json(401,{error:'OWNER_SESSION_REQUIRED'});
+    const supabaseUrl=process.env.HH_APP_SUPABASE_URL||'';
+    const publishableKey=process.env.HH_APP_SUPABASE_PUBLISHABLE_KEY||'';
+    let target;
+    try{target=new URL(supabaseUrl)}catch{return json(503,{error:'OWNER_AUTH_NOT_CONFIGURED'})}
+    let validKey=/^sb_publishable_[A-Za-z0-9_-]{20,}$/.test(publishableKey);
+    if(!validKey&&/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(publishableKey)){
+      try{validKey=JSON.parse(Buffer.from(publishableKey.split('.')[1],'base64url').toString('utf8')).role==='anon'}catch{}
+    }
+    if(target.origin!=='https://shervdixkaxurnaecioe.supabase.co'||target.pathname!=='/'||
+       target.search||target.hash||!validKey)return json(503,{error:'OWNER_AUTH_NOT_CONFIGURED'});
+    const response=await fetch(target.origin+'/functions/v1/'+EDGE_FUNCTION,{
+      method:'POST',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(6500),
+      headers:{apikey:publishableKey,Authorization:authorization,
+        'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify({action:'status'})
+    });
+    const status=await response.json().catch(()=>null);
+    if(!response.ok||status?.ok!==true||status?.owner!==true||
+       status?.canWrite!==true||status?.privateStoreConfigured!==true||
+       status?.service!=='AGENT_COMMANDER_PRIVATE_STORE_V1')
+      return json(response.status===401?401:403,{error:'OWNER_ACCESS_DENIED'});
+    const configured=ownedModelConfig(process.env)!==null;
+    return json(200,{
+      schema:'HH_AGENT_DIRECTOR_PROVIDER_STATUS_V1',
+      provider:'OPENROUTER_FREE',
+      configured,
+      providerVerified:false,
+      reasonCode:configured?'OPENROUTER_CONFIGURED_AWAITING_LIVE_VERIFICATION':
+        process.env.HH_AGENT_OPENROUTER_ENABLED==='true'?'OPENROUTER_KEY_NOT_CONFIGURED':'OPENROUTER_DISABLED',
+      checkedAt:new Date().toISOString()
+    });
+  }catch(error){
+    const status=error?.name==='TimeoutError'?503:503;
+    return json(status,{error:'AGENT_DIRECTOR_STATUS_UNAVAILABLE'});
   }
 }
