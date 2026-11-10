@@ -1219,7 +1219,8 @@ test('outcome validation rejects terminal claims without independent source proo
  assert.equal(validateTaskOutcome({...valid,next_action:''}),false);
 });
 
-\ntest('free model audit preserves numeric GitHub Actions run IDs and rejects wrong PR/HEAD',()=>{
+
+test('free model audit preserves numeric GitHub Actions run IDs and rejects wrong PR/HEAD',()=>{
  const {normalizeModelAudit}=require('../scripts/ci-pr-repair-worker.cjs');
  const raw={schema:'HH_FREE_AI_MODEL_RUN_V1',provider:'openrouter',model:'cohere/north-mini-code:free',
   model_version:'catalog-v1',catalog_model_created:1794260000,executor_type:'free_ci_patch_proposer',
