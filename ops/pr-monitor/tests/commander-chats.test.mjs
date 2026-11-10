@@ -173,7 +173,7 @@ test('execution API is owner-gated, idempotent and reports blocked instead of fa
  assert.ok(edge.includes("agentStarted:false"));
  assert.ok(edge.includes("NOT_STARTED_NO_EXECUTION_RECEIPT"));
  assert.ok(ui.includes("SERVER+'?action=run'"));
- assert.ok(ui.includes("Запрос и попытка сохранены. Исполнитель НЕ запущен"));
+ assert.ok(ui.includes("Запрос сохранён. Исполнитель НЕ запущен"));
  assert.ok(ui.includes("Локальная копия не может запускать исполнителей"));
 });
 
