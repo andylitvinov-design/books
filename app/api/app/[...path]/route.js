@@ -16,6 +16,13 @@ import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
+import {personalCoachingBrainTurn} from '@/lib/app/coaching-brain'
+import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
+import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
+import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
+import { exportCoachingLifePlan } from '@/lib/app/coaching-life-plan'
+import { revokeCoachingPlanContext } from '@/lib/app/coaching-life-plan'
+import { deleteCoachingPlanAction } from '@/lib/app/coaching-life-plan'
 import {learnerCoachingAudio} from '@/lib/academy/coaching-audio-store'
 import { readPersonalCoachingCatalog } from '@/lib/app/personal-coaching-catalog'
 import { readCoachingIntake, saveCoachingIntake } from '@/lib/app/coaching-intake'
@@ -838,11 +845,51 @@ async function handle(request, { params }) {
       if (method === 'GET') return json(await readPersonalCoachingCatalog(config,actor))
       throw new AppError('NOT_FOUND',404)
     }
+    if (joined === 'personal-coaching/brain') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method !== 'POST') throw new AppError('NOT_FOUND', 404)
+      await consumeRate(config, {op:'coaching-brain-turn', actor:actor.id}, 40, 3600)
+      return json(await personalCoachingBrainTurn(config,actor,
+        await readBody(request,16384),{signal:request.signal}))
+    }
     if (joined === 'personal-coaching') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
       if (method === 'GET') return json(await readPersonalCoaching(config, actor))
       if (method === 'POST') return json(await savePersonalCoaching(config, actor, await readBody(request, 8192)))
       throw new AppError('NOT_FOUND', 404)
+    }
+    if (joined === 'personal-coaching-report') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method === 'POST') return json(await readCoachingReportDraft(config,actor,await readBody(request,2048)))
+      throw new AppError('NOT_FOUND',404)
+    }
+    if (path[0] === 'personal-coaching-reports') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (path.length===1 && method==='GET') return json(await listCoachingReports(config,actor))
+      if (path.length===1 && method==='POST') return json(await saveCoachingReport(config,actor,await readBody(request,4096)))
+      if (path.length===2 && method==='GET') return json(await readCoachingReport(config,actor,path[1]))
+      if (path.length===3 && path[2]==='delete' && method==='POST') return json(await deleteCoachingReport(config,actor,path[1],await readBody(request,1024)))
+      throw new AppError('NOT_FOUND',404)
+    }
+    if (path[0] === 'coaching-life-plan') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED',409)
+      if (path.length===1 && method==='GET') {
+        const locale=new URL(request.url).searchParams.get('locale')||'en'
+        return json(await readCoachingLifePlan(config,actor,{locale}))
+      }
+      if (path.length===3 && path[1]==='areas' && method==='POST') {
+        return json(await updateCoachingLifePlanArea(config,actor,{...await readBody(request,8192),areaKey:path[2]}))
+      }
+      if (path.length===2 && path[1]==='import' && method==='POST') {
+        return json(await importCoachingReportActions(config,actor,await readBody(request,2048)))
+      }
+      if (path.length===2 && path[1]==='revoke-context' && method==='POST') {
+        return json(await revokeCoachingPlanContext(config,actor,await readBody(request,1024)))
+      }
+      if (path.length===4 && path[1]==='actions' && path[3]==='delete' && method==='POST') {
+        return json(await deleteCoachingPlanAction(config,actor,path[2],await readBody(request,1024)))
+      }
+      throw new AppError('NOT_FOUND',404)
     }
     if (joined === 'tradition-coaching-summary') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
@@ -1035,6 +1082,8 @@ async function handle(request, { params }) {
       exported.labReports = (await listLabReports(config, actor)).reports
       exported.businessCoaching = await readBusinessCoaching(config, actor)
       exported.personalCoaching = await readPersonalCoaching(config, actor)
+      exported.coachingReports = (await exportCoachingReports(config, actor)).reports
+      exported.coachingLifePlan = await exportCoachingLifePlan(config, actor)
       exported.egyptianCoaching = await readTraditionCoaching(config, actor, 'hh-egyptian-goal-planning-v1')
       exported.greekCoaching = await readTraditionCoaching(config, actor, 'hh-greek-goal-planning-v1')
       exported.growthCourse = (await createGrowthCourseRepository(config).read(actor)).course

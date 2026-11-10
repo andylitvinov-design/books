@@ -26,6 +26,7 @@ type Props={
   loginUnavailable:boolean;disabled:boolean;meditationEditor:ReactNode;
   onOpenDelivery:()=>void;onRefreshLogin:()=>void;onOpenCourse:()=>void;onReturnToPro:()=>void;
   onGenerateBasicVideo:()=>boolean;basicFreeAvailable:boolean;
+  basicFreeIssue:"checking"|"unavailable"|"guest_used"|"insufficient"|null;basicCreditCost:number;
 };
 const COPY={
   en:{
@@ -36,7 +37,12 @@ const COPY={
     videoBasic:"Basic video",videoBasicHint:"Quality video from our library.",videoPhoto:"Animated photo",videoPhotoHint:"Your photo or character with gentle motion.",
     videoCharacter:"Character video",videoCharacterHint:"Personalized animated story with a character.",videoFree:"FREE",
     videoGenerate:"Generate video",videoCartAction:"Add to cart",videoPaidInfo:"Paid videos are confirmed manually after payment. This does not start an AI render.",videoCartError:"Please choose this video in PRO instead.",
-    videoFreeHold:"The free video allowance is currently unavailable. Check the current credit quote in PRO.",
+    videoFreeHold:"Video credits cannot be checked right now. Try again shortly.",
+    videoChecking:"Checking your video credits. Try again shortly.",
+    videoGuestUsed:"Your first free guest video has been used. Sign in to use your included video credits.",
+    videoInsufficient:"You do not have enough included video credits for this export. Check your balance in PRO.",
+    videoGuestSignIn:"Sign in to use video credits",
+    videoIncludedCredit:"included video credits for this export · no payment",
     videoSetup:"Finish the required video settings in PRO, then generate.",videoIdeas:"More ideas for this video",
     verifying:"Checking playback on this device…",failed:"No playable exported video is available yet.",
     signIn:"Sign in to save and download",save:"Save to My Videos",download:"Download",
@@ -73,7 +79,12 @@ const COPY={
     videoBasic:"Базовое видео",videoBasicHint:"Качественный видеоряд из нашей библиотеки.",videoPhoto:"Анимированное фото",videoPhotoHint:"Ваше фото или персонаж с мягкой анимацией.",
     videoCharacter:"Видео с персонажем",videoCharacterHint:"Индивидуальный анимированный ролик с персонажем.",videoFree:"БЕСПЛАТНО",
     videoGenerate:"Создать видео",videoCartAction:"В корзину",videoPaidInfo:"Платный заказ подтверждается вручную после проверки оплаты. Генерация ИИ здесь не запускается.",videoCartError:"Выберите этот формат во вкладке PRO.",
-    videoFreeHold:"Бесплатный лимит сейчас недоступен. Проверьте стоимость в кредитах во вкладке PRO.",
+    videoFreeHold:"Сейчас не удалось проверить видеокредиты. Попробуйте немного позже.",
+    videoChecking:"Проверяем ваши видеокредиты. Повторите попытку чуть позже.",
+    videoGuestUsed:"Первое бесплатное видео без входа уже использовано. Войдите, чтобы использовать включённые видеокредиты.",
+    videoInsufficient:"Для экспорта недостаточно видеокредитов. Проверьте баланс во вкладке PRO.",
+    videoGuestSignIn:"Войти и использовать видеокредиты",
+    videoIncludedCredit:"включённых видеокредитов за экспорт · без оплаты",
     videoSetup:"Завершите настройки во вкладке PRO, затем создайте видео.",videoIdeas:"Другие идеи для этого видео",
     verifying:"Проверяем воспроизведение на устройстве…",failed:"Пока нет проверенного готового видео.",
     signIn:"Войдите, чтобы сохранить и скачать",save:"В Мои видео",download:"Скачать",
@@ -110,7 +121,12 @@ const COPY={
     videoBasic:"Vídeo básico",videoBasicHint:"Vídeo de calidad de nuestra biblioteca.",videoPhoto:"Foto animada",videoPhotoHint:"Tu foto o personaje con movimiento suave.",
     videoCharacter:"Vídeo con personaje",videoCharacterHint:"Historia animada personalizada con personaje.",videoFree:"GRATIS",
     videoGenerate:"Generar vídeo",videoCartAction:"Añadir al carrito",videoPaidInfo:"El pedido se confirma manualmente tras verificar el pago. No se inicia ninguna generación de IA.",videoCartError:"Selecciona este formato en PRO.",
-    videoFreeHold:"La cuota gratuita no está disponible. Consulta el coste en créditos en PRO.",
+    videoFreeHold:"No se pueden comprobar los créditos de vídeo ahora. Inténtalo más tarde.",
+    videoChecking:"Comprobando tus créditos de vídeo. Vuelve a intentarlo pronto.",
+    videoGuestUsed:"Ya usaste tu primer vídeo gratis como invitado. Inicia sesión para usar tus créditos incluidos.",
+    videoInsufficient:"No tienes suficientes créditos de vídeo incluidos. Comprueba tu saldo en PRO.",
+    videoGuestSignIn:"Iniciar sesión y usar créditos",
+    videoIncludedCredit:"créditos de vídeo incluidos para exportar · sin pago",
     videoSetup:"Completa la configuración en PRO y genera el vídeo.",videoIdeas:"Más ideas para este vídeo",
     verifying:"Verificando el vídeo en tu dispositivo…",failed:"Aún no hay un vídeo reproducible verificado.",
     signIn:"Inicia sesión para guardar y descargar",save:"Mis vídeos",download:"Descargar",
@@ -144,13 +160,14 @@ const COPY={
 export function MandalaVideoReady({
   locale,theme,wish,focus,video,verified,checking,signedIn,loginUnavailable,disabled,
   meditationEditor,onOpenDelivery,onRefreshLogin,onOpenCourse,onReturnToPro,
-  onGenerateBasicVideo,basicFreeAvailable
+  onGenerateBasicVideo,basicFreeAvailable,basicFreeIssue,basicCreditCost
 }:Props){
   const t=COPY[locale];
   const router=useRouter();
   const [view,setView]=useState<View>("home");
   const [videoTier,setVideoTier]=useState<VideoTier>("basic");
   const [videoGenerationNotice,setVideoGenerationNotice]=useState("");
+  useEffect(()=>{if(basicFreeAvailable)setVideoGenerationNotice("");},[basicFreeAvailable]);
   // Three continuation offers expand within Ready; the login dialog is independent.
   const [activeOffer,setActiveOffer]=useState<Offer|null>(null);
   const [generatedOffer,setGeneratedOffer]=useState<Offer|null>(null);
@@ -310,7 +327,9 @@ export function MandalaVideoReady({
       return;
     }
     if(!basicFreeAvailable){
-      setVideoGenerationNotice(t.videoFreeHold);
+      setVideoGenerationNotice(basicFreeIssue==="guest_used"?t.videoGuestUsed:
+        basicFreeIssue==="insufficient"?t.videoInsufficient:
+        basicFreeIssue==="checking"?t.videoChecking:t.videoFreeHold);
       return;
     }
     setVideoGenerationNotice(onGenerateBasicVideo()?"":t.videoSetup);
@@ -378,12 +397,20 @@ export function MandalaVideoReady({
           onClick={generateSelectedVideo} data-ready-generate>
           <Play size={19} aria-hidden="true"/>{videoTier==="basic"?t.videoGenerate:t.videoCartAction}<ArrowRight size={18} aria-hidden="true"/>
         </button>
+        {videoTier==="basic"&&basicFreeAvailable&&basicCreditCost>0?
+          <p className={css.note} data-ready-video-credit-cost>
+            <ShieldCheck size={17} aria-hidden="true"/>{basicCreditCost} {t.videoIncludedCredit}
+          </p>:null}
         {videoTier!=="basic"?<p className={css.note} data-ready-video-payment-disclosure>
           <ShieldCheck size={17} aria-hidden="true"/>{t.videoPaidInfo}
         </p>:null}
         {videoGenerationNotice?<p className={css.tierNotice} role="status"
           data-ready-video-tier-notice>{videoGenerationNotice}</p>:null}
-        {videoGenerationNotice&&videoTier==="basic"?<button type="button"
+        {videoGenerationNotice&&videoTier==="basic"&&basicFreeIssue==="guest_used"?
+          <Link className={css.secondary} href={myVideos} prefetch={false}
+            target="_blank" rel="noopener noreferrer" data-ready-sign-in-credits>
+            {t.videoGuestSignIn}<ArrowRight size={17} aria-hidden="true"/>
+          </Link>:videoGenerationNotice&&videoTier==="basic"?<button type="button"
           className={css.secondary} onClick={onReturnToPro} data-ready-review-pro>
           {t.backPro}<ArrowRight size={17} aria-hidden="true"/>
         </button>:null}

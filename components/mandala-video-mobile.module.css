@@ -5358,3 +5358,89 @@
    display:flex!important
  }
 }
+
+
+/* Approved Montage > Text one-screen mobile composition · 2026-11-10.
+   The existing Canvas remains mounted, and appears for intentional preview. */
+.studio[data-active-workspace="editor"][data-montage-panel="text"]:not([data-video-preview-playing="true"]) .previewStage{display:none!important}
+.studio[data-active-workspace="editor"][data-montage-panel="text"] .quickBuilder>[data-video-order-bar]{
+  display:grid!important; /* mandatory narration/phrase reapproval notices must stay visible */
+  min-height:0!important;margin:0!important;padding:0!important;border:0!important;
+  box-shadow:none!important;background:transparent!important
+}
+.studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-order-bar] .quickOrderSummary,
+.studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-order-bar] .stageActionPair{
+  display:none!important; /* only the redundant price + CTA pair are hidden */
+}
+.studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-basic-editor]{
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  padding:0!important;margin:0!important;gap:7px!important
+}
+.studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-montage-text]{
+  position:relative;gap:6px;padding:13px 12px 14px!important;
+  background:var(--hh-studio-surface,#fffcfa);
+  border:1px solid var(--hh-studio-border,#eadfd9);
+  border-radius:20px;box-shadow:0 4px 14px #614d3814
+}
+.studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-montage-text]>h3{
+  min-height:27px;margin:0 0 3px!important;padding-right:117px;
+  color:var(--hh-studio-forest,#14523f);
+  font:800 clamp(18px,4.5vw,23px)/1.2 Arial,Helvetica,sans-serif
+}
+.studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-montage-text]>.montageMovedNote{display:none!important}
+@media(max-width:759px){
+  .studio[data-active-workspace="editor"][data-montage-panel="text"] .quickBuilder{gap:7px!important}
+  .studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-montage-text]{padding:12px 10px 13px!important}
+  .studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-montage-text]>h3{font-size:clamp(17px,4.7vw,22px)}
+}
+@media(max-width:354px){
+  .studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-montage-text]>h3{padding-right:103px;font-size:17px}
+}
+
+/* Story is the verified, automatically proposed scene plan, not an intake form. */
+.storyAutoRoot{display:grid;gap:12px;min-width:0}
+.storyAutoHead{display:grid;gap:8px}
+.storyAutoBadge{display:inline-flex;align-items:center;gap:6px;justify-self:start;
+  border-radius:20px;padding:5px 9px;background:#e5f5ec;color:#067a60;
+  font:750 12px/1.25 Arial,Helvetica,sans-serif}
+.storyAutoHead>strong{color:#16463e;font:800 19px/1.25 Arial,Helvetica,sans-serif}
+.storyAutoHead>p{margin:0;color:#567369;font:500 13px/1.4 Arial,Helvetica,sans-serif}
+.storyAutoStats{display:flex;gap:7px;flex-wrap:wrap}
+.storyAutoStats>span{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;
+  border-radius:9px;background:#f1f4ed;color:#3e6557;font:700 12px/1.2 Arial,Helvetica,sans-serif}
+.storyAutoList{display:grid;gap:11px;list-style:none;margin:0;padding:0;min-width:0}
+.storyAutoCard{display:grid;grid-template-columns:minmax(95px,35%) minmax(0,1fr);
+  border:1px solid #dfe8df;border-radius:15px;background:#fff;overflow:hidden;min-width:0}
+.storyAutoPoster{position:relative;background:#e8f0e9;min-width:0;aspect-ratio:3/4}
+.storyAutoPoster>img{width:100%;height:100%;min-height:135px;display:block;object-fit:cover}
+.storyAutoPoster>span{position:absolute;top:7px;left:7px;width:27px;height:27px;
+  display:grid;place-items:center;border-radius:8px;background:#07654ee8;color:#fff;
+  font:800 14px/1 Arial,Helvetica,sans-serif}
+.storyAutoNoPoster{display:grid;align-content:center;justify-items:center;height:100%;
+  min-height:135px;gap:5px;color:#648878;text-align:center}
+.storyAutoBody{display:grid;align-content:start;gap:7px;min-width:0;padding:12px 10px}
+.storyAutoNumber{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:#087e66;
+  font:800 12px/1.25 Arial,Helvetica,sans-serif}
+.storyAutoNumber>small{color:#607c70;font:650 11px/1.3 Arial,Helvetica,sans-serif}
+.storyAutoBody>strong{color:#19483e;font:800 15px/1.27 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.storyAutoBody>p{margin:0;color:#536e60;font:550 12px/1.35 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.storyAutoBody>small{color:#947d5d;font:600 11px/1.3 Arial,Helvetica,sans-serif}
+.storyAutoView{display:inline-flex;align-items:center;justify-self:start;gap:5px;
+  border:1px solid #c1ddd0;border-radius:18px;background:#fff;color:#08765e;
+  padding:7px 10px;font:750 11px/1.2 Arial,Helvetica,sans-serif}
+.storyAutoNote,.storyAutoFormat{margin:0;color:#65786e;font:500 12px/1.4 Arial,Helvetica,sans-serif}
+.storyAutoFormat{color:#8a7145}
+.storyAutoApply{display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;min-height:50px;border:0;border-radius:14px;padding:12px;
+  background:#07876b;color:#fff;font:800 15px/1.25 Arial,Helvetica,sans-serif}
+.storyAutoApplied{display:flex;align-items:center;gap:6px;margin:0;
+  color:#087d60;font:750 13px/1.3 Arial,Helvetica,sans-serif}
+.storyAutoIdeas{display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;
+  border:1px solid #c5ded3;border-radius:14px;background:#fff;color:#166e59;
+  font:750 12px/1.3 Arial,Helvetica,sans-serif}
+.storyAutoEmpty{margin:0;border:1px dashed #cbd9ce;border-radius:12px;padding:12px}
+.storyAutoView:disabled,.storyAutoApply:disabled,.storyAutoIdeas:disabled{opacity:.5}
+.storyAutoView:focus-visible,.storyAutoApply:focus-visible,.storyAutoIdeas:focus-visible{
+  outline:3px solid #098269;outline-offset:2px}
+@media(max-width:350px){.storyAutoCard{grid-template-columns:minmax(90px,32%) minmax(0,1fr)}
+ .storyAutoBody{padding:9px 7px;gap:5px}.storyAutoBody>strong{font-size:14px}}

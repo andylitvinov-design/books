@@ -108,20 +108,39 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(montageStoryboardTab).toHaveAttribute("aria-pressed","true");
     const montageVideoConcept=page.locator('[data-video-montage-concept]');
     await expect(montageVideoConcept).toBeVisible();
-    const cinematicDirector=montageVideoConcept.locator('[data-cinematic-director]');
-    await expect(cinematicDirector).toBeVisible();
-    await cinematicDirector.locator('[aria-controls="cinematic-director-content"]').tap();
-    const visualIdea=cinematicDirector.locator('[data-director-visual-idea] textarea');
-    await expect(visualIdea).toBeVisible();
-    await visualIdea.fill(locale==="ru"?"Белая птица летит над горами, затем появляется рассвет.":
-      locale==="es"?"Un ave blanca vuela sobre las montañas y aparece el amanecer.":
-      "A white bird flies over mountains as the sunrise appears.");
-    await cinematicDirector.locator('[data-director-create-plan]').tap();
-    await expect(cinematicDirector.locator('[data-director-storyboard]')).toBeVisible();
-    const storyboardShotCount=await cinematicDirector.locator('[data-director-shot]').count();
-    assert.ok(storyboardShotCount===4||storyboardShotCount===6,
-      "Montage video concept creates four or six real scene cards");
-    await expect(cinematicDirector.locator('[data-director-scene-choice]')).toHaveCount(storyboardShotCount);
+    // Story is the EXISTING automatic storyboard generated from the Ideas concept.
+    // No manual prompt/questionnaire: check real scene cards and licensed posters.
+    const automaticStoryboard=montageVideoConcept.locator('[data-video-auto-storyboard]');
+    await expect(automaticStoryboard).toBeVisible({timeout:20000});
+    const cards=automaticStoryboard.locator('[data-video-story-scene]');
+    const storyboardShotCount=Number(await automaticStoryboard.getAttribute('data-storyboard-scenes'));
+    assert.ok(Number.isSafeInteger(storyboardShotCount) && storyboardShotCount>=0,
+      "automatic storyboard must report a finite scene count");
+    await expect(cards).toHaveCount(storyboardShotCount);
+    assert.equal(await automaticStoryboard.locator("textarea").count(),0,
+      "the Story tab must render its proposal, not ask the user to fill it out");
+    if(storyboardShotCount>0){
+      assert.ok(storyboardShotCount===4||storyboardShotCount===6,
+        "verified storyboard has four or six source-backed scenes");
+      await expect(automaticStoryboard.locator('[data-video-auto-storyboard-list]')).toBeVisible();
+      await expect(cards.first()).toContainText(
+        locale==="ru"?"Сцена 1":locale==="es"?"Escena 1":"Scene 1");
+      const firstPoster=cards.first().locator("img");
+      if(await firstPoster.count()){
+        assert.ok((await firstPoster.getAttribute("src"))?.startsWith("/"),
+          "source-backed poster uses an approved local URL");
+        assert.ok((await firstPoster.getAttribute("alt"))?.trim(),
+          "visible poster retains a meaningful source label");
+      }else{
+        await expect(cards.first()).toContainText(
+          locale==="ru"?"Превью недоступно":locale==="es"?"Vista previa no disponible":"Preview unavailable");
+      }
+    }else{
+      // No fictional clips: missing verified footage must fail closed with a
+      // visible explanation, not restore the retired manual storyboard editor.
+      await expect(automaticStoryboard.getByRole("status")).toBeVisible();
+      await expect(automaticStoryboard.locator('[data-video-auto-storyboard-apply]')).toHaveCount(0);
+    }
     await montageStyle.tap();
     await expect(montageStyle).toHaveAttribute("aria-pressed","true");
     const ideasTop=page.locator('[data-video-quick-control="phrases"]');
@@ -922,20 +941,24 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // The approved TTS track is already attached; both effects must render
       // locally into a real stereo WAV before the movie export starts.
       await page.locator('[data-video-quick-control="effects"]').click();
-      // Approved Hypno UI has two real panels. Check the new visual controls
-      // in headed WebKit before moving to the existing narration/effect mixer.
+      // Hypno has three exclusive subtabs: Visual, Audio effects and Effects.
+      // Verify the relocated effect presets in macOS WebKit before the audio mixer.
       const hypnoTabs=page.locator('[data-hypno-tabs]');
       await hypnoTabs.waitFor({state:"visible",timeout:10000});
       const visualTab=hypnoTabs.locator('[data-hypno-tab="visual"]');
       const audioTab=hypnoTabs.locator('[data-hypno-tab="audio"]');
-      await expect(hypnoTabs.getByRole("tab")).toHaveCount(2);
+      const effectsTab=hypnoTabs.locator('[data-hypno-tab="effects"]');
+      await expect(hypnoTabs.getByRole("tab")).toHaveCount(3);
       await expect(visualTab).toBeVisible();
       await expect(audioTab).toBeVisible();
+      await expect(effectsTab).toBeVisible();
       await expect(visualTab).toHaveAttribute("aria-selected","true");
       const visualGroup=page.locator('[data-hypno-group="visual"]');
       const audioGroup=page.locator('[data-hypno-group="audio"]');
+      const effectsGroup=page.locator('[data-hypno-group="effects"]');
       await expect(visualGroup).toBeVisible();
       await expect(audioGroup).toBeHidden();
+      await expect(effectsGroup).toBeHidden();
       const lightPresets=visualGroup.locator('[data-hypno-light-preset]');
       await expect(lightPresets).toHaveCount(3);
       const balancedLight=lightPresets.nth(1);
@@ -957,7 +980,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(briefFrame).toHaveAttribute("aria-checked","true");
       await briefFrame.click();
       await expect(briefFrame).toHaveAttribute("aria-checked","false");
+      // Exercise the new Effects tab and its original no-flash Canvas presets.
+      await effectsTab.click();
+      await expect(effectsTab).toHaveAttribute("aria-selected","true");
+      await expect(visualGroup).toBeHidden();
+      await expect(effectsGroup).toBeVisible();
+      const sunlight=effectsGroup.locator('[data-hypno-visual-effect="sunlight"]');
+      await sunlight.click();
+      await expect(sunlight).toHaveAttribute("aria-pressed","true");
+      await expect(effectsGroup.locator("#video-hypno-effect-strength")).toBeEnabled();
+      const waves=effectsGroup.locator('[data-hypno-visual-effect="waves"]');
+      await waves.click();
+      await expect(waves).toHaveAttribute("aria-pressed","true");
       await audioTab.click();
+      await expect(effectsGroup).toBeHidden();
       await expect(audioTab).toHaveAttribute("aria-selected","true");
       await expect(visualGroup).toBeHidden();
       await expect(audioGroup).toBeVisible();

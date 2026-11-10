@@ -90,7 +90,7 @@ test("One shared Montage Text editor receives the actual Goal request and keeps 
  assert.match(ideas,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  assert.match(ideas,/onResetPreview\(\);/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("visual"\);setPreviewPlaying\(false\);\}\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("audio"\);setBasicPanelTab\("music"\);setPreviewPlaying\(false\);\}\}/);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1,
    "only one shared phrases editor; no duplicate video caption or recorder");
  assert.doesNotMatch(ideas,/fetch\(|localStorage|navigator\.sendBeacon|SpeechSynthesisUtterance/);

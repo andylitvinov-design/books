@@ -4,9 +4,11 @@ import test from "node:test";
 const source=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-video-mobile.module.css",import.meta.url),"utf8");
 test("Montage audio is an owner-approved compact panel, not a second generator",()=>{
-  const pane=source.split('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}')[1]
-    ?.split('</div> : null}')[0];
-  assert.ok(pane,"dedicated compact pane");
+  const start=source.indexOf('{montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact}');
+  const end=source.indexOf('data-video-audio-bed-panel',start);
+  const pane=source.slice(start,end+300);
+  assert.ok(start>0&&end>start,"dedicated compact pane");
+  assert.match(pane,/Background music/);
   for(const marker of ['data-video-audio-mode="library"','data-video-audio-mode="upload"',
     "data-video-audio-category","data-video-audio-compact-selected",
     "data-video-audio-compact-volume","data-video-audio-compact-attach",
@@ -20,10 +22,11 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
   assert.ok(source.includes('onClick={createQuickVideo}'));
 });
 test("Style, Add text, Audio, Settings and real audio source actions remain",()=>{
-  const rail=source.split('data-video-montage-tools')[1]?.split('</nav>')[0];
+  const start=source.indexOf('<nav className={videoStyles.montageQuickTools}');
+  const rail=source.slice(start,source.indexOf('</nav>',start));
   assert.match(rail,/id:"effects".*id:"text"[\s\S]*id:"audio".*id:"settings"/);
   assert.ok(source.includes('"Choose your style"'));
-  assert.ok(source.includes('en:"Add text"'));
+  assert.match(source,/"Add Text"/);
   assert.ok(source.includes('data-video-audio-compact-upload'));
   assert.ok(source.includes('chooseAudioFile(event.currentTarget.files?.[0])'));
   assert.ok(source.includes('data-video-audio-rights'));
@@ -39,5 +42,5 @@ test("The compact Audio pane preserves one opt-in consented RU/EN voice editor",
   assert.match(panel,/onAudioReady=\{attachMeditationNarration\}/);
   assert.match(panel,/onAudioInvalidated=\{\(\)=>setAttachedAudio/);
   assert.doesNotMatch(panel,/data-video-basic-tab/);
-  assert.ok(source.includes('if(hash==="voice-studio"){setMontagePanel("audio");setBasicPanelTab("voice");setVoiceStudioActivated(true);}'));
+  assert.match(source,/if\(hash==="voice-studio"\)\{[\s\S]*?setMontagePanel\("audio"\);setBasicPanelTab\("voice"\);/);
 });

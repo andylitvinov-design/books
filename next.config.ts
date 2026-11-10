@@ -22,6 +22,11 @@ const practitionerRecordingSources = [
 // Only approved pages with an explicit Record button may ask for microphone.
 // The public Messenger needs the same narrowly scoped permission as Studio;
 // microphone remains denied across the rest of the site.
+// The existing authenticated one-to-one coaching page supports voice dictation
+// and optional AI voice. Grant microphone only to these exact private pages;
+// all other Cabinet, reports and API routes remain denied.
+const privateCoachingVoiceSources = ["/en/app/coaching", "/ru/app/coaching"];
+
 const liveAudioHostSources = [
   "/en/live/host", "/ru/live/host", "/es/live/host",
   "/en/holistic-support/mandala", "/ru/holistic-support/mandala",
@@ -102,6 +107,10 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
         ],
+      })),
+      ...privateCoachingVoiceSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
       })),
       ...liveAudioHostSources.map((source) => ({
         source,
