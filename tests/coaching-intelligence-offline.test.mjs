@@ -161,3 +161,40 @@ test('changed JSX modules parse before Vercel build',()=>{
     assert.equal(errors.length,0,path+': '+errors.map(d=>ts.flattenDiagnosticMessageText(d.messageText,' ')).join('; '))
   }
 })
+
+
+test('adaptive methodology selects a focused follow-up for overload, ambivalence and advice requests',()=>{
+  const overload=authoredFollowupFor({id:'overload',stepKey:'reality'},'У меня слишком много дел, я не успеваю')
+  assert.equal(overload.intervention,'prioritize')
+  assert.equal(overload.prompt.ru,'Что из этого важнее всего в ближайшие семь дней?')
+  const ambivalence=authoredFollowupFor({id:'ambivalence',stepKey:'action'},'I am afraid to start')
+  assert.equal(ambivalence.intervention,'explore_ambivalence')
+  assert.match(ambivalence.prompt.en,/what makes you want to move forward/i)
+  const advice=authoredFollowupFor({id:'advice',stepKey:'options'},'What should I do?')
+  assert.equal(advice.intervention,'offer_advice_with_permission')
+  assert.match(advice.prompt.en,/Would you like me/i)
+})
+
+test('methodology adapts across EN/RU/ES, including contradiction and priority stage',()=>{
+  const contradiction=authoredFollowupFor({id:'c',stepKey:'reality'},
+    'On one hand I want to leave, but at the same time I want to stay')
+  assert.equal(contradiction.intervention,'check_contradiction')
+  for(const locale of ['en','ru','es']){
+    assert.ok(contradiction.prompt[locale].length>20)
+    const priority=authoredFollowupFor({id:'p',stepKey:'priority'},'choice:important')
+    assert.ok(priority.prompt[locale].length>20)
+  }
+})
+
+test('safety, stop and pause are not converted into ordinary follow-up questions',()=>{
+  assert.equal(authoredFollowupFor({id:'s',stepKey:'reality'},'I want to kill myself'),null)
+  assert.equal(authoredFollowupFor({id:'s',stepKey:'reality'},'I want to stop now'),null)
+  assert.equal(authoredFollowupFor({id:'s',stepKey:'reality'},'Please pause'),null)
+})
+
+test('adaptive metadata contains only controlled reason codes and no client text',()=>{
+  const result=authoredFollowupFor({id:'a',stepKey:'reality'},'I am afraid to start')
+  assert.equal(result.methodologyVersion,'hh-coaching-methodology-v2')
+  assert.equal(result.intervention,'explore_ambivalence')
+  assert.equal(JSON.stringify(result).includes('afraid to start'),false)
+})
