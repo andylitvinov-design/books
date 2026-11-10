@@ -1,3 +1,4 @@
+// Synced from live Supabase Edge Function v10; deployed SHA fc392030bf8dda2a424f3a2934ffdd00376b035a1281fef04ba95fe25f70c935.
 // Agent Commander private task/chat store. A valid Supabase user JWT and
 // business_brain.owner_access row are required for every request.
 import postgres from "npm:postgres@3.4.5";
@@ -13,6 +14,59 @@ const EXECUTORS = new Set(["local","openrouter","codex","chatgpt-work","repair-w
 const uuid = v => typeof v==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 const clean = (v,n) => typeof v==="string" ? v.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,n) : "";
 const number = v => Number.isSafeInteger(Number(v)) && Number(v)>0 && Number(v)<100000 ? Number(v) : null;
+
+const DIRECTOR_RUN_SCHEMA="HH_AGENT_DIRECTOR_RUN_V1";
+const DIRECTOR_STATES=new Set(["COMPLETED","BLOCKED"]);
+const DIRECTOR_ORIGIN="https://holistichouse.vercel.app";
+async function ownedDirectorCall(req,data){
+ const authorization=req.headers.get("authorization")||"";
+ if(!/^Bearer [A-Za-z0-9._-]{120,8000}$/.test(authorization))throw Error("OWNER_TOKEN_NOT_AVAILABLE");
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),27000);
+ try{
+  const response=await fetch(DIRECTOR_ORIGIN+"/api/agent-director/commander-run",{
+   method:"POST",redirect:"error",cache:"no-store",signal:ctl.signal,
+   headers:{authorization,"content-type":"application/json","accept":"application/json"},body:JSON.stringify(data)});
+  const raw=await response.text();if(raw.length>8000)throw Error("AGENT_DIRECTOR_RECEIPT_TOO_LARGE");
+  let value;try{value=JSON.parse(raw)}catch{throw Error("AGENT_DIRECTOR_RECEIPT_INVALID_JSON")}
+  if(!response.ok)throw Error("AGENT_DIRECTOR_HTTP_"+response.status);
+  return value;
+ }finally{clearTimeout(timer)}
+}
+function trustedOwnedDirectorReceipt(value,run){
+ if(!value||value.schema!==DIRECTOR_RUN_SCHEMA||value.runId!==run.run_id||value.chatId!==run.chat_id||
+  value.ownerId!==run.owner_id||!DIRECTOR_STATES.has(value.status)||
+  typeof value.agentStarted!=="boolean"||typeof value.executionVerified!=="boolean"||
+  (value.status==="COMPLETED"&&(!value.agentStarted||!value.executionVerified||
+    typeof value.result!=="string"||!value.result.trim()))||
+  (value.status==="BLOCKED"&&(value.executionVerified||value.agentStarted))||value.sourceWrite!==null||
+  value.proofLevel!==(value.status==="COMPLETED"?"AGENT_DIRECTOR_READ_ONLY_RESPONSE":"NOT_STARTED"))
+  throw Error("AGENT_DIRECTOR_RECEIPT_NOT_VERIFIED");
+ return {status:value.status,reasonCode:clean(value.reasonCode,110)||null,
+  agentStarted:value.agentStarted,executionVerified:value.executionVerified,model:clean(value.model,120)||null,
+  result:value.status==="COMPLETED"?clean(value.result,1800):"",sourceWrite:null,proofLevel:value.proofLevel};
+}
+async function saveOwnedDirectorReceipt(db,ownerId,chatId,runId,report){
+ const selected=await q(db,"select request_payload from business_brain.commander_execution_runs where run_id=$1::uuid and owner_id=$2::uuid and chat_id=$3::uuid limit 1",[runId,ownerId,chatId]);
+ if(!selected.length||selected[0].request_payload?.confirmGitHubWrite===true)throw Error("AGENT_DIRECTOR_RUN_PROVENANCE_MISMATCH");
+ const done=report.status==="COMPLETED";
+ const receipt={schema:DIRECTOR_RUN_SCHEMA,dispatchAttempted:true,agentStarted:report.agentStarted,
+  executionVerified:report.executionVerified,model:report.model,status:report.status,sourceWrite:null,
+  result:report.result,proofLevel:report.proofLevel,checkedAt:new Date().toISOString()};
+ const rows=await q(db,"update business_brain.commander_execution_runs set status=$1,reason_code=$2,receipt=$3::text::jsonb,started_at=case when $4::boolean then coalesce(started_at,now()) else started_at end,completed_at=case when $5::boolean then coalesce(completed_at,now()) else completed_at end,updated_at=now() where run_id=$6::uuid and owner_id=$7::uuid and chat_id=$8::uuid and status not in ('COMPLETED','FAILED','CANCELLED') returning run_id",
+  [report.status,report.reasonCode||"AGENT_DIRECTOR_"+report.status,jsonbText(receipt),report.agentStarted,done,runId,ownerId,chatId]);
+ if(!rows.length)return report;
+ const eventId=await stableScopeId(ownerId,"agent-director:"+runId+":final");
+ const text=done?"Ответ Agent Director (собственная модель, read-only): "+report.result+"\nИсходный код не менялся. GitHub PR, CI и LIVE не подтверждены.":
+  "Запуск Agent Director заблокирован: "+(report.reasonCode||"OWNED_MODEL_RUNTIME_NOT_CONFIGURED")+".";
+ const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"agent_final",author:"Agent Director",
+  text:clean(text,1800),status:report.status,model:report.model,sourceWrite:null,sourceVerified:false,
+  proofLevel:report.proofLevel,createdAt:new Date().toISOString()};
+ await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false) on conflict(event_id) do nothing",
+  [eventId,chatId,ownerId,jsonbText(event)]);
+ await q(db,"update business_brain.commander_chats set execution_state=$1,updated_at=now() where owner_id=$2::uuid and chat_id=$3::uuid",
+  [done?"COMPLETED_UNVERIFIED":"BLOCKED",ownerId,chatId]);
+ return report;
+}
 const reply = (status,body,origin) => new Response(JSON.stringify(body),{
   status,headers:{
     "content-type":"application/json; charset=utf-8",
@@ -179,6 +233,14 @@ async function verifyFreeModel(modelId: unknown): Promise<{id:string,name:string
   } finally {clearTimeout(timer);}
 }
 
+// postgres.js encodes values according to the SQL parameter type. A pre-serialized
+// JSON string bound as jsonb becomes a JSON string scalar; bind it as TEXT and
+// cast once in SQL to preserve objects and arrays as native JSONB values.
+function jsonbText(value){
+  const encoded=JSON.stringify(value);
+  if(typeof encoded!=="string")throw Error("INVALID_JSONB_PARAMETER");
+  return encoded;
+}
 async function q(db,sql,params=[]){return await db.unsafe(sql,params);}
 async function githubPublic(path){
   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);
@@ -324,8 +386,8 @@ async function receiveGitHubWorkflowRun(req, origin) {
       returning ci_event_id`,
       [event.repository,event.workflow_name,event.workflow_path,event.workflow_run_id,event.run_attempt,
        event.workflow_run_head_sha,event.head_branch,event.pr_number,event.base_ref,event.base_sha,
-       event.head_ref,event.head_sha,event.conclusion,event.category,JSON.stringify(event.failed_jobs),
-       JSON.stringify(event.failed_steps),event.run_url,event.source_run_created_at,claims.workflow_ref]);
+       event.head_ref,event.head_sha,event.conclusion,event.category,jsonbText(event.failed_jobs),
+       jsonbText(event.failed_steps),event.run_url,event.source_run_created_at,claims.workflow_ref]);
     if (!inserted.length) {
       const existing = await q(db,
         `select ci_event_id,association_status from business_brain.commander_ci_event_inbox
@@ -338,7 +400,7 @@ async function receiveGitHubWorkflowRun(req, origin) {
 
     const matches = await q(db,
       `select task_id, owner_id from business_brain.commander_tasks
-       where project_key='agent-commander' and state not in ('completed','superseded')
+       where project_key='holistic-house' and state not in ('completed','superseded')
          and coalesce(payload->'relatedPr','[]'::jsonb) @> to_jsonb($1::int)
        order by updated_at desc limit 2`, [event.pr_number]);
     let association = "UNMATCHED";
@@ -354,7 +416,6 @@ async function receiveGitHubWorkflowRun(req, origin) {
           text: "Core CI failed for PR #" + event.pr_number + " at " + event.head_sha.slice(0,12) +
             ". Category: " + event.category + ". Failed jobs: " + event.failed_jobs.join(", ") +
             ". Failed steps: " + event.failed_steps.join(", ") + ". Repair has not been started by this event receiver.",
-          url: event.run_url,
           source: { repository: event.repository, workflow_run_id: event.workflow_run_id,
             run_attempt: event.run_attempt, head_sha: event.head_sha, run_url: event.run_url },
           sourceVerified: true, proofLevel: "GITHUB_OIDC_AND_EXACT_PR_HEAD",
@@ -364,7 +425,7 @@ async function receiveGitHubWorkflowRun(req, origin) {
           `insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified)
            values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,true)
            on conflict(event_id) do nothing`,
-          [chatEvent.id,chats[0].chat_id,matches[0].owner_id,JSON.stringify(chatEvent)]);
+          [chatEvent.id,chats[0].chat_id,matches[0].owner_id,jsonbText(chatEvent)]);
         await q(db, `update business_brain.commander_chats set updated_at=now()
           where chat_id=$1::uuid and owner_id=$2::uuid`, [chats[0].chat_id,matches[0].owner_id]);
         association = "MATCHED_CHAT_EVENT_RECORDED";
@@ -374,12 +435,7 @@ async function receiveGitHubWorkflowRun(req, origin) {
         set associated_task_id=$1::uuid,associated_owner_id=$2::uuid,association_status=$3
         where ci_event_id=$4::uuid`,
         [matches[0].task_id,matches[0].owner_id,association,inserted[0].ci_event_id]);
-    } else if (matches.length > 1) {
-      association = "AMBIGUOUS_TASKS";
-      await q(db, `update business_brain.commander_ci_event_inbox
-        set association_status=$1 where ci_event_id=$2::uuid`,
-        [association,inserted[0].ci_event_id]);
-    }
+    } else if (matches.length > 1) association = "AMBIGUOUS_TASKS";
 
     return reply(202, { accepted: true, outcome: "RECORDED", inbox_id: inserted[0].ci_event_id,
       association, pr_number: event.pr_number, head_sha: event.head_sha }, origin);
@@ -436,98 +492,107 @@ async function handler(req){
       const chatNumber=number(body.issueNumber);if(!chatNumber)return reply(400,{error:"INVALID_CHAT_NUMBER"},origin);
       const chats=await q(db,"select chat_id from business_brain.commander_chats where owner_id=$1::uuid and chat_number=$2 limit 1",[ownerId,chatNumber]);
       if(!chats.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
-      const runs=await q(db,`select run_id,executor,status,reason_code,request_sha256,hermes_job_id,executor_session_id,
-        started_at,completed_at,created_at,updated_at
-        from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid
-        order by created_at desc limit 30`,[ownerId,chats[0].chat_id]);
+      const runsSql="select run_id,executor,status,reason_code,request_sha256,hermes_job_id,executor_session_id,receipt,started_at,completed_at,created_at,updated_at from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid order by created_at desc limit 30";
+      let runs=await q(db,runsSql,[ownerId,chats[0].chat_id]);
       return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUNS_V1",runs,storage:"SUPABASE_PRIVATE",
-        dispatchEnabled:false,observedAt:new Date().toISOString()},origin);
+        dispatchEnabled:false,dispatchAvailable:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",liveVerified:false,observedAt:new Date().toISOString()},origin);
     }
     if(action==="commander_start_run"){
       const chatNumber=number(body.issueNumber);
       if(!chatNumber)return reply(400,{error:"INVALID_CHAT_NUMBER"},origin);
       const runId=body.runId,idempotencyKey=body.idempotencyKey,executor=body.executor;
-      const message=clean(body.message,6000);
+      const message=clean(body.message,5000);
       if(!uuid(runId)||!uuid(idempotencyKey)||!EXECUTORS.has(executor)||message.length<2||
-         String(body.message||"").length>6000)return reply(400,{error:"INVALID_EXECUTION_REQUEST"},origin);
-      const chats=await q(db,`select chat_id,task_id,payload,revision from business_brain.commander_chats
-        where owner_id=$1::uuid and chat_number=$2 limit 1`,[ownerId,chatNumber]);
+         String(body.message||"").length>5000||(executor==="local"&&String(body.message||"").length>3000))
+        return reply(400,{error:"INVALID_EXECUTION_REQUEST"},origin);
+      const chats=await q(db,"select chat_id,task_id,payload,revision from business_brain.commander_chats where owner_id=$1::uuid and chat_number=$2 limit 1",[ownerId,chatNumber]);
       if(!chats.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
-      const chat=chats[0];
-      const rawChat=chat.payload&&typeof chat.payload==="object"?chat.payload:{};
+      const chat=chats[0],rawChat=chat.payload&&typeof chat.payload==="object"?chat.payload:{};
       const contextCapsule={
-        schema:"HH_COMMANDER_TASK_CONTEXT_V1",
-        chatId:chat.chat_id,
-        taskId:chat.task_id||null,
+        schema:"HH_COMMANDER_TASK_CONTEXT_V1",chatId:chat.chat_id,taskId:chat.task_id||null,
         chatRevision:Number.isSafeInteger(chat.revision)?chat.revision:0,
-        title:clean(rawChat.title,160),
-        project:clean(rawChat.project,80),
-        description:clean(rawChat.description,1200),
-        tasks:Array.isArray(rawChat.tasks)?rawChat.tasks.slice(0,12).map(x=>clean(x,180)).filter(Boolean):[],
-        linkedPrHints:Array.isArray(rawChat.prs)?rawChat.prs.filter(x=>Number.isSafeInteger(x)&&x>0&&x<100000).slice(0,15):[],
+        title:clean(rawChat.title,160),project:clean(rawChat.project,80),
+        description:clean(rawChat.description,700),
+        linkedPrHints:Array.isArray(rawChat.prs)?rawChat.prs.filter(x=>Number.isSafeInteger(x)&&x>0&&x<100000).slice(0,8):[],
         linkedPrHintsVerified:false,
-        requiredBeforeSourceChange:"Resolve each linked PR against live GitHub metadata and exact current HEAD; hints are not execution or source evidence."
+        requiredBeforeSourceChange:"Resolve live GitHub PR and exact HEAD before any source change."
       };
-      const digestInput=[chat.chat_id,executor,String(contextCapsule.chatRevision),message].join(String.fromCharCode(31));
-      const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(digestInput)));
-      const requestSha256=Array.from(digest,x=>x.toString(16).padStart(2,"0")).join("");
+      const modelId=typeof body.modelId==="string"&&body.modelId.length?clean(body.modelId,120):"owned-default";
+      const writeConfirmed=body.confirmGitHubWrite===true;
+      const canDispatch=executor==="local"&&!writeConfirmed;
       let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
-      if(executor==="hermes"){
-        const endpoint=Deno.env.get("HERMES_ORIGIN_URL")||"";
-        const secret=Deno.env.get("HERMES_SHARED_SECRET")||"";
-        let validEndpoint=false;
-        try{const u=new URL(endpoint);validEndpoint=u.protocol==="https:"&&u.username===""&&u.password===""&&u.pathname==="/"&&u.search===""&&u.hash==="";}catch{}
-        reasonCode=(!validEndpoint||secret.length<32)?"HERMES_RUNTIME_NOT_CONFIGURED":"HERMES_EXECUTOR_DISPATCH_CONTRACT_NOT_VERIFIED";
-      }else if(executor==="openrouter"){
-        reasonCode=Deno.env.get("HH_PM_OPENROUTER_API_KEY")?"OPENROUTER_EXECUTION_ADAPTER_NOT_CONNECTED":"OPENROUTER_KEY_NOT_CONFIGURED";
-      }else if(executor==="codex"){
-        reasonCode="CODEX_LOCAL_AGENT_OFFLINE_OR_REMOTE_APPROVAL_DISABLED";
-      }else if(executor==="repair-worker"){
-        reasonCode="REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE";
-      }else if(executor==="chatgpt-work"){
-        reasonCode="CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE";
-      }else if(executor==="local"){
-        reasonCode="LOCAL_ADVISOR_IS_NOT_AN_EXECUTOR";
-      }else if(executor==="manual"){
-        reasonCode="MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF";
-      }
-      const blockedText="Запрос сохранён, но исполнитель НЕ запущен. Причина: "+reasonCode+". Статус BLOCKED не является подтверждением запуска.";
-      const now=new Date().toISOString();
+      if(executor==="local")reasonCode=writeConfirmed?"AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED":"AGENT_DIRECTOR_DISPATCH_REQUESTED";
+      else if(executor==="hermes"||executor==="openrouter")reasonCode="EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY";
+      else if(executor==="codex")reasonCode="CODEX_LOCAL_AGENT_NOT_CONNECTED";
+      else if(executor==="repair-worker")reasonCode="REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE";
+      else if(executor==="chatgpt-work")reasonCode="CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE";
+      else if(executor==="manual")reasonCode="MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF";
+      const firstStatus=canDispatch?"STARTING":"BLOCKED";
+      const hashInput=[chat.chat_id,executor,String(contextCapsule.chatRevision),message,modelId,String(writeConfirmed)].join(String.fromCharCode(31));
+      const hashed=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(hashInput)));
+      const requestSha256=Array.from(hashed,x=>x.toString(16).padStart(2,"0")).join("");
+      const initialReceipt={dispatchAttempted:false,agentStarted:false,executionVerified:false,
+        status:firstStatus,sourceWrite:null,model:modelId};
+      const pendingText=canDispatch?"Задача зарегистрирована; Agent Director проверяет доступность собственной модели.":
+        "Задача сохранена, но запуск не подтверждён. Причина: "+reasonCode+".";
       const result=await db.begin(async tx=>{
-        const inserted=await tx.unsafe(`insert into business_brain.commander_execution_runs
-          (run_id,owner_id,chat_id,task_id,idempotency_key,request_sha256,executor,status,reason_code,request_payload,receipt)
-          values($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,'BLOCKED',$8,$9::text::jsonb,$10::text::jsonb)
-          on conflict(owner_id,chat_id,idempotency_key) do nothing
-          returning run_id,status,reason_code,request_sha256,executor,created_at`,
-          [runId,ownerId,chat.chat_id,chat.task_id||null,idempotencyKey,requestSha256,executor,reasonCode,
-           JSON.stringify({message,contextCapsule}),JSON.stringify({dispatchAttempted:false,agentStarted:false,liveVerified:false})]);
+        const inserted=await tx.unsafe("insert into business_brain.commander_execution_runs (run_id,owner_id,chat_id,task_id,idempotency_key,request_sha256,executor,status,reason_code,request_payload,receipt) values($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8,$9,$10::text::jsonb,$11::text::jsonb) on conflict(owner_id,chat_id,idempotency_key) do nothing returning run_id,status,reason_code,request_sha256,executor,hermes_job_id,receipt,created_at",
+         [runId,ownerId,chat.chat_id,chat.task_id||null,idempotencyKey,requestSha256,executor,
+          firstStatus,reasonCode,jsonbText({message,contextCapsule,modelId,confirmGitHubWrite:writeConfirmed}),
+          jsonbText(initialReceipt)]);
         let run=inserted[0],duplicate=false;
         if(!run){
-          const prior=await tx.unsafe(`select run_id,status,reason_code,request_sha256,executor,created_at
-            from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid
-            and idempotency_key=$3 limit 1`,[ownerId,chat.chat_id,idempotencyKey]);
+          const prior=await tx.unsafe("select run_id,status,reason_code,request_sha256,executor,hermes_job_id,receipt,created_at from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid and idempotency_key=$3 limit 1",[ownerId,chat.chat_id,idempotencyKey]);
           if(!prior.length)return {conflict:true};
           run=prior[0];duplicate=true;
-          if(run.request_sha256!==requestSha256)return {idempotencyConflict:true};
+          if(run.request_sha256!==requestSha256||run.run_id!==runId)return {idempotencyConflict:true};
         }else{
-          const eventPayload={schema:"HH_COMMANDER_EVENT_V1",id:runId,kind:"execution_blocked",
-            author:"Hermes Dispatcher",text:blockedText,executor,status:"BLOCKED",reasonCode,
-            sourceVerified:false,proofLevel:"NOT_STARTED_NO_EXECUTION_RECEIPT",createdAt:now};
-          await tx.unsafe(`insert into business_brain.commander_chat_events
-            (event_id,chat_id,owner_id,kind,payload,source_verified)
-            values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false)
-            on conflict(event_id) do nothing`,[runId,chat.chat_id,ownerId,JSON.stringify(eventPayload)]);
-          await tx.unsafe(`update business_brain.commander_chats set execution_state='BLOCKED',
-            payload=jsonb_set(payload,'{executionState}','"BLOCKED"'::jsonb,true),updated_at=now()
-            where owner_id=$1::uuid and chat_id=$2::uuid`,[ownerId,chat.chat_id]);
+          const eventPayload={schema:"HH_COMMANDER_EVENT_V1",id:runId,
+            kind:canDispatch?"execution_requested":"execution_blocked",
+            author:"Agent Director",text:pendingText,executor,status:firstStatus,reasonCode,
+            sourceVerified:false,proofLevel:"NOT_STARTED_NO_EXECUTION_RECEIPT",createdAt:new Date().toISOString()};
+          // Physical DB kind CHECK permits 'note', not custom payload event kinds.
+          await tx.unsafe("insert into business_brain.commander_chat_events (event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false) on conflict(event_id) do nothing",
+           [runId,chat.chat_id,ownerId,jsonbText(eventPayload)]);
+          await tx.unsafe("update business_brain.commander_chats set execution_state=$1,updated_at=now() where owner_id=$2::uuid and chat_id=$3::uuid",
+           [firstStatus,ownerId,chat.chat_id]);
         }
         return {run,duplicate};
       });
       if(result.conflict)return reply(409,{error:"RUN_IDEMPOTENCY_CONFLICT"},origin);
       if(result.idempotencyConflict)return reply(409,{error:"IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST"},origin);
-      return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",run:result.run,duplicate:result.duplicate===true,
-        dispatchAttempted:false,agentStarted:false,liveVerified:false,status:"BLOCKED",
-        reasonCode:result.run.reason_code,storage:"SUPABASE_PRIVATE"},origin);
+      if(result.duplicate){
+        return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",run:result.run,duplicate:true,
+          agentStarted:result.run.receipt?.agentStarted===true,liveVerified:false,
+          status:result.run.status,reasonCode:result.run.reason_code,storage:"SUPABASE_PRIVATE"},origin);
+      }
+      if(!canDispatch)return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",run:result.run,
+        duplicate:false,dispatchAttempted:false,agentStarted:false,liveVerified:false,
+        status:"BLOCKED",reasonCode,storage:"SUPABASE_PRIVATE"},origin);
+      try{
+        const remote=await ownedDirectorCall(req,{schemaVersion:1,runId,chatId:chat.chat_id,
+          ownerId,projectKey:"holistic-house",message,modelId,confirmGitHubWrite:false,contextCapsule});
+        const verified=trustedOwnedDirectorReceipt(remote,{run_id:runId,chat_id:chat.chat_id,owner_id:ownerId});
+        await saveOwnedDirectorReceipt(db,ownerId,chat.chat_id,runId,verified);
+        return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",
+          run:{...result.run,status:verified.status,reason_code:verified.reasonCode,receipt:{
+            dispatchAttempted:true,agentStarted:verified.agentStarted,executionVerified:verified.executionVerified,
+            model:verified.model,sourceWrite:null,proofLevel:verified.proofLevel}},
+          duplicate:false,dispatchAttempted:true,agentStarted:verified.agentStarted,
+          executionVerified:verified.executionVerified,liveVerified:false,status:verified.status,
+          reasonCode:verified.reasonCode,model:verified.model,sourceWrite:null,
+          proofLevel:verified.proofLevel,storage:"SUPABASE_PRIVATE"},origin);
+      }catch(error){
+        console.error("COMMANDER_AGENT_DIRECTOR_DISPATCH_UNCONFIRMED",error&&error.name||"Error");
+        const reason="AGENT_DIRECTOR_DISPATCH_UNCONFIRMED";
+        await q(db,"update business_brain.commander_execution_runs set status='BLOCKED',reason_code=$1,receipt=$2::text::jsonb,updated_at=now() where run_id=$3::uuid and owner_id=$4::uuid and chat_id=$5::uuid and status='STARTING'",
+          [reason,jsonbText({dispatchAttempted:true,agentStarted:false,executionVerified:false,status:"BLOCKED",
+            sourceWrite:null,model:modelId,proofLevel:"DISPATCH_UNCONFIRMED"}),runId,ownerId,chat.chat_id]);
+        await q(db,"update business_brain.commander_chats set execution_state='BLOCKED',updated_at=now() where owner_id=$1::uuid and chat_id=$2::uuid",[ownerId,chat.chat_id]);
+        return reply(202,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",run:{...result.run,status:"BLOCKED",reason_code:reason},
+          duplicate:false,dispatchAttempted:true,agentStarted:false,liveVerified:false,status:"BLOCKED",
+          reasonCode:reason,storage:"SUPABASE_PRIVATE"},origin);
+      }
     }
     if(action==="commander_list_ci_events"){
       const limit=Math.max(1,Math.min(100,Number(body.limit)||30));
@@ -566,7 +631,7 @@ async function handler(req){
         storage:"SUPABASE_PRIVATE",preferenceOnly:true,agentStarted:false},origin);
     }
     if(action==="status")return reply(200,{ok:true,service:"AGENT_COMMANDER_PRIVATE_STORE_V1",
-      owner:true,authenticated:true,privateStoreConfigured:true,executorDispatch:false,executionRunLedger:true,dispatchReason:"NO_VERIFIED_EXECUTOR_RUNTIME",
+      owner:true,authenticated:true,privateStoreConfigured:true,executorDispatch:false,dispatchAvailable:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OWNED_MODEL_CONFIG_REQUIRED",liveVerification:false,
       liveVerification:false,checkedAt:new Date().toISOString()},origin);
 
     if(action==="commander_list_tasks"){
@@ -590,7 +655,7 @@ async function handler(req){
         if(!prior.length||prior[0].task_id!==record.taskId)return reply(409,{error:"TASK_OWNER_OR_ID_MISMATCH"},origin);
       }else prior=await q(db,"select task_number,task_id,state from business_brain.commander_tasks where owner_id=$1::uuid and task_id=$2::uuid limit 1",[ownerId,record.taskId]);
       const state=prior[0]?.state==="queued_review"?"queued_review":"draft";
-      const saved=await q(db,"insert into business_brain.commander_tasks(task_id,owner_id,project_key,title,payload,state,revision) values($1::uuid,$2::uuid,'agent-commander',$3,$4::text::jsonb,$5,1) on conflict(task_id) do update set title=excluded.title,payload=excluded.payload,state=case when business_brain.commander_tasks.state='queued_review' then 'queued_review' else 'draft' end,revision=business_brain.commander_tasks.revision+1,updated_at=now() where business_brain.commander_tasks.owner_id=excluded.owner_id returning task_number,task_id,state,revision,updated_at",[record.taskId,ownerId,record.title,JSON.stringify(record),state]);
+      const saved=await q(db,"insert into business_brain.commander_tasks(task_id,owner_id,project_key,title,payload,state,revision) values($1::uuid,$2::uuid,'agent-commander',$3,$4::text::jsonb,$5,1) on conflict(task_id) do update set title=excluded.title,payload=excluded.payload,state=case when business_brain.commander_tasks.state='queued_review' then 'queued_review' else 'draft' end,revision=business_brain.commander_tasks.revision+1,updated_at=now() where business_brain.commander_tasks.owner_id=excluded.owner_id returning task_number,task_id,state,revision,updated_at",[record.taskId,ownerId,record.title,jsonbText(record),state]);
       if(!saved.length)return reply(409,{error:"TASK_OWNER_OR_ID_MISMATCH"},origin);
       return reply(200,{saved:true,issueNumber:Number(saved[0].task_number),taskId:saved[0].task_id,
         state:saved[0].state,revision:saved[0].revision,agentStarted:false,storage:"SUPABASE_PRIVATE",
@@ -628,7 +693,7 @@ async function handler(req){
         executor:"manual",mode:"analysis",relatedPr:resolved.relatedPr,
         restrictions:{noCost:true,noDuplicate:true,verifyLive:true},taskScope:body.scope,
         scopePrHintsUnverified:resolved.scopePrHintsUnverified===true};
-      const taskRows=await q(db,"insert into business_brain.commander_tasks(task_id,owner_id,project_key,title,payload,state,revision) values($1::uuid,$2::uuid,'agent-commander',$3,$4::text::jsonb,'draft',1) on conflict(task_id) do nothing returning task_number",[taskId,ownerId,resolved.title,JSON.stringify(source)]);
+      const taskRows=await q(db,"insert into business_brain.commander_tasks(task_id,owner_id,project_key,title,payload,state,revision) values($1::uuid,$2::uuid,'agent-commander',$3,$4::text::jsonb,'draft',1) on conflict(task_id) do nothing returning task_number",[taskId,ownerId,resolved.title,jsonbText(source)]);
       let taskNumber=taskRows.length?Number(taskRows[0].task_number):null;
       if(!taskNumber){
         const priorTask=await q(db,"select task_number,owner_id,payload from business_brain.commander_tasks where task_id=$1::uuid limit 1",[taskId]);
@@ -643,7 +708,7 @@ async function handler(req){
         executors:["manual"],prs:resolved.relatedPr,scopePrHintsUnverified:resolved.scopePrHintsUnverified===true,
         status:"assigned",revision:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
         executionState:"AWAITING_EXECUTOR_NOT_DISPATCHED",liveVerified:false};
-      const inserted=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,task_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$1::uuid,$3,$4::text::jsonb,'assigned','AWAITING_EXECUTOR_NOT_DISPATCHED',1) on conflict(task_id) do nothing returning chat_number",[taskId,ownerId,resolved.title,JSON.stringify(chat)]);
+      const inserted=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,task_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$1::uuid,$3,$4::text::jsonb,'assigned','AWAITING_EXECUTOR_NOT_DISPATCHED',1) on conflict(task_id) do nothing returning chat_number",[taskId,ownerId,resolved.title,jsonbText(chat)]);
       if(!inserted.length){
         const raced=await q(db,"select chat_number,payload from business_brain.commander_chats where owner_id=$1::uuid and task_id=$2::uuid limit 1",[ownerId,taskId]);
         if(!raced.length)return reply(409,{error:"TASK_CHAT_COLLISION_HOLD"},origin);
@@ -666,7 +731,7 @@ async function handler(req){
         executors:EXECUTORS.has(r.executor)?[r.executor]:["manual"],status:"assigned",revision:1,
         createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
         executionState:"AWAITING_EXECUTOR_NOT_DISPATCHED",liveVerified:false};
-      const inserted=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,task_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$1::uuid,$3,$4::text::jsonb,'assigned','AWAITING_EXECUTOR_NOT_DISPATCHED',1) on conflict(task_id) do nothing returning chat_number",[taskId,ownerId,title,JSON.stringify(chat)]);
+      const inserted=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,task_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$1::uuid,$3,$4::text::jsonb,'assigned','AWAITING_EXECUTOR_NOT_DISPATCHED',1) on conflict(task_id) do nothing returning chat_number",[taskId,ownerId,title,jsonbText(chat)]);
       if(!inserted.length){
         const raced=await q(db,"select chat_number,payload from business_brain.commander_chats where owner_id=$1::uuid and task_id=$2::uuid limit 1",[ownerId,taskId]);
         if(!raced.length)return reply(409,{error:"TASK_CHAT_COLLISION_HOLD"},origin);
@@ -679,7 +744,7 @@ async function handler(req){
       const existing=await q(db,"select chat_number,payload from business_brain.commander_chats where owner_id=$1::uuid and chat_id=$2::uuid limit 1",[ownerId,chat.id]);
       if(existing.length)return reply(200,{issueNumber:Number(existing[0].chat_number),created:false,alreadyExists:true,
         chat:{...existing[0].payload,issueNumber:Number(existing[0].chat_number)}},origin);
-      const rows=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$3,$4::text::jsonb,$5,'UNVERIFIED_ASSIGNMENT_ONLY',$6) on conflict(chat_id) do nothing returning chat_number",[chat.id,ownerId,chat.title,JSON.stringify(chat),chat.status,chat.revision]);
+      const rows=await q(db,"insert into business_brain.commander_chats(chat_id,owner_id,title,payload,status,execution_state,revision) values($1::uuid,$2::uuid,$3,$4::text::jsonb,$5,'UNVERIFIED_ASSIGNMENT_ONLY',$6) on conflict(chat_id) do nothing returning chat_number",[chat.id,ownerId,chat.title,jsonbText(chat),chat.status,chat.revision]);
       if(!rows.length)return reply(409,{error:"CHAT_OWNER_OR_ID_MISMATCH"},origin);
       return reply(201,{issueNumber:Number(rows[0].chat_number),created:true,chat,agentStarted:false},origin);
     }
@@ -691,7 +756,7 @@ async function handler(req){
       const updated=normalizeChat(body.chat,prior[0].payload);
       const payload={...updated,taskId:prior[0].task_id||prior[0].payload.taskId||null,
         taskIssueNumber:prior[0].payload.taskIssueNumber||null};
-      const rows=await q(db,"update business_brain.commander_chats set title=$1,payload=$2::text::jsonb,status=$3,revision=$4,updated_at=now() where owner_id=$5::uuid and chat_number=$6 and revision=$7 returning chat_number",[payload.title,JSON.stringify(payload),payload.status,payload.revision,ownerId,id,prior[0].revision]);
+      const rows=await q(db,"update business_brain.commander_chats set title=$1,payload=$2::text::jsonb,status=$3,revision=$4,updated_at=now() where owner_id=$5::uuid and chat_number=$6 and revision=$7 returning chat_number",[payload.title,jsonbText(payload),payload.status,payload.revision,ownerId,id,prior[0].revision]);
       if(!rows.length)return reply(409,{error:"STALE_CHAT_REVISION"},origin);
       return reply(200,{updated:true,issueNumber:Number(rows[0].chat_number),chat:payload,agentStarted:false},origin);
     }
@@ -704,7 +769,7 @@ async function handler(req){
       if(prior.length)return reply(200,{appended:false,duplicate:true,event:prior[0].payload},origin);
       const count=await q(db,"select count(*)::int as total from business_brain.commander_chat_events where owner_id=$1::uuid and chat_id=$2::uuid",[ownerId,rows[0].chat_id]);
       if(count[0].total>=400)return reply(409,{error:"CHAT_EVENT_LIMIT_REACHED_EXPORT_REQUIRED"},origin);
-      const inserted=await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,$4,$5::text::jsonb,false) on conflict(event_id) do nothing returning event_id",[event.id,rows[0].chat_id,ownerId,event.kind,JSON.stringify(event)]);
+      const inserted=await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,$4,$5::text::jsonb,false) on conflict(event_id) do nothing returning event_id",[event.id,rows[0].chat_id,ownerId,event.kind,jsonbText(event)]);
       if(!inserted.length)return reply(200,{appended:false,duplicate:true,event},origin);
       await q(db,"update business_brain.commander_chats set updated_at=now() where owner_id=$1::uuid and chat_id=$2::uuid",[ownerId,rows[0].chat_id]);
       return reply(201,{appended:true,event,agentStarted:false},origin);
@@ -723,7 +788,7 @@ async function handler(req){
       const text=clean(String(comment.body||"").replace(/<!--[\s\S]*?-->/g,"").replace(/(?:ghp_|gho_|sk-)[A-Za-z0-9_-]{16,}/g,"[REDACTED]"),1600);
       const event={schema:"HH_COMMANDER_EVENT_V1",id:eventId,kind:"github_report",author:"GitHub report",
         text,url:body.url,sourceVerified:false,proofLevel:"REPORT_ONLY_NOT_COMMIT",createdAt:new Date().toISOString()};
-      const inserted=await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,false) on conflict(event_id) do nothing returning event_id",[eventId,rows[0].chat_id,ownerId,JSON.stringify(event)]);
+      const inserted=await q(db,"insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,false) on conflict(event_id) do nothing returning event_id",[eventId,rows[0].chat_id,ownerId,jsonbText(event)]);
       if(!inserted.length)return reply(200,{appended:false,duplicate:true,event},origin);
       await q(db,"update business_brain.commander_chats set updated_at=now() where owner_id=$1::uuid and chat_id=$2::uuid",[ownerId,rows[0].chat_id]);
       return reply(201,{appended:true,event,agentStarted:false},origin);
