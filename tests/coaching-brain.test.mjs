@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
   COACHING_BRAIN_VERSION,normalizeCoachingBrainInput,coachingBrainSafety,
-  selectCoachingBrainMethod,coachingBrainStage,coachingBrainMessages,
+  selectCoachingBrainMethod,coachingBrainStage,coachingBrainStageDecision,coachingBrainMessages,
   parseCoachingBrainReply,offlineCoachingBrainReply,
 } from '../lib/personal-coaching/coaching-brain.mjs'
 
@@ -45,21 +45,78 @@ test('reviewed method selection adapts to actual client wording in EN/RU/ES',()=
     assert.equal(selectCoachingBrainMethod(normalizeCoachingBrainInput(req({message}))),method,message)
 })
 
-test('an orderly, bounded dialogue grows without demanding a user commitment',()=>{
-  let input=normalizeCoachingBrainInput(req())
-  assert.equal(coachingBrainStage(input),'clarify')
-  for(const [length,expected] of [[1,'explore'],[2,'options'],[3,'decision'],[4,'review']]){
-    input=normalizeCoachingBrainInput(req({turns:Array.from({length},(_,i)=>({
-      role:'user',content:'My client message '+i,
-    }))}))
-    assert.equal(coachingBrainStage(input),expected)
+test('stage intelligence uses client signals instead of counting messages',()=>{
+  const turns=(...content)=>content.flatMap(text=>[
+    {role:'user',content:text},
+    {role:'assistant',content:'What would you like to explore next?'},
+  ])
+  const stage=(message,history=[],locale='en')=>coachingBrainStage(
+    normalizeCoachingBrainInput(req({message,turns:history,locale}))
+  )
+  assert.equal(stage('I want to talk about work'),'clarify')
+  assert.equal(stage('My manager changed my role and I feel stuck.',turns('I want to talk about work')),'explore')
+  assert.equal(stage('I realize I have not told my manager what I need.',turns('I want to talk about work')),'awareness')
+  assert.equal(stage('I used to think asking for help was weakness; now I see it as collaboration.',turns('I want to talk about work')),'reframe')
+  assert.equal(stage('I choose to request a meeting rather than resign.',turns('I want to talk about work')),'choice')
+  assert.equal(stage('My first step is to draft the meeting agenda.',turns('I want to talk about work')),'planning')
+  assert.equal(stage('I will send the agenda tomorrow.',turns('I want to talk about work')),'commitment')
+  assert.equal(stage('Please summarize what we clarified.',turns('I want to talk about work')),'integration')
+  assert.equal(stage('I do not know where to start.',turns('I want to talk about work')),'clarify')
+})
+
+test('dialogue stage may move backwards when the client introduces uncertainty',()=>{
+  const input=normalizeCoachingBrainInput(req({
+    message:'I do not know where to start.',
+    turns:[
+      {role:'user',content:'I choose to request a meeting.'},
+      {role:'assistant',content:'What would help you prepare?'},
+    ],
+  }))
+  assert.deepEqual(coachingBrainStageDecision(input),{
+    stage:'clarify',reasonCode:'explicit_client_signal',
+  })
+  const noSignal=normalizeCoachingBrainInput(req({
+    message:'My manager changed the schedule again.',
+    turns:Array.from({length:8},(_,i)=>({role:i%2?'assistant':'user',content:'A neutral message '+i})),
+  }))
+  assert.deepEqual(coachingBrainStageDecision(noSignal),{
+    stage:'explore',reasonCode:'no_progress_signal',
+  })
+})
+
+test('commitment stage requires an explicit positive action with a time cue',()=>{
+  const input=normalizeCoachingBrainInput(req({
+    message:'I will not resign tomorrow.',
+    turns:[{role:'user',content:'We compared both options yesterday.'}],
+  }))
+  assert.notEqual(coachingBrainStage(input),'commitment')
+  for(const [locale,message] of [
+    ['ru','Я отправлю письмо завтра.'],
+    ['en','I will send the agenda tomorrow.'],
+    ['es','Mañana voy a enviar el correo.'],
+  ]){
+    const localized=normalizeCoachingBrainInput(req({locale,message,
+      turns:[{role:'user',content:'We chose a possible option.'}]}))
+    assert.equal(coachingBrainStage(localized),'commitment')
   }
-  const messages=coachingBrainMessages(input,'grow','review')
+})
+
+test('stage guidance is non-forcing and offline fallback covers every stage',()=>{
+  const input=normalizeCoachingBrainInput(req({
+    turns:[{role:'user',content:'I want to talk about work'}],
+  }))
+  const messages=coachingBrainMessages(input,'grow','explore')
   assert.deepEqual(messages.map(row=>row.role),['system','user'])
+  assert.match(messages[0].content,/soft navigation hint/)
+  assert.match(messages[0].content,/Never advance just because another message arrived/)
   assert.match(messages[0].content,/ONE useful open question/)
   assert.match(messages[0].content,/UNTRUSTED DATA/)
-  assert.doesNotMatch(messages[0].content,/My client message/)
-  assert.match(messages[1].content,/My client message/)
+  assert.match(messages[1].content,/overwhelmed at work/)
+  for(const stage of ['clarify','explore','awareness','reframe','choice','planning','commitment','integration']){
+    const fallback=offlineCoachingBrainReply(input,'grow',stage)
+    assert.equal(fallback.mode,'offline')
+    assert.ok(fallback.question.length>15,stage)
+  }
 })
 
 test('unsupported model output never becomes a confirmed decision',()=>{
