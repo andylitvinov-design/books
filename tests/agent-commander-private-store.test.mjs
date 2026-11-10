@@ -63,30 +63,34 @@ test('Commander Edge Function TypeScript parses before deployment', () => {
   assert.deepEqual(errors.map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n')), [])
 })
 
-test('owner-authenticated Hermes dispatch is opt-in, free-only and idempotent', () => {
+test('Commander dispatch is first-party, owner-authenticated and fails closed without an owned model', () => {
   const edge = read('supabase/functions/agent-commander-private-store-v1/index.ts')
-  assert.match(edge, /HERMES_ORIGIN_URL/)
-  assert.match(edge, /HERMES_SHARED_SECRET/)
-  assert.match(edge, /url.protocol!=="https:"/)
-  assert.match(edge, /const canUseHermes=executor==="hermes"\|\|executor==="openrouter"/)
-  assert.match(edge, /const validModel=MODEL_ID.test\(modelId\)/)
-  assert.match(edge, /const writeConfirmed=body.confirmGitHubWrite===true/)
-  assert.match(edge, /run\.request_sha256!==requestSha256\|\|run\.run_id!==runId/)
-  assert.match(edge, /trustedHermesReceipt\(remote,runId,null,modelId\)/)
-  assert.match(edge, /await saveHermesReceipt\(db,ownerId,chat.chat_id,runId,verified\)/)
-  assert.doesNotMatch(edge, /GITHUB_WRITE_ENABLED\s*=\s*true/)
+  const route = read('app/api/agent-director/commander-run/route.js')
+  const runtime = read('lib/agent-director/commander-owned-runtime.mjs')
+  assert.match(edge, /DIRECTOR_ORIGIN="https:\/\/holistichouse\.vercel\.app"/)
+  assert.match(edge, /ownedDirectorCall\(req,/)
+  assert.match(edge, /const canDispatch=executor==="local"&&!writeConfirmed/)
+  assert.match(edge, /EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/)
+  assert.match(edge, /trustedOwnedDirectorReceipt\(remote,/)
+  assert.match(edge, /saveOwnedDirectorReceipt\(db,ownerId,chat\.chat_id,runId,verified\)/)
+  assert.doesNotMatch(edge, /HERMES_ORIGIN_URL|HERMES_SHARED_SECRET|hermesCall\(|trustedHermesReceipt/)
+  assert.match(route, /auth\/v1\/user/)
+  assert.match(route, /privateStoreConfigured!==true/)
+  assert.match(route, /executeOwnedCommanderRun/)
+  assert.match(runtime, /HH_AGENT_OLLAMA_ENABLED!=='true'/)
+  assert.match(runtime, /AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED/)
+  assert.match(runtime, /AGENT_DIRECTOR_READ_ONLY_RESPONSE/)
+  assert.doesNotMatch(runtime, /fetch\(['"]https?:\/\/|OPENROUTER_API_KEY|GITHUB_TOKEN/)
 })
 
-test('Commander execution events preserve existing database kind CHECK and do not forge LIVE', () => {
+test('Commander execution receipts never claim source writes, CI or LIVE from a model reply', () => {
   const edge = read('supabase/functions/agent-commander-private-store-v1/index.ts')
-  assert.match(edge, /kind:report.status==="COMPLETED"\?"agent_final":"execution_blocked"/)
-  assert.match(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'note',\$4::text::jsonb,\$5::boolean\)/)
-  assert.match(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'note',\$4::text::jsonb,false\)/)
-  assert.doesNotMatch(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'execution_blocked'/)
-  assert.match(edge, /"DRAFT_PR_COMMIT_VERIFIED_NOT_LIVE"/)
-  assert.match(edge, /runId,chatId:chat.chat_id,ownerId,projectKey:"holistic-house"/)
+  assert.match(edge, /sourceVerified:false/)
+  assert.match(edge, /sourceWrite:null/)
+  assert.match(edge, /COMPLETED_UNVERIFIED/)
+  assert.match(edge, /proofLevel:verified\.proofLevel/)
+  assert.doesNotMatch(edge, /liveVerified:true|sourceVerified:true.*Agent Director/)
 })
-
 
 test('private store preserves native JSONB objects and arrays when persisting payloads',()=>{
   const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
