@@ -594,10 +594,14 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Reopen the real Audio voice panel through its visible workspace navigation.
       // Text mode deliberately collapses the advanced editor. The actual
       // visitor taps Record a phrase to reveal it; this does not request mic access.
-      await openAudioVoice();
+      await openIdeas();
       // The approved one phrase editor now lives in Montage Text. Traverse
-      // through visible Ideas → Montage → Text, then Record → My Voice.
-      await phrases.locator('[data-video-ideas-open-montage-text]').click();
+      // through the visible Ideas → Montage → Text action, then Record → My Voice.
+      // Audio workspace hides Ideas; explicitly reopen Ideas before clicking
+      // its button rather than forcing a click on a hidden element.
+      const openMontageText=phrases.locator('[data-video-ideas-open-montage-text]');
+      await expect(openMontageText).toBeVisible();
+      await openMontageText.click();
       await expect(page.locator('[data-video-montage-tab="text"]')).toHaveAttribute("aria-pressed","true");
       await expect(page.locator('[data-video-montage-text]')).toBeVisible();
       const montageIdeas=page.locator('[data-video-montage-text] [data-video-ideas-compact]');
