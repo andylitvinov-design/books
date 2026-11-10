@@ -255,7 +255,7 @@ test('verified model receipt precedes inference and malformed replies get precis
 
 
 test('reasoning blocks are excluded while actual patch text remains usable',()=>{
- const patch='diff --git a/a.js b/a.js\\n@@ -1 +1 @@\\n-old\\n+new';
+ const patch='diff --git a/a.js b/a.js\n@@ -1 +1 @@\n-old\n+new';
  assert.equal(extractAssistantText([
   {type:'reasoning',text:'internal reasoning must not become a patch'},
   {type:'text',text:patch}
