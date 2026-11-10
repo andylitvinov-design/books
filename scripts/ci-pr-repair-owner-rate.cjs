@@ -55,7 +55,9 @@ function writerOperation(method,path){
  if(!path.startsWith(prefix+'/'))return 'OUTSIDE_REPO';
  const route=path.slice(prefix.length);
  if(/^\/git\/ref\/heads\/[a-z0-9_./-]+$/i.test(route))
-   return method==='PATCH'?'UPDATE_REF':method==='GET'?'READ_REF':'UNKNOWN';
+   return method==='GET'?'READ_REF':'UNKNOWN';
+ if(/^\/git\/refs\/heads\/[a-z0-9_./-]+$/i.test(route))
+   return method==='PATCH'?'UPDATE_REF':'UNKNOWN';
  if(method==='POST'&&route==='/git/blobs')return 'CREATE_BLOB';
  if(method==='POST'&&route==='/git/trees')return 'CREATE_TREE';
  if(method==='POST'&&route==='/git/commits')return 'CREATE_COMMIT';
