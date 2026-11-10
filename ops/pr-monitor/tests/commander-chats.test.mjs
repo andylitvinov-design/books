@@ -178,3 +178,26 @@ test('Commander execution run snapshots a bounded revision-pinned task context a
  assert.ok(edge.includes('JSON.stringify({message,contextCapsule})'));
  assert.ok(edge.includes('String(contextCapsule.chatRevision)'));
 });
+
+
+test('compact chat UI supports a single question, optional executor and hidden advanced metadata',()=>{
+ const html=src('chats.html'),css=src('commander-chats.css'),js=src('commander-chats.js');
+ assert.match(html,/id="cc-new-prompt"[^>]*maxlength="1200"[^>]*required/);
+ assert.match(html,/class="cc-executor-chips"/);
+ assert.match(html,/name="cc-new-executor" value="local" checked/);
+ assert.match(html,/<details class="cc-extra">/);
+ assert.match(html,/id="cc-new-title"/);
+ assert.match(html,/id="cc-new-project"/);
+ assert.match(html,/id="cc-new-prs"/);
+ assert.match(html,/id="cc-create-backdrop"/);
+ assert.match(html,/id="cc-thread-tools"/);
+ assert.match(css,/cc-create-sheet:not\(\[hidden\]\)/);
+ assert.match(css,/cc-executor-chip:has\(input:checked\)/);
+ assert.match(js,/if\(!el\('new-title'\)\.value\.trim\(\)\)/);
+ assert.match(js,/const data=\{\.\.\.formValues\('new-'\),id:id\(\)\}/);
+ assert.match(js,/el\('mode'\)\.value=data\.executors\[0\]/);
+ assert.match(js,/await send\(\{preventDefault\(\)\{\}\}\)/);
+ assert.match(js,/el\('board'\)\.dataset\.view='thread'/);
+ assert.match(js,/el\('board'\)\.dataset\.view='list'/);
+ assert.match(js,/closeCreate\(\)/);
+});
