@@ -9,7 +9,7 @@ const cp=require('node:child_process');
 
 const MODEL='opencode/glm-5.3-flash-free';
 const MAX_FILES=8, MAX_SOURCE=18000, MAX_DISK_SOURCE=150000, MAX_CONTEXT=58000, MAX_PATCH=35000;
-const FREE_MODEL_ID=/^[A-Za-z0-9][A-Za-z0-9_.-]*\\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/;
+const FREE_MODEL_ID=/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/;
 function recordFreeModelEvidence({provider,model,zeroCost}={},{
   filePath=process.env.HH_FREE_AI_METADATA_PATH,
   runnerTemp=process.env.RUNNER_TEMP
