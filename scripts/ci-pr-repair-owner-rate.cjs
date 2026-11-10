@@ -20,18 +20,20 @@ function requireOwnerRateBudget(headers,required){
   throw Error('HH_REPAIR_OWNER_RATE_RESERVE_LOW remaining='+remaining+' required='+required);
  return {remaining,required,source:'GITHUB_AUTHENTICATED_RESPONSE_HEADER'};
 }
-// A repository-scoped Actions credential is preferred over a broad owner
-// PAT after the PAT was proven to return 403 on the Git Data write endpoint.
-// No credential is chosen merely from its existence, a UI flag or unknown quota.
+// ONLY the existing trusted publish job supplies a repository-scoped
+// GitHub Actions token with contents:write. Its authenticated repository
+// identity and bounded API rate may be verified via GET /repos; the per-user
+// permissions.push flag is not an Actions installation-token permission check.
+// The actual Git Data API remains the mandatory authorization test: any 403
+// fails closed without PAT fallback, write retry, bypass or claimed commit.
 function eligibleWriter(probe,required){
- return !!(probe?.ok===true&&probe?.canPush===true&&
-  Number.isSafeInteger(probe.remaining)&&probe.remaining>=required);
+ return !!(probe?.ok===true&&Number.isSafeInteger(probe.remaining)&&
+   probe.remaining>=required);
 }
-function chooseWriterMode({job,owner}={},required){
+function chooseWriterMode({job}={},required){
  if(!Number.isSafeInteger(required)||required<10||required>17)
   throw Error('HH_REPAIR_OWNER_RATE_INVALID_BUDGET');
  if(eligibleWriter(job,required))return 'job';
- if(eligibleWriter(owner,required))return 'owner';
- throw Error('HH_REPAIR_NO_VERIFIED_WRITER_CREDENTIAL_OR_RATE');
+ throw Error('HH_REPAIR_NO_VERIFIED_SCOPED_JOB_CREDENTIAL_OR_RATE');
 }
 module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode};

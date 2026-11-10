@@ -657,7 +657,8 @@ jobs:
         if: needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready'
         uses: actions/github-script@v7
         env:
-          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+          # Only the scope-restricted publish job receives its own write token.
+          # The owner PAT is prohibited here: real writes returned HTTP 403.
           HH_REPAIR_JOB_TOKEN: ${{ github.token }}
           HH_REPAIR_SHA: ${{ needs.claim.outputs.sha }}
           HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
@@ -666,11 +667,10 @@ jobs:
           script: |
             const fs=require('node:fs');
             const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
-            const ownerToken=process.env.HH_AUTOMERGE_TOKEN||'';
             const jobToken=process.env.HH_REPAIR_JOB_TOKEN||'';
             const rateGuard=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-owner-rate.cjs');
             if(!jobToken)throw Error('HH_REPAIR_JOB_TOKEN_NOT_CONFIGURED');
-            let token=jobToken;
+            const token=jobToken;
             // Credentials are used only in the trusted publisher, after an
             // independently verified candidate. Never run PR code here.
             const probe=async key=>{
@@ -684,7 +684,8 @@ jobs:
                 const data=await response.json().catch(()=>({}));
                 const raw=response.headers.get('x-ratelimit-remaining');
                 return {ok:response.ok&&data.full_name==='andylitvinov-design/books',
-                  canPush:data.permissions?.push===true,
+                  // permissions.push is a USER flag, not a reliable
+                  // Actions installation-token contents:write scope oracle.
                   remaining:typeof raw==='string'&&/^(?:0|[1-9][0-9]{0,9})$/.test(raw)?
                     Number(raw):null};
               }catch{return null;}
@@ -715,16 +716,20 @@ jobs:
               // Prefer this job's repository-scoped contents:write token.
               // GitHub-token ref updates require the EXISTING next-Core wake
               // fallback; do not fabricate a pull_request synchronization.
+              // Real GitHub Actions run #42910969868 had Contents:write,
+              // but repository.permissions.push was false/absent for the
+              // scoped job credential. The old selector then incorrectly
+              // fell back to the PAT that repeatedly failed Git Data 403.
+              // Authenticate THIS job credential to exactly this repository,
+              // verify its rate reserve, then let the actual Git Data API
+              // enforce write permission. Never retry with broader credentials.
               const required=rateGuard.requiredOwnerBudget(files.length);
               const jobProbe=await probe(jobToken);
-              const ownerProbe=rateGuard.eligibleWriter(jobProbe,required)?
-                null:await probe(ownerToken);
-              const mode=rateGuard.chooseWriterMode({job:jobProbe,owner:ownerProbe},required);
-              token=mode==='job'?jobToken:ownerToken;
+              const mode=rateGuard.chooseWriterMode({job:jobProbe},required);
               const repository=await call('GET',base,undefined,required);
-              if(repository?.full_name!==owner+'/'+repo||repository.permissions?.push!==true)
-                throw Error('HH_REPAIR_WRITER_REPO_WRITE_PERMISSION_MISSING');
-              core.info('HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH mode='+mode);
+              if(repository?.full_name!==owner+'/'+repo)
+                throw Error('HH_REPAIR_JOB_TOKEN_REPOSITORY_MISMATCH');
+              core.info('HH_REPAIR_WRITE_CREDENTIAL AUTHENTICATED_REPOSITORY_SCOPED mode='+mode);
               const current=await call('GET',base+ref);
               if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)
                 throw Error('Source branch moved before repair commit');

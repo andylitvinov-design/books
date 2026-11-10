@@ -24,32 +24,34 @@ test('actual low, missing or invalid rate header fails closed before any write',
   ()=>requireOwnerRateBudget(hdr('100'),n),/INVALID_BUDGET/);
  assert.throws(()=>requireOwnerRateBudget(null,10),/RATE_NOT_VERIFIED/);
 });
-test('job-scoped GitHub token is preferred only with verified repository write and rate budget',()=>{
- const good=remaining=>({ok:true,canPush:true,remaining});
- assert.equal(chooseWriterMode({job:good(10),owner:good(5000)},10),'job');
- assert.equal(chooseWriterMode({job:good(18),owner:good(5000)},17),'job');
- assert.equal(chooseWriterMode({job:good(9),owner:good(5000)},10),'owner');
- assert.equal(chooseWriterMode({job:null,owner:good(10)},10),'owner');
- for(const invalid of [null,{ok:true,canPush:false,remaining:999},
-   {ok:false,canPush:true,remaining:999},{ok:true,canPush:true,remaining:null}]){
-  assert.equal(eligibleWriter(invalid,10),false);
-  assert.throws(()=>chooseWriterMode({job:invalid,owner:invalid},10),
-   /NO_VERIFIED_WRITER/);
+test('only authenticated scoped Actions job token may publish; user push flag is not its scope oracle',()=>{
+ const job=remaining=>({ok:true,canPush:false,remaining});
+ assert.equal(chooseWriterMode({job:job(10),owner:{ok:true,canPush:true,remaining:5000}},10),'job');
+ assert.equal(chooseWriterMode({job:job(18)},17),'job');
+ for(const noJob of [null,{ok:false,remaining:5000},{ok:true,remaining:null},
+    {ok:true,remaining:9},{ok:true,remaining:NaN}]){
+  assert.equal(eligibleWriter(noJob,10),false);
+  assert.throws(()=>chooseWriterMode({job:noJob,owner:{ok:true,canPush:true,remaining:5000}},10),
+    /NO_VERIFIED_SCOPED_JOB_CREDENTIAL_OR_RATE/);
  }
- assert.throws(()=>chooseWriterMode({job:good(5000)},18),/INVALID_BUDGET/);
+ assert.throws(()=>chooseWriterMode({job:job(5000)},18),/INVALID_BUDGET/);
 });
 test('existing issuer remains credential isolated and branch/head guarded',()=>{
  const flow=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
- assert.match(flow,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
- assert.match(flow,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
  const publish=flow.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
+ assert.doesNotMatch(publish,/HH_AUTOMERGE_TOKEN:|process\.env\.HH_AUTOMERGE_TOKEN/);
+ assert.match(publish,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
+ assert.match(flow,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
  assert.match(publish,/permissions:\n      contents: write/);
  assert.match(publish,/rateGuard\.chooseWriterMode/);
- assert.match(publish,/mode==='job'\?jobToken:ownerToken/);
+ assert.match(publish,/const token=jobToken/);
+ assert.match(publish,/rateGuard\.chooseWriterMode\(\{job:jobProbe\},required\)/);
+ assert.doesNotMatch(publish,/await probe\(ownerToken\)|mode==='job'\?jobToken:ownerToken/);
  assert.match(flow,/rateGuard\.requiredOwnerBudget\(files\.length\)/);
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
- assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH/);
- assert.match(flow,/repository\.permissions\?\.push!==true/);
+ assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL AUTHENTICATED_REPOSITORY_SCOPED/);
+ assert.doesNotMatch(publish,/repository\.permissions\?\.push!==true/);
+ assert.match(publish,/HH_REPAIR_JOB_TOKEN_REPOSITORY_MISMATCH/);
  assert.match(flow,/force:false/);
  assert.match(flow,/Source branch moved before repair commit/);
  assert.match(flow,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
