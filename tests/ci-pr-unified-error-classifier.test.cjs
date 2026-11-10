@@ -22,7 +22,7 @@ function assertDiagnosticOnly(result, category) {
 }
 
 test('versioned taxonomy exposes all required category families', () => {
-  assert.equal(RULESET_VERSION, '1.0.0');
+  assert.equal(RULESET_VERSION, '1.1.0');
   for (const key of ['SECURITY', 'ACCESS_CONFIG', 'INFRASTRUCTURE', 'MERGE_CONFLICT',
     'BASE_ADVANCED', 'BASE_OR_CI_ROUTING', 'TYPESCRIPT', 'SOURCE_CODE',
     'TEST_FAILURE', 'INTEGRATION', 'AI_EXECUTOR', 'AUTOMATION_PROCESS', 'UNKNOWN']) {
