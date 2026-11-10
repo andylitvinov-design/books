@@ -25,9 +25,27 @@ import { coachingRequestTopicLabel } from '@/lib/coaching/session-onboarding'
 import { coachingArt } from '@/lib/coaching/public-session-art'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingAdaptivePrompt, buildCoachingRecap, coachingRecapClipboardText } from '@/lib/personal-coaching/guided-session'
+import { growPhaseForStep, growClarityOutcome } from '@/lib/personal-coaching/grow-20.mjs'
 import styles from './personal-coaching.module.css'
 
 
+const growCopy={
+  en:{phases:{G:'Goal',R:'Reality',O:'Options',W:'Way forward',Review:'Review'},
+    target:'Target 20 min · flexible',clarity:'Clarity of my next step',before:'At the start',
+    after:'At the end',missing:'Not measured',change:'Change in my rating',
+    noCompare:'A comparison needs both ratings.',reflection:'Your own 0–10 reflection, not a clinical score or proof of lasting change.',
+    confirmed:'Client-confirmed actions',fallback:'Fallback'},
+  ru:{phases:{G:'Цель',R:'Реальность',O:'Варианты',W:'Действие',Review:'Итог'},
+    target:'Ориентир 20 минут · без таймера',clarity:'Ясность следующего шага',before:'В начале',
+    after:'В конце',missing:'Не измерено',change:'Изменение моей оценки',
+    noCompare:'Для сравнения нужны обе оценки.',reflection:'Ваша субъективная оценка 0–10, не клинический показатель и не доказательство устойчивых изменений.',
+    confirmed:'Подтверждено действий',fallback:'Запасной вариант'},
+  es:{phases:{G:'Objetivo',R:'Realidad',O:'Opciones',W:'Siguiente paso',Review:'Revisión'},
+    target:'Objetivo 20 min · sin límite rígido',clarity:'Claridad de mi próximo paso',before:'Al inicio',
+    after:'Al final',missing:'Sin medir',change:'Cambio de mi valoración',
+    noCompare:'Para comparar hacen falta ambas valoraciones.',reflection:'Autoevaluación de 0–10, no puntuación clínica ni prueba de cambios duraderos.',
+    confirmed:'Acciones confirmadas',fallback:'Alternativa'},
+}
 const copy={
   en:{
     eyebrow:'HOLISTIC HOUSE · SELF-GUIDED COACHING',title:'Personal Coaching Session',
@@ -179,6 +197,8 @@ export default function PersonalCoaching({locale='en',accountId}){
   const activeQuestions=questionsFor(course,catalog)
   const question=activeQuestions[index]||activeQuestions[0]
   const isOverload=session?.schemeKey==='grow_overload_20_v1'
+  const growPhase=isOverload?growPhaseForStep(question?.stepKey):null
+  const clarityOutcome=isOverload&&session?.status==='completed'?growClarityOutcome(session.answers):null
   const requiresWrittenPlan=Boolean(scheme?.requiredCustomPlan && (isOverload?question?.stepKey==='will':index===activeQuestions.length-1))
   const planHint=isOverload?(lang==='ru'?'Опишите свой конкретный первый шаг.':lang==='es'?'Describe tu primer paso concreto.':'Describe your own concrete first step.'):langCopy.woop
   const quickChoices=coachingQuickChoicesAllowed(question,index,{allowReview:isOverload})
@@ -461,6 +481,8 @@ export default function PersonalCoaching({locale='en',accountId}){
     const plan=target.actionPlan
     const planText=plan?.approvedAt?[
       plan.goal,plan.obstacle,plan.actionText,plan.when,
+      ...(Array.isArray(plan.nextActions)?plan.nextActions.slice(0,2).map((row,i)=>row?.text?(i+2)+'. '+row.text+(row.when?' — '+row.when:''):''):[]),
+      plan.fallback?growCopy[lang].fallback+': '+plan.fallback:'',
       Number.isInteger(plan.confidence)?String(plan.confidence)+'/10':'',
     ].filter(Boolean).join('\n'):'' // Only the client's approved plan, no auto-inferred goals.
     try{
@@ -554,6 +576,18 @@ export default function PersonalCoaching({locale='en',accountId}){
           {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</p>}
           {session.clientTopic&&<p className={styles.contextQuestion}><strong>{entryCopy.topicTitle}:</strong> {coachingRequestTopicLabel(session.clientTopic,lang)}</p>}
           {session.clientQuestion&&<p className={styles.contextQuestion}><strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
+          {clarityOutcome&&<section className={styles.smartRecap} data-coaching-grow-outcome>
+            <h2>{growCopy[lang].clarity}</h2>
+            <div className={styles.smartRecapGrid}>
+              <div className={styles.smartRecapCard}><span>{growCopy[lang].before}</span>
+                <strong>{clarityOutcome.before===null?growCopy[lang].missing:clarityOutcome.before+'/10'}</strong></div>
+              <div className={styles.smartRecapCard}><span>{growCopy[lang].after}</span>
+                <strong>{clarityOutcome.after===null?growCopy[lang].missing:clarityOutcome.after+'/10'}</strong></div>
+            </div>
+            <p>{clarityOutcome.delta===null?growCopy[lang].noCompare:
+              growCopy[lang].change+': '+(clarityOutcome.delta>0?'+':'')+clarityOutcome.delta}</p>
+            <p>{growCopy[lang].reflection}</p>
+          </section>}
           <div className={styles.answers}>
             {activeQuestions.map(item=><div className={styles.answer} key={item.id}>
               <strong>{translated(item.prompt||item.question,lang)}</strong>
@@ -562,7 +596,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 <p><em>{followupCopy[lang].answer}:</em> {session.reflections[item.id].text}</p>}
             </div>)}
           </div>
-          <CoachingActionPlan key={session.id} locale={lang} privateSave lowConfidenceGuidance={isOverload}
+          <CoachingActionPlan key={session.id} locale={lang} privateSave lowConfidenceGuidance={isOverload} growPilot={isOverload}
             initial={session.actionPlan||draftCoachingActionPlan(activeQuestions,session.answers,session.clientQuestion||'',lang)}
             disabled={busy} onSave={async fields=>{
               if(conflictingPlan!==undefined&&!coachingPlansEqual(fields,conflictingPlan)&&!window.confirm(lang==='ru'?'Заменить план, сохранённый в другой вкладке, вашим черновиком?':lang==='es'?'¿Reemplazar el plan guardado en otra pestaña con tu borrador?':'Replace the plan saved in another tab with your draft?'))return false
@@ -570,7 +604,10 @@ export default function PersonalCoaching({locale='en',accountId}){
               if(saved)setConflictingPlan(undefined)
               return Boolean(saved)
             }}/>
-          {notice&&<p role="status">{notice}</p>}
+          {isOverload&&session.actionPlan?.approvedAt&&<p className={styles.subtle} data-coaching-grow-actions>
+            {growCopy[lang].confirmed}: {1+(Array.isArray(session.actionPlan.nextActions)?session.actionPlan.nextActions.length:0)}/3
+          </p>}
+          {notice&&<p role="status">{notice}</p>
           {error&&<p role="alert">{error} <button type="button" disabled={busy} onClick={refreshPlan}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
           {conflictingPlan!==undefined&&<div className={styles.answer} data-coaching-conflicting-plan>
             <strong>{lang==='ru'?'План из другой вкладки:':lang==='es'?'Plan de otra pestaña:':'Plan from another tab:'}</strong>
@@ -695,6 +732,9 @@ export default function PersonalCoaching({locale='en',accountId}){
           </div>
           <div className={styles.questionArea}>
             <span className={styles.stage}>{translated(question.stageTitle,lang)||(question.stage||'').toUpperCase()}</span>
+            {growPhase&&<span className={styles.schemeLabel} data-coaching-grow-phase>
+              {growPhase.phase} · {growCopy[lang].phases[growPhase.phase]} · {growPhase.window} min / {growCopy[lang].target}
+            </span>}
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
@@ -733,7 +773,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             {!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>
               <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
             </p>}
-            {!quickChoices&&question.type==='scale_0_10'&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
+            {!quickChoices&&question.type==='scale_0_10'&&!isOverload&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
@@ -749,13 +789,22 @@ export default function PersonalCoaching({locale='en',accountId}){
             {error&&<p className={styles.footerMessage} role="alert">{error} <button type="button" disabled={busy||dictating} onClick={reload}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
-                {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
-              <textarea id="hh-personal-coach-answer" className={styles.textarea}
-                aria-describedby="hh-personal-coach-answer-report-note"
-                data-coaching-open-reflection={!quickChoices?'true':undefined}
-                value={draft.startsWith('choice:')?'':draft}
-                maxLength={800} rows={2} placeholder={t.placeholder} disabled={busy}
-                onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
+                {isOverload&&question.type==='scale_0_10'?growCopy[lang].clarity:
+                  quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
+              {isOverload&&question.type==='scale_0_10'
+                ? <select id="hh-personal-coach-answer" className={styles.textarea}
+                    aria-describedby="hh-personal-coach-answer-report-note" disabled={busy}
+                    value={/^(?:10|[0-9])$/.test(draft)?draft:''}
+                    onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}>
+                    <option value="">{growCopy[lang].missing}</option>
+                    {Array.from({length:11},(_,n)=><option key={n} value={n}>{n}/10</option>)}
+                  </select>
+                : <textarea id="hh-personal-coach-answer" className={styles.textarea}
+                    aria-describedby="hh-personal-coach-answer-report-note"
+                    data-coaching-open-reflection={!quickChoices?'true':undefined}
+                    value={draft.startsWith('choice:')?'':draft}
+                    maxLength={800} rows={2} placeholder={t.placeholder} disabled={busy}
+                    onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
               <div className={styles.composerTools}>
                 <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')} compact
                   text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}

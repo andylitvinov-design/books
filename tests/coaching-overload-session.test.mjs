@@ -15,12 +15,17 @@ test('the first overload coaching session is one reviewed GROW scheme, not a dup
   assert.match(sql,/"ru":"GROW · От перегрузки к ясному плану"/)
   assert.match(sql,/estimated_minutes,topic_tags,step_keys,required_custom_plan/)
   assert.match(sql,/ARRAY\['productivity','stress','goal','decision'\]/)
-  assert.match(sql,/ARRAY\['frame','goal','reality','priorities','options','will','review'\]/)
+  assert.match(sql,/ARRAY\['pilot_start','goal','reality','priorities','options','will','pilot_end','review'\]/)
   assert.match(sql,/true,true\)/)
   assert.match(sql,/ON CONFLICT \(scheme_key\) DO NOTHING/)
   assert.match(sql,/ON CONFLICT \(question_key\) DO NOTHING/)
   assert.match(sql,/ON CONFLICT \(answer_set_key\) DO NOTHING/)
   assert.match(sql,/'priorities',7/)
+  assert.match(sql,/'pilot_start',8/)
+  assert.match(sql,/'pilot_end',9/)
+  assert.match(sql,/'scale_0_10',NULL,true,false/)
+  assert.match(sql,/grow_overload_clarity_start_q1_v1/)
+  assert.match(sql,/grow_overload_clarity_end_q1_v1/)
   for(const locale of ['en','ru','es']){
     assert.match(sql,new RegExp('"'+locale+'":'))
   }
