@@ -4,12 +4,12 @@
 <meta name="robots" content="noindex,nofollow,noarchive"><meta name="color-scheme" content="dark">
 <title>Рабочие чаты · Agent Commander · Holistic House</title>
 <link rel="stylesheet" href="/commander-shell.css?v=20261107-cc-v1">
-<link rel="stylesheet" href="/commander-chats.css?v=20261107-v1">
+<link rel="stylesheet" href="/commander-chats.css?v=20261110-ai-council-v1">
 <link rel="stylesheet" href="/commander-codex.css?v=20261108-v2">
 <link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
 <script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
 <script src="/owner-google-signin.js?v=20261107-v1" defer></script>
-<script src="/commander-chats.js?v=20261109-retry-v1" defer></script>
+<script src="/commander-chats.js?v=20261110-ai-council-v1" defer></script>
 <script src="/commander-codex.js?v=20261108-v2" defer></script>
 </head><body class="hh-cc-shell">
 <main id="cc-chat-root" class="cc-chats-page">
@@ -89,10 +89,17 @@
 <div id="cc-pr-proof"></div></div>
 <div id="cc-messages" class="cc-messages" role="log" aria-live="polite"></div>
 <form id="cc-chat-form">
-<label>Исполнитель диалога<select id="cc-mode"><option value="local">Локальный PM Advisor</option><option value="openrouter">OpenRouter · бесплатная модель</option></select></label>
+<label>Режим диалога<select id="cc-mode"><option value="local">Локальный PM Advisor</option><option value="openrouter">OpenRouter · бесплатная модель</option><option value="council-free">✳ Совет ИИ · AI Council Free</option></select></label>
 <label id="cc-model-label" hidden>Модель<select id="cc-model"></select></label>
 <label>Сообщение<textarea id="cc-message" rows="3" maxlength="1800" placeholder="Обсудить задание, следующий шаг или результат"></textarea></label>
 <div class="cc-chat-buttons"><button type="submit" class="cc-primary" id="cc-send">Отправить и получить ответ</button><button type="button" id="cc-note">Добавить как заметку</button></div></form>
+<section id="cc-council-panel" class="cc-council-panel" hidden>
+  <div class="cc-heading"><h3>Совет ИИ · бесплатные модели</h3><a href="https://ai-council-free-super10.vercel.app/" target="_blank" rel="noopener noreferrer">Открыть отдельно ↗</a></div>
+  <p class="cc-help">Вопрос уже передан в форму. В Совете выбери 2–3 модели с подтверждённой ценой $0, проверь текст и отдельно подтверди отправку. API-ключ остаётся только в окне Совета. Не передавай личные, медицинские, клиентские или финансовые данные.</p>
+  <iframe id="cc-council-frame" title="AI Council Free — Совет ИИ" loading="lazy" referrerpolicy="no-referrer"
+    sandbox="allow-scripts allow-forms allow-same-origin allow-downloads allow-popups allow-popups-to-escape-sandbox"
+    data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"></iframe>
+</section>
 <div class="cc-reports"><div class="cc-heading"><h3>CI / Repair · отчёты по этим PR</h3><button type="button" id="cc-load-reports">Обновить</button></div>
 <p class="cc-help">Свежие подписанные отчёты автоматически появляются при открытии чата и обновляются раз в 2 минуты, пока чат открыт. Они не заменяют проверку HEAD, CI, merge и LIVE.</p>
 <div id="cc-report-list"></div></div>
