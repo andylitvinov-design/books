@@ -16,6 +16,7 @@ import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import CoachingBrainPanel from '@/components/coaching-brain-panel'
 import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
 import { coachingEntryCopy } from '@/components/coaching-session-onboarding'
@@ -30,7 +31,7 @@ const copy={
   en:{
     eyebrow:'HOLISTIC HOUSE · SELF-GUIDED COACHING',title:'Personal Coaching Session',
     intro:'A quiet space to think through one question and choose your next step.',
-    selfGuided:'A guided reflection in your own words — not a live coach or an AI chat.',
+    selfGuided:'The guided questions are self-reflection. Optional AI dialogue requires your consent.',
     time:'Choose a coaching approach · 10–30 minutes',private:'Your answers stay private in your account.',
     start:'Start my session',resume:'Continue my session',new:'Start another session',
     loading:'Opening your private session…',loadError:'Your session could not be loaded. Try again.',
@@ -55,7 +56,7 @@ const copy={
   ru:{
     eyebrow:'HOLISTIC HOUSE · САМОСТОЯТЕЛЬНАЯ КОУЧ-СЕССИЯ',title:'Личная коуч-сессия',
     intro:'Пространство для разговора с собой: один вопрос за раз, один следующий шаг.',
-    selfGuided:'Вопросы коуча для самостоятельного размышления — не живой коуч и не чат с ИИ.',
+    selfGuided:'Основные вопросы — для самостоятельной работы. Дополнительный AI-диалог запускается только с вашего согласия.',
     time:'Выберите подход · примерно 10–30 минут',private:'Ваши ответы сохраняются только в личном кабинете.',
     start:'Начать сессию',resume:'Продолжить сессию',new:'Начать новую сессию',
     loading:'Открываем вашу личную сессию…',loadError:'Не удалось загрузить сессию. Попробуйте ещё раз.',
@@ -80,7 +81,7 @@ const copy={
   es:{
     eyebrow:'HOLISTIC HOUSE · COACHING AUTOGUIADO',title:'Sesión personal de coaching',
     intro:'Un espacio para aclarar una pregunta y elegir tu siguiente paso.',
-    selfGuided:'Reflexión autoguiada, no una sesión con un coach ni un chat con IA.',
+    selfGuided:'Las preguntas son autoguiadas. El diálogo opcional con IA requiere tu consentimiento.',
     time:'Elige un enfoque · 10–30 minutos',private:'Tus respuestas permanecen privadas.',
     start:'Empezar sesión',resume:'Continuar sesión',new:'Empezar otra sesión',
     loading:'Abriendo tu sesión…',loadError:'No se pudo cargar. Inténtalo de nuevo.',
@@ -385,7 +386,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     const planText=plan?.approvedAt?[
       plan.goal,plan.obstacle,plan.actionText,plan.when,
       Number.isInteger(plan.confidence)?String(plan.confidence)+'/10':'',
-    ].filter(Boolean).join('\n'):'' // Only the client's approved plan, no auto-inferred goals.
+    ].filter(Boolean).join('\n'):(target.brainDecision?.confirmedAt?target.brainDecision.actionText:'') // Only client-confirmed actions.
     try{
       downloadCoachingSessionPdf({
         locale:lang,
@@ -415,6 +416,10 @@ export default function PersonalCoaching({locale='en',accountId}){
       <header className={styles.header}>
         <Link href={root+'/course?view=courses'} className={styles.close} onClick={exit} aria-label={t.close} title={t.close}><X size={21}/></Link>
         <span className={styles.brand}>HOLISTIC HOUSE</span>
+        {!loading&&!entry&&!newSelection&&session?.status==='active'&&accountId&&
+          <CoachingBrainPanel key={session.id} locale={lang} accountId={accountId}
+            sessionId={session.id} onConfirmDecision={async actionText=>
+              Boolean(await command('brain-decision',{sessionId:session.id,actionText}))}/>}
         <span className={styles.private}><LockKeyhole size={14}/>{lang==='ru'?'Личное':'Private'}</span>
       </header>
       <section className={styles.sheet}>
@@ -470,7 +475,8 @@ export default function PersonalCoaching({locale='en',accountId}){
             </div>)}
           </div>
           <CoachingActionPlan key={session.id} locale={lang} privateSave
-            initial={session.actionPlan||draftCoachingActionPlan(activeQuestions,session.answers,session.clientQuestion||'',lang)}
+            initial={session.actionPlan||{...draftCoachingActionPlan(activeQuestions,session.answers,session.clientQuestion||'',lang),
+              ...(session.brainDecision?.confirmedAt?{actionText:session.brainDecision.actionText}:{})}}
             disabled={busy} onSave={async fields=>Boolean(await command('plan',fields))}/>
           {recapRows.length>0&&<section className={styles.smartRecap} data-coaching-evidence-recap aria-label={iCopy.recap}>
             <h2>{iCopy.recap}</h2>
