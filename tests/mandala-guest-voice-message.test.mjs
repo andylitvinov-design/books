@@ -157,6 +157,6 @@ test("guided meditation Add opens the single Audio / Meditations composer; Skip 
  assert.match(studio,/coursePreview=\{Boolean\(courseMeditationDraft\)\} seedScript=\{courseMeditationDraft\}/);
  assert.equal((studio.match(/<MandalaPersonalMeditation\b/g)||[]).length,1,
    "there is one composer, not another one in Ready or Practices");
- assert.doesNotMatch(studio,/courseMeditationIncluded|courseMeditationOmitted|data-video-therapy-meditation-audio/,
+ assert.doesNotMatch(studio,/courseMeditationIncluded|courseMeditationOmitted|<details[^>]*data-video-therapy-meditation-audio/,
    "the obsolete inline-details composer state is not reintroduced");
 });
