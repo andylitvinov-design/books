@@ -27,6 +27,7 @@ const SIGNALS = Object.freeze({
   AI_EXECUTOR: /(?:openrouter|model response|completion response|invalid patch|patch response|free_model|free model|provider quota|model timeout|empty model|non[- ]text response|unexpected model identity|inference)/i,
   AUTOMATION_PROCESS: /(?:dispatcher|dispatch(?:er)?|task queue|queue reservation|lease|prompt missing|missing prompt|no executor|executor not invoked|finalizer|finalization|task state|task capsule|handoff|idempotency|duplicate task|lost context|worker claim)/i,
   CI_WORKFLOW_BUDGET: /(?:workflow budget exceeded|workflow count (?:exceeded|limit)|too many (?:github actions )?workflows|workflow (?:graph|fan.out) budget|CI[- ]policy changes|specialist ownership|Messenger isolation)/i,
+  SPECIALIST_PROOF_GATE: /^(?:validate exact-head risk and required specialist workflows)$/i,
   SOURCE_CODE: /(?:eslint|syntax error|cannot find module|module not found|missing import|build failed|compilation failed|type error|referenceerror|syntaxerror|cannot resolve|dependency conflict)/i,
   INFRA_STEP: /^(?:set ?up job|run actions\/(?:checkout|setup-node)@|checkout|install dependencies|download|fetch|restore cache|prepare runner)/i
 });
@@ -123,6 +124,18 @@ function classifyRedCiError({
       evidenceCode: 'WORKFLOW_BUDGET_GUARD'
     });
   }
+  // This exact specialist gate validates live HEAD/base identity and the
+  // presence/completion of required specialist workflows. Its failure is
+  // missing/stale CI proof, never proof that product source is defective.
+  const specialistProofFailure=evidence.some(item=>
+    String(item.job||'').toLowerCase()==='hh-specialist'&&
+    SIGNALS.SPECIALIST_PROOF_GATE.test(String(item.step||'')));
+  if(specialistProofFailure){
+    return makeResult('BASE_OR_CI_ROUTING',evidence,0.97,{
+      reasonCode:'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE',
+      evidenceCode:'SPECIALIST_PROOF_UNAVAILABLE'
+    });
+  }
   if (coreRoot === 'CI_PREFLIGHT_OR_ROUTING') {
     return makeResult('BASE_OR_CI_ROUTING', evidence, 0.9, { evidenceCode: 'TRUSTED_PREFLIGHT_ROUTING_FAILURE' });
   }
@@ -183,24 +196,6 @@ function classifyRedCiError({
 
   if (SIGNALS.SOURCE_CODE.test(text)) {
     return makeResult('SOURCE_CODE', evidence, 0.86, { evidenceCode: 'SOURCE_BUILD_OR_LINT_FAILURE' });
-  }
-
-  // Independent required Specialist failure after a green Core is a real
-  // product/test triage task, NOT an unknown error or a source-write grant.
-  // A red hh-merge-check is normally its downstream consequence. Never
-  // interpret this fingerprint as permission to re-run an unchanged HEAD.
-  const coreGreen=jobs.some(job=>job?.name==='core-lint-types-build'&&
-    job.conclusion==='success');
-  const specialistRed=failed.some(job=>job.name==='hh-specialist');
-  const specialistOnly=failed.every(job=>
-    ['hh-specialist','hh-merge-check','hh-specialists-verified','release-ready'].includes(job.name));
-  if(coreGreen&&specialistRed&&specialistOnly){
-    return makeResult('TEST_FAILURE',evidence,0.96,{
-      reasonCode:'SPECIALIST_GATE_FAILED_REQUIRES_TRIAGE',
-      evidenceCode:'CORE_GREEN_SPECIALIST_RED',
-      recommendedStatus:'REROUTED',
-      retryOverride:{allowed:false,max_attempts:0}
-    });
   }
 
   // A partially interpretable or mixed failure is never silently discarded.
