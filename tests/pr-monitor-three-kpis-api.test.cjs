@@ -93,9 +93,23 @@ test('deep Repair lookup spends its five-PR budget only on failed Core CI heads'
  const repairAt=new Date(Date.now()-60000).toISOString(),postedAt=new Date(Date.now()-30000).toISOString();
  const stage='<!-- HH_PR_STAGE_V1 '+JSON.stringify({stage:'repair_started',pr_number:101,
   head_sha:head,run_id:'200',task_key:'e'.repeat(32),at:repairAt,source:'github_actions_fix_step'})+' -->';
- const receipt=[{id:44,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
-  performed_via_github_app:{id:15368,slug:'github-actions'},body:stage,created_at:postedAt,
-  html_url:'https://github.com/andylitvinov-design/books/pull/101#issuecomment-44'}];
+ const modelAudit={schema:'HH_FREE_AI_MODEL_RUN_V1',provider:'openrouter',model:'cohere/north-mini-code:free',
+  model_version:'catalog-v1',executor_type:'free_ci_patch_proposer',pr_number:101,source_head:head,
+  run_id:'200',run_attempt:1,started_at:repairAt,model_call_started_at:repairAt,response_received_at:repairAt,
+  attempt_count:1,result:'PATCH_PROPOSED',failure_reason:null,patch_present:true,
+  candidate_paths:['components/public.tsx'],verification_result:'PASSED',published_commit_sha:null};
+ const finalizer={schema:'HH_PR_TASK_V1',task_key:'e'.repeat(32),pr_number:101,head_sha:head,
+  owner_run_id:'200',model_run:modelAudit};
+ const fence=String.fromCharCode(96).repeat(3);
+ const finalBody=['<!-- HH_PR_REPAIR_OUTCOME_V1 '+head+' 200 -->',fence+'json',JSON.stringify(finalizer),fence].join('\\n');
+ const receipt=[
+  {id:44,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'},body:stage,created_at:postedAt,
+   html_url:'https://github.com/andylitvinov-design/books/pull/101#issuecomment-44'},
+  {id:45,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+   performed_via_github_app:{id:15368,slug:'github-actions'},body:finalBody,created_at:postedAt,
+   html_url:'https://github.com/andylitvinov-design/books/pull/101#issuecomment-45'}
+ ];
  try{
   global.fetch=async uri=>{const url=String(uri);paths.push(url);
    if(url.includes('/issues/3419/comments'))return response(issueShard());
@@ -109,6 +123,9 @@ test('deep Repair lookup spends its five-PR budget only on failed Core CI heads'
   const kpi=res.payload.windows.last_24h.error_to_repair;
   assert.equal(kpi.candidate_heads,1);assert.equal(kpi.checked_heads,1);
   assert.equal(kpi.n,1);assert.equal(kpi.rows[0].pr,101);
+  assert.equal(kpi.model_usage.inference_attempts,1);
+  assert.equal(kpi.model_usage.models['cohere/north-mini-code:free'],1);
+  assert.equal(kpi.model_usage.patches_verified,1);
   assert.ok(paths.some(x=>x.includes('/issues/101/comments')));
   assert.equal(paths.some(x=>x.includes('/issues/102/comments')),false);
  }finally{global.fetch=old;}

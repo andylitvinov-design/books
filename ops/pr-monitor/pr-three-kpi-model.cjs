@@ -214,7 +214,37 @@ function parseRepairReceipts(comments,{pr,head}) {
         !/^[a-f0-9]{32}$/i.test(e.task_key||''))continue;
       const t=ts(e.at);
       if(t===null||t>posted+60000||posted-t>86400000)continue;
-      out.push({at:e.at,comment_url:c.html_url||null,run_id:String(e.run_id)});
+      out.push({kind:'repair_started',at:e.at,comment_url:c.html_url||null,run_id:String(e.run_id)});
+    }
+    const fence=String.fromCharCode(96).repeat(3);
+    const pattern=new RegExp('<!-- HH_PR_REPAIR_OUTCOME_V1 ([a-f0-9]{40}) ([0-9]{1,20}) -->\\s*'+fence+'json\\s*([\\s\\S]*?)'+fence,'g');
+    for(const match of c.body.matchAll(pattern)){
+      const [,markerHead,markerRun,json]=match;
+      if(markerHead.toLowerCase()!==head.toLowerCase())continue;
+      let record;try{record=JSON.parse(json);}catch{continue;}
+      const audit=record?.model_run;
+      const modelPattern=audit?.provider==='openrouter'?
+        /^[A-Za-z0-9][A-Za-z0-9_.-]*[/][A-Za-z0-9][A-Za-z0-9_.-]*:free$/:
+        /^opencode[/][A-Za-z0-9][A-Za-z0-9_.-]*-free$/;
+      if(record?.schema!=='HH_PR_TASK_V1'||record.pr_number!==pr||
+         record.head_sha?.toLowerCase()!==head.toLowerCase()||
+         String(record.owner_run_id)!==markerRun||!audit||
+         audit.schema!=='HH_FREE_AI_MODEL_RUN_V1'||audit.pr_number!==pr||
+         audit.source_head?.toLowerCase()!==head.toLowerCase()||
+         String(audit.run_id)!==markerRun||
+         !Number.isInteger(audit.attempt_count)||audit.attempt_count<0||audit.attempt_count>1||
+         !['openrouter','opencode'].includes(audit.provider)||typeof audit.model!=='string'||
+         !modelPattern.test(audit.model))continue;
+      const started=ts(audit.started_at);
+      if(started===null||started>posted+60000||posted-started>86400000)continue;
+      out.push({kind:'model_run',at:audit.started_at,run_id:markerRun,provider:audit.provider,
+        model:audit.model,model_version:typeof audit.model_version==='string'?audit.model_version:null,
+        attempt_count:audit.attempt_count,result:audit.result,
+        response_received:audit.response_received_at!==null&&audit.response_received_at!==undefined,
+        patch_present:audit.patch_present===true,verification_result:audit.verification_result||'NOT_RUN',
+        failure_reason:typeof audit.failure_reason==='string'?audit.failure_reason:null,
+        published_commit_sha:SHA.test(audit.published_commit_sha||'')?audit.published_commit_sha:null,
+        comment_url:c.html_url||null});
     }
   }
   return out;
@@ -225,18 +255,43 @@ function repairSample(candidates,proofs,w,checked) {
   for(const c of candidates) {
     const key=c.pr+':'+c.head_sha;if(seen.has(key))continue;seen.add(key);
     const receipts=proofs?.[key]||[];
-    const next=receipts.filter(x=>ts(x.at)!==null&&ts(x.at)>=ts(c.failed_at)&&
-      ts(x.at)>from&&ts(x.at)<=to)
-      .sort((a,b)=>ts(a.at)-ts(b.at))[0];
+    const next=receipts.filter(x=>x.kind!=='model_run'&&ts(x.at)!==null&&ts(x.at)>=ts(c.failed_at)&&
+      ts(x.at)>from&&ts(x.at)<=to).sort((a,b)=>ts(a.at)-ts(b.at))[0];
     if(next)rows.push({...c,repair_started_at:next.at,
       minutes:(ts(next.at)-ts(c.failed_at))/M,receipt_url:next.comment_url});
   }
+  const modelRuns=[],seenRuns=new Set();
+  for(const c of candidates){
+    const key=c.pr+':'+c.head_sha;
+    for(const run of proofs?.[key]||[]){
+      if(run.kind!=='model_run'||ts(run.at)===null||ts(run.at)<ts(c.failed_at)||
+         ts(run.at)<=from||ts(run.at)>to)continue;
+      const id=c.pr+':'+c.head_sha+':'+run.run_id;
+      if(seenRuns.has(id))continue;seenRuns.add(id);modelRuns.push({pr:c.pr,...run});
+    }
+  }
+  const countBy=key=>Object.fromEntries([...modelRuns.reduce((map,row)=>{
+    const value=row[key]||'unknown';map.set(value,(map.get(value)||0)+1);return map;
+  },new Map()).entries()].sort((a,b)=>b[1]-a[1]));
+  const modelUsage={schema:'HH_FREE_AI_REPAIR_USAGE_SAMPLE_V1',
+    scope:'BOUNDED_DEEP_READ_ONLY_EXACT_HEAD_FINALIZER_RECEIPTS',
+    model_runs:modelRuns.length,inference_attempts:modelRuns.reduce((n,x)=>n+x.attempt_count,0),
+    responses_received:modelRuns.filter(x=>x.response_received).length,
+    patches_proposed:modelRuns.filter(x=>x.patch_present).length,
+    patches_verified:modelRuns.filter(x=>x.verification_result==='PASSED').length,
+    commits_published:modelRuns.filter(x=>x.published_commit_sha).length,
+    failures:modelRuns.filter(x=>x.failure_reason).length,
+    providers:countBy('provider'),models:countBy('model'),failure_reasons:countBy('failure_reason'),
+    rows:modelRuns.slice(0,20).map(x=>({pr:x.pr,provider:x.provider,model:x.model,run_id:x.run_id,
+      attempt_count:x.attempt_count,result:x.result,response_received:x.response_received,
+      patch_present:x.patch_present,verification_result:x.verification_result,
+      failure_reason:x.failure_reason,published_commit_sha:x.published_commit_sha,comment_url:x.comment_url}))};
   return {schema:'HH_FIRST_CONFIRMED_ERROR_TO_ACTUAL_REPAIR_SAMPLE_V1',
     scope:'VERIFIED_CORE_FAILED_JOB_AND_SAME_HEAD_REPAIR_STARTED_RECEIPT',
     ...summarize(rows.map(r=>r.minutes)),
     candidate_heads:candidates.length,checked_heads:checked,
     unchecked_heads:Math.max(0,candidates.length-checked),
-    history_complete:false,
+    history_complete:false,model_usage:modelUsage,
     rows:rows.slice(0,20).map(x=>({...x,minutes:round(x.minutes)}))};
 }
 function report(runs,now,{partialArchive=true,repairProofs={},repairChecked=0,mergeProofs=[]}={}) {

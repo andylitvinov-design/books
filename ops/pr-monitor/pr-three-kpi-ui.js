@@ -179,8 +179,35 @@ function renderWaves(){
    description.append(el('p','','Сейчас: '+range(today)+'; две недели назад: '+range(history)+'.'));
    if(conf.key==='ci_first_pass')description.append(el('p','hh-kpi-warning',
      '* Процент рассчитан только по первым сохранённым Core-запускам. Это НЕ подтверждённый CI First Pass всей когорты без полной истории GitHub.'));
-   if(conf.key==='error_to_repair')description.append(el('p','hh-kpi-warning',
+   if(conf.key==='error_to_repair'){
+    description.append(el('p','hh-kpi-warning',
      'Repair измеряется только по подлинному событию repair_started на том же PR и HEAD после доказанной ошибки, а не по принятию dispatch или метке Repair.'));
+    const usage=today?.error_to_repair?.model_usage;
+    if(usage){
+     const panel=el('div','hh-kpi-examples');
+     panel.append(el('strong','','Бесплатные AI-исполнители · ограниченная проверка PR'));
+     panel.append(el('p','', 'Вызовов модели: '+usage.inference_attempts+
+      ' · ответов: '+usage.responses_received+' · патчей предложено: '+usage.patches_proposed+
+      ' · проверено: '+usage.patches_verified+' · коммитов опубликовано: '+usage.commits_published+
+      ' · отказов: '+usage.failures+' (model receipts: '+usage.model_runs+')'));
+     panel.append(el('p','','Провайдеры: '+(Object.entries(usage.providers||{}).map(([k,v])=>k+' '+v).join(' · ')||'нет записей')));
+     panel.append(el('p','','Модели: '+(Object.entries(usage.models||{}).map(([k,v])=>k+' ×'+v).join(' · ')||'модель не записана')));
+     const reasons=Object.entries(usage.failure_reasons||{}).map(([k,v])=>k+' ×'+v);
+     if(reasons.length)panel.append(el('p','hh-kpi-warning','Причины отказа: '+reasons.join(' · ')));
+     for(const run of (usage.rows||[]).slice(0,6)){
+      const row=el('div','hh-kpi-example'),link=el('a','','#'+run.pr);
+      link.href='https://github.com/andylitvinov-design/books/pull/'+run.pr;
+      link.target='_blank';link.rel='noopener noreferrer';
+      row.append(link,el('span','',run.provider+' · '+run.model+' · '+run.result+
+       (run.failure_reason?' · '+run.failure_reason:'')));
+      const proof=safeLink(run.comment_url);if(proof){const a=el('a','','receipt');
+       a.href=proof;a.target='_blank';a.rel='noopener noreferrer';row.append(a);}
+      panel.append(row);
+     }
+     panel.append(el('p','hh-kpi-warning','Только ограниченная deep-выборка PR с подтверждённой ошибкой Core CI; непроверенные PR и записи без model_run не считаются нулём.'));
+     description.append(panel);
+    }
+   }
    const items=evidenceItems(conf.key,today?.[conf.key]);
    if(items.length){
     const list=el('div','hh-kpi-examples');

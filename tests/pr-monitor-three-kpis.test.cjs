@@ -158,3 +158,39 @@ test('new model and frontend never start recurring polling or CI jobs',()=>{
   assert.doesNotMatch(s,/\bsetInterval\s*\(|workflow_dispatch|createWorkflowDispatch/);
  }
 });
+
+test('deep Repair parser reads exact-HEAD model audit from trusted finalizer receipt',()=>{
+ const started=new Date(now-12*60000).toISOString(),posted=new Date(now-10*60000).toISOString();
+ const audit={schema:'HH_FREE_AI_MODEL_RUN_V1',provider:'openrouter',model:'cohere/north-mini-code:free',
+  model_version:'catalog-v1',executor_type:'free_ci_patch_proposer',pr_number:12,source_head:sha,
+  run_id:'200',run_attempt:1,started_at:started,model_call_started_at:started,
+  response_received_at:started,attempt_count:1,result:'PATCH_PROPOSED',failure_reason:null,
+  patch_present:true,candidate_paths:['components/public.tsx'],verification_result:'PASSED',
+  published_commit_sha:null};
+ const item={schema:'HH_PR_TASK_V1',task_key:'e'.repeat(32),pr_number:12,head_sha:sha,
+  owner_run_id:'200',model_run:audit};
+ const fence=String.fromCharCode(96).repeat(3);
+ const body=['<!-- HH_PR_REPAIR_OUTCOME_V1 '+sha+' 200 -->',fence+'json',JSON.stringify(item),fence].join('\n');
+ const comments=[{user:bot,performed_via_github_app:{id:15368,slug:'github-actions'},body,
+  created_at:posted,html_url:'https://github.com/andylitvinov-design/books/pull/12#issuecomment-200'}];
+ const parsed=k.parseRepairReceipts(comments,{pr:12,head:sha}),run=parsed.find(x=>x.kind==='model_run');
+ assert.equal(run.provider,'openrouter');assert.equal(run.model,'cohere/north-mini-code:free');
+ assert.equal(k.parseRepairReceipts(comments,{pr:13,head:sha}).length,0);
+ assert.equal(k.parseRepairReceipts(comments,{pr:12,head:'b'.repeat(40)}).length,0);
+ assert.equal(k.parseRepairReceipts([{...comments[0],user:{id:1,login:'attacker',type:'User'}}],{pr:12,head:sha}).length,0);
+ const failure={...audit,run_id:'201',result:'MODEL_CALL_FAILED_OR_OUTPUT_REJECTED',response_received_at:null,
+  patch_present:false,verification_result:'NOT_RUN',failure_reason:'FREE_AI_OPENROUTER_RESPONSE_CHOICE_COUNT_INVALID'};
+ const failedItem={...item,owner_run_id:'201',model_run:failure};
+ const failedBody=['<!-- HH_PR_REPAIR_OUTCOME_V1 '+sha+' 201 -->',fence+'json',JSON.stringify(failedItem),fence].join('\n');
+ const failedComments=[{...comments[0],body:failedBody}];
+ const candidates=k.errors([record(12,'failure',{jobs:[job(121,'core-lint-types-build','failure',today),
+  job(122,'hh-specialist','success',today),job(123,'hh-merge-check','failure',later)]})],k.window(now,0),now);
+ const proof=k.parseRepairReceipts([...comments,...failedComments],{pr:12,head:sha});
+ const sample=k.repairSample(candidates,{['12:'+sha]:proof},k.window(now,0),1);
+ assert.equal(sample.model_usage.inference_attempts,2);
+ assert.equal(sample.model_usage.patches_proposed,1);
+ assert.equal(sample.model_usage.patches_verified,1);
+ assert.equal(sample.model_usage.failures,1);
+ assert.equal(sample.model_usage.providers.openrouter,2);
+ assert.equal(sample.model_usage.models['cohere/north-mini-code:free'],2);
+});
