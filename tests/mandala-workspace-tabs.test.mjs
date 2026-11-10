@@ -208,32 +208,29 @@ test("pending Phrases selection blocks the actual shared hero handler in every w
   }
 });
 
-test("compact Ideas preserves one opt-in advanced phrase and voice editor",()=>{
+test("Ideas exposes only Personalization and Concept; phrase and voice editors live in Montage and Audio",()=>{
  const start=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="phrases"');
  const end=studio.indexOf('<section className={videoStyles.quickPhraseSection} data-workspace-section="effects"',start);
  assert.ok(start>0 && end>start);
  const section=studio.slice(start,end);
- const editor=section.indexOf('data-video-phrase-editor-first');
- const audio=section.indexOf('data-video-phrase-audio-shortcut');
- assert.ok(editor>0&&audio>editor);
- assert.equal((section.match(/\{deepHypnoPane\}/g)||[]).length,1);
- assert.doesNotMatch(section,/<MandalaVideoIdeas/);
- assert.match(section,/data-video-ideas-open-montage-text/);
- assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
- assert.match(section,/data-video-legacy-phrase-editor/);
- assert.match(section,/data-video-ideas-recording-open=\{ideasVoiceAdvancedOpen\?"true":"false"\}/);
- assert.match(section,/hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
- assert.match(section,/aria-hidden=\{activeWorkspace!=="phrases"\|\|ideasSubtab!=="personalization"\}/);
  assert.equal((section.match(/data-video-ideas-tab="/g)||[]).length,2);
+ assert.match(section,/data-video-ideas-tab="personalization"/);
+ assert.match(section,/data-video-ideas-tab="concept"/);
+ assert.match(section,/data-video-ideas-personalization-panel/);
+ assert.match(section,/data-video-ideas-concept-panel/);
+ assert.match(section,/data-video-ideas-open-montage-text/);
+ assert.doesNotMatch(section,/data-video-legacy-phrase-editor|data-video-ideas-advanced-voice|data-video-ideas-voice-mode|data-video-phrase-audio-shortcut/);
  assert.equal((section.match(/<MandalaVideoConcept /g)||[]).length,1);
- assert.match(section,/data-video-ideas-advanced-voice open=\{ideasVoiceAdvancedOpen\}/);
- assert.equal((studio.match(/<MandalaHypnoCompact /g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!==\"text\"\}/);
+ assert.match(studio,/audioWorkspaceTab===\"voice\" \? hypnoVoiceEditor : null/);
+ assert.match(studio,/data-video-audio-voice-mode=\"my-voice\"/);
+ assert.match(studio,/data-video-audio-own-upload/);
+ assert.match(studio,/setActiveWorkspace\(\"effects\"\);\s*setAudioWorkspaceTab\(\"voice\"\);\s*setVoiceStudioActivated\(true\)/);
  assert.match(studio,/onPendingChange=\{setPhrasePending\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);
  assert.match(studio,/onPreview=\{openAffirmationPreview\}/);
- for(const label of ['tab:"Идеи"','tab:"Ideas"'])
-   assert.ok(studio.includes(label),label);
+ for(const label of ['tab:"Идеи"','tab:"Ideas"'])assert.ok(studio.includes(label),label);
  assert.match(css,/\.studio\[data-active-workspace="phrases"\] \.phraseEditorLead\{/);
 });
 test("hydrated Studio gates the first local MP4 test before its first real user click",()=>{
