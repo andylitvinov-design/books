@@ -494,6 +494,7 @@ jobs:
     env:
       REPAIR_SHA: ${{ needs.claim.outputs.sha }}
       REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
+      REPAIR_TASK_KEY: ${{ needs.claim.outputs.task_key }}
       REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
     steps:
       - name: Checkout exact PR HEAD with no persisted credentials

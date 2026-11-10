@@ -203,3 +203,33 @@ test('CLI entrypoint awaits the async price-checked proposer',()=>{
  assert.match(source,/async function main\(\)[\s\S]*?await propose\(\)/);
  assert.match(source,/if\(require\.main===module\)main\(\)/);
 });
+
+test('prompt provenance is task-bound, redacted and stable only for identical context',()=>{
+ const {promptReceipt}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const taskKey='1'.repeat(32),scope={sha:SHA,files:['components/public-card.tsx']};
+ const argumentsFor={taskKey,runId:'123456',runAttempt:1};
+ const evidence={tests:{ok:false,detail:'private diagnostic with ghp_FAKE_SECRET'}};
+ const a=promptReceipt(scope,'untrusted source excerpt',evidence,argumentsFor);
+ const b=promptReceipt(scope,'untrusted source excerpt',evidence,argumentsFor);
+ assert.equal(a.schema,'HH_PR_PROMPT_RECEIPT_V1');
+ assert.equal(a.task_key,taskKey);
+ assert.equal(a.template_version,'HH_PR_FREE_REPAIR_PROMPT_V1');
+ assert.match(a.prompt_id,/^[a-f0-9]{32}$/);
+ assert.match(a.context_hash,/^[a-f0-9]{64}$/);
+ assert.deepEqual(a,b);
+ assert.doesNotMatch(JSON.stringify(a),/private diagnostic|FAKE_SECRET|source excerpt/);
+ assert.notEqual(promptReceipt(scope,'different prompt',evidence,argumentsFor).prompt_id,a.prompt_id);
+ assert.notEqual(promptReceipt(scope,'untrusted source excerpt',evidence,
+  {...argumentsFor,runAttempt:2}).prompt_id,a.prompt_id);
+ assert.notEqual(promptReceipt(scope,'untrusted source excerpt',evidence,
+  {...argumentsFor,taskKey:'2'.repeat(32)}).prompt_id,a.prompt_id);
+});
+test('missing signed task, malformed identity and sensitive scope never create a prompt receipt',()=>{
+ const {promptReceipt}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const scope={sha:SHA,files:['components/public-card.tsx']};
+ const identity={taskKey:'1'.repeat(32),runId:'123456',runAttempt:1};
+ assert.throws(()=>promptReceipt(scope,'prompt',{}, {...identity,taskKey:''}),/INVALID_CONTEXT/);
+ assert.throws(()=>promptReceipt(scope,'prompt',{}, {...identity,runId:'0'}),/INVALID_CONTEXT/);
+ assert.throws(()=>promptReceipt(scope,'prompt',{}, {...identity,runAttempt:0}),/INVALID_CONTEXT/);
+ assert.throws(()=>promptReceipt({...scope,files:['lib/private/clients.js']},'prompt',{},identity),/INVALID_CONTEXT/);
+});

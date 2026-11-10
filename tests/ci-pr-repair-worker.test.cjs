@@ -1247,3 +1247,40 @@ test('publisher and fallback finalizers pass the same-run free model audit with 
  assert.match(source,/modelAuditRaw:process\.env\.HH_MODEL_AUDIT/);
  assert.match(source,/modelAuditRunAttempt:Number\(process\.env\.HH_WORKFLOW_ATTEMPT\|\|0\)/);
 });
+
+test('free-model prompt delivery receipt is accepted only for the exact signed task/run/attempt',()=>{
+ const {normalizeModelAudit}=require('../scripts/ci-pr-repair-worker.cjs');
+ const {promptReceipt}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const taskKey='1'.repeat(32);
+ const prompt=promptReceipt({sha,files:['components/public-card.tsx']},
+  'bounded prompt',{tests:{ok:false,detail:'redacted'}},
+  {taskKey,runId:'123456',runAttempt:1});
+ const raw={schema:'HH_FREE_AI_MODEL_RUN_V1',provider:'openrouter',
+   model:'cohere/north-mini-code:free',executor_type:'free_ci_patch_proposer',
+   pr_number:42,source_head:sha,run_id:'123456',run_attempt:1,
+   started_at:'2026-11-09T00:00:00.000Z',model_call_started_at:'2026-11-09T00:00:01.000Z',
+   response_received_at:'2026-11-09T00:00:02.000Z',attempt_count:1,
+   result:'MODEL_RESPONSE_RECEIVED',patch_present:false,candidate_paths:[],
+   verification_result:'NOT_RUN',prompt_receipt:prompt,
+   prompt_prepared_at:'2026-11-09T00:00:00.500Z',
+   prompt_delivery_status:'RESPONSE_OBSERVED'};
+ const expected={number:42,expectedSha:sha,runId:123456,runAttempt:1,taskKey};
+ const audit=normalizeModelAudit(raw,expected);
+ assert.equal(audit.prompt_receipt.prompt_id,prompt.prompt_id);
+ assert.equal(audit.prompt_receipt.context_hash,prompt.context_hash);
+ assert.equal(audit.prompt_delivery_status,'RESPONSE_OBSERVED');
+ assert.equal(normalizeModelAudit(raw,{...expected,taskKey:'2'.repeat(32)}),null);
+ assert.equal(normalizeModelAudit(raw,{...expected,runAttempt:2}),null);
+ assert.equal(normalizeModelAudit({...raw,prompt_receipt:{...prompt,context_hash:'bad'}},expected),null);
+ assert.equal(normalizeModelAudit({...raw,prompt_delivery_status:'RESPONSE_OBSERVED',
+   response_received_at:null},expected),null,
+  'a send attempt alone must never be recorded as a delivered response');
+ assert.equal(normalizeModelAudit({...raw,prompt_delivery_status:'ATTEMPTED_UNCONFIRMED',
+   response_received_at:null},expected).prompt_delivery_status,'ATTEMPTED_UNCONFIRMED');
+ assert.equal(normalizeModelAudit({...raw,prompt_delivery_status:'PREPARED'},expected),null,
+   'a started model call cannot be represented as only a prepared prompt');
+});
+test('repair workflow binds exact signed task key to isolated free proposer',()=>{
+ const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(wf,/REPAIR_TASK_KEY:\s*\$\{\{ needs\.claim\.outputs\.task_key \}\}/);
+});
