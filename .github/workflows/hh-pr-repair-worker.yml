@@ -73,6 +73,7 @@ jobs:
           node --check scripts/ci-pr-repair-deterministic.cjs
           node --check scripts/ci-pr-repair-free-agent.cjs
           node --check scripts/ci-pr-repair-openrouter-free.cjs
+          node --check scripts/ci-pr-repair-graphql-writer.cjs
           node --check scripts/ci-pr-repair-code-candidate.cjs
           node --check scripts/ci-pr-manus-handoff.cjs
           node --check scripts/ci-pr-priority.cjs
@@ -669,6 +670,7 @@ jobs:
             const ownerToken=process.env.HH_AUTOMERGE_TOKEN||'';
             const jobToken=process.env.HH_REPAIR_JOB_TOKEN||'';
             const rateGuard=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-owner-rate.cjs');
+            const atomicWriter=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-graphql-writer.cjs');
             if(!jobToken)throw Error('HH_REPAIR_JOB_TOKEN_NOT_CONFIGURED');
             let token=jobToken;
             // Credentials are used only in the trusted publisher, after an
@@ -709,7 +711,11 @@ jobs:
                     response.headers.get('x-accepted-github-permissions'))
                 };
                 core.error('HH_REPAIR_GIT_DATA_DENIED '+JSON.stringify(receipt));
-                throw Error('HH_REPAIR_GIT_DATA_'+operation+'_HTTP_'+response.status);
+                const failure=Error('HH_REPAIR_GIT_DATA_'+operation+'_HTTP_'+response.status);
+                failure.status=response.status;
+                failure.operation=operation;
+                failure.kind=receipt.kind;
+                throw failure;
               }
               if(minRemaining>0){
                 const rate=rateGuard.requireOwnerRateBudget(response.headers,minRemaining);
@@ -757,8 +763,41 @@ jobs:
               if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)
                 throw Error('Source branch moved before repair commit');
               const tree=[];
-              for(const file of files){
-                const blob=await call('POST',base+'/git/blobs',{content:file.content,encoding:'base64'});
+              for(const [index,file] of files.entries()){
+                let blob;
+                try{
+                  blob=await call('POST',base+'/git/blobs',{content:file.content,encoding:'base64'});
+                }catch(error){
+                  // One atomic CAS alternative ONLY for a DEFINITIVELY
+                  // denied FIRST Git blob. Never after a successful write,
+                  // multiple files' mutations, unknown errors or stale HEAD.
+                  if(index!==0||mode!=='job'||error?.status!==403||
+                     error?.operation!=='CREATE_BLOB'||
+                     error?.kind!=='INTEGRATION_PERMISSION_DENIED'||
+                     error?.message!=='HH_REPAIR_GIT_DATA_CREATE_BLOB_HTTP_403')
+                    throw error;
+                  const beforeCas=await call('GET',base+ref);
+                  if(beforeCas.ref!=='refs/heads/'+branch||
+                     beforeCas.object?.sha!==expectedSha)
+                    throw Error('HH_REPAIR_GRAPHQL_FALLBACK_STALE_HEAD');
+                  core.info('HH_REPAIR_GIT_DATA_403_GRAPHQL_CAS_ATTEMPT '+JSON.stringify({
+                    pr:number,prior_sha:expectedSha,files:files.length,
+                    endpoint:'createCommitOnBranch',denied_operation:'CREATE_BLOB',
+                    source_write_unverified:true
+                  }));
+                  const atomic=await atomicWriter.atomicGraphqlCommit({
+                    owner,repo,branch,expectedSha,files,number,
+                    repairKind:candidate.repair_kind,token});
+                  // A GraphQL response alone is not proof of publication.
+                  // Worker.publish subsequently verifies remote SHA + parent.
+                  const posted=await call('GET',base+ref);
+                  if(posted.ref!=='refs/heads/'+branch||
+                     posted.object?.sha!==atomic.sha)
+                    throw Error('HH_REPAIR_GRAPHQL_REMOTE_REF_NOT_VERIFIED');
+                  core.info('HH_REPAIR_REMOTE_REF VERIFIED '+JSON.stringify({
+                    sha:atomic.sha,branch,method:atomic.method}));
+                  return {sha:atomic.sha};
+                }
                 if(!/^[a-f0-9]{40}$/i.test(blob.sha||''))throw Error('Blob creation failed');
                 tree.push({path:file.path,mode:'100644',type:'blob',sha:blob.sha});
               }

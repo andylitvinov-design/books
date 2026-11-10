@@ -155,6 +155,8 @@ on:
       - '.github/workflows/hh-pr-cron-owner-repair.yml'
       - 'scripts/ci-pr-repair-worker.cjs'
       - 'scripts/ci-pr-repair-owner-rate.cjs'
+      - 'scripts/ci-pr-repair-graphql-writer.cjs'
+      - 'tests/ci-pr-repair-graphql-writer.test.cjs'
       - 'tests/ci-pr-repair-owner-rate.test.cjs'
       - 'scripts/ci-pr-runner-evidence.cjs'
       - 'tests/ci-pr-runner-evidence.test.cjs'
@@ -299,6 +301,8 @@ jobs:
           node --check tests/ci-pr-core-metadata-wake.test.cjs
           node --check scripts/ci-pr-repair-worker.cjs
           node --check scripts/ci-pr-repair-owner-rate.cjs
+          node --check scripts/ci-pr-repair-graphql-writer.cjs
+          node --check tests/ci-pr-repair-graphql-writer.test.cjs
           node --check tests/ci-pr-repair-owner-rate.test.cjs
           node --check scripts/ci-pr-runner-evidence.cjs
           node --check tests/ci-pr-runner-evidence.test.cjs
@@ -364,7 +368,7 @@ jobs:
           node --check tests/ci-pr-legacy-cloud.test.cjs
           node --check tests/ci-pr-repair-source-proof.test.cjs
       - name: Watchdog decision contracts
-        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-pm-agent-inbox.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-native-merge-policy.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-base-advanced-recovery.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-core-metadata-wake.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-owner-rate.test.cjs tests/ci-pr-next-wave-proof.test.cjs tests/ci-pr-repair-verified-finalizer.test.cjs tests/ci-pr-legacy-cloud.test.cjs tests/ci-pr-repair-source-proof.test.cjs tests/ci-pr-runner-evidence.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-repair-deterministic.test.cjs tests/ci-pr-repair-free-agent.test.cjs tests/ci-pr-repair-openrouter-free.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-ci-wake-reconcile.test.cjs tests/ci-pr-selective-core-rerun.test.cjs tests/ci-pr-direct-handoff.test.cjs tests/ci-pr-inprocess-snapshot.test.cjs tests/ci-pr-monitor-feed.test.cjs tests/ci-pr-ci-daytime-signals.test.cjs tests/ci-pr-blocker-progress.test.cjs tests/ci-pr-event-handoff.test.cjs tests/ci-pr-conflict-event-handoff.test.cjs tests/ci-pr-direction-event-label.test.cjs tests/ci-pr-event-snapshot-fastpath.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs tests/ci-pr-closed-run-cleanup.test.cjs tests/ci-pr-manus-handoff.test.cjs tests/ci-pr-unified-error-classifier.test.cjs tests/ci-pr-red-ci-classifier.test.cjs tests/ci-pr-error-task.test.cjs
+        run: node --test tests/ci-pr-direction-watcher.test.cjs tests/ci-pr-slot-wakeup.test.cjs tests/ci-pr-priority.test.cjs tests/ci-pr-ten-minute-watchdog.test.cjs tests/ci-pr-pm-agent-inbox.test.cjs tests/ci-pr-merge-gates.test.cjs tests/ci-pr-native-merge-policy.test.cjs tests/ci-pr-base-freshness.test.cjs tests/ci-pr-base-advanced-recovery.test.cjs tests/ci-pr-ci-worker.test.cjs tests/ci-pr-core-metadata-wake.test.cjs tests/ci-pr-repair-worker.test.cjs tests/ci-pr-repair-owner-rate.test.cjs tests/ci-pr-repair-graphql-writer.test.cjs tests/ci-pr-next-wave-proof.test.cjs tests/ci-pr-repair-verified-finalizer.test.cjs tests/ci-pr-legacy-cloud.test.cjs tests/ci-pr-repair-source-proof.test.cjs tests/ci-pr-runner-evidence.test.cjs tests/ci-pr-repair-test-scope.test.cjs tests/ci-pr-repair-deterministic.test.cjs tests/ci-pr-repair-free-agent.test.cjs tests/ci-pr-repair-openrouter-free.test.cjs tests/ci-pr-orchestration-triggers.test.cjs tests/ci-pr-control-tower-wakeup.test.cjs tests/ci-pr-control-tower.test.cjs tests/ci-pr-ci-wake-reconcile.test.cjs tests/ci-pr-selective-core-rerun.test.cjs tests/ci-pr-direct-handoff.test.cjs tests/ci-pr-inprocess-snapshot.test.cjs tests/ci-pr-monitor-feed.test.cjs tests/ci-pr-ci-daytime-signals.test.cjs tests/ci-pr-blocker-progress.test.cjs tests/ci-pr-event-handoff.test.cjs tests/ci-pr-conflict-event-handoff.test.cjs tests/ci-pr-direction-event-label.test.cjs tests/ci-pr-event-snapshot-fastpath.test.cjs tests/ci-pr-live-verifier.test.cjs tests/ci-pr-served-release.test.cjs tests/ci-pr-release-outcomes.test.cjs tests/ci-pr-release-kpi.test.cjs tests/ci-pr-kpi*.test.cjs tests/ci-pr-closed-run-cleanup.test.cjs tests/ci-pr-manus-handoff.test.cjs tests/ci-pr-unified-error-classifier.test.cjs tests/ci-pr-red-ci-classifier.test.cjs tests/ci-pr-error-task.test.cjs
       - name: Hermes CI event bridge and private inbox contracts
         run: node --test tests/ci-pr-hermes-event-bridge.test.cjs tests/ci-pr-commander-ci-inbox.test.cjs tests/ci-pr-commander-strategy-router.test.cjs tests/ci-pr-commander-ci-route-receipt.test.cjs tests/ci-pr-direct-core-intake.test.cjs tests/ci-pr-readonly-route-intake.test.cjs tests/ci-pr-commander-assignment-receipts.test.cjs tests/ci-pr-openrouter-quota-triage.test.cjs
       - name: Agent Commander learning security and evidence contracts

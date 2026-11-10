@@ -119,7 +119,11 @@ test('trusted publisher emits bounded operation-specific 403 receipts without ra
  assert.match(pub,/rateGuard\.errorKind\(response\.status/);
  assert.match(pub,/rateGuard\.allowedPermissions/);
  assert.match(pub,/x-accepted-github-permissions/);
- assert.match(pub,/throw Error\('HH_REPAIR_GIT_DATA_'\+operation\+'_HTTP_'\+response\.status\)/);
+ assert.match(pub,/const failure=Error\('HH_REPAIR_GIT_DATA_'\+operation\+'_HTTP_'\+response\.status\)/);
+ assert.match(pub,/failure\.status=response\.status/);
+ assert.match(pub,/failure\.operation=operation/);
+ assert.match(pub,/failure\.kind=receipt\.kind/);
+ assert.match(pub,/throw failure/);
  assert.doesNotMatch(pub,/core\.error\([^)]*JSON\.stringify\(data\)/);
  assert.match(pub,/HH_REPAIR_REMOTE_REF VERIFIED /);
  assert.match(pub,/force:false/);
