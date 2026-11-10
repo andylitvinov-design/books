@@ -8,12 +8,12 @@
  const el=id=>doc.getElementById('cc-'+id),SERVER='/api/commander-chats',AI='/api/pm-agent-chat';
  const MAIN='https://holistichouse.vercel.app';
  const KEY='hh.commander.chat-vault.v1',SCHEMA='HH_COMMANDER_LOCAL_CHATS_V1';
- const EXEC={local:'Локальный советник',openrouter:'OpenRouter Free',codex:'Codex · передача',
+ const EXEC={local:'Локальный советник',director:'Agents Director · свой (анализ)',openrouter:'OpenRouter Free',codex:'Codex · передача',
   'chatgpt-work':'ChatGPT Work · передача','repair-worker':'GitHub Repair Worker · передача',
   hermes:'Hermes · OpenRouter Free',manual:'Ручной исполнитель'};
  const STATES={planned:'Запланировано',assigned:'Назначено · не запущено',working:'В работе · по заявлению',
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
- let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
+ let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false,ownedDirectorAvailable=false;
  let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null,ciInboxTimer=null,ciInboxBusy=false;
  let executorModels=null,executorModelsPromise=null,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
  const COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app';
@@ -264,7 +264,7 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
  function formValues(prefix){
   const value=k=>el(prefix+k).value;
   const r={title:value('title').trim(),project:value('project'),description:value('description').trim(),
-   tasks:tasks(value('tasks')),prs:prs(value('prs')),executors:prefix==='new-'?(value('mode')==='council-free'?['local']:[value('mode')]):picks('executors'),
+   tasks:tasks(value('tasks')),prs:prs(value('prs')),executors:prefix==='new-'?(['council-free','director'].includes(value('mode'))?['local']:[value('mode')]):picks('executors'),
    status:prefix==='new-'?'planned':value('status')};
   if(prefix==='new-'&&value('mode')!=='council-free'&&!EXEC[value('mode')])throw Error('Неизвестный исполнитель');
   if(r.title.length<4||r.title.length>110||r.description.length>1000)throw Error('Название: 4–110 символов; цель до 1000');
@@ -283,7 +283,7 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
  }
  function executorBoxes(chosen){
   const field=el('executors');field.replaceChildren();
-  Object.entries(EXEC).forEach(([k,label])=>{
+  Object.entries(EXEC).filter(([k])=>k!=='director').forEach(([k,label])=>{
    const l=make('label'),c=make('input');c.type='checkbox';c.value=k;c.checked=chosen.includes(k);
    l.append(c,make('span',null,label));field.append(l);
   });
@@ -338,7 +338,7 @@ function renderThread(){
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
   el('thread-advanced').open=false;el('chat-extra').open=false;el('verify-status').textContent='';
   const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
-  if(el('mode').value==='council-free'||!available.includes(el('mode').value))
+  if(el('mode').value==='council-free'||!(el('mode').value==='director'&&available.includes('local'))&&!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
   configureModels('thread');
   el('chat-feedback').textContent='';show('chat-feedback',false);
@@ -414,6 +414,7 @@ function renderThread(){
   try{
    if(question.length<2||question.length>1200)throw Error('Вопрос должен содержать 2–1200 символов.');
    if(mode==='openrouter'&&!aiReady)throw Error('Бесплатная модель OpenRouter сейчас недоступна. Выберите локального советника.');
+   if(mode==='director'&&(!remote||!ownedDirectorAvailable))throw Error('Agents Director пока не подключён к защищённому серверу.');
    if(mode==='hermes'){
     const free=await ensureExecutorModels();
     if(!free.length)throw Error('Каталог не подтвердил бесплатные текстовые модели Hermes.');
@@ -569,11 +570,12 @@ async function update(e){
   }finally{councilSaving.delete(data.requestId);}
  }
  async function assignSelectedExecutor(c,mode){
-  if(mode==='council-free'||c.executors.includes(mode))return c;
+  const storedMode=mode==='director'?'local':mode;
+  if(mode==='council-free'||c.executors.includes(storedMode))return c;
   if(!EXEC[mode])throw Error('Неизвестный исполнитель');
   const current=c.executors||[];
   if(current.length>=6)throw Error('В чате уже назначено шесть исполнителей. Измените список в разделе «Контекст и проверки».');
-  const chosen=[...current,mode];
+  const chosen=[...current,storedMode];
   if(remote){
    const data={id:c.id,title:c.title,project:c.project,description:c.description||'',
     tasks:c.tasks||[],prs:c.prs||[],executors:chosen,status:c.status};
@@ -627,8 +629,9 @@ async function update(e){
   if(text.length<2||text.length>1200)return info('Сообщение должно содержать 2–1200 символов.');
   if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
   if(mode==='hermes'&&!(executorModels||[]).some(x=>x.id===model))return info('Выберите проверенную бесплатную модель для Hermes.');
+  if(mode==='director'&&(!remote||!ownedDirectorAvailable))return info('Собственный Agents Director ещё не доступен в защищённом сервисе.');
   let c=thread;
-  if(mode!=='council-free'&&!thread.executors.includes(mode)){
+  if(mode!=='council-free'&&!thread.executors.includes(mode==='director'?'local':mode)){
    busy=true;el('send').disabled=true;
    try{c=await assignSelectedExecutor(c,mode);}
    catch(err){info('Не удалось выбрать исполнителя: '+String(err.message||err));return;}
@@ -648,7 +651,7 @@ async function update(e){
   }
   const context=messages.slice(-8).filter(x=>['owner','assistant_unverified'].includes(x.kind))
    .map(x=>({role:x.kind==='owner'?'user':'assistant',content:x.text.slice(0,800)}));
-  const dispatchModes=new Set(['hermes','codex','chatgpt-work','repair-worker','manual']);
+  const dispatchModes=new Set(['director','hermes','codex','chatgpt-work','repair-worker','manual']);
   if(dispatchModes.has(mode)){
    if(!remote)return info('Запуск доступен только для чата в защищённом серверном хранилище. Локальная копия не может запускать исполнителей.');
    busy=true;el('send').disabled=true;
@@ -658,8 +661,8 @@ async function update(e){
     const writeApproved=mode==='hermes'&&el('github-write').checked===true;
     if(mode==='hermes')el('github-write').checked=false; // one-shot consent, even if transport fails
     const result=await request(SERVER+'?action=run','POST',{
-     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text,
-     ...(mode==='hermes'?{modelId:model,confirmGitHubWrite:writeApproved}:{})
+     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode==='director'?'local':mode,message:text,
+     ...(mode==='hermes'?{modelId:model,confirmGitHubWrite:writeApproved}:mode==='director'?{modelId:'owned-default',confirmGitHubWrite:false}:{})
     });
     try{
      const latest=await request(SERVER+'?action=read&issue='+c.issueNumber);
@@ -667,6 +670,9 @@ async function update(e){
     }catch{}
     const reasons={
      HERMES_RUNTIME_NOT_CONFIGURED:'Hermes HTTPS runtime и секрет не настроены',
+     OWNED_MODEL_RUNTIME_NOT_CONFIGURED:'Собственная модель ещё не подключена к Holistic House',
+     AGENT_DIRECTOR_DISPATCH_UNCONFIRMED:'Запуск собственного исполнителя не подтверждён',
+     EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY:'Выберите собственный Agents Director вместо старого Hermes',
      HERMES_FREE_MODEL_NOT_SELECTED:'Нет проверенной бесплатной модели для исполнителя',
      HERMES_DISPATCH_UNCONFIRMED_RECONCILE:'Запуск не подтверждён; состояние следует сверить с Hermes, не отправлять повторно',
      HERMES_EXECUTOR_DISPATCH_CONTRACT_NOT_VERIFIED:'Нет проверенного Hermes executor endpoint',
@@ -849,6 +855,13 @@ async function update(e){
   try{status=await request(SERVER+'?action=status')}
   catch(error){statusError=error;status={privateStoreConfigured:false}}
   remote=!!status.privateStoreConfigured;
+  ownedDirectorAvailable=remote&&status.dispatchAvailable===true&&status.dispatchMode==='FIRST_PARTY_AGENT_DIRECTOR';
+  for(const select of [el('mode'),el('new-mode')]){
+   const director=select.querySelector('option[value=director]');
+   if(director)director.disabled=!ownedDirectorAvailable;
+   const legacy=select.querySelector('option[value=hermes]');
+   if(legacy&&ownedDirectorAvailable)legacy.disabled=true;
+  }
   if(statusError){
    show('vault',false);show('board',false);
    el('storage-label').textContent='Проверка защищённого серверного хранилища временно не завершилась.';

@@ -511,3 +511,33 @@ test('missing monitor cookie silently resumes the existing Holistic House sessio
  assert.match(boot,/Не удалось проверить защищённую сессию/);
  assert.doesNotMatch(boot,/startGoogle|auth\/start/);
 });
+
+test('owner-scoped first-party Agents Director is selected separately from advisory chat',()=>{
+ const ui=src('commander-chats.js'),html=src('chats.html'),apiSrc=src('api/commander-chats.js');
+ assert.equal((html.match(/option value="director" disabled/g)||[]).length,2);
+ assert.match(ui,/ownedDirectorAvailable=remote&&status\.dispatchAvailable===true&&status\.dispatchMode==='FIRST_PARTY_AGENT_DIRECTOR'/);
+ assert.match(ui,/director\.disabled=!ownedDirectorAvailable/);
+ assert.match(ui,/const storedMode=mode==='director'\?'local':mode/);
+ assert.match(ui,/\['council-free','director'\]\.includes\(value\('mode'\)\)/);
+ assert.match(ui,/Object\.entries\(EXEC\)\.filter\(\(\[k\]\)=>k!=='director'\)/);
+ assert.match(ui,/const dispatchModes=new Set\(\['director','hermes'/);
+ assert.match(ui,/executor:mode==='director'\?'local':mode/);
+ assert.match(ui,/mode==='director'\?\{modelId:'owned-default',confirmGitHubWrite:false\}/);
+ assert.match(apiSrc,/body\.executor==='local'&&body\.modelId!=='owned-default'/);
+ assert.match(apiSrc,/OWNED_DIRECTOR_SOURCE_WRITE_NOT_AVAILABLE/);
+ assert.match(apiSrc,/dispatchMode:result\.data\.dispatchMode\|\|null/);
+ assert.doesNotMatch(ui,/HERMES_SHARED_SECRET|HH_AGENT_OLLAMA_TOKEN|GITHUB_TOKEN/);
+});
+
+test('owned Director writer and invalid model fail before sending a request to private store',async()=>{
+ const headers={host:'holistic-house-pr-monitor.vercel.app',
+  origin:'https://holistic-house-pr-monitor.vercel.app','sec-fetch-site':'same-origin'};
+ const req={method:'POST',url:'/api/commander-chats?action=run',headers,
+  body:{executor:'local',modelId:'owned-default',confirmGitHubWrite:true}};
+ const rejected=response();await api(req,rejected);
+ assert.equal(rejected.statusCode,403);
+ assert.equal(rejected.body.error,'OWNED_DIRECTOR_SOURCE_WRITE_NOT_AVAILABLE');
+ const unsafe=response();await api({...req,body:{...req.body,modelId:'provider/paid-model',confirmGitHubWrite:false}},unsafe);
+ assert.equal(unsafe.statusCode,400);
+ assert.equal(unsafe.body.error,'OWNED_DIRECTOR_MODEL_REQUIRED');
+});
