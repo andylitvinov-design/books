@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { ACQUISITION_EVENTS } from "@/data/local-acquisition";
 import type { PublicAnalyticsEvent } from "@/lib/public-analytics";
 
-type AcquisitionEvent = (typeof ACQUISITION_EVENTS)[number] | PublicAnalyticsEvent;
+type AcquisitionEvent = hhRepairCanaryMissingTypeV11 | PublicAnalyticsEvent;
 
 type AcquisitionEventLinkProps = {
   analyticsEvent?: PublicAnalyticsEvent;
