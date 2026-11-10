@@ -337,3 +337,16 @@ test('Commander login document is rewritten through the nonce-aware page under s
   assert.ok(page.includes("nonce={nonce}"))
   assert.ok(page.includes('/commander-connect.js?v=20261109-owner-csp-nonce-v2'))
 })
+
+
+test('Commander SSO handoff includes the existing Supabase refresh token only for the monitor session',async()=>{
+ const route=await readFile(new URL('../app/api/app/commander/session/route.js',import.meta.url),'utf8')
+ const connect=await readFile(new URL('../public/commander-connect.js',import.meta.url),'utf8')
+ assert.match(route,/auth\\.client\\.auth\\.getSession\\(\\)/)
+ assert.match(route,/refreshToken/)
+ assert.match(route,/privateStoreConfigured: true/)
+ assert.match(connect,/typeof data\\.refreshToken !== 'string'/)
+ assert.match(connect,/refresh_token: data\\.refreshToken/)
+ assert.match(connect,/target\\.hash = new URLSearchParams/)
+ assert.doesNotMatch(connect,/localStorage\\.setItem\\([^,]*refresh/i)
+})
