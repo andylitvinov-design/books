@@ -153,3 +153,13 @@
  .cc-filter-line{grid-template-columns:minmax(0,1fr) 110px}
 }
 @media(max-width:345px){.cc-filter-line{grid-template-columns:1fr 94px}}
+
+/* The global dock has eight links for seven columns. Hide the duplicate Projects
+   entry on this page only; Projects remains available in the top menu. */
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-dock a[href="/projects.html"]{display:none}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-dock{grid-template-columns:repeat(7,minmax(0,1fr))}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-topbar .hh-cc-iconbtn[aria-label="Обновить страницу"]{display:none}
+/* The global dock uses z-index:2020. The creation dialog must sit above it so
+   the Send button cannot be hidden or clicked through on iPhone. */
+.cc-create-backdrop:not([hidden]){z-index:2040}
+.cc-create-sheet:not([hidden]){z-index:2041}
