@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-hermes-handoff-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -119,7 +119,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-hermes-handoff-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -333,4 +333,31 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  assert.equal(elements['cc-thread'].hidden,false);
  assert.equal(elements['cc-messages'].children.length,2);
  assert.ok(network.some(x=>x.action==='read'&&x.method==='GET'));
+});
+
+
+test('Hermes dispatch includes a selected zero-cost model and explicit one-run GitHub write consent',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),api=src('api/commander-chats.js'),
+  edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ for(const id of ['cc-new-model-label','cc-new-model','cc-new-hermes-write-label','cc-new-hermes-write','cc-model-label','cc-model','cc-hermes-write-label','cc-hermes-write'])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ assert.match(js,/modelId:mode==='hermes'\?model:undefined/);
+ assert.match(js,/confirmGitHubWrite/);
+ assert.match(js,/el\('hermes-write'\)\.checked/);
+ assert.match(api,/modelId:body\.modelId/);
+ assert.match(api,/confirmGitHubWrite:body\.confirmGitHubWrite===true/);
+ assert.match(edge,/const canUseHermes=executor==="hermes"/);
+ assert.match(edge,/GITHUB_WRITE_REQUIRES_HERMES_EXECUTOR/);
+ assert.match(edge,/HERMES_FREE_MODEL_NOT_SELECTED/);
+});
+
+test('Hermes gets bounded previous turns from the private chat ledger and the UI reconciles the receipt',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts'),js=src('commander-chats.js');
+ assert.match(edge,/select payload from business_brain\.commander_chat_events/);
+ assert.match(edge,/history:priorHistory\.slice\(-4\)/);
+ assert.match(edge,/linkedPrHintsVerified:false/);
+ assert.match(js,/startExecutionPolling/);
+ assert.match(js,/action=runs&issue=/);
+ assert.match(js,/receipt\?\.dispatchAttempted===true/);
+ assert.match(js,/executionPollCount>=180/);
 });
