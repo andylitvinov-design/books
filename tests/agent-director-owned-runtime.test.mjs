@@ -111,3 +111,18 @@ test('selected model must match the server-side owned model instead of selecting
   assert.equal(result.reasonCode,'OWNED_MODEL_ID_MISMATCH');
   assert.equal(calls,0);
 });
+
+
+test('native GitHub App source publisher remains server-only and disabled without App secrets',async()=>{
+ const {ownedGithubAppConfigured,publishOwnedDraftSource}=await import('../lib/agent-director/github-app-source-publisher.mjs');
+ assert.equal(ownedGithubAppConfigured({}),false);
+ let calls=0;
+ const example={job:{id:'owned_writer_check',projectKey:'holistic-house',
+  githubPlan:{repo:'andylitvinov-design/books',baseBranch:'codex/public-book-library'}},
+  project:{repo:'andylitvinov-design/books',productionBranch:'codex/public-book-library'},
+  expectedBaseSha:'a'.repeat(40),
+  filesJson:JSON.stringify([{path:'docs/read-only-check.md',content:'safe note',expectedBlobSha:null}]),
+  commitMessage:'docs: bounded safe note',confirmWrite:true,ownerAuthorized:true,freeCiBudgetVerified:true};
+ await assert.rejects(publishOwnedDraftSource(example,{env:{},fetchImpl:async()=>{calls++;throw Error('network forbidden')}}),/APP_NOT_CONFIGURED/);
+ assert.equal(calls,0);
+});
