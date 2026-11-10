@@ -122,7 +122,7 @@ test('exact failed Core source-preflight step becomes safe reproduction-only sou
 test('source preflight cannot be inferred from near-match, mixed failures or security events',()=>{
  const step='Source Preflight — syntax and TypeScript before costly Next build';
  assert.equal(check([job('core-lint-types-build','Source Preflight summary')]).category,'UNKNOWN');
- assert.equal(check([job('unit-tests',step)]).category,'UNKNOWN');
+ assert.equal(check([job('unit-tests',step)]).category,'TEST_FAILURE');
  assert.equal(check([job('core-lint-types-build',step),job('Unit tests','Run unit tests')]).category,'UNKNOWN');
  assert.equal(check([job('core-lint-types-build',step),job('guard','Security / dependency scan')]).category,'SECURITY');
 });
