@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -10,17 +9,9 @@ import { createPractitionerRepository } from "@/lib/practitioners/repository";
 import { createServiceReviewRepository } from "@/lib/practitioners/reviews";
 import { createPractitionerCourseRepository } from "@/lib/practitioners/course-repository";
 import { MarketplaceMasterFinder } from "@/components/master-network-explorer";
-import type { PublicMentorCourse, PublicPractitioner } from "@/lib/practitioners/public-types";
 import styles from "./page.module.css";
 
-type PageProps = { params: Promise<{ locale: string }> };
-type PublishedCourseRow = {
-  slug: string;
-  practitionerSlug: string;
-  course: { title: string; description?: string; locale: string };
-};
-
-const meta: Record<string, { title: string; description: string }> = {
+const meta = {
   en: { title: "My Coach · Find your personal coach | Holistic House", description: "Find a verified public Holistic House practitioner by topic, language, method and session format." },
   ru: { title: "My Coach · Подберите личного коуча | Holistic House", description: "Подберите специалиста по теме, методу, языку и формату. Профили и отзывы показываются только из опубликованного каталога." },
   es: { title: "Mi coach · Encuentra tu coach personal | Holistic House", description: "Encuentra un profesional por tema, método, idioma y modalidad de sesión." },
@@ -108,7 +99,7 @@ function copy(locale: string) {
   })[locale as "en" | "ru" | "es"];
 }
 
-function Header({ locale }: { locale: "en" | "ru" | "es" }) {
+function Header({ locale }) {
   const t = copy(locale);
   return (
     <header className={styles.topbar}>
@@ -137,7 +128,7 @@ function Header({ locale }: { locale: "en" | "ru" | "es" }) {
   );
 }
 
-function Hero({ locale }: { locale: "en" | "ru" | "es" }) {
+function Hero({ locale }) {
   const t = copy(locale);
   return (
     <>
@@ -163,7 +154,7 @@ function Hero({ locale }: { locale: "en" | "ru" | "es" }) {
   );
 }
 
-export default async function PublicCoachingPage({ params }: PageProps) {
+export default async function PublicCoachingPage({ params }) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) notFound();
   const t = copy(locale);
@@ -181,7 +172,7 @@ export default async function PublicCoachingPage({ params }: PageProps) {
     if (mastersResult.status === "fulfilled") practitioners = mastersResult.value as PublicPractitioner[];
     else directoryUnavailable = true;
     coursesUnavailable = coursesResult.status === "rejected";
-    const publishedRows = coursesResult.status === "fulfilled" ? coursesResult.value as PublishedCourseRow[] : [];
+    const publishedRows = coursesResult.status === "fulfilled" ? coursesResult.value : [];
     const approvedSlugs = new Set(practitioners.map((coach) => coach.slug));
     courses = publishedRows
       .filter((row) => approvedSlugs.has(row.practitionerSlug)
@@ -192,7 +183,7 @@ export default async function PublicCoachingPage({ params }: PageProps) {
         practitionerSlug: row.practitionerSlug,
         title: row.course.title,
         description: row.course.description || "",
-        locale: row.course.locale as PublicMentorCourse["locale"],
+        locale: row.course.locale,
       }));
     if (practitioners.length) {
       try {
