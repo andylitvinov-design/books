@@ -149,3 +149,159 @@ body.hh-cc-shell:has(#cc-board input:focus) #hh-cc-dock{display:none!important}
 /* The reply/error belongs to the visible composer, including with iOS keyboard up. */
 .cc-create-feedback:not([hidden]){padding:10px 12px;margin:0;border:1px solid #ab87ca;border-radius:11px;background:#332642;color:#fff1ff;font-size:13px;line-height:1.45}
 .cc-quick-compose #cc-create-send[disabled]{opacity:.62;cursor:progress}
+
+
+/* HH_COMMANDER_RECENT_VOICE_COMPOSER_V1
+ * Codex-like mobile structure: recent threads first, one keyboard-safe bottom composer.
+ * Speech is opt-in, only recognized text can be sent; existing private APIs unchanged.
+ */
+body.hh-cc-shell:has(#cc-chat-root){padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))!important}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-topbar{
+ width:min(100%,620px);min-height:61px;padding:9px 14px 7px;gap:9px;
+}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-topbar .hh-cc-logo{
+ width:34px;height:34px;flex-basis:34px;border-radius:11px;font-size:23px
+}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-topbar .hh-cc-brand strong{font-size:14px}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-topbar .hh-cc-brand small{font-size:10px}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-topbar .hh-cc-iconbtn{min-width:36px;min-height:36px;flex-basis:36px;border-radius:11px}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-dock{
+ grid-template-columns:repeat(8,minmax(0,1fr));grid-auto-rows:1fr;
+ width:min(100%,620px);min-height:65px;padding:7px 4px calc(6px + env(safe-area-inset-bottom,0px));
+}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-dock a,
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-dock button{min-height:49px;padding:0;gap:1px}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-dock svg{width:19px;height:19px}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-dock small{font-size:9px;letter-spacing:-.04em}
+body.hh-cc-shell:has(#cc-chat-root) #hh-cc-dock .hh-cc-add{
+ width:42px;height:42px;min-height:42px;font-size:27px;border-width:2px
+}
+.cc-chats-page{max-width:620px;width:100%;padding:7px 15px calc(255px + env(safe-area-inset-bottom,0px));min-height:calc(100dvh - 125px)}
+.cc-chats-hero{align-items:center;gap:10px;margin:4px 0 12px;min-height:45px}
+.cc-chats-hero .cc-chat-page-name{flex:1;min-width:0}
+.cc-chats-hero h1{margin:0 0 1px;font-size:24px;line-height:1.12;font-weight:770;letter-spacing:-.04em}
+.cc-chats-hero .cc-chat-page-name p{font-size:11px;line-height:1.25;color:#a9a6c4;margin:0}
+.cc-chats-hero .cc-back{font-size:26px;min-width:26px;min-height:36px;line-height:1.3}
+.cc-new-chat-button{
+ flex-shrink:0;min-height:39px;padding:7px 11px;background:#37304e;border:1px solid #75668e;
+ color:#f4eafa;font-weight:650;border-radius:12px;display:flex;align-items:center;gap:3px;cursor:pointer;font-size:13px
+}
+.cc-new-chat-button:focus-visible,.cc-history button:focus-visible,.cc-composer-space button:focus-visible{
+ outline:2px solid #d6b6ff;outline-offset:2px
+}
+.cc-chats-page .cc-history{margin:0 0 12px;background:transparent;border:0;border-radius:0;padding:0}
+.cc-history-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 7px}
+.cc-history-toolbar h2{font-size:14px;font-weight:700;margin:0;color:#dfd8ec}
+.cc-history-toolbar small{font-size:11px;font-weight:400;color:#8d8da8}
+.cc-history-toolbar button{border:0;background:transparent;font-size:24px;color:#a4a0c1;min-width:39px;min-height:39px;cursor:pointer;border-radius:9px}
+.cc-history #cc-chat-list{display:grid;gap:0;max-height:min(39dvh,370px);overflow-y:auto;overscroll-behavior:contain;border-top:1px solid #ffffff14}
+.cc-history .cc-chat-card{
+ display:flex;flex-direction:row;gap:11px;align-items:center;min-height:62px;padding:10px 6px;
+ border-radius:0;border:0;border-bottom:1px solid #ffffff13;
+ background:transparent;box-shadow:none;text-align:left
+}
+.cc-history .cc-chat-card[aria-current="true"]{background:#9e74d519;border-bottom-color:#9e74d543}
+.cc-history .cc-chat-symbol{display:grid;place-items:center;flex:0 0 37px;width:37px;height:37px;font-size:22px;line-height:1;color:#c7a4ee;background:#51426855;border:1px solid #8c74a44d;border-radius:12px}
+.cc-history .cc-chat-card-body{display:grid;gap:3px;min-width:0;flex:1}
+.cc-history .cc-chat-card-body strong{font-size:14px;font-weight:625;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-history .cc-chat-card-body span{font-size:11px;color:#938eac}
+.cc-chats-page .cc-empty{font-size:13px;color:#9491ad;padding:17px 6px;margin:0}
+.cc-history-all{margin-top:9px;border:0;padding:0}
+.cc-history-all summary{font-size:12px;color:#c4a6ed;min-height:35px;cursor:pointer;width:max-content;max-width:100%}
+.cc-history-all .cc-filter-line{margin:7px 0 12px}
+.cc-backup-tools{margin:7px 0;padding-top:4px;border-top:0}
+.cc-backup-tools summary{font-size:11px;color:#888aa5;min-height:33px}
+.cc-chats-page .cc-thread-surface{
+ background:transparent;border:0;border-top:1px solid #ffffff20;border-radius:0;
+ padding:12px 0 0;margin:4px 0 16px;min-width:0
+}
+.cc-thread-top{align-items:start;min-height:37px;margin-bottom:9px}
+.cc-thread-top h2#cc-thread-title{font-size:15px;line-height:1.24;color:#d9cbe8;max-width:300px;margin:0 0 2px}
+.cc-thread-top button{border:0!important;padding:5px 7px!important;background:transparent!important;color:#b8a3d4!important;min-height:35px;font-size:12px}
+.cc-thread-stamp{font-size:10px;color:#777b93;margin:0}
+.cc-thread-surface .cc-messages{max-height:42dvh;min-height:48px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding:6px 0 11px;margin:0}
+.cc-thread-surface .cc-message-item{max-width:92%;background:#211c33;border:1px solid #493c61;border-radius:16px;padding:10px 12px}
+.cc-thread-surface .cc-message-item.cc-from-owner{align-self:flex-end;background:#3a3157;border-color:#6c598b;max-width:89%}
+.cc-thread-surface .cc-message-item p{font-size:14px;line-height:1.46}
+.cc-thread-surface .cc-advanced,.cc-thread-surface .cc-chat-extra{margin:8px 0;background:#19182b;border-color:#4c4163;padding:9px 11px}
+.cc-composer-space{
+ position:fixed;left:50%;transform:translateX(-50%);bottom:calc(65px + env(safe-area-inset-bottom,0px) + var(--cc-keyboard-offset,0px));
+ z-index:1900;width:min(100%,620px);padding:9px 12px 10px;
+ background:linear-gradient(0deg,rgba(14,15,29,.98),rgba(14,15,29,.93));
+ border-top:1px solid #ffffff13;box-shadow:0 -12px 25px #07071450;
+}
+.cc-composer-panel{
+ background:#252039;border:1px solid #755f8c;border-radius:22px;padding:12px 12px 9px;
+ display:flex;flex-direction:column;gap:8px;box-shadow:0 4px 18px #0004;
+ min-height:146px;
+}
+.cc-composer-space .cc-composer-panel[hidden]{display:none!important}
+.cc-composer-space textarea{
+ box-sizing:border-box;display:block;width:100%;min-height:79px;max-height:min(28dvh,180px);
+ padding:5px 4px 7px;border:0!important;outline:0!important;border-radius:0!important;
+ background:transparent!important;color:#f7f2ff!important;
+ font-family:inherit;font-size:16px!important;line-height:1.45;
+ resize:vertical;overflow-y:auto
+}
+.cc-composer-space textarea::placeholder{color:#9690af}
+.cc-composer-actions{display:flex;align-items:center;gap:7px;width:100%;min-width:0}
+.cc-composer-spacer{flex:1;min-width:2px}
+.cc-composer-space .cc-mode-pick{display:flex;align-items:center;flex:0 1 auto;max-width:174px;min-width:0;margin:0}
+.cc-composer-space .cc-mode-pick select{
+ box-sizing:border-box;width:100%;max-width:174px;height:41px;min-height:41px;
+ border:0;border-radius:10px;padding:7px 18px 7px 7px;
+ font-size:13px!important;font-weight:600;color:#e5d5f5;background:#353049;
+ overflow:hidden;text-overflow:ellipsis;outline-offset:2px
+}
+.cc-composer-space .cc-composer-tool,.cc-composer-space .cc-voice-toggle{
+ display:grid;place-items:center;flex:0 0 43px;width:43px;height:43px;min-height:43px;
+ padding:0;border-radius:13px;border:1px solid #655379;background:#3b3150;
+ color:#ebdafb;font-size:25px;cursor:pointer
+}
+.cc-composer-space .cc-voice-toggle{border-radius:50%;background:#30283e;border-color:#675379}
+.cc-composer-space .cc-voice-toggle.cc-voice-listening{
+ background:#883d80;border-color:#f4afd8;box-shadow:0 0 0 4px #d37bcd33;color:#fff
+}
+.cc-composer-space .cc-send-primary{
+ flex:0 0 46px;display:grid;place-items:center;width:46px;height:46px;min-height:46px;
+ border-radius:50%;padding:0;border:1px solid #c39df1;
+ background:linear-gradient(140deg,#a470e9,#8450cb);color:#fff;
+ font-weight:700;font-size:27px;cursor:pointer
+}
+.cc-composer-space .cc-send-primary[disabled]{opacity:.58;cursor:progress}
+.cc-composer-space .cc-send-primary span{font-size:27px;line-height:1;margin:0}
+.cc-composer-space .cc-voice-status,.cc-composer-space .cc-chat-feedback{
+ font-size:11px;line-height:1.35;color:#d8c3ea;padding:4px 7px 0;margin:0;max-height:64px;
+ overflow-y:auto;overflow-wrap:anywhere
+}
+.cc-composer-space .cc-create-feedback:not([hidden]){
+ margin:3px 0;padding:8px 9px;background:#3a2a4b;border:1px solid #9668b3;
+ border-radius:10px;font-size:12px;color:#ffe6ff
+}
+.cc-composer-space #cc-model-label:not([hidden]){font-size:11px;display:grid;gap:4px}
+.cc-composer-space #cc-model-label select{height:38px;width:100%;background:#181729;border:1px solid #6c567c;color:#e6d8f6;border-radius:9px}
+.cc-chats-page .cc-context-dialog{z-index:2300}
+.cc-chats-page:has(#cc-board:not([hidden]))>#cc-alert{display:none!important}
+body.hh-cc-shell.cc-keyboard-active #hh-cc-dock{display:none!important}
+body.hh-cc-shell.cc-keyboard-active .cc-composer-space{
+ bottom:calc(env(safe-area-inset-bottom,0px) + var(--cc-keyboard-offset,0px))
+}
+@media(max-width:390px){
+ .cc-chats-page{padding-left:12px;padding-right:12px}
+ .cc-composer-space{padding-left:9px;padding-right:9px}
+ .cc-composer-panel{padding-left:10px;padding-right:10px}
+ .cc-composer-space .cc-mode-pick{max-width:148px}
+ .cc-composer-space .cc-mode-pick select{font-size:12px!important;max-width:148px}
+ .cc-composer-space .cc-composer-tool,.cc-composer-space .cc-voice-toggle{flex-basis:40px;width:40px;height:40px}
+ .cc-composer-space .cc-send-primary{flex-basis:43px;width:43px;height:43px}
+ body.hh-cc-shell:has(#cc-chat-root) #hh-cc-dock small{font-size:8px}
+}
+@media(max-width:350px){
+ .cc-composer-actions{gap:5px}
+ .cc-composer-space .cc-mode-pick{max-width:119px}
+ .cc-composer-space .cc-mode-pick select{max-width:119px}
+ .cc-new-chat-button span{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+ .cc-composer-space,.cc-voice-toggle{transition:none!important}
+}
