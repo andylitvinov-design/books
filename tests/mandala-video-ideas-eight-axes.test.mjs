@@ -105,7 +105,10 @@ test("Ideas Play reuses film, not unstable speech synthesis; preserve real voice
  assert.ok(studio.includes('const visibleCaption=singleTextSource==="caption"?caption:""') && studio.includes('paintSingleVideoTextOverlay(ctx,previewSeekSeconds,'),
    "legacy caption is not drawn on top of Ideas text");
  assert.ok(studio.includes('onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}'));
- assert.ok(studio.includes('data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}'));
+ const recorder=readFileSync(new URL("../components/mandala-local-voice-tracks.tsx",import.meta.url),"utf8");
+ assert.match(recorder,/data-video-own-voice-record/);
+ assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
+ assert.doesNotMatch(studio,/data-video-ideas-recording-open|data-video-legacy-phrase-editor/);
  assert.ok(studio.includes('data-video-ideas-open-montage-text'), 'Ideas retains an explicit working Montage destination');
 });
 
@@ -141,7 +144,7 @@ test("Ideas shows Personalization and Concept without cloning Montage or the rec
  assert.doesNotMatch(studio,/data-video-ideas-voice-mode|data-video-ideas-own-upload|data-video-legacy-phrase-editor/);
  const recorder=read("components/mandala-local-voice-tracks.tsx");
  assert.match(recorder,/data-video-own-voice-record/);
- assert.match(studio,/setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\);setVoiceStudioActivated\(true\)/);
+ assert.match(studio,/setActiveWorkspace\("effects"\);[\\s\\S]*?setAudioWorkspaceTab\("voice"\);[\\s\\S]*?setVoiceStudioActivated\(true\)/);
 });
 test("WebKit keeps two Ideas tabs and real opt-in voice while five Montage tabs remain",()=>{
  const styles=read("components/mandala-video-mobile.module.css");
