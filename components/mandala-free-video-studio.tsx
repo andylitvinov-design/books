@@ -92,6 +92,7 @@ import { resolveLicensedSourceFrame, assessLicensedSourceFrame,validateLicensedS
 import type { PublicLocale } from "@/lib/public-locales";
 import {fetchVideoCreditCatalog,fetchVideoCreditStatus,
   postVideoCreditAction,releaseVideoCreditOnExit} from "@/lib/video-credits/client.mjs";
+import {readyBasicVideoAccess} from "@/lib/video-credits/ready-basic-eligibility.mjs";
 import { SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import styles from "./mandala-meditation.module.css";
 import videoStyles from "./mandala-video-mobile.module.css";
@@ -2390,6 +2391,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setCreditSession(error instanceof Error&&error.message==="SIGN_IN_REQUIRED"?"guest":"unavailable");
     }
   },[]);
+  // Preview-only eligibility: the original server ledger still authorizes every debit.
+  const basicVideoAccess=readyBasicVideoAccess({
+    catalog:creditCatalog,session:creditSession,balanceCredits:creditBalance,guestFirstVideoUsed
+  });
   const [creditConfirmed,setCreditConfirmed]=useState(true);
   const [creditRetry,setCreditRetry]=useState(false);
   const creditOpRef=useRef<string|null>(null);
@@ -6802,9 +6807,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         disabled={recording||preparing}
         onRefreshLogin={()=>void refreshCreditSession()}
         onReturnToPro={()=>{setActiveWorkspace("pro");setStudioMode("pump");}}
-        basicFreeAvailable={Boolean(creditCatalog&&!creditCatalog.blocked&&
-          (!creditCatalog.chargeRequired||
-            (creditSession==="guest"&&!guestFirstVideoUsed)))}
+        basicFreeAvailable={basicVideoAccess.allowed}
+        basicFreeIssue={basicVideoAccess.reason}
+        basicCreditCost={basicVideoAccess.chargeCredits}
         onGenerateBasicVideo={()=>{
           // Never substitute a credit-charged or paid render for the FREE offer.
           if(!freeVideoSelected){
