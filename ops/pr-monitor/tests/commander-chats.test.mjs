@@ -444,6 +444,15 @@ test('free Hermes model catalogue authenticates owner before its read-only publi
  assert.ok(api.includes("m.id.endsWith(':free')"));
  assert.doesNotMatch(api,/Authorization:\s*'Bearer '|OPENROUTER_API_KEY/);
 });
+test('Commander uses first-party Agent Director for local execution and disables external Hermes',()=>{
+ const html=src('chats.html'),ui=src('commander-chats.js'),api=src('api/commander-chats.js');
+ assert.equal((html.match(/<option value="local">Agent Director · собственная модель<\/option>/g)||[]).length,2);
+ assert.equal((html.match(/<option value="hermes" disabled>Внешний Hermes отключён<\/option>/g)||[]).length,2);
+ assert.match(ui,/const dispatchModes=new Set\(\['local','codex'/);
+ assert.match(ui,/executor:mode,message:text,[\s\S]{0,180}\{modelId:'owned-default',confirmGitHubWrite:false\}/);
+ assert.match(ui,/OWNED_MODEL_RUNTIME_NOT_CONFIGURED/);
+ assert.match(api,/action='commander_start_run'/);
+});
 test('verified GitHub CI reports carry the top-level source URL consumed by the chat renderer',()=>{
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
  const render=src('commander-chats.js');
