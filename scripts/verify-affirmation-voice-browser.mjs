@@ -108,20 +108,18 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(montageStoryboardTab).toHaveAttribute("aria-pressed","true");
     const montageVideoConcept=page.locator('[data-video-montage-concept]');
     await expect(montageVideoConcept).toBeVisible();
-    const cinematicDirector=montageVideoConcept.locator('[data-cinematic-director]');
-    await expect(cinematicDirector).toBeVisible();
-    await cinematicDirector.locator('[aria-controls="cinematic-director-content"]').tap();
-    const visualIdea=cinematicDirector.locator('[data-director-visual-idea] textarea');
-    await expect(visualIdea).toBeVisible();
-    await visualIdea.fill(locale==="ru"?"Белая птица летит над горами, затем появляется рассвет.":
-      locale==="es"?"Un ave blanca vuela sobre las montañas y aparece el amanecer.":
-      "A white bird flies over mountains as the sunrise appears.");
-    await cinematicDirector.locator('[data-director-create-plan]').tap();
-    await expect(cinematicDirector.locator('[data-director-storyboard]')).toBeVisible();
-    const storyboardShotCount=await cinematicDirector.locator('[data-director-shot]').count();
-    assert.ok(storyboardShotCount===4||storyboardShotCount===6,
-      "Montage video concept creates four or six real scene cards");
-    await expect(cinematicDirector.locator('[data-director-scene-choice]')).toHaveCount(storyboardShotCount);
+    // Story is now generated from the approved Ideas concept and verified 5s footage;
+    // the former manual Cinematic Director form is intentionally absent.
+    const automaticStoryboard=montageVideoConcept.locator('[data-video-auto-storyboard]');
+    await expect(automaticStoryboard).toBeVisible();
+    await expect(automaticStoryboard.locator('[data-video-auto-storyboard-list]')).toBeVisible();
+    await expect(automaticStoryboard.locator('[data-video-story-scene]')).toHaveCount(6);
+    await expect(automaticStoryboard).toHaveAttribute("data-storyboard-scenes","6");
+    const applyStoryboard=automaticStoryboard.locator('[data-video-auto-storyboard-apply]');
+    await expect(applyStoryboard).toBeVisible();
+    await expect(applyStoryboard).toBeEnabled();
+    await applyStoryboard.tap();
+    await expect(automaticStoryboard).toHaveAttribute("data-storyboard-source","montage");
     await montageStyle.tap();
     await expect(montageStyle).toHaveAttribute("aria-pressed","true");
     const ideasTop=page.locator('[data-video-quick-control="phrases"]');
