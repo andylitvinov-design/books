@@ -152,3 +152,22 @@ test('source request without owner token or exact current base refuses dispatch'
  assert.equal(stale.reason,'SOURCE_BASE_SHA_MOVED');
  assert.equal(sent,0);
 });
+test('unknown or nonzero provider billing is blocked and never reported as free',async()=>{
+ const cases=[[{},'MODEL_BILLING_UNVERIFIED_HOLD'],[{cost:null},'MODEL_BILLING_UNVERIFIED_HOLD'],
+  [{cost:'0'},'MODEL_BILLING_UNVERIFIED_HOLD'],[{cost:0.000001},'MODEL_REPORTED_NONZERO_COST_HOLD']];
+ for(const [usage,reason] of cases){
+  const fetcher=async()=>({ok:true,json:async()=>({model:'openrouter/free',usage,
+   choices:[{finish_reason:'stop',message:{content:'Ответ.'}}]})});
+  const out=await inbox.askFree('Проверка цены?',{fetcher,token:'synthetic-key'});
+  assert.equal(out.ok,undefined);assert.equal(out.reason,reason);
+ }
+});
+test('verified zero provider cost is included in owner-visible receipt and telemetry',async()=>{
+ const fetcher=async()=>({ok:true,json:async()=>({model:'nvidia/nemotron-3.5-super-vl:free',
+  usage:{cost:0},choices:[{finish_reason:'stop',message:{content:'Проверка пройдена.'}}]})});
+ const out=await inbox.askFree('Проверка цены?',{fetcher,token:'synthetic-key'});
+ assert.equal(out.ok,true);assert.equal(out.cost,0);
+ const body=inbox.resultBody({kind:'ask',id:777},{...out},'https://github.com/example/run/1');
+ assert.match(body,/nvidia\/nemotron-3\.5-super-vl:free/);
+ assert.match(body,/verified provider cost: \$0/);
+});
