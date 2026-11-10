@@ -766,23 +766,23 @@ test('free model is activated only after deterministic failure and never sees wr
  assert.match(pub,/HH_AUTOMERGE_TOKEN/);
  for(const isolated of [codeFix,codeVerify])assert.doesNotMatch(isolated,/HH_AUTOMERGE_TOKEN/);
 });
-test('Codex failures report NO source commit while unverified proposals cannot publish',async()=>{
+test('free-model failures report NO source commit while unverified proposals cannot publish',async()=>{
  const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
    performed_via_github_app:{id:15368,slug:'github-actions'}};
  const owned=commentBody({...taskFor(pr(),{tier:'P1'}),
    state:'CLAIMED',owner_run_id:String(outcomeContext.runId),task_key:receiptKey});
  for(const variant of [
-  {codeAvailable:true,codeResult:'failure',expected:'CODEX_JOB_FAILED_NO_SOURCE_COMMIT'},
+  {codeAvailable:true,codeResult:'failure',expected:'FREE_AI_JOB_FAILED_NO_SOURCE_COMMIT'},
   {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
-    codeVerifyResult:'failure',expected:'CODEX_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT'},
+    codeVerifyResult:'failure',expected:'FREE_AI_VERIFIER_JOB_FAILED_NO_SOURCE_COMMIT'},
   {codeAvailable:true,codeResult:'success',codeStatus:'no_change',
-    expected:'CODEX_NO_VERIFIED_SOURCE_CHANGE'},
+    expected:'FREE_AI_NO_VERIFIED_SOURCE_CHANGE'},
   {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
     codeVerifyResult:'success',codeVerifyStatus:'manual_required',
-    codeVerifyDetail:'CODEX_CANDIDATE_OUT_OF_SCOPE',expected:'CODEX_CANDIDATE_REJECTED'},
+    codeVerifyDetail:'FREE_AI_CANDIDATE_OUT_OF_SCOPE',expected:'FREE_AI_CANDIDATE_REJECTED'},
   {codeAvailable:true,codeResult:'success',codeStatus:'proposed',
     codeVerifyResult:'success',codeVerifyStatus:'ready',
-    expected:'CODEX_VERIFIED_BUT_NOT_PUBLISHED_SKIPPED'}
+    expected:'FREE_AI_VERIFIED_BUT_NOT_PUBLISHED_SKIPPED'}
  ]){
   const f=fixture({comments:[{...bot,body:'<!-- '+MARKER+' '+sha+' -->\n'+owned}]});
   const {expected,...props}=variant;
@@ -1217,4 +1217,19 @@ test('outcome validation rejects terminal claims without independent source proo
  assert.equal(validateTaskOutcome(valid),true);
  assert.equal(validateTaskOutcome({...valid,verified_source:false}),false);
  assert.equal(validateTaskOutcome({...valid,next_action:''}),false);
+});
+
+
+test('free model audit preserves numeric GitHub Actions run IDs and rejects wrong PR/HEAD',()=>{
+ const {normalizeModelAudit}=require('../scripts/ci-pr-repair-worker.cjs');
+ const raw={schema:'HH_FREE_AI_MODEL_RUN_V1',provider:'openrouter',model:'cohere/north-mini-code:free',
+  model_version:'catalog-v1',catalog_model_created:1794260000,executor_type:'free_ci_patch_proposer',
+  pr_number:42,source_head:sha,run_id:'123456',run_attempt:1,started_at:'2026-11-09T00:00:00.000Z',
+  model_call_started_at:'2026-11-09T00:00:01.000Z',response_received_at:null,attempt_count:1,
+  result:'MODEL_CALL_FAILED_OR_OUTPUT_REJECTED',failure_reason:'FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED',
+  patch_present:false,candidate_paths:[],verification_result:'NOT_RUN'};
+ const audit=normalizeModelAudit(raw,{number:42,expectedSha:sha});
+ assert.equal(audit.run_id,'123456');
+ assert.equal(normalizeModelAudit(raw,{number:43,expectedSha:sha}),null);
+ assert.equal(normalizeModelAudit({...raw,source_head:newSha},{number:42,expectedSha:sha}),null);
 });
