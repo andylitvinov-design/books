@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-council-inline-v2'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-openrouter-connection-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -127,7 +127,7 @@ test('Council is direct in-chat; no nested iframe or second settings form',()=>{
  assert.match(js,/await append\(c,'owner',text,''\)/);
  assert.match(js,/await append\(c,'ai',part,'Совет ИИ/);
  assert.match(js,/councilPending=null;renderMessages\(\)/);
- assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v2/);
+ assert.match(html,/commander-chats\.js\?v=20261110-openrouter-connection-v1/);
  const start=js.indexOf("if(mode==='council-free'){",js.indexOf('async function send(e)'));
  assert.doesNotMatch(js.slice(start,js.indexOf('const context=messages.slice(-8)',start)),/history:|tasks:|context:|iframe|window\.open|location\./);
 });
@@ -527,7 +527,7 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
 
 test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
- assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v2/);
+ assert.match(html,/commander-chats\.js\?v=20261110-openrouter-connection-v1/);
  assert.match(html,/commander-chats\.css\?v=20261110-council-inline-v2/);
  assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
  for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
@@ -539,7 +539,7 @@ test('CI Inbox displays the shared diagnostic recommendation and retry policy wi
 test('owner chat accurately labels first-party OpenRouter Free and translates every fail-closed provider reason',()=>{
  const html=src('chats.html'),js=src('commander-chats.js');
  assert.equal((html.match(/Agents Director · OpenRouter Free \(анализ\)/g)||[]).length,2);
- assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v2/);
+ assert.match(html,/commander-chats\.js\?v=20261110-openrouter-connection-v1/);
  assert.match(js,/director:'Agents Director · OpenRouter Free'/);
  for(const code of ['OWNED_MODEL_RUNTIME_NOT_CONFIGURED','OWNED_MODEL_FREE_RATE_LIMIT',
    'OWNED_MODEL_NO_VERIFIED_FREE_MODELS','OWNED_MODEL_COST_UNVERIFIED',
@@ -560,4 +560,26 @@ test('terminal BLOCKED run reloads its persisted private chat event just like CO
  assert.match(refresh,/renderMessages\(\)/);
  // A terminal blocker is never portrayed as an executing model; polling ends.
  assert.match(js,/!\['STARTING','RUNNING'\]\.includes\(run\.status\)/);
+});
+
+test('first-party OpenRouter status is owner-gated, server-only and visible on the chat page',async()=>{
+ const backend=src('api/commander-chats.js'),ui=src('commander-chats.js'),html=src('chats.html');
+ assert.match(backend,/async function providerStatus\(req,res\)/);
+ assert.match(backend,/const owner=await callStore\(req,'status'/);
+ assert.match(backend,/owner\.data\?\.canWrite!==true/);
+ assert.match(backend,/const token=tokenFromRequest\(req\)/);
+ assert.match(backend,/name==='provider_status'/);
+ assert.match(backend,/data\?\.providerVerified!==false/);
+ assert.doesNotMatch(backend,/HH_AGENT_OPENROUTER_API_KEY|OPENROUTER_SECRET/);
+ assert.match(ui,/SERVER\+'\?action=provider_status'/);
+ assert.match(ui,/ownedDirectorAvailable=directorStoreReady&&providerStatus\?\.configured===true/);
+ assert.match(ui,/OPENROUTER_KEY_NOT_CONFIGURED/);
+ assert.match(html,/id="cc-director-connection"/);
+ assert.match(html,/id="cc-director-connect-link"/);
+ assert.match(html,/commander-chats\.js\?v=20261110-openrouter-connection-v1/);
+ const guest=response();
+ await api({method:'GET',url:'/api/commander-chats?action=provider_status',
+  headers:{host:'holistic-house-pr-monitor.vercel.app'}},guest);
+ assert.equal(guest.statusCode,401);
+ assert.equal(guest.body.error,'OWNER_SESSION_REQUIRED');
 });
