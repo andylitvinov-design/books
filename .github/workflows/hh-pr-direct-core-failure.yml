@@ -207,6 +207,7 @@ jobs:
       actions: write
       pull-requests: read
       issues: write
+      checks: read
     steps:
       - name: Checkout trusted default branch for bounded admission policy
         uses: actions/checkout@v4
