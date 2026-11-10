@@ -67,7 +67,7 @@ test('untrusted run, changed PR head or wrong task never publishes runner receip
 
 test('old manually held legacy preflight confirms real runner without granting source publication',async()=>{
  const f=fixture();
- const old={...pr(),mergeable:false,mergeable_state:'dirty',
+ const old={...pr(),mergeable:null,mergeable_state:'unknown',
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]};
  const legacy=taskFor(old,priorityFor(old,Date.now()));
  assert.equal(legacy.lane,'legacy');
