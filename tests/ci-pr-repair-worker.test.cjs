@@ -1228,8 +1228,22 @@ test('free model audit preserves numeric GitHub Actions run IDs and rejects wron
   model_call_started_at:'2026-11-09T00:00:01.000Z',response_received_at:null,attempt_count:1,
   result:'MODEL_CALL_FAILED_OR_OUTPUT_REJECTED',failure_reason:'FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED',
   patch_present:false,candidate_paths:[],verification_result:'NOT_RUN'};
- const audit=normalizeModelAudit(raw,{number:42,expectedSha:sha});
+ const audit=normalizeModelAudit(raw,{number:42,expectedSha:sha,runId:123456,runAttempt:1});
  assert.equal(audit.run_id,'123456');
- assert.equal(normalizeModelAudit(raw,{number:43,expectedSha:sha}),null);
- assert.equal(normalizeModelAudit({...raw,source_head:newSha},{number:42,expectedSha:sha}),null);
+ assert.equal(normalizeModelAudit(raw,{number:43,expectedSha:sha,runId:123456,runAttempt:1}),null);
+ assert.equal(normalizeModelAudit({...raw,source_head:newSha},{number:42,expectedSha:sha,runId:123456,runAttempt:1}),null);
+ assert.equal(normalizeModelAudit(raw,{number:42,expectedSha:sha,runId:123457,runAttempt:1}),null,
+  'audit from a different workflow run must not be attached');
+ assert.equal(normalizeModelAudit(raw,{number:42,expectedSha:sha,runId:123456,runAttempt:2}),null,
+  'audit from a different rerun attempt must not be attached');
+});
+
+
+test('publisher and fallback finalizers pass the same-run free model audit with exact workflow attempt',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ assert.match(source,/HH_MODEL_AUDIT:\s*\$\{\{\s*needs\.code_fix\.outputs\.model_audit\s*\}\}/);
+ assert.match(source,/HH_WORKFLOW_ATTEMPT:\s*\$\{\{\s*github\.run_attempt\s*\}\}/);
+ assert.match(source,/modelAuditRaw:process\.env\.HH_MODEL_AUDIT/);
+ assert.match(source,/modelAuditRunAttempt:Number\(process\.env\.HH_WORKFLOW_ATTEMPT\|\|0\)/);
 });
