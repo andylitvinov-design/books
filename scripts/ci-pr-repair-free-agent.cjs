@@ -436,10 +436,10 @@ function reconstructUniqueSingleLinePatch(patch,scope,readSource){
  if(count<2)return null;
  const before=actual.slice(from,index).map(line=>' '+line).join('\n');
  const after=actual.slice(index+1,until).map(line=>' '+line).join('\n');
- const body=[...(before?[before]:[]),'-'+removed[0], '++'+added[0],
+ const body=[...(before?[before]:[]),'-'+removed[0], '+'+added[0],
    ...(after?[after]:[])].join('\n');
  const canonical=header+'\n'+a+'\n'+b+'\n@@ -'+(from+1)+','+count+
-   ' +'+(from+1)+','+count+' @@\n'+body.replace('\n++','\n+')+'\n';
+   ' +'+(from+1)+','+count+' @@\n'+body+'\n';
  return Buffer.byteLength(canonical,'utf8')<=MAX_PATCH?canonical:null;
 }
 function isolatedEnvironment(dir,freeApiKey=process.env.HH_OPENCODE_FREE_API_KEY||''){
