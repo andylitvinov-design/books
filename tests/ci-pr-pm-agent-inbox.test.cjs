@@ -190,7 +190,6 @@ test('issue-comment trigger rejects pull requests, other issues, bots, other use
   {...context,eventName:'issue_comment',payload:{issue:{number:3890,pull_request:{url:'https://api.github.com/pulls/3890'}},comment:valid}},
   {...context,eventName:'issue_comment',payload:{issue:{number:3890},comment:{...valid,user:bot}}},
   {...context,eventName:'issue_comment',payload:{issue:{number:3890},comment:{...valid,user:{login:'intruder',id:1,type:'User'}}}},
-  {...context,eventName:'issue_comment',payload:{issue:{number:3890},comment:cmd(703,'Обычный комментарий без команды')}}
  ];
  for(const ctx of cases){
   const fx=stub([valid]);
@@ -198,6 +197,13 @@ test('issue-comment trigger rejects pull requests, other issues, bots, other use
   assert.equal(out.status,'SKIPPED_UNTRUSTED_CONTEXT');
   assert.equal(fx.calls.length,0);
  }
+ const noCommand={...context,eventName:'issue_comment',payload:{
+  issue:{number:3890},comment:cmd(703,'Обычный комментарий без команды')
+ }};
+ const fx=stub([valid]);
+ const out=await inbox.run({github:fx.github,context:noCommand,fetcher:fx.fetcher,token:'mock-key'});
+ assert.equal(out.status,'NO_OWNER_COMMAND');
+ assert.equal(fx.calls.length,0);
 });
 test('issue-comment trigger does not skip FIFO when an earlier owner command is pending',async()=>{
  const older=cmd(704,'!pm ask Старый ожидающий запрос?');
