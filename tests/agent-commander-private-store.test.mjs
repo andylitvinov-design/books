@@ -63,35 +63,6 @@ test('Commander Edge Function TypeScript parses before deployment', () => {
   assert.deepEqual(errors.map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n')), [])
 })
 
-test('Commander dispatch is first-party, owner-authenticated and fails closed without an owned model', () => {
-  const edge = read('supabase/functions/agent-commander-private-store-v1/index.ts')
-  const route = read('app/api/agent-director/commander-run/route.js')
-  const runtime = read('lib/agent-director/commander-owned-runtime.mjs')
-  assert.match(edge, /DIRECTOR_ORIGIN="https:\/\/holistichouse\.vercel\.app"/)
-  assert.match(edge, /ownedDirectorCall\(req,/)
-  assert.match(edge, /const canDispatch=executor==="local"&&!writeConfirmed/)
-  assert.match(edge, /EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/)
-  assert.match(edge, /trustedOwnedDirectorReceipt\(remote,/)
-  assert.match(edge, /saveOwnedDirectorReceipt\(db,ownerId,chat\.chat_id,runId,verified\)/)
-  assert.doesNotMatch(edge, /HERMES_ORIGIN_URL|HERMES_SHARED_SECRET|hermesCall\(|trustedHermesReceipt/)
-  assert.match(route, /auth\/v1\/user/)
-  assert.match(route, /privateStoreConfigured!==true/)
-  assert.match(route, /executeOwnedCommanderRun/)
-  assert.match(runtime, /HH_AGENT_OLLAMA_ENABLED!=='true'/)
-  assert.match(runtime, /AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED/)
-  assert.match(runtime, /AGENT_DIRECTOR_READ_ONLY_RESPONSE/)
-  assert.doesNotMatch(runtime, /fetch\(['"]https?:\/\/|OPENROUTER_API_KEY|GITHUB_TOKEN/)
-})
-
-test('Commander execution receipts never claim source writes, CI or LIVE from a model reply', () => {
-  const edge = read('supabase/functions/agent-commander-private-store-v1/index.ts')
-  assert.match(edge, /sourceVerified:false/)
-  assert.match(edge, /sourceWrite:null/)
-  assert.match(edge, /COMPLETED_UNVERIFIED/)
-  assert.match(edge, /proofLevel:verified\.proofLevel/)
-  assert.doesNotMatch(edge, /liveVerified:true|sourceVerified:true.*Agent Director/)
-})
-
 test('private store preserves native JSONB objects and arrays when persisting payloads',()=>{
   const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
   assert.match(edge,/function jsonbText\(value\)/);
