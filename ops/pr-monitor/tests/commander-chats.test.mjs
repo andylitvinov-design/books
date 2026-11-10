@@ -155,7 +155,7 @@ test('Commander Hermes adapter passes a live-catalog free model and never enable
  assert.ok(api.includes("name==='free_models'"));
  assert.ok(api.includes("m.id.endsWith(':free')"));
  assert.ok(api.includes('GITHUB_WRITE_CONFIRMATION_UI_NOT_AVAILABLE'));
- assert.ok(api.includes('modelId:body.modelId,confirmGitHubWrite:false'));
+ assert.ok(api.includes('modelId:body.modelId||\'\',confirmGitHubWrite:false'));
  assert.ok(ui.includes("SERVER+'?action=free_models'"));
  assert.ok(ui.includes('modelId:selectedModel,confirmGitHubWrite:false'));
  assert.ok(ui.includes('executorModelReady'));
