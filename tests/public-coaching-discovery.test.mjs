@@ -286,7 +286,7 @@ test('My Coach mobile page matches the compact five-tab mockup without removing 
   assert.match(shell,/\.hero\{/)
   assert.match(shell,/\.topicChips\{/)
   assert.match(shell,/\.compactMaster/)
-  assert.match(finder,/embedded \? locale === "ru" \? "Подберите коуча"/)
+  assert.match(finder,/embedded[\s\S]{0,50}locale === "ru" \? "Подберите коуча"/)
   assert.match(finder,/Filters · language, format, method & price/)
 })
 
