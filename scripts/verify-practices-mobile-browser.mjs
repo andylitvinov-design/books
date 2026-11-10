@@ -134,12 +134,17 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         const consentBox=form.locator('input[name="contactConsent"][type="checkbox"]');
         if(await messengerOnly.count()===1){
           // In messenger-only mode the product deliberately does NOT create a
-          // direct CRM form or treat a link open as a submitted lead. Verify
-          // both real handoff channels and the neutral delivery disclaimer.
+          // direct CRM form or treat a link open as a submitted lead. The
+          // handoff is collapsed by default; open it with one real visitor click.
           assert.equal(await course.locator("[data-meditation-course-order]").count(),0);
           assert.equal(await form.count(),0);
-          assert.equal(await messengerOnly.locator('[data-messenger-only-channel="whatsapp"]').count(),1);
-          assert.equal(await messengerOnly.locator('[data-messenger-only-channel="telegram"]').count(),1);
+          const disclosure=messengerOnly.locator("details");
+          assert.equal(await disclosure.count(),1);
+          await disclosure.locator("summary").click();
+          const whatsapp=messengerOnly.locator('[data-messenger-only-channel="whatsapp"]');
+          const telegram=messengerOnly.locator('[data-messenger-only-channel="telegram"]');
+          await expect(whatsapp).toBeVisible();
+          await expect(telegram).toBeVisible();
           const note=(await messengerOnly.innerText()).toLowerCase();
           assert.ok(/opening a link|открытие ссылки|abrir el enlace/.test(note),
             "messenger handoff must explain that opening a link is not a submitted enquiry");
