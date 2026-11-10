@@ -218,7 +218,11 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
     body:JSON.stringify({model:selected,
       messages:[{role:'system',content:'Return ONLY one of: (1) raw JSON with exactly keys file,old,new for a single exact full-line source replacement; or (2) a valid unified git diff for allowed source files. The old line must match the supplied original source exactly, including whitespace. No reasoning, prose, tool calls or markdown fences. If no safe fix is possible, return NO_SAFE_PATCH.'},
         {role:'user',content:prompt}],
-      modalities:['text'],reasoning:{enabled:false},
+      // A forced reasoning:false is HTTP 400 for mandatory-reasoning free
+      // endpoints (including recursive/flint-v1.0:free). Omit the optional
+      // parameter up front: still exactly one free, non-streamed text request.
+      // Reasoning metadata is never a patch; only strict final text is used.
+      modalities:['text'],
       max_tokens:5500,n:1,stream:false,usage:{include:true},
       provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
         data_collection:'deny'}})

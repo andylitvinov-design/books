@@ -305,7 +305,8 @@ test('repair uses one text-only free request and makes the patch contract explic
  assert.equal(calls.length,2,'no hidden model retries');
  const payload=JSON.parse(calls[1].body);
  assert.deepEqual(payload.modalities,['text']);
- assert.deepEqual(payload.reasoning,{enabled:false});
+ assert.equal(payload.reasoning,undefined,
+   'mandatory-reasoning free models must not get unsupported reasoning:false');
  assert.equal(payload.messages[0].role,'system');
  assert.match(payload.messages[0].content,/unified git diff/);
  assert.equal(payload.messages[1].content,'safe-source-only');
@@ -318,6 +319,32 @@ test('repair uses one text-only free request and makes the patch contract explic
  assert.equal(validatePatch(text,{files:['components/a.tsx']}),patch);
  assert.throws(()=>validatePatch('The fix is to change something',{files:['components/a.tsx']}),
    /FREE_AI_/);
+});
+
+test('mandatory-reasoning free Flint gets one compatible zero-price request, no paid retry',async()=>{
+ const model='recursive/flint-v1.0:free',calls=[];
+ const catalog=response({data:[{...entry(),id:model}]});
+ const patch='diff --git a/components/a.tsx b/components/a.tsx\n';
+ const fetchImpl=async(url,args)=>{
+  calls.push({url,...args});
+  return calls.length===1?catalog:response({model,usage:{cost:0},
+   choices:[{finish_reason:'stop',message:{role:'assistant',content:patch,
+     reasoning:'private reasoning must never become a patch'}}]});
+ };
+ const actual=await requestFreePatch({prompt:'public exact-head source',key:'fixture',fetchImpl});
+ assert.equal(actual,patch);
+ assert.equal(calls.length,2,'one catalog read + exactly one model request');
+ const request=JSON.parse(calls[1].body);
+ assert.equal(request.model,model);
+ assert.equal(request.reasoning,undefined);
+ assert.deepEqual(request.modalities,['text']);
+ assert.equal(request.max_tokens,5500);
+ assert.equal(request.n,1);
+ assert.equal(request.stream,false);
+ assert.equal(request.tools,undefined);
+ assert.equal(request.provider.allow_fallbacks,false);
+ assert.deepEqual(request.provider.max_price,{prompt:0,completion:0});
+ assert.equal(request.provider.data_collection,'deny');
 });
 
 test('provider text-value envelopes work without treating reasoning as source',()=>{
