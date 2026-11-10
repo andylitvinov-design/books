@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-recent-voice-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-ci-inbox-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -121,7 +121,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-recent-voice-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-ci-inbox-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -210,7 +210,7 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-recent-voice-composer-v1'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-ci-inbox-v1'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -433,4 +433,20 @@ test('Director silently refreshes the existing Google owner session before askin
  assert.match(js,/r\.status===401&&!retried/);
  assert.match(js,/return request\(url,method,body,true\)/);
  assert.match(js,/ownerRefreshPromise/);
+});
+
+test('owner-only global CI Inbox is visible and polls independently of opening or closing chats',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),api=src('api/commander-chats.js');
+ for(const id of ['cc-ci-inbox','cc-ci-meta','cc-ci-list','cc-ci-refresh'])assert.ok(html.includes('id="'+id+'"'),id);
+ assert.match(js,/SERVER\+'\?action=ci_events&limit=30'/);
+ assert.match(js,/function startCIInboxPolling\(\)/);
+ assert.match(js,/120000\)/);
+ assert.match(js,/doc\.visibilityState!=='hidden'/);
+ assert.match(js,/association_status/);
+ assert.match(js,/event\.head_sha/);assert.match(js,/event\.failed_jobs/);assert.match(js,/event\.failed_steps/);
+ assert.match(api,/name==='ci_events'/);assert.match(api,/commander_list_ci_events/);
+ assert.match(api,/callStore\(req,action,body/);
+ assert.doesNotMatch(api,/service_role|SUPABASE_DB_URL|HERMES_SHARED_SECRET/);
+ const poll=js.slice(js.indexOf('function startCIInboxPolling'),js.indexOf('const from64='));
+ assert.doesNotMatch(poll,/startReportPolling/);
 });
