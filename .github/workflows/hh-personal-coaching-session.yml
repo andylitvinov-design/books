@@ -1,8 +1,9 @@
 name: HH Personal Coaching Session
 on:
   pull_request:
-    branches: [codex/public-book-library, codex/coaching-platform-foundation-v1]
+    branches: [codex/public-book-library]
     paths:
+      - '.github/workflows/hh-personal-coaching-session.yml'
       - 'lib/personal-coaching/**'
       - 'components/coaching-context-review*'
       - 'components/coaching-report-preview*'
@@ -13,7 +14,7 @@ on:
       - 'lib/app/coaching-life-plan.js'
       - 'components/app/my-coaching-plan*'
       - 'tests/coaching-life-plan.test.mjs'
-      - 'app/[locale]/app/[[...path]]/page.jsx'
+      - 'app/\[locale\]/app/\[\[...path\]\]/page.jsx'
       - 'components/app/app-workspace.jsx'
       - 'lib/app/spanish-cabinet-bridge.mjs'
       - 'supabase/migrations/20261110153118_hh_coaching_report_storage_v1.sql'
