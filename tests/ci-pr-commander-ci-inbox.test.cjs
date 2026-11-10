@@ -60,3 +60,17 @@ test('OIDC event bridge uses the same versioned classifier and carries its diagn
  assert.match(bridge,/source_write_authorized: decision\.source_write_authorized/);
  assert.match(bridge,/execution_authorized: decision\.execution_authorized/);
 });
+
+
+test('Commander execution verifies live zero pricing before dispatch and rejects write approval from non-Hermes executors',()=>{
+ const start=edge.indexOf('if(action==="commander_start_run")');
+ const end=edge.indexOf('if(action==="commander_list_ci_events")',start);
+ assert.ok(start>=0&&end>start,'dispatcher block exists');
+ const handler=edge.slice(start,end);
+ assert.match(handler,/if\(writeConfirmed&&executor!==\"hermes\"\)return reply\(403,\{error:\"GITHUB_WRITE_REQUIRES_HERMES_EXECUTOR\"\}/);
+ assert.match(handler,/await verifyFreeModel\(modelId\)/);
+ assert.match(handler,/const canDispatch=Boolean\(canUseHermes&&config&&validModel&&modelVerified\)/);
+ assert.ok(handler.indexOf('await verifyFreeModel(modelId)')<handler.indexOf('await db.begin'),
+  'current live catalog is checked before any dispatch ledger or remote side effect');
+ assert.match(handler,/!modelVerified\?modelVerificationReason/);
+});
