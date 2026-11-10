@@ -970,7 +970,7 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       }finally{session.destroy?.();}
       if(abort.signal.aborted)return;
       if(!generated.modelUsed||!generated.text?.trim())throw Error("DEVICE_MODEL_NO_REPLY");
-      setMessages(prev=>[...prev,{role:"assistant",text:generated.text,variant:"alternative"}].slice(-30));
+      setMessages(prev=>[...prev,{role:"assistant" as const,text:generated.text,variant:"alternative" as const}].slice(-30));
       setSource(context.locale==="ru"?"Бесплатная модель на устройстве":context.locale==="es"?"Modelo gratuito en el dispositivo":"Free on-device model");
     }catch(error){
       if(!abort.signal.aborted){
