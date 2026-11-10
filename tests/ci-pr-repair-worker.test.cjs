@@ -1284,3 +1284,10 @@ test('repair workflow binds exact signed task key to isolated free proposer',()=
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(wf,/REPAIR_TASK_KEY:\s*\$\{\{ needs\.claim\.outputs\.task_key \}\}/);
 });
+
+test('free-model publisher receipt is provider-neutral',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync(require.resolve('../scripts/ci-pr-repair-worker.cjs'),'utf8');
+ assert.equal(source.includes('free-model source repair'),true);
+ assert.equal(source.includes('free OpenCode/GLM source repair'),false);
+});
