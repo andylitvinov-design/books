@@ -183,7 +183,8 @@ function cleanLine(text: string): string {
 export function linesForVideoAffirmations(
   locale: VideoLocale, theme: VideoTheme, settings: AffirmationSettings,
 ): string[] {
-  const options = Array.isArray(settings.presetOverride) && settings.presetOverride.length === 5 &&
+  const options = Array.isArray(settings.presetOverride) && settings.presetOverride.length > 0 &&
+    settings.presetOverride.length <= 5 &&
     settings.presetOverride.every(text => typeof text === "string" && text.trim().length && text.length <= MAX_AFFIRMATION_LENGTH && !/[<>]/.test(text))
     ? settings.presetOverride : suggestedVideoAffirmations[locale][theme];
   const selected = [...new Set(settings.selected)]
