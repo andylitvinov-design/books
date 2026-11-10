@@ -13,7 +13,7 @@ const copy={
     privacy:'Диалог не сохраняется в истории. Только ваш подтверждённый шаг можно записать в защищённую сессию.',
     label:'Ваше сообщение',placeholder:'Что сейчас важно прояснить?',send:'Отправить',sending:'Думаю…',
     you:'Вы',coach:'AI-коуч',offline:'AI сейчас недоступен · авторский вопрос',
-    ai:'Ответ модели',safety:'Пауза для безопасности',method:'Метод',hypothesis:'Возможная гипотеза — проверьте',
+    ai:'Ответ модели',safety:'Пауза для безопасности',method:'Метод',methodChoice:'Методика',methodAuto:'Выбрать автоматически',hypothesis:'Возможная гипотеза — проверьте',
     suggestion:'Возможный следующий шаг (предложение, не решение)',evidence:'Основание — ваши слова',
     decision:'Мой следующий шаг (проверьте и исправьте)',save:'Подтвердить и сохранить шаг',
     saving:'Сохраняем…',saved:'Подтверждённый шаг сохранён в личной сессии',
@@ -27,7 +27,7 @@ const copy={
     privacy:'This conversation is not added to your history. Only a step you confirm can be saved in the private session.',
     label:'Your message',placeholder:'What would you like to understand?',send:'Send',sending:'Thinking…',
     you:'You',coach:'AI coach',offline:'AI unavailable · authored question',
-    ai:'Model reply',safety:'Safety pause',method:'Method',hypothesis:'Tentative hypothesis — please correct',
+    ai:'Model reply',safety:'Safety pause',method:'Method',methodChoice:'Method',methodAuto:'Choose automatically',hypothesis:'Tentative hypothesis — please correct',
     suggestion:'Possible next step (suggestion, not a decision)',evidence:'Based on your words',
     decision:'My next step (review and edit)',save:'Confirm and save this step',
     saving:'Saving…',saved:'Your confirmed step was saved in your private session',
@@ -41,7 +41,7 @@ const copy={
     privacy:'Esta conversación no se añade al historial. Solo se guarda el paso que confirmes expresamente.',
     label:'Tu mensaje',placeholder:'¿Qué te gustaría aclarar?',send:'Enviar',sending:'Pensando…',
     you:'Tú',coach:'Coach IA',offline:'IA no disponible · pregunta preparada',
-    ai:'Respuesta del modelo',safety:'Pausa de seguridad',method:'Método',hypothesis:'Hipótesis provisional — corrígela',
+    ai:'Respuesta del modelo',safety:'Pausa de seguridad',method:'Método',methodChoice:'Método',methodAuto:'Elegir automáticamente',hypothesis:'Hipótesis provisional — corrígela',
     suggestion:'Posible paso siguiente (sugerencia, no decisión)',evidence:'Basado en tus palabras',
     decision:'Mi siguiente paso (revisar y editar)',save:'Confirmar y guardar este paso',
     saving:'Guardando…',saved:'Tu paso confirmado se guardó en tu sesión privada',
@@ -59,6 +59,7 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
   const lang=copy[locale]?locale:'en',t=copy[lang]
   const dialog=useRef(null),composer=useRef(null),latest=useRef(null),pending=useRef(null)
   const [consent,setConsent]=useState(false),[turns,setTurns]=useState([])
+  const [preferredMethod,setPreferredMethod]=useState('auto')
   const [draft,setDraft]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const [decision,setDecision]=useState(''),[saving,setSaving]=useState(false),[saved,setSaved]=useState('')
   useEffect(()=>()=>pending.current?.abort(),[])
@@ -84,6 +85,7 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
     try{
       const result=await appFetch('personal-coaching/brain',{
         sessionId,locale:lang,consent:true,message,
+        ...(preferredMethod!=='auto'?{preferredMethod}:{}),
         turns:turns.slice(-10).map(row=>({role:row.role,content:row.content})),
       },'POST',{accountId,signal:controller.signal})
       if(controller.signal.aborted)return
@@ -144,6 +146,14 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
           <div ref={latest}/>
         </div>
         <div className={styles.controls}>
+          <label className={styles.methodChoice} htmlFor="hh-brain-method">
+            <span>{t.methodChoice}</span>
+            <select id="hh-brain-method" data-coaching-method-override value={preferredMethod}
+              disabled={busy} onChange={event=>setPreferredMethod(event.target.value)}>
+              <option value="auto">{t.methodAuto}</option>
+              {Object.entries(methodLabels).map(([value,label])=><option value={value} key={value}>{label}</option>)}
+            </select>
+          </label>
           {(decision||turns.filter(turn=>turn.role==='user').length>=2)&&<div className={styles.decision}>
             <label htmlFor="hh-brain-decision">{t.decision}</label>
             <textarea id="hh-brain-decision" rows={2} value={decision} maxLength={300}

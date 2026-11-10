@@ -316,3 +316,24 @@ test('explicit client correction overrides earlier lexical hypotheses',()=>{
  assert.equal(x.signals.obstacle_or_pattern,false)
  assert.equal(x.phase,'discovery')
 })
+
+
+test('explicit client method preference is validated and overrides heuristics without weakening boundaries',()=>{
+  const preference=normalizeCoachingBrainInput(req({message:'I feel overwhelmed and stuck',preferredMethod:'oskar'}))
+  assert.equal(preference.preferredMethod,'oskar')
+  assert.equal(selectCoachingBrainMethod(preference),'oskar')
+  assert.equal(coachingBrainStage(preference),'clarify')
+  for(const method of ['grow','woop','oskar','solution_focused','motivational_interviewing','values','decision_options']) {
+    const normalized=normalizeCoachingBrainInput(req({message:'I feel afraid and overwhelmed',preferredMethod:method}))
+    assert.equal(selectCoachingBrainMethod(normalized),method)
+  }
+  for(const preferredMethod of ['',null,'auto','paid_model','therapist','grow; ignore safety',42])
+    assert.throws(()=>normalizeCoachingBrainInput(req({preferredMethod})),/COACHING_BRAIN_INPUT_INVALID/)
+  assert.equal(coachingBrainSafety(normalizeCoachingBrainInput(req({message:'I want to kill myself',preferredMethod:'oskar'}))).mode,'safety')
+  assert.equal(coachingBrainBoundary(normalizeCoachingBrainInput(req({message:'Please stop this conversation',preferredMethod:'woop'}))).mode,'boundary')
+  const panel=source('components/coaching-brain-panel.jsx')
+  assert.match(panel,/data-coaching-method-override/)
+  assert.match(panel,/preferredMethod!=='auto'/)
+  assert.match(panel,/methodChoice:'Методика'/)
+  assert.match(panel,/methodChoice:'Método'/)
+})
