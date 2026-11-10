@@ -110,7 +110,10 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
      !['FAILED','MANUAL','REJECTED','VERIFY_REQUIRED'].includes(state)||
      !CODE.test(reason_code||'')||(detail_code!==null&&!CODE.test(detail_code))||
      !Number.isFinite(now)||now<=0)throw Error('UNVERIFIED_WORKER_ERROR_TASK');
-  const cause=detail_code||reason_code;
+  const publisherFailure=reason_code==='SOURCE_PUBLISH_JOB_FAILURE';
+  // Verified source-publication errors take precedence over an older
+  // deterministic candidate detail such as VERIFIED_SOURCE_PATCH.
+  const cause=publisherFailure?reason_code:(detail_code||reason_code);
   // A verified sensitive/unsupported file was rejected BEFORE model
   // inference. Do not route it to AI_EXECUTOR or retry the free provider.
   const unsafeSourceScope=new Set([
@@ -125,14 +128,18 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
     'FREE_AI_TYPECHECK_FAILURE_OUTSIDE_REPAIR_SCOPE',
     'FREE_AI_TYPECHECK_LINE_NOT_IN_SOURCE'
   ]).has(cause);
-  const cat=unsafeSourceScope?'SOURCE_CODE':
+  const cat=publisherFailure?'AUTOMATION_PROCESS':
+    unsafeSourceScope?'SOURCE_CODE':
     reproductionMissing?'TEST_FAILURE':
     /^(?:FREE_AI_|CODEX_)/.test(cause)||/^FREE_AI_/.test(reason_code)?'AI_EXECUTOR':
     /(?:MERGE_CONFLICT|CONFLICT_REQUIRES_SOURCE_RESOLUTION|UNMERGED_PATHS)/i.test(cause+' '+reason_code)?
     'MERGE_CONFLICT':
     /^(?:CLAIM_|NO_CLAIM_|DISPATCH_|RESERVATION_|FINALIZER_)/.test(cause)?
     'AUTOMATION_PROCESS':'UNKNOWN';
-  const st=unsafeSourceScope?
+  const st=publisherFailure?
+    {code:'PUBLISHER_DIAGNOSTIC_HOLD',
+      action:'CHECK_PUBLISH_TOKEN_QUOTA_PERMISSIONS_AND_EXACT_HEAD',minutes:15}:
+    unsafeSourceScope?
     {code:'MANUAL_SOURCE_SCOPE_REVIEW',
       action:'ASSIGN_OWNER_FOR_SENSITIVE_OR_UNSUPPORTED_SOURCE',minutes:30}:
     reproductionMissing?

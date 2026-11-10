@@ -544,6 +544,25 @@ test('finalizer is idempotent for same signed exact-head run receipt',async()=>{
  assert.equal(result.status,'already_finalized');
  assert.equal(f.log.comments,0);
 });
+test('verified deterministic candidate plus failed GitHub publisher is NOT labeled as OpenRouter failure',async()=>{
+ const f=fixture();
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',strategy:'code',fixResult:'success',codeAvailable:true,
+  codeResult:'skipped',candidateStatus:'ready',
+  candidateDetail:'VERIFIED_SOURCE_PATCH',
+  codeVerifyResult:'success',codeVerifyStatus:'ready',
+  publishResult:'failure'});
+ assert.equal(result.state,'FAILED');
+ assert.equal(result.source_published,false);
+ assert.equal(result.reason_code,'SOURCE_PUBLISH_JOB_FAILURE');
+ assert.equal(result.follow_up_task.category,'AUTOMATION_PROCESS');
+ assert.equal(result.follow_up_task.reason_code,'SOURCE_PUBLISH_JOB_FAILURE');
+ assert.equal(result.follow_up_task.strategy_code,'PUBLISHER_DIAGNOSTIC_HOLD');
+ assert.equal(result.follow_up_task.next_action,'CHECK_PUBLISH_TOKEN_QUOTA_PERMISSIONS_AND_EXACT_HEAD');
+ assert.equal(f.log.commit,0);
+});
+
 test('workflow guarantees a finalizer after code verification and publishing',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  assert.match(wf,/  finalize:\n/);
