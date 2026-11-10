@@ -543,6 +543,7 @@ test('CI inbox OIDC events and owner list are scoped to the single authorized ow
  assert.match(edge,/where inbox_owner_id=\$3::uuid/);
  assert.match(migration,/add column if not exists inbox_owner_id uuid references auth\.users\(id\)/);
  assert.match(migration,/alter column inbox_owner_id set not null/);
+ assert.match(migration,/create index if not exists commander_ci_event_inbox_scope_created_idx[\\s\\S]{0,160}inbox_owner_id/);
  assert.match(migration,/readable_count <> 1/);
  assert.match(migration,/revoke all on business_brain\.commander_ci_event_inbox from public, anon, authenticated/);
 });

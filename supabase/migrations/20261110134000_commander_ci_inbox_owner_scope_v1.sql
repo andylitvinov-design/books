@@ -34,7 +34,7 @@ end $$;
 alter table business_brain.commander_ci_event_inbox
   alter column inbox_owner_id set not null;
 
-create index if not exists commander_ci_event_inbox_owner_created_idx
+create index if not exists commander_ci_event_inbox_scope_created_idx
   on business_brain.commander_ci_event_inbox(inbox_owner_id,created_at desc);
 
 revoke all on business_brain.commander_ci_event_inbox from public, anon, authenticated;
