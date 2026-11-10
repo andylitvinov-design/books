@@ -201,3 +201,16 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
  assert.ok(html.includes('commander-chats.css?v=20261110-compact-composer-v1'));
 });
+
+test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
+ assert.match(html,/<form id="cc-create-form" novalidate>/);
+ assert.match(html,/id="cc-create-feedback"[^>]*role="alert"/);
+ assert.ok(js.includes('pendingCreateId||(pendingCreateId=id())'));
+ assert.ok(js.includes("listing.chats?.find(x=>x.id===data.id"));
+ assert.ok(js.includes('feedback.scrollIntoView'));
+ assert.ok(js.includes("button.textContent='Создаю…'"));
+ assert.ok(js.includes("if(busy)return fail("));
+ assert.ok(js.includes("el('create-form').addEventListener('input'"));
+ assert.ok(css.includes('.cc-create-feedback:not([hidden])'));
+});
