@@ -201,7 +201,12 @@ test("Free uses the original generator; paid Ready tiers reuse the fixed-SKU man
   assert.match(ready,/onGenerateBasicVideo\(\)/);
   assert.doesNotMatch(ready,/fetch\(.*pay|fetch\(.*billing|window\.location\s*=/);
   assert.doesNotMatch(ready,/createVideoCartSelection\(id,\s*(wish|focus|anchor)/);
-  assert.match(studio,/basicFreeAvailable=\{Boolean\(creditCatalog/);
+  assert.match(studio,/basicFreeAvailable=\{basicVideoAccess\.allowed\}/);
+  assert.match(studio,/basicFreeIssue=\{basicVideoAccess\.reason\}/);
+  assert.match(studio,/basicCreditCost=\{basicVideoAccess\.chargeCredits\}/);
+  assert.match(studio,/readyBasicVideoAccess\(/);
+  assert.match(ready,/data-ready-video-credit-cost/);
+  assert.match(ready,/data-ready-sign-in-credits/);
   assert.match(studio,/onGenerateBasicVideo=\{\(\)=>\{/);
   assert.match(studio,/if\(!freeVideoSelected\)\{/);
   assert.match(studio,/return createQuickVideo\(\)/);
