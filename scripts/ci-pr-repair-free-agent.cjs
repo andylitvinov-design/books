@@ -295,7 +295,10 @@ function collectDiagnostics(root,scope){
 function promptFor(scope,sources,signals){
  return [
   'You are a zero-tool, zero-credential patch proposer for one source-red GitHub PR.',
-  'If editing, start exactly with: diff --git a/REAL_FILE b/REAL_FILE',
+  'For an exact one-line fix, prefer raw JSON with exactly three keys: "file", "old", "new".',
+  'For JSON: old and new MUST each be a complete source line (including indentation),',
+  'and old MUST match one whole original line exactly once. Never use partial substrings.',
+  'For multi-line edits, start exactly with: diff --git a/REAL_FILE b/REAL_FILE',
   'then --- a/REAL_FILE, +++ b/REAL_FILE, and standard @@ -N +N @@ hunks.',
   'Use an actual allowlisted REAL_FILE; no preamble, commentary, JSON or code fences.',
   'Fix the actual observed failure with the smallest safe patch.',
@@ -451,6 +454,29 @@ function reanchorSingleHunkPatch(patch,scope,readSource){
 // once at a real line boundary. Rebuild the unified diff deterministically
 // from the current unprivileged checkout; git apply and clean verification
 // must still pass. Never use fuzzy substring matching or touch extra files.
+/** Accept an alternative response from a zero-cost model only as a unique,
+ * byte-exact FULL single-source-line edit. Rebuild the diff from trusted
+ * checkout content; never accept path changes, fuzzy matches or extra keys.
+ * The normal unprivileged git apply + independent verification still run.
+ */
+function exactJsonSingleLinePatch(text,scope,readSource){
+ if(typeof text!=='string'||Buffer.byteLength(text,'utf8')>13000||
+    !scope||!Array.isArray(scope.files)||scope.files.length!==1||
+    typeof readSource!=='function')return null;
+ let obj;
+ try{obj=JSON.parse(text.trim());}catch{return null;}
+ if(!obj||typeof obj!=='object'||Array.isArray(obj)||
+    Object.keys(obj).sort().join(',')!=='file,new,old')return null;
+ const file=obj.file,old=obj.old,newText=obj.new;
+ if(file!==scope.files[0]||!safeSourcePath(file)||typeof old!=='string'||
+    typeof newText!=='string'||!old||!newText||old===newText||
+    old.length>4000||newText.length>4000||
+    /[\r\n\0]/.test(old)||/[\r\n\0]/.test(newText))return null;
+ const candidate='diff --git a/'+file+' b/'+file+'\n'+
+   '--- a/'+file+'\n+++ b/'+file+'\n@@ -1 +1 @@\n-'+
+   old+'\n+'+newText+'\n';
+ return exactSingleLineReplacementPatch(candidate,scope,readSource);
+}
 function exactSingleLineReplacementPatch(patch,scope,readSource){
  if(typeof patch!=='string'||typeof readSource!=='function'||!scope||
     !Array.isArray(scope.files)||Buffer.byteLength(patch,'utf8')>MAX_PATCH)return null;
@@ -614,7 +640,11 @@ async function propose(){
   }
   audit.response_received_at=new Date().toISOString();audit.result='MODEL_RESPONSE_RECEIVED';
   audit.prompt_delivery_status='RESPONSE_OBSERVED';persist();
-  const patch=validatePatch(reply,scope),patchPath=path.join(isolated,'candidate.patch');
+  const jsonPatch=exactJsonSingleLinePatch(reply,scope,
+    file=>fs.readFileSync(path.resolve(root,file),'utf8'));
+  const patch=jsonPatch||validatePatch(reply,scope);
+  if(jsonPatch)console.log('HH_FREE_AI_EXACT_JSON_LINE_VERIFIED_AGAINST_CHECKOUT');
+  const patchPath=path.join(isolated,'candidate.patch');
   fs.writeFileSync(patchPath,patch,{mode:0o600});
   let checked=run('git',['apply','--check','--whitespace=error',patchPath],{cwd:root,timeout:10000});
   if(!checked.ok){
@@ -666,5 +696,5 @@ async function main(){
 }
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,findTypeScriptFailureTarget,validateAgentAcl,extractTextEvents,
- validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
+ validatePatch,exactJsonSingleLinePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
  noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,exactSingleLineReplacementPatch};
