@@ -60,13 +60,14 @@ function buildPublishedCase(record){
   diagnostic_signature:null,auto_reuse:false,
   code_backend:record.repair_kind==='free_ai'?record.code_backend:null,
   code_model:record.repair_kind==='free_ai'?record.code_model:null,
+  code_model_verified:record.repair_kind==='free_ai',
   run_url:record.run_url,pr_url:`https://github.com/${REPO}/pull/${record.pr_number}`});
 }
 function validCase(c){
  const modelProofValid=c?.skill_id==='bounded-free-ai'?
-  (['openrouter','opencode'].includes(c.code_backend)&&
+  (c.code_model_verified===true&&['openrouter','opencode'].includes(c.code_backend)&&
    typeof c.code_model==='string'&&FREE_MODEL_ID.test(c.code_model)):
-  c?.code_backend===null&&c?.code_model===null;
+  c?.code_model_verified===false&&c?.code_backend===null&&c?.code_model===null;
  return !!c&&modelProofValid&&c.schema==='HH_REPAIR_CASE_V1'&&
   typeof c.case_id==='string'&&/^[a-f0-9]{32}$/.test(c.case_id)&&
   c.repo===REPO&&Number.isSafeInteger(c.pr_number)&&c.pr_number>0&&c.pr_number<=99999999&&
