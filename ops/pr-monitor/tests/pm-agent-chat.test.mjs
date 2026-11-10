@@ -49,3 +49,14 @@ test('owner free chat can answer public general questions without implying real-
  assert.ok(api.includes('If a prompt contains sensitive content, ask for a redacted version'));
  assert.ok(api.includes('allow_fallbacks:false,max_price:{prompt:0,completion:0}'));
 });
+
+
+test('free-model metadata discovery is owner-only and does not require a paid or configured key',()=>{
+ const api=read('api/pm-agent-chat.js');
+ assert.match(api,/getModels\(\{catalogOnly:true\}\)/);
+ assert.match(api,/if\(!catalogOnly&&!apiKey\(\)\)/);
+ assert.match(api,/\.\.\.\(apiKey\(\)\?\{Authorization:/);
+ assert.match(api,/await isOwner\(req\)/);
+ assert.match(api,/if\(!apiKey\(\)\)return json\(res,503,\{error:'OPENROUTER_NOT_CONNECTED'\}\)/);
+ assert.match(api,/if\(!model\|\|!model\.endsWith\(':free'\)\)/);
+});

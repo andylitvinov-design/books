@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
 <script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
 <script src="/owner-google-signin.js?v=20261107-v1" defer></script>
-<script src="/commander-chats.js?v=20261110-compact-composer-v1" defer></script>
+<script src="/commander-chats.js?v=20261110-hermes-dispatch-v1" defer></script>
 <script src="/commander-codex.js?v=20261108-v2" defer></script>
 </head><body class="hh-cc-shell">
 <main id="cc-chat-root" class="cc-chats-page">
@@ -74,6 +74,7 @@
     <label>Задачи (необязательно)<input id="cc-new-tasks" autocomplete="off" placeholder="ci-head:A01, ai-commits:B02"></label>
     <label>Номера PR (необязательно)<input id="cc-new-prs" inputmode="text" autocomplete="off" placeholder="3886, 3889"></label>
     <label>Цель (необязательно)<textarea id="cc-new-description" rows="2" maxlength="1000" placeholder="Ожидаемый результат"></textarea></label>
+    <label class="cc-github-consent"><input id="cc-new-github-write" type="checkbox"> Для Hermes отдельно разрешаю создать ветку, коммит и Draft PR в GitHub. Не merge и не публикацию LIVE.</label>
   </dialog>
 </form>
 </section>
@@ -108,9 +109,10 @@
     </label>
     <button type="submit" class="cc-primary cc-send-primary" id="cc-send">Отправить <span aria-hidden="true">↑</span></button>
   </div>
-  <label id="cc-model-label" hidden>Бесплатная модель<select id="cc-model"></select></label>
   <details class="cc-chat-extra" id="cc-chat-extra">
     <summary>Ещё действия</summary>
+    <label id="cc-model-label" hidden>Бесплатная модель<select id="cc-model"></select></label>
+    <label id="cc-github-write-label" class="cc-github-consent" hidden><input id="cc-confirm-github-write" type="checkbox"> Разрешаю Hermes создать новую ветку, коммит и Draft PR для <strong>этого</strong> сообщения. Без merge и деплоя.</label>
     <button type="button" id="cc-note">Сохранить как заметку</button>
   </details>
 </form>

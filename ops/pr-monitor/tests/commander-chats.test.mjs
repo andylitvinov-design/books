@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-hermes-dispatch-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -119,7 +119,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-hermes-dispatch-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -164,7 +164,7 @@ test('execution API is owner-gated, idempotent and reports blocked instead of fa
  assert.ok(edge.includes("agentStarted:false"));
  assert.ok(edge.includes("NOT_STARTED_NO_EXECUTION_RECEIPT"));
  assert.ok(ui.includes("SERVER+'?action=run'"));
- assert.ok(ui.includes("Запрос и попытка сохранены. Исполнитель НЕ запущен"));
+ assert.ok(ui.includes("Запрос сохранён, но запуск не подтверждён"));
  assert.ok(ui.includes("Локальная копия не может запускать исполнителей"));
 });
 
@@ -174,8 +174,8 @@ test('Commander execution run snapshots a bounded revision-pinned task context a
  assert.ok(edge.includes('HH_COMMANDER_TASK_CONTEXT_V1'));
  assert.ok(edge.includes('chatRevision:Number.isSafeInteger(chat.revision)?chat.revision:0'));
  assert.ok(edge.includes('linkedPrHintsVerified:false'));
- assert.ok(edge.includes('Resolve each linked PR against live GitHub metadata and exact current HEAD'));
- assert.ok(edge.includes('JSON.stringify({message,contextCapsule})'));
+ assert.ok(edge.includes('Resolve live GitHub PR and exact HEAD before any source change.'));
+ assert.ok(edge.includes('JSON.stringify({message,contextCapsule,modelId,confirmGitHubWrite:writeConfirmed})'));
  assert.ok(edge.includes('String(contextCapsule.chatRevision)'));
 });
 
@@ -333,4 +333,30 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  assert.equal(elements['cc-thread'].hidden,false);
  assert.equal(elements['cc-messages'].children.length,2);
  assert.ok(network.some(x=>x.action==='read'&&x.method==='GET'));
+});
+
+
+test('Hermes code writes are opt-in per message and use a catalog-selected free model',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),backend=src('api/commander-chats.js'),edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.ok(html.includes('id="cc-new-github-write"'));
+ assert.ok(html.includes('id="cc-confirm-github-write"'));
+ assert.ok(html.includes('Draft PR'));
+ assert.ok(js.includes("const newWriteApproved=mode==='hermes'&&el('new-github-write').checked===true"));
+ assert.ok(js.includes("const confirmGitHubWrite=mode==='hermes'&&el('confirm-github-write').checked===true"));
+ assert.ok(js.includes("el('confirm-github-write').checked=false"));
+ assert.ok(js.includes("modelId:mode==='hermes'?model:undefined,confirmGitHubWrite"));
+ assert.ok(backend.includes('modelId:body.modelId,confirmGitHubWrite:body.confirmGitHubWrite===true'));
+ assert.ok(edge.includes('const validModel=MODEL_ID.test(modelId)'));
+ assert.ok(edge.includes('confirmGitHubWrite:writeConfirmed,contextCapsule'));
+ assert.ok(edge.includes("executor==='hermes'||executor==='openrouter'")||
+           edge.includes('executor==="hermes"||executor==="openrouter"'));
+});
+test('owner-verified Hermes result is read back from the same chat without reporting false LIVE',()=>{
+ const js=src('commander-chats.js'),edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.ok(js.includes("msg.kind==='agent_final'&&msg.sourceWrite?.verified===true"));
+ assert.ok(js.includes("if(thread?.issueNumber){const fresh=await request(SERVER+'?action=read"));
+ assert.ok(edge.includes('await refreshHermesRun(db,ownerId,rows[0].chat_id,active[0].run_id)'));
+ assert.ok(edge.includes('sourceWrite:report.sourceWrite'));
+ assert.ok(edge.includes('DRAFT_PR_COMMIT_VERIFIED_NOT_LIVE'));
+ assert.ok(!js.includes('GITHUB_TOKEN='));
 });

@@ -213,6 +213,7 @@
    c.append(make('div','cc-message-by',author),make('p',null,msg.text||''),
     make('small',null,time(msg.createdAt)+(msg.kind==='github_report'?' · отчёт, не доказательство LIVE':'')));
    if(msg.kind==='github_report')htmlLink(c,'Источник GitHub',msg.url);
+   if(msg.kind==='agent_final'&&msg.sourceWrite?.verified===true)htmlLink(c,'Подтверждённый Draft PR',msg.sourceWrite.prUrl);
    box.append(c);
   }
   box.scrollTop=box.scrollHeight;
@@ -220,8 +221,12 @@
 function renderThread(){
   el('thread-title').textContent=thread.title;
   el('thread-updated').textContent=time(thread.updatedAt)+' · '+(remote?'приватное серверное хранилище':'зашифровано на устройстве');
-  el('executor-state').textContent=(thread.taskId?'Чат привязан к защищённой задаче. ':'')+
+  const runLabel=thread.executionState==='COMPLETED'?'Ответ исполнителя получен. PR и коммит проверяются отдельно; LIVE не подтверждён.':
+   thread.executionState==='RUNNING'?'Hermes подтвердил запуск исполнителя; результат ещё не получен.':
+   thread.executionState==='STARTING'?'Задача зарегистрирована; запуск ещё не подтверждён.':
+   thread.executionState==='BLOCKED'?'Запуск заблокирован или не подтверждён; проверьте причину.':
    'Ожидается подтверждённый ответ исполнителя; назначение и консультация AI не запускают код и не доказывают LIVE.';
+  el('executor-state').textContent=(thread.taskId?'Чат привязан к защищённой задаче. ':'')+runLabel;
   for(const field of ['title','project','description','status'])el(field).value=thread[field]||'';
   el('tasks').value=(thread.tasks||[]).join(', ');el('prs').value=(thread.prs||[]).join(', ');
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
@@ -229,7 +234,9 @@ function renderThread(){
   const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
   if(el('mode').value==='council-free'||!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
-  show('model-label',el('mode').value==='openrouter');
+  show('model-label',['openrouter','hermes'].includes(el('mode').value));
+  show('github-write-label',el('mode').value==='hermes');
+  el('confirm-github-write').checked=false;
   el('chat-feedback').textContent='';show('chat-feedback',false);
   el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('create',false);show('thread',true);
   renderMessages();renderList();
@@ -264,6 +271,7 @@ function renderThread(){
   };
   if(busy)return fail('Другая операция ещё выполняется. Повторите нажатие.');
   const question=el('new-question').value.trim(),mode=el('new-mode').value;
+  const newWriteApproved=mode==='hermes'&&el('new-github-write').checked===true;
   busy=true;button.disabled=true;
   const buttonLabel=button.textContent;button.textContent='Создаю…';
   feedback.hidden=true;feedback.textContent='';
@@ -305,7 +313,9 @@ function renderThread(){
    thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});
    el('create-form').reset();el('new-mode').value=aiReady?'openrouter':'local';pendingCreateId=null;
    if(el('new-context').open)el('new-context').close();
-   el('mode').value=mode;show('model-label',mode==='openrouter');
+   el('mode').value=mode;show('model-label',['openrouter','hermes'].includes(mode));
+   show('github-write-label',mode==='hermes');
+   el('confirm-github-write').checked=newWriteApproved;
    el('message').value=question;
    created=true;
    info('Отправляю вопрос…');
@@ -474,8 +484,10 @@ async function update(e){
    try{
     await append(c,'owner',text,'');el('message').value='';
     const runId=id(),idempotencyKey=id();
+    const confirmGitHubWrite=mode==='hermes'&&el('confirm-github-write').checked===true;
     const result=await request(SERVER+'?action=run','POST',{
-     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text
+     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text,
+     modelId:mode==='hermes'?model:undefined,confirmGitHubWrite
     });
     try{
      const latest=await request(SERVER+'?action=read&issue='+c.issueNumber);
@@ -484,16 +496,22 @@ async function update(e){
     const reasons={
      HERMES_RUNTIME_NOT_CONFIGURED:'Hermes HTTPS runtime и секрет не настроены',
      HERMES_EXECUTOR_DISPATCH_CONTRACT_NOT_VERIFIED:'Нет проверенного Hermes executor endpoint',
+     HERMES_FREE_MODEL_NOT_SELECTED:'Не выбрана модель из подтверждённого бесплатного каталога',
+     HERMES_DISPATCH_UNCONFIRMED_RECONCILE:'Нет подтверждения запуска. Обновите чат для сверки с Hermes',
      CODEX_LOCAL_AGENT_OFFLINE_OR_REMOTE_APPROVAL_DISABLED:'Локальный Codex agent Offline или remote approval выключен',
      REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE:'Нужны точный PR HEAD и активная lease',
      CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE:'Нет поддерживаемого транспорта ChatGPT Work',
      MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF:'Требуется ручная передача владельцем'
     };
     info(result.status==='BLOCKED'
-     ?'Запрос и попытка сохранены. Исполнитель НЕ запущен: '+(reasons[result.reasonCode]||result.reasonCode)+'. Код: '+result.reasonCode+'.'
-     :'Запрос отправлен; дождитесь отдельного подтверждения запуска исполнителя.');
+     ?'Запрос сохранён, но запуск не подтверждён: '+(reasons[result.reasonCode]||result.reasonCode)+'. Код: '+result.reasonCode+'.'
+     :result.status==='COMPLETED'&&result.executionVerified===true
+      ?'Hermes подтвердил ответ. Проверьте результат в чате; CI, merge и LIVE требуют отдельной проверки.'
+     :result.status==='RUNNING'&&result.agentStarted===true
+      ?'Hermes подтвердил реальный запуск исполнителя. Обновите чат для получения результата.'
+      :'Задача зарегистрирована. Запуск и итог будут подтверждены отдельным отчётом Hermes.');
    }catch(err){info('Сообщение сохранено, но запуск не подтверждён: '+String(err.message||err))}
-   finally{busy=false;el('send').disabled=false}
+   finally{el('confirm-github-write').checked=false;busy=false;el('send').disabled=false}
    return;
   }
   busy=true;el('send').disabled=true;
@@ -670,7 +688,7 @@ async function update(e){
   show('vault',false);show('board',remote);show('export',!remote);show('import-label',!remote);
   try{
    const s=await request(AI+'?action=status');aiReady=s.modes?.openrouter===true;
-   if(aiReady){const m=await request(AI+'?action=models');models=m.models||[];aiReady=models.length>0;}
+   const m=await request(AI+'?action=models');models=m.models||[];aiReady=aiReady&&models.length>0;
   }catch{aiReady=false;models=[]}
   el('model').replaceChildren();
   for(const m of models){const o=make('option',null,m.name+' · '+m.id);o.value=m.id;el('model').append(o)}
@@ -735,7 +753,7 @@ async function update(e){
   if(busy)return;
   busy=true;el('refresh').disabled=true;
   try{
-   if(remote){await listRemote();info('Серверные рабочие чаты обновлены.');}
+   if(remote){await listRemote();if(thread?.issueNumber){const fresh=await request(SERVER+'?action=read&issue='+thread.issueNumber);thread=fresh.chat;messages=fresh.messages;renderThread();}info('Серверные рабочие чаты обновлены.');}
    else if(authorized){await authenticated();}
    else{
     const s=await request(AI+'?action=status');
@@ -746,7 +764,7 @@ async function update(e){
   finally{busy=false;el('refresh').disabled=false;}
  });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
- el('mode').addEventListener('change',()=>{show('model-label',el('mode').value==='openrouter');if(el('mode').value!=='council-free')show('council-panel',false)});
+ el('mode').addEventListener('change',()=>{const chosen=el('mode').value;show('model-label',['openrouter','hermes'].includes(chosen));show('github-write-label',chosen==='hermes');if(chosen!=='hermes')el('confirm-github-write').checked=false;if(chosen!=='council-free')show('council-panel',false)});
  win.addEventListener('message',event=>{void receiveCouncilMessage(event)});
  request(AI+'?action=status').then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
   authorized=false;show('login',true);info('Продолжите через Google — отдельный код PR Monitor не нужен.');

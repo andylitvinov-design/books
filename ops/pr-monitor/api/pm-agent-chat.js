@@ -58,12 +58,12 @@ function freeCatalog(data){
   .slice(0,FREE_MAX).map(x=>({id:x.id,name:clamp(x.name||x.id,90),pricing:'$0 verified by current catalog'}));
 }
 const apiKey=()=>process.env.HH_PM_OPENROUTER_API_KEY||'';
-async function getModels(){
- if(!apiKey())return {error:'OPENROUTER_KEY_NOT_CONFIGURED'};
+async function getModels({catalogOnly=false}={}){
+ if(!catalogOnly&&!apiKey())return {error:'OPENROUTER_KEY_NOT_CONFIGURED'};
  if(cachedModels&&Date.now()<modelsUntil)return {models:cachedModels};
  let r;
  try{r=await fetch('https://openrouter.ai/api/v1/models',{headers:{
-  Accept:'application/json',Authorization:'Bearer '+apiKey()},
+  Accept:'application/json',...(apiKey()?{Authorization:'Bearer '+apiKey()}:{})},
   redirect:'error',signal:AbortSignal.timeout(7000),cache:'no-store'});}
  catch{return {error:'FREE_MODEL_CATALOG_UNAVAILABLE'};}
  if(!r.ok)return {error:'FREE_MODEL_CATALOG_HTTP_'+r.status};
@@ -237,7 +237,7 @@ module.exports=async function(req,res){
    githubInboxUrl:'https://github.com/andylitvinov-design/books/issues/3890',
    storage:'CURRENT_BROWSER_SESSION_ONLY',githubCodeExecution:false,
    provider:'OPENROUTER_FREE_ONLY',observedAt:new Date().toISOString()});
-  if(action==='models'){const value=await getModels();return json(res,value.error?503:200,value)}
+  if(action==='models'){const value=await getModels({catalogOnly:true});return json(res,value.error?503:200,value)}
   if(action==='reports'){
    try{return json(res,200,await reports())}
    catch(e){return json(res,503,{error:'GITHUB_REPORTS_UNAVAILABLE',reason:clamp(e.message,80)})}
