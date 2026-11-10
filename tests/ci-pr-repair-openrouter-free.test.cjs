@@ -126,7 +126,7 @@ test('explicit pin cannot silently fallback and unknown roles fail before infere
  assert.equal(calls.length,1);
 });
 test('429 and missing or nonzero real response cost stop without retry',async()=>{
- const model=MODEL_PROFILES.repair[0],catalog=response({data:[entry()]});
+ const model=MODEL_PROFILES.repair[0],catalog=response({data:[{...entry(),id:model}]});
  for(const result of [
   response({},429),
   response({model,usage:{},choices:[{message:{content:'patch'}}]}),
