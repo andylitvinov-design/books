@@ -1,6 +1,7 @@
 'use strict';
 /** Trusted default-branch single-writer queue dispatcher: no source checkout, no merge. */
 const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,validLegacyPrep,taskFor,reservation,commentBody,reservationStatus,parseRecords,readCompleteIssueComments,trustedControlComment,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
+const {latestErrorTaskId}=require('./ci-pr-error-task.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
@@ -966,7 +967,10 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   // The trusted single writer reserves the exact task before dispatch.
   // On interrupted dispatch this reservation fails closed pending a human
   // inspection of worker history: never duplicate a possible source write.
-  const claim=reservation(task,now,context.runId||'unspecified');
+  const errorTaskId=task.lane==='repair'?
+    latestErrorTaskId(comments,task.pr_number,task.head_sha):null;
+  const claim={...reservation(task,now,context.runId||'unspecified'),
+    ...(errorTaskId?{error_task_id:errorTaskId}:{})};
   try{
    await limited('reserve-task',()=>github.rest.issues.createComment({
     owner,repo,issue_number:task.pr_number,body:commentBody(claim)}));

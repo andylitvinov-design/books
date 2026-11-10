@@ -146,6 +146,29 @@ function taskStatus(comments,task){
  * HH_PR_TASK_V1 receipts. An event task receipt alone never proves delivery.
  * Ambiguous, untrusted, stale or partial history fails closed.
  */
+/**
+ * Bind only the latest authenticated error-task receipt for this exact
+ * PR/HEAD. No unrelated task, untrusted comment or malformed receipt can
+ * be used as causal delivery evidence.
+ */
+function latestErrorTaskId(comments,prNumber,headSha){
+  if(!Array.isArray(comments)||!Number.isSafeInteger(prNumber)||
+     !SHA.test(headSha||''))return null;
+  let latest=null;
+  for(const c of comments){
+    if(!trustedControlComment(c))continue;
+    const body=String(c.body||'');
+    if(!body.startsWith('<!-- '+SCHEMA+' '))continue;
+    const marker=body.match(/^<!-- HH_CI_ERROR_TASK_V1 ([a-f0-9]{32}) -->/);
+    const chunk=body.split(fence+'json\n')[1]?.split('\n'+fence)[0];
+    if(!marker||!chunk)return null;
+    let x;try{x=JSON.parse(chunk);}catch{return null;}
+    if(!validTask(x)||x.task_id!==marker[1])return null;
+    if(x.pr_number===prNumber&&x.head_sha===headSha.toLowerCase()&&
+       x.event_kind==='CORE_CI_FAILED')latest=x.task_id;
+  }
+  return latest;
+}
 function taskLifecycle(comments,task){
   const status=taskStatus(comments,task);
   if(status===null)return {state:'HISTORY_UNVERIFIED',next_action:'RECHECK_SIGNED_HISTORY'};
@@ -178,4 +201,4 @@ function taskLifecycle(comments,task){
   return {state:'CLASSIFIED_NOT_DELIVERED',next_action:'RECONCILE_EXISTING_DISPATCHER'};
 }
 
-module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,validTask};
+module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,latestErrorTaskId,validTask};
