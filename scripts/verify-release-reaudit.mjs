@@ -426,7 +426,7 @@ async function exercise(engine, browserType, width) {
           // intake mode. In that mode no email/phone form is rendered: require
           // the visible session-format selector and explicit WhatsApp/Telegram
           // links instead. Never force-enable legacy contact collection in CI.
-          const messengerOnly = await capture.getAttribute('data-messenger-only-intake') !== null;
+          const messengerOnly = await capture.locator('[data-messenger-only-intake]').count() === 1;
           if (messengerOnly) {
             await expect(form).toHaveCount(0);
             await expect(capture.locator('input, textarea')).toHaveCount(0);
