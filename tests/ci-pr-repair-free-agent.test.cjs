@@ -243,3 +243,42 @@ test('missing signed task, malformed identity and sensitive scope never create a
  assert.throws(()=>promptReceipt(scope,'prompt',{}, {...identity,runAttempt:0}),/INVALID_CONTEXT/);
  assert.throws(()=>promptReceipt({...scope,files:['lib/private/clients.js']},'prompt',{},identity),/INVALID_CONTEXT/);
 });
+
+
+test('safe recount fixes ONLY wrong unified diff hunk counts; exact file context still mandatory',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const cp=require('node:child_process');
+ const {applyCandidatePatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'hh-patch-recount-test-'));
+ const git=(...args)=>cp.execFileSync('git',args,{cwd:root,encoding:'utf8'});
+ try {
+  git('init','-q');git('config','user.name','Safe Test');git('config','user.email','test@example.invalid');
+  fs.writeFileSync(path.join(root,'demo.js'),'alpha\\nbeta\\ngamma\\n');
+  git('add','demo.js');git('commit','-qm','base');
+  const malformed=[
+   'diff --git a/demo.js b/demo.js','--- a/demo.js','+++ b/demo.js',
+   '@@ -1,9 +1,9 @@',' alpha','-beta','+delta',' gamma',''
+  ].join('\\n');
+  const patch=path.join(root,'candidate.patch');
+  fs.writeFileSync(patch,malformed);
+  aThrowsStandard();
+  function aThrowsStandard(){
+    const probe=cp.spawnSync('git',['apply','--check','--whitespace=error',patch],{cwd:root});
+    assert.notEqual(probe.status,0,'standard Git apply rejects inconsistent hunk header');
+  }
+  const result=applyCandidatePatch(root,patch);
+  assert.equal(result.recount,true);
+  assert.equal(fs.readFileSync(path.join(root,'demo.js'),'utf8'),'alpha\\ndelta\\ngamma\\n');
+  assert.equal(cp.spawnSync('git',['diff','--check'],{cwd:root}).status,0);
+  git('checkout','--','demo.js');
+  const wrongContext=malformed.replace(' alpha',' missing-irrelevant-context');
+  fs.writeFileSync(patch,wrongContext);
+  assert.throws(()=>applyCandidatePatch(root,patch),/FREE_AI_PATCH_APPLY_CHECK_FAILED/,
+    'recount cannot bypass an incorrect context or apply a wrong patch');
+  assert.equal(fs.readFileSync(path.join(root,'demo.js'),'utf8'),'alpha\\nbeta\\ngamma\\n');
+  const exact=malformed.replace('@@ -1,9 +1,9 @@','@@ -1,3 +1,3 @@');
+  fs.writeFileSync(patch,exact);
+  const normal=applyCandidatePatch(root,patch);
+  assert.equal(normal.recount,false,'do not use relaxed mode for correct patches');
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
