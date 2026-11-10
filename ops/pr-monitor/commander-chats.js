@@ -52,7 +52,7 @@
  async function loadExecutorModels(){
   if(!remote)return;
   try{await ensureExecutorModels();configureModels('new');configureModels('thread');}
-  catch(error){executorModels=[];info('Каталог бесплатных моделей Hermes недоступен: '+String(error.message||error));}
+  catch(error){info('Каталог бесплатных моделей Hermes недоступен: '+String(error.message||error));}
  }
  async function refreshExecutionRuns(){
   if(!remote||!thread||!authorized||executionPollBusy)return null;
