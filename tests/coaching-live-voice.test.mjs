@@ -134,6 +134,9 @@ test('mobile controls include explicit mic/pause/manual interrupt, language, tex
     'disabled={safetyHandoff}','dialogRef','onCancel=',
   ])assert.ok(ui.includes(phrase),phrase)
   for(const language of ['en:','ru:','es:'])assert.ok(ui.includes(language))
+  assert.match(ui,/replyMode==='offline'/)
+  assert.match(ui,/t\.offline/)
+  assert.match(ui,/safetyRef\.current=true/)
   assert.match(css,/:focus-visible/)
   assert.match(css, /@media\(max-width:370px\)/)
   assert.match(css, /prefers-reduced-motion/)
