@@ -108,5 +108,7 @@ test('Meta setup route is owner-only and UI disables OAuth when environment is n
   assert.match(ui,/metaSetup\?\.authorizationReady/)
   assert.match(ui,/metaSetup\.missingSettings\.join/)
   assert.match(ui,/<button type="button" disabled title=/)
-  assert.match(ui,/setMetaSetup\(result\.configuration\|\|null\)/)
+  assert.match(ui,/const configuration=result\.configuration\|\|null/)
+  assert.match(ui,/setMetaSetup\(configuration\)/)
+  assert.match(ui,/onMetaStatus\(\{accounts,configuration\}\)/)
 })
