@@ -320,7 +320,7 @@ test('release re-audit follows the guest test-first Profile and explicit private
     "locator('[data-profile-tests-first]')",
     "locator('[data-guest-test-choice]')).toHaveCount(3)",
     "locator('[data-profile-results-link]')).toHaveAttribute('href', '/en/app/portrait?space=reports')",
-    "locator('[data-profile-results-archive]')).toHaveCount(0)",
+    "locator('[data-profile-domains], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0)",
     "locator('.mobile-bottom-navigation')).toHaveCount(0)",
     "cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' })",
     "toHaveURL(origin + '/en/personality-profiles')",
