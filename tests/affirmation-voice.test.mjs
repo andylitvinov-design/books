@@ -465,7 +465,7 @@ test("WebKit release follows the real Montage Settings, Audio, and voice disclos
  assert.match(source,/await audioWorkspaceAfterExport\.click\(\)/);
  assert.match(source,/await page\.locator\('\[data-video-audio-tab="voice"\]'\)\.click\(\)/);
  assert.match(source,/data-video-audio-panel="voice"/);
- assert.match(source,/const voicePanel=page\.locator\("\[data-video-voice-studio\]"\)/);
+ assert.match(source,/const voiceStudioPanel=page\.locator\("\[data-video-voice-studio\]"\)/);
  assert.match(source,/voiceStudioPanel\.locator\(":scope > summary"\)\.click\(\)/);
  assert.doesNotMatch(source,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
 });
