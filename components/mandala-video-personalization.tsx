@@ -73,6 +73,15 @@ const copy={
 } as const;
 export const goalCurrentMeaningId=(id:string)=>currentChoices.find(c=>c.id===id)?.meaning||"present";
 export const goalDesiredMeaningId=(id:string)=>desiredChoices.find(c=>c.id===id)?.meaning||"calm";
+// Only selected/confirmed answers may enter Concept. Defaults alone are not
+// evidence of a person's emotional state or wishes.
+export function summarizeVideoGoalProfile(value:VideoGoalProfile,locale:VideoLocale){
+ const current=value.current.map(id=>currentChoices.find(c=>c.id===id)?.[locale]).filter(Boolean).join(" · ");
+ const desired=value.desired.map(id=>desiredChoices.find(c=>c.id===id)?.[locale]).filter(Boolean).join(" · ");
+ const axes=listMeaningAxes(locale);
+ const focus=value.axes.map(id=>axes.find(c=>c.id===id)?.label).filter(Boolean).join(" · ");
+ return {currentState:current,desiredState:desired,focus};
+}
 
 export function MandalaVideoPersonalization({locale,value,onChange,onBack,onContinue,disabled}:{
  locale:VideoLocale;value:VideoGoalProfile;onChange:Dispatch<SetStateAction<VideoGoalProfile>>;
