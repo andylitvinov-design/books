@@ -17,7 +17,7 @@ test('monitor accepts only the one-time fragment handoff and removes it immediat
  assert.match(monitor,/api\/commander-session/);
  assert.match(session,/HttpOnly/);assert.match(session,/SameSite=Strict/);
  assert.match(session,/REFRESH_COOKIE/);
- assert.match(session,/auth\\/v1\\/token\\?grant_type=refresh_token/);
+ assert.ok(session.includes('/auth/v1/token?grant_type=refresh_token'));
  assert.match(session,/callStore/);
 });
 test('owner-only APIs use the private edge store and do not claim executor dispatch',()=>{
