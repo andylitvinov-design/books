@@ -27,6 +27,14 @@ test('trusted red-CI taxonomy: infrastructure is not a product source error',()=
  assert.equal(check([job('core-lint-types-build','Checkout sources')]).category,'INFRASTRUCTURE');
  assert.equal(check([{name:'core-lint-types-build',conclusion:'startup_failure',steps:[]}]).category,'INFRASTRUCTURE');
 });
+test('trusted red-CI taxonomy: CI policy ownership/isolation contract failures route to CI owner, never source repair',()=>{
+ const r=check([job('core-lint-types-build','Verify specialist ownership and Messenger isolation on CI-policy changes')]);
+ assert.equal(r.category,'BASE_OR_CI_ROUTING');
+ assert.equal(r.reason_code,'CI_WORKFLOW_BUDGET_GUARD');
+ assert.equal(r.responsible_role,'ci-routing-owner');
+ assert.equal(r.source_write_authorized,false);
+ assert.equal(r.execution_authorized,false);
+});
 test('trusted red-CI taxonomy: base advanced requires explicit evidence',()=>{
  assert.equal(check([job('classify-change','production-base advanced')]).category,'BASE_ADVANCED');
  assert.equal(check([job('classify-change','Check routing')],PR,'CI_PREFLIGHT_OR_ROUTING').category,'BASE_OR_CI_ROUTING');

@@ -525,3 +525,10 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
  assert.equal(out.statusCode,410);
  assert.equal(out.body.error,'EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY');
 });
+
+test('CI inbox task association uses the same project key as the private task insert',()=>{
+ const source=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.match(source,/insert into business_brain\.commander_tasks[\s\S]{0,1000}'agent-commander'/);
+ assert.match(source,/from business_brain\.commander_tasks[\s\S]{0,150}where project_key='agent-commander'/);
+ assert.doesNotMatch(source,/where project_key='holistic-house'/);
+});
