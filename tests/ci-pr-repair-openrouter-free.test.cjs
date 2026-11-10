@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {DEFAULT_MODEL,MODEL_PROFILES,chooseVerifiedFreeModel,selectedModel,verifyZeroPrice,requestFreePatch}=
+const {DEFAULT_MODEL,MODEL_PROFILES,chooseVerifiedFreeModel,selectedModel,verifyZeroPrice,extractAssistantText,requestFreePatch}=
   require('../scripts/ci-pr-repair-openrouter-free.cjs');
 const entry=(pricing={prompt:'0',completion:'0'})=>({id:DEFAULT_MODEL,pricing,
   architecture:{input_modalities:['text'],output_modalities:['text']}});
@@ -134,5 +134,44 @@ test('429 and missing or nonzero real response cost stop without retry',async()=
   await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',fetchImpl}),
    /QUOTA_EXHAUSTED|BILLING_UNVERIFIED|BILLING_NONZERO/);
   assert.equal(count,2,'no LLM fallback or paid retry after attempted inference');
+ }
+});
+
+
+test('structured OpenRouter text blocks normalize to a bounded patch while unsupported blocks fail closed',()=>{
+ const blocks=[
+  {type:'text',text:'diff --git a/a.js b/a.js\\n'},
+  {type:'output_text',text:'@@ -1 +1 @@\\n-old\\n+new'}
+ ];
+ assert.equal(extractAssistantText(blocks),
+  'diff --git a/a.js b/a.js\\n\\n@@ -1 +1 @@\\n-old\\n+new');
+ assert.equal(extractAssistantText('plain patch'),'plain patch');
+ assert.throws(()=>extractAssistantText([{type:'refusal',text:'declined'}]),/MODEL_REFUSED/);
+ assert.throws(()=>extractAssistantText([{type:'image_url',image_url:{}}]),/PATCH_RESPONSE_INVALID/);
+ assert.throws(()=>extractAssistantText([{type:'text',text:'  '}]),/PATCH_RESPONSE_EMPTY/);
+ assert.throws(()=>extractAssistantText('x'.repeat(40001)),/PATCH_RESPONSE_TOO_LARGE/);
+});
+
+test('one zero-cost OpenRouter inference accepts structured text and rejects truncated/tool output',async()=>{
+ const catalog=response({data:[entry()]});
+ const structured=response({model:DEFAULT_MODEL,usage:{cost:0},
+  choices:[{finish_reason:'stop',message:{role:'assistant',content:[
+   {type:'text',text:'diff --git a/a.js b/a.js\\n'},
+   {type:'text',text:'@@ -1 +1 @@\\n-old\\n+new'}
+  ]}}]});
+ let count=0;
+ const fetchImpl=async()=>++count===1?catalog:structured;
+ const patch=await requestFreePatch({prompt:'safe bounded repair',key:'fixture',fetchImpl});
+ assert.equal(patch,'diff --git a/a.js b/a.js\\n\\n@@ -1 +1 @@\\n-old\\n+new');
+ assert.equal(count,2,'catalog plus exactly one inference request');
+ for(const choice of [
+  {finish_reason:'length',message:{role:'assistant',content:'partial'}},
+  {finish_reason:'tool_calls',message:{role:'assistant',content:null,tool_calls:[{id:'x'}]}}
+ ]){
+  let calls=0;
+  const fetch=async()=>++calls===1?catalog:response({model:DEFAULT_MODEL,usage:{cost:0},choices:[choice]});
+  await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',fetchImpl:fetch}),
+   /TRUNCATED|TOOL_CALL_NOT_ALLOWED/);
+  assert.equal(calls,2,'never retries a refused or unsupported completion');
  }
 });
