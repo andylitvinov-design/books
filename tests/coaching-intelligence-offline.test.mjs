@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import ts from 'typescript'
 import {
-  coachingStageKey,authoredFollowupFor,draftCoachingActionPlan,
+  coachingStageKey,authoredFollowupFor,coachingControlForAnswer,draftCoachingActionPlan,
   displayCoachingAnswer,COACHING_P1_VERSION,
 } from '../lib/personal-coaching/offline-intelligence.js'
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')
