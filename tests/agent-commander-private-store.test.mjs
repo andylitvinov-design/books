@@ -86,3 +86,19 @@ test('Commander execution events preserve existing database kind CHECK and do no
   assert.match(edge, /"DRAFT_PR_COMMIT_VERIFIED_NOT_LIVE"/)
   assert.match(edge, /runId,chatId:chat.chat_id,ownerId,projectKey:"holistic-house"/)
 })
+
+
+test('private store preserves native JSONB objects and arrays when persisting payloads',()=>{
+  const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
+  assert.match(edge,/function jsonbText\(value\)/);
+  assert.match(edge,/payload=\$4::text::jsonb/);
+  assert.match(edge,/payload=\$2::text::jsonb/);
+  assert.match(edge,/failed_jobs[\\s\\S]{0,300}\\$15::text::jsonb/);
+  assert.match(edge,/failed_steps[\\s\\S]{0,100}\\$16::text::jsonb/);
+  assert.match(edge,/receipt=\$4::text::jsonb/);
+  assert.doesNotMatch(edge,/\$[0-9]+::jsonb/);
+  assert.doesNotMatch(edge,/jsonb_set\(payload,'\{executionState\}'/);
+  assert.match(edge,/set execution_state=\$1,updated_at=now\(\)/);
+  assert.match(edge,/jsonbText\(event\.failed_jobs\)/);
+  assert.match(edge,/jsonbText\(event\.failed_steps\)/);
+});
