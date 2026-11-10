@@ -867,9 +867,11 @@ test('trusted Repair finalization fast paths preserve independent Codex verifica
  assert.match(fix,/permissions:\n      contents: read/);
  assert.match(codeFix,/permissions:\n      contents: read/);
  assert.match(codeVerify,/permissions:\n      contents: read/);
- for(const untrusted of [fix,codeFix,codeVerify]) assert.doesNotMatch(untrusted,/HH_AUTOMERGE_TOKEN/);
- assert.match(pub,/HH_AUTOMERGE_TOKEN: \$\{\{ secrets\.HH_AUTOMERGE_TOKEN \}\}/);
- assert.doesNotMatch(pub,/contents: write/);
+ for(const untrusted of [fix,codeFix,codeVerify])
+   assert.doesNotMatch(untrusted,/HH_AUTOMERGE_TOKEN|HH_REPAIR_JOB_TOKEN|contents: write/);
+ assert.match(pub,/permissions:\n      contents: write/);
+ assert.match(pub,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
+ assert.doesNotMatch(pub,/HH_AUTOMERGE_TOKEN:/);
 });
 
 
