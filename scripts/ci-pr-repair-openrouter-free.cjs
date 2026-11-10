@@ -7,6 +7,9 @@ const CHAT_ENDPOINT='/api/v1/chat/completions';
 const CHAT_CATALOG=BASE+'/models?endpoints='+encodeURIComponent(CHAT_ENDPOINT);
 // Ordered CANDIDATES, not proven winners. Live catalog + zero-price validation wins.
 const DEFAULT_MODEL='cohere/north-mini-code:free';
+// Virtual free router is used only when explicitly selected by the trusted workflow.
+// Unlike a pinned :free ID, the actual response model must be revalidated.
+const FREE_ROUTER_MODEL='openrouter/free';
 const MODEL_PROFILES=Object.freeze({
   repair:Object.freeze(['recursive/flint-v1.0:free',
     'nvidia/nemotron-3-ultra-550b-a55b:free','cohere/north-mini-code:free',
@@ -60,6 +63,18 @@ function verifyZeroPrice(catalog,model){
 function chooseVerifiedFreeModel(catalog,{model='auto',role='repair'}={}){
   if(!Object.hasOwn(MODEL_PROFILES,role))
     throw Error('FREE_AI_OPENROUTER_ROLE_UNKNOWN');
+  if(model===FREE_ROUTER_MODEL){
+    // The router alias has no :free catalog entry of its own. Require at
+    // least one known role-compatible $0 model before requesting inference,
+    // then verify the ACTUAL routed model against this catalog and $0 usage.
+    const available=MODEL_PROFILES[role].some(candidate=>{
+      try{return verifyZeroPrice(catalog,candidate).zeroCost===true;}
+      catch{return false;}
+    });
+    if(!available)throw Error('FREE_AI_OPENROUTER_NO_VERIFIED_FREE_MODEL');
+    return {model:FREE_ROUTER_MODEL,zeroCost:true,role,
+      selection:'zero_cost_router_runtime_verified'};
+  }
   if(model!=='auto'){
     const selected=selectedModel(model);
     return {...verifyZeroPrice(catalog,selected),role,selection:'pinned'};
@@ -194,7 +209,7 @@ function extractAssistantText(content,{hasReasoning=false}={}){
 }
 async function requestFreePatch({prompt,key,model='auto',role='repair',
   fetchImpl=global.fetch,onVerifiedModel=undefined,onResponseShape=undefined}={}){
-  if(model!=='auto')selectedModel(model); // reject malformed manual overrides before any API call
+  if(model!=='auto'&&model!==FREE_ROUTER_MODEL)selectedModel(model); // never allow paid or unknown aliases
   if(typeof key!=='string'||!key.trim())
     throw Error('FREE_AI_OPENROUTER_KEY_NOT_CONFIGURED');
   if(typeof fetchImpl!=='function')throw Error('FREE_AI_OPENROUTER_NETWORK_UNAVAILABLE');
@@ -218,8 +233,13 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
     body:JSON.stringify({model:selected,
       messages:[{role:'system',content:'Return ONLY one of: (1) raw JSON with exactly keys file,old,new for a single exact full-line source replacement; or (2) a valid unified git diff for allowed source files. The old line must match the supplied original source exactly, including whitespace. No reasoning, prose, tool calls or markdown fences. If no safe fix is possible, return NO_SAFE_PATCH.'},
         {role:'user',content:prompt}],
-      modalities:['text'],reasoning:{enabled:false},
-      max_tokens:5500,n:1,stream:false,usage:{include:true},
+      // The proven working $0 router endpoint needs only the portable chat
+      // completion fields. Provider-specific optional reasoning/modalities
+      // caused HTTP 400 in real source-repair runs; keep pinned-model behavior.
+      ...(selected===FREE_ROUTER_MODEL?{}:{
+        modalities:['text'],reasoning:{enabled:false},n:1}),
+      max_tokens:selected===FREE_ROUTER_MODEL?2200:5500,
+      stream:false,usage:{include:true},
       provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
         data_collection:'deny'}})
   },170000);
@@ -228,7 +248,14 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
   // Provider error envelopes are diagnostic outcomes, never patch candidates.
   // Check before model/billing fields because error bodies may omit both.
   if(completion?.error)throw Error('FREE_AI_OPENROUTER_PROVIDER_ERROR');
-  if(completion?.model!==selected)throw Error('FREE_AI_OPENROUTER_MODEL_MISMATCH');
+  if(selected===FREE_ROUTER_MODEL){
+    // A virtual router may select any model, but it cannot bypass exact
+    // catalog proof of a zero-priced text-only :free model.
+    try{verifyZeroPrice(catalog,completion?.model);}
+    catch{throw Error('FREE_AI_OPENROUTER_FREE_ROUTER_MODEL_UNVERIFIED');}
+  }else if(completion?.model!==selected){
+    throw Error('FREE_AI_OPENROUTER_MODEL_MISMATCH');
+  }
   const cost=completion?.usage?.cost;
   if(typeof cost!=='number'||!Number.isFinite(cost))
     throw Error('FREE_AI_OPENROUTER_BILLING_UNVERIFIED');
@@ -252,6 +279,6 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
   const metadata=safeResponseDiagnostics(completion);
   return extractAssistantText(message.content,{hasReasoning:metadata.reasoning_present});
 }
-module.exports={BASE,CHAT_ENDPOINT,CHAT_CATALOG,DEFAULT_MODEL,MODEL_PROFILES,
+module.exports={BASE,CHAT_ENDPOINT,CHAT_CATALOG,DEFAULT_MODEL,FREE_ROUTER_MODEL,MODEL_PROFILES,
   selectedModel,verifyZeroPrice,chooseVerifiedFreeModel,responseShape,safeResponseDiagnostics,
   extractAssistantText,requestFreePatch};
