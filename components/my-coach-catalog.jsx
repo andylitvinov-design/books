@@ -1,0 +1,252 @@
+'use client'
+
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users } from 'lucide-react'
+import {
+  COACH_PERSONAS, COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
+  localCoachText, normalizeCoachSettings,
+} from '@/lib/coaching/persona-registry.mjs'
+import styles from './my-coach-catalog.module.css'
+
+const words = {
+  en: {
+    eyebrow: 'HOLISTIC HOUSE · MY COACH',
+    title: 'Find your AI coach',
+    intro: 'Eight distinct coaching personas. Choose the approach that fits your situation, then adjust how your coach asks questions.',
+    aiNotice: 'These are fictional AI personas, not real practitioners. Coaching supports reflection; it does not replace medical or mental health care.',
+    search: 'Search coaches and topics', searchPlaceholder: 'E.g. relationships, decisions, habits',
+    all: 'All coaches', favorites: 'Favorites', noResults: 'No coaches match. Clear the filters to see everyone.',
+    topics: 'Choose a direction', profile: 'Coach profile', about: 'About this coach',
+    suited: 'Good for', method: 'Approaches', example: 'How this coach starts',
+    adjust: 'Your conversation settings', adjustNote: 'Settings change the tone and optional follow-up questions, not the safety rules.',
+    warmth: 'Warmth', directness: 'Directness', pace: 'Pace', depth: 'Depth',
+    less: 'Less', more: 'More', slow: 'Gentle', balanced: 'Balanced', fast: 'Fast',
+    light: 'Practical', deep: 'Reflective', reset: 'Reset style',
+    preview: 'Preview of a follow-up question', start: 'Start guided coaching',
+    viewProfile: 'Explore coach', favorite: 'Add to favorites', unfavorite: 'Remove from favorites',
+    chosen: 'Selected', available: '8 characters', change: 'Change your coach anytime',
+    sessionNote: 'The current free session follows reviewed, fixed coaching questions; its optional follow-up adapts to the selected persona. Live generative AI and two-way voice are not enabled here.',
+    back: 'Coaching Lounge', human: 'Human specialists', privacy: 'Search and choices stay in this browser; favorites save only persona IDs on this device.',
+    safety: 'One question at a time · No diagnoses · Your decisions remain yours',
+  },
+  ru: {
+    eyebrow: 'HOLISTIC HOUSE · MY COACH',
+    title: 'Выберите своего AI-коуча',
+    intro: 'Восемь разных AI-персонажей. Выберите подходящий стиль и настройте, как коуч будет задавать вопросы.',
+    aiNotice: 'Это вымышленные AI-персонажи, а не реальные специалисты. Коучинг помогает размышлять, но не заменяет медицинскую или психотерапевтическую помощь.',
+    search: 'Поиск по коучам и темам', searchPlaceholder: 'Например: отношения, решение, привычки',
+    all: 'Все коучи', favorites: 'Избранные', noResults: 'По запросу никого нет. Сбросьте фильтры, чтобы увидеть всех.',
+    topics: 'Выберите направление', profile: 'Профиль коуча', about: 'О коуче',
+    suited: 'Подходит для', method: 'Методики', example: 'Как коуч начинает разговор',
+    adjust: 'Настройки разговора', adjustNote: 'Настройки меняют тон и дополнительные вопросы, но не правила безопасности.',
+    warmth: 'Теплота', directness: 'Прямота', pace: 'Темп', depth: 'Глубина',
+    less: 'Меньше', more: 'Больше', slow: 'Мягкий', balanced: 'Средний', fast: 'Быстрый',
+    light: 'Практично', deep: 'Глубоко', reset: 'Вернуть стиль',
+    preview: 'Пример дополнительного вопроса', start: 'Начать коучинг-сессию',
+    viewProfile: 'Открыть профиль', favorite: 'В избранное', unfavorite: 'Убрать из избранного',
+    chosen: 'Выбран', available: '8 персонажей', change: 'Коуча можно сменить в любой момент',
+    sessionNote: 'Сейчас бесплатная сессия проходит по проверенным фиксированным вопросам; дополнительные вопросы адаптированы к выбранному персонажу. Генеративный AI-диалог и двусторонний голос здесь пока не подключены.',
+    back: 'Гостиная коучинга', human: 'Реальные специалисты', privacy: 'Поиск остаётся в браузере; в избранном на устройстве сохраняются только ID персонажей.',
+    safety: 'Один вопрос за раз · Без диагнозов · Решение остаётся за вами',
+  },
+  es: {
+    eyebrow: 'HOLISTIC HOUSE · MY COACH',
+    title: 'Elige tu coach de IA',
+    intro: 'Ocho personajes diferentes. Elige el estilo apropiado y adapta cómo hace las preguntas.',
+    aiNotice: 'Son personajes ficticios de IA, no profesionales reales. El coaching ayuda a reflexionar, pero no sustituye la atención clínica.',
+    search: 'Buscar coaches y temas', searchPlaceholder: 'Ej.: relaciones, decisiones, hábitos',
+    all: 'Todos los coaches', favorites: 'Favoritos', noResults: 'No hay resultados. Borra los filtros para verlos todos.',
+    topics: 'Elige una dirección', profile: 'Perfil del coach', about: 'Sobre el coach',
+    suited: 'Adecuado para', method: 'Métodos', example: 'Así comienza la conversación',
+    adjust: 'Ajustes de conversación', adjustNote: 'Cambian el tono y preguntas adicionales, no las reglas de seguridad.',
+    warmth: 'Calidez', directness: 'Claridad directa', pace: 'Ritmo', depth: 'Profundidad',
+    less: 'Menos', more: 'Más', slow: 'Suave', balanced: 'Equilibrado', fast: 'Rápido',
+    light: 'Práctico', deep: 'Reflexivo', reset: 'Restablecer estilo',
+    preview: 'Ejemplo de pregunta de seguimiento', start: 'Empezar coaching guiado',
+    viewProfile: 'Ver perfil', favorite: 'Añadir favorito', unfavorite: 'Quitar favorito',
+    chosen: 'Seleccionado', available: '8 personajes', change: 'Cambia de coach cuando quieras',
+    sessionNote: 'La sesión gratuita usa preguntas revisadas y fijas; las preguntas adicionales se adaptan al personaje elegido. El diálogo generativo y la voz bidireccional aún no están activados.',
+    back: 'Sala de coaching', human: 'Profesionales reales', privacy: 'La búsqueda queda en este navegador; solo se guardan los ID de favoritos en el dispositivo.',
+    safety: 'Una pregunta por turno · Sin diagnósticos · Tú decides',
+  },
+}
+const topicText = {
+  en: { clarity: 'Clarity', resilience: 'Calm & support', relationships: 'Relationships', career: 'Career & business',
+    meaning: 'Meaning', habits: 'Habits', creativity: 'Creativity', decisions: 'Decisions' },
+  ru: { clarity: 'Ясность', resilience: 'Опора и спокойствие', relationships: 'Отношения', career: 'Карьера и бизнес',
+    meaning: 'Смысл', habits: 'Привычки', creativity: 'Творчество', decisions: 'Решения' },
+  es: { clarity: 'Claridad', resilience: 'Calma y apoyo', relationships: 'Relaciones', career: 'Carrera y negocio',
+    meaning: 'Sentido', habits: 'Hábitos', creativity: 'Creatividad', decisions: 'Decisiones' },
+}
+const FAVORITES_KEY = 'hh-my-coach-favorites-v1'
+const normalizeSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ё/g, 'е').trim()
+
+export default function MyCoachCatalog({ locale = 'en' }) {
+  const lang = words[locale] ? locale : 'en'
+  const t = words[lang]
+  const categories = topicText[lang]
+  const [search, setSearch] = useState('')
+  const [topic, setTopic] = useState('all')
+  const [onlyFavorites, setOnlyFavorites] = useState(false)
+  const [favorites, setFavorites] = useState([])
+  const [favoritesReady, setFavoritesReady] = useState(false)
+  const [selectedId, setSelectedId] = useState('mira')
+  const [settings, setSettings] = useState(() => normalizeCoachSettings('mira'))
+  const profileRef = useRef(null)
+  useEffect(() => {
+    try {
+      const ids = JSON.parse(window.localStorage.getItem(FAVORITES_KEY) || '[]')
+      if (Array.isArray(ids)) setFavorites(ids.filter(id => typeof id === 'string' && getCoachPersona(id)).slice(0, 8))
+    } catch { /* Private browsing may disable localStorage: favorites remain in memory. */ }
+    setFavoritesReady(true)
+  }, [])
+  useEffect(() => {
+    if (!favoritesReady) return
+    try { window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)) }
+    catch { /* Local choice stays usable even when storage is unavailable. */ }
+  }, [favorites, favoritesReady])
+  const list = useMemo(() => COACH_PERSONAS.filter(persona => {
+    if (topic !== 'all' && persona.topic !== topic && !persona.related.includes(topic)) return false
+    if (onlyFavorites && !favorites.includes(persona.id)) return false
+    if (!search.trim()) return true
+    const haystack = [
+      persona.id, persona.name[lang], persona.role[lang], persona.description[lang],
+      persona.suitable[lang], categories[persona.topic],
+      ...persona.related.map(id => categories[id]), ...persona.methods,
+    ].join(' ')
+    return normalizeSearch(haystack).includes(normalizeSearch(search))
+  }), [lang, topic, onlyFavorites, favorites, search, categories])
+  const selected = getCoachPersona(selectedId) || COACH_PERSONAS[0]
+  const safeSettings = normalizeCoachSettings(selected.id, settings)
+  const updateSettings = (field, value) => setSettings(previous =>
+    normalizeCoachSettings(selected.id, { ...previous, [field]: value }))
+  const startHref = coachSessionHref(lang, selected.id, safeSettings)
+  const selectedName = localCoachText(selected.name, lang)
+  const followupPreview = coachStagePrompt(selected.id, 'goal', lang, safeSettings)
+  const choose = (id) => {
+    setSelectedId(id)
+    setSettings(normalizeCoachSettings(id))
+    // Scroll only after a deliberate click, not on hydration or filter changes.
+    window.requestAnimationFrame(() => profileRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+  const toggleFavorite = id => setFavorites(current =>
+    current.includes(id) ? current.filter(value => value !== id) : [...current, id].slice(-8))
+  return <main className={styles.root} data-my-coach-catalog lang={lang}>
+    <div className={styles.frame}>
+      <section className={styles.hero}>
+        <span className={styles.eyebrow}><Sparkles size={15} aria-hidden="true" /> {t.eyebrow}</span>
+        <h1>{t.title}</h1>
+        <p className={styles.heroLead}>{t.intro}</p>
+        <div className={styles.heroBottom}>
+          <span className={styles.heroCount}><Users size={17} aria-hidden="true" /> {t.available}</span>
+          <span className={styles.heroSafety}><ShieldCheck size={17} aria-hidden="true" /> {t.safety}</span>
+        </div>
+      </section>
+      <p className={styles.disclosure} role="note">{t.aiNotice}</p>
+      <section className={styles.discover} aria-label={t.topics}>
+        <div className={styles.controlTop}>
+          <label className={styles.search}>
+            <Search size={19} aria-hidden="true" />
+            <span className={styles.srOnly}>{t.search}</span>
+            <input type="search" value={search} onChange={event => setSearch(event.target.value)}
+              placeholder={t.searchPlaceholder} autoComplete="off" maxLength={90} />
+          </label>
+          <button type="button" className={onlyFavorites ? styles.favoritesActive : styles.favoritesButton}
+            aria-pressed={onlyFavorites} onClick={() => setOnlyFavorites(value => !value)}>
+            <Heart size={17} fill={onlyFavorites ? 'currentColor' : 'none'} aria-hidden="true" /> {t.favorites}
+          </button>
+        </div>
+        <div className={styles.topicRail} role="group" aria-label={t.topics}>
+          <button type="button" aria-pressed={topic === 'all'} className={topic === 'all' ? styles.topicActive : styles.topicChip}
+            onClick={() => setTopic('all')}>{t.all}</button>
+          {COACH_TOPICS.map(key => <button type="button" key={key} aria-pressed={topic === key}
+            className={topic === key ? styles.topicActive : styles.topicChip} onClick={() => setTopic(key)}>{categories[key]}</button>)}
+        </div>
+        {list.length ? <div className={styles.cardGrid}>
+          {list.map(persona => {
+            const isSelected = selected.id === persona.id
+            const isFavorite = favorites.includes(persona.id)
+            return <article key={persona.id} className={isSelected ? styles.cardSelected : styles.card}
+              data-my-coach-card={persona.id}>
+              <div className={styles.cardHead}>
+                <div className={styles.avatar} data-palette={persona.palette} role="img"
+                  aria-label={localCoachText(persona.role, lang)}>{persona.symbol}</div>
+                <button type="button" className={styles.heart} onClick={() => toggleFavorite(persona.id)}
+                  aria-label={(isFavorite ? t.unfavorite : t.favorite) + ': ' + localCoachText(persona.name, lang)}
+                  aria-pressed={isFavorite}>
+                  <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
+                </button>
+              </div>
+              <h2>{localCoachText(persona.name, lang)}</h2>
+              <p className={styles.role}>{localCoachText(persona.role, lang)}</p>
+              <p className={styles.cardDescription}>{localCoachText(persona.description, lang)}</p>
+              <span className={styles.cardTopic}>{categories[persona.topic]}</span>
+              <button type="button" className={isSelected ? styles.selectedButton : styles.cardButton}
+                onClick={() => choose(persona.id)} aria-pressed={isSelected}>
+                {isSelected ? t.chosen : t.viewProfile} <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </article>
+          })}
+        </div> : <div className={styles.empty}>
+          <p>{t.noResults}</p>
+          <button type="button" onClick={() => { setSearch(''); setTopic('all'); setOnlyFavorites(false) }}>{t.all}</button>
+        </div>}
+      </section>
+      <section ref={profileRef} className={styles.profile} aria-label={t.profile}
+        data-my-coach-selected={selected.id}>
+        <div className={styles.profileHead}>
+          <div className={styles.avatarLarge} data-palette={selected.palette} aria-hidden="true">{selected.symbol}</div>
+          <div>
+            <span className={styles.profileEyebrow}>{t.profile}</span>
+            <h2>{selectedName}</h2>
+            <p>{localCoachText(selected.role, lang)}</p>
+          </div>
+        </div>
+        <p className={styles.profileAbout}>{localCoachText(selected.description, lang)}</p>
+        <div className={styles.profileFacts}>
+          <div><h3>{t.suited}</h3><p>{localCoachText(selected.suitable, lang)}</p></div>
+          <div><h3>{t.about}</h3><p>{localCoachText(selected.approach, lang)}</p></div>
+          <div><h3>{t.method}</h3><p>{selected.methods.join(' · ')}</p></div>
+        </div>
+        <div className={styles.opening}>
+          <span>{t.example}</span>
+          <p>“{localCoachText(selected.opening, lang)}”</p>
+        </div>
+        <div className={styles.settings}>
+          <div className={styles.settingsHeading}><SlidersHorizontal size={19} aria-hidden="true" />
+            <div><h3>{t.adjust}</h3><p>{t.adjustNote}</p></div></div>
+          <div className={styles.settingsGrid}>
+            {['warmth', 'directness'].map(field => <label className={styles.range} key={field}>
+              <span><strong>{t[field]}</strong><output>{safeSettings[field]} / 5</output></span>
+              <input type="range" min="1" max="5" step="1" value={safeSettings[field]}
+                onChange={event => updateSettings(field, Number(event.target.value))} />
+              <small><span>{t.less}</span><span>{t.more}</span></small>
+            </label>)}
+            <label className={styles.selectField}><strong>{t.pace}</strong>
+              <select value={safeSettings.pace} onChange={event => updateSettings('pace', event.target.value)}>
+                <option value="slow">{t.slow}</option><option value="balanced">{t.balanced}</option><option value="fast">{t.fast}</option>
+              </select></label>
+            <label className={styles.selectField}><strong>{t.depth}</strong>
+              <select value={safeSettings.depth} onChange={event => updateSettings('depth', event.target.value)}>
+                <option value="light">{t.light}</option><option value="balanced">{t.balanced}</option><option value="deep">{t.deep}</option>
+              </select></label>
+          </div>
+          <button type="button" className={styles.reset} onClick={() => setSettings(normalizeCoachSettings(selected.id))}>
+            <RotateCcw size={16} aria-hidden="true" /> {t.reset}</button>
+        </div>
+        <div className={styles.preview}>
+          <span>{t.preview}</span><p>{followupPreview}</p>
+        </div>
+        <Link className={styles.primary} href={startHref} prefetch={false}
+          data-my-coach-start={selected.id}>{t.start}<ArrowRight size={19} aria-hidden="true" /></Link>
+        <p className={styles.sessionNote}>{t.sessionNote}</p>
+        <p className={styles.privacy}>{t.privacy}</p>
+      </section>
+      <nav className={styles.secondaryNav} aria-label={t.change}>
+        <Link href={'/' + lang + '/coaching'}><BookOpen size={17} aria-hidden="true" /> {t.back}</Link>
+        <Link href={'/' + lang + '/masters'}><Users size={17} aria-hidden="true" /> {t.human}</Link>
+      </nav>
+    </div>
+  </main>
+}
