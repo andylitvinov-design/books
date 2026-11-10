@@ -99,11 +99,13 @@ test("macOS WebKit opens Style by default and still allows reviewed Concept",()=
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
 });
 
-test("required Hypno two tabs and guided kind click remain browser-tested after Concept",()=>{
+test("required Hypno three tabs, relocated effects and guided kind remain browser-tested after Concept",()=>{
   const webkit=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const guided=readFileSync(new URL("../scripts/verify-mandala-practices-browser.mjs",import.meta.url),"utf8");
   const exportFlow=readFileSync(new URL("../scripts/benchmarking/first-video-live-export.mjs",import.meta.url),"utf8");
-  assert.match(webkit,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
+  assert.match(webkit,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(3\)/);
+  assert.match(webkit,/await effectsTab\.click\(\)/);
+  assert.match(webkit,/data-hypno-visual-effect="sunlight"/);
   assert.match(webkit,/await expect\(briefFrame\)\.toHaveAttribute\("aria-checked","false"\)/);
   assert.match(guided,/await expect\(kind\)\.toHaveAttribute\("aria-pressed","true",\{timeout:15000\}\)/);
   assert.match(guided,/GUIDED_KIND_DID_NOT_COMMIT/);
