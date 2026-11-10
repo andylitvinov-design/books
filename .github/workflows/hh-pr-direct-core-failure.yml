@@ -40,6 +40,7 @@ jobs:
         run: |
           node --check scripts/ci-pr-event-handoff.cjs
           node --check scripts/ci-pr-commander-strategy-router.cjs
+          node --check scripts/ci-pr-commander-route-receipt.cjs
           node --check scripts/ci-pr-error-task.cjs
           node --check scripts/ci-pr-ten-minute-watchdog.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
@@ -190,8 +191,14 @@ jobs:
               infraRerun:process.env.HH_INFRA_RERUN==='true',
               existingCoreHandoff});
             core.info('HH_DIRECT_CORE_HANDOFF '+JSON.stringify(result));
-            await core.summary.addHeading('Commander CI strategy route (not execution proof)')
-              .addCodeBlock(JSON.stringify(result,null,2)).write();
+            const {sendCommanderCiRoute}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-commander-route-receipt.cjs');
+            const oidcToken=await core.getIDToken('hh-commander-ci');
+            const delivery=await sendCommanderCiRoute({
+              routeResult:result,receipt,core,oidcToken});
+            core.info('HH_COMMANDER_CI_ROUTE_RECEIPT '+JSON.stringify(delivery));
+            await core.summary.addHeading('Commander CI strategy and delivery proof')
+              .addCodeBlock(JSON.stringify({route:result,delivery},null,2)).write();
 
       - name: Persist completed Core job timings without another runner
         if: ${{ always() }}
