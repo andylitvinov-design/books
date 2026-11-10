@@ -96,7 +96,8 @@ async function run({github,core,context,now=Date.now()}){
  const comments=await readCompleteIssueComments(github,owner,repo,pr.number,
   async(_label,fn)=>{if(++reads>5)throw Error('VERIFIER_COMMENT_HISTORY_BUDGET');return fn();});
  if(!comments||comments.length>300)return finish('SIGNED_REPAIR_HISTORY_UNAVAILABLE');
- const cases=trustedCases(comments,{maxComments:300}).filter(c=>
+ const cases=trustedCases(comments.filter(x=>x?.updated_at===x?.created_at),
+   {maxComments:300}).filter(c=>
    c.pr_number===pr.number&&c.published_head===pr.head.sha);
  if(cases.length!==1)return finish(cases.length?'PUBLISHED_CASE_AMBIGUOUS':'NO_SIGNED_PUBLISHED_SOURCE');
  const c=cases[0];
