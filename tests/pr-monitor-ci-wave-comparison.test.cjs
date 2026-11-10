@@ -91,7 +91,7 @@ test('failed workflow gap is classified by the actual failed required job',()=>{
       started_at:prior.queued_at,completed_at:prior.completed_at,conclusion:'failure'}
   ];
   const next=makeRun(812,1104,iso(Date.parse(prior.completed_at)+10*60_000),'b','success');
-  const coreFailed=makeRun(813,1201,iso(start+90*60*60_000),'c','failure');
+  const coreFailed=makeRun(813,1201,iso(start+90*60_000),'c','failure');
   coreFailed.jobs=[{...coreFailed.jobs[0],conclusion:'failure'}];
   const coreNext=makeRun(813,1202,iso(Date.parse(coreFailed.completed_at)+5*60_000),'d','success');
   const store={runs:[prior,next,coreFailed,coreNext],comments:2,pages:1,
