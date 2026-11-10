@@ -390,3 +390,28 @@ test('opened PR records Ready but defers API-heavy merge validation until Core s
   assert.ok(s.includes("steps.safety.outputs.eligible == 'true'"),
     'mandatory protected merge guard must remain');
 });
+
+test('cancelled exact Core handoff re-enters the existing durable single-writer queue',()=>{
+ const watchdog=read('hh-pr-ten-minute-watchdog');
+ const direct=read('hh-pr-direct-core-failure');
+ const events=watchdog.split("  workflow_run:\n")[1]?.split("  push:\n")[0]||'';
+ assert.ok(events.includes("      - 'HH PR direct failed-Core handoff'"),
+  'only the named direct Core bridge can initiate cancellation recovery');
+ const recover=watchdog.split('\n  direct-handoff:\n')[1]?.split('\n    runs-on:')[0]||'';
+ assert.ok(recover.includes("github.event.workflow_run.name == 'HH PR direct failed-Core handoff'"));
+ assert.ok(recover.includes("github.event.workflow_run.event == 'workflow_run'"));
+ assert.ok(recover.includes("github.event.workflow_run.head_branch == 'codex/bootstrap-books'"));
+ assert.ok(recover.includes("github.event.workflow_run.conclusion == 'cancelled'"));
+ assert.ok(recover.includes("github.event.workflow_run.conclusion != 'cancelled'"),
+   'ordinary handoffs still reject cancelled events');
+ const directJob=watchdog.split('\n  direct-handoff:\n')[1]?.split('\n  reactivate-schedules-and-dispatch:\n')[0]||'';
+ assert.ok(directJob.includes("group: hh-control-tower-single-writer"));
+ assert.ok(directJob.includes('cancel-in-progress: false'));
+ assert.ok(directJob.includes("const {run}=require(process.env.GITHUB_WORKSPACE+"));
+ assert.ok(directJob.includes("'/scripts/ci-pr-queue-dispatcher.cjs'"));
+ assert.ok(!watchdog.includes("      - 'HH PR core release gate'"),
+  'no second trigger on every Core completion');
+ assert.ok(direct.includes("  ci_event_intake:\n"));
+ assert.ok(direct.includes('  direct-core-failure:\n    needs: ci_event_intake'));
+ assert.ok(direct.includes("group: hh-control-tower-single-writer"));
+});
