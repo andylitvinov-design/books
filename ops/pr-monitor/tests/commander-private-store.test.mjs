@@ -38,7 +38,7 @@ test('Origin is exact and owner JWT is not accepted from query parameters',()=>{
 
 
 
-test('Commander handoff accepts only a verified access token,()=>{
+test('Commander handoff accepts only a verified access token plus the paired refresh token',()=>{
  const fs=require('node:fs');
  const sessionSource=fs.readFileSync(new URL('../api/commander-session.js',import.meta.url),'utf8');
  const authSource=fs.readFileSync(new URL('../commander-auth.js',import.meta.url),'utf8');
