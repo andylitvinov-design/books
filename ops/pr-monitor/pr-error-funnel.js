@@ -185,7 +185,7 @@
   }
   var model={STAGES:STAGES,validEvent:validEvent,classified:classified,
     taskLinked:taskLinked,routeFor:routeFor,trustedComment:trustedComment,
-    taskEvidence:taskEvidence,summarize:summarize};
+    taskEvidence:taskEvidence,summarize:summarize,safeLink:safeLink};
   if(typeof module!=='undefined'&&module.exports)module.exports=model;
   if(typeof document==='undefined'||typeof window==='undefined')return;
   if(root.__hhPrErrorFunnelMounted)return;
@@ -197,7 +197,7 @@
     if(css)n.className=css;if(label!==undefined)n.textContent=String(label);return n;}
   function safeLink(url){
     return typeof url==='string'&&
-      /^https:\/\/github\.com\/andylitvinov-design\/books\/(?:pull\/\d+|issues\/\d+#issuecomment-\d+|commit\/[0-9a-f]{40}|actions\/runs\/\d+)$/.test(url);
+      /^https:\/\/github\.com\/andylitvinov-design\/books\/(?:(?:pull|issues)\/\d+(?:#issuecomment-\d+)?|commit\/[0-9a-f]{40}|actions\/runs\/\d+)$/.test(url);
   }
   function mount(){
     if(panel||document.getElementById('hh-pr-error-funnel'))return;
