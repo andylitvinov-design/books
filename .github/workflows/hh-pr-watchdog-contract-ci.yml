@@ -122,6 +122,11 @@ on:
       - 'tests/ci-pr-base-advanced-recovery.test.cjs'
       - '.github/workflows/hh-pr-direct-core-failure.yml'
       - 'supabase/functions/agent-commander-private-store-v1/index.ts'
+      - 'supabase/functions/agent-commander-openrouter-worker/index.ts'
+      - 'supabase/functions/agent-commander-openrouter-worker/deno.json'
+      - 'supabase/migrations/20261110144812_commander_openrouter_worker_leases_20261110.sql'
+      - 'supabase/migrations/20261110150548_commander_openrouter_worker_schedule_20261110.sql'
+      - 'tests/commander-openrouter-worker.test.mjs'
       - 'supabase/migrations/20261109200000_commander_ci_event_inbox.sql'
       - 'scripts/ci-pr-hermes-event-bridge.cjs'
       - 'scripts/ci-pr-commander-strategy-router.cjs'
@@ -202,13 +207,17 @@ jobs:
         with:
           deno-version: v2.x
       - name: Resolve and syntax-compile Agent Commander Supabase Edge Function
-        run: cd supabase/functions/agent-commander-private-store-v1 && deno cache --no-lock index.ts
+        run: |
+          cd supabase/functions/agent-commander-private-store-v1 && deno cache --no-lock index.ts
+          cd ../agent-commander-openrouter-worker && deno cache --no-lock index.ts
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - name: Install trusted test dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify cloud OpenRouter worker leases, zero-cost, and typed SQL contracts
+        run: node --test tests/commander-openrouter-worker.test.mjs
       - name: Syntax-check trusted watchdog and tests
         run: |
           node --check ops/pr-monitor/commander-learning-model.cjs
