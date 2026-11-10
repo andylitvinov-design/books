@@ -32,7 +32,7 @@ test('JSONB arrays and objects are encoded once as TEXT before explicit JSONB ca
  assert.match(edge,/jsonbText\(chatEvent\)/);
  assert.doesNotMatch(edge,/\$15::jsonb/);
  assert.match(inboxMigration,/failed_jobs jsonb/);
- assert.match(inboxMigration,/jsonb_typeof\(failed_jobs\) = 'array'/);
+ assert.match(inboxMigration,/jsonb_typeof\(failed_jobs\)\s*=\s*'array'/);
 });
 
 test('duplicate webhook delivery recovers task/chat association without duplicate chat events',()=>{
