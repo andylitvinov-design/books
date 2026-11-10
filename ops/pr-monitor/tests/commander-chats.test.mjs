@@ -333,6 +333,9 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  assert.equal(elements['cc-thread'].hidden,false);
  assert.equal(elements['cc-messages'].children.length,2);
  assert.ok(network.some(x=>x.action==='read'&&x.method==='GET'));
+ await elements['cc-verify-chat'].fire('click');
+ assert.match(elements['cc-verify-status'].textContent,/вопрос и ответ сохранены в Supabase/);
+ assert.equal(elements['cc-verify-chat'].disabled,false);
 });
 
 test('last chats stay at the top and one fixed bottom composer supports typed and spoken questions',()=>{
@@ -366,4 +369,21 @@ test('last chats stay at the top and one fixed bottom composer supports typed an
  assert.match(css,/\.cc-composer-space\s*\{\s*position:fixed/);
  assert.match(css,/\.cc-composer-space \.cc-send-primary/);
  assert.match(css,/\.cc-composer-space \.cc-voice-toggle/);
+});
+
+test('owner history verification is read-only and free-model setup remains hidden in context',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js');
+ assert.match(html,/id="cc-verify-chat"/);
+ assert.match(html,/id="cc-verify-status"[^>]*role="status"/);
+ assert.match(html,/id="cc-free-model-status"[^>]*hidden/);
+ assert.match(html,/HH_PM_OPENROUTER_API_KEY/);
+ const i=js.indexOf('async function verifySavedThread()'),j=js.indexOf('function startReportPolling()',i);
+ assert.ok(i>=0&&j>i);
+ const body=js.slice(i,j);
+ assert.match(body,/SERVER\+'\?action=read&issue='/);
+ assert.match(body,/read\.chat\?\.id!==current\.id/);
+ assert.match(body,/answerIndex>ownerIndex/);
+ assert.doesNotMatch(body,/action=create|method:\s*'POST'|service_role|localStorage/);
+ assert.match(js,/el\('verify-chat'\)\.addEventListener\('click',verifySavedThread\)/);
+ assert.match(js,/show\('free-model-status',!aiReady\)/);
 });
