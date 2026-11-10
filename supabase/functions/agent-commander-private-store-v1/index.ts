@@ -531,10 +531,15 @@ async function receiveCommanderCiRoute(req,origin){
     !/^[A-Z0-9_]{3,120}$/.test(p.reason)||
     typeof p.router!=="string"||!/^[A-Z0-9_]{3,90}$/.test(p.router)||
     typeof p.responsibleRole!=="string"||p.responsibleRole.length>80||
-    !Number.isSafeInteger(p.dispatchAccepted)||p.dispatchAccepted<0||p.dispatchAccepted>2||
+    !Number.isSafeInteger(p.dispatchAccepted)||p.dispatchAccepted<0||p.dispatchAccepted>1||
     typeof p.category!=="string"||
     p.workerStarted!==false||p.sourceWriteVerified!==false||p.liveVerified!==false||
-    (p.state==="DISPATCH_ACCEPTED_NOT_WORKER_STARTED")!==(p.dispatchAccepted>0)||
+    (p.state==="DISPATCH_ACCEPTED_NOT_WORKER_STARTED")!==(p.dispatchAccepted===1)||
+    p.dispatchAcknowledged!==(p.dispatchAccepted===1)||
+    (p.dispatchAccepted===1?(
+      p.executorId!=="github-actions:hh-pr-repair-worker.yml"||
+      !/^[a-f0-9]{32}$/.test(p.workerTaskKey||"")):
+      (p.executorId!==null||p.workerTaskKey!==null))||
     !p.blocked||typeof p.blocked!=="object"||Array.isArray(p.blocked)||
     Object.entries(p.blocked).length>12||
     Object.entries(p.blocked).some(([k,v])=>!/^[A-Z0-9_]{3,80}$/.test(k)||
@@ -557,7 +562,8 @@ async function receiveCommanderCiRoute(req,origin){
         e.oidc_workflow_ref!==claims.workflow_ref||
         String(e.workflow_run_id)!==String(p.runId)||e.pr_number!==p.prNumber||
         e.head_sha!==p.headSha||e.category!==p.category||
-        !["MATCHED_CHAT_EVENT_RECORDED","TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED"].includes(e.association_status)||
+        !["MATCHED_CHAT_EVENT_RECORDED","TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED",
+          "AUTO_TASK_CREATED_NOT_DISPATCHED"].includes(e.association_status)||
         !uuid(e.associated_task_id)||!c||
         c.schema!=="HH_CI_ERROR_CLASSIFICATION_V1"||
         c.category!==p.category||c.responsible_role!==p.responsibleRole||
@@ -571,6 +577,8 @@ async function receiveCommanderCiRoute(req,origin){
         headSha:p.headSha,runId:p.runId,category:p.category,router:p.router,
         responsibleRole:p.responsibleRole,state:p.state,reason:p.reason,
         dispatchAccepted:p.dispatchAccepted,blocked:p.blocked,
+        executorId:p.executorId,workerTaskKey:p.workerTaskKey,
+        dispatchAcknowledged:p.dispatchAcknowledged,
         workerStarted:false,sourceWriteVerified:false,liveVerified:false,
         proofLevel:"GITHUB_OIDC_ROUTE_ONLY_NOT_EXECUTION"};
       if(e.route_receipt){
@@ -601,7 +609,9 @@ async function receiveCommanderCiRoute(req,origin){
         kind:"github_report",author:"GitHub Actions · verified CI routing",
         text:clean("CI task PR #"+p.prNumber+" strategy "+p.router+
           "; route state "+p.state+"; "+p.reason+
-          "; dispatch requests accepted "+p.dispatchAccepted+
+          "; dispatch accepted "+p.dispatchAccepted+
+          (p.executorId?"; selected executor "+p.executorId+
+            "; exact worker task "+p.workerTaskKey:"; assigned owner review, no worker dispatch")+
           ". Worker start, source commit, CI and LIVE are NOT verified.",1800),
         ciRoute:record,sourceVerified:true,
         proofLevel:"GITHUB_OIDC_ROUTE_ONLY_NOT_EXECUTION",
