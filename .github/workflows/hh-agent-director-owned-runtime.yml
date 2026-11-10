@@ -2,7 +2,7 @@ name: Agent Director owned runtime contracts
 
 on:
   push:
-    branches: ['feat/agent-director-owned-runtime-20261110']
+    branches: ['feat/agent-director-owned-runtime-bootstrap-20261110']
     paths:
       - 'app/api/agent-director/commander-run/route.js'
       - 'lib/agent-director/**'
@@ -12,7 +12,7 @@ on:
       - 'tests/agent-commander-private-store.test.mjs'
       - '.github/workflows/hh-agent-director-owned-runtime.yml'
   pull_request:
-    branches: ['codex/public-book-library']
+    branches: ['codex/bootstrap-books']
     paths:
       - 'app/api/agent-director/commander-run/route.js'
       - 'lib/agent-director/**'
