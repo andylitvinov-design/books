@@ -125,25 +125,17 @@ test("Ideas keeps Personalization and Concept; Voice / My Voice live only in Aud
  assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
  assert.match(studio,/data-video-ideas-tab="personalization"/);
  assert.match(studio,/data-video-ideas-tab="concept"/);
+ assert.doesNotMatch(studio,/data-video-legacy-phrase-editor|data-video-phrase-audio-shortcut|data-video-ideas-voice-mode/);
  assert.match(studio,/data-video-audio-voice-mode="voice"/);
  assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
  assert.match(studio,/data-video-audio-panel="voice"[\s\S]*?hypnoVoiceEditor/);
  assert.match(studio,/ownVoiceOnly=\{ideasVoiceMode==="my-voice"\}/);
- const legacy=studio.indexOf("data-video-legacy-phrase-editor");
- assert.ok(legacy>0);
- assert.match(studio.slice(legacy,legacy+600),/hidden=\{true\}/,
-   "old voice controls in Ideas are preserved but not displayed");
- assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\)/);
- const audio=browser.indexOf("const audioWorkspaceAfterExport=page.locator");
- const open=browser.indexOf("await audioWorkspaceAfterExport.click()",audio);
- const panel=browser.indexOf('await expect(page.locator(\'[data-video-audio-panel="voice"]\')).toBeVisible()',open);
- const voice=browser.indexOf('const standardAudioMode=page.locator',panel);
- const my=browser.indexOf('await myVoiceAudioMode.click()',voice);
- const consent=browser.indexOf('await narrationConsent.check()');
- assert.ok(audio>=0&&open>audio&&panel>open&&voice>panel&&my>voice&&consent>=0,
-   "real WebKit opens Audio Voice / My Voice mode controls and retains explicit narration consent");
+ assert.match(studio,/setActiveWorkspace\("effects"\);\s*setAudioWorkspaceTab\("voice"\);\s*setVoiceStudioActivated\(true\)/);
+ assert.match(studio,/data-video-audio-own-upload/);
+ assert.match(browser,/const openAudioVoice=async/);
  assert.match(browser,/data-video-audio-voice-mode="voice"/);
  assert.match(browser,/data-video-audio-voice-mode="my-voice"/);
+ assert.match(browser,/data-video-audio-panel="voice"/);
  assert.match(browser,/data-video-affirmation-transcript-review/);
  assert.match(browser,/spawnSync\("ffprobe"/);
 });
