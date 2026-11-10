@@ -162,7 +162,7 @@ test('strict one-line TS2304 may restore only the exact protected source line',(
   {diagnostics:diagnostic+'\n'+diagnostic},
   {diagnostics:diagnostic.replace('TS2304','TS2322')},
   {diagnostics:diagnostic.replace('(2,','(1,')},
-  {diagnostics:diagnostic.replace('('+col+',','(1,')},
+  {diagnostics:diagnostic.replace(','+col+')',',1)')},
   {source:source.replace('before','other')},
   {source:source.replace('after','other')},
   {source:source+source},
