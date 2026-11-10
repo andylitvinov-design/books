@@ -381,3 +381,15 @@ test('task outcome receipts preserve non-fixed next actions without implying sou
  assert.equal(rows[0].source_published,false);
  assert.equal(rows[0].new_sha,null);
 });
+
+
+test('existing mobile PR monitor renders signed repair task outcomes and next actions',()=>{
+ const fs=require('node:fs');
+ const src=fs.readFileSync('ops/pr-monitor/pr-attribution-ui.js','utf8');
+ assert.match(src,/renderTaskOutcomes/);
+ assert.match(src,/data\.task_outcomes/);
+ assert.match(src,/Следующее действие/);
+ assert.match(src,/Следующая проверка/);
+ assert.match(src,/status==='FIXED'/);
+ assert.match(src,/не статус VERIFIED/);
+});
