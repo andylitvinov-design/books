@@ -226,7 +226,7 @@ test('long Maya readers wait for rendered content instead of global network idle
 test('release browser audit preserves separate free-topic and paid-service safety contracts', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
   assert.match(verifier, /check\('consultation-safe-handoff'/);
-  assert.match(verifier, /check\('paid-imagery-consultation-safe-handoff'/);
+  assert.match(verifier, /check\('paid-imagery-consultation-messenger-only-handoff'/);
   assert.match(verifier, /data-consultation-action/);
   assert.match(verifier, /searchParams\.get\('topic'\)/);
   assert.match(verifier, /option\[value="30-min"\].*€50/);
@@ -244,23 +244,24 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /check\('api-video-csp-restrictive'/);
 });
 
-test('release audit verifies current compact paid capture and safe synthetic handoff', () => {
+test('release audit verifies messenger-only paid service capture without collecting typed personal data', () => {
   const verifier = read('scripts/verify-release-reaudit.mjs');
-  const paid = verifier.slice(verifier.indexOf("check('paid-imagery-consultation-safe-handoff'"), verifier.indexOf('if (width === 390)'));
+  const paid = verifier.slice(verifier.indexOf("check('paid-imagery-consultation-messenger-only-handoff'"), verifier.indexOf('if (width === 390)'));
   assert.match(paid, /data-service-visual-screen="final-capture"/);
-  assert.match(paid, /data-compact-hydrated/);
+  assert.match(paid, /data-messenger-only-intake/);
+  assert.match(paid, /form, input, textarea/);
+  assert.match(paid, /data-messenger-offer-format/);
   assert.match(paid, /option\[value="30-min"\].*€50/);
   assert.match(paid, /option\[value="60-min"\].*€100/);
+  assert.match(paid, /data-messenger-only-channel/);
+  assert.match(paid, /noopener/);
+  assert.match(paid, /noreferrer/);
+  assert.match(paid, /referrerpolicy/);
+  assert.match(paid, /Only approved WhatsApp or Telegram destinations/);
   assert.match(paid, /services\/free-situation-review/);
-  assert.match(paid, /replyConsent\)\.not\.toBeChecked/);
-  assert.match(paid, /attribution\)\.not\.toBeChecked/);
-  assert.match(paid, /assertSyntheticLoopback\(paidPage\.url\(\)\)/);
-  assert.match(paid, /assert\.equal\(submissions, 0/);
-  assert.match(paid, /assert\.equal\(submissions, 1/);
-  assert.match(paid, /submitted\.contactConsent, true/);
-  assert.match(paid, /data-lead-saved/);
-  assert.match(paid, /enquiry-qa%40example\.test/);
-  assert.match(paid, /liveConsentSubmitted:false/);
+  assert.match(paid, /messageSent: false/);
+  assert.match(paid, /contactFieldsAbsent: true/);
+  assert.doesNotMatch(paid, /data-compact-hydrated|contactConsent|enquiry-qa@/);
 });
 
 test('initial navigation effect and identical replay preserve preopened native menus', () => {
