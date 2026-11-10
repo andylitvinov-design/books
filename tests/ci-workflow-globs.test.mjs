@@ -524,3 +524,14 @@ test('Core Mandala fast contracts run only as fallback when the BASE/HEAD Specia
     assert.ok(mandala.includes(name),'Specialist focused unit coverage must retain '+name);
   }
 });
+
+test('Stories Studio PR must execute real WebKit and four-format acceptance, never silently skip media gates', () => {
+  const s=workflow('holistic-support-mandala.yml');
+  assert.match(s, /'lib\/mandala\/stories-studio\.\*'/);
+  assert.match(s, /'tests\/stories-studio-\*\.test\.mjs'/);
+  assert.match(s, /node --test tests\/stories-studio-contract\.test\.mjs tests\/stories-studio-ui\.test\.mjs/);
+  const webkit=s.slice(s.indexOf('  voice-webkit-macos:'),s.indexOf('    needs: [webkit_preflight]',s.indexOf('  voice-webkit-macos:')));
+  assert.match(webkit, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
+  const linux=s.slice(s.indexOf('      - name: Build\n'),s.indexOf('  webkit_preflight:'));
+  assert.match(linux, /startsWith\(github\.head_ref, 'codex\/stories-'\)/);
+});
