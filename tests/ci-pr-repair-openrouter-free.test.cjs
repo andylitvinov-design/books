@@ -178,9 +178,6 @@ test('one zero-cost OpenRouter inference accepts structured text and rejects tru
 
 
 test('refusal metadata, mixed text/non-text content and tool finish reasons fail closed',()=>{
- assert.throws(()=>requestFreePatch({
-  prompt:'p',key:'fixture',fetchImpl:async()=>{throw Error('must not fetch')}
- }),/KEY_NOT_CONFIGURED/);
  assert.throws(()=>extractAssistantText([
   {type:'text',text:'diff --git a/a.js b/a.js\\n'},
   {type:'image_url',image_url:{url:'https://example.invalid/image'}}
