@@ -589,7 +589,7 @@ async function exercise(engine, browserType, width) {
           // The unified Profile dock now opens the PRIVATE Cabinet first.
           // Verify the hard CSP boundary, guest isolation and the public
           // actual six-tab My Space and separate public profile builder.
-          await cspPage.locator('.mobile-bottom-navigation [data-nav-item="profile"]').click();
+          await cspPage.locator('[data-hh-unified-dock] [data-unified-dock-item="profile"]').click();
           await expect(cspPage).toHaveURL(origin + '/en/app/portrait');
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
