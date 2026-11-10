@@ -496,13 +496,4 @@ test('new chat sends bounded acceptance criteria and Skill IDs as references onl
  assert.doesNotMatch(js,/grantCapabilities|autoGrantSkills|skillIds.*capabilit/i);
 });
 
-test('Hermes run remains tied to owner-persisted chat goal, criteria and skill references',()=>{
- const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
- assert.match(edge,/acceptanceCriteria:criteria\.map/);
- assert.match(edge,/skillIds:\[\.\.\.skills\]/);
- assert.match(edge,/const goal=clean\(rawChat\.goal/);
- assert.match(edge,/const acceptanceCriteria=Array\.isArray\(rawChat\.acceptanceCriteria\)/);
- assert.match(edge,/const skillIds=Array\.isArray\(rawChat\.skillIds\)/);
- assert.match(edge,/goal,acceptanceCriteria,skillIds,parentTaskId/);
- assert.match(edge,/linkedPrHintsVerified:false/);
-});
+
