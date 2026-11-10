@@ -99,6 +99,25 @@ function findFailureTarget(testFile,source,output,allowed){
  }
  return null;
 }
+// The real Core may fail the Next.js TypeScript gate while all direct unit
+// tests pass. Only an independently reproduced diagnostic on one EXACT
+// allowlisted changed source may select the free-model target.
+function findTypeScriptFailureTarget(output,allowed){
+ if(typeof output!=='string'||output.length>300000||
+   !Array.isArray(allowed)||!allowed.length)return null;
+ const targets=[];
+ const pattern=/(?:^|\n)(?:\.\/)?([^\r\n]+?\.(?:ts|tsx|jsx))\((\d+),(\d+)\):\s*error TS(\d{4,5}):/g;
+ for(const match of output.matchAll(pattern)){
+   const file=match[1].trim(),line=Number(match[2]),column=Number(match[3]);
+   if(!allowed.includes(file)||!safeSourcePath(file)||
+     !Number.isSafeInteger(line)||line<1||line>50000||
+     !Number.isSafeInteger(column)||column<1||column>5000)continue;
+   targets.push({file,line,column,code:'TS'+match[4],source:'typescript_compiler'});
+   if(targets.length>80)return null;
+ }
+ if(!targets.length||new Set(targets.map(t=>t.file)).size!==1)return null;
+ return targets.sort((a,b)=>a.line-b.line||a.column-b.column)[0];
+}
 function narrowFailedSourceScope(root,scope){
  const listing=run('git',['ls-files','-z','--','tests'],{cwd:root,timeout:10000});
  if(!listing.ok)throw Error('FREE_AI_TEST_INDEX_UNAVAILABLE');
@@ -129,16 +148,55 @@ function narrowFailedSourceScope(root,scope){
      evidence.set(exact.file,exact);
    }
  }
+ // Reproduce the same TS gate without npm lifecycle scripts, network or
+ // credentials. A failed compiler in an unrelated file NEVER authorizes
+ // patching one of the PR's other changed files.
+ if(!ranked.size&&scope.files.some(file=>/\.(?:ts|tsx|jsx)$/.test(file))){
+   const types=run(path.join(root,'node_modules/.bin/tsc'),
+     ['--noEmit','--incremental','false','--pretty','false'],
+     {cwd:root,env:noSecretEnv(),timeout:95000});
+   if(!types.ok&&!types.error){
+     const target=findTypeScriptFailureTarget(types.output,scope.files);
+     if(!target)throw Error('FREE_AI_TYPECHECK_FAILURE_OUTSIDE_REPAIR_SCOPE');
+     const lines=fs.readFileSync(path.resolve(root,target.file),'utf8').split(/\r?\n/);
+     if(target.line>lines.length)throw Error('FREE_AI_TYPECHECK_LINE_NOT_IN_SOURCE');
+     target.assertion=String(lines[target.line-1]||'').trim().slice(0,240);
+     ranked.set(target.file,100);
+     evidence.set(target.file,target);
+     console.log('HH_FREE_AI_TYPESCRIPT_REPRODUCED '+JSON.stringify({
+       file:target.file,line:target.line,code:target.code,
+       evidence:'CURRENT_HEAD_COMPILER_DIAGNOSTIC'}));
+   }
+ }
  if(!ranked.size)throw Error('FREE_AI_NO_REPRODUCED_BOUNDED_FAILURE');
  const selected=[...ranked].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0][0];
  const focused={sha:scope.sha,files:[selected],evidence:evidence.get(selected)||null};
  console.log('HH_FREE_AI_NARROW_SCOPE '+JSON.stringify({
    file:selected,source_candidates:scope.files.length,test_probes:probes,
-   evidence:focused.evidence?{test:focused.evidence.test,line:focused.evidence.line}:null}));
+   evidence:focused.evidence?{source:focused.evidence.source||'focused_test',
+     test:focused.evidence.test||null,line:focused.evidence.line,
+     code:focused.evidence.code||null}:null}));
  return focused;
 }
 function boundedSource(content,evidence=null){
  if(Buffer.byteLength(content,'utf8')<=MAX_SOURCE)return {content,bounded:false};
+ // The compiler points to a precise safe file/line. Include the surrounding
+ // source (not arbitrary unrelated body) when the complete file is oversized.
+ if(evidence?.source==='typescript_compiler'&&
+    Number.isSafeInteger(evidence.line)&&evidence.line>0){
+   const lines=content.split(/\r?\n/),center=evidence.line-1;
+   if(center<lines.length){
+     const start=Math.max(0,center-30),end=Math.min(lines.length,center+31);
+     const excerpt=content.slice(0,2000)+
+       '\n/* [SOURCE MIDDLE OMITTED] */\n'+
+       '/* [VERIFIED TYPESCRIPT LINE '+evidence.line+
+       '; SOURCE LINES '+(start+1)+'-'+end+'] */\n'+
+       lines.slice(start,end).join('\n')+
+       '\n/* [SOURCE MIDDLE OMITTED] */\n'+content.slice(-3600);
+     if(Buffer.byteLength(excerpt,'utf8')<=MAX_SOURCE)
+       return {content:excerpt,bounded:true};
+   }
+ }
  // The old head/tail-only excerpt silently omitted real failures in the
  // middle of 30-150 KB UI files. Focus *only* on lexical hints from the
  // independently reproduced, literal-source assertion; never trust model
@@ -597,6 +655,6 @@ async function main(){
  }
 }
 if(require.main===module)main();
-module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,validateAgentAcl,extractTextEvents,
+module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,findTypeScriptFailureTarget,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
  noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,exactSingleLineReplacementPatch};
