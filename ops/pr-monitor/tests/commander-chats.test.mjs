@@ -565,3 +565,16 @@ test('terminal BLOCKED run reloads its persisted private chat event just like CO
  // A terminal blocker is never portrayed as an executing model; polling ends.
  assert.match(js,/!\['QUEUED','STARTING','RUNNING'\]\.includes\(run\.status\)/);
 });
+
+
+test('first question defaults to the authenticated cloud Director and its real final answer is verifiable after reload',()=>{
+ const html=src('chats.html'),css=src('commander-chats.css'),js=src('commander-chats.js');
+ assert.match(js,/el\('new-mode'\)\.value=ownedDirectorAvailable\?'director':\(aiReady\?'openrouter':'local'\)/);
+ assert.equal(js.split("el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local')").length-1,2);
+ assert.match(js,/const lastAnswer=\[\.\.\.messages\]\.reverse\(\)\.find\(m=>\['assistant_unverified','agent_final','ai'\]\.includes\(m\.kind\)\)/);
+ assert.match(js,/\['assistant_unverified','agent_final','ai'\]\.includes\(m\.kind\)\)\:-1/);
+ assert.match(js,/MODE[Ll]_RESPONSE_ZERO_COST_VERIFIED_READ_ONLY|OPENROUTER_RESPONSE_VERIFIED|const labels=\{QUEUED:/);
+ assert.match(js,/startExecutionPolling\(\)/);
+ assert.match(html,/id="cc-run-status"/);
+ assert.match(css,/\.cc-run-status/);
+});

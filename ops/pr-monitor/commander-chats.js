@@ -434,9 +434,9 @@ function renderThread(){
    if(!lastOwner){status.textContent='Чтение чата работает. Отправьте вопрос для проверки записи.';return}
    const ownerIndex=read.messages.findIndex(m=>m.id===lastOwner.id&&m.kind==='owner');
    if(ownerIndex<0){status.textContent='Последний вопрос не найден в серверной истории.';return}
-   const lastAnswer=[...messages].reverse().find(m=>['assistant_unverified','ai'].includes(m.kind));
+   const lastAnswer=[...messages].reverse().find(m=>['assistant_unverified','agent_final','ai'].includes(m.kind));
    const answerIndex=lastAnswer?read.messages.findIndex(m=>m.id===lastAnswer.id&&
-    ['assistant_unverified','ai'].includes(m.kind)):-1;
+    ['assistant_unverified','agent_final','ai'].includes(m.kind)):-1;
    status.textContent=answerIndex>ownerIndex
     ?'Подтверждено: вопрос и ответ сохранены в Supabase.'
     :'Подтверждено: вопрос сохранён. Ответ на этот вопрос ещё не подтверждён.';
@@ -525,7 +525,7 @@ function renderThread(){
    if(!c?.id)throw Error('Сервер не подтвердил создание чата.');
    if(remote){chats=[c,...chats.filter(x=>x.id!==c.id)];messages=[];}else messages=c.messages;
    thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});
-   el('create-form').reset();el('new-mode').value=aiReady?'openrouter':'local';pendingCreateId=null;
+   el('create-form').reset();el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local');pendingCreateId=null;
    if(el('new-context').open)el('new-context').close();
    el('mode').value=mode;configureModels('thread');
    if(mode==='hermes'){el('model').value=selectedModel;el('github-write').checked=selectedWrite;}
@@ -921,7 +921,7 @@ async function update(e){
   for(const m of models){const o=make('option',null,m.name+' · '+m.id);o.value=m.id;el('model').append(o)}
   for(const select of [el('mode'),el('new-mode')])
    select.querySelector('option[value=openrouter]').disabled=!aiReady;
-  el('new-mode').value=aiReady?'openrouter':'local';
+  el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local');
   show('free-model-status',!aiReady);
   if(remote){
    await loadExecutorModels();
