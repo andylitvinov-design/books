@@ -317,3 +317,65 @@ test('complete free source scope checks all changed paths, not a sliced eight-fi
    Array.from({length:100},(_,i)=>({filename:'lib/repair-'+i+'.js',status:'modified'}))
  ).allowed,false,'incomplete paginated inventory fails closed');
 });
+
+
+test('TS2304 source-line reconstruction uses exact compiler line, unique deleted source, and strict Git apply',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const cp=require('node:child_process');
+ const {rebuildExactTs2304LinePatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const file='components/public-card.tsx';
+ const oldLine='  const active = hhRepairCanaryMissingV3;';
+ const replacement='  const active = "ready";';
+ const source=['alpha',oldLine,'omega',''].join('\n');
+ const scope={files:[file],evidence:{file,test:'tests/public-card.test.mjs',line:3}};
+ const signals={types:{ok:false,detail:file+"(2,18): error TS2304: Cannot find name 'hhRepairCanaryMissingV3'."}};
+ const badModel=['diff --git a/'+file+' b/'+file,'--- a/'+file,'+++ b/'+file,
+   '@@ -99,3 +99,3 @@',' wrong-context','-'+oldLine,'+'+replacement,
+   ' omitted-context',''].join('\n');
+ const fixed=rebuildExactTs2304LinePatch(badModel,scope,signals,()=>source);
+ const expected=['diff --git a/'+file+' b/'+file,'--- a/'+file,'+++ b/'+file,
+   '@@ -1,3 +1,3 @@',' alpha','-'+oldLine,'+'+replacement,' omega',''].join('\n');
+ assert.equal(fixed,expected);
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'hh-ts2304-rebuild-'));
+ try{
+   fs.mkdirSync(path.join(root,'components'));
+   fs.writeFileSync(path.join(root,file),source);
+   const patchFile=path.join(root,'repaired.patch');
+   fs.writeFileSync(patchFile,fixed);
+   const git=(args)=>cp.spawnSync('git',args,{cwd:root,encoding:'utf8'});
+   assert.equal(git(['init','-q']).status,0);
+   assert.equal(git(['add',file]).status,0);
+   assert.equal(git(['apply','--check','--whitespace=error',patchFile]).status,0);
+   assert.equal(git(['apply','--whitespace=error',patchFile]).status,0);
+   assert.equal(fs.readFileSync(path.join(root,file),'utf8'),source.replace(oldLine,replacement));
+   assert.equal(git(['diff','--check']).status,0);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('TS2304 reconstruction fails closed on ambiguity, path drift and absent independent evidence',()=>{
+ const {rebuildExactTs2304LinePatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const file='components/public-card.tsx',oldLine='  const value = hhMissingSymbol;';
+ const source='alpha\n'+oldLine+'\nomega\n';
+ const patch=['diff --git a/'+file+' b/'+file,'--- a/'+file,'+++ b/'+file,
+   '@@ -300,1 +300,1 @@','-'+oldLine,'+  const value = 1;',''].join('\n');
+ const scope={files:[file],evidence:{file,test:'tests/a.test.mjs',line:11}};
+ const diag={types:{ok:false,detail:file+"(2,10): error TS2304: Cannot find name 'hhMissingSymbol'."}};
+ const fix=(p=patch,s=scope,d=diag,content=source)=>
+   rebuildExactTs2304LinePatch(p,s,d,()=>content);
+ assert.ok(fix(),'known one-line exact source match may be rebuilt');
+ assert.equal(fix(patch,{files:[file]},diag),null,'independent failing test is mandatory');
+ assert.equal(fix(patch,{...scope,evidence:{file:'components/other.tsx'}},diag),null);
+ assert.equal(fix(patch,{files:['lib/private/records.ts'],evidence:{file:'lib/private/records.ts'}},diag),null);
+ assert.equal(fix(patch,scope,{types:{ok:true,detail:diag.types.detail}}),null);
+ assert.equal(fix(patch,scope,{types:{ok:false,detail:''}}),null);
+ assert.equal(fix(patch,scope,{types:{ok:false,detail:diag.types.detail+'\n'+diag.types.detail}}),null);
+ assert.equal(fix(patch,scope,{types:{ok:false,detail:diag.types.detail.replace('(2,10)','(3,10)')}}),null);
+ assert.equal(fix(patch,scope,diag,source+oldLine+'\n'),null,'duplicate deleted source is ambiguous');
+ assert.equal(fix(patch.replace('-'+oldLine,'- const value = hhMissingSymbol;')),null);
+ assert.equal(fix(patch.replace('hhMissingSymbol','otherSymbol'),scope,diag),null);
+ assert.equal(fix(patch.replace('@@ -300,1 +300,1 @@','@@ garbage')),null);
+ assert.equal(fix(patch+'@@ -4 +4 @@\n-old\n+new\n'),null);
+ assert.equal(fix(patch.replace('+'+'  const value = 1;','+'+'  const value = 1;\n+  extra()')),null);
+ assert.equal(fix(patch.replace('+'+'  const value = 1;','+'+oldLine)),null);
+ assert.equal(fix(patch,scope,diag,source.slice(0,-1)),null);
+});

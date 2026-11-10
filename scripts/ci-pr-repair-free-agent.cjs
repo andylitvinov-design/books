@@ -387,6 +387,60 @@ function reanchorSingleHunkPatch(patch,scope,readSource){
  const proposal=corrected.join('\n')+'\n';
  return Buffer.byteLength(proposal,'utf8')<=MAX_PATCH&&proposal!==patch?proposal:null;
 }
+// Repair exactly the line pinpointed by a reproduced TS2304 diagnostic.
+// This is NOT fuzzy patching: the model's deleted line must be byte-exact,
+// unique in the current HEAD, at the precise compiler-reported line, and
+// associated with the independently failing literal source test. All proposed
+// output still goes through strict git apply --check and the external verifier.
+function rebuildExactTs2304LinePatch(patch,scope,signals,readSource){
+ if(typeof patch!=='string'||typeof readSource!=='function'||
+   !scope||!Array.isArray(scope.files)||scope.files.length!==1||
+   !scope.evidence||scope.evidence.file!==scope.files[0]||
+   Buffer.byteLength(patch,'utf8')>MAX_PATCH)return null;
+ const file=scope.files[0];
+ if(!safeSourcePath(file)||!signals?.types||signals.types.ok!==false||
+   typeof signals.types.detail!=='string')return null;
+ const errors=signals.types.detail.split(/\r?\n/).filter(line=>
+   line.startsWith(file+'(')&&line.includes(': error TS2304:'));
+ if(errors.length!==1)return null;
+ const diagnostic=/\((\d+),(\d+)\): error TS2304: Cannot find name '([^'\n]{2,120})'\./.exec(errors[0]);
+ if(!diagnostic||!Number.isSafeInteger(Number(diagnostic[1]))||
+   Number(diagnostic[1])<1)return null;
+ const matchingHeaders=[...patch.matchAll(/^diff --git a\/([^\n]+) b\/([^\n]+)$/gm)];
+ if(matchingHeaders.length!==1||matchingHeaders[0][1]!==file||
+   matchingHeaders[0][2]!==file)return null;
+ const lines=patch.split('\n');
+ if(lines.at(-1)==='')lines.pop();
+ const hunks=lines.map((s,i)=>/^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@/.test(s)?i:-1).filter(i=>i>=0);
+ if(hunks.length!==1)return null;
+ const body=lines.slice(hunks[0]+1);
+ if(!body.length||body.some(s=>!s||![' ','+','-'].includes(s[0])||
+   s.startsWith('+++')||s.startsWith('---')))return null;
+ const deleted=body.filter(s=>s[0]==='-');
+ const added=body.filter(s=>s[0]==='+');
+ if(deleted.length!==1||added.length!==1)return null;
+ const oldLine=deleted[0].slice(1),newLine=added[0].slice(1);
+ if(oldLine===newLine||oldLine.length>1600||newLine.length>1600||
+   !oldLine.includes(diagnostic[3]))return null;
+ const source=readSource(file);
+ if(typeof source!=='string'||!source.endsWith('\n')||source.includes('\0'))
+   return null;
+ const sourceLines=source.slice(0,-1).split('\n');
+ const at=Number(diagnostic[1])-1;
+ if(sourceLines[at]!==oldLine||sourceLines.indexOf(oldLine)!==at||
+   sourceLines.lastIndexOf(oldLine)!==at)return null;
+ const above=sourceLines.slice(Math.max(0,at-1),at);
+ const below=sourceLines.slice(at+1,at+2);
+ const length=above.length+1+below.length,first=at-above.length+1;
+ const repaired=[
+   'diff --git a/'+file+' b/'+file,
+   '--- a/'+file,'+++ b/'+file,
+   '@@ -'+first+','+length+' +'+first+','+length+' @@',
+   ...above.map(s=>' '+s),'-'+oldLine,'+'+newLine,
+   ...below.map(s=>' '+s)
+ ].join('\n')+'\n';
+ return Buffer.byteLength(repaired,'utf8')<=MAX_PATCH&&repaired!==patch?repaired:null;
+}
 function isolatedEnvironment(dir,freeApiKey=process.env.HH_OPENCODE_FREE_API_KEY||''){
  const config=path.join(dir,'config'),home=path.join(dir,'home');
  for(const p of [config,home,path.join(dir,'data'),path.join(dir,'cache'),
@@ -522,6 +576,17 @@ async function propose(){
     if(checked.ok)console.log('HH_FREE_AI_EXACT_SOURCE_ANCHOR_RECOUNT_VERIFIED');
    }
   }
+  if(!checked.ok){
+   // One compiler- and test-anchored, exact one-line diff reconstruction.
+   // No second model call, no partial/ambiguous source matches.
+   const rebuilt=rebuildExactTs2304LinePatch(patch,scope,signals,
+     file=>fs.readFileSync(path.resolve(root,file),'utf8'));
+   if(rebuilt){
+    fs.writeFileSync(patchPath,rebuilt,{mode:0o600});
+    checked=run('git',['apply','--check','--whitespace=error',patchPath],{cwd:root,timeout:10000});
+    if(checked.ok)console.log('HH_FREE_AI_EXACT_TS2304_LINE_VERIFIED');
+   }
+  }
   if(!checked.ok)throw Error('FREE_AI_PATCH_APPLY_CHECK_FAILED');
   const applied=run('git',['apply','--whitespace=error',patchPath],{cwd:root,timeout:10000});
   if(!applied.ok)throw Error('FREE_AI_PATCH_APPLY_FAILED');
@@ -551,4 +616,4 @@ async function main(){
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch};
+ noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,rebuildExactTs2304LinePatch};
