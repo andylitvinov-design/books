@@ -810,11 +810,13 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     created_at:new Date().toISOString(),fix_result:fixResult||'unknown',
     publish_result:publishResult||'unknown',publish_status:publishStatus||'unknown',
     owner_run_id:runId,run_url:'https://github.com/'+fullRepo+'/actions/runs/'+runId};
+  if(Number.isSafeInteger(context.runId)&&context.runId>0){
   result.outcome=buildTaskOutcome({task_key:taskKey,pr_number:number,
     head_sha:expectedSha,new_sha:newSha,state,reason_code:reason,
     source_published:sourcePublished,head_matches:state==='PUBLISHED'&&pr.head?.sha===newSha,
     claim_status:claimStatus,retry_after:retryAfter,owner_run_id:runId,
     now:result.created_at});
+  }
   // Learning is strictly advisory: only the already verified remote source
   // commit earns a case. The SAME existing finalizer comment carries it.
   // No additional GitHub write, provider call, CI run or source permission.
