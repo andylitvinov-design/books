@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {route,receiptProof}=require('../scripts/ci-pr-commander-strategy-router.cjs');
+const {coreErrorTaskId}=require('../scripts/ci-pr-error-task.cjs');
 const rules=require('../scripts/ci-pr-error-rules.v1.json');
 
 const REPO='andylitvinov-design/books', SHA='a'.repeat(40);
@@ -37,7 +38,8 @@ function receipt(category='TYPESCRIPT'){
 }
 const acceptedHandoff=()=>({dispatchAccepted:1,dispatchAcknowledged:true,
  prNumber:4024,headSha:SHA,executorId:'github-actions:hh-pr-repair-worker.yml',
- workerTaskKey:'b'.repeat(32),outcome:'DISPATCH_ACCEPTED'});
+ workerTaskKey:'b'.repeat(32),errorTaskId:coreErrorTaskId(4024,SHA,42831850720,1),
+ outcome:'DISPATCH_ACCEPTED'});
 test('automatically created Commander task and matched task both reach router',()=>{
  for(const association of ['MATCHED_CHAT_EVENT_RECORDED',
    'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED','AUTO_TASK_CREATED_NOT_DISPATCHED']){
@@ -54,6 +56,7 @@ test('source repair starts ONLY via existing guarded single-writer after unique 
  assert.equal(result.dispatchAcknowledged,true);
  assert.equal(result.executorId,'github-actions:hh-pr-repair-worker.yml');
  assert.equal(result.workerTaskKey,'b'.repeat(32));
+ assert.equal(result.errorTaskId,coreErrorTaskId(4024,SHA,42831850720,1));
  assert.equal(result.workerStarted,false);
  assert.equal(result.sourceWriteVerified,false);
  assert.equal(result.liveVerified,false);
@@ -65,6 +68,7 @@ test('aggregate dispatch and missing causal ACK cannot claim executor delivery',
   {...acceptedHandoff(),prNumber:4025},
   {...acceptedHandoff(),headSha:'b'.repeat(40)},
   {...acceptedHandoff(),dispatchAcknowledged:false},
+  {...acceptedHandoff(),errorTaskId:'d'.repeat(32)},
   {dispatchAccepted:1,outcome:'DISPATCH_ACCEPTANCE_UNVERIFIED'}
  ]){
   const r=await route({receipt:receipt(),context:context(),
