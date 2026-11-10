@@ -35,6 +35,8 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await page.locator('[data-video-studio-hydrated="true"]').waitFor({state:"attached",timeout:35000});
       const studio=page.locator("[data-mandala-free-video]");
       const course=page.locator("[data-video-guided-course]");
+      const audioPanel=page.locator("[data-video-audio-workspace]");
+      const voice=audioPanel.locator('[data-video-audio-panel="meditations"]');
       await course.waitFor({state:"visible",timeout:25000});
       // The six-tab Video Studio intentionally has no obsolete seventh
       // "practices" tab. The existing, public #guided-video-series deep link

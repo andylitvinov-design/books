@@ -294,13 +294,14 @@ test("all six workspaces use the same in-flow navigation and one real export",()
 });
 
 
-test("guided meditation opt-out is reconciled after React commit without losing explicit reopen",()=>{
-  assert.match(studio,/const \[courseMeditationOmitted,setCourseMeditationOmitted\]=useState\(false\)/);
-  assert.match(studio,/useLayoutEffect\(\(\)=>\{\s*if\(!courseMeditationOmitted\)return;/);
-  assert.match(studio,/if\(details instanceof HTMLDetailsElement\)details\.open=false/);
-  assert.match(studio,/\},\[courseMeditationOmitted,courseMeditationDraft\]\)/);
-  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationOmitted\(false\)/);
-  assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationOmitted\(true\)/);
+test("guided meditation Add opens the single Audio/Meditations composer and Skip revokes its seed",()=>{
+  assert.ok(studio.includes('const [courseMeditationDraft,setCourseMeditationDraft] = useState("");'));
+  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationDraft\(script\);[\s\S]*?setActiveWorkspace\("effects"\);[\s\S]*?setAudioWorkspaceTab\("meditations"\);/);
+  assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationDraft\(""\);[\s\S]*?setAttachedAudio\(current=>current\?\.kind==="file"&&current\.nonLoop\?null:current\)/);
+  assert.match(studio,/data-video-audio-panel="meditations"[\s\S]*?<MandalaPersonalMeditation[\s\S]*?seedScript=\{courseMeditationDraft\}/,
+    "the one canonical meditation composer is seeded only inside Audio / Meditations");
+  assert.doesNotMatch(studio,/courseMeditationOmitted|data-meditation-details/,
+    "the retired inline composer is not restored");
 });
 
 test("validated Messenger video handoff visibly opens the original Studio Director on compact Goals",()=>{
