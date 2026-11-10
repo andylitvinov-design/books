@@ -138,3 +138,35 @@ test('no inline-width CSP violations in the funnel and stages remain visible whe
  assert.equal(src.includes("el('progress','hh-error-progress')"),true);
  assert.equal(src.includes('renderSkeleton();'),true);
 });
+
+test('blocker counts preserve distinct PR/event identity and review vs code writer',()=>{
+ const unknown=event({pr_number:57,ci_event_id:'4d471ad5-40b3-4200-9d55-7c41f5db301a',
+   category:'UNKNOWN',route_receipt:null,classification:{
+     schema:'HH_CI_ERROR_CLASSIFICATION_V1',status:'DIAGNOSTIC_ONLY',
+     category:'UNKNOWN',reason_code:'UNCLASSIFIED_FAILURE',responsible_role:'ci-diagnostic-triage'}});
+ const review=event({pr_number:58,ci_event_id:'5d471ad5-40b3-4200-9d55-7c41f5db301a',
+   category:'BASE_OR_CI_ROUTING',route_receipt:{state:'TASK_ROUTED_TO_REVIEW',reason:'NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY'},
+   classification:{schema:'HH_CI_ERROR_CLASSIFICATION_V1',status:'DIAGNOSTIC_ONLY',
+     category:'BASE_OR_CI_ROUTING',reason_code:'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE',responsible_role:'ci-routing-owner'}});
+ const worker=m.taskEvidence(records({state:'MANUAL'}),event());
+ const summary=m.summarize([unknown,review,event()],
+   {[INBOX]:worker},1,NOW,true);
+ const pick=id=>summary.blockers.find(b=>b.key===id);
+ assert.equal(pick('unclassified').pr_count,1);
+ assert.equal(pick('unrouted').pr_count,1);
+ assert.equal(pick('needs_review').pr_count,1);
+ assert.equal(pick('worker_without_commit').pr_count,1);
+ assert.deepEqual(pick('unrouted').prs,[57]);
+ assert.equal(summary.counts.committed,0);
+});
+test('duplicate incidents on one PR retain event count but avoid double-counting bottleneck PR',()=>{
+ const one=event({pr_number:59,category:'UNKNOWN',route_receipt:null,
+   classification:{schema:'HH_CI_ERROR_CLASSIFICATION_V1',status:'DIAGNOSTIC_ONLY',
+   category:'UNKNOWN',reason_code:'UNCLASSIFIED_FAILURE',responsible_role:'ci-diagnostic-triage'}});
+ const two={...one,workflow_run_id:CORE+1};
+ const summary=m.summarize([one,two],{},1,NOW,true);
+ const unknown=summary.blockers.find(x=>x.key==='unclassified');
+ assert.equal(unknown.pr_count,1);
+ assert.equal(unknown.event_count,2);
+ assert.equal(summary.unique_prs,1);
+});
