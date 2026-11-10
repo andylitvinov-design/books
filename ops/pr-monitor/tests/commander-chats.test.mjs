@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-ai-council-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-execution-ledger-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -119,7 +119,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-ai-council-v1'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-execution-ledger-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -147,4 +147,23 @@ test('Director Council flow records only the explicit owner question before ifra
  assert.ok(!block.includes('history:context'));
  assert.ok(!block.includes('action=chat'));
  assert.ok(!block.includes('executor'));
+});
+
+
+test('execution API is owner-gated, idempotent and reports blocked instead of fake executor start',()=>{
+ const backend=src('api/commander-chats.js');
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ const ui=src('commander-chats.js');
+ assert.ok(backend.includes("name==='runs'"));
+ assert.ok(backend.includes("commander_list_execution_runs"));
+ assert.ok(backend.includes("name==='run'"));
+ assert.ok(backend.includes("commander_start_run"));
+ assert.ok(edge.includes("commander_execution_runs"));
+ assert.ok(edge.includes("on conflict(owner_id,chat_id,idempotency_key) do nothing"));
+ assert.ok(edge.includes("IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST"));
+ assert.ok(edge.includes("agentStarted:false"));
+ assert.ok(edge.includes("NOT_STARTED_NO_EXECUTION_RECEIPT"));
+ assert.ok(ui.includes("SERVER+'?action=run'"));
+ assert.ok(ui.includes("Запрос и попытка сохранены. Исполнитель НЕ запущен"));
+ assert.ok(ui.includes("Локальная копия не может запускать исполнителей"));
 });

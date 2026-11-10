@@ -14,6 +14,7 @@ module.exports=async function(req,res){
    else if(name==='list')action='commander_list_chats';
    else if(name==='read'){action='commander_read_chat';body.issueNumber=Number(url.searchParams.get('issue'))}
    else if(name==='proof'){action='commander_pr_proof';body.pr=Number(url.searchParams.get('pr'))}
+   else if(name==='runs'){action='commander_list_execution_runs';body.issueNumber=Number(url.searchParams.get('issue'))}
    else if(name==='ci_events'){
     action='commander_list_ci_events';
     const prValue=url.searchParams.get('pr'),limitValue=url.searchParams.get('limit');
@@ -29,11 +30,12 @@ module.exports=async function(req,res){
    else if(name==='update'){action='commander_update_chat';body={issueNumber:body.issueNumber,expectedRevision:body.expectedRevision,chat:body.chat}}
    else if(name==='event'){action='commander_append_event';body={issueNumber:body.issueNumber,eventId:body.eventId,kind:body.kind,text:body.text,model:body.model}}
    else if(name==='attach'){action='commander_attach_event';body={issueNumber:body.issueNumber,eventId:body.eventId,url:body.url}}
+   else if(name==='run'){action='commander_start_run';body={issueNumber:body.issueNumber,runId:body.runId,idempotencyKey:body.idempotencyKey,executor:body.executor,message:body.message}}
    else return sendJson(res,400,{error:'UNKNOWN_ACTION'});
   }
   const result=await callStore(req,action,body,{method:req.method});
   if(result.status===200&&action==='status')return sendJson(res,200,{schema:'HH_COMMANDER_THREAD_V1',
-   authenticated:true,privateStoreConfigured:true,storage:'SUPABASE_PRIVATE',executorDispatch:false,liveVerification:false,
+   authenticated:true,privateStoreConfigured:true,storage:'SUPABASE_PRIVATE',executorDispatch:result.data.executorDispatch===true,executionRunLedger:result.data.executionRunLedger===true,dispatchReason:result.data.dispatchReason||'NO_VERIFIED_EXECUTOR_RUNTIME',liveVerification:false,
    observedAt:result.data.checkedAt||new Date().toISOString()});
   return sendJson(res,result.status,result.data);
  }catch(error){return sendJson(res,error.status||503,{error:error.code||'PRIVATE_STORE_UNAVAILABLE'})}
