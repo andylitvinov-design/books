@@ -73,3 +73,15 @@ test('existing watchdog records a diagnostic only, without new dispatch or gate 
  assert.match(src,/ciErrorByCategory/);
  assert.match(src,/noteConfirmedBlocker/);
 });
+
+
+test('Watchdog contract path-filters, syntax-checks and executes this exact classifier suite',()=>{
+ const workflow=fs.readFileSync('.github/workflows/hh-pr-watchdog-contract-ci.yml','utf8');
+ assert.ok(workflow.includes("'tests/ci-pr-red-ci-classifier.test.cjs'"),
+  'classifier test file must trigger Watchdog contract');
+ assert.match(workflow,/node --check tests\/ci-pr-red-ci-classifier\.test\.cjs/);
+ const decision=workflow.slice(workflow.indexOf('Watchdog decision contracts'),
+  workflow.indexOf('Hermes CI event bridge and private inbox contracts'));
+ assert.ok(decision.includes('tests/ci-pr-red-ci-classifier.test.cjs'),
+  'classifier test file must actually execute in the decision suite');
+});
