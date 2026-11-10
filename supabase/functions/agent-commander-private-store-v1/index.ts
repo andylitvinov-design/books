@@ -338,7 +338,7 @@ async function receiveGitHubWorkflowRun(req, origin) {
 
     const matches = await q(db,
       `select task_id, owner_id from business_brain.commander_tasks
-       where project_key='holistic-house' and state not in ('completed','superseded')
+       where project_key='agent-commander' and state not in ('completed','superseded')
          and coalesce(payload->'relatedPr','[]'::jsonb) @> to_jsonb($1::int)
        order by updated_at desc limit 2`, [event.pr_number]);
     let association = "UNMATCHED";
@@ -373,7 +373,12 @@ async function receiveGitHubWorkflowRun(req, origin) {
         set associated_task_id=$1::uuid,associated_owner_id=$2::uuid,association_status=$3
         where ci_event_id=$4::uuid`,
         [matches[0].task_id,matches[0].owner_id,association,inserted[0].ci_event_id]);
-    } else if (matches.length > 1) association = "AMBIGUOUS_TASKS";
+    } else if (matches.length > 1) {
+      association = "AMBIGUOUS_TASKS";
+      await q(db, `update business_brain.commander_ci_event_inbox
+        set association_status=$1 where ci_event_id=$2::uuid`,
+        [association,inserted[0].ci_event_id]);
+    }
 
     return reply(202, { accepted: true, outcome: "RECORDED", inbox_id: inserted[0].ci_event_id,
       association, pr_number: event.pr_number, head_sha: event.head_sha }, origin);
