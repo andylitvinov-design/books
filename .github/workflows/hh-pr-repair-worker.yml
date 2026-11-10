@@ -674,6 +674,11 @@ jobs:
                 throw Error('Unsafe writer arguments');
               const base='/repos/'+owner+'/'+repo;
               const ref='/git/ref/heads/'+branch.split('/').map(encodeURIComponent).join('/');
+              // Verify the dedicated publisher credential can push to this repo.
+              const repository=await call('GET',base);
+              if(repository?.full_name!==owner+'/'+repo||repository.permissions?.push!==true)
+                throw Error('HH_AUTOMERGE_TOKEN_REPO_WRITE_PERMISSION_MISSING');
+              core.info('HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH');
               const current=await call('GET',base+ref);
               if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)
                 throw Error('Source branch moved before repair commit');
@@ -692,6 +697,10 @@ jobs:
               if(still.object?.sha!==expectedSha)throw Error('PR branch changed during repair');
               await call('PATCH',base+'/git/refs/heads/'+branch.split('/').map(encodeURIComponent).join('/'),
                 {sha:commit.sha,force:false});
+              const published=await call('GET',base+ref);
+              if(published.ref!=='refs/heads/'+branch||published.object?.sha!==commit.sha)
+                throw Error('HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED');
+              core.info('HH_REPAIR_REMOTE_REF VERIFIED '+JSON.stringify({sha:commit.sha,branch}));
               return {sha:commit.sha};
             }};
             const candidate=JSON.parse(fs.readFileSync('hh-candidate/candidate.json','utf8'));
