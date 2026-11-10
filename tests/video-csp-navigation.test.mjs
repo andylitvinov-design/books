@@ -31,7 +31,8 @@ test("CSP class boundary reloads only cross-policy client navigation", async () 
     source("middleware.ts"), source("app/layout.tsx"), source("components/csp-navigation-boundary.tsx"),
   ]);
   assert.match(middleware, /requestHeaders\.set\('x-csp-class', cspClass\)/);
-  assert.match(layout, /className=\{standaloneCommander \? "" : "font-sans"\}/);
+  assert.match(layout, /<body className="font-sans" data-csp-class=\{cspClass\}>/);
+  assert.match(layout, /standaloneCommander \? children :/);
   assert.match(layout, /data-csp-class=\{cspClass\}/);
   assert.match(layout, /standaloneCommander \? children/);
   assert.match(layout, /<CspNavigationBoundary \/>/);
