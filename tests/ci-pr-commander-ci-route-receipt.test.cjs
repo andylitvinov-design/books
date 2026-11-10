@@ -94,3 +94,31 @@ test('existing Commander private store validates and persists immutable route re
  a.ok(from>0&&delivery>from);
  a.match(workflow,/HH_COMMANDER_CI_ROUTE_RECEIPT/);
 });
+
+
+test('route receipt accepts each authenticated task association state',()=>{
+ for(const association of ['MATCHED_CHAT_EVENT_RECORDED',
+  'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED','AUTO_TASK_CREATED_NOT_DISPATCHED']){
+  const v=normalizedPayload(result(),{...receipt(),association});
+  a.equal(v.inboxId,INBOX);
+  a.equal(v.workerStarted,false);
+ }
+ for(const association of ['UNMATCHED','AMBIGUOUS_TASKS','MATCHED_TASK_NO_CHAT']){
+  a.throws(()=>normalizedPayload(result(),{...receipt(),association}));
+ }
+});
+test('Commander fallback constructs one deterministic private task and chat per exact source SHA',()=>{
+ const code=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
+ const start=code.indexOf('async function ensureCiIncidentTask(');
+ const end=code.indexOf('async function receiveGitHubWorkflowRun(');
+ a.ok(start>0&&end>start);
+ const helper=code.slice(start,end);
+ a.match(helper,/stableScopeId\(ownerId,scope\)/);
+ a.match(helper,/on conflict\(task_id\) do nothing/);
+ a.match(helper,/CI_TASK_IDENTITY_UNVERIFIED/);
+ a.match(helper,/CI_TASK_CHAT_UNVERIFIED/);
+ a.match(helper,/CLASSIFIED_NOT_DISPATCHED/);
+ a.match(helper,/AWAITING_EXECUTOR_NOT_DISPATCHED/);
+ a.match(code,/ensureCiIncidentTask\(db,inboxOwnerId,event\)/);
+ a.match(code,/AUTO_TASK_CREATED_NOT_DISPATCHED/);
+});
