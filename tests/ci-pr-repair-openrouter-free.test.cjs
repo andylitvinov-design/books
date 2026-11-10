@@ -175,3 +175,41 @@ test('one zero-cost OpenRouter inference accepts structured text and rejects tru
   assert.equal(calls,2,'never retries a refused or unsupported completion');
  }
 });
+
+
+test('refusal metadata, mixed text/non-text content and tool finish reasons fail closed',()=>{
+ assert.throws(()=>requestFreePatch({
+  prompt:'p',key:'fixture',fetchImpl:async()=>{throw Error('must not fetch')}
+ }),/KEY_NOT_CONFIGURED/);
+ assert.throws(()=>extractAssistantText([
+  {type:'text',text:'diff --git a/a.js b/a.js\\n'},
+  {type:'image_url',image_url:{url:'https://example.invalid/image'}}
+ ]),/PATCH_RESPONSE_INVALID/);
+});
+
+test('provider error envelopes are classified before missing model or billing metadata',async()=>{
+ let count=0;
+ const fetchImpl=async()=>++count===1
+  ? response({data:[entry()]})
+  : response({error:{message:'provider unavailable'}});
+ await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',fetchImpl}),
+  /FREE_AI_OPENROUTER_PROVIDER_ERROR/);
+ assert.equal(count,2,'exactly one inference attempt, no paid or alternate-model retry');
+});
+
+test('completion refusal and tool-routing finish reasons are never treated as text patches',async()=>{
+ const catalog=response({data:[entry()]});
+ for(const choice of [
+  {finish_reason:'stop',message:{role:'assistant',refusal:'cannot comply',content:'NO_SAFE_PATCH'}},
+  {finish_reason:'tool_calls',message:{role:'assistant',content:'diff --git a/a.js b/a.js'}},
+  {finish_reason:'function_call',message:{role:'assistant',content:'diff --git a/a.js b/a.js'}}
+ ]){
+  let calls=0;
+  const fetchImpl=async()=>++calls===1?catalog:response({
+   model:DEFAULT_MODEL,usage:{cost:0},choices:[choice]
+  });
+  await assert.rejects(requestFreePatch({prompt:'p',key:'fixture',fetchImpl}),
+   /MODEL_REFUSED|TOOL_CALL_NOT_ALLOWED/);
+  assert.equal(calls,2,'no retry after an unsupported completion');
+ }
+});
