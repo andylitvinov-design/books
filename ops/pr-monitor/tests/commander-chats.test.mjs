@@ -98,3 +98,37 @@ test('monitor-side owner token handoff is bounded, retryable and removes bearer 
  assert.match(auth,/if\(response\.status===401\|\|response\.status===403\)sessionToken=''/);
  assert.match(auth,/HttpOnly|api\/commander-session/);
 });
+
+
+test('AI Council Free is embedded in a persistent Director chat with strict cross-origin validation and explicit consent',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css'),csp=src('vercel.json');
+ assert.match(html,/option value="council-free"/);
+ assert.match(html,/id="cc-council-frame"/);
+ assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
+ assert.match(html,/sandbox="allow-scripts allow-forms allow-same-origin/);
+ assert.match(html,/commander-chats\\.js\\?v=20261110-ai-council-v1/);
+ assert.match(js,/COUNCIL_ORIGIN='https:\\/\\/ai-council-free-super10\\.vercel\\.app'/);
+ assert.match(js,/event\\.origin!==COUNCIL_ORIGIN\\|\\|event\\.source!==el\\('council-frame'\\)\\.contentWindow/);
+ assert.match(js,/HH_AI_COUNCIL_SET_PROMPT_V1/);
+ assert.match(js,/HH_AI_COUNCIL_RESULT_V1/);
+ assert.match(js,/data\\.report\\.length>18000/);
+ assert.match(js,/HH_AI_COUNCIL_SAVE_ACK_V1/);
+ assert.match(js,/HH_AI_COUNCIL_SAVE_FAILED_V1/);
+ assert.match(js,/eventId:eventIdOverride\\|\\|id\\(\\)/);
+ assert.match(js,/councilChunkEventId\\(data\\.requestId,index\\)/);
+ assert.match(js,/AI Council Free · часть/);
+ assert.match(js,/mode!=='council-free'&&!thread\\.executors\\.includes\\(mode\\)/);
+ assert.match(css,/cc-council-panel/);
+ assert.match(css,/min-height:600px/);
+ assert.match(csp,/frame-src[^;]*ai-council-free-super10\\.vercel\\.app/);
+ assert.match(html,/API-ключ/);
+});
+test('Director Council flow records only the explicit owner question before iframe handoff',()=>{
+ const js=src('commander-chats.js');
+ const start=js.indexOf("if(mode==='council-free'){");
+ const end=js.indexOf("const context=messages.slice",start);
+ const block=js.slice(start,end);
+ assert.match(block,/await append\\(c,'owner',text,''\\)/);
+ assert.match(block,/councilPending=\\{requestId:id\\(\\),prompt:text,chat:c,sent:false\\}/);
+ assert.doesNotMatch(block,/tasks:c\\.tasks|history:context|action=chat|executor/);
+});
