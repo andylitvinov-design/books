@@ -182,21 +182,27 @@
   });
  }
  function renderList(){
-  el('count').textContent=chats.length;el('active-count').textContent=chats.filter(c=>['assigned','working','review'].includes(c.status)).length;
-  el('blocked-count').textContent=chats.filter(c=>c.status==='blocked').length;el('list-meta').textContent=chats.length+' всего';
-  const q=el('search').value.toLowerCase(),status=el('filter').value,box=el('chat-list');box.replaceChildren();
+  el('count').textContent=chats.length;
+  el('active-count').textContent=chats.filter(c=>['assigned','working','review'].includes(c.status)).length;
+  el('blocked-count').textContent=chats.filter(c=>c.status==='blocked').length;
+  el('list-meta').textContent=chats.length+' всего';
+  const q=el('search').value.trim().toLowerCase(),status=el('filter').value,box=el('chat-list');
+  doc.querySelectorAll('[data-cc-status]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ccStatus===status)));
+  box.replaceChildren();
   let count=0;
   for(const c of chats.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))){
-   if(status!=='all'&&c.status!==status)continue;
+   if(status==='working'? !['assigned','working','review'].includes(c.status) : status!=='all'&&c.status!==status)continue;
    const value=[c.title,c.description,c.project,...(c.tasks||[]),...(c.prs||[])].join(' ').toLowerCase();
-   if(q&&!value.includes(q))continue;count++;
+   if(q&&!value.includes(q))continue;
+   count++;
    const b=make('button','cc-chat-card');b.type='button';b.setAttribute('aria-current',String(thread?.id===c.id));
-   b.append(make('strong',null,c.title),make('span','cc-state',STATES[c.status]||'Статус неизвестен'),
-    make('span',null,(c.executors||[]).map(x=>EXEC[x]||x).join(' · ')),
-    make('span',null,(c.prs?.length?'PR #'+c.prs.join(', #')+' · ':'')+(c.tasks?.length||0)+' задач · '+time(c.updatedAt)));
+   const title=make('strong',null,c.title||'Рабочий чат');
+   const state=make('span','cc-state',STATES[c.status]||'Без статуса');state.dataset.state=c.status||'planned';
+   const summary=[c.project==='commander'?'Agent Commander':c.project||'',...(c.prs?.length?['PR #'+c.prs.join(', #')]:[])].filter(Boolean).join(' · ');
+   b.append(title,state,make('span','cc-chat-meta',summary||time(c.updatedAt)));
    b.addEventListener('click',()=>openChat(c));box.append(b);
   }
-  if(!count)box.append(make('p','cc-empty',chats.length?'Нет совпадений по фильтру.':'Чатов нет. Создайте первый.'));
+  if(!count)box.append(make('p','cc-empty',chats.length?'Нет чатов с такими фильтрами.':'Чатов пока нет. Нажмите «Новый чат» и напишите вопрос.'));
  }
  function renderMessages(){
   const box=el('messages');box.replaceChildren();
@@ -217,7 +223,7 @@
   for(const field of ['title','project','description','status'])el(field).value=thread[field]||'';
   el('tasks').value=(thread.tasks||[]).join(', ');el('prs').value=(thread.prs||[]).join(', ');
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
-  el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('thread',true);
+  el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('thread',true);el('board').dataset.view='thread';
   renderMessages();renderList();
  }
  function startReportPolling(){
@@ -243,7 +249,14 @@
  }
  async function create(e){
   e.preventDefault();if(busy)return;busy=true;
+  let created=false;
   try{
+   const question=el('new-prompt').value.trim();
+   if(question.length<2||question.length>1200)throw Error('Напишите вопрос длиной 2–1200 символов.');
+   if(!el('new-title').value.trim()){
+    const title=question.split('\n')[0].trim().slice(0,110);
+    el('new-title').value=title.length>=4?title:'Вопрос: '+question.slice(0,95);
+   }
    const data={...formValues('new-'),id:id()};let c;
    if(remote){
     const v=await request(SERVER+'?action=create','POST',{chat:data});
@@ -256,10 +269,19 @@
     chats.unshift(c);await persist();
    }
    if(remote){chats.unshift(c);messages=[];}else messages=c.messages;
-   thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});show('create',false);el('create-form').reset();
-   info('Чат создан. Назначение исполнителей не запускает работу.');
+   thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});
+   closeCreate();el('create-form').reset();
+   el('mode').value=data.executors[0];
+   el('mode').dispatchEvent(new Event('change'));
+   el('message').value=question;
+   info('Чат создан. Отправляю вопрос выбранному исполнителю…');
+   created=true;
   }catch(err){info('Чат не создан: '+String(err.message||err))}
   finally{busy=false}
+  if(created){
+   await send({preventDefault(){}});
+   el('thread').scrollIntoView({block:'start',behavior:'smooth'});
+  }
  }
  async function update(e){
   e.preventDefault();if(!thread||busy)return;busy=true;
@@ -624,13 +646,24 @@
    show('vault',false);show('board',true);renderList();info('Чаты открыты. Повторный пароль больше не требуется.')}
   catch(err){info('Хранилище не открыто: '+String(err.message||err))}
  });
- el('new-toggle').addEventListener('click',()=>show('create',el('create').hidden));
+ function closeCreate(){show('create',false);show('create-backdrop',false);}
+ function openCreate(){
+  show('create',true);show('create-backdrop',true);
+  win.setTimeout(()=>el('new-prompt').focus(),0);
+ }
+ el('new-toggle').addEventListener('click',()=>el('create').hidden?openCreate():closeCreate());
+ el('create-close').addEventListener('click',closeCreate);
+ el('create-backdrop').addEventListener('click',closeCreate);
+ doc.addEventListener('keydown',e=>{if(e.key==='Escape'&&!el('create').hidden)closeCreate();});
+ doc.querySelectorAll('[data-cc-status]').forEach(b=>b.addEventListener('click',()=>{
+  el('filter').value=b.dataset.ccStatus;renderList();
+ }));
  el('create-form').addEventListener('submit',create);el('metadata-form').addEventListener('submit',update);
  el('chat-form').addEventListener('submit',send);el('note').addEventListener('click',addNote);
  el('check-prs').addEventListener('click',checkPRs);el('load-reports').addEventListener('click',reportList);
  el('handoff').addEventListener('click',handoff);
  el('search').addEventListener('input',renderList);el('filter').addEventListener('change',renderList);
- el('close-thread').addEventListener('click',()=>{if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);reportRefreshTimer=null;thread=null;messages=[];show('thread',false);renderList()});
+ el('close-thread').addEventListener('click',()=>{if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);reportRefreshTimer=null;thread=null;messages=[];show('thread',false);el('board').dataset.view='list';renderList()});
  el('refresh').addEventListener('click',async()=>{
   if(busy)return;
   busy=true;el('refresh').disabled=true;
