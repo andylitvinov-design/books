@@ -15,7 +15,7 @@ test("exactly six real workspaces with all RU EN ES labels",()=>{
    for(const id of ids)assert.match(studio,new RegExp(id+":\\{tab:"));
  }
  assert.match(studio,/phrases:\{tab:"Идеи",title:"Идеи для видео"/);
- assert.match(studio,/Гипноэффекты/);
+ assert.match(studio,/effects:\{tab:"Аудио",title:"Аудио для видео"/);
  assert.match(studio,/Курс практик/);
  assert.match(studio,/pro:\{tab:"PRO",title:"PRO генерация"/);
  assert.match(studio,/editor:\{tab:"Монтаж",title:"Быстрая генерация"/);
@@ -40,8 +40,8 @@ test("reuse existing one player and one full audio, hypnosis and photo editor",(
    assert.ok(studio.includes("activeWorkspace"),"local selection retained");
  }
  assert.match(studio,/data-workspace-section="practices"/);
- assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
- assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
+ assert.equal((studio.match(/\{deepAudioPane\}/g)||[]).length,1);
+ assert.match(studio,/\{soundtrackWorkspacePanel\}/);
  assert.equal((studio.match(/\{deepHypnoPane\}/g)||[]).length,1,
    "the single phrase editor stays mounted while its workspace is hidden");
  assert.match(studio,/\{basicPanelTab==="photo" \? deepCharacterPhotoPane : null\}/,
@@ -81,7 +81,7 @@ function exercise(input,workspace,overrides={}){
  const consent={scrollIntoView:()=>scrolls.push({open:cover.open,workspace:active,
    visible:cover.open&&(active==='video'||active==='editor')})};
  runInNewContext(js,{...state,canGenerate:true,preparingRef:{current:state.preparing},jobRef:{current:null},webCodecJobRef:{current:null},activeWorkspace:workspace,setActiveWorkspace:value=>{queued=value;},
-   setBasicPanelTab:value=>{basicTab=value;},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
+   setBasicPanelTab:value=>{basicTab=value;},setAudioWorkspaceTab:()=>{},setMontagePanel:()=>{},setMontageStyleSettingsOpen:()=>{},setIntroPlaying:()=>{},setNotice:value=>notices.push(value),supportUi:{heroConsent:'Consent required'},audioUi:{needsAttach:'Attach audio'},ui:{audioRightsHelp:'Audio rights required'},onPickPhoto:()=>picks++,createVideo:()=>renders++,window:{requestAnimationFrame:cb=>frames.push(cb)},document:{querySelector:selector=>selector==='[data-video-cover-options]'?cover:selector==='[data-video-photo-consent]'?consent:{scrollIntoView(){}}}},{timeout:1000});
  assert.equal(scrolls.length,0,'scroll must retain two-frame boundary');
  while(frames.length){active=queued;frames.shift()();}
  return {workspace:active,basicTab,open:cover.open,scrolls,notices,renders,picks};
@@ -186,7 +186,7 @@ test("video studio lazily loads optional editor workspaces and collapsed tools",
 });
 
 test("final approved six tabs lead to exactly one real workspace each",()=>{
-  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Гипноэффект"',
+  const expected=['tab:"Цель"','tab:"Идеи"','tab:"Аудио"',
     'tab:"Курс практик"','tab:"Монтаж"','tab:"PRO"'];
   for(const label of expected)assert.ok(studio.includes(label),"missing "+label);
   assert.match(studio,/data-video-quick-control=\{item.id\}/);
@@ -250,7 +250,7 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
  const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
  const scenario=editor.indexOf('data-video-editor-scenario');
- assert.ok(scenario>=0&&scenario<editor.indexOf('data-video-montage-audio'),"script is available before Audio");
+ assert.ok(scenario>=0&&editor.includes("data-video-montage-script-update"),"Montage retains its actual script editor");
  assert.match(editor,/data-video-montage-script-update/);
  assert.match(editor,/normalizeStageCaption\(lines\[index\]\|\|""\)/,
    "editing a four-shot montage changes the local actual caption track");

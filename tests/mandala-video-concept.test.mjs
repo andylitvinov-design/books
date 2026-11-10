@@ -60,7 +60,8 @@ test("Montage still owns the original single editor and verifies guest approval 
   assert.match(source,/data-video-concept-text-tools/);
   assert.match(source,/data-video-montage-text/);
   assert.match(source,/MandalaMultiTrackTimeline/);
-  assert.match(source,/setMontagePanel\("audio"\)/);
+  assert.match(source,/setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("music"\)/,
+    "the approved concept routes to the dedicated Audio workspace, not a retired Montage pane");
   assert.match(source,/onApprove=\{approved=>/);
   assert.match(source,/approvedConcept=\{approvedVideoConcept\}/);
   assert.match(source,/setApprovedVideoConcept\(approved\)/);
@@ -78,17 +79,19 @@ test("Montage still owns the original single editor and verifies guest approval 
   assert.match(css,/safe-area-inset-bottom/);
 });
 
-test("macOS WebKit opens Style by default and still allows reviewed Concept",()=>{
+test("macOS WebKit checks Montage Style and the dedicated Audio workspace",()=>{
   const source=readFileSync(new URL("../scripts/verify-affirmation-voice-browser.mjs",import.meta.url),"utf8");
   const start=source.indexOf('const editorTab=page.locator');
   const end=source.indexOf('const selectedStyle=page.locator',start);
   assert.ok(start>0&&end>start);
   const route=source.slice(start,end);
   assert.match(route,/\[data-video-montage-tab="effects"\]/);
-  assert.match(source,/\[data-video-montage-open-concept\]/);
   assert.match(route,/await montageStyleTab\.click\(\)/);
   assert.match(route,/await expect\(montageStyleTab\)\.toHaveAttribute\("aria-pressed","true"/);
   assert.doesNotMatch(route,/force:\s*true|setMontagePanel/);
+  assert.match(source,/\[data-video-quick-control="effects"\]/);
+  assert.match(source,/\[data-video-audio-tab="meditations"\]/);
+  assert.match(source,/data-video-audio-workspace/);
 });
 
 test("required Hypno two tabs and guided kind click remain browser-tested after Concept",()=>{

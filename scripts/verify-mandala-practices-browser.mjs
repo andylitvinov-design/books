@@ -86,51 +86,26 @@ export async function verifyGuidedPractices({browser,base,engine}){
       assert.notEqual(await practice.locator("h5").innerText(),titles[2],"refresh changes the method");
 
       await result.locator("[data-guided-add-meditation]").click();
-      const voice=page.locator("[data-video-therapy-meditation-audio]");
-      await page.waitForFunction(()=>document.querySelector("[data-video-therapy-meditation-audio]")?.open===true);
-      await voice.locator("[data-meditation-script]").waitFor({state:"attached"});
-      const seeded=await voice.locator("[data-meditation-script]").inputValue();
-      assert.equal(seeded.trim(),script.trim(),"approved original script reaches the existing narration editor");
+      await expect(audioPanel).toBeVisible({timeout:15000});
+      const scriptField=voice.locator("[data-meditation-script]");
+      await scriptField.waitFor({state:"attached"});
+      const seeded=await scriptField.inputValue();
+      assert.equal(seeded.trim(),script.trim(),
+        "approved original script reaches the one Audio/Meditations composer");
+
+      // Add navigates to Audio. Return to the course for the independent Skip
+      // choice, then reopen Audio and prove the seeded script has been revoked.
+      await page.locator('[data-video-quick-control="ready"]').click();
+      await expect(course).toBeVisible();
       await result.locator("[data-guided-skip-meditation]").click();
-      // WebKit may resolve the DOM click before React commits the reversible
-      // omission. Wait for both verified effects, never a timed sleep.
-      try{
-        await page.waitForFunction(()=>{
-          const skip=document.querySelector("[data-guided-skip-meditation]");
-          const audio=document.querySelector("[data-video-therapy-meditation-audio]");
-          return skip?.getAttribute("aria-pressed")==="true" && audio?.open===false;
-        },null,{timeout:15000});
-      }catch(error){
-        // Evidence only: do not soften the real WebKit fail-closed acceptance.
-        // Read no narration, private goal, DOM input values or client content.
-        const state=await page.evaluate(()=>{
-          const skip=document.querySelector("[data-guided-skip-meditation]");
-          const audio=document.querySelector("[data-video-therapy-meditation-audio]");
-          return {skipPresent:!!skip,skipPressed:skip?.getAttribute("aria-pressed")??null,
-            audioPresent:!!audio,audioOpen:audio?.open??null,
-            coursePresent:!!document.querySelector("[data-video-guided-course]")};
-        }).catch(()=>({browserStateUnavailable:true}));
-        console.error("GUIDED_SKIP_WEBKIT_STATE",JSON.stringify({locale,engine,...state}));
-        throw error;
-      }
-      assert.equal(await result.locator("[data-guided-skip-meditation]").getAttribute("aria-pressed"),"true");
-      // Revoke the seeded narration completely before a visitor reopens the
-      // existing details. A rapid re-open must not race React's seed cleanup.
-      await page.waitForFunction(()=>
-        !document.querySelector("[data-video-therapy-meditation-audio] [data-meditation-script]"),
-        null,{timeout:15000});
-      // Reopen through the real Personal Meditation CTA in step 03, using
-      // the approved visible button instead of a tiny native details summary.
-      // This verifies the one existing editor is usable after the skip.
-      await course.locator("[data-guided-open-personal-meditation]").click();
-      await page.waitForFunction(()=>
-        document.querySelector("[data-video-therapy-meditation-audio]")?.open===true,
-        null,{timeout:15000});
-      assert.equal(await voice.locator("[data-meditation-script]").count(),0,
-        "skipped narration stays absent after the Personal Meditation CTA reopens editor");
-      // The details element opens synchronously, but React may still be
-      // committing the preceding user action on headed iPhone WebKit.
-      // Wait for the REAL rendered step state, never a timer or a second click.
+      await expect(result.locator("[data-guided-skip-meditation]"))
+        .toHaveAttribute("aria-pressed","true",{timeout:15000});
+      await page.locator('[data-video-quick-control="effects"]').click();
+      await expect(audioPanel).toBeVisible({timeout:15000});
+      await expect(voice.locator("[data-meditation-script]")).toHaveCount(0,
+        "explicit Skip revokes the seeded script in the shared composer");
+      await page.locator('[data-video-quick-control="ready"]').click();
+      await expect(course).toBeVisible();
       await expect(course).toHaveAttribute("data-guided-personal-opened","true",{timeout:15000});
 
       await course.locator("[data-guided-create-plan]").click();

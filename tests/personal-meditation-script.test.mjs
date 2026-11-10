@@ -67,13 +67,22 @@ test("affirmations are opt-in and file generation is not cloud storage",()=>{
   ];
   assert.ok(!files.some(s=>/fetch\s*\(|localStorage|sessionStorage|sendBeacon|supabase|openai\.com|analytics\.track/.test(s)));
 });
-test("writer stays at end of existing video studio and receives explicit course context",()=>{
+test("one Audio meditation composer receives explicit guided-course context",()=>{
   const parent=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
   const course=readFileSync(new URL("../components/mandala-guided-course.tsx",import.meta.url),"utf8");
-  assert.ok(parent.indexOf("data-video-result")<parent.lastIndexOf("<MandalaPersonalMeditation"));
-  assert.ok(parent.includes('studioMode==="therapy" && activeWorkspace!=="practices" ? <MandalaPersonalMeditation'),
-    "one shared meditation composer is shown in therapy mode only when the inline course is closed");
-  assert.ok(parent.includes("onContextChange={updateMeditationFocus}"));
+  const audio=parent.indexOf('data-video-audio-panel="meditations"');
+  const writer=parent.indexOf("<MandalaPersonalMeditation",audio);
+  assert.ok(audio>0&&writer>audio,"the canonical personal meditation writer belongs to Audio/Meditations");
+  assert.equal((parent.match(/<MandalaPersonalMeditation\b/g)||[]).length,1,
+    "do not create a second meditation composer");
+  assert.match(parent,/<MandalaPersonalMeditation[\s\S]*?coursePreview=\{Boolean\(courseMeditationDraft\)\} seedScript=\{courseMeditationDraft\}[\s\S]*?onNarrationReady=/);
+  assert.ok(parent.includes('data-video-therapy-meditation-audio'),
+    "the guided course still offers a visible action to open Audio/Meditations");
+  assert.match(parent,/onOpenMeditation=\{\(\)=>\{[\s\S]*?setActiveWorkspace\("effects"\);[\s\S]*?setAudioWorkspaceTab\("meditations"\)/,
+    "guided course navigation opens the first-class Audio / Meditations workspace");
+  assert.match(course,/onOpenMeditation\?\.\(\)/,
+    "the Personal Meditation action delegates to the shared workspace, not inline details");
+  assert.ok(parent.includes('onContextChange={updateMeditationFocus}'));
   assert.ok(course.includes("const detailLabels=useMemo(()=>detailGoals.flatMap"),
     "memoized details are derived only from the visitor's explicit choices");
   assert.ok(course.includes("goals:actualGoals,details:detailLabels"),
