@@ -9,6 +9,7 @@ const CONFLICT = 'hh:conflict-repair-needed';
 const MANUAL = 'hh:repair-manual';
 const MARKER = 'HH_PR_REPAIR_WORKER_V1';
 const SHA = /^[0-9a-f]{40}$/i;
+const FREE_MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]*\\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/;
 const PATH = /^(?!\/)(?!.*(?:^|\/)\.)(?!.*\.\.)(?:[\w.-]+\/)*[\w.-]+\.(?:js|jsx|ts|tsx|mjs|cjs)$/;
 const MAX_FILES = 8;
 const MAX_CANDIDATES = 4;
@@ -626,6 +627,7 @@ function sourceDeliveryStatus({state,sourcePublished,codeAvailable}) {
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
   claimStatus='',claimReason='',claimResult='',fixResult='',strategy='lint',
   codeAvailable=false,codeResult='',codeStatus='',codeDetail='',
+  codeBackend='',codeModel='',
   codeVerifyResult='',codeVerifyStatus='',codeVerifyDetail='',publishResult='',
   publishStatus='',publishSha='',candidateStatus='',candidateDetail='',
   candidateSnapshot='',dryRun=false}) {
@@ -788,6 +790,8 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state==='MANUAL'||state==='FAILED'?
       agentDetail||(validCandidateDetails.has(candidateDetail)?candidateDetail:null):null;
   const delivery=sourceDeliveryStatus({state,sourcePublished,codeAvailable});
+  const codeModelVerified=['openrouter','opencode'].includes(codeBackend)&&
+    typeof codeModel==='string'&&FREE_MODEL_ID.test(codeModel);
   const result={schema:'HH_PR_TASK_V1',task_key:taskKey,pr_number:number,
     ...delivery,verified_source_fix:state==='PUBLISHED'&&sourcePublished===true,
     head_sha:expectedSha,lane:strategy==='legacy'?'legacy':'repair',
@@ -799,7 +803,12 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
       parseLegacySnapshotSummary(candidateSnapshot):null,
     repair_kind:publishStatus==='committed'&&candidateStatus!=='ready'?'free_ai':
       publishStatus==='committed'?'lint':null,
-    code_agent_configured:codeAvailable,code_provider:codeAvailable?'opencode/glm-5.3-flash-free':null,
+    code_agent_configured:codeAvailable,
+    // Backward-compatible code_provider field now contains the exact verified model id.
+    code_provider:codeModelVerified?codeModel:null,
+    code_backend:codeModelVerified?codeBackend:null,
+    code_model:codeModelVerified?codeModel:null,
+    code_model_verified:codeModelVerified,
      code_job_result:codeResult||'skipped',
     code_candidate_status:codeStatus||'skipped',
     code_verify_result:codeVerifyResult||'skipped',
