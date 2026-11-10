@@ -130,7 +130,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     // without replacing the existing Holistic Support catalogue.
     { id: 'practice', label: text.practice, href: '/' + activeLocale + '/holistic-support/mobile', ariaLabel: text.practice, external: false },
     { id: 'insights', label: text.insights, href: '/' + activeLocale + '/temple-insights', ariaLabel: text.insights, external: false },
-    { id: 'my-coach', label: myCoachMenuCopy[activeLocale], href: '/' + activeLocale + '/masters', ariaLabel: myCoachMenuCopy[activeLocale], external: false },
+    { id: 'my-coach', label: myCoachMenuCopy[activeLocale], href: '/' + activeLocale + '/my-coach', ariaLabel: myCoachMenuCopy[activeLocale], external: false },
   );
 
   return <nav aria-label={text.navigation} className="site-navigation">
