@@ -117,7 +117,16 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
     'FREE_AI_UNSAFE_SOURCE_SCOPE','SOURCE_SCOPE_UNSAFE_FOR_FREE_AI',
     'SOURCE_SCOPE_NOT_ACTIONABLE','NO_AUTOFIXABLE_ESLINT_CHANGE'
   ]).has(cause);
+  // An absent focused test/TypeScript reproduction is a diagnostic gap,
+  // NOT a failed model call: no provider was invoked at this stage.
+  const reproductionMissing=new Set([
+    'FREE_AI_NO_REPRODUCED_BOUNDED_FAILURE',
+    'FREE_AI_NO_BOUNDED_TEST_COVERAGE',
+    'FREE_AI_TYPECHECK_FAILURE_OUTSIDE_REPAIR_SCOPE',
+    'FREE_AI_TYPECHECK_LINE_NOT_IN_SOURCE'
+  ]).has(cause);
   const cat=unsafeSourceScope?'SOURCE_CODE':
+    reproductionMissing?'TEST_FAILURE':
     /^(?:FREE_AI_|CODEX_)/.test(cause)||/^FREE_AI_/.test(reason_code)?'AI_EXECUTOR':
     /(?:MERGE_CONFLICT|CONFLICT_REQUIRES_SOURCE_RESOLUTION|UNMERGED_PATHS)/i.test(cause+' '+reason_code)?
     'MERGE_CONFLICT':
@@ -126,13 +135,17 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
   const st=unsafeSourceScope?
     {code:'MANUAL_SOURCE_SCOPE_REVIEW',
       action:'ASSIGN_OWNER_FOR_SENSITIVE_OR_UNSUPPORTED_SOURCE',minutes:30}:
+    reproductionMissing?
+    {code:'REPRODUCTION_PROOF_REQUIRED',
+      action:'VERIFY_EXACT_HEAD_CORE_TYPESCRIPT_AND_TEST_COVERAGE',minutes:30}:
     strategyFor(cat,'UNVERIFIED',false);
   return Object.freeze({schema:SCHEMA,event_kind:'REPAIR_WORKER_FAILED',
     task_id:key([REPO,pr_number,head_sha.toLowerCase(),task_key,owner_run_id,'WORKER']),
     pr_number,head_sha:head_sha.toLowerCase(),parent_task_key:task_key,
     owner_run_id:String(owner_run_id),category:cat,ruleset_version:rules.version,
     reason_code:cause,strategy_code:st.code,
-    responsible_role:unsafeSourceScope?'source-repair-owner':rules.categories[cat].responsible_role,
+    responsible_role:unsafeSourceScope?'source-repair-owner':
+      reproductionMissing?'ci-diagnostic-triage':rules.categories[cat].responsible_role,
     executor_id:OWNER_EXECUTOR,executor_kind:'owner_review',
     assignment_status:'OWNER_REVIEW_REQUIRED',
     next_action:st.action,recommended_status:cat==='UNKNOWN'?'UNCLASSIFIED':'MANUAL_REQUIRED',

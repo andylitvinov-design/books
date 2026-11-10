@@ -50,58 +50,6 @@ test('extract JSON stream only from text events, reject provider errors',()=>{
  assert.throws(()=>extractTextEvents(JSON.stringify({type:'error',error:'429'})));
  assert.throws(()=>extractTextEvents('garbled'));
 });
-test('single exact model-source line can be rebuilt when model hunk context is unusable',()=>{
- const {reconstructUniqueSingleLinePatch,validatePatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
- const file='components/public-card.tsx',scope={files:[file]};
- const before='const safe = 1;\n  const label = hhInvalidValue;\nconst after = 2;\n';
- const prefix='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n';
- const bad=prefix+'@@ -900,8 +900,8 @@\n some omitted unrelated source\n-  const label = hhInvalidValue;\n+  const label = "OK";\n';
- const expected=prefix+'@@ -1,3 +1,3 @@\n const safe = 1;\n-  const label = hhInvalidValue;\n+  const label = "OK";\n const after = 2;\n';
- const result=reconstructUniqueSingleLinePatch(bad,scope,()=>before);
- assert.equal(result,expected);
- assert.equal(validatePatch(result,scope),result);
- assert.equal(reconstructUniqueSingleLinePatch(bad,scope,()=>before+before),null,
-  'same old source line appearing twice is ambiguous');
- assert.equal(reconstructUniqueSingleLinePatch(bad,scope,()=>before.replace('hhInvalidValue','renamed')),null);
- assert.equal(reconstructUniqueSingleLinePatch(bad,{files:['components/other.tsx']},()=>before),null);
- assert.equal(reconstructUniqueSingleLinePatch(bad,{files:['app/api/auth.ts']},()=>before),null);
- assert.equal(reconstructUniqueSingleLinePatch(bad,scope,()=>before.slice(0,-1)),null);
- assert.equal(reconstructUniqueSingleLinePatch(bad,scope,()=> '  const label = hhInvalidValue;\\n'),null,
-  'strict Git apply requires at least one real adjacent context line');
- assert.equal(reconstructUniqueSingleLinePatch(bad.replace('@@ -900,8 +900,8 @@','@@ broken'),scope,()=>before),null);
- assert.equal(reconstructUniqueSingleLinePatch(bad.replace('+  const label = "OK";','+'),scope,()=>before),null);
- assert.equal(reconstructUniqueSingleLinePatch(bad.replace('  const label = hhInvalidValue;', '  const label = hhInvalidValue;\n-const after = 2;'),scope,()=>before),null);
- assert.equal(reconstructUniqueSingleLinePatch(bad+'diff --git a/'+file+' b/'+file+'\n',scope,()=>before),null);
- assert.equal(reconstructUniqueSingleLinePatch(bad+'@@ -2 +2 @@\n-other\n+other\n',scope,()=>before),null);
- assert.equal(reconstructUniqueSingleLinePatch(bad+'\\ No newline at end of file\n',scope,()=>before),null);
-});
-test('reconstructed unique source line passes normal git apply without relaxing flags',()=>{
- const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
- const cp=require('node:child_process');
- const {reconstructUniqueSingleLinePatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'hh-one-line-canonical-'));
- const file='components/public-card.tsx';
- const source='const safe = 1;\n  const label = hhInvalidValue;\nconst after = 2;\n';
- const patch='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n'+
-  '@@ -900,8 +900,8 @@\n wrong context\n-  const label = hhInvalidValue;\n+  const label = "OK";\n';
- try{
-  fs.mkdirSync(path.join(dir,'components'));
-  fs.writeFileSync(path.join(dir,file),source);
-  cp.execFileSync('git',['init','-q'],{cwd:dir});
-  cp.execFileSync('git',['add','--',file],{cwd:dir});
-  cp.execFileSync('git',['-c','user.email=fixture@example.invalid','-c','user.name=Fixture','commit','-qm','base'],{cwd:dir});
-  const patchPath=path.join(dir,'proposal.patch');
-  fs.writeFileSync(patchPath,patch);
-  assert.notEqual(cp.spawnSync('git',['apply','--check','--whitespace=error',patchPath],{cwd:dir}).status,0);
-  const rebuilt=reconstructUniqueSingleLinePatch(patch,{files:[file]},rel=>fs.readFileSync(path.join(dir,rel),'utf8'));
-  assert.ok(rebuilt);
-  fs.writeFileSync(patchPath,rebuilt);
-  assert.equal(cp.spawnSync('git',['apply','--check','--whitespace=error',patchPath],{cwd:dir}).status,0);
-  cp.execFileSync('git',['apply','--whitespace=error',patchPath],{cwd:dir});
-  assert.equal(fs.readFileSync(path.join(dir,file),'utf8'),source.replace('hhInvalidValue','"OK"'));
-  assert.equal(cp.spawnSync('git',['diff','--check'],{cwd:dir}).status,0);
- }finally{fs.rmSync(dir,{recursive:true,force:true});}
-});
 test('one wrong-position free-model hunk is anchored ONLY by unique exact source',()=>{
  const {reanchorSingleHunkPatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
  const scope={files:['components/public-card.tsx']};
@@ -139,6 +87,63 @@ test('one exact source anchor does not permit altered content or whitespace bypa
   prefix+'@@ -2,1 +2,1 @@\n-  let result="old";\n+  let result="new";\n');
  assert.equal(reanchorSingleHunkPatch(patch,scope,()=>source.replace('  let',' let')),null);
 });
+test('exact one-line model replacement salvages faulty context only with unique whole-line match',()=>{
+ const {exactSingleLineReplacementPatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const file='components/site-navigation.tsx',scope={files:[file]};
+ const before='    <Link className={hhRepairCanaryMissingSymbolV2} href={freeReviewHref} prefetch={false}>{siteMenu.start}</Link>';
+ const after='    <Link className="site-nav-free-entry" href={freeReviewHref} prefetch={false}>{siteMenu.start}</Link>';
+ const source='other code\n'+before+'\nmore code\n';
+ const model='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n'+
+  '@@ -500,6 +500,6 @@\n'+' unrelated hallucinated context\n'+'-'+before+'\n+'+after+'\n';
+ const expected='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n'+
+  '@@ -1,3 +1,3 @@\n other code\n-'+before+'\n+'+after+'\n more code\n';
+ assert.equal(exactSingleLineReplacementPatch(model,scope,()=>source),expected);
+ assert.equal(exactSingleLineReplacementPatch(model,scope,()=>source+source),null);
+ assert.equal(exactSingleLineReplacementPatch(model,scope,()=>source.replace('hhRepair','other')),null);
+ assert.equal(exactSingleLineReplacementPatch(model,{files:['components/other.tsx']},()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model,{files:['app/api/secret.ts']},()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model,scope,()=>'no trailing newline'),null);
+ assert.equal(exactSingleLineReplacementPatch(model,scope,()=>before+'\n'),null,
+  'strict Git requires at least one real unchanged source context line');
+ assert.equal(exactSingleLineReplacementPatch(model.replace('-'+before,'-className={hhRepairCanaryMissingSymbolV2}'),scope,()=>source),null,
+  'shortened token within a line must never be matched fuzzily');
+ assert.equal(exactSingleLineReplacementPatch(model+'@@ -5 +5 @@\n-another\n+replacement\n',scope,()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model+'diff --git a/components/other.tsx b/components/other.tsx\n',scope,()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model.replace('+'+after,'+'+before),scope,()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model.replace('+'+after,'+'+after+'\n+another'),scope,()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model.replace('-'+before,'-'+before+'\n-'+before),scope,()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model.replace('@@ -500,6 +500,6 @@','@@ not-valid'),scope,()=>source),null);
+});
+
+test('unique exact-line model fallback produces a normal strictly applicable git patch',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const cp=require('node:child_process');
+ const {exactSingleLineReplacementPatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'hh-one-line-git-'));
+ const rel='components/public-card.tsx';
+ const original='const first = true;\nconst state = badUnknown;\nconst last = 3;\n';
+ try{
+  fs.mkdirSync(path.join(root,'components'));
+  fs.writeFileSync(path.join(root,rel),original);
+  const git=(...args)=>cp.execFileSync('git',args,{cwd:root});
+  git('init','-q');git('add','--',rel);
+  git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','-qm','base');
+  const wrong='diff --git a/'+rel+' b/'+rel+'\n--- a/'+rel+'\n+++ b/'+rel+'\n'+
+   '@@ -999,7 +999,7 @@\n model invented context\n-const state = badUnknown;\n+const state = "correct";\n';
+  const p=path.join(root,'candidate.patch');
+  fs.writeFileSync(p,wrong);
+  assert.notEqual(cp.spawnSync('git',['apply','--check','--whitespace=error',p],{cwd:root}).status,0);
+  const exact=exactSingleLineReplacementPatch(wrong,{files:[rel]},f=>fs.readFileSync(path.join(root,f),'utf8'));
+  assert.ok(exact);
+  assert.match(exact,/\n@@ -1,3 \+1,3 @@\n const first = true;/);
+  fs.writeFileSync(p,exact);
+  assert.equal(cp.spawnSync('git',['apply','--check','--whitespace=error',p],{cwd:root}).status,0);
+  git('apply','--whitespace=error',p);
+  assert.equal(fs.readFileSync(path.join(root,rel),'utf8'),original.replace('badUnknown','"correct"'));
+  assert.equal(cp.spawnSync('git',['diff','--check'],{cwd:root}).status,0);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
 test('model patch must be bounded unified diff only changing allowlist',()=>{
  const scope={files:['components/a.tsx'],sha:SHA};
  const patch='diff --git a/components/a.tsx b/components/a.tsx\n'+
@@ -368,4 +373,34 @@ test('complete free source scope checks all changed paths, not a sliced eight-fi
  assert.equal(assessCompleteFreeRepairScope(
    Array.from({length:100},(_,i)=>({filename:'lib/repair-'+i+'.js',status:'modified'}))
  ).allowed,false,'incomplete paginated inventory fails closed');
+});
+
+
+test('typecheck targets exact-HEAD changed source only and rejects ambiguous or unsafe diagnoses',()=>{
+ const {findTypeScriptFailureTarget,boundedSource}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const chosen=['components/mandala-video-concept.tsx','lib/mandala/video-concept-narrative.mjs'];
+ const output='components/mandala-video-concept.tsx(125,5): error TS2322: Type string[] is not assignable to type never[].\n';
+ assert.deepEqual(findTypeScriptFailureTarget(output,chosen),{
+   file:'components/mandala-video-concept.tsx',line:125,column:5,
+   code:'TS2322',source:'typescript_compiler'
+ });
+ assert.equal(findTypeScriptFailureTarget(output,['components/other.tsx']),null);
+ assert.equal(findTypeScriptFailureTarget(
+   'app/api/private/route.ts(1,1): error TS2322: no\n',
+   ['app/api/private/route.ts']),null);
+ assert.equal(findTypeScriptFailureTarget(
+   output+'components/another.tsx(6,3): error TS2322: no\n',
+   ['components/mandala-video-concept.tsx','components/another.tsx']),null,
+   'two equally trusted changed TS files remain ambiguous; do not guess');
+ assert.equal(findTypeScriptFailureTarget(
+   'components/mandala-video-concept.tsx(0,5): error TS2322: bad\n',
+   chosen),null);
+ const content=Array.from({length:1100},(_,i)=>
+   'const longLine'+i+" = 'wide source context to retain distinct exact content';"
+ ).join('\n')+'\n';
+ const excerpt=boundedSource(content,{source:'typescript_compiler',line:500});
+ assert.equal(excerpt.bounded,true);
+ assert.match(excerpt.content,/VERIFIED TYPESCRIPT LINE 500/);
+ assert.match(excerpt.content,/longLine499/);
+ assert.ok(Buffer.byteLength(excerpt.content,'utf8')<18000);
 });

@@ -99,6 +99,25 @@ function findFailureTarget(testFile,source,output,allowed){
  }
  return null;
 }
+// The real Core may fail the Next.js TypeScript gate while all direct unit
+// tests pass. Only an independently reproduced diagnostic on one EXACT
+// allowlisted changed source may select the free-model target.
+function findTypeScriptFailureTarget(output,allowed){
+ if(typeof output!=='string'||output.length>300000||
+   !Array.isArray(allowed)||!allowed.length)return null;
+ const targets=[];
+ const pattern=/(?:^|\n)(?:\.\/)?([^\r\n]+?\.(?:ts|tsx|jsx))\((\d+),(\d+)\):\s*error TS(\d{4,5}):/g;
+ for(const match of output.matchAll(pattern)){
+   const file=match[1].trim(),line=Number(match[2]),column=Number(match[3]);
+   if(!allowed.includes(file)||!safeSourcePath(file)||
+     !Number.isSafeInteger(line)||line<1||line>50000||
+     !Number.isSafeInteger(column)||column<1||column>5000)continue;
+   targets.push({file,line,column,code:'TS'+match[4],source:'typescript_compiler'});
+   if(targets.length>80)return null;
+ }
+ if(!targets.length||new Set(targets.map(t=>t.file)).size!==1)return null;
+ return targets.sort((a,b)=>a.line-b.line||a.column-b.column)[0];
+}
 function narrowFailedSourceScope(root,scope){
  const listing=run('git',['ls-files','-z','--','tests'],{cwd:root,timeout:10000});
  if(!listing.ok)throw Error('FREE_AI_TEST_INDEX_UNAVAILABLE');
@@ -129,16 +148,55 @@ function narrowFailedSourceScope(root,scope){
      evidence.set(exact.file,exact);
    }
  }
+ // Reproduce the same TS gate without npm lifecycle scripts, network or
+ // credentials. A failed compiler in an unrelated file NEVER authorizes
+ // patching one of the PR's other changed files.
+ if(!ranked.size&&scope.files.some(file=>/\.(?:ts|tsx|jsx)$/.test(file))){
+   const types=run(path.join(root,'node_modules/.bin/tsc'),
+     ['--noEmit','--incremental','false','--pretty','false'],
+     {cwd:root,env:noSecretEnv(),timeout:95000});
+   if(!types.ok&&!types.error){
+     const target=findTypeScriptFailureTarget(types.output,scope.files);
+     if(!target)throw Error('FREE_AI_TYPECHECK_FAILURE_OUTSIDE_REPAIR_SCOPE');
+     const lines=fs.readFileSync(path.resolve(root,target.file),'utf8').split(/\r?\n/);
+     if(target.line>lines.length)throw Error('FREE_AI_TYPECHECK_LINE_NOT_IN_SOURCE');
+     target.assertion=String(lines[target.line-1]||'').trim().slice(0,240);
+     ranked.set(target.file,100);
+     evidence.set(target.file,target);
+     console.log('HH_FREE_AI_TYPESCRIPT_REPRODUCED '+JSON.stringify({
+       file:target.file,line:target.line,code:target.code,
+       evidence:'CURRENT_HEAD_COMPILER_DIAGNOSTIC'}));
+   }
+ }
  if(!ranked.size)throw Error('FREE_AI_NO_REPRODUCED_BOUNDED_FAILURE');
  const selected=[...ranked].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0][0];
  const focused={sha:scope.sha,files:[selected],evidence:evidence.get(selected)||null};
  console.log('HH_FREE_AI_NARROW_SCOPE '+JSON.stringify({
    file:selected,source_candidates:scope.files.length,test_probes:probes,
-   evidence:focused.evidence?{test:focused.evidence.test,line:focused.evidence.line}:null}));
+   evidence:focused.evidence?{source:focused.evidence.source||'focused_test',
+     test:focused.evidence.test||null,line:focused.evidence.line,
+     code:focused.evidence.code||null}:null}));
  return focused;
 }
 function boundedSource(content,evidence=null){
  if(Buffer.byteLength(content,'utf8')<=MAX_SOURCE)return {content,bounded:false};
+ // The compiler points to a precise safe file/line. Include the surrounding
+ // source (not arbitrary unrelated body) when the complete file is oversized.
+ if(evidence?.source==='typescript_compiler'&&
+    Number.isSafeInteger(evidence.line)&&evidence.line>0){
+   const lines=content.split(/\r?\n/),center=evidence.line-1;
+   if(center<lines.length){
+     const start=Math.max(0,center-30),end=Math.min(lines.length,center+31);
+     const excerpt=content.slice(0,2000)+
+       '\n/* [SOURCE MIDDLE OMITTED] */\n'+
+       '/* [VERIFIED TYPESCRIPT LINE '+evidence.line+
+       '; SOURCE LINES '+(start+1)+'-'+end+'] */\n'+
+       lines.slice(start,end).join('\n')+
+       '\n/* [SOURCE MIDDLE OMITTED] */\n'+content.slice(-3600);
+     if(Buffer.byteLength(excerpt,'utf8')<=MAX_SOURCE)
+       return {content:excerpt,bounded:true};
+   }
+ }
  // The old head/tail-only excerpt silently omitted real failures in the
  // middle of 30-150 KB UI files. Focus *only* on lexical hints from the
  // independently reproduced, literal-source assertion; never trust model
@@ -241,9 +299,6 @@ function promptFor(scope,sources,signals){
   'then --- a/REAL_FILE, +++ b/REAL_FILE, and standard @@ -N +N @@ hunks.',
   'Use an actual allowlisted REAL_FILE; no preamble, commentary, JSON or code fences.',
   'Fix the actual observed failure with the smallest safe patch.',
-  'For a one-line bug use one exact -old/+new hunk with no surrounding context.',
-  'Copy the full removed line verbatim from the provided file, including whitespace.',
-  'Never abbreviate code or add unrelated changes.',
   'For each @@ hunk, copy every unchanged and removed source line EXACTLY,',
   'including indentation and the complete line; never elide text or use ... .',
   'Ensure hunk line counts match the emitted context/deleted/added lines.',
@@ -390,56 +445,51 @@ function reanchorSingleHunkPatch(patch,scope,readSource){
  const proposal=corrected.join('\n')+'\n';
  return Buffer.byteLength(proposal,'utf8')<=MAX_PATCH&&proposal!==patch?proposal:null;
 }
-// A one-line model replacement can be structurally useful even if its
-// surrounding hunk context is inaccurate. Rebuild only when the COMPLETE
-// removed line matches exactly once in one already-authorized source file.
-// No fuzzy matching, broader edits, partial matches or source/test bypass.
-function reconstructUniqueSingleLinePatch(patch,scope,readSource){
- if(typeof patch!=='string'||Buffer.byteLength(patch,'utf8')>MAX_PATCH||
-   typeof readSource!=='function'||!Array.isArray(scope?.files))return null;
+// A model may supply a one-line replacement but inaccurate context/hunk
+// positions. Accept only ONE exact whole-line deletion and ONE addition in
+// ONE allowlisted source file, with the deleted full line occurring exactly
+// once at a real line boundary. Rebuild the unified diff deterministically
+// from the current unprivileged checkout; git apply and clean verification
+// must still pass. Never use fuzzy substring matching or touch extra files.
+function exactSingleLineReplacementPatch(patch,scope,readSource){
+ if(typeof patch!=='string'||typeof readSource!=='function'||!scope||
+    !Array.isArray(scope.files)||Buffer.byteLength(patch,'utf8')>MAX_PATCH)return null;
  const headers=[...patch.matchAll(/^diff --git a\/([^\n]+) b\/([^\n]+)$/gm)];
- if(headers.length!==1||headers[0][1]!==headers[0][2])return null;
- const file=headers[0][1];
- if(!scope.files.includes(file)||!safeSourcePath(file))return null;
- const lines=patch.split('\n');
+ if(headers.length!==1||headers[0][1]!==headers[0][2]||
+    !scope.files.includes(headers[0][1])||!safeSourcePath(headers[0][1]))return null;
+ const file=headers[0][1],lines=patch.split('\n');
  if(lines.at(-1)==='')lines.pop();
- const header='diff --git a/'+file+' b/'+file;
- const a='--- a/'+file,b='+++ b/'+file;
- if(lines[0]!==header||lines.filter(x=>x===a).length!==1||
-   lines.filter(x=>x===b).length!==1)return null;
- const hunks=lines.map((line,i)=>/^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@/.test(line)?i:-1).filter(i=>i>=0);
+ const hunks=lines.map((s,i)=>/^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@/.test(s)?i:-1).filter(i=>i>=0);
  if(hunks.length!==1)return null;
- const at=hunks[0];
- if(at<3||lines.indexOf(a)>=at||lines.indexOf(b)>=at||
-   lines.slice(1,at).some(line=>line!==a&&line!==b&&
-     !/^index [a-f0-9]{7,40}\.\.[a-f0-9]{7,40}(?: 100644)?$/i.test(line)))return null;
- const removed=[],added=[];
- for(const line of lines.slice(at+1)){
-   if(line.startsWith('---')||line.startsWith('+++')||
-      !/^[ +\-]/.test(line))return null;
-   if(line[0]==='-')removed.push(line.slice(1));
-   if(line[0]==='+')added.push(line.slice(1));
+ const minus=[],plus=[];
+ for(const line of lines.slice(hunks[0]+1)){
+   if(line.startsWith('-'))minus.push(line.slice(1));
+   else if(line.startsWith('+'))plus.push(line.slice(1));
+   else if(line.startsWith(' '))continue;
+   else return null;
  }
- if(removed.length!==1||added.length!==1||
-   removed[0]===added[0]||!removed[0].trim()||!added[0].trim()||
-   removed[0].length>500||added[0].length>500)return null;
+ if(minus.length!==1||plus.length!==1||minus[0]===plus[0]||
+    !minus[0]||!plus[0]||minus[0].length>4000||plus[0].length>4000)
+   return null;
  const source=readSource(file);
- if(typeof source!=='string'||!source.endsWith('\n')||source.includes('\r')||
-   source.includes('\0'))return null;
- const actual=source.split('\n').slice(0,-1);
- const indices=actual.map((line,i)=>line===removed[0]?i:-1).filter(i=>i>=0);
- if(indices.length!==1)return null;
- // Git's strict default rejects zero-context hunks. Use up to three unchanged
- // ORIGINAL lines on each side, copied verbatim from the authorized HEAD.
- const index=indices[0],from=Math.max(0,index-3),
-   until=Math.min(actual.length,index+4),count=until-from;
+ if(typeof source!=='string'||!source.endsWith('\n')||
+   source.includes('\r')||source.includes('\0'))return null;
+ const target=minus[0]+'\n',at=source.indexOf(target);
+ if(at<0||source.indexOf(target,at+1)>=0||(at>0&&source[at-1]!=='\n'))
+   return null;
+ // Strict Git rejects zero-context hunks. Rebuild up to three unchanged,
+ // trusted ORIGINAL source lines either side, never model-invented context.
+ const original=source.split('\n').slice(0,-1);
+ const lineNo=1+(source.slice(0,at).match(/\n/g)||[]).length;
+ const idx=lineNo-1,from=Math.max(0,idx-3),end=Math.min(original.length,idx+4);
+ const count=end-from;
  if(count<2)return null;
- const before=actual.slice(from,index).map(line=>' '+line).join('\n');
- const after=actual.slice(index+1,until).map(line=>' '+line).join('\n');
- const body=[...(before?[before]:[]),'-'+removed[0], '+'+added[0],
-   ...(after?[after]:[])].join('\n');
- const canonical=header+'\n'+a+'\n'+b+'\n@@ -'+(from+1)+','+count+
-   ' +'+(from+1)+','+count+' @@\n'+body+'\n';
+ const unchangedBefore=original.slice(from,idx).map(x=>' '+x);
+ const unchangedAfter=original.slice(idx+1,end).map(x=>' '+x);
+ const body=[...unchangedBefore,'-'+minus[0],'+'+plus[0],...unchangedAfter].join('\n');
+ const canonical='diff --git a/'+file+' b/'+file+'\n'+
+   '--- a/'+file+'\n+++ b/'+file+'\n'+
+   '@@ -'+(from+1)+','+count+' +'+(from+1)+','+count+' @@\n'+body+'\n';
  return Buffer.byteLength(canonical,'utf8')<=MAX_PATCH?canonical:null;
 }
 function isolatedEnvironment(dir,freeApiKey=process.env.HH_OPENCODE_FREE_API_KEY||''){
@@ -578,15 +628,14 @@ async function propose(){
    }
   }
   if(!checked.ok){
-   // This is an exact single-source-line replacement, not a loose patch apply.
-   // The independently trusted verifier still repeats every safety/test gate.
-   const single=reconstructUniqueSingleLinePatch(patch,scope,
+   // One further structurally restricted exact-line proposal: no added model
+   // call, no inexact source match, and no verifier or publisher bypass.
+   const replacement=exactSingleLineReplacementPatch(patch,scope,
      file=>fs.readFileSync(path.resolve(root,file),'utf8'));
-   if(single){
-    const canonical=validatePatch(single,scope);
-    fs.writeFileSync(patchPath,canonical,{mode:0o600});
+   if(replacement){
+    fs.writeFileSync(patchPath,replacement,{mode:0o600});
     checked=run('git',['apply','--check','--whitespace=error',patchPath],{cwd:root,timeout:10000});
-    if(checked.ok)console.log('HH_FREE_AI_EXACT_UNIQUE_LINE_REPLACEMENT_VERIFIED');
+    if(checked.ok)console.log('HH_FREE_AI_EXACT_SINGLE_LINE_REPLACEMENT_VERIFIED');
    }
   }
   if(!checked.ok)throw Error('FREE_AI_PATCH_APPLY_CHECK_FAILED');
@@ -616,6 +665,6 @@ async function main(){
  }
 }
 if(require.main===module)main();
-module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,validateAgentAcl,extractTextEvents,
+module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,findTypeScriptFailureTarget,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,reconstructUniqueSingleLinePatch};
+ noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,exactSingleLineReplacementPatch};

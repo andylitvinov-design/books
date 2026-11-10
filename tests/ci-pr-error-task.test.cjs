@@ -212,3 +212,25 @@ test('real Repair Worker #4217 no-autofixable scope is owner review not free-mod
  a.equal(genuineProviderFailure.category,'AI_EXECUTOR',
   'real model reply failures still use their own provider diagnosis');
 });
+
+
+test('model-free TypeScript reproduction failure stays owned, never misclassified as provider failure',()=>{
+ for(const detail_code of [
+  'FREE_AI_NO_REPRODUCED_BOUNDED_FAILURE',
+  'FREE_AI_NO_BOUNDED_TEST_COVERAGE',
+  'FREE_AI_TYPECHECK_FAILURE_OUTSIDE_REPAIR_SCOPE',
+  'FREE_AI_TYPECHECK_LINE_NOT_IN_SOURCE'
+ ]){
+  const x=makeWorkerFollowUp({pr_number:4234,head_sha:sha,
+   task_key:'b'.repeat(32),owner_run_id:'42876455977',
+   state:'MANUAL',reason_code:'FREE_AI_NO_VERIFIED_SOURCE_CHANGE',
+   detail_code,now});
+  a.equal(x.category,'TEST_FAILURE');
+  a.equal(x.strategy_code,'REPRODUCTION_PROOF_REQUIRED');
+  a.equal(x.responsible_role,'ci-diagnostic-triage');
+  a.equal(x.next_action,'VERIFY_EXACT_HEAD_CORE_TYPESCRIPT_AND_TEST_COVERAGE');
+  a.equal(x.source_write_authorized,false);
+  a.equal(x.execution_authorized,false);
+  a.equal(x.assignment_status,'OWNER_REVIEW_REQUIRED');
+ }
+});
