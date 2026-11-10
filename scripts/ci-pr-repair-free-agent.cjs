@@ -426,12 +426,20 @@ function reconstructUniqueSingleLinePatch(patch,scope,readSource){
  const source=readSource(file);
  if(typeof source!=='string'||!source.endsWith('\n')||source.includes('\r')||
    source.includes('\0'))return null;
- const actual=source.split('\n');
+ const actual=source.split('\n').slice(0,-1);
  const indices=actual.map((line,i)=>line===removed[0]?i:-1).filter(i=>i>=0);
  if(indices.length!==1)return null;
- const line=indices[0]+1;
- const canonical=header+'\n'+a+'\n'+b+'\n@@ -'+line+',1 +'+line+',1 @@\n-'+
-   removed[0]+'\n+'+added[0]+'\n';
+ // Git's strict default rejects zero-context hunks. Use up to three unchanged
+ // ORIGINAL lines on each side, copied verbatim from the authorized HEAD.
+ const index=indices[0],from=Math.max(0,index-3),
+   until=Math.min(actual.length,index+4),count=until-from;
+ if(count<2)return null;
+ const before=actual.slice(from,index).map(line=>' '+line).join('\n');
+ const after=actual.slice(index+1,until).map(line=>' '+line).join('\n');
+ const body=[...(before?[before]:[]),'-'+removed[0], '++'+added[0],
+   ...(after?[after]:[])].join('\n');
+ const canonical=header+'\n'+a+'\n'+b+'\n@@ -'+(from+1)+','+count+
+   ' +'+(from+1)+','+count+' @@\n'+body.replace('\n++','\n+')+'\n';
  return Buffer.byteLength(canonical,'utf8')<=MAX_PATCH?canonical:null;
 }
 function isolatedEnvironment(dir,freeApiKey=process.env.HH_OPENCODE_FREE_API_KEY||''){
