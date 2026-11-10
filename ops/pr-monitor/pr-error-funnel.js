@@ -228,12 +228,14 @@
     panel.append(header,grid,message,drill);
     main.insertBefore(panel,main.firstChild);
     select.addEventListener('change',load);
-    refreshButton.addEventListener('click',load);
+    refreshButton.addEventListener('click',function(){
+      commentsCache.clear();commitCache.clear();void load();
+    });
     void load();
   }
   async function gh(url){
     var response=await fetch(url,{method:'GET',credentials:'omit',
-      cache:'default',headers:{Accept:'application/vnd.github+json'}});
+      cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
     if(!response.ok)throw Error('GITHUB_HTTP_'+response.status);
     return response.json();
   }
