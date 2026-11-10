@@ -75,10 +75,10 @@
   border-radius:17px;color:#596a62;text-decoration:none;font-size:11px;font-weight:700;text-align:center}
 .bottomNav a[aria-current="page"]{background:#dcf5e8;color:#075d4d;font-weight:850}
 .bottomNav a:focus-visible{outline:3px solid #13866b;outline-offset:-2px}
-.page :global(body:has([data-coaching-hub]) [data-sitewide-antistress-banner]){display:none!important}
+:global(body:has([data-coaching-hub]) [data-sitewide-antistress-banner]){display:none!important}
+:global(body:has([data-coaching-hub]) [data-hh-ihelp-trigger]){display:none!important}
 @media(max-width:760px){
   :global(body:has([data-coaching-hub]) .mobile-bottom-navigation){display:none!important}
-  :global(body:has([data-coaching-hub]) [data-hh-ihelp-trigger]){display:none!important}
 }
 @media(max-width:600px){
   .wrap,.topbar{width:calc(100% - 20px)}
