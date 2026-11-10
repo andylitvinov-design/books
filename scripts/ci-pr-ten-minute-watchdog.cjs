@@ -187,6 +187,14 @@ function transientFailure(run, jobs, now) {
       /^(checkout|set ?up|install dependencies|download|fetch|restore cache|prepare runner)/i.test(step.name || '')));
 }
 
+function shouldRetryTransientCoreFailure({diagnosis,run,jobs,now,ciRoom,reruns=0}={}){
+  return ciRoom===true&&reruns<MAX_STALE_RUNS&&
+    diagnosis?.category==='INFRASTRUCTURE'&&
+    diagnosis.retry?.allowed===true&&
+    Number.isSafeInteger(diagnosis.retry.max_attempts)&&diagnosis.retry.max_attempts>0&&
+    transientFailure(run,jobs,now);
+}
+
 function classifyCoreFailureJobs(jobs) {
   // No complete job evidence => no source-repair claim or gate diagnosis.
   if (!Array.isArray(jobs) || !jobs.length) return 'UNVERIFIED';
@@ -1143,38 +1151,40 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     // A delayed, infrastructure-only retry is still guarded by transientFailure().
     let jobs=null;
     try {jobs=await listJobs(github,owner,repo,latest.id,limited);} catch(e) {log(`#${pr.number} jobs lookup: ${e.message}`);continue;}
-    if (ciRoom && summary.transientCiReruns < MAX_STALE_RUNS && transientFailure(latest,jobs,now)) {
+    // Every confirmed red Core event is classified before any retry, reroute,
+    // or source-repair decision. Retry requires both the classifier policy and
+    // the existing bounded exact-run timing/attempt gate.
+    const root=classifyCoreFailureJobs(jobs);
+    const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root});
+    summary.ciErrorByCategory[diagnosis.category]=
+      (summary.ciErrorByCategory[diagnosis.category]||0)+1;
+    const blocker=summary.blockerCases.find(c=>c.pr_number===live.number&&
+      c.root_code==='CORE_REQUIRED_CHECK_FAILED');
+    if(blocker){
+      blocker.ci_error_category=diagnosis.category;
+      blocker.ci_error_ruleset_version=diagnosis.ruleset_version||null;
+      blocker.ci_error_confidence=Number.isFinite(diagnosis.confidence)?diagnosis.confidence:null;
+      blocker.ci_error_reason_code=diagnosis.reason_code||null;
+      blocker.ci_error_evidence_code=diagnosis.evidence_code||null;
+      blocker.ci_error_recommended_status=diagnosis.recommended_status||'UNCLASSIFIED';
+      blocker.ci_error_responsible_role=diagnosis.responsible_role||'ci-diagnostic-triage';
+      blocker.ci_error_next_action=diagnosis.recommended_action||'Preserve evidence and continue bounded diagnostics.';
+      blocker.ci_error_retry_policy=diagnosis.retry||{allowed:false,max_attempts:0};
+      if(diagnosis.failed_job)blocker.failed_job=diagnosis.failed_job;
+      if(diagnosis.failed_step)blocker.failed_step=diagnosis.failed_step;
+    }
+    log('HH_RED_CI_CATEGORY #'+live.number+' '+diagnosis.category+
+      ' root='+root+' HEAD='+live.head.sha.slice(0,12));
+    if (shouldRetryTransientCoreFailure({diagnosis,run:latest,jobs,now,ciRoom,
+        reruns:summary.transientCiReruns})) {
       if (!dryRun) {
         try {
           await limited('retry-failed-ci',()=>github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs',{owner,repo,run_id:latest.id}));
         } catch(e) { log(`CI retry #${pr.number} failed: ${e.message}`);continue; }
       }
       summary.transientCiReruns++;
-      log(`${dryRun?'WOULD_RERUN':'RERUN'} transient core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
+      log(`${dryRun?'WOULD_RERUN':'RERUN'} classified ${diagnosis.category} core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
     } else if (latest.conclusion === 'failure' && latest.run_attempt >= 1) {
-      const root=classifyCoreFailureJobs(jobs);
-      // Reuse the already fetched trusted exact-HEAD jobs. Diagnostic only:
-      // this category cannot authorize a source write, retry or merge.
-      const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root});
-      summary.ciErrorByCategory[diagnosis.category]=
-        (summary.ciErrorByCategory[diagnosis.category]||0)+1;
-      const blocker=summary.blockerCases.find(c=>c.pr_number===live.number&&
-        c.root_code==='CORE_REQUIRED_CHECK_FAILED');
-      if(blocker){
-        blocker.ci_error_category=diagnosis.category;
-        blocker.ci_error_ruleset_version=diagnosis.ruleset_version||null;
-        blocker.ci_error_confidence=Number.isFinite(diagnosis.confidence)?diagnosis.confidence:null;
-        blocker.ci_error_reason_code=diagnosis.reason_code||null;
-        blocker.ci_error_evidence_code=diagnosis.evidence_code||null;
-        blocker.ci_error_recommended_status=diagnosis.recommended_status||'UNCLASSIFIED';
-        blocker.ci_error_responsible_role=diagnosis.responsible_role||'ci-diagnostic-triage';
-        blocker.ci_error_next_action=diagnosis.recommended_action||'Preserve evidence and continue bounded diagnostics.';
-        blocker.ci_error_retry_policy=diagnosis.retry||{allowed:false,max_attempts:0};
-        if(diagnosis.failed_job)blocker.failed_job=diagnosis.failed_job;
-        if(diagnosis.failed_step)blocker.failed_step=diagnosis.failed_step;
-      }
-      log('HH_RED_CI_CATEGORY #'+live.number+' '+diagnosis.category+
-        ' root='+root+' HEAD='+live.head.sha.slice(0,12));
       if(root==='RELEASE_GATE_ONLY') {
         summary.releaseGateOnly++;
         // This may be a production BASE_ADVANCED result or failed specialist
@@ -1349,4 +1359,4 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
   return summary;
 }
 
-module.exports = {eventOnlyPR,isTrustedQualityFailureEvent,qualityEventMatchesPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
+module.exports = {eventOnlyPR,isTrustedQualityFailureEvent,qualityEventMatchesPR,classifyIndependentSpecialistChecks,run,selectCandidates,latestByName,gateIsGreen,verifiedRedSpecialist,needsFailedCoreCronBackstop,transientFailure,shouldRetryTransientCoreFailure,canRetryCi,canDispatchRepair,classifyMergeState,coreRunForCurrentPR,verifyCoreRunOnExactHead,bootstrapLegacyCore,hasActiveLease,buildLiveBatchQuery,normalizeLiveBatchPR,boundedRestFallback,classifyCoreFailureJobs,latestCompletedFailedGate,recordRepairHandoff,assessCronHealth,canRetireCiHint};
