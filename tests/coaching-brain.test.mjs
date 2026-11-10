@@ -3,10 +3,11 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {
   COACHING_BRAIN_VERSION,normalizeCoachingBrainInput,coachingBrainSafety,
-  selectCoachingBrainMethod,coachingBrainStage,coachingBrainMessages,
+  selectCoachingBrainMethod,coachingBrainStage,coachingBrainStageDecision,coachingBrainMessages,
   parseCoachingBrainReply,offlineCoachingBrainReply,
   classifyCoachingResistance,coachingBrainBoundary,
 } from '../lib/personal-coaching/coaching-brain.mjs'
+import {analyzeCoachingProtocol,coachingProtocolPrompt} from '../lib/personal-coaching/coaching-session-protocol.mjs'
 
 const uuid='e620286d-62ac-4efb-87e3-e58baa2c71b5'
 const req=(overrides={})=>({sessionId:uuid,locale:'en',consent:true,
@@ -46,21 +47,78 @@ test('reviewed method selection adapts to actual client wording in EN/RU/ES',()=
     assert.equal(selectCoachingBrainMethod(normalizeCoachingBrainInput(req({message}))),method,message)
 })
 
-test('an orderly, bounded dialogue grows without demanding a user commitment',()=>{
-  let input=normalizeCoachingBrainInput(req())
-  assert.equal(coachingBrainStage(input),'clarify')
-  for(const [length,expected] of [[1,'explore'],[2,'options'],[3,'decision'],[4,'review']]){
-    input=normalizeCoachingBrainInput(req({turns:Array.from({length},(_,i)=>({
-      role:'user',content:'My client message '+i,
-    }))}))
-    assert.equal(coachingBrainStage(input),expected)
+test('stage intelligence uses client signals instead of counting messages',()=>{
+  const turns=(...content)=>content.flatMap(text=>[
+    {role:'user',content:text},
+    {role:'assistant',content:'What would you like to explore next?'},
+  ])
+  const stage=(message,history=[],locale='en')=>coachingBrainStage(
+    normalizeCoachingBrainInput(req({message,turns:history,locale}))
+  )
+  assert.equal(stage('I want to talk about work'),'clarify')
+  assert.equal(stage('My manager changed my role and I feel stuck.',turns('I want to talk about work')),'explore')
+  assert.equal(stage('I realize I have not told my manager what I need.',turns('I want to talk about work')),'awareness')
+  assert.equal(stage('I used to think asking for help was weakness; now I see it as collaboration.',turns('I want to talk about work')),'reframe')
+  assert.equal(stage('I choose to request a meeting rather than resign.',turns('I want to talk about work')),'choice')
+  assert.equal(stage('My first step is to draft the meeting agenda.',turns('I want to talk about work')),'planning')
+  assert.equal(stage('I will send the agenda tomorrow.',turns('I want to talk about work')),'commitment')
+  assert.equal(stage('Please summarize what we clarified.',turns('I want to talk about work')),'integration')
+  assert.equal(stage('I do not know where to start.',turns('I want to talk about work')),'clarify')
+})
+
+test('dialogue stage may move backwards when the client introduces uncertainty',()=>{
+  const input=normalizeCoachingBrainInput(req({
+    message:'I do not know where to start.',
+    turns:[
+      {role:'user',content:'I choose to request a meeting.'},
+      {role:'assistant',content:'What would help you prepare?'},
+    ],
+  }))
+  assert.deepEqual(coachingBrainStageDecision(input),{
+    stage:'clarify',reasonCode:'explicit_client_signal',
+  })
+  const noSignal=normalizeCoachingBrainInput(req({
+    message:'My manager changed the schedule again.',
+    turns:Array.from({length:8},(_,i)=>({role:i%2?'assistant':'user',content:'A neutral message '+i})),
+  }))
+  assert.deepEqual(coachingBrainStageDecision(noSignal),{
+    stage:'explore',reasonCode:'no_progress_signal',
+  })
+})
+
+test('commitment stage requires an explicit positive action with a time cue',()=>{
+  const input=normalizeCoachingBrainInput(req({
+    message:'I will not resign tomorrow.',
+    turns:[{role:'user',content:'We compared both options yesterday.'}],
+  }))
+  assert.notEqual(coachingBrainStage(input),'commitment')
+  for(const [locale,message] of [
+    ['ru','Я отправлю письмо завтра.'],
+    ['en','I will send the agenda tomorrow.'],
+    ['es','Mañana voy a enviar el correo.'],
+  ]){
+    const localized=normalizeCoachingBrainInput(req({locale,message,
+      turns:[{role:'user',content:'We chose a possible option.'}]}))
+    assert.equal(coachingBrainStage(localized),'commitment')
   }
-  const messages=coachingBrainMessages(input,'grow','review')
-  assert.deepEqual(messages.map(row=>row.role),['system','user'])
+})
+
+test('stage guidance is non-forcing and offline fallback covers every stage',()=>{
+  const input=normalizeCoachingBrainInput(req({
+    turns:[{role:'user',content:'I want to talk about work'}],
+  }))
+  const messages=coachingBrainMessages(input,'grow','explore')
+  assert.deepEqual(messages.map(row=>row.role),['system','system','user'])
+  assert.match(messages[0].content,/soft navigation hint/)
+  assert.match(messages[0].content,/Never advance just because another message arrived/)
   assert.match(messages[0].content,/ONE useful open question/)
   assert.match(messages[0].content,/UNTRUSTED DATA/)
-  assert.doesNotMatch(messages[0].content,/My client message/)
-  assert.match(messages[1].content,/My client message/)
+  assert.match(messages[2].content,/overwhelmed at work/)
+  for(const stage of ['clarify','explore','awareness','reframe','choice','planning','commitment','integration']){
+    const fallback=offlineCoachingBrainReply(input,'grow',stage)
+    assert.equal(fallback.mode,'offline')
+    assert.ok(fallback.question.length>15,stage)
+  }
 })
 
 test('unsupported model output never becomes a confirmed decision',()=>{
@@ -99,7 +157,7 @@ test('crisis interrupts provider invocation in three languages with no silent AI
   const input=normalizeCoachingBrainInput(req())
   assert.equal(coachingBrainSafety(input),null)
   for(const locale of ['en','ru','es']){
-    const fallback=offlineCoachingBrainReply({...input,locale},'grow','options')
+    const fallback=offlineCoachingBrainReply({...input,locale},'grow','explore')
     assert.equal(fallback.mode,'offline')
     assert.ok(fallback.question.length>15)
     assert.equal(fallback.planSuggestion,'')
@@ -134,7 +192,6 @@ test('server stays owner-scoped, rate-limited and provider gated; UI requires co
   assert.match(page,/session\.brainDecision\?\.confirmedAt/)
 })
 
-
 test('resistance detector distinguishes a client boundary from a coaching obstacle',()=>{
   const skip=normalizeCoachingBrainInput(req({message:'I do not want to answer this'}))
   const boundary=classifyCoachingResistance(skip)
@@ -143,7 +200,7 @@ test('resistance detector distinguishes a client boundary from a coaching obstac
   assert.equal(coachingBrainBoundary(skip,boundary).mode,'boundary')
   const stop=normalizeCoachingBrainInput(req({message:'Please stop this conversation'}))
   assert.equal(coachingBrainBoundary(stop).question,'You can close this dialogue whenever you are ready.')
-  const silenceLike=normalizeCoachingBrainInput(req({message:'ok'}))
+  const silenceLike=normalizeCoachingBrainInput(req({message:'okay'}))
   assert.equal(classifyCoachingResistance(silenceLike).type,'none')
 })
 
@@ -225,4 +282,37 @@ test('a short or neutral answer is not automatically treated as resistance',()=>
     const input=normalizeCoachingBrainInput(req({message}))
     assert.equal(classifyCoachingResistance(input).type,'none',message)
   }
+})
+
+test('protocol selects localized next-best action and unresolved milestones',()=>{
+ const x=analyzeCoachingProtocol({locale:'ru',message:'Хочу изменить работу; вчера на встрече я замер, потому что боялся критики',turns:[]})
+ assert.equal(x.phase,'possibilities')
+ assert.equal(x.nextBestAction.type,'open_options')
+ assert.equal(x.nextBestAction.question,'Учитывая то, что вы рассказали, какие возможные пути вы видите?')
+ assert.ok(x.unresolved.includes('possibilities'))
+ assert.match(coachingProtocolPrompt(x),/never advance because of turn count or elapsed time/i)
+})
+test('timeboxes are advisory and cannot force completion',()=>{
+ const x=analyzeCoachingProtocol({locale:'en',message:'I want to start my project',turns:[]})
+ assert.deepEqual(x.timebox,[120,300])
+ assert.equal(x.completion.action,false)
+ assert.equal(x.phase,'discovery')
+})
+test('review requires a client-authored action and time anchor',()=>{
+ const x=analyzeCoachingProtocol({locale:'en',message:'I want to start; yesterday I avoided it because I was afraid; I could try outlining it',turns:[]})
+ assert.equal(x.phase,'action')
+ assert.equal(x.completion.action,false)
+ const y=analyzeCoachingProtocol({locale:'en',message:'I want to start; yesterday I avoided it because I was afraid; I could try outlining it; I will do it tomorrow',turns:[]})
+ assert.equal(y.phase,'review')
+ assert.equal(y.completion.review,true)
+})
+
+test('explicit client correction overrides earlier lexical hypotheses',()=>{
+ const x=analyzeCoachingProtocol({
+  locale:'en',
+  turns:[{role:'user',content:'I want to start; yesterday at work I froze because I was afraid.'}],
+  message:'No, I am not afraid; I want to look at workload instead.'
+ })
+ assert.equal(x.signals.obstacle_or_pattern,false)
+ assert.equal(x.phase,'discovery')
 })
