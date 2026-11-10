@@ -123,6 +123,10 @@ function extractAssistantText(content){
         parts.push(part.text);
         continue;
       }
+      // Reasoning is a separate non-user-facing channel, never patch material.
+      // Ignore it only when a valid text block is also present; reasoning-only
+      // responses remain empty and are rejected below.
+      if(part.type==='reasoning'||part.type==='reasoning_details')continue;
       // Refusals, images, tool payloads and unknown blocks are not source patches.
       throw Error(part.type==='refusal'
         ?'FREE_AI_OPENROUTER_MODEL_REFUSED'
@@ -161,7 +165,7 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
     method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json',
       Accept:'application/json'},
     body:JSON.stringify({model:selected,messages:[{role:'user',content:prompt}],
-      max_tokens:5500,stream:false,usage:{include:true},
+      max_tokens:5500,n:1,stream:false,usage:{include:true},
       provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
         data_collection:'deny'}})
   },170000);
