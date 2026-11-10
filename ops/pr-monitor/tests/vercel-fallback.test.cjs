@@ -6,13 +6,13 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const cfg = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8'));
 test('legacy fallback targets the current verified complete immutable standalone deployment', () => {
-  // Verified one-tap Council complete production bundle: dpl_39ZGXf5Tk1WJiCE2Mo4iAdfKpq7S.
+  // Verified one-tap Council complete production bundle: dpl_8M1qtKur2j5YVBHsnEfggUrHEqLJ.
   // Do not point this proxy at an incomplete Git-only archive.
   const rewrites = cfg.rewrites || [];
   assert.equal(rewrites.length, 1);
   assert.deepEqual(rewrites[0], {
     source: '/:path*',
-    destination: 'https://holistic-house-pr-monitor-9l1u731f5-super10.vercel.app/:path*'
+    destination: 'https://holistic-house-pr-monitor-2yqc9bhgt-super10.vercel.app/:path*'
   });
   assert.match(JSON.stringify(cfg.headers), /ai-council-free-super10\.vercel\.app/);
 });
