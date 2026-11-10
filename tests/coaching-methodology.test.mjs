@@ -9,6 +9,9 @@ test('classifies the current task, not a client trait',()=>{
  assert.equal(classifyCoachingDifficulty({message:'I have too many tasks and cannot keep up'}),'overload');
  assert.equal(classifyCoachingDifficulty({message:'I am afraid to start'}),'ambivalence');
  assert.equal(classifyCoachingDifficulty({message:'Can you tell me what I should do?'}),'advice_requested');
+ assert.equal(classifyCoachingDifficulty({message:'What should I do?'}),'advice_requested');
+ assert.equal(classifyCoachingDifficulty({message:'Tell me what to do'}),'advice_requested');
+ assert.equal(classifyCoachingDifficulty({message:'¿Qué hago?'}),'advice_requested');
  assert.equal(classifyCoachingDifficulty({message:'I do not know'}),'uncertainty');
  assert.equal(classifyCoachingDifficulty({message:'I need to stop now'}),'stop_request');
 });
