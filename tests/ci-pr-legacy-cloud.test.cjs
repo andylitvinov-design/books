@@ -11,7 +11,7 @@ function pr(number,extra={}){
  return {number,state:'open',draft:false,title:'feat(reiki): legacy restore',
   user:{login:'andylitvinov-design'},base:{ref:'codex/public-book-library'},
   head:{ref:'legacy-'+number,sha:HEAD,repo:{full_name:'andylitvinov-design/books'}},
-  mergeable:false,mergeable_state:'dirty',
+  mergeable:null,mergeable_state:'unknown',
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],...extra};
 }
 test('manual PR is read-only eligible but NEVER auto-source eligible',()=>{
@@ -60,7 +60,8 @@ test('stable old candidate survives arbitrary delayed cron ticks and rotates hou
   'the existing two-worker hard cap remains unchanged');
 });
 test('no manual source retry without real bot history, clean HEAD and non-sensitive paths',()=>{
- const dirty=pr(204,{labels:[{name:'hh:repair-manual'},{name:'hh:repair-needed'}]});
+ const dirty=pr(204,{mergeable:false,mergeable_state:'dirty',
+  labels:[{name:'hh:repair-manual'},{name:'hh:repair-needed'}]});
  assert.equal(worker.trustedLegacySourceRetry(dirty,[],['components/reiki-hero.jsx']),false);
  const clean={...dirty,mergeable:true,mergeable_state:'clean'};
  assert.equal(worker.trustedLegacySourceRetry(clean,[],['components/reiki-hero.jsx']),false);

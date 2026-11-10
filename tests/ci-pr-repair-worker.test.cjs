@@ -1291,3 +1291,18 @@ test('free-model publisher receipt is provider-neutral',()=>{
  assert.equal(source.includes('free-model source repair'),true);
  assert.equal(source.includes('free OpenCode/GLM source repair'),false);
 });
+
+test('verified dirty conflicts outrank manual legacy preflight and never enter source repair',()=>{
+ const conflicted=pr({mergeable:false,mergeable_state:'dirty',labels:[
+  {name:'hh:repair-manual'},
+  {name:'hh:conflict-repair-needed'},
+  {name:'hh:repair-needed'}
+ ]});
+ assert.equal(require('../scripts/ci-pr-task-state.cjs').validLegacyPrep(conflicted),true,
+  'fixture reproduces the legacy-preflight eligibility that previously masked the conflict');
+ const task=taskFor(conflicted,{tier:'P1',direction:'source'});
+ assert.equal(task.lane,'conflict');
+ assert.equal(task.reason_code,'merge-conflict');
+ assert.equal(task.next_action,'CONFLICT_TRIAGE');
+ assert.notEqual(task.next_action,'LEGACY_CLOUD_PREFLIGHT');
+});
