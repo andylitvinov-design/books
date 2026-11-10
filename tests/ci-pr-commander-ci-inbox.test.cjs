@@ -18,7 +18,7 @@ test('Commander CI inbox accepts the complete shared 13-category taxonomy',()=>{
  for(const category of categories)assert.ok(edge.includes('"'+category+'"'),category);
  for(const category of categories)assert.ok(taxonomyMigration.includes("'"+category+"'"),category);
  assert.match(edge,/classification,failed_jobs,failed_steps/);
- assert.match(edge,/classification: incoming.schema/);
+ assert.match(edge,/schema: incoming.schema/);
  assert.match(edge,/incoming.status !== "DIAGNOSTIC_ONLY"/);
  assert.match(edge,/incoming.source_write_authorized !== false/);
  assert.match(edge,/incoming.execution_authorized !== false/);
