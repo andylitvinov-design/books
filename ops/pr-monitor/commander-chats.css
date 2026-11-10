@@ -145,3 +145,7 @@ body.hh-cc-shell:has(#cc-board input:focus) #hh-cc-dock{display:none!important}
  .cc-surface .cc-send-primary{font-size:12px;padding:10px 9px}
  .cc-send-primary span{margin-left:2px}
 }
+
+/* The reply/error belongs to the visible composer, including with iOS keyboard up. */
+.cc-create-feedback:not([hidden]){padding:10px 12px;margin:0;border:1px solid #ab87ca;border-radius:11px;background:#332642;color:#fff1ff;font-size:13px;line-height:1.45}
+.cc-quick-compose #cc-create-send[disabled]{opacity:.62;cursor:progress}
