@@ -100,7 +100,6 @@ for(const [engine,browserType] of [["chromium",chromium],["webkit",webkit]].filt
         await practice.locator("button").last().click();
         assert.notEqual(await practice.locator("ol").innerText(),prior,"changing variant must update practice");
         await course.locator("[data-guided-add-meditation]").click();
-        const audioPanel=page.locator('[data-video-audio-panel="meditations"]');
         await expect(audioPanel).toBeVisible({timeout:20000});
         const audio=audioPanel.locator("[data-video-personal-meditation]");
         await expect(audio).toBeVisible();
