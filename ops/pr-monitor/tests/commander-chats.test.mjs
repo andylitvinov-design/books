@@ -407,7 +407,7 @@ test('private Commander writes raw JSON text through text-to-jsonb casts, not JS
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
  assert.doesNotMatch(edge,/\$\d+::jsonb\b/);
  const jsonbParams=[...edge.matchAll(/\$\d+::text::jsonb\b/g)];
- assert.equal(jsonbParams.length,18);
+ assert.equal(jsonbParams.length,17);
  for(const field of ['failed_jobs','failed_steps','commander_tasks','commander_chats','commander_chat_events','commander_execution_runs'])
   assert.ok(edge.includes(field));
  assert.match(edge,/jsonbText\(event\.failed_jobs\)/);
@@ -499,25 +499,28 @@ test('new chat sends bounded acceptance criteria and Skill IDs as references onl
 
 
 
-test('first-party Agent Director handles owner-scoped read-only dispatch with verifiable receipts and no Hermes Cloud transport',()=>{
-  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
-  const begin=edge.indexOf('if(action==="commander_start_run")');
-  const end=edge.indexOf('if(action==="commander_list_ci_events")',begin);
-  assert.ok(begin>=0&&end>begin);
-  const handler=edge.slice(begin,end);
-  assert.match(edge,/const DIRECTOR_RUN_SCHEMA="HH_AGENT_DIRECTOR_RUN_V1"/);
-  assert.match(edge,/const DIRECTOR_ORIGIN="https:\/\/holistichouse\.vercel\.app"/);
-  assert.match(edge,/async function ownedDirectorCall\(req,data\)/);
-  assert.match(edge,/function trustedOwnedDirectorReceipt\(value,run\)/);
-  assert.match(handler,/const canDispatch=executor==="local"&&!writeConfirmed/);
-  assert.match(handler,/await ownedDirectorCall\(req,/);
-  assert.match(handler,/trustedOwnedDirectorReceipt\(remote,/);
-  assert.match(handler,/AGENT_DIRECTOR_DISPATCH_UNCONFIRMED/);
-  assert.match(handler,/EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/);
-  assert.doesNotMatch(handler,/hermesCall\(|HERMES_DISPATCH_REQUESTED|await verifyFreeModel\(/);
-  assert.match(edge,/value\.sourceWrite!==null/);
-  assert.match(edge,/value\.proofLevel!==/);
-  assert.doesNotMatch(edge,/HERMES_RUN_SCHEMA|HERMES_SHARED_SECRET/);
+test('first-party Agent Director queues read-only OpenRouter jobs through the durable owner ledger',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ const worker=src('../../supabase/functions/agent-commander-openrouter-worker/index.ts');
+ const begin=edge.indexOf('if(action==="commander_start_run")');
+ const end=edge.indexOf('if(action==="commander_list_ci_events")',begin);
+ assert.ok(begin>=0&&end>begin);
+ const handler=edge.slice(begin,end);
+ assert.match(edge,/const openRouterReady=Boolean\(Deno\.env\.get\("HH_PM_OPENROUTER_API_KEY"\)\|\|Deno\.env\.get\("OPENROUTER_API_KEY"\)\)/);
+ assert.match(handler,/const canDispatch=executor==="local"&&!writeConfirmed&&openRouterReady/);
+ assert.match(handler,/OPENROUTER_API_KEY_NOT_CONFIGURED/);
+ assert.match(handler,/firstStatus=canDispatch\?"QUEUED":"BLOCKED"/);
+ assert.match(handler,/on conflict\(owner_id,chat_id,idempotency_key\) do nothing/);
+ assert.match(handler,/IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST/);
+ assert.match(handler,/OPENROUTER_WORKER_QUEUED/);
+ assert.match(handler,/dispatchAttempted:false,agentStarted:false,executionVerified:false/);
+ assert.match(handler,/EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/);
+ assert.doesNotMatch(handler,/ownedDirectorCall|trustedOwnedDirectorReceipt|AGENT_DIRECTOR_DISPATCH_UNCONFIRMED/);
+ assert.doesNotMatch(edge,/DIRECTOR_RUN_SCHEMA|DIRECTOR_ORIGIN|HERMES_SHARED_SECRET/);
+ assert.match(worker,/FOR UPDATE SKIP LOCKED/i);
+ assert.match(worker,/worker_lease_token/);
+ assert.match(worker,/OPENROUTER_ZERO_COST_NOT_VERIFIED/);
+ assert.match(worker,/sourceWrite: null/);
 });
 
 test('legacy external Hermes code executor is disabled in UI and rejected before private-store dispatch',async()=>{
