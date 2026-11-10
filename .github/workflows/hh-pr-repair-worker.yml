@@ -562,7 +562,7 @@ jobs:
               throw Error('HH_FREE_MODEL_PROOF_INVALID');
             fs.appendFileSync(process.env.GITHUB_OUTPUT,
               'code_backend='+proof.provider+'\ncode_model='+proof.model+'\n');
-            NODE
+          NODE
           fi
       - name: Store untrusted proposal for independent verification
         uses: actions/upload-artifact@v4
