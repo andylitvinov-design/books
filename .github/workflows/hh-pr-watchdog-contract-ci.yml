@@ -185,6 +185,7 @@ on:
       - 'tests/ci-pr-red-ci-classifier.test.cjs'
 
       - 'tests/ci-pr-commander-ci-inbox.test.cjs'
+      - 'supabase/migrations/20261110182500_commander_ci_triage_disposition_backfill_v1.sql'
       - 'tests/ci-pr-openrouter-quota-triage.test.cjs'
       - 'supabase/migrations/20261110174500_commander_openrouter_rate_limit_triage.sql'
       - 'tests/ci-pr-commander-assignment-receipts.test.cjs'
