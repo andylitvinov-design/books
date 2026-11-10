@@ -56,11 +56,11 @@ test('one wrong-position free-model hunk is anchored ONLY by unique exact source
  const prefix='diff --git a/components/public-card.tsx b/components/public-card.tsx\n'+
   '--- a/components/public-card.tsx\n+++ b/components/public-card.tsx\n';
  const wrong=prefix+'@@ -999,99 +999,99 @@\n'+
-  ' const nav = "safe";\n- const value = "broken";\n+ const value = "fixed";\n';
+  '  const nav = "safe";\n- const value = "broken";\n+ const value = "fixed";\n';
  const body='const preceding = 42;\n const nav = "safe";\n const value = "broken";\nconst ending = 7;\n';
  const matched=reanchorSingleHunkPatch(wrong,scope,()=>body);
  assert.equal(matched,prefix+'@@ -2,2 +2,2 @@\n'+
-  ' const nav = "safe";\n- const value = "broken";\n+ const value = "fixed";\n');
+  '  const nav = "safe";\n- const value = "broken";\n+ const value = "fixed";\n');
  assert.equal(reanchorSingleHunkPatch(matched,scope,()=>body),null,
   'already exactly anchored patch cannot be changed again');
  assert.equal(reanchorSingleHunkPatch(wrong,scope,()=>body+body),null,
