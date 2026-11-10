@@ -497,3 +497,17 @@ test('new chat sends bounded acceptance criteria and Skill IDs as references onl
 });
 
 
+
+
+test('missing monitor cookie silently resumes the existing Holistic House session without opening a second Google login',()=>{
+ const js=src('commander-chats.js');
+ const start=js.lastIndexOf("request('/api/commander-session')");
+ const boot=js.slice(start);
+ assert.ok(js.includes("const MAIN='https://holistichouse.vercel.app'"));
+ assert.match(js,/if\(!r\.ok\)\{const error=Error\(j\.error\|\|'HTTP '\+r\.status\);error\.status=r\.status;throw error;\}/);
+ assert.match(boot,/if\(error\?\.status===401\|\|error\?\.message==='OWNER_SESSION_REQUIRED'\)/);
+ assert.match(boot,/location\.replace\(MAIN\+'\/commander-connect\.html\?next='/);
+ assert.match(boot,/requestedTask/);
+ assert.match(boot,/Не удалось проверить защищённую сессию/);
+ assert.doesNotMatch(boot,/startGoogle|auth\/start/);
+});
