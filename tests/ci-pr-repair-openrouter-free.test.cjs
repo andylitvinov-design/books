@@ -80,7 +80,7 @@ test('priced catalog, 429, wrong model, paid usage and invalid reply fail closed
 test('named free coding routes prioritize specialization, not catalog usage popularity',()=>{
  assert.equal(DEFAULT_MODEL,'cohere/north-mini-code:free');
  assert.deepEqual(MODEL_PROFILES.repair.slice(0,2),
-  ['cohere/north-mini-code:free','recursive/flint-v1.0:free']);
+  ['recursive/flint-v1.0:free','cohere/north-mini-code:free']);
  assert.equal(MODEL_PROFILES.architecture[0],'nvidia/nemotron-3-ultra-550b-a55b:free');
  assert.equal(MODEL_PROFILES.visual[0],'nvidia/nemotron-3.5-super-vl:free');
  assert.ok(Object.values(MODEL_PROFILES).every(profile=>profile.every(
@@ -92,7 +92,7 @@ test('one preflight catalog selects next verified free code model; one inference
  const fetchImpl=async(url,args)=>{
   calls.push({url,args});
   if(calls.length===1)return response({data:[
-   entry({prompt:'0.01',completion:'0'}),
+   {...entry({prompt:'0.01',completion:'0'}),id:MODEL_PROFILES.repair[0]},
    {...entry(),id:second}
   ]});
   return response({model:second,usage:{cost:0},choices:[{message:{content:'diff --git a/a b/a'}}]});
@@ -125,7 +125,7 @@ test('explicit pin cannot silently fallback and unknown roles fail before infere
  assert.equal(calls.length,1);
 });
 test('429 and missing or nonzero real response cost stop without retry',async()=>{
- const model=MODEL_PROFILES.repair[0],catalog=response({data:[entry()]});
+ const model=MODEL_PROFILES.repair[0],catalog=response({data:[{...entry(),id:model}]});
  for(const result of [
   response({},429),
   response({model,usage:{},choices:[{message:{content:'patch'}}]}),
@@ -344,4 +344,32 @@ test('bounded response diagnostics contain only response categories and no provi
   reasoning_present:true,tool_calls_present:false
  });
  assert.doesNotMatch(JSON.stringify(shape),/SECRET_TEXT|SECRET_CHAIN|SECRET_SOURCE|SECRET_REASON/);
+});
+
+test('repair auto prefers verified Flint free model, with no second completion fallback',async()=>{
+ const first=MODEL_PROFILES.repair[0],second=MODEL_PROFILES.repair[1];
+ assert.equal(first,'recursive/flint-v1.0:free');
+ const catalog={data:[{...entry(),id:second},{...entry(),id:first}]};
+ assert.deepEqual(chooseVerifiedFreeModel(catalog,{model:'auto',role:'repair'}),
+   {model:first,zeroCost:true,role:'repair',selection:'ranked_catalog'});
+ const calls=[],patched='diff --git a/components/a.tsx b/components/a.tsx\n';
+ const got=await requestFreePatch({
+   prompt:'public bounded code repair',key:'fixture',
+   fetchImpl:async(url,args)=>{
+     calls.push({url,args});
+     return calls.length===1?response(catalog):
+       response({model:first,usage:{cost:0},choices:[{message:{content:patched}}]});
+   }
+ });
+ assert.equal(got,patched);
+ assert.equal(calls.length,2);
+ const data=JSON.parse(calls[1].args.body);
+ assert.equal(data.model,first);
+ assert.deepEqual(data.provider.max_price,{prompt:0,completion:0});
+ assert.equal(data.provider.allow_fallbacks,false);
+ const fallback=chooseVerifiedFreeModel({data:[
+   {...entry(),id:first,pricing:{prompt:'0.0001',completion:'0'}},
+   {...entry(),id:second}
+ ]},{model:'auto',role:'repair'});
+ assert.equal(fallback.model,second,'never select paid/unknown model even if first ranked');
 });
