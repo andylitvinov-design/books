@@ -1346,3 +1346,32 @@ test('worker failure follow-ups distinguish free-model failure from dispatch fai
   assert.equal(validTask(task),true);
  }
 });
+
+test('safe OpenRouter response-shape metadata survives task finalization without source leakage',()=>{
+ const {normalizeModelAudit}=require('../scripts/ci-pr-repair-worker.cjs');
+ const receipt={schema:'HH_OPENROUTER_RESPONSE_SHAPE_V1',
+  choices_count:1,finish_reason:'stop',content_type:'null',
+  content_parts:0,text_parts:0,reasoning_present:true,tool_calls_present:false,
+  raw_response:'SECRET_PRIVATE_MODEL_TEXT',untrusted_provider_key:'SECRET_PRIVATE_SOURCE'};
+ const raw={schema:'HH_FREE_AI_MODEL_RUN_V1',provider:'openrouter',
+  model:'cohere/north-mini-code:free',executor_type:'free_ci_patch_proposer',
+  pr_number:42,source_head:sha,run_id:'123456',run_attempt:1,
+  started_at:'2026-11-09T00:00:00.000Z',model_call_started_at:'2026-11-09T00:00:01.000Z',
+  response_received_at:'2026-11-09T00:00:02.000Z',attempt_count:1,
+  result:'MODEL_RESPONSE_RECEIVED',patch_present:false,candidate_paths:[],
+  verification_result:'NOT_RUN',response_shape:receipt};
+ const task={number:42,expectedSha:sha,runId:123456,runAttempt:1};
+ const normalized=normalizeModelAudit(raw,task);
+ assert.deepEqual(normalized.response_shape,{
+  schema:'HH_OPENROUTER_RESPONSE_SHAPE_V1',choices_count:1,
+  finish_reason:'stop',content_type:'null',content_parts:0,text_parts:0,
+  reasoning_present:true,tool_calls_present:false
+ });
+ assert.doesNotMatch(JSON.stringify(normalized),/SECRET_PRIVATE_MODEL_TEXT|SECRET_PRIVATE_SOURCE/);
+ assert.equal(normalizeModelAudit({...raw,response_shape:{...receipt,text_parts:2}},task).response_shape,null,
+  'invalid shape must not invalidate the full audit or become a trusted receipt');
+ assert.equal(normalizeModelAudit({...raw,response_shape:{...receipt,content_type:'SECRET_PRIVATE_SOURCE'}},task).response_shape,null);
+ assert.equal(normalizeModelAudit({...raw,provider:'opencode',
+  model:'opencode/glm-5.3-flash-free'},task).response_shape,null,
+  'OpenRouter response shape must not be attributed to another provider');
+});
