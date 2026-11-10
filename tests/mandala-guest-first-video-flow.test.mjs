@@ -18,21 +18,21 @@ test('first guest video does not need an account-bound XP hold, but signed-in vi
   assert.doesNotMatch(studio,/Sign in to create videos\./)
 })
 
-test('Add Effects only navigates; direct Generate still applies paid and consent checks',()=>{
+test('Montage next opens background Audio then Hypno without rendering or charging',()=>{
  const handler=studio.slice(studio.indexOf('const continueMontageOrGenerate='),
    studio.indexOf('// First mobile step is only',studio.indexOf('const continueMontageOrGenerate=')));
  assert.ok(handler.includes('if(montagePanel==="effects"){'));
  assert.ok(handler.includes('setMontagePanel("text")'));
- assert.ok(handler.includes('setMontagePanel("visual")'));
+ assert.ok(handler.includes('setBasicPanelTab("music")'));
+ assert.ok(handler.includes('setActiveWorkspace("effects")'));
  assert.ok(handler.includes('setMontagePanel("audio")'));
- assert.ok(!handler.includes('setActiveWorkspace("effects")'));
  assert.ok(!handler.includes('startFromHero()'));
  assert.ok(!handler.includes('createQuickVideo()'),"Add Effects must never encode or charge credits");
  const direct=studio.slice(studio.indexOf('data-video-quick-generate'),studio.indexOf('</button>',studio.indexOf('data-video-quick-generate')));
- const next=studio.slice(studio.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"visual":"audio"}'),studio.indexOf('</button>',studio.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"visual":"audio"}')));
+ const next=studio.slice(studio.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":"hypno"}'),studio.indexOf('</button>',studio.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":"hypno"}')));
  assert.ok(direct.includes('onClick={createQuickVideo}'));
  assert.ok(next.includes('onClick={continueMontageOrGenerate}'));
- assert.ok(next.includes('montagePanel==="text"?"visual":"audio"'));
+ assert.ok(next.includes('montagePanel==="text"?"audio":"hypno"'));
  assert.ok(studio.includes('if(!freeVideoSelected){'),"paid formats stay explicitly gated");
  assert.ok(studio.includes('<MandalaVideoConcept locale={locale}'));
  assert.ok(studio.includes('onApprove={approved=>'));

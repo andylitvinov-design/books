@@ -5,12 +5,14 @@ import { getCompactNavigation, navigationCopy } from '../lib/site-navigation-mod
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
-test('My Space replaces Cabinet across the public header, without changing six bottom-bar routes', () => {
+test('My Space remains a private header entry while seven compact public journeys stay available', () => {
   const labels = { en: 'My Space', ru: 'Моё пространство', es: 'Mi espacio' }
   for (const locale of ['en', 'ru', 'es']) {
-    const last = getCompactNavigation(locale).at(-1)
-    assert.equal(last.id, 'books')
-    assert.equal(last.href, '/' + locale + '/books')
+    const journeys = getCompactNavigation(locale)
+    assert.deepEqual(journeys.map(item => item.id), ['home','analysis','courses','profile','alchemy','pro','temple'])
+    assert.equal(journeys.at(-1)?.href, '/' + locale + '/holistic-support')
+    assert.equal(journeys.find(item => item.id === 'profile')?.href,
+      '/' + (locale === 'es' ? 'en' : locale) + '/app/portrait')
     assert.equal(navigationCopy[locale].house, labels[locale])
     assert.equal(navigationCopy[locale].cabinet, labels[locale])
   }
@@ -32,7 +34,8 @@ test('portrait-only guest welcome explains growth tools and practitioner publish
 
   assert.match(page, /state !== 'ready' && page === 'portrait' && !stressSignup/)
   assert.match(page, /<CabinetGuestOverview/)
-  assert.match(page, /onSignin=\{signin\}/)
+  assert.match(page, /onSignin=\{\(\)=>signin\('google'\)\}/)
+  assert.match(page, /onTelegramSignin=\{\(\)=>signin\('telegram'\)\}/)
   assert.match(page, /unavailable=\{state === 'unavailable'\}/)
   assert.match(page, /sessionNotice=\{state === 'error'\}/)
   assert.match(page, /const signinAttempted = useRef\(false\)/)
