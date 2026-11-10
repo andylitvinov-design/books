@@ -241,6 +241,9 @@ function promptFor(scope,sources,signals){
   'then --- a/REAL_FILE, +++ b/REAL_FILE, and standard @@ -N +N @@ hunks.',
   'Use an actual allowlisted REAL_FILE; no preamble, commentary, JSON or code fences.',
   'Fix the actual observed failure with the smallest safe patch.',
+  'For a one-line bug use one exact -old/+new hunk with no surrounding context.',
+  'Copy the full removed line verbatim from the provided file, including whitespace.',
+  'Never abbreviate code or add unrelated changes.',
   'For each @@ hunk, copy every unchanged and removed source line EXACTLY,',
   'including indentation and the complete line; never elide text or use ... .',
   'Ensure hunk line counts match the emitted context/deleted/added lines.',
@@ -387,6 +390,50 @@ function reanchorSingleHunkPatch(patch,scope,readSource){
  const proposal=corrected.join('\n')+'\n';
  return Buffer.byteLength(proposal,'utf8')<=MAX_PATCH&&proposal!==patch?proposal:null;
 }
+// A one-line model replacement can be structurally useful even if its
+// surrounding hunk context is inaccurate. Rebuild only when the COMPLETE
+// removed line matches exactly once in one already-authorized source file.
+// No fuzzy matching, broader edits, partial matches or source/test bypass.
+function reconstructUniqueSingleLinePatch(patch,scope,readSource){
+ if(typeof patch!=='string'||Buffer.byteLength(patch,'utf8')>MAX_PATCH||
+   typeof readSource!=='function'||!Array.isArray(scope?.files))return null;
+ const headers=[...patch.matchAll(/^diff --git a\/([^\n]+) b\/([^\n]+)$/gm)];
+ if(headers.length!==1||headers[0][1]!==headers[0][2])return null;
+ const file=headers[0][1];
+ if(!scope.files.includes(file)||!safeSourcePath(file))return null;
+ const lines=patch.split('\n');
+ if(lines.at(-1)==='')lines.pop();
+ const header='diff --git a/'+file+' b/'+file;
+ const a='--- a/'+file,b='+++ b/'+file;
+ if(lines[0]!==header||lines.filter(x=>x===a).length!==1||
+   lines.filter(x=>x===b).length!==1)return null;
+ const hunks=lines.map((line,i)=>/^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@/.test(line)?i:-1).filter(i=>i>=0);
+ if(hunks.length!==1)return null;
+ const at=hunks[0];
+ if(at<3||lines.indexOf(a)>=at||lines.indexOf(b)>=at||
+   lines.slice(1,at).some(line=>line!==a&&line!==b&&
+     !/^index [a-f0-9]{7,40}\.\.[a-f0-9]{7,40}(?: 100644)?$/i.test(line)))return null;
+ const removed=[],added=[];
+ for(const line of lines.slice(at+1)){
+   if(line.startsWith('---')||line.startsWith('+++')||
+      !/^[ +\-]/.test(line))return null;
+   if(line[0]==='-')removed.push(line.slice(1));
+   if(line[0]==='+')added.push(line.slice(1));
+ }
+ if(removed.length!==1||added.length!==1||
+   removed[0]===added[0]||!removed[0].trim()||!added[0].trim()||
+   removed[0].length>500||added[0].length>500)return null;
+ const source=readSource(file);
+ if(typeof source!=='string'||!source.endsWith('\n')||source.includes('\r')||
+   source.includes('\0'))return null;
+ const actual=source.split('\n');
+ const indices=actual.map((line,i)=>line===removed[0]?i:-1).filter(i=>i>=0);
+ if(indices.length!==1)return null;
+ const line=indices[0]+1;
+ const canonical=header+'\n'+a+'\n'+b+'\n@@ -'+line+',1 +'+line+',1 @@\n-'+
+   removed[0]+'\n+'+added[0]+'\n';
+ return Buffer.byteLength(canonical,'utf8')<=MAX_PATCH?canonical:null;
+}
 function isolatedEnvironment(dir,freeApiKey=process.env.HH_OPENCODE_FREE_API_KEY||''){
  const config=path.join(dir,'config'),home=path.join(dir,'home');
  for(const p of [config,home,path.join(dir,'data'),path.join(dir,'cache'),
@@ -522,6 +569,18 @@ async function propose(){
     if(checked.ok)console.log('HH_FREE_AI_EXACT_SOURCE_ANCHOR_RECOUNT_VERIFIED');
    }
   }
+  if(!checked.ok){
+   // This is an exact single-source-line replacement, not a loose patch apply.
+   // The independently trusted verifier still repeats every safety/test gate.
+   const single=reconstructUniqueSingleLinePatch(patch,scope,
+     file=>fs.readFileSync(path.resolve(root,file),'utf8'));
+   if(single){
+    const canonical=validatePatch(single,scope);
+    fs.writeFileSync(patchPath,canonical,{mode:0o600});
+    checked=run('git',['apply','--check','--whitespace=error',patchPath],{cwd:root,timeout:10000});
+    if(checked.ok)console.log('HH_FREE_AI_EXACT_UNIQUE_LINE_REPLACEMENT_VERIFIED');
+   }
+  }
   if(!checked.ok)throw Error('FREE_AI_PATCH_APPLY_CHECK_FAILED');
   const applied=run('git',['apply','--whitespace=error',patchPath],{cwd:root,timeout:10000});
   if(!applied.ok)throw Error('FREE_AI_PATCH_APPLY_FAILED');
@@ -551,4 +610,4 @@ async function main(){
 if(require.main===module)main();
 module.exports={MODEL,safeSourcePath,assessCompleteFreeRepairScope,sourceScope,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
- noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch};
+ noSecretEnv,findFailureTarget,boundedSource,narrowFailedSourceScope,promptReceipt,reanchorSingleHunkPatch,reconstructUniqueSingleLinePatch};
