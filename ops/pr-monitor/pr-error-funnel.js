@@ -150,12 +150,32 @@
     // Count the PR once per step; independent incidents on the same PR cannot
     // be accidentally combined into a fabricated single verified repair.
     var prs=new Map(),uniqueEvents=new Set(),counts={},links={};
+    // These diagnostic cohorts overlap. No missing receipt is fabricated.
+    var BLOCKERS=[
+      ['unclassified','Диагностика не завершена','Нет проверенной классификации или причина UNKNOWN'],
+      ['unrouted','Нет результата маршрутизации','Задача есть, но нет сохранённой квитанции маршрута'],
+      ['needs_review','Нужен другой исполнитель','Сохранён маршрут на диагностику/ручной разбор, но не на кодовый Worker'],
+      ['worker_without_commit','Ответ без коммита','Worker завершил попытку, исходный код не опубликован']
+    ];
+    var blockers={};
+    for(var item of BLOCKERS)blockers[item[0]]={prs:new Set(),events:new Set(),label:item[1],note:item[2]};
+    var mark=(code,e)=>{
+      blockers[code].prs.add(e.pr_number);
+      blockers[code].events.add([e.pr_number,e.head_sha,e.workflow_run_id,e.run_attempt].join(':'));
+    };
     for(var stage of STAGES){counts[stage[0]]=0;links[stage[0]]=[];}
     for(var e of selected){
       uniqueEvents.add([e.pr_number,e.head_sha,e.workflow_run_id,e.run_attempt].join(':'));
       var pr=prs.get(e.pr_number)||{number:e.pr_number,steps:{},proof:{},ai_response:false};
       var route=routeFor(e),id=String(e.ci_event_id||'');
       var proof=byEvent&&byEvent[id]||{};
+      if(!classified(e)||e.category==='UNKNOWN')mark('unclassified',e);
+      if(taskLinked(e)&&!e.route_receipt)mark('unrouted',e);
+      if(['TASK_REQUIRES_REVIEW','TASK_ROUTED_TO_REVIEW',
+        'TASK_AWAITING_EXISTING_RECOVERY'].includes(e.route_receipt?.state))
+        mark('needs_review',e);
+      if(route&&proof.responded===true&&proof.commit_verified!==true)
+        mark('worker_without_commit',e);
       var states={failed:true,classified:classified(e),task:taskLinked(e),
         assigned:!!route,dispatched:!!route,claimed:!!route&&proof.claimed===true,
         runner:!!route&&proof.runner===true,
@@ -181,6 +201,12 @@
       to:new Date(now).toISOString(),counts:counts,links:links,
       unique_prs:prs.size,unique_events:uniqueEvents.size,
       ai_responded_prs:[...prs.values()].filter(function(p){return p.ai_response;}).length,
+      blockers:BLOCKERS.map(function(item){
+        var row=blockers[item[0]];
+        return {key:item[0],label:row.label,note:row.note,
+          prs:[...row.prs].sort(function(a,b){return b-a;}),
+          pr_count:row.prs.size,event_count:row.events.size};
+      }),
       complete:complete===true};
   }
   var model={STAGES:STAGES,validEvent:validEvent,classified:classified,
@@ -190,7 +216,7 @@
   if(typeof document==='undefined'||typeof window==='undefined')return;
   if(root.__hhPrErrorFunnelMounted)return;
   root.__hhPrErrorFunnelMounted=true;
-  var panel,select,refreshButton,message,grid,drill,loading=false;
+  var panel,select,refreshButton,message,grid,drill,blockerPanel,loading=false;
   var commentsCache=new Map(),commitCache=new Map();
   var formatter=new Intl.NumberFormat('ru-RU');
   function el(tag,css,label){var n=document.createElement(tag);
@@ -225,7 +251,10 @@
     message=el('p','hh-error-message','Загружаю подтверждённые события…');
     message.setAttribute('role','status');
     drill=el('div','hh-error-drill');
-    panel.append(header,grid,message,drill);
+    blockerPanel=el('details','hh-error-blockers');
+    blockerPanel.append(el('summary','','Почему задачи останавливаются · причины и PR'),
+      el('p','','После входа здесь появится разбивка по типу блокировки.'));
+    panel.append(header,grid,message,blockerPanel,drill);
     main.insertBefore(panel,main.firstChild);
     renderSkeleton();
     select.addEventListener('change',load);
@@ -300,6 +329,23 @@
       }
       d.append(list);drill.append(d);
     }
+    blockerPanel.replaceChildren();
+    blockerPanel.append(el('summary','','Почему задачи останавливаются · причины и PR'));
+    var reasons=el('div','hh-error-reasons');
+    for(var b of data.blockers||[]){
+      var box=el('article','hh-error-reason');
+      var head=el('div','hh-error-reason-head');
+      head.append(el('strong','',b.label),el('span','',b.event_count+' событий · '+b.pr_count+' PR'));
+      box.append(head,el('small','',b.note));
+      var prs=el('div','hh-error-reason-prs');
+      for(var number of b.prs){
+        var link=el('a','','#'+number);
+        link.href='https://github.com/'+REPO+'/pull/'+number;
+        link.rel='noopener noreferrer';link.target='_blank';prs.append(link);
+      }
+      box.append(prs);reasons.append(box);
+    }
+    blockerPanel.append(reasons);
     message.replaceChildren();
     var time=new Intl.DateTimeFormat('ru-RU',{timeZone:'America/Toronto',
       day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
