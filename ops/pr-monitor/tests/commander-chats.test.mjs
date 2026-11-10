@@ -453,6 +453,15 @@ test('Commander uses first-party Agent Director for local execution and disables
  assert.match(ui,/OWNED_MODEL_RUNTIME_NOT_CONFIGURED/);
  assert.match(api,/action='commander_start_run'/);
 });
+test('Commander first-party Agent Director never calls an external Hermes model catalogue',()=>{
+ const ui=src('commander-chats.js'),html=src('chats.html');
+ assert.match(ui,/await request\(SERVER\+'\?action=run','POST',\{[\s\S]{0,260}executor:mode/);
+ assert.match(ui,/mode==='local'\?\{modelId:'owned-default',confirmGitHubWrite:false\}/);
+ assert.match(ui,/const dispatchModes=new Set\(\['local'/);
+ assert.doesNotMatch(ui,/await loadExecutorModels\(\)/);
+ assert.match(html,/option value="local">Agent Director · собственная модель/);
+ assert.match(html,/option value="hermes" disabled>Внешний Hermes отключён/);
+});
 test('verified GitHub CI reports carry the top-level source URL consumed by the chat renderer',()=>{
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
  const render=src('commander-chats.js');
