@@ -115,6 +115,15 @@ test('counts unique PR rather than conflating independent failed CI attempts',()
  assert.equal(s.unique_prs,1);assert.equal(s.unique_events,2);
  assert.equal(s.counts.failed,1);assert.equal(s.counts.assigned,1);
 });
+test('one-hour cohort includes only failures recorded within the last hour',()=>{
+ const recent=event({created_at:'2026-11-10T18:31:00Z'});
+ const older=event({pr_number:63,created_at:'2026-11-10T17:59:00Z'});
+ const current=m.summarize([older,recent],{},1,NOW,true);
+ assert.equal(current.period_hours,1);
+ assert.equal(current.unique_prs,1);
+ assert.equal(current.unique_events,1);
+ assert.equal(m.summarize([older,recent],{},24,NOW,true).unique_prs,2);
+});
 test('window and incomplete source never claim exact totals',()=>{
  const e=event(),early=event({pr_number:99,created_at:'2026-11-01T00:00:00Z'});
  const s=m.summarize([early,e],{},24,NOW,false);
@@ -128,4 +137,36 @@ test('no inline-width CSP violations in the funnel and stages remain visible whe
  assert.equal(src.includes('fill.style.width='),false);
  assert.equal(src.includes("el('progress','hh-error-progress')"),true);
  assert.equal(src.includes('renderSkeleton();'),true);
+});
+
+test('blocker counts preserve distinct PR/event identity and review vs code writer',()=>{
+ const unknown=event({pr_number:57,ci_event_id:'4d471ad5-40b3-4200-9d55-7c41f5db301a',
+   category:'UNKNOWN',route_receipt:null,classification:{
+     schema:'HH_CI_ERROR_CLASSIFICATION_V1',status:'DIAGNOSTIC_ONLY',
+     category:'UNKNOWN',reason_code:'UNCLASSIFIED_FAILURE',responsible_role:'ci-diagnostic-triage'}});
+ const review=event({pr_number:58,ci_event_id:'5d471ad5-40b3-4200-9d55-7c41f5db301a',
+   category:'BASE_OR_CI_ROUTING',route_receipt:{state:'TASK_ROUTED_TO_REVIEW',reason:'NO_SAFE_AUTOMATIC_WRITER_FOR_CATEGORY'},
+   classification:{schema:'HH_CI_ERROR_CLASSIFICATION_V1',status:'DIAGNOSTIC_ONLY',
+     category:'BASE_OR_CI_ROUTING',reason_code:'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE',responsible_role:'ci-routing-owner'}});
+ const worker=m.taskEvidence(records({state:'MANUAL'}),event());
+ const summary=m.summarize([unknown,review,event()],
+   {[INBOX]:worker},1,NOW,true);
+ const pick=id=>summary.blockers.find(b=>b.key===id);
+ assert.equal(pick('unclassified').pr_count,1);
+ assert.equal(pick('unrouted').pr_count,1);
+ assert.equal(pick('needs_review').pr_count,1);
+ assert.equal(pick('worker_without_commit').pr_count,1);
+ assert.deepEqual(pick('unrouted').prs,[57]);
+ assert.equal(summary.counts.committed,0);
+});
+test('duplicate incidents on one PR retain event count but avoid double-counting bottleneck PR',()=>{
+ const one=event({pr_number:59,category:'UNKNOWN',route_receipt:null,
+   classification:{schema:'HH_CI_ERROR_CLASSIFICATION_V1',status:'DIAGNOSTIC_ONLY',
+   category:'UNKNOWN',reason_code:'UNCLASSIFIED_FAILURE',responsible_role:'ci-diagnostic-triage'}});
+ const two={...one,workflow_run_id:CORE+1};
+ const summary=m.summarize([one,two],{},1,NOW,true);
+ const unknown=summary.blockers.find(x=>x.key==='unclassified');
+ assert.equal(unknown.pr_count,1);
+ assert.equal(unknown.event_count,2);
+ assert.equal(summary.unique_prs,1);
 });
