@@ -18,6 +18,11 @@ export async function POST(request) {
     requireSameOrigin(request, config)
     auth = createRequestAuth(request, config)
     const actor = await auth.verified()
+    const { data: currentSession, error: sessionError } = await auth.client.auth.getSession()
+    const refreshToken = currentSession?.session?.refresh_token
+    // Supabase legacy refresh tokens can be 12 characters; validate owner against Edge below.
+    if (sessionError || typeof refreshToken !== 'string' || refreshToken.length < 12 || refreshToken.length > 4096)
+      throw new AppError('OWNER_SESSION_INVALID', 401)
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 7000)
     let edge
@@ -61,6 +66,7 @@ export async function POST(request) {
       owner: true,
       privateStoreConfigured: true,
       accessToken: actor.accessToken,
+      refreshToken,
       expiresAt: claims.exp,
       service: edge.service,
     }, { headers: PRIVATE_HEADERS }))

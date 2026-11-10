@@ -337,3 +337,33 @@ test('Commander login document is rewritten through the nonce-aware page under s
   assert.ok(page.includes("nonce={nonce}"))
   assert.ok(page.includes('/commander-connect.js?v=20261109-owner-csp-nonce-v2'))
 })
+
+
+test('Commander SSO handoff includes the existing Supabase refresh token only for the monitor session',async()=>{
+ const route=await readFile(new URL('../app/api/app/commander/session/route.js',import.meta.url),'utf8')
+ const connect=await readFile(new URL('../public/commander-connect.js',import.meta.url),'utf8')
+ assert.match(route,/auth\.client\.auth\.getSession\(\)/)
+ assert.match(route,/refreshToken/)
+ assert.match(route,/privateStoreConfigured: true/)
+ assert.match(connect,/typeof data\.refreshToken !== 'string'/)
+ assert.match(connect,/refresh_token: data\.refreshToken/)
+ assert.match(connect,/target\.hash = new URLSearchParams/)
+ assert.doesNotMatch(connect,/localStorage\.setItem\([^,]*refresh/i)
+})
+
+test('Commander owner handoff accepts 12-character provider refresh tokens without bypassing verification', async () => {
+  const handler = await readFile(new URL('../app/api/app/commander/session/route.js', import.meta.url), 'utf8')
+  const client = await readFile(new URL('../public/commander-connect.js', import.meta.url), 'utf8')
+  assert.match(handler, /refreshToken\.length < 12 \|\| refreshToken\.length > 4096/)
+  assert.doesNotMatch(handler, /refreshToken\.length < 20/)
+  assert.match(client, /data\.refreshToken\.length < 12 \|\| data\.refreshToken\.length > 4096/)
+  assert.ok(handler.indexOf('const actor = await auth.verified()') < handler.indexOf('const refreshToken ='))
+  assert.match(handler, /data\?\.owner !== true/)
+  assert.match(handler, /data\?\.privateStoreConfigured !== true/)
+  assert.match(client, /function recoverHandoff\(error\)/)
+  assert.match(client, /error\?\.status === 401/)
+  assert.match(client, /recoverHandoff\(error\)/)
+  assert.match(client, /method: 'POST'/)
+  assert.match(client, /credentials: 'same-origin'/)
+  assert.match(client, /target\.hash = new URLSearchParams/)
+})

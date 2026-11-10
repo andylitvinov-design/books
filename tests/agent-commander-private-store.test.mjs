@@ -13,12 +13,12 @@ test('commander OAuth continuation is fixed and owner-verified', () => {
   assert.match(session, /requireSameOrigin/)
   assert.match(session, /auth\.verified\(\)/)
   assert.match(session, /AGENT_COMMANDER_PRIVATE_STORE_V1/)
-  assert.match(session, /data\?\.owner!==true/)
+  assert.match(session, /data\?\.owner\s*!==\s*true/)
 })
 
 test('one-time owner token is carried in a URL fragment, not query or browser storage', () => {
   const main = read('public/commander-connect.js')
-  assert.match(main, /target\.hash = 'token='/)
+  assert.match(main, /target\.hash = new URLSearchParams\(\{/)
   assert.doesNotMatch(main, /searchParams\.set\(['"]token/)
   assert.doesNotMatch(main, /localStorage/)
   assert.match(main, /sessionStorage\.setItem\(KEY, next\)/)
@@ -32,7 +32,7 @@ test('private store source requires a verified Supabase user and owner ACL', () 
   assert.match(edge, /can_read/)
   assert.match(edge, /can_write/)
   assert.match(edge, /assistant_unverified/)
-  assert.match(edge, /executorDispatch:Boolean\(hermesConfiguration\(\)\)/)
+  assert.match(edge, /executorDispatch:false,dispatchAvailable:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR"/)
   assert.match(config, /verify_jwt = true/)
 })
 
@@ -63,26 +63,61 @@ test('Commander Edge Function TypeScript parses before deployment', () => {
   assert.deepEqual(errors.map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n')), [])
 })
 
-test('owner-authenticated Hermes dispatch is opt-in, free-only and idempotent', () => {
-  const edge = read('supabase/functions/agent-commander-private-store-v1/index.ts')
-  assert.match(edge, /HERMES_ORIGIN_URL/)
-  assert.match(edge, /HERMES_SHARED_SECRET/)
-  assert.match(edge, /url.protocol!=="https:"/)
-  assert.match(edge, /const canUseHermes=executor==="hermes"\|\|executor==="openrouter"/)
-  assert.match(edge, /const validModel=MODEL_ID.test\(modelId\)/)
-  assert.match(edge, /const writeConfirmed=body.confirmGitHubWrite===true/)
-  assert.match(edge, /run\.request_sha256!==requestSha256\|\|run\.run_id!==runId/)
-  assert.match(edge, /trustedHermesReceipt\(remote,runId,null,modelId\)/)
-  assert.match(edge, /await saveHermesReceipt\(db,ownerId,chat.chat_id,runId,verified\)/)
-  assert.doesNotMatch(edge, /GITHUB_WRITE_ENABLED\s*=\s*true/)
-})
+test('private store preserves native JSONB objects and arrays when persisting payloads',()=>{
+  const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
+  assert.match(edge,/function jsonbText\(value\)/);
+  assert.match(edge,/payload=\$\d+::text::jsonb/);
+  assert.match(edge,/payload=\$\d+::text::jsonb/);
+  assert.match(edge,/jsonbText\(event\.failed_jobs\)/);
+  assert.match(edge,/jsonbText\(event\.failed_steps\)/);
+  assert.match(edge,/receipt=\$\d+::text::jsonb/);
+  assert.doesNotMatch(edge,/\$[0-9]+::jsonb/);
+  assert.doesNotMatch(edge,/jsonb_set\(payload,'\{executionState\}'/);
+  assert.match(edge,/set execution_state=\$1,updated_at=now\(\)/);
+  assert.match(edge,/jsonbText\(event\.failed_jobs\)/);
+  assert.match(edge,/jsonbText\(event\.failed_steps\)/);
+});
 
-test('Commander execution events preserve existing database kind CHECK and do not forge LIVE', () => {
-  const edge = read('supabase/functions/agent-commander-private-store-v1/index.ts')
-  assert.match(edge, /kind:report.status==="COMPLETED"\?"agent_final":"execution_blocked"/)
-  assert.match(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'note',\$4::jsonb,\$5::boolean\)/)
-  assert.match(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'note',\$4::jsonb,false\)/)
-  assert.doesNotMatch(edge, /values\(\$1::uuid,\$2::uuid,\$3::uuid,'execution_blocked'/)
-  assert.match(edge, /"DRAFT_PR_COMMIT_VERIFIED_NOT_LIVE"/)
-  assert.match(edge, /runId,chatId:chat.chat_id,ownerId,projectKey:"holistic-house"/)
-})
+
+test('Agent Director owns its run path and the Supabase store does not depend on an external Hermes HTTP service',()=>{
+  const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
+  const route=read('app/api/agent-director/commander-run/route.js');
+  const runtime=read('lib/agent-director/commander-owned-runtime.mjs');
+  assert.match(edge,/DIRECTOR_ORIGIN="https:\/\/holistichouse\.vercel\.app"/);
+  assert.match(edge,/ownedDirectorCall\(req,/);
+  assert.match(edge,/const canDispatch=executor==="local"&&!writeConfirmed/);
+  assert.match(edge,/EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY/);
+  assert.match(edge,/trustedOwnedDirectorReceipt\(remote,/);
+  assert.match(edge,/saveOwnedDirectorReceipt\(db,ownerId,chat\.chat_id,runId,verified\)/);
+  assert.doesNotMatch(edge,/HERMES_ORIGIN_URL|HERMES_SHARED_SECRET|hermesCall\(|trustedHermesReceipt/);
+  assert.match(route,/auth\/v1\/user/);
+  assert.match(route,/privateStoreConfigured!==true/);
+  assert.match(route,/executeOwnedCommanderRun/);
+  assert.match(route,/store\?\.canWrite!==true/);
+  assert.match(route,/runs\?\.chatId!==body\.chatId/);
+  assert.match(route,/run\.request_sha256!==body\.requestSha256/);
+  assert.match(route,/consumeRate\(config/);
+  assert.match(edge,/canWrite:writable/);
+  assert.match(edge,/requestSha256,ownerId,projectKey:/);
+  assert.match(runtime,/HH_AGENT_OLLAMA_ENABLED!=='true'/);
+  assert.match(runtime,/AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED/);
+  assert.match(runtime,/AGENT_DIRECTOR_READ_ONLY_RESPONSE/);
+  assert.doesNotMatch(runtime,/OPENROUTER_API_KEY|GITHUB_TOKEN/);
+  assert.match(edge,/executorDispatch:false,dispatchAvailable:true/);
+});
+
+
+test('CI inbox is scoped to one owner while first-party Director dispatch stays intact',()=>{
+ const edge=read('supabase/functions/agent-commander-private-store-v1/index.ts');
+ const migration=read('supabase/migrations/20261110134000_commander_ci_inbox_owner_scope_v1.sql');
+ assert.match(edge,/select user_id from business_brain\.owner_access where can_read=true/);
+ assert.match(edge,/readableOwners.length!==1/);
+ assert.ok(edge.includes('oidc_workflow_ref, inbox_owner_id'));
+ assert.ok(edge.includes("where project_key='agent-commander' and owner_id=$1::uuid"));
+ assert.ok(edge.includes('where inbox_owner_id=$3::uuid'));
+ assert.ok(edge.includes('ownedDirectorCall(req,'));
+ assert.ok(edge.includes('FIRST_PARTY_AGENT_DIRECTOR'));
+ assert.doesNotMatch(edge,/HERMES_ORIGIN_URL|HERMES_SHARED_SECRET|hermesCall\(/);
+ assert.match(migration,/alter column inbox_owner_id set not null/);
+ assert.match(migration,/revoke all on business_brain\.commander_ci_event_inbox/);
+});
