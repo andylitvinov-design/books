@@ -1304,11 +1304,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       const stillHasOldVoice=soundtrackLabels.some(label=>
         label.includes("holistic-house-hypno-audio.wav")||label.includes(expectedFileName));
       if(stillHasOldVoice)await expect(page.locator("[data-video-quick-generate]")).toBeDisabled();
-      const voicePanel=page.locator("[data-video-voice-studio]");
-      await voicePanel.waitFor({state:"visible",timeout:25000});
-      if(await voicePanel.getAttribute("open")===null)
-        await voicePanel.locator(":scope > summary").click();
-      const studio=voicePanel.locator("[data-voice-studio]");
+      const voiceStudioPanel=page.locator("[data-video-voice-studio]");
+      await voiceStudioPanel.waitFor({state:"visible",timeout:25000});
+      if(await voiceStudioPanel.getAttribute("open")===null)
+        await voiceStudioPanel.locator(":scope > summary").click();
+      const studio=voiceStudioPanel.locator("[data-voice-studio]");
       await studio.waitFor({state:"visible"});
       assert.equal(await studio.locator("[data-voice-id]").count(),6);
       await studio.locator("[data-voice-studio-generate]").click();
