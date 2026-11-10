@@ -551,7 +551,7 @@ export default function GrowthStudio({initialLocale='en',initialRecords=[],stora
           <strong>{CHANNEL_CAPABILITIES[form.channel]?.name || form.channel} · {METHOD_LABELS[locale]?.[CHANNEL_CAPABILITIES[form.channel]?.mode] || METHOD_LABELS.en.manual}</strong>
            {form.channel==='instagram'&&form.placement==='story'&&<p className={styles.hint}>
              {locale==='ru'?'Story: публикуется только сам медиафайл, без подписи и кликабельной ссылки через этот API.':'Story: this API publishes the media only, without a caption or clickable link.'}
-           </p>
+           </p>}
           {draftPreflight.characterLimit&&<p className={styles.hint}>{t.characterLabel}: <strong>{draftPreflight.characterCount} / {draftPreflight.characterLimit}</strong> · {draftPreflight.campaignLinkIncluded?t.characterWithLink:t.characterWithoutLink}</p>}
           {draftPreflight.issues.length>0&&<ul>{draftPreflight.issues.map(code=>
               <li key={code}>{CHANNEL_WARNINGS[locale]?.[code]||CHANNEL_WARNINGS.en[code]||code}</li>)}</ul>}
