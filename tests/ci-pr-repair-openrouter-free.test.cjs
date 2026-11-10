@@ -79,8 +79,9 @@ test('priced catalog, 429, wrong model, paid usage and invalid reply fail closed
 
 test('named free coding routes prioritize specialization, not catalog usage popularity',()=>{
  assert.equal(DEFAULT_MODEL,'cohere/north-mini-code:free');
- assert.deepEqual(MODEL_PROFILES.repair.slice(0,2),
-  ['cohere/north-mini-code:free','recursive/flint-v1.0:free']);
+ assert.deepEqual(MODEL_PROFILES.repair.slice(0,3),
+  ['nvidia/nemotron-3-ultra-550b-a55b:free','recursive/flint-v1.0:free',
+   'cohere/north-mini-code:free']);
  assert.equal(MODEL_PROFILES.architecture[0],'nvidia/nemotron-3-ultra-550b-a55b:free');
  assert.equal(MODEL_PROFILES.visual[0],'nvidia/nemotron-3.5-super-vl:free');
  assert.ok(Object.values(MODEL_PROFILES).every(profile=>profile.every(
@@ -125,7 +126,7 @@ test('explicit pin cannot silently fallback and unknown roles fail before infere
  assert.equal(calls.length,1);
 });
 test('429 and missing or nonzero real response cost stop without retry',async()=>{
- const model=MODEL_PROFILES.repair[0],catalog=response({data:[entry()]});
+ const model=MODEL_PROFILES.repair[0],catalog=response({data:[{...entry(),id:model}]});
  for(const result of [
   response({},429),
   response({model,usage:{},choices:[{message:{content:'patch'}}]}),

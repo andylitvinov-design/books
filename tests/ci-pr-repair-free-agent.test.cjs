@@ -87,6 +87,32 @@ test('one exact source anchor does not permit altered content or whitespace bypa
   prefix+'@@ -2,1 +2,1 @@\n-  let result="old";\n+  let result="new";\n');
  assert.equal(reanchorSingleHunkPatch(patch,scope,()=>source.replace('  let',' let')),null);
 });
+test('exact one-line model replacement salvages faulty context only with unique whole-line match',()=>{
+ const {exactSingleLineReplacementPatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const file='components/site-navigation.tsx',scope={files:[file]};
+ const before='    <Link className={hhRepairCanaryMissingSymbolV2} href={freeReviewHref} prefetch={false}>{siteMenu.start}</Link>';
+ const after='    <Link className="site-nav-free-entry" href={freeReviewHref} prefetch={false}>{siteMenu.start}</Link>';
+ const source='other code\n'+before+'\nmore code\n';
+ const model='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n'+
+  '@@ -500,6 +500,6 @@\n'+' unrelated hallucinated context\n'+'-'+before+'\n+'+after+'\n';
+ const expected='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n'+
+  '@@ -2,1 +2,1 @@\n-'+before+'\n+'+after+'\n';
+ assert.equal(exactSingleLineReplacementPatch(model,scope,()=>source),expected);
+ assert.equal(exactSingleLineReplacementPatch(model,scope,()=>source+source),null);
+ assert.equal(exactSingleLineReplacementPatch(model,scope,()=>source.replace('hhRepair','other')),null);
+ assert.equal(exactSingleLineReplacementPatch(model,{files:['components/other.tsx']},()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model,{files:['app/api/secret.ts']},()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model,scope,()=>'no trailing newline'),null);
+ assert.equal(exactSingleLineReplacementPatch(model.replace('-'+before,'-className={hhRepairCanaryMissingSymbolV2}'),scope,()=>source),null,
+  'shortened token within a line must never be matched fuzzily');
+ assert.equal(exactSingleLineReplacementPatch(model+'@@ -5 +5 @@\n-another\n+replacement\n',scope,()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model+'diff --git a/components/other.tsx b/components/other.tsx\n',scope,()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model.replace('+'+after,'+'+before),scope,()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model.replace('+'+after,'+'+after+'\n+another'),scope,()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model.replace('-'+before,'-'+before+'\n-'+before),scope,()=>source),null);
+ assert.equal(exactSingleLineReplacementPatch(model.replace('@@ -500,6 +500,6 @@','@@ not-valid'),scope,()=>source),null);
+});
+
 test('model patch must be bounded unified diff only changing allowlist',()=>{
  const scope={files:['components/a.tsx'],sha:SHA};
  const patch='diff --git a/components/a.tsx b/components/a.tsx\n'+
