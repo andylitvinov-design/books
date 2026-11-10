@@ -181,7 +181,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Type-check Agent Commander Supabase Edge Function
-        run: deno install --no-lock && deno check --no-lock supabase/functions/agent-commander-private-store-v1/index.ts
+        run: deno check --no-lock supabase/functions/agent-commander-private-store-v1/index.ts
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
