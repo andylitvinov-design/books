@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import CoachingReportPreview from '@/components/coaching-report-preview'
 import { ArrowRight, Check, ChevronLeft, Copy, Download, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
@@ -11,6 +12,7 @@ import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingContextReview from '@/components/coaching-context-review'
 import { buildClientCoachingContext, developmentGoalsContextItems } from '@/lib/personal-coaching/client-context.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
+import CoachingLiveVoice from './coaching-live-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
@@ -49,7 +51,7 @@ const copy={
     reportNotice:'After tapping Save, your answer is kept in your private account. At the end you can download a PDF with your questions, answers and reflections.',
     pdf:'Download PDF report',pdfError:'Could not create the PDF. Your private answers remain saved.',date:'Session date',
     restart:'This starts a new session and saves the completed one to your private history.',
-    home:'My Courses',delete:'Delete my coaching notes',deleteConfirm:'Delete all personal coaching notes and session history? This cannot be undone.',
+    home:'My Courses',delete:'Delete my coaching notes',deleteConfirm:'Delete all personal coaching notes and session history? Saved reports remain in your archive and can be deleted separately. This cannot be undone.',
     completeNote:'This is a self-reflection tool, not a diagnosis, guaranteed result, or booked consultation.',
     completed:'Session completed',emptyError:'Could not start the session. Please retry.',
   },
@@ -74,7 +76,7 @@ const copy={
     reportNotice:'После нажатия «Сохранить» ваш ответ останется в личном кабинете. В конце сможете скачать PDF с вашими мыслями, вопросами и ответами.',
     pdf:'Скачать PDF-отчёт',pdfError:'Не удалось создать PDF. Ответы сохранены в кабинете.',date:'Дата сессии',
     restart:'Новая сессия сохранит завершённую в вашей личной истории.',
-    home:'Мои курсы',delete:'Удалить мои записи',deleteConfirm:'Удалить все ответы и историю коуч-сессий? Это действие нельзя отменить.',
+    home:'Мои курсы',delete:'Удалить мои записи',deleteConfirm:'Удалить все ответы и историю коуч-сессий? Сохранённые отчёты останутся в архиве и удаляются отдельно. Это действие нельзя отменить.',
     completeNote:'Это практика размышления, а не диагноз, обещание результата или запись на консультацию.',
     completed:'Сессия завершена',emptyError:'Не удалось начать сессию. Попробуйте ещё раз.',
   },
@@ -97,7 +99,7 @@ const copy={
     reportNotice:'Al pulsar Guardar, tu respuesta queda en tu cuenta privada. Al final podrás descargar un PDF con tus reflexiones, preguntas y respuestas.',
     pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen guardadas.',date:'Fecha de la sesión',
     restart:'La sesión completada se guardará en tu historial.',home:'Mis cursos',delete:'Borrar mis notas',
-    deleteConfirm:'¿Eliminar todas tus respuestas e historial? No se puede deshacer.',
+    deleteConfirm:'¿Eliminar todas tus respuestas e historial? Los informes guardados permanecerán en el archivo y pueden eliminarse por separado. No se puede deshacer.',
     completeNote:'Esto es autorreflexión, no un diagnóstico ni una consulta reservada.',
     completed:'Sesión completada',emptyError:'No se pudo empezar. Inténtalo de nuevo.',
   },
@@ -499,6 +501,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 onFocus={event=>event.target.select()} />
             </label>}
           </section>}
+          <CoachingReportPreview accountId={accountId} sessionId={session.id} revision={state.revision} locale={lang}/>
           <button type="button" className={styles.primary} data-coaching-download-pdf disabled={busy} onClick={()=>downloadReport(session)}><Download size={18}/>{t.pdf}</button>
           <p className={styles.privacyNote}>{t.share}</p>
           {course.history?.length>0&&<details className={styles.history}>
@@ -572,6 +575,9 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.progressHeader}>
             <span className={styles.eyebrow}>{t.title}</span>
             <strong>{t.question} {index+1} {t.of} {activeQuestions.length}</strong>
+            {process.env.NEXT_PUBLIC_HH_COACHING_LIVE_VOICE_UI==='true'&&
+              <CoachingLiveVoice key={session?.id} locale={lang} sessionId={session?.id} accountId={accountId}
+                disabled={busy||dictating}/>}
           </div>
           <div className={styles.progressTrack} role="progressbar" aria-label={t.question} aria-valuemin={0} aria-valuemax={activeQuestions.length} aria-valuenow={index+1}>
             <span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/>
@@ -661,6 +667,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           </footer>
         </div>}
       </section>
+      {!loading&&!entry&&(!course||newSelection||finished)&&<CoachingReportPreview accountId={accountId} archiveOnly locale={lang}/>}
     </div>
   </main>
 }
