@@ -1517,7 +1517,7 @@ test('mismatched Watchdog evidence never claims verified blockers or authorizes 
 });
 
 test('previous DIRTY conflict handoff cannot starve manual cloud preflight',async()=>{
- const old=pr(204,'repair',{mergeable:false,mergeable_state:'dirty',
+ const old=pr(204,'repair',{mergeable:null,mergeable_state:'unknown',
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]});
  const marker='<!-- HH_CONTROL_CONFLICT_HANDOFF_V1 '+SHA+' -->';
  const f=fixture([old],{comments:{204:[{body:marker+'\\nEarlier owner handoff; no source write.'}]}});
@@ -1537,7 +1537,7 @@ test('previous DIRTY conflict handoff cannot starve manual cloud preflight',asyn
 
 test('handled old PR does not cause another read-only worker until the next UTC hour',async()=>{
  const old=[204,205,206].map(number=>pr(number,'repair',{
-  mergeable:false,mergeable_state:'dirty',
+  mergeable:null,mergeable_state:'unknown',
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}]
  }));
  const first=planCandidates(old,NOW).filter(x=>x.lane==='legacy')[0];
@@ -1566,7 +1566,7 @@ test('one normal source repair and one manual preflight share the existing two w
  const source=pr(1,'repair');
  const old=pr(204,'repair',{
   labels:[{name:'hh:repair-manual'},{name:'hh:conflict-repair-needed'}],
-  mergeable:false,mergeable_state:'dirty'});
+  mergeable:null,mergeable_state:'unknown'});
  const f=fixture([source,old],{comments:{1:[proof()]}});
  const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
  assert.equal(r.dispatchAccepted,2);
