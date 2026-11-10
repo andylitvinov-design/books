@@ -118,3 +118,118 @@
   .bottomNav a{font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){.page *{scroll-behavior:auto!important}}
+
+
+
+/* Real practitioner cards: profile/photo left, identity + details right. */
+:global([data-coaching-hub] .embeddedExplorer .compactMaster){
+  display:grid;grid-template-columns:116px minmax(0,1fr);grid-template-rows:repeat(7,min-content);
+  align-items:start;gap:4px 14px;padding:12px;border:1px solid #e8ded4;border-radius:19px;
+  background:linear-gradient(145deg,#fffefa,#faf7f1);box-shadow:0 5px 16px #51412f0d;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .masterFeature){
+  grid-column:1;grid-row:1 / span 7;align-self:stretch;min-width:0;height:116px;margin:0;
+  overflow:hidden;border-radius:15px;background:#e8eee6;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .masterFeature img){
+  display:block;width:100%;height:100%;object-fit:cover;object-position:center 34%;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .masterHeading){
+  grid-column:2;gap:7px;min-width:0;margin:0 0 2px;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .portrait),
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .portraitInitials){
+  width:42px;height:42px;border-radius:50%;font-size:19px;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .masterHeading h3){
+  margin:0 0 3px;color:#103f37;font:800 19px/1.1 system-ui,-apple-system,sans-serif;letter-spacing:-.025em;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .area){
+  margin:0 0 3px;color:#628071;font-size:9px;letter-spacing:.07em;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .role){
+  color:#5b6b62;font-size:11.5px;line-height:1.25;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .description){
+  grid-column:2;margin:0;color:#5f6e65;font-size:11.5px;line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .masterRating){
+  grid-column:2;min-height:24px;margin:0;color:#4f6d5e;font-size:10.5px;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .masterRating strong){color:#087f62}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .meta){
+  grid-column:2;gap:5px;margin:0;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .meta span){
+  padding:4px 7px;border:1px solid #e7e9df;border-radius:99px;background:#f5f7f0;color:#526a5d;font-size:9px;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .offerPreview),
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .coursePreview){
+  grid-column:2;margin:0;padding:5px 0 0;border-top:1px solid #ece7df;color:#65736a;font-size:10px;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .actions){
+  grid-column:2;display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:2px 0 0;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .primary),
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .energyButton){
+  min-height:42px;margin-left:auto;padding:8px 15px;border-radius:99px;
+  background:linear-gradient(145deg,#109473,#06604c);font-size:11px;box-shadow:0 4px 11px #087b6120;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .secondary){
+  min-height:40px;color:#087e66;font-size:10.5px;
+}
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .primary:hover),
+:global([data-coaching-hub] .embeddedExplorer .compactMaster .energyButton:hover){background:#075c49}
+:global([data-coaching-hub] .embeddedExplorer .masterExtraToggle){
+  display:flex;align-items:center;justify-content:center;width:max-content;min-height:42px;padding:7px 14px;
+  border:1px solid #e4dbd1;border-radius:99px;background:#fffefa;color:#174d40;font-size:12px;font-weight:800;
+}
+:global([data-coaching-hub] .embeddedExplorer .masterExtraBody){
+  padding:10px;border:1px solid #e9e0d6;border-radius:16px;background:#fffdfa;
+}
+:global([data-coaching-hub] .embeddedExplorer .masterExtraBody .selectGrid){margin-top:8px}
+:global([data-coaching-hub] .embeddedExplorer .masterExtraBody .categories){margin-top:12px}
+@media(max-width:600px){
+  :global([data-coaching-hub] .embeddedExplorer .filters){padding:9px 0 0;gap:8px}
+  :global([data-coaching-hub] .embeddedExplorer .heading){display:none}
+  :global([data-coaching-hub] .embeddedExplorer .search){min-height:48px;padding-left:43px;border:1px solid #e4dcd2;border-radius:99px;background-color:#fffefa;font-size:14px;box-shadow:0 4px 13px #50402f0b}
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar){
+    display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+    padding:1px 1px 6px;margin:1px 0 0;scroll-snap-type:x mandatory;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar::-webkit-scrollbar){display:none}
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button){
+    flex:0 0 auto;min-height:41px;padding:8px 13px;border:1px solid #e6ded4;border-radius:99px;
+    background:#fffefa;color:#315649;font-size:11px;font-weight:750;scroll-snap-align:start;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .masterQuickBar button.selected){
+    border-color:#0b8a6d;background:linear-gradient(145deg,#0d9877,#07614e);color:#fff;
+    box-shadow:0 4px 12px #087b6120;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster){
+    grid-template-columns:100px minmax(0,1fr);gap:4px 10px;padding:10px;border-radius:17px;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .masterFeature){
+    width:100px;height:105px;border-radius:13px;
+  }
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .masterHeading){gap:6px}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .masterHeading h3){font-size:17px}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .role){font-size:10.5px}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .portrait),
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .portraitInitials){width:36px;height:36px;font-size:16px}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .description){font-size:10.5px;line-height:1.3;-webkit-line-clamp:2}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .masterRating){min-height:21px;font-size:9.5px}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .meta span){font-size:8.5px;padding:3px 6px}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .offerPreview),
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .coursePreview){font-size:9px}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .actions){gap:5px}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .primary),
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .energyButton){min-height:39px;font-size:10px;padding:7px 10px}
+}
+@media(max-width:360px){
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster){grid-template-columns:88px minmax(0,1fr);gap:3px 8px}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .masterFeature){width:88px;height:100px}
+  :global([data-coaching-hub] .embeddedExplorer .compactMaster .masterHeading h3){font-size:15px}
+}
