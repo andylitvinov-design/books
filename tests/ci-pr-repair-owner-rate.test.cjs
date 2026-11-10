@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode}=
+const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,eligibleScopedJobWriter,chooseWriterMode}=
  require('../scripts/ci-pr-repair-owner-rate.cjs');
 const hdr=value=>({get:name=>{
  assert.equal(name,'x-ratelimit-remaining');return value;
@@ -49,9 +49,33 @@ test('existing issuer remains credential isolated and branch/head guarded',()=>{
  assert.match(flow,/rateGuard\.requiredOwnerBudget\(files\.length\)/);
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
  assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH/);
- assert.match(flow,/repository\.permissions\?\.push!==true/);
+ assert.match(flow,/mode==='owner'&&repository\.permissions\?\.push!==true/);
  assert.match(flow,/force:false/);
  assert.match(flow,/Source branch moved before repair commit/);
  assert.match(flow,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
  assert.doesNotMatch(flow,/remaining<100/);
+});
+
+test('scoped Actions publisher tolerates absent push field only with trusted write job',()=>{
+ const job={ok:true,canPush:false,remaining:100};
+ const owner={ok:true,canPush:true,remaining:4000};
+ assert.equal(eligibleWriter(job,10),false);
+ assert.equal(eligibleScopedJobWriter(job,10),false);
+ assert.equal(eligibleScopedJobWriter(job,10,true),true);
+ assert.equal(chooseWriterMode({job,owner},10),'owner');
+ assert.equal(chooseWriterMode({job,owner},10,{writeJobAuthorized:true}),'job');
+ assert.equal(chooseWriterMode({job:{...job,remaining:9},owner},10,{writeJobAuthorized:true}),'owner');
+ for(const bad of [{ok:false,canPush:false,remaining:100},{ok:true,canPush:false,remaining:null},
+  {ok:true,canPush:false,remaining:9}]){
+  assert.equal(eligibleScopedJobWriter(bad,10,true),false);
+  assert.throws(()=>chooseWriterMode({job:bad,owner:null},10,{writeJobAuthorized:true}),
+    /NO_VERIFIED_WRITER/);
+ }
+ const flow=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const publisher=flow.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
+ assert.match(publisher,/permissions:\n      contents: write/);
+ assert.match(publisher,/writeJobAuthorized=context\.repo\.owner/);
+ assert.match(publisher,/context\.ref==='refs\/heads\/codex\/bootstrap-books'/);
+ assert.match(publisher,/github\.token/);
+ assert.match(publisher,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
 });
