@@ -527,7 +527,7 @@ async function update(e){
    busy=true;el('send').disabled=true;
    try{
     await append(c,'owner',text,'');el('message').value='';
-    const runId=id(),idempotencyKey=idempotencyKey=id(),confirmGitHubWrite=mode==='hermes'&&el('hermes-write').checked;
+    const runId=id(),idempotencyKey=id(),confirmGitHubWrite=mode==='hermes'&&el('hermes-write').checked;
     const result=await request(SERVER+'?action=run','POST',{
      issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text,
      modelId:mode==='hermes'?model:undefined,confirmGitHubWrite
