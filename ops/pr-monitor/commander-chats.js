@@ -35,7 +35,26 @@
   if(!/^https:\/\/github\.com\/andylitvinov-design\/books\/(?:pull\/\d+|issues\/(?:1419|3128|3890)#issuecomment-\d+)$/.test(url))return;
   const a=make('a',null,label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';box.append(a);
  };
- async function request(url,method='GET',body){
+ let ownerRefreshPromise=null;
+ async function refreshOwnerSession(){
+  if(ownerRefreshPromise)return ownerRefreshPromise;
+  ownerRefreshPromise=(async()=>{
+   const controller=new AbortController(),timer=win.setTimeout(()=>controller.abort(),10000);
+   try{
+    const response=await win.fetch('/api/commander-session',{credentials:'same-origin',cache:'no-store',
+     headers:{Accept:'application/json'},signal:controller.signal});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||data.authenticated!==true||data.owner!==true)
+     throw Error(data.error||'Сессия владельца истекла. Войдите через Google повторно.');
+    return data;
+   }catch(error){
+    if(error?.name==='AbortError')throw Error('Не удалось продлить сессию владельца. Повторите проверку.');
+    throw error;
+   }finally{win.clearTimeout(timer)}
+  })();
+  try{return await ownerRefreshPromise}finally{ownerRefreshPromise=null}
+ }
+ async function request(url,method='GET',body,retried=false){
   const controller=new AbortController(),timer=win.setTimeout(()=>controller.abort(),13000);
   let r;
   try{
@@ -46,6 +65,10 @@
    if(error?.name==='AbortError')throw Error('Сервер не ответил за 13 секунд. Повторите проверку соединения.');
    throw error;
   }finally{win.clearTimeout(timer)}
+  if(r.status===401&&!retried&&url!=='/api/commander-session'){
+   await refreshOwnerSession();
+   return request(url,method,body,true);
+  }
   let j;try{j=await r.json()}catch{throw Error('Не удалось прочитать ответ сервера')}
   if(!r.ok)throw Error(j.error||'HTTP '+r.status);return j;
  }
@@ -932,8 +955,11 @@ async function update(e){
  }
 
  win.addEventListener('message',event=>{void receiveCouncilMessage(event)});
- request(AI+'?action=status').then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
-  authorized=false;show('login',true);info('Продолжите через Google — отдельный код PR Monitor не нужен.');
-   win.HHGoogleOwnerSSO?.mount(el('google-owner'),s=>info(s));
+ request('/api/commander-session').then(s=>{
+  if(s.authenticated!==true||s.owner!==true)throw Error('OWNER_SESSION_REQUIRED');
+  return request(AI+'?action=status');
+ }).then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
+  authorized=false;show('login',true);info('Продолжите через существующий Google-вход Holistic House. Повторный вход не потребуется, пока сессия владельца действительна.');
+  win.HHGoogleOwnerSSO?.mount(el('google-owner'),s=>info(s));
  });
 })(window,document);

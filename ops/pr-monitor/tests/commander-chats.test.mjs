@@ -44,7 +44,9 @@ test('chat adapter uses only the owner-verified Supabase private store',()=>{
  assert.doesNotMatch(drafts,/api\.github\.com|HH_PM_GITHUB_WRITE_TOKEN/);
  assert.match(helper,/agent-commander-private-store-v1/);
  assert.match(helper,/HH_PM_SUPABASE_PUBLISHABLE_KEY/);
- assert.match(session,/HttpOnly/);assert.match(session,/SameSite=Lax/);
+ assert.match(session,/HttpOnly/);assert.match(session,/SameSite=Strict/);
+ assert.match(session,/REFRESH_COOKIE/);
+ assert.ok(session.includes('/auth/v1/token?grant_type=refresh_token'));
  assert.match(session,/callStore/);
 });
 test('chat UI keeps encrypted local recovery and does not claim assignment is execution',()=>{
@@ -283,6 +285,7 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
    const action=target.searchParams.get('action');
    const body=options.body?JSON.parse(options.body):{};
    network.push({path:target.pathname,action,method:options.method||'GET'});
+   if(target.pathname==='/api/commander-session')return response({authenticated:true,owner:true,privateStoreConfigured:true,expiresAt:2000000000});
    if(target.pathname==='/api/pm-agent-chat'){
     if(action==='status')return response({authenticated:true,modes:{local:true,openrouter:false}});
     if(action==='chat')return response({reply:'Синтетический ответ советника',model:'local'});
@@ -416,4 +419,18 @@ test('verified GitHub CI reports carry the top-level source URL consumed by the 
  const render=src('commander-chats.js');
  assert.match(edge,/kind: "github_report"[\s\S]{0,1200}url: event\.run_url/);
  assert.match(render,/if\(msg\.kind==='github_report'\)htmlLink\(c,'Источник GitHub',msg\.url\)/);
+});
+
+
+
+test('Director silently refreshes the existing Google owner session before asking for another login',()=>{
+ const js=src('commander-chats.js');
+ const start=js.lastIndexOf("request('/api/commander-session')");
+ assert.ok(start>=0,'startup checks the existing monitor session first');
+ const boot=js.slice(start,start+900);
+ assert.match(boot,/request\(AI\+'\?action=status'\)/);
+ assert.match(js,/async function refreshOwnerSession\(\)/);
+ assert.match(js,/r\.status===401&&!retried/);
+ assert.match(js,/return request\(url,method,body,true\)/);
+ assert.match(js,/ownerRefreshPromise/);
 });
