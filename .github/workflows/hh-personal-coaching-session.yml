@@ -16,7 +16,7 @@ on:
       - 'app/[locale]/app/[[...path]]/page.jsx'
       - 'components/app/app-workspace.jsx'
       - 'lib/app/spanish-cabinet-bridge.mjs'
-      - 'supabase/migrations/20261109210000_hh_coaching_report_storage_v1.sql'
+      - 'supabase/migrations/20261110153118_hh_coaching_report_storage_v1.sql'
       - 'tests/coaching-report-*.test.mjs'
       - 'lib/app/personal-coaching-catalog.js'
       - 'lib/app/business-coaching.js'

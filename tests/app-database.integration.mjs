@@ -281,7 +281,7 @@ test('coaching report save requires consent, binds the owner source and survives
     if(!(await db.query("select to_regclass('app_private.personal_coaching_sessions') as table")).rows[0].table)
       await db.query(await readFile(new URL('../supabase/migrations/20261023183700_hh_personal_coaching_sessions.sql',import.meta.url),'utf8'))
     if(!(await db.query("select to_regclass('app_private.coaching_reports') as table")).rows[0].table)
-      await db.query(await readFile(new URL('../supabase/migrations/20261109210000_hh_coaching_report_storage_v1.sql',import.meta.url),'utf8'))
+      await db.query(await readFile(new URL('../supabase/migrations/20261110153118_hh_coaching_report_storage_v1.sql',import.meta.url),'utf8'))
     await db.query('insert into auth.users(id,email) values($1,$2)',[C,'coaching-report-save@example.invalid'])
     await db.query('insert into auth.sessions(id,user_id) values($1,$2)',[SC,C])
     await repo.ensureAccount(c)
