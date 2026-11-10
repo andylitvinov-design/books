@@ -538,7 +538,7 @@ test('CI inbox OIDC events and owner list are scoped to the single authorized ow
  const migration=src('../../supabase/migrations/20261110134000_commander_ci_inbox_owner_scope_v1.sql');
  assert.match(edge,/select user_id from business_brain\.owner_access where can_read=true[\s\S]{0,120}limit 2/);
  assert.match(edge,/readableOwners\.length!==1/);
- assert.match(edge,/oidc_workflow_ref,\\s*inbox_owner_id/);
+ assert.ok(edge.includes('oidc_workflow_ref, inbox_owner_id'));
  assert.match(edge,/where project_key='agent-commander' and owner_id=\$1::uuid/);
  assert.match(edge,/where inbox_owner_id=\$3::uuid/);
  assert.match(migration,/add column if not exists inbox_owner_id uuid references auth\.users\(id\)/);
