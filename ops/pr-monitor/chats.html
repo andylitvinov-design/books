@@ -153,7 +153,10 @@
     <label>Проект<select id="cc-new-project"><option value="commander">Agent Commander / PR Monitor</option><option value="video">Video Studio</option><option value="holistic">Holistic House</option><option value="other">Другой</option></select></label>
     <label>Задачи (необязательно)<input id="cc-new-tasks" autocomplete="off" placeholder="ci-head:A01, ai-commits:B02"></label>
     <label>Номера PR (необязательно)<input id="cc-new-prs" inputmode="text" autocomplete="off" placeholder="3886, 3889"></label>
-    <label>Цель (необязательно)<textarea id="cc-new-description" rows="2" maxlength="1000" placeholder="Ожидаемый результат"></textarea></label>
+    <label>Цель (необязательно)<textarea id="cc-new-description" rows="2" maxlength="1000" placeholder="Какого результата нужно достичь?"></textarea></label>
+    <label>Критерии приёмки (необязательно)<textarea id="cc-new-acceptance" rows="3" maxlength="2500" placeholder="По одному критерию на строку, максимум 5"></textarea></label>
+    <label>Skill IDs (необязательно)<input id="cc-new-skill-ids" maxlength="1200" placeholder="github.read, tests.run"></label>
+    <p class="cc-help">Критерии и навыки передаются исполнителю как контекст. Skill IDs сами по себе не выдают доступ к инструментам.</p>
   </dialog>
     </form>
   </section>
