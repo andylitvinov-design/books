@@ -346,7 +346,6 @@ test('Repair Worker records claim and true source publish as distinct signed HEA
  const pub=await publish({github:f.github,core,context:contextWithRun,prNumber:11,
    expectedSha:sha,candidate,writer:f.writer});
  assert.equal(pub.status,'committed');
- assert.equal(f.log.commentBodies.at(-1).includes('cohere/north-mini-code:free'),true);
  assert.ok(f.log.commentBodies.at(-1).includes('cohere/north-mini-code:free'));
  assert.match(f.log.commentBodies.at(-1),/"outcome":"VERIFIED_SOURCE_COMMIT"/);
  assert.match(f.log.commentBodies.at(-1),/actions\/runs\/41350000001/);
@@ -894,7 +893,7 @@ test('direct Core failures reach deterministic checks and then free AI without p
  assert.match(wf,/  code_fix:\n[\s\S]*?ci-pr-repair-free-agent\.cjs/);
  assert.match(wf,/  code_verify:\n[\s\S]*?ci-pr-repair-code-candidate\.cjs verify/);
  assert.ok(wf.includes('HH_AUTOMERGE_TOKEN'));
- assert.doesNotMatch(require('node:fs').readFileSync('scripts/ci-pr-repair-worker.cjs','utf8'),/free OpenCode\\/GLM source repair/);
+ assert.equal(require('node:fs').readFileSync('scripts/ci-pr-repair-worker.cjs','utf8').includes('free OpenCode/GLM source repair'),false);
  assert.match(require('node:fs').readFileSync('scripts/ci-pr-repair-worker.cjs','utf8'),/free \+codeBackend\+ ' model '/);
  assert.ok(wf.includes('HH_FREE_AI_METADATA_PATH: ${{ runner.temp }}/hh-free-ai-model.json'));
  assert.ok(wf.includes('code_model: ${{ steps.capture.outputs.code_model }}'));
@@ -1171,7 +1170,7 @@ test('finalizer records the actual verified free model instead of hard-coding Op
  assert.equal(result.code_backend,'openrouter');
  assert.equal(result.code_model,'cohere/north-mini-code:free');
  assert.equal(result.code_model_verified,true);
- assert.match(f.log.commentBodies.at(-1),/cohere\\/north-mini-code:free/);
+ assert.ok(f.log.commentBodies.at(-1).includes('cohere/north-mini-code:free'));
 });
 
 test('finalizer never reports an invalid or non-free model as verified provenance',async()=>{
