@@ -38,7 +38,7 @@ const {readCompleteIssueComments,externalOwnerLeaseStatus}=require('./ci-pr-task
 const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const {classifyRedCiError}=require('./ci-pr-red-ci-classifier.cjs');
-const {makeCoreTask,taskBody,taskStatus}=require('./ci-pr-error-task.cjs');
+const {makeCoreTask,taskBody,taskStatus,taskLifecycle}=require('./ci-pr-error-task.cjs');
 const {isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
 
 /**
@@ -516,7 +516,12 @@ async function recordErrorTask(github,owner,repo,pr,run,diagnosis,root,
   const comments=await readCompleteIssueComments(github,owner,repo,pr.number,limited);
   const status=taskStatus(comments,task);
   if(status===null)return 'UNVERIFIED_HISTORY';
-  if(status==='ALREADY_RECORDED')return status;
+  if(status==='ALREADY_RECORDED'){
+    const lifecycle=taskLifecycle(comments,task);
+    log('HH_CI_ERROR_TASK_LIFECYCLE #'+pr.number+' '+lifecycle.state+
+      ' next='+lifecycle.next_action);
+    return lifecycle.state==='HISTORY_UNVERIFIED'?'UNVERIFIED_HISTORY':'ALREADY_RECORDED';
+  }
   const current=(await limited('error-task-head-recheck',()=>
     github.rest.pulls.get({owner,repo,pull_number:pr.number}))).data;
   if(current?.state!=='open'||current.draft||current.base?.ref!==PROD||
@@ -525,6 +530,11 @@ async function recordErrorTask(github,owner,repo,pr,run,diagnosis,root,
     return 'STALE_OR_UNTRUSTED_HEAD';
   await limited('signed-error-task-receipt',()=>github.rest.issues.createComment({
     owner,repo,issue_number:pr.number,body:taskBody(task)}));
+  // GitHub accepted the write; prove durable signed readback before claiming
+  // creation or allowing an unchanged-HEAD transient retry.
+  const verified=await readCompleteIssueComments(github,owner,repo,pr.number,limited);
+  if(taskStatus(verified,task)!=='ALREADY_RECORDED')
+    return 'TASK_RECEIPT_READBACK_UNVERIFIED';
   log('HH_CI_ERROR_TASK_CREATED #'+pr.number+' '+task.task_id+
     ' category='+task.category+' strategy='+task.strategy_code);
   return 'CREATED';
@@ -737,6 +747,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,ciErrorByCategory:{},
     errorTasksCreated:0,errorTasksExisting:0,errorTasksDeferred:0,errorTasksDryRun:0,
+    errorTaskReceiptVerified:0,errorTaskReceiptUnverified:0,
     releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,
     specialistPolicyHolds:0,specialistContractFailures:0,specialistEvidenceUnverified:0,
     staleGateReclassified:0,wouldReclassifyStaleGate:0,
@@ -1204,21 +1215,28 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       ' root='+root+' HEAD='+live.head.sha.slice(0,12));
     // Classification is never a no-op: write one versioned owner/strategy
     // task even when no source-edit privilege or complete jobs are available.
+    let errorTaskDurable=false;
     if(!budget.exhausted && (dryRun||summary.errorTasksCreated<3)){
       try {
         const result=await recordErrorTask(github,owner,repo,live,latest,
           diagnosis,root,dryRun,log,limited,now);
-        if(result==='CREATED')summary.errorTasksCreated++;
-        else if(result==='ALREADY_RECORDED')summary.errorTasksExisting++;
+        if(result==='CREATED'){summary.errorTasksCreated++;errorTaskDurable=true;}
+        else if(result==='ALREADY_RECORDED'){summary.errorTasksExisting++;errorTaskDurable=true;}
         else if(result==='WOULD_RECORD')summary.errorTasksDryRun++;
         else {summary.errorTasksDeferred++;log('HH_CI_ERROR_TASK_DEFERRED #'+pr.number+' '+result);}
+        if(errorTaskDurable)summary.errorTaskReceiptVerified++;
+        else if(!dryRun)summary.errorTaskReceiptUnverified++;
       }catch(error){
         summary.errorTasksDeferred++;
         log('HH_CI_ERROR_TASK_DEFERRED #'+pr.number+' '+String(error.message||error).slice(0,100));
       }
     }else summary.errorTasksDeferred++;
     if(!jobs.length){summary.coreFailureUnverified++;continue;}
-    if (shouldRetryTransientCoreFailure({diagnosis,run:latest,jobs,now,ciRoom,
+    if(!dryRun&&!errorTaskDurable){
+      log('HH_CI_ERROR_TASK_BLOCKED_PENDING_SIGNED_RECEIPT #'+pr.number);
+      continue;
+    }
+    if ((dryRun||errorTaskDurable) && shouldRetryTransientCoreFailure({diagnosis,run:latest,jobs,now,ciRoom,
         reruns:summary.transientCiReruns})) {
       if (!dryRun) {
         try {
@@ -1227,7 +1245,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       }
       summary.transientCiReruns++;
       log(`${dryRun?'WOULD_RERUN':'RERUN'} classified ${diagnosis.category} core CI #${pr.number} run=${latest.id} HEAD ${pr.head.sha.slice(0,12)}`);
-    } else if (latest.conclusion === 'failure' && latest.run_attempt >= 1) {
+    } else if ((dryRun||errorTaskDurable) && latest.conclusion === 'failure' && latest.run_attempt >= 1) {
       if(root==='RELEASE_GATE_ONLY') {
         summary.releaseGateOnly++;
         // This may be a production BASE_ADVANCED result or failed specialist

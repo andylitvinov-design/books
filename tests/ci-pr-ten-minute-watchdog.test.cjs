@@ -125,6 +125,8 @@ test('green unarmed PR dispatches existing protected coordinator, not a direct m
   assert.equal(targeted,true);
 });
 test('CI overload blocks retries, but code failures are handed to Repair once',async()=>{
+ const stored=[];
+ const signed=body=>({body,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'}});
   let reruns=0,comments=0,labels=0;
   const github={rest:{
     pulls:{list:async()=>({data:[pr(98)]}),get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
@@ -135,11 +137,11 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
     },
     checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',conclusion:'failure'}]}})},
     repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
-    issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++;},addLabels:async()=>{labels++;}}
+    issues:{listComments:async()=>({data:stored}),createComment:async({body})=>{comments++;stored.push(signed(body));},addLabels:async()=>{labels++;}}
   },paginate:async()=>[],request:async(route,args)=>{
     if(route.includes('rerun-failed-jobs'))reruns++;
     if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[{
-      id:44,name:'HH PR core release gate',event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
+      id:44,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/bootstrap-books',repository:{full_name:'andylitvinov-design/books'},head_repository:{full_name:'andylitvinov-design/books'},event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
       pull_requests:[{number:98,head:{sha:SHA,ref:'test-98'}}],
       status:'completed',conclusion:'failure',run_attempt:1,
       created_at:new Date(NOW-60*60000).toISOString(),updated_at:new Date(NOW-40*60000).toISOString()}]}};
@@ -149,7 +151,7 @@ test('CI overload blocks retries, but code failures are handed to Repair once',a
   assert.equal(result.blockedByCapacity,true);
   assert.equal(result.transientCiReruns,0);
   assert.equal(reruns,0);
-  assert.equal(comments,1);
+  assert.equal(comments,2);
   assert.equal(labels,1);
   assert.equal(result.activeActions,18);
   assert.equal(result.queuedActions,32);
@@ -1003,6 +1005,8 @@ test('PR #3245 CI source-contract failure routes to policy, not product Source R
 });
 
 test('CI contract-only failed Core labels release gate and does not hand off source',async()=>{
+ const stored=[];
+ const signed=body=>({body,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'}});
   const current={...pr(3245),state:'open',mergeable:true,mergeable_state:'clean',labels:[]};
   let repairComments=0;const labels=[];
   const contractStep={name:'Verify specialist ownership and Messenger isolation on CI-policy changes',
@@ -1019,12 +1023,12 @@ test('CI contract-only failed Core labels release gate and does not hand off sou
     },
     checks:{listForRef:async()=>({data:{total_count:0,check_runs:[]}})},
     repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
-    issues:{addLabels:async({labels:added})=>{labels.push(...added);},
-      createComment:async()=>{repairComments++;}},
+    issues:{listComments:async()=>({data:stored}),addLabels:async({labels:added})=>{labels.push(...added);},
+      createComment:async({body})=>{repairComments++;stored.push(signed(body));}},
   },request:async(route,args)=>{
     if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{
       total_count:1,workflow_runs:[{
-        id:41581262858,name:'HH PR core release gate',event:'pull_request',
+        id:41581262858,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/bootstrap-books',repository:{full_name:'andylitvinov-design/books'},head_repository:{full_name:'andylitvinov-design/books'},event:'pull_request',
         head_sha:'c'.repeat(40),head_branch:current.head.ref,
         pull_requests:[{number:current.number,head:{sha:SHA,ref:current.head.ref}}],
         status:'completed',conclusion:'failure',run_attempt:1,
@@ -1038,7 +1042,7 @@ test('CI contract-only failed Core labels release gate and does not hand off sou
   assert.equal(report.ciContractFailures,1);
   assert.equal(report.sourceRepairQueued,0);
   assert.equal(report.verifiedSourceFailures,0);
-  assert.equal(repairComments,0);
+  assert.equal(repairComments,1);
   assert.deepEqual(labels,['hh:release-gate-review']);
 });
 
@@ -1438,6 +1442,8 @@ test('fresh environment failures are not source-repair diagnoses',()=>{
 });
 
 test('fresh checkout failure never queues source repair or an early rerun',async()=>{
+ const stored=[];
+ const signed=body=>({body,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},performed_via_github_app:{id:15368,slug:'github-actions'}});
  let reruns=0,comments=0,labels=0;
  const github={rest:{
   pulls:{list:async()=>({data:[pr(98)]}),get:async()=>({data:{...pr(98),state:'open',mergeable:true,mergeable_state:'clean'}})},
@@ -1445,18 +1451,18 @@ test('fresh checkout failure never queues source repair or an early rerun',async
    listJobsForWorkflowRun:async()=>({data:{total_count:1,jobs:[{name:'core-lint-types-build',conclusion:'failure',steps:[{name:'Run actions/checkout@v4',conclusion:'failure'}]}]}})},
   checks:{listForRef:async()=>({data:{total_count:1,check_runs:[{id:1,name:'hh-core-verified',conclusion:'failure'}]}})},
   repos:{getCommit:async()=>({data:{parents:[{sha:'a'.repeat(40)},{sha:SHA}]}})},
-  issues:{listComments:async()=>({data:[]}),createComment:async()=>{comments++},addLabels:async()=>{labels++}}
+  issues:{listComments:async()=>({data:stored}),createComment:async({body})=>{comments++;stored.push(signed(body));},addLabels:async()=>{labels++}}
  },paginate:async()=>[],request:async(route,args)=>{
   if(route.includes('rerun-failed-jobs'))reruns++;
   if(args?.workflow_id==='hh-pr-core-release.yml')return {data:{total_count:1,workflow_runs:[{
-   id:44,name:'HH PR core release gate',event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
+   id:44,name:'HH PR core release gate',path:'.github/workflows/hh-pr-core-release.yml@refs/heads/codex/bootstrap-books',repository:{full_name:'andylitvinov-design/books'},head_repository:{full_name:'andylitvinov-design/books'},event:'pull_request',head_sha:'c'.repeat(40),head_branch:'test-98',
    pull_requests:[{number:98,head:{sha:SHA,ref:'test-98'}}],status:'completed',conclusion:'failure',run_attempt:1,
    created_at:new Date(NOW-60000).toISOString(),updated_at:new Date(NOW-60000).toISOString()}]}};
   return {data:{workflow_runs:[]}};
  }};
  const result=await run({github,core:core(),context,now:NOW,hasMergeToken:false});
  assert.equal(result.infraOrEnvironment,1);assert.equal(result.sourceRepairQueued,0);
- assert.equal(reruns,0);assert.equal(comments,0);assert.equal(labels,0);
+ assert.equal(reruns,0);assert.equal(comments,1);assert.equal(labels,0);
 });
 
 test('watchdog does not accept an outsider marker as a durable source handoff',async()=>{

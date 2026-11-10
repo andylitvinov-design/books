@@ -138,4 +138,41 @@ function taskStatus(comments,task){
   }
   return 'MISSING';
 }
-module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,validTask};
+
+/**
+ * Read-only delivery/execution reconciliation from authenticated existing
+ * HH_PR_TASK_V1 receipts. An event task receipt alone never proves delivery.
+ * Ambiguous, untrusted, stale or partial history fails closed.
+ */
+function taskLifecycle(comments,task){
+  const status=taskStatus(comments,task);
+  if(status===null)return {state:'HISTORY_UNVERIFIED',next_action:'RECHECK_SIGNED_HISTORY'};
+  if(status==='MISSING')return {state:'TASK_MISSING',next_action:'CREATE_IDEMPOTENT_TASK'};
+  const {parseRecords}=require('./ci-pr-task-state.cjs');
+  const trusted=comments.filter(trustedControlComment);
+  const records=parseRecords(trusted);
+  if(!records)return {state:'HISTORY_UNVERIFIED',next_action:'RECHECK_SIGNED_HISTORY'};
+  const same=records.filter(x=>x.pr_number===task.pr_number&&
+    x.head_sha?.toLowerCase()===task.head_sha&&KEY.test(x.task_key||''));
+  // Existing task lanes are source, CI bootstrap and conflict. A classifier
+  // record does not grant access to these lanes or invent a dispatch.
+  const latest=same.at(-1);
+  if(!latest)return {state:'CLASSIFIED_NOT_DELIVERED',next_action:'RECONCILE_EXISTING_DISPATCHER'};
+  if(['PUBLISHED','REPAIRED','DONE'].includes(latest.state)){
+    // A source commit is not VERIFIED until independent exact-HEAD checks.
+    return {state:'SOURCE_PUBLISHED_VERIFY_PENDING',next_action:'VERIFY_NEW_HEAD_REQUIRED_CHECKS',
+      worker_task_key:latest.task_key};
+  }
+  if(['FAILED','MANUAL','REJECTED','UNCONFIRMED','VERIFY_REQUIRED'].includes(latest.state))
+    return {state:'REPAIR_FAILED_REDIAGNOSE',next_action:'RECLASSIFY_WORKER_FAILURE_AND_ASSIGN_OWNER',
+      worker_task_key:latest.task_key};
+  if(latest.state==='CLAIMED')
+    return {state:'EXECUTOR_CLAIMED_NOT_COMPLETED',next_action:'CHECK_WORKER_RUN_AND_FINALIZER',
+      worker_task_key:latest.task_key};
+  if(latest.state==='RESERVED')
+    return {state:'RESERVED_DELIVERY_UNVERIFIED',next_action:'VERIFY_WORKFLOW_DISPATCH_AND_CLAIM',
+      worker_task_key:latest.task_key};
+  return {state:'CLASSIFIED_NOT_DELIVERED',next_action:'RECONCILE_EXISTING_DISPATCHER'};
+}
+
+module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,validTask};
