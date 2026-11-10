@@ -1253,5 +1253,5 @@ test('free-model publisher receipt is provider-neutral',()=>{
  const fs=require('node:fs');
  const source=fs.readFileSync(require.resolve('../scripts/ci-pr-repair-worker.cjs'),'utf8');
  assert.match(source,/free-model source repair/);
- assert.doesNotMatch(source,/free OpenCode\\/GLM source repair/);
+ assert.equal(source.includes('free OpenCode/GLM source repair'),false);
 });
