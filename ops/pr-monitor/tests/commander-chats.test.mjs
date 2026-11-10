@@ -401,3 +401,10 @@ test('private Commander writes raw JSON text through text-to-jsonb casts, not JS
  assert.match(edge,/JSON\.stringify\(chat\)/);
  assert.match(edge,/JSON\.stringify\(event\)/);
 });
+
+test('verified GitHub CI reports carry the top-level source URL consumed by the chat renderer',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ const render=src('commander-chats.js');
+ assert.match(edge,/kind: "github_report"[\s\S]{0,1200}url: event\.run_url/);
+ assert.match(render,/if\(msg\.kind==='github_report'\)htmlLink\(c,'Источник GitHub',msg\.url\)/);
+});

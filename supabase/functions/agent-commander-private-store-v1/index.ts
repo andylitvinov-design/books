@@ -354,6 +354,7 @@ async function receiveGitHubWorkflowRun(req, origin) {
           text: "Core CI failed for PR #" + event.pr_number + " at " + event.head_sha.slice(0,12) +
             ". Category: " + event.category + ". Failed jobs: " + event.failed_jobs.join(", ") +
             ". Failed steps: " + event.failed_steps.join(", ") + ". Repair has not been started by this event receiver.",
+          url: event.run_url,
           source: { repository: event.repository, workflow_run_id: event.workflow_run_id,
             run_attempt: event.run_attempt, head_sha: event.head_sha, run_url: event.run_url },
           sourceVerified: true, proofLevel: "GITHUB_OIDC_AND_EXACT_PR_HEAD",
