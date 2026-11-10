@@ -414,44 +414,18 @@ async function exercise(engine, browserType, width) {
         assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 0);
         return { messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true, freeAssessmentInternal: true };
       });
-      await check('paid-imagery-consultation-safe-handoff', { engine, width, locale }, async () => {
-        const local = ['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname);
+      await check('paid-imagery-consultation-messenger-only-handoff', { engine, width, locale }, async () => {
         const paidPage = await context.newPage();
         try {
           await paidPage.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
           const capture = paidPage.locator('[data-service-visual-screen="final-capture"]');
           await expect(capture).toHaveCount(1);
-          const form = capture.locator('form[data-compact-lead-form]');
-          // Production may intentionally run the owner-approved messenger-only
-          // intake mode. In that mode no email/phone form is rendered: require
-          // the visible session-format selector and explicit WhatsApp/Telegram
-          // links instead. Never force-enable legacy contact collection in CI.
-          const messengerOnly = await capture.locator('[data-messenger-only-intake]').count() === 1;
-          if (messengerOnly) {
-            await expect(form).toHaveCount(0);
-            await expect(capture.locator('input, textarea')).toHaveCount(0);
-            const messengerFormats = capture.locator('select[data-messenger-offer-format]');
-            await expect(messengerFormats).toHaveCount(1);
-            await expect(messengerFormats.locator('option[value="30-min"]')).toContainText('€50');
-            await expect(messengerFormats.locator('option[value="60-min"]')).toContainText('€100');
-            await messengerFormats.selectOption('60-min');
-            await expect(messengerFormats).toHaveValue('60-min');
-            await messengerFormats.selectOption('30-min');
-            await expect(messengerFormats).toHaveValue('30-min');
-            const actions = capture.locator('[data-messenger-only-contact]');
-            await expect(actions).toHaveCount(1);
-            const whatsapp = actions.locator('a[data-messenger-only-channel="whatsapp"]');
-            const telegram = actions.locator('a[data-messenger-only-channel="telegram"]');
-            await expect(whatsapp).toHaveAttribute('target', '_blank');
-            await expect(telegram).toHaveAttribute('target', '_blank');
-            await expect(whatsapp).toHaveAttribute('rel', /noopener/);
-            await expect(telegram).toHaveAttribute('rel', /noopener/);
-            assert.equal(new URL(await whatsapp.getAttribute('href')).origin, 'https://wa.me');
-            assert.equal(new URL(await telegram.getAttribute('href')).origin, 'https://t.me');
-            return { messengerOnly: true, paidPricesVerified: true, explicitChannelsVerified: true, noContactCollection: true };
-          }
-          await expect(form).toHaveAttribute('data-compact-hydrated', 'true');
-          const formats = capture.locator('select');
+          const intake = capture.locator('[data-messenger-only-intake]');
+          await expect(intake).toHaveCount(1);
+          // Current site policy deliberately avoids typed email/phone capture:
+          // a messenger link click alone is not a verified conversation.
+          await expect(intake.locator('form, input, textarea')).toHaveCount(0);
+          const formats = intake.locator('select[data-messenger-offer-format]');
           await expect(formats).toHaveCount(1);
           await expect(formats.locator('option[value="30-min"]')).toContainText('€50');
           await expect(formats.locator('option[value="60-min"]')).toContainText('€100');
@@ -459,57 +433,32 @@ async function exercise(engine, browserType, width) {
           await expect(formats).toHaveValue('60-min');
           await formats.selectOption('30-min');
           await expect(formats).toHaveValue('30-min');
-          await expect(capture.locator('a[data-compact-channel]')).toHaveCount(0);
-          const free = capture.locator(`a[href="/${locale}/services/free-situation-review"]`);
-          await expect(free).toHaveCount(1);
-          const replyConsent = form.locator('input[type="checkbox"][required]');
-          const attribution = form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
-          await expect(replyConsent).toHaveCount(1);
-          await expect(replyConsent).not.toBeChecked();
-          await expect(attribution).toHaveCount(1);
-          await expect(attribution).not.toBeChecked();
-          if (!local) return {messageSent:false, liveConsentSubmitted:false, paidPricesVerified:true, freeAssessmentInternal:true};
-          assertSyntheticLoopback(paidPage.url());
-          let submissions = 0, submitted = null;
-          await paidPage.route('**/api/service-enquiries', async route => {
-            if (route.request().method() !== 'POST') return route.continue();
-            submissions++; submitted = route.request().postDataJSON();
-            await route.fulfill({status:201, contentType:'application/json', body:JSON.stringify({saved:true, referenceCode:'HH-ABCD1234EF56'})});
-          });
-          await paidPage.evaluate(() => {
-            window.__testNoExternalHandoff = [];
-            window.open = () => ({opener:null, closed:false, location:{replace:url => window.__testNoExternalHandoff.push(String(url))}, close:()=>{}});
-          });
-          await form.locator('input[name="contact"]').fill('enquiry-qa@example.test');
-          const submit = form.locator('button[data-compact-channel="whatsapp"]');
-          await submit.click();
-          await expect(form.locator('[role="alert"]')).toBeVisible();
-          assert.equal(submissions, 0, 'No enquiry without explicit reply consent');
-          await replyConsent.check();
-          await submit.click();
-          await expect(capture.locator('[data-lead-saved]')).toBeVisible();
-          assert.equal(submissions, 1);
-          assert.equal(submitted.contactConsent, true);
-          assert.equal(submitted.contact.email, 'enquiry-qa@example.test');
-          assert.equal(submitted.sourcePath, `/${locale}/services/imagery-therapy`);
-          assert.ok(submitted.description.includes('30-min'));
-          for (const channel of ['whatsapp','telegram']) {
-            const link = capture.locator(`a[data-compact-channel="${channel}"]`);
+          const channels = intake.locator('a[data-messenger-only-channel]');
+          await expect(channels).toHaveCount(2);
+          const whatsapp = channels.locator('[data-messenger-only-channel="whatsapp"]');
+          const telegram = channels.locator('[data-messenger-only-channel="telegram"]');
+          for (const link of [whatsapp, telegram]) {
             await expect(link).toHaveAttribute('target', '_blank');
             await expect(link).toHaveAttribute('rel', /noopener/);
             await expect(link).toHaveAttribute('rel', /noreferrer/);
-            const draft = new URL(await link.getAttribute('href'));
-            assert.equal(draft.origin, channel === 'whatsapp' ? 'https://wa.me' : 'https://t.me');
-            assert.equal(draft.pathname, channel === 'whatsapp' ? '/14376066502' : '/AndyTherapist');
-            assert.deepEqual([...draft.searchParams.keys()], ['text']);
-            assert.ok(draft.searchParams.get('text')?.includes('HH-ABCD1234EF56'));
-            assert.ok(draft.searchParams.get('text')?.includes('30-min'));
-            assert.ok(!draft.href.includes('enquiry-qa%40example.test'));
+            await expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
+            const href = new URL(await link.getAttribute('href'));
+            assert.ok(href.protocol === 'https:', 'Messenger handoff must use HTTPS');
+            assert.ok(['wa.me', 'api.whatsapp.com', 't.me', 'telegram.me'].includes(href.hostname),
+              'Only approved WhatsApp or Telegram destinations are allowed');
           }
-          const handoffs = await paidPage.evaluate(() => window.__testNoExternalHandoff);
-          assert.equal(handoffs.length, 1);
-          assert.equal(new URL(handoffs[0]).origin, 'https://wa.me');
-          return {messageSent:false, syntheticConsent:true, paidPricesVerified:true, bothChannelsVerified:true, freeAssessmentInternal:true};
+          assert.equal(await capture.locator('a[data-compact-channel], form[data-compact-lead-form]').count(), 0,
+            'Legacy contact capture and CRM-confirmation controls must not appear in messenger-only mode');
+          const free = capture.locator(`a[href="/${locale}/services/free-situation-review"]`);
+          await expect(free).toHaveCount(1);
+          return {
+            messageSent: false,
+            contactFieldsAbsent: true,
+            paidPricesVerified: true,
+            bothChannelsVerified: true,
+            secureExternalHandoff: true,
+            freeAssessmentInternal: true,
+          };
         } finally { await paidPage.close(); }
       });
     }
