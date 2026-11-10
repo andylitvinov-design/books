@@ -108,6 +108,15 @@ function classifyRedCiError({
     return makeResult('BASE_OR_CI_ROUTING', evidence, 0.9, { evidenceCode: 'TRUSTED_PREFLIGHT_ROUTING_FAILURE' });
   }
 
+  const providerQuota = /(?:(?:openrouter|model|provider)[^\\n]{0,60}(?:quota|rate limit|credits)|(?:quota|rate limit|credits)[^\\n]{0,60}(?:openrouter|model|provider))/i.test(text);
+  if (providerQuota) {
+    return makeResult('AI_EXECUTOR', evidence, 0.96, {
+      evidenceCode: 'MODEL_PROVIDER_QUOTA_OR_REJECTION',
+      recommendedStatus: 'REROUTED',
+      retryOverride: { allowed: false, max_attempts: 0 }
+    });
+  }
+
   const infraStep = evidence.some(item =>
     item.conclusion === 'timed_out' ||
     item.conclusion === 'startup_failure' ||
@@ -117,9 +126,11 @@ function classifyRedCiError({
       coreRoot === 'CI_INFRA_OR_ENVIRONMENT') {
     const transient = evidence.some(item =>
       ['timed_out', 'startup_failure'].includes(item.conclusion)
-    ) || /(?:\b502\b|\b503\b|\b504\b|temporarily unavailable|runner lost)/i.test(text);
+    ) || /(?:\\b502\\b|\\b503\\b|\\b504\\b|temporarily unavailable|runner lost)/i.test(text);
     return makeResult('INFRASTRUCTURE', evidence, transient ? 0.96 : 0.82, {
-      evidenceCode: transient ? 'TRANSIENT_INFRASTRUCTURE_FAILURE' : 'INFRASTRUCTURE_FAILURE'
+      evidenceCode: transient ? 'TRANSIENT_INFRASTRUCTURE_FAILURE' : 'PERSISTENT_INFRASTRUCTURE_FAILURE',
+      recommendedStatus: transient ? 'RETRY_SCHEDULED' : 'MANUAL_REQUIRED',
+      retryOverride: transient ? {} : { allowed: false, max_attempts: 0 }
     });
   }
 
