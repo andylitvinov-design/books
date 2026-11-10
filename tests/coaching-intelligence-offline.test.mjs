@@ -198,3 +198,23 @@ test('adaptive metadata contains only controlled reason codes and no client text
   assert.equal(result.intervention,'explore_ambivalence')
   assert.equal(JSON.stringify(result).includes('afraid to start'),false)
 })
+
+
+test('safety, pause and stop return explicit control states instead of silent fallthrough',()=>{
+  const safety=authoredFollowupFor({id:'safe',stepKey:'reality'},'I want to kill myself')
+  assert.equal(safety.controlStatus,'safety_hold')
+  assert.ok(safety.prompt.ru.length>20)
+  const pause=authoredFollowupFor({id:'pause',stepKey:'reality'},'Please pause')
+  assert.equal(pause.controlStatus,'paused')
+  const stop=authoredFollowupFor({id:'stop',stepKey:'reality'},'I want to stop now')
+  assert.equal(stop.controlStatus,'stopped')
+})
+
+test('runner renders a blocking control state and resumes only after explicit user action',()=>{
+  const ui=source('components/app/personal-coaching.jsx')
+  assert.match(ui,/if\(item\.controlStatus\)\{/)
+  assert.match(ui,/setSessionControl\(item\)/)
+  assert.match(ui,/: sessionControl \? <div/)
+  assert.match(ui,/sessionControl\.controlStatus==='safety_hold'/)
+  assert.match(ui,/onClick=\{\(\)=>visit\(index\+1,session\?\.answers\)\}/)
+})
