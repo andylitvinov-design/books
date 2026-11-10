@@ -3030,7 +3030,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
     return () => { window.cancelAnimationFrame(firstFrame); window.cancelAnimationFrame(nextFrame); };
   }, [result]);
-  // Attach approved automatic music in both Montage and Ready before Generate.
+  // Auto-music must be ATTACHED before the Montage Generate tap and Ready Basic.
   // Previously Ready suggested a track but left it unattached; Create then
   // opened the large Audio overlay instead of rendering. Uploaded tracks,
   // manual choices, silence and rights checks retain their existing gates.

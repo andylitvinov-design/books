@@ -233,7 +233,7 @@ test("WebKit voice advanced settings use native one-tap disclosure without a dou
 });
 
 test("Ready Basic auto-attaches suggested music before Generate without bypassing manual audio rights",()=>{
-  const start=studio.indexOf("// Attach approved automatic music in both Montage and Ready");
+  const start=studio.indexOf("// Auto-music must be ATTACHED before the Montage Generate tap");
   const end=studio.indexOf("// A paused film",start);
   assert.ok(start>0&&end>start,"the original shared audio effect remains in the studio");
   const effect=studio.slice(start,end);
