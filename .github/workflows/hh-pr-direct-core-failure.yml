@@ -207,6 +207,7 @@ jobs:
       actions: write
       pull-requests: read
       issues: write
+      checks: read
     steps:
       - name: Checkout trusted default branch for bounded admission policy
         uses: actions/checkout@v4
@@ -221,6 +222,17 @@ jobs:
           script: |
             const {run}=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-slot-wakeup.cjs');
             await run({github,core,context});
+      - name: Record independently verified repair outcome on real new HEAD
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {run}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-repair-verified-finalizer.cjs');
+            const result=await run({github,core,context});
+            await core.summary.addHeading('Repair task: exact-HEAD CI outcome')
+              .addCodeBlock(JSON.stringify(result,null,2)).write();
       - name: Persist completed Core job timings without another runner
         if: ${{ always() }}
         uses: actions/github-script@v7
