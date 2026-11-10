@@ -219,3 +219,21 @@ test('failed job evidence is required; a stale conflict label or green job canno
  });
  assert.equal(dirtyLabelOnly.category,'TYPESCRIPT');
 });
+
+
+test('exact Specialist proof failure routes to CI policy diagnostics, not source or test rewriting',()=>{
+ const jobs=[
+  {name:'core-lint-types-build',conclusion:'success',steps:[]},
+  {name:'hh-specialist',conclusion:'failure',steps:[{name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}]},
+  {name:'hh-merge-check',conclusion:'failure',steps:[{name:'Require real Core and specialist results from this workflow',conclusion:'failure'}]}
+ ];
+ const result=classify(jobs);
+ assertDiagnosticOnly(result,'BASE_OR_CI_ROUTING');
+ assert.equal(result.reason_code,'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE');
+ assert.equal(result.evidence_code,'SPECIALIST_PROOF_UNAVAILABLE');
+ assert.equal(result.retry.max_attempts,1);
+ assert.equal(result.source_write_authorized,false);
+ assert.equal(result.recommended_status,'REROUTED');
+ const unknown=classify(jobs.filter(j=>j.name!=='core-lint-types-build'));
+ assert.equal(unknown.category,'BASE_OR_CI_ROUTING','verified Specialist step is independent routing proof');
+});

@@ -1,6 +1,8 @@
 'use strict';
 /** Trusted default-branch single-writer queue dispatcher: no source checkout, no merge. */
 const {REPO,PROD,DEFAULT,SHA,laneOf,validPR,validLegacyPrep,taskFor,reservation,commentBody,reservationStatus,parseRecords,readCompleteIssueComments,trustedControlComment,DEFINITIVE_DISPATCH_DENIAL}=require('./ci-pr-task-state.cjs');
+const {latestErrorTaskId,dispatchAcceptance,dispatchAcceptanceBody,
+ REPAIR_EXECUTOR,CI_EXECUTOR}=require('./ci-pr-error-task.cjs');
 const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
@@ -295,6 +297,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   specialistReclassified:0,wouldSpecialistReclassify:0,
   policyReclassified:0,wouldPolicyReclassify:0,
   definitiveDispatchRejections:0,repairDispatchAccepted:0,
+  dispatchReceiptsConfirmed:0,dispatchReceiptsUnverified:0,
   actionableByLane:{repair:0,legacy:0,ci:0,conflict:0},
   legacyDispatchAccepted:0,
   capacityReason:null,blocked:{},legacyCiRecovery:null,
@@ -966,25 +969,57 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   // The trusted single writer reserves the exact task before dispatch.
   // On interrupted dispatch this reservation fails closed pending a human
   // inspection of worker history: never duplicate a possible source write.
-  const claim=reservation(task,now,context.runId||'unspecified');
+  const errorTaskId=task.lane==='repair'?
+    latestErrorTaskId(comments,task.pr_number,task.head_sha):null;
+  const claim={...reservation(task,now,context.runId||'unspecified'),
+    assigned_executor_id:task.lane==='ci'?CI_EXECUTOR:REPAIR_EXECUTOR,
+    executor_kind:'github_actions',assignment_status:'SELECTED_RESERVED_NOT_STARTED',
+    ...(errorTaskId?{error_task_id:errorTaskId}:{})};
+  const reservedBody=commentBody(claim);
+  let reservationCommentId=null;
   try{
-   await limited('reserve-task',()=>github.rest.issues.createComment({
-    owner,repo,issue_number:task.pr_number,body:commentBody(claim)}));
+   const stored=await limited('reserve-task',()=>github.rest.issues.createComment({
+    owner,repo,issue_number:task.pr_number,body:reservedBody}));
+   reservationCommentId=stored?.data?.id||null;
   }catch(err){blocked('RESERVATION_FAILED');log('Reserve #'+task.pr_number+' '+err.message);continue;}
   const inputs={pr_number:String(task.pr_number),expected_sha:task.head_sha,
     task_key:task.task_key,reservation_run_id:String(context.runId||''),
     dry_run:'false'};
   try{
-   await limited('dispatch-worker',()=>github.rest.actions.createWorkflowDispatch({
+   const delivered=await limited('dispatch-worker',()=>github.rest.actions.createWorkflowDispatch({
     owner,repo,workflow_id:WORKER_PATH[task.lane],ref:DEFAULT,inputs}));
+   // A successful HTTP 204 proves GitHub accepted the dispatch request;
+   // it does not prove a worker run exists or that it claimed this HEAD.
+   if(delivered?.status!==204)throw Error('DISPATCH_HTTP_204_UNVERIFIED');
    summary.dispatchAccepted++;
    if(task.lane==='repair')summary.repairDispatchAccepted++;
    if(task.lane==='legacy')summary.legacyDispatchAccepted++;
-   summary.workerRuns.push({task_key:task.task_key,pr_number:task.pr_number,
-    head_sha:task.head_sha,lane:task.lane,outcome:'DISPATCH_ACCEPTED',
-    sourceCommitConfirmed:false});
+   const workerRun={task_key:task.task_key,pr_number:task.pr_number,
+    head_sha:task.head_sha,lane:task.lane,error_task_id:errorTaskId,
+    executor_id:claim.assigned_executor_id,outcome:'DISPATCH_ACCEPTED',
+    acceptanceReceiptPersisted:false,sourceCommitConfirmed:false};
+   // Patch the SAME reservation comment, keeping its first signed
+   // HH_PR_TASK_V1 JSON and RESERVED state exactly intact. The worker still
+   // requires the original reservation and records CLAIMED independently.
+   try{
+    if(!Number.isSafeInteger(reservationCommentId)||reservationCommentId<1)
+      throw Error('RESERVATION_COMMENT_ID_UNVERIFIED');
+    const ack=dispatchAcceptance(claim,now);
+    const body=reservedBody+'\n'+dispatchAcceptanceBody(ack);
+    const updated=await limited('persist-dispatch-acceptance',()=>github.rest.issues.updateComment({
+      owner,repo,comment_id:reservationCommentId,body}));
+    if(updated?.data?.body!==body)throw Error('DISPATCH_RECEIPT_WRITE_READBACK_UNVERIFIED');
+    workerRun.acceptanceReceiptPersisted=true;
+    summary.dispatchReceiptsConfirmed++;
+   }catch(error){
+    summary.dispatchReceiptsUnverified++;
+    blocked('DISPATCH_ACCEPTANCE_RECEIPT_UNVERIFIED');
+    log('Dispatch accepted but receipt not verified #'+task.pr_number+' '+String(error.message||error).slice(0,120));
+   }
+   summary.workerRuns.push(workerRun);
    occupyWorkerSlot(worker);
-   log('DISPATCH_ACCEPTED '+task.lane+' #'+task.pr_number+' '+task.head_sha.slice(0,12));
+   log('DISPATCH_ACCEPTED '+task.lane+' #'+task.pr_number+' '+task.head_sha.slice(0,12)+
+     ' executor='+claim.assigned_executor_id+' ack='+workerRun.acceptanceReceiptPersisted);
   }catch(err){
    blocked(classify(err)?'DISPATCH_RATE_LIMIT':'DISPATCH_DENIED');log('Dispatch #'+task.pr_number+' '+err.message);
    // Never release an ambiguous reservation. A definite non-accepted HTTP

@@ -3,6 +3,7 @@ const {test}=require('node:test');
 const a=require('node:assert/strict');
 const fs=require('node:fs');
 const {normalizedPayload,sendCommanderCiRoute,ENDPOINT}=require('../scripts/ci-pr-commander-route-receipt.cjs');
+const {coreErrorTaskId}=require('../scripts/ci-pr-error-task.cjs');
 const SHA='a'.repeat(40),INBOX='12341234-1234-4234-8234-123412341234';
 const receipt=()=>({
  accepted:true,association:'MATCHED_CHAT_EVENT_RECORDED',inboxId:INBOX,
@@ -13,12 +14,18 @@ const result=()=>({
  state:'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',reason:'EXISTING_DISPATCHER_ACCEPTED',
  strategy:'GUARDED_SOURCE_REPAIR',responsibleRole:'free-code-repair-worker',
  prNumber:123,runId:456,category:'TYPESCRIPT',dispatchAccepted:1,
+ dispatchAcknowledged:true,executorId:'github-actions:hh-pr-repair-worker.yml',
+ workerTaskKey:'b'.repeat(32),errorTaskId:coreErrorTaskId(123,SHA,456,1),
  workerStarted:false,sourceWriteVerified:false,liveVerified:false
 });
 test('accepted dispatch is explicitly not worker, source, CI or LIVE proof',()=>{
  const r=normalizedPayload(result(),receipt());
  a.equal(r.schema,'HH_COMMANDER_CI_ROUTE_RECEIPT_V1');
  a.equal(r.dispatchAccepted,1);
+ a.equal(r.dispatchAcknowledged,true);
+ a.equal(r.executorId,'github-actions:hh-pr-repair-worker.yml');
+ a.equal(r.workerTaskKey,'b'.repeat(32));
+ a.equal(r.errorTaskId,coreErrorTaskId(123,SHA,456,1));
  a.equal(r.workerStarted,false);
  a.equal(r.sourceWriteVerified,false);
  a.equal(r.liveVerified,false);
@@ -28,14 +35,25 @@ test('unsupported categories and forged execution evidence are refused',()=>{
   {state:'COMPLETED'},{state:'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',workerStarted:true},
   {sourceWriteVerified:true},{liveVerified:true},{prNumber:124},{runId:457},
   {category:'SECURITY'},{dispatchAccepted:0},{dispatchAccepted:3},
-  {reason:'not valid'},{responsibleRole:'stranger'}
+  {reason:'not valid'},{responsibleRole:'stranger'},
+  {dispatchAcknowledged:false},{executorId:'fake-worker'},
+  {workerTaskKey:'not-a-task-key'},{workerTaskKey:null},
+  {errorTaskId:null},{errorTaskId:'c'.repeat(31)}
  ])a.throws(()=>normalizedPayload({...result(),...mutation},receipt()));
  a.throws(()=>normalizedPayload(result(),{...receipt(),association:'UNMATCHED'}));
  a.throws(()=>normalizedPayload(result(),{...receipt(),inboxId:'bad'}));
 });
+test('new auto-created Commander tasks are accepted with exact event identity',()=>{
+ for(const association of ['AUTO_TASK_CREATED_NOT_DISPATCHED',
+   'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED']){
+  const p=normalizedPayload(result(),{...receipt(),association});
+  a.equal(p.executorId,'github-actions:hh-pr-repair-worker.yml');
+ }
+});
 test('non-code diagnostic or manual routes can record zero dispatches',()=>{
  const r=normalizedPayload({
   ...result(),state:'TASK_REQUIRES_REVIEW',dispatchAccepted:0,
+  dispatchAcknowledged:false,executorId:null,workerTaskKey:null,errorTaskId:null,
   blocked:{WORKER_BUSY:1}
  },receipt());
  a.equal(r.state,'TASK_REQUIRES_REVIEW');
@@ -57,6 +75,10 @@ test('sends one OIDC-only callback to pinned existing Edge Function endpoint',as
  a.equal(request.options.headers.authorization,'Bearer '+'a'.repeat(220));
  const body=JSON.parse(request.options.body);
  a.equal(body.headSha,SHA);
+ a.equal(body.dispatchAcknowledged,true);
+ a.equal(body.executorId,'github-actions:hh-pr-repair-worker.yml');
+ a.equal(body.workerTaskKey,'b'.repeat(32));
+ a.equal(body.errorTaskId,coreErrorTaskId(123,SHA,456,1));
  a.equal(body.workerStarted,false);
  a.equal(body.sourceWriteVerified,false);
 });
@@ -87,10 +109,40 @@ test('existing Commander private store validates and persists immutable route re
  a.match(s,/route_receipt=\$1::text::jsonb/);
  a.match(s,/GITHUB_OIDC_ROUTE_ONLY_NOT_EXECUTION/);
  a.match(s,/ciLatestRoute/);
+ a.match(s,/CI_ROUTE_CAUSAL_TASK_MISMATCH/);
+ a.match(s,/exactCoreFailureTaskId/);
  a.match(s,/route_receipt,route_recorded_at/);
  a.match(migration,/ALTER TABLE business_brain\.commander_ci_event_inbox/);
  const from=workflow.indexOf("const {route}=require(");
  const delivery=workflow.indexOf("const {sendCommanderCiRoute}=require(");
  a.ok(from>0&&delivery>from);
  a.match(workflow,/HH_COMMANDER_CI_ROUTE_RECEIPT/);
+});
+
+
+test('route receipt accepts each authenticated task association state',()=>{
+ for(const association of ['MATCHED_CHAT_EVENT_RECORDED',
+  'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED','AUTO_TASK_CREATED_NOT_DISPATCHED']){
+  const v=normalizedPayload(result(),{...receipt(),association});
+  a.equal(v.inboxId,INBOX);
+  a.equal(v.workerStarted,false);
+ }
+ for(const association of ['UNMATCHED','AMBIGUOUS_TASKS','MATCHED_TASK_NO_CHAT']){
+  a.throws(()=>normalizedPayload(result(),{...receipt(),association}));
+ }
+});
+test('Commander fallback constructs one deterministic private task and chat per exact source SHA',()=>{
+ const code=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
+ const start=code.indexOf('async function ensureCiIncidentTask(');
+ const end=code.indexOf('async function receiveGitHubWorkflowRun(');
+ a.ok(start>0&&end>start);
+ const helper=code.slice(start,end);
+ a.match(helper,/stableScopeId\(ownerId,scope\)/);
+ a.match(helper,/on conflict\(task_id\) do nothing/);
+ a.match(helper,/CI_TASK_IDENTITY_UNVERIFIED/);
+ a.match(helper,/CI_TASK_CHAT_UNVERIFIED/);
+ a.match(helper,/CLASSIFIED_NOT_DISPATCHED/);
+ a.match(helper,/AWAITING_EXECUTOR_NOT_DISPATCHED/);
+ a.match(code,/ensureCiIncidentTask\(db,inboxOwnerId,event\)/);
+ a.match(code,/AUTO_TASK_CREATED_NOT_DISPATCHED/);
 });

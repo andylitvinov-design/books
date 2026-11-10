@@ -193,3 +193,19 @@ test('event bridge preserves exact live dirty mergeability for conflict classifi
  assert.equal(result.classification.responsible_role,'semantic-conflict-resolver');
  assert.equal(result.classification.retry.allowed,false);
 });
+
+
+test('known real Specialist proof gate becomes an owner-visible CI routing strategy',()=>{
+ const jobs=[
+  {name:'core-lint-types-build',conclusion:'success',steps:[]},
+  {name:'hh-specialist',conclusion:'failure',steps:[{name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}]},
+  {name:'hh-merge-check',conclusion:'failure',steps:[{name:'Require real Core and specialist results from this workflow',conclusion:'failure'}]}
+ ];
+ const d=buildDiagnostics(jobs,makePR());
+ assert.equal(d.category,'BASE_OR_CI_ROUTING');
+ assert.equal(d.classification.reason_code,'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE');
+ assert.equal(d.classification.strategy_code,'CI_ROUTING_DIAGNOSIS');
+ assert.equal(d.classification.next_action,'INSPECT_REQUIRED_HEAD_CHECKS');
+ assert.equal(d.classification.retry.max_attempts,1);
+ assert.equal(d.classification.execution_authorized,false);
+});

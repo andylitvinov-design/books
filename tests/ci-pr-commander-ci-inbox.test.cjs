@@ -67,8 +67,12 @@ test('Commander dispatch queues first-party cloud OpenRouter runs read-only with
  const end=edge.indexOf('if(action==="commander_list_ci_events")',start);
  assert.ok(start>=0&&end>start,'dispatcher block exists');
  const handler=edge.slice(start,end);
- assert.match(handler,/const canDispatch=executor==="local"&&!writeConfirmed/);
+ assert.ok(handler.includes('const canDispatch=(executor==="local"||executor==="openrouter")&&!writeConfirmed&&openRouterReady'));
  assert.match(handler,/OPENROUTER_WORKER_QUEUED/);
+ assert.match(handler,/OPENROUTER_API_KEY_NOT_CONFIGURED/);
+ assert.match(edge,/HH_PM_OPENROUTER_API_KEY/);
+ assert.match(edge,/receiveCommanderCiRoute\(req,origin\)/);
+ assert.match(edge,/route_receipt/);
  assert.match(handler,/status:"QUEUED"/);
  assert.match(handler,/dispatchAttempted:false,agentStarted:false,executionVerified:false/);
  assert.match(handler,/GITHUB_WRITE_REQUIRES_SEPARATE_APPROVAL/);

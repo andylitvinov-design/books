@@ -76,7 +76,7 @@ async function failClaim(db, run, token, error) {
   const retryable = error?.retryable === true && run.worker_attempt_count < MAX_ATTEMPTS;
   const status = retryable ? "QUEUED" : "FAILED";
   await query(db,
-    "update business_brain.commander_execution_runs set status=$1,reason_code=$2,worker_last_error_code=$2,worker_next_attempt_at=case when $3::boolean then now()+interval '2 minutes' else worker_next_attempt_at end,worker_lease_token=null,worker_lease_expires_at=null,worker_checkpoint=jsonb_build_object('phase',$4,'errorCode',$2,'attempt',worker_attempt_count),completed_at=case when $3::boolean then completed_at else now() end,updated_at=now() where run_id=$5::uuid and status='RUNNING' and worker_lease_token=$6::uuid",
+    "update business_brain.commander_execution_runs set status=$1::text,reason_code=$2::text,worker_last_error_code=$2::text,worker_next_attempt_at=case when $3::boolean then now()+interval '2 minutes' else worker_next_attempt_at end,worker_lease_token=null,worker_lease_expires_at=null,worker_checkpoint=jsonb_build_object('phase',$4::text,'errorCode',$2::text,'attempt',worker_attempt_count),completed_at=case when $3::boolean then completed_at else now() end,updated_at=now() where run_id=$5::uuid and status='RUNNING' and worker_lease_token=$6::uuid",
     [status, code, retryable, retryable ? "retry_scheduled" : "failed", run.run_id, token]);
   if (!retryable) {
     await appendEvent(db, run, "execution_blocked", "Исполнение остановлено: " + code + ".", { proofLevel: "EXECUTION_FAILED" });
@@ -106,7 +106,7 @@ async function executeOne(db) {
     if (request.length < 2) throw Object.assign(new Error("OPENROUTER_TASK_MESSAGE_MISSING"), { permanent: true });
     const context = payload.contextCapsule && typeof payload.contextCapsule === "object" ? payload.contextCapsule : {};
     await query(db,
-      "update business_brain.commander_execution_runs set actual_model_id=$1,worker_checkpoint=jsonb_build_object('phase','inference_started','model',$1,'attempt',worker_attempt_count),updated_at=now() where run_id=$2::uuid and status='RUNNING' and worker_lease_token=$3::uuid",
+      "update business_brain.commander_execution_runs set actual_model_id=$1::text,worker_checkpoint=jsonb_build_object('phase','inference_started','model',$1::text,'attempt',worker_attempt_count),updated_at=now() where run_id=$2::uuid and status='RUNNING' and worker_lease_token=$3::uuid",
       [MODEL, run.run_id, token]);
     const messages = [
       { role: "system", content: [
@@ -167,7 +167,7 @@ async function executeOne(db) {
       completedAt: now, sourceWrite: null, proofLevel: "MODEL_RESPONSE_ZERO_COST_VERIFIED_READ_ONLY"
     };
     const saved = await query(db,
-      "update business_brain.commander_execution_runs set status='COMPLETED',reason_code='OPENROUTER_RESPONSE_VERIFIED',receipt=$1::text::jsonb,actual_model_id=$2,cost_usd=0,worker_checkpoint=jsonb_build_object('phase','completed','answerSha256',$3,'completedAt',$4::timestamptz),worker_lease_token=null,worker_lease_expires_at=null,worker_last_error_code=null,completed_at=now(),updated_at=now() where run_id=$5::uuid and status='RUNNING' and worker_lease_token=$6::uuid returning run_id",
+      "update business_brain.commander_execution_runs set status='COMPLETED',reason_code='OPENROUTER_RESPONSE_VERIFIED',receipt=$1::text::jsonb,actual_model_id=$2,cost_usd=0,worker_checkpoint=jsonb_build_object('phase','completed','answerSha256',$3::text,'completedAt',$4::timestamptz),worker_lease_token=null,worker_lease_expires_at=null,worker_last_error_code=null,completed_at=now(),updated_at=now() where run_id=$5::uuid and status='RUNNING' and worker_lease_token=$6::uuid returning run_id",
       [jsonbText(receipt), actualModel, answerHash, now, run.run_id, token]);
     if (!saved.length) throw Object.assign(new Error("OPENROUTER_WORKER_LEASE_LOST"), { permanent: true });
     await appendEvent(db, run, "agent_final",

@@ -387,7 +387,8 @@ async function propose(){
   run_attempt:Number(process.env.GITHUB_RUN_ATTEMPT||0)||null,started_at:new Date().toISOString(),
   model_call_started_at:null,response_received_at:null,attempt_count:0,result:'PREPARING',
   failure_reason:null,patch_present:false,candidate_paths:[],verification_result:'NOT_RUN',published_commit_sha:null,
-  prompt_receipt:null,prompt_prepared_at:null,prompt_delivery_status:'NOT_PREPARED'};
+  prompt_receipt:null,prompt_prepared_at:null,prompt_delivery_status:'NOT_PREPARED',
+  response_shape:null};
  const auditPath=path.join(os.tmpdir(),'hh-free-ai-model-audit.json');
  const persist=()=>{fs.writeFileSync(auditPath,JSON.stringify(audit),{mode:0o600});console.log('HH_FREE_AI_MODEL_AUDIT '+JSON.stringify(audit));};
  let isolated=null;persist();
@@ -411,7 +412,8 @@ async function propose(){
     onVerifiedModel:r=>{modelUsed=r.model;audit.provider='openrouter';audit.model=r.model;
      audit.model_version=r.model_version||null;audit.catalog_model_created=r.catalog_created||null;
      audit.model_call_started_at=new Date().toISOString();audit.attempt_count=1;
-      audit.prompt_delivery_status='ATTEMPTED_UNCONFIRMED';audit.result='MODEL_CALL_STARTED';persist();}});
+      audit.prompt_delivery_status='ATTEMPTED_UNCONFIRMED';audit.result='MODEL_CALL_STARTED';persist();},
+    onResponseShape:shape=>{audit.response_shape=shape;persist();}});
   }else{
    const price=await verifyFreeModelPrice();audit.provider='opencode';audit.model=MODEL;
    console.log('HH_FREE_AI_ZERO_COST_MODEL_VERIFIED '+JSON.stringify(price));

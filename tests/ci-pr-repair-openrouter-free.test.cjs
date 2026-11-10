@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {DEFAULT_MODEL,MODEL_PROFILES,chooseVerifiedFreeModel,selectedModel,verifyZeroPrice,responseShape,extractAssistantText,requestFreePatch}=
+const {DEFAULT_MODEL,MODEL_PROFILES,chooseVerifiedFreeModel,selectedModel,verifyZeroPrice,responseShape,safeResponseDiagnostics,extractAssistantText,requestFreePatch}=
   require('../scripts/ci-pr-repair-openrouter-free.cjs');
 const entry=(pricing={prompt:'0',completion:'0'})=>({id:DEFAULT_MODEL,pricing,
   architecture:{input_modalities:['text'],output_modalities:['text']}});
@@ -262,8 +262,86 @@ test('reasoning blocks are excluded while actual patch text remains usable',()=>
  ]),patch);
  assert.throws(()=>extractAssistantText([
   {type:'reasoning',text:'reasoning only'}
- ]),/PATCH_RESPONSE_EMPTY/);
+ ]),/REASONING_ONLY/);
  assert.throws(()=>extractAssistantText([
   {type:'image_url',image_url:{url:'https://invalid.example/image'}}
  ]),/PATCH_RESPONSE_INVALID/);
+});
+
+
+test('repair uses one text-only free request and makes the patch contract explicit',async()=>{
+ const catalog=response({data:[entry()]});
+ const patch='diff --git a/components/a.tsx b/components/a.tsx\n'+
+  '--- a/components/a.tsx\n+++ b/components/a.tsx\n@@ -1 +1 @@\n-old\n+new\n';
+ const {calls,fetchImpl}=mocked(catalog,response({
+  model:DEFAULT_MODEL,usage:{cost:0},choices:[{finish_reason:'stop',message:{role:'assistant',content:patch}}]
+ }));
+ const text=await requestFreePatch({prompt:'safe-source-only',key:'fixture',fetchImpl});
+ assert.equal(text,patch);
+ assert.equal(calls.length,2,'no hidden model retries');
+ const payload=JSON.parse(calls[1].body);
+ assert.deepEqual(payload.modalities,['text']);
+ assert.deepEqual(payload.reasoning,{enabled:false});
+ assert.equal(payload.messages[0].role,'system');
+ assert.match(payload.messages[0].content,/unified git diff/);
+ assert.equal(payload.messages[1].content,'safe-source-only');
+ assert.equal(payload.models,undefined);
+ assert.equal(payload.tools,undefined);
+ assert.equal(payload.provider.allow_fallbacks,false);
+ assert.equal(payload.provider.max_price.prompt,0);
+ assert.equal(payload.provider.max_price.completion,0);
+ const {validatePatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ assert.equal(validatePatch(text,{files:['components/a.tsx']}),patch);
+ assert.throws(()=>validatePatch('The fix is to change something',{files:['components/a.tsx']}),
+   /FREE_AI_/);
+});
+
+test('provider text-value envelopes work without treating reasoning as source',()=>{
+ const patch='diff --git a/components/a.tsx b/components/a.tsx';
+ assert.equal(extractAssistantText({type:'output_text',text:{value:patch}}),patch);
+ assert.equal(extractAssistantText([
+  {type:'reasoning_details',text:'private reasoning must not become patch'},
+  {type:'output_text',text:{value:patch}}
+ ]),patch);
+ assert.throws(()=>extractAssistantText(null),/PATCH_RESPONSE_NULL/);
+ assert.throws(()=>extractAssistantText(null,{hasReasoning:true}),/REASONING_ONLY/);
+ assert.throws(()=>extractAssistantText([{type:'reasoning',text:'private chain'}]),/REASONING_ONLY/);
+ assert.throws(()=>extractAssistantText([{type:'tool_result',text:patch}]),/PATCH_RESPONSE_INVALID/);
+ assert.throws(()=>extractAssistantText({type:'output_text',text:{unexpected:patch}}),/PATCH_RESPONSE_INVALID/);
+});
+
+test('one failing OpenRouter response persists only redacted shape and exact failure class',async()=>{
+ const catalog=response({data:[entry()]});
+ for(const [message,reason] of [
+  [{role:'assistant',content:null,reasoning:'SECRET_PRIVATE_REASONING'},/REASONING_ONLY/],
+  [{role:'assistant',content:null},/PATCH_RESPONSE_NULL/],
+  [{role:'assistant',content:[{type:'output_text',text:'  '}]},/PATCH_RESPONSE_EMPTY/]
+ ]){
+  const shapes=[];
+  const {calls,fetchImpl}=mocked(catalog,response({model:DEFAULT_MODEL,
+   usage:{cost:0},choices:[{finish_reason:'stop',message}]}));
+  await assert.rejects(requestFreePatch({prompt:'secret source here',key:'secret-token',
+    fetchImpl,onResponseShape:shape=>shapes.push(shape)}),reason);
+  assert.equal(calls.length,2,'invalid output must not cause extra inference');
+  assert.equal(shapes.length,1);
+  assert.equal(shapes[0].schema,'HH_OPENROUTER_RESPONSE_SHAPE_V1');
+  const serialized=JSON.stringify(shapes[0]);
+  assert.doesNotMatch(serialized,/SECRET_PRIVATE_REASONING|secret source here|secret-token/);
+  assert.equal(Object.hasOwn(shapes[0],'content'),false);
+  assert.equal(Object.hasOwn(shapes[0],'prompt'),false);
+ }
+});
+
+test('bounded response diagnostics contain only response categories and no provider keys',()=>{
+ const sample={sensitive_source_snippet:'SECRET_TEXT',choices:[{finish_reason:'untrusted SECRET',
+  message:{role:'assistant',content:[{type:'reasoning',text:'SECRET_CHAIN'},
+   {type:'output_text',text:{value:'SECRET_SOURCE'}}],reasoning:'SECRET_REASON',
+   tool_calls:[]}}]};
+ const shape=safeResponseDiagnostics(sample);
+ assert.deepEqual(shape,{
+  schema:'HH_OPENROUTER_RESPONSE_SHAPE_V1',choices_count:1,finish_reason:'other',
+  content_type:'array',content_parts:2,text_parts:1,
+  reasoning_present:true,tool_calls_present:false
+ });
+ assert.doesNotMatch(JSON.stringify(shape),/SECRET_TEXT|SECRET_CHAIN|SECRET_SOURCE|SECRET_REASON/);
 });

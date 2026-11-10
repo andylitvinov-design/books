@@ -42,10 +42,15 @@ test('OpenRouter execution uses only the free router and verifies zero price bef
 });
 
 test('private store queues owner-authorized read-only local/OpenRouter runs independently of worker secret placement',()=>{
- assert.ok(store.includes('const canDispatch=(executor==="local"||executor==="openrouter")&&!writeConfirmed'));
+ assert.ok(store.includes('const canDispatch=(executor==="local"||executor==="openrouter")&&!writeConfirmed&&openRouterReady'));
  assert.match(store,/OPENROUTER_WORKER_QUEUED/);
  assert.ok(store.includes('const firstStatus=canDispatch?"QUEUED":"BLOCKED"'));
- assert.match(store,/dispatchAvailable:true/);
+ assert.match(store,/dispatchAvailable:openRouterReady/);
+ assert.match(store,/openRouterConfigured:openRouterReady/);
+ assert.match(store,/OPENROUTER_API_KEY_NOT_CONFIGURED/);
+ assert.match(store,/receiveCommanderCiRoute\(req,origin\)/);
+ assert.match(store,/route_receipt/);
+ assert.match(store,/ensureCiIncidentTask/);
 });
 
 test('lease/checkpoint migration uses the existing private execution ledger, not a second queue',()=>{
@@ -67,4 +72,12 @@ test('worker is read-only and cannot merge, deploy or write source files',()=>{
 
 test('Deno v2 worker directory opts into automatic npm node_modules installation',()=>{
  assert.equal(workerDeno.nodeModulesDir,'auto');
+});
+
+test('SQLSTATE 42P08 regression: scalar placeholders are cast before JSONB checkpoint construction',()=>{
+ assert.ok(worker.includes('actual_model_id=$1::text'));
+ assert.ok(worker.includes("'model',$1::text"));
+ assert.ok(worker.includes('status=$1::text,reason_code=$2::text,worker_last_error_code=$2::text'));
+ assert.ok(worker.includes("'phase',$4::text,'errorCode',$2::text"));
+ assert.ok(worker.includes("'answerSha256',$3::text,'completedAt',$4::timestamptz"));
 });

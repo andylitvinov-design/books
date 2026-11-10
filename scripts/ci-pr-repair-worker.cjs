@@ -321,11 +321,22 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     }
     // Persist the addressed task acknowledgement on the exact source HEAD.
     // CLAIMED is evidence of ownership, never evidence of a published fix.
-    const receipt=task;
+    const trustedReservation=taskKey?
+      parseRecords(comments.filter(trustedControlComment))?.filter(r=>
+        r.task_key===taskKey&&r.head_sha===pr.head.sha&&
+        r.state==='RESERVED'&&r.owner_run_id===reservationRunId).at(-1):null;
+    const receipt=trustedReservation?{...task,
+      ...(trustedReservation.error_task_id?
+        {error_task_id:trustedReservation.error_task_id}:{}),
+      ...(trustedReservation.assigned_executor_id?
+        {assigned_executor_id:trustedReservation.assigned_executor_id}:{}),
+      assignment_status:'WORKER_CLAIMED'}:task;
     const workerRunUrl=Number.isSafeInteger(context.runId)?
       'https://github.com/'+fullRepo+'/actions/runs/'+context.runId:null;
     const claimedReceipt=receipt?commentBody({...receipt,state:'CLAIMED',
       owner_run_id:String(context.runId||'unknown'),run_url:workerRunUrl,
+      executor_run_id:String(context.runId||'unknown'),
+      worker_started:true,source_published:false,
       outcome:'CLAIM_ONLY_NO_SOURCE_WRITE'}):'';
     const claimStage=Number.isSafeInteger(context.runId)&&receipt?.task_key?
       stageLine({stage:'claimed',pr_number:pr.number,head_sha:pr.head.sha,
@@ -625,6 +636,26 @@ function sourceDeliveryStatus({state,sourcePublished,codeAvailable}) {
     next_action:'DIAGNOSE_EXACT_HEAD_FAILED_STEP'};
 }
 
+// The free model job is untrusted. Preserve a fixed, bounded receipt only;
+// never persist provider-controlled response keys, source text or reasoning.
+function normalizedOpenRouterResponseShape(value){
+ if(!value||typeof value!=='object'||Array.isArray(value)||
+   value.schema!=='HH_OPENROUTER_RESPONSE_SHAPE_V1')return null;
+ const integer=key=>Number.isSafeInteger(value[key])&&value[key]>=0&&value[key]<=100;
+ if(!['stop','length','max_tokens','max_output_tokens','content_filter','refusal',
+   'tool_calls','function_call','error','other'].includes(value.finish_reason)||
+   !['null','undefined','string','array','object','number','boolean'].includes(value.content_type)||
+   !integer('choices_count')||!integer('content_parts')||!integer('text_parts')||
+   value.text_parts>value.content_parts||
+   (value.content_type!=='array'&&(value.content_parts!==0||value.text_parts!==0))||
+   typeof value.reasoning_present!=='boolean'||
+   typeof value.tool_calls_present!=='boolean')return null;
+ return {schema:'HH_OPENROUTER_RESPONSE_SHAPE_V1',
+   choices_count:value.choices_count,finish_reason:value.finish_reason,
+   content_type:value.content_type,content_parts:value.content_parts,
+   text_parts:value.text_parts,reasoning_present:value.reasoning_present,
+   tool_calls_present:value.tool_calls_present};
+}
 function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt,taskKey}={}){
  let v=raw;if(typeof raw==='string'){if(raw.length>8000)return null;try{v=JSON.parse(raw);}catch{return null;}}
  if(!v||typeof v!=='object'||Array.isArray(v)||v.schema!=='HH_FREE_AI_MODEL_RUN_V1'||v.pr_number!==number||
@@ -672,7 +703,9 @@ function normalizeModelAudit(raw,{number,expectedSha,runId,runAttempt,taskKey}={
    ruleset_version:prompt.ruleset_version,context_hash:prompt.context_hash,
    prompt_sha256:prompt.prompt_sha256}:null,
  prompt_prepared_at:prompt?v.prompt_prepared_at:null,
- prompt_delivery_status:prompt?delivery:'NOT_RECORDED'};
+ prompt_delivery_status:prompt?delivery:'NOT_RECORDED',
+ response_shape:v.provider==='openrouter'?
+   normalizedOpenRouterResponseShape(v.response_shape):null};
 }
 
 async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
