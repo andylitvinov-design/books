@@ -615,7 +615,7 @@ async function update(e){
      // Send transfers only this explicit question. Never hidden chat history.
      const answer=await request(AI+'?action=council','POST',{message:text});
      if(typeof answer.reply!=='string'||!answer.reply.trim())throw Error('COUNCIL_NO_REPLY');
-     const chunks=answer.reply.match(/[\\s\\S]{1,1500}/g)||[];
+     const chunks=answer.reply.match(/[\s\S]{1,1500}/g)||[];
      if(!chunks.length||chunks.length>10)throw Error('COUNCIL_RESPONSE_TOO_LONG');
      for(const part of chunks)await append(c,'ai',part,'Совет ИИ · бесплатная модель');
      info('Ответ Совета ИИ сохранён в переписке.');

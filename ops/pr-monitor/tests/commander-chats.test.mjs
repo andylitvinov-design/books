@@ -126,7 +126,7 @@ test('Council is direct in-chat; no nested iframe or second settings form',()=>{
  assert.match(js,/await append\(c,'owner',text,''\)/);
  assert.match(js,/await append\(c,'ai',part,'Совет ИИ/);
  assert.match(js,/councilPending=null;renderMessages\(\)/);
- assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v1/);
+ assert.match(html,/commander-chats\.js\?v=20261110-council-inline-v2/);
  const start=js.indexOf("if(mode==='council-free'){",js.indexOf('async function send(e)'));
  assert.doesNotMatch(js.slice(start,js.indexOf('const context=messages.slice(-8)',start)),/history:|tasks:|context:|iframe|window\.open|location\./);
 });
@@ -191,7 +191,7 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-council-inline-v1'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-council-inline-v2'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -270,6 +270,7 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
    if(target.pathname==='/api/pm-agent-chat'){
     if(action==='status')return response({authenticated:true,modes:{local:true,openrouter:false}});
     if(action==='chat')return response({reply:'Синтетический ответ советника',model:'local'});
+    if(action==='council')return response({reply:'Синтетический ответ Совета ИИ, это проверенный тестовый ответ.',model:'Council free'});
     if(action==='reports')return response({reports:[]});
    }
    if(target.pathname==='/api/commander-chats'){
@@ -329,6 +330,16 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  await elements['cc-verify-chat'].fire('click');
  assert.match(elements['cc-verify-status'].textContent,/вопрос и ответ сохранены в Supabase/);
  assert.equal(elements['cc-verify-chat'].disabled,false);
+ // The exact same owner chat receives the Council answer on ONE Send.
+ elements['cc-mode'].value='council-free';
+ elements['cc-message'].value='Какие тренды ИИ сейчас основные?';
+ await elements['cc-chat-form'].fire('submit');
+ assert.equal(network.filter(x=>x.action==='council').length,1);
+ assert.deepEqual(eventRows.slice(-2).map(e=>e.kind),['owner','assistant_unverified']);
+ assert.match(eventRows.at(-1).text,/Синтетический ответ Совета ИИ/);
+ assert.equal(elements['cc-messages'].children.length,4);
+ assert.equal(elements['cc-send'].disabled,false);
+ assert.match(elements['cc-chat-feedback'].textContent,/Ответ Совета ИИ сохранён/);
 });
 
 test('last chats stay at the top and one fixed bottom composer supports typed and spoken questions',()=>{
@@ -516,7 +527,7 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
 test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
  assert.match(html,/commander-chats\.js\?v=20261110-openrouter-free-v1/);
- assert.match(html,/commander-chats\.css\?v=20261110-council-inline-v1/);
+ assert.match(html,/commander-chats\.css\?v=20261110-council-inline-v2/);
  assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
  for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
   assert.ok(js.includes('classification.'+field)||js.includes('classification?.'+field),field);
