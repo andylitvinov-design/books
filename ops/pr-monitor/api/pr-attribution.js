@@ -127,7 +127,8 @@ function extractTaskOutcomes(comments,number,currentHead=null){
     owner_run_id:String(record.owner_run_id),
     source_published:outcome.source_published,verified_source:outcome.verified_source,
     new_sha:outcome.new_sha||null,current_head:SHA.test(currentHead||'')&&
-      currentHead.toLowerCase()===record.head_sha.toLowerCase(),
+      currentHead.toLowerCase()===((outcome.source_published===true&&SHA.test(outcome.new_sha||''))?
+        outcome.new_sha.toLowerCase():record.head_sha.toLowerCase()),
     comment_url:url,run_url:runUrl,source:'SIGNED_GITHUB_ACTIONS_REPAIR_FINALIZER'
   });
  }
@@ -288,7 +289,7 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  if(!Array.isArray(comments))throw makeError('PR_COMMENTS_UNVERIFIED',503);
  if(comments.length===100)partial=true;
  const events=extractStageReceipts(comments,number);
- const taskOutcomes=extractTaskOutcomes(comments,number,pr.head?.sha||null);
+ const rawTaskOutcomes=extractTaskOutcomes(comments,number,pr.head?.sha||null);
  let prTimelineEvents=null;
  // A label proves the recorded conflict signal, never the time spent fixing it.
  // When near the read budget, skip the optional timeline instead of losing core data.
@@ -314,6 +315,17 @@ async function loadPr(number,{request=fetch,token=TOKEN,now=Date.now()}={}){
  // Reuse the SAME previously fetched PR comment page: zero extra API calls.
  const live=verifiedLiveReceipt(comments,pr);
  const headProof=summarizeHeadStatus({pr,chronology:timeline.chronology,runs:filtered,historyPartial:partial,live});
+ const taskOutcomes=rawTaskOutcomes.map(row=>{
+  const verified=row.status==='FIXED'&&row.current_head===true&&
+    row.new_sha===pr.head?.sha?.toLowerCase?.()&&headProof.green_exact_head===true&&
+    parseUTC(headProof.green_at)!==null&&parseUTC(headProof.green_at)>=parseUTC(row.created_at);
+  return {...row,recorded_status:row.status,
+    status:verified?'VERIFIED':row.status,
+    verification_evidence:verified?'EXACT_CURRENT_HEAD_CORE_SPECIALIST_MERGE_GATES':
+      row.status==='FIXED'?'SOURCE_PUBLISHED_WAITING_EXACT_HEAD_REQUIRED_CI':'NOT_VERIFIED',
+    verified_at:verified?headProof.green_at:null,
+    verification_url:verified?headProof.green_url:null};
+ });
  if(live){
   timeline.chronology.push({kind:'live_verified',at:live.live_at,
    reason:'Production LIVE независимо подтверждён: '+live.proof_method,
