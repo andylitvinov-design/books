@@ -8,6 +8,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const worker=fs.readFileSync(path.join(root,'supabase/functions/agent-commander-openrouter-worker/index.ts'),'utf8');
 const store=fs.readFileSync(path.join(root,'supabase/functions/agent-commander-private-store-v1/index.ts'),'utf8');
 const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261110144812_commander_openrouter_worker_leases_20261110.sql'),'utf8');
+const workerDeno=JSON.parse(fs.readFileSync(path.join(root,'supabase/functions/agent-commander-openrouter-worker/deno.json'),'utf8'));
 
 test('cloud worker is owner-independent but protected by a Vault-only worker bearer',()=>{
  assert.match(worker,/x-agent-commander-worker/);
@@ -64,4 +65,8 @@ test('worker is read-only and cannot merge, deploy or write source files',()=>{
  assert.match(worker,/sourceWrite: null/);
  assert.doesNotMatch(worker,/github\.com\/repos\/.*\/git\/refs|\/pulls/);
  assert.doesNotMatch(worker,/merge.*pull|git push/i);
+});
+
+test('Deno v2 worker directory opts into automatic npm node_modules installation',()=>{
+ assert.equal(workerDeno.nodeModulesDir,'auto');
 });
