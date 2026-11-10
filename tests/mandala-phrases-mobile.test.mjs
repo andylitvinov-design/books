@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 
 const read=file=>readFileSync(new URL("../"+file,import.meta.url),"utf8");
 const phrases=read("components/mandala-hypno-compact.tsx");
+const ideas=read("components/mandala-video-ideas.tsx");
 const style=read("components/mandala-hypno-compact.module.css");
 const studio=read("components/mandala-free-video-studio.tsx");
 const studioCss=read("components/mandala-video-mobile.module.css");
@@ -209,26 +210,34 @@ test("Safari fine-tuning uses one accessible button and a stable hidden region",
   ])assert.ok(phrases.includes(part),part);
   assert.ok(!phrases.includes("<details className={css.ideaDisclosure}"));
   assert.ok(css.includes(".overview .ideaDisclosure>.card[hidden]{display:none!important}"));
-  assert.ok(browser.includes("await expect(ideaToggle).toHaveAttribute(\"aria-expanded\",\"true\")"));
-  assert.ok(browser.includes("await expect(intentDetails.locator('[data-hypno-request]')).toBeVisible()"));
+  assert.ok(browser.includes("await expect(intentDetails).toBeHidden()"),
+    "personal-intent editor is kept in the Personalization tab, outside voice-only mode");
+  assert.ok(browser.includes("await expect(phrases.locator('[data-video-ideas-personalization-panel]')).toBeVisible()"));
 });
 
-test("choosing Ready discards stale idea and approval clears Wave drafts",()=>{
+test("choosing Ready preserves private audio state while the current Ideas editor owns phrase selection",()=>{
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.match(phrases,/setIdeaPending\(false\);\s*setReadyDraft\(\{selected:\[0,1,2\],resetPreset:true\}\)/);
- assert.match(phrases,/setDraftState\(null\);setReadyDraft\(null\);setCustomDraft\(null\);setIdeaPending\(false\)/);
- for(const status of ['draft','ready','custom','external','idea','safety'])
-   assert.ok(phrases.includes('?"'+status+'":null'),status);
- assert.match(browser,/if\(engine==="webkit"\)await approvalButton\.tap\(\)/);
- assert.ok(browser.includes("APPROVED_PHRASES_STILL_PENDING"));
- assert.ok(browser.includes('data-hypno-pending-reasons'));
+ assert.ok(ideas.includes("data-video-idea-select"));
+ assert.ok(browser.includes("data-video-affirmation-phrase"));
+ assert.ok(browser.includes("data-video-affirmation-transcript-review"));
+ assert.ok(browser.includes("data-video-narration-reapproval"),"removed spoken phrases require explicit narration reapproval");
+ assert.ok(browser.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"),"stale audio stays attached only as unusable media");
+ assert.ok(browser.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
+ assert.doesNotMatch(browser,/approvalButton\.tap\(\)/,
+   "the retired standalone Hypno approval button must not reappear");
 });
 
-test("five-phrase limit requires a real removal before the visitor adds another",()=>{
+test("ten-phrase limit and stale spoken-audio guard use the current visible Montage Text editor",()=>{
  const script=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.ok(phrases.includes('disabled={disabled||(!chosen.includes(i)&&selectedCount>=5)}'));
- assert.ok(phrases.includes('data-hypno-selection-limit role="status"'));
- for(const needle of ["if(currentSelected===5){","a non-spoken phrase can be deselected without revoking the WAV",
-   'await nextPhrase.tap()','await approvalButton.tap()','await spokenPhrase.tap()'])
-  assert.ok(script.includes(needle),needle);
+ assert.ok(ideas.includes("else if(chosen.length>=10){"),"ten-phrase cap stays explicit");
+  assert.ok(ideas.includes("apply(options,[...chosen.slice(0,-1),index])"),"choosing at the cap replaces the last selected phrase");
+  assert.ok(ideas.includes("setFeedback(t.savedReplaced)"),"the replacement is communicated to the visitor");
+ assert.ok(ideas.includes("Choose up to 10 phrases for your video."));
+ assert.ok(ideas.includes("The maximum remains ten"));
+ assert.match(script,/const unselectedToggle=phraseEditor\.locator\('\[data-video-idea-select\]\[aria-pressed="false"\]'\)\.first\(\)/);
+ assert.ok(script.includes("const spokenToggle=spokenPhrase.locator('[data-video-idea-select]')"));
+ assert.ok(script.includes("adding an unspoken phrase does not invalidate the actual WAV"));
+ assert.ok(script.includes("data-video-narration-reapproval"));
+ assert.ok(script.includes("the old WAV may remain attached, but must be unusable until narration is regenerated"));
+ assert.ok(script.includes("await expect(page.locator('[data-video-quick-generate]')).toBeDisabled"));
 });
