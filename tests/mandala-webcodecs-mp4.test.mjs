@@ -197,7 +197,10 @@ test("physical voice WebKit checks real Settings and Audio, exclusive Hypno tabs
  assert.match(browser,/const hypnoTabs=page\.locator\('\[data-hypno-tabs\]'\)/);
  assert.match(browser,/const visualTab=hypnoTabs\.locator\('\[data-hypno-tab="visual"\]'\)/);
  assert.match(browser,/const audioTab=hypnoTabs\.locator\('\[data-hypno-tab="audio"\]'\)/);
- assert.match(browser,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(2\)/);
+ assert.match(browser,/await expect\(hypnoTabs\.getByRole\("tab"\)\)\.toHaveCount\(3\)/);
+  assert.match(browser,/const effectsTab=hypnoTabs\.locator\('\[data-hypno-tab="effects"\]'\)/);
+  assert.match(browser,/await effectsTab\.click\(\)/);
+  assert.match(browser,/await expect\(effectsGroup\)\.toBeVisible\(\)/);
  assert.match(browser,/await expect\(visualTab\)\.toHaveAttribute\("aria-selected","true"\)/);
  assert.match(browser,/await expect\(audioTab\)\.toHaveAttribute\("aria-selected","true"\)/);
  assert.match(browser,/await balancedLight\.click\(\)/);
