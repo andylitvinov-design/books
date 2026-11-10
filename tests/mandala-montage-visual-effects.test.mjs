@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs';
 import {paintHypnoLightOverlay,recommendHypnoLight,hypnoWavePhase} from '../lib/mandala/hypno-visual-overlay.mjs';
 const studio=readFileSync(new URL('../components/mandala-free-video-studio.tsx',import.meta.url),'utf8');
 const css=readFileSync(new URL('../components/mandala-video-mobile.module.css',import.meta.url),'utf8');
+const hypno=readFileSync(new URL('../components/mandala-hypnocorrection-mobile.tsx',import.meta.url),'utf8');
+const hypnoCss=readFileSync(new URL('../components/mandala-hypnocorrection-mobile.module.css',import.meta.url),'utf8');
 
 function fakeCanvas(){
  const actions=[];
@@ -16,7 +18,7 @@ function fakeCanvas(){
  return {ctx,actions};
 }
 
-test('Each Montage effect paints real, distinct, low-opacity Canvas pixels without network',()=>{
+test('Each Hypno effect paints real, distinct, low-opacity Canvas pixels without network',()=>{
  const renders=new Map();
  for(const mode of ['sunlight','glow','waves']){
   const {ctx,actions}=fakeCanvas();
@@ -46,25 +48,31 @@ test('Preserves the existing Hypno waves and strictly avoids fast strobing',()=>
    'existing wave overlay must remain the fallback for older saved projects');
 });
 
-test('Four visible Montage tabs and one real shared Text engine; no second renderer',()=>{
+test('Five visible Montage tabs preserve the separate video storyboard and one shared Text engine',()=>{
  const rail=studio.slice(studio.indexOf('<nav className={videoStyles.montageQuickTools}'));
  const firstNav=rail.slice(0,rail.indexOf('</nav>'));
  assert.deepEqual([...firstNav.matchAll(/\{id:"(\w+)",Icon:/g)].map(match=>match[1]),
-  ['effects','text','visual','settings']);
+  ['effects','text','audio','settings','concept']);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
  assert.equal((studio.match(/data-mandala-cinematic-canvas/g)||[]).length,1);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
  assert.match(studio,/onChange=\{setAffirmations\}/);
  for(const mode of ['none','sunlight','glow','waves'])
-  assert.match(studio,new RegExp('id:"'+mode+'"'));
- assert.match(studio,/data-video-montage-visual-effect=\{item.id\}/);
- assert.match(studio,/data-video-montage-effect-status/);
+  assert.match(hypno,new RegExp('id:"'+mode+'"'));
+ assert.match(hypno,/data-hypno-visual-effect=\{item.id\}/);
+ assert.match(hypno,/data-hypno-effect-status/);
  assert.match(studio,/data-video-montage-aspect-switch/);
  assert.match(studio,/data-video-montage-aspect=\{item.id\}/);
  assert.match(studio,/onClick=\{\(\)=>changeVideoAspect\(item.id\)\}/);
  assert.match(studio,/data-video-montage-open-concept/);
+ assert.match(studio,/data-video-montage-open-storyboard/);
+ assert.match(studio,/id:"concept",Icon:Film/);
+ assert.match(studio,/data-video-montage-concept/);
+ assert.equal((studio.match(/<MandalaCinematicDirector /g)||[]).length,1);
+ assert.match(studio,/data-video-pro-open-montage-storyboard/);
+ assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
  assert.match(studio,/data-video-montage-open-audio/);
- assert.match(css,/\.montageVisualGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(hypnoCss,/\.visualPresetGrid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(css,/\.montageAspectSwitch>div\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
@@ -73,7 +81,10 @@ test('Live still, playing frames and export share one real effect painter',()=>{
  assert.equal(calls.length,5,'live still, animated preview and recorded export all paint the same effect');
  assert.match(studio,/\[source, effect, moneyScene, theme, otherScene, aspect, previewPlaying, previewSeekSeconds,[\s\S]*?hypnoLight/);
  assert.match(studio,/creationMode,activeMontageStyleId,currentFreeVideoPlan/);
- assert.doesNotMatch(studio.slice(studio.indexOf('data-video-montage-visual-effect='),
-  studio.indexOf('{montagePanel==="audio" ? <div')),/createQuickVideo|postVideoCreditAction|appFetch/,
-  'a visual selection is a local state update, never a paid render');
+ const presets=hypno.slice(hypno.indexOf('data-hypno-visual-effect={item.id}'),
+  hypno.indexOf('{group.id==="visual"?<>'));
+ assert.doesNotMatch(presets,/onCreate|postVideoCreditAction|appFetch|createQuickVideo/,
+  'the Hypno effect selection is a local state update, never a paid render');
+ assert.match(studio,/light=\{hypnoLight\} onLightChange=\{next=>\{setHypnoLight\(next\);setPreviewPlaying\(false\);\}\}/);
+ assert.doesNotMatch(studio,/montagePanel==="visual"/,'Montage no longer has a duplicate Effects pane');
 });

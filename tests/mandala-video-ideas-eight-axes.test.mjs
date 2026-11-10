@@ -29,7 +29,7 @@ test("one phrase editor supplies Montage Text with selected and manually edited 
  assert.match(cmp,/listMeaningAxes\(locale\)/);
  assert.doesNotMatch(cmp,/fetch\(|appFetch\(|localStorage|sessionStorage|navigator\.sendBeacon/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("visual"\);setPreviewPlaying\(false\);\}\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("audio"\);setBasicPanelTab\("music"\);setPreviewPlaying\(false\);\}\}/);
  assert.match(studio,/const workspaceTabs=\[\s*\{id:"video",Icon:Film\},\s*\{id:"phrases",Icon:Heart\},\s*\{id:"editor",Icon:Scissors\}/);
 });
 
@@ -40,7 +40,7 @@ test("Ideas shortcut opens the single Montage Text editor without renderer or pa
  const action=studio.slice(start,end);
  assert.match(action,/setActiveWorkspace\("editor"\)/);
  assert.match(action,/setMontagePanel\("text"\)/);
-  assert.match(studio,/data-video-montage-concept/);
+  assert.match(studio,/data-video-ideas-concept-panel/);
   assert.match(studio,/data-video-concept-text-tools/);
  assert.match(action,/scrollIntoView/);
  assert.doesNotMatch(action,/createQuickVideo\(|createVideo\(|startFromHero\(/);
@@ -69,12 +69,12 @@ test("approved seven-choice Ideas mock retains five-minimum, real canvas text si
   assert.ok(cmp.includes(marker),marker);
  assert.match(cmp,/selectedCount<5/);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("visual"\);setPreviewPlaying\(false\);\}\}/);
+ assert.match(studio,/onCreate=\{\(\)=>\{setMontagePanel\("audio"\);setBasicPanelTab\("music"\);setPreviewPlaying\(false\);\}\}/);
  assert.match(cmp,/planIdeaSelection\(candidates,indices,suggested,signature\)/);
  const renderer=readFileSync(new URL("../lib/mandala/video-affirmations.ts",import.meta.url),"utf8");
  assert.match(renderer,/textScale\?: "small" \| "medium" \| "large"/);
  assert.match(renderer,/const textScale = settings\.textScale === "small"/);
- assert.match(studio,/onRecord=\{\(\)=>\{[\s\S]*?setIdeasSubtab\("my-voice"\)/);
+ assert.match(studio,/onRecord=\{\(\)=>\{[\s\S]*?setIdeasVoiceMode\("my-voice"\)/);
  assert.match(studio,/data-video-own-voice-record/);
 });
 
@@ -123,27 +123,40 @@ test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list
 });
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
-test("Ideas Text, Voice and My Voice share one stateful audio editor and real recorder",()=>{
+test("Ideas shows Personalization and Concept without cloning Montage or the recorder",()=>{
  const studio=read("components/mandala-free-video-studio.tsx");
- assert.match(studio,/data-video-ideas-tabs role="group"/);
- assert.match(studio,/data-video-ideas-tab="text" aria-pressed=\{ideasSubtab==="text"\}/);
- assert.match(studio,/data-video-ideas-tab="voice" aria-pressed=\{ideasSubtab==="voice"\}/);
- assert.match(studio,/data-video-ideas-text-panel hidden=\{ideasSubtab!=="text"\}/);
- assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
+ assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
+ for(const name of ["personalization","concept"])
+  assert.ok(studio.includes('data-video-ideas-tab="'+name+'"'),name);
+ assert.match(studio,/data-video-ideas-personalization-panel/);
+ assert.match(studio,/data-video-ideas-concept-panel/);
+ assert.equal((studio.match(/<MandalaVideoConcept /g)||[]).length,1);
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
+ assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
+ assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
+ assert.match(studio,/data-video-ideas-voice-mode="voice"/);
+ assert.match(studio,/data-video-ideas-voice-mode="my-voice"/);
  assert.match(studio,/data-video-ideas-own-upload/);
- assert.match(studio,/data-video-ideas-tab="my-voice"/);
  const recorder=read("components/mandala-local-voice-tracks.tsx");
  assert.match(recorder,/data-video-ideas-record-voice/);
  assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
 });
-
-test("Ideas Voice subtab is visible on desktop and switches in the real voice browser",()=>{
+test("WebKit keeps two Ideas tabs and real opt-in voice while five Montage tabs remain",()=>{
  const styles=read("components/mandala-video-mobile.module.css");
  const browser=read("scripts/verify-affirmation-voice-browser.mjs");
- assert.match(styles,/\[data-ideas-subtab="voice"\] \[data-video-legacy-phrase-editor\]\[data-video-ideas-recording-open="true"\]\{display:block!important\}/);
+ assert.match(styles,/\.studio\[data-active-workspace="phrases"\] \.ideasSubtabs\{/);
+ assert.match(styles,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(browser,/const ideasModes=phrases\.locator/);
- assert.match(browser,/data-ideas-subtab","voice"/);
- assert.match(browser,/data-video-ideas-own-upload/);
- assert.match(browser,/data-ideas-subtab","text"/);
+ assert.match(browser,/data-video-ideas-tab="personalization"/);
+ assert.match(browser,/data-video-ideas-tab="concept"/);
+ assert.match(browser,/await advancedText\.click\(\)/);
+ assert.match(browser,/await myVoiceModeButton\.click\(\)/);
+ assert.match(browser,/data-video-affirmation-voice-consent/);
+ for(const tab of ['id:"effects",Icon:Sparkles','id:"text",Icon:Type','id:"audio",Icon:Music2','id:"settings",Icon:SlidersHorizontal'])
+  assert.ok(studio.includes(tab),tab);
+});
+
+test("selecting a new phrase at the ten-phrase cap replaces the last choice and reports it",()=>{
+ assert.match(cmp,/else if\(chosen\.length>=10\)\{[\s\S]*?apply\(options,\[\.\.\.chosen\.slice\(0,-1\),index\]\);[\s\S]*?setFeedback\(t\.savedReplaced\);/);
+ assert.match(cmp,/Choose up to 10 phrases|Выбрано максимум 10|Elige hasta 10/i);
 });

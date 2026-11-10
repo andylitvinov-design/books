@@ -130,8 +130,10 @@ test('practitioner client inbox is unified without revealing owner-only CRM',()=
 test('direct messenger remains available when the optional request directory is down',()=>{
  const hub=source('components/app/messages-hub.jsx')
  assert.match(hub,/if\(embedded\)return <div className=\{styles.hub\} data-member-direct-fallback>/)
- assert.match(hub,/<DirectMessageInbox locale=\{locale\} embedded compact ownerCrmAvailable=\{false\}\/>/)
- assert.match(hub,/!loading&&!unauthenticated&&!bootstrapSignInRequired/)
+ assert.match(hub,/<MessengerGuestGate locale=\{locale\} section="clients"\/>/)
+ assert.match(hub,/if\(embedded\)return[\s\S]*?<DirectMessageInbox locale=\{locale\} embedded compact ownerCrmAvailable=\{false\}\/>/)
+ assert.match(hub,/if\(ownerAccountId&&directDestination\)[\s\S]*?recipientSlug=\{directDestination\}/)
+ assert.match(hub,/\(unauthenticated\|\|bootstrapSignInRequired\)[\s\S]*?<MessengerGuestGate/)
 })
 
 test('CSP class is identical on Spanish app routes in server and client',()=>{

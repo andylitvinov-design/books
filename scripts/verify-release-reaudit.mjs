@@ -44,10 +44,16 @@ async function assertAnonymousPrivateNavigation(page) {
   assert.equal(response.status(), 200);
   await expect(page).toHaveURL(origin + '/en/app/portrait');
   await expect(page.locator('body')).toHaveAttribute('data-csp-class', 'private');
-  await expect(page.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
+  // /app/portrait is a public test-first Profile entry, even though the
+  // route keeps the private CSP boundary. It must not mount the old account
+  // overview or request a personal bootstrap for an anonymous visitor.
+  const guest = page.locator('[data-profile-tests-first]');
+  await expect(guest).toBeVisible();
+  await expect(guest.locator('[data-guest-test-choice]')).toHaveCount(3);
+  await expect(guest.locator('[data-profile-create-link]')).toHaveAttribute('href', '/en/personality-profiles');
+  await expect(guest.locator('[data-profile-results-link]')).toHaveAttribute('href', '/en/app/portrait?space=reports');
   await expect(page.locator('.mobile-bottom-navigation')).toHaveCount(0);
-  await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
-  await expect(page.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview] a[href="/en/client"]')).toHaveAttribute('href', '/en/client');
+  await expect(page.locator('[data-profile-domains], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
 }
 
 async function verifyCspBfcache() {
@@ -414,16 +420,18 @@ async function exercise(engine, browserType, width) {
         assert.equal(await capture.locator('[data-contact-channel="telegram"]').count(), 0);
         return { messageSent: false, privateFieldsAbsent: true, changingTopicRebuildsUrl: true, freeAssessmentInternal: true };
       });
-      await check('paid-imagery-consultation-safe-handoff', { engine, width, locale }, async () => {
-        const local = ['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname);
+      await check('paid-imagery-consultation-messenger-only-handoff', { engine, width, locale }, async () => {
         const paidPage = await context.newPage();
         try {
           await paidPage.goto(origin + `/${locale}/services/imagery-therapy`, { waitUntil: 'networkidle' });
           const capture = paidPage.locator('[data-service-visual-screen="final-capture"]');
           await expect(capture).toHaveCount(1);
-          const form = capture.locator('form[data-compact-lead-form]');
-          await expect(form).toHaveAttribute('data-compact-hydrated', 'true');
-          const formats = capture.locator('select');
+          const intake = capture.locator('[data-messenger-only-intake]');
+          await expect(intake).toHaveCount(1);
+          // Current site policy deliberately avoids typed email/phone capture:
+          // a messenger link click alone is not a verified conversation.
+          await expect(intake.locator('form, input, textarea')).toHaveCount(0);
+          const formats = intake.locator('select[data-messenger-offer-format]');
           await expect(formats).toHaveCount(1);
           await expect(formats.locator('option[value="30-min"]')).toContainText('€50');
           await expect(formats.locator('option[value="60-min"]')).toContainText('€100');
@@ -431,57 +439,33 @@ async function exercise(engine, browserType, width) {
           await expect(formats).toHaveValue('60-min');
           await formats.selectOption('30-min');
           await expect(formats).toHaveValue('30-min');
-          await expect(capture.locator('a[data-compact-channel]')).toHaveCount(0);
-          const free = capture.locator(`a[href="/${locale}/services/free-situation-review"]`);
-          await expect(free).toHaveCount(1);
-          const replyConsent = form.locator('input[type="checkbox"][required]');
-          const attribution = form.locator('[data-enquiry-attribution-choice] input[type="checkbox"]');
-          await expect(replyConsent).toHaveCount(1);
-          await expect(replyConsent).not.toBeChecked();
-          await expect(attribution).toHaveCount(1);
-          await expect(attribution).not.toBeChecked();
-          if (!local) return {messageSent:false, liveConsentSubmitted:false, paidPricesVerified:true, freeAssessmentInternal:true};
-          assertSyntheticLoopback(paidPage.url());
-          let submissions = 0, submitted = null;
-          await paidPage.route('**/api/service-enquiries', async route => {
-            if (route.request().method() !== 'POST') return route.continue();
-            submissions++; submitted = route.request().postDataJSON();
-            await route.fulfill({status:201, contentType:'application/json', body:JSON.stringify({saved:true, referenceCode:'HH-ABCD1234EF56'})});
-          });
-          await paidPage.evaluate(() => {
-            window.__testNoExternalHandoff = [];
-            window.open = () => ({opener:null, closed:false, location:{replace:url => window.__testNoExternalHandoff.push(String(url))}, close:()=>{}});
-          });
-          await form.locator('input[name="contact"]').fill('enquiry-qa@example.test');
-          const submit = form.locator('button[data-compact-channel="whatsapp"]');
-          await submit.click();
-          await expect(form.locator('[role="alert"]')).toBeVisible();
-          assert.equal(submissions, 0, 'No enquiry without explicit reply consent');
-          await replyConsent.check();
-          await submit.click();
-          await expect(capture.locator('[data-lead-saved]')).toBeVisible();
-          assert.equal(submissions, 1);
-          assert.equal(submitted.contactConsent, true);
-          assert.equal(submitted.contact.email, 'enquiry-qa@example.test');
-          assert.equal(submitted.sourcePath, `/${locale}/services/imagery-therapy`);
-          assert.ok(submitted.description.includes('30-min'));
-          for (const channel of ['whatsapp','telegram']) {
-            const link = capture.locator(`a[data-compact-channel="${channel}"]`);
+          const channels = intake.locator('a[data-messenger-only-channel]');
+          await expect(channels).toHaveCount(2);
+          // Each channel attribute is on the anchor itself, not a nested child.
+          const whatsapp = intake.locator('a[data-messenger-only-channel="whatsapp"]');
+          const telegram = intake.locator('a[data-messenger-only-channel="telegram"]');
+          for (const link of [whatsapp, telegram]) {
             await expect(link).toHaveAttribute('target', '_blank');
             await expect(link).toHaveAttribute('rel', /noopener/);
             await expect(link).toHaveAttribute('rel', /noreferrer/);
-            const draft = new URL(await link.getAttribute('href'));
-            assert.equal(draft.origin, channel === 'whatsapp' ? 'https://wa.me' : 'https://t.me');
-            assert.equal(draft.pathname, channel === 'whatsapp' ? '/14376066502' : '/AndyTherapist');
-            assert.deepEqual([...draft.searchParams.keys()], ['text']);
-            assert.ok(draft.searchParams.get('text')?.includes('HH-ABCD1234EF56'));
-            assert.ok(draft.searchParams.get('text')?.includes('30-min'));
-            assert.ok(!draft.href.includes('enquiry-qa%40example.test'));
+            await expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
+            const href = new URL(await link.getAttribute('href'));
+            assert.ok(href.protocol === 'https:', 'Messenger handoff must use HTTPS');
+            assert.ok(['wa.me', 'api.whatsapp.com', 't.me', 'telegram.me'].includes(href.hostname),
+              'Only approved WhatsApp or Telegram destinations are allowed');
           }
-          const handoffs = await paidPage.evaluate(() => window.__testNoExternalHandoff);
-          assert.equal(handoffs.length, 1);
-          assert.equal(new URL(handoffs[0]).origin, 'https://wa.me');
-          return {messageSent:false, syntheticConsent:true, paidPricesVerified:true, bothChannelsVerified:true, freeAssessmentInternal:true};
+          assert.equal(await capture.locator('a[data-compact-channel], form[data-compact-lead-form]').count(), 0,
+            'Legacy contact capture and CRM-confirmation controls must not appear in messenger-only mode');
+          const free = capture.locator(`a[href="/${locale}/services/free-situation-review"]`);
+          await expect(free).toHaveCount(1);
+          return {
+            messageSent: false,
+            contactFieldsAbsent: true,
+            paidPricesVerified: true,
+            bothChannelsVerified: true,
+            secureExternalHandoff: true,
+            freeAssessmentInternal: true,
+          };
         } finally { await paidPage.close(); }
       });
     }
@@ -610,13 +594,16 @@ async function exercise(engine, browserType, width) {
           await expect(cspPage.locator('body')).toHaveAttribute('data-csp-class', 'private');
           await waitForDocument();
           assert.equal(await cspPage.evaluate(() => window.__cspDocumentProbe), undefined, 'Public to private Profile must load a new document');
-          await expect(cspPage.locator('.hh-app--cabinet-guest [data-cabinet-guest-overview]')).toBeVisible();
-          await expect(cspPage.locator('[data-profile-domains], [data-my-tests-dashboard]')).toHaveCount(0);
+          // Anonymous Profile now exposes the approved public test-first entry.
+          // It stays under the private CSP class but must not request account data.
+          const guestProfile = cspPage.locator('[data-profile-tests-first]');
+          await expect(guestProfile).toBeVisible();
+          await expect(guestProfile.locator('[data-guest-test-choice]')).toHaveCount(3);
+          await expect(guestProfile.locator('[data-profile-create-link]')).toHaveAttribute('href', '/en/personality-profiles');
+          await expect(guestProfile.locator('[data-profile-results-link]')).toHaveAttribute('href', '/en/app/portrait?space=reports');
+          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="tests"]')).toHaveAttribute('aria-current', 'page');
+          await expect(cspPage.locator('[data-profile-domains], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0);
           await expect(cspPage.locator('.mobile-bottom-navigation')).toHaveCount(0);
-          // Current My Space has six PRIVATE tabs, not the retired Create link.
-          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="today"]')).toHaveAttribute('aria-current', 'page');
-          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="tests"]')).toHaveAttribute('href', '/en/app/tests');
-          await expect(cspPage.locator('[data-profile-hub-tabs] [data-profile-tab="create"]')).toHaveCount(0);
           await cspPage.evaluate(() => { window.__cspDocumentProbe = 'private-profile-before-public-builder'; });
           // The builder is now a separate public route. Exercise the real
           // private-to-public CSP boundary with a fresh document navigation.

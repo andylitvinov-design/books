@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import CoachingReportPreview from '@/components/coaching-report-preview'
 import { ArrowRight, Check, ChevronLeft, Copy, Download, LockKeyhole, Sparkles, Trash2, X } from 'lucide-react'
 import { appFetch } from '@/lib/app/client-fetch'
 import { PERSONAL_COACH_QUESTIONS, personalCoachNextIndex } from '@/lib/personal-coaching/questions'
@@ -11,11 +12,13 @@ import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingContextReview from '@/components/coaching-context-review'
 import { buildClientCoachingContext, developmentGoalsContextItems } from '@/lib/personal-coaching/client-context.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
+import CoachingLiveVoice from './coaching-live-voice'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
-import { authoredFollowupFor, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
+import { authoredFollowupFor, coachingControlForAnswer, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingActionPlan from '@/components/coaching-action-plan'
+import CoachingBrainPanel from '@/components/coaching-brain-panel'
 import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
 import { CoachingSessionIntroduction, CoachingSessionTopic } from '@/components/coaching-session-onboarding'
 import { coachingEntryCopy } from '@/components/coaching-session-onboarding'
@@ -30,7 +33,7 @@ const copy={
   en:{
     eyebrow:'HOLISTIC HOUSE · SELF-GUIDED COACHING',title:'Personal Coaching Session',
     intro:'A quiet space to think through one question and choose your next step.',
-    selfGuided:'A guided reflection in your own words — not a live coach or an AI chat.',
+    selfGuided:'The guided questions are self-reflection. Optional AI dialogue requires your consent.',
     time:'Choose a coaching approach · 10–30 minutes',private:'Your answers stay private in your account.',
     start:'Start my session',resume:'Continue my session',new:'Start another session',
     loading:'Opening your private session…',loadError:'Your session could not be loaded. Try again.',
@@ -48,14 +51,14 @@ const copy={
     reportNotice:'After tapping Save, your answer is kept in your private account. At the end you can download a PDF with your questions, answers and reflections.',
     pdf:'Download PDF report',pdfError:'Could not create the PDF. Your private answers remain saved.',date:'Session date',
     restart:'This starts a new session and saves the completed one to your private history.',
-    home:'My Courses',delete:'Delete my coaching notes',deleteConfirm:'Delete all personal coaching notes and session history? This cannot be undone.',
+    home:'My Courses',delete:'Delete my coaching notes',deleteConfirm:'Delete all personal coaching notes and session history? Saved reports remain in your archive and can be deleted separately. This cannot be undone.',
     completeNote:'This is a self-reflection tool, not a diagnosis, guaranteed result, or booked consultation.',
     completed:'Session completed',emptyError:'Could not start the session. Please retry.',
   },
   ru:{
     eyebrow:'HOLISTIC HOUSE · САМОСТОЯТЕЛЬНАЯ КОУЧ-СЕССИЯ',title:'Личная коуч-сессия',
     intro:'Пространство для разговора с собой: один вопрос за раз, один следующий шаг.',
-    selfGuided:'Вопросы коуча для самостоятельного размышления — не живой коуч и не чат с ИИ.',
+    selfGuided:'Основные вопросы — для самостоятельной работы. Дополнительный AI-диалог запускается только с вашего согласия.',
     time:'Выберите подход · примерно 10–30 минут',private:'Ваши ответы сохраняются только в личном кабинете.',
     start:'Начать сессию',resume:'Продолжить сессию',new:'Начать новую сессию',
     loading:'Открываем вашу личную сессию…',loadError:'Не удалось загрузить сессию. Попробуйте ещё раз.',
@@ -73,14 +76,14 @@ const copy={
     reportNotice:'После нажатия «Сохранить» ваш ответ останется в личном кабинете. В конце сможете скачать PDF с вашими мыслями, вопросами и ответами.',
     pdf:'Скачать PDF-отчёт',pdfError:'Не удалось создать PDF. Ответы сохранены в кабинете.',date:'Дата сессии',
     restart:'Новая сессия сохранит завершённую в вашей личной истории.',
-    home:'Мои курсы',delete:'Удалить мои записи',deleteConfirm:'Удалить все ответы и историю коуч-сессий? Это действие нельзя отменить.',
+    home:'Мои курсы',delete:'Удалить мои записи',deleteConfirm:'Удалить все ответы и историю коуч-сессий? Сохранённые отчёты останутся в архиве и удаляются отдельно. Это действие нельзя отменить.',
     completeNote:'Это практика размышления, а не диагноз, обещание результата или запись на консультацию.',
     completed:'Сессия завершена',emptyError:'Не удалось начать сессию. Попробуйте ещё раз.',
   },
   es:{
     eyebrow:'HOLISTIC HOUSE · COACHING AUTOGUIADO',title:'Sesión personal de coaching',
     intro:'Un espacio para aclarar una pregunta y elegir tu siguiente paso.',
-    selfGuided:'Reflexión autoguiada, no una sesión con un coach ni un chat con IA.',
+    selfGuided:'Las preguntas son autoguiadas. El diálogo opcional con IA requiere tu consentimiento.',
     time:'Elige un enfoque · 10–30 minutos',private:'Tus respuestas permanecen privadas.',
     start:'Empezar sesión',resume:'Continuar sesión',new:'Empezar otra sesión',
     loading:'Abriendo tu sesión…',loadError:'No se pudo cargar. Inténtalo de nuevo.',
@@ -96,7 +99,7 @@ const copy={
     reportNotice:'Al pulsar Guardar, tu respuesta queda en tu cuenta privada. Al final podrás descargar un PDF con tus reflexiones, preguntas y respuestas.',
     pdf:'Descargar informe PDF',pdfError:'No se pudo crear el PDF. Tus respuestas siguen guardadas.',date:'Fecha de la sesión',
     restart:'La sesión completada se guardará en tu historial.',home:'Mis cursos',delete:'Borrar mis notas',
-    deleteConfirm:'¿Eliminar todas tus respuestas e historial? No se puede deshacer.',
+    deleteConfirm:'¿Eliminar todas tus respuestas e historial? Los informes guardados permanecerán en el archivo y pueden eliminarse por separado. No se puede deshacer.',
     completeNote:'Esto es autorreflexión, no un diagnóstico ni una consulta reservada.',
     completed:'Sesión completada',emptyError:'No se pudo empezar. Inténtalo de nuevo.',
   },
@@ -139,6 +142,35 @@ const intelligenceCopy={
 }
 const entryCopyContinue=locale=>({en:'Continue coaching session',ru:'Продолжить коучинг-сессию',es:'Continuar sesión de coaching'})[locale]||'Continue coaching session'
 const entryCopyBegin=locale=>({en:'Continue to questions',ru:'Перейти к вопросам',es:'Continuar con preguntas'})[locale]||'Continue to questions'
+const controlCopy={
+  en:{
+    safetyTitle:'Let’s pause here',
+    safetyBody:'This may need support beyond self guided coaching. If anyone is in immediate danger, contact local emergency services now or reach someone you trust. This coaching flow is paused.',
+    pausedTitle:'Your session is paused',
+    pausedBody:'Take the time you need. Your saved answer remains in your private session. You can continue when you feel ready.',
+    stoppedTitle:'We’ll stop here',
+    stoppedBody:'Your request to stop is respected. Your saved answers remain in your private session.',
+    resume:'Continue session',home:'Return to My Courses',
+  },
+  ru:{
+    safetyTitle:'Давайте остановимся здесь',
+    safetyBody:'В этой ситуации может понадобиться поддержка за пределами самостоятельного коучинга. Если кому-либо угрожает непосредственная опасность, обратитесь в местную экстренную службу или к человеку, которому доверяете. Коучинговая сессия приостановлена.',
+    pausedTitle:'Сессия приостановлена',
+    pausedBody:'Возьмите столько времени, сколько нужно. Ваш сохранённый ответ остаётся в личной сессии. Вы сможете продолжить, когда будете готовы.',
+    stoppedTitle:'На этом остановимся',
+    stoppedBody:'Ваше желание завершить разговор принято. Сохранённые ответы останутся в личной сессии.',
+    resume:'Продолжить сессию',home:'Вернуться в Мои курсы',
+  },
+  es:{
+    safetyTitle:'Hagamos una pausa aquí',
+    safetyBody:'Esto puede requerir apoyo más allá del coaching autónomo. Si alguien está en peligro inmediato, contacta con los servicios locales de emergencia o con una persona de confianza. Esta sesión queda pausada.',
+    pausedTitle:'Tu sesión está en pausa',
+    pausedBody:'Tómate el tiempo que necesites. Tu respuesta guardada permanece en tu sesión privada. Puedes continuar cuando estés preparado/a.',
+    stoppedTitle:'Terminamos aquí',
+    stoppedBody:'Respetamos tu decisión de parar. Tus respuestas guardadas permanecen en tu sesión privada.',
+    resume:'Continuar sesión',home:'Volver a Mis cursos',
+  },
+}
 const translated=(value,lang)=>value?.[lang]||value?.en||''
 const questionsFor=(course,catalog)=>{
   const key=course?.current?.schemeKey
@@ -166,6 +198,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [index,setIndex]=useState(0),[draft,setDraft]=useState('')
   const [dictating,setDictating]=useState(false),[speechConsent,setSpeechConsent]=useState(false)
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
+  const [sessionControl,setSessionControl]=useState(null)
   const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
   const titleRef=useRef(null),busyRef=useRef(false)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
@@ -202,7 +235,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     const saved=values?.[items[next]?.id]
     setDraft(typeof saved==='string'?saved:'')
     setDictating(false)
-    setPendingFollowup(null);setReflectionDraft('')
+    setPendingFollowup(null);setReflectionDraft('');setSessionControl(null)
     setUseStandardPrompt(false)
     setClipboardState('')
     setNotice('')
@@ -298,10 +331,24 @@ export default function PersonalCoaching({locale='en',accountId}){
       setNewSelection(false)
     }
   }
+  function offerSessionControl(answer){
+    const control=coachingControlForAnswer(answer,lang)
+    if(!control)return false
+    setSessionControl(control)
+    setPendingFollowup(null);setReflectionDraft('')
+    return true
+  }
   function offerFollowup(current,answer){
+    if(offerSessionControl(answer))return true
     if(index>=activeQuestions.length-1)return false
     const item=authoredFollowupFor(question,answer,current?.reflections)
     if(!item)return false
+    if(item.controlStatus){
+      setSessionControl(item)
+      setPendingFollowup(null);setReflectionDraft('')
+      return true
+    }
+    setSessionControl(null)
     setPendingFollowup(item);setReflectionDraft('')
     return true
   }
@@ -331,12 +378,14 @@ export default function PersonalCoaching({locale='en',accountId}){
       setError(langCopy.woop);return
     }
     if(!skip&&typeof persisted==='string'&&persisted===answer && Object.prototype.hasOwnProperty.call(session.answers,question.id)){
+      if(offerSessionControl(answer))return
       if(index===activeQuestions.length-1)await command('complete')
       else if(!offerFollowup(session,answer))visit(index+1,session.answers)
       return
     }
     const saved=await command('answer',{questionId:question.id,answer})
     if(!saved)return
+    if(!skip&&offerSessionControl(answer))return
     if(index===activeQuestions.length-1){
       // Completion is reported only after the final answer and status both persisted.
       const completed=await commandAfterSave(saved,'complete')
@@ -385,7 +434,7 @@ export default function PersonalCoaching({locale='en',accountId}){
     const planText=plan?.approvedAt?[
       plan.goal,plan.obstacle,plan.actionText,plan.when,
       Number.isInteger(plan.confidence)?String(plan.confidence)+'/10':'',
-    ].filter(Boolean).join('\n'):'' // Only the client's approved plan, no auto-inferred goals.
+    ].filter(Boolean).join('\n'):(target.brainDecision?.confirmedAt?target.brainDecision.actionText:'') // Only client-confirmed actions.
     try{
       downloadCoachingSessionPdf({
         locale:lang,
@@ -415,6 +464,10 @@ export default function PersonalCoaching({locale='en',accountId}){
       <header className={styles.header}>
         <Link href={root+'/course?view=courses'} className={styles.close} onClick={exit} aria-label={t.close} title={t.close}><X size={21}/></Link>
         <span className={styles.brand}>HOLISTIC HOUSE</span>
+        {!loading&&!entry&&!newSelection&&session?.status==='active'&&accountId&&
+          <CoachingBrainPanel key={session.id} locale={lang} accountId={accountId}
+            sessionId={session.id} onConfirmDecision={async actionText=>
+              Boolean(await command('brain-decision',{sessionId:session.id,actionText}))}/>}
         <span className={styles.private}><LockKeyhole size={14}/>{lang==='ru'?'Личное':'Private'}</span>
       </header>
       <section className={styles.sheet}>
@@ -470,7 +523,8 @@ export default function PersonalCoaching({locale='en',accountId}){
             </div>)}
           </div>
           <CoachingActionPlan key={session.id} locale={lang} privateSave
-            initial={session.actionPlan||draftCoachingActionPlan(activeQuestions,session.answers,session.clientQuestion||'',lang)}
+            initial={session.actionPlan||{...draftCoachingActionPlan(activeQuestions,session.answers,session.clientQuestion||'',lang),
+              ...(session.brainDecision?.confirmedAt?{actionText:session.brainDecision.actionText}:{})}}
             disabled={busy} onSave={async fields=>Boolean(await command('plan',fields))}/>
           {recapRows.length>0&&<section className={styles.smartRecap} data-coaching-evidence-recap aria-label={iCopy.recap}>
             <h2>{iCopy.recap}</h2>
@@ -493,6 +547,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 onFocus={event=>event.target.select()} />
             </label>}
           </section>}
+          <CoachingReportPreview accountId={accountId} sessionId={session.id} revision={state.revision} locale={lang}/>
           <button type="button" className={styles.primary} data-coaching-download-pdf disabled={busy} onClick={()=>downloadReport(session)}><Download size={18}/>{t.pdf}</button>
           <p className={styles.privacyNote}>{t.share}</p>
           {course.history?.length>0&&<details className={styles.history}>
@@ -512,6 +567,26 @@ export default function PersonalCoaching({locale='en',accountId}){
           <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.home}</Link>
           <button type="button" className={styles.delete} disabled={busy} onClick={erase}><Trash2 size={15}/>{t.delete}</button>
           <small className={styles.disclaimer}>{t.completeNote}</small>
+        </div>
+        : sessionControl ? <div className={styles.session} data-coaching-control={sessionControl.controlStatus} data-coaching-one-viewport>
+          <div className={styles.questionArea}>
+            <span className={styles.eyebrow}>HOLISTIC HOUSE · COACHING</span>
+            <h1 ref={titleRef} tabIndex={-1}>
+              {sessionControl.controlStatus==='safety_hold'?controlCopy[lang].safetyTitle:
+               sessionControl.controlStatus==='paused'?controlCopy[lang].pausedTitle:controlCopy[lang].stoppedTitle}
+            </h1>
+            <p className={styles.messageTip}>
+              {sessionControl.controlStatus==='safety_hold'?controlCopy[lang].safetyBody:
+               sessionControl.controlStatus==='paused'?controlCopy[lang].pausedBody:controlCopy[lang].stoppedBody}
+            </p>
+          </div>
+          <footer className={styles.footer} data-coaching-messenger-footer>
+            {sessionControl.controlStatus==='paused'&&<button type="button" className={styles.primary}
+              onClick={()=>visit(index+1,session?.answers)}>{controlCopy[lang].resume}<ArrowRight size={18}/></button>}
+            <Link href={root+'/course?view=courses'} className={styles.secondary} onClick={()=>setSessionControl(null)}>
+              {controlCopy[lang].home}
+            </Link>
+          </footer>
         </div>
         : pendingFollowup ? <div className={styles.session} data-coaching-authored-followup data-coaching-one-viewport>
           <div className={styles.progressHeader}>
@@ -566,6 +641,9 @@ export default function PersonalCoaching({locale='en',accountId}){
           <div className={styles.progressHeader}>
             <span className={styles.eyebrow}>{t.title}</span>
             <strong>{t.question} {index+1} {t.of} {activeQuestions.length}</strong>
+            {process.env.NEXT_PUBLIC_HH_COACHING_LIVE_VOICE_UI==='true'&&
+              <CoachingLiveVoice key={session?.id} locale={lang} sessionId={session?.id} accountId={accountId}
+                disabled={busy||dictating}/>}
           </div>
           <div className={styles.progressTrack} role="progressbar" aria-label={t.question} aria-valuemin={0} aria-valuemax={activeQuestions.length} aria-valuenow={index+1}>
             <span style={{width:((index+1)/activeQuestions.length*100)+'%'}}/>
@@ -655,6 +733,7 @@ export default function PersonalCoaching({locale='en',accountId}){
           </footer>
         </div>}
       </section>
+      {!loading&&!entry&&(!course||newSelection||finished)&&<CoachingReportPreview accountId={accountId} archiveOnly locale={lang}/>}
     </div>
   </main>
 }

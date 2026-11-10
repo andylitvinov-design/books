@@ -4,6 +4,8 @@ import "./mandala-phrases-mobile.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
+import {planIdeaSelection} from "../lib/mandala/video-idea-selection.mjs";
+import {affirmationNarrationText,isApprovedAffirmationNarration} from "../lib/mandala/affirmation-voice.mjs";
 
 const read = path => readFileSync(new URL("../" + path,import.meta.url),"utf8");
 const library = read("lib/mandala/video-affirmations.ts");
@@ -43,6 +45,18 @@ test("selected presets and custom lines are local-only, normalized and bounded",
   assert.ok(lines.every(line=>!/[<>]/.test(line)));
 });
 
+test("deselecting an Ideas phrase removes it from narration and invalidates the old WAV text", () => {
+  const suggested=suggestedVideoAffirmations.en.energy;
+  const original=planIdeaSelection(suggested,[0,1,2,3,4],suggested,"energy:profile");
+  const originalLines=linesForVideoAffirmations("en","energy",original.settingsPatch);
+  const oldSpokenText=affirmationNarrationText(originalLines);
+  const changed=planIdeaSelection(original.editor.options,[1,2,3,4],suggested,"energy:profile");
+  const currentLines=linesForVideoAffirmations("en","energy",changed.settingsPatch);
+  assert.deepEqual(currentLines,suggested.slice(1));
+  assert.equal(isApprovedAffirmationNarration(currentLines,oldSpokenText,true),false,
+    "an old WAV must never remain approved after one of its selected phrases is removed");
+});
+ 
 test("custom affirmations are visibly limited to five concise lines", () => {
   const input=["A".repeat(90),"B".repeat(45),"I am calm","I choose care","I can rest","ignored"].join("\n");
   const short=compactCustomAffirmationInput(input);

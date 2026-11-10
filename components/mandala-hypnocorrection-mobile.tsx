@@ -11,10 +11,11 @@ import type { AffirmationSettings } from "@/lib/mandala/video-affirmations";
 import styles from "./mandala-hypnocorrection-mobile.module.css";
 
 export type HypnoLightSettings = { enabled: boolean; cyclesPerMinute: number; opacity: number; mode?: "sunlight"|"glow"|"waves" };
-type GroupId = "visual" | "audio";
-type PosterGroupId = GroupId | "phrases";
+type GroupId = "visual" | "audio" | "effects";
+type PosterGroupId = "visual" | "audio" | "phrases";
 type Props = {
   locale: PublicLocale;
+  initialGroup?: GroupId;
   disabled: boolean;
   affirmations: AffirmationSettings;
   onAffirmationsChange: (settings: AffirmationSettings) => void;
@@ -48,7 +49,7 @@ type Props = {
 
 const copy = {
   ru: {
-    title:"Гипноэффекты для вашего видео",sub:"Выберите визуальные или аудиоэффекты",phraseTab:"Фразы",visualTab:"Визуальные",audioTab:"Аудиоэффекты",applyCreate:"Создать видео",withoutCreate:"Добавить эффекты",chooseScenes:"Выбрать сцены",choosePhoto:"Выбрать фото",
+    title:"Гипноэффекты для вашего видео",sub:"Выберите визуальные или аудиоэффекты",phraseTab:"Фразы",visualTab:"Визуальные",audioTab:"Аудиоэффекты",effectsTab:"Эффекты",presetTitle:"Визуальные эффекты",presetHelp:"Выбор сразу отображается в видео и сохраняется при экспорте.",applyCreate:"Создать видео",withoutCreate:"Добавить эффекты",chooseScenes:"Выбрать сцены",choosePhoto:"Выбрать фото",
     wave:"Быстрая настройка с Wave",waveHelp:"Подберёт мягкие эффекты по вашей цели",try:"Попробовать",
     suggested:"Предложен мягкий световой ритм и видимые фразы. Измените любой пункт или отключите его.",
     phrases:"Установки и внушения",phrasesHelp:"Слова поддержки и настройки",
@@ -77,7 +78,7 @@ const copy = {
     preview:"Проверить в основном видео",privacy:"Бесплатные эффекты выполняются локально. Персональные файлы не отправляются стороннему ИИ.",
   },
   en: {
-    title:"Hypno effects for your video",sub:"Choose visual or audio effects to personalize your video.",phraseTab:"Phrases",visualTab:"Visual effects",audioTab:"Audio effects",applyCreate:"Generate Video",withoutCreate:"Add Effects",chooseScenes:"Choose scenes",choosePhoto:"Choose photo",
+    title:"Hypno effects for your video",sub:"Choose visual or audio effects to personalize your video.",phraseTab:"Phrases",visualTab:"Visual",audioTab:"Audio effects",effectsTab:"Effects",presetTitle:"Visual effects",presetHelp:"Your choice appears immediately in the preview and the exported film.",applyCreate:"Generate Video",withoutCreate:"Add Effects",chooseScenes:"Choose scenes",choosePhoto:"Choose photo",
     wave:"Quick setup with Wave",waveHelp:"Suggests suitable effects based on your goal",try:"Try it",
     suggested:"Gentle light waves and visible phrases suggested. You can edit or disable any effect.",
     phrases:"Phrases and suggestions",phrasesHelp:"Supportive words and timing",
@@ -106,7 +107,7 @@ const copy = {
     preview:"Preview in main video",privacy:"Free effects run on your device. Personal files are not sent to third-party AI.",
   },
   es: {
-    title:"Efectos hipnóticos para tu vídeo",sub:"Elige efectos visuales o de audio para tu vídeo.",phraseTab:"Frases",visualTab:"Visuales",audioTab:"Efectos de audio",applyCreate:"Generar vídeo",withoutCreate:"Añadir efectos",chooseScenes:"Elegir escenas",choosePhoto:"Elegir foto",
+    title:"Efectos hipnóticos para tu vídeo",sub:"Elige efectos visuales o de audio para tu vídeo.",phraseTab:"Frases",visualTab:"Visuales",audioTab:"Efectos de audio",effectsTab:"Efectos",presetTitle:"Efectos visuales",presetHelp:"Tu elección aparece de inmediato en la vista previa y en el vídeo exportado.",applyCreate:"Generar vídeo",withoutCreate:"Añadir efectos",chooseScenes:"Elegir escenas",choosePhoto:"Elegir foto",
     wave:"Ajuste rápido con Wave",waveHelp:"Sugiere efectos adecuados según tu objetivo",try:"Probar",
     suggested:"Se sugieren ondas de luz suaves y frases visibles. Puedes cambiar o desactivar todo.",
     phrases:"Frases y sugerencias",phrasesHelp:"Palabras de apoyo y ritmo",
@@ -170,7 +171,7 @@ function Feature({icon,title,help,active,onToggle,onConfigure,disabled,unavailab
 }
 
 export function MandalaHypnocorrectionMobile({
-  locale,disabled,affirmations,onAffirmationsChange,light,onLightChange,
+  locale,initialGroup="visual",disabled,affirmations,onAffirmationsChange,light,onLightChange,
   onOpenPhraseEditor,onOpenScenes,
   onPickPhoto,onRemovePhoto,onCreate,status,onWavePreset,hasPhoto,hasVoiceFile,voiceActive,posters,
   voiceEditor,whisperEnabled,binauralEnabled,beatHz,repeatEverySeconds,whisperGain,audioEffectBusy,
@@ -178,7 +179,7 @@ export function MandalaHypnocorrectionMobile({
 }:Props) {
   const t=copy[locale];
   const extra=compactLabels[locale];
-  const [activeGroup,setActiveGroup]=useState<GroupId>("visual");
+  const [activeGroup,setActiveGroup]=useState<GroupId>(initialGroup);
   const [showLightSettings,setShowLightSettings]=useState(false);
   const [showSpeechSettings,setShowSpeechSettings]=useState(false);
   const [showWhisperSettings,setShowWhisperSettings]=useState(false);
@@ -199,6 +200,7 @@ export function MandalaHypnocorrectionMobile({
   const groups: {id:GroupId;title:string;tab:string;help:string}[]=[
     {id:"visual",title:t.visual,tab:t.visualTab,help:t.visualHelp},
     {id:"audio",title:t.audio,tab:t.audioTab,help:t.audioHelp},
+    {id:"effects",title:t.presetTitle,tab:t.effectsTab,help:t.presetHelp},
   ];
   const visualCount=[light.enabled,visible,briefFrame,hasPhoto].filter(Boolean).length;
   const audioCount=[voiceActive,whisperEnabled,binauralEnabled].filter(Boolean).length;
@@ -223,8 +225,9 @@ export function MandalaHypnocorrectionMobile({
       {groups.map(group=><button key={group.id} type="button" id={"hypno-tab-"+group.id}
         role="tab" aria-selected={activeGroup===group.id} aria-controls={"hypno-group-"+group.id}
         data-hypno-tab={group.id} onClick={()=>setActiveGroup(group.id)} disabled={disabled}>
-        {group.id==="visual"?<Eye size={22} aria-hidden="true"/>:
-          <AudioLines size={22} aria-hidden="true"/>}
+        {group.id==="visual"?<Eye size={20} aria-hidden="true"/>:
+          group.id==="audio"?<AudioLines size={20} aria-hidden="true"/>:
+          <Sparkles size={20} aria-hidden="true"/>}
         <span>{group.tab}</span>
       </button>)}
     </div>
@@ -273,6 +276,40 @@ export function MandalaHypnocorrectionMobile({
           {audioEffectBusy?<p className={styles.note} role="status" aria-live="polite" data-hypno-audio-effect-busy>{t.effectBusy}</p>:null}
           {note==="voice"?<p className={styles.note}>{t.voiceHint}</p>:null}
         </>:null}
+
+        {group.id==="effects"?<div className={styles.visualPresets} data-hypno-visual-effects>
+          <h4>{t.presetTitle}</h4>
+          <p>{t.presetHelp}</p>
+          <div className={styles.visualPresetGrid} role="group" aria-label={t.presetTitle}>
+            {([
+              {id:"none",icon:"○",ru:"Без эффекта",en:"None",es:"Sin efecto"},
+              {id:"sunlight",icon:"☀",ru:"Свет солнца",en:"Sunlight",es:"Luz solar"},
+              {id:"glow",icon:"✧",ru:"Мягкое сияние",en:"Soft glow",es:"Brillo suave"},
+              {id:"waves",icon:"〰",ru:"Волны сияния",en:"Radiant waves",es:"Ondas de luz"}
+            ] as const).map(item=><button key={item.id} type="button"
+              data-hypno-visual-effect={item.id} disabled={disabled}
+              aria-pressed={item.id==="none"?!light.enabled:
+                light.enabled&&(light.mode??"waves")===item.id}
+              onClick={()=>onLightChange({...light,
+                enabled:item.id!=="none",mode:item.id==="none"?"waves":item.id
+              })}>
+              <span aria-hidden="true">{item.icon}</span><strong>{item[locale]}</strong>
+              {(item.id==="none"?!light.enabled:
+                light.enabled&&(light.mode??"waves")===item.id)?<Check size={18} aria-hidden="true"/>:null}
+            </button>)}
+          </div>
+          <label className={styles.visualPresetIntensity} htmlFor="video-hypno-effect-strength">
+            {t.intensity}<strong>{Math.round(light.opacity*100)}%</strong>
+            <input id="video-hypno-effect-strength" type="range" min="5" max="35" step="5"
+              value={Math.round(light.opacity*100)} disabled={!light.enabled||disabled}
+              onChange={event=>onLightChange({...light,opacity:Number(event.currentTarget.value)/100})}/>
+          </label>
+          <p className={styles.note} role="status" data-hypno-effect-status>
+            {light.enabled
+              ?locale==="ru"?"Эффект применён · без вспышек · без оплаты до экспорта":locale==="es"?"Efecto aplicado · sin destellos · sin cobro hasta exportar":"Effect applied · no flashes · no charge until export"
+              :locale==="ru"?"Без визуального эффекта":locale==="es"?"Sin efecto visual":"No visual effect"}
+          </p>
+        </div>:null}
         {group.id==="visual"?<>
           <Feature icon={<Sun/>} title={t.light} help={t.lightHelp}
             active={light.enabled}
@@ -325,7 +362,7 @@ export function MandalaHypnocorrectionMobile({
       </div>
     </section>)}
     <div className={styles.summary} data-hypno-summary aria-live="polite">
-      <span><Check size={17} aria-hidden="true"/>{extra.selected}: {activeGroup==="visual"?visualCount:audioCount}</span>
+      <span><Check size={17} aria-hidden="true"/>{extra.selected}: {activeGroup==="visual"?visualCount:activeGroup==="audio"?audioCount:Number(light.enabled)}</span>
       <span className={styles.modeBadge}>{extra.noFlashes}</span>
     </div>
     <div className={styles.actions} data-hypno-actions>
@@ -333,8 +370,8 @@ export function MandalaHypnocorrectionMobile({
         <Sparkles size={23} aria-hidden="true"/><strong>{t.applyCreate}</strong><ArrowRight size={21} aria-hidden="true"/>
       </button>
       <button type="button" data-hypno-add-effects className={styles.withoutEffects}
-        disabled={disabled} aria-controls={"hypno-group-"+(activeGroup==="visual"?"audio":"visual")}
-        onClick={()=>setActiveGroup(activeGroup==="visual"?"audio":"visual")}>
+        disabled={disabled} aria-controls={"hypno-group-"+(activeGroup==="visual"?"audio":activeGroup==="audio"?"effects":"visual")}
+        onClick={()=>setActiveGroup(activeGroup==="visual"?"audio":activeGroup==="audio"?"effects":"visual")}>
         <Play size={20} aria-hidden="true"/><strong>{t.withoutCreate}</strong>
       </button>
     </div>

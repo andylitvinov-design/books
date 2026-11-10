@@ -83,3 +83,16 @@ test('guest coaching questions and followups also keep their full-screen compose
   assert.match(guest,/onClick=\{\(\)=>advance\(false\)\}/)
   assert.doesNotMatch(guest,/localStorage\.setItem|sessionStorage\.setItem/)
 })
+ 
+test('approved mobile session template uses Holistic Light colors, warm artwork and accessible controls',()=>{
+  const css=source('components/app/personal-coaching.module.css')
+  assert.match(css,/background:var\(--hh-light-canvas,#fbf5e9\)/)
+  assert.match(css,/--hh-light-ink,#143d3a/)
+  assert.match(css,/#e6f6f1/)
+  assert.match(css,/reiki-approved-sunrise-v3\.webp/)
+  assert.match(css,/\.session\[data-coaching-one-question\] \.questionArea::before/)
+  assert.match(css,/background:#067a67/)
+  assert.match(css,/safe-area-inset-bottom/)
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/)
+  assert.match(css,/min-height:48px/)
+})
