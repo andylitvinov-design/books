@@ -30,7 +30,7 @@ const cap=(active=0,queued=0)=>computeCapacity(
  [{status:'in_progress'}]);
 const core=()=>({info(){},summary:{addHeading(){return this},addCodeBlock(){return this},async write(){}}});
 function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
- const calls={dispatched:[],reserved:[],read:[],removed:[],labels:[]};
+ const calls={dispatched:[],reserved:[],acknowledged:[],read:[],removed:[],labels:[]};
  const github={rest:{pulls:{
   list:async({page})=>({data:page===1?items:[],headers:{'x-ratelimit-remaining':'2500'}}),
   get:async({pull_number})=>({data:live||items.find(x=>x.number===pull_number)}),
@@ -38,6 +38,7 @@ function fixture(items,{comments={},active=0,queued=0,recent=[],live=null}={}){
  },issues:{
   listComments:async({issue_number})=>({data:comments[issue_number]||[]}),
   createComment:async arg=>{calls.reserved.push(arg);return {data:{id:5}};},
+  updateComment:async arg=>{calls.acknowledged.push(arg);return {data:{body:arg.body}};},
   addLabels:async arg=>{calls.labels.push(arg);return {data:{}};},
   removeLabel:async arg=>{calls.removed.push(arg);return {data:{}};}
  },actions:{createWorkflowDispatch:async arg=>{calls.dispatched.push(arg);return {status:204};}}},
@@ -144,6 +145,23 @@ test('single-writer dispatcher reserves before sending an exact-head repair',asy
  assert.equal(f.calls.dispatched[0].inputs.expected_sha,SHA);
  assert.equal(f.calls.dispatched[0].inputs.task_key.length,32);
  assert.equal(f.calls.dispatched[0].inputs.reservation_run_id,'42');
+ assert.equal(result.dispatchReceiptsConfirmed,1);
+ assert.equal(result.dispatchReceiptsUnverified,0);
+ assert.equal(f.calls.acknowledged.length,1);
+ assert.match(f.calls.acknowledged[0].body,/HH_CI_ERROR_DISPATCH_V1/);
+ assert.match(f.calls.acknowledged[0].body,/github-actions:hh-pr-repair-worker.yml/);
+ assert.equal(result.workerRuns[0].acceptanceReceiptPersisted,true);
+});
+test('accepted workflow with unavailable acknowledgment remains unconfirmed, never auto-retried',async()=>{
+ const f=fixture([pr(1)],{comments:{1:[proof()]}});
+ f.github.rest.issues.updateComment=async()=>{throw Error('write response lost');};
+ const r=await run({github:f.github,core:core(),context,now:NOW,capacityFn:f.capacityFn});
+ assert.equal(r.dispatchAccepted,1,'GitHub accepted a dispatch request');
+ assert.equal(r.dispatchReceiptsConfirmed,0,'no durable readback exists');
+ assert.equal(r.dispatchReceiptsUnverified,1);
+ assert.equal(r.workerRuns[0].acceptanceReceiptPersisted,false);
+ assert.equal(r.blocked.DISPATCH_ACCEPTANCE_RECEIPT_UNVERIFIED,1);
+ assert.equal(f.calls.dispatched.length,1,'never send a second source writer');
 });
 test('two independent Repair PRs dispatch concurrently with exact HEAD receipts',async()=>{
  const items=[pr(101),pr(102),pr(103)];

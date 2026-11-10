@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {route,receiptProof}=require('../scripts/ci-pr-commander-strategy-router.cjs');
+const {coreErrorTaskId}=require('../scripts/ci-pr-error-task.cjs');
 const rules=require('../scripts/ci-pr-error-rules.v1.json');
 
 const REPO='andylitvinov-design/books', SHA='a'.repeat(40);
@@ -35,18 +36,48 @@ function receipt(category='TYPESCRIPT'){
   }
  };
 }
+const acceptedHandoff=()=>({dispatchAccepted:1,dispatchAcknowledged:true,
+ prNumber:4024,headSha:SHA,executorId:'github-actions:hh-pr-repair-worker.yml',
+ workerTaskKey:'b'.repeat(32),errorTaskId:coreErrorTaskId(4024,SHA,42831850720,1),
+ outcome:'DISPATCH_ACCEPTED'});
+test('automatically created Commander task and matched task both reach router',()=>{
+ for(const association of ['MATCHED_CHAT_EVENT_RECORDED',
+   'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED','AUTO_TASK_CREATED_NOT_DISPATCHED']){
+  assert.equal(receiptProof({...receipt(),association},context()),null,association);
+ }
+});
 test('source repair starts ONLY via existing guarded single-writer after unique Commander task',async()=>{
  let calls=0, args;
  const result=await route({receipt:receipt(),context:context(),github:{},core:{},existingCoreHandoff:async a=>{
-   calls++;args=a;return {dispatchAccepted:1,outcome:'DISPATCH_ACCEPTED'};
+   calls++;args=a;return acceptedHandoff();
  }});
  assert.equal(result.state,'DISPATCH_ACCEPTED_NOT_WORKER_STARTED');
  assert.equal(result.dispatchAccepted,1);
+ assert.equal(result.dispatchAcknowledged,true);
+ assert.equal(result.executorId,'github-actions:hh-pr-repair-worker.yml');
+ assert.equal(result.workerTaskKey,'b'.repeat(32));
+ assert.equal(result.errorTaskId,coreErrorTaskId(4024,SHA,42831850720,1));
  assert.equal(result.workerStarted,false);
  assert.equal(result.sourceWriteVerified,false);
  assert.equal(result.liveVerified,false);
  assert.equal(args.context.eventName,'workflow_run');
  assert.equal(calls,1);
+});
+test('aggregate dispatch and missing causal ACK cannot claim executor delivery',async()=>{
+ for(const handoff of [
+  {...acceptedHandoff(),prNumber:4025},
+  {...acceptedHandoff(),headSha:'b'.repeat(40)},
+  {...acceptedHandoff(),dispatchAcknowledged:false},
+  {...acceptedHandoff(),errorTaskId:'d'.repeat(32)},
+  {dispatchAccepted:1,outcome:'DISPATCH_ACCEPTANCE_UNVERIFIED'}
+ ]){
+  const r=await route({receipt:receipt(),context:context(),
+    existingCoreHandoff:async()=>handoff});
+  assert.equal(r.dispatchAccepted,0);
+  assert.equal(r.dispatchAcknowledged,false);
+  assert.equal(r.workerStarted,false);
+  assert.equal(r.state,'DISPATCH_UNCONFIRMED_RECONCILE');
+ }
 });
 test('source task with blocked dispatcher is NOT described as executed',async()=>{
  const result=await route({receipt:receipt('SOURCE_CODE'),context:context(),
@@ -62,7 +93,7 @@ test('all 13 classified categories have explicit route, but only source and Type
  for(const cat of categories){
   let calls=0;
   const r=await route({receipt:receipt(cat),context:context(),
-   existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
+   existingCoreHandoff:async()=>{calls++;return acceptedHandoff();}});
   assert.ok(r.state&&r.strategy&&r.responsibleRole,cat);
   assert.equal(calls,['TYPESCRIPT','SOURCE_CODE'].includes(cat)?1:0,cat);
   if(['SECURITY','ACCESS_CONFIG','MERGE_CONFLICT','UNKNOWN'].includes(cat))
@@ -77,7 +108,7 @@ test('existing bounded base and infrastructure recovery is respected, not duplic
  for(const change of [{baseUpdated:true},{infraRerun:true}]){
   let calls=0;
   const r=await route({receipt:receipt('INFRASTRUCTURE'),context:context(),...change,
-   existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
+   existingCoreHandoff:async()=>{calls++;return acceptedHandoff();}});
   assert.equal(r.state,'EXISTING_RECOVERY_ACCEPTED');
   assert.equal(calls,0);
  }
@@ -85,7 +116,7 @@ test('existing bounded base and infrastructure recovery is respected, not duplic
 test('infrastructure hold without proven rerun retains task without starting source repair',async()=>{
  let calls=0;
  const r=await route({receipt:receipt('TYPESCRIPT'),context:context(),infraHold:true,
-  existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
+  existingCoreHandoff:async()=>{calls++;return acceptedHandoff();}});
  assert.equal(r.state,'TASK_AWAITING_EXISTING_RECOVERY');
  assert.equal(r.reason,'INFRA_HOLD_NO_TARGETED_RERUN');
  assert.equal(calls,0);
@@ -104,7 +135,7 @@ test('missing, ambiguous, moved, or forged task association must fail closed',as
  for(const changes of cases){
   let calls=0;
   const result=await route({receipt:{...receipt(),...changes},context:context(),
-   existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
+   existingCoreHandoff:async()=>{calls++;return acceptedHandoff();}});
   assert.equal(result.state,'BLOCKED',JSON.stringify(changes));
   assert.equal(calls,0);
  }
@@ -122,7 +153,7 @@ test('uncertain and duplicate dispatch errors do not retry a second worker',asyn
 test('dry run is read-only even when source is actionable',async()=>{
  let calls=0;
  const r=await route({receipt:receipt(),context:context(),dryRun:true,
-  existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
+  existingCoreHandoff:async()=>{calls++;return acceptedHandoff();}});
  assert.equal(r.state,'WOULD_HANDOFF_GUARDED_SOURCE');
  assert.equal(calls,0);
 });
@@ -145,7 +176,7 @@ test('existing or auto-created private incident task can be routed, but not clai
   'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED','AUTO_TASK_CREATED_NOT_DISPATCHED']){
   let calls=0;
   const r=await route({receipt:{...receipt(),association},context:context(),
-   existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
+   existingCoreHandoff:async()=>{calls++;return acceptedHandoff();}});
   assert.equal(r.state,'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',association);
   assert.equal(r.workerStarted,false);
   assert.equal(r.liveVerified,false);
