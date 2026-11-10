@@ -268,7 +268,7 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
   if(prefix==='new-'&&value('mode')!=='council-free'&&!EXEC[value('mode')])throw Error('Неизвестный исполнитель');
   if(r.title.length<4||r.title.length>110||r.description.length>1000)throw Error('Название: 4–110 символов; цель до 1000');
   if(prefix==='new-'){
-   const rawCriteria=value('acceptance').split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean);
+   const rawCriteria=value('acceptance').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
    if(rawCriteria.length>5||rawCriteria.some(x=>x.length>500)||rawCriteria.reduce((n,x)=>n+x.length,0)>2500)
     throw Error('Укажите до 5 критериев, не более 500 символов каждый.');
    const rawSkills=value('skill-ids').split(',').map(x=>x.trim()).filter(Boolean);
