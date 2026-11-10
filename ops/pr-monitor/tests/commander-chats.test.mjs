@@ -367,3 +367,23 @@ test('CI inbox associates only Agent Commander tasks saved under the actual priv
  assert.match(edge,/association = "AMBIGUOUS_TASKS"/);
  assert.match(edge,/set association_status=\$1 where ci_event_id=\$2::uuid/);
 });
+
+
+test('postgres.js private-store JSONB binds parse UTF-8 JSON text exactly once for task/chat/event and executor receipts',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ // postgres.js auto-serializes JSON parameters; $N::jsonb can double-encode JSON.stringify(value).
+ // Require text->jsonb conversion for every pre-serialized bound parameter.
+ assert.match(edge,/import postgres from "npm:postgres@3\.4\.5"/);
+ assert.match(edge,/\$\d+::text::jsonb/);
+ assert.doesNotMatch(edge,/\$\d+::jsonb\b/);
+ assert.match(edge,/insert into business_brain\.commander_chats/);
+ assert.match(edge,/JSON\.stringify\(chat\)/);
+ assert.match(edge,/insert into business_brain\.commander_chat_events/);
+ assert.match(edge,/JSON\.stringify\(event\)/);
+ assert.match(edge,/insert into business_brain\.commander_tasks/);
+ assert.match(edge,/JSON\.stringify\(record\)/);
+ assert.match(edge,/business_brain\.commander_execution_runs/);
+ assert.match(edge,/jsonb_set\(payload/);
+ // This contract preserves the actual database CHECK that requires an object.
+ assert.doesNotMatch(edge,/alter table business_brain\.commander_chats.*drop constraint/i);
+});
