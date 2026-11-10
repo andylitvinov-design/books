@@ -177,3 +177,16 @@ test('event bridge cannot infer conflict from green jobs or stale labels',()=>{
  assert.equal(green.category,'UNKNOWN');
  assert.equal(green.classification.retry.allowed,false);
 });
+
+test('event bridge preserves exact live dirty mergeability for conflict classification',()=>{
+ const liveDirty=makePR({mergeable:false,mergeable_state:'dirty'});
+ const exact=JSON.parse(JSON.stringify(liveDirty));
+ const { exactPullRequestLink }=require('../scripts/ci-pr-hermes-event-bridge.cjs');
+ const snapshot=exactPullRequestLink(exact);
+ assert.equal(snapshot.mergeable,false);
+ assert.equal(snapshot.mergeable_state,'dirty');
+ const result=buildDiagnostics([{name:'merge-check',conclusion:'failure',steps:[]}],snapshot);
+ assert.equal(result.category,'MERGE_CONFLICT');
+ assert.equal(result.classification.responsible_role,'semantic-conflict-resolver');
+ assert.equal(result.classification.retry.allowed,false);
+});
