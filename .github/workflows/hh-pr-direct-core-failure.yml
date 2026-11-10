@@ -165,7 +165,9 @@ jobs:
       # handoff. The trusted ci-pr-event-handoff.cjs still independently checks
       # causal job evidence, exact PR HEAD, leases, worker slots and labels.
       - name: Route confirmed Commander CI task through guarded dispatcher
-        if: ${{ always() && steps.commander_ci_event.outcome == 'success' }}
+        if: >-
+          always() && steps.base_recovery.outputs.updated != 'true' && steps.infra_recovery.outputs.infra_hold != 'true' &&
+          steps.commander_ci_event.outcome == 'success'
         uses: actions/github-script@v7
         env:
           HH_CONTROL_TOWER_ENABLED: 'true'
