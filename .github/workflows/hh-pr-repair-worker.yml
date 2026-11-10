@@ -652,12 +652,11 @@ jobs:
         with:
           name: hh-code-repair-verified
           path: hh-candidate
-      - name: Revalidate owner + SHA; publish one source commit with existing owner token
+      - name: Revalidate exact HEAD; publish verified source using scoped Actions token
         id: publish_source
         if: needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready'
         uses: actions/github-script@v7
         env:
-          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
           HH_REPAIR_JOB_TOKEN: ${{ github.token }}
           HH_REPAIR_SHA: ${{ needs.claim.outputs.sha }}
           HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
@@ -666,13 +665,12 @@ jobs:
           script: |
             const fs=require('node:fs');
             const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
-            const ownerToken=process.env.HH_AUTOMERGE_TOKEN||'';
             const jobToken=process.env.HH_REPAIR_JOB_TOKEN||'';
             const rateGuard=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-owner-rate.cjs');
             if(!jobToken)throw Error('HH_REPAIR_JOB_TOKEN_NOT_CONFIGURED');
             let token=jobToken;
-            // Credentials are used only in the trusted publisher, after an
-            // independently verified candidate. Never run PR code here.
+            // Only this trusted publisher receives github.token:contents:write,
+            // after independent verification. Never execute PR source here.
             const probe=async key=>{
               if(!key)return null;
               try{
@@ -697,10 +695,11 @@ jobs:
                 ...(payload?{body:JSON.stringify(payload)}:{})
               });
               const data=await response.json().catch(()=>({}));
-              if(!response.ok)throw Error('Owner API '+response.status+': '+String(data.message||'denied').slice(0,140));
+              if(!response.ok)throw Error('Scoped Actions API '+response.status+': '+
+                String(data.message||'denied').slice(0,140));
               if(minRemaining>0){
                 const rate=rateGuard.requireOwnerRateBudget(response.headers,minRemaining);
-                core.info('HH_REPAIR_OWNER_RATE_BUDGET '+JSON.stringify(rate));
+                core.info('HH_REPAIR_JOB_RATE_BUDGET '+JSON.stringify(rate));
               }
               return data;
             };
@@ -711,19 +710,23 @@ jobs:
               const base='/repos/'+owner+'/'+repo;
               const ref='/git/ref/heads/'+branch.split('/').map(encodeURIComponent).join('/');
               // The owner PAT returned Git Data API 403 despite repository
-              // permissions.push=true (verified #4275, run 42907804597).
-              // Prefer this job's repository-scoped contents:write token.
-              // GitHub-token ref updates require the EXISTING next-Core wake
+              // permissions.push=true (#4275, #4279). This trusted job has
+              // GitHub Actions contents:write; PAT is never used for source.
+              // GitHub-token writes require existing next-Core CI wake
               // fallback; do not fabricate a pull_request synchronization.
               const required=rateGuard.requiredOwnerBudget(files.length);
               const jobProbe=await probe(jobToken);
-              const ownerProbe=rateGuard.eligibleWriter(jobProbe,required)?
-                null:await probe(ownerToken);
-              const mode=rateGuard.chooseWriterMode({job:jobProbe,owner:ownerProbe},required);
-              token=mode==='job'?jobToken:ownerToken;
+              const mode=rateGuard.chooseWriterMode({job:jobProbe},required);
+              token=jobToken;
               const repository=await call('GET',base,undefined,required);
-              if(repository?.full_name!==owner+'/'+repo||repository.permissions?.push!==true)
-                throw Error('HH_REPAIR_WRITER_REPO_WRITE_PERMISSION_MISSING');
+              // GitHub Actions' short-lived installation token can have a
+              // granted contents:write scope even when the REST repository's
+              // user-centric permissions.push field is absent/false. Its
+              // origin is pinned to github.token above; verify repository
+              // identity and rate budget without treating this field as ACL.
+              // Actual Git Data write errors remain fail-closed.
+              if(repository?.full_name!==owner+'/'+repo)
+                throw Error('HH_REPAIR_JOB_TOKEN_REPOSITORY_UNVERIFIED');
               core.info('HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH mode='+mode);
               const current=await call('GET',base+ref);
               if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)

@@ -27,11 +27,17 @@ function eligibleWriter(probe,required){
  return !!(probe?.ok===true&&probe?.canPush===true&&
   Number.isSafeInteger(probe.remaining)&&probe.remaining>=required);
 }
-function chooseWriterMode({job,owner}={},required){
+function eligibleJobWriter(probe,required){
+ // The REST repository permissions.push is a user/installation view, not
+ // authoritative for this workflow-scoped GITHUB_TOKEN. Job permissions are
+ // explicitly contents:write in trusted publish YAML. Do not borrow a PAT.
+ return probe?.ok===true && Number.isSafeInteger(probe.remaining) &&
+   probe.remaining>=required;
+}
+function chooseWriterMode({job}={},required){
  if(!Number.isSafeInteger(required)||required<10||required>17)
   throw Error('HH_REPAIR_OWNER_RATE_INVALID_BUDGET');
- if(eligibleWriter(job,required))return 'job';
- if(eligibleWriter(owner,required))return 'owner';
- throw Error('HH_REPAIR_NO_VERIFIED_WRITER_CREDENTIAL_OR_RATE');
+ if(eligibleJobWriter(job,required))return 'job';
+ throw Error('HH_REPAIR_JOB_TOKEN_UNVERIFIED_OR_RATE_LOW');
 }
-module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode};
+module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,eligibleJobWriter,chooseWriterMode};
