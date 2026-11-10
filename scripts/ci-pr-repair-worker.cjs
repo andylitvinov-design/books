@@ -755,6 +755,12 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     state=strategy==='code'?'MANUAL':'FAILED';
     reason=(strategy==='code'?'DETERMINISTIC_REPAIR_JOB_':'FIX_JOB_')+
       String(fixResult||'UNKNOWN').toUpperCase();
+  }else if((strategy==='lint'||strategy==='code')&&
+    candidateStatus==='ready'&&codeVerifyStatus==='ready'&&
+    codeVerifyResult==='success'&&publishResult==='failure'){
+    // A verified deterministic patch exists; the source publisher failed.
+    // A skipped optional free-model step is NOT the causal failure.
+    state='FAILED';reason='SOURCE_PUBLISH_JOB_FAILURE';
   }else if(strategy==='code'&&!codeAvailable){
     state='MANUAL';reason='FREE_AI_EXECUTOR_NOT_CONFIGURED';
   }else if(strategy==='code'&&codeResult==='skipped'){
