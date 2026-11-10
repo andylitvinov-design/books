@@ -882,7 +882,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                     data-coaching-open-reflection={!quickChoices?'true':undefined}
                     value={draft.startsWith('choice:')?'':draft}
                     maxLength={800} rows={2} placeholder={t.placeholder} disabled={busy}
-                    onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
+                    onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>}
               <div className={styles.composerTools}>
                 <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')} compact
                   text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
