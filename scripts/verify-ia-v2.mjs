@@ -437,7 +437,7 @@ async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'r
       await resizePublicViewport(page, { width: 390, height: 900 })
       const from = '/' + locale + '/services/free-situation-review'
       assert.equal((await go(page, from)).status(), 200, locale + ': free-review entry')
-      await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/free-review/390',active:'analysis'})
+      await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/free-review/390',active:'services'})
       // Alchemy remains accessible in the existing expanded public menu;
       // it is no longer a bottom-dock destination on this route.
       const menu=page.locator('header.house-header--services details.site-main-menu')
