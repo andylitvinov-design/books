@@ -495,7 +495,7 @@ async function handler(req){
       const runsSql="select run_id,executor,status,reason_code,request_sha256,hermes_job_id,executor_session_id,receipt,started_at,completed_at,created_at,updated_at from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid order by created_at desc limit 30";
       let runs=await q(db,runsSql,[ownerId,chats[0].chat_id]);
       return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUNS_V1",runs,storage:"SUPABASE_PRIVATE",
-        dispatchEnabled:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",observedAt:new Date().toISOString()},origin);
+        dispatchEnabled:false,dispatchAvailable:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",liveVerified:false,observedAt:new Date().toISOString()},origin);
     }
     if(action==="commander_start_run"){
       const chatNumber=number(body.issueNumber);
@@ -548,7 +548,7 @@ async function handler(req){
         }else{
           const eventPayload={schema:"HH_COMMANDER_EVENT_V1",id:runId,
             kind:canDispatch?"execution_requested":"execution_blocked",
-            author:"Hermes Dispatcher",text:pendingText,executor,status:firstStatus,reasonCode,
+            author:"Agent Director",text:pendingText,executor,status:firstStatus,reasonCode,
             sourceVerified:false,proofLevel:"NOT_STARTED_NO_EXECUTION_RECEIPT",createdAt:new Date().toISOString()};
           // Physical DB kind CHECK permits 'note', not custom payload event kinds.
           await tx.unsafe("insert into business_brain.commander_chat_events (event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false) on conflict(event_id) do nothing",
@@ -630,7 +630,7 @@ async function handler(req){
         storage:"SUPABASE_PRIVATE",preferenceOnly:true,agentStarted:false},origin);
     }
     if(action==="status")return reply(200,{ok:true,service:"AGENT_COMMANDER_PRIVATE_STORE_V1",
-      owner:true,authenticated:true,privateStoreConfigured:true,executorDispatch:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OWNED_MODEL_CONFIG_CHECKED_AT_RUN_TIME",
+      owner:true,authenticated:true,privateStoreConfigured:true,executorDispatch:false,dispatchAvailable:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OWNED_MODEL_CONFIG_REQUIRED",liveVerification:false,
       liveVerification:false,checkedAt:new Date().toISOString()},origin);
 
     if(action==="commander_list_tasks"){
