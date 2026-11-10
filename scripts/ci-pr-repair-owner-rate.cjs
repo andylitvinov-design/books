@@ -34,4 +34,21 @@ function chooseWriterMode({job,owner}={},required){
  if(eligibleWriter(owner,required))return 'owner';
  throw Error('HH_REPAIR_NO_VERIFIED_WRITER_CREDENTIAL_OR_RATE');
 }
-module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode};
+// GitHub Actions job-scoped GITHUB_TOKEN is granted contents:write by the
+// protected workflow. Repository GET permissions.push is user-role metadata,
+// not an authoritative per-job installation-token permission probe. Only the
+// authenticated repo read and real rate budget can be proven before mutation;
+// GitHub's Git Data API independently ENFORCES write authorization. Never
+// select the repeatedly 403-denied owner PAT as a fallback.
+function requireScopedJobWriterProbe(probe,required){
+ if(!Number.isSafeInteger(required)||required<10||required>17)
+   throw Error('HH_REPAIR_OWNER_RATE_INVALID_BUDGET');
+ if(probe?.ok!==true)
+   throw Error('HH_REPAIR_JOB_TOKEN_REPOSITORY_READ_UNVERIFIED');
+ if(!Number.isSafeInteger(probe.remaining)||probe.remaining<required)
+   throw Error('HH_REPAIR_JOB_TOKEN_RATE_RESERVE_UNVERIFIED');
+ return Object.freeze({mode:'job',repositoryVerified:true,
+   remaining:probe.remaining,required,
+   gitDataWriteVerified:false,proofLevel:'REPOSITORY_READ_AND_RATE_NOT_WRITE'});
+}
+module.exports={requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode,requireScopedJobWriterProbe};
