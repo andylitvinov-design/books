@@ -320,7 +320,7 @@ export async function POST(request) {
       usedSavedTestEvidence:useMeasurements && measurements.length>0,
       usedSavedVideoHistory:useHistory && completedIds.length>0,
       // Browser presentation may use a local model AFTER separate on-device opt-in.
-      browserModelAllowed:body.mode==="device" && safety.status==="clear",
+      browserModelAllowed:experimentalEnabled && body.mode!=="owned" && safety.status==="clear" && !recentUnsafe,
     },{headers:PRIVATE_HEADERS}));
   } catch (error) {
     const e=safeError(error);
