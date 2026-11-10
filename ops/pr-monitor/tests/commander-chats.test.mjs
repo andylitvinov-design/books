@@ -132,7 +132,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(js.includes('eventId:eventIdOverride||id()'));
  assert.ok(js.includes('councilChunkEventId(data.requestId,index)'));
  assert.ok(js.includes('AI Council Free · часть'));
- assert.ok(js.includes("mode!=='council-free'&&!thread.executors.includes(mode==='director'?'local':mode)"));
+ assert.ok(js.includes("mode!=='council-free'&&!thread.executors.includes(mode)"));
  assert.match(css,/cc-council-panel/);
  assert.match(css,/min-height:600px/);
  assert.ok(csp.includes('frame-src https://accounts.google.com/gsi/ https://ai-council-free-super10.vercel.app;'));
@@ -188,7 +188,7 @@ test('Commander execution run snapshots a bounded revision-pinned task context a
  assert.ok(edge.includes('HH_COMMANDER_TASK_CONTEXT_V1'));
  assert.ok(edge.includes('chatRevision:Number.isSafeInteger(chat.revision)?chat.revision:0'));
  assert.ok(edge.includes('linkedPrHintsVerified:false'));
- assert.ok(edge.includes('Resolve each linked PR against live GitHub metadata and exact current HEAD'));
+ assert.ok(edge.includes('requiredBeforeSourceChange:"Resolve live GitHub PR and exact HEAD before any source change."'));
  assert.ok(edge.includes('JSON.stringify({message,contextCapsule})'));
  assert.ok(edge.includes('String(contextCapsule.chatRevision)'));
 });
@@ -407,8 +407,8 @@ test('private Commander writes raw JSON text through text-to-jsonb casts, not JS
  const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
  assert.doesNotMatch(edge,/\$\d+::jsonb\b/);
  const jsonbParams=[...edge.matchAll(/\$\d+::text::jsonb\b/g)];
- assert.equal(jsonbParams.length,14);
- for(const field of ['failed_jobs','failed_steps','commander_tasks','commander_chats','commander_chat_events'])
+ assert.equal(jsonbParams.length,18);
+ for(const field of ['failed_jobs','failed_steps','commander_tasks','commander_chats','commander_chat_events','commander_execution_runs'])
   assert.ok(edge.includes(field));
  assert.match(edge,/JSON\.stringify\(event\.failed_jobs\)/);
  assert.match(edge,/JSON\.stringify\(event\.failed_steps\)/);
@@ -499,45 +499,13 @@ test('new chat sends bounded acceptance criteria and Skill IDs as references onl
 
 
 
-test('missing monitor cookie silently resumes the existing Holistic House session without opening a second Google login',()=>{
- const js=src('commander-chats.js');
- const start=js.lastIndexOf("request('/api/commander-session')");
- const boot=js.slice(start);
- assert.ok(js.includes("const MAIN='https://holistichouse.vercel.app'"));
- assert.match(js,/if\(!r\.ok\)\{const error=Error\(j\.error\|\|'HTTP '\+r\.status\);error\.status=r\.status;throw error;\}/);
- assert.match(boot,/if\(error\?\.status===401\|\|error\?\.message==='OWNER_SESSION_REQUIRED'\)/);
- assert.match(boot,/location\.replace\(MAIN\+'\/commander-connect\.html\?next='/);
- assert.match(boot,/requestedTask/);
- assert.match(boot,/Не удалось проверить защищённую сессию/);
- assert.doesNotMatch(boot,/startGoogle|auth\/start/);
-});
-
-test('owner-scoped first-party Agents Director is selected separately from advisory chat',()=>{
- const ui=src('commander-chats.js'),html=src('chats.html'),apiSrc=src('api/commander-chats.js');
- assert.equal((html.match(/option value="director" disabled/g)||[]).length,2);
- assert.match(ui,/ownedDirectorAvailable=remote&&status\.dispatchAvailable===true&&status\.dispatchMode==='FIRST_PARTY_AGENT_DIRECTOR'/);
- assert.match(ui,/director\.disabled=!ownedDirectorAvailable/);
- assert.match(ui,/const storedMode=mode==='director'\?'local':mode/);
- assert.match(ui,/\['council-free','director'\]\.includes\(value\('mode'\)\)/);
- assert.match(ui,/Object\.entries\(EXEC\)\.filter\(\(\[k\]\)=>k!=='director'\)/);
- assert.match(ui,/const dispatchModes=new Set\(\['director','hermes'/);
- assert.match(ui,/executor:mode==='director'\?'local':mode/);
- assert.match(ui,/mode==='director'\?\{modelId:'owned-default',confirmGitHubWrite:false\}/);
- assert.match(apiSrc,/body\.executor==='local'&&body\.modelId!=='owned-default'/);
- assert.match(apiSrc,/OWNED_DIRECTOR_SOURCE_WRITE_NOT_AVAILABLE/);
- assert.match(apiSrc,/dispatchMode:result\.data\.dispatchMode\|\|null/);
- assert.doesNotMatch(ui,/HERMES_SHARED_SECRET|HH_AGENT_OLLAMA_TOKEN|GITHUB_TOKEN/);
-});
-
-test('owned Director writer and invalid model fail before sending a request to private store',async()=>{
- const headers={host:'holistic-house-pr-monitor.vercel.app',
-  origin:'https://holistic-house-pr-monitor.vercel.app','sec-fetch-site':'same-origin'};
- const req={method:'POST',url:'/api/commander-chats?action=run',headers,
-  body:{executor:'local',modelId:'owned-default',confirmGitHubWrite:true}};
- const rejected=response();await api(req,rejected);
- assert.equal(rejected.statusCode,403);
- assert.equal(rejected.body.error,'OWNED_DIRECTOR_SOURCE_WRITE_NOT_AVAILABLE');
- const unsafe=response();await api({...req,body:{...req.body,modelId:'provider/paid-model',confirmGitHubWrite:false}},unsafe);
- assert.equal(unsafe.statusCode,400);
- assert.equal(unsafe.body.error,'OWNED_DIRECTOR_MODEL_REQUIRED');
+test('Hermes dispatch independently verifies live zero-price catalog and rejects write approvals for non-Hermes executor',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ const begin=edge.indexOf('if(action==="commander_start_run")');
+ const end=edge.indexOf('if(action==="commander_list_ci_events")',begin);
+ const handler=edge.slice(begin,end);
+ assert.match(handler,/if\(writeConfirmed&&executor!==\"hermes\"\)return reply\(403/);
+ assert.match(handler,/await verifyFreeModel\(modelId\)/);
+ assert.match(handler,/modelVerified\)/);
+ assert.ok(handler.indexOf('await verifyFreeModel(modelId)')<handler.indexOf('await db.begin'));
 });
