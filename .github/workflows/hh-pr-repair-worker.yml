@@ -848,6 +848,7 @@ jobs:
           HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
           HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
           HH_MODEL_AUDIT: ${{ needs.code_fix.outputs.model_audit }}
+          HH_WORKFLOW_ATTEMPT: ${{ github.run_attempt }}
           HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
           HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
           HH_CODE_VERIFY_DETAIL: ${{ needs.code_verify.outputs.candidate_detail }}
@@ -879,6 +880,7 @@ jobs:
               codeStatus:process.env.HH_CODE_STATUS,
               codeDetail:process.env.HH_CODE_DETAIL,
               modelAuditRaw:process.env.HH_MODEL_AUDIT,
+              modelAuditRunAttempt:Number(process.env.HH_WORKFLOW_ATTEMPT||0),
               codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
               codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
               codeVerifyDetail:process.env.HH_CODE_VERIFY_DETAIL,
@@ -983,6 +985,8 @@ jobs:
           HH_CODE_RESULT: ${{ needs.code_fix.result }}
           HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
           HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
+          HH_MODEL_AUDIT: ${{ needs.code_fix.outputs.model_audit }}
+          HH_WORKFLOW_ATTEMPT: ${{ github.run_attempt }}
           HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
           HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
           HH_CODE_VERIFY_DETAIL: ${{ needs.code_verify.outputs.candidate_detail }}
@@ -1010,6 +1014,8 @@ jobs:
               codeResult:process.env.HH_CODE_RESULT,
               codeStatus:process.env.HH_CODE_STATUS,
               codeDetail:process.env.HH_CODE_DETAIL,
+              modelAuditRaw:process.env.HH_MODEL_AUDIT,
+              modelAuditRunAttempt:Number(process.env.HH_WORKFLOW_ATTEMPT||0),
               codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
               codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
               codeVerifyDetail:process.env.HH_CODE_VERIFY_DETAIL,
