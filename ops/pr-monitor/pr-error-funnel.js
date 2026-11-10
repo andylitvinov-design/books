@@ -227,6 +227,7 @@
     drill=el('div','hh-error-drill');
     panel.append(header,grid,message,drill);
     main.insertBefore(panel,main.firstChild);
+    renderSkeleton();
     select.addEventListener('change',load);
     refreshButton.addEventListener('click',function(){
       commentsCache.clear();commitCache.clear();void load();
@@ -258,6 +259,20 @@
     commitCache.set(cacheKey,valid);
     return valid;
   }
+  function renderSkeleton(){
+    if(!grid||!drill)return;
+    grid.replaceChildren();drill.replaceChildren();
+    for(var stage of STAGES){
+      var card=el('article','hh-error-stage');
+      var head=el('div','hh-error-stage-head');
+      head.append(el('span','',stage[1]),el('strong','','—'));
+      var progress=el('progress','hh-error-progress');
+      progress.max=100;progress.value=0;
+      progress.setAttribute('aria-label',stage[1]+' · данные недоступны');
+      card.append(head,progress,el('small','',stage[2]));
+      grid.append(card);
+    }
+  }
   function display(data,note){
     grid.replaceChildren();drill.replaceChildren();
     for(var stage of STAGES){
@@ -265,8 +280,9 @@
       var top=el('div','hh-error-stage-head');
       top.append(el('span','',stage[1]),el('strong','',data.complete?formatter.format(n):'≥'+formatter.format(n)));
       var fraction=data.unique_prs>0?Math.max(0,Math.min(100,100*n/data.unique_prs)):0;
-      var track=el('div','hh-error-track'),fill=el('span','hh-error-fill');
-      fill.style.width=fraction.toFixed(1)+'%';track.append(fill);
+      var track=el('progress','hh-error-progress');
+      track.max=100;track.value=fraction;
+      track.setAttribute('aria-label',stage[1]+' · '+fraction.toFixed(0)+'% PR');
       var sub=el('small','',stage[2]);
       card.append(top,track,sub);grid.append(card);
       var d=el('details','hh-error-details');
@@ -297,7 +313,7 @@
     if(loading||!panel)return;loading=true;
     refreshButton.disabled=true;select.disabled=true;
     message.textContent='Сверяю задачи с подписанными квитанциями Worker и GitHub…';
-    grid.replaceChildren();drill.replaceChildren();
+    renderSkeleton();
     try{
       var response=await fetch('/api/commander-chats?action=ci_events&limit=100',{
         credentials:'same-origin',headers:{Accept:'application/json'},cache:'no-store'});

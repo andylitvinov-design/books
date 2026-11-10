@@ -121,3 +121,11 @@ test('window and incomplete source never claim exact totals',()=>{
  assert.equal(s.unique_prs,1);assert.equal(s.complete,false);
  assert.equal(m.summarize([early,e],{},720,NOW,true).unique_prs,2);
 });
+
+test('no inline-width CSP violations in the funnel and stages remain visible when signed out',()=>{
+ const fs=require('node:fs');
+ const src=fs.readFileSync(require.resolve('../pr-error-funnel.js'),'utf8');
+ assert.equal(src.includes('fill.style.width='),false);
+ assert.equal(src.includes("el('progress','hh-error-progress')"),true);
+ assert.equal(src.includes('renderSkeleton();'),true);
+});
