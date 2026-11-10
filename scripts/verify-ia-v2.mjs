@@ -289,7 +289,7 @@ async function verifyPublicHeaderMatrix(page, engine, locales = ['en', 'ru', 'es
         const header = page.locator('header.house-header--services')
         await expect(header).toBeVisible()
         const expected = getSiteNavigation(locale)
-        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...expected.filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/holistic-support/mobile', '/' + locale + '/temple-insights', '/' + locale + '/services', '/' + locale + '/about']
+        const expectedMenu = ['/' + locale + '/services/free-situation-review', ...getCompactNavigation(locale).map(item => item.href), '/' + locale + '/shop', '/' + locale + '/cart', '/' + locale + '/install', ...expected.filter(item => ['energy','love','business','library','events'].includes(item.id)).map(item => item.href), '/' + locale + '/holistic-support/mobile', '/' + locale + '/temple-insights', '/' + locale + '/my-coach', '/' + locale + '/services', '/' + locale + '/masters', '/' + locale + '/about']
         await verifyDirectNavigation(header.locator('.site-navigation'), { locale, surface, expected, label })
         const cabinetEntry = header.locator('.site-cabinet-entry')
         const menu = header.locator('details.site-language-menu')
@@ -437,7 +437,7 @@ async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'r
       await resizePublicViewport(page, { width: 390, height: 900 })
       const from = '/' + locale + '/services/free-situation-review'
       assert.equal((await go(page, from)).status(), 200, locale + ': free-review entry')
-      await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/free-review/390',active:'analysis'})
+      await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/free-review/390',active:'services'})
       // Alchemy remains accessible in the existing expanded public menu;
       // it is no longer a bottom-dock destination on this route.
       const menu=page.locator('header.house-header--services details.site-main-menu')
@@ -449,7 +449,7 @@ async function verifyPublicDiscoveryNavigation(page, engine, locales = ['en', 'r
       await alchemy.click()
       await expect(page).toHaveURL(origin + '/' + locale + '/services/alchemy-of-soul')
       await expect(page.locator('[data-alchemy-soul-landing]')).toHaveCount(1)
-      await expect(page.locator('.mobile-bottom-navigation [data-nav-item="alchemy"]')).toHaveAttribute('aria-current', 'page')
+      await assertUnifiedBottomNavigation(page,{locale,label:engine+'/'+locale+'/alchemy/390',active:'services'})
     }
   await resizePublicViewport(page, originalViewport)
   pass(engine + ': public client and client/tests discovery retain seven-slot navigation with My Profile active on free tests, keyboard order, responsive bounds and private headers in ' + locales.join('/'))
