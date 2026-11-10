@@ -270,11 +270,14 @@ function extractTextEvents(stream){
  * snippets from commentary or support changing extra files.
  */
 function normalizeSafePatchEnvelope(text,scope){
- let patch=String(text).replace(/\r\n?/g,'\n').trim();
+ // In a unified diff a line containing one space is a real empty context
+ // line. String.trim() removes that marker and can break a valid hunk.
+ // Strip only non-diff boundary newlines; preserve hunk indentation.
+ let patch=String(text).replace(/\r\n?/g,'\n').replace(/^\s+/, '').replace(/\n+$/, '');
  if(patch==='NO_SAFE_PATCH')throw Error('FREE_AI_MODEL_DECLINED');
  if(Buffer.byteLength(patch)>MAX_PATCH)throw Error('FREE_AI_INVALID_PATCH_FORMAT');
  const fence=/^```(?:diff|patch)?[ \t]*\n([\s\S]*?)\n```$/i.exec(patch);
- if(fence)patch=fence[1].trim();
+ if(fence)patch=fence[1].replace(/\n+$/, '');
  if(!patch.startsWith('diff --git a/')){
    const match=/^--- a\/([^\n]+)\n\+\+\+ b\/([^\n]+)\n@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@[^\n]*\n/.exec(patch);
    if(!match||match[1]!==match[2]||!scope?.files?.includes(match[1])||
