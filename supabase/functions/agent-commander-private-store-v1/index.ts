@@ -795,7 +795,7 @@ async function handler(req){
       const chatNumber=number(body.issueNumber);if(!chatNumber)return reply(400,{error:"INVALID_CHAT_NUMBER"},origin);
       const chats=await q(db,"select chat_id from business_brain.commander_chats where owner_id=$1::uuid and chat_number=$2 limit 1",[ownerId,chatNumber]);
       if(!chats.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
-      const runsSql="select run_id,executor,status,reason_code,request_sha256,hermes_job_id,executor_session_id,receipt,started_at,completed_at,worker_attempt_count,worker_lease_expires_at,actual_model_id,cost_usd,worker_last_error_code,created_at,updated_at from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid order by created_at desc limit 30";
+      const runsSql="select run_id,executor,status,reason_code,request_sha256,hermes_job_id,executor_session_id,receipt,started_at,completed_at,worker_attempt_count,worker_lease_expires_at,worker_checkpoint,worker_next_attempt_at,actual_model_id,cost_usd,worker_last_error_code,created_at,updated_at from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid order by created_at desc limit 30";
       let runs=await q(db,runsSql,[ownerId,chats[0].chat_id]);
       return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUNS_V1",chatId:chats[0].chat_id,runs,storage:"SUPABASE_PRIVATE",
         dispatchEnabled:false,dispatchAvailable:openRouterReady,openRouterConfigured:openRouterReady,workerMode:"SUPABASE_OPENROUTER_CLOUD_WORKER",dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",liveVerified:false,observedAt:new Date().toISOString()},origin);
@@ -864,7 +864,7 @@ async function handler(req){
           await tx.unsafe("insert into business_brain.commander_chat_events (event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'note',$4::text::jsonb,false) on conflict(event_id) do nothing",
            [runId,chat.chat_id,ownerId,jsonbText(eventPayload)]);
           await tx.unsafe("update business_brain.commander_chats set execution_state=$1,updated_at=now() where owner_id=$2::uuid and chat_id=$3::uuid",
-           [firstStatus,ownerId,chat.chat_id]);
+           [canDispatch?"AWAITING_EXECUTOR_NOT_DISPATCHED":"BLOCKED",ownerId,chat.chat_id]);
         }
         return {run,duplicate};
       });

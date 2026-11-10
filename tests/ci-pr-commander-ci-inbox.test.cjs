@@ -134,3 +134,18 @@ test('task/chat reconciliation backfills unmatched legacy inbox rows idempotentl
  assert.match(autotaskV2Migration,/AMBIGUOUS_TASKS/);
  assert.doesNotMatch(autotaskV2Migration,/workflow_dispatch|rerun-failed-jobs|github\.rest\./);
 });
+
+test('queued OpenRouter execution never writes a non-CHECK chat status and preserves worker checkpoints',()=>{
+ const start=edge.indexOf('if(action==="commander_start_run")');
+ const end=edge.indexOf('if(action==="commander_list_ci_events")',start);
+ const action=edge.slice(start,end);
+ assert.ok(start>=0&&end>start);
+ assert.ok(action.includes('const firstStatus=canDispatch?"QUEUED":"BLOCKED"'));
+ assert.ok(action.includes('[canDispatch?"AWAITING_EXECUTOR_NOT_DISPATCHED":"BLOCKED",ownerId,chat.chat_id]'));
+ assert.ok(!action.includes('[firstStatus,ownerId,chat.chat_id]'));
+ assert.ok(edge.includes('worker_checkpoint,worker_next_attempt_at,actual_model_id'));
+ assert.ok(edge.includes('commanderCiChatExecutionState(p.state)'));
+ assert.ok(edge.includes('p.dispatchAcknowledged'));
+ assert.ok(edge.includes('p.workerTaskKey'));
+ assert.ok(edge.includes('p.errorTaskId'));
+});
