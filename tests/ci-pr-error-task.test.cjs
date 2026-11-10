@@ -184,3 +184,31 @@ test('only authenticated exact-HEAD error task binds dispatcher causal delivery'
  a.equal(taskLifecycle([bot(taskBody(x)),receipt('RESERVED')],x).state,'RESERVED_DELIVERY_UNVERIFIED');
  a.equal(taskLifecycle([bot(taskBody(x)),receipt('CLAIMED')],x).state,'EXECUTOR_CLAIMED_NOT_COMPLETED');
 });
+
+
+test('real Repair Worker #4217 no-autofixable scope is owner review not free-model retry',()=>{
+ for(const detail_code of [
+  'NO_AUTOFIXABLE_ESLINT_CHANGE','FREE_AI_UNSAFE_SOURCE_SCOPE',
+  'SOURCE_SCOPE_UNSAFE_FOR_FREE_AI','SOURCE_SCOPE_NOT_ACTIONABLE'
+ ]){
+  const x=makeWorkerFollowUp({
+   pr_number:4217,head_sha:'e'.repeat(40),
+   task_key:'a'.repeat(32),owner_run_id:'42867102351',
+   state:'FAILED',reason_code:'FREE_AI_JOB_FAILED_NO_SOURCE_COMMIT',
+   detail_code,now});
+  a.equal(x.category,'SOURCE_CODE');
+  a.equal(x.strategy_code,'MANUAL_SOURCE_SCOPE_REVIEW');
+  a.equal(x.responsible_role,'source-repair-owner');
+  a.equal(x.executor_id,'github-owner:andylitvinov-design');
+  a.equal(x.assignment_status,'OWNER_REVIEW_REQUIRED');
+  a.equal(x.source_write_authorized,false);
+  a.equal(x.execution_authorized,false);
+  a.equal(x.recommended_status,'MANUAL_REQUIRED');
+ }
+ const genuineProviderFailure=makeWorkerFollowUp({pr_number:4217,
+  head_sha:'e'.repeat(40),task_key:'a'.repeat(32),
+  owner_run_id:'42867102351',state:'FAILED',
+  reason_code:'FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID',now});
+ a.equal(genuineProviderFailure.category,'AI_EXECUTOR',
+  'real model reply failures still use their own provider diagnosis');
+});
