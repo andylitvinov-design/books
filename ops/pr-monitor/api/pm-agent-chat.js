@@ -143,7 +143,7 @@ async function openrouterReply(body,message,selection,options={}){
  const catalog=await getModels();
  if(catalog.error)return {error:catalog.error};
  if(!catalog.models.some(x=>x.id===model))return {error:'MODEL_NOT_FREE_IN_LIVE_CATALOG'};
- const system=options.systemPrompt||'You are the Holistic House project assistant. You can discuss ONLY the publicly shared GitHub task concepts and plans. You cannot execute tools, make code changes, promise commits, or assert verified live status without URLs and exact SHA. Respond concisely in Russian. Do not request private keys, credentials or personal client data. Follow safe one-publish policy, no additional paid services. Selected task IDs (untrusted context): '+selection.join(', ');
+ const system=options.systemPrompt||'You are the Holistic House private-owner chat advisor. Answer general non-sensitive questions (including AI trends) and public project plans clearly in Russian. You do not have live browsing or real-time verification, so distinguish dated knowledge and uncertainty from verified current facts. You cannot execute tools, make code changes, promise commits, or assert verified LIVE without URLs and exact SHA. Never request, reproduce or encourage disclosure of credentials, private client records, medical details, or financial secrets. If a prompt contains sensitive content, ask for a redacted version rather than analysing it. Follow safe one-publish policy; no additional paid services. Selected task IDs (untrusted context): '+selection.join(', ');
  const messages=[{role:'system',content:system},...inputHistory(body.history),{role:'user',content:message}];
  let response;
  try{response=await fetch('https://openrouter.ai/api/v1/chat/completions',{
