@@ -23,6 +23,7 @@ export type GuidedMeditationFocus = {
 };
 type Props = {
   onContextChange?: (focus:GuidedMeditationFocus)=>void;
+  onOpenMeditation?: ()=>void;
   onAddMeditation?: (script:string)=>void;
   onOmitMeditation?: ()=>void;
   locale:PublicLocale; theme:VideoTheme; selfRatings:Partial<Record<VideoTheme,number>>;
@@ -252,7 +253,7 @@ type PracticeKind = "ritual" | "exercise" | "daily";
 const ritualMoments = ["morning","evening","transition","recovery"] as const;
 type RitualMoment = (typeof ritualMoments)[number];
 
-export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFreeVideo,onContextChange,onAddMeditation,onOmitMeditation}:Props) {
+export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFreeVideo,onContextChange,onOpenMeditation,onAddMeditation,onOmitMeditation}:Props) {
   const t = copy[locale];
   const f = flowCopy[locale];
   const [focusMode,setFocusMode] = useState<"state"|"vector">("state");
@@ -421,16 +422,10 @@ export function MandalaGuidedCourse({locale,theme,selfRatings,disabled,onApplyFr
   }
   function openPersonalMeditation(){
     if(disabled||!focusReady)return;
-    const editorDetails=document.querySelector("[data-video-therapy-meditation-audio]");
-    if(editorDetails instanceof HTMLDetailsElement){
-      editorDetails.open=true;
-      setPersonalOpened(true);
-      // Scroll synchronously: a deferred smooth scroll can move Safari's page
-      // AFTER a visitor taps the next 'Create programme' control, swallowing
-      // that real tap while the on-screen button appears enabled.
-      // The editor details is already present and open at this point.
-      editorDetails.scrollIntoView({behavior:"instant",block:"start"});
-    }
+    // Audio is a first-class workspace now; the course must not manipulate
+    // the former inline <details> element or create a second composer.
+    setPersonalOpened(true);
+    onOpenMeditation?.();
   }
   function createProgramme(){
     if(disabled||!focusReady||profileStatus==="loading")return;
