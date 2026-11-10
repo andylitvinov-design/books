@@ -1306,3 +1306,43 @@ test('verified dirty conflicts outrank manual legacy preflight and never enter s
  assert.equal(task.next_action,'CONFLICT_TRIAGE');
  assert.notEqual(task.next_action,'LEGACY_CLOUD_PREFLIGHT');
 });
+
+
+test('worker failure follow-up creates a specialist conflict task instead of UNKNOWN triage',()=>{
+ const {makeWorkerFollowUp,validTask}=require('../scripts/ci-pr-error-task.cjs');
+ const base={pr_number:3946,head_sha:sha,task_key:'a'.repeat(32),
+  owner_run_id:'42840000000',state:'MANUAL',
+  reason_code:'CONFLICT_REQUIRES_SOURCE_RESOLUTION',
+  now:Date.parse('2026-11-10T15:00:00.000Z')};
+ const first=makeWorkerFollowUp(base);
+ const repeated=makeWorkerFollowUp(base);
+ assert.equal(first.category,'MERGE_CONFLICT');
+ assert.equal(first.strategy_code,'SEMANTIC_CONFLICT_TRIAGE');
+ assert.equal(first.responsible_role,'semantic-conflict-resolver');
+ assert.equal(first.next_action,'ASSIGN_SEMANTIC_CONFLICT_OWNER');
+ assert.equal(first.recommended_status,'MANUAL_REQUIRED');
+ assert.equal(first.task_id,repeated.task_id,'same failed task/run remains idempotent');
+ assert.equal(first.source_write_authorized,false);
+ assert.equal(first.execution_authorized,false);
+ assert.equal(validTask(first),true);
+});
+
+test('worker failure follow-ups distinguish free-model failure from dispatch failure without authorizing retry',()=>{
+ const {makeWorkerFollowUp,validTask}=require('../scripts/ci-pr-error-task.cjs');
+ const common={pr_number:42,head_sha:sha,task_key:'b'.repeat(32),
+  owner_run_id:'42840000001',now:Date.parse('2026-11-10T15:00:00.000Z')};
+ const ai=makeWorkerFollowUp({...common,state:'FAILED',
+  reason_code:'FREE_AI_OPENROUTER_PATCH_RESPONSE_INVALID'});
+ const dispatch=makeWorkerFollowUp({...common,state:'REJECTED',
+  reason_code:'DISPATCH_RESERVATION_UNVERIFIED'});
+ assert.equal(ai.category,'AI_EXECUTOR');
+ assert.equal(ai.strategy_code,'FREE_PROVIDER_HOLD');
+ assert.equal(ai.recommended_status,'MANUAL_REQUIRED');
+ assert.equal(dispatch.category,'AUTOMATION_PROCESS');
+ assert.equal(dispatch.strategy_code,'RECOVER_EXISTING_TASK');
+ for(const task of [ai,dispatch]){
+  assert.equal(task.source_write_authorized,false);
+  assert.equal(task.execution_authorized,false);
+  assert.equal(validTask(task),true);
+ }
+});
