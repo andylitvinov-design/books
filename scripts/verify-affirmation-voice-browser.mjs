@@ -108,20 +108,39 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(montageStoryboardTab).toHaveAttribute("aria-pressed","true");
     const montageVideoConcept=page.locator('[data-video-montage-concept]');
     await expect(montageVideoConcept).toBeVisible();
-    const cinematicDirector=montageVideoConcept.locator('[data-cinematic-director]');
-    await expect(cinematicDirector).toBeVisible();
-    await cinematicDirector.locator('[aria-controls="cinematic-director-content"]').tap();
-    const visualIdea=cinematicDirector.locator('[data-director-visual-idea] textarea');
-    await expect(visualIdea).toBeVisible();
-    await visualIdea.fill(locale==="ru"?"Белая птица летит над горами, затем появляется рассвет.":
-      locale==="es"?"Un ave blanca vuela sobre las montañas y aparece el amanecer.":
-      "A white bird flies over mountains as the sunrise appears.");
-    await cinematicDirector.locator('[data-director-create-plan]').tap();
-    await expect(cinematicDirector.locator('[data-director-storyboard]')).toBeVisible();
-    const storyboardShotCount=await cinematicDirector.locator('[data-director-shot]').count();
-    assert.ok(storyboardShotCount===4||storyboardShotCount===6,
-      "Montage video concept creates four or six real scene cards");
-    await expect(cinematicDirector.locator('[data-director-scene-choice]')).toHaveCount(storyboardShotCount);
+    // Story is the EXISTING automatic storyboard generated from the Ideas concept.
+    // No manual prompt/questionnaire: check real scene cards and licensed posters.
+    const automaticStoryboard=montageVideoConcept.locator('[data-video-auto-storyboard]');
+    await expect(automaticStoryboard).toBeVisible({timeout:20000});
+    const cards=automaticStoryboard.locator('[data-video-story-scene]');
+    const storyboardShotCount=Number(await automaticStoryboard.getAttribute('data-storyboard-scenes'));
+    assert.ok(Number.isSafeInteger(storyboardShotCount) && storyboardShotCount>=0,
+      "automatic storyboard must report a finite scene count");
+    await expect(cards).toHaveCount(storyboardShotCount);
+    assert.equal(await automaticStoryboard.locator("textarea").count(),0,
+      "the Story tab must render its proposal, not ask the user to fill it out");
+    if(storyboardShotCount>0){
+      assert.ok(storyboardShotCount===4||storyboardShotCount===6,
+        "verified storyboard has four or six source-backed scenes");
+      await expect(automaticStoryboard.locator('[data-video-auto-storyboard-list]')).toBeVisible();
+      await expect(cards.first()).toContainText(
+        locale==="ru"?"Сцена 1":locale==="es"?"Escena 1":"Scene 1");
+      const firstPoster=cards.first().locator("img");
+      if(await firstPoster.count()){
+        assert.ok((await firstPoster.getAttribute("src"))?.startsWith("/"),
+          "source-backed poster uses an approved local URL");
+        assert.ok((await firstPoster.getAttribute("alt"))?.trim(),
+          "visible poster retains a meaningful source label");
+      }else{
+        await expect(cards.first()).toContainText(
+          locale==="ru"?"Превью недоступно":locale==="es"?"Vista previa no disponible":"Preview unavailable");
+      }
+    }else{
+      // No fictional clips: missing verified footage must fail closed with a
+      // visible explanation, not restore the retired manual storyboard editor.
+      await expect(automaticStoryboard.getByRole("status")).toBeVisible();
+      await expect(automaticStoryboard.locator('[data-video-auto-storyboard-apply]')).toHaveCount(0);
+    }
     await montageStyle.tap();
     await expect(montageStyle).toHaveAttribute("aria-pressed","true");
     const ideasTop=page.locator('[data-video-quick-control="phrases"]');
