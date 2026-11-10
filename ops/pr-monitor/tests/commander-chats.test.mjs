@@ -359,3 +359,11 @@ test('owner-only live chat verification uses read-only private history and free-
  assert.match(js,/show\('free-model-status',!aiReady\)/);
  assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v2'));
 });
+
+test('CI inbox associates only Agent Commander tasks saved under the actual private-store project key',()=>{
+ const edge=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ assert.match(edge,/from business_brain\.commander_tasks[\s\S]{0,160}where project_key='agent-commander'/);
+ assert.doesNotMatch(edge,/where project_key='holistic-house'/);
+ assert.match(edge,/association = "AMBIGUOUS_TASKS"/);
+ assert.match(edge,/set association_status=\$1 where ci_event_id=\$2::uuid/);
+});
