@@ -253,12 +253,12 @@ test('safe recount fixes ONLY wrong unified diff hunk counts; exact file context
  const git=(...args)=>cp.execFileSync('git',args,{cwd:root,encoding:'utf8'});
  try {
   git('init','-q');git('config','user.name','Safe Test');git('config','user.email','test@example.invalid');
-  fs.writeFileSync(path.join(root,'demo.js'),'alpha\\nbeta\\ngamma\\n');
+  fs.writeFileSync(path.join(root,'demo.js'),['alpha','beta','gamma',''].join(String.fromCharCode(10)));
   git('add','demo.js');git('commit','-qm','base');
   const malformed=[
    'diff --git a/demo.js b/demo.js','--- a/demo.js','+++ b/demo.js',
    '@@ -1,9 +1,9 @@',' alpha','-beta','+delta',' gamma',''
-  ].join('\\n');
+  ].join(String.fromCharCode(10));
   const patch=path.join(root,'candidate.patch');
   fs.writeFileSync(patch,malformed);
   aThrowsStandard();
@@ -268,14 +268,14 @@ test('safe recount fixes ONLY wrong unified diff hunk counts; exact file context
   }
   const result=applyCandidatePatch(root,patch);
   assert.equal(result.recount,true);
-  assert.equal(fs.readFileSync(path.join(root,'demo.js'),'utf8'),'alpha\\ndelta\\ngamma\\n');
+  assert.equal(fs.readFileSync(path.join(root,'demo.js'),'utf8'),['alpha','delta','gamma',''].join(String.fromCharCode(10)));
   assert.equal(cp.spawnSync('git',['diff','--check'],{cwd:root}).status,0);
   git('checkout','--','demo.js');
   const wrongContext=malformed.replace(' alpha',' missing-irrelevant-context');
   fs.writeFileSync(patch,wrongContext);
   assert.throws(()=>applyCandidatePatch(root,patch),/FREE_AI_PATCH_APPLY_CHECK_FAILED/,
     'recount cannot bypass an incorrect context or apply a wrong patch');
-  assert.equal(fs.readFileSync(path.join(root,'demo.js'),'utf8'),'alpha\\nbeta\\ngamma\\n');
+  assert.equal(fs.readFileSync(path.join(root,'demo.js'),'utf8'),['alpha','beta','gamma',''].join(String.fromCharCode(10)));
   const exact=malformed.replace('@@ -1,9 +1,9 @@','@@ -1,3 +1,3 @@');
   fs.writeFileSync(patch,exact);
   const normal=applyCandidatePatch(root,patch);
