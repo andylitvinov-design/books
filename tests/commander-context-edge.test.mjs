@@ -27,5 +27,5 @@ test('Agent Director dispatch derives task context from the persisted owner chat
 test('parent Agent Director run is selected only from a completed run in the same owner and chat', () => {
   assert.match(edge, /where owner_id=\$1::uuid and chat_id=\$2::uuid and executor='local' and status='COMPLETED'/);
   assert.match(edge, /\[ownerId,chat\.chat_id\]/);
-  assert.match(edge, /parentTaskId=prior\[0\]\?\.hermes_job_id\|\|null/);
+  assert.match(edge, /parentTaskId=prior\[0\]\?\.run_id\|\|null/);
 });
