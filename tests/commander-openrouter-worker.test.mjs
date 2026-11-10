@@ -43,13 +43,11 @@ test('OpenRouter execution uses only the free router and verifies zero price bef
  assert.match(worker,/COMPLETED_UNVERIFIED/);
 });
 
-test('private store queues only when owner, runtime key and read-only mode are valid',()=>{
- assert.match(store,/const openRouterReady=Boolean\(Deno\.env\.get\("HH_PM_OPENROUTER_API_KEY"\)\|\|Deno\.env\.get\("OPENROUTER_API_KEY"\)\)/);
- assert.match(store,/executor==="local"&&!writeConfirmed&&openRouterReady/);
- assert.match(store,/OPENROUTER_API_KEY_NOT_CONFIGURED/);
- assert.match(store,/firstStatus=canDispatch\?"QUEUED":"BLOCKED"/);
- assert.match(store,/status:"QUEUED",reasonCode:"OPENROUTER_WORKER_QUEUED"/);
- assert.match(store,/dispatchAvailable:openRouterReady/);
+test('private store queues owner-authorized read-only local/OpenRouter runs independently of worker secret placement',()=>{
+ assert.match(store,/const canDispatch=\\(executor===\"local\"\\|\\|executor===\"openrouter\"\\)&&!writeConfirmed/);
+ assert.match(store,/OPENROUTER_WORKER_QUEUED/);
+ assert.match(store,/firstStatus=canDispatch\\?\"QUEUED\":\"BLOCKED\"/);
+ assert.match(store,/dispatchAvailable:true/);
 });
 
 test('lease/checkpoint migration uses the existing private execution ledger, not a second queue',()=>{
