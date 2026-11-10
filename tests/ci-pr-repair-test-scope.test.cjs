@@ -103,3 +103,71 @@ test('worker runs the trusted test selector before it creates a source candidate
  assert.ok(workflow.includes('before.get(p)===digest(p)'));
  assert.ok(workflow.indexOf('gate.status===0')<workflow.indexOf('result.files.push('));
 });
+
+
+function committedBaselineFixture({baseline='export const value=1;\\n',patched='export const value=2;\\n',
+ green=true,stale=true,staleMessageChanges=false}={}){
+ const {execFileSync}=require('node:child_process');
+ const f=fixture();
+ f.put('src/a.mjs',baseline.replace('\\n','\n'));
+ if(green)f.put('tests/green.test.mjs',
+  "import '../src/a.mjs';\\nimport test from 'node:test';\\ntest('related green',()=>{});\\n".replaceAll('\\n','\n'));
+ if(stale)f.put('tests/stale.test.mjs',staleMessageChanges
+  ? "import {value} from '../src/a.mjs';\\nimport test from 'node:test';\\ntest('stale',()=>{throw Error('preexisting issue '+value)});\\n".replaceAll('\\n','\n')
+  : "import '../src/a.mjs';\\nimport test from 'node:test';\\ntest('stale',()=>{throw Error('preexisting issue')});\\n".replaceAll('\\n','\n'));
+ execFileSync('git',['init','-q'],{cwd:f.root});
+ execFileSync('git',['add','.'],{cwd:f.root});
+ execFileSync('git',['-c','user.name=Repair Test','-c','user.email=repair-test@example.invalid',
+  'commit','-qm','baseline'],{cwd:f.root});
+ f.put('src/a.mjs',patched.replace('\\n','\n'));
+ return f;
+}
+test('a known baseline-red related test is quarantined only with unchanged TAP plus green direct coverage',()=>{
+ const f=committedBaselineFixture();
+ try{
+  const run=require('node:child_process').spawnSync(process.execPath,
+   [path.resolve(__dirname,'../scripts/ci-pr-repair-test-scope.cjs'),'src/a.mjs'],
+   {cwd:f.root,encoding:'utf8'});
+  assert.equal(run.status,0,run.stderr||run.stdout);
+  assert.match(run.stdout,/HH_REPAIR_PREEXISTING_TEST_FAILURE/);
+  assert.match(run.stdout,/HH_REPAIR_TEST_PASS tests\\/green/);
+  assert.equal(fs.readFileSync(path.join(f.root,'src/a.mjs'),'utf8'),
+   'export const value=2;\n','baseline probe must restore the exact repaired source bytes');
+ }finally{f.cleanup()}
+});
+test('changed failure diagnostic is never waived as a preexisting related test failure',()=>{
+ const f=committedBaselineFixture({staleMessageChanges:true});
+ try{
+  const run=require('node:child_process').spawnSync(process.execPath,
+   [path.resolve(__dirname,'../scripts/ci-pr-repair-test-scope.cjs'),'src/a.mjs'],
+   {cwd:f.root,encoding:'utf8'});
+  assert.notEqual(run.status,0);
+  assert.match(run.stderr,/RELATED_TEST_REGRESSION_OR_UNVERIFIED_BASELINE/);
+ }finally{f.cleanup()}
+});
+test('all-stale test scope still fails closed when no direct source test passes',()=>{
+ const f=committedBaselineFixture({green:false});
+ try{
+  const run=require('node:child_process').spawnSync(process.execPath,
+   [path.resolve(__dirname,'../scripts/ci-pr-repair-test-scope.cjs'),'src/a.mjs'],
+   {cwd:f.root,encoding:'utf8'});
+  assert.notEqual(run.status,0);
+  assert.match(run.stderr,/NO_GREEN_DIRECT_SOURCE_COVERAGE/);
+ }finally{f.cleanup()}
+});
+test('baseline-green test becoming red is a regression even when other tests pass',()=>{
+ const f=committedBaselineFixture({stale:false});
+ try{
+  f.put('tests/regression.test.mjs',
+    "import {value} from '../src/a.mjs';\nimport test from 'node:test';\ntest('source contract',()=>{if(value!==1)throw Error('new regression')});\n");
+  const cp=require('node:child_process');
+  cp.execFileSync('git',['add','tests/regression.test.mjs'],{cwd:f.root});
+  cp.execFileSync('git',['-c','user.name=Repair Test','-c','user.email=repair-test@example.invalid',
+    'commit','-qm','add baseline contract'],{cwd:f.root});
+  const run=cp.spawnSync(process.execPath,
+   [path.resolve(__dirname,'../scripts/ci-pr-repair-test-scope.cjs'),'src/a.mjs'],
+   {cwd:f.root,encoding:'utf8'});
+  assert.notEqual(run.status,0);
+  assert.match(run.stderr,/RELATED_TEST_REGRESSION_OR_UNVERIFIED_BASELINE/);
+ }finally{f.cleanup()}
+});
