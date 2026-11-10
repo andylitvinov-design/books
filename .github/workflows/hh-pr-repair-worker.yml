@@ -873,7 +873,7 @@ jobs:
             }
 
       # Logical finalization on the same trusted runner, not the isolated fix.
-      # HH_AUTOMERGE_TOKEN is step-scoped above and absent from this step.
+      # A scoped job token is used only by the trusted publisher; finalization gets no secrets.
       - name: Finalize on publisher runner
         id: finalize_outcome
         if: always()
