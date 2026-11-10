@@ -347,11 +347,11 @@
   const pending=councilPending;
   councilSaving.add(data.requestId);
   try{
-   const chunks=data.report.match(/[\\s\\S]{1,1640}/g)||[];
+   const chunks=data.report.match(/[\s\S]{1,1640}/g)||[];
    if(!chunks.length||chunks.length>12)throw Error('REPORT_CHUNK_LIMIT');
    for(let index=0;index<chunks.length;index++){
     if(pending.savedChunks?.has(index))continue;
-    const part='AI Council Free · часть '+(index+1)+'/'+chunks.length+'\\n'+chunks[index];
+    const part='AI Council Free · часть '+(index+1)+'/'+chunks.length+'\n'+chunks[index];
     await append(pending.chat,'ai',part,'AI Council Free · бесплатные модели · согласованный отчёт',
       councilChunkEventId(data.requestId,index));
     (pending.savedChunks??=new Set()).add(index);
