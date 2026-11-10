@@ -48,7 +48,7 @@ test('existing issuer remains credential isolated and branch/head guarded',()=>{
  assert.match(publish,/mode==='job'\?jobToken:ownerToken/);
  assert.match(flow,/rateGuard\.requiredOwnerBudget\(files\.length\)/);
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
- assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH/);
+ assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_IDENTITY_RATE/);
  assert.match(flow,/mode==='owner'&&repository\.permissions\?\.push!==true/);
  assert.match(flow,/force:false/);
  assert.match(flow,/Source branch moved before repair commit/);
