@@ -321,7 +321,12 @@ async function claim({github,core,context,number=0,expectedSha='',taskKey='',res
     }
     // Persist the addressed task acknowledgement on the exact source HEAD.
     // CLAIMED is evidence of ownership, never evidence of a published fix.
-    const receipt=task;
+    const trustedReservation=taskKey?
+      parseRecords(comments.filter(trustedControlComment))?.filter(r=>
+        r.task_key===taskKey&&r.head_sha===pr.head.sha&&
+        r.state==='RESERVED'&&r.owner_run_id===reservationRunId).at(-1):null;
+    const receipt=trustedReservation?.error_task_id?
+      {...task,error_task_id:trustedReservation.error_task_id}:task;
     const workerRunUrl=Number.isSafeInteger(context.runId)?
       'https://github.com/'+fullRepo+'/actions/runs/'+context.runId:null;
     const claimedReceipt=receipt?commentBody({...receipt,state:'CLAIMED',

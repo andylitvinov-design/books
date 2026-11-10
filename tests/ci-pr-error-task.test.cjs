@@ -104,3 +104,21 @@ test('watchdog requires signed task readback before allowing a real transient re
  a.match(src,/\(dryRun\|\|errorTaskDurable\) && shouldRetryTransientCoreFailure/);
  a.match(src,/HH_CI_ERROR_TASK_LIFECYCLE/);
 });
+
+test('only authenticated exact-HEAD error task binds dispatcher causal delivery',()=>{
+ const {latestErrorTaskId,taskLifecycle}=require('../scripts/ci-pr-error-task.cjs');
+ const x=task('TypeScript check');
+ a.equal(latestErrorTaskId([bot(taskBody(x))],x.pr_number,x.head_sha),x.task_id);
+ a.equal(latestErrorTaskId([{body:taskBody(x)}],x.pr_number,x.head_sha),null);
+ a.equal(latestErrorTaskId([bot(taskBody(x))],x.pr_number+1,x.head_sha),null);
+ a.equal(latestErrorTaskId([bot(taskBody(x))],x.pr_number,'b'.repeat(40)),null);
+ const other=task('TypeScript check',{run:{...run,run_attempt:2}});
+ a.equal(latestErrorTaskId([bot(taskBody(x)),bot(taskBody(other))],x.pr_number,x.head_sha),other.task_id);
+ const marker='<!-- HH_PR_TASK_V1 -->';
+ const receipt=state=>bot(marker+'\n'+String.fromCharCode(96).repeat(3)+'json\n'+
+  JSON.stringify({schema:'HH_PR_TASK_V1',task_key:'b'.repeat(32),
+    pr_number:x.pr_number,head_sha:x.head_sha,error_task_id:x.task_id,state})+
+  '\n'+String.fromCharCode(96).repeat(3));
+ a.equal(taskLifecycle([bot(taskBody(x)),receipt('RESERVED')],x).state,'RESERVED_DELIVERY_UNVERIFIED');
+ a.equal(taskLifecycle([bot(taskBody(x)),receipt('CLAIMED')],x).state,'EXECUTOR_CLAIMED_NOT_COMPLETED');
+});
