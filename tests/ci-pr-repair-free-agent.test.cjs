@@ -50,6 +50,56 @@ test('extract JSON stream only from text events, reject provider errors',()=>{
  assert.throws(()=>extractTextEvents(JSON.stringify({type:'error',error:'429'})));
  assert.throws(()=>extractTextEvents('garbled'));
 });
+test('single exact model-source line can be rebuilt when model hunk context is unusable',()=>{
+ const {reconstructUniqueSingleLinePatch,validatePatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const file='components/public-card.tsx',scope={files:[file]};
+ const before='const safe = 1;\n  const label = hhInvalidValue;\nconst after = 2;\n';
+ const prefix='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n';
+ const bad=prefix+'@@ -900,8 +900,8 @@\n some omitted unrelated source\n-  const label = hhInvalidValue;\n+  const label = "OK";\n';
+ const expected=prefix+'@@ -2,1 +2,1 @@\n-  const label = hhInvalidValue;\n+  const label = "OK";\n';
+ const result=reconstructUniqueSingleLinePatch(bad,scope,()=>before);
+ assert.equal(result,expected);
+ assert.equal(validatePatch(result,scope),result);
+ assert.equal(reconstructUniqueSingleLinePatch(bad,scope,()=>before+before),null,
+  'same old source line appearing twice is ambiguous');
+ assert.equal(reconstructUniqueSingleLinePatch(bad,scope,()=>before.replace('hhInvalidValue','renamed')),null);
+ assert.equal(reconstructUniqueSingleLinePatch(bad,{files:['components/other.tsx']},()=>before),null);
+ assert.equal(reconstructUniqueSingleLinePatch(bad,{files:['app/api/auth.ts']},()=>before),null);
+ assert.equal(reconstructUniqueSingleLinePatch(bad,scope,()=>before.slice(0,-1)),null);
+ assert.equal(reconstructUniqueSingleLinePatch(bad.replace('@@ -900,8 +900,8 @@','@@ broken'),scope,()=>before),null);
+ assert.equal(reconstructUniqueSingleLinePatch(bad.replace('+  const label = "OK";','+'),scope,()=>before),null);
+ assert.equal(reconstructUniqueSingleLinePatch(bad.replace('  const label = hhInvalidValue;', '  const label = hhInvalidValue;\n-const after = 2;'),scope,()=>before),null);
+ assert.equal(reconstructUniqueSingleLinePatch(bad+'diff --git a/'+file+' b/'+file+'\n',scope,()=>before),null);
+ assert.equal(reconstructUniqueSingleLinePatch(bad+'@@ -2 +2 @@\n-other\n+other\n',scope,()=>before),null);
+ assert.equal(reconstructUniqueSingleLinePatch(bad+'\\ No newline at end of file\n',scope,()=>before),null);
+});
+test('reconstructed unique source line passes normal git apply without relaxing flags',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const cp=require('node:child_process');
+ const {reconstructUniqueSingleLinePatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'hh-one-line-canonical-'));
+ const file='components/public-card.tsx';
+ const source='const safe = 1;\n  const label = hhInvalidValue;\nconst after = 2;\n';
+ const patch='diff --git a/'+file+' b/'+file+'\n--- a/'+file+'\n+++ b/'+file+'\n'+
+  '@@ -900,8 +900,8 @@\n wrong context\n-  const label = hhInvalidValue;\n+  const label = "OK";\n';
+ try{
+  fs.mkdirSync(path.join(dir,'components'));
+  fs.writeFileSync(path.join(dir,file),source);
+  cp.execFileSync('git',['init','-q'],{cwd:dir});
+  cp.execFileSync('git',['add','--',file],{cwd:dir});
+  cp.execFileSync('git',['-c','user.email=fixture@example.invalid','-c','user.name=Fixture','commit','-qm','base'],{cwd:dir});
+  const patchPath=path.join(dir,'proposal.patch');
+  fs.writeFileSync(patchPath,patch);
+  assert.notEqual(cp.spawnSync('git',['apply','--check','--whitespace=error',patchPath],{cwd:dir}).status,0);
+  const rebuilt=reconstructUniqueSingleLinePatch(patch,{files:[file]},rel=>fs.readFileSync(path.join(dir,rel),'utf8'));
+  assert.ok(rebuilt);
+  fs.writeFileSync(patchPath,rebuilt);
+  assert.equal(cp.spawnSync('git',['apply','--check','--whitespace=error',patchPath],{cwd:dir}).status,0);
+  cp.execFileSync('git',['apply','--whitespace=error',patchPath],{cwd:dir});
+  assert.equal(fs.readFileSync(path.join(dir,file),'utf8'),source.replace('hhInvalidValue','"OK"'));
+  assert.equal(cp.spawnSync('git',['diff','--check'],{cwd:dir}).status,0);
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
 test('one wrong-position free-model hunk is anchored ONLY by unique exact source',()=>{
  const {reanchorSingleHunkPatch}=require('../scripts/ci-pr-repair-free-agent.cjs');
  const scope={files:['components/public-card.tsx']};
