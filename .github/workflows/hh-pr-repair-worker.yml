@@ -73,6 +73,7 @@ jobs:
           node --check scripts/ci-pr-repair-deterministic.cjs
           node --check scripts/ci-pr-repair-free-agent.cjs
           node --check scripts/ci-pr-repair-openrouter-free.cjs
+          node --check scripts/ci-pr-repair-graphql-writer.cjs
           node --check scripts/ci-pr-repair-code-candidate.cjs
           node --check scripts/ci-pr-manus-handoff.cjs
           node --check scripts/ci-pr-priority.cjs
@@ -699,15 +700,22 @@ jobs:
               });
               const data=await response.json().catch(()=>({}));
               if(!response.ok){
-                const error=Error('GitHub API '+response.status+': '+String(data.message||'denied').slice(0,120));
-                error.status=response.status;
-                // Enumerate only Git Data MUTATIONS. Read/unknown errors
-                // may be ambiguous and never trigger the GraphQL fallback.
-                error.operation=method==='POST'&&path.endsWith('/git/blobs')?'git_blob':
-                  method==='POST'&&path.endsWith('/git/trees')?'git_tree':
-                  method==='POST'&&path.endsWith('/git/commits')?'git_commit':
-                  method==='PATCH'&&path.includes('/git/refs/heads/')?'git_ref':'other';
-                throw error;
+                // Log only allowlisted operation/status/permission metadata.
+                // Never log raw provider errors, branch, token or source code.
+                const operation=rateGuard.writerOperation(method,path);
+                const receipt={
+                  schema:'HH_REPAIR_GIT_DATA_DENIED_V1',
+                  operation,status:response.status,
+                  kind:rateGuard.errorKind(response.status,String(data.message||'')),
+                  accepted_permissions:rateGuard.allowedPermissions(
+                    response.headers.get('x-accepted-github-permissions'))
+                };
+                core.error('HH_REPAIR_GIT_DATA_DENIED '+JSON.stringify(receipt));
+                const failure=Error('HH_REPAIR_GIT_DATA_'+operation+'_HTTP_'+response.status);
+                failure.status=response.status;
+                failure.operation=operation;
+                failure.kind=receipt.kind;
+                throw failure;
               }
               if(minRemaining>0){
                 const rate=rateGuard.requireOwnerRateBudget(response.headers,minRemaining);
@@ -754,65 +762,59 @@ jobs:
               const current=await call('GET',base+ref);
               if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)
                 throw Error('Source branch moved before repair commit');
-              // A definitive 403 from a Git Data MUTATION is not evidence of
-              // successful source publication. If the current branch ref is
-              // still EXACTLY the failed HEAD, a single official GitHub
-              // GraphQL expectedHeadOid CAS may replace the denied REST path.
-              // Partial successful blob/tree/commit object creations do not
-              // change a branch ref; ref moves are proved by a fresh read.
-              // Network failures, 401/404/422/429, REST read errors and
-              // ambiguous outcomes never trigger this fallback.
-              const graphCasAfterDeniedGitMutation=async error=>{
-                if(mode!=='job'||error?.status!==403||
-                   !['git_blob','git_tree','git_commit','git_ref'].includes(error?.operation))
-                  throw error;
-                const beforeCas=await call('GET',base+ref);
-                if(beforeCas.ref!=='refs/heads/'+branch||
-                   beforeCas.object?.sha!==expectedSha)
-                  throw Error('HH_REPAIR_GRAPHQL_FALLBACK_STALE_HEAD');
-                core.info('HH_REPAIR_GIT_DATA_403_GRAPHQL_CAS_ATTEMPT '+JSON.stringify({
-                  pr:number,prior_sha:expectedSha,files:files.length,
-                  denied_operation:error.operation,
-                  endpoint:'createCommitOnBranch',source_write_unverified:true}));
-                const atomic=await atomicWriter.atomicGraphqlCommit({
-                  owner,repo,branch,expectedSha,files,number,
-                  repairKind:candidate.repair_kind,token});
-                // Require remote ref readback and the unchanged independent
-                // one-parent proof in ci-pr-repair-worker.publish.
-                const posted=await call('GET',base+ref);
-                if(posted.ref!=='refs/heads/'+branch||
-                   posted.object?.sha!==atomic.sha)
-                  throw Error('HH_REPAIR_GRAPHQL_REMOTE_REF_NOT_VERIFIED');
-                core.info('HH_REPAIR_REMOTE_REF VERIFIED '+JSON.stringify({
-                  sha:atomic.sha,branch,method:atomic.method}));
-                return {sha:atomic.sha};
-              };
-              try{
-                const tree=[];
-                for(const file of files){
-                  const blob=await call('POST',base+'/git/blobs',{
-                    content:file.content,encoding:'base64'});
-                  if(!/^[a-f0-9]{40}$/i.test(blob.sha||''))
-                    throw Error('Blob creation failed');
-                  tree.push({path:file.path,mode:'100644',type:'blob',sha:blob.sha});
+              const tree=[];
+              for(const [index,file] of files.entries()){
+                let blob;
+                try{
+                  blob=await call('POST',base+'/git/blobs',{content:file.content,encoding:'base64'});
+                }catch(error){
+                  // One atomic CAS alternative ONLY for a DEFINITIVELY
+                  // denied FIRST Git blob. Never after a successful write,
+                  // multiple files' mutations, unknown errors or stale HEAD.
+                  if(index!==0||mode!=='job'||error?.status!==403||
+                     error?.operation!=='CREATE_BLOB'||
+                     error?.kind!=='INTEGRATION_PERMISSION_DENIED'||
+                     error?.message!=='HH_REPAIR_GIT_DATA_CREATE_BLOB_HTTP_403')
+                    throw error;
+                  const beforeCas=await call('GET',base+ref);
+                  if(beforeCas.ref!=='refs/heads/'+branch||
+                     beforeCas.object?.sha!==expectedSha)
+                    throw Error('HH_REPAIR_GRAPHQL_FALLBACK_STALE_HEAD');
+                  core.info('HH_REPAIR_GIT_DATA_403_GRAPHQL_CAS_ATTEMPT '+JSON.stringify({
+                    pr:number,prior_sha:expectedSha,files:files.length,
+                    endpoint:'createCommitOnBranch',denied_operation:'CREATE_BLOB',
+                    source_write_unverified:true
+                  }));
+                  const atomic=await atomicWriter.atomicGraphqlCommit({
+                    owner,repo,branch,expectedSha,files,number,
+                    repairKind:candidate.repair_kind,token});
+                  // A GraphQL response alone is not proof of publication.
+                  // Worker.publish subsequently verifies remote SHA + parent.
+                  const posted=await call('GET',base+ref);
+                  if(posted.ref!=='refs/heads/'+branch||
+                     posted.object?.sha!==atomic.sha)
+                    throw Error('HH_REPAIR_GRAPHQL_REMOTE_REF_NOT_VERIFIED');
+                  core.info('HH_REPAIR_REMOTE_REF VERIFIED '+JSON.stringify({
+                    sha:atomic.sha,branch,method:atomic.method}));
+                  return {sha:atomic.sha};
                 }
-                const t=await call('POST',base+'/git/trees',{base_tree:treeSha,tree});
-                const commit=await call('POST',base+'/git/commits',{
-                  message:'fix(ci): '+(candidate.repair_kind==='free_ai'?'verified free-model source repair':candidate.repair_kind==='codex'?'verified legacy code repair':'verified deterministic source repair')+' for PR #'+number,
-                  tree:t.sha,parents:[expectedSha]});
-                if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
-                const still=await call('GET',base+ref);
-                if(still.object?.sha!==expectedSha)throw Error('PR branch changed during repair');
-                await call('PATCH',base+'/git/refs/heads/'+branch.split('/').map(encodeURIComponent).join('/'),
-                  {sha:commit.sha,force:false});
-                const published=await call('GET',base+ref);
-                if(published.ref!=='refs/heads/'+branch||published.object?.sha!==commit.sha)
-                  throw Error('HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED');
-                core.info('HH_REPAIR_REMOTE_REF VERIFIED '+JSON.stringify({sha:commit.sha,branch}));
-                return {sha:commit.sha};
-              }catch(error){
-                return graphCasAfterDeniedGitMutation(error);
+                if(!/^[a-f0-9]{40}$/i.test(blob.sha||''))throw Error('Blob creation failed');
+                tree.push({path:file.path,mode:'100644',type:'blob',sha:blob.sha});
               }
+              const t=await call('POST',base+'/git/trees',{base_tree:treeSha,tree});
+              const commit=await call('POST',base+'/git/commits',{
+                message:'fix(ci): '+(candidate.repair_kind==='free_ai'?'verified free-model source repair':candidate.repair_kind==='codex'?'verified legacy code repair':'verified deterministic source repair')+' for PR #'+number,
+                tree:t.sha,parents:[expectedSha]});
+              if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
+              const still=await call('GET',base+ref);
+              if(still.object?.sha!==expectedSha)throw Error('PR branch changed during repair');
+              await call('PATCH',base+'/git/refs/heads/'+branch.split('/').map(encodeURIComponent).join('/'),
+                {sha:commit.sha,force:false});
+              const published=await call('GET',base+ref);
+              if(published.ref!=='refs/heads/'+branch||published.object?.sha!==commit.sha)
+                throw Error('HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED');
+              core.info('HH_REPAIR_REMOTE_REF VERIFIED '+JSON.stringify({sha:commit.sha,branch}));
+              return {sha:commit.sha};
             }};
             const candidate=JSON.parse(fs.readFileSync('hh-candidate/candidate.json','utf8'));
             let result;

@@ -301,6 +301,8 @@ jobs:
           node --check tests/ci-pr-core-metadata-wake.test.cjs
           node --check scripts/ci-pr-repair-worker.cjs
           node --check scripts/ci-pr-repair-owner-rate.cjs
+          node --check scripts/ci-pr-repair-graphql-writer.cjs
+          node --check tests/ci-pr-repair-graphql-writer.test.cjs
           node --check tests/ci-pr-repair-owner-rate.test.cjs
           node --check scripts/ci-pr-runner-evidence.cjs
           node --check tests/ci-pr-runner-evidence.test.cjs
@@ -357,8 +359,6 @@ jobs:
           node --check scripts/ci-pr-task-outcome.cjs
           node --check tests/ci-pr-ci-worker.test.cjs
           node --check tests/ci-pr-repair-worker.test.cjs
-          node --check scripts/ci-pr-repair-graphql-writer.cjs
-          node --check tests/ci-pr-repair-graphql-writer.test.cjs
           node --check scripts/ci-pr-next-wave-proof.cjs
           node --check tests/ci-pr-next-wave-proof.test.cjs
           node --check scripts/ci-pr-repair-verified-finalizer.cjs

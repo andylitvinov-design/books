@@ -88,21 +88,21 @@ test('GitHub mutation is rejected locally before sending unsafe file, target, or
  }
  assert.equal(calls,0,'reject before any credential-bound remote API call');
 });
-test('fallback is only after the first definitively denied REST blob; CAS and parent guards remain',()=>{
+test('GraphQL CAS is reached only after first definite integration-denied Git blob',()=>{
  const workflow=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  const trusted=workflow.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
  assert.match(trusted,/permissions:\n      contents: write/);
- assert.match(trusted,/if\(mode!=='job'\|\|error\?\.status!==403/);
- assert.match(trusted,/\['git_blob','git_tree','git_commit','git_ref'\]/);
- assert.match(trusted,/error\.operation=method==='POST'/);
- assert.match(trusted,/method==='PATCH'&&path\.includes\('\/git\/refs\/heads\/'\)/);
+ assert.match(trusted,/for\(const \[index,file\] of files\.entries\(\)\)/);
+ assert.match(trusted,/if\(index!==0\|\|mode!=='job'\|\|error\?\.status!==403/);
+ assert.match(trusted,/error\?\.operation!=='CREATE_BLOB'/);
+ assert.match(trusted,/error\?\.kind!=='INTEGRATION_PERMISSION_DENIED'/);
+ assert.match(trusted,/error\?\.message!=='HH_REPAIR_GIT_DATA_CREATE_BLOB_HTTP_403'/);
+ assert.doesNotMatch(trusted,/\['git_blob','git_tree','git_commit','git_ref'\]/);
  assert.match(trusted,/beforeCas\.object\?\.sha!==expectedSha/);
- assert.match(trusted,/return graphCasAfterDeniedGitMutation\(error\)/);
- assert.match(trusted,/source_write_unverified:true/);
- assert.doesNotMatch(trusted,/force:true|git apply --3way|unidiff-zero/);
  assert.match(trusted,/atomicWriter\.atomicGraphqlCommit/);
  assert.match(trusted,/posted\.object\?\.sha!==atomic\.sha/);
  assert.match(trusted,/HH_REPAIR_REMOTE_REF VERIFIED/);
+ assert.match(trusted,/failure\.kind=receipt\.kind/);
  assert.match(trusted,/force:false/);
  assert.match(trusted,/verify_next_ci/);
  for(const job of ['code_fix','code_verify']){
