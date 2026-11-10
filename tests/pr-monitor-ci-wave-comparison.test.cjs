@@ -68,5 +68,49 @@ test('a wave queued outside the selected window is not counted as a wave in that
   assert.equal(current.wave_summary.ci_runs,1);
   assert.equal(current.wave_summary.repeat_waves,1);
   assert.equal(current.wave_summary.intervals,1);
-  assert.equal(current.wave_summary.gap_mean_minutes_per_pr,131);
+  assert.equal(current.wave_summary.gap_mean_minutes_per_pr,75,
+    'only the 75 minutes overlapping the selected 24-hour window are attributed to this period');
+  assert.equal(current.wave_summary.gap_total_minutes,75);
+  assert.equal(current.wave_summary.clipped_at_window_start,1);
+  const detail=api.waveDetail(store,811,24,now);
+  assert.equal(detail.waves[0].duration_ms,131*60_000,
+    'per-PR drilldown retains the full observed gap; only period aggregates are clipped');
+  assert.equal(detail.waves[0].clipped_at_window_start,undefined);
+});
+
+
+test('failed workflow gap is classified by the actual failed required job',()=>{
+  const now=Date.parse('2026-11-09T12:00:00.000Z');
+  const start=now-23*60*60_000;
+  const prior=makeRun(812,1101,iso(start+60*60_000),'a','failure');
+  prior.jobs=[
+    {...prior.jobs[0],conclusion:'success'},
+    {id:1102,name:'hh-specialist',queued_at:prior.queued_at,
+      started_at:prior.queued_at,completed_at:prior.completed_at,conclusion:'failure'},
+    {id:1103,name:'hh-merge-check',queued_at:prior.queued_at,
+      started_at:prior.queued_at,completed_at:prior.completed_at,conclusion:'failure'}
+  ];
+  const next=makeRun(812,1104,iso(Date.parse(prior.completed_at)+10*60_000),'b','success');
+  const coreFailed=makeRun(813,1201,iso(start+90*60_000),'c','failure');
+  coreFailed.jobs=[{...coreFailed.jobs[0],conclusion:'failure'}];
+  const coreNext=makeRun(813,1202,iso(Date.parse(coreFailed.completed_at)+5*60_000),'d','success');
+  const store={runs:[prior,next,coreFailed,coreNext],comments:2,pages:1,
+    pagination_partial:false,remaining:100,fetched_at:iso(now),stale:false};
+  const current=api.report(store,24,now);
+  assert.equal(current.wave_summary.after_workflow_failure,2);
+  assert.equal(current.wave_summary.after_failed,2,'legacy field remains backward compatible');
+  assert.equal(current.wave_summary.after_core_failure,1);
+  assert.equal(current.wave_summary.after_specialist_failure,1);
+  assert.equal(current.wave_summary.after_merge_gate_failure,1);
+});
+
+test('mobile monitor keeps main stage on Created→Merged cohort and labels diagnostic archive cohort separately',()=>{
+  const fs=require('node:fs'),path=require('node:path');
+  const source=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/pr-two-screen.js'),'utf8');
+  assert.ok(source.includes('Do not overwrite stages.ci_gaps.current'));
+  assert.match(source,/Основное значение выше рассчитано по той же Created→Merged когорте/);
+  assert.match(source,/После failed Core job/);
+  assert.match(source,/После failed Specialist job/);
+  assert.match(source,/После failed Merge Gate/);
+  assert.ok(!source.includes("s.current.textContent=typeof v==='number'?duration(v):'—'"));
 });
