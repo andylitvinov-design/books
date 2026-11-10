@@ -17,9 +17,23 @@ test('every eligible Core error gets its own independent OIDC ingestion without 
  assert.match(intake,/ref: \$\{\{ github\.sha \}\}/);
  assert.match(intake,/core\.getIDToken\('hh-commander-ci'\)/);
  assert.match(intake,/sendWorkflowFailure\(\{github,context,core,oidcToken\}\)/);
- assert.match(intake,/receipt\.association!=='MATCHED_CHAT_EVENT_RECORDED'/);
+ const {readFileSync}=require('node:fs');
+ const workflow=readFileSync(require('node:path').join(__dirname,'../.github/workflows/hh-pr-direct-core-failure.yml'),'utf8');
+ for(const accepted of ['MATCHED_CHAT_EVENT_RECORDED','TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED','AUTO_TASK_CREATED_NOT_DISPATCHED'])
+  assert.ok(intake.includes(accepted),'persisted receipt is accepted: '+accepted);
+ assert.match(intake,/receipt\.accepted!==true/);
+ assert.match(intake,/persistedAssociations\.has\(receipt\.association\)/);
  assert.match(intake,/COMMANDER_CI_TASK_INGEST_NOT_VERIFIED/);
+ assert.ok(workflow.includes('AUTO_TASK_CREATED_NOT_DISPATCHED'));
 });
+test('unknown or unmatched association is never treated as successful task intake',()=>{
+ const source=intake;
+ assert.match(source,/persistedAssociations\.has\(receipt\.association\)/);
+ assert.match(source,/receipt\.accepted!==true/);
+ assert.match(source,/COMMANDER_CI_TASK_INGEST_NOT_VERIFIED/);
+ assert.doesNotMatch(source,/association\s*===\s*['"]UNMATCHED/);
+});
+
 test('repair stage still serializes every source write, only after verified task intake',()=>{
  assert.match(worker,/needs: ci_event_intake/);
  assert.match(worker,/needs\.ci_event_intake\.result == 'success'/);
