@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {requiredOwnerBudget,requireOwnerRateBudget,eligibleWriter,chooseWriterMode}=
+const {requiredOwnerBudget,requireOwnerRateBudget,verifiedInvalidGitBlobProbe,eligibleWriter,chooseWriterMode}=
  require('../scripts/ci-pr-repair-owner-rate.cjs');
 const hdr=value=>({get:name=>{
  assert.equal(name,'x-ratelimit-remaining');return value;
@@ -25,13 +25,17 @@ test('actual low, missing or invalid rate header fails closed before any write',
  assert.throws(()=>requireOwnerRateBudget(null,10),/RATE_NOT_VERIFIED/);
 });
 test('job-scoped GitHub token is preferred only with verified repository write and rate budget',()=>{
- const good=remaining=>({ok:true,canPush:true,remaining});
+ const good=remaining=>({ok:true,canPush:true,gitDataWriteVerified:true,remaining});
  assert.equal(chooseWriterMode({job:good(10),owner:good(5000)},10),'job');
  assert.equal(chooseWriterMode({job:good(18),owner:good(5000)},17),'job');
  assert.equal(chooseWriterMode({job:good(9),owner:good(5000)},10),'owner');
  assert.equal(chooseWriterMode({job:null,owner:good(10)},10),'owner');
- for(const invalid of [null,{ok:true,canPush:false,remaining:999},
-   {ok:false,canPush:true,remaining:999},{ok:true,canPush:true,remaining:null}]){
+ assert.equal(chooseWriterMode({job:{...good(10),canPush:false},owner:good(5000)},10),'job',
+  'GitHub installation token may omit user-shaped push metadata with validated Git Data grant');
+ for(const invalid of [null,{ok:true,canPush:false,gitDataWriteVerified:false,remaining:999},
+   {ok:true,canPush:true,gitDataWriteVerified:false,remaining:999},
+   {ok:false,canPush:true,gitDataWriteVerified:true,remaining:999},
+   {ok:true,canPush:true,gitDataWriteVerified:true,remaining:null}]){
   assert.equal(eligibleWriter(invalid,10),false);
   assert.throws(()=>chooseWriterMode({job:invalid,owner:invalid},10),
    /NO_VERIFIED_WRITER/);
@@ -50,8 +54,35 @@ test('existing issuer remains credential isolated and branch/head guarded',()=>{
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
  assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH/);
  assert.match(flow,/repository\.permissions\?\.push!==true/);
+ assert.match(flow,/rateGuard\.verifiedInvalidGitBlobProbe/);
+ assert.match(flow,/HH_REPAIR_WRITE_PROBE/);
+ assert.match(flow,/content:null,encoding:'__invalid_nonwrite__'/);
+ assert.doesNotMatch(flow,/\-\-unidiff-zero|force:true/);
  assert.match(flow,/force:false/);
  assert.match(flow,/Source branch moved before repair commit/);
  assert.match(flow,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
  assert.doesNotMatch(flow,/remaining<100/);
+});
+
+test('non-mutating Git Data permission probe accepts ONLY explicit invalid-field 422',()=>{
+ const valid=[
+  {message:'Validation Failed',errors:[{resource:'Blob',field:'content',code:'missing_field'}]},
+  {message:'Validation Failed',errors:[{resource:'Blob',field:'encoding',code:'invalid'}]},
+  {message:'Invalid request.\n\n"content" wasn\'t supplied.'}
+ ];
+ for(const payload of valid)
+  assert.equal(verifiedInvalidGitBlobProbe(422,payload),true,'422 invalid-field proof');
+ for(const status of [200,201,202,400,401,403,404,409,429,500])
+  assert.equal(verifiedInvalidGitBlobProbe(status,valid[0]),false,'HTTP '+status+' is not a permission receipt');
+ for(const bad of [
+  null,{},[],{message:'Validation Failed'},
+  {message:'Validation Failed',errors:[{field:'ref',code:'invalid'}]},
+  {message:'Validation Failed',errors:[{field:'content',code:'abuse'}]},
+  {message:'Validation Failed. You have triggered an abuse detection mechanism'},
+  {message:'Invalid request.\n\nwrong field.'},
+  {message:'Invalid request.',errors:[{field:'content',code:'rate_limit'}]}
+ ])assert.equal(verifiedInvalidGitBlobProbe(422,bad),false);
+ const deniedOwner={ok:true,canPush:true,remaining:5000,gitDataWriteVerified:false};
+ assert.throws(()=>chooseWriterMode({job:deniedOwner,owner:deniedOwner},10),
+   /NO_VERIFIED_WRITER/,'metadata push alone cannot authorize a source write');
 });
