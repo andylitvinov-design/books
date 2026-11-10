@@ -68,7 +68,9 @@ test('trusted writer does not call the denied REST Git ref PATCH or bypass indep
  assert.match(publisher,/HH_REPAIR_JOB_TOKEN: \$\{\{ github\.token \}\}/);
  assert.match(publisher,/verifiedAtomicCommitRequest\(\{/);
  assert.match(publisher,/verifiedAtomicCommitResponse\(result,expectedSha\)/);
- assert.match(publisher,/if\(still\.object\?\.sha!==expectedSha\)/);
+ assert.match(publisher,/current\.object\?\.sha!==expectedSha/);
+ assert.match(fs.readFileSync('scripts/ci-pr-repair-graphql-commit.cjs','utf8'),
+  /expectedHeadOid:expectedSha/);
  assert.match(publisher,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
  assert.match(publisher,/await worker\.publish\(\{github,core,context,/);
  assert.match(flow,/Independently verify exact SHA, direct tests, lint, TS and diff/);
