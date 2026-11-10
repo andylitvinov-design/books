@@ -143,7 +143,7 @@
     return empty;
   }
   function summarize(raw,byEvent,hours,now,complete){
-    if(!Array.isArray(raw)||![24,168,336,720].includes(hours))return null;
+    if(!Array.isArray(raw)||![1,24,168,336,720].includes(hours))return null;
     var start=now-hours*3600000;
     var selected=raw.filter(function(e){var t=goodTime(e.created_at);
       return validEvent(e)&&t>=start&&t<=now+60000;});
@@ -213,7 +213,7 @@
     var controls=el('div','hh-error-controls');
     var label=el('label','', 'Период');
     select=el('select');select.setAttribute('aria-label','Период обработки ошибок PR');
-    for(var x of [[24,'24 часа'],[168,'7 дней'],[336,'14 дней'],[720,'30 дней']]){
+    for(var x of [[1,'1 час'],[24,'24 часа'],[168,'7 дней'],[336,'14 дней'],[720,'30 дней']]){
       var option=el('option','',x[1]);option.value=String(x[0]);select.append(option);
     }
     select.value='24';label.append(select);
