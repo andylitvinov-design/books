@@ -685,7 +685,7 @@ jobs:
                 const remaining=typeof header==='string'&&/^\d+$/.test(header)
                   ?Number(header):null;
                 return {ok:response.ok&&data.full_name==='andylitvinov-design/books',
-                  push:data.permissions?.push===true,remaining};
+                  canPush:data.permissions?.push===true,remaining};
               }catch{return null;}
             };
             const ownerProbe=await probe(ownerToken);
