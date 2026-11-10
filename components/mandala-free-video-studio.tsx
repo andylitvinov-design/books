@@ -227,7 +227,7 @@ const workspaceCopy = {
  ru:{
   video:{tab:"Цель",title:"Цель видео",desc:"Реальные видеосюжеты, атмосфера и оформление."},
   phrases:{tab:"Идеи",title:"Идеи для видео",desc:"Мой запрос, фразы поддержки и, по желанию, голос и музыка."},
-  effects:{tab:"Гипноэффект",title:"Гипноэффекты",desc:"Мягкие визуальные и звуковые эффекты с честной пометкой экспериментальных функций."},
+  effects:{tab:"Аудио",title:"Аудио для видео",desc:"Музыка, голос и персональная медитация в одном месте."},
   practices:{tab:"Курс практик",title:"Курсы и практики",desc:"Выберите фокус, создайте медитацию, практику и личную программу из восьми сессий."},
   pro:{tab:"PRO",title:"PRO генерация",desc:"Персонажи, сюжеты, места и профессиональный режиссёрский бриф."},
   ready:{tab:"Ready",title:"Видео готово",desc:"Просмотр, сохранение и развитие практики."},
@@ -236,7 +236,7 @@ const workspaceCopy = {
  en:{
   video:{tab:"Goal",title:"Video goal",desc:"Real film scenes, atmosphere and visual direction."},
   phrases:{tab:"Ideas",title:"Video ideas",desc:"Your intention, support phrases and optional voice or music."},
-  effects:{tab:"Hypno effect",title:"Hypno effects",desc:"Optional gentle visual and sound effects, with experimental features labelled."},
+  effects:{tab:"Audio",title:"Audio for your video",desc:"Music, narration and personal meditations in one place."},
   practices:{tab:"Practice course",title:"Courses & practices",desc:"Choose your focus, create a meditation and practice, then explore eight guided sessions."},
   pro:{tab:"PRO",title:"PRO generation",desc:"Characters, stories, locations and advanced direction."},
   ready:{tab:"Ready",title:"Your video is ready",desc:"Preview, save and continue your practice."},
@@ -245,7 +245,7 @@ const workspaceCopy = {
  es:{
   video:{tab:"Objetivo",title:"Objetivo del vídeo",desc:"Escenas reales, ambiente y estilo visual."},
   phrases:{tab:"Ideas",title:"Ideas para vídeo",desc:"Tu intención, frases de apoyo y voz o música opcionales."},
-  effects:{tab:"Efecto hipno",title:"Efectos de hipnosis",desc:"Efectos suaves y opcionales claramente identificados."},
+  effects:{tab:"Audio",title:"Audio para tu vídeo",desc:"Música, voz y meditaciones personales en un solo lugar."},
   practices:{tab:"Curso práctico",title:"Cursos y prácticas",desc:"Elige tu enfoque, crea una meditación y una práctica, y descubre ocho sesiones guiadas."},
   pro:{tab:"PRO",title:"Generación PRO",desc:"Personajes, historias, lugares y dirección avanzada."},
   ready:{tab:"Ready",title:"Tu vídeo está listo",desc:"Mira, guarda y continúa tu práctica."},
@@ -255,13 +255,13 @@ const workspaceCopy = {
 // One row, six real existing workspace destinations. No anchor-only navigation.
 const workspaceTabs=[
  {id:"video",Icon:Film},{id:"phrases",Icon:Heart},
- {id:"editor",Icon:Scissors},{id:"effects",Icon:Sparkles},
+ {id:"editor",Icon:Scissors},{id:"effects",Icon:Music2},
  {id:"pro",Icon:Zap},{id:"ready",Icon:Check}
 ] as const;
 const mobileWorkspaceCopy={
- ru:{video:"Цель",editor:"Монтаж",phrases:"Идеи",effects:"Гипно",practices:"Курс",pro:"PRO",ready:"Ready"},
- en:{video:"Goal",editor:"Montage",phrases:"Ideas",effects:"Hypno",practices:"Course",pro:"PRO",ready:"Ready"},
- es:{video:"Objetivo",editor:"Montaje",phrases:"Ideas",effects:"Hipno",practices:"Curso",pro:"PRO",ready:"Ready"}
+ ru:{video:"Цель",editor:"Монтаж",phrases:"Идеи",effects:"Аудио",practices:"Курс",pro:"PRO",ready:"Ready"},
+ en:{video:"Goal",editor:"Montage",phrases:"Ideas",effects:"Audio",practices:"Course",pro:"PRO",ready:"Ready"},
+ es:{video:"Objetivo",editor:"Montaje",phrases:"Ideas",effects:"Audio",practices:"Curso",pro:"PRO",ready:"Ready"}
 } as const;
 
 const studioCopy = {
@@ -1939,6 +1939,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
   const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
+  const [audioWorkspaceTab,setAudioWorkspaceTab] = useState<"music"|"voice"|"meditations">("music");
   const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"concept">("personalization");
   const [ideasVoiceMode,setIdeasVoiceMode] = useState<"voice"|"my-voice">("voice");
   const [ideasProfile,setIdeasProfile] = useState<VideoGoalProfile>(DEFAULT_VIDEO_GOAL_PROFILE);
@@ -2266,7 +2267,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       setImportedAudioSeconds(voice.transcript.durationSeconds);
       setSttError("");
       setActiveWorkspace("editor");
-      setMontagePanel("audio");
+      setActiveWorkspace("effects");setAudioWorkspaceTab("music");
       setShowAdvancedVideo(true);
       setVideoScenarioOpen(true);
       setPendingAutoVoice(voice.transcript);
@@ -2330,19 +2331,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const freeFilmPlayerRefs=useRef<Record<string,HTMLVideoElement>>({});
   const activeFreeFilmShotRef=useRef<string|null>(null);
   const [courseMeditationDraft,setCourseMeditationDraft] = useState("");
-  // A deferred opener must never override a later explicit "Do not add" choice.
-  const meditationDisclosureEpochRef=useRef(0);
-  const [courseMeditationIncluded,setCourseMeditationIncluded]=useState(false);
-  const [courseMeditationOmitted,setCourseMeditationOmitted]=useState(false);
-  // Commit native <details> after React has committed the corresponding script
-  // choice. WebKit can drop an rAF opener when the parent state rerenders.
-  // Include and omit share one deterministic, post-commit disclosure owner.
-  useLayoutEffect(()=>{
-    const details=document.querySelector("[data-video-therapy-meditation-audio]");
-    if(!(details instanceof HTMLDetailsElement))return;
-    if(courseMeditationOmitted)details.open=false;
-    else if(courseMeditationIncluded&&courseMeditationDraft)details.open=true;
-  },[courseMeditationIncluded,courseMeditationOmitted,courseMeditationDraft]);
+  // The guided course seeds the single canonical Audio / Meditations composer.
   const [meditationFocus,setMeditationFocus] = useState<GuidedMeditationFocus>({
     difficulty:"",goal:"",goals:[],details:[]
   });
@@ -4094,9 +4083,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       // A voice-first handoff must not re-open the manual Goal questionnaire
       // after the async IndexedDB read. Hash routing may have already fired.
       const voiceFirstEntry=window.location.hash==="#video-audio";
-      setStudioMode("pump");setActiveWorkspace(voiceFirstEntry?"editor":"video");
+      setStudioMode("pump");setActiveWorkspace(voiceFirstEntry?"effects":"video");
       if(voiceFirstEntry){
-        setMontagePanel("audio");setBasicPanelTab("music");
+        setActiveWorkspace("effects");setAudioWorkspaceTab("music");setBasicPanelTab("music");
         setShowAdvancedVideo(true);
         setQuickDetailedOpen(false);
         setDirectorChatOpen(false);setVideoScenarioOpen(false);
@@ -4901,14 +4890,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
     if(audioNeedsAttachment){
       setNotice(audioUi.needsAttach);
-      setActiveWorkspace("editor");setMontagePanel("audio");setBasicPanelTab("music");
+      setActiveWorkspace("effects");setAudioWorkspaceTab("music");setBasicPanelTab("music");
       window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
         document.querySelector("[data-video-audio-attach-panel]")?.scrollIntoView({behavior:"smooth",block:"center"})));
       return false;
     }
     if(uploadedAudio && !audioRights){
       setNotice(ui.audioRightsHelp);
-      setActiveWorkspace("editor");setMontagePanel("audio");setBasicPanelTab("music");
+      setActiveWorkspace("effects");setAudioWorkspaceTab("music");setBasicPanelTab("music");
       window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
         document.querySelector("[data-video-audio-rights]")?.scrollIntoView({behavior:"smooth",block:"center"})));
       return false;
@@ -5006,7 +4995,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const destination:Record<string,StudioWorkspace>={
         "video-audio":"editor","voice-studio":"editor","video-templates":"video",
         "video-hypnosis":"phrases","video-hypnocorrection-mobile":"effects",
-        "guided-video-series":"practices","personal-meditation":"practices",
+        "guided-video-series":"practices","personal-meditation":"effects",
         "cinematic-director":"pro","video-settings":"editor",
         "video-director-chat":"video",
       };
@@ -5022,10 +5011,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         setVideoScenarioOpen(true);
         setFirstVideoAdvancedActivated(true);
       }
-      if(hash==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");}
+      if(hash==="personal-meditation"){setActiveWorkspace("effects");setAudioWorkspaceTab("meditations");}
+      if(hash==="video-audio"){setActiveWorkspace("effects");setAudioWorkspaceTab("music");setBasicPanelTab("music");}
       if(hash==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
       if(hash==="voice-studio"){
-        setMontagePanel("audio");setBasicPanelTab("voice");
+        setActiveWorkspace("effects");setAudioWorkspaceTab("voice");setBasicPanelTab("voice");
         setVoiceStudioActivated(true);setQuickDetailedOpen(true);
       }
       if(hash==="video-audio"||hash==="voice-studio"||hash==="video-templates")
@@ -5049,19 +5039,19 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     return()=>window.removeEventListener("hashchange",reveal);
   },[]);
   const openQuickDetailed=(anchor:string)=>{
-    const tab:StudioWorkspace=anchor==="video-audio"||anchor==="voice-studio"?"editor":
+    const tab:StudioWorkspace=anchor==="video-audio"||anchor==="voice-studio"?"effects":
       anchor==="video-hypnosis"?"phrases":
       anchor==="video-hypnocorrection-mobile"?"effects":
       anchor==="video-settings"?"editor":anchor==="cinematic-director"?"pro":"video";
     setActiveWorkspace(tab);
-    if(anchor==="video-audio"){setMontagePanel("audio");setBasicPanelTab("music");setAudioLibraryOpen(true);}
+    if(anchor==="video-audio"){setActiveWorkspace("effects");setAudioWorkspaceTab("music");setBasicPanelTab("music");setAudioLibraryOpen(true);}
     if(anchor==="video-settings"){setMontagePanel("settings");setMontageStyleSettingsOpen(true);}
     if(anchor==="video-templates"){
       // A visitor choosing All styles must see the original 4-shot catalogue.
       setVideoScenarioOpen(true);
       setFirstVideoAdvancedActivated(true);
     }
-    if(anchor==="voice-studio"){setMontagePanel("audio");setBasicPanelTab("voice");setVoiceStudioActivated(true);}
+    if(anchor==="voice-studio"){setActiveWorkspace("effects");setAudioWorkspaceTab("voice");setBasicPanelTab("voice");setVoiceStudioActivated(true);}
     // The compact Video surface hides the full audio gallery by default.
     // Make the *single* real audio editor visible before navigating to it.
     if(anchor==="video-audio"||anchor==="voice-studio"||anchor==="video-templates")
@@ -5200,7 +5190,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       return;
     }
     // Legacy manual audio editor remains available until the separate Audio migration.
-    setMontagePanel("audio");setBasicPanelTab("music");setNotice("");
+    setActiveWorkspace("effects");setAudioWorkspaceTab("music");setBasicPanelTab("music");setNotice("");
   };
 
   // First mobile step is only the short goal, category and optional request.
@@ -5585,14 +5575,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <section className={videoStyles.phraseVoiceSection} data-hypno-voice>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Mic size={23} aria-hidden="true"/></span>
-          <div><h3>{activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen?
+          <div><h3>{ideasVoiceMode==="my-voice"?
               (locale==="ru"?"Мой голос для видео":locale==="es"?"Mi voz para el vídeo":"My voice for your video"):
-              activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen?
+              false?
               (locale==="ru"?"Голос для вашего видео":locale==="es"?"Voz para tu vídeo":"Voice for your video"):
               (locale==="ru"?"Голос для озвучки фраз":locale==="es"?"Voz para las frases":"Voice for phrases")}</h3>
-            <p>{activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen?
+            <p>{ideasVoiceMode==="my-voice"?
               (locale==="ru"?"Загрузите или запишите собственный голос.":locale==="es"?"Sube o graba tu propia voz.":"Upload or record your own voice."):
-              activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen?
+              false?
               (locale==="ru"?"Выберите фразу и голос для её озвучивания.":locale==="es"?"Elige una frase y una voz para narrarla.":"Choose a phrase and a voice to narrate it."):
               (locale==="ru"?"Озвучка выбранных фраз":locale==="es"?"Narración de las frases elegidas":"Narration of your chosen phrases")}</p></div>
         </div>
@@ -5610,8 +5600,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             previousHypnoAudioRef.current=null;
             if(staleHypnoTrack){clearUploadedAudio();setAttachedAudio(null);}
           }}
-          compact={activeWorkspace==="phrases"&&ideasVoiceAdvancedOpen}
-          ownVoiceOnly={activeWorkspace==="phrases"&&ideasVoiceMode==="my-voice"&&ideasVoiceAdvancedOpen}
+          compact={audioWorkspaceTab==="voice"}
+          ownVoiceOnly={ideasVoiceMode==="my-voice"}
           extraActions={<>
         <div className={videoStyles.ideasVoiceActions} data-video-ideas-voice-actions>
           <label className={videoStyles.ideasVoiceUpload}>
@@ -5706,7 +5696,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ?.scrollIntoView({block:"nearest",behavior:"smooth"}));
           }}/> : null}
       </details>
-      {activeWorkspace==="phrases" ? hypnoVoiceEditor : null}
+      {/* Voice is mounted once, only in Audio / Voice. */}
       <section className={videoStyles.phraseMusicSection} data-hypno-music>
         <div className={videoStyles.phraseAudioHeading}>
           <span><Music2 size={23} aria-hidden="true"/></span>
@@ -5747,7 +5737,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <details id="phrase-audio-settings" className={videoStyles.phraseAudioSettings}
         open={phraseAudioExpanded} onToggle={event=>setPhraseAudioExpanded(event.currentTarget.open)}>
         <summary>{locale==="ru"?"Запись голоса и расширенные аудионастройки":locale==="es"?"Grabación de voz y audio avanzado":"Voice recording and advanced audio"}<ChevronDown size={18} aria-hidden="true"/></summary>
-        {activeWorkspace==="phrases" ? deepAudioPane : null}
+        <button type="button" onClick={()=>{setActiveWorkspace("effects");setAudioWorkspaceTab("music");}}>
+          {locale==="ru"?"Открыть аудио":locale==="es"?"Abrir audio":"Open audio"}
+        </button>
       </details>
       </MandalaHypnoCompact>
       <details className={videoStyles.hypnoOptionalWish} data-video-wish-disclosure>
@@ -5908,7 +5900,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     // Keep the original authorized recording and never loop it.
     setAttachedAudio({kind:"file",file:entry.file,id:entry.url,nonLoop:true});
     setAudioAuto(false);setMusic("none");
-    setActiveWorkspace("editor");setMontagePanel("audio");
+    setActiveWorkspace("effects");setAudioWorkspaceTab("music");
     setShowAdvancedVideo(true);setVideoScenarioOpen(true);setStudioMode("pump");
     setNotice(locale==="ru"
       ?"Запись добавлена в монтаж без расшифровки. Выберите видеоряд вручную."
@@ -6051,6 +6043,317 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       locale==="es"?"No se genera ni se cobra automáticamente.":"No automatic rendering or payment."}</small>
   </section>;
 
+  const soundtrackWorkspacePanel = (
+    <div className={videoStyles.montageAudioCompact} data-video-montage-audio>
+            <div className={videoStyles.montageAudioMode} role="group"
+              aria-label={locale==="ru"?"Источник аудио":locale==="es"?"Fuente de audio":"Audio source"}>
+              <button type="button" data-video-audio-mode="library"
+                aria-pressed={!uploadedAudio} disabled={recording||preparing}
+                onClick={()=>{openAudioLibrary();setShowAllAudio(false);}}>
+                <Music2 size={19} aria-hidden="true"/>
+                {locale==="ru"?"Библиотека музыки":locale==="es"?"Biblioteca musical":"Music library"}
+              </button>
+              <label className={videoStyles.montageAudioNativeUpload}
+                data-video-audio-mode="upload" data-selected={Boolean(uploadedAudio)}>
+                <Paperclip size={19} aria-hidden="true"/>
+                {locale==="ru"?"Моё аудио (загрузить)":locale==="es"?"Mi audio (subir)":"My audio (upload)"}
+                <input type="file" data-video-audio-compact-upload
+                  accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
+                  disabled={recording||preparing}
+                  onChange={event=>{
+                    chooseAudioFile(event.currentTarget.files?.[0]);
+                    setAudioLibraryOpen(true);
+                    event.currentTarget.value="";
+                  }}/>
+              </label>
+            </div>
+            <div className={videoStyles.montageAudioFilters} role="group"
+              aria-label={locale==="ru"?"Подбор музыки":locale==="es"?"Categorías musicales":"Music categories"}>
+              {([
+                {id:"all",theme:null,mood:"all"},
+                {id:"wellbeing",theme:"health",mood:"all"},
+                {id:"focus",theme:"goals",mood:"focus"},
+                {id:"calm",theme:"life",mood:"calm"},
+                {id:"energy",theme:"energy",mood:"uplift"},
+                {id:"love",theme:"relationships",mood:"all"}
+              ] as const).map((item,index)=>
+                <button key={item.id} type="button" data-video-audio-category={item.id}
+                  aria-pressed={audioCategory===item.id}
+                  disabled={recording||preparing}
+                  onClick={()=>{
+                    setAudioCategory(item.id);
+                    setAudioThemeOverride(item.theme);
+                    setAudioMood(item.mood);
+                    setAudioKind("all");setAudioPace("all");setAudioSearch("");
+                    setShowAllAudio(false);setAudioAuto(false);
+                  }}>{(locale==="ru"
+                    ?["Все","Самочувствие","Фокус","Спокойствие","Энергия","Любовь"]
+                    :locale==="es"
+                    ?["Todo","Bienestar","Enfoque","Calma","Energía","Amor"]
+                    :["All","Wellbeing","Focus","Calm","Energy","Love"])[index]}</button>)}
+            </div>
+            <div className={videoStyles.montageAudioSelected} data-video-audio-compact-selected>
+              <span className={videoStyles.montageAudioCover} aria-hidden="true">
+                {/* Existing licensed in-project poster; never depicts uploaded private audio. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt="" loading="lazy"/>
+              </span>
+              <button type="button" className={videoStyles.montageAudioPlay}
+                data-video-audio-compact-play
+                disabled={!previewAudioUrl||recording||preparing||audioPlaybackError}
+                aria-label={soundPreview?ui.soundStop:ui.soundPreview}
+                aria-pressed={soundPreview} onClick={toggleSoundPreview}>
+                {soundPreview?<Pause size={20} fill="currentColor" aria-hidden="true"/>:
+                  <Play size={20} fill="currentColor" aria-hidden="true"/>}
+              </button>
+              <div className={videoStyles.montageAudioSelectedText}>
+                <strong>{uploadedAudio?.file.name||selectedAudio?.name[locale]||ui.noMusic}</strong>
+                <small>{uploadedAudio?(locale==="ru"?"Локальный файл":locale==="es"?"Archivo local":"Local file"):
+                  (locale==="ru"?"Музыка для вашего видео":locale==="es"?"Música para tu vídeo":"Music for your video")}</small>
+                <span>{audioNeedsAttachment
+                  ?audioUi.needsAttach
+                  :attachedAudio?audioUi.attached:audioUi.noAttached}</span>
+              </div>
+              <button type="button" className={videoStyles.montageAudioFavorite}
+                data-video-audio-compact-favorite
+                aria-label={audioFavorites.includes(music)?audioUi.unfavorite:audioUi.favorite}
+                aria-pressed={audioFavorites.includes(music)}
+                disabled={!music||music==="none"||Boolean(uploadedAudio)}
+                onClick={()=>setAudioFavorites(list=>list.includes(music)?
+                  list.filter(item=>item!==music):[...list,music])}>
+                <Heart size={21} fill={audioFavorites.includes(music)?"currentColor":"none"}/>
+              </button>
+            </div>
+            <div className={videoStyles.montageAudioVolume}>
+              <label htmlFor="montage-audio-volume"><AudioLines size={19} aria-hidden="true"/>
+                {locale==="ru"?"Громкость":locale==="es"?"Volumen":"Volume"} · {soundVolume}%
+              </label>
+              <input id="montage-audio-volume" type="range" data-video-audio-compact-volume
+                min={0} max={100} step={5} value={soundVolume}
+                disabled={recording||preparing}
+                onChange={event=>setSoundVolume(Number(event.currentTarget.value))}/>
+              <button type="button" data-video-audio-compact-silent
+                disabled={recording||preparing}
+                onClick={()=>{setAudioAuto(false);chooseMusic("none");setAttachedAudio(null);}}>
+                {ui.noMusic}
+              </button>
+            </div>
+            <div className={videoStyles.montageAudioActions}>
+              <button type="button" data-video-audio-compact-browse ref={audioLibraryTriggerRef}
+                aria-haspopup="dialog" aria-expanded={audioLibraryOpen}
+                onClick={openAudioLibrary}>
+                <Search size={18} aria-hidden="true"/>{audioUi.browse}
+                <ChevronDown size={17} aria-hidden="true"/>
+              </button>
+              <button type="button" data-video-audio-compact-attach
+                disabled={!audioNeedsAttachment||audioDurationInvalid||micRecording||
+                  (Boolean(uploadedAudio)&&!audioRights)}
+                onClick={attachSelectedAudio}>
+                {audioNeedsAttachment?<Paperclip size={18} aria-hidden="true"/>:
+                  <Check size={18} aria-hidden="true"/>}
+                {audioNeedsAttachment?audioUi.attach:audioUi.attached}
+              </button>
+            </div>
+            {audioLibraryOpen ? <div className={videoStyles.montageAudioOverlay}
+              data-video-audio-library-overlay onMouseDown={event=>{
+                if(event.target===event.currentTarget)closeAudioLibrary(true);
+              }}>
+              <section className={videoStyles.montageAudioDialog}
+                data-video-audio-library-dialog data-video-audio-library
+                role="dialog" aria-modal="true" aria-labelledby="video-audio-library-title">
+                <div className={videoStyles.montageAudioDialogHandle} aria-hidden="true"/>
+                <header className={videoStyles.montageAudioDialogHeader}>
+                  <h3 id="video-audio-library-title"><Music2 size={23} aria-hidden="true"/>
+                    {locale==="ru"?"Библиотека музыки":locale==="es"?"Biblioteca musical":"Music library"}
+                  </h3>
+                  <button type="button" ref={audioLibraryCloseRef} data-video-audio-library-close
+                    aria-label={locale==="ru"?"Закрыть библиотеку":locale==="es"?"Cerrar biblioteca":"Close music library"}
+                    onClick={()=>closeAudioLibrary(true)}><X size={22} aria-hidden="true"/></button>
+                </header>
+                <div className={videoStyles.montageAudioDialogScroll}>
+                  <label className={videoStyles.audioLibrarySearch}>
+                    <Search size={18} aria-hidden="true"/>
+                    <input type="search" data-video-audio-library-search value={audioSearch}
+                      onChange={event=>{setAudioSearch(event.currentTarget.value);setShowAllAudio(false);}}
+                      placeholder={audioUi.search} aria-label={audioUi.search}/>
+                  </label>
+                  <div className={videoStyles.audioLibraryFilters}>
+                    <label>{locale==="ru"?"Тема":locale==="es"?"Tema":"Theme"}
+                      <select data-video-audio-library-theme value={audioThemeOverride||"all"}
+                        onChange={event=>{setAudioThemeOverride(event.currentTarget.value==="all"?null:event.currentTarget.value as VideoTheme);setAudioAuto(false);setShowAllAudio(false);}}>
+                        <option value="all">{locale==="ru"?"Все":locale==="es"?"Todas":"All"}</option>
+                        {(["relationships","money","energy","goals","health","life"] as VideoTheme[]).map(id=>
+                          <option key={id} value={id}>{ui.themes[id]}</option>)}
+                      </select>
+                    </label>
+                    <label>{audioUi.mood}
+                      <select data-video-audio-library-mood value={audioMood}
+                        onChange={event=>{setAudioMood(event.currentTarget.value);setShowAllAudio(false);}}>
+                        {Object.entries(audioUi.moods).map(([id,name])=><option key={id} value={id}>{name}</option>)}
+                      </select>
+                    </label>
+                    <label>{audioUi.pace}
+                      <select data-video-audio-library-pace value={audioPace}
+                        onChange={event=>{setAudioPace(event.currentTarget.value);setShowAllAudio(false);}}>
+                        {Object.entries(audioUi.paces).map(([id,name])=><option key={id} value={id}>{name}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                  <small data-video-audio-library-count role="status">
+                    {locale==="ru"?"Найдено мелодий: ":locale==="es"?"Melodías encontradas: ":"Melodies found: "}{filteredAudio.length}
+                  </small>
+                  <div className={videoStyles.audioLibraryTrackList} data-video-audio-library-tracks>
+                    {filteredAudio.slice(0,showAllAudio?filteredAudio.length:5).map(track=>{
+                      const selected=!uploadedAudio&&music===track.id;
+                      const playing=selected&&soundPreview;
+                      return <article key={track.id} className={videoStyles.audioLibraryTrack}
+                        data-video-audio-library-track={track.id} data-selected={selected}>
+                        <button type="button" className={videoStyles.audioLibraryTrackPlay}
+                          data-video-audio-library-play={track.id}
+                          aria-label={(playing?ui.soundStop:ui.soundPreview)+" — "+track.name[locale]}
+                          aria-pressed={playing} disabled={recording||preparing||micRecording}
+                          onClick={()=>playAudioTrack(track.id as Exclude<AmbientMusic,"none">)}>
+                          {playing?<Pause size={19} fill="currentColor"/>:<Play size={19} fill="currentColor"/>}
+                        </button>
+                        <div className={videoStyles.audioLibraryTrackInfo}>
+                          <strong>{track.name[locale]}</strong>
+                          <small>{track.detail[locale]}</small>
+                        </div>
+                        <button type="button" className={videoStyles.audioLibraryFavorite}
+                          aria-label={(audioFavorites.includes(track.id)?audioUi.unfavorite:audioUi.favorite)+" — "+track.name[locale]}
+                          aria-pressed={audioFavorites.includes(track.id)}
+                          onClick={()=>setAudioFavorites(list=>list.includes(track.id)?list.filter(id=>id!==track.id):[...list,track.id])}>
+                          <Heart size={18} fill={audioFavorites.includes(track.id)?"currentColor":"none"}/>
+                        </button>
+                        <button type="button" className={videoStyles.audioLibraryTrackSelect}
+                          data-video-audio-library-select={track.id}
+                          aria-pressed={selected}
+                          onClick={()=>{stopSoundPreview();setAudioAuto(false);chooseMusic(track.id as AmbientMusic);}}>
+                          {selected?<><Check size={16}/>{audioUi.picked}</>:audioUi.pick}
+                        </button>
+                      </article>;
+                    })}
+                    {filteredAudio.length===0?<p role="status">{audioUi.empty}</p>:null}
+                  </div>
+                  {filteredAudio.length>5?<button type="button" className={videoStyles.audioLibraryMore}
+                    data-video-audio-library-more onClick={()=>setShowAllAudio(v=>!v)}>
+                    {showAllAudio?audioUi.showLess:audioUi.showMore} · {filteredAudio.length}
+                  </button>:null}
+                  <div className={videoStyles.audioLibrarySourceActions}>
+                    <label>{ui.uploadAudio}
+                      <input type="file" data-video-audio-library-upload
+                        accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
+                        disabled={recording||preparing}
+                        onChange={event=>{chooseAudioFile(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
+                    </label>
+                    <button type="button" disabled={recording||preparing}
+                      data-video-audio-library-record onClick={()=>{if(micRecording)stopMicRecording();else void startMicRecording();}}>
+                      <Mic size={17}/>{micRecording?audioUi.stopVoice:audioUi.recordVoice}
+                    </button>
+                  </div>
+                  {uploadedAudio?<label className={videoStyles.audioLibraryRights}>
+                    <input type="checkbox" data-video-audio-library-rights checked={audioRights}
+                      onChange={event=>setAudioRights(event.currentTarget.checked)}/>
+                    {ui.audioRights}
+                  </label>:null}
+                </div>
+                <footer className={videoStyles.montageAudioDialogFooter}>
+                  <button type="button" data-video-audio-library-cancel
+                    onClick={()=>closeAudioLibrary(true)}>
+                    {locale==="ru"?"Отмена":locale==="es"?"Cancelar":"Cancel"}
+                  </button>
+                  <button type="button" data-video-audio-library-confirm
+                    disabled={recording||preparing||micRecording||audioDurationInvalid||
+                      (Boolean(uploadedAudio)&&!audioRights)}
+                    onClick={()=>{
+                      if(audioNeedsAttachment)attachSelectedAudio();
+                      closeAudioLibrary(false);
+                    }}><Check size={19} aria-hidden="true"/>
+                    {locale==="ru"?"Использовать эту музыку":locale==="es"?"Usar esta música":"Use this music"}
+                  </button>
+                </footer>
+              </section>
+            </div> : null}
+            {/* Keep the single native audio player mounted for compact Play even with the library closed. */}
+            <div className={videoStyles.audioLibraryHiddenEngine} aria-hidden="true">
+                    {deepAudioPane}
+          <details className={videoStyles.audioBedPanel} data-video-audio-bed-panel>
+            <summary><Music2 size={17} aria-hidden="true"/>
+              {locale==="ru"?"Голос + фоновая музыка":locale==="es"?
+                "Voz y música de fondo":"Voice + background music"}
+            </summary>
+            <p className={videoStyles.audioBedInfo}>
+              {locale==="ru"
+                ?"Не заменяйте голос музыкой: добавьте одну из наших оригинальных мелодий отдельной дорожкой. Для работы сначала прикрепите аудиофайл."
+                :locale==="es"
+                ?"Mantén la voz y añade una melodía original como pista independiente. Primero adjunta un archivo de audio."
+                :"Keep the attached audio and add one of our original melodies on a separate track. Attach an audio file first."}
+            </p>
+            <div className={videoStyles.audioBedControls}>
+              <label>{locale==="ru"?"Мелодия":locale==="es"?"Melodía":"Melody"}
+                <select data-video-audio-bed-select value={musicBed.id}
+                  disabled={recording||preparing||attachedAudio?.kind!=="file"||!audioRights}
+                  onChange={event=>changeMusicBed({
+                    id:event.currentTarget.value as MyTubeMusicBed["id"]
+                  })}>
+                  <option value="none">{locale==="ru"?"Без фона":locale==="es"?
+                    "Sin fondo":"No music bed"}</option>
+                  {MYTUBE_MUSIC_BEDS.map(id=><option key={id} value={id}>
+                    {MUSIC_BED_NAMES[id][locale]}
+                  </option>)}
+                </select>
+              </label>
+              <label>{locale==="ru"?"Громкость фона":locale==="es"?
+                "Volumen de fondo":"Music volume"}: {musicBed.volumePercent}%
+                <input type="range" min={0} max={60} step={5} data-video-audio-bed-volume
+                  value={musicBed.volumePercent}
+                  disabled={recording||preparing||attachedAudio?.kind!=="file"||
+                    !audioRights||musicBed.id==="none"}
+                  onChange={event=>changeMusicBed({volumePercent:Number(event.currentTarget.value)})}/>
+              </label>
+              <label>{locale==="ru"?"Плавное появление/затухание":locale==="es"?
+                "Fundido musical":"Music fade"}
+                <select data-video-audio-bed-fade value={musicBed.fadeSeconds}
+                  disabled={recording||preparing||attachedAudio?.kind!=="file"||
+                    !audioRights||musicBed.id==="none"}
+                  onChange={event=>changeMusicBed({fadeSeconds:Number(event.currentTarget.value)})}>
+                  {MYTUBE_BED_FADES.map(seconds=><option key={seconds} value={seconds}>
+                    {seconds===0?(locale==="ru"?"Без затухания":locale==="es"?
+                      "Sin fundido":"No fade"):seconds+"s"}
+                  </option>)}
+                </select>
+              </label>
+            </div>
+            <p className={videoStyles.audioBedInfo}>
+              {locale==="ru"?"В готовом видео уровни смешиваются точно. На некоторых iPhone громкость браузерного предпросмотра может отличаться."
+                :locale==="es"?"La mezcla final usa los niveles elegidos; la vista previa en iPhone puede sonar diferente."
+                :"The exported mix uses the selected levels; native iPhone preview volume may differ."}
+            </p>
+          </details>
+                  </div>
+            {/* Preserve the existing consented RU/EN narration as a genuinely
+                user-invoked tool, not the removed duplicate Audio toolbar. */}
+
+            {musicWarning?<p role="alert" className={videoStyles.montageAudioWarning}>{musicWarning}</p>:null}
+          </div>
+  );
+  const supplementaryCloudVoicePanel = (
+            <details id="voice-studio" className={[videoStyles.extraControls,videoStyles.basicVoicePane].join(" ")}
+              data-video-voice-studio open={voiceStudioActivated}
+              onToggle={event=>setVoiceStudioActivated(event.currentTarget.open)}>
+              <summary><AudioLines size={18} aria-hidden="true"/>
+                {locale==="ru"?"Озвучить текст · голоса RU/EN":
+                  locale==="es"?"Narración · voces RU/EN":
+                    "Voice narration · RU/EN voices"}
+              </summary>
+              {voiceStudioActivated?<MandalaCloudVoiceStudio locale={locale}
+                sourceText={currentAffirmationSpeech} sourceIsPublic
+                onAudioReady={attachMeditationNarration}
+                onAudioInvalidated={()=>setAttachedAudio(current=>
+                  current?.kind==="file"&&current.nonLoop?null:current)}/>:null}
+            </details>
+  );
+
   // First-paint opt-in presentation occupies the SAME 16:9 Goal player.
   // EN explicitly labels this real Russian recording, not an invented translation.
   const showIntroHero = (
@@ -6140,7 +6443,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               stopMovieSound();setPreviewPlaying(false);
             }}
             onOpenAudio={()=>{
-              setActiveWorkspace("editor");setMontagePanel("audio");setBasicPanelTab("music");
+              setActiveWorkspace("effects");setAudioWorkspaceTab("music");setBasicPanelTab("music");
               window.requestAnimationFrame(()=>document.querySelector("[data-video-music-editor]")
                 ?.scrollIntoView({behavior:"smooth",block:"nearest"}));
             }}
@@ -6656,26 +6959,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </button>
       </aside>
       {activeWorkspace==="effects" ? <aside className={videoStyles.hypnoStageTitle}
-        data-hypno-stage-intro aria-label={locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipnóticos":"Hypno effects"}>
+        data-hypno-stage-intro aria-label={workspaceCopy[locale].effects.title}>
         <Sparkles size={23} aria-hidden="true"/>
         <div>
-          <h3>{locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipnóticos":"Hypno effects"}</h3>
+          <h3>{workspaceCopy[locale].effects.title}</h3>
           <p>{locale==="ru"?"Выберите мягкие дополнительные эффекты для видео.":
             locale==="es"?"Elige capas suaves opcionales para tu vídeo.":
             "Choose optional gentle layers for your video."}</p>
         </div>
       </aside> : null}
-      {activeWorkspace==="editor" && montagePanel==="audio" ? (
-        <aside className={videoStyles.montageAudioHero} data-video-audio-intro>
-          <Music2 size={27} aria-hidden="true"/>
-          <div>
-            <h3>{locale==="ru"?"Аудио":locale==="es"?"Audio":"Audio"}</h3>
-            <p>{locale==="ru"?"Выберите музыку или загрузите запись.":
-              locale==="es"?"Elige música o sube tu grabación.":
-              "Choose music or upload your recording."}</p>
-          </div>
-        </aside>
-      ) : null}
+
       </div>
       <section id="video-studio-intro-guide" className={videoStyles.studioIntroGuide}
         hidden={!studioIntroOpen||(activeWorkspace!=="video"&&activeWorkspace!=="editor")}
@@ -6823,18 +7116,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           window.requestAnimationFrame(()=>document.getElementById("guided-video-series")
             ?.scrollIntoView({block:"start",behavior:"smooth"}));
         }}
-        meditationEditor={<MandalaPersonalMeditation
-          locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
-          sound={attachedAudio?appliedAudioName:""}
-          audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
-            attachedAudio?.kind==="preset"?presetAudioUrl(attachedAudio.id):
-              attachedAudio?.kind==="presets"?presetAudioUrl(attachedAudio.ids[0]):null}
-          pace={speed} brightness={brightness}
-          affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
-          focus={meditationFocus} disabled={recording||preparing}
-          onNarrationReady={attachMeditationNarration}
-          onNarrationInvalidated={()=>setAttachedAudio(current=>
-            current?.kind==="file"&&current.nonLoop?null:current)}/>}
+        onOpenMeditation={()=>{setActiveWorkspace("effects");setAudioWorkspaceTab("meditations");}}
         />:null}
       {studioMode==="pump" ?       <section className={videoStyles.therapyBanner} data-workspace-section="practices" data-video-therapy-banner>
         <div className={videoStyles.therapyBannerCopy}>
@@ -6946,12 +7228,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           <h3 id="quick-phrases-heading"><HandHeart size={19} aria-hidden="true"/>{locale==="ru"?"Мой запрос и тема":locale==="es"?"Mi intención y tema":"My request & topic"}</h3>
           <button type="button" className={videoStyles.quickPhrasePersonal} disabled={recording||preparing}
             onClick={()=>{
-               // The old native details is now a real accessible button/region.
-               // Open Text's visible settings; never synthesize a hidden click
-               // or access private test results without another user action.
-               setIdeasSubtab("personalization");
-               setIdeasVoiceAdvancedOpen(true);
-               window.requestAnimationFrame(()=>document.querySelector<HTMLElement>('[data-video-ideas-advanced-voice]')?.scrollIntoView({block:"nearest",behavior:"smooth"}));
+               setActiveWorkspace("effects");setAudioWorkspaceTab("voice");
              }}><Sparkles size={15} aria-hidden="true"/>
             {locale==="ru"?"Индивидуальный подбор":locale==="es"?"Personalizar":"Personalize"}</button>
         </div>
@@ -6972,7 +7249,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           {/* One persistent editor instance; collapsed by default in Ideas.
               Do not unmount it between workspaces or duplicate audio state. */}
           <div id="video-ideas-voice-panel" data-video-legacy-phrase-editor data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}
-            hidden={activeWorkspace!=="phrases"||ideasSubtab!=="personalization"}
+            hidden={true}
             aria-hidden={activeWorkspace!=="phrases"||ideasSubtab!=="personalization"}>
             <details className={videoStyles.phraseAudioSettings}
               data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}
@@ -7044,13 +7321,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           data-video-phrase-audio-shortcut hidden={ideasSubtab!=="personalization"}
           disabled={recording||preparing}
           onClick={()=>{
-            // The advanced voice editor lives in Ideas. Reveal it on an actual
-            // visitor action before trying to focus the nested audio settings.
-            setIdeasSubtab("personalization");
-            setIdeasVoiceAdvancedOpen(true);
-            setPhraseAudioExpanded(true);
-            window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-              document.querySelector("[data-video-ideas-advanced-voice]")?.scrollIntoView({behavior:"smooth",block:"nearest"})));
+            // Ideas authors intention; sound controls live in Audio / Voice.
+            setActiveWorkspace("effects");setAudioWorkspaceTab("voice");
           }}>
           <Music2 size={19} aria-hidden="true"/>
           {locale==="ru"?"Настроить аудиогид, музыку и голос":
@@ -7060,7 +7332,69 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       </section>
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
-        {activeWorkspace==="effects" ? <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
+        {activeWorkspace==="effects" ? <div className={videoStyles.audioWorkspace} data-video-audio-workspace>
+          <div className={videoStyles.audioWorkspaceTabs} role="tablist"
+            aria-label={locale==="ru"?"Разделы аудио":locale==="es"?"Secciones de audio":"Audio sections"}>
+            {([
+              {id:"music",Icon:Music2,ru:"Музыка",en:"Music",es:"Música"},
+              {id:"voice",Icon:Mic,ru:"Голос",en:"Voice",es:"Voz"},
+              {id:"meditations",Icon:Headphones,ru:"Медитации",en:"Meditations",es:"Meditaciones"}
+            ] as const).map(tab=><button type="button" key={tab.id} role="tab"
+              id={"video-audio-label-"+tab.id} aria-controls={"video-audio-panel-"+tab.id}
+              data-video-audio-tab={tab.id} aria-selected={audioWorkspaceTab===tab.id}
+              disabled={recording||preparing}
+              onClick={()=>{
+                setAudioWorkspaceTab(tab.id);
+                stopSoundPreview();
+              }}><tab.Icon size={19} aria-hidden="true"/><span>{tab[locale]}</span></button>)}
+          </div>
+          <section className={videoStyles.audioWorkspacePanel} id="video-audio-panel-music"
+            role="tabpanel" aria-labelledby="video-audio-label-music"
+            hidden={audioWorkspaceTab!=="music"} data-video-audio-panel="music">
+            {soundtrackWorkspacePanel}
+          </section>
+          <section className={videoStyles.audioWorkspacePanel} id="video-audio-panel-voice"
+            role="tabpanel" aria-labelledby="video-audio-label-voice"
+            hidden={audioWorkspaceTab!=="voice"} data-video-audio-panel="voice">
+            <div className={videoStyles.audioWorkspaceTabs} role="group" data-video-audio-voice-modes
+              aria-label={locale==="ru"?"Режим голоса":locale==="es"?"Modo de voz":"Voice mode"}>
+              <button type="button" data-video-audio-voice-mode="voice" aria-pressed={ideasVoiceMode==="voice"}
+                onClick={()=>setIdeasVoiceMode("voice")}>{locale==="ru"?"Голос":locale==="es"?"Voz":"Voice"}</button>
+              <button type="button" data-video-audio-voice-mode="my-voice" aria-pressed={ideasVoiceMode==="my-voice"}
+                onClick={()=>setIdeasVoiceMode("my-voice")}>{locale==="ru"?"Мой голос":locale==="es"?"Mi voz":"My Voice"}</button>
+            </div>
+            {audioWorkspaceTab==="voice" ? hypnoVoiceEditor : null}
+            {supplementaryCloudVoicePanel}
+          </section>
+          <section className={videoStyles.audioWorkspacePanel} id="video-audio-panel-meditations"
+            role="tabpanel" aria-labelledby="video-audio-label-meditations"
+            hidden={audioWorkspaceTab!=="meditations"} data-video-audio-panel="meditations">
+            <p className={videoStyles.audioMeditationNote} role="note" data-video-audio-meditation-cost>
+              {locale==="ru"
+                ?"Текст медитации и чтение голосом телефона бесплатны. Облачная озвучка выполняется только по отдельному согласию. Списание средств пока отключено до подтверждения тарифа и безопасной оплаты."
+                :locale==="es"
+                ?"El texto y la lectura con la voz del dispositivo son gratuitos. La voz en la nube requiere consentimiento separado. Los cargos están desactivados hasta verificar precio y pago seguro."
+                :"Meditation text and on-device voice playback are free. Cloud narration requires separate consent. Account charges remain disabled until pricing and secure billing are verified."}
+            </p>
+            <MandalaPersonalMeditation key={courseMeditationDraft ? "guided-seeded" : "guided-empty"}
+          coursePreview={Boolean(courseMeditationDraft)} seedScript={courseMeditationDraft}
+          locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
+          sound={attachedAudio?appliedAudioName:""}
+          audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
+            attachedAudio?.kind==="preset"?presetAudioUrl(attachedAudio.id):
+              attachedAudio?.kind==="presets"?presetAudioUrl(attachedAudio.ids[0]):null}
+          pace={speed} brightness={brightness}
+          affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
+          focus={meditationFocus} disabled={recording||preparing}
+          onNarrationReady={attachMeditationNarration}
+          onNarrationInvalidated={()=>setAttachedAudio(current=>
+            current?.kind==="file"&&current.nonLoop?null:current)}/>
+          </section>
+          <details className={videoStyles.audioAdditionalEffects} data-video-audio-additional-effects>
+            <summary><Sparkles size={19} aria-hidden="true"/>
+              {locale==="ru"?"Дополнительные визуальные эффекты":locale==="es"?"Efectos visuales opcionales":"Optional visual effects"}
+              <ChevronDown size={17} aria-hidden="true"/></summary>
+            <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
           <MandalaHypnocorrectionMobile locale={locale} disabled={recording||preparing||hypnoAudioBusy}
             affirmations={affirmations} onAffirmationsChange={setAffirmations}
             light={hypnoLight} onLightChange={setHypnoLight}
@@ -7071,7 +7405,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}
             hasVoiceFile={Boolean(hypnoSpeechSource)}
             voiceActive={Boolean(hypnoSpeechSource&&attachedAudio?.kind==="file"&&attachedAudio.narration&&audioRights)}
-            voiceEditor={activeWorkspace==="effects"?hypnoVoiceEditor:null}
+            voiceEditor={null}
             whisperEnabled={hypnoWhisperEnabled} binauralEnabled={hypnoBinauralEnabled}
             beatHz={hypnoBeatHz} repeatEverySeconds={hypnoRepeatEvery}
             whisperGain={hypnoWhisperGain} audioEffectBusy={hypnoAudioBusy}
@@ -7104,6 +7438,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 visibility:current.visibility.includes("large")?current.visibility:[...current.visibility,"large"]}));
               setPreviewPlaying(false);
             }}/>
+            </div>
+          </details>
         </div> : null}
       </section>
       {activeWorkspace==="video" ? <section className={videoStyles.quickMusicSection} data-workspace-section="video" data-video-quick-audio-choices aria-labelledby="quick-music-heading">
@@ -7157,7 +7493,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <details data-video-audio-details className={videoStyles.quickExtras}>
           <summary>{locale==="ru"?"Все мелодии и голос":locale==="es"?"Todos los sonidos y voz":"All soundtracks and voice"}</summary>
-          {activeWorkspace==="video" ? deepAudioPane : null}
+          <button type="button" data-video-quick-open-audio onClick={()=>{
+            setActiveWorkspace("effects");setAudioWorkspaceTab("music");
+          }}>{locale==="ru"?"Открыть аудио":locale==="es"?"Abrir audio":"Open Audio"}</button>
         </details>
       </section> : null}
         <MandalaAutoVideoDirector
@@ -7596,27 +7934,14 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       <MandalaGuidedCourse locale={locale} theme={theme}
         onContextChange={updateMeditationFocus}
         onAddMeditation={script=>{
-          meditationDisclosureEpochRef.current++;
-          setCourseMeditationOmitted(false);
-          setCourseMeditationIncluded(true);
+          // Transfer the exact approved local script to the one Audio composer.
           setCourseMeditationDraft(script);
+          setActiveWorkspace("effects");setAudioWorkspaceTab("meditations");
         }}
         onOmitMeditation={()=>{
-          setCourseMeditationIncluded(false);
-          const epoch=++meditationDisclosureEpochRef.current;
-          setCourseMeditationOmitted(true);
-          // Explicit omission always revokes the parent's seed and transient narration.
-          // Do not depend on a render-captured draft value: WebKit can re-open the
-          // same details before the previous state transition has committed.
+          // Explicit Skip revokes the seeded script and any transient narration.
           setCourseMeditationDraft("");
           setAttachedAudio(current=>current?.kind==="file"&&current.nonLoop?null:current);
-          const closeDetails=()=>{
-            if(epoch!==meditationDisclosureEpochRef.current)return;
-            const details=document.querySelector("[data-video-therapy-meditation-audio]");
-            if(details instanceof HTMLDetailsElement)details.open=false;
-          };
-          closeDetails();
-          window.requestAnimationFrame(closeDetails);
         }}
         selfRatings={touchedScores} disabled={recording||preparing}
         onApplyFreeVideo={session=>{
@@ -8198,311 +8523,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 :locale==="ru"?"Без визуального эффекта":locale==="es"?"Sin efecto visual":"No visual effect"}
             </p>
           </div> : null}
-          {montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact} data-video-montage-audio>
-            <div className={videoStyles.montageAudioMode} role="group"
-              aria-label={locale==="ru"?"Источник аудио":locale==="es"?"Fuente de audio":"Audio source"}>
-              <button type="button" data-video-audio-mode="library"
-                aria-pressed={!uploadedAudio} disabled={recording||preparing}
-                onClick={()=>{openAudioLibrary();setShowAllAudio(false);}}>
-                <Music2 size={19} aria-hidden="true"/>
-                {locale==="ru"?"Библиотека музыки":locale==="es"?"Biblioteca musical":"Music library"}
-              </button>
-              <label className={videoStyles.montageAudioNativeUpload}
-                data-video-audio-mode="upload" data-selected={Boolean(uploadedAudio)}>
-                <Paperclip size={19} aria-hidden="true"/>
-                {locale==="ru"?"Моё аудио (загрузить)":locale==="es"?"Mi audio (subir)":"My audio (upload)"}
-                <input type="file" data-video-audio-compact-upload
-                  accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
-                  disabled={recording||preparing}
-                  onChange={event=>{
-                    chooseAudioFile(event.currentTarget.files?.[0]);
-                    setAudioLibraryOpen(true);
-                    event.currentTarget.value="";
-                  }}/>
-              </label>
-            </div>
-            <div className={videoStyles.montageAudioFilters} role="group"
-              aria-label={locale==="ru"?"Подбор музыки":locale==="es"?"Categorías musicales":"Music categories"}>
-              {([
-                {id:"all",theme:null,mood:"all"},
-                {id:"wellbeing",theme:"health",mood:"all"},
-                {id:"focus",theme:"goals",mood:"focus"},
-                {id:"calm",theme:"life",mood:"calm"},
-                {id:"energy",theme:"energy",mood:"uplift"},
-                {id:"love",theme:"relationships",mood:"all"}
-              ] as const).map((item,index)=>
-                <button key={item.id} type="button" data-video-audio-category={item.id}
-                  aria-pressed={audioCategory===item.id}
-                  disabled={recording||preparing}
-                  onClick={()=>{
-                    setAudioCategory(item.id);
-                    setAudioThemeOverride(item.theme);
-                    setAudioMood(item.mood);
-                    setAudioKind("all");setAudioPace("all");setAudioSearch("");
-                    setShowAllAudio(false);setAudioAuto(false);
-                  }}>{(locale==="ru"
-                    ?["Все","Самочувствие","Фокус","Спокойствие","Энергия","Любовь"]
-                    :locale==="es"
-                    ?["Todo","Bienestar","Enfoque","Calma","Energía","Amor"]
-                    :["All","Wellbeing","Focus","Calm","Energy","Love"])[index]}</button>)}
-            </div>
-            <div className={videoStyles.montageAudioSelected} data-video-audio-compact-selected>
-              <span className={videoStyles.montageAudioCover} aria-hidden="true">
-                {/* Existing licensed in-project poster; never depicts uploaded private audio. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt="" loading="lazy"/>
-              </span>
-              <button type="button" className={videoStyles.montageAudioPlay}
-                data-video-audio-compact-play
-                disabled={!previewAudioUrl||recording||preparing||audioPlaybackError}
-                aria-label={soundPreview?ui.soundStop:ui.soundPreview}
-                aria-pressed={soundPreview} onClick={toggleSoundPreview}>
-                {soundPreview?<Pause size={20} fill="currentColor" aria-hidden="true"/>:
-                  <Play size={20} fill="currentColor" aria-hidden="true"/>}
-              </button>
-              <div className={videoStyles.montageAudioSelectedText}>
-                <strong>{uploadedAudio?.file.name||selectedAudio?.name[locale]||ui.noMusic}</strong>
-                <small>{uploadedAudio?(locale==="ru"?"Локальный файл":locale==="es"?"Archivo local":"Local file"):
-                  (locale==="ru"?"Музыка для вашего видео":locale==="es"?"Música para tu vídeo":"Music for your video")}</small>
-                <span>{audioNeedsAttachment
-                  ?audioUi.needsAttach
-                  :attachedAudio?audioUi.attached:audioUi.noAttached}</span>
-              </div>
-              <button type="button" className={videoStyles.montageAudioFavorite}
-                data-video-audio-compact-favorite
-                aria-label={audioFavorites.includes(music)?audioUi.unfavorite:audioUi.favorite}
-                aria-pressed={audioFavorites.includes(music)}
-                disabled={!music||music==="none"||Boolean(uploadedAudio)}
-                onClick={()=>setAudioFavorites(list=>list.includes(music)?
-                  list.filter(item=>item!==music):[...list,music])}>
-                <Heart size={21} fill={audioFavorites.includes(music)?"currentColor":"none"}/>
-              </button>
-            </div>
-            <div className={videoStyles.montageAudioVolume}>
-              <label htmlFor="montage-audio-volume"><AudioLines size={19} aria-hidden="true"/>
-                {locale==="ru"?"Громкость":locale==="es"?"Volumen":"Volume"} · {soundVolume}%
-              </label>
-              <input id="montage-audio-volume" type="range" data-video-audio-compact-volume
-                min={0} max={100} step={5} value={soundVolume}
-                disabled={recording||preparing}
-                onChange={event=>setSoundVolume(Number(event.currentTarget.value))}/>
-              <button type="button" data-video-audio-compact-silent
-                disabled={recording||preparing}
-                onClick={()=>{setAudioAuto(false);chooseMusic("none");setAttachedAudio(null);}}>
-                {ui.noMusic}
-              </button>
-            </div>
-            <div className={videoStyles.montageAudioActions}>
-              <button type="button" data-video-audio-compact-browse ref={audioLibraryTriggerRef}
-                aria-haspopup="dialog" aria-expanded={audioLibraryOpen}
-                onClick={openAudioLibrary}>
-                <Search size={18} aria-hidden="true"/>{audioUi.browse}
-                <ChevronDown size={17} aria-hidden="true"/>
-              </button>
-              <button type="button" data-video-audio-compact-attach
-                disabled={!audioNeedsAttachment||audioDurationInvalid||micRecording||
-                  (Boolean(uploadedAudio)&&!audioRights)}
-                onClick={attachSelectedAudio}>
-                {audioNeedsAttachment?<Paperclip size={18} aria-hidden="true"/>:
-                  <Check size={18} aria-hidden="true"/>}
-                {audioNeedsAttachment?audioUi.attach:audioUi.attached}
-              </button>
-            </div>
-            {audioLibraryOpen ? <div className={videoStyles.montageAudioOverlay}
-              data-video-audio-library-overlay onMouseDown={event=>{
-                if(event.target===event.currentTarget)closeAudioLibrary(true);
-              }}>
-              <section className={videoStyles.montageAudioDialog}
-                data-video-audio-library-dialog data-video-audio-library
-                role="dialog" aria-modal="true" aria-labelledby="video-audio-library-title">
-                <div className={videoStyles.montageAudioDialogHandle} aria-hidden="true"/>
-                <header className={videoStyles.montageAudioDialogHeader}>
-                  <h3 id="video-audio-library-title"><Music2 size={23} aria-hidden="true"/>
-                    {locale==="ru"?"Библиотека музыки":locale==="es"?"Biblioteca musical":"Music library"}
-                  </h3>
-                  <button type="button" ref={audioLibraryCloseRef} data-video-audio-library-close
-                    aria-label={locale==="ru"?"Закрыть библиотеку":locale==="es"?"Cerrar biblioteca":"Close music library"}
-                    onClick={()=>closeAudioLibrary(true)}><X size={22} aria-hidden="true"/></button>
-                </header>
-                <div className={videoStyles.montageAudioDialogScroll}>
-                  <label className={videoStyles.audioLibrarySearch}>
-                    <Search size={18} aria-hidden="true"/>
-                    <input type="search" data-video-audio-library-search value={audioSearch}
-                      onChange={event=>{setAudioSearch(event.currentTarget.value);setShowAllAudio(false);}}
-                      placeholder={audioUi.search} aria-label={audioUi.search}/>
-                  </label>
-                  <div className={videoStyles.audioLibraryFilters}>
-                    <label>{locale==="ru"?"Тема":locale==="es"?"Tema":"Theme"}
-                      <select data-video-audio-library-theme value={audioThemeOverride||"all"}
-                        onChange={event=>{setAudioThemeOverride(event.currentTarget.value==="all"?null:event.currentTarget.value as VideoTheme);setAudioAuto(false);setShowAllAudio(false);}}>
-                        <option value="all">{locale==="ru"?"Все":locale==="es"?"Todas":"All"}</option>
-                        {(["relationships","money","energy","goals","health","life"] as VideoTheme[]).map(id=>
-                          <option key={id} value={id}>{ui.themes[id]}</option>)}
-                      </select>
-                    </label>
-                    <label>{audioUi.mood}
-                      <select data-video-audio-library-mood value={audioMood}
-                        onChange={event=>{setAudioMood(event.currentTarget.value);setShowAllAudio(false);}}>
-                        {Object.entries(audioUi.moods).map(([id,name])=><option key={id} value={id}>{name}</option>)}
-                      </select>
-                    </label>
-                    <label>{audioUi.pace}
-                      <select data-video-audio-library-pace value={audioPace}
-                        onChange={event=>{setAudioPace(event.currentTarget.value);setShowAllAudio(false);}}>
-                        {Object.entries(audioUi.paces).map(([id,name])=><option key={id} value={id}>{name}</option>)}
-                      </select>
-                    </label>
-                  </div>
-                  <small data-video-audio-library-count role="status">
-                    {locale==="ru"?"Найдено мелодий: ":locale==="es"?"Melodías encontradas: ":"Melodies found: "}{filteredAudio.length}
-                  </small>
-                  <div className={videoStyles.audioLibraryTrackList} data-video-audio-library-tracks>
-                    {filteredAudio.slice(0,showAllAudio?filteredAudio.length:5).map(track=>{
-                      const selected=!uploadedAudio&&music===track.id;
-                      const playing=selected&&soundPreview;
-                      return <article key={track.id} className={videoStyles.audioLibraryTrack}
-                        data-video-audio-library-track={track.id} data-selected={selected}>
-                        <button type="button" className={videoStyles.audioLibraryTrackPlay}
-                          data-video-audio-library-play={track.id}
-                          aria-label={(playing?ui.soundStop:ui.soundPreview)+" — "+track.name[locale]}
-                          aria-pressed={playing} disabled={recording||preparing||micRecording}
-                          onClick={()=>playAudioTrack(track.id as Exclude<AmbientMusic,"none">)}>
-                          {playing?<Pause size={19} fill="currentColor"/>:<Play size={19} fill="currentColor"/>}
-                        </button>
-                        <div className={videoStyles.audioLibraryTrackInfo}>
-                          <strong>{track.name[locale]}</strong>
-                          <small>{track.detail[locale]}</small>
-                        </div>
-                        <button type="button" className={videoStyles.audioLibraryFavorite}
-                          aria-label={(audioFavorites.includes(track.id)?audioUi.unfavorite:audioUi.favorite)+" — "+track.name[locale]}
-                          aria-pressed={audioFavorites.includes(track.id)}
-                          onClick={()=>setAudioFavorites(list=>list.includes(track.id)?list.filter(id=>id!==track.id):[...list,track.id])}>
-                          <Heart size={18} fill={audioFavorites.includes(track.id)?"currentColor":"none"}/>
-                        </button>
-                        <button type="button" className={videoStyles.audioLibraryTrackSelect}
-                          data-video-audio-library-select={track.id}
-                          aria-pressed={selected}
-                          onClick={()=>{stopSoundPreview();setAudioAuto(false);chooseMusic(track.id as AmbientMusic);}}>
-                          {selected?<><Check size={16}/>{audioUi.picked}</>:audioUi.pick}
-                        </button>
-                      </article>;
-                    })}
-                    {filteredAudio.length===0?<p role="status">{audioUi.empty}</p>:null}
-                  </div>
-                  {filteredAudio.length>5?<button type="button" className={videoStyles.audioLibraryMore}
-                    data-video-audio-library-more onClick={()=>setShowAllAudio(v=>!v)}>
-                    {showAllAudio?audioUi.showLess:audioUi.showMore} · {filteredAudio.length}
-                  </button>:null}
-                  <div className={videoStyles.audioLibrarySourceActions}>
-                    <label>{ui.uploadAudio}
-                      <input type="file" data-video-audio-library-upload
-                        accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
-                        disabled={recording||preparing}
-                        onChange={event=>{chooseAudioFile(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
-                    </label>
-                    <button type="button" disabled={recording||preparing}
-                      data-video-audio-library-record onClick={()=>{if(micRecording)stopMicRecording();else void startMicRecording();}}>
-                      <Mic size={17}/>{micRecording?audioUi.stopVoice:audioUi.recordVoice}
-                    </button>
-                  </div>
-                  {uploadedAudio?<label className={videoStyles.audioLibraryRights}>
-                    <input type="checkbox" data-video-audio-library-rights checked={audioRights}
-                      onChange={event=>setAudioRights(event.currentTarget.checked)}/>
-                    {ui.audioRights}
-                  </label>:null}
-                </div>
-                <footer className={videoStyles.montageAudioDialogFooter}>
-                  <button type="button" data-video-audio-library-cancel
-                    onClick={()=>closeAudioLibrary(true)}>
-                    {locale==="ru"?"Отмена":locale==="es"?"Cancelar":"Cancel"}
-                  </button>
-                  <button type="button" data-video-audio-library-confirm
-                    disabled={recording||preparing||micRecording||audioDurationInvalid||
-                      (Boolean(uploadedAudio)&&!audioRights)}
-                    onClick={()=>{
-                      if(audioNeedsAttachment)attachSelectedAudio();
-                      closeAudioLibrary(false);
-                    }}><Check size={19} aria-hidden="true"/>
-                    {locale==="ru"?"Использовать эту музыку":locale==="es"?"Usar esta música":"Use this music"}
-                  </button>
-                </footer>
-              </section>
-            </div> : null}
-            {/* Keep the single native audio player mounted for compact Play even with the library closed. */}
-            <div className={videoStyles.audioLibraryHiddenEngine} aria-hidden="true">
-                    {deepAudioPane}
-          <details className={videoStyles.audioBedPanel} data-video-audio-bed-panel>
-            <summary><Music2 size={17} aria-hidden="true"/>
-              {locale==="ru"?"Голос + фоновая музыка":locale==="es"?
-                "Voz y música de fondo":"Voice + background music"}
-            </summary>
-            <p className={videoStyles.audioBedInfo}>
-              {locale==="ru"
-                ?"Не заменяйте голос музыкой: добавьте одну из наших оригинальных мелодий отдельной дорожкой. Для работы сначала прикрепите аудиофайл."
-                :locale==="es"
-                ?"Mantén la voz y añade una melodía original como pista independiente. Primero adjunta un archivo de audio."
-                :"Keep the attached audio and add one of our original melodies on a separate track. Attach an audio file first."}
-            </p>
-            <div className={videoStyles.audioBedControls}>
-              <label>{locale==="ru"?"Мелодия":locale==="es"?"Melodía":"Melody"}
-                <select data-video-audio-bed-select value={musicBed.id}
-                  disabled={recording||preparing||attachedAudio?.kind!=="file"||!audioRights}
-                  onChange={event=>changeMusicBed({
-                    id:event.currentTarget.value as MyTubeMusicBed["id"]
-                  })}>
-                  <option value="none">{locale==="ru"?"Без фона":locale==="es"?
-                    "Sin fondo":"No music bed"}</option>
-                  {MYTUBE_MUSIC_BEDS.map(id=><option key={id} value={id}>
-                    {MUSIC_BED_NAMES[id][locale]}
-                  </option>)}
-                </select>
-              </label>
-              <label>{locale==="ru"?"Громкость фона":locale==="es"?
-                "Volumen de fondo":"Music volume"}: {musicBed.volumePercent}%
-                <input type="range" min={0} max={60} step={5} data-video-audio-bed-volume
-                  value={musicBed.volumePercent}
-                  disabled={recording||preparing||attachedAudio?.kind!=="file"||
-                    !audioRights||musicBed.id==="none"}
-                  onChange={event=>changeMusicBed({volumePercent:Number(event.currentTarget.value)})}/>
-              </label>
-              <label>{locale==="ru"?"Плавное появление/затухание":locale==="es"?
-                "Fundido musical":"Music fade"}
-                <select data-video-audio-bed-fade value={musicBed.fadeSeconds}
-                  disabled={recording||preparing||attachedAudio?.kind!=="file"||
-                    !audioRights||musicBed.id==="none"}
-                  onChange={event=>changeMusicBed({fadeSeconds:Number(event.currentTarget.value)})}>
-                  {MYTUBE_BED_FADES.map(seconds=><option key={seconds} value={seconds}>
-                    {seconds===0?(locale==="ru"?"Без затухания":locale==="es"?
-                      "Sin fundido":"No fade"):seconds+"s"}
-                  </option>)}
-                </select>
-              </label>
-            </div>
-            <p className={videoStyles.audioBedInfo}>
-              {locale==="ru"?"В готовом видео уровни смешиваются точно. На некоторых iPhone громкость браузерного предпросмотра может отличаться."
-                :locale==="es"?"La mezcla final usa los niveles elegidos; la vista previa en iPhone puede sonar diferente."
-                :"The exported mix uses the selected levels; native iPhone preview volume may differ."}
-            </p>
-          </details>
-                  </div>
-            {/* Preserve the existing consented RU/EN narration as a genuinely
-                user-invoked tool, not the removed duplicate Audio toolbar. */}
-            <details id="voice-studio" className={[videoStyles.extraControls,videoStyles.basicVoicePane].join(" ")}
-              data-video-voice-studio open={voiceStudioActivated}
-              onToggle={event=>setVoiceStudioActivated(event.currentTarget.open)}>
-              <summary><AudioLines size={18} aria-hidden="true"/>
-                {locale==="ru"?"Озвучить текст · голоса RU/EN":
-                  locale==="es"?"Narración · voces RU/EN":
-                    "Voice narration · RU/EN voices"}
-              </summary>
-              {voiceStudioActivated?<MandalaCloudVoiceStudio locale={locale}
-                sourceText={currentAffirmationSpeech} sourceIsPublic
-                onAudioReady={attachMeditationNarration}
-                onAudioInvalidated={()=>setAttachedAudio(current=>
-                  current?.kind==="file"&&current.nonLoop?null:current)}/>:null}
-            </details>
-            {musicWarning?<p role="alert" className={videoStyles.montageAudioWarning}>{musicWarning}</p>:null}
-          </div> : null}
+
           </div>
         </section>
 
@@ -8527,7 +8548,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <div className={videoStyles.quickSectionHeading}>
               <h3><Film size={20} aria-hidden="true"/>{locale==="ru"?"Монтажная лента":locale==="es"?"Línea de montaje":"Multitrack timeline"}</h3>
             </div>
-            {activeWorkspace==="pro"?sharedMontageTimeline:null}
+            <button type="button" onClick={()=>{setActiveWorkspace("editor");setMontagePanel("effects");}}>{locale==="ru"?"Открыть монтаж":locale==="es"?"Abrir montaje":"Open montage"}</button>
             <div className={videoStyles.editorActions}>
               <button type="button" disabled={recording||preparing||!source}
                 onClick={openAffirmationPreview}><Play size={17} aria-hidden="true"/>
@@ -8594,26 +8615,9 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               <span>{locale==="ru"?"Персональная программа":locale==="es"?"Plan personal":"Personal programme"}</span><ArrowRight size={18} aria-hidden="true"/></button>
           </div>
           </details>
-          <details className={videoStyles.therapyAudioDetails} data-video-therapy-meditation-audio>
-            <summary onClick={()=>{meditationDisclosureEpochRef.current++;}}>{locale==="ru"?"Настроить озвучку и добавить медитацию к видео":
-              locale==="es"?"Configurar voz y añadir la meditación al vídeo":
-              "Set up narration and add meditation to video"}<ChevronDown size={19} aria-hidden="true"/></summary>
-            <div data-video-meditation-course-panel className={videoStyles.workspaceCourses}>
-              <MandalaPersonalMeditation key={courseMeditationDraft ? "guided-seeded" : "guided-empty"}
-                coursePreview seedScript={courseMeditationDraft}
-                locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
-                sound={attachedAudio?appliedAudioName:""}
-                audioSrc={attachedAudio?.kind==="file"?(audioRights?uploadedAudio?.url||null:null):
-                  attachedAudio?.kind==="preset"?presetAudioUrl(attachedAudio.id):
-                    attachedAudio?.kind==="presets"?presetAudioUrl(attachedAudio.ids[0]):null}
-                pace={speed} brightness={brightness}
-                affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
-                focus={meditationFocus} disabled={recording||preparing}
-                onNarrationReady={attachMeditationNarration}
-                onNarrationInvalidated={()=>setAttachedAudio(current=>
-                  current?.kind==="file"&&current.nonLoop?null:current)}/>
-            </div>
-          </details>
+          <button type="button" data-video-therapy-meditation-audio onClick={()=>{
+            setActiveWorkspace("effects");setAudioWorkspaceTab("meditations");
+          }}>{locale==="ru"?"Настроить озвучку и добавить медитацию к видео":locale==="es"?"Configurar voz y añadir la meditación al vídeo":"Set up narration and add meditation to video"}</button>
         </section> : null}
         <div className={videoStyles.quickOrderBar} data-workspace-section="editor" data-video-order-bar>
           <div className={videoStyles.quickOrderSummary} data-video-price-summary aria-live="polite">
@@ -9131,18 +9135,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           :ui.noStorage}</p>
 
       </details>
-      {studioMode==="therapy" && activeWorkspace!=="practices" ? <MandalaPersonalMeditation
-        locale={locale} theme={theme} wish={wish} scene={sceneName} caption={caption}
-        sound={attachedAudio?appliedAudioName:""}
-        audioSrc={attachedAudio?.kind==="file" ? (audioRights ? uploadedAudio?.url||null : null) :
-          attachedAudio?.kind==="preset" ? presetAudioUrl(attachedAudio.id) :
-          attachedAudio?.kind==="presets" ? presetAudioUrl(attachedAudio.ids[0]) : null}
-        pace={speed} brightness={brightness}
-        affirmations={affirmationLines} affirmationsEnabled={affirmations.enabled}
-        focus={meditationFocus} disabled={recording||preparing}
-         onNarrationReady={attachMeditationNarration}
-         onNarrationInvalidated={()=>setAttachedAudio(current=>
-           current?.kind==="file"&&current.nonLoop?null:current)}/> : null}
+
 
 
 
