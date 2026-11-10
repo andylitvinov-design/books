@@ -155,7 +155,7 @@ test('crisis interrupts provider invocation in three languages with no silent AI
   const input=normalizeCoachingBrainInput(req())
   assert.equal(coachingBrainSafety(input),null)
   for(const locale of ['en','ru','es']){
-    const fallback=offlineCoachingBrainReply({...input,locale},'grow','options')
+    const fallback=offlineCoachingBrainReply({...input,locale},'grow','explore')
     assert.equal(fallback.mode,'offline')
     assert.ok(fallback.question.length>15)
     assert.equal(fallback.planSuggestion,'')
