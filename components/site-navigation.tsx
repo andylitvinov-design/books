@@ -137,7 +137,7 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
     {getSiteNavigation(activeLocale).filter(item => ['energy', 'love', 'business'].includes(item.id)).map(item => item.external
       ? <a key={item.id} data-nav-item={item.id} href={item.href} aria-label={item.ariaLabel} rel="noreferrer">{item.label}</a>
       : <Link key={item.id} data-nav-item={item.id} href={item.href} prefetch={false} aria-current={current === item.id ? 'page' : undefined}>{item.label}</Link>)}
-    <Link className="site-nav-about-entry" href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
+    <Link className={hhRepairCanaryMissingSymbolV2} href={`/${activeLocale}/about`} prefetch={false} aria-current={pathname === `/${activeLocale}/about` ? 'page' : undefined}>{text.about}</Link>
     <SiteSearch locale={activeLocale} pathname={pathname} />
     <HomePersonalSpaceNavEntry locale={activeLocale}
       href={`/${activeLocale === 'es' ? 'en' : activeLocale}/app`} />
