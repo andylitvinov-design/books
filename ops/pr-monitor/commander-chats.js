@@ -14,6 +14,7 @@
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
  let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null;
+ let executionRefreshTimer=null,executionSyncBusy=false,executionPollCount=0,executionErrorCount=0;
  const COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app';
  const COUNCIL_PROTOCOL='HH_AI_COUNCIL_BRIDGE_V1';
  let councilFrameReady=false,councilPending=null;
@@ -217,22 +218,71 @@
   }
   box.scrollTop=box.scrollHeight;
  }
-function renderThread(){
+function updateExecutionLabel(){
+  const labels={STARTING:'Hermes запускается · ожидаем подтверждение',RUNNING:'Hermes выполняет задачу',
+   BLOCKED:'Запуск требует сверки receipt; повторно не запускаем',WAITING_FOR_APPROVAL:'Ожидается отдельное согласование',
+   COMPLETED:'Исполнитель завершил задачу · CI, merge и LIVE проверяются отдельно',
+   FAILED:'Исполнение завершилось ошибкой',CANCELLED:'Исполнение отменено'};
+  const state=String(thread?.executionState||'').toUpperCase();
+  el('executor-state').textContent=(thread?.taskId?'Чат привязан к защищённой задаче. ':'')+
+   (labels[state]||'Назначение ≠ запуск. Ответ AI не доказывает коммит, merge или LIVE.');
+ }
+ function updateExecutorControls(scope='thread'){
+  const mode=el(scope==='new'?'new-mode':'mode').value;
+  const modelNeeded=['openrouter','hermes'].includes(mode);
+  show(scope==='new'?'new-model-label':'model-label',modelNeeded);
+  show(scope==='new'?'new-hermes-write-label':'hermes-write-label',mode==='hermes');
+  if(mode!=='hermes')el(scope==='new'?'new-hermes-write':'hermes-write').checked=false;
+ }
+ function renderThread(){
   el('thread-title').textContent=thread.title;
   el('thread-updated').textContent=time(thread.updatedAt)+' · '+(remote?'приватное серверное хранилище':'зашифровано на устройстве');
-  el('executor-state').textContent=(thread.taskId?'Чат привязан к защищённой задаче. ':'')+
-   'Ожидается подтверждённый ответ исполнителя; назначение и консультация AI не запускают код и не доказывают LIVE.';
+  updateExecutionLabel();
   for(const field of ['title','project','description','status'])el(field).value=thread[field]||'';
   el('tasks').value=(thread.tasks||[]).join(', ');el('prs').value=(thread.prs||[]).join(', ');
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
   el('thread-advanced').open=false;el('chat-extra').open=false;el('history').open=false;
-  const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
+  const available=(thread.executors||[]).filter(x=>!['openrouter','hermes'].includes(x)||aiReady);
   if(el('mode').value==='council-free'||!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
-  show('model-label',el('mode').value==='openrouter');
+  updateExecutorControls();
   el('chat-feedback').textContent='';show('chat-feedback',false);
   el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('create',false);show('thread',true);
   renderMessages();renderList();
+ }
+ function stopExecutionPolling(){
+  if(executionRefreshTimer!==null)win.clearInterval(executionRefreshTimer);
+  executionRefreshTimer=null;executionSyncBusy=false;executionPollCount=0;executionErrorCount=0;
+ }
+ function startExecutionPolling(){
+  stopExecutionPolling();
+  if(!remote||!thread||!Number.isSafeInteger(thread.issueNumber))return;
+  const chatId=thread.id;
+  executionRefreshTimer=win.setInterval(async()=>{
+   if(!thread||thread.id!==chatId){stopExecutionPolling();return;}
+   if(doc.visibilityState==='hidden'||executionSyncBusy)return;
+   if(executionPollCount>=180){stopExecutionPolling();info('Автообновление остановлено через 15 минут. Нажмите «Обновить» для сверки статуса.');return;}
+   executionSyncBusy=true;executionPollCount++;
+   try{
+    const runs=await request(SERVER+'?action=runs&issue='+thread.issueNumber);
+    const latest=Array.isArray(runs.runs)?runs.runs[0]:null;
+    const active=latest?.receipt?.dispatchAttempted===true&&
+     !['COMPLETED','FAILED','CANCELLED','WAITING_FOR_APPROVAL'].includes(latest.status);
+    if(!active){
+     if(latest?.receipt?.dispatchAttempted===true){
+      const final=await request(SERVER+'?action=read&issue='+thread.issueNumber);
+      if(thread?.id===chatId){thread=final.chat;messages=final.messages;updateExecutionLabel();renderMessages();renderList();}
+     }
+     stopExecutionPolling();return;
+    }
+    const fresh=await request(SERVER+'?action=read&issue='+thread.issueNumber);
+    if(thread?.id===chatId){thread=fresh.chat;messages=fresh.messages;updateExecutionLabel();renderMessages();renderList();}
+    executionErrorCount=0;
+   }catch(error){
+    executionErrorCount++;
+    if(executionErrorCount>=3){stopExecutionPolling();info('Не удалось обновить receipt Hermes. Повторный запуск не выполнялся. Нажмите «Обновить» для сверки.');}
+   }finally{executionSyncBusy=false;}
+  },5000);
  }
  function startReportPolling(){
   if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
@@ -250,7 +300,7 @@ function renderThread(){
     thread=v.chat;messages=v.messages;if(v.truncated)info('Длинная история GitHub: охват ограничен пятью страницами.');
    }else{thread=chats.find(x=>x.id===c.id);messages=thread?.messages||[];}
    if(!thread)throw Error('Чат не найден');renderThread();
-   startReportPolling();
+   startReportPolling();startExecutionPolling();
    void reportList({automatic:true,silent:true});
    el('thread').scrollIntoView({block:'start',behavior:'smooth'});
   }catch(err){info('Ошибка открытия чата: '+String(err.message||err))}
@@ -264,13 +314,16 @@ function renderThread(){
   };
   if(busy)return fail('Другая операция ещё выполняется. Повторите нажатие.');
   const question=el('new-question').value.trim(),mode=el('new-mode').value;
+  const selectedModel=el('new-model').value||el('model').value;
+  const writeConfirmed=mode==='hermes'&&el('new-hermes-write').checked;
   busy=true;button.disabled=true;
   const buttonLabel=button.textContent;button.textContent='Создаю…';
   feedback.hidden=true;feedback.textContent='';
   let created=false;
   try{
    if(question.length<2||question.length>1200)throw Error('Вопрос должен содержать 2–1200 символов.');
-   if(mode==='openrouter'&&!aiReady)throw Error('Бесплатная модель OpenRouter сейчас недоступна. Выберите локального советника.');
+   if(['openrouter','hermes'].includes(mode)&&(!aiReady||!models.some(x=>x.id===selectedModel)))
+    throw Error('Нет подтверждённой бесплатной модели OpenRouter. Выберите доступную модель или локального советника.');
    if(!el('new-title').value.trim())el('new-title').value=('Вопрос: '+question.replace(/\s+/g,' ')).slice(0,110);
    if(el('new-title').value.trim().length<4)el('new-title').value='Вопрос: '+question.slice(0,95);
    const data={...formValues('new-'),id:pendingCreateId||(pendingCreateId=id())};let c;
@@ -305,7 +358,8 @@ function renderThread(){
    thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});
    el('create-form').reset();el('new-mode').value=aiReady?'openrouter':'local';pendingCreateId=null;
    if(el('new-context').open)el('new-context').close();
-   el('mode').value=mode;show('model-label',mode==='openrouter');
+   el('mode').value=mode;el('model').value=selectedModel;el('hermes-write').checked=writeConfirmed;
+   updateExecutorControls();updateExecutorControls('new');
    el('message').value=question;
    created=true;
    info('Отправляю вопрос…');
@@ -445,7 +499,7 @@ async function update(e){
   e.preventDefault();if(!thread||busy)return;
   const text=el('message').value.trim(),mode=el('mode').value,model=el('model').value;
   if(text.length<2||text.length>1200)return info('Сообщение должно содержать 2–1200 символов.');
-  if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
+  if(['openrouter','hermes'].includes(mode)&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
   let c=thread;
   if(mode!=='council-free'&&!thread.executors.includes(mode)){
    busy=true;el('send').disabled=true;
@@ -473,17 +527,22 @@ async function update(e){
    busy=true;el('send').disabled=true;
    try{
     await append(c,'owner',text,'');el('message').value='';
-    const runId=id(),idempotencyKey=id();
+    const runId=id(),idempotencyKey=idempotencyKey=id(),confirmGitHubWrite=mode==='hermes'&&el('hermes-write').checked;
     const result=await request(SERVER+'?action=run','POST',{
-     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text
+     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text,
+     modelId:mode==='hermes'?model:undefined,confirmGitHubWrite
     });
+    el('hermes-write').checked=false;
     try{
      const latest=await request(SERVER+'?action=read&issue='+c.issueNumber);
      if(thread?.id===c.id){thread=latest.chat;messages=latest.messages;renderThread();}
     }catch{}
     const reasons={
      HERMES_RUNTIME_NOT_CONFIGURED:'Hermes HTTPS runtime и секрет не настроены',
-     HERMES_EXECUTOR_DISPATCH_CONTRACT_NOT_VERIFIED:'Нет проверенного Hermes executor endpoint',
+     HERMES_FREE_MODEL_NOT_SELECTED:'Выберите подтверждённую бесплатную модель',
+     HERMES_GITHUB_WRITE_NOT_CONFIGURED:'GitHub Write не настроен на сервере; запуск остановлен безопасно',
+     COMMANDER_FREE_EXECUTOR_NOT_CONFIGURED:'Бесплатный OpenRouter executor Hermes не настроен',
+     OPENROUTER_IS_ADVISOR_MODE_NOT_EXECUTOR:'OpenRouter доступен как советник; для выполнения выберите Hermes',
      CODEX_LOCAL_AGENT_OFFLINE_OR_REMOTE_APPROVAL_DISABLED:'Локальный Codex agent Offline или remote approval выключен',
      REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE:'Нужны точный PR HEAD и активная lease',
      CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE:'Нет поддерживаемого транспорта ChatGPT Work',
@@ -491,7 +550,8 @@ async function update(e){
     };
     info(result.status==='BLOCKED'
      ?'Запрос и попытка сохранены. Исполнитель НЕ запущен: '+(reasons[result.reasonCode]||result.reasonCode)+'. Код: '+result.reasonCode+'.'
-     :'Запрос отправлен; дождитесь отдельного подтверждения запуска исполнителя.');
+     :'Hermes принял запрос: '+(result.status||'STARTING')+'. Receipt будет обновляться в чате; это ещё не подтверждение коммита, CI, merge или LIVE.');
+    startExecutionPolling();
    }catch(err){info('Сообщение сохранено, но запуск не подтверждён: '+String(err.message||err))}
    finally{busy=false;el('send').disabled=false}
    return;
@@ -672,10 +732,14 @@ async function update(e){
    const s=await request(AI+'?action=status');aiReady=s.modes?.openrouter===true;
    if(aiReady){const m=await request(AI+'?action=models');models=m.models||[];aiReady=models.length>0;}
   }catch{aiReady=false;models=[]}
-  el('model').replaceChildren();
-  for(const m of models){const o=make('option',null,m.name+' · '+m.id);o.value=m.id;el('model').append(o)}
-  for(const select of [el('mode'),el('new-mode')])
+  for(const select of [el('model'),el('new-model')]){
+   select.replaceChildren();
+   for(const m of models){const o=make('option',null,m.name+' · '+m.id);o.value=m.id;select.append(o);}
+  }
+  for(const select of [el('mode'),el('new-mode')]){
    select.querySelector('option[value=openrouter]').disabled=!aiReady;
+   select.querySelector('option[value=hermes]').disabled=!aiReady;
+  }
   el('new-mode').value=aiReady?'openrouter':'local';
   if(remote){
    show('board',true);
@@ -710,6 +774,7 @@ async function update(e){
  });
  function showNewChat(){
   if(busy)return;
+  stopExecutionPolling();
   if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
   reportRefreshTimer=null;thread=null;messages=[];pendingCreateId=null;el('history').open=false;
   show('thread',false);show('create',true);renderList();
@@ -746,7 +811,8 @@ async function update(e){
   finally{busy=false;el('refresh').disabled=false;}
  });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
- el('mode').addEventListener('change',()=>{show('model-label',el('mode').value==='openrouter');if(el('mode').value!=='council-free')show('council-panel',false)});
+ el('mode').addEventListener('change',()=>{updateExecutorControls();if(el('mode').value!=='council-free')show('council-panel',false)});
+ el('new-mode').addEventListener('change',()=>updateExecutorControls('new'));
  win.addEventListener('message',event=>{void receiveCouncilMessage(event)});
  request(AI+'?action=status').then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
   authorized=false;show('login',true);info('Продолжите через Google — отдельный код PR Monitor не нужен.');
