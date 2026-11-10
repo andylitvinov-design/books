@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {OWNER_RATE_RESERVE,JOB_RATE_RESERVE,eligible,chooseRepairWriter}=
  require('../scripts/ci-pr-repair-credential-policy.cjs');
-const valid=remaining=>({ok:true,push:true,remaining});
+const valid=remaining=>({ok:true,canPush:true,remaining});
 test('dedicated owner token preferred only when rate reserve permits',()=>{
  assert.equal(OWNER_RATE_RESERVE,100);assert.equal(JOB_RATE_RESERVE,24);
  assert.equal(chooseRepairWriter({owner:valid(100),job:valid(200)}),'owner');
@@ -11,14 +11,14 @@ test('dedicated owner token preferred only when rate reserve permits',()=>{
 test('low owner rate safely chooses scoped job credential',()=>{
  assert.equal(chooseRepairWriter({owner:valid(99),job:valid(24)}),'job');
  assert.equal(chooseRepairWriter({owner:valid(0),job:valid(1000)}),'job');
- assert.equal(chooseRepairWriter({owner:{ok:false,push:false,remaining:0},job:valid(800)}),'job');
+ assert.equal(chooseRepairWriter({owner:{ok:false,canPush:false,remaining:0},job:valid(800)}),'job');
  assert.equal(chooseRepairWriter({job:valid(1000)}),'job');
 });
 test('unknown or weak credentials fail closed before source mutation',()=>{
- for(const bad of [null,undefined,{}, {ok:false,push:true,remaining:1000},
- {ok:true,push:false,remaining:1000},{ok:true,push:true,remaining:null},
- {ok:true,push:true,remaining:NaN},{ok:true,push:true,remaining:-1},
- {ok:true,push:true,remaining:23.5},valid(23)]){
+ for(const bad of [null,undefined,{}, {ok:false,canPush:true,remaining:1000},
+ {ok:true,canPush:false,remaining:1000},{ok:true,canPush:true,remaining:null},
+ {ok:true,canPush:true,remaining:NaN},{ok:true,canPush:true,remaining:-1},
+ {ok:true,canPush:true,remaining:23.5},valid(23)]){
   assert.equal(eligible(bad,JOB_RATE_RESERVE),false);
   assert.throws(()=>chooseRepairWriter({owner:valid(99),job:bad}),
    /NO_VERIFIED_WRITER_CREDENTIAL_OR_API_RATE/);
