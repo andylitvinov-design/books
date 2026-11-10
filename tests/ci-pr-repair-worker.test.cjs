@@ -782,7 +782,7 @@ test('free model is activated only after deterministic failure and never sees wr
  assert.doesNotMatch(trustedPublish,/name: \$\{\{ needs.fix.outputs.candidate_status/);
  assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
  const pub=wf.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
- assert.match(pub,/HH_AUTOMERGE_TOKEN/);
+ assert.match(pub,/HH_REPAIR_JOB_TOKEN/);
  for(const isolated of [codeFix,codeVerify])assert.doesNotMatch(isolated,/HH_AUTOMERGE_TOKEN/);
 });
 test('free-model failures report NO source commit while unverified proposals cannot publish',async()=>{
