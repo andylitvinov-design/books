@@ -697,7 +697,20 @@ jobs:
                 ...(payload?{body:JSON.stringify(payload)}:{})
               });
               const data=await response.json().catch(()=>({}));
-              if(!response.ok)throw Error('Owner API '+response.status+': '+String(data.message||'denied').slice(0,140));
+              if(!response.ok){
+                // Log only allowlisted operation/status/permission metadata.
+                // Never log raw provider errors, branch, token or source code.
+                const operation=rateGuard.writerOperation(method,path);
+                const receipt={
+                  schema:'HH_REPAIR_GIT_DATA_DENIED_V1',
+                  operation,status:response.status,
+                  kind:rateGuard.errorKind(response.status,String(data.message||'')),
+                  accepted_permissions:rateGuard.allowedPermissions(
+                    response.headers.get('x-accepted-github-permissions'))
+                };
+                core.error('HH_REPAIR_GIT_DATA_DENIED '+JSON.stringify(receipt));
+                throw Error('HH_REPAIR_GIT_DATA_'+operation+'_HTTP_'+response.status);
+              }
               if(minRemaining>0){
                 const rate=rateGuard.requireOwnerRateBudget(response.headers,minRemaining);
                 core.info('HH_REPAIR_OWNER_RATE_BUDGET '+JSON.stringify(rate));
