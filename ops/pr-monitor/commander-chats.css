@@ -305,3 +305,9 @@ body.hh-cc-shell.cc-keyboard-active .cc-composer-space{
 @media(prefers-reduced-motion:reduce){
  .cc-composer-space,.cc-voice-toggle{transition:none!important}
 }
+
+/* HH_COMMANDER_HERMES_HANDOFF_V1 */
+.cc-executor-options{display:grid;gap:6px;margin-top:5px}
+.cc-executor-options label{margin:0}
+.cc-dispatch-consent{display:flex;align-items:flex-start;gap:8px;margin:5px 0;padding:7px 9px;border:1px solid var(--line,#d9dce3);border-radius:10px;font-size:12px;line-height:1.35;color:var(--muted,#5e6572)}
+.cc-dispatch-consent input{width:auto;flex:0 0 auto;margin:2px 0 0}
