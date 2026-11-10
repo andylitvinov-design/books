@@ -58,7 +58,12 @@ jobs:
             core.setOutput('receipt_json',JSON.stringify(receipt));
             await core.summary.addHeading('Core failure CI intake (independent of source writer)')
               .addCodeBlock(JSON.stringify(receipt,null,2)).write();
-            if(receipt.accepted!==true||receipt.association!=='MATCHED_CHAT_EVENT_RECORDED')
+            const persistedAssociations=new Set([
+              'MATCHED_CHAT_EVENT_RECORDED',
+              'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED',
+              'AUTO_TASK_CREATED_NOT_DISPATCHED'
+            ]);
+            if(receipt.accepted!==true||!persistedAssociations.has(receipt.association))
               throw Error('COMMANDER_CI_TASK_INGEST_NOT_VERIFIED');
   direct-core-failure:
     needs: ci_event_intake
