@@ -251,8 +251,8 @@ test("WebKit macOS media acceptance is headed, real encoded audio and never a mo
 });
 
 test("post-edit consent reset is checked after entering custom narration text",()=>{
-  const panel=source.indexOf('const voicePanel=page.locator("[data-video-voice-studio]")');
-  const studio=source.indexOf('const studio=voicePanel.locator("[data-voice-studio]")',panel);
+  const panel=source.indexOf('const voiceStudioPanel=page.locator("[data-video-voice-studio]")');
+  const studio=source.indexOf('const studio=voiceStudioPanel.locator("[data-voice-studio]")',panel);
   const custom=source.indexOf('await studio.getByRole("button",{name:locale==="ru"?"Мой текст":"My own script",exact:true}).click()',studio);
   const fill=source.indexOf('await studio.locator("textarea").fill(customText)',custom);
   const consent=source.indexOf('studio.locator(\'input[type="checkbox"]\')',fill);
@@ -446,14 +446,14 @@ test("real WebKit selects Settings duration, then the top-level Audio workspace 
  assert.match(browser,/data-video-quick-generate/);
 });
 test("post-export stale narration refusal reopens mounted Audio and consented Voice",()=>{
- const start=source.indexOf('the old WAV may remain attached, but must be unusable until narration is regenerated');
+ const start=source.indexOf("the old WAV may remain attached, but must be unusable until narration is regenerated");
  const audio=source.indexOf("const audioWorkspaceAfterExport=page.locator",start);
  const tap=source.indexOf("await audioWorkspaceAfterExport.click()",audio);
  const selected=source.indexOf('await expect(page.locator("[data-video-audio-workspace]")).toBeVisible()',tap);
  const voice=source.indexOf('await page.locator(\'[data-video-audio-tab="voice"]\').click()',selected);
  assert.ok(start>=0&&audio>start&&tap>audio&&selected>tap&&voice>selected,
    "stale narration refusal returns visitor to Audio / Voice");
- assert.match(source,/const voicePanel=page\.locator\("\[data-video-voice-studio\]"\)/);
+ assert.match(source,/const voiceStudioPanel=page\.locator\("\[data-video-voice-studio\]"\)/);
  assert.match(source,/await expect\(studioConsent\)\.not\.toBeChecked/);
 });
 
@@ -466,7 +466,7 @@ test("WebKit release follows the real Montage Settings, Audio, and voice disclos
  assert.match(source,/await page\.locator\('\[data-video-audio-tab="voice"\]'\)\.click\(\)/);
  assert.match(source,/data-video-audio-panel="voice"/);
  assert.match(source,/const voicePanel=page\.locator\("\[data-video-voice-studio\]"\)/);
- assert.match(source,/voicePanel\.locator\(":scope > summary"\)\.click\(\)/);
+ assert.match(source,/voiceStudioPanel\.locator\(":scope > summary"\)\.click\(\)/);
  assert.doesNotMatch(source,/data-video-montage-settings|data-video-basic-tab=|data-video-audio-length="/);
 });
 
