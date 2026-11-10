@@ -49,6 +49,11 @@ const copy={
     missing:'Escribe al menos tres caracteres.',revoke:'El consentimiento se aplica solo a esta página. Desmárcalo para dejar de enviar.',confidential:'No escribas contraseñas, claves API ni números de documentos.',
   },
 }
+const offlineReasons={
+  en:{feature_disabled:'The AI service is not enabled yet.',server_not_configured:'The AI connection is not configured.',privacy_model_unavailable:'No free privacy-preserving model is available. Your answer stays offline.',rate_limited:'The free AI limit was reached.',cost_unverified:'Free processing could not be verified.',response_unverified:'The AI answer did not pass validation.',model_unavailable:'The AI service is temporarily unavailable.'},
+  ru:{feature_disabled:'AI-сервис пока не включён.',server_not_configured:'Подключение AI не настроено.',privacy_model_unavailable:'Нет доступной бесплатной модели с защитой данных. Используется офлайн-вопрос.',rate_limited:'Лимит бесплатной модели исчерпан.',cost_unverified:'Не подтверждена бесплатность ответа.',response_unverified:'Ответ AI не прошёл проверку.',model_unavailable:'AI-сервис временно недоступен.'},
+  es:{feature_disabled:'El servicio de IA aún no está habilitado.',server_not_configured:'La conexión de IA no está configurada.',privacy_model_unavailable:'No hay un modelo gratuito con privacidad verificada. Seguimos sin IA.',rate_limited:'Se alcanzó el límite del modelo gratuito.',cost_unverified:'No se pudo verificar el coste cero.',response_unverified:'La respuesta de IA no pasó la validación.',model_unavailable:'El servicio de IA no está disponible temporalmente.'},
+}
 const methodLabels={
   grow:'GROW',motivational_interviewing:'Motivational Interviewing',
   woop:'WOOP',solution_focused:'Solution-focused',oskar:'OSKAR',
@@ -94,6 +99,7 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
         result.question].filter(Boolean).join('\n\n')
       const response={role:'assistant',content:replyText,mode:result.mode,
         method:result.method,stage:result.stage,phase:result.phase,
+        offlineReason:result.mode==='offline'?result.offlineReason||'model_unavailable':'',
         suggestion:result.planSuggestion||'',evidence:result.evidenceQuote||''}
       setTurns(previous=>[...previous,{role:'user',content:message},response].slice(-12))
       setDraft('')
@@ -134,7 +140,9 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
           {turns.map((turn,index)=><article key={index} className={turn.role==='user'?styles.user:styles.assistant}>
             <span className={styles.sender}>{turn.role==='user'?t.you:t.coach}</span>
             {turn.role==='assistant'&&<div className={styles.meta}>
-              {turn.mode==='ai'?t.ai:turn.mode==='safety'?t.safety:t.offline}
+              {turn.mode==='ai'?t.ai:turn.mode==='safety'?t.safety:
+                turn.mode==='offline'&&turn.offlineReason?
+                  t.offline+' · '+(offlineReasons[lang][turn.offlineReason]||offlineReasons[lang].model_unavailable):t.offline}
               {turn.mode==='ai'&&turn.method&&<> · {t.method}: {methodLabels[turn.method]||turn.method}</>}{turn.phase&&<> · {t.phase}: {t.phases[turn.phase]||turn.phase}</>}
             </div>}
             <p>{turn.content}</p>
