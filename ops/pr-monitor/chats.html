@@ -38,10 +38,11 @@
 </div>
 <section id="cc-create" class="cc-surface cc-quick-compose" aria-label="Новый чат">
 <h2>Новый чат</h2>
-<form id="cc-create-form">
+<form id="cc-create-form" novalidate>
   <label class="cc-visually-hidden" for="cc-new-question">Ваш вопрос</label>
   <textarea id="cc-new-question" rows="3" minlength="2" maxlength="1200" required autocomplete="off"
     placeholder="Спросите что угодно…"></textarea>
+  <p id="cc-create-feedback" class="cc-chat-feedback cc-create-feedback" role="alert" aria-live="assertive" tabindex="-1" hidden></p>
   <div class="cc-compose-footer">
     <label class="cc-mode-pick" for="cc-new-mode">Исполнитель
       <select id="cc-new-mode" aria-label="Выберите исполнителя">
@@ -75,7 +76,6 @@
     <label>Цель (необязательно)<textarea id="cc-new-description" rows="2" maxlength="1000" placeholder="Ожидаемый результат"></textarea></label>
   </dialog>
 </form>
-<p id="cc-create-feedback" class="cc-chat-feedback" role="status" aria-live="polite" hidden></p>
 </section>
 
 <section class="cc-surface cc-thread-surface" id="cc-thread" hidden aria-label="Выбранный чат">
