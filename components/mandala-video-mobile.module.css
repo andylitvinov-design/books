@@ -5363,7 +5363,15 @@
 /* Approved Montage > Text one-screen mobile composition · 2026-11-10.
    The existing Canvas remains mounted, and appears for intentional preview. */
 .studio[data-active-workspace="editor"][data-montage-panel="text"]:not([data-video-preview-playing="true"]) .previewStage{display:none!important}
-.studio[data-active-workspace="editor"][data-montage-panel="text"] .quickBuilder>[data-video-order-bar]{display:none!important}
+.studio[data-active-workspace="editor"][data-montage-panel="text"] .quickBuilder>[data-video-order-bar]{
+  display:grid!important; /* mandatory narration/phrase reapproval notices must stay visible */
+  min-height:0!important;margin:0!important;padding:0!important;border:0!important;
+  box-shadow:none!important;background:transparent!important
+}
+.studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-order-bar] .quickOrderSummary,
+.studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-order-bar] .stageActionPair{
+  display:none!important; /* only the redundant price + CTA pair are hidden */
+}
 .studio[data-active-workspace="editor"][data-montage-panel="text"] [data-video-basic-editor]{
   background:transparent!important;border:0!important;box-shadow:none!important;
   padding:0!important;margin:0!important;gap:7px!important

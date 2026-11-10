@@ -20,6 +20,13 @@ test("Montage Text retains the original seven-phrase editor and all three phrase
 });
 test("Text-only mobile UI hides size, note, refine, clear and outer duplicate CTA",()=>{
  assert.ok(layout.includes('[data-montage-panel="text"] .quickBuilder>[data-video-order-bar]'));
+ assert.match(layout,/\.quickBuilder>\[data-video-order-bar\]\{[\s\S]*?display:grid!important/);
+ for(const cls of [".quickOrderSummary",".stageActionPair"])
+  assert.ok(layout.includes('[data-montage-panel="text"] [data-video-order-bar] '+cls),cls);
+ assert.ok(studio.includes('data-video-narration-reapproval'),'stale narration warning stays mounted');
+ assert.ok(studio.includes('data-video-phrase-approval-required'),'unapproved phrase warning stays mounted');
+ assert.ok(studio.includes('if(narrationInvalid){'),'actual Generate remains narration guarded');
+ assert.ok(studio.includes('if(phrasePending){'),'actual Generate remains phrase guarded');
  assert.ok(layout.includes('[data-montage-panel="text"] [data-video-montage-text]>.montageMovedNote'));
  for(const cls of [".sizeCard",".subtitle",".refine",".clear",".privacy"])
   assert.ok(css.includes('[data-montage-panel="text"]) '+cls),cls);
