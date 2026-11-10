@@ -71,6 +71,7 @@ test('published free-model cases require and retain the exact zero-cost model pr
  assert.equal(free.skill_id,'bounded-free-ai');
  assert.equal(free.code_backend,'openrouter');
  assert.equal(free.code_model,'cohere/north-mini-code:free');
+ assert.equal(free.code_model_verified,true);
  assert.equal(validCase(free),true);
  assert.equal(buildPublishedCase({...record,strategy:'code',repair_kind:'free_ai'}),null);
  assert.equal(buildPublishedCase({...record,strategy:'code',repair_kind:'free_ai',
