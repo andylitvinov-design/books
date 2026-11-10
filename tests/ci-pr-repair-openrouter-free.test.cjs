@@ -80,19 +80,19 @@ test('priced catalog, 429, wrong model, paid usage and invalid reply fail closed
 test('named free coding routes prioritize specialization, not catalog usage popularity',()=>{
  assert.equal(DEFAULT_MODEL,'cohere/north-mini-code:free');
  assert.deepEqual(MODEL_PROFILES.repair.slice(0,2),
-  ['cohere/north-mini-code:free','recursive/flint-v1.0:free']);
+  ['recursive/flint-v1.0:free','cohere/north-mini-code:free']);
  assert.equal(MODEL_PROFILES.architecture[0],'nvidia/nemotron-3-ultra-550b-a55b:free');
  assert.equal(MODEL_PROFILES.visual[0],'nvidia/nemotron-3.5-super-vl:free');
  assert.ok(Object.values(MODEL_PROFILES).every(profile=>profile.every(
    candidate=>selectedModel(candidate)===candidate)));
 });
 test('one preflight catalog selects next verified free code model; one inference, zero billing',async()=>{
- const second=MODEL_PROFILES.repair[1],picked=[];
+ const first=MODEL_PROFILES.repair[0],second=MODEL_PROFILES.repair[1],picked=[];
  const calls=[];
  const fetchImpl=async(url,args)=>{
   calls.push({url,args});
   if(calls.length===1)return response({data:[
-   entry({prompt:'0.01',completion:'0'}),
+   {...entry({prompt:'0.01',completion:'0'}),id:first},
    {...entry(),id:second}
   ]});
   return response({model:second,usage:{cost:0},choices:[{message:{content:'diff --git a/a b/a'}}]});
