@@ -330,7 +330,7 @@ test('signed Repair Worker outcome receipts are surfaced only when PR, HEAD, tas
  assert.equal(rows[0].status,'FIXED');
  assert.equal(rows[0].head_sha,old);
  assert.equal(rows[0].new_sha,next);
- assert.equal(rows[0].current_head,false);
+ assert.equal(rows[0].current_head,true);
  assert.equal(rows[0].responsible_role,'exact-head-ci-verifier');
  assert.equal(rows[0].source,'SIGNED_GITHUB_ACTIONS_REPAIR_FINALIZER');
 });
@@ -392,4 +392,58 @@ test('existing mobile PR monitor renders signed repair task outcomes and next ac
  assert.match(src,/Следующая проверка/);
  assert.match(src,/status==='FIXED'/);
  assert.match(src,/не статус VERIFIED/);
+});
+
+
+test('on-demand PR attribution promotes FIXED to VERIFIED only after exact current-head protected gates pass',async()=>{
+ const old='a'.repeat(40),next='b'.repeat(40),task='f'.repeat(32),run='912348';
+ const created=at(45);
+ const record={schema:'HH_PR_TASK_V1',task_key:task,pr_number:3390,head_sha:old,
+  state:'PUBLISHED',source_published:true,new_sha:next,created_at:created,owner_run_id:run,
+  run_url:'https://github.com/'+repo+'/actions/runs/'+run,
+  outcome:{schema:'HH_TASK_OUTCOME_V1',task_key:task,pr_number:3390,head_sha:old,
+   status:'FIXED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+   responsible_role:'exact-head-ci-verifier',next_action:'VERIFY_EXACT_HEAD_REQUIRED_CI',
+   next_check_at:at(60),created_at:created,owner_run_id:run,
+   source_published:true,verified_source:true,new_sha:next,terminal:false}};
+ const body='<!-- HH_PR_REPAIR_OUTCOME_V1 '+old+' '+run+' -->\n'+
+  '<!-- HH_PR_TASK_V1 -->\n\x60\x60\x60json\n'+JSON.stringify(record)+'\n\x60\x60\x60';
+ const outcomeComment={id:9004,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},created_at:at(46),updated_at:at(46),
+  html_url:'https://github.com/'+repo+'/pull/3390#issuecomment-9004',body};
+ const m=makeRequest({commentRows:[...comments,outcomeComment]});
+ const data=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100))});
+ const row=data.task_outcomes?.find(x=>x.task_key===task);
+ assert.ok(row);
+ assert.equal(row.recorded_status,'FIXED');
+ assert.equal(row.status,'VERIFIED');
+ assert.equal(row.current_head,true);
+ assert.equal(row.verification_evidence,'EXACT_CURRENT_HEAD_CORE_SPECIALIST_MERGE_GATES');
+ assert.equal(row.verified_at,at(75));
+});
+
+test('green checks for an earlier HEAD do not promote a published outcome to VERIFIED',async()=>{
+ const old='a'.repeat(40),next='b'.repeat(40),task='f'.repeat(32),run='912349';
+ const created=at(45);
+ const record={schema:'HH_PR_TASK_V1',task_key:task,pr_number:3390,head_sha:old,
+  state:'PUBLISHED',source_published:true,new_sha:next,created_at:created,owner_run_id:run,
+  run_url:'https://github.com/'+repo+'/actions/runs/'+run,
+  outcome:{schema:'HH_TASK_OUTCOME_V1',task_key:task,pr_number:3390,head_sha:old,
+   status:'FIXED',reason_code:'SOURCE_COMMIT_VERIFIED_ON_PR_HEAD',
+   responsible_role:'exact-head-ci-verifier',next_action:'VERIFY_EXACT_HEAD_REQUIRED_CI',
+   next_check_at:at(60),created_at:created,owner_run_id:run,
+   source_published:true,verified_source:true,new_sha:next}};
+ const body='<!-- HH_PR_REPAIR_OUTCOME_V1 '+old+' '+run+' -->\n'+
+  '<!-- HH_PR_TASK_V1 -->\n\x60\x60\x60json\n'+JSON.stringify(record)+'\n\x60\x60\x60';
+ const outcomeComment={id:9005,user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'},created_at:at(46),updated_at:at(46),body};
+ const changed={...pr,head:{...pr.head,sha:'c'.repeat(40)}};
+ const m=makeRequest({prValue:changed,commentRows:[...comments,outcomeComment]});
+ const data=await api.loadPr(3390,{request:m.request,now:Date.parse(at(100))});
+ const row=data.task_outcomes?.find(x=>x.task_key===task);
+ assert.ok(row);
+ assert.equal(row.recorded_status,'FIXED');
+ assert.equal(row.status,'FIXED');
+ assert.equal(row.current_head,false);
+ assert.equal(row.verification_evidence,'SOURCE_PUBLISHED_WAITING_EXACT_HEAD_REQUIRED_CI');
 });
