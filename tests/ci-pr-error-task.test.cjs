@@ -87,7 +87,10 @@ test('delivery/execution reconciliation never equates classification with worker
  const receipt=state=>bot('<!-- HH_PR_TASK_V1 -->\n'+
   String.fromCharCode(96).repeat(3)+'json\n'+
   JSON.stringify({schema:'HH_PR_TASK_V1',task_key:key,pr_number:x.pr_number,
-    head_sha:x.head_sha,state})+'\n'+String.fromCharCode(96).repeat(3));
+    head_sha:x.head_sha,error_task_id:x.task_id,state})+'\n'+String.fromCharCode(96).repeat(3));
+ const unrelated=bot(receipt('PUBLISHED').body.replace(x.task_id,'c'.repeat(32)));
+ a.equal(taskLifecycle([bot(taskBody(x)),unrelated],x).state,'CLASSIFIED_NOT_DELIVERED',
+  'an unrelated task on the same PR/HEAD cannot prove this failure was delivered');
  a.equal(taskLifecycle([bot(taskBody(x)),receipt('RESERVED')],x).state,'RESERVED_DELIVERY_UNVERIFIED');
  a.equal(taskLifecycle([bot(taskBody(x)),receipt('CLAIMED')],x).state,'EXECUTOR_CLAIMED_NOT_COMPLETED');
  a.equal(taskLifecycle([bot(taskBody(x)),receipt('FAILED')],x).state,'REPAIR_FAILED_REDIAGNOSE');
