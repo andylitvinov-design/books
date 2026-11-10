@@ -25,7 +25,7 @@ test("alternative retry preserves the source answer and appends a labelled versi
   assert.match(chat,/lastAnswerRef\.current=\{message:text,history:prior,decision:data\.decision,locale:turnLocale\}/);
   assert.match(chat,/variant\?:"alternative"/);
   assert.match(chat,/variant==="alternative"/);
-  assert.match(chat,/setMessages\(prev=>\[\.\.\.prev,\{role:"assistant",text:generated\.text,variant:"alternative"\}\]/);
+  assert.match(chat,/setMessages\(prev=>\[\.\.\.prev,\{role:"assistant" as const,text:generated\.text,variant:"alternative" as const\}\]/);
   assert.match(chat,/data-hh-alternative-actions/);
   assert.match(chat,/Another answer/);
   assert.match(chat,/Объяснить проще/);
