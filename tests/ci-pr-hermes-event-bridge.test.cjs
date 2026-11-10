@@ -193,3 +193,19 @@ test('event bridge preserves exact live dirty mergeability for conflict classifi
  assert.equal(result.classification.responsible_role,'semantic-conflict-resolver');
  assert.equal(result.classification.retry.allowed,false);
 });
+
+
+test('known real Specialist gate fingerprint becomes an owner-visible strategy with no blind retry',()=>{
+ const jobs=[
+  {name:'core-lint-types-build',conclusion:'success',steps:[]},
+  {name:'hh-specialist',conclusion:'failure',steps:[{name:'Validate exact-head risk and required specialist workflows',conclusion:'failure'}]},
+  {name:'hh-merge-check',conclusion:'failure',steps:[{name:'Require real Core and specialist results from this workflow',conclusion:'failure'}]}
+ ];
+ const d=buildDiagnostics(jobs,makePR());
+ assert.equal(d.category,'TEST_FAILURE');
+ assert.equal(d.classification.reason_code,'SPECIALIST_GATE_FAILED_REQUIRES_TRIAGE');
+ assert.equal(d.classification.strategy_code,'SPECIALIST_TRIAGE');
+ assert.equal(d.classification.next_action,'VERIFY_INDEPENDENT_SPECIALIST_CHECK');
+ assert.equal(d.classification.retry.allowed,false);
+ assert.equal(d.classification.execution_authorized,false);
+});
