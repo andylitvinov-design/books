@@ -79,7 +79,8 @@ test("macOS WebKit hydration follows Ideas → Montage, then opens the top-level
  assert.match(studio,/data-video-audio-panel="meditations"/);
  assert.match(practice,/data-guided-add-meditation/);
  assert.match(practice,/data-guided-skip-meditation/);
- assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\)/);
+assert.doesNotMatch(studio,/data-video-phrase-audio-shortcut|data-video-legacy-phrase-editor/);
+assert.match(studio,/setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\);setVoiceStudioActivated\(true\)/);
 });
 test("macOS WebKit exercises explicit accessible adult consent and revocation",()=>{
  const source=read("scripts/verify-affirmation-voice-browser.mjs");
