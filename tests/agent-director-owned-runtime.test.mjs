@@ -16,47 +16,48 @@ const run={
   confirmGitHubWrite:false,
   contextCapsule:{schema:'HH_COMMANDER_TASK_CONTEXT_V1',title:'Review task',linkedPrHintsVerified:false}
 };
-const configured={
-  HH_AGENT_OLLAMA_ENABLED:'true',
-  HH_AGENT_OLLAMA_ENDPOINT:'https://ollama.example/api/chat',
-  HH_AGENT_OLLAMA_MODEL:'qwen2.5-coder:7b',
-  HH_AGENT_OLLAMA_TOKEN:'test-only-token-which-is-never-logged',
-  VERCEL_ENV:'production'
-};
+const configured={HH_AGENT_OPENROUTER_API_KEY:'sk-or-v1-test-only-key-which-is-never-logged'};
 function response(body,status=200){
-  return {ok:status>=200&&status<300,status,json:async()=>body};
+  return {ok:status>=200&&status<300,status,text:async()=>JSON.stringify(body)};
 }
+const freeCompletion={
+  model:'meta-llama/llama-3.3-70b-instruct:free',
+  usage:{prompt_tokens:120,completion_tokens:90,total_tokens:210,cost:0},
+  choices:[{message:{content:'Проверил контекст. Предлагаю сначала выполнить тесты и затем подготовить ограниченный Draft PR.'}}]
+};
 
-test('owned runtime is disabled unless the first-party model flag and protected endpoint are configured',()=>{
+test('OpenRouter configuration is server-only and disabled without the protected API key',()=>{
   assert.equal(ownedModelConfig({}),null);
-  assert.equal(ownedModelConfig({...configured,HH_AGENT_OLLAMA_ENABLED:'false'}),null);
-  assert.equal(ownedModelConfig({...configured,HH_AGENT_OLLAMA_ENDPOINT:'http://10.0.0.4:11434/api/chat'}),null);
-  assert.equal(ownedModelConfig({...configured,HH_AGENT_OLLAMA_TOKEN:''}),null);
-  assert.equal(ownedModelConfig(configured).model,'qwen2.5-coder:7b');
+  assert.equal(ownedModelConfig({HH_AGENT_OPENROUTER_API_KEY:''}),null);
+  assert.equal(ownedModelConfig({HH_AGENT_OPENROUTER_API_KEY:'too short'}),null);
+  assert.equal(ownedModelConfig(configured).model,'openrouter/free');
+  assert.equal(ownedModelConfig(configured).apiKey,configured.HH_AGENT_OPENROUTER_API_KEY);
 });
 
 test('request validation binds one run to a valid owner, chat and first-party project',()=>{
   assert.equal(normalizeOwnedCommanderRun(run).projectKey,'holistic-house');
+  assert.equal(normalizeOwnedCommanderRun(run).modelId,'owned-default');
   assert.throws(()=>normalizeOwnedCommanderRun({...run,ownerId:'not-a-uuid'}),/INVALID_AGENT_DIRECTOR_ID/);
   assert.throws(()=>normalizeOwnedCommanderRun({...run,projectKey:'other'}),/PROJECT_NOT_ALLOWED/);
   assert.throws(()=>normalizeOwnedCommanderRun({...run,confirmGitHubWrite:'yes'}),/WRITE_POLICY_REQUIRED/);
   assert.throws(()=>normalizeOwnedCommanderRun({...run,contextCapsule:{large:'x'.repeat(4000)}}),/INVALID_AGENT_DIRECTOR_CONTEXT/);
+  assert.throws(()=>normalizeOwnedCommanderRun({...run,modelId:'anthropic/claude-sonnet'}),/INVALID_AGENT_DIRECTOR_MODEL/);
   assert.throws(()=>normalizeOwnedCommanderRun({...run,unexpected:'secret'}),/UNEXPECTED_AGENT_DIRECTOR_FIELD/);
 });
 
-test('missing owned model returns a BLOCKED receipt without starting a network request',async()=>{
+test('missing OpenRouter key returns BLOCKED without any model request',async()=>{
   let calls=0;
   const result=await executeOwnedCommanderRun(run,{env:{},fetcher:async()=>{calls++;throw Error('must not fetch')}});
   assert.equal(result.schema,'HH_AGENT_DIRECTOR_RUN_V1');
   assert.equal(result.status,'BLOCKED');
-  assert.equal(result.reasonCode,'OWNED_MODEL_RUNTIME_NOT_CONFIGURED');
+  assert.equal(result.reasonCode,'OPENROUTER_API_KEY_NOT_CONFIGURED');
   assert.equal(result.agentStarted,false);
   assert.equal(result.executionVerified,false);
   assert.equal(result.sourceWrite,null);
   assert.equal(calls,0);
 });
 
-test('GitHub write confirmation fails closed until the protected first-party writer exists',async()=>{
+test('GitHub write confirmation stays blocked until the protected App writer is explicitly wired',async()=>{
   let calls=0;
   const result=await executeOwnedCommanderRun({...run,confirmGitHubWrite:true},{
     env:configured,fetcher:async()=>{calls++;throw Error('must not fetch')}
@@ -68,23 +69,26 @@ test('GitHub write confirmation fails closed until the protected first-party wri
   assert.equal(calls,0);
 });
 
-test('native Ollama completion returns a read-only receipt and never claims a source write',async()=>{
+test('first-party Director uses only OpenRouter free router and verifies exact zero cost',async()=>{
   let request;
   const result=await executeOwnedCommanderRun(run,{
     env:configured,
     fetcher:async(url,options)=>{
       request={url:String(url),options,body:JSON.parse(options.body)};
-      return response({message:{content:'Проверил контекст. Предлагаю сначала выполнить тесты и только затем создавать PR.'}});
+      return response(freeCompletion);
     }
   });
-  assert.equal(request.url,configured.HH_AGENT_OLLAMA_ENDPOINT);
+  assert.equal(request.url,'https://openrouter.ai/api/v1/chat/completions');
   assert.equal(request.options.method,'POST');
   assert.equal(request.options.redirect,'error');
-  assert.equal(request.options.headers.Authorization,'Bearer '+configured.HH_AGENT_OLLAMA_TOKEN);
-  assert.equal(request.body.model,configured.HH_AGENT_OLLAMA_MODEL);
+  assert.equal(request.options.headers.Authorization,'Bearer '+configured.HH_AGENT_OPENROUTER_API_KEY);
+  assert.equal(request.body.model,'openrouter/free');
+  assert.equal(request.body.provider.allow_fallbacks,false);
+  assert.equal(request.body.stream,false);
   assert.equal(result.status,'COMPLETED');
   assert.equal(result.agentStarted,true);
   assert.equal(result.executionVerified,true);
+  assert.equal(result.model,'meta-llama/llama-3.3-70b-instruct:free');
   assert.equal(result.sourceWrite,null);
   assert.equal(result.proofLevel,'AGENT_DIRECTOR_READ_ONLY_RESPONSE');
   assert.match(result.result,/Предлагаю/);
@@ -92,26 +96,37 @@ test('native Ollama completion returns a read-only receipt and never claims a so
   assert.ok(request.body.messages[0].content.includes('cannot'));
 });
 
+test('a paid or unverified routed model is rejected instead of falling back or being reported as success',async()=>{
+  const paid={...freeCompletion,model:'anthropic/claude-sonnet-4'};
+  const result=await executeOwnedCommanderRun(run,{env:configured,fetcher:async()=>response(paid)});
+  assert.equal(result.status,'BLOCKED');
+  assert.equal(result.reasonCode,'OPENROUTER_NON_FREE_MODEL_REJECTED');
+  assert.equal(result.agentStarted,false);
+  assert.equal(result.sourceWrite,null);
+  const noCost={...freeCompletion,usage:{prompt_tokens:100,completion_tokens:100,total_tokens:200}};
+  const costResult=await executeOwnedCommanderRun(run,{env:configured,fetcher:async()=>response(noCost)});
+  assert.equal(costResult.status,'BLOCKED');
+  assert.equal(costResult.reasonCode,'OPENROUTER_COST_NOT_VERIFIED_ZERO');
+});
+
 test('unsafe, oversized or URL-bearing model output is not accepted as a receipt',async()=>{
   for(const output of ['', 'https://github.com/example/repo', '<script>alert(1)</script>', 'x'.repeat(1801)]){
-    const result=await executeOwnedCommanderRun(run,{env:configured,
-      fetcher:async()=>response({message:{content:output}})});
+    const invalid={...freeCompletion,choices:[{message:{content:output}}]};
+    const result=await executeOwnedCommanderRun(run,{env:configured,fetcher:async()=>response(invalid)});
     assert.equal(result.status,'BLOCKED');
-    assert.equal(result.reasonCode,'OWNED_MODEL_RESPONSE_NOT_ACCEPTED');
+    assert.equal(result.reasonCode,'OPENROUTER_RESPONSE_NOT_ACCEPTED');
     assert.equal(result.sourceWrite,null);
   }
 });
 
-test('selected model must match the server-side owned model instead of selecting an arbitrary model',async()=>{
-  let calls=0;
-  const result=await executeOwnedCommanderRun({...run,modelId:'someone/other-model'},{
-    env:configured,fetcher:async()=>{calls++;return response({message:{content:'not used'}})}
-  });
-  assert.equal(result.status,'BLOCKED');
-  assert.equal(result.reasonCode,'OWNED_MODEL_ID_MISMATCH');
-  assert.equal(calls,0);
+test('transport errors and free-tier limit errors return durable BLOCKED receipts',async()=>{
+  const failed=await executeOwnedCommanderRun(run,{env:configured,fetcher:async()=>{throw Error('network error')}});
+  assert.equal(failed.status,'BLOCKED');
+  assert.equal(failed.reasonCode,'OPENROUTER_REQUEST_FAILED');
+  const limited=await executeOwnedCommanderRun(run,{env:configured,fetcher:async()=>response({},429)});
+  assert.equal(limited.status,'BLOCKED');
+  assert.equal(limited.reasonCode,'OPENROUTER_FREE_LIMIT_REACHED');
 });
-
 
 test('native GitHub App source publisher remains server-only and disabled without App secrets',async()=>{
  const {ownedGithubAppConfigured,publishOwnedDraftSource}=await import('../lib/agent-director/github-app-source-publisher.mjs');
