@@ -392,13 +392,40 @@ async function update(e){
    info('Отчёт сохранён частично или не сохранён: '+String(error.message||error)+'. Повторная передача продолжит с недостающей части.');
   }finally{councilSaving.delete(data.requestId);}
  }
+ async function assignSelectedExecutor(c,mode){
+  if(mode==='council-free'||c.executors.includes(mode))return c;
+  if(!EXEC[mode])throw Error('Неизвестный исполнитель');
+  const current=c.executors||[];
+  if(current.length>=6)throw Error('В чате уже назначено шесть исполнителей. Измените список в разделе «Контекст и проверки».');
+  const chosen=[...current,mode];
+  if(remote){
+   const data={id:c.id,title:c.title,project:c.project,description:c.description||'',
+    tasks:c.tasks||[],prs:c.prs||[],executors:chosen,status:c.status};
+   const r=await request(SERVER+'?action=update','POST',{
+    issueNumber:c.issueNumber,expectedRevision:c.revision,chat:data
+   });
+   const changed={...r.chat,issueNumber:c.issueNumber};
+   chats=chats.map(x=>x.id===changed.id?changed:x);
+   if(thread?.id===c.id)thread=changed;
+   renderList();
+   return changed;
+  }
+  c.executors=chosen;c.revision=(c.revision||0)+1;c.updatedAt=new Date().toISOString();
+  await persist();renderList();
+  return c;
+ }
  async function send(e){
   e.preventDefault();if(!thread||busy)return;
   const text=el('message').value.trim(),mode=el('mode').value,model=el('model').value;
   if(text.length<2||text.length>1200)return info('Сообщение должно содержать 2–1200 символов.');
-  if(mode!=='council-free'&&!thread.executors.includes(mode))return info('Сначала назначьте этого исполнителя в настройках чата.');
   if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
-  const c=thread;
+  let c=thread;
+  if(mode!=='council-free'&&!thread.executors.includes(mode)){
+   busy=true;el('send').disabled=true;
+   try{c=await assignSelectedExecutor(c,mode);}
+   catch(err){info('Не удалось выбрать исполнителя: '+String(err.message||err));return;}
+   finally{busy=false;el('send').disabled=false;}
+  }
   if(mode==='council-free'){
    if(councilPending)return info('Уже ожидается ответ Совета ИИ. Заверши текущий вопрос или переключись на него.');
    busy=true;el('send').disabled=true;
