@@ -798,6 +798,38 @@ test('free-model failures report NO source commit while unverified proposals can
  }
 });
 
+test('pre-model sensitive source failure preserves true root and a human source owner',async()=>{
+ const bot={user:{id:41898282,login:'github-actions[bot]',type:'Bot'},
+  performed_via_github_app:{id:15368,slug:'github-actions'}};
+ const claimed=commentBody({...taskFor(pr(),{tier:'P1'}),
+   state:'CLAIMED',owner_run_id:String(outcomeContext.runId),task_key:receiptKey});
+ const f=fixture({comments:[{...bot,body:'<!-- '+MARKER+' '+sha+' -->\\n'+claimed}]});
+ f.github.rest.actions={listJobsForWorkflowRun:async()=>({data:{jobs:[
+  {name:'publish',conclusion:'failure',steps:[
+    {name:'Finalize on publisher runner',conclusion:'failure'}]},
+  {name:'code_fix',conclusion:'failure',steps:[
+    {name:'Fail early on unsupported or sensitive free-model source scope',conclusion:'failure'}]}
+ ]}})};
+ const result=await finalize({github:f.github,core:outcomeCore,context:outcomeContext,
+  number:11,expectedSha:sha,taskKey:receiptKey,claimStatus:'claimed',
+  claimResult:'success',fixResult:'success',strategy:'code',
+  codeAvailable:true,codeResult:'failure',publishResult:'skipped',
+  candidateStatus:'manual_required',candidateDetail:'NO_AUTOFIXABLE_ESLINT_CHANGE'});
+ assert.equal(result.reason_code,'FREE_AI_JOB_FAILED_NO_SOURCE_COMMIT',
+  'existing monitor contract preserves the parent outcome');
+ assert.equal(result.failed_step,'Fail early on unsupported or sensitive free-model source scope');
+ assert.equal(result.detail_code,'FREE_AI_UNSAFE_SOURCE_SCOPE');
+ assert.equal(result.follow_up_task?.category,'SOURCE_CODE');
+ assert.equal(result.follow_up_task?.strategy_code,'MANUAL_SOURCE_SCOPE_REVIEW');
+ assert.equal(result.follow_up_task?.responsible_role,'source-repair-owner');
+ assert.equal(result.follow_up_task?.executor_kind,'owner_review');
+ assert.equal(result.follow_up_task?.next_action,'ASSIGN_OWNER_FOR_SENSITIVE_OR_UNSUPPORTED_SOURCE');
+ assert.equal(result.follow_up_task?.source_write_authorized,false);
+ assert.equal(result.source_published,false);
+ assert.equal(result.new_sha,null);
+ assert.equal(f.log.commit,0);
+});
+
 test('trusted Repair finalization fast paths preserve independent Codex verification',()=>{
  const wf=require('node:fs').readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
  const claim=wf.split('  claim:\n')[1].split('  fix:\n')[0];
