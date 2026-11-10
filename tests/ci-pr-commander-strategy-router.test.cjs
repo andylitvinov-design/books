@@ -121,7 +121,7 @@ test('dry run is read-only even when source is actionable',async()=>{
 test('the existing workflow executes OIDC task association BEFORE source dispatch, without an added workflow',()=>{
  const file=fs.readFileSync(path.join(__dirname,'../.github/workflows/hh-pr-direct-core-failure.yml'),'utf8');
  const o=file.indexOf('id: commander_ci_event');
- const r=file.indexOf('scripts/ci-pr-commander-strategy-router.cjs');
+ const r=file.indexOf("'/scripts/ci-pr-commander-strategy-router.cjs'");
  assert.ok(o>0&&r>o);
  assert.match(file,/HH_COMMANDER_CI_RECEIPT: \$\{\{ steps\.commander_ci_event\.outputs\.verified_receipt_json \}\}/);
  assert.match(file,/ci-pr-event-handoff\.cjs/);
