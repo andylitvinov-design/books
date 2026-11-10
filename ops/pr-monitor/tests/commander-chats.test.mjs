@@ -344,7 +344,7 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  assert.equal(elements['cc-run-status'].hidden,false);
  assert.match(elements['cc-run-status-label'].textContent,/в очереди/);
  assert.equal(elements['cc-send'].disabled,false);
- assert.match(elements['cc-chat-feedback'].textContent,/очереди OpenRouter/);
+ assert.match(elements['cc-chat-feedback'].textContent,/очередь OpenRouter/);
 });
 
 test('last chats stay at the top and one fixed bottom composer supports typed and spoken questions',()=>{
