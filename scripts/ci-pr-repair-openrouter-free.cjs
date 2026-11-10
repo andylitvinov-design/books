@@ -237,7 +237,9 @@ async function requestFreePatch({prompt,key,model='auto',role='repair',
       // completion fields. Provider-specific optional reasoning/modalities
       // caused HTTP 400 in real source-repair runs; keep pinned-model behavior.
       ...(selected===FREE_ROUTER_MODEL?{}:{
-        modalities:['text'],reasoning:{enabled:false},n:1}),
+        // Required-reasoning free endpoints reject reasoning:false (HTTP 400).
+        // Leave reasoning selection to the pre-verified provider; parse only final text.
+        modalities:['text'],n:1}),
       max_tokens:selected===FREE_ROUTER_MODEL?2200:5500,
       stream:false,usage:{include:true},
       provider:{allow_fallbacks:false,max_price:{prompt:0,completion:0},
