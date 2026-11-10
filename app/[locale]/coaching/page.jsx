@@ -21,7 +21,7 @@ export function generateStaticParams() {
   return ["en", "ru", "es"].map((locale) => ({ locale }));
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }) {
   const { locale } = await params;
   if (!isPublicLocale(locale)) return { title: "Not found", robots: { index: false } };
   return {
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-function copy(locale: string) {
+function copy(locale) {
   return ({
     ru: {
       title: "My Coach",
@@ -96,7 +96,7 @@ function copy(locale: string) {
       profile: "Perfil",
       openAll: "Todos",
     },
-  })[locale as "en" | "ru" | "es"];
+  })[locale];
 }
 
 function Header({ locale }) {
@@ -159,8 +159,8 @@ export default async function PublicCoachingPage({ params }) {
   if (!isPublicLocale(locale)) notFound();
   const t = copy(locale);
 
-  let practitioners: PublicPractitioner[] = [];
-  let courses: PublicMentorCourse[] = [];
+  let practitioners = [];
+  let courses = [];
   let directoryUnavailable = false;
   let coursesUnavailable = false;
   try {
@@ -169,7 +169,7 @@ export default async function PublicCoachingPage({ params }) {
       createPractitionerRepository(config).listPublicPractitioners(locale),
       createPractitionerCourseRepository(config).catalog(),
     ]);
-    if (mastersResult.status === "fulfilled") practitioners = mastersResult.value as PublicPractitioner[];
+    if (mastersResult.status === "fulfilled") practitioners = mastersResult.value;
     else directoryUnavailable = true;
     coursesUnavailable = coursesResult.status === "rejected";
     const publishedRows = coursesResult.status === "fulfilled" ? coursesResult.value : [];
@@ -187,7 +187,7 @@ export default async function PublicCoachingPage({ params }) {
       }));
     if (practitioners.length) {
       try {
-        const summaries: { practitionerId: string; count: number; average: number }[] =
+        const summaries =
           await createServiceReviewRepository(config)
             .listPublicSummariesForPractitioners(practitioners.map((coach) => coach.id));
         const byId = new Map(summaries.map((summary) => [summary.practitionerId, {
