@@ -15,7 +15,9 @@ function exactPullRequestLink(pr) {
   return {
     number: pr.number,
     base: { ref: pr.base.ref, sha: pr.base.sha, repo: { full_name: pr.base.repo?.full_name || REPO } },
-    head: { ref: pr.head.ref, sha: pr.head.sha, repo: { full_name: pr.head.repo.full_name } }
+    head: { ref: pr.head.ref, sha: pr.head.sha, repo: { full_name: pr.head.repo.full_name } },
+    mergeable: pr.mergeable === true ? true : pr.mergeable === false ? false : null,
+    mergeable_state: typeof pr.mergeable_state === 'string' ? pr.mergeable_state : null
   };
 }
 
