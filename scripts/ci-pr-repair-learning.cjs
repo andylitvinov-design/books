@@ -67,7 +67,9 @@ function validCase(c){
  const modelProofValid=c?.skill_id==='bounded-free-ai'?
   (c.code_model_verified===true&&['openrouter','opencode'].includes(c.code_backend)&&
    typeof c.code_model==='string'&&FREE_MODEL_ID.test(c.code_model)):
-  c?.code_model_verified===false&&c?.code_backend===null&&c?.code_model===null;
+  (c?.code_model_verified===false||c?.code_model_verified===undefined)&&
+   (c?.code_backend===null||c?.code_backend===undefined)&&
+   (c?.code_model===null||c?.code_model===undefined);
  return !!c&&modelProofValid&&c.schema==='HH_REPAIR_CASE_V1'&&
   typeof c.case_id==='string'&&/^[a-f0-9]{32}$/.test(c.case_id)&&
   c.repo===REPO&&Number.isSafeInteger(c.pr_number)&&c.pr_number>0&&c.pr_number<=99999999&&
