@@ -606,6 +606,25 @@ async function exactCoreFailureTaskId(e: {pr_number:number;head_sha:string;
   return Array.from(new Uint8Array(bytes)).slice(0,16)
     .map((value)=>value.toString(16).padStart(2,"0")).join("");
 }
+// Map detailed CI strategy outcomes to the existing seven-value chat state contract.
+// The full factual route remains in the immutable inbox receipt and chat timeline;
+// no dispatch, worker start, source write, CI or LIVE success is implied.
+function commanderCiChatExecutionState(routeState: string): string {
+  switch(routeState) {
+    case "TASK_REQUIRES_REVIEW":
+    case "TASK_ROUTED_TO_REVIEW":
+      return "BLOCKED";
+    case "EXISTING_RECOVERY_ACCEPTED":
+    case "DISPATCH_ACCEPTED_NOT_WORKER_STARTED":
+    case "DISPATCH_UNCONFIRMED_RECONCILE":
+      return "DISPATCHED_UNVERIFIED";
+    case "TASK_AWAITING_EXISTING_RECOVERY":
+    case "TASK_WAITING_FOR_DISPATCH":
+      return "AWAITING_EXECUTOR_NOT_DISPATCHED";
+    default:
+      return "BLOCKED";
+  }
+}
 async function receiveCommanderCiRoute(req,origin){
   const claims=await verifyGitHubActionsOidc(req);
   if(!claims)return reply(401,{recorded:false,outcome:"GITHUB_OIDC_IDENTITY_REJECTED"},origin);
@@ -716,7 +735,7 @@ async function receiveCommanderCiRoute(req,origin){
         [chatEventId,chats[0].chat_id,e.inbox_owner_id,jsonbText(event)]);
       await tx.unsafe(
         "update business_brain.commander_chats set execution_state=$1,updated_at=now() where chat_id=$2::uuid and owner_id=$3::uuid",
-        [p.state,chats[0].chat_id,e.inbox_owner_id]);
+        [commanderCiChatExecutionState(p.state),chats[0].chat_id,e.inbox_owner_id]);
       return {code:202,outcome:"RECORDED"};
     });
     return reply(result.code,{recorded:result.code===200||result.code===202,
