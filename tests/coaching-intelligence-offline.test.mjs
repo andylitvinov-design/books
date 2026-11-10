@@ -186,10 +186,18 @@ test('methodology adapts across EN/RU/ES, including contradiction and priority s
   }
 })
 
-test('safety, stop and pause are not converted into ordinary follow-up questions',()=>{
-  assert.equal(authoredFollowupFor({id:'s',stepKey:'reality'},'I want to kill myself'),null)
-  assert.equal(authoredFollowupFor({id:'s',stepKey:'reality'},'I want to stop now'),null)
-  assert.equal(authoredFollowupFor({id:'s',stepKey:'reality'},'Please pause'),null)
+test('safety, stop and pause produce terminal controls, never ordinary follow-up questions',()=>{
+  for(const [message,expected] of [
+    ['I want to kill myself','safety_hold'],
+    ['I want to stop now','stopped'],
+    ['Please pause','paused'],
+  ]){
+    const control=authoredFollowupFor({id:'s',stepKey:'reality'},message)
+    assert.equal(control.controlStatus,expected)
+    assert.match(control.key,/^control_(?:safety_hold|stopped|paused)_v2$/)
+    assert.notEqual(control.key,'reality_text_v1')
+    assert.equal(control.methodologyVersion,'hh-coaching-methodology-v2')
+  }
 })
 
 test('adaptive metadata contains only controlled reason codes and no client text',()=>{
