@@ -151,7 +151,8 @@ test('Commander fallback constructs one deterministic private task and chat per 
 test('CI route outcomes cannot violate the existing Commander chat execution_state CHECK',()=>{
  const source=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
  const from=source.indexOf('function commanderCiChatExecutionState(routeState: string): string {');
- const to=source.indexOf('async function receiveCommanderCiRoute(req,origin){',from);
+ const next=source.indexOf('function normalizeLegacyZeroDispatchCiRoute(p: any): any {',from);
+ const to=next>from?next:source.indexOf('async function receiveCommanderCiRoute(req,origin){',from);
  a.ok(from>=0&&to>from,'mapping exists before authenticated route receiver');
  const body=source.slice(from,to)
    .replace('routeState: string','routeState').replace('): string {',') {');
