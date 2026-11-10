@@ -81,6 +81,10 @@ test('coach style changes voluntary follow-up copy, not authored question count'
   assert.notEqual(coachStagePrompt('max', 'action', 'ru'), coachStagePrompt('mira', 'action', 'ru'))
   assert.match(coachStagePrompt('mira', 'goal', 'ru', { pace: 'slow' }), /Не торопитесь/)
   assert.match(coachStagePrompt('alex', 'goal', 'en', { directness: 5, pace: 'fast' }), /One concrete question/)
+  assert.notEqual(coachStagePrompt('mira', 'goal', 'ru', { warmth: 1 }),
+    coachStagePrompt('mira', 'goal', 'ru', { warmth: 5 }))
+  assert.match(coachStagePrompt('mira', 'goal', 'ru', { warmth: 5 }), /можно пропустить/)
+  assert.match(coachStagePrompt('mira', 'goal', 'ru', { pace: 'fast' }), /Коротко/)
   assert.equal(coachStagePrompt('mira', 'diagnosis', 'ru'), null)
   assert.equal(coachStagePrompt('../../admin', 'goal', 'en'), null)
   assert.equal(personaMethodFit('max', 'woop_v1'), 1)
