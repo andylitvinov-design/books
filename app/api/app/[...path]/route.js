@@ -16,6 +16,7 @@ import { readLearningJourney } from '@/lib/app/learning-journey-repository'
 import { listLabReports, saveLabReport, deleteLabReport } from '@/lib/app/lab-reports'
 import { readBusinessCoaching, saveBusinessCoaching } from '@/lib/app/business-coaching'
 import { readPersonalCoaching, savePersonalCoaching, readTraditionCoaching, saveTraditionCoaching, readTraditionCoachingSummaries } from '@/lib/app/personal-coaching'
+import {personalCoachingBrainTurn} from '@/lib/app/coaching-brain'
 import { readCoachingReportDraft } from '@/lib/app/coaching-report-v2'
 import { listCoachingReports, exportCoachingReports, readCoachingReport, saveCoachingReport, deleteCoachingReport } from '@/lib/app/coaching-report-store'
 import { readCoachingLifePlan, updateCoachingLifePlanArea, importCoachingReportActions } from '@/lib/app/coaching-life-plan'
@@ -843,6 +844,13 @@ async function handle(request, { params }) {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
       if (method === 'GET') return json(await readPersonalCoachingCatalog(config,actor))
       throw new AppError('NOT_FOUND',404)
+    }
+    if (joined === 'personal-coaching/brain') {
+      if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)
+      if (method !== 'POST') throw new AppError('NOT_FOUND', 404)
+      await consumeRate(config, {op:'coaching-brain-turn', actor:actor.id}, 40, 3600)
+      return json(await personalCoachingBrainTurn(config,actor,
+        await readBody(request,16384),{signal:request.signal}))
     }
     if (joined === 'personal-coaching') {
       if (request.headers.get('x-hh-account-id') !== actor.id) throw new AppError('ACCOUNT_CHANGED', 409)

@@ -112,6 +112,7 @@ jobs:
           node --check lib/app/coaching-report-v2.js
           node --check lib/app/coaching-life-plan.js
           node --test tests/coaching-life-plan.test.mjs tests/coaching-report-save-intent.test.mjs tests/coaching-report-store.test.mjs tests/coaching-report-review.test.mjs tests/coaching-report-preview.test.mjs tests/coaching-report-source.test.mjs tests/coaching-report-v2.test.mjs
+          node --test tests/coaching-quality-engine.test.mjs
           node --check lib/personal-coaching/traditions.js
           node --check lib/academy/coaching-audio-model.js
           node --check lib/academy/coaching-audio-store.js
