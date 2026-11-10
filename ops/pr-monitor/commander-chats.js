@@ -518,7 +518,7 @@ async function update(e){
    const item=make('option',null,model.name+' · '+model.id);item.value=model.id;selection.append(item);
   }
   if(options.some(item=>item.id===current))selection.value=current;
-  show(isNew?'new-model-label':'model-label',mode==='hermes'||mode==='openrouter');
+  show(isNew?'new-model-label':'model-label',mode==='hermes'||(!isNew&&mode==='openrouter'));
   show(isNew?'new-github-write-wrap':'github-write-wrap',mode==='hermes');
   if(mode!=='hermes')el(isNew?'new-github-write':'github-write').checked=false;
  }
@@ -558,11 +558,11 @@ async function update(e){
     await append(c,'owner',text,'');el('message').value='';
     const runId=id(),idempotencyKey=id();
     const writeApproved=mode==='hermes'&&el('github-write').checked===true;
+    if(writeApproved)el('github-write').checked=false; // per-message consent, even on transport error
     const result=await request(SERVER+'?action=run','POST',{
      issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode,message:text,
      ...(mode==='hermes'?{modelId:model,confirmGitHubWrite:writeApproved}:{})
     });
-    if(writeApproved)el('github-write').checked=false;
     try{
      const latest=await request(SERVER+'?action=read&issue='+c.issueNumber);
      if(thread?.id===c.id){thread=latest.chat;messages=latest.messages;renderThread();}

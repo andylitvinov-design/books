@@ -253,7 +253,7 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  elements['cc-create-send'].textContent='Отправить';
  elements['cc-create'].hidden=true;
  elements['cc-thread'].hidden=true;
- let created=null,createdCount=0,eventRows=[],seq=0;
+ let created=null,createdCount=0,eventRows=[],seq=0,lastRunBody=null;
  const network=[];
  const response=(data,status=200)=>({ok:status>=200&&status<400,status,json:async()=>data});
  const doc={
@@ -294,6 +294,12 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
      return response({event});
     }
     if(action==='read')return response({chat:created,messages:eventRows});
+    if(action==='executor_models')return response({schema:'HH_COMMANDER_EXECUTOR_FREE_MODELS_V1',
+     models:[{id:'test/synthetic:free',name:'Synthetic zero-price model'}]});
+    if(action==='run'){
+     lastRunBody=body;
+     return response({status:'BLOCKED',reasonCode:'HERMES_RUNTIME_NOT_CONFIGURED',agentStarted:false});
+    }
    }
    throw new Error('Unexpected network call: '+url);
   }
@@ -336,6 +342,26 @@ test('question-first chat completes owner-scoped create, reply, save and reopen 
  await elements['cc-verify-chat'].fire('click');
  assert.match(elements['cc-verify-status'].textContent,/вопрос и ответ сохранены в Supabase/);
  assert.equal(elements['cc-verify-chat'].disabled,false);
+
+ // Exercise the actual Hermes code-mode handoff in the same authenticated
+ // browser-like runtime. No paid inference, real server or source mutation.
+ created.executors.push('hermes');
+ elements['cc-mode'].value='hermes';
+ await elements['cc-mode'].fire('change');
+ for(let i=0;i<16;i++)await Promise.resolve();
+ elements['cc-model'].value='test/synthetic:free';
+ elements['cc-github-write'].checked=true;
+ elements['cc-message'].value='Исправь одну строку исходного кода в тестовой ветке';
+ await elements['cc-chat-form'].fire('submit');
+ assert.equal(lastRunBody.executor,'hermes');
+ assert.equal(lastRunBody.modelId,'test/synthetic:free');
+ assert.equal(lastRunBody.confirmGitHubWrite,true,'write approval must originate from checked control');
+ assert.equal(elements['cc-github-write'].checked,false,'write consent resets for next message');
+ elements['cc-message'].value='Проверь текущий статус исходного кода';
+ await elements['cc-chat-form'].fire('submit');
+ assert.equal(lastRunBody.confirmGitHubWrite,false,'next message never inherits GitHub approval');
+ assert.ok(network.some(x=>x.action==='executor_models'&&x.method==='GET'));
+ assert.ok(network.some(x=>x.action==='run'&&x.method==='POST'));
 });
 
 test('last chats stay at the top and one fixed bottom composer supports typed and spoken questions',()=>{
