@@ -144,3 +144,19 @@ test('critical domain jobs must be current, terminal and passing/skipped',async(
  const workflow=fs.readFileSync('.github/workflows/hh-native-auto-merge.yml','utf8');
  assert.match(workflow,/^  checks: read$/m);
 });
+
+test('isolated repair canaries are denied native auto-merge without blocking the Repair Worker',async()=>{
+ const branchWorld=makeTestWorld({pr:{
+   title:'test(repair): exact one-line model proof — NEVER MERGE',
+   head:{sha:HEAD,ref:'test/pr-repair-json-line-proof-20261110',repo:{full_name:OWNER+'/'+REPO}}}});
+ const onlyTitle=makeTestWorld({pr:{
+   title:'test(repair): legacy source canary',head:{sha:HEAD,ref:'fix/public-card',repo:{full_name:OWNER+'/'+REPO}}}});
+ const results=await Promise.all([check(branchWorld),check(onlyTitle)]);
+ for(const result of results){
+  assert.equal(result.ok,false);
+  assert.equal(result.reason,'REPAIR_CANARY_NEVER_MERGE');
+ }
+ const normal=makeTestWorld({pr:{
+   title:'fix: ordinary verified source repair',head:{sha:HEAD,ref:'fix/public-card',repo:{full_name:OWNER+'/'+REPO}}}});
+ assert.equal((await check(normal)).ok,true,'normal verified production PR stays eligible');
+});
