@@ -385,7 +385,17 @@ jobs:
         if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy == 'code'
         timeout-minutes: 5
         continue-on-error: true
-        run: npx tsc --noEmit --incremental false
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsc --noEmit --incremental false --pretty false 2>&1 | tee .hh-repair-tsc-errors.log
+      - name: Restore only exact compiler-proven changed line from protected base
+        if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy == 'code'
+        timeout-minutes: 2
+        env:
+          REPAIR_SHA: ${{ needs.claim.outputs.sha }}
+          REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
+        run: node .hh-trusted/scripts/ci-pr-repair-deterministic.cjs base-line
       - id: build_candidate
         if: steps.fresh_head.outputs.current == 'true' && needs.claim.outputs.strategy != 'legacy'
         name: Try targeted ESLint autofix and write bounded patch candidate
