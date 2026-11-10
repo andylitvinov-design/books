@@ -203,3 +203,30 @@ test('CLI entrypoint awaits the async price-checked proposer',()=>{
  assert.match(source,/async function main\(\)[\s\S]*?await propose\(\)/);
  assert.match(source,/if\(require\.main===module\)main\(\)/);
 });
+
+
+test('records exact verified free model provenance outside the untrusted PR worktree',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'hh-free-model-proof-'));
+ try{
+  const target=path.join(temp,'free-model-proof.json');
+  const proof=recordFreeModelEvidence({provider:'openrouter',
+    model:'cohere/north-mini-code:free',zeroCost:true},{filePath:target,runnerTemp:temp});
+  assert.deepEqual(proof,{schema:'HH_FREE_MODEL_PROOF_V1',provider:'openrouter',
+    model:'cohere/north-mini-code:free',zero_cost:true,catalog_verified:true});
+  assert.deepEqual(JSON.parse(fs.readFileSync(target,'utf8')),proof);
+  assert.equal(fs.statSync(target).mode&0o777,0o600);
+  assert.throws(()=>recordFreeModelEvidence({provider:'opencode',
+    model:'vendor/paid-model',zeroCost:true},{filePath:path.join(temp,'paid.json'),runnerTemp:temp}),
+    /EVIDENCE_INVALID/);
+  assert.throws(()=>recordFreeModelEvidence({provider:'openrouter',
+    model:'vendor/model:free',zeroCost:false},{filePath:path.join(temp,'unknown.json'),runnerTemp:temp}),
+    /EVIDENCE_INVALID/);
+  assert.throws(()=>recordFreeModelEvidence({provider:'openrouter',
+    model:'vendor/model:free',zeroCost:true},{filePath:path.join(temp,'nested','proof.json'),runnerTemp:temp}),
+    /PATH_OUTSIDE_RUNNER_TEMP/);
+  assert.throws(()=>recordFreeModelEvidence({provider:'openrouter',
+    model:'vendor/model:free',zeroCost:true},{filePath:target,runnerTemp:temp}),
+    /EVIDENCE_WRITE_FAILED/);
+ }finally{fs.rmSync(temp,{recursive:true,force:true});}
+});
