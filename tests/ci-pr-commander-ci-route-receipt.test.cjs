@@ -13,12 +13,16 @@ const result=()=>({
  state:'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',reason:'EXISTING_DISPATCHER_ACCEPTED',
  strategy:'GUARDED_SOURCE_REPAIR',responsibleRole:'free-code-repair-worker',
  prNumber:123,runId:456,category:'TYPESCRIPT',dispatchAccepted:1,
- workerStarted:false,sourceWriteVerified:false,liveVerified:false
+ dispatchAcknowledged:true,executorId:'github-actions:hh-pr-repair-worker.yml',
+ workerTaskKey:'b'.repeat(32),workerStarted:false,sourceWriteVerified:false,liveVerified:false
 });
 test('accepted dispatch is explicitly not worker, source, CI or LIVE proof',()=>{
  const r=normalizedPayload(result(),receipt());
  a.equal(r.schema,'HH_COMMANDER_CI_ROUTE_RECEIPT_V1');
  a.equal(r.dispatchAccepted,1);
+ a.equal(r.dispatchAcknowledged,true);
+ a.equal(r.executorId,'github-actions:hh-pr-repair-worker.yml');
+ a.equal(r.workerTaskKey,'b'.repeat(32));
  a.equal(r.workerStarted,false);
  a.equal(r.sourceWriteVerified,false);
  a.equal(r.liveVerified,false);
@@ -28,14 +32,24 @@ test('unsupported categories and forged execution evidence are refused',()=>{
   {state:'COMPLETED'},{state:'DISPATCH_ACCEPTED_NOT_WORKER_STARTED',workerStarted:true},
   {sourceWriteVerified:true},{liveVerified:true},{prNumber:124},{runId:457},
   {category:'SECURITY'},{dispatchAccepted:0},{dispatchAccepted:3},
-  {reason:'not valid'},{responsibleRole:'stranger'}
+  {reason:'not valid'},{responsibleRole:'stranger'},
+  {dispatchAcknowledged:false},{executorId:'fake-worker'},
+  {workerTaskKey:'not-a-task-key'},{workerTaskKey:null}
  ])a.throws(()=>normalizedPayload({...result(),...mutation},receipt()));
  a.throws(()=>normalizedPayload(result(),{...receipt(),association:'UNMATCHED'}));
  a.throws(()=>normalizedPayload(result(),{...receipt(),inboxId:'bad'}));
 });
+test('new auto-created Commander tasks are accepted with exact event identity',()=>{
+ for(const association of ['AUTO_TASK_CREATED_NOT_DISPATCHED',
+   'TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED']){
+  const p=normalizedPayload(result(),{...receipt(),association});
+  a.equal(p.executorId,'github-actions:hh-pr-repair-worker.yml');
+ }
+});
 test('non-code diagnostic or manual routes can record zero dispatches',()=>{
  const r=normalizedPayload({
   ...result(),state:'TASK_REQUIRES_REVIEW',dispatchAccepted:0,
+  dispatchAcknowledged:false,executorId:null,workerTaskKey:null,
   blocked:{WORKER_BUSY:1}
  },receipt());
  a.equal(r.state,'TASK_REQUIRES_REVIEW');
@@ -57,6 +71,9 @@ test('sends one OIDC-only callback to pinned existing Edge Function endpoint',as
  a.equal(request.options.headers.authorization,'Bearer '+'a'.repeat(220));
  const body=JSON.parse(request.options.body);
  a.equal(body.headSha,SHA);
+ a.equal(body.dispatchAcknowledged,true);
+ a.equal(body.executorId,'github-actions:hh-pr-repair-worker.yml');
+ a.equal(body.workerTaskKey,'b'.repeat(32));
  a.equal(body.workerStarted,false);
  a.equal(body.sourceWriteVerified,false);
 });
