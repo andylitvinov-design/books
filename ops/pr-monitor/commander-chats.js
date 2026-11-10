@@ -24,7 +24,9 @@
   const message=String(s);
   el('alert').textContent=message;
   const target=thread&&!el('thread').hidden?el('chat-feedback'):el('create-feedback');
-  if(target){target.textContent=message;target.hidden=!message;}
+  // Do not turn successful background loading into a giant banner under the composer.
+  const routine=/^(?:Рабочие чаты загружены\.|Рабочие чаты открыты без дополнительного пароля\.|Серверные рабочие чаты обновлены\.)$/.test(message);
+  if(target){target.textContent=routine?'':message;target.hidden=routine||!message;}
  };
  const time=s=>{try{return new Date(s).toLocaleString('ru-RU',{dateStyle:'short',timeStyle:'short'})}catch{return '—'}};
  const id=()=>win.crypto.randomUUID();
@@ -188,21 +190,30 @@
   });
  }
  function renderList(){
-  el('count').textContent=chats.length;el('active-count').textContent=chats.filter(c=>['assigned','working','review'].includes(c.status)).length;
-  el('blocked-count').textContent=chats.filter(c=>c.status==='blocked').length;el('list-meta').textContent=chats.length+' всего';
-  const q=el('search').value.toLowerCase(),status=el('filter').value,box=el('chat-list');box.replaceChildren();
-  let count=0;
-  for(const c of chats.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))){
-   if(status!=='all'&&c.status!==status)continue;
-   const value=[c.title,c.description,c.project,...(c.tasks||[]),...(c.prs||[])].join(' ').toLowerCase();
-   if(q&&!value.includes(q))continue;count++;
-   const b=make('button','cc-chat-card');b.type='button';b.setAttribute('aria-current',String(thread?.id===c.id));
-   b.append(make('strong',null,c.title),
-    make('span',null,time(c.updatedAt)+(c.status==='blocked'?' · Требует внимания':'')));
+  el('count').textContent=chats.length;
+  el('active-count').textContent=chats.filter(c=>['assigned','working','review'].includes(c.status)).length;
+  el('blocked-count').textContent=chats.filter(c=>c.status==='blocked').length;
+  el('list-meta').textContent=chats.length?'· '+chats.length:'';
+  const q=el('search').value.trim().toLowerCase(),status=el('filter').value,box=el('chat-list');
+  box.replaceChildren();
+  const filtered=chats.slice().sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))
+   .filter(c=>{
+    if(status!=='all'&&c.status!==status)return false;
+    const hay=[c.title,c.description,c.project,...(c.tasks||[]),...(c.prs||[])].join(' ').toLowerCase();
+    return !q||hay.includes(q);
+   });
+  const expanded=el('history-all').open;
+  for(const c of (expanded?filtered:filtered.slice(0,5))){
+   const b=make('button','cc-chat-card');
+   b.type='button';b.setAttribute('aria-current',String(thread?.id===c.id));
+   const mark=make('span','cc-chat-symbol','◌');
+   const body=make('span','cc-chat-card-body');
+   body.append(make('strong',null,c.title),make('span',null,time(c.updatedAt)+(c.status==='blocked'?' · Требует внимания':'')));
+   b.append(mark,body);
    b.addEventListener('click',()=>openChat(c));box.append(b);
   }
-  if(!count)box.append(make('p','cc-empty',chats.length?'Нет совпадений по фильтру.':'Чатов нет. Создайте первый.'));
- }
+  if(!filtered.length)box.append(make('p','cc-empty',chats.length?'Чаты не найдены.':'Начните диалог — он появится здесь.'));
+ } 
  function renderMessages(){
   const box=el('messages');box.replaceChildren();
   if(!messages.length)box.append(make('p','cc-empty','Напишите вопрос, чтобы начать диалог.'));
@@ -225,13 +236,14 @@ function renderThread(){
   for(const field of ['title','project','description','status'])el(field).value=thread[field]||'';
   el('tasks').value=(thread.tasks||[]).join(', ');el('prs').value=(thread.prs||[]).join(', ');
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
-  el('thread-advanced').open=false;el('chat-extra').open=false;el('history').open=false;
+  el('thread-advanced').open=false;el('chat-extra').open=false;
   const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
   if(el('mode').value==='council-free'||!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
   show('model-label',el('mode').value==='openrouter');
   el('chat-feedback').textContent='';show('chat-feedback',false);
-  el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('create',false);show('thread',true);
+  el('pr-proof').replaceChildren();el('report-list').replaceChildren();
+  show('create',false);show('chat-form',true);show('thread',true);
   renderMessages();renderList();
  }
  function startReportPolling(){
@@ -249,7 +261,10 @@ function renderThread(){
     const v=await request(SERVER+'?action=read&issue='+c.issueNumber);
     thread=v.chat;messages=v.messages;if(v.truncated)info('Длинная история GitHub: охват ограничен пятью страницами.');
    }else{thread=chats.find(x=>x.id===c.id);messages=thread?.messages||[];}
-   if(!thread)throw Error('Чат не найден');renderThread();
+   if(!thread)throw Error('Чат не найден');
+   stopVoice();
+   el('message').value='';
+   renderThread();
    startReportPolling();
    void reportList({automatic:true,silent:true});
    el('thread').scrollIntoView({block:'start',behavior:'smooth'});
@@ -265,7 +280,7 @@ function renderThread(){
   if(busy)return fail('Другая операция ещё выполняется. Повторите нажатие.');
   const question=el('new-question').value.trim(),mode=el('new-mode').value;
   busy=true;button.disabled=true;
-  const buttonLabel=button.textContent;button.textContent='Создаю…';
+  const buttonLabel=button.textContent;button.textContent='⋯';button.setAttribute('aria-label','Создаю чат…');
   feedback.hidden=true;feedback.textContent='';
   let created=false;
   try{
@@ -310,7 +325,7 @@ function renderThread(){
    created=true;
    info('Отправляю вопрос…');
   }catch(err){fail('Не удалось создать чат: '+String(err.message||err))}
-  finally{busy=false;button.disabled=false;button.textContent=buttonLabel;}
+  finally{busy=false;button.disabled=false;button.textContent=buttonLabel;button.setAttribute('aria-label','Отправить вопрос');}
   if(created){
    await send({preventDefault(){}});
    el('thread').scrollIntoView({block:'start',behavior:'smooth'});
@@ -710,11 +725,13 @@ async function update(e){
  });
  function showNewChat(){
   if(busy)return;
+  stopVoice();
   if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
-  reportRefreshTimer=null;thread=null;messages=[];pendingCreateId=null;el('history').open=false;
-  show('thread',false);show('create',true);renderList();
+  reportRefreshTimer=null;thread=null;messages=[];pendingCreateId=null;
+  show('thread',false);show('chat-form',false);show('create',true);renderList();
   el('create-feedback').textContent='';show('create-feedback',false);
-  el('create').scrollIntoView({block:'start',behavior:'smooth'});
+  el('new-question').value='';
+  el('create').scrollIntoView({block:'nearest',behavior:'smooth'});
  }
  el('new-toggle').addEventListener('click',showNewChat);
  el('context-toggle').addEventListener('click',()=>{
@@ -731,6 +748,12 @@ async function update(e){
  el('handoff').addEventListener('click',handoff);
  el('search').addEventListener('input',renderList);el('filter').addEventListener('change',renderList);
  el('close-thread').addEventListener('click',showNewChat);
+ el('thread-context-toggle').addEventListener('click',()=>{
+  el('thread-advanced').open=!el('thread-advanced').open;
+  if(el('thread-advanced').open)el('thread-advanced').scrollIntoView({block:'nearest'});
+ });
+ el('history-all').addEventListener('toggle',renderList);
+ for(const field of ['search','filter'])el(field).addEventListener('input',renderList);
  el('refresh').addEventListener('click',async()=>{
   if(busy)return;
   busy=true;el('refresh').disabled=true;
@@ -747,6 +770,90 @@ async function update(e){
  });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
  el('mode').addEventListener('change',()=>{show('model-label',el('mode').value==='openrouter');if(el('mode').value!=='council-free')show('council-panel',false)});
+ 
+ // Speech recognition is user-initiated and stays on device/browser voice services.
+ // Never send raw audio. Only the edited transcript joins the chat on Send.
+ let activeVoice=null,voiceSerial=0;
+ function voiceStatus(message,visible=true){
+  el('voice-status').textContent=message||'';
+  el('voice-status').hidden=!message||!visible;
+ }
+ function stopVoice(){
+  const session=activeVoice;if(!session)return;
+  activeVoice=null;voiceSerial++;
+  session.button.setAttribute('aria-pressed','false');
+  session.button.classList.remove('cc-voice-listening');
+  try{session.engine.abort()}catch{}
+  voiceStatus('');
+ }
+ function currentSpeechText(session,result){
+  if(!activeVoice||activeVoice!==session)return;
+  let speech='';
+  for(let index=0;index<result.results.length;index++){
+   const segment=result.results[index];
+   if(!segment?.[0]?.transcript)continue;
+   speech+=segment[0].transcript+' ';
+  }
+  speech=speech.trim();
+  const prefix=session.original.trimEnd();
+  const text=[prefix,speech].filter(Boolean).join(prefix&&speech?' ':'').slice(0,1200);
+  session.target.value=text;
+  session.target.dispatchEvent(new Event('input',{bubbles:true}));
+  voiceStatus(speech?'Диктовка: '+speech.slice(-90):'Слушаю…');
+ }
+ function toggleVoice(button,target){
+  if(activeVoice){stopVoice();return;}
+  const Speech=win.SpeechRecognition||win.webkitSpeechRecognition;
+  if(typeof Speech!=='function'){
+   voiceStatus('Нажмите микрофон на клавиатуре iPhone для голосового ввода.');
+   target.focus();return;
+  }
+  let engine;
+  try{engine=new Speech()}catch{voiceStatus('Диктовка браузера недоступна. Используйте микрофон клавиатуры.');return;}
+  const session={engine,button,target,original:target.value,serial:++voiceSerial};
+  activeVoice=session;
+  engine.lang='ru-RU';engine.interimResults=true;engine.continuous=false;
+  engine.maxAlternatives=1;
+  button.setAttribute('aria-pressed','true');button.classList.add('cc-voice-listening');
+  voiceStatus('Слушаю… Нажмите микрофон ещё раз, чтобы остановить.');
+  engine.onresult=result=>{if(activeVoice===session)currentSpeechText(session,result)};
+  engine.onerror=event=>{
+   if(activeVoice!==session)return;
+   voiceStatus(event.error==='not-allowed'?'Нет доступа к микрофону. Разрешите его в браузере или используйте клавиатуру.':
+    'Голосовой ввод не завершён. Можно написать сообщение вручную.');
+   activeVoice=null;button.setAttribute('aria-pressed','false');button.classList.remove('cc-voice-listening');
+  };
+  engine.onend=()=>{
+   if(activeVoice!==session)return;
+   activeVoice=null;button.setAttribute('aria-pressed','false');button.classList.remove('cc-voice-listening');
+   voiceStatus(session.target.value!==session.original?'Проверьте распознанный текст и нажмите ↑.':'Диктовка завершена. Можно написать текст.');
+  };
+  try{engine.start()}catch{stopVoice();voiceStatus('Не удалось включить микрофон. Используйте голосовой ввод клавиатуры.');}
+ }
+ el('voice-new').addEventListener('click',()=>toggleVoice(el('voice-new'),el('new-question')));
+ el('voice-thread').addEventListener('click',()=>toggleVoice(el('voice-thread'),el('message')));
+ for(const name of ['new-question','message']){
+  const area=el(name);
+  area.addEventListener('keydown',event=>{
+   if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){
+    event.preventDefault();(name==='message'?el('chat-form'):el('create-form')).requestSubmit();
+   }
+  });
+ }
+ if(win.visualViewport){
+  const sync=()=>{
+   const active=doc.activeElement;
+   const keyboardVisible=active===el('new-question')||active===el('message');
+   const viewport=win.visualViewport;
+   const delta=keyboardVisible?Math.max(0,win.innerHeight-viewport.height-viewport.offsetTop):0;
+   doc.documentElement?.style?.setProperty('--cc-keyboard-offset',Math.round(delta)+'px');
+   doc.body.classList.toggle('cc-keyboard-active',keyboardVisible);
+  };
+  win.visualViewport.addEventListener('resize',sync);
+  win.visualViewport.addEventListener('scroll',sync);
+  doc.addEventListener('focusin',sync);doc.addEventListener('focusout',sync);
+ }
+
  win.addEventListener('message',event=>{void receiveCouncilMessage(event)});
  request(AI+'?action=status').then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
   authorized=false;show('login',true);info('Продолжите через Google — отдельный код PR Monitor не нужен.');
