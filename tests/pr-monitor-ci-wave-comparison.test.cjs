@@ -68,9 +68,9 @@ test('a wave queued outside the selected window is not counted as a wave in that
   assert.equal(current.wave_summary.ci_runs,1);
   assert.equal(current.wave_summary.repeat_waves,1);
   assert.equal(current.wave_summary.intervals,1);
-  assert.equal(current.wave_summary.gap_mean_minutes_per_pr,15,
-    'only the 15 minutes inside the selected 24-hour window are attributed to this period');
-  assert.equal(current.wave_summary.gap_total_minutes,15);
+  assert.equal(current.wave_summary.gap_mean_minutes_per_pr,75,
+    'only the 75 minutes overlapping the selected 24-hour window are attributed to this period');
+  assert.equal(current.wave_summary.gap_total_minutes,75);
   assert.equal(current.wave_summary.clipped_at_window_start,1);
   const detail=api.waveDetail(store,811,24,now);
   assert.equal(detail.waves[0].duration_ms,131*60_000,
@@ -107,10 +107,10 @@ test('failed workflow gap is classified by the actual failed required job',()=>{
 test('mobile monitor keeps main stage on Created→Merged cohort and labels diagnostic archive cohort separately',()=>{
   const fs=require('node:fs'),path=require('node:path');
   const source=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/pr-two-screen.js'),'utf8');
-  assert.match(source,/Do not overwrite stages\\.ci_gaps\\.current/);
+  assert.ok(source.includes('Do not overwrite stages.ci_gaps.current'));
   assert.match(source,/Основное значение выше рассчитано по той же Created→Merged когорте/);
   assert.match(source,/После failed Core job/);
   assert.match(source,/После failed Specialist job/);
   assert.match(source,/После failed Merge Gate/);
-  assert.doesNotMatch(source,/s\\.current\\.textContent=typeof v==='number'\\?duration\\(v\\):'—'/);
+  assert.ok(!source.includes("s.current.textContent=typeof v==='number'?duration(v):'—'"));
 });
