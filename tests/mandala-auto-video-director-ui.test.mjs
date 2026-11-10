@@ -240,7 +240,7 @@ test("audio guidance remains actionable from both the compact Video screen and S
  assert.match(studio,/data-video-audio-panel="music"/);
  assert.match(studio,/data-video-audio-panel="voice"/);
  assert.match(studio,/openQuickDetailed\("video-audio"\)/);
- assert.match(studio,/data-video-phrase-audio-shortcut[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\)/);
+assert.match(studio,/setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\);setVoiceStudioActivated\(true\)/);
  assert.equal((studio.match(/\{deepAudioPane\}/g)||[]).length,1,
    "full audio controls are centralized in the dedicated Audio workspace");
  assert.match(style,/data-active-workspace="phrases"[\s\S]*?data-video-quick-audio-choices/);
