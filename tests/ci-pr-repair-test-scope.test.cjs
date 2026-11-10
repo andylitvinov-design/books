@@ -130,7 +130,7 @@ test('a known baseline-red related test is quarantined only with unchanged TAP p
    {cwd:f.root,encoding:'utf8'});
   assert.equal(run.status,0,run.stderr||run.stdout);
   assert.match(run.stdout,/HH_REPAIR_PREEXISTING_TEST_FAILURE/);
-  assert.match(run.stdout,/HH_REPAIR_TEST_PASS tests\\/green/);
+  assert.ok(run.stdout.includes('HH_REPAIR_TEST_PASS tests/green'));
   assert.equal(fs.readFileSync(path.join(f.root,'src/a.mjs'),'utf8'),
    'export const value=2;\n','baseline probe must restore the exact repaired source bytes');
  }finally{f.cleanup()}
