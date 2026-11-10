@@ -24,12 +24,12 @@ test('localized, versioned, answer-aware followups with no speculative AI analys
   assert.notEqual(choice.prompt.en,written.prompt.en)
 })
 
-test('one gentle followup per stage, up to five per session; danger and unknown stages skip it',()=>{
+test('one gentle followup per stage, up to five per session; safety returns a blocking control and unknown stages skip it',()=>{
   const reality={id:'a',stepKey:'reality'}
   assert.equal(authoredFollowupFor(reality,''),null)
-  assert.equal(authoredFollowupFor(reality,'kill myself'),null)
-  assert.equal(authoredFollowupFor(reality,'покончить с собой'),null)
-  assert.equal(authoredFollowupFor(reality,'quiero morir'),null)
+  assert.equal(authoredFollowupFor(reality,'kill myself').controlStatus,'safety_hold')
+  assert.equal(authoredFollowupFor(reality,'покончить с собой').controlStatus,'safety_hold')
+  assert.equal(authoredFollowupFor(reality,'quiero morir').controlStatus,'safety_hold')
   assert.equal(authoredFollowupFor({id:'c',stepKey:'review'},'A note'),null)
   const prev={a:{stage:'reality',text:'My own note'}}
   assert.equal(authoredFollowupFor({id:'b',stepKey:'obstacle'},'An obstacle',prev),null)
