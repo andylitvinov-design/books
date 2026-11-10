@@ -1938,7 +1938,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
-  const [ideasVoiceAdvancedOpen,setIdeasVoiceAdvancedOpen] = useState(false);
   const [audioWorkspaceTab,setAudioWorkspaceTab] = useState<"music"|"voice"|"meditations">("music");
   const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"concept">("personalization");
   const [ideasVoiceMode,setIdeasVoiceMode] = useState<"voice"|"my-voice">("voice");
@@ -5603,11 +5602,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           compact={audioWorkspaceTab==="voice"}
           ownVoiceOnly={ideasVoiceMode==="my-voice"}
           extraActions={<>
-        <div className={videoStyles.ideasVoiceActions} data-video-ideas-voice-actions>
+        <div className={videoStyles.ideasVoiceActions} data-video-audio-voice-actions>
           <label className={videoStyles.ideasVoiceUpload}>
             <Paperclip size={19} aria-hidden="true"/>
             {locale==="ru"?"Загрузить мой голос":locale==="es"?"Subir mi voz":"Upload my voice"}
-            <input type="file" data-video-ideas-own-upload
+            <input type="file" data-video-audio-own-upload
               accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.webm"
               disabled={recording||preparing}
               onChange={event=>{
@@ -5617,7 +5616,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               }}/>
           </label>
         </div>
-        {uploadedAudio?<p className={videoStyles.ideasVoiceUploadNotice} data-video-ideas-own-notice role="status">
+        {uploadedAudio?<p className={videoStyles.ideasVoiceUploadNotice} data-video-audio-own-notice role="status">
           {locale==="ru"?"Файл выбран. Подтвердите права и прикрепите дорожку ниже.":
             locale==="es"?"Archivo elegido. Confirma los derechos y añade la pista abajo.":
               "File selected. Confirm rights and attach the track below."}
@@ -5653,7 +5652,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         <div className={videoStyles.blockHeading}><h3 id="video-hypnosis-heading">{layout.hypnosisTitle}</h3>
           <p>{layout.hypnosisHelp}</p></div>
       <MandalaHypnoCompact locale={locale} theme={theme} settings={affirmations} requestText={wish}
-        autoExpandIdea={activeWorkspace==="phrases"&&ideasSubtab==="personalization"&&ideasVoiceAdvancedOpen}
+        autoExpandIdea={false}
         onPendingChange={setPhrasePending} externalPhraseDraft={catalogPhraseDraft}
         onExternalPhraseClear={()=>setCatalogPhraseDraft(null)}
         onChange={setAffirmations} disabled={recording||preparing}
@@ -7246,34 +7245,6 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <ArrowRight size={18} aria-hidden="true"/>
           </button>
           </div>
-          {/* One persistent editor instance; collapsed by default in Ideas.
-              Do not unmount it between workspaces or duplicate audio state. */}
-          <div id="video-ideas-voice-panel" data-video-legacy-phrase-editor data-video-ideas-recording-open={ideasVoiceAdvancedOpen?"true":"false"}
-            hidden={true}
-            aria-hidden={activeWorkspace!=="phrases"||ideasSubtab!=="personalization"}>
-            <details className={videoStyles.phraseAudioSettings}
-              data-video-ideas-advanced-voice open={ideasVoiceAdvancedOpen}
-              onToggle={event=>setIdeasVoiceAdvancedOpen(event.currentTarget.open)}>
-              <summary><AudioLines size={18} aria-hidden="true"/>
-                {locale==="ru"?"Дополнительные настройки фраз и голоса":
-                  locale==="es"?"Opciones adicionales de frases y voz":
-                    "Advanced phrase and voice settings"}
-                <ChevronDown size={18} aria-hidden="true"/>
-              </summary>
-              <div role="group" data-ideas-voice-modes
-                aria-label={locale==="ru"?"Выберите тип голоса":locale==="es"?"Elige voz":"Select voice mode"}>
-                <button type="button" data-video-ideas-voice-mode="voice" aria-pressed={ideasVoiceMode==="voice"}
-                  onClick={()=>setIdeasVoiceMode("voice")} disabled={recording||preparing}>
-                  {locale==="ru"?"Голос":locale==="es"?"Voz":"Voice"}
-                </button>
-                <button type="button" data-video-ideas-voice-mode="my-voice" aria-pressed={ideasVoiceMode==="my-voice"}
-                  onClick={()=>setIdeasVoiceMode("my-voice")} disabled={recording||preparing}>
-                  {locale==="ru"?"Мой голос":locale==="es"?"Mi voz":"My Voice"}
-                </button>
-              </div>
-              <div data-ideas-subtab="voice" data-ideas-voice-mode={ideasVoiceMode}>{deepHypnoPane}</div>
-            </details>
-          </div>
         </div>
         <div className={videoStyles.ideasConceptPane} id="video-ideas-concept-panel"
           data-video-ideas-concept-panel hidden={ideasSubtab!=="concept"}>
@@ -7317,18 +7288,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             }}/>
         </div>
         <div data-video-director-idea-controls hidden={ideasSubtab!=="personalization"} />
-        <button type="button" className={videoStyles.phraseAudioNext}
-          data-video-phrase-audio-shortcut hidden={ideasSubtab!=="personalization"}
-          disabled={recording||preparing}
-          onClick={()=>{
-            // Ideas authors intention; sound controls live in Audio / Voice.
-            setActiveWorkspace("effects");setAudioWorkspaceTab("voice");
-          }}>
-          <Music2 size={19} aria-hidden="true"/>
-          {locale==="ru"?"Настроить аудиогид, музыку и голос":
-            locale==="es"?"Configurar audioguía, música y voz":"Set up audio guidance, music & voice"}
-          <ArrowRight size={17} aria-hidden="true"/>
-        </button>
+
       </section>
       <section className={videoStyles.quickPhraseSection} data-workspace-section="effects"
         data-video-effects-panel aria-label={workspaceCopy[locale].effects.title}>
@@ -8317,12 +8277,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onPendingChange={setPhrasePending} onPreview={openAffirmationPreview}
             onResetPreview={()=>{setPreviewPlaying(false);setPreviewSeekSeconds(0);setPreviewPlayhead(0);}}
             onRecord={()=>{
-              setActiveWorkspace("phrases");
-              // Reuse the one protected local voice recorder; no extra MediaRecorder.
-              setIdeasSubtab("personalization");setIdeasVoiceMode("my-voice");
-              setIdeasVoiceAdvancedOpen(true);
-              window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>
-                document.querySelector<HTMLElement>('[data-video-own-voice-record]')?.scrollIntoView({behavior:"smooth",block:"center"})));
+              // Voice recording and upload live only in Audio → Voice → My Voice.
+              // Reuse the one protected recorder; do not mount a second editor in Ideas.
+              setIdeasVoiceMode("my-voice");
+              setActiveWorkspace("effects");
+              setAudioWorkspaceTab("voice");
+              setVoiceStudioActivated(true);
             }}
             onCreate={()=>{setMontagePanel("visual");setPreviewPlaying(false);}} onGenerate={createQuickVideo} status={notice}/>
           </div>
