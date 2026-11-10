@@ -19,6 +19,7 @@ const {safeSourcePath: safeFreeSourcePath}=require('./ci-pr-repair-free-agent.cj
 const {taskFor,commentBody,readCompleteIssueComments,externalOwnerLeaseStatus,parseRecords,trustedControlComment,reservationStatus}=require('./ci-pr-task-state.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const {buildTaskOutcome}=require('./ci-pr-task-outcome.cjs');
+const {makeWorkerFollowUp}=require('./ci-pr-error-task.cjs');
 
 function validBranch(ref) {
   return typeof ref === 'string' && ref.length <= 160 &&
@@ -873,6 +874,22 @@ async function finalize({github,core,context,number=0,expectedSha='',taskKey='',
     source_published:sourcePublished,head_matches:state==='PUBLISHED'&&pr.head?.sha===newSha,
     claim_status:claimStatus,retry_after:retryAfter,owner_run_id:runId,
     now:result.created_at});
+  }
+
+  // A failed Worker forms a secondary strategy/task in this SAME signed
+  // finalizer receipt. It cannot rerun an unchanged HEAD or authorize a write.
+  if(['FAILED','MANUAL','REJECTED','VERIFY_REQUIRED'].includes(state)&&
+     Number.isSafeInteger(context.runId)&&context.runId>0){
+    try{
+      result.follow_up_task=makeWorkerFollowUp({
+        pr_number:number,head_sha:expectedSha,task_key:taskKey,
+        owner_run_id:runId,state,reason_code:reason,
+        detail_code:/^[A-Z0-9_]{3,120}$/.test(detailCode||'')?detailCode:null,
+        now:Date.parse(result.created_at)});
+    }catch(error){
+      core.warning('HH_REPAIR_FOLLOWUP_TASK_UNAVAILABLE '+
+        String(error.message||error).slice(0,90));
+    }
   }
   // Learning is strictly advisory: only the already verified remote source
   // commit earns a case. The SAME existing finalizer comment carries it.

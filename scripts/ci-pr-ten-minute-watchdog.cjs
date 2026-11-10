@@ -38,6 +38,7 @@ const {readCompleteIssueComments,externalOwnerLeaseStatus}=require('./ci-pr-task
 const {hasVerifiedSourceHandoff}=require('./ci-pr-repair-worker.cjs');
 const {stageLine}=require('./ci-pr-stage-receipts.cjs');
 const {classifyRedCiError}=require('./ci-pr-red-ci-classifier.cjs');
+const {makeCoreTask,taskBody,taskStatus}=require('./ci-pr-error-task.cjs');
 const {isTrustedQualityFailureEvent,qualityEventMatchesPR}=require('./ci-pr-quality-event.cjs');
 
 /**
@@ -505,6 +506,30 @@ async function recordRepairHandoff(github, owner, repo, pr, run, jobs, dryRun, l
   return true;
 }
 
+/** Record a trusted diagnostic task per exact failed Core run/attempt.
+ * Existing PR comments are the durable store, not a new worker/queue.
+ */
+async function recordErrorTask(github,owner,repo,pr,run,diagnosis,root,
+  dryRun,log,limited,now){
+  const task=makeCoreTask({pr,run,classification:diagnosis,root,now});
+  if(dryRun)return 'WOULD_RECORD';
+  const comments=await readCompleteIssueComments(github,owner,repo,pr.number,limited);
+  const status=taskStatus(comments,task);
+  if(status===null)return 'UNVERIFIED_HISTORY';
+  if(status==='ALREADY_RECORDED')return status;
+  const current=(await limited('error-task-head-recheck',()=>
+    github.rest.pulls.get({owner,repo,pull_number:pr.number}))).data;
+  if(current?.state!=='open'||current.draft||current.base?.ref!==PROD||
+     current.head?.sha!==pr.head.sha||current.head?.ref!==pr.head.ref||
+     current.head?.repo?.full_name!==owner+'/'+repo)
+    return 'STALE_OR_UNTRUSTED_HEAD';
+  await limited('signed-error-task-receipt',()=>github.rest.issues.createComment({
+    owner,repo,issue_number:pr.number,body:taskBody(task)}));
+  log('HH_CI_ERROR_TASK_CREATED #'+pr.number+' '+task.task_id+
+    ' category='+task.category+' strategy='+task.strategy_code);
+  return 'CREATED';
+}
+
 function coreRunForCurrentPR(r,pr) {
   // GitHub can report a genuine PR Core run with pull_requests:[] even on
   // its exact source SHA. Do not misclassify it as missing CI: require the
@@ -711,6 +736,7 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
       '#'+availableRepair.number+' '+priorityFor(availableRepair,now).tier+
       ' '+priorityFor(availableRepair,now).direction : 'no eligible source repair',
     greenUnarmed:0,mergeCoordinatorDispatched:0,pendingCi:0,coreFailures:0,ciErrorByCategory:{},
+    errorTasksCreated:0,errorTasksExisting:0,errorTasksDeferred:0,errorTasksDryRun:0,
     releaseGateOnly:0,releaseGateQueued:0,specialistFailures:0,specialistQueued:0,
     specialistPolicyHolds:0,specialistContractFailures:0,specialistEvidenceUnverified:0,
     staleGateReclassified:0,wouldReclassifyStaleGate:0,
@@ -1150,7 +1176,8 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     // Immediately hand verified source failures to Repair when capacity is idle.
     // A delayed, infrastructure-only retry is still guarded by transientFailure().
     let jobs=null;
-    try {jobs=await listJobs(github,owner,repo,latest.id,limited);} catch(e) {log(`#${pr.number} jobs lookup: ${e.message}`);continue;}
+    try {jobs=await listJobs(github,owner,repo,latest.id,limited);}
+    catch(e){log('#'+pr.number+' jobs lookup unavailable: '+e.message);jobs=[];}
     // Every confirmed red Core event is classified before any retry, reroute,
     // or source-repair decision. Retry requires both the classifier policy and
     // the existing bounded exact-run timing/attempt gate.
@@ -1175,6 +1202,22 @@ async function run({github, repairGithub=null, core, context, dryRun=false, hasM
     }
     log('HH_RED_CI_CATEGORY #'+live.number+' '+diagnosis.category+
       ' root='+root+' HEAD='+live.head.sha.slice(0,12));
+    // Classification is never a no-op: write one versioned owner/strategy
+    // task even when no source-edit privilege or complete jobs are available.
+    if(!budget.exhausted && (dryRun||summary.errorTasksCreated<3)){
+      try {
+        const result=await recordErrorTask(github,owner,repo,live,latest,
+          diagnosis,root,dryRun,log,limited,now);
+        if(result==='CREATED')summary.errorTasksCreated++;
+        else if(result==='ALREADY_RECORDED')summary.errorTasksExisting++;
+        else if(result==='WOULD_RECORD')summary.errorTasksDryRun++;
+        else {summary.errorTasksDeferred++;log('HH_CI_ERROR_TASK_DEFERRED #'+pr.number+' '+result);}
+      }catch(error){
+        summary.errorTasksDeferred++;
+        log('HH_CI_ERROR_TASK_DEFERRED #'+pr.number+' '+String(error.message||error).slice(0,100));
+      }
+    }else summary.errorTasksDeferred++;
+    if(!jobs.length){summary.coreFailureUnverified++;continue;}
     if (shouldRetryTransientCoreFailure({diagnosis,run:latest,jobs,now,ciRoom,
         reruns:summary.transientCiReruns})) {
       if (!dryRun) {
