@@ -37,7 +37,7 @@ function receipt(category='TYPESCRIPT'){
 }
 test('source repair starts ONLY via existing guarded single-writer after unique Commander task',async()=>{
  let calls=0, args;
- const result=await route({receipt:receipt(),context(),github:{},core:{},existingCoreHandoff:async a=>{
+ const result=await route({receipt:receipt(),context:context(),github:{},core:{},existingCoreHandoff:async a=>{
    calls++;args=a;return {dispatchAccepted:1,outcome:'DISPATCH_ACCEPTED'};
  }});
  assert.equal(result.state,'DISPATCH_ACCEPTED_NOT_WORKER_STARTED');
@@ -49,7 +49,7 @@ test('source repair starts ONLY via existing guarded single-writer after unique 
  assert.equal(calls,1);
 });
 test('source task with blocked dispatcher is NOT described as executed',async()=>{
- const result=await route({receipt:receipt('SOURCE_CODE'),context(),
+ const result=await route({receipt:receipt('SOURCE_CODE'),context:context(),
   existingCoreHandoff:async()=>({dispatchAccepted:0,outcome:'NOT_DISPATCHED_CRON_BACKSTOP',
    blocked:{WORKER_BUSY:1}})});
  assert.equal(result.state,'TASK_WAITING_FOR_DISPATCH');
@@ -61,7 +61,7 @@ test('all 13 classified categories have explicit route, but only source and Type
  assert.equal(categories.length,13);
  for(const cat of categories){
   let calls=0;
-  const r=await route({receipt:receipt(cat),context(),
+  const r=await route({receipt:receipt(cat),context:context(),
    existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
   assert.ok(r.state&&r.strategy&&r.responsibleRole,cat);
   assert.equal(calls,['TYPESCRIPT','SOURCE_CODE'].includes(cat)?1:0,cat);
@@ -76,7 +76,7 @@ test('all 13 classified categories have explicit route, but only source and Type
 test('existing bounded base and infrastructure recovery is respected, not duplicated',async()=>{
  for(const change of [{baseUpdated:true},{infraRerun:true}]){
   let calls=0;
-  const r=await route({receipt:receipt('INFRASTRUCTURE'),context(),...change,
+  const r=await route({receipt:receipt('INFRASTRUCTURE'),context:context(),...change,
    existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
   assert.equal(r.state,'EXISTING_RECOVERY_ACCEPTED');
   assert.equal(calls,0);
@@ -95,7 +95,7 @@ test('missing, ambiguous, moved, or forged task association must fail closed',as
  ];
  for(const changes of cases){
   let calls=0;
-  const result=await route({receipt:{...receipt(),...changes},context(),
+  const result=await route({receipt:{...receipt(),...changes},context:context(),
    existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
   assert.equal(result.state,'BLOCKED',JSON.stringify(changes));
   assert.equal(calls,0);
@@ -105,7 +105,7 @@ test('missing, ambiguous, moved, or forged task association must fail closed',as
 });
 test('uncertain and duplicate dispatch errors do not retry a second worker',async()=>{
  let calls=0;
- const result=await route({receipt:receipt(),context(),core:{warning:()=>{}},
+ const result=await route({receipt:receipt(),context:context(),core:{warning:()=>{}},
   existingCoreHandoff:async()=>{calls++;throw Error('timeout');}});
  assert.equal(calls,1);
  assert.equal(result.state,'DISPATCH_UNCONFIRMED_RECONCILE');
@@ -113,7 +113,7 @@ test('uncertain and duplicate dispatch errors do not retry a second worker',asyn
 });
 test('dry run is read-only even when source is actionable',async()=>{
  let calls=0;
- const r=await route({receipt:receipt(),context(),dryRun:true,
+ const r=await route({receipt:receipt(),context:context(),dryRun:true,
   existingCoreHandoff:async()=>{calls++;return {dispatchAccepted:1};}});
  assert.equal(r.state,'WOULD_HANDOFF_GUARDED_SOURCE');
  assert.equal(calls,0);
