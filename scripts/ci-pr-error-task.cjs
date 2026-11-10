@@ -88,6 +88,8 @@ function makeWorkerFollowUp({pr_number,head_sha,task_key,owner_run_id,
      !Number.isFinite(now)||now<=0)throw Error('UNVERIFIED_WORKER_ERROR_TASK');
   const cause=detail_code||reason_code;
   const cat=/^(?:FREE_AI_|CODEX_)/.test(cause)||/^FREE_AI_/.test(reason_code)?'AI_EXECUTOR':
+    /(?:MERGE_CONFLICT|CONFLICT_REQUIRES_SOURCE_RESOLUTION|UNMERGED_PATHS)/i.test(cause+' '+reason_code)?
+    'MERGE_CONFLICT':
     /^(?:CLAIM_|NO_CLAIM_|DISPATCH_|RESERVATION_|FINALIZER_)/.test(cause)?
     'AUTOMATION_PROCESS':'UNKNOWN';
   const st=strategyFor(cat,'UNVERIFIED',false);
