@@ -214,3 +214,123 @@ test('compact mobile chat never silently swallows validation or duplicates a tim
  assert.ok(js.includes("el('create-form').addEventListener('input'"));
  assert.ok(css.includes('.cc-create-feedback:not([hidden])'));
 });
+
+
+test('question-first chat completes owner-scoped create, reply, save and reopen in a browser-like runtime',async()=>{
+ const html=src('chats.html'),source=src('commander-chats.js');
+ const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
+ const elements={};
+ class Element {
+  constructor(id=''){
+   Object.assign(this,{id,hidden:false,open:false,value:'',textContent:'',children:[],
+    listeners:{},dataset:{},disabled:false,scrollHeight:0,scrollTop:0,attrs:{}});
+   this.classList={add(){},remove(){}};
+  }
+  addEventListener(type,fn){(this.listeners[type]??=[]).push(fn)}
+  async fire(type){for(const fn of this.listeners[type]||[])await fn({preventDefault(){},target:this})}
+  setAttribute(key,value){this.attrs[key]=value}
+  getAttribute(key){return this.attrs[key]??null}
+  append(...children){this.children.push(...children)}
+  replaceChildren(...children){this.children=[...children]}
+  querySelector(){return new Element()}
+  querySelectorAll(){return []}
+  scrollIntoView(){}
+  focus(){}
+  reset(){
+   for(const key of ['question','title','tasks','prs','description'])elements['cc-new-'+key].value='';
+   elements['cc-new-mode'].value='local';
+   elements['cc-new-project'].value='commander';
+  }
+  close(){this.open=false}
+  showModal(){this.open=true}
+ }
+ for(const id of ids)elements[id]=new Element(id);
+ assert.ok(elements['cc-chat-root']&&elements['cc-create-form']);
+ elements['cc-new-project'].value='commander';
+ elements['cc-new-mode'].value='local';
+ elements['cc-mode'].value='local';
+ elements['cc-filter'].value='all';
+ elements['cc-create-send'].textContent='Отправить';
+ elements['cc-create'].hidden=true;
+ elements['cc-thread'].hidden=true;
+ let created=null,createdCount=0,eventRows=[],seq=0;
+ const network=[];
+ const response=(data,status=200)=>({ok:status>=200&&status<400,status,json:async()=>data});
+ const doc={
+  getElementById:id=>elements[id]||null,
+  createElement:tag=>new Element(tag),
+  addEventListener(){}
+ };
+ const win={
+  crypto:{randomUUID(){
+   seq++;
+   return '123e4567-e89b-42d3-a456-'+String(426614174000+seq);
+  },subtle:{}},
+  setTimeout(){return 1},clearTimeout(){},
+  setInterval(){return 2},clearInterval(){},addEventListener(){},
+  location:{pathname:'/chats.html',search:''},history:{replaceState(){}},
+  async fetch(url,options={}){
+   const target=new URL(url,'https://holistic-house-pr-monitor.vercel.app');
+   const action=target.searchParams.get('action');
+   const body=options.body?JSON.parse(options.body):{};
+   network.push({path:target.pathname,action,method:options.method||'GET'});
+   if(target.pathname==='/api/pm-agent-chat'){
+    if(action==='status')return response({authenticated:true,modes:{local:true,openrouter:false}});
+    if(action==='chat')return response({reply:'Синтетический ответ советника',model:'local'});
+    if(action==='reports')return response({reports:[]});
+   }
+   if(target.pathname==='/api/commander-chats'){
+    if(action==='status')return response({authenticated:true,privateStoreConfigured:true});
+    if(action==='list')return response({chats:created?[created]:[]});
+    if(action==='create'){
+     createdCount++;
+     created={...body.chat,issueNumber:42};
+     return response({chat:created,issueNumber:42},201);
+    }
+    if(action==='event'){
+     const event={...body,id:body.eventId,kind:body.kind==='ai'?'assistant_unverified':body.kind,
+      author:body.kind==='ai'?'AI-ответ':'Владелец',createdAt:'2026-11-10T00:00:00Z'};
+     eventRows.push(event);
+     return response({event});
+    }
+    if(action==='read')return response({chat:created,messages:eventRows});
+   }
+   throw new Error('Unexpected network call: '+url);
+  }
+ };
+ // Execute the real browser script with a DOM adapter and deterministic, fake
+ // owner-verified responses. No Supabase credentials or production writes.
+ new Function('window','document',source)(win,doc);
+ for(let i=0;i<30;i++)await Promise.resolve();
+ assert.equal(elements['cc-board'].hidden,false,'verified owner sees the workspace');
+ elements['cc-new-question'].value='Проверь работу сохранения рабочего чата';
+ await elements['cc-create-form'].fire('submit');
+ assert.equal(createdCount,1);
+ assert.equal(created.title,'Вопрос: Проверь работу сохранения рабочего чата');
+ assert.deepEqual(created.executors,['local']);
+ assert.deepEqual(eventRows.map(e=>e.kind),['owner','assistant_unverified']);
+ assert.equal(eventRows[0].text,'Проверь работу сохранения рабочего чата');
+ assert.equal(eventRows[1].text,'Синтетический ответ советника');
+ assert.equal(elements['cc-thread'].hidden,false);
+ assert.equal(elements['cc-create'].hidden,true);
+ assert.equal(elements['cc-messages'].children.length,2);
+ assert.match(elements['cc-chat-feedback'].textContent,/Ответ сохранён/);
+ assert.equal(elements['cc-create-send'].disabled,false);
+ assert.ok(network.some(x=>x.action==='create'&&x.method==='POST'));
+ assert.ok(network.some(x=>x.action==='chat'&&x.method==='POST'));
+
+ // Re-open using the real list card callback. History must be returned by the
+ // owner-scoped read endpoint, not silently replaced with a local archive.
+ await elements['cc-close-thread'].fire('click');
+ assert.equal(elements['cc-create'].hidden,false);
+ elements['cc-new-question'].value='x';
+ await elements['cc-create-form'].fire('submit');
+ assert.equal(createdCount,1,'invalid question must not create a chat');
+ assert.match(elements['cc-create-feedback'].textContent,/2–1200/);
+ const card=elements['cc-chat-list'].children.find(x=>x.className==='cc-chat-card');
+ assert.ok(card,'saved chat must appear in history');
+ await card.fire('click');
+ assert.equal(elements['cc-thread'].hidden,false);
+ assert.equal(elements['cc-messages'].children.length,2);
+ assert.ok(network.some(x=>x.action==='read'&&x.method==='GET'));
+});
