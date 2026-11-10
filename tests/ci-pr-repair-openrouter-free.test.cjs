@@ -197,8 +197,8 @@ test('response diagnostics expose shape only, never completion or prompt content
  assert.equal(shape.finish_reason,'stop');
  assert.deepEqual(shape.message_keys,['content','refusal','role']);
  assert.equal(shape.content_type,'null');
- assert.doesNotHaveProperty(shape,'content');
- assert.doesNotHaveProperty(shape,'prompt');
+ assert.equal(Object.hasOwn(shape,'content'),false);
+ assert.equal(Object.hasOwn(shape,'prompt'),false);
 });
 
 test('single structured text object is accepted but refusals and unsupported output stay blocked',()=>{
