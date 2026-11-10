@@ -35,8 +35,13 @@ function clearSessionCookies(res){
 }
 async function verifyOwner(req,token){
   const result=await callStore(req,'status',{}, {method:'GET',token});
-  if(result.status!==200||result.data?.owner!==true||result.data?.privateStoreConfigured!==true)
-    return {ok:false,status:result.status===401?401:403};
+  if(result.status!==200){
+    if(result.status===401)return {ok:false,status:401};
+    if(result.status===403)return {ok:false,status:403};
+    return {ok:false,status:503};
+  }
+  if(result.data?.owner!==true||result.data?.privateStoreConfigured!==true)
+    return {ok:false,status:403};
   return {ok:true,data:result.data};
 }
 async function refreshWithSupabase(req,refreshToken){
@@ -78,6 +83,7 @@ module.exports=async function(req,res) {
         if(owner.ok)return sendJson(res,200,{authenticated:true,owner:true,privateStoreConfigured:true,
           storage:'SUPABASE_PRIVATE',expiresAt:claims.exp,refreshed:false});
         if(owner.status===403)return sendJson(res,403,{authenticated:false,error:'OWNER_ACCESS_DENIED'});
+        if(owner.status===503)return sendJson(res,503,{authenticated:false,error:'OWNER_CHECK_UNAVAILABLE'});
       }catch(error){
         if(error.status===403)return sendJson(res,403,{authenticated:false,error:'OWNER_ACCESS_DENIED'});
         // A transient private-store failure is not a reason to discard a valid refresh session.
