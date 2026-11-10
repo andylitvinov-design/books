@@ -34,8 +34,9 @@ function verifiedInvalidGitBlobProbe(status,data){
    return true;
  // GitHub also uses an Invalid request message with no errors array.
  return typeof data.message==='string'&&
-   /^Invalid request\\./.test(data.message)&&
-   /(?:\\\"content\\\"|\\\"encoding\\\").{0,100}(?:wasn.t supplied|required|invalid|must be)/i.test(data.message);
+   data.message.startsWith('Invalid request.')&&
+   (data.message.includes('"content"')||data.message.includes('"encoding"'))&&
+   /(?:wasn.t supplied|required|invalid|must be)/i.test(data.message);
 }
 // Repo identity + real Git Data validation + bounded remaining quota are
 // mandatory for every credential, including broad owner PATs.
