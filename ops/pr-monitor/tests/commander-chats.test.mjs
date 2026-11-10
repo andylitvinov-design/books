@@ -186,7 +186,9 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(js.includes("el('new-context').close()"));
  assert.ok(js.includes("el('history-all').addEventListener('toggle',renderList)"));
  assert.ok(js.includes("await assignSelectedExecutor(c,mode)"));
- assert.ok(js.includes("el('new-mode').value=aiReady?'openrouter':'local'"));
+ const preferred="el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local')";
+ assert.equal(js.split(preferred).length-1,2,'authenticated Director default remains set on both initial load and chat creation');
+ assert.ok(js.includes("ownedDirectorAvailable=remote&&status.dispatchAvailable===true&&status.dispatchMode==='FIRST_PARTY_AGENT_DIRECTOR'"));
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
