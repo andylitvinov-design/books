@@ -41,6 +41,13 @@ const ROUTES=Object.freeze({
   UNKNOWN:['SECONDARY_DIAGNOSIS','INSPECT_CAUSAL_JOB_AND_CLASSIFY_AGAIN',15]
 });
 const key=parts=>crypto.createHash('sha256').update(parts.join(':')).digest('hex').slice(0,32);
+function coreErrorTaskId(prNumber,headSha,runId,attempt){
+  if(!Number.isSafeInteger(prNumber)||prNumber<1||!SHA.test(headSha||'')||
+    !Number.isSafeInteger(runId)||runId<1||
+    !Number.isSafeInteger(attempt)||attempt<1)
+    return null;
+  return key([REPO,prNumber,headSha.toLowerCase(),runId,attempt,'CORE']);
+}
 const iso=s=>typeof s==='string'&&
   /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(s)&&Number.isFinite(Date.parse(s));
 function strategyFor(category,root='UNVERIFIED',canRetry=false){
@@ -78,7 +85,7 @@ function makeCoreTask({pr,run,classification,root='UNVERIFIED',now=Date.now()}={
   const st=strategyFor(classification.category,root,classification.retry?.allowed===true);
   return Object.freeze({
     schema:SCHEMA,event_kind:'CORE_CI_FAILED',
-    task_id:key([REPO,pr.number,pr.head.sha.toLowerCase(),run.id,run.run_attempt,'CORE']),
+    task_id:coreErrorTaskId(pr.number,pr.head.sha,run.id,run.run_attempt),
     pr_number:pr.number,head_sha:pr.head.sha.toLowerCase(),run_id:run.id,
     run_attempt:run.run_attempt,category:classification.category,
     ruleset_version:rules.version,reason_code:classification.reason_code,root_code:root,
@@ -299,4 +306,4 @@ function taskLifecycle(comments,task,now=Date.now()){
   return {state:'CLASSIFIED_NOT_DELIVERED',next_action:'RECONCILE_EXISTING_DISPATCHER'};
 }
 
-module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,latestErrorTaskId,validTask,executorPlan,dispatchAcceptance,dispatchAcceptanceBody,validDispatchAcceptance,REPAIR_EXECUTOR,CI_EXECUTOR};
+module.exports={makeCoreTask,makeWorkerFollowUp,strategyFor,taskBody,taskStatus,taskLifecycle,latestErrorTaskId,validTask,executorPlan,coreErrorTaskId,dispatchAcceptance,dispatchAcceptanceBody,validDispatchAcceptance,REPAIR_EXECUTOR,CI_EXECUTOR};
