@@ -669,6 +669,7 @@ jobs:
             const ownerToken=process.env.HH_AUTOMERGE_TOKEN||'';
             const jobToken=process.env.HH_REPAIR_JOB_TOKEN||'';
             const rateGuard=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-owner-rate.cjs');
+            const atomicWriter=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-graphql-writer.cjs');
             if(!jobToken)throw Error('HH_REPAIR_JOB_TOKEN_NOT_CONFIGURED');
             let token=jobToken;
             // Credentials are used only in the trusted publisher, after an
@@ -697,7 +698,12 @@ jobs:
                 ...(payload?{body:JSON.stringify(payload)}:{})
               });
               const data=await response.json().catch(()=>({}));
-              if(!response.ok)throw Error('Owner API '+response.status+': '+String(data.message||'denied').slice(0,140));
+              if(!response.ok){
+                const error=Error('GitHub API '+response.status+': '+String(data.message||'denied').slice(0,120));
+                error.status=response.status;
+                error.operation=method==='POST'&&path.endsWith('/git/blobs')?'git_blob':'other';
+                throw error;
+              }
               if(minRemaining>0){
                 const rate=rateGuard.requireOwnerRateBudget(response.headers,minRemaining);
                 core.info('HH_REPAIR_OWNER_RATE_BUDGET '+JSON.stringify(rate));
@@ -744,8 +750,39 @@ jobs:
               if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)
                 throw Error('Source branch moved before repair commit');
               const tree=[];
-              for(const file of files){
-                const blob=await call('POST',base+'/git/blobs',{content:file.content,encoding:'base64'});
+              for(const [index,file] of files.entries()){
+                let blob;
+                try{
+                  blob=await call('POST',base+'/git/blobs',{content:file.content,encoding:'base64'});
+                }catch(error){
+                  // GitHub's Git Data endpoint rejected the FIRST blob. No
+                  // blob/tree/commit/ref mutation from this attempt succeeded.
+                  // One official GraphQL createCommitOnBranch mutation can
+                  // atomically append file changes with expectedHeadOid CAS.
+                  // No fallback after any successful blob or ambiguous failure.
+                  if(index!==0||mode!=='job'||error?.status!==403||
+                     error?.operation!=='git_blob')throw error;
+                  const beforeCas=await call('GET',base+ref);
+                  if(beforeCas.ref!=='refs/heads/'+branch||
+                     beforeCas.object?.sha!==expectedSha)
+                    throw Error('HH_REPAIR_GRAPHQL_FALLBACK_STALE_HEAD');
+                  core.info('HH_REPAIR_GIT_DATA_403_GRAPHQL_CAS_ATTEMPT '+JSON.stringify({
+                    pr:number,prior_sha:expectedSha,files:files.length,
+                    endpoint:'createCommitOnBranch',source_write_unverified:true}));
+                  const atomic=await atomicWriter.atomicGraphqlCommit({
+                    owner,repo,branch,expectedSha,files,number,
+                    repairKind:candidate.repair_kind,token});
+                  // Even a successful GraphQL mutation is not terminal proof:
+                  // require a new remote ref before independent one-parent
+                  // Git commit readback in worker.publish.
+                  const posted=await call('GET',base+ref);
+                  if(posted.ref!=='refs/heads/'+branch||
+                     posted.object?.sha!==atomic.sha)
+                    throw Error('HH_REPAIR_GRAPHQL_REMOTE_REF_NOT_VERIFIED');
+                  core.info('HH_REPAIR_REMOTE_REF VERIFIED '+JSON.stringify({
+                    sha:atomic.sha,branch,method:atomic.method}));
+                  return {sha:atomic.sha};
+                }
                 if(!/^[a-f0-9]{40}$/i.test(blob.sha||''))throw Error('Blob creation failed');
                 tree.push({path:file.path,mode:'100644',type:'blob',sha:blob.sha});
               }
