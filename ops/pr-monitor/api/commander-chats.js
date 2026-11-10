@@ -61,8 +61,9 @@ module.exports=async function(req,res){
    else if(name==='attach'){action='commander_attach_event';body={issueNumber:body.issueNumber,eventId:body.eventId,url:body.url}}
    else if(name==='run'){
     action='commander_start_run';
-    if(typeof body.modelId!=='string'||typeof body.confirmGitHubWrite!=='boolean')return sendJson(res,400,{error:'MODEL_AND_WRITE_POLICY_REQUIRED'});
-    body={issueNumber:body.issueNumber,runId:body.runId,idempotencyKey:body.idempotencyKey,executor:body.executor,message:body.message,modelId:body.modelId,confirmGitHubWrite:body.confirmGitHubWrite};
+    if(typeof body.modelId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(body.modelId)||typeof body.confirmGitHubWrite!=='boolean')return sendJson(res,400,{error:'MODEL_AND_WRITE_POLICY_REQUIRED'});
+    if(body.confirmGitHubWrite!==false)return sendJson(res,403,{error:'GITHUB_WRITE_CONFIRMATION_UI_NOT_AVAILABLE'});
+    body={issueNumber:body.issueNumber,runId:body.runId,idempotencyKey:body.idempotencyKey,executor:body.executor,message:body.message,modelId:body.modelId,confirmGitHubWrite:false};
    }
    else return sendJson(res,400,{error:'UNKNOWN_ACTION'});
   }
