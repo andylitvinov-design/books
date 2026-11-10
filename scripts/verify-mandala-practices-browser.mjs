@@ -97,8 +97,16 @@ export async function verifyGuidedPractices({browser,base,engine}){
 
       // Add navigates to Audio. Return to the course for the independent Skip
       // choice, then reopen Audio and prove the seeded script has been revoked.
+      // Audio is a separate top-level workspace, so the course is not
+      // expected to remain mounted while Ready is selected. Exercise the
+      // supported course deep-link again after returning through Audio; this
+      // verifies the real route rather than asserting a hidden panel stays visible.
       await page.locator('[data-video-quick-control="ready"]').click();
-      await expect(course).toBeVisible();
+      await expect(page.locator("[data-video-ready]")).toBeVisible();
+      await page.evaluate(()=>{window.location.hash="video-audio";});
+      await expect(audioPanel).toBeVisible({timeout:15000});
+      await page.evaluate(()=>{window.location.hash="guided-video-series";});
+      await expect(course).toBeVisible({timeout:15000});
       await result.locator("[data-guided-skip-meditation]").click();
       await expect(result.locator("[data-guided-skip-meditation]"))
         .toHaveAttribute("aria-pressed","true",{timeout:15000});
@@ -106,8 +114,10 @@ export async function verifyGuidedPractices({browser,base,engine}){
       await expect(audioPanel).toBeVisible({timeout:15000});
       await expect(voice.locator("[data-meditation-script]")).toHaveCount(0,
         "explicit Skip revokes the seeded script in the shared composer");
-      await page.locator('[data-video-quick-control="ready"]').click();
-      await expect(course).toBeVisible();
+      await page.evaluate(()=>{window.location.hash="video-audio";});
+      await expect(audioPanel).toBeVisible({timeout:15000});
+      await page.evaluate(()=>{window.location.hash="guided-video-series";});
+      await expect(course).toBeVisible({timeout:15000});
       await expect(course).toHaveAttribute("data-guided-personal-opened","true",{timeout:15000});
 
       await course.locator("[data-guided-create-plan]").click();
