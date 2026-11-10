@@ -50,7 +50,8 @@ test('existing issuer remains credential isolated and branch/head guarded',()=>{
  assert.match(flow,/rateGuard\.requireOwnerRateBudget\(response\.headers,minRemaining\)/);
  assert.match(flow,/HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_IDENTITY_RATE/);
  assert.match(flow,/mode==='owner'&&repository\.permissions\?\.push!==true/);
- assert.match(flow,/force:false/);
+ assert.match(flow,/verifiedAtomicCommitRequest/);
+ assert.doesNotMatch(flow,/await call\('PATCH',base\+'\/git\/refs\/heads/);
  assert.match(flow,/Source branch moved before repair commit/);
  assert.match(flow,/HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED/);
  assert.doesNotMatch(flow,/remaining<100/);
