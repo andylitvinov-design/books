@@ -20,7 +20,12 @@
  const councilCompleted=new Set(),councilSaving=new Set();
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
  const show=(id,yes)=>{el(id).hidden=!yes};
- const info=s=>{el('alert').textContent=String(s)};
+ const info=s=>{
+  const message=String(s);
+  el('alert').textContent=message;
+  const target=thread&&!el('thread').hidden?el('chat-feedback'):el('create-feedback');
+  if(target){target.textContent=message;target.hidden=!message;}
+ };
  const time=s=>{try{return new Date(s).toLocaleString('ru-RU',{dateStyle:'short',timeStyle:'short'})}catch{return '—'}};
  const id=()=>win.crypto.randomUUID();
  const htmlLink=(box,label,url)=>{
@@ -169,8 +174,9 @@
  function formValues(prefix){
   const value=k=>el(prefix+k).value;
   const r={title:value('title').trim(),project:value('project'),description:value('description').trim(),
-   tasks:tasks(value('tasks')),prs:prs(value('prs')),executors:picks(prefix+'executors'),
+   tasks:tasks(value('tasks')),prs:prs(value('prs')),executors:prefix==='new-'?(value('mode')==='council-free'?['local']:[value('mode')]):picks('executors'),
    status:prefix==='new-'?'planned':value('status')};
+  if(prefix==='new-'&&value('mode')!=='council-free'&&!EXEC[value('mode')])throw Error('Неизвестный исполнитель');
   if(r.title.length<4||r.title.length>110||r.description.length>1000)throw Error('Название: 4–110 символов; цель до 1000');
   return r;
  }
@@ -191,25 +197,27 @@
    const value=[c.title,c.description,c.project,...(c.tasks||[]),...(c.prs||[])].join(' ').toLowerCase();
    if(q&&!value.includes(q))continue;count++;
    const b=make('button','cc-chat-card');b.type='button';b.setAttribute('aria-current',String(thread?.id===c.id));
-   b.append(make('strong',null,c.title),make('span','cc-state',STATES[c.status]||'Статус неизвестен'),
-    make('span',null,(c.executors||[]).map(x=>EXEC[x]||x).join(' · ')),
-    make('span',null,(c.prs?.length?'PR #'+c.prs.join(', #')+' · ':'')+(c.tasks?.length||0)+' задач · '+time(c.updatedAt)));
+   b.append(make('strong',null,c.title),
+    make('span',null,time(c.updatedAt)+(c.status==='blocked'?' · Требует внимания':'')));
    b.addEventListener('click',()=>openChat(c));box.append(b);
   }
   if(!count)box.append(make('p','cc-empty',chats.length?'Нет совпадений по фильтру.':'Чатов нет. Создайте первый.'));
  }
  function renderMessages(){
   const box=el('messages');box.replaceChildren();
-  if(!messages.length)box.append(make('p','cc-empty','Пока сообщений нет. Начните диалог или добавьте заметку.'));
+  if(!messages.length)box.append(make('p','cc-empty','Напишите вопрос, чтобы начать диалог.'));
   for(const msg of messages){
    const c=make('div','cc-message-item cc-from-'+msg.kind);
-   c.append(make('div','cc-message-by',msg.author||'Сообщение'),make('p',null,msg.text||''),
-    make('small',null,time(msg.createdAt)+(msg.model?' · '+msg.model:'')+' · '+(msg.kind==='github_report'?'отчёт, НЕ коммит':'не доказательство LIVE')));
-   if(msg.kind==='github_report')htmlLink(c,'Источник GitHub',msg.url);box.append(c);
+   const author=msg.kind==='owner'?'Вы':msg.kind==='assistant_unverified'?'Ассистент':
+    msg.kind==='note'?'Заметка':msg.author||'Сообщение';
+   c.append(make('div','cc-message-by',author),make('p',null,msg.text||''),
+    make('small',null,time(msg.createdAt)+(msg.kind==='github_report'?' · отчёт, не доказательство LIVE':'')));
+   if(msg.kind==='github_report')htmlLink(c,'Источник GitHub',msg.url);
+   box.append(c);
   }
   box.scrollTop=box.scrollHeight;
  }
- function renderThread(){
+function renderThread(){
   el('thread-title').textContent=thread.title;
   el('thread-updated').textContent=time(thread.updatedAt)+' · '+(remote?'приватное серверное хранилище':'зашифровано на устройстве');
   el('executor-state').textContent=(thread.taskId?'Чат привязан к защищённой задаче. ':'')+
@@ -217,7 +225,13 @@
   for(const field of ['title','project','description','status'])el(field).value=thread[field]||'';
   el('tasks').value=(thread.tasks||[]).join(', ');el('prs').value=(thread.prs||[]).join(', ');
   executorBoxes(thread.executors||['local']);el('thread-details').open=false;
-  el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('thread',true);
+  el('thread-advanced').open=false;el('chat-extra').open=false;el('history').open=false;
+  const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
+  if(el('mode').value==='council-free'||!available.includes(el('mode').value))
+   el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
+  show('model-label',el('mode').value==='openrouter');
+  el('chat-feedback').textContent='';show('chat-feedback',false);
+  el('pr-proof').replaceChildren();el('report-list').replaceChildren();show('create',false);show('thread',true);
   renderMessages();renderList();
  }
  function startReportPolling(){
@@ -242,8 +256,13 @@
   }catch(err){info('Ошибка открытия чата: '+String(err.message||err))}
  }
  async function create(e){
-  e.preventDefault();if(busy)return;busy=true;
+  e.preventDefault();if(busy)return;
+  const question=el('new-question').value.trim(),mode=el('new-mode').value;
+  if(question.length<2||question.length>1200)return info('Вопрос должен содержать 2–1200 символов.');
+  busy=true;el('create-send').disabled=true;
+  let created=false;
   try{
+   if(!el('new-title').value.trim())el('new-title').value=('Вопрос: '+question.replace(/\s+/g,' ')).slice(0,110);
    const data={...formValues('new-'),id:id()};let c;
    if(remote){
     const v=await request(SERVER+'?action=create','POST',{chat:data});
@@ -256,12 +275,21 @@
     chats.unshift(c);await persist();
    }
    if(remote){chats.unshift(c);messages=[];}else messages=c.messages;
-   thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});show('create',false);el('create-form').reset();
-   info('Чат создан. Назначение исполнителей не запускает работу.');
-  }catch(err){info('Чат не создан: '+String(err.message||err))}
-  finally{busy=false}
+   thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});
+   el('create-form').reset();el('new-mode').value=aiReady?'openrouter':'local';
+   if(el('new-context').open)el('new-context').close();
+   el('mode').value=mode;show('model-label',mode==='openrouter');
+   el('message').value=question;
+   created=true;
+   info('Отправляю вопрос…');
+  }catch(err){info('Не удалось создать чат: '+String(err.message||err))}
+  finally{busy=false;el('create-send').disabled=false;}
+  if(created){
+   await send({preventDefault(){}});
+   el('thread').scrollIntoView({block:'start',behavior:'smooth'});
+  }
  }
- async function update(e){
+async function update(e){
   e.preventDefault();if(!thread||busy)return;busy=true;
   try{
    const data={...formValues(''),id:thread.id};
@@ -592,7 +620,9 @@
   }catch{aiReady=false;models=[]}
   el('model').replaceChildren();
   for(const m of models){const o=make('option',null,m.name+' · '+m.id);o.value=m.id;el('model').append(o)}
-  el('mode').querySelector('option[value=openrouter]').disabled=!aiReady;
+  for(const select of [el('mode'),el('new-mode')])
+   select.querySelector('option[value=openrouter]').disabled=!aiReady;
+  el('new-mode').value=aiReady?'openrouter':'local';
   if(remote){
    show('board',true);
    try{await listRemote();info('Рабочие чаты загружены.');await openRequestedTask();}
@@ -624,13 +654,26 @@
    show('vault',false);show('board',true);renderList();info('Чаты открыты. Повторный пароль больше не требуется.')}
   catch(err){info('Хранилище не открыто: '+String(err.message||err))}
  });
- el('new-toggle').addEventListener('click',()=>show('create',el('create').hidden));
+ function showNewChat(){
+  if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);
+  reportRefreshTimer=null;thread=null;messages=[];el('history').open=false;
+  show('thread',false);show('create',true);renderList();
+  el('create-feedback').textContent='';show('create-feedback',false);
+  el('create').scrollIntoView({block:'start',behavior:'smooth'});
+ }
+ el('new-toggle').addEventListener('click',showNewChat);
+ el('context-toggle').addEventListener('click',()=>{
+  const dialog=el('new-context');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+ });
+ el('context-close').addEventListener('click',()=>{
+  const dialog=el('new-context');if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');
+ });
  el('create-form').addEventListener('submit',create);el('metadata-form').addEventListener('submit',update);
  el('chat-form').addEventListener('submit',send);el('note').addEventListener('click',addNote);
  el('check-prs').addEventListener('click',checkPRs);el('load-reports').addEventListener('click',reportList);
  el('handoff').addEventListener('click',handoff);
  el('search').addEventListener('input',renderList);el('filter').addEventListener('change',renderList);
- el('close-thread').addEventListener('click',()=>{if(reportRefreshTimer!==null)win.clearInterval(reportRefreshTimer);reportRefreshTimer=null;thread=null;messages=[];show('thread',false);renderList()});
+ el('close-thread').addEventListener('click',showNewChat);
  el('refresh').addEventListener('click',async()=>{
   if(busy)return;
   busy=true;el('refresh').disabled=true;
@@ -646,7 +689,7 @@
   finally{busy=false;el('refresh').disabled=false;}
  });
  el('export').addEventListener('click',exportBackup);el('import').addEventListener('change',importBackup);
- el('mode').addEventListener('change',()=>{show('model-label',el('mode').value==='openrouter');if(el('mode').value==='council-free')ensureCouncilFrame();else show('council-panel',false)});
+ el('mode').addEventListener('change',()=>{show('model-label',el('mode').value==='openrouter');if(el('mode').value!=='council-free')show('council-panel',false)});
  win.addEventListener('message',event=>{void receiveCouncilMessage(event)});
  request(AI+'?action=status').then(s=>s.authenticated?authenticated():Promise.reject()).catch(()=>{
   authorized=false;show('login',true);info('Продолжите через Google — отдельный код PR Monitor не нужен.');
