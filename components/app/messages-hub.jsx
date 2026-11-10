@@ -3,6 +3,7 @@ import {useCallback,useEffect,useState} from 'react'
 import {ArrowRight,ClipboardList,Link2,MessageCircle,ShieldCheck} from 'lucide-react'
 import {useSearchParams} from 'next/navigation'
 import DirectMessageInbox from './direct-message-inbox'
+import MessengerGuestGate from './messenger-guest-gate'
 import MessengerSignIn from './messenger-sign-in'
 import CrmMessengerPanel from './crm-messenger'
 import MessagesClientRequests from './messages-client-requests'
@@ -171,14 +172,17 @@ export default function MessagesHub({locale='en',embedded=false,onClientsCount=u
   // private messenger still uses its own verified account API. Never hide
   // existing direct conversations just because one listing endpoint is down.
   if(embedded)return <div className={styles.hub} data-member-direct-fallback>
-    {(unauthenticated||bootstrapSignInRequired)&&<p className={styles.authNotice} role="alert">
-      {directDestination?t.masterAuth:t.sessionRequired}{' '}
-      <MessengerSignIn locale={locale} recipientSlug={directDestination}
-        label={directDestination?t.masterSignIn:t.signIn}/>
-    </p>}
-    {!loading&&!unauthenticated&&!bootstrapSignInRequired&&
-      <p className={styles.authNotice} role="alert">{t.failure}</p>}
-    <DirectMessageInbox locale={locale} embedded compact ownerCrmAvailable={false}/>
+    {(unauthenticated||bootstrapSignInRequired)
+      ?directDestination
+        ?<p className={styles.authNotice} role="alert">
+          {t.masterAuth}{' '}
+          <MessengerSignIn locale={locale} recipientSlug={directDestination} label={t.masterSignIn}/>
+        </p>
+        :<MessengerGuestGate locale={locale} section="clients"/>
+      :<>
+        {!loading&&<p className={styles.authNotice} role="alert">{t.failure}</p>}
+        <DirectMessageInbox locale={locale} embedded compact ownerCrmAvailable={false}/>
+      </>}
   </div>
   return <div className={styles.hub} data-messages-hub
     data-thread-open={tab==='chats'&&(ownerAccountId?(source==='crm'?crmOpen:directOpen):directOpen)||undefined}>
