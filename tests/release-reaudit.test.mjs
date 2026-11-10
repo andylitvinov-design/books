@@ -231,7 +231,9 @@ test('release browser audit preserves separate free-topic and paid-service safet
   assert.match(verifier, /searchParams\.get\('topic'\)/);
   assert.match(verifier, /option\[value="30-min"\].*€50/);
   assert.match(verifier, /option\[value="60-min"\].*€100/);
-  assert.match(verifier, /No enquiry without explicit reply consent/);
+  assert.match(verifier, /data-messenger-only-intake/);
+  assert.match(verifier, /data-messenger-only-channel/);
+  assert.match(verifier, /contactFieldsAbsent: true/);
   assert.match(verifier, /check\('csp-navigation-and-history'/);
   assert.match(verifier, /privateIframeBlocked: true/);
   assert.match(verifier, /ignoreDefaultArgs: \['--disable-back-forward-cache'\]/);
