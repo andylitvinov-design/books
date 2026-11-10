@@ -153,7 +153,7 @@ test("guided meditation Add opens the single Audio / Meditations composer; Skip 
  const composer=studio.indexOf("<MandalaPersonalMeditation",audio);
  assert.ok(audio>0&&composer>audio,"one dedicated Audio / Meditations panel owns the composer");
  assert.match(studio,/onAddMeditation=\{script=>\{[\s\S]*?setCourseMeditationDraft\(script\);[\s\S]*?setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("meditations"\)/);
- assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationDraft\("");[\s\S]*?setAttachedAudio\(current=>/);
+ assert.match(studio,/onOmitMeditation=\{\(\)=>\{[\s\S]*?setCourseMeditationDraft\(""\);[\s\S]*?setAttachedAudio\(current=>/);
  assert.match(studio,/coursePreview=\{Boolean\(courseMeditationDraft\)\} seedScript=\{courseMeditationDraft\}/);
  assert.equal((studio.match(/<MandalaPersonalMeditation\b/g)||[]).length,1,
    "there is one composer, not another one in Ready or Practices");
