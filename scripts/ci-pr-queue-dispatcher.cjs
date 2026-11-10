@@ -7,6 +7,7 @@ const {priorityFor,rankedCandidates}=require('./ci-pr-priority.cjs');
 const {run:reconcileLegacyCiDenial}=require('./ci-pr-ci-legacy-recovery.cjs');
 const {WORKFLOWS,admission,snapshot}=require('./ci-pr-capacity.cjs');
 const {repairMode,safeFiles,hasVerifiedSourceHandoff,verifiedCoreCodeFailure}=require('./ci-pr-repair-worker.cjs');
+const {safeSourcePath: safeFreeSourcePath}=require('./ci-pr-repair-free-agent.cjs');
 const {verifiedRunnerReceipt}=require('./ci-pr-runner-evidence.cjs');
 const {reconcileCiWake,recoverVerifiedCiManualHold}=require('./ci-pr-ci-wake-reconcile.cjs');
 const {classifyIndependentSpecialistChecks,latestByName}=require('./ci-pr-ten-minute-watchdog.cjs');
@@ -897,8 +898,15 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
     owner,repo,pull_number:task.pr_number,per_page:100,page:1}))).data;}
    catch(e){blocked('SOURCE_FILES_UNAVAILABLE');continue;}
    const safe=safeFiles(files);
-   if(!safe||!safe.length){
-    blocked('SOURCE_SCOPE_NOT_ACTIONABLE');
+   // The deterministic/source selection is broader than the free-model
+   // publisher sandbox. Never reserve a writer for files that the isolated
+   // proposer will reject (e.g. admin, Meta publisher, private APIs).
+   // Doing this BEFORE dispatch preserves the real no-claim/manual terminal
+   // task instead of wasting a runner and inferring a source fix.
+   const freeScopeSafe=Array.isArray(safe)&&safe.length>0&&
+     safe.every(safeFreeSourcePath);
+   if(!freeScopeSafe){
+    blocked(safe?.length?'SOURCE_SCOPE_UNSAFE_FOR_FREE_AI':'SOURCE_SCOPE_NOT_ACTIONABLE');
     // Verified source CI can affect files outside the source-writing sandbox.
     // Escalate once to the PR owner instead of repeatedly re-enqueueing an
     // unauthorized code-write attempt. NEVER auto-publish these files.
@@ -923,8 +931,9 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
      await limited('scope-owner-terminal-receipt',()=>github.rest.issues.createComment({
       owner,repo,issue_number:task.pr_number,
       body:marker+'\n@'+ownerPr.user.login+
-       ' — Core failed at this exact HEAD, but no file is within the permitted '+
-       'automatic source-repair scope. Authorized human/Code Repair review needed. '+
+       ' — Core failed at this exact HEAD, but the changed source scope is '+
+       'unsupported or sensitive for the existing free automatic repair. '+
+       'Authorized human/Code Repair review is required. '+
        'No source write or required CI bypass occurred.\n'+commentBody({
         ...task,state:'MANUAL',reason_code:'SOURCE_SCOPE_NOT_ACTIONABLE',
         source_published:false,owner_run_id:String(context.runId||'unknown'),
