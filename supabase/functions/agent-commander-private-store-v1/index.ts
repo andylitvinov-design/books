@@ -494,15 +494,8 @@ async function handler(req){
       if(!chats.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
       const runsSql="select run_id,executor,status,reason_code,request_sha256,hermes_job_id,executor_session_id,receipt,started_at,completed_at,created_at,updated_at from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid order by created_at desc limit 30";
       let runs=await q(db,runsSql,[ownerId,chats[0].chat_id]);
-      const unfinished=runs.find(x=>!["COMPLETED","FAILED","CANCELLED"].includes(x.status)&&x.receipt?.dispatchAttempted===true);
-      if(writable&&unfinished&&hermesConfiguration()){
-        try{
-          await refreshHermesRun(db,ownerId,chats[0].chat_id,unfinished.run_id);
-          runs=await q(db,runsSql,[ownerId,chats[0].chat_id]);
-        }catch(error){console.error("COMMANDER_HERMES_RECONCILE_UNCONFIRMED",error&&error.name||"Error");}
-      }
       return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUNS_V1",runs,storage:"SUPABASE_PRIVATE",
-        dispatchEnabled:Boolean(hermesConfiguration()),observedAt:new Date().toISOString()},origin);
+        dispatchEnabled:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",observedAt:new Date().toISOString()},origin);
     }
     if(action==="commander_start_run"){
       const chatNumber=number(body.issueNumber);
@@ -523,19 +516,15 @@ async function handler(req){
         linkedPrHintsVerified:false,
         requiredBeforeSourceChange:"Resolve live GitHub PR and exact HEAD before any source change."
       };
-      const canUseHermes=executor==="hermes"||executor==="openrouter";
-      const modelId=typeof body.modelId==="string"?body.modelId:"";
-      const validModel=MODEL_ID.test(modelId);
+      const modelId=typeof body.modelId==="string"&&body.modelId.length?clean(body.modelId,120):"owned-default";
       const writeConfirmed=body.confirmGitHubWrite===true;
-      const config=hermesConfiguration();
-      const canDispatch=Boolean(canUseHermes&&config&&validModel);
+      const canDispatch=executor==="local"&&!writeConfirmed;
       let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
-      if(canUseHermes)reasonCode=!config?"HERMES_RUNTIME_NOT_CONFIGURED":
-        !validModel?"HERMES_FREE_MODEL_NOT_SELECTED":"HERMES_DISPATCH_REQUESTED";
-      else if(executor==="codex")reasonCode="CODEX_LOCAL_AGENT_OFFLINE_OR_REMOTE_APPROVAL_DISABLED";
+      if(executor==="local")reasonCode=writeConfirmed?"AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED":"AGENT_DIRECTOR_DISPATCH_REQUESTED";
+      else if(executor==="hermes"||executor==="openrouter")reasonCode="EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY";
+      else if(executor==="codex")reasonCode="CODEX_LOCAL_AGENT_NOT_CONNECTED";
       else if(executor==="repair-worker")reasonCode="REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE";
       else if(executor==="chatgpt-work")reasonCode="CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE";
-      else if(executor==="local")reasonCode="LOCAL_ADVISOR_IS_NOT_AN_EXECUTOR";
       else if(executor==="manual")reasonCode="MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF";
       const firstStatus=canDispatch?"STARTING":"BLOCKED";
       const hashInput=[chat.chat_id,executor,String(contextCapsule.chatRevision),message,modelId,String(writeConfirmed)].join(String.fromCharCode(31));
@@ -543,7 +532,7 @@ async function handler(req){
       const requestSha256=Array.from(hashed,x=>x.toString(16).padStart(2,"0")).join("");
       const initialReceipt={dispatchAttempted:false,agentStarted:false,executionVerified:false,
         status:firstStatus,sourceWrite:null,model:modelId};
-      const pendingText=canDispatch?"Задача зарегистрирована; подтверждение запуска Hermes ещё не получено.":
+      const pendingText=canDispatch?"Задача зарегистрирована; Agent Director проверяет доступность собственной модели.":
         "Задача сохранена, но запуск не подтверждён. Причина: "+reasonCode+".";
       const result=await db.begin(async tx=>{
         const inserted=await tx.unsafe("insert into business_brain.commander_execution_runs (run_id,owner_id,chat_id,task_id,idempotency_key,request_sha256,executor,status,reason_code,request_payload,receipt) values($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$8,$9,$10::text::jsonb,$11::text::jsonb) on conflict(owner_id,chat_id,idempotency_key) do nothing returning run_id,status,reason_code,request_sha256,executor,hermes_job_id,receipt,created_at",
@@ -580,28 +569,28 @@ async function handler(req){
         duplicate:false,dispatchAttempted:false,agentStarted:false,liveVerified:false,
         status:"BLOCKED",reasonCode,storage:"SUPABASE_PRIVATE"},origin);
       try{
-        const remote=await hermesCall(config,"/commander/runs","POST",{
-          runId,chatId:chat.chat_id,ownerId,projectKey:"holistic-house",message,model:modelId,
-          confirmGitHubWrite:writeConfirmed,contextCapsule});
-        const verified=trustedHermesReceipt(remote,runId,null,modelId);
-        await saveHermesReceipt(db,ownerId,chat.chat_id,runId,verified);
-        return reply(202,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",
-          run:{...result.run,status:verified.status,hermes_job_id:verified.jobId},
+        const remote=await ownedDirectorCall(req,{schemaVersion:1,runId,chatId:chat.chat_id,
+          ownerId,projectKey:"holistic-house",message,modelId,confirmGitHubWrite:false,contextCapsule});
+        const verified=trustedOwnedDirectorReceipt(remote,{run_id:runId,chat_id:chat.chat_id,owner_id:ownerId});
+        await saveOwnedDirectorReceipt(db,ownerId,chat.chat_id,runId,verified);
+        return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",
+          run:{...result.run,status:verified.status,reason_code:verified.reasonCode,receipt:{
+            dispatchAttempted:true,agentStarted:verified.agentStarted,executionVerified:verified.executionVerified,
+            model:verified.model,sourceWrite:null,proofLevel:verified.proofLevel}},
           duplicate:false,dispatchAttempted:true,agentStarted:verified.agentStarted,
-          executionVerified:verified.executionVerified,liveVerified:false,
-          status:verified.status,sourceWrite:verified.sourceWrite,reasonCode:verified.reasonCode,
-          storage:"SUPABASE_PRIVATE"},origin);
+          executionVerified:verified.executionVerified,liveVerified:false,status:verified.status,
+          reasonCode:verified.reasonCode,model:verified.model,sourceWrite:null,
+          proofLevel:verified.proofLevel,storage:"SUPABASE_PRIVATE"},origin);
       }catch(error){
-        console.error("COMMANDER_HERMES_DISPATCH_UNCONFIRMED",error&&error.name||"Error");
-        // A timeout can mean the remote accepted the request; do not retry blindly.
-        const reason="HERMES_DISPATCH_UNCONFIRMED_RECONCILE";
+        console.error("COMMANDER_AGENT_DIRECTOR_DISPATCH_UNCONFIRMED",error&&error.name||"Error");
+        const reason="AGENT_DIRECTOR_DISPATCH_UNCONFIRMED";
         await q(db,"update business_brain.commander_execution_runs set status='BLOCKED',reason_code=$1,receipt=$2::text::jsonb,updated_at=now() where run_id=$3::uuid and owner_id=$4::uuid and chat_id=$5::uuid and status='STARTING'",
-          [reason,jsonbText({dispatchAttempted:true,agentStarted:false,executionVerified:false,
-            status:"BLOCKED",sourceWrite:null,model:modelId}),runId,ownerId,chat.chat_id]);
-        return reply(202,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",
-          run:{...result.run,status:"BLOCKED",reason_code:reason},duplicate:false,
-          dispatchAttempted:true,agentStarted:false,liveVerified:false,
-          status:"BLOCKED",reasonCode:reason,storage:"SUPABASE_PRIVATE"},origin);
+          [reason,jsonbText({dispatchAttempted:true,agentStarted:false,executionVerified:false,status:"BLOCKED",
+            sourceWrite:null,model:modelId,proofLevel:"DISPATCH_UNCONFIRMED"}),runId,ownerId,chat.chat_id]);
+        await q(db,"update business_brain.commander_chats set execution_state='BLOCKED',updated_at=now() where owner_id=$1::uuid and chat_id=$2::uuid",[ownerId,chat.chat_id]);
+        return reply(202,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",run:{...result.run,status:"BLOCKED",reason_code:reason},
+          duplicate:false,dispatchAttempted:true,agentStarted:false,liveVerified:false,status:"BLOCKED",
+          reasonCode:reason,storage:"SUPABASE_PRIVATE"},origin);
       }
     }
     if(action==="commander_list_ci_events"){
@@ -641,7 +630,7 @@ async function handler(req){
         storage:"SUPABASE_PRIVATE",preferenceOnly:true,agentStarted:false},origin);
     }
     if(action==="status")return reply(200,{ok:true,service:"AGENT_COMMANDER_PRIVATE_STORE_V1",
-      owner:true,authenticated:true,privateStoreConfigured:true,executorDispatch:Boolean(hermesConfiguration()),executionRunLedger:true,dispatchReason:hermesConfiguration()?"HERMES_CONFIGURED_AWAITING_LIVE_EXECUTION_PROOF":"HERMES_RUNTIME_NOT_CONFIGURED",
+      owner:true,authenticated:true,privateStoreConfigured:true,executorDispatch:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OWNED_MODEL_CONFIG_CHECKED_AT_RUN_TIME",
       liveVerification:false,checkedAt:new Date().toISOString()},origin);
 
     if(action==="commander_list_tasks"){
@@ -688,15 +677,6 @@ async function handler(req){
       const id=number(body.issueNumber);if(!id)return reply(400,{error:"INVALID_CHAT_NUMBER"},origin);
       const rows=await q(db,"select chat_number,chat_id,task_id,status,revision,execution_state,updated_at,payload from business_brain.commander_chats where owner_id=$1::uuid and chat_number=$2 limit 1",[ownerId,id]);
       if(!rows.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
-      // Reconcile only one active run during an owner-driven chat read.
-      // Never mark a task complete based on a queued or generated message.
-      if(writable&&hermesConfiguration()){
-        const active=await q(db,"select run_id from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid and status in ('STARTING','RUNNING','BLOCKED') and receipt->>'dispatchAttempted'='true' order by created_at desc limit 1",[ownerId,rows[0].chat_id]);
-        if(active.length){
-          try{await refreshHermesRun(db,ownerId,rows[0].chat_id,active[0].run_id);}
-          catch(error){console.error("COMMANDER_HERMES_RECONCILE_UNCONFIRMED",error&&error.name||"Error");}
-        }
-      }
       const events=await q(db,"select payload from business_brain.commander_chat_events where owner_id=$1::uuid and chat_id=$2::uuid order by created_at asc limit 400",[ownerId,rows[0].chat_id]);
       const chat={...rows[0].payload,issueNumber:Number(rows[0].chat_number),githubUpdatedAt:rows[0].updated_at,
         updatedAt:rows[0].updated_at,revision:rows[0].revision,status:rows[0].status,executionState:rows[0].execution_state};
