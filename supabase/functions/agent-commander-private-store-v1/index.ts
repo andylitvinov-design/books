@@ -905,7 +905,7 @@ async function handler(req){
       if(body.pr!==undefined&&!pr)return reply(400,{error:"INVALID_PR_NUMBER"},origin);
       const rows=await q(db,
         `select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,
-          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,route_receipt,route_recorded_at,created_at
+          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,route_receipt,route_recorded_at,triage_receipt,triage_recorded_at,historical_pr_readback,created_at
          from business_brain.commander_ci_event_inbox
          where inbox_owner_id=$3::uuid and ($1::int is null or pr_number=$1)
          order by created_at desc limit $2`,[pr,limit,ownerId]);
