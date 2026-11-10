@@ -81,7 +81,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-chat-submit-fix-v2'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -119,7 +119,7 @@ test('AI Council Free is embedded in a persistent Director chat with strict cros
  assert.ok(html.includes('id="cc-council-frame"'));
  assert.ok(html.includes('data-src="https://ai-council-free-super10.vercel.app/?embed=agents-director"'));
  assert.ok(html.includes('sandbox="allow-scripts allow-forms allow-same-origin'));
- assert.ok(html.includes('commander-chats.js?v=20261110-chat-submit-fix-v2'));
+ assert.ok(html.includes('commander-chats.js?v=20261110-compact-composer-v1'));
  assert.ok(js.includes("COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app'"));
  assert.ok(js.includes("event.origin!==COUNCIL_ORIGIN||event.source!==el('council-frame').contentWindow"));
  assert.ok(js.includes('HH_AI_COUNCIL_SET_PROMPT_V1'));
@@ -179,40 +179,38 @@ test('Commander execution run snapshots a bounded revision-pinned task context a
  assert.ok(edge.includes('String(contextCapsule.chatRevision)'));
 });
 
-
-test('compact chat UI supports a single question, optional executor and hidden advanced metadata',()=>{
- const html=src('chats.html'),css=src('commander-chats.css'),js=src('commander-chats.js');
- assert.match(html,/id="cc-new-prompt"[^>]*maxlength="1200"[^>]*required/);
- assert.match(html,/class="cc-executor-chips"/);
- assert.match(html,/name="cc-new-executor" value="local" checked/);
- assert.match(html,/<details class="cc-extra">/);
- assert.match(html,/id="cc-new-title"/);
- assert.match(html,/id="cc-new-project"/);
- assert.match(html,/id="cc-new-prs"/);
- assert.match(html,/id="cc-create-backdrop"/);
- assert.match(html,/id="cc-thread-tools"/);
- assert.match(css,/cc-create-sheet:not\(\[hidden\]\)/);
- assert.match(css,/cc-executor-chip:has\(input:checked\)/);
- assert.match(js,/if\(!el\('new-title'\)\.value\.trim\(\)\)/);
- assert.match(js,/const data=\{\.\.\.formValues\('new-'\),id:pendingCreateId\|\|\(pendingCreateId=id\(\)\)\}/);
- assert.match(js,/el\('mode'\)\.value=data\.executors\[0\]/);
- assert.match(js,/await send\(\{preventDefault\(\)\{\}\}\)/);
- assert.match(js,/el\('board'\)\.dataset\.view='thread'/);
- assert.match(js,/el\('board'\)\.dataset\.view='list'/);
- assert.match(js,/closeCreate\(\)/);
+test('Commander one-box UX shows the question first and keeps task metadata in an optional sheet',()=>{
+ const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
+ assert.ok(html.indexOf('id="cc-new-question"')>=0);
+ assert.ok(html.indexOf('id="cc-new-question"')<html.indexOf('id="cc-new-context"'));
+ assert.ok(html.includes('<dialog id="cc-new-context"'));
+ for(const id of ['cc-new-mode','cc-create-send','cc-context-toggle','cc-context-close',
+   'cc-new-title','cc-new-project','cc-new-tasks','cc-new-prs','cc-new-description','cc-history'])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ assert.doesNotMatch(html,/id="cc-new-title"[^>]*required/);
+ assert.ok(html.includes('id="cc-history" class="cc-history"'));
+ assert.ok(!html.includes('<fieldset id="cc-new-executors"'));
+ assert.match(js,/if\(!el\('new-title'\)\.value\.trim\(\)\)el\('new-title'\)\.value=/);
+ assert.ok(js.includes("await send({preventDefault(){}})"));
+ assert.ok(js.includes("el('new-context').close()"));
+ assert.ok(js.includes("el('history').open=false"));
+ assert.ok(js.includes("await assignSelectedExecutor(c,mode)"));
+ assert.ok(js.includes("el('new-mode').value=aiReady?'openrouter':'local'"));
+ assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
+ assert.ok(css.includes('.cc-context-dialog::backdrop'));
+ assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
+ assert.ok(html.includes('commander-chats.css?v=20261110-compact-composer-v1'));
 });
 
-test('mobile creation always handles submit and shows errors beside its button',()=>{
+test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
  assert.match(html,/<form id="cc-create-form" novalidate>/);
  assert.match(html,/id="cc-create-feedback"[^>]*role="alert"/);
- assert.match(html,/id="cc-thread-feedback"/);
- assert.match(js,/feedback\.scrollIntoView/);
- assert.match(js,/button\.disabled=true/);
- assert.match(js,/if\(busy\)return fail/);
- assert.match(js,/if\(el\('new-title'\)\.value\.trim\(\)\.length<4\)/);
- assert.match(js,/pendingCreateId\|\|\(pendingCreateId=id\(\)\)/);
- assert.match(js,/if\(created\)\{\s*el\('thread'\)\.scrollIntoView[\s\S]*?await send/);
- assert.match(js,/if\(thread&&!el\('thread'\)\.hidden\)el\('thread-feedback'\)/);
- assert.match(css,/cc-create-feedback:not\(\[hidden\]\)/);
+ assert.ok(js.includes('pendingCreateId||(pendingCreateId=id())'));
+ assert.ok(js.includes("listing.chats?.find(x=>x.id===data.id"));
+ assert.ok(js.includes('feedback.scrollIntoView'));
+ assert.ok(js.includes("button.textContent='Создаю…'"));
+ assert.ok(js.includes("if(busy)return fail("));
+ assert.ok(js.includes("el('create-form').addEventListener('input'"));
+ assert.ok(css.includes('.cc-create-feedback:not([hidden])'));
 });
