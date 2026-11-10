@@ -509,127 +509,11 @@ async function receiveGitHubWorkflowRun(req, origin) {
   }
 }
 
-
-// Authenticated callback from the ALREADY RUNNING failed-Core GitHub workflow.
-// A dispatch decision is never proof of a worker start, source patch or LIVE.
-const CI_ROUTE_STATES = new Set([
-  "TASK_REQUIRES_REVIEW","TASK_ROUTED_TO_REVIEW","TASK_AWAITING_EXISTING_RECOVERY",
-  "EXISTING_RECOVERY_ACCEPTED","DISPATCH_ACCEPTED_NOT_WORKER_STARTED",
-  "TASK_WAITING_FOR_DISPATCH","DISPATCH_UNCONFIRMED_RECONCILE"
-]);
-async function receiveCommanderCiRoute(req,origin){
-  const claims=await verifyGitHubActionsOidc(req);
-  if(!claims)return reply(401,{recorded:false,outcome:"GITHUB_OIDC_IDENTITY_REJECTED"},origin);
-  if(Number(req.headers.get("content-length")||"0")>6000)return reply(413,{recorded:false,outcome:"BODY_TOO_LARGE"},origin);
-  const raw=await req.text();
-  if(raw.length>6000)return reply(413,{recorded:false,outcome:"BODY_TOO_LARGE"},origin);
-  let p;try{p=JSON.parse(raw);}catch{return reply(400,{recorded:false,outcome:"INVALID_JSON"},origin);}
-  if(!p||p.schema!=="HH_COMMANDER_CI_ROUTE_RECEIPT_V1"||
-    !uuid(p.inboxId)||!number(p.prNumber)||!Number.isSafeInteger(p.runId)||p.runId<1||
-    !/^[a-f0-9]{40}$/.test(p.headSha||"")||
-    !CI_ROUTE_STATES.has(p.state)||typeof p.reason!=="string"||
-    !/^[A-Z0-9_]{3,120}$/.test(p.reason)||
-    typeof p.router!=="string"||!/^[A-Z0-9_]{3,90}$/.test(p.router)||
-    typeof p.responsibleRole!=="string"||p.responsibleRole.length>80||
-    !Number.isSafeInteger(p.dispatchAccepted)||p.dispatchAccepted<0||p.dispatchAccepted>2||
-    typeof p.category!=="string"||
-    p.workerStarted!==false||p.sourceWriteVerified!==false||p.liveVerified!==false||
-    (p.state==="DISPATCH_ACCEPTED_NOT_WORKER_STARTED")!==(p.dispatchAccepted>0)||
-    !p.blocked||typeof p.blocked!=="object"||Array.isArray(p.blocked)||
-    Object.entries(p.blocked).length>12||
-    Object.entries(p.blocked).some(([k,v])=>!/^[A-Z0-9_]{3,80}$/.test(k)||
-      !Number.isSafeInteger(v)||v<1||v>100))
-    return reply(400,{recorded:false,outcome:"INVALID_ROUTE_RECEIPT"},origin);
-  if(p.dispatchAccepted>0&&!(p.category==="TYPESCRIPT"||p.category==="SOURCE_CODE"))
-    return reply(403,{recorded:false,outcome:"UNSAFE_CATEGORY_DISPATCH_REJECTED"},origin);
-  const dbUrl=Deno.env.get("SUPABASE_DB_URL");
-  if(!dbUrl)return reply(503,{recorded:false,outcome:"PRIVATE_DATABASE_NOT_CONFIGURED"},origin);
-  const db=postgres(dbUrl,{max:1,connect_timeout:6,idle_timeout:4,ssl:"require",prepare:false});
-  try{
-    const result=await db.begin(async tx=>{
-      const rows=await tx.unsafe(
-        "select ci_event_id,repository,workflow_run_id,pr_number,head_sha,head_ref,category,classification,association_status,associated_task_id,inbox_owner_id,oidc_workflow_ref,route_receipt from business_brain.commander_ci_event_inbox where ci_event_id=$1::uuid for update",
-        [p.inboxId]);
-      const e=rows[0];
-      if(!e)return {code:404,outcome:"CI_EVENT_NOT_FOUND"};
-      const c=e.classification;
-      if(e.repository!=="andylitvinov-design/books"||
-        e.oidc_workflow_ref!==claims.workflow_ref||
-        String(e.workflow_run_id)!==String(p.runId)||e.pr_number!==p.prNumber||
-        e.head_sha!==p.headSha||e.category!==p.category||
-        !["MATCHED_CHAT_EVENT_RECORDED","TASK_ASSIGNED_CHAT_RECORDED_NOT_DISPATCHED"].includes(e.association_status)||
-        !uuid(e.associated_task_id)||!c||
-        c.schema!=="HH_CI_ERROR_CLASSIFICATION_V1"||
-        c.category!==p.category||c.responsible_role!==p.responsibleRole||
-        c.status!=="DIAGNOSTIC_ONLY"||c.source_write_authorized!==false||
-        c.execution_authorized!==false||
-        (p.dispatchAccepted>0&&(
-          c.requires_human!==false||c.retry?.allowed!==true||
-          c.recommended_status!=="REROUTED")))
-        return {code:409,outcome:"CI_ROUTE_SOURCE_NOT_VERIFIED"};
-      const record={schema:p.schema,inboxId:p.inboxId,prNumber:p.prNumber,
-        headSha:p.headSha,runId:p.runId,category:p.category,router:p.router,
-        responsibleRole:p.responsibleRole,state:p.state,reason:p.reason,
-        dispatchAccepted:p.dispatchAccepted,blocked:p.blocked,
-        workerStarted:false,sourceWriteVerified:false,liveVerified:false,
-        proofLevel:"GITHUB_OIDC_ROUTE_ONLY_NOT_EXECUTION"};
-      if(e.route_receipt){
-        const prior=e.route_receipt;
-        const equivalent=Object.entries(record).every(([k,v])=>
-          JSON.stringify(prior[k])===JSON.stringify(v));
-        return equivalent?{code:200,outcome:"ALREADY_RECORDED"}:
-          {code:409,outcome:"ROUTE_RECEIPT_IMMUTABLE_CONFLICT"};
-      }
-      const tasks=await tx.unsafe(
-        "select task_id,payload from business_brain.commander_tasks where task_id=$1::uuid and owner_id=$2::uuid and project_key='agent-commander' for update",
-        [e.associated_task_id,e.inbox_owner_id]);
-      if(tasks.length!==1||!Array.isArray(tasks[0].payload?.relatedPr)||
-        !tasks[0].payload.relatedPr.includes(e.pr_number))
-        return {code:409,outcome:"COMMANDER_TASK_NOT_VERIFIED"};
-      const chats=await tx.unsafe(
-        "select chat_id from business_brain.commander_chats where task_id=$1::uuid and owner_id=$2::uuid limit 2",
-        [e.associated_task_id,e.inbox_owner_id]);
-      if(chats.length!==1)return {code:409,outcome:"COMMANDER_CHAT_NOT_UNIQUE"};
-      await tx.unsafe(
-        "update business_brain.commander_ci_event_inbox set route_receipt=$1::text::jsonb,route_recorded_at=now() where ci_event_id=$2::uuid and route_receipt is null",
-        [jsonbText(record),p.inboxId]);
-      await tx.unsafe(
-        "update business_brain.commander_tasks set payload=jsonb_set(payload,'{ciLatestRoute}',$1::text::jsonb,true),updated_at=now() where task_id=$2::uuid and owner_id=$3::uuid",
-        [jsonbText(record),e.associated_task_id,e.inbox_owner_id]);
-      const chatEventId=await stableScopeId(e.inbox_owner_id,"github-ci-route:"+p.inboxId);
-      const event={schema:"HH_COMMANDER_EVENT_V1",id:chatEventId,
-        kind:"github_report",author:"GitHub Actions · verified CI routing",
-        text:clean("CI task PR #"+p.prNumber+" strategy "+p.router+
-          "; route state "+p.state+"; "+p.reason+
-          "; dispatch requests accepted "+p.dispatchAccepted+
-          ". Worker start, source commit, CI and LIVE are NOT verified.",1800),
-        ciRoute:record,sourceVerified:true,
-        proofLevel:"GITHUB_OIDC_ROUTE_ONLY_NOT_EXECUTION",
-        createdAt:new Date().toISOString()};
-      await tx.unsafe(
-        "insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified) values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::text::jsonb,true) on conflict(event_id) do nothing",
-        [chatEventId,chats[0].chat_id,e.inbox_owner_id,jsonbText(event)]);
-      await tx.unsafe(
-        "update business_brain.commander_chats set execution_state=$1,updated_at=now() where chat_id=$2::uuid and owner_id=$3::uuid",
-        [p.state,chats[0].chat_id,e.inbox_owner_id]);
-      return {code:202,outcome:"RECORDED"};
-    });
-    return reply(result.code,{recorded:result.code===200||result.code===202,
-      outcome:result.outcome,inbox_id:p.inboxId,workerStarted:false,liveVerified:false},origin);
-  }catch(error){
-    console.error("COMMANDER_CI_ROUTE_RECEIPT_ERROR "+String(error?.name||"Error")+
-      " code="+String(error?.code||"unknown"));
-    return reply(503,{recorded:false,outcome:"CI_ROUTE_STORAGE_UNAVAILABLE"},origin);
-  }finally{await db.end({timeout:2});}
-}
-
 async function handler(req){
   const origin=req.headers.get("origin")||"";
   const pathname=new URL(req.url).pathname;
   if(req.method==="POST"&&pathname.endsWith("/webhooks/github-workflow-run"))
     return await receiveGitHubWorkflowRun(req,origin);
-  if(req.method==="POST"&&pathname.endsWith("/webhooks/github-ci-route"))
-    return await receiveCommanderCiRoute(req,origin);
   if(req.method==="OPTIONS")return ALLOWED_ORIGINS.has(origin)?reply(204,{},origin):reply(403,{error:"ORIGIN_DENIED"},origin);
   if(!["GET","POST"].includes(req.method))return reply(405,{error:"METHOD_NOT_ALLOWED"},origin);
   if(origin&&!ALLOWED_ORIGINS.has(origin))return reply(403,{error:"ORIGIN_DENIED"},origin);
@@ -702,21 +586,21 @@ async function handler(req){
       };
       const modelId=typeof body.modelId==="string"&&body.modelId.length?clean(body.modelId,120):"owned-default";
       const writeConfirmed=body.confirmGitHubWrite===true;
-      const canDispatch=executor==="local"&&!writeConfirmed;
+      const canDispatch=(executor==="local"||executor==="openrouter")&&!writeConfirmed;
       let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
-      if(executor==="local")reasonCode=writeConfirmed?"AGENT_DIRECTOR_GITHUB_APP_NOT_CONFIGURED":"AGENT_DIRECTOR_DISPATCH_REQUESTED";
+      if(executor==="local"||executor==="openrouter")reasonCode=writeConfirmed?"GITHUB_WRITE_REQUIRES_SEPARATE_APPROVAL":"OPENROUTER_WORKER_QUEUED";
       else if(executor==="hermes"||executor==="openrouter")reasonCode="EXTERNAL_HERMES_SERVICE_DISABLED_FIRST_PARTY_ONLY";
       else if(executor==="codex")reasonCode="CODEX_LOCAL_AGENT_NOT_CONNECTED";
       else if(executor==="repair-worker")reasonCode="REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE";
       else if(executor==="chatgpt-work")reasonCode="CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE";
 
       else if(executor==="manual")reasonCode="MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF";
-      const firstStatus=canDispatch?"STARTING":"BLOCKED";
+      const firstStatus=canDispatch?"QUEUED":"BLOCKED";
       const hashInput=[chat.chat_id,executor,String(contextCapsule.chatRevision),message,modelId,String(writeConfirmed),goal,JSON.stringify(acceptanceCriteria),JSON.stringify(skillIds),parentTaskId||""].join(String.fromCharCode(31));
       const hashed=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(hashInput)));
       const requestSha256=Array.from(hashed,x=>x.toString(16).padStart(2,"0")).join("");
       const initialReceipt={dispatchAttempted:false,agentStarted:false,executionVerified:false,
-        status:firstStatus,sourceWrite:null,model:modelId};
+        status:firstStatus,sourceWrite:null,model:modelId==="owned-default"?"openrouter/free":modelId};
       const pendingText=canDispatch?"Задача зарегистрирована; Agent Director проверяет доступность собственной модели.":
         "Задача сохранена, но запуск не подтверждён. Причина: "+reasonCode+".";
       const result=await db.begin(async tx=>{
@@ -753,30 +637,11 @@ async function handler(req){
       if(!canDispatch)return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",run:result.run,
         duplicate:false,dispatchAttempted:false,agentStarted:false,liveVerified:false,
         status:"BLOCKED",reasonCode,storage:"SUPABASE_PRIVATE"},origin);
-      try{
-        const remote=await ownedDirectorCall(req,{schemaVersion:1,runId,chatId:chat.chat_id,issueNumber:chatNumber,
-          requestSha256,ownerId,projectKey:"holistic-house",message,modelId,confirmGitHubWrite:false,contextCapsule});
-        const verified=trustedOwnedDirectorReceipt(remote,{run_id:runId,chat_id:chat.chat_id,owner_id:ownerId});
-        await saveOwnedDirectorReceipt(db,ownerId,chat.chat_id,runId,verified);
-        return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",
-          run:{...result.run,status:verified.status,reason_code:verified.reasonCode,receipt:{
-            dispatchAttempted:true,agentStarted:verified.agentStarted,executionVerified:verified.executionVerified,
-            model:verified.model,sourceWrite:null,proofLevel:verified.proofLevel}},
-          duplicate:false,dispatchAttempted:true,agentStarted:verified.agentStarted,
-          executionVerified:verified.executionVerified,liveVerified:false,status:verified.status,
-          reasonCode:verified.reasonCode,model:verified.model,sourceWrite:null,
-          proofLevel:verified.proofLevel,storage:"SUPABASE_PRIVATE"},origin);
-      }catch(error){
-        console.error("COMMANDER_AGENT_DIRECTOR_DISPATCH_UNCONFIRMED",error&&error.name||"Error");
-        const reason="AGENT_DIRECTOR_DISPATCH_UNCONFIRMED";
-        await q(db,"update business_brain.commander_execution_runs set status='BLOCKED',reason_code=$1,receipt=$2::text::jsonb,updated_at=now() where run_id=$3::uuid and owner_id=$4::uuid and chat_id=$5::uuid and status='STARTING'",
-          [reason,jsonbText({dispatchAttempted:true,agentStarted:false,executionVerified:false,status:"BLOCKED",
-            sourceWrite:null,model:modelId,proofLevel:"DISPATCH_UNCONFIRMED"}),runId,ownerId,chat.chat_id]);
-        await q(db,"update business_brain.commander_chats set execution_state='BLOCKED',updated_at=now() where owner_id=$1::uuid and chat_id=$2::uuid",[ownerId,chat.chat_id]);
-        return reply(202,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",run:{...result.run,status:"BLOCKED",reason_code:reason},
-          duplicate:false,dispatchAttempted:true,agentStarted:false,liveVerified:false,status:"BLOCKED",
-          reasonCode:reason,storage:"SUPABASE_PRIVATE"},origin);
-      }
+      return reply(202,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",
+        run:{...result.run,status:"QUEUED",reason_code:"OPENROUTER_WORKER_QUEUED",receipt:initialReceipt},
+        duplicate:false,dispatchAttempted:false,agentStarted:false,executionVerified:false,
+        liveVerified:false,status:"QUEUED",reasonCode:"OPENROUTER_WORKER_QUEUED",
+        model:"openrouter/free",sourceWrite:null,storage:"SUPABASE_PRIVATE"},origin);
     }
     if(action==="commander_list_ci_events"){
       const limit=Math.max(1,Math.min(100,Number(body.limit)||30));
@@ -784,7 +649,7 @@ async function handler(req){
       if(body.pr!==undefined&&!pr)return reply(400,{error:"INVALID_PR_NUMBER"},origin);
       const rows=await q(db,
         `select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,
-          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,route_receipt,route_recorded_at,created_at
+          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,created_at
          from business_brain.commander_ci_event_inbox
          where inbox_owner_id=$3::uuid and ($1::int is null or pr_number=$1)
          order by created_at desc limit $2`,[pr,limit,ownerId]);
@@ -815,8 +680,7 @@ async function handler(req){
         storage:"SUPABASE_PRIVATE",preferenceOnly:true,agentStarted:false},origin);
     }
     if(action==="status")return reply(200,{ok:true,service:"AGENT_COMMANDER_PRIVATE_STORE_V1",
-      owner:true,canWrite:writable,authenticated:true,privateStoreConfigured:true,executorDispatch:false,dispatchAvailable:true,executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OWNED_MODEL_CONFIG_REQUIRED",liveVerification:false,
-      liveVerification:false,checkedAt:new Date().toISOString()},origin);
+      owner:true,canWrite:writable,authenticated:true,privateStoreConfigured:true,executorDispatch:false,dispatchEnabled:false,dispatchAvailable:true,workerMode:"SUPABASE_OPENROUTER_CLOUD_WORKER",executionRunLedger:true,dispatchMode:"FIRST_PARTY_AGENT_DIRECTOR",dispatchReason:"OPENROUTER_WORKER_WAKEUP_REQUIRED",liveVerification:false,checkedAt:new Date().toISOString()},origin);
 
     if(action==="commander_list_tasks"){
       const rows=await q(db,"select task_number,task_id,title,state,revision,updated_at,payload from business_brain.commander_tasks where owner_id=$1::uuid order by updated_at desc limit 40",[ownerId]);
