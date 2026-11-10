@@ -476,6 +476,20 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator("[data-video-audio-workspace]")).toBeVisible();
       await expect(page.locator('[data-video-audio-panel="music"]')).toBeVisible();
       await expect(page.locator('[data-video-audio-tab="music"]')).toHaveAttribute("aria-selected","true");
+      // The owner-requested sound effects must be real controls, not a buried
+      // Hypno disclosure or a decorative tab; check the default audio panel
+      // without enabling effects, synthesis or playback.
+      const soundEffectsTab=page.locator('[data-video-audio-tab="effects"]');
+      await soundEffectsTab.click();
+      await expect(soundEffectsTab).toHaveAttribute("aria-selected","true");
+      const soundEffectsPanel=page.locator('[data-video-audio-panel="effects"]');
+      await expect(soundEffectsPanel).toBeVisible();
+      await expect(soundEffectsPanel.locator('[data-hypno-tab="audio"]')).toHaveAttribute("aria-selected","true");
+      await expect(soundEffectsPanel.locator('[data-hypno-group="audio"]')).toBeVisible();
+      await expect(soundEffectsPanel.locator('[data-hypno-group="audio"] [role="switch"]')).toHaveCount(3);
+      await expect(soundEffectsPanel.locator('[data-hypno-tab="visual"]')).toBeVisible();
+      await page.locator('[data-video-audio-tab="music"]').click();
+      await expect(page.locator('[data-video-audio-panel="music"]')).toBeVisible();
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
@@ -637,20 +651,18 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       // Switching back from Montage returns to Personalization with the
       // advanced disclosure collapsed. Reopen it through the same visible
       // shortcut a visitor uses before choosing the standard voice mode.
-      await openAudioVoice();
-      await openAudioVoice();
-      await openAudioVoice();
-      await openAudioVoice();
+      // Verify Voice while it is active; Ideas is a different workspace.
+      // Return to visible Personalization before asserting its panel, then
+      // navigate back to Voice to exercise the actual phrase selector.
       await openAudioVoice(); await voiceModeButton.click();
       await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
-      await expect(personalTab).toHaveAttribute("aria-pressed","true");
-            // Voice mode intentionally hides the separate personal-intention editor;
-      // that content belongs to Personalization and phrase editing belongs to
-      // Montage → Text. Keep this voice-only panel focused on approved speech.
       const intentDetails=phrases.locator('[data-hypno-idea-details]');
       await expect(intentDetails).toBeHidden();
+      await openIdeas();
+      await personalTab.click();
+      await expect(personalTab).toHaveAttribute("aria-pressed","true");
       await expect(phrases.locator('[data-video-ideas-personalization-panel]')).toBeVisible();
-
+      await openAudioVoice();
       const voicePhraseSelect=compactVoicePanel.locator("[data-video-affirmation-phrase]");
       await expect(voicePhraseSelect).toBeVisible();
       assert.ok(await voicePhraseSelect.locator("option").count()>=3,

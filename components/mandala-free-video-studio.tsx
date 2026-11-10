@@ -227,7 +227,7 @@ const workspaceCopy = {
  ru:{
   video:{tab:"Цель",title:"Цель видео",desc:"Реальные видеосюжеты, атмосфера и оформление."},
   phrases:{tab:"Идеи",title:"Идеи для видео",desc:"Мой запрос, фразы поддержки и, по желанию, голос и музыка."},
-  effects:{tab:"Аудио",title:"Аудио для видео",desc:"Музыка, голос и персональная медитация в одном месте."},
+  effects:{tab:"Аудио",title:"Аудио для видео",desc:"Музыка, озвучка фраз, аудиоэффекты и медитации."},
   practices:{tab:"Курс практик",title:"Курсы и практики",desc:"Выберите фокус, создайте медитацию, практику и личную программу из восьми сессий."},
   pro:{tab:"PRO",title:"PRO генерация",desc:"Персонажи, сюжеты, места и профессиональный режиссёрский бриф."},
   ready:{tab:"Ready",title:"Видео готово",desc:"Просмотр, сохранение и развитие практики."},
@@ -236,7 +236,7 @@ const workspaceCopy = {
  en:{
   video:{tab:"Goal",title:"Video goal",desc:"Real film scenes, atmosphere and visual direction."},
   phrases:{tab:"Ideas",title:"Video ideas",desc:"Your intention, support phrases and optional voice or music."},
-  effects:{tab:"Audio",title:"Audio for your video",desc:"Music, narration and personal meditations in one place."},
+  effects:{tab:"Audio",title:"Audio for your video",desc:"Music, phrase narration, sound effects and meditations."},
   practices:{tab:"Practice course",title:"Courses & practices",desc:"Choose your focus, create a meditation and practice, then explore eight guided sessions."},
   pro:{tab:"PRO",title:"PRO generation",desc:"Characters, stories, locations and advanced direction."},
   ready:{tab:"Ready",title:"Your video is ready",desc:"Preview, save and continue your practice."},
@@ -245,7 +245,7 @@ const workspaceCopy = {
  es:{
   video:{tab:"Objetivo",title:"Objetivo del vídeo",desc:"Escenas reales, ambiente y estilo visual."},
   phrases:{tab:"Ideas",title:"Ideas para vídeo",desc:"Tu intención, frases de apoyo y voz o música opcionales."},
-  effects:{tab:"Audio",title:"Audio para tu vídeo",desc:"Música, voz y meditaciones personales en un solo lugar."},
+  effects:{tab:"Audio",title:"Audio para tu vídeo",desc:"Música, voz para frases, efectos de audio y meditaciones."},
   practices:{tab:"Curso práctico",title:"Cursos y prácticas",desc:"Elige tu enfoque, crea una meditación y una práctica, y descubre ocho sesiones guiadas."},
   pro:{tab:"PRO",title:"Generación PRO",desc:"Personajes, historias, lugares y dirección avanzada."},
   ready:{tab:"Ready",title:"Tu vídeo está listo",desc:"Mira, guarda y continúa tu práctica."},
@@ -1938,7 +1938,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [studioMode,setStudioMode] = useState<"pump"|"therapy">("pump");
   const [activeWorkspace,setActiveWorkspace] = useState<StudioWorkspace>("video");
   const [proCatalogKind,setProCatalogKind]=useState<StoryAddonKind>("character");
-  const [audioWorkspaceTab,setAudioWorkspaceTab] = useState<"music"|"voice"|"meditations">("music");
+  const [audioWorkspaceTab,setAudioWorkspaceTab] = useState<"music"|"voice"|"effects"|"meditations">("music");
   const [ideasSubtab,setIdeasSubtab] = useState<"personalization"|"concept">("personalization");
   const [ideasVoiceMode,setIdeasVoiceMode] = useState<"voice"|"my-voice">("voice");
   const [ideasProfile,setIdeasProfile] = useState<VideoGoalProfile>(DEFAULT_VIDEO_GOAL_PROFILE);
@@ -7297,7 +7297,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             aria-label={locale==="ru"?"Разделы аудио":locale==="es"?"Secciones de audio":"Audio sections"}>
             {([
               {id:"music",Icon:Music2,ru:"Музыка",en:"Music",es:"Música"},
-              {id:"voice",Icon:Mic,ru:"Голос",en:"Voice",es:"Voz"},
+              {id:"voice",Icon:Mic,ru:"Озвучка",en:"Voice",es:"Voz"},
+              {id:"effects",Icon:AudioLines,ru:"Эффекты",en:"Effects",es:"Efectos"},
               {id:"meditations",Icon:Headphones,ru:"Медитации",en:"Meditations",es:"Meditaciones"}
             ] as const).map(tab=><button type="button" key={tab.id} role="tab"
               id={"video-audio-label-"+tab.id} aria-controls={"video-audio-panel-"+tab.id}
@@ -7350,12 +7351,12 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           onNarrationInvalidated={()=>setAttachedAudio(current=>
             current?.kind==="file"&&current.nonLoop?null:current)}/>
           </section>
-          <details className={videoStyles.audioAdditionalEffects} data-video-audio-additional-effects>
-            <summary><Sparkles size={19} aria-hidden="true"/>
-              {locale==="ru"?"Дополнительные визуальные эффекты":locale==="es"?"Efectos visuales opcionales":"Optional visual effects"}
-              <ChevronDown size={17} aria-hidden="true"/></summary>
+          <section className={videoStyles.audioWorkspacePanel} id="video-audio-panel-effects"
+            role="tabpanel" aria-labelledby="video-audio-label-effects"
+            hidden={audioWorkspaceTab!=="effects"} data-video-audio-panel="effects"
+            data-video-audio-additional-effects>
             <div id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel>
-          <MandalaHypnocorrectionMobile locale={locale} disabled={recording||preparing||hypnoAudioBusy}
+          <MandalaHypnocorrectionMobile initialGroup="audio" locale={locale} disabled={recording||preparing||hypnoAudioBusy}
             affirmations={affirmations} onAffirmationsChange={setAffirmations}
             light={hypnoLight} onLightChange={setHypnoLight}
             posters={{
@@ -7399,7 +7400,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               setPreviewPlaying(false);
             }}/>
             </div>
-          </details>
+          </section>
         </div> : null}
       </section>
       {activeWorkspace==="video" ? <section className={videoStyles.quickMusicSection} data-workspace-section="video" data-video-quick-audio-choices aria-labelledby="quick-music-heading">

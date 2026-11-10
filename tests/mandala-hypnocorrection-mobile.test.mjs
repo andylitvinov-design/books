@@ -94,7 +94,9 @@ test("07 Nov Hypno uses two exclusive effect tabs and live visual option chips",
   assert.match(ui,/data-hypno-summary/);
   assert.match(ui,/onOpenPhraseEditor/);
   assert.match(ui,/onLightChange\(\{\.\.\.light,enabled:true,opacity\}\)/);
-  assert.match(ui,/useState<GroupId>\("visual"\)/);
+  assert.match(ui,/initialGroup="visual"/);
+  assert.match(ui,/useState<GroupId>\(initialGroup\)/);
+  assert.match(studio,/<MandalaHypnocorrectionMobile initialGroup="audio"/);
   assert.match(ui,/data-hypno-tabs/);
   assert.match(ui,/role="tablist"/);
   assert.match(ui,/role="tabpanel"/);

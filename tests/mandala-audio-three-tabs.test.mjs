@@ -18,8 +18,8 @@ test("Audio replaces Hypno in six-tab EN/RU/ES navigation",()=>{
   assert.equal((studio.match(/data-video-quick-control=\{item.id\}/g)||[]).length,1);
 });
 
-test("three accessible in-place Audio tabs keep warm 320-430px mobile layout",()=>{
-  for(const name of ["music","voice","meditations"]){
+test("four accessible in-place Audio tabs keep warm 320-430px mobile layout",()=>{
+  for(const name of ["music","voice","effects","meditations"]){
     assert.match(studio,new RegExp("id:\""+name+"\""),name);
     assert.match(studio,new RegExp('data-video-audio-panel=\"'+name+'\"'),name);
   }
@@ -29,7 +29,8 @@ test("three accessible in-place Audio tabs keep warm 320-430px mobile layout",()
   assert.match(studio,/hidden=\{audioWorkspaceTab!=="music"\}/);
   assert.match(studio,/hidden=\{audioWorkspaceTab!=="voice"\}/);
   assert.match(studio,/hidden=\{audioWorkspaceTab!=="meditations"\}/);
-  assert.match(css,/\.audioWorkspaceTabs\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(studio,/hidden=\{audioWorkspaceTab!=="effects"\}/);
+  assert.match(css,/\.audioWorkspaceTabs\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css,/\.audioWorkspacePanel\[hidden\]\{display:none!important\}/);
   assert.match(css,/@media\(max-width:359px\)\{\.audioWorkspace/);
   assert.match(css,/\.audioWorkspaceTabs button\{[^}]*min-height:49px/);
@@ -52,6 +53,7 @@ test("one existing music picker is moved from Montage, preserving original attac
 
 test("Ideas has only Personalization and Concept; Audio owns Voice and My Voice",()=>{
   const local=read("components/mandala-local-voice-tracks.tsx");
+  const voiceEditor=read("components/mandala-affirmation-voice.tsx");
   assert.match(studio,/data-video-ideas-tab="personalization"/);
   assert.match(studio,/data-video-ideas-tab="concept"/);
   assert.equal((studio.match(/data-video-ideas-tab="/g)||[]).length,2);
@@ -64,7 +66,7 @@ test("Ideas has only Personalization and Concept; Audio owns Voice and My Voice"
   assert.match(studio,/ownVoiceOnly=\{ideasVoiceMode==="my-voice"\}/);
   assert.match(studio,/setActiveWorkspace\("effects"\);\s*setAudioWorkspaceTab\("voice"\);\s*setVoiceStudioActivated\(true\)/);
   assert.match(studio,/data-video-audio-own-upload/);
-  assert.match(studio,/data-video-own-voice-record/);
+  assert.match(voiceEditor,/<MandalaLocalVoiceTracks locale=\{locale\}/);
   assert.match(local,/data-video-own-voice-record/);
   assert.equal((studio.match(/<MandalaAffirmationVoice locale=/g)||[]).length,1);
   assert.match(studio,/\{supplementaryCloudVoicePanel\}/);
@@ -103,10 +105,13 @@ test("cloud TTS is optional with explicit consent; never fake an account charge"
   assert.match(studio,/if\(uploadedAudio && !audioRights\)|if\(uploadedAudio&&!audioRights\)/);
 });
 
-test("existing visual effects survive only as opt-in advanced section",()=>{
+test("sound effects are first-class while the existing real visual effects engine survives",()=>{
   assert.match(studio,/data-video-audio-additional-effects/);
+  assert.match(studio,/data-video-audio-panel="effects"/);
+  assert.match(studio,/id:"effects",Icon:AudioLines/);
+  assert.match(read("components/mandala-hypnocorrection-mobile.tsx"),/useState<GroupId>\(initialGroup\)/);
   assert.match(studio,/id="video-hypnocorrection-mobile" data-video-hypnocorrection-panel/);
-  assert.match(studio,/<MandalaHypnocorrectionMobile locale=\{locale\}/);
+  assert.match(studio,/<MandalaHypnocorrectionMobile initialGroup="audio" locale=\{locale\}/);
   assert.match(studio,/onWavePreset=\{\(\)=>\{/);
   assert.match(studio,/paintHypnoLightOverlay\(ctx,/);
 });

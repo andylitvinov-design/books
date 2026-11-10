@@ -52,5 +52,5 @@ test("Audio Voice reuses the single consented local voice editor and optional cl
   assert.match(cloud,/voiceStudioActivated\?<MandalaCloudVoiceStudio locale=\{locale\}/);
   assert.match(source,/\{supplementaryCloudVoicePanel\}/);
   assert.match(source,/onToggle=\{event=>setVoiceStudioActivated\(event.currentTarget.open\)\}/);
-  assert.match(css,/\.audioWorkspaceTabs\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.audioWorkspaceTabs\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 });

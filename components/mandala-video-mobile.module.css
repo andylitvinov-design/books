@@ -5346,8 +5346,11 @@
 /* Video Studio: Audio replaces Hypno and hosts ONE music/voice/meditation source.
    Only one library and player, no duplicate sound engines or billing action. */
 .audioWorkspace{display:grid;gap:12px;min-width:0;width:100%;padding:12px;border:1px solid #e9dfd1;border-radius:22px;background:#fffcf7;box-shadow:0 8px 24px #38534510}
-.audioWorkspaceTabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:4px;border:1px solid #e9dfd1;border-radius:17px;background:#f5ecdc;min-width:0}
+.audioWorkspaceTabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:4px;border:1px solid #e9dfd1;border-radius:17px;background:#f5ecdc;min-width:0}
 .audioWorkspaceTabs button{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:49px;padding:8px 5px;border:1px solid transparent;border-radius:13px;background:#fffcf7;color:#174b3e;font:750 clamp(11px,3vw,15px)/1.2 Arial,Helvetica,sans-serif;cursor:pointer}
+.audioWorkspaceTabs[role="tablist"] button{flex-direction:column;gap:2px;padding:6px 2px}
+.audioWorkspaceTabs[role="tablist"] button span{max-width:100%;overflow-wrap:anywhere;text-align:center}
+.audioWorkspaceTabs[role="group"]{grid-template-columns:repeat(2,minmax(0,1fr))}
 .audioWorkspaceTabs button[aria-selected="true"]{background:#067a67;border-color:#067a67;color:#fff;box-shadow:0 3px 10px #067a6730}
 .audioWorkspaceTabs button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
 .audioWorkspaceTabs svg{flex:none}
