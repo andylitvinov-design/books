@@ -119,7 +119,8 @@ test("compact Ideas mobile layout has no conflicting Intro/My Film rail and list
  assert.ok(css.includes('Ideas iPhone rising phrases repair'),"last responsive override");
  assert.ok(css.includes('.heroRail,')&&css.includes('.heroEditorial{display:none!important}'));
  assert.ok(css.includes('.heroCanvas{opacity:1!important;z-index:1!important}'));
- assert.ok(css.includes('[data-video-phrase-audio-shortcut]{display:none!important}'));
+ assert.doesNotMatch(studio,/data-video-phrase-audio-shortcut/,
+   "the removed Ideas audio shortcut is not hidden as an inactive duplicate");
 });
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
@@ -134,12 +135,13 @@ test("Ideas shows Personalization and Concept without cloning Montage or the rec
  assert.equal((studio.match(/<MandalaVideoIdeas locale/g)||[]).length,1);
  assert.equal((studio.match(/<MandalaAffirmationVoice locale/g)||[]).length,1);
  assert.match(studio,/data-video-montage-text hidden=\{montagePanel!=="text"\}/);
- assert.match(studio,/data-video-ideas-voice-mode="voice"/);
- assert.match(studio,/data-video-ideas-voice-mode="my-voice"/);
- assert.match(studio,/data-video-ideas-own-upload/);
+ assert.match(studio,/data-video-audio-voice-mode="voice"/);
+ assert.match(studio,/data-video-audio-voice-mode="my-voice"/);
+ assert.match(studio,/data-video-audio-own-upload/);
+ assert.doesNotMatch(studio,/data-video-ideas-voice-mode|data-video-ideas-own-upload|data-video-legacy-phrase-editor/);
  const recorder=read("components/mandala-local-voice-tracks.tsx");
- assert.match(recorder,/data-video-ideas-record-voice/);
- assert.match(studio,/chooseAudioFile\(file\)\)setPhraseAudioExpanded\(true\)/);
+ assert.match(recorder,/data-video-own-voice-record/);
+ assert.match(studio,/setActiveWorkspace\("effects"\);setAudioWorkspaceTab\("voice"\);setVoiceStudioActivated\(true\)/);
 });
 test("WebKit keeps two Ideas tabs and real opt-in voice while five Montage tabs remain",()=>{
  const styles=read("components/mandala-video-mobile.module.css");
@@ -149,8 +151,10 @@ test("WebKit keeps two Ideas tabs and real opt-in voice while five Montage tabs 
  assert.match(browser,/const ideasModes=phrases\.locator/);
  assert.match(browser,/data-video-ideas-tab="personalization"/);
  assert.match(browser,/data-video-ideas-tab="concept"/);
- assert.match(browser,/await advancedText\.click\(\)/);
- assert.match(browser,/await myVoiceModeButton\.click\(\)/);
+ assert.match(browser,/const openAudioVoice=async/);
+ assert.match(browser,/await openAudioVoice\(\)/);
+ assert.match(browser,/data-video-audio-voice-mode="my-voice"/);
+ assert.doesNotMatch(browser,/advancedText|advancedVoice|data-video-ideas-voice-mode/);
  assert.match(browser,/data-video-affirmation-voice-consent/);
  for(const tab of ['id:"effects",Icon:Sparkles','id:"text",Icon:Type','id:"visual",Icon:Zap','id:"settings",Icon:SlidersHorizontal'])
   assert.ok(studio.includes(tab),tab);
