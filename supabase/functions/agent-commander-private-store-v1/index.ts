@@ -422,9 +422,93 @@ async function handler(req){
     if(!acl.length||!acl[0].can_read)return reply(403,{error:"OWNER_ACCESS_DENIED"},origin);
     const writable=acl[0].can_write===true;
     const writeActions=new Set(["commander_set_model_preference","commander_save_task","commander_queue_task","commander_from_task",
-      "commander_create_chat","commander_update_chat","commander_append_event","commander_attach_event"]);
+      "commander_create_chat","commander_update_chat","commander_append_event","commander_attach_event","commander_start_run"]);
     if(writeActions.has(action)&&!writable)return reply(403,{error:"OWNER_WRITE_DENIED"},origin);
 
+
+    if(action==="commander_list_execution_runs"){
+      const chatNumber=number(body.issueNumber);if(!chatNumber)return reply(400,{error:"INVALID_CHAT_NUMBER"},origin);
+      const chats=await q(db,"select chat_id from business_brain.commander_chats where owner_id=$1::uuid and chat_number=$2 limit 1",[ownerId,chatNumber]);
+      if(!chats.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
+      const runs=await q(db,`select run_id,executor,status,reason_code,request_sha256,hermes_job_id,executor_session_id,
+        started_at,completed_at,created_at,updated_at
+        from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid
+        order by created_at desc limit 30`,[ownerId,chats[0].chat_id]);
+      return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUNS_V1",runs,storage:"SUPABASE_PRIVATE",
+        dispatchEnabled:false,observedAt:new Date().toISOString()},origin);
+    }
+    if(action==="commander_start_run"){
+      const chatNumber=number(body.issueNumber);
+      if(!chatNumber)return reply(400,{error:"INVALID_CHAT_NUMBER"},origin);
+      const runId=body.runId,idempotencyKey=body.idempotencyKey,executor=body.executor;
+      const message=clean(body.message,6000);
+      if(!uuid(runId)||!uuid(idempotencyKey)||!EXECUTORS.has(executor)||message.length<2||
+         String(body.message||"").length>6000)return reply(400,{error:"INVALID_EXECUTION_REQUEST"},origin);
+      const chats=await q(db,`select chat_id,task_id,payload from business_brain.commander_chats
+        where owner_id=$1::uuid and chat_number=$2 limit 1`,[ownerId,chatNumber]);
+      if(!chats.length)return reply(404,{error:"CHAT_NOT_FOUND"},origin);
+      const chat=chats[0];
+      const digestInput=[chat.chat_id,executor,message].join(String.fromCharCode(31));
+      const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(digestInput)));
+      const requestSha256=Array.from(digest,x=>x.toString(16).padStart(2,"0")).join("");
+      let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
+      if(executor==="hermes"){
+        const endpoint=Deno.env.get("HERMES_ORIGIN_URL")||"";
+        const secret=Deno.env.get("HERMES_SHARED_SECRET")||"";
+        let validEndpoint=false;
+        try{const u=new URL(endpoint);validEndpoint=u.protocol==="https:"&&u.username===""&&u.password===""&&u.pathname==="/"&&u.search===""&&u.hash==="";}catch{}
+        reasonCode=(!validEndpoint||secret.length<32)?"HERMES_RUNTIME_NOT_CONFIGURED":"HERMES_EXECUTOR_DISPATCH_CONTRACT_NOT_VERIFIED";
+      }else if(executor==="openrouter"){
+        reasonCode=Deno.env.get("HH_PM_OPENROUTER_API_KEY")?"OPENROUTER_EXECUTION_ADAPTER_NOT_CONNECTED":"OPENROUTER_KEY_NOT_CONFIGURED";
+      }else if(executor==="codex"){
+        reasonCode="CODEX_LOCAL_AGENT_OFFLINE_OR_REMOTE_APPROVAL_DISABLED";
+      }else if(executor==="repair-worker"){
+        reasonCode="REPAIR_WORKER_REQUIRES_EXACT_PR_HEAD_AND_ACTIVE_LEASE";
+      }else if(executor==="chatgpt-work"){
+        reasonCode="CHATGPT_WORK_TRANSPORT_NOT_AVAILABLE";
+      }else if(executor==="local"){
+        reasonCode="LOCAL_ADVISOR_IS_NOT_AN_EXECUTOR";
+      }else if(executor==="manual"){
+        reasonCode="MANUAL_EXECUTOR_REQUIRES_OWNER_HANDOFF";
+      }
+      const blockedText="Запрос сохранён, но исполнитель НЕ запущен. Причина: "+reasonCode+". Статус BLOCKED не является подтверждением запуска.";
+      const now=new Date().toISOString();
+      const result=await db.begin(async tx=>{
+        const inserted=await tx.unsafe(`insert into business_brain.commander_execution_runs
+          (run_id,owner_id,chat_id,task_id,idempotency_key,request_sha256,executor,status,reason_code,request_payload,receipt)
+          values($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,'BLOCKED',$8,$9::jsonb,$10::jsonb)
+          on conflict(owner_id,chat_id,idempotency_key) do nothing
+          returning run_id,status,reason_code,request_sha256,executor,created_at`,
+          [runId,ownerId,chat.chat_id,chat.task_id||null,idempotencyKey,requestSha256,executor,reasonCode,
+           JSON.stringify({message}),JSON.stringify({dispatchAttempted:false,agentStarted:false,liveVerified:false})]);
+        let run=inserted[0],duplicate=false;
+        if(!run){
+          const prior=await tx.unsafe(`select run_id,status,reason_code,request_sha256,executor,created_at
+            from business_brain.commander_execution_runs where owner_id=$1::uuid and chat_id=$2::uuid
+            and idempotency_key=$3 limit 1`,[ownerId,chat.chat_id,idempotencyKey]);
+          if(!prior.length)return {conflict:true};
+          run=prior[0];duplicate=true;
+          if(run.request_sha256!==requestSha256)return {idempotencyConflict:true};
+        }else{
+          const eventPayload={schema:"HH_COMMANDER_EVENT_V1",id:runId,kind:"execution_blocked",
+            author:"Hermes Dispatcher",text:blockedText,executor,status:"BLOCKED",reasonCode,
+            sourceVerified:false,proofLevel:"NOT_STARTED_NO_EXECUTION_RECEIPT",createdAt:now};
+          await tx.unsafe(`insert into business_brain.commander_chat_events
+            (event_id,chat_id,owner_id,kind,payload,source_verified)
+            values($1::uuid,$2::uuid,$3::uuid,'execution_blocked',$4::jsonb,false)
+            on conflict(event_id) do nothing`,[runId,chat.chat_id,ownerId,JSON.stringify(eventPayload)]);
+          await tx.unsafe(`update business_brain.commander_chats set execution_state='BLOCKED',
+            payload=jsonb_set(payload,'{executionState}','"BLOCKED"'::jsonb,true),updated_at=now()
+            where owner_id=$1::uuid and chat_id=$2::uuid`,[ownerId,chat.chat_id]);
+        }
+        return {run,duplicate};
+      });
+      if(result.conflict)return reply(409,{error:"RUN_IDEMPOTENCY_CONFLICT"},origin);
+      if(result.idempotencyConflict)return reply(409,{error:"IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST"},origin);
+      return reply(200,{schema:"HH_COMMANDER_EXECUTION_RUN_V1",run:result.run,duplicate:result.duplicate===true,
+        dispatchAttempted:false,agentStarted:false,liveVerified:false,status:"BLOCKED",
+        reasonCode:result.run.reason_code,storage:"SUPABASE_PRIVATE"},origin);
+    }
     if(action==="commander_list_ci_events"){
       const limit=Math.max(1,Math.min(100,Number(body.limit)||30));
       const pr=body.pr===undefined?null:number(body.pr);
@@ -462,7 +546,7 @@ async function handler(req){
         storage:"SUPABASE_PRIVATE",preferenceOnly:true,agentStarted:false},origin);
     }
     if(action==="status")return reply(200,{ok:true,service:"AGENT_COMMANDER_PRIVATE_STORE_V1",
-      owner:true,authenticated:true,privateStoreConfigured:true,executorDispatch:false,
+      owner:true,authenticated:true,privateStoreConfigured:true,executorDispatch:false,executionRunLedger:true,dispatchReason:"NO_VERIFIED_EXECUTOR_RUNTIME",
       liveVerification:false,checkedAt:new Date().toISOString()},origin);
 
     if(action==="commander_list_tasks"){
