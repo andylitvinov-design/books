@@ -35,6 +35,28 @@ test('trusted red-CI taxonomy: CI policy ownership/isolation contract failures r
  assert.equal(r.source_write_authorized,false);
  assert.equal(r.execution_authorized,false);
 });
+test('specialist exact-head/required-workflow gate is CI routing evidence, never source repair',()=>{
+ const step='Validate exact-head risk and required specialist workflows';
+ const results=[
+  check([job('hh-specialist',step)]),
+  check([job('hh-specialist',step),job('hh-merge-check','Require real Core and specialist results from this workflow')])
+ ];
+ for(const r of results){
+  assert.equal(r.category,'BASE_OR_CI_ROUTING');
+  assert.equal(r.reason_code,'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE');
+  assert.equal(r.evidence_code,'SPECIALIST_PROOF_UNAVAILABLE');
+  assert.equal(r.responsible_role,'ci-routing-owner');
+  assert.equal(r.retry.allowed,true);
+  assert.equal(r.retry.max_attempts,1);
+  assert.equal(r.source_write_authorized,false);
+  assert.equal(r.execution_authorized,false);
+  assert.equal(r.status,'DIAGNOSTIC_ONLY');
+ }
+ // A similar-looking unrelated failure must not be promoted to this route.
+ assert.notEqual(check([job('hh-specialist','Run Specialist functional tests')]).reason_code,
+  'SPECIALIST_REQUIRED_PROOF_MISSING_OR_STALE');
+});
+
 test('trusted red-CI taxonomy: base advanced requires explicit evidence',()=>{
  assert.equal(check([job('classify-change','production-base advanced')]).category,'BASE_ADVANCED');
  assert.equal(check([job('classify-change','Check routing')],PR,'CI_PREFLIGHT_OR_ROUTING').category,'BASE_OR_CI_ROUTING');
