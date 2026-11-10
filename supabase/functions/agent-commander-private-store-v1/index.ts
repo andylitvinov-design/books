@@ -192,8 +192,204 @@ async function githubPublic(path){
     return JSON.parse(text);
   }finally{clearTimeout(timer)}
 }
+
+let githubOidcJwksCache = null;
+let githubOidcJwksExpiresAt = 0;
+
+function decodeBase64Url(value) {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((value.length + 3) % 4);
+  return Uint8Array.from(atob(padded), (char) => char.charCodeAt(0));
+}
+function decodeJwtJson(value) {
+  return JSON.parse(new TextDecoder().decode(decodeBase64Url(value)));
+}
+async function githubOidcJwks() {
+  if (githubOidcJwksCache && Date.now() < githubOidcJwksExpiresAt) return githubOidcJwksCache;
+  const response = await fetch("https://token.actions.githubusercontent.com/.well-known/jwks", {
+    method: "GET", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(5000),
+    headers: { accept: "application/json" }
+  });
+  if (!response.ok) throw Error("GITHUB_OIDC_JWKS_UNAVAILABLE");
+  const value = await response.json();
+  if (!Array.isArray(value?.keys) || value.keys.length < 1 || value.keys.length > 20) throw Error("GITHUB_OIDC_JWKS_INVALID");
+  githubOidcJwksCache = value;
+  githubOidcJwksExpiresAt = Date.now() + 5 * 60 * 1000;
+  return value;
+}
+async function verifyGitHubActionsOidc(req) {
+  const authorization = req.headers.get("authorization") || "";
+  const match = /^Bearer ([A-Za-z0-9._-]{100,8000})$/.exec(authorization);
+  if (!match) return null;
+  const token = match[1], parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const header = decodeJwtJson(parts[0]);
+    const claims = decodeJwtJson(parts[1]);
+    if (header.alg !== "RS256" || typeof header.kid !== "string" ||
+        claims.iss !== "https://token.actions.githubusercontent.com" ||
+        !(claims.aud === "hh-commander-ci" || (Array.isArray(claims.aud) && claims.aud.includes("hh-commander-ci")))) return null;
+    const now = Math.floor(Date.now() / 1000);
+    if (!Number.isSafeInteger(claims.exp) || !Number.isSafeInteger(claims.iat) ||
+        claims.exp <= now || claims.exp > now + 15 * 60 ||
+        claims.iat > now + 60 || claims.iat < now - 15 * 60 ||
+        (Number.isSafeInteger(claims.nbf) && claims.nbf > now + 60)) return null;
+    if (claims.repository !== "andylitvinov-design/books" ||
+        claims.repository_owner !== "andylitvinov-design" ||
+        claims.event_name !== "workflow_run" ||
+        claims.ref !== "refs/heads/codex/bootstrap-books" ||
+        claims.workflow_ref !== "andylitvinov-design/books/.github/workflows/hh-pr-direct-core-failure.yml@refs/heads/codex/bootstrap-books") return null;
+
+    const jwks = await githubOidcJwks();
+    const jwk = jwks.keys.find((item) => item.kid === header.kid && item.kty === "RSA" && (!item.use || item.use === "sig"));
+    if (!jwk) return null;
+    const publicKey = await crypto.subtle.importKey("jwk", jwk,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+    const valid = await crypto.subtle.verify({ name: "RSASSA-PKCS1-v1_5" }, publicKey,
+      decodeBase64Url(parts[2]), new TextEncoder().encode(parts[0] + "." + parts[1]));
+    return valid ? claims : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeTrustedCoreFailure(body) {
+  const run = body?.workflow_run;
+  const repo = "andylitvinov-design/books";
+  const fail = new Set(["failure", "timed_out", "startup_failure"]);
+  if (!run || body.action !== "completed" || run.event !== "pull_request" ||
+      run.status !== "completed" || !fail.has(run.conclusion) ||
+      run.repository?.full_name !== repo || run.head_repository?.full_name !== repo ||
+      run.name !== "HH PR core release gate" ||
+      run.path?.split("@")[0] !== ".github/workflows/hh-pr-core-release.yml" ||
+      !Number.isSafeInteger(run.id) || run.id < 1 ||
+      !Number.isSafeInteger(run.run_attempt) || run.run_attempt < 1 ||
+      !/^[a-f0-9]{40}$/i.test(run.head_sha || "") ||
+      typeof run.head_branch !== "string" || run.head_branch.length > 255) return null;
+  const links = run.pull_requests;
+  if (!Array.isArray(links) || links.length !== 1) return null;
+  const pr = links[0];
+  if (!Number.isSafeInteger(pr?.number) || pr.number < 1 ||
+      pr.base?.repo?.full_name !== repo || pr.base?.ref !== "codex/public-book-library" ||
+      pr.head?.repo?.full_name !== repo || pr.head?.ref !== run.head_branch ||
+      !/^[a-f0-9]{40}$/i.test(pr.head?.sha || "")) return null;
+  const category = String(body.diagnostics?.category || "UNKNOWN");
+  if (!new Set(["TYPESCRIPT", "TEST_FAILURE", "SECURITY", "INFRASTRUCTURE", "MERGE_CONFLICT", "BASE_ADVANCED", "UNKNOWN"]).has(category)) return null;
+  const safeList = (value) => Array.isArray(value)
+    ? value.slice(0, 10).map((x) => clean(String(x || ""), 160)).filter(Boolean) : [];
+  return {
+    repository: repo,
+    workflow_name: run.name,
+    workflow_path: ".github/workflows/hh-pr-core-release.yml",
+    workflow_run_id: run.id,
+    run_attempt: run.run_attempt,
+    workflow_run_head_sha: run.head_sha.toLowerCase(),
+    head_branch: run.head_branch,
+    pr_number: pr.number,
+    base_ref: pr.base.ref,
+    base_sha: /^[a-f0-9]{40}$/i.test(pr.base.sha || "") ? pr.base.sha.toLowerCase() : null,
+    head_ref: pr.head.ref,
+    head_sha: pr.head.sha.toLowerCase(),
+    conclusion: run.conclusion,
+    category,
+    failed_jobs: safeList(body.diagnostics?.failedJobs),
+    failed_steps: safeList(body.diagnostics?.failedSteps),
+    run_url: "https://github.com/" + repo + "/actions/runs/" + run.id,
+    source_run_created_at: run.created_at || null
+  };
+}
+
+async function receiveGitHubWorkflowRun(req, origin) {
+  const claims = await verifyGitHubActionsOidc(req);
+  if (!claims) return reply(401, { accepted: false, outcome: "GITHUB_OIDC_IDENTITY_REJECTED" }, origin);
+  if (Number(req.headers.get("content-length") || "0") > 28000) return reply(413, { accepted: false, outcome: "BODY_TOO_LARGE" }, origin);
+  const raw = await req.text();
+  if (raw.length > 28000) return reply(413, { accepted: false, outcome: "BODY_TOO_LARGE" }, origin);
+  let body;
+  try { body = JSON.parse(raw); } catch { return reply(400, { accepted: false, outcome: "INVALID_JSON" }, origin); }
+  const event = normalizeTrustedCoreFailure(body);
+  if (!event) return reply(202, { accepted: false, outcome: "UNTRUSTED_OR_AMBIGUOUS_CORE_EVENT" }, origin);
+  const dbUrl = Deno.env.get("SUPABASE_DB_URL");
+  if (!dbUrl) return reply(503, { accepted: false, outcome: "PRIVATE_DATABASE_NOT_CONFIGURED" }, origin);
+
+  const db = postgres(dbUrl, { max: 1, connect_timeout: 6, idle_timeout: 4, ssl: "require", prepare: false });
+  try {
+    const inserted = await q(db,
+      `insert into business_brain.commander_ci_event_inbox(
+        repository, workflow_name, workflow_path, workflow_run_id, run_attempt,
+        workflow_run_head_sha, head_branch, pr_number, base_ref, base_sha,
+        head_ref, head_sha, conclusion, category, failed_jobs, failed_steps,
+        run_url, source_run_created_at, oidc_workflow_ref
+      ) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb,$17,$18::timestamptz,$19)
+      on conflict(repository,workflow_run_id,run_attempt,pr_number,head_sha) do nothing
+      returning ci_event_id`,
+      [event.repository,event.workflow_name,event.workflow_path,event.workflow_run_id,event.run_attempt,
+       event.workflow_run_head_sha,event.head_branch,event.pr_number,event.base_ref,event.base_sha,
+       event.head_ref,event.head_sha,event.conclusion,event.category,JSON.stringify(event.failed_jobs),
+       JSON.stringify(event.failed_steps),event.run_url,event.source_run_created_at,claims.workflow_ref]);
+    if (!inserted.length) {
+      const existing = await q(db,
+        `select ci_event_id,association_status from business_brain.commander_ci_event_inbox
+         where repository=$1 and workflow_run_id=$2 and run_attempt=$3 and pr_number=$4 and head_sha=$5 limit 1`,
+        [event.repository,event.workflow_run_id,event.run_attempt,event.pr_number,event.head_sha]);
+      return reply(202, { accepted: true, outcome: "ALREADY_RECORDED",
+        inbox_id: existing[0]?.ci_event_id || null, association: existing[0]?.association_status || "UNKNOWN",
+        pr_number: event.pr_number, head_sha: event.head_sha }, origin);
+    }
+
+    const matches = await q(db,
+      `select task_id, owner_id from business_brain.commander_tasks
+       where project_key='holistic-house' and state not in ('completed','superseded')
+         and coalesce(payload->'relatedPr','[]'::jsonb) @> to_jsonb($1::int)
+       order by updated_at desc limit 2`, [event.pr_number]);
+    let association = "UNMATCHED";
+    if (matches.length === 1) {
+      const chats = await q(db,
+        `select chat_id from business_brain.commander_chats
+         where task_id=$1::uuid and owner_id=$2::uuid order by updated_at desc limit 2`,
+        [matches[0].task_id,matches[0].owner_id]);
+      if (chats.length === 1) {
+        const chatEvent = {
+          schema: "HH_COMMANDER_EVENT_V1", id: crypto.randomUUID(),
+          kind: "github_report", author: "GitHub Actions · verified CI",
+          text: "Core CI failed for PR #" + event.pr_number + " at " + event.head_sha.slice(0,12) +
+            ". Category: " + event.category + ". Failed jobs: " + event.failed_jobs.join(", ") +
+            ". Failed steps: " + event.failed_steps.join(", ") + ". Repair has not been started by this event receiver.",
+          source: { repository: event.repository, workflow_run_id: event.workflow_run_id,
+            run_attempt: event.run_attempt, head_sha: event.head_sha, run_url: event.run_url },
+          sourceVerified: true, proofLevel: "GITHUB_OIDC_AND_EXACT_PR_HEAD",
+          createdAt: new Date().toISOString()
+        };
+        await q(db,
+          `insert into business_brain.commander_chat_events(event_id,chat_id,owner_id,kind,payload,source_verified)
+           values($1::uuid,$2::uuid,$3::uuid,'github_report',$4::jsonb,true)
+           on conflict(event_id) do nothing`,
+          [chatEvent.id,chats[0].chat_id,matches[0].owner_id,JSON.stringify(chatEvent)]);
+        await q(db, `update business_brain.commander_chats set updated_at=now()
+          where chat_id=$1::uuid and owner_id=$2::uuid`, [chats[0].chat_id,matches[0].owner_id]);
+        association = "MATCHED_CHAT_EVENT_RECORDED";
+      } else if (chats.length > 1) association = "AMBIGUOUS_TASK_CHATS";
+      else association = "MATCHED_TASK_NO_CHAT";
+      await q(db, `update business_brain.commander_ci_event_inbox
+        set associated_task_id=$1::uuid,associated_owner_id=$2::uuid,association_status=$3
+        where ci_event_id=$4::uuid`,
+        [matches[0].task_id,matches[0].owner_id,association,inserted[0].ci_event_id]);
+    } else if (matches.length > 1) association = "AMBIGUOUS_TASKS";
+
+    return reply(202, { accepted: true, outcome: "RECORDED", inbox_id: inserted[0].ci_event_id,
+      association, pr_number: event.pr_number, head_sha: event.head_sha }, origin);
+  } catch (error) {
+    console.error("COMMANDER_GITHUB_CI_INBOX_ERROR", error && error.name || "unknown");
+    return reply(503, { accepted: false, outcome: "CI_EVENT_STORE_UNAVAILABLE" }, origin);
+  } finally {
+    await db.end({ timeout: 2 });
+  }
+}
+
 async function handler(req){
   const origin=req.headers.get("origin")||"";
+  const pathname=new URL(req.url).pathname;
+  if(req.method==="POST"&&pathname.endsWith("/webhooks/github-workflow-run"))
+    return await receiveGitHubWorkflowRun(req,origin);
   if(req.method==="OPTIONS")return ALLOWED_ORIGINS.has(origin)?reply(204,{},origin):reply(403,{error:"ORIGIN_DENIED"},origin);
   if(!["GET","POST"].includes(req.method))return reply(405,{error:"METHOD_NOT_ALLOWED"},origin);
   if(origin&&!ALLOWED_ORIGINS.has(origin))return reply(403,{error:"ORIGIN_DENIED"},origin);
@@ -229,6 +425,19 @@ async function handler(req){
       "commander_create_chat","commander_update_chat","commander_append_event","commander_attach_event"]);
     if(writeActions.has(action)&&!writable)return reply(403,{error:"OWNER_WRITE_DENIED"},origin);
 
+    if(action==="commander_list_ci_events"){
+      const limit=Math.max(1,Math.min(100,Number(body.limit)||30));
+      const pr=body.pr===undefined?null:number(body.pr);
+      if(body.pr!==undefined&&!pr)return reply(400,{error:"INVALID_PR_NUMBER"},origin);
+      const rows=await q(db,
+        `select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,
+          conclusion,category,failed_jobs,failed_steps,run_url,association_status,created_at
+         from business_brain.commander_ci_event_inbox
+         where ($1::int is null or pr_number=$1)
+         order by created_at desc limit $2`,[pr,limit]);
+      return reply(200,{schema:"HH_COMMANDER_CI_EVENT_INBOX_V1",events:rows,
+        count:rows.length,sourceVerifiedBy:"GITHUB_OIDC_AND_EXACT_PR_HEAD"},origin);
+    }
     if(action==="commander_list_model_preferences"){
       const rows=await q(db,"select preference_key,model_id,model_name,catalog_verified_at,updated_at from business_brain.commander_model_preferences where owner_id=$1::uuid order by updated_at desc limit 400",[ownerId]);
       return reply(200,{schema:"HH_PM_MODEL_PREFERENCES_V1",preferences:rows.map(r=>({
