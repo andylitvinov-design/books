@@ -39,6 +39,7 @@ jobs:
       - name: Check trusted direct event code
         run: |
           node --check scripts/ci-pr-event-handoff.cjs
+          node --check scripts/ci-pr-error-task.cjs
           node --check scripts/ci-pr-ten-minute-watchdog.cjs
           node --check scripts/ci-pr-queue-dispatcher.cjs
           node --check scripts/ci-pr-base-advanced-recovery.cjs

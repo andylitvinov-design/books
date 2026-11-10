@@ -46,6 +46,8 @@ on:
     paths:
       - '.github/workflows/hh-pr-ten-minute-watchdog.yml'
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
+      - 'scripts/ci-pr-error-task.cjs'
+      - 'tests/ci-pr-error-task.test.cjs'
       - 'scripts/ci-pr-event-handoff.cjs'
       - 'scripts/ci-pr-quality-event.cjs'
       - 'tests/ci-pr-event-handoff.test.cjs'
