@@ -4,12 +4,12 @@
 <meta name="robots" content="noindex,nofollow,noarchive"><meta name="color-scheme" content="dark">
 <title>Рабочие чаты · Agent Commander · Holistic House</title>
 <link rel="stylesheet" href="/commander-shell.css?v=20261107-cc-v1">
-<link rel="stylesheet" href="/commander-chats.css?v=20261110-ai-council-v1-compact-v2">
+<link rel="stylesheet" href="/commander-chats.css?v=20261110-chat-submit-fix-v2">
 <link rel="stylesheet" href="/commander-codex.css?v=20261108-v2">
 <link rel="stylesheet" href="/owner-google-signin.css?v=20261107-v1">
 <script src="/project-management-nav.js?v=20261107-cc-v1" defer></script>
 <script src="/owner-google-signin.js?v=20261107-v1" defer></script>
-<script src="/commander-chats.js?v=20261110-execution-ledger-v1-compact-v2" defer></script>
+<script src="/commander-chats.js?v=20261110-chat-submit-fix-v2" defer></script>
 <script src="/commander-codex.js?v=20261108-v2" defer></script>
 </head><body class="hh-cc-shell">
 <main id="cc-chat-root" class="cc-chats-page">
@@ -49,7 +49,7 @@
 <div id="cc-create-backdrop" class="cc-create-backdrop" hidden></div>
 <section id="cc-create" class="cc-surface cc-create-sheet" role="dialog" aria-modal="true" aria-labelledby="cc-create-heading" hidden>
 <div class="cc-create-head"><h2 id="cc-create-heading">Новый чат</h2><button id="cc-create-close" type="button" aria-label="Закрыть создание чата">×</button></div>
-<form id="cc-create-form">
+<form id="cc-create-form" novalidate>
 <label class="cc-question-label">Ваш вопрос или задача<textarea id="cc-new-prompt" rows="3" minlength="2" maxlength="1200" required placeholder="Что нужно сделать?"></textarea></label>
 <fieldset id="cc-new-executors" class="cc-executor-chips"><legend>Исполнитель</legend>
 <label class="cc-executor-chip"><input type="radio" name="cc-new-executor" value="local" checked>Советник</label>
@@ -69,6 +69,7 @@
 <label>Краткая цель (необязательно)<textarea id="cc-new-description" rows="2" maxlength="1000" placeholder="Результат и условия проверки"></textarea></label>
 </div></details>
 <p class="cc-create-note">Вопрос сохранится в личном чате. Назначение Codex или Hermes не означает, что исполнитель уже запущен.</p>
+<p id="cc-create-feedback" class="cc-create-feedback" role="alert" aria-live="assertive" tabindex="-1" hidden></p>
 <button id="cc-create-submit" class="cc-primary" type="submit">Отправить</button>
 </form></section>
 <section class="cc-surface cc-chat-catalog" aria-label="Каталог рабочих чатов"><div class="cc-heading"><h2>История чатов</h2><small id="cc-list-meta"></small></div>
@@ -78,6 +79,7 @@
 <section class="cc-surface" id="cc-thread" hidden aria-label="Выбранный рабочий чат">
 <div class="cc-heading"><h2 id="cc-thread-title">Рабочий чат</h2><button type="button" id="cc-close-thread" aria-label="Вернуться к списку">← К чатам</button></div>
 <p class="cc-help" id="cc-thread-updated"></p>
+<p id="cc-thread-feedback" class="cc-thread-feedback" role="status" aria-live="polite"></p>
 <p id="cc-executor-state" class="cc-help" role="status">Исполнитель не запущен; ждём подтверждённого ответа.</p>
 <details id="cc-thread-details"><summary>Настройки · команда, задача, PR</summary>
 <form id="cc-metadata-form">

@@ -13,14 +13,16 @@
  const STATES={planned:'Запланировано',assigned:'Назначено · не запущено',working:'В работе · по заявлению',
   review:'Проверка',blocked:'Блокировано',archived:'Архив · LIVE не подтверждён'};
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false;
- let reportRefreshTimer=null,reportSyncBusy=false;
+ let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null;
  const COUNCIL_ORIGIN='https://ai-council-free-super10.vercel.app';
  const COUNCIL_PROTOCOL='HH_AI_COUNCIL_BRIDGE_V1';
  let councilFrameReady=false,councilPending=null;
  const councilCompleted=new Set(),councilSaving=new Set();
  const make=(tag,cls,text)=>{const n=doc.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
  const show=(id,yes)=>{el(id).hidden=!yes};
- const info=s=>{el('alert').textContent=String(s)};
+ const info=s=>{const message=String(s);el('alert').textContent=message;
+  if(thread&&!el('thread').hidden)el('thread-feedback').textContent=message;
+ };
  const time=s=>{try{return new Date(s).toLocaleString('ru-RU',{dateStyle:'short',timeStyle:'short'})}catch{return '—'}};
  const id=()=>win.crypto.randomUUID();
  const htmlLink=(box,label,url)=>{
@@ -248,42 +250,55 @@
   }catch(err){info('Ошибка открытия чата: '+String(err.message||err))}
  }
  async function create(e){
-  e.preventDefault();if(busy)return;busy=true;
-  let created=false;
-  try{
-   const question=el('new-prompt').value.trim();
-   if(question.length<2||question.length>1200)throw Error('Напишите вопрос длиной 2–1200 символов.');
-   if(!el('new-title').value.trim()){
-    const title=question.split('\n')[0].trim().slice(0,110);
-    el('new-title').value=title.length>=4?title:'Вопрос: '+question.slice(0,95);
+   e.preventDefault();
+   const feedback=el('create-feedback'),button=el('create-submit');
+   const fail=message=>{
+    feedback.textContent=message;feedback.hidden=false;info(message);
+    feedback.scrollIntoView({block:'nearest'});feedback.focus({preventScroll:true});
+   };
+   if(busy)return fail('Другая операция ещё выполняется. Повторите нажатие.');
+   busy=true;button.disabled=true;button.textContent='Создаю…';
+   feedback.hidden=true;feedback.textContent='';
+   let created=false;
+   try{
+    const question=el('new-prompt').value.trim();
+    if(question.length<2||question.length>1200)throw Error('Напишите вопрос длиной 2–1200 символов.');
+    if(!el('new-title').value.trim()){
+     const title=question.split('\n')[0].trim().slice(0,110);
+     el('new-title').value=title.length>=4?title:'Вопрос: '+question.slice(0,95);
+    }
+    if(el('new-title').value.trim().length<4)el('new-title').value='Вопрос: '+question.slice(0,95);
+    const data={...formValues('new-'),id:pendingCreateId||(pendingCreateId=id())};let c;
+    if(data.executors[0]==='openrouter'&&!aiReady)
+     throw Error('OpenRouter Free сейчас недоступен. Выберите «Советник» или другого исполнителя.');
+    if(remote){
+     const v=await request(SERVER+'?action=create','POST',{chat:data});
+     c=v.chat?{...v.chat,issueNumber:v.issueNumber}:null;
+     if(!c){const read=await request(SERVER+'?action=read&issue='+v.issueNumber);c={...read.chat,issueNumber:v.issueNumber};}
+    }else{
+     if(chats.length>=80)throw Error('Лимит 80 локальных чатов; сохраните копию.');
+     c={...data,revision:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
+      liveVerified:false,executionState:'UNVERIFIED_ASSIGNMENT_ONLY',messages:[]};
+     chats.unshift(c);await persist();
+    }
+    if(!c?.id)throw Error('Сервер не подтвердил создание чата.');
+    if(remote){chats.unshift(c);messages=[];}else messages=c.messages;
+    thread=c;renderThread();startReportPolling();
+    closeCreate();el('create-form').reset();pendingCreateId=null;
+    el('mode').value=data.executors[0];
+    el('mode').dispatchEvent(new Event('change'));
+    el('message').value=question;
+    info('Чат создан. Отправляю вопрос выбранному исполнителю…');
+    created=true;
+   }catch(err){fail('Чат не создан: '+String(err.message||err));}
+   finally{busy=false;button.disabled=false;button.textContent='Отправить';}
+   if(created){
+    el('thread').scrollIntoView({block:'start',behavior:'smooth'});
+    await send({preventDefault(){}});
+    void reportList({automatic:true,silent:true});
    }
-   const data={...formValues('new-'),id:id()};let c;
-   if(remote){
-    const v=await request(SERVER+'?action=create','POST',{chat:data});
-    c={...v.chat,issueNumber:v.issueNumber};
-    if(!v.chat){const read=await request(SERVER+'?action=read&issue='+v.issueNumber);c=read.chat;}
-   }else{
-    if(chats.length>=80)throw Error('Лимит 80 локальных чатов; сохраните копию.');
-    c={...data,revision:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
-     liveVerified:false,executionState:'UNVERIFIED_ASSIGNMENT_ONLY',messages:[]};
-    chats.unshift(c);await persist();
-   }
-   if(remote){chats.unshift(c);messages=[];}else messages=c.messages;
-   thread=c;renderThread();startReportPolling();void reportList({automatic:true,silent:true});
-   closeCreate();el('create-form').reset();
-   el('mode').value=data.executors[0];
-   el('mode').dispatchEvent(new Event('change'));
-   el('message').value=question;
-   info('Чат создан. Отправляю вопрос выбранному исполнителю…');
-   created=true;
-  }catch(err){info('Чат не создан: '+String(err.message||err))}
-  finally{busy=false}
-  if(created){
-   await send({preventDefault(){}});
-   el('thread').scrollIntoView({block:'start',behavior:'smooth'});
   }
- }
- async function update(e){
+  async function update(e){
   e.preventDefault();if(!thread||busy)return;busy=true;
   try{
    const data={...formValues(''),id:thread.id};
@@ -658,7 +673,9 @@
  doc.querySelectorAll('[data-cc-status]').forEach(b=>b.addEventListener('click',()=>{
   el('filter').value=b.dataset.ccStatus;renderList();
  }));
- el('create-form').addEventListener('submit',create);el('metadata-form').addEventListener('submit',update);
+ el('create-form').addEventListener('input',()=>{pendingCreateId=null;el('create-feedback').hidden=true;});
+  el('create-form').addEventListener('change',()=>{pendingCreateId=null;el('create-feedback').hidden=true;});
+  el('create-form').addEventListener('submit',create);el('metadata-form').addEventListener('submit',update);
  el('chat-form').addEventListener('submit',send);el('note').addEventListener('click',addNote);
  el('check-prs').addEventListener('click',checkPRs);el('load-reports').addEventListener('click',reportList);
  el('handoff').addEventListener('click',handoff);
