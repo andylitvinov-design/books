@@ -213,6 +213,11 @@ export function SiteNavigation({ locale, onLocaleChange }: Props) {
               onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}
             >{item.label}</Link>
           ))}
+          <Link href={`/${activeLocale}/services`} prefetch={false} data-nav-item="services"
+            aria-current={/^\/(?:ru|en|es)\/services(?:\/|$)/.test(pathname) ? 'page' : undefined}
+            onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
+            {text.services}
+          </Link>
           <Link href={`/${activeLocale}/masters`} prefetch={false} data-nav-item="human-mentors"
             aria-current={/^\/(?:ru|en|es)\/masters(?:\/|$)/.test(pathname) ? 'page' : undefined}
             onClick={() => { if (siteMenuRef.current) siteMenuRef.current.open = false; }}>
