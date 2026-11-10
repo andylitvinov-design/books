@@ -1,7 +1,8 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {selectCandidates, gateIsGreen, transientFailure, canRetryCi, canDispatchRepair, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {selectCandidates, gateIsGreen, transientFailure, shouldRetryTransientCoreFailure, canRetryCi, canDispatchRepair, classifyMergeState, run, bootstrapLegacyCore, hasActiveLease, classifyCoreFailureJobs} = require('../scripts/ci-pr-ten-minute-watchdog.cjs');
+const {classifyRedCiError}=require('../scripts/ci-pr-red-ci-classifier.cjs');
 const SHA = 'b'.repeat(40);
 const NOW = 1800000000000;
 const pr = number => ({
@@ -1871,4 +1872,38 @@ test('missing verified job ID keeps original signed handoff but never constructs
   assert.ok(body.includes('Confirmed failed Core source step'));
   assert.ok(!body.includes('/job/'));
   assert.equal(labels,1);
+});
+
+
+test('every transient Core retry requires the shared classifier to authorize infrastructure retry first',()=>{
+ const run={status:'completed',run_attempt:1,conclusion:'timed_out',
+  created_at:new Date(NOW-20*60_000).toISOString(),
+  updated_at:new Date(NOW-9*60_000).toISOString()};
+ const jobs=[{name:'core-lint-types-build',conclusion:'timed_out',steps:[
+  {name:'Run actions/checkout@v4',conclusion:'failure'}
+ ]}];
+ const pr={number:11,head:{sha:SHA}};
+ const root=classifyCoreFailureJobs(jobs);
+ const diagnosis=classifyRedCiError({pr,jobs,coreRoot:root});
+ assert.equal(diagnosis.category,'INFRASTRUCTURE');
+ assert.equal(diagnosis.retry.allowed,true);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis,run,jobs,now:NOW,ciRoom:true,reruns:0}),true);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis,run,jobs,now:NOW,ciRoom:false,reruns:0}),false);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis,run,jobs,now:NOW,ciRoom:true,reruns:2}),false);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis:{...diagnosis,retry:{allowed:false,max_attempts:0}},run,jobs,now:NOW,ciRoom:true,reruns:0}),false);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis:{...diagnosis,category:'SOURCE_CODE'},run,jobs,now:NOW,ciRoom:true,reruns:0}),false);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis,run:{...run,run_attempt:2},jobs,now:NOW,ciRoom:true,reruns:0}),false);
+ assert.equal(shouldRetryTransientCoreFailure({diagnosis,run,jobs,now:NOW-5*60_000,ciRoom:true,reruns:0}),false,
+  'a recent timeout must not retry before the existing backoff window');
+});
+
+test('Watchdog classifies red Core jobs and records blocker diagnostics before bounded retry evaluation',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync('scripts/ci-pr-ten-minute-watchdog.cjs','utf8');
+ const classify=source.indexOf('const diagnosis=classifyRedCiError({pr:live,jobs,coreRoot:root});');
+ const retry=source.indexOf('shouldRetryTransientCoreFailure({diagnosis,run:latest,jobs,now,ciRoom,');
+ const sourceRepair=source.indexOf('summary.verifiedSourceFailures++');
+ assert.ok(classify>=0&&retry>classify&&sourceRepair>retry);
+ assert.match(source,/blocker\.ci_error_category=diagnosis\.category/);
+ assert.match(source,/blocker\.ci_error_retry_policy=diagnosis\.retry/);
 });
