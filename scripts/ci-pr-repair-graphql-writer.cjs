@@ -83,4 +83,14 @@ async function atomicGraphqlCommit({owner,repo,branch,expectedSha,files,number,
  return Object.freeze({sha:newSha,method:'GRAPHQL_ATOMIC_EXPECTED_HEAD_CAS',
    sourceWriteVerified:false}); // remote ref + one-parent readback still mandatory
 }
-module.exports={MUTATION,REPO,validateInput,mutationInput,atomicGraphqlCommit};
+// Only a definitive integration-permission denial on the REST ref UPDATE
+// may trigger one atomic, exact-HEAD GraphQL alternative. A lost response,
+// other operation, owner PAT failure, 429 or generic 403 MUST fail closed.
+function isDefinitiveRefUpdateDenial(error,mode){
+ return mode==='job'&&error?.status===403&&
+  error?.operation==='UPDATE_REF'&&
+  error?.kind==='INTEGRATION_PERMISSION_DENIED'&&
+  error?.message==='HH_REPAIR_GIT_DATA_UPDATE_REF_HTTP_403';
+}
+module.exports={MUTATION,REPO,validateInput,mutationInput,atomicGraphqlCommit,
+ isDefinitiveRefUpdateDenial};

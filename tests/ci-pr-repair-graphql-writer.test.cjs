@@ -1,7 +1,8 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {MUTATION,validateInput,mutationInput,atomicGraphqlCommit}=
+const {MUTATION,validateInput,mutationInput,atomicGraphqlCommit,
+ isDefinitiveRefUpdateDenial}=
  require('../scripts/ci-pr-repair-graphql-writer.cjs');
 const owner='andylitvinov-design',repo='books',branch='test/pr-repair-graphql-canary';
 const expectedSha='a'.repeat(40),newSha='b'.repeat(40);
@@ -114,4 +115,41 @@ test('GraphQL CAS is reached only after first definite integration-denied Git bl
  const publisher=fs.readFileSync('scripts/ci-pr-repair-worker.cjs','utf8');
  assert.match(publisher,/HH_REPAIR_PUBLISH_PARENT_UNVERIFIED/);
  assert.match(publisher,/HH_REPAIR_PUBLISH_REMOTE_REF_UNVERIFIED/);
+});
+
+test('known Git ref integration 403 permits one exact-head CAS, all other responses fail closed',()=>{
+ const denied={status:403,operation:'UPDATE_REF',
+   kind:'INTEGRATION_PERMISSION_DENIED',
+   message:'HH_REPAIR_GIT_DATA_UPDATE_REF_HTTP_403'};
+ assert.equal(isDefinitiveRefUpdateDenial(denied,'job'),true);
+ for(const bad of [
+   {...denied,status:429},
+   {...denied,status:401},
+   {...denied,operation:'CREATE_BLOB'},
+   {...denied,operation:'CREATE_COMMIT'},
+   {...denied,kind:'PROVIDER_RATE_LIMIT'},
+   {...denied,kind:'PERSONAL_TOKEN_PERMISSION_DENIED'},
+   {...denied,message:'HH_REPAIR_GIT_DATA_CREATE_BLOB_HTTP_403'},
+   {status:403,message:'Resource not accessible by integration'},
+   null
+ ])assert.equal(isDefinitiveRefUpdateDenial(bad,'job'),false);
+ assert.equal(isDefinitiveRefUpdateDenial(denied,'owner'),false);
+ assert.equal(isDefinitiveRefUpdateDenial(denied,null),false);
+});
+test('verified REST ref 403 has one guarded GraphQL CAS and readback, no force or paid fallback',()=>{
+ const workflow=fs.readFileSync('.github/workflows/hh-pr-repair-worker.yml','utf8');
+ const publish=workflow.split('\n  publish:\n')[1].split('\n  finalize:\n')[0];
+ assert.ok(publish.includes('if(!atomicWriter.isDefinitiveRefUpdateDenial(error,mode))throw error'));
+ assert.ok(publish.includes("beforeCas.object?.sha!==expectedSha"));
+ assert.ok(publish.includes('HH_REPAIR_REF_403_GRAPHQL_CAS_ATTEMPT'));
+ assert.ok(publish.includes('denied_operation:\'UPDATE_REF\''));
+ assert.ok(publish.includes('sourceSha=atomic.sha'));
+ assert.ok(publish.includes("published.object?.sha!==sourceSha"));
+ assert.ok(publish.includes("force:false"));
+ const count=(publish.match(/atomicWriter\.atomicGraphqlCommit\(/g)||[]).length;
+ assert.equal(count,2,'one alternate branch for CREATE_BLOB denial and one for UPDATE_REF denial');
+ const worker=fs.readFileSync('scripts/ci-pr-repair-worker.cjs','utf8');
+ assert.match(worker,/HH_REPAIR_PUBLISH_PARENT_UNVERIFIED/);
+ assert.match(worker,/HH_REPAIR_PUBLISH_REMOTE_REF_UNVERIFIED/);
+ assert.doesNotMatch(publish,/model.*retry|paid.*fallback/i);
 });

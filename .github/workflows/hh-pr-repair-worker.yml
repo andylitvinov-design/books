@@ -807,14 +807,41 @@ jobs:
                 tree:t.sha,parents:[expectedSha]});
               if(!/^[a-f0-9]{40}$/i.test(commit.sha||''))throw Error('No commit SHA');
               const still=await call('GET',base+ref);
-              if(still.object?.sha!==expectedSha)throw Error('PR branch changed during repair');
-              await call('PATCH',base+'/git/refs/heads/'+branch.split('/').map(encodeURIComponent).join('/'),
-                {sha:commit.sha,force:false});
+              if(still.ref!=='refs/heads/'+branch||still.object?.sha!==expectedSha)
+                throw Error('PR branch changed during repair commit');
+              let sourceSha=commit.sha,sourceMethod='REST_FAST_FORWARD';
+              try{
+                await call('PATCH',base+'/git/refs/heads/'+branch.split('/').map(encodeURIComponent).join('/'),
+                  {sha:commit.sha,force:false});
+              }catch(error){
+                // The real v10 failure was UPDATE_REF HTTP 403, AFTER successful
+                // blob, tree and unreferenced commit creation. GraphQL CAS
+                // safely publishes a separate commit only when HEAD is intact.
+                // Never retry if the REST ref write was ambiguous or rate-limited.
+                if(!atomicWriter.isDefinitiveRefUpdateDenial(error,mode))throw error;
+                const beforeCas=await call('GET',base+ref);
+                if(beforeCas.ref!=='refs/heads/'+branch||
+                   beforeCas.object?.sha!==expectedSha)
+                  throw Error('HH_REPAIR_GRAPHQL_REF_FALLBACK_STALE_HEAD');
+                core.info('HH_REPAIR_REF_403_GRAPHQL_CAS_ATTEMPT '+JSON.stringify({
+                  pr:number,prior_sha:expectedSha,files:files.length,
+                  denied_operation:'UPDATE_REF',source_write_unverified:true
+                }));
+                const atomic=await atomicWriter.atomicGraphqlCommit({
+                  owner,repo,branch,expectedSha,files,number,
+                  repairKind:candidate.repair_kind,token
+                });
+                sourceSha=atomic.sha;
+                sourceMethod=atomic.method;
+              }
+              // An API acceptance is not a published commit until its remote ref
+              // and exact parent are independently checked by worker.publish.
               const published=await call('GET',base+ref);
-              if(published.ref!=='refs/heads/'+branch||published.object?.sha!==commit.sha)
+              if(published.ref!=='refs/heads/'+branch||published.object?.sha!==sourceSha)
                 throw Error('HH_REPAIR_REMOTE_REF_UPDATE_NOT_VERIFIED');
-              core.info('HH_REPAIR_REMOTE_REF VERIFIED '+JSON.stringify({sha:commit.sha,branch}));
-              return {sha:commit.sha};
+              core.info('HH_REPAIR_REMOTE_REF VERIFIED '+JSON.stringify({
+                sha:sourceSha,branch,method:sourceMethod}));
+              return {sha:sourceSha};
             }};
             const candidate=JSON.parse(fs.readFileSync('hh-candidate/candidate.json','utf8'));
             let result;
