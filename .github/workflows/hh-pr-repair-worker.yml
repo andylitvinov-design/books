@@ -490,6 +490,8 @@ jobs:
     outputs:
       candidate_status: ${{ steps.capture.outputs.candidate_status }}
       candidate_detail: ${{ steps.capture.outputs.candidate_detail }}
+      code_backend: ${{ steps.capture.outputs.code_backend }}
+      code_model: ${{ steps.capture.outputs.code_model }}
     env:
       REPAIR_SHA: ${{ needs.claim.outputs.sha }}
       REPAIR_FILES_JSON: ${{ needs.claim.outputs.files_json }}
@@ -530,6 +532,7 @@ jobs:
           # Free model resolved in the trusted adapter from the live zero-price catalog.
           # A profile change never bypasses repair leases, isolation or exact-HEAD CI.
           HH_OPENROUTER_FREE_MODEL: auto
+          HH_FREE_AI_METADATA_PATH: ${{ runner.temp }}/hh-free-ai-model.json
         run: |
           set -euo pipefail
           # Proposer runs OpenCode in an empty temporary cwd, with an empty
@@ -542,7 +545,25 @@ jobs:
           fi
       - id: capture
         name: Capture exact-HEAD allowlisted source proposal only
-        run: node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs capture
+        env:
+          HH_FREE_AI_METADATA_PATH: ${{ runner.temp }}/hh-free-ai-model.json
+        run: |
+          node .hh-trusted/scripts/ci-pr-repair-code-candidate.cjs capture
+          if [ -s "$HH_FREE_AI_METADATA_PATH" ]; then
+            node - "$HH_FREE_AI_METADATA_PATH" <<'NODE'
+            const fs=require('node:fs');
+            const file=process.argv[2];
+            const proof=JSON.parse(fs.readFileSync(file,'utf8'));
+            const model=/^[A-Za-z0-9][A-Za-z0-9_.-]*\\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/;
+            if(proof?.schema!=='HH_FREE_MODEL_PROOF_V1'||
+               !['openrouter','opencode'].includes(proof.provider)||
+               typeof proof.model!=='string'||!model.test(proof.model)||
+               proof.zero_cost!==true||proof.catalog_verified!==true)
+              throw Error('HH_FREE_MODEL_PROOF_INVALID');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,
+              'code_backend='+proof.provider+'\ncode_model='+proof.model+'\n');
+            NODE
+          fi
       - name: Store untrusted proposal for independent verification
         uses: actions/upload-artifact@v4
         with:
@@ -836,6 +857,8 @@ jobs:
           HH_CODE_RESULT: ${{ needs.code_fix.result }}
           HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
           HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
+          HH_CODE_BACKEND: ${{ needs.code_fix.outputs.code_backend }}
+          HH_CODE_MODEL: ${{ needs.code_fix.outputs.code_model }}
           HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
           HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
           HH_CODE_VERIFY_DETAIL: ${{ needs.code_verify.outputs.candidate_detail }}
@@ -866,6 +889,8 @@ jobs:
               codeResult:process.env.HH_CODE_RESULT,
               codeStatus:process.env.HH_CODE_STATUS,
               codeDetail:process.env.HH_CODE_DETAIL,
+              codeBackend:process.env.HH_CODE_BACKEND,
+              codeModel:process.env.HH_CODE_MODEL,
               codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
               codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
               codeVerifyDetail:process.env.HH_CODE_VERIFY_DETAIL,
@@ -970,6 +995,8 @@ jobs:
           HH_CODE_RESULT: ${{ needs.code_fix.result }}
           HH_CODE_STATUS: ${{ needs.code_fix.outputs.candidate_status }}
           HH_CODE_DETAIL: ${{ needs.code_fix.outputs.candidate_detail }}
+          HH_CODE_BACKEND: ${{ needs.code_fix.outputs.code_backend }}
+          HH_CODE_MODEL: ${{ needs.code_fix.outputs.code_model }}
           HH_CODE_VERIFY_RESULT: ${{ needs.code_verify.result }}
           HH_CODE_VERIFY_STATUS: ${{ needs.code_verify.outputs.candidate_status }}
           HH_CODE_VERIFY_DETAIL: ${{ needs.code_verify.outputs.candidate_detail }}
@@ -997,6 +1024,8 @@ jobs:
               codeResult:process.env.HH_CODE_RESULT,
               codeStatus:process.env.HH_CODE_STATUS,
               codeDetail:process.env.HH_CODE_DETAIL,
+              codeBackend:process.env.HH_CODE_BACKEND,
+              codeModel:process.env.HH_CODE_MODEL,
               codeVerifyResult:process.env.HH_CODE_VERIFY_RESULT,
               codeVerifyStatus:process.env.HH_CODE_VERIFY_STATUS,
               codeVerifyDetail:process.env.HH_CODE_VERIFY_DETAIL,
