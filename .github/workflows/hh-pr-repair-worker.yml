@@ -652,12 +652,11 @@ jobs:
         with:
           name: hh-code-repair-verified
           path: hh-candidate
-      - name: Revalidate owner + SHA; publish one source commit with existing owner token
+      - name: Revalidate exact PR HEAD; publish verified source via scoped GitHub job token
         id: publish_source
         if: needs.code_verify.result == 'success' && needs.code_verify.outputs.candidate_status == 'ready'
         uses: actions/github-script@v7
         env:
-          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
           HH_REPAIR_JOB_TOKEN: ${{ github.token }}
           HH_REPAIR_SHA: ${{ needs.claim.outputs.sha }}
           HH_REPAIR_PR: ${{ needs.claim.outputs.pr_number }}
@@ -666,7 +665,6 @@ jobs:
           script: |
             const fs=require('node:fs');
             const worker=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-worker.cjs');
-            const ownerToken=process.env.HH_AUTOMERGE_TOKEN||'';
             const jobToken=process.env.HH_REPAIR_JOB_TOKEN||'';
             const rateGuard=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-repair-owner-rate.cjs');
             if(!jobToken)throw Error('HH_REPAIR_JOB_TOKEN_NOT_CONFIGURED');
@@ -697,7 +695,7 @@ jobs:
                 ...(payload?{body:JSON.stringify(payload)}:{})
               });
               const data=await response.json().catch(()=>({}));
-              if(!response.ok)throw Error('Owner API '+response.status+': '+String(data.message||'denied').slice(0,140));
+              if(!response.ok)throw Error('GitHub scoped job API '+response.status+': '+String(data.message||'denied').slice(0,140));
               if(minRemaining>0){
                 const rate=rateGuard.requireOwnerRateBudget(response.headers,minRemaining);
                 core.info('HH_REPAIR_OWNER_RATE_BUDGET '+JSON.stringify(rate));
@@ -710,21 +708,23 @@ jobs:
                 throw Error('Unsafe writer arguments');
               const base='/repos/'+owner+'/'+repo;
               const ref='/git/ref/heads/'+branch.split('/').map(encodeURIComponent).join('/');
-              // The owner PAT returned Git Data API 403 despite repository
-              // permissions.push=true (verified #4275, run 42907804597).
-              // Prefer this job's repository-scoped contents:write token.
-              // GitHub-token ref updates require the EXISTING next-Core wake
-              // fallback; do not fabricate a pull_request synchronization.
+              // PAT repeatedly returned 403 on Git Data despite permissions.push.
+              // The protected publisher JOB already has contents:write, while
+              // other untrusted jobs are read-only. A repository role's push
+              // field cannot attest job-scoped installation-token permissions.
+              // Check authenticated repository read and bounded quota; GitHub
+              // independently enforces actual write permissions on POST/PATCH.
+              // Never downgrade to the known-denied owner PAT or try extra creds.
+              // The existing next-Core wake is essential because GITHUB_TOKEN
+              // source commits may not trigger pull_request.synchronize.
               const required=rateGuard.requiredOwnerBudget(files.length);
               const jobProbe=await probe(jobToken);
-              const ownerProbe=rateGuard.eligibleWriter(jobProbe,required)?
-                null:await probe(ownerToken);
-              const mode=rateGuard.chooseWriterMode({job:jobProbe,owner:ownerProbe},required);
-              token=mode==='job'?jobToken:ownerToken;
+              const proof=rateGuard.requireScopedJobWriterProbe(jobProbe,required);
+              token=jobToken;
               const repository=await call('GET',base,undefined,required);
-              if(repository?.full_name!==owner+'/'+repo||repository.permissions?.push!==true)
-                throw Error('HH_REPAIR_WRITER_REPO_WRITE_PERMISSION_MISSING');
-              core.info('HH_REPAIR_WRITE_CREDENTIAL VERIFIED_REPOSITORY_PUSH mode='+mode);
+              if(repository?.full_name!==owner+'/'+repo)
+                throw Error('HH_REPAIR_JOB_TOKEN_REPOSITORY_MISMATCH');
+              core.info('HH_REPAIR_WRITE_CREDENTIAL '+JSON.stringify(proof));
               const current=await call('GET',base+ref);
               if(current.ref!=='refs/heads/'+branch || current.object?.sha!==expectedSha)
                 throw Error('Source branch moved before repair commit');
