@@ -126,4 +126,12 @@ test('legacy category contract remains compatible with watchdog consumers', () =
   assert.match(source, /classifyRedCiError\(\{pr:live,jobs,coreRoot:root\}\)/);
   assert.match(source, /ciErrorByCategory/);
   assert.match(source, /noteConfirmedBlocker/);
+  const watchdog = require('node:fs').readFileSync(
+    require('node:path').join(__dirname, '../scripts/ci-pr-ten-minute-watchdog.cjs'), 'utf8'
+  );
+  for (const field of ['ci_error_ruleset_version', 'ci_error_confidence',
+    'ci_error_reason_code', 'ci_error_recommended_status',
+    'ci_error_responsible_role', 'ci_error_next_action', 'ci_error_retry_policy']) {
+    assert.ok(watchdog.includes(field), field);
+  }
 });
