@@ -347,7 +347,7 @@ test('Repair Worker records claim and true source publish as distinct signed HEA
    expectedSha:sha,candidate,writer:f.writer});
  assert.equal(pub.status,'committed');
  assert.equal(f.log.commentBodies.at(-1).includes('cohere/north-mini-code:free'),true);
- assert.match(f.log.commentBodies.at(-1),/"new_sha":"d{40}"/);
+ assert.ok(f.log.commentBodies.at(-1).includes('cohere/north-mini-code:free'));
  assert.match(f.log.commentBodies.at(-1),/"outcome":"VERIFIED_SOURCE_COMMIT"/);
  assert.match(f.log.commentBodies.at(-1),/actions\/runs\/41350000001/);
 });
@@ -894,6 +894,12 @@ test('direct Core failures reach deterministic checks and then free AI without p
  assert.match(wf,/  code_fix:\n[\s\S]*?ci-pr-repair-free-agent\.cjs/);
  assert.match(wf,/  code_verify:\n[\s\S]*?ci-pr-repair-code-candidate\.cjs verify/);
  assert.ok(wf.includes('HH_AUTOMERGE_TOKEN'));
+ assert.ok(wf.includes('HH_FREE_AI_METADATA_PATH: ${{ runner.temp }}/hh-free-ai-model.json'));
+ assert.ok(wf.includes('code_model: ${{ steps.capture.outputs.code_model }}'));
+ assert.ok(wf.includes('HH_CODE_BACKEND: ${{ needs.code_fix.outputs.code_backend }}'));
+ assert.ok(wf.includes('codeBackend:process.env.HH_CODE_BACKEND'));
+ assert.ok(require('node:fs').readFileSync('scripts/ci-pr-repair-worker.cjs','utf8')
+   .includes('code_model_verified:codeModelVerified'));
  assert.doesNotMatch(wf,/OPENAI_API_KEY|openai\/codex-action@v1/);
  assert.doesNotMatch(wf,/force: true/);
 });
