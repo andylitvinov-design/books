@@ -130,9 +130,9 @@ test("mobile audio controls preserve native HTTPS playback, private files, EN/RU
   assert.match(studio,/kind:audioKind,mood:audioMood,pace:audioPace/);
   assert.match(studio,/theme:audioTheme,kind:audioKind/);
   assert.match(studio,/voiceFriendly:audioVoiceFriendly,wish/);
-  // Auto recommendation now attaches sound in Montage while preserving manual rights.
+  // Automatic recommendations attach sound in Montage and Ready; manual audio rights still apply.
   assert.match(studio,/if\(!audioAuto\|\|uploadedAudio\|\|attachedAudio\?\.kind==="file"/);
-  assert.match(studio,/if\(activeWorkspace!=="editor"\)return;/);
+  assert.match(studio,/if\(activeWorkspace!=="editor"&&activeWorkspace!=="ready"\)return;/);
   assert.match(studio,/setMusic\(current=>current===recommended\?current:recommended\)/);
   assert.match(studio,/setAttachedAudio\(current=>/);
   assert.match(studio,/current\?\.kind==="presets"/);

@@ -3,8 +3,10 @@
 import {useEffect,useRef,useState} from 'react'
 import {AudioLines,Mic,MicOff,Pause,Play,Send,Square,Volume2,X} from 'lucide-react'
 import styles from './coaching-live-voice.module.css'
+import {startCoachingMp3Playback} from '@/lib/personal-coaching/streamed-mp3-playback.mjs'
 
 const speechLanguages={en:'en-US',ru:'ru-RU',es:'es-ES'}
+const cloudVoiceVisible=process.env.NEXT_PUBLIC_HH_COACHING_FISH_TTS_UI==='true'
 const labels={
   en:{
     launch:'Live Voice',heading:'Talk with your AI coach',disclosure:'Optional AI conversation using OpenRouter for text responses and your device for speech. Your browser may send microphone audio to its speech-recognition provider. No audio or transcript is saved to your coaching report or Life Plan. Provider data handling depends on the provider.',
@@ -21,6 +23,7 @@ const labels={
     empty:'Say something or type your message.',tooShort:'Please say a few more words.',private:'Private in this tab · AI, not a human practitioner',
     recent:'Latest reply',textMode:'You can use typed conversation even without a microphone.',
     offline:'AI unavailable · an authored coaching question is shown instead.',
+    voiceProvider:'Voice',voiceDevice:'Device voice · free',voiceCloud:'Original character voice · Fish Audio',cloudDisclosure:'Optional Fish Audio: a coach reply goes to an external voice provider only when selected. Use licensed original voices. Holistic House does not save audio or text. API charges may apply.',cloudFallback:'Cloud voice is unavailable. Switched to the free device voice.',
   },
   ru:{
     launch:'Живой голос',heading:'Разговор с AI-коучем',disclosure:'Дополнительный AI-диалог: OpenRouter формирует текст ответа, устройство распознаёт речь и озвучивает ответ. Браузер может передавать голос поставщику распознавания. Аудио и история диалога не сохраняются в отчёте или Life Plan. Обработка данных у поставщика регулируется его правилами.',
@@ -37,6 +40,7 @@ const labels={
     empty:'Скажите что-нибудь или напишите сообщение.',tooShort:'Пожалуйста, скажите чуть подробнее.',private:'Приватно в этой вкладке · AI, не живой специалист',
     recent:'Последний ответ',textMode:'Письменный диалог доступен и без микрофона.',
     offline:'AI сейчас недоступен · показываем авторский вопрос.',
+    voiceProvider:'Голос',voiceDevice:'Голос устройства · бесплатно',voiceCloud:'Оригинальный голос персонажа · Fish Audio',cloudDisclosure:'Дополнительная озвучка Fish Audio: при выборе облачного голоса ответ коуча передаётся внешнему поставщику. Используются только оригинальные лицензированные голоса. Holistic House не сохраняет текст и аудио. Возможна оплата API.',cloudFallback:'Облачный голос недоступен. Возвращаем бесплатный голос устройства.',
   },
   es:{
     launch:'Voz en vivo',heading:'Habla con tu coach de IA',disclosure:'Conversación opcional con OpenRouter para respuestas de texto y tu dispositivo para voz. El navegador puede enviar audio al proveedor de reconocimiento. Ni el audio ni el historial se guardan en el informe o Life Plan. El tratamiento de datos depende de cada proveedor.',
@@ -53,6 +57,7 @@ const labels={
     empty:'Habla o escribe un mensaje.',tooShort:'Di unas palabras más, por favor.',private:'Privado en esta pestaña · IA, no profesional humano',
     recent:'Última respuesta',textMode:'Puedes escribir incluso sin micrófono.',
     offline:'IA no disponible · se muestra una pregunta preparada.',
+    voiceProvider:'Voz',voiceDevice:'Voz del dispositivo · gratis',voiceCloud:'Voz original · Fish Audio',cloudDisclosure:'La voz opcional Fish Audio envía la respuesta a un proveedor externo solo cuando se selecciona. Se usan voces originales con licencia. Holistic House no guarda audio ni texto; podrían aplicarse cargos.',cloudFallback:'La voz en la nube no está disponible. Se usará la voz gratuita del dispositivo.',
   },
 }
 const statusCopy=(t,phase)=>({
@@ -67,6 +72,7 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
   const [safetyHandoff,setSafetyHandoff]=useState(false)
   const [phase,setPhase]=useState('ready')
   const [micOn,setMicOn]=useState(false)
+  const [voiceEngine,setVoiceEngine]=useState('device')
   const [lastReply,setLastReply]=useState('')
   const [replyMode,setReplyMode]=useState('')
   const [interim,setInterim]=useState('')
@@ -76,6 +82,8 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
   const dialogRef=useRef(null)
   const recognitionRef=useRef(null)
   const networkRef=useRef(null)
+  const cloudControllerRef=useRef(null)
+  const cloudPlayerRef=useRef(null)
   const silenceRef=useRef(null)
   const pendingRef=useRef('')
   const historyRef=useRef([])
@@ -104,6 +112,10 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
     setInterim('')
   }
   function cancelPlayback(){
+    cloudControllerRef.current?.abort()
+    cloudControllerRef.current=null
+    cloudPlayerRef.current?.cancel()
+    cloudPlayerRef.current=null
     if(typeof window!=='undefined')window.speechSynthesis?.cancel()
   }
   function abortPending(){
@@ -142,6 +154,8 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
       recognitionRef.current=null
       if(recognition){recognition.onresult=null;recognition.onerror=null;recognition.onend=null;try{recognition.abort()}catch{}}
       networkRef.current?.abort()
+      cloudControllerRef.current?.abort()
+      cloudPlayerRef.current?.cancel()
       generationRef.current+=1
       if(silenceRef.current!==null)clearTimeout(silenceRef.current)
       if(typeof window!=='undefined')window.speechSynthesis?.cancel()
@@ -159,7 +173,7 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
         const recognition=recognitionRef.current
         recognitionRef.current=null
         if(recognition){recognition.onresult=null;recognition.onerror=null;recognition.onend=null;try{recognition.abort()}catch{}}
-        networkRef.current?.abort();generationRef.current+=1
+        networkRef.current?.abort();cloudControllerRef.current?.abort();cloudPlayerRef.current?.cancel();generationRef.current+=1
         if(silenceRef.current!==null){clearTimeout(silenceRef.current);silenceRef.current=null}
         pendingRef.current=''
         window.speechSynthesis?.cancel()
@@ -291,6 +305,58 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
     synth.speak(utterance)
   }
 
+  async function speakCloudReply(reply,replyLocale){
+    if(!['en','ru'].includes(replyLocale)){speakReply(reply,replyLocale);return}
+    const generation=generationRef.current
+    const controller=new AbortController()
+    cloudControllerRef.current=controller
+    phaseTo('thinking')
+    const fallback=()=>{
+      if(generation!==generationRef.current||!activeRef.current||pausedRef.current||controller.signal.aborted)return
+      cloudPlayerRef.current?.cancel()
+      cloudPlayerRef.current=null
+      cloudControllerRef.current=null
+      setVoiceEngine('device')
+      setError(t.cloudFallback)
+      speakReply(reply,replyLocale)
+    }
+    try{
+      const response=await fetch('/api/app/coaching/voice/synthesize',{
+        method:'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,
+        headers:{
+          'Content-Type':'application/json',
+          ...(accountId?{'x-hh-account-id':accountId}:{}),
+        },
+        body:JSON.stringify({sessionId,locale:replyLocale,text:reply,
+          voiceConsent:true,cloudVoiceConsent:true}),
+      })
+      if(!response.ok||!response.body)throw Error('CLOUD_TTS_UNAVAILABLE')
+      if(generation!==generationRef.current||!activeRef.current||pausedRef.current||controller.signal.aborted)return
+      cloudPlayerRef.current=startCoachingMp3Playback(response,{
+        onStart:()=>{if(generation===generationRef.current&&!pausedRef.current)phaseTo('speaking')},
+        onEnd:()=>{
+          if(generation!==generationRef.current||!activeRef.current||pausedRef.current)return
+          cloudControllerRef.current=null
+          cloudPlayerRef.current?.cancel();cloudPlayerRef.current=null
+          phaseTo(safetyRef.current?'paused':'ready')
+          if(micRef.current&&!safetyRef.current)startListening()
+        },
+        onError:fallback,
+      })
+    }catch{fallback()}
+  }
+
+  function setSpeechEngine(next){
+    if(!['device','cloud'].includes(next)||next===voiceEngine)return
+    resetAudio()
+    setVoiceEngine(next)
+    setError('')
+    if(activeRef.current){
+      phaseTo(pausedRef.current?'paused':'ready')
+      if(micRef.current&&!pausedRef.current)startListening()
+    }
+  }
+
   async function sendTurn(raw){
     const message=String(raw||'').trim().slice(0,1200)
     if(safetyRef.current)return // Crisis handoff is terminal for this ephemeral dialogue.
@@ -336,7 +402,9 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
         localeRef.current=result.locale
         setLanguage(result.locale)
       }
-      speakReply(result.reply,result.locale||localeRef.current)
+      if(voiceEngine==='cloud'&&result.mode==='ai'&&['en','ru'].includes(result.locale||localeRef.current))
+        void speakCloudReply(result.reply,result.locale||localeRef.current)
+      else speakReply(result.reply,result.locale||localeRef.current)
     }catch{
       if(!activeRef.current||pausedRef.current||generationRef.current!==requestGeneration)return
       setError(t.error)
@@ -395,6 +463,7 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
     resetAudio()
     localeRef.current=next
     setLanguage(next)
+    if(next==='es')setVoiceEngine('device')
     setError('')
     if(activeRef.current){
       phaseTo(pausedRef.current?'paused':'ready')
@@ -415,6 +484,16 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
       </header>
       {!started ? <>
         <p className={styles.disclosure}>{t.disclosure}</p>
+        {cloudVoiceVisible&&<>
+          <div className={styles.topControls}>
+            <label htmlFor="hh-coaching-cloud-provider-intro">{t.voiceProvider}</label>
+            <select id="hh-coaching-cloud-provider-intro" value={voiceEngine} onChange={event=>setSpeechEngine(event.target.value)}>
+              <option value="device">{t.voiceDevice}</option>
+              <option value="cloud" disabled={language==='es'}>{t.voiceCloud}</option>
+            </select>
+          </div>
+          <p className={styles.subtle}>{t.cloudDisclosure}</p>
+        </>}
         <p className={styles.subtle}>{t.textMode}</p>
         <button type="button" className={styles.mainAction} onClick={start}>{t.start}<Play size={17}/></button>
       </> : <>
@@ -424,6 +503,13 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
             <option value="en">English</option><option value="ru">Русский</option><option value="es">Español</option>
           </select>
         </div>
+        {cloudVoiceVisible&&<div className={styles.topControls}>
+          <label htmlFor="hh-coaching-cloud-provider">{t.voiceProvider}</label>
+          <select id="hh-coaching-cloud-provider" value={voiceEngine} onChange={event=>setSpeechEngine(event.target.value)}>
+            <option value="device">{t.voiceDevice}</option>
+            <option value="cloud" disabled={language==='es'}>{t.voiceCloud}</option>
+          </select>
+        </div>}
         <div className={styles.avatar} data-voice-phase={phase} aria-hidden="true">
           <span className={styles.pulse}><AudioLines size={38}/></span>
         </div>
@@ -443,7 +529,7 @@ export default function CoachingLiveVoice({locale='en',sessionId,accountId,disab
           <button type="button" onClick={interrupt} disabled={safetyHandoff||(phase!=='thinking'&&phase!=='speaking')}>
             <Square size={21}/><span>{t.interrupt}</span>
           </button>
-          <button type="button" onClick={()=>{if(lastReply){resetAudio();speakReply(lastReply,localeRef.current)}}}
+          <button type="button" onClick={()=>{if(lastReply){resetAudio();if(voiceEngine==='cloud'&&['en','ru'].includes(localeRef.current)&&replyMode==='ai')void speakCloudReply(lastReply,localeRef.current);else speakReply(lastReply,localeRef.current)}}}
             disabled={!lastReply||(phase==='paused'&&!safetyHandoff)}>
             <Volume2 size={21}/><span>{t.repeat}</span>
           </button>

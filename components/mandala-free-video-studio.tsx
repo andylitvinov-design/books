@@ -3031,16 +3031,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
     return () => { window.cancelAnimationFrame(firstFrame); window.cancelAnimationFrame(nextFrame); };
   }, [result]);
-  // Auto-music must be ATTACHED before the Montage Generate tap. The earlier
-  // suggestion-only effect changed music without attachedAudio, so the real
-  // recorder's rights guard redirected Generate into the large Audio gallery.
-  // Keep manual silence, uploaded tracks and narration fully authoritative.
+  // Auto-music must be ATTACHED before the Montage Generate tap and Ready Basic.
+  // Previously Ready suggested a track but left it unattached; Create then
+  // opened the large Audio overlay instead of rendering. Uploaded tracks,
+  // manual choices, silence and rights checks retain their existing gates.
   useEffect(() => {
     if(!audioAuto||uploadedAudio||attachedAudio?.kind==="file"||
        attachedAudio?.kind==="presets")return;
     const recommended=recommendedAudioId||"none";
     setMusic(current=>current===recommended?current:recommended);
-    if(activeWorkspace!=="editor")return;
+    if(activeWorkspace!=="editor"&&activeWorkspace!=="ready")return;
     setAttachedAudio(current=>{
       if(current?.kind==="file"||current?.kind==="presets")return current;
       if(recommended==="none")return null;

@@ -6,8 +6,10 @@ import {
   selectCoachingBrainMethod,coachingBrainStage,coachingBrainStageDecision,coachingBrainMessages,
   parseCoachingBrainReply,offlineCoachingBrainReply,
   classifyCoachingResistance,coachingBrainBoundary,
+  normalizeCoachingBrainProbeInput,isCoachingBrainProbeReply,
 } from '../lib/personal-coaching/coaching-brain.mjs'
 import {analyzeCoachingProtocol,coachingProtocolPrompt} from '../lib/personal-coaching/coaching-session-protocol.mjs'
+import {understandCoachingTurn,coachingTurnPrompt} from '../lib/personal-coaching/coaching-turn-understanding.mjs'
 
 const uuid='e620286d-62ac-4efb-87e3-e58baa2c71b5'
 const req=(overrides={})=>({sessionId:uuid,locale:'en',consent:true,
@@ -347,9 +349,197 @@ test('production Coaching Brain uses ZDR-only free routing and explains offline 
   assert.match(service,/HH_COACHING_BRAIN_ENABLED/)
   assert.match(service,/offlineReason/)
   assert.match(service,/privacy_model_unavailable/)
-  assert.match(gateway,/zdrOnly\?\{zdr:true\}/)
+  assert.match(gateway,/zdrOnly\?\{zdr:true,data_collection:'deny'\}/)
   assert.match(gateway,/CATALOG\+'&zdr=true'/)
   assert.match(panel,/offlineReasons/)
   assert.match(panel,/turn\.offlineReason/)
   assert.doesNotMatch(service,/console\.(?:log|warn|error)/)
+})
+
+
+test('AI probe only accepts a session pointer and never forwards private conversation text',()=>{
+  assert.deepEqual(normalizeCoachingBrainProbeInput({sessionId:uuid}),{sessionId:uuid})
+  for(const bad of [{},{sessionId:'bad'},{sessionId:uuid,message:'secret'},{sessionId:uuid,turns:[]}])
+    assert.throws(()=>normalizeCoachingBrainProbeInput(bad),/COACHING_BRAIN_PROBE_INVALID/)
+  assert.equal(isCoachingBrainProbeReply('OK'),true)
+  assert.equal(isCoachingBrainProbeReply('OK.'),true)
+  assert.equal(isCoachingBrainProbeReply('private transcript'),false)
+  const route=source('app/api/app/[...path]/route.js')
+  const service=source('lib/app/coaching-brain.js')
+  const panel=source('components/coaching-brain-panel.jsx')
+  assert.match(route,/joined === 'personal-coaching\/brain-probe'/)
+  assert.match(route,/coaching-brain-probe',actor:actor\.id\},3,3600/)
+  assert.match(service,/personalCoachingBrainProbe\(config,actor,body/)
+  assert.match(service,/current\.id!==input\.sessionId/)
+  assert.match(service,/privacyMode:'zdr'/)
+  assert.match(service,/isCoachingBrainProbeReply\(reply\.text\)/)
+  assert.doesNotMatch(service,/console\.(?:log|warn|error)/)
+  assert.match(panel,/data-coaching-brain-probe/)
+  assert.match(panel,/personal-coaching\/brain-probe/)
+  assert.match(panel,/probeCheck:'Проверить AI без личного текста'/)
+})
+
+
+// Coaching response intelligence v3: the agent must understand how a reply
+// relates to the preceding question, not simply count messages or match topics.
+test('short coaching replies are accepted from the actual form/API schema',()=>{
+  for (const message of ['да','no','sí','1','2','ok','нет','I do not know']) {
+    const v=normalizeCoachingBrainInput(req({message}))
+    assert.equal(v.message,message)
+  }
+  assert.throws(()=>normalizeCoachingBrainInput(req({message:'  '})),/COACHING_BRAIN_INPUT_INVALID/)
+  const panel=source('components/coaching-brain-panel.jsx')
+  assert.match(panel,/if\(message\.length<1\)/)
+  assert.match(panel,/if\(text\.length<3\)/)
+  assert.match(panel,/decisionMissing/)
+})
+
+test('reply-intent understanding is multilingual and grounded in the current utterance',()=>{
+  const cases=[
+    ['ru','да','affirmation'],['en','yes','affirmation'],['es','sí','affirmation'],
+    ['ru','нет','negation'],['en','not really','negation'],['es','no','negation'],
+    ['ru','не знаю','uncertainty'],['en',"I don't know",'uncertainty'],['es','no sé','uncertainty'],
+    ['ru','может быть','hesitation'],['en','perhaps','hesitation'],['es','quizás','hesitation'],
+    ['ru','второй','option_reference'],['en','2','option_reference'],['es','la segunda','option_reference'],
+    ['ru','спасибо','gratitude'],['en','thanks','gratitude'],['es','gracias','gratitude'],
+    ['ru','Нет, я имел в виду другое','correction'],['en','No, I meant workload','correction'],
+    ['es','No era eso','correction'],['ru','Давай сменим тему','topic_shift'],
+    ['en',"Let's talk about something else",'topic_shift'],['es','Cambiemos de tema','topic_shift'],
+    ['ru','Не понимаю вопрос','clarification_request'],
+    ['en','Could you rephrase that?','clarification_request'],
+    ['es','No entiendo la pregunta','clarification_request'],
+    ['ru','Что ты предлагаешь?','question_to_coach'],
+    ['en','What do you recommend?','question_to_coach'],
+    ['es','¿Qué sugieres?','question_to_coach'],
+    ['ru','Мне грустно','emotion_shared'],
+    ['en','I feel sad','emotion_shared'],
+    ['es','Me siento triste','emotion_shared'],
+    ['en','My manager changed the schedule again','substantive_reply'],
+  ]
+  for(const [locale,message,expected] of cases) {
+    const v=understandCoachingTurn({locale,message,turns:[
+      {role:'assistant',content:'What part of this would you like to explore?'},
+    ]})
+    assert.equal(v.act,expected,locale+' '+message)
+    assert.equal(v.hasPriorCoachQuestion,true)
+  }
+  const isolated=understandCoachingTurn({locale:'ru',message:'да',turns:[]})
+  assert.equal(isolated.needsClarification,true)
+  assert.equal(isolated.previousQuestion,'')
+})
+
+test('stage and method respect topic resets and corrections instead of stale framing',()=>{
+  const turns=[
+    {role:'user',content:'I am afraid of changing jobs'},
+    {role:'assistant',content:'What worries you most?'},
+  ]
+  const corrected=normalizeCoachingBrainInput(req({turns,message:'No, I meant workload'}))
+  assert.deepEqual(coachingBrainStageDecision(corrected),{
+    stage:'clarify',reasonCode:'client_repair_or_topic_reset',
+  })
+  const newTopic=normalizeCoachingBrainInput(req({
+    turns,message:"Let's talk about something else — my priorities."
+  }))
+  assert.equal(coachingBrainStage(newTopic),'clarify')
+  assert.equal(classifyCoachingResistance(newTopic).type,'none')
+  const resources=normalizeCoachingBrainInput(req({
+    turns,message:'No, I am not afraid; I have no time'
+  }))
+  assert.equal(classifyCoachingResistance(resources).type,'resource_gap')
+  assert.equal(selectCoachingBrainMethod(resources),'oskar')
+  const short=normalizeCoachingBrainInput(req({turns,message:'yes'}))
+  assert.equal(coachingBrainStageDecision(short).reasonCode,'contextual_short_answer')
+  assert.equal(classifyCoachingResistance(short).type,'none')
+})
+
+test('model guidance uses previous question without inventing meaning for short replies',()=>{
+  const x=normalizeCoachingBrainInput(req({
+    locale:'ru',message:'нет',turns:[
+      {role:'user',content:'Я хочу разобраться с рабочим графиком'},
+      {role:'assistant',content:'Вы хотите принять решение сегодня?'},
+    ]
+  }))
+  const prompt=coachingBrainMessages(x,'grow','explore')
+  assert.match(prompt[1].content,/CURRENT-TURN RESPONSE UNDERSTANDING: negation/)
+  assert.match(prompt[1].content,/Avoid inventing meaning for yes, no, maybe/)
+  assert.match(prompt[1].content,/Клиент: «Нет»/)
+  assert.match(prompt[0].content,/answer or clarify their request BEFORE/)
+  const fallback=offlineCoachingBrainReply(x,'grow','explore')
+  assert.match(fallback.question,/не подходит/)
+  assert.equal(fallback.planSuggestion,'')
+})
+
+test('short confirmations and corrections never turn old quotations into new commitments',()=>{
+  const prior=[
+    {role:'user',content:'I could call tomorrow'},
+    {role:'assistant',content:'What would you want to say?'},
+  ]
+  const no=normalizeCoachingBrainInput(req({message:'yes',turns:prior}))
+  const reply={reflection:'You are confirming that you want to keep exploring this.',
+    question:'What part of the idea matters to you?',
+    planSuggestion:'Call tomorrow',evidenceQuote:'I could call tomorrow'}
+  assert.equal(parseCoachingBrainReply(JSON.stringify(reply),no,'grow','explore').planSuggestion,'')
+  const correction=normalizeCoachingBrainInput(req({message:'No, I meant something else',turns:prior}))
+  assert.equal(parseCoachingBrainReply(JSON.stringify(reply),correction,'grow','clarify').planSuggestion,'')
+  const dup=normalizeCoachingBrainInput(req({message:'I want to think about it',turns:prior}))
+  assert.throws(()=>parseCoachingBrainReply(JSON.stringify({...reply,
+    question:'What would you want to say?'}),dup,'grow','explore'),/COACHING_BRAIN_RESPONSE_INVALID/)
+})
+
+test('the 20-minute protocol does not manufacture readiness from negated or split hints',()=>{
+  const prior=[{role:'user',content:'I want to start; yesterday I froze because I was afraid. One option is to write an email.'}]
+  for(const message of ['I will not send the email tomorrow','Maybe I will send the email tomorrow','yes']){
+    const result=analyzeCoachingProtocol({locale:'en',message,turns:prior})
+    assert.notEqual(result.phase,'review',message)
+    assert.equal(result.completion.action,false,message)
+  }
+  const real=analyzeCoachingProtocol({locale:'en',message:'I will send the email tomorrow',turns:prior})
+  assert.equal(real.phase,'review')
+  assert.equal(real.completion.action,true)
+  assert.equal(real.nextBestAction.question.includes(' and '),false)
+  assert.equal(coachingBrainBoundary({locale:'en',message:"I can't stop worrying about work",turns:[]}),null)
+})
+
+
+test('affirming a clear pause/end invitation respects a client boundary without invoking AI',()=>{
+  for(const [locale,question,message] of [
+    ['en','Would you like to end this conversation?','yes'],
+    ['ru','Хотите закончить разговор?','да'],
+    ['es','¿Quieres terminar nuestra conversación aquí?','sí'],
+  ]){
+    const input=normalizeCoachingBrainInput(req({
+      locale,message,turns:[{role:'assistant',content:question}]
+    }))
+    assert.equal(understandCoachingTurn(input).confirmedStop,true)
+    const result=coachingBrainBoundary(input)
+    assert.equal(result.mode,'boundary')
+    assert.equal(result.stage,'pause')
+    assert.equal(result.planSuggestion,'')
+  }
+  const ambiguous=normalizeCoachingBrainInput(req({
+    message:'yes',turns:[{role:'assistant',content:'Would you like to pause or continue?'}]
+  }))
+  assert.equal(understandCoachingTurn(ambiguous).confirmedStop,false)
+  assert.equal(coachingBrainBoundary(ambiguous),null)
+})
+
+
+test('offline coaching notices explicitly named constraints instead of asking again',()=>{
+  for (const [locale,message,needle] of [
+    ['en','I have no time','schedule'],
+    ['ru','У меня нет денег','затрат'],
+    ['es','No tengo tiempo','agenda'],
+  ]){
+    const input=normalizeCoachingBrainInput(req({locale,message}))
+    const signal=classifyCoachingResistance(input)
+    assert.equal(signal.type,'resource_gap')
+    const result=offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),'explore',signal)
+    assert.match(result.question,new RegExp(needle,'iu'))
+    assert.equal((result.question.match(/[?？]/gu)||[]).length,1)
+    assert.equal(result.planSuggestion,'')
+  }
+  const fallback=offlineCoachingBrainReply(
+    normalizeCoachingBrainInput(req({message:'I am afraid of being criticized'})),
+    'motivational_interviewing','explore')
+  assert.equal((fallback.question.match(/[?？]/gu)||[]).length,1)
 })

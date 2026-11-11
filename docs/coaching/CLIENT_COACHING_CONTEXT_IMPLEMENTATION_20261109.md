@@ -23,3 +23,8 @@ Run `node --test tests/personal-coaching-client-context.test.mjs` and `npm run t
 ## Existing Life Plan source integration (2026-11-09 follow-up)
 
 The private development-goals endpoint is the existing owner-authored source for the four Life Plan directional targets. The next-session review now reads it through the authenticated `development-goals` API, and only when the record has a saved revision (revision >= 1) projects the four named sector targets into `life_plan_changes`. Unsaved default 50/100 values are ignored. Numeric test measurements, raw test answers, axis-level diagnostic details and check-in payloads are not included. The client reviews/edits these target labels alongside previous session notes before they are attached to the new encrypted coaching session.
+
+
+## Completed-session report references (2026-11-09 follow-up)
+
+The continuity summary includes a bounded reference to each completed session's downloadable report (session UUID and date label). It does not duplicate PDF content or answers. The reference remains client-visible/editable and stays in the same encrypted coaching envelope. The future model projection includes only the client-confirmed text and never the internal session UUID.

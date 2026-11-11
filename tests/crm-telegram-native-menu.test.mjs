@@ -94,6 +94,12 @@ test('first Home reply may bootstrap native Menu once per hour without blocking 
  assert.ok(route.includes("HH_CRM_TG_COMMAND_MENU_SETUP_FAILED"));
  assert.ok(route.includes('after(async()=>'));
  // It must not mutate webhooks and must not interfere with existing customer /stop.
- assert.ok(route.includes('const intake=companion.reviewRequested'));
+ assert.ok(route.includes('const diagnosticEvent=companion.reviewRequested'));
+ assert.ok(route.includes("rawText:'/start hhreview_'+companion.reviewLocale,inlineAction:null"));
+ assert.ok(route.includes('const aiIntake=await processTelegramAiV3(diagnosticEvent,config)'));
+ assert.ok(route.includes('const intake=await processTelegramDiagnostic(diagnosticEvent,config)'));
+ assert.ok(route.indexOf('const aiIntake=await processTelegramAiV3') <
+   route.indexOf('const intake=await processTelegramDiagnostic'),
+   'consented V3 is handled first; legacy diagnostics remain the next handler');
  assert.ok(route.includes('const video=await receiveOwnerTelegramVideoWebhook'));
 });

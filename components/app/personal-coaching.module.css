@@ -660,3 +660,15 @@
 }
 @media(max-width:370px){.root .private{padding:6px 8px;font-size:10px}.root .brand{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.root .progressTrack span{transition:none}}
+
+/* Replace, rather than stack on, the approved sunrise banner in avatar-enabled lessons. */
+.root .session[data-coaching-avatar-ready] .questionArea::before{display:none}
+
+/* iPhone Safari: actual visual viewport height and keyboard offset control the fixed coaching shell.
+   JS cleans the properties when the private session unmounts. No client answers are stored. */
+.root{
+  top:var(--coaching-viewport-top,0px);
+  bottom:auto;
+  height:var(--coaching-viewport-height,100dvh);
+  max-height:var(--coaching-viewport-height,100dvh);
+}

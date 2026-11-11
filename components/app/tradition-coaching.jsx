@@ -9,6 +9,7 @@ import {traditionStages,traditionStageGuide,traditionStageImage,traditionStageSo
 import {coachingReportDate,downloadCoachingSessionPdf} from '@/lib/personal-coaching/session-pdf'
 import {coachingQuickChoicesAllowed,coachingConversationTurn} from '@/lib/personal-coaching/gentle-dialogue'
 import CoachingQuestionVoice from './coaching-question-voice'
+import {useCoachingVisualViewport} from './use-coaching-visual-viewport'
 import TraditionCoachingAudio from './tradition-coaching-audio'
 import CoachingChatThread from '@/components/coaching-chat-thread'
 import {CoachingSessionIntroduction,CoachingSessionTopic} from '@/components/coaching-session-onboarding'
@@ -87,7 +88,8 @@ export default function TraditionCoaching({locale='en',accountId,template}){
  const [index,setIndex]=useState(0),[choice,setChoice]=useState(''),[note,setNote]=useState('')
  const [entryStep,setEntryStep]=useState('intro'),[clientTopic,setClientTopic]=useState(''),[topicAdultConfirmed,setTopicAdultConfirmed]=useState(false),[restartRequested,setRestartRequested]=useState(false)
  const [checkin,setCheckin]=useState('')
- const busyRef=useRef(false),heading=useRef(null)
+ const busyRef=useRef(false),heading=useRef(null),viewportRef=useRef(null)
+ useCoachingVisualViewport(viewportRef)
  const course=data?.course,session=course?.current
  const questions=data?.questions||[]
  const question=questions[index]
@@ -219,7 +221,7 @@ export default function TraditionCoaching({locale='en',accountId,template}){
   }catch{setError(t.pdfError)}
  }
  if(!def)return null
- return <main className={base.root} data-tradition-coaching={def.slug} data-coaching-template={template} lang={lang}>
+ return <main ref={viewportRef} className={base.root} data-tradition-coaching={def.slug} data-coaching-template={template} lang={lang}>
   <div className={base.scenery} aria-hidden="true"/>
   <div className={base.layout}>
    <header className={base.header}>
