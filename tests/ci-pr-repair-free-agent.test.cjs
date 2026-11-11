@@ -1,5 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {
  MODEL,safeSourcePath,sourceScope,validateAgentAcl,extractTextEvents,
  validatePatch,promptFor,safeDiagnostic,isolatedEnvironment,verifyFreeModelMetadata,verifyFreeModelPrice,
@@ -459,4 +460,85 @@ test('JSON proposal never accepts fuzzy old content, multiple files or privilege
   ()=>source+source),null);
  assert.equal(exactJsonSingleLinePatch(JSON.stringify(base),scope,
   ()=>'no newline'),null);
+});
+
+
+test('ESLint severity-2 targeting is exact and refuses foreign, ambiguous, or warning-only evidence',()=>{
+ const {findEslintFailureTarget}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'hh-eslint-scope-'));
+ try{
+  fs.mkdirSync(path.join(root,'components'),{recursive:true});
+  fs.writeFileSync(path.join(root,'components/public-card.tsx'),'const thing = broken;\n');
+  const filename=path.join(root,'components/public-card.tsx');
+  const row={filePath:filename,errorCount:1,messages:[{
+   ruleId:'@typescript-eslint/no-unsafe-assignment',severity:2,
+   message:'unsafe',line:1,column:15}]};
+  const allowed=['components/public-card.tsx','components/other.tsx'];
+  assert.deepEqual(findEslintFailureTarget(JSON.stringify([row]),allowed,root),{
+   file:'components/public-card.tsx',line:1,column:15,
+   code:'@typescript-eslint/no-unsafe-assignment',source:'eslint_diagnostic'});
+  for(const invalid of [
+    {row:{...row,filePath:path.join(root,'../escape.js')},allow:allowed},
+    {row:{...row,filePath:filename},allow:['components/other.tsx']},
+    {row:{...row,messages:[{...row.messages[0],severity:1}]},allow:allowed},
+    {row:{...row,messages:[{...row.messages[0],line:0}]},allow:allowed},
+    {row:{...row,messages:[{...row.messages[0],ruleId:null}]},allow:allowed},
+    {row:{...row,messages:[{...row.messages[0],column:6000}]},allow:allowed}
+  ])assert.equal(findEslintFailureTarget(JSON.stringify([invalid.row]),invalid.allow,root),null);
+  assert.equal(findEslintFailureTarget('not-json',allowed,root),null);
+  assert.equal(findEslintFailureTarget(JSON.stringify([row,{
+   ...row,filePath:path.join(root,'components/other.tsx')}]),allowed,root),null,
+   'more than one error source cannot authorize a guessed target');
+  assert.equal(findEslintFailureTarget(JSON.stringify([{
+   ...row,filePath:path.join(root,'components/other.tsx'),errorCount:0,messages:[]
+  },row]),allowed,root)?.file,'components/public-card.tsx');
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('retry prompt has one verified original source line and a small bounded context',()=>{
+ const {boundedTruncationRetryPrompt}=require('../scripts/ci-pr-repair-free-agent.cjs');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'hh-free-retry-'));
+ const file='components/public-card.tsx';
+ try{
+  fs.mkdirSync(path.join(root,'components'),{recursive:true});
+  const source='const first = true;\n  const value = missingName;\nconst final = 5;\n';
+  fs.writeFileSync(path.join(root,file),source);
+  const scope={sha:SHA,files:[file],evidence:{
+   source:'typescript_compiler',line:2,code:'TS2304'}};
+  const prompt=boundedTruncationRetryPrompt(scope,root);
+  assert.equal(typeof prompt,'string');
+  assert.ok(prompt.length<8500);
+  assert.match(prompt,/Second and FINAL zero-price/);
+  assert.match(prompt,/Only source file: components\/public-card.tsx/);
+  assert.ok(prompt.includes(JSON.stringify('  const value = missingName;')));
+  assert.match(prompt,/TS2304 at line 2/);
+  assert.match(prompt,/No reasoning, prose, markdown, or multiple edits/);
+  assert.match(boundedTruncationRetryPrompt({...scope,evidence:{
+   source:'eslint_diagnostic',line:2,code:'no-undef'}},root),/eslint_diagnostic/);
+  for(const invalid of [
+   {...scope,files:[file,'components/other.tsx']},
+   {...scope,evidence:{source:'untrusted_model',line:2}},
+   {...scope,evidence:{source:'typescript_compiler',line:99}},
+   {...scope,evidence:{source:'typescript_compiler',line:0}},
+   {...scope,files:['app/api/private.tsx']}
+  ])assert.equal(boundedTruncationRetryPrompt(invalid,root),null);
+  fs.writeFileSync(path.join(root,file),'  const value = missingName;');
+  assert.equal(boundedTruncationRetryPrompt(scope,root),null,'no trailing newline is not a safe anchor');
+  fs.writeFileSync(path.join(root,file),'x'.repeat(2000)+'\n');
+  assert.equal(boundedTruncationRetryPrompt({...scope,evidence:{
+   source:'eslint_diagnostic',line:1}},root),null,'oversized original line blocked');
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('free code repair never blindly retries quota, provider errors, or unverified source',()=>{
+ const text=fs.readFileSync(require.resolve('../scripts/ci-pr-repair-free-agent.cjs'),'utf8');
+ assert.match(text,/if\(!covered\.size\)throw Error\('FREE_AI_NO_BOUNDED_TEST_COVERAGE'\)/);
+ assert.match(text,/findEslintFailureTarget\(lint\.stdout,scope\.files,root\)/);
+ assert.match(text,/FREE_AI_OPENROUTER_PATCH_RESPONSE_TRUNCATED/);
+ assert.match(text,/audit\.attempt_count===1\?boundedTruncationRetryPrompt/);
+ assert.match(text,/if\(!focused\)throw error/);
+ assert.match(text,/audit\.attempt_count=retry\?2:1/);
+ assert.match(text,/audit\.retry_prompt_receipt=promptReceipt\(/);
+ assert.match(text,/reply=await invoke\(focused,true\)/);
+ assert.doesNotMatch(text,/paid.*fallback\s*=\s*true/i);
 });
