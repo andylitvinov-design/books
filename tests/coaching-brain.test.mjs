@@ -6,6 +6,7 @@ import {
   selectCoachingBrainMethod,coachingBrainStage,coachingBrainStageDecision,coachingBrainMessages,
   parseCoachingBrainReply,offlineCoachingBrainReply,
   classifyCoachingResistance,coachingBrainBoundary,
+  normalizeCoachingBrainProbeInput,isCoachingBrainProbeReply,
 } from '../lib/personal-coaching/coaching-brain.mjs'
 import {analyzeCoachingProtocol,coachingProtocolPrompt} from '../lib/personal-coaching/coaching-session-protocol.mjs'
 
@@ -347,9 +348,32 @@ test('production Coaching Brain uses ZDR-only free routing and explains offline 
   assert.match(service,/HH_COACHING_BRAIN_ENABLED/)
   assert.match(service,/offlineReason/)
   assert.match(service,/privacy_model_unavailable/)
-  assert.match(gateway,/zdrOnly\?\{zdr:true\}/)
+  assert.match(gateway,/zdrOnly\?\{zdr:true,data_collection:'deny'\}/)
   assert.match(gateway,/CATALOG\+'&zdr=true'/)
   assert.match(panel,/offlineReasons/)
   assert.match(panel,/turn\.offlineReason/)
   assert.doesNotMatch(service,/console\.(?:log|warn|error)/)
+})
+
+
+test('AI probe only accepts a session pointer and never forwards private conversation text',()=>{
+  assert.deepEqual(normalizeCoachingBrainProbeInput({sessionId:uuid}),{sessionId:uuid})
+  for(const bad of [{},{sessionId:'bad'},{sessionId:uuid,message:'secret'},{sessionId:uuid,turns:[]}])
+    assert.throws(()=>normalizeCoachingBrainProbeInput(bad),/COACHING_BRAIN_PROBE_INVALID/)
+  assert.equal(isCoachingBrainProbeReply('OK'),true)
+  assert.equal(isCoachingBrainProbeReply('OK.'),true)
+  assert.equal(isCoachingBrainProbeReply('private transcript'),false)
+  const route=source('app/api/app/[...path]/route.js')
+  const service=source('lib/app/coaching-brain.js')
+  const panel=source('components/coaching-brain-panel.jsx')
+  assert.match(route,/joined === 'personal-coaching\/brain-probe'/)
+  assert.match(route,/coaching-brain-probe',actor:actor\.id\},3,3600/)
+  assert.match(service,/personalCoachingBrainProbe\(config,actor,body/)
+  assert.match(service,/current\.id!==input\.sessionId/)
+  assert.match(service,/privacyMode:'zdr'/)
+  assert.match(service,/isCoachingBrainProbeReply\(reply\.text\)/)
+  assert.doesNotMatch(service,/console\.(?:log|warn|error)/)
+  assert.match(panel,/data-coaching-brain-probe/)
+  assert.match(panel,/personal-coaching\/brain-probe/)
+  assert.match(panel,/probeCheck:'Проверить AI без личного текста'/)
 })

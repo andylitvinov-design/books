@@ -17,6 +17,7 @@ const copy={
     suggestion:'Возможный следующий шаг (предложение, не решение)',evidence:'Основание — ваши слова',
     decision:'Мой следующий шаг (проверьте и исправьте)',save:'Подтвердить и сохранить шаг',
     saving:'Сохраняем…',saved:'Подтверждённый шаг сохранён в личной сессии',
+    probeCheck:'Проверить AI без личного текста',probeChecking:'Проверка…',probeVerified:'AI ответил: ZDR-маршрут, $0',
     error:'Не удалось получить ответ. Ваш текст остаётся здесь.',saveError:'Не удалось сохранить шаг. Проверьте сессию и повторите.',
     missing:'Напишите хотя бы три символа.',revoke:'Согласие действует только в этой вкладке. Снимите отметку, чтобы прекратить отправку.',confidential:'Не вводите пароли, ключи доступа и номера документов.',
   },
@@ -31,6 +32,7 @@ const copy={
     suggestion:'Possible next step (suggestion, not a decision)',evidence:'Based on your words',
     decision:'My next step (review and edit)',save:'Confirm and save this step',
     saving:'Saving…',saved:'Your confirmed step was saved in your private session',
+    probeCheck:'Test AI without personal text',probeChecking:'Checking…',probeVerified:'AI responded: ZDR routing, $0',
     error:'Could not get a reply. Your text is still here.',saveError:'Could not save this step. Check your session and retry.',
     missing:'Please write at least three characters.',revoke:'Consent applies only to this page. Uncheck to stop sending.',confidential:'Do not enter passwords, API keys or document numbers.',
   },
@@ -45,6 +47,7 @@ const copy={
     suggestion:'Posible paso siguiente (sugerencia, no decisión)',evidence:'Basado en tus palabras',
     decision:'Mi siguiente paso (revisar y editar)',save:'Confirmar y guardar este paso',
     saving:'Guardando…',saved:'Tu paso confirmado se guardó en tu sesión privada',
+    probeCheck:'Probar IA sin datos personales',probeChecking:'Comprobando…',probeVerified:'La IA respondió: ruta ZDR, $0',
     error:'No se pudo responder. Tu texto permanece aquí.',saveError:'No se pudo guardar este paso. Comprueba la sesión.',
     missing:'Escribe al menos tres caracteres.',revoke:'El consentimiento se aplica solo a esta página. Desmárcalo para dejar de enviar.',confidential:'No escribas contraseñas, claves API ni números de documentos.',
   },
@@ -65,6 +68,7 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
   const dialog=useRef(null),composer=useRef(null),latest=useRef(null),pending=useRef(null)
   const [consent,setConsent]=useState(false),[turns,setTurns]=useState([])
   const [preferredMethod,setPreferredMethod]=useState('auto')
+  const [probing,setProbing]=useState(false),[probe,setProbe]=useState(null)
   const [draft,setDraft]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const [decision,setDecision]=useState(''),[saving,setSaving]=useState(false),[saved,setSaved]=useState('')
   useEffect(()=>()=>pending.current?.abort(),[])
@@ -78,9 +82,25 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
     pending.current?.abort()
     dialog.current?.close()
   }
+  async function checkAI(){
+    if(busy||probing||!accountId||!sessionId)return
+    const controller=new AbortController()
+    pending.current?.abort()
+    pending.current=controller
+    setProbing(true);setProbe(null)
+    try{
+      const result=await appFetch('personal-coaching/brain-probe',
+        {sessionId},'POST',{accountId,signal:controller.signal})
+      if(!controller.signal.aborted)setProbe(result)
+    }catch{
+      if(!controller.signal.aborted)setProbe({status:'unavailable',reason:'model_unavailable'})
+    }finally{
+      if(pending.current===controller){pending.current=null;setProbing(false)}
+    }
+  }
   async function send(event){
     event.preventDefault()
-    if(busy||!consent||!accountId||!sessionId)return
+    if(busy||probing||!consent||!accountId||!sessionId)return
     const message=draft.trim()
     if(message.length<3){setError(t.missing);return}
     const controller=new AbortController()
@@ -154,6 +174,15 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
           <div ref={latest}/>
         </div>
         <div className={styles.controls}>
+          <div className={styles.aiProbe} data-coaching-brain-probe>
+            <button type="button" disabled={busy||probing||saving} onClick={checkAI}>
+              {probing?t.probeChecking:t.probeCheck}
+            </button>
+            {probe&&<span role="status" data-coaching-probe-status={probe.status}>
+              {probe.status==='verified'?t.probeVerified:
+                offlineReasons[lang][probe.reason]||offlineReasons[lang].model_unavailable}
+            </span>}
+          </div>
           <label className={styles.methodChoice} htmlFor="hh-brain-method">
             <span>{t.methodChoice}</span>
             <select id="hh-brain-method" data-coaching-method-override value={preferredMethod}
@@ -178,7 +207,7 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
             <textarea ref={composer} id="hh-brain-composer" rows={2}
               maxLength={1200} value={draft} disabled={busy}
               placeholder={t.placeholder} onChange={e=>{setDraft(e.target.value);setError('')}}/>
-            <button type="submit" disabled={busy||!consent||draft.trim().length<3}
+            <button type="submit" disabled={busy||probing||!consent||draft.trim().length<3}
               className={styles.send}><Send size={17}/>{busy?t.sending:t.send}</button>
           </form>
           {error&&<p role="alert" className={styles.error}>{error}</p>}
