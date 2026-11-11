@@ -27,3 +27,20 @@ test('deduplicates and omits only rows with no numeric evidence',()=>{
     {key:'waves',label:'Waves',now:'≥4',week:'3/5'}
   ]);
 });
+
+test('wakes existing hidden KPI only when its source is empty and ready',()=>{
+  const {wakeNativeKpi}=require('./pr-dense-view.js');
+  let calls=0;
+  const source=(loaded,disabled)=>({
+    querySelector(selector){
+      if(selector==='.hh-kpi-head button')return {disabled,click(){calls++;}};
+      if(selector==='.hh-kpi-data .hh-kpi-item')return loaded?{}:null;
+      return null;
+    }
+  });
+  assert.equal(wakeNativeKpi(null),false);
+  assert.equal(wakeNativeKpi(source(true,false)),false);
+  assert.equal(wakeNativeKpi(source(false,true)),false);
+  assert.equal(wakeNativeKpi(source(false,false)),true);
+  assert.equal(calls,1);
+});
