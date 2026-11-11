@@ -141,3 +141,11 @@ test('executor prompt includes all separately requested actions, keeps product-s
  assert.match(normal,/Проект: основной Holistic House/);
  assert.ok(normal.includes(raw));
 });
+
+test('exactly seven mobile dock actions; automation stays available in header menu',()=>{
+ const nav=src('project-management-nav.js'),css=src('commander-shell.css');
+ assert.match(nav,/\['Автоматизации · Cron Jobs',paths\.automations\]/);
+ assert.doesNotMatch(nav,/\['automations','Авто'\]/);
+ assert.match(nav,/\['agents','Агенты'\],\['chats','Чат'\]/);
+ assert.match(css,/grid-template-columns:repeat\(7,minmax\(0,1fr\)\)/);
+});
