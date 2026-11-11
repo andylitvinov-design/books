@@ -9,6 +9,7 @@ import {
 } from '@/lib/coaching/persona-registry.mjs'
 import styles from './my-coach-catalog.module.css'
 import heroStyles from './my-coach-mira-landing.module.css'
+import MyCoachExpressStart from './my-coach-express-start'
 
 const words = {
   en: {
@@ -271,10 +272,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <div className={heroStyles.stageActions}>
             <button type="button" className={heroStyles.circleAction} onClick={() => setIntroExpanded(v => !v)}
               aria-label={hw.preview} aria-expanded={introExpanded}>▶</button>
-            <Link className={heroStyles.talkButton} href={startHref} prefetch={false}
-              data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></Link>
-            <Link className={heroStyles.circleAction} href={startHref} prefetch={false}
-              aria-label={t.start}><ArrowRight size={21} aria-hidden="true" /></Link>
+            {selected.id === 'mira'
+              ? <MyCoachExpressStart locale={lang} embedded data-my-coach-hero-start={selected.id} />
+              : <Link className={heroStyles.talkButton} href={startHref} prefetch={false}
+                  data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></Link>}
+            {selected.id !== 'mira' && <Link className={heroStyles.circleAction} href={startHref} prefetch={false}
+              aria-label={t.start}><ArrowRight size={21} aria-hidden="true" /></Link>}
           </div>
           <div className={heroStyles.stageTopics}>
             <span>{hw.topic}</span>
