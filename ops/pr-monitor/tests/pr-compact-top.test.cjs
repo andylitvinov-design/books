@@ -34,6 +34,19 @@ test('mounts once, safely handles asynchronous scripts and narrow mobile widths'
   assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:359px\)/);
   assert.match(css, /\.hh-pr-speed-description \{display:none!important\}/);
-  assert.match(boot, /pr-compact-top\.js\?v=20261111-top-v1/);
-  assert.match(boot, /pr-compact-top\.css\?v=20261111-top-v1/);
+  assert.match(boot, /pr-compact-top\.js\?v=20261111-graphs-top-v2/);
+  assert.match(boot, /pr-compact-top\.css\?v=20261111-graphs-top-v2/);
+});
+
+test('both original PR graphs are rehomed beneath KPI without duplicate fetches', () => {
+  assert.match(script, /getElementById\('hh-pr-trends'\)/);
+  assert.match(script, /getElementById\('hh-merge-velocity'\)/);
+  assert.match(script, /charts\.appendChild\(activity\)/);
+  assert.match(script, /charts\.appendChild\(latency\)/);
+  assert.match(script, /main\.insertBefore\(charts, section\.nextSibling\)/);
+  assert.match(script, /graphsWatcher\.disconnect\(\)/);
+  assert.match(css, /#hh-pr-top-graphs/);
+  assert.match(css, /@media\(max-width:850px\)/);
+  assert.match(boot, /pr-merge-velocity-ui\.js\?v=20261111-restored-v1/);
+  assert.doesNotMatch(script, /fetch\(|setInterval\(|setTimeout\(|workflow_dispatch/);
 });
