@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import ts from "typescript";
+import { runInNewContext } from "node:vm";
+import {curatedAudioTracks} from "../lib/mandala/curated-audio-recommendations.mjs";
 
 const read = path => readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const studio=read("components/mandala-free-video-studio.tsx");
@@ -16,12 +18,14 @@ test("audio-only mobile list: no fake video images, real readable controls and f
   const section=studio.slice(start,end);
   assert.doesNotMatch(section,/<video\b|<img\b/,"this block selects audio, not video scenes");
   for(const hook of ["data-video-audio-context","data-video-audio-kind","data-video-audio-mood",
-    "data-video-audio-pace","data-video-audio-length","data-video-audio-search",
+    "data-video-audio-pace","data-video-audio-search",
     "data-video-audio-sort","data-video-audio-more","data-video-music=",
     "data-video-audio-player","data-video-audio-upload","data-video-audio-mic",
     "data-video-audio-attach","data-video-audio-attached"]){
     assert.ok(section.includes(hook),hook);
   }
+  assert.doesNotMatch(section,/data-video-audio-length/,"Duration belongs to Montage Settings");
+  assert.match(studio,/data-video-montage-preference="duration"/);
   assert.match(section,/visibleAudio\.map\(/);
   assert.match(section,/AudioLines/);
   assert.match(section,/audioUi\.pick/);
@@ -34,20 +38,29 @@ test("audio-only mobile list: no fake video images, real readable controls and f
   assert.doesNotMatch(section,/<video\b|<img\b|youtube|autoplay/);
 });
 
-test("choice is a preview, attach is explicit and MediaRecorder exports ONLY attached audio",()=>{
+test("choice is preview; only attached voice plus explicitly selected original music can reach MediaRecorder",()=>{
   assert.match(studio,/type AttachedAudio = \{kind:"preset"/);
   assert.match(studio,/const selectedAudioKey=uploadedAudio/);
   assert.match(studio,/const attachedAudioKey=attachedAudio===null/);
   assert.match(studio,/const audioNeedsAttachment=selectedAudioKey!==attachedAudioKey/);
-  assert.match(studio,/attachedAudioKey,attachedAudio\?soundVolume:0,caption/);
+  assert.match(studio,/attachedAudioKey,attachedAudio\?soundVolume:0,[\s\S]*?audioStartSeconds,timelineTextClips,caption/);
   assert.match(studio,/!audioNeedsAttachment &&/);
+  assert.match(studio,/job\.musicSession\?\.begin\?\.\(\)/,
+    "native sound begins only when the recorder starts, not during video preflight");
   assert.match(studio,/function attachSelectedAudio\(\)/);
-  assert.match(studio,/setAttachedAudio\(\{kind:"file",id:uploadedAudio.url,file:uploadedAudio.file\}\)/);
+  assert.match(studio,/setAttachedAudio\(\{kind:"file",id:uploadedAudio.url,file:uploadedAudio.file,/);
+  assert.match(studio,/my-voice\\./);
+  assert.match(studio,/nonLoop:true as const/);
   assert.match(studio,/setAttachedAudio\(\{kind:"preset",id:music\}\)/);
   assert.match(studio,/setAttachedAudio\(null\)/);
   assert.match(studio,/musicSession = attachedAudio\?\.kind==="file"/);
-  assert.match(studio,/startUploadedAudio\(attachedAudio.file,soundVolume\)/);
-  assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume\)/);
+  assert.match(studio,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(studio,/startPresetAudio\(attachedAudio.id,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(studio,/musicBed\.id!=="none"\s*\?await startLayeredVideoAudio\(/);
+  assert.match(studio,/const activeBed=attached\.kind==="file"&&audioRights&&musicBed\.id!=="none"/);
+  assert.match(studio,/musicSession = attachedAudio\?\.kind==="file"/);
+  assert.match(studio,/if\(musicBed\.id!=="none"\)files\.push\(/);
+  assert.match(studio,/startLayeredVideoAudio\(\s*attachedAudio\.file,musicBed\.id,soundVolume,musicBed\.volumePercent/);
   assert.match(studio,/if\(attachedAudio && !musicSession\)/);
   assert.match(studio,/if\(audioNeedsAttachment\)\{[\s\S]*?audioUi\.needsAttach/);
   for(const fragment of [
@@ -87,13 +100,20 @@ test("EN/RU/ES visible attach, select, upload and recording copy is complete",()
     "Sound is attached","Дорожка прикреплена","Audio adjunto"]){
     assert.ok(studio.includes(phrase),phrase);
   }
-  assert.doesNotMatch(studio+source,/\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
+  // Permit only two safe same-origin music GETs (existing gallery mixer and
+  // the explicitly selected original bed). Never allow arbitrary network IO.
+  const firstPartyWav=/fetch\(presetAudioUrl\(id\),\{cache:"force-cache"\}\)/g;
+  const originalBedWav=/fetch\(presetAudioUrl\(bedId\),\{credentials:"same-origin",cache:"force-cache"\}\)/g;
+  assert.equal((source.match(firstPartyWav)||[]).length,1,"one verified gallery music GET");
+  assert.equal((source.match(originalBedWav)||[]).length,1,"one verified optional original-music GET");
+  assert.doesNotMatch((studio+source).replace(firstPartyWav,"").replace(originalBedWav,""),
+    /\bfetch\s*\(|XMLHttpRequest|FormData|sendBeacon|api\.kling|heygen/i);
 });
 
-test("sound-only covers reuse 13 real local first-party illustration files",()=>{
+test("39 soundtrack covers reuse approved local first-party illustration files",()=>{
   const covers=[...styles.matchAll(/\.audioTrackRow\[data-audio-id="([a-z-]+)"\] \.audioTileGlyph\{background-image:url\('([^']+)'\)\}/g)];
-  assert.equal(covers.length,13,"all thirteen site audio sounds have honest illustrative cover art");
-  assert.equal(new Set(covers.map(x=>x[1])).size,13);
+  assert.equal(covers.length,39,"all 39 site audio sounds have explicit illustrative cover art");
+  assert.ok(new Set(covers.map(x=>x[1])).size>=13,"retain diverse existing cover scenes");
   for(const [,id,url] of covers){
     assert.match(url,/^\/videos\/holistic-house\/film-collection-v2\/[a-z-]+\.jpg$/);
     assert.ok(existsSync(new URL("../public"+url,import.meta.url)),id+" first-party cover must exist");
@@ -113,7 +133,13 @@ test("approved compact audio mock has one real player/microphone and no duplicat
   const quickEnd=studio.indexOf('data-video-quick-section="6"',quickStart);
   const fullStart=studio.indexOf('<section className={videoStyles.audioSection}');
   const fullEnd=studio.indexOf('<section className={videoStyles.hypnosisSection}',fullStart);
-  assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>quickEnd && fullEnd>fullStart);
+  assert.ok(quickStart>=0 && quickEnd>quickStart && fullStart>=0 && fullEnd>fullStart,
+    "the single detailed audio editor may be hoisted before JSX to serve the active workspace");
+  assert.equal((studio.match(/id="video-audio"/g)||[]).length,1);
+  assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
+  assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
+  assert.doesNotMatch(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/,
+    "only the active workspace mounts the shared native audio editor");
   const quick=studio.slice(quickStart,quickEnd);
   const full=studio.slice(fullStart,fullEnd);
   assert.doesNotMatch(quick,/<audio\b|quickAudioFilters|quickAudioPlayer|data-video-audio-mic/,
@@ -131,4 +157,148 @@ test("approved compact audio mock has one real player/microphone and no duplicat
   assert.match(styles,/\.audioSection \.audioFilterRow\{grid-template-columns:/);
   assert.match(styles,/\.audioTrackPlay\{position:absolute/);
   assert.match(styles,/\.quickAudioCompact\{display:grid/);
+});
+
+
+test("quick music checkboxes attach at most three unique first-party melodies while audition is independent",()=>{
+  assert.match(studio,/type AttachedAudio = [^\n]*kind:"presets";ids:PresetId\[\]/);
+  assert.match(studio,/data-video-quick-music-check=\{id\}/);
+  assert.match(studio,/data-video-quick-music-play=\{id\}/);
+  assert.match(studio,/onClick=\{\(\)=>playQuickTrack\(id\)\}/);
+  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(studio,/job\.musicSession\?\.begin\?\.\(\)/,"the recorder, not decoder preflight, begins scheduled audio");
+  assert.match(studio,/startMovieSound\(attachedAudio,soundVolume\)/);
+  assert.match(studio,/stopMovieSound\(\);setPreviewPlaying\(false\)/);
+  assert.equal((studio.match(/<audio\b/g)||[]).length,1,"keep exactly one visible HTML audio player");
+  assert.equal((studio.match(/data-video-audio-mic\b/g)||[]).length,1,"one recorder");
+  const ast=ts.createSourceFile("mandala.tsx",studio,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+  let handler=null;
+  const visit=node=>{
+    if(ts.isFunctionDeclaration(node) && node.name?.text==="toggleQuickMusic")handler=node;
+    ts.forEachChild(node,visit);
+  };
+  visit(ast);
+  assert.ok(handler,"exercise the actual quick-music implementation, not a duplicate mock");
+  const transpiled=ts.transpileModule(handler.getText(ast),{
+    fileName:"mandala.tsx",compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}
+  }).outputText;
+  const [first,second,third,fourth]=curatedAudioTracks.slice(0,4).map(track=>track.id);
+  assert.ok(first&&second&&third&&fourth,"four real approved recordings required");
+  let attached=null,selected="none",mutations=0,played=0;
+  const invoke=choice=>{
+    const attachedPresetIds=attached?.kind==="presets"?attached.ids:
+      attached?.kind==="preset"?[attached.id]:[];
+    runInNewContext(transpiled+";toggleQuickMusic(choice)",{
+      choice,curatedAudioTracks,attachedAudio:attached,locale:"en",attachedPresetIds,recording:false,preparing:false,micRecording:false,
+      clearUploadedAudio:()=>{},setSamplePreviewId:()=>{},setAudioAuto:()=>{},
+      setMusic:id=>{selected=id;},setAttachedAudio:next=>{attached=next;mutations++;},
+      setMusicWarning:()=>{},previewPlaying:false,startMovieSound:()=>{played++;}
+    },{timeout:1000});
+  };
+  invoke("warm-morning");
+  assert.equal(attached,null,"old synthetic IDs cannot be attached to new videos");
+  assert.equal(mutations,0);
+  invoke(first);
+  assert.equal(attached.kind,"preset");assert.equal(attached.id,first);
+  invoke(second);
+  assert.deepEqual(Array.from(attached.ids),[first,second]);
+  invoke(third);
+  assert.equal(attached.ids.length,3);
+  invoke(fourth);
+  assert.deepEqual(Array.from(attached.ids),[second,third,fourth],"FIFO bound of three");
+  invoke(third);
+  assert.deepEqual(Array.from(attached.ids),[second,fourth],"toggle off selected layer");
+  assert.equal(selected,second);
+  assert.equal(mutations,5);assert.equal(played,0,"inactive film does not autoplay");
+  // An already attached mastered voice must never be replaced by music.
+  attached={kind:"file",narration:true,file:{name:"voice.wav"},id:"blob:voice"};
+  invoke(first);
+  assert.equal(attached.kind,"file");
+  assert.equal(attached.narration,true);
+  assert.equal(mutations,5,"no audio mutation when narration is attached");
+});
+
+test("local music mixer reads at most three static site-owned WAVs and emits one export audio track",async()=>{
+  const {exports:compiled}=(()=>{
+    const result=ts.transpileModule(source,{fileName:"local-video-music.ts",
+      compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}});
+    return {exports:result.outputText};
+  })();
+  const calls=[],started=[],track={kind:"audio",stop(){this.stopped=true;}};
+  const ctx={
+    state:"suspended",currentTime:0,
+    resume(){this.state="running";return Promise.resolve();},
+    decodeAudioData:async()=>({length:16,duration:16}),
+    createMediaStreamDestination:()=>({stream:{getAudioTracks:()=>[track]}}),
+    createGain:()=>({gain:{value:0,setValueAtTime(){},cancelScheduledValues(){},setTargetAtTime(){},linearRampToValueAtTime(){}},connect(){},disconnect(){}}),
+    createBufferSource:()=>{const item={loop:false,connect(){},disconnect(){},start(){started.push(item);},stop(){}};return item;},
+    close(){this.closed=true;return Promise.resolve();}
+  };
+  const session={type:"ambient"};
+  const api={};
+  new Function("exports","window","navigator","fetch","Blob","File",compiled)(
+    api,{AudioContext:class{constructor(){return ctx;}}},{audioSession:session},
+    async(url,options)=>{calls.push({url,options});return {ok:true,arrayBuffer:async()=>new ArrayBuffer(32)};},
+    Blob,undefined
+  );
+  assert.equal(await api.startPresetMixAudio([],75),null);
+  assert.equal(await api.startPresetMixAudio(["warm-morning","warm-morning"],75),null);
+  assert.equal(await api.startPresetMixAudio(["warm-morning","wings-of-light","heart-harmony","quiet-stars"],75),null);
+  const output=await api.startPresetMixAudio(["warm-morning","wings-of-light","heart-harmony"],75);
+  assert.ok(output);assert.equal(output.track.kind,"audio");
+  assert.equal(started.length,3);
+  assert.ok(started.every(x=>x.loop));
+  assert.deepEqual(calls.map(x=>x.url),[
+    "/audio/mandala/warm-morning.wav",
+    "/audio/mandala/wings-of-light.wav",
+    "/audio/mandala/heart-harmony.wav"
+  ]);
+  assert.ok(calls.every(x=>x.options.cache==="force-cache"));
+  output.setVolume(50);output.fadeOut();output.close();
+  assert.equal(track.stopped,true);
+  assert.equal(session.type,"ambient","restore iOS audio routing");
+});
+
+
+test("quick music rail and shared native player are simultaneously mounted on Audio workspace",()=>{
+  // The old production CSS hid the quick selector exactly when the native player existed.
+  assert.doesNotMatch(styles,/\.studio\[data-active-workspace="audio"\] \.quickMusicRail/);
+  assert.match(studio,/\{activeWorkspace==="video" \? deepAudioPane : null\}/);
+  assert.match(studio,/\{activeWorkspace==="phrases" \? deepAudioPane : null\}/);
+  assert.doesNotMatch(studio,/activeWorkspace==="video"\|\|activeWorkspace==="phrases" \? deepAudioPane/,
+    "only the active workspace mounts the shared native audio editor");
+  assert.match(studio,/flushSync\(\(\)=>\{if\(activeWorkspace!=="phrases"\)\{setActiveWorkspace\("editor"\);setBasicPanelTab\("music"\);\}setSamplePreviewId\(choice\);\}\)/,
+    "playing a track synchronously mounts the one real native player in fifth Montage");
+  assert.match(studio,/const player=audioPreviewRef\.current/);
+  assert.equal((studio.match(/<audio\b/g)||[]).length,1);
+});
+
+
+test("direct audio URL reveals its existing workspace instead of hidden advanced settings",()=>{
+  const s=read("components/mandala-free-video-studio.tsx");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(s,/const reveal=\(\)=>\{/);
+  assert.match(s,/"video-audio":"editor"/);
+  assert.match(s,/setBasicPanelTab\("music"\)/,
+    "deep link shows the actual shared audio editor, not a hidden old tab");
+  assert.match(s,/setActiveWorkspace\(tab\)/);
+  assert.match(s,/window\.addEventListener\("hashchange",reveal\)/);
+  assert.match(s,/window\.removeEventListener\("hashchange",reveal\)/);
+  assert.equal((s.match(/id=\"video-audio\"/g)||[]).length,1);
+  assert.equal((s.match(/data-video-audio-mic\b/g)||[]).length,1);
+  assert.match(browser,/await deepPage\.goto\(url\+\"#video-audio\"/);
+  assert.match(browser,/deep-link\.png/);
+});
+
+test("original audio cover and separate 44px Play keep the real photograph visible",()=>{
+  const s=read("components/mandala-free-video-studio.tsx");
+  const styles=read("components/mandala-video-mobile.module.css");
+  const browser=read("scripts/verify-holistic-mandala-browser.mjs");
+  assert.match(s,/audioTileGlyph\} aria-hidden="true"\s*\/>\s*<span className=\{videoStyles\.audioPlaySlot\}/);
+  assert.match(s,/data-video-audio-play=\{track\.id\}/);
+  assert.match(styles,/\.audioPlaySlot\{display:block;min-width:44px/);
+  assert.match(styles,/\.audioSection \.audioTrackSelect\{grid-template-columns:54px 44px minmax\(0,1fr\) auto/);
+  assert.match(styles,/\.audioSection \.audioTrackPlay\{left:68px;top:50%;width:44px;height:44px/);
+  assert.match(styles,/@media\(max-width:375px\)\{[\s\S]*?\.audioSection \.audioTrackPlay\{left:59px\}/);
+  assert.match(browser,/play\.x>=cover\.x\+cover\.width\+4/);
 });

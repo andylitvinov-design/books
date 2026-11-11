@@ -71,6 +71,7 @@ test("global fallback is a short consented footer after page content and preserv
   assert.match(suppress, /body:has\(\[data-consultation-cta\]\) \[data-sitewide-capture\]/);
   assert.match(suppress, /body:has\(\[data-reiki-choice-capture\]\) \[data-sitewide-capture\]/);
   assert.match(suppress, /body:has\(\[data-free-entry-landing\]\) \[data-sitewide-capture\]/);
+  assert.match(suppress, /body:has\(\[data-personal-service\]\[data-visual-service-landing\]\) \[data-sitewide-capture\]/);
   assert.match(css, /@media\(max-width:767px\)/);
   assert.match(css, /min-height:48px/);
   assert.match(css, /:focus-visible/);
@@ -87,22 +88,21 @@ test("single-field request is explicit opt-in with real CRM commit receipt and n
   assert.match(form, /contactConsent: true/);
   assert.match(form, /if \(busy \|\| reference\) return;/);
   assert.match(form, /if \(!consent\) \{ setError\(t\.consentRequired\); return; \}/);
-  assert.match(form, /whatsappEnquiryUrl\(\{/);
-  assert.match(form, /telegramEnquiryUrlFromWhatsApp\(whatsapp\)/);
-  assert.match(form, /data-compact-channel="whatsapp"/);
-  assert.match(form, /data-compact-channel="telegram"/);
+  assert.match(form, /disabled=\{busy !== null\}/);
   assert.match(form, /parseContact\(address\)/);
   assert.match(form, /window.crypto.randomUUID\(\)/);
   assert.match(form, /fetch\("\/api\/service-enquiries"/);
   assert.match(form, /result\?\.saved !== true/);
-  assert.match(form, /committedReference = result.referenceCode/);
+  assert.match(form, /committedReference = result\.referenceCode/);
   assert.match(form, /setReference\(committedReference\)/);
   assert.match(form, /RECEIPT_SESSION_KEY/);
   assert.doesNotMatch(form, /lead_created|booking_confirmed|payment_received|gtag\(/);
   assert.match(api, /createPublicServiceEnquiry/);
   assert.match(writer, /insert into app\.public_service_enquiries/);
   assert.match(writer, /insert into app\.crm_contacts/);
-  assert.match(writer, /if \(contact && !crmEnabled\(\)\)/);
+  assert.match(writer, /if \(\(contact\|\|linkedTelegram\) && !crmEnabled\(\)\)/);
+  assert.match(writer, /linkedTelegram\.ownerId !== practitioner\.owner_id/);
+  assert.match(writer, /TELEGRAM_HANDOFF_REVOKED/);
   assert.match(css, /@media\(max-width:600px\)/);
   assert.match(css, /grid-template-columns:1fr/);
   assert.match(css, /:focus-visible/);
@@ -120,7 +120,7 @@ test("free landing's final slide is just the compact form, in all three language
   assert.match(page, /id=\{captureId\}/);
   assert.match(page, /disclaimer=\{common.limitations\}/);
   assert.ok(page.lastIndexOf("<CompactLeadCapture") > page.lastIndexOf("<PersonalTestimonials"));
-  assert.ok(page.lastIndexOf("<CompactLeadCapture") > page.lastIndexOf("<SiteVideoPlayer"));
+  assert.ok(page.lastIndexOf("<CompactLeadCapture") > page.lastIndexOf("<ServiceVideoShowcase"));
   assert.doesNotMatch(page, /<section className=\{styles\.end\}/);
   assert.doesNotMatch(page, /<FreeResourceEnquiry/);
   assert.match(page, /data-optional-written-review/);
@@ -129,4 +129,39 @@ test("free landing's final slide is just the compact form, in all three language
   assert.match(es, /<CompactLeadCapture locale="es"/);
   assert.ok(main.lastIndexOf("<CompactLeadCapture") > main.lastIndexOf("<ServicesDirectoryInvitation"));
   assert.ok(es.lastIndexOf("<CompactLeadCapture") > es.lastIndexOf("<ServicesDirectoryInvitation"));
+});
+
+
+test("academy footer offers one Order button then two prepared chat links, never a duplicate contact form", () => {
+  const source = read("components/sitewide-lead-capture.tsx");
+  const css = read("components/sitewide-lead-capture.module.css");
+  const academyBranch = source.split('if (kind === "training") {')[1]?.split('const offer = coreKind')[0];
+  assert.ok(academyBranch, "dedicated Academy CTA exists");
+  assert.match(academyBranch, /data-academy-messenger-order/);
+  assert.match(academyBranch, /data-academy-order-button/);
+  assert.match(academyBranch, /aria-expanded=\{messengerOpen\}/);
+  assert.match(academyBranch, /trainingEnquiryUrl\(locale, pathname\)/);
+  assert.match(academyBranch, /telegramEnquiryUrlFromWhatsApp\(whatsappHref\)/);
+  assert.equal((academyBranch.match(/data-messenger-channel/g) || []).length, 2);
+  assert.doesNotMatch(academyBranch, /<CompactLeadCapture|<input|<textarea|contactConsent|\/api\/service-enquiries/);
+  assert.match(academyBranch, /hidden=\{!messengerOpen\}/);
+  assert.match(source, /setMessengerOpen\(false\)/);
+  for (const order of ["Order", "Заказать", "Solicitar"]) assert.ok(source.includes(order));
+  assert.match(css, /\.trainingChannels\[hidden\]/);
+  assert.match(css, /@media\(max-width:720px\)/);
+  assert.match(css, /@media\(max-width:345px\)/);
+  assert.match(css, /env\(safe-area-inset-bottom\)/);
+});
+
+test("Kundalini course appears correctly in all locales' prepared messenger requests", () => {
+  for (const locale of ["en", "ru", "es"]) {
+    const path = "/" + locale + "/academy/reiki/kundalini-reiki";
+    assert.equal(courseTopicForPath(path), "Kundalini Reiki");
+    const url = new URL(trainingEnquiryUrl(locale, path));
+    assert.equal(url.hostname, "wa.me");
+    const text = url.searchParams.get("text") || "";
+    assert.match(text, /Kundalini Reiki/);
+    assert.ok(text.includes("holistichouse.vercel.app" + path));
+    assert.doesNotMatch(text, /secret|health|password/i);
+  }
 });

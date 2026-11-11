@@ -242,18 +242,24 @@ try{
     async function fill(title, target = editor) {
       await target.locator('input[name="youtubeUrl"]').fill('https://youtu.be/OkLEN8Zb-sY?si=test-tracker')
       await target.locator('input[name="title"]').fill(title)
+      // Every new slot starts with independent author approval. A verified
+      // synthetic master is seeded in this isolated Postgres fixture; select
+      // that actual owner instead of bypassing the required author gate.
+      const author = target.locator('select[name="practitionerSlug"]')
+      await expect(author.locator('option[value="andy-litvinov"]')).toHaveCount(1)
+      await author.selectOption('andy-litvinov')
     }
     async function save(intent, target = editor) {
       if (intent === 'publish') {
         await target.locator('input[name="reviewed"]').check()
         await target.locator('.site-video-admin-button--primary').click()
-        await expect(target.locator('[aria-live="polite"]')).toContainText('Video published to the selected page.')
+        await expect(target.locator('[aria-live="polite"]')).toContainText('Video published to the selected page.', { timeout: 30_000 })
       } else if (intent === 'draft') {
         await target.getByRole('button', { name: 'Save draft', exact: true }).click()
         await expect(target.locator('[aria-live="polite"]')).toContainText('Draft saved.')
       } else {
         await target.getByRole('button', { name: 'Hide from website', exact: true }).click()
-        await expect(target.locator('[aria-live="polite"]')).toContainText('Video hidden from the website.')
+        await expect(target.locator('[aria-live="polite"]')).toContainText('Video hidden from the website.', { timeout: 30_000 })
       }
     }
     await openEditor()

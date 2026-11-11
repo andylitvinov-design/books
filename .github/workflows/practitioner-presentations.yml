@@ -29,8 +29,8 @@ on:
       - 'tests/practitioner-video-materials.test.mjs'
       - '.github/workflows/practitioner-presentations.yml'
 concurrency:
-  group: hh-practitioner-presentations-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-practitioner-presentations-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 permissions:
   contents: read
@@ -44,8 +44,14 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
+      - name: Load original checksum-verified FFmpeg for npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
-      - run: node --test tests/practitioner-presentation-video.test.mjs tests/practitioner-video-materials.test.mjs tests/practitioner-articles-v4.test.mjs tests/practitioner-articles-folders.test.mjs tests/master-network-r2.test.mjs tests/practice-public-alias.test.mjs
+      - name: Install SHA-verified FFmpeg into package after npm ci
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
+      - run: node --test tests/practitioner-presentation-video.test.mjs tests/practitioner-video-materials.test.mjs tests/practitioner-articles-v4.test.mjs tests/practitioner-articles-folders.test.mjs tests/master-network-r2.test.mjs tests/master-showcase-landing.test.mjs tests/practice-public-alias.test.mjs
       # The production PR Core gate owns full TS/build; feature-branch push
       # still verifies the independent production bundle after source tests.
       - name: Full TypeScript (Core owns production PR)

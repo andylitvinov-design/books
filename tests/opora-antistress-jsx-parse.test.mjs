@@ -35,10 +35,17 @@ test('a practice phrase closes before the guided exercise and controls remain op
   assert.match(player,/data-antistress-skill-probe/)
 })
 
-test('typed public programme retains the description supplied by the canonical blueprint',()=>{
+test('typed public programme retains the description supplied by the canonical blueprint',async()=>{
   const source=readFileSync(new URL('../components/public-antistress-landing.tsx',import.meta.url),'utf8')
-  const blueprint=readFileSync(new URL('../lib/inner-growth/anti-stress-blueprint.js',import.meta.url),'utf8')
+  const {antiStressBlueprint}=await import('../lib/inner-growth/anti-stress-blueprint.js')
+  const {oporaAs60Skills}=await import('../lib/inner-growth/opora-as60-experiential-practices.js')
   assert.match(source,/skills: \{id:string;title:string;description:string;days:\[number,number\];outcome:string\}\[\]/)
   assert.match(source,/skill\.description/)
-  assert.match(blueprint,/description:base\.description\|\|base\.result/)
+  for (const locale of ['en','ru','es']) {
+    const skills=antiStressBlueprint(locale).skills
+    const expected=oporaAs60Skills(locale)
+    assert.equal(skills.length,7)
+    assert.deepEqual(skills.map(skill=>skill.description),expected.map(skill=>skill.description))
+    assert.ok(skills.every(skill=>typeof skill.description==='string' && skill.description.trim().length>0))
+  }
 })

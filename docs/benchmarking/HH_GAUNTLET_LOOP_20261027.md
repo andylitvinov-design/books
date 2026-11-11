@@ -1,5 +1,16 @@
 # Holistic House · bounded Gauntlet Loop / OpenCode pilot
 
+## Latest implementation readback — 27 October 2026
+
+- **Existing live tooling:** PR #2233 merged with exact SHA and READY deployment previously verified. Follow-up [PR #2247](https://github.com/andylitvinov-design/books/pull/2247) is a separate rollout gate; do not claim its code is live before merge and domain check.
+- **Real free inference:** [GitHub Action #40506626748](https://github.com/andylitvinov-design/books/actions/runs/40506626748) received a genuine `GLM-5.3-Flash Free` text reply through official OpenCode v2.1.2 with no paid credential.
+- **Real Builder:** an isolated Mac run on 27 October used that free model to change only the existing Free Express resume hook dependency to include `t.timeout` and add one regression test. Independent review fixed a faulty test assertion before copying two reviewed files into PR #2247. Local contract tests **33/33**, targeted zero-warning ESLint, TypeScript `--noEmit --incremental false`, and `git diff --check` all succeeded.
+- **AI Critic HOLD:** separate Critic returned `provider.free-limit` HTTP **429**. No paid retry, account switch, or billing activation occurred. Full two-agent approval is **NOT VERIFIED** and the synthetic scorecard correctly remains `NOT_PASSED`. Independent deterministic checks did catch and resolve the test mistake.
+- **Quota protection:** normal PRs and production pushes run only the offline tests. An agent trial now requires an **explicit** push of a marker under `docs/benchmarking/gauntlet-runs/` on a disposable branch named `codex/hh-gauntlet-run-*`. The CI gate also verifies exact repository, matching temporary HOME/XDG, no provider key, free-model allowlist and effective Builder/Critic ACLs. Each deliberate marker push authorizes at most one bounded isolated trial; no agent pushes/merges or creates a real lead.
+- **Still required:** exact-head GitHub CI for PR #2247, mobile Chromium/WebKit browser acceptance if shipping the two-file UI fix, safe merge, Vercel READY/alias/exact SHA, and separate consenting-person end-to-end CRM/media/OAuth/provider verification. Never confuse synthetic consent checks with delivered user data or payment.
+
+The dated original notes below document the first pilot and can refer to earlier PR-triggered runs; this later status supersedes those trigger descriptions.
+
 **27 October 2026.** Implementation: `lib/benchmarking/hh-gauntlet-loop.mjs`, `scripts/benchmarking/hh-gauntlet-loop.mjs`, two `.opencode/agents/hh-gauntlet-*.md`, independent regression tests and `.github/workflows/hh-gauntlet-loop.yml`.
 
 ## Goal and release separation
@@ -19,9 +30,9 @@ Two separate confidence levels:
 
 ## Policy (before any AI)
 
-- **Free allowlist only:** `opencode/glm-5.3-flash-free` (default) or `opencode/deepseek-v4.1-flash-free`. Model availability must be confirmed by the local OpenCode catalog (`opencode models opencode`) and current OpenCode Console pricing. Model ID mismatch stops; it never falls back to a paid model.
+- **Free allowlist only:** `opencode/glm-5.3-flash-free` (default) or `opencode/deepseek-v4.1-flash-free`. Model availability must be confirmed by the local OpenCode catalog (`opencode models --standalone`) and current OpenCode Console pricing. Model ID mismatch stops; it never falls back to a paid model.
 - Step 5 Preview may be evaluated separately **only after its actual price, opt-in and spending limits have been approved**; it is deliberately not selectable here.
-- `--check` is the default and runs **offline**, no CLI/model call or installation. `--run` must be explicitly requested; never executed in GitHub Actions or Vercel.
+- `--check` is the default and runs **offline**. `--run` must be explicitly requested. Production Vercel and ordinary CI remain blocked. A single **PR-only, zero-credential** GitHub Actions trial is permitted only with `HH_GAUNTLET_CI_SYNTHETIC=isolated-20261027`, the official exact repository, a disposable `codex/hh-gauntlet-*` branch, and an isolated matching HOME/XDG under `RUNNER_TEMP`. This is not enabled on production pushes; future agent PR experiments require their own deliberate gate.
 - Run only in an initially clean, disposable `codex/hh-gauntlet-*` worktree of `andylitvinov-design/books`. No `.env*`, `.vercel` or production credentials in that worktree.
 - Builder and Critic each run via their own `opencode run` invocation (no `--continue` or shared session). Critic has **no edit/bash/network/MCP rights** and sees the goal, diff and deterministic results, **not Builder self-evaluation**. Both have external-directory access denied. Builder can edit only six named wizard UI/contract test files and has no shell/network/MCP permissions.
 - No `git push`, commits, PR merge, Vercel changes, database migration, real posts, paid render or delivery. The script stops on unauthorized edits and on tests/typecheck/lint/critic failures.
@@ -39,7 +50,7 @@ npm ci --include=dev
 node scripts/benchmarking/hh-gauntlet-loop.mjs --check
 
 # Only after OpenCode is installed and its account's selected model is visibly free:
-opencode models opencode
+opencode models --standalone
 node scripts/benchmarking/hh-gauntlet-loop.mjs --run --model opencode/glm-5.3-flash-free --rounds 2
 ```
 
@@ -50,6 +61,20 @@ If either model is unavailable, **stop**. Do not set or enable a paid OpenRouter
 The independent critic returns a machine-validated scorecard for six predefined criteria: `en-ru-es`, `mobile-320-430`, `opt-in`, `single-lead`, `privacy`, `regressions`. Each needs a concrete evidence statement and status `PASS`, `FAIL` or `UNKNOWN`. Missing, duplicated or unsupported criteria cannot pass. The deterministic test/typecheck/lint/whitespace gates **also** must pass. One negative gate stops a PASS; feedback may guide the next bounded builder iteration. On the last failure, exit code 2 and retain evidence. The agents do not approve merges.
 
 The real Chromium/WebKit, mobile and PG17 RLS systems already exist in `.github/workflows/hh-free-express-wizard-v2.yml` and `scripts/verify-free-express-wizard-v2.mjs`. They remain the source of truth for their respective layers. This Gauntlet adds independent AI review and **reuses** those tests; it does not clone them or produce artificial customer leads.
+
+## OpenCode V2 agent security gate
+
+OpenCode v2 CLI lists available free models using `opencode models --standalone`; the obsolete `opencode models opencode` positional form returns an error. The run preflight checks that the selected full free model ID is present before invoking an agent.
+
+OpenCode CLI v2 does **not** use the V1 Markdown `permission:` map or `bash:` and `task:` action names; in V2 the correct form is an ordered `permissions:` list with `action`, `resource`, `effect`, including `shell` and `subagent`. Both agent files were migrated from legacy V1 to V2 in [PR #2247](https://github.com/andylitvinov-design/books/pull/2247), with an explicit global deny rule followed only by local source read/glob/grep and six exact Builder UI/test edit grants. Critic has zero edit grants. This is independently supported by the official [OpenCode v2 permissions guide](https://opencode.ai/v2/docs/permissions) and [v2 agent guide](https://opencode.ai/v2/docs/agents).
+
+The PR job now runs `opencode debug agents` **before model tool access**, checks the resolved permissions for both roles and stops on any parsing problem, missing agent, shell/external access, wildcard later grant or edit-list mismatch. It also runs the new V2 policy unit test before invoking Builder. This gate is required because passing source-level regex tests alone does not prove effective OpenCode permissions.
+
+## Cloud test — 27 October 2026
+
+The authorized Mac is offline, so [PR #2247](https://github.com/andylitvinov-design/books/pull/2247) includes one isolated PR runner using pinned official `@opencode/cli@2.1.2`. A **real** zero-credential GLM-5.3-Flash Free text reply was observed in [GitHub Actions run #40506626748](https://github.com/andylitvinov-design/books/actions/runs/40506626748): `opencode v2.1.2`, exit `0`, NDJSON `step_start, text`, token `HH_GAUNTLET_FREE_20261027_OK` received. No billing key or stored account authentication was supplied. This verifies only the public free inference path, not permissions/Builder/Critic/CRM.
+
+The next PR run deliberately checks out public HH code **after** the successful connectivity probe, installs existing tests, and permits exactly one Builder → fresh-context Critic pass. The run does not persist edits or push; it saves a 7-day synthetic-only scorecard. Any unapproved paths or failed verification should make the job red; investigate rather than force-merging. No live applications or data are modified.
 
 ## Acceptance / limitations
 

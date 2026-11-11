@@ -665,3 +665,39 @@ C. 30-секундный сценический ролик в двух верс�
 Current implementation PR covers ONLY G1/G2 text-only plus read-only GPU readiness audit. It does not generate any new AI footage; external code routes remain disabled and non-billable. Current Runway ChatGPT team has availableVideoModels=[], and remote MacBook is offline with exhausted remote tool quota. Cannot assert hardware or model availability, install weights, spend credits, or pass a real provider E2E. The optional read-only owner hardware probe is scripts/video-ai-gpu-readiness.mjs; it never claims an executable local model, even with an adequate GPU.
 
 Release policy: exact-head specialized unit tests + lint + TypeScript + Next build + actual Chromium/WebKit, no secrets; merge only to codex/public-book-library after success, then Vercel READY exact production commit and canonical domain. G2 real image + G3b GPU/provider + G4 paid job + G5 private E2E remain separate, explicitly blocked. Do not treat this PR as finished prompt-to-video.
+
+## 22. G3b — Direct Kling prompt handoff, owner-authorized generation (2026-10-29)
+
+**Scope: actual code path, not an authorization to spend.** The public Cinematic Director now prepares one specific 3-second 720p silent Kling 3.0 prompt from a strictly approved artistic packet: fictional actor, on-screen action, location, visual transformation, colour, one of four stages, style, aspect, and exclusions. Unlike the generic original scene catalog this preserves recognizable visual details such as a white eagle changing into a constellation above mountains. The existing site editor still exports its free animated montage separately.
+
+The compiler is in lib/mandala/cinematic-kling-handoff.mjs. It reconstructs prompts only from whitelisted enums: no raw client difficulty, goal, photos, tests, CRM data, identity, arbitrary free-text, price or signed URLs. The artistic prompt and safe link are displayed on the existing public page. Only safe enum IDs are included in the owner-admin deep link. RU/EN/ES are parsed locally; Kling receives the curated English visual text.
+
+The owner-only /admin/videos Kling Studio reads the safe packet, prepopulates the actual prompt and 3-second text-to-video request without auto-submission. Owner manual editing invalidates the imported packet. The existing server action requires verified admin session, paidApproved, server HH_KLING_PAID_GENERATION_ENABLED and KLING_API_KEY; it rebuilds the safe prompt and rejects tampered text or changed duration, image URL, resolution or aspect. Only a subsequent explicit owner Generate click calls the already implemented real Kling 3.0 API POST. Existing status action queries actual task ID or recoverable external task ID. This is a **real backend path when enabled**, not a fake browser video.
+
+Visual exclusions for water, forest and night are passed as trusted IDs and enforced in the prompt. Contradictions between a selected sea/forest/night scene and its exclusion fail closed with a request to clarify, never quietly rendering a prohibited scene.
+
+**NOT implemented or claimed:** a paid provider task in this change, verified current Kling price/balance, a guarantee of model entitlement, a completed new provider MP4, bulk four-shot rendering, cloud archive, client checkout or private client delivery. Vercel has the relevant production environment variable records, but that does not verify their current enabled state. No API key/flag/value is copied into docs or JavaScript. No provider credits are consumed by source changes or CI.
+
+### Operational launch gates
+
+1. Confirm a real account-specific Kling price, credits/resource entitlement, commercial license and owner-approved maximum for one 3-second 720p silent test. Before approval paid flags remain unchanged and the owner-facing generate action is unavailable when disabled.
+2. Add durable server-side job ledger and unique external-task reservation, real charge receipt, timeout reconciliation and budget limits before automating client self-service or batch generation. The current owner studio does not constitute durable billing-safe multiuser job processing.
+3. Download actual provider MP4, verify bytes/codec/duration/frames/checksum with FFprobe/FFmpeg and human QA, then archive the master and only after separate consent deliver to the private account. A provider status=success URL is not by itself verified client delivery.
+4. Only then connect server-verified payment/entitlement to client one-click generation; protect account A/B, idempotence, RLS, privacy and negative cases. No auto publication or sharing private test/health data.
+
+### Additional provider paths checked
+
+Runway's connected ChatGPT workspace currently exposes no video models. Higgsfield plan credits, including its 10-credit connected account, do not fund the separate prepaid USD API; no confirmed free server integration. LTX 2.5 ComfyUI requires a verified capable GPU/weights/license and private worker, not an iPhone or Vercel request. HeyGen remains for the approved owner's private Digital Twin and separately approved voice, not for arbitrary client photorealistic characters.
+
+This is a staged G3b safe prompt-to-real-adapter connection. The full consumer generation/delivery remains open in books issue #2397.
+
+
+### 21.x · Video editor browser-auth QA repair (2026-10-29)
+
+**Never revive deprecated owner auth for green browser checks.** The website-video Chromium verification historically injected a deterministic v1 HMAC `prescriptions_admin` cookie, while production now intentionally requires a random v2 owner session bound to the verified Supabase user/session, current practitioner authority, persisted token digest and revocation. A synthetic Redis-only test runner cannot issue such a real session. The previous browser-admin publishing scenario was no longer valid; its failures cannot prove Kling handoff is broken.
+
+Release evidence is separated rather than faked:
+- Browser (isolated site): actual EN/RU video route and lazy iframe play, 10 current About testimonial masters, real guest redirect from `/admin/videos`, and rejection of retired v1 HMAC cookie even with local Redis configured.
+- Real-source tests: `prepareVideoChange` and `createMemorySiteVideoStore` draft → publish (human reviewed flag) → hide, CAS conflict with two editors, genuine EN/RU/ES slot limits, rejection of private data; plus `tests/admin-session-lifecycle.test.mjs` for v2 owner sessions, verified Supabase identity/practitioner checks, expiry and revocation.
+- **Not yet verified:** physical browser owner sign-in and authenticated live Redis authoring/publishing E2E, requiring a correctly configured isolated test owner or approved real owner session. Synthetic credentials must not bypass production authorization.
+- Client-facing Kling handoff remains a strict allowlisted art-only draft. Charged provider submission is only possible by the authenticated owner with separate paid consent and existing server flag/key. No paid render executed by this change; real provider task/media receipt and private delivery remain future gates.

@@ -31,7 +31,7 @@ const compiledHooks=ts.transpileModule('function render(pathname,activeLocale,lo
  '\nreturn {languageRef,siteMenuRef}}',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText
 
 class MenuNode {
- constructor(parent=null){this.parent=parent;this.open=false;this.focused=false}
+ constructor(parent=null){this.parent=parent;this.open=false;this.focused=false;this.dataset={}}
  contains(node){return node===this||Boolean(node.parent&&this.contains(node.parent))}
  querySelector(){return this.summary}
  focus(){this.focused=true}
@@ -101,4 +101,10 @@ test('Escape closes both menus and restores the open menu trigger focus',()=>{
 test('unmount removes all dismissal listeners',()=>{
  const h=navigationHarness();h.commit();assert.equal(h.listeners.size,3)
  h.unmount();assert.equal(h.listeners.size,0)
+})
+
+test('hydrated language menu announces keyboard readiness and clears it on unmount',()=>{
+ const h=navigationHarness();h.commit()
+ assert.equal(h.language.dataset.hhKeyboardReady,'true')
+ h.unmount();assert.equal(h.language.dataset.hhKeyboardReady,undefined)
 })

@@ -49,9 +49,11 @@ test('Google entry uses existing PKCE and prefill, never silently submits a CRM 
   // booking may use the actual verified Google email with explicit consent.
   assert.match(src, /const usePhone = \(compactPhone && !bookingSku\) \|\| method === "phone"/)
   assert.match(src, /email: usePhone \? "" : email\.trim\(\), phone: usePhone \? cleanedPhone : ""/)
-  assert.match(src, /if \(busy \|\| saved\) return;/)
+  assert.match(src, /if \(!interactive \|\| busy \|\| saved\) return;/)
   assert.match(src,/contactConsent: consent/)
-  assert.match(src,/<details className=\{styles\.optionalName\}>/)
+  assert.match(src,/<details key=\{resetSignature\} className=\{styles\.optionalName\}>/)
+  assert.match(src,/<summary>\{c\.nameOptional\}<\/summary>/)
+  assert.doesNotMatch(src,/nameOpen|setNameOpen/)
   assert.match(src,/<details className=\{styles\.privacy\}>/)
   assert.doesNotMatch(src,/localStorage|sendBeacon|autoSubmit/)
   assert.match(auth,/safeEnquiryReturnPath\(returnPath, locale\)/)

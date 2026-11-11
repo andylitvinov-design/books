@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Clipboard, Download, FileText, Headphones, Leaf, RotateCcw, Sparkles, Square } from "lucide-react";
+import { MeditationCourseEnquiry } from "./meditation-course-enquiry";
+import { BookOpen, Check, ChevronDown, Clipboard, Download, FileText, Headphones, Leaf, RotateCcw, Sparkles, Square } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import type { VideoTheme } from "@/lib/mandala/holistic-video-themes";
 import type { GuidedMeditationFocus } from "./mandala-guided-course";
-import { buildPersonalMeditationScript } from "@/lib/mandala/personal-meditation-script.mjs";
+import { buildPersonalMeditationScript, isMeditationSafetyResponse } from "@/lib/mandala/personal-meditation-script.mjs";
+import { buildAdaptiveMeditationOutline } from "@/lib/mandala/adaptive-meditation-course.mjs";
 import { findLocalMeditationVoices, meditationNarrationEstimate, playMeditationNarration } from "@/lib/mandala/meditation-narration.mjs";
 import css from "./mandala-personal-meditation.module.css";
+import { MandalaCloudVoiceStudio } from "./mandala-cloud-voice-studio";
 
 const accents = ["calm","confidence","clarity","boundaries","acceptance","motivation","rest","gratitude"] as const;
 type Accent = (typeof accents)[number];
@@ -25,11 +28,18 @@ type Props = {
   pace:"slow"|"dynamic";brightness:"soft"|"bright";
   affirmations:string[];affirmationsEnabled:boolean;
   focus:GuidedMeditationFocus;disabled:boolean;
+  /** Optional standalone entry: one meditation + eight-day outline, without a purchase. */
+  coursePreview?:boolean;
+  /** A locally composed user-approved course script. Never sent to a provider automatically. */
+  seedScript?:string;
+  onNarrationReady?:(file:File)=>Promise<boolean>;
+  onNarrationInvalidated?:()=>void;
 };
+type CourseDay={id:string;number:number;title:string;motif:string};
 const copy = {
   en:{
     title:"Personal meditation",eyebrow:"FINAL STEP · YOUR SCRIPT",
-    intro:"A personal script from this editor's theme, your own request, chosen goals, imagery, sound and affirmations. No paid AI or upload.",
+    intro:"A personal script from this editor's theme, your own request, chosen goals, imagery, sound and affirmations. The script is authored locally; optional cloud narration requires separate consent.",
     filters:"Taken into account",theme:"Theme",scene:"Scene",sound:"Sound",phrases:"Affirmations",quiet:"Quiet",
     customize:"Additional meditation accents",selected:"Select up to 3 (optional)",extra:"One more personal emphasis · optional",
     placeholder:"For example: more inner steadiness before an important conversation",
@@ -50,11 +60,11 @@ const copy = {
     copy:"Copy text",copied:"Copied",copyError:"Copy is unavailable here; select the text and copy manually.",
     download:"Save .txt",changed:"Settings have changed. Update the text to apply them.",
     safety:"A resource-oriented reflective script, not a diagnosis or substitute for treatment. Pause or stop whenever needed. For a clinical plan, ask a qualified practitioner.",
-    privacy:"Private and free: text is composed on this device, without AI calls, CRM or persistent storage."
+    privacy:"Text is composed locally. Optional cloud voice sends a chosen excerpt to Google only on explicit consent; no CRM save."
   },
   ru:{
     title:"Персональная медитация",eyebrow:"ПОСЛЕДНИЙ ШАГ · ВАШ ТЕКСТ",
-    intro:"Сценарий по запросу клиента, теме, выбранным целям, видеосюжету, звуку и аффирмациям. Бесплатно, без отправки данных в ИИ.",
+    intro:"Сценарий по запросу клиента, теме, выбранным целям, видеосюжету, звуку и аффирмациям. Текст создаётся локально; отправка для облачной озвучки возможна только по отдельному согласию.",
     filters:"Учитываем",theme:"Тема",scene:"Сюжет",sound:"Звук",phrases:"Аффирмации",quiet:"Без звука",
     customize:"Дополнительные акценты медитации",selected:"Выберите до 3 (необязательно)",extra:"Ещё один личный акцент · необязательно",
     placeholder:"Например: больше внутренней опоры перед важным разговором",
@@ -75,11 +85,11 @@ const copy = {
     copy:"Скопировать",copied:"Скопировано",copyError:"Не удалось скопировать автоматически. Выделите текст вручную.",
     download:"Скачать .txt",changed:"Вы изменили фильтры. Нажмите «Обновить текст», чтобы их учесть.",
     safety:"Бережный образный текст для рефлексии, не диагноз и не замена лечению. Можно остановиться в любой момент. Клиническую программу проверяет специалист.",
-    privacy:"Приватно и бесплатно: текст создаётся здесь, без внешнего ИИ, CRM и сохранения в браузере."
+    privacy:"Текст создаётся локально. В облачный сервис отправляется лишь выбранный отрывок после отдельного согласия, без сохранения в CRM."
   },
   es:{
     title:"Meditación personal",eyebrow:"ÚLTIMO PASO · TU GUION",
-    intro:"Guion a partir de tu petición, metas elegidas, escena, sonido y afirmaciones. Gratis y sin enviar datos a IA externa.",
+    intro:"Guion a partir de tu petición, metas elegidas, escena, sonido y afirmaciones. El guion se prepara localmente; la voz en la nube requiere consentimiento aparte.",
     filters:"Se tiene en cuenta",theme:"Tema",scene:"Escena",sound:"Sonido",phrases:"Afirmaciones",quiet:"Silencio",
     customize:"Acentos adicionales",selected:"Elige hasta 3 (opcional)",extra:"Otro matiz personal · opcional",
     placeholder:"Por ejemplo: más tranquilidad antes de una conversación importante",
@@ -100,7 +110,7 @@ const copy = {
     copy:"Copiar texto",copied:"Copiado",copyError:"No se puede copiar automáticamente. Selecciona el texto y cópialo.",
     download:"Guardar .txt",changed:"Has cambiado los filtros. Actualiza el texto para aplicarlos.",
     safety:"Un guion reflexivo, no diagnóstico ni sustituto de tratamiento. Puedes detenerlo cuando quieras. Un profesional debe revisar un plan clínico.",
-    privacy:"Privado y gratuito: el texto se redacta en este dispositivo, sin IA externa, CRM ni almacenamiento."
+    privacy:"Texto creado localmente. La voz en la nube envía solo el fragmento aprobado a Google; no se guarda en CRM."
   }
 } as const;
 const themeLabels = {
@@ -109,10 +119,48 @@ const themeLabels = {
   es:{money:"Dinero",energy:"Energía",relationships:"Relaciones",goals:"Metas",life:"Sentido",health:"Bienestar"}
 } as const;
 
+const courseCopy={
+  ru:{
+    title:"Курсы медитаций",eyebrow:"БЕСПЛАТНО · ПЕРВЫЙ ДЕНЬ",
+    intro:"Создайте первую медитацию, настройте её и посмотрите темы следующих семи дней.",
+    request:"О чём будет ваша медитация?",placeholder:"Например: хочу спокойно выражать свои желания и сохранять внутреннюю опору",
+    regenerate:"Сгенерировать заново",sequence:"Ваша программа на 8 дней",
+    planHint:"Это предварительные темы. Сегодня создан только текст первой медитации; остальные семь текстов, аудио и видео не генерируются и не оплачиваются автоматически.",
+    day:"День",first:"Текст первой медитации готов",next:"Тема будущей медитации",
+    offerTitle:"Хотите продолжить все 8 дней?",offerText:"Закажите персональный курс: восемь связанных медитаций с постепенным развитием темы и проверкой специалистом.",
+    order:"Запросить курс из 8 медитаций",orderNote:"Сначала обсуждение программы и условий. Эта кнопка не проводит оплату и не оформляет заказ автоматически.",
+  },
+  en:{
+    title:"Meditation courses",eyebrow:"FREE · DAY ONE",
+    intro:"Create your first meditation, adjust its settings, and preview the next seven daily topics.",
+    request:"What would you like to focus on?",placeholder:"For example: speaking up calmly while staying grounded",
+    regenerate:"Generate again",sequence:"Your 8-day meditation outline",
+    planHint:"These are proposed topics. Only day one's text has been created; seven more scripts, audio and videos are not generated or purchased automatically.",
+    day:"Day",first:"Your first meditation text is ready",next:"Future meditation topic",
+    offerTitle:"Continue for all eight days?",offerText:"Request a personal series of eight connected meditations, progressing gently through your goal and reviewed by a practitioner.",
+    order:"Request the 8-meditation course",orderNote:"First discuss the plan and terms. This link does not charge you or place an order.",
+  },
+  es:{
+    title:"Cursos de meditación",eyebrow:"GRATIS · PRIMER DÍA",
+    intro:"Crea tu primera meditación, ajusta sus parámetros y conoce los temas de los siete días siguientes.",
+    request:"¿Qué te gustaría trabajar?",placeholder:"Por ejemplo: comunicar mis deseos con calma y sentir más apoyo",
+    regenerate:"Generar de nuevo",sequence:"Tu programa de meditación de 8 días",
+    planHint:"Temas preliminares: solo está creado el texto del primer día. Los otros siete guiones, audios y vídeos no se generan ni se compran automáticamente.",
+    day:"Día",first:"Texto del primer día preparado",next:"Tema de una futura meditación",
+    offerTitle:"¿Quieres continuar durante ocho días?",offerText:"Solicita ocho meditaciones personales conectadas y revisadas por un profesional, con un progreso suave hacia tu objetivo.",
+    order:"Solicitar curso de 8 meditaciones",orderNote:"Primero se acuerdan programa y condiciones. El enlace no realiza un pago ni un pedido.",
+  },
+} as const;
+
 export function MandalaPersonalMeditation({
-  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled
+  locale,theme,wish,scene,sound,caption,audioSrc,pace,brightness,affirmations,affirmationsEnabled,focus,disabled,coursePreview=false,seedScript,onNarrationReady,onNarrationInvalidated
 }:Props) {
   const t=copy[locale];
+  const course=courseCopy[locale];
+  const [courseRequest,setCourseRequest]=useState(wish);
+  const [courseDays,setCourseDays]=useState<CourseDay[]>([]);
+  const [courseFocus,setCourseFocus]=useState<VideoTheme|null>(null);
+  const effectiveWish=coursePreview?courseRequest:wish;
   const [selected,setSelected]=useState<Accent[]>([]);
   const [image,setImage]=useState<ImageKey>("video");
   const [tone,setTone]=useState<ToneKey>("gentle");
@@ -133,12 +181,29 @@ export function MandalaPersonalMeditation({
   const ambientRef=useRef<HTMLAudioElement>(null);
   const [extra,setExtra]=useState("");
   const [script,setScript]=useState("");
+  const seededScriptRef=useRef("");
+  const [variantIndex,setVariantIndex]=useState(0);
   const [generatedFor,setGeneratedFor]=useState("");
   const [notice,setNotice]=useState("");
   const actualTheme=meditationTheme==="inherit"?theme:meditationTheme;
-  const signature=JSON.stringify([locale,theme,meditationTheme,wish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
+  const signature=JSON.stringify([locale,theme,meditationTheme,effectiveWish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
     focus.difficulty,focus.goal,focus.goals,focus.details,selected,image,tone,length,extra,technique,attention,depth,ending,moment]);
   const stale=Boolean(script&&generatedFor!==signature);
+  useEffect(()=>{
+    if(!seedScript){
+      const previousSeed=seededScriptRef.current;
+      if(previousSeed){
+        seededScriptRef.current="";
+        setScript(current=>current===previousSeed?"":current);
+        setGeneratedFor("");
+      }
+      return;
+    }
+    if(seededScriptRef.current===seedScript)return;
+    seededScriptRef.current=seedScript;
+    setScript(seedScript);setGeneratedFor(signature);setNotice("");
+    setCourseDays([]);setCourseFocus(null);
+  },[seedScript,signature]);
   const chosenVoice=voices.find(item=>item.name===voiceName)||voices[0];
   const estimatedSeconds=script?meditationNarrationEstimate(script,rate):0;
   useEffect(()=>{
@@ -221,11 +286,29 @@ export function MandalaPersonalMeditation({
   const generate=()=>{
     if(disabled)return;
     stopNarration();
+    const plan=coursePreview?buildAdaptiveMeditationOutline({
+      locale,theme:actualTheme,explicitTheme:meditationTheme!=="inherit",
+      request:effectiveWish||focus.goal,difficulty:focus.difficulty,details:focus.details,
+    }):null;
+    // A deliberate second press rotates among curated, meaningful local passages.
+    // Neither the requested topic nor the selected filters are changed.
+    const nextVariant=script?(variantIndex+1)%3:variantIndex;
     const next=buildPersonalMeditationScript({
-      locale,theme:actualTheme,wish,scene,sound,caption,pace,brightness,affirmationsEnabled,affirmations,
-      focus,accents:selected,image,tone,length,extra,technique,attention,depth,ending,moment
+      locale,theme:plan?.focusTheme||actualTheme,wish:effectiveWish,
+      scene:coursePreview&&plan?plan.days[0].motif:scene,
+      sound,caption,pace,brightness,affirmationsEnabled,affirmations,
+      focus,accents:selected,image,tone,length,extra,technique,attention,depth,ending,moment,
+      variantIndex:nextVariant,
     });
-    setScript(next);setGeneratedFor(signature);setNotice(t.creating);
+    const safetyResponse=isMeditationSafetyResponse(next,locale);
+    setVariantIndex(nextVariant);
+    setScript(next);setGeneratedFor(signature);setNotice(safetyResponse?"":t.creating);
+    if(coursePreview&&!safetyResponse&&plan){
+      setCourseFocus(plan.focusTheme as VideoTheme);
+      setCourseDays(plan.days.map(({id,number,title,motif})=>({id,number,title,motif})));
+    }else if(coursePreview){
+      setCourseDays([]);setCourseFocus(null);
+    }
   };
   async function copyScript(){
     if(!script)return;
@@ -247,13 +330,20 @@ export function MandalaPersonalMeditation({
       aria-labelledby="personal-meditation-heading">
       <header className={css.heading}>
         <span className={css.icon}><Leaf size={20} aria-hidden="true"/></span>
-        <div><small>{t.eyebrow}</small><h3 id="personal-meditation-heading">{t.title}</h3></div>
+        <div><small>{coursePreview?course.eyebrow:t.eyebrow}</small><h3 id="personal-meditation-heading">{coursePreview?course.title:t.title}</h3></div>
       </header>
-      <p className={css.intro}>{t.intro}</p>
+      <p className={css.intro}>{coursePreview?course.intro:t.intro}</p>
+      {coursePreview?<label className={css.courseRequest} htmlFor="meditation-course-request">
+        {course.request}
+        <textarea id="meditation-course-request" data-meditation-course-request
+          rows={2} maxLength={160} disabled={disabled}
+          placeholder={course.placeholder} value={courseRequest}
+          onChange={event=>setCourseRequest(event.currentTarget.value)}/>
+      </label>:null}
       <div className={css.context} data-meditation-context aria-label={t.filters}>
         <small>{t.filters}</small>
         <div className={css.chips}>
-          <span>{t.theme}: {themeLabels[locale][actualTheme]}</span>
+          <span>{t.theme}: {themeLabels[locale][coursePreview&&courseFocus&&!stale?courseFocus:actualTheme]}</span>
           <span>{t.scene}: {scene}</span>
           <span>{t.sound}: {sound||t.quiet}</span>
           <span>{t.phrases}: {affirmationsEnabled?affirmations.length:0}</span>
@@ -346,7 +436,7 @@ export function MandalaPersonalMeditation({
       <button type="button" className={css.generate} data-meditation-generate disabled={disabled}
         onClick={generate}>
         {script?<RotateCcw size={19} aria-hidden="true"/>:<Sparkles size={19} aria-hidden="true"/>}
-        {script?t.regenerate:t.generate}
+        {script?(coursePreview?course.regenerate:t.regenerate):t.generate}
       </button>
       {script?<div className={css.result} data-meditation-result>
         <div className={css.resultHead}>
@@ -397,6 +487,8 @@ export function MandalaPersonalMeditation({
           {!voices.length?<p className={css.voiceHint} role="note">{t.noVoice}</p>:null}
           <small className={css.voiceHint}>{t.voiceNote}</small>
         </div>
+        <MandalaCloudVoiceStudio locale={locale} sourceText={script} ambientSrc={audioSrc}
+          onAudioReady={onNarrationReady} onAudioInvalidated={onNarrationInvalidated}/>
         <div className={css.actions}>
           <button type="button" data-meditation-copy onClick={()=>void copyScript()}>
             <Clipboard size={16} aria-hidden="true"/>{t.copy}
@@ -407,6 +499,27 @@ export function MandalaPersonalMeditation({
         </div>
         <p className={css.helper}>{t.editHint}</p>
       </div>:null}
+      {coursePreview&&script&&!stale&&courseDays.length===8?
+        <section className={css.courseOutline} data-meditation-eight-day-plan aria-labelledby="meditation-course-outline-heading">
+          <div className={css.courseOutlineHeader}>
+            <BookOpen size={20} aria-hidden="true"/>
+            <h4 id="meditation-course-outline-heading">{course.sequence}</h4>
+          </div>
+          <p>{course.planHint}</p>
+          <ol className={css.courseDays}>
+            {courseDays.map((day,index)=><li key={day.id} data-meditation-course-day={day.number}>
+              <span>{course.day} {day.number}</span>
+              <div><strong>{day.title}</strong><small>{day.motif}</small></div>
+              <em>{index===0?course.first:course.next}</em>
+            </li>)}
+          </ol>
+          <div className={css.courseOffer} data-meditation-eight-day-offer>
+            <h4>{course.offerTitle}</h4>
+            <p>{course.offerText}</p>
+            <MeditationCourseEnquiry key={signature} locale={locale} focus={courseFocus||actualTheme}/>
+            <small>{course.orderNote}</small>
+          </div>
+        </section>:null}
       {notice?<p className={css.notice} role="status" aria-live="polite">{notice}</p>:null}
       <p className={css.safety}>{t.safety}</p>
       <p className={css.privacy}><Check size={14} aria-hidden="true"/>{t.privacy}</p>

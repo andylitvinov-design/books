@@ -111,6 +111,40 @@ async function routeStart(cookies = [], intentId, continueTo = null, extra = {})
   for(const c of response.cookies.getAll()) { if(c.maxAge===0) jar.delete(c.name); else jar.set(c.name,c) }
   return {cookies:[...jar.values()], callback:new URL(url.searchParams.get('redirect_to')), challenge:url.searchParams.get('code_challenge')}
 }
+test('Telegram OIDC uses the real OAuth PKCE start, stays off by default and does not weaken Google',async()=>{
+  const original=process.env.HH_APP_TELEGRAM_OIDC_ENABLED
+  async function call(body){
+    const req=new NextRequest(origin+'/api/app/auth/start',{
+      method:'POST',headers:{origin,'content-type':'application/json'},
+      body:JSON.stringify({locale:'en',...body}),
+    })
+    const response=await route.POST(req,{params:Promise.resolve({path:['auth','start']})})
+    return {status:response.status,data:await response.json(),cookies:response.cookies.getAll()}
+  }
+  try{
+    delete process.env.HH_APP_TELEGRAM_OIDC_ENABLED
+    const blocked=await call({provider:'telegram'})
+    assert.equal(blocked.status,503)
+    assert.equal(blocked.data.error,'TELEGRAM_LOGIN_UNAVAILABLE')
+    const invalid=await call({provider:'not-a-provider'})
+    assert.equal(invalid.status,400)
+    assert.equal(invalid.data.error,'INVALID_AUTH_PROVIDER')
+    const google=await call({provider:'google'})
+    assert.equal(google.status,200)
+    assert.equal(new URL(google.data.redirectUrl).searchParams.get('provider'),'google')
+    process.env.HH_APP_TELEGRAM_OIDC_ENABLED='true'
+    const telegram=await call({provider:'telegram'})
+    assert.equal(telegram.status,200)
+    const url=new URL(telegram.data.redirectUrl)
+    assert.equal(url.searchParams.get('provider'),'custom:telegram')
+    assert.equal(url.searchParams.get('code_challenge_method')?.toLowerCase(),'s256')
+    assert(telegram.cookies.some(item=>item.httpOnly && item.name.startsWith('hh-app-auth')))
+  }finally{
+    if(original===undefined)delete process.env.HH_APP_TELEGRAM_OIDC_ENABLED
+    else process.env.HH_APP_TELEGRAM_OIDC_ENABLED=original
+  }
+})
+
 async function routeCallback(flow, cookies, options={}) {
   const url = new URL(flow.callback)
   if(options.cancelled) url.searchParams.set('error','access_denied')
@@ -257,6 +291,8 @@ test('session cabinet one-tap OAuth accepts only allowlisted app destinations, n
   const url=new URL(response.headers.get('location'))
   assert.equal(url.pathname+url.hash,path)
   assert.equal(url.searchParams.get('auth'),'cancelled')
+  if (continuation === 'cabinet') assert.equal(url.searchParams.get('space'), 'today')
+  if (continuation === 'reports') assert.equal(url.searchParams.get('space'), 'reports')
   assert(!url.href.includes('client/session/'))
  }
  const forbidden = new NextRequest(origin + '/api/app/auth/start',{
@@ -265,4 +301,69 @@ test('session cabinet one-tap OAuth accepts only allowlisted app destinations, n
  })
  const rejected=await route.POST(forbidden,{params:Promise.resolve({path:['auth','start']})})
  assert.equal(rejected.status,400)
+})
+
+// Run the Telegram OIDC identity-proof and multilingual-entry suite inside the
+// existing mandatory App R1 PKCE job; never leave this security test orphaned.
+await import('./app-telegram-oidc-login.test.mjs')
+
+test('Commander owner login check always ends and exposes a retry action when auth provider is slow', async () => {
+  const source = await readFile(new URL('../public/commander-connect.js', import.meta.url), 'utf8')
+  const page = await readFile(new URL('../public/commander-connect.html', import.meta.url), 'utf8')
+  assert.ok(page.includes('commander-connect.js?v=20261109-owner-timeout-v1'))
+  assert.match(source, /fetchWithTimeout/)
+  assert.match(source, /8000, 'Проверка сессии'/)
+  assert.match(source, /10000, 'Проверка владельца'/)
+  assert.match(source, /12000, 'Google-вход'/)
+  assert.match(source, /showAction\(String\(error\.message \|\| error\) \+ ' Войдите повторно через Google\.'/)
+  assert.match(source, /Повторить проверку/)
+  assert.match(source, /button\.addEventListener\('click'/)
+  assert.doesNotMatch(source, /addEventListener\('click', startGoogle, \{ once: true \}\)/)
+})
+
+
+test('Commander login document is rewritten through the nonce-aware page under strict-dynamic CSP', async () => {
+  const middleware = await readFile(new URL('../middleware.ts', import.meta.url), 'utf8')
+  const page = await readFile(new URL('../app/commander-connect/page.tsx', import.meta.url), 'utf8')
+  const layout = await readFile(new URL('../app/layout.tsx', import.meta.url), 'utf8')
+  assert.ok(middleware.includes("pathname === '/commander-connect.html'"))
+  assert.ok(middleware.includes("NextResponse.rewrite(new URL('/commander-connect'"))
+  assert.ok(middleware.includes("request: { headers: requestHeaders }"))
+  assert.ok(middleware.includes("requestHeaders.set('x-standalone-commander', '1')"))
+  assert.ok(layout.includes('standaloneCommander ? children'))
+  assert.ok(page.includes("import Script from 'next/script'"))
+  assert.ok(page.includes("const requestHeaders = await headers()"))
+  assert.ok(page.includes("requestHeaders.get('x-nonce')"))
+  assert.ok(page.includes("nonce={nonce}"))
+  assert.ok(page.includes('/commander-connect.js?v=20261109-owner-csp-nonce-v2'))
+})
+
+
+test('Commander SSO handoff includes the existing Supabase refresh token only for the monitor session',async()=>{
+ const route=await readFile(new URL('../app/api/app/commander/session/route.js',import.meta.url),'utf8')
+ const connect=await readFile(new URL('../public/commander-connect.js',import.meta.url),'utf8')
+ assert.match(route,/auth\.client\.auth\.getSession\(\)/)
+ assert.match(route,/refreshToken/)
+ assert.match(route,/privateStoreConfigured: true/)
+ assert.match(connect,/typeof data\.refreshToken !== 'string'/)
+ assert.match(connect,/refresh_token: data\.refreshToken/)
+ assert.match(connect,/target\.hash = new URLSearchParams/)
+ assert.doesNotMatch(connect,/localStorage\.setItem\([^,]*refresh/i)
+})
+
+test('Commander owner handoff accepts 12-character provider refresh tokens without bypassing verification', async () => {
+  const handler = await readFile(new URL('../app/api/app/commander/session/route.js', import.meta.url), 'utf8')
+  const client = await readFile(new URL('../public/commander-connect.js', import.meta.url), 'utf8')
+  assert.match(handler, /refreshToken\.length < 12 \|\| refreshToken\.length > 4096/)
+  assert.doesNotMatch(handler, /refreshToken\.length < 20/)
+  assert.match(client, /data\.refreshToken\.length < 12 \|\| data\.refreshToken\.length > 4096/)
+  assert.ok(handler.indexOf('const actor = await auth.verified()') < handler.indexOf('const refreshToken ='))
+  assert.match(handler, /data\?\.owner !== true/)
+  assert.match(handler, /data\?\.privateStoreConfigured !== true/)
+  assert.match(client, /function recoverHandoff\(error\)/)
+  assert.match(client, /error\?\.status === 401/)
+  assert.match(client, /recoverHandoff\(error\)/)
+  assert.match(client, /method: 'POST'/)
+  assert.match(client, /credentials: 'same-origin'/)
+  assert.match(client, /target\.hash = new URLSearchParams/)
 })

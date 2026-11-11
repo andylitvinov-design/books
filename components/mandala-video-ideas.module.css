@@ -1,0 +1,184 @@
+.ideas{display:flex;flex-direction:column;gap:7px;min-width:0;width:100%;color:#143d3a}
+.ideas[hidden]{display:none!important}.ideas *{box-sizing:border-box}
+.sizeCard{display:grid;gap:2px;min-width:0;padding:9px 12px 6px;border:1px solid #d4e8df;border-radius:16px;background:#eaf7f0}
+.sizeTitle{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
+.sizeTitle label{display:flex;align-items:center;gap:7px;flex:1;min-width:0;font-size:clamp(12px,3.4vw,15px);font-weight:750;line-height:1.2;color:#18483a}
+.sizeTitle output{min-width:0;max-width:28%;font-size:clamp(10px,2.7vw,12px);font-weight:750;text-align:right;color:#08725a;overflow-wrap:anywhere}
+.sample{display:grid;place-items:center;flex:none;width:27px;height:27px;font-weight:850;color:#087a60;line-height:1}
+.sample[data-scale="small"]{font-size:14px}.sample[data-scale="medium"]{font-size:20px}.sample[data-scale="large"]{font-size:25px}
+.sizeCard input[type="range"]{width:100%;min-width:0;height:27px;margin:0;accent-color:#008b6b;touch-action:pan-y;cursor:pointer}
+.sizeHints{display:flex;justify-content:space-between;gap:6px;color:#637a6e;font-size:10px;line-height:1.12}
+.phrases{display:flex;flex-direction:column;gap:4px;min-width:0;min-height:0}
+.phraseHeader{display:flex;align-items:center;justify-content:space-between;gap:7px;min-width:0}
+.phraseHeader h3{display:flex;align-items:center;gap:7px;min-width:0;margin:0!important;font:800 clamp(16px,4.3vw,20px)/1.14 Arial,Helvetica,sans-serif!important;color:#143d3a;overflow-wrap:anywhere}
+.phraseHeader h3 svg{flex:none;color:#08735b;width:21px;height:21px}
+.count{display:inline-flex;align-items:center;flex:none;padding:4px 7px;border-radius:99px;background:#dcf2e6;color:#0a6a52;font-size:10px;font-weight:800}
+.subtitle{margin:0!important;color:#63746b;font-size:11px;line-height:1.25}
+.phraseList{list-style:none;display:grid;align-content:start;gap:4px;min-height:0;max-height:clamp(130px,29dvh,256px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#aacfc0 transparent;margin:0;padding:1px 3px 3px 1px}
+.item{display:flex;align-items:center;gap:5px;min-width:0;min-height:41px;padding:3px 6px;border:1px solid #dfe7e0;border-radius:12px;background:#fffdfa}
+.item[data-selected="true"]{background:#eff9f1;border-color:#c9e9d8}
+.pick{display:grid;place-items:center;min-width:32px;width:32px;height:32px;border:2px solid #94a79e;border-radius:9px;background:#fff;color:#fff;flex:none}
+.pick[aria-pressed="true"]{background:#098b6c;border-color:#098b6c}
+.phraseText,.editInput{flex:1 1 0;min-width:0;color:#143d33;font:700 clamp(11px,3.2vw,15px)/1.23 Arial,Helvetica,sans-serif;overflow-wrap:anywhere}
+.editInput{background:#fff;border:1px solid #95d1b8;min-height:35px;border-radius:8px;padding:4px 6px}
+.play,.edit{display:grid;place-items:center;flex:none;min-width:38px;min-height:41px;border:0;border-radius:50%;color:#087e62}
+.play{background:#fff;box-shadow:0 1px 5px #244c3d25}.edit{background:transparent}
+.play:disabled,.edit:disabled,.pick:disabled{opacity:.4}
+.warning{margin:0!important;color:#a16a1b;font-size:11px;font-weight:700}
+.saved{margin:0!important;color:#08745a;font-size:11px;font-weight:750}
+.actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.actions button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:43px;padding:5px;border:1px solid #dce7dd;border-radius:11px;background:#fffdf8;color:#08705a;text-align:center}
+.actions button:last-child{background:#fff4dc;border-color:#eedbb5;color:#91620c}
+.actions button svg{flex:none;width:17px;height:17px}
+.actions button span{display:block;min-width:0}
+.actions strong{display:block;font-size:clamp(10px,2.7vw,12px);line-height:1.18;overflow-wrap:anywhere}
+.actions small{display:none}
+.actions button:disabled{opacity:.45}
+.addForm{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;padding:7px;border:1px solid #deddd3;border-radius:13px;background:#fffefa}
+.addForm input{min-width:0;min-height:39px;border:1px solid #bddacc;background:#fff;padding:5px 8px;border-radius:9px;font-size:13px}
+.addForm button{min-height:39px;border:1px solid #bdd9cb;border-radius:9px;background:#e4f5eb;color:#0f6d51;font-size:11px;font-weight:800;padding:5px 7px}
+.addForm button:disabled{opacity:.4}
+.addForm button:last-child{grid-column:1/-1;background:transparent;border:0}
+.clear{align-self:flex-end;min-height:28px;margin-top:-4px;border:0;background:transparent;color:#0b745b;font-size:11px;font-weight:750}
+.refine{min-width:0;border:1px solid #e8e1d5;border-radius:12px;background:#fffdfa;overflow:visible}
+.refine summary{display:flex;align-items:center;gap:7px;min-height:35px;padding:6px 11px;color:#24634d;font-size:12px;font-weight:750;cursor:pointer;list-style:none}
+.refine summary::-webkit-details-marker{display:none}.refine summary svg:last-child{margin-left:auto}
+.refine[open] summary svg:last-child{transform:rotate(180deg)}
+.stateCard,.wishCard{padding:11px;border-top:1px solid #eee6d8}
+.title{display:flex;align-items:center;gap:7px;margin:0 0 8px!important;color:#0c5c47;font-size:16px!important;font-weight:800!important}
+.title svg{flex:none;color:#078c68}
+.selectGrid,.sliderGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.selectField,.sliderField{display:grid;gap:5px;min-width:0;color:#0b674d;font-size:12px;font-weight:750}
+.selectField select{width:100%;min-width:0;min-height:40px;border:1px solid #d8e2da;border-radius:10px;background:#fff;color:#1b4238;padding:6px;font-size:12px}
+.sliderGrid{margin-top:7px}
+.sliderField{padding:6px;border:1px solid #e2e9e0;border-radius:12px;background:#fff}
+.sliderTitle{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.sliderTitle>span{display:flex;gap:3px;align-items:center;min-width:0}
+.sliderTitle output{flex:none;background:#e3f4e8;border-radius:99px;padding:3px 6px;font-size:11px}
+.scaleHint{font-size:10px;color:#66766d;font-weight:400}
+.sliderField input{width:100%;min-height:28px;accent-color:#088c69}
+.axisGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:8px}
+.axisGrid button{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:43px;padding:4px 2px;border:1px solid #dce6dd;border-radius:11px;background:#fffefa;color:#145b42;font-size:clamp(10px,2.8vw,13px);font-weight:750;line-height:1.15;overflow-wrap:anywhere}
+.axisGrid button[aria-pressed="true"]{border-color:#60be97;background:#e2f6e9;color:#075b40}
+.create{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:46px;padding:8px 11px;border:0;border-radius:99px;background:linear-gradient(110deg,#009e79,#007b58);color:#fff;font:850 clamp(14px,3.8vw,17px)/1.2 Arial,Helvetica,sans-serif;box-shadow:0 3px 9px #007c5c1e}
+.create span{font-size:21px}.create:disabled{opacity:.5;cursor:not-allowed}
+.privacy{margin:0!important;color:#677970;text-align:center;font-size:10px;line-height:1.2}
+.ideas button:focus-visible,.ideas input:focus-visible,.ideas select:focus-visible,.ideas summary:focus-visible,.ideas .phraseList:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+@media(max-width:360px){.item{gap:3px;padding:2px 4px}.pick{min-width:30px;width:30px;height:30px}.play,.edit{min-width:35px}.phraseText,.editInput{font-size:11px}.actions strong{font-size:10px}.sizeTitle label{font-size:12px}.sizeTitle output{max-width:27%}}
+@media(max-height:750px) and (max-width:759px){.phraseList{max-height:clamp(115px,23dvh,178px)}.sizeCard{padding:6px 9px 4px}.item{min-height:38px}.create{min-height:43px}.refine summary{min-height:31px}.privacy{display:none}}
+@media(min-width:760px){.phraseList{max-height:350px}.item{min-height:48px;padding:6px 9px}.phraseText{font-size:15px}.sizeCard{padding:12px 16px}.sizeTitle label{font-size:16px}.actions button{min-height:49px}.actions small{display:block;font-size:11px}}
+@media(prefers-reduced-motion:reduce){.sample{transition:none}}
+
+/* Design Bible §10.13: original Ideas/Text editor, neutral surfaces only.
+   Preserve selected phrase mint and the warm-gold custom-phrase button. */
+:global([data-mandala-mode="video"]) .ideas{
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .sizeCard,
+:global([data-mandala-mode="video"]) .refine,
+:global([data-mandala-mode="video"]) .sliderField,
+:global([data-mandala-mode="video"]) .addForm{
+  background:var(--hh-studio-inset,#FFF9F5);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .item:not([data-selected="true"]),
+:global([data-mandala-mode="video"]) .actions button:not(:last-child),
+:global([data-mandala-mode="video"]) .selectField select,
+:global([data-mandala-mode="video"]) .addForm input{
+  background:var(--hh-studio-surface,#FFFCFA);
+  border-color:var(--hh-studio-border,#EADFD9);
+  color:var(--hh-studio-ink,#142B3D)
+}
+:global([data-mandala-mode="video"]) .subtitle,
+:global([data-mandala-mode="video"]) .sizeHints{
+  color:var(--hh-studio-muted,#5D6A71)
+}
+:global([data-mandala-mode="video"]) .phraseHeader h3{
+  color:var(--hh-studio-forest,#14523F)
+}
+
+/* Independent actual video render vs. optional effects continuation. */
+.stageActions{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;margin-top:10px}
+.stageActions .create,.stageActions .addEffects{display:flex;align-items:center;justify-content:center;gap:9px;min-height:50px;width:100%;padding:9px 12px;border-radius:15px;font:800 clamp(14px,3.7vw,17px)/1.2 Arial,sans-serif;text-align:center}
+.stageActions .addEffects{border:1px solid #aed3c5;background:#fffdf7;color:#146b53}
+.stageActions button:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.stageActions button:disabled{opacity:.55;cursor:not-allowed}
+.stageStatus{margin:7px 0!important;padding:10px 12px;border:1px solid #e5d6b7;border-radius:12px;background:#fff8e9;color:#594d32;font-size:13px;line-height:1.35}
+
+
+/* Owner-approved phrase editor: only Montage / Text gets compact controls.
+   All handlers remain the original editable/preview/record/render paths. */
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .ideas{gap:0}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .sizeCard,
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .subtitle,
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .refine,
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .clear,
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .privacy{display:none!important}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .phrases{gap:0}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .phraseHeader{
+  position:absolute;z-index:1;right:12px;top:14px;margin:0
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .phraseHeader h3{display:none!important}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .count{
+  padding:6px 9px;border-radius:99px;background:#e3f5ed;color:#116a51;
+  font-size:clamp(10px,2.85vw,12px);font-weight:800;white-space:nowrap
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .phraseList{
+  gap:4px;max-height:none;overflow-y:visible;min-height:0;padding:1px 1px 2px
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .item{
+  gap:5px;min-height:44px;padding:3px 5px;border-radius:12px;border-color:#dcded6
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .item[data-selected="true"]{
+  border-color:#c3e6d6;background:#eaf7f0
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .pick{
+  min-width:35px;width:35px;height:35px;border-radius:10px
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .phraseText,
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .editInput{
+  font:700 clamp(11px,3.1vw,14px)/1.18 Arial,Helvetica,sans-serif
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .play,
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .edit{min-width:36px;min-height:42px}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .actions{
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .actions button{
+  min-width:0;min-height:44px;padding:5px 3px;gap:4px;border-radius:12px
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .actions button svg{
+  flex:none;width:17px;height:17px
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .actions strong{
+  font:750 clamp(9px,2.6vw,12px)/1.15 Arial,Helvetica,sans-serif
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .stageActions{
+  display:grid;gap:7px;margin-top:12px
+}
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .stageActions .create,
+:global([data-active-workspace="editor"][data-montage-panel="text"]) .stageActions .addEffects{
+  min-height:51px;width:100%;padding:9px 10px;border-radius:15px;
+  font:800 clamp(14px,3.8vw,18px)/1.18 Arial,Helvetica,sans-serif
+}
+@media(max-width:759px){
+  :global([data-active-workspace="editor"][data-montage-panel="text"]) .phraseList{
+    max-height:clamp(220px,42dvh,350px);overflow-y:auto;overscroll-behavior:contain
+  }
+}
+@media(max-width:759px) and (max-height:760px){
+  :global([data-active-workspace="editor"][data-montage-panel="text"]) .phraseList{
+    max-height:clamp(165px,31dvh,245px)
+  }
+}
+@media(max-width:354px){
+  :global([data-active-workspace="editor"][data-montage-panel="text"]) .phraseHeader{top:13px;right:10px}
+  :global([data-active-workspace="editor"][data-montage-panel="text"]) .count{padding:5px 7px;font-size:10px}
+  :global([data-active-workspace="editor"][data-montage-panel="text"]) .item{gap:3px;padding:3px 4px}
+  :global([data-active-workspace="editor"][data-montage-panel="text"]) .phraseText{font-size:11px}
+  :global([data-active-workspace="editor"][data-montage-panel="text"]) .pick{min-width:32px;width:32px;height:34px}
+  :global([data-active-workspace="editor"][data-montage-panel="text"]) .play,
+  :global([data-active-workspace="editor"][data-montage-panel="text"]) .edit{min-width:32px;min-height:40px}
+  :global([data-active-workspace="editor"][data-montage-panel="text"]) .actions button svg{width:15px;height:15px}
+}

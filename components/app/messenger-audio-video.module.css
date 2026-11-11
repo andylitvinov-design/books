@@ -1,0 +1,38 @@
+.root{width:100%;max-width:100%;min-width:0;overflow-x:hidden;border:1px solid #bdded3;border-radius:12px;background:#f5fbf8;color:#20473d;box-sizing:border-box;flex:none;margin:7px 0}
+.root>summary{min-height:46px;display:flex;align-items:center;padding:11px 13px;cursor:pointer;font:750 14px/1.35 system-ui,sans-serif;list-style-position:inside}
+.root>summary:focus-visible{outline:3px solid #147f6c;outline-offset:2px}
+.content{display:grid;gap:11px;min-width:0;max-width:100%;padding:0 11px 12px;box-sizing:border-box}
+.content p{margin:0;font:500 13px/1.48 system-ui,sans-serif}
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tools :is(button,.upload){min-height:46px;min-width:0;border:1px solid #a5cfc3;border-radius:11px;background:#fff;color:#1c5749;font:700 12px/1.35 system-ui,sans-serif;text-align:center;cursor:pointer;padding:10px 8px;box-sizing:border-box;overflow-wrap:anywhere}
+.tools .upload{position:relative;display:flex;justify-content:center;align-items:center}
+.upload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.upload:focus-within{outline:3px solid #147f6c;outline-offset:2px}
+.tools button:focus-visible,.primary:focus-visible{outline:3px solid #147f6c;outline-offset:2px}
+.tools button:disabled,.primary:disabled{opacity:.52;cursor:not-allowed}
+.ready{display:grid;gap:9px;min-width:0;max-width:100%;box-sizing:border-box;padding:10px;border:1px solid #d5e7dc;border-radius:11px;background:white}
+.ready strong,.ready small{overflow-wrap:anywhere}
+.ready strong{font:700 13px/1.4 system-ui,sans-serif}
+.ready small,.privacy{font:500 11px/1.45 system-ui,sans-serif;color:#586f66}
+.ready audio{max-width:100%;width:100%;min-width:0;min-height:42px}
+.field{display:grid;gap:5px;font:650 12px/1.5 system-ui,sans-serif}
+.field input{width:100%;min-height:44px;box-sizing:border-box;border:1px solid #afc7bd;border-radius:10px;padding:8px;font:500 16px/1.4 system-ui,sans-serif;background:#fff;color:#173a30}
+.consent{display:flex;align-items:flex-start;gap:8px;font:550 12px/1.5 system-ui,sans-serif}
+.consent input{width:19px;height:19px;flex:none;accent-color:#147f6c}
+.autoNote{display:block;color:#506a60;font:500 12px/1.5 system-ui,sans-serif}
+.readyActions{display:grid;gap:8px;min-width:0;max-width:100%}
+.secondary{min-height:44px;border:1px solid #b5d2c4;border-radius:11px;background:#f7fbf9;color:#1e5f4d;font:700 13px/1.35 system-ui,sans-serif;padding:10px;cursor:pointer}
+.secondary:disabled{opacity:.52;cursor:not-allowed}
+.primary{min-height:48px;border:0;border-radius:11px;background:#087f69;color:white;font:750 14px/1.35 system-ui,sans-serif;padding:12px;cursor:pointer}
+.error{color:#9d1e25!important}
+@media(max-width:354px){.tools{grid-template-columns:minmax(0,1fr)}}
+
+/* The compact Messages screen is a fixed-height flex column. Keep the audio
+   action immediately above the pinned composer, not above the conversation. */
+@media(max-width:760px){
+ :global(.hh-messages-page) :global([data-hh-agent-preview][data-compact="true"]) > .root{
+  order:3;flex:none;max-height:min(46dvh,420px);overflow-y:auto;
+  overscroll-behavior-y:contain;scroll-padding-bottom:12px;
+  margin:2px 0;border-radius:11px
+ }
+}

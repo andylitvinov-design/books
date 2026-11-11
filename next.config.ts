@@ -19,8 +19,20 @@ const practitionerRecordingSources = [
   "/admin/clients/:id/sessions/:path*",
 ];
 
-// Only the LIVE host can ask the user for microphone permission.
-const liveAudioHostSources = ["/en/live/host", "/ru/live/host", "/es/live/host"];
+// Only approved pages with an explicit Record button may ask for microphone.
+// The public Messenger needs the same narrowly scoped permission as Studio;
+// microphone remains denied across the rest of the site.
+// The existing authenticated one-to-one coaching page supports voice dictation
+// and optional AI voice. Grant microphone only to these exact private pages;
+// all other Cabinet, reports and API routes remain denied.
+const privateCoachingVoiceSources = ["/en/app/coaching", "/ru/app/coaching"];
+
+const liveAudioHostSources = [
+  "/en/live/host", "/ru/live/host", "/es/live/host",
+  "/en/holistic-support/mandala", "/ru/holistic-support/mandala",
+  "/es/holistic-support/mandala",
+  "/en/app/messages", "/ru/app/messages", "/es/app/messages",
+];
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -75,7 +87,7 @@ const nextConfig: NextConfig = {
       },
       // Versioned public video artwork is safe to cache; never apply this policy
       // to HTML, sessions, consultations, prescriptions, API or RSC payloads.
-      ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*"].map((source) => ({
+      ...["/images/holistic-house/video-posters/:path*", "/images/holistic-house/testimonial-posters/:path*", "/images/reiki-originals/:path*"].map((source) => ({
         source,
         headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600" }],
       })),
@@ -95,6 +107,10 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
         ],
+      })),
+      ...privateCoachingVoiceSources.map((source) => ({
+        source,
+        headers: [{ key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" }],
       })),
       ...liveAudioHostSources.map((source) => ({
         source,
@@ -182,6 +198,12 @@ const nextConfig: NextConfig = {
       "./source-books/book-2-dao-books/*.html",
       "./source-books/book-3-maya-tradition/manuscript/*.md",
       "./source-books/book-3-maya-tradition/outputs/*.html",
+      // Restore only the 8 small, published tradition HTML manuals to reader
+      // functions. Exclude raw archives and photographs to protect function size.
+      "./source-books/book-4-egyptian-tradition/*.html",
+      "./source-books/book-5-greek-mysteries/*.html",
+      "./source-books/book-6-roman-tradition/*.html",
+      "./source-books/book-7-zoroastrian-mithra/*.html",
     ]] as const).reduce<Record<string, string[]>>((all, [route, files]) => {
       all[route] = [...files]; return all;
     }, {}),

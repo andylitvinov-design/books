@@ -86,8 +86,8 @@ on:
       - 'package-lock.json'
       - '.github/workflows/hh-private-audio-e2e.yml'
 concurrency:
-  group: hh-private-audio-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-private-audio-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 permissions:
   contents: read
@@ -103,7 +103,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Expiring admin sessions and pinned SDK refresh regressions
         run: node --conditions=react-server --test tests/admin-session-lifecycle.test.mjs tests/admin-auth-refresh.test.mjs tests/admin-login-security.test.mjs tests/practitioner-bridge.test.mjs tests/client-session-recorder-auth.test.mjs tests/cabinet-v2-ux.test.mjs tests/prescription-access.test.mjs
       - name: Lint admin authorization and refresh boundaries

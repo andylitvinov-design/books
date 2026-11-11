@@ -7,6 +7,22 @@ on:
       - 'components/library-feed.tsx'
       - 'components/library-feed.module.css'
       - 'components/library-hub.tsx'
+      - 'app/[locale]/mytube/**'
+      - 'components/unified-mobile-dock.tsx'
+      - 'components/unified-mobile-dock.module.css'
+      - 'app/unified-mobile-dock.css'
+      - 'lib/unified-mobile-dock*'
+      - 'tests/unified-six-dock.test.mjs'
+      - 'scripts/verify-unified-six-dock-browser.mjs'
+      - 'components/mandala-video-director-chat.tsx'
+      - 'components/app/messages-orders-clients.jsx'
+      - 'components/holistic-support-mobile.tsx'
+      - 'components/video-discovery.tsx'
+      - 'components/video-discovery.module.css'
+      - 'lib/video-discovery/**'
+      - 'tests/video-discovery*.test.mjs'
+      - 'scripts/audit-video-discovery-candidates.mjs'
+      - 'scripts/video-discovery-import-review.mjs'
       - 'data/academy/greek-video-series.ts'
       - 'tests/greek-video-series.test.mjs'
       - 'components/practitioner-materials-cabinet.jsx'
@@ -36,15 +52,14 @@ on:
       - 'tests/library-compact-design.test.mjs'
       - 'tests/library-block-design.test.mjs'
       - 'tests/flat-book-catalog.test.mjs'
-      - '.github/workflows/library-public-feed.yml'
   workflow_dispatch:
 permissions:
   contents: read
 # Superseded PR heads must not spend 35 minutes on redundant browser jobs.
 # workflow_dispatch runs remain independent.
 concurrency:
-  group: hh-library-feed-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-library-feed-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 jobs:
   isolated-build:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
@@ -61,11 +76,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Stage checksum-verified FFmpeg before npm lifecycle
+        uses: ./.github/actions/ci-ffmpeg-static
       - run: npm ci --no-audit --no-fund
+      - name: Materialize checksum-verified FFmpeg for package runtime
+        uses: ./.github/actions/ci-ffmpeg-static
+        with:
+          stage: materialize
       - name: Test Library feed, existing book reference, and owner materials isolation
-        run: node --conditions=react-server --test tests/library-news-feed.test.mjs tests/ideas-news-feed.test.mjs tests/ideas-guidance.test.mjs tests/ideas-preview-rotation.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-mobile-ui.test.mjs tests/library-compact-design.test.mjs tests/library-block-design.test.mjs tests/flat-book-catalog.test.mjs tests/practitioner-material-library.test.mjs tests/greek-video-series.test.mjs
+        run: node --conditions=react-server --test tests/library-news-feed.test.mjs tests/ideas-news-feed.test.mjs tests/ideas-guidance.test.mjs tests/ideas-preview-rotation.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-mobile-ui.test.mjs tests/library-compact-design.test.mjs tests/library-block-design.test.mjs tests/flat-book-catalog.test.mjs tests/practitioner-material-library.test.mjs tests/greek-video-series.test.mjs tests/video-discovery.test.mjs tests/video-discovery-unified-catalog.test.mjs tests/mytube-duration.test.mjs tests/unified-six-dock.test.mjs
       - name: Lint changed TypeScript and JavaScript sources
-        run: npx --no-install eslint 'app/[locale]/library/page.tsx' 'app/[locale]/books/page.tsx' 'app/es/books/page.tsx' 'app/api/admin/materials/[id]/route.js' components/library-feed.tsx components/library-hub.tsx data/academy/greek-video-series.ts components/ideas-news-feed.tsx components/ideas-discovery.tsx lib/ideas-guidance.mjs lib/ideas-preview-rotation.mjs tests/ideas-preview-rotation.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-guidance.test.mjs components/practitioner-materials-cabinet.jsx lib/public-library-feed.ts lib/clients/material-library.js
+        run: npx --no-install eslint 'app/[locale]/library/page.tsx' 'app/[locale]/books/page.tsx' 'app/es/books/page.tsx' 'app/api/admin/materials/[id]/route.js' components/library-feed.tsx components/library-hub.tsx data/academy/greek-video-series.ts components/ideas-news-feed.tsx components/ideas-discovery.tsx lib/ideas-guidance.mjs lib/ideas-preview-rotation.mjs tests/ideas-preview-rotation.test.mjs tests/ideas-aphorisms-catalog.test.mjs tests/ideas-guidance.test.mjs components/practitioner-materials-cabinet.jsx lib/public-library-feed.ts lib/clients/material-library.js components/video-discovery.tsx components/unified-mobile-dock.tsx components/holistic-support-mobile.tsx components/mandala-video-director-chat.tsx components/app/messages-orders-clients.jsx lib/unified-mobile-dock.mjs 'app/[locale]/mytube/page.tsx' lib/video-discovery/taxonomy.mjs lib/video-discovery/catalog.mjs lib/video-discovery/curation.mjs lib/video-discovery/ranker.mjs lib/video-discovery/mytube-duration.mjs tests/mytube-duration.test.mjs lib/video-discovery/approved-meditations.ts tests/video-discovery-unified-catalog.test.mjs
       - name: Production-mode Next build (no Vercel Preview created)
         run: npm run build
       - name: TypeScript type verification
@@ -92,9 +113,12 @@ jobs:
             sleep 2
           done
           node scripts/verify-ideas-mobile-browser.mjs || { tail -80 /tmp/hh-ideas-server.log; exit 1; }
+          node scripts/verify-unified-six-dock-browser.mjs || { tail -80 /tmp/hh-ideas-server.log; exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: hh-ideas-mobile-acceptance
-          path: artifacts/ideas-mobile/
+          path: |
+            artifacts/ideas-mobile/
+            artifacts/unified-six-dock/
           retention-days: 7

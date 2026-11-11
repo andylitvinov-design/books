@@ -14,7 +14,7 @@ test("free video lives inside original mandala editor and reuses its private loc
   assert.match(video, /data-mandala-free-video/);
   assert.match(video, /canvas\.captureStream\(framesPerSecond\)/);
   assert.match(video, /new MediaRecorder\(stream/);
-  assert.match(video, /recorder\.start\(500\)/);
+  assert.match(video, /recorder\.start\(\)/);
   assert.match(video, /URL\.createObjectURL\(blob\)/);
   assert.match(video, /URL\.revokeObjectURL\(result\.url\)/);
   assert.match(video, /loadSceneImage\(snapshot\)/);
@@ -28,12 +28,16 @@ test("video recorder keeps legacy durations and adds the 15-second brief option 
   assert.match(source, /type Aspect = "square" \| "portrait" \| "landscape"/);
   for (const key of ['"glow"', '"energy"', '"prosperity"', '"temple"']) assert.ok(source.includes(key));
   for (const language of ["en:", "ru:", "es:"]) assert.ok(source.includes(language));
-  assert.match(source, /onClick=\{createVideo\}/);
+  assert.match(source, /onClick=\{\(\)=>void createVideo\(\)\}/);
   assert.match(source, /data-mandala-video-download/);
   assert.match(source, /playsInline/);
   assert.match(source, /recorder\.ondataavailable/);
   assert.match(source, /job\.stream\.getTracks\(\)\.forEach\(track => track\.stop\(\)\)/);
-  assert.match(source, /extension: type\.includes\("mp4"\) \? "mp4" : "webm"/);
+  // Real file container bytes, not Safari's unreliable declared MIME,
+  // determine the saved format on the new iPhone recorder path.
+  assert.match(source, /const extension=isWebm\?"webm":"mp4"/);
+  assert.ok(source.includes('const type=isWebm?"video/webm":"video/mp4"'));
+  assert.match(source, /isMp4=header\.length>=8/);
 });
 
 test("Mandala video preview has path-scoped blob media CSP and iPhone-safe compact controls", () => {
@@ -156,4 +160,96 @@ test("background-only reusable clip is the default, with an explicit photo check
   assert.match(browser,/holistic-house-money-background/);
   for(const label of ['"Animated background only"','"Только видеофон"','"Solo fondo animado"'])
     assert.ok(studio.includes(label),label);
+});
+
+test("Safari failed render offers only a source-backed unedited MP4 without pretending it is customized", () => {
+  const studio = read("components/mandala-free-video-studio.tsx");
+  assert.match(studio, /const originalFallbackCandidate=creationMode==="generated"\?null:cinematicPlan\?\.shots\[0\]/);
+  assert.match(studio, /firstPartyFilmFor\(cinematicPlan\.shots\[0\]\.theme,cinematicPlan\.shots\[0\]\.sceneId\)/);
+  assert.match(studio, /playbackStatus==="failed" && originalFallbackMp4/);
+  assert.match(studio, /data-video-original-fallback-download/);
+  assert.match(studio, /exportUnavailable && !result && originalFallbackMp4/);
+  assert.match(studio, /setExportUnavailable\(true\)/);
+  assert.match(studio, /setExportUnavailable\(false\)/);
+  assert.match(studio, /holistic-house-original-scene\.mp4/);
+  assert.match(studio, /Это НЕ ваш готовый фильм/);
+  assert.match(studio, /duration, format, photo, captions and music were not applied/);
+  assert.match(studio, /playbackStatus==="ready"&&\(result\.mode==="catalog"\|\|creditConfirmed\)&&\s*\(!creditCatalog\?\.chargeRequired\|\|creditSession==="signed_in"\|\|result\.mode==="catalog"\) \? <>/,
+    "generated files cannot be downloaded before native decode AND authenticated credit confirmation");
+  // No user-generated blob is advertised as ready when native decoding fails.
+  assert.match(studio, /playbackStatus==="failed"\?<div role="alert" data-video-playback-error>/);
+  const allowPublicMp4 = /^\/videos\/holistic-house\/[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\.mp4$/;
+  assert.equal(allowPublicMp4.test("/videos/holistic-house/money-films-v1/golden-rain.mp4"), true);
+  assert.equal(allowPublicMp4.test("/videos/holistic-house/film-collection-v2/mountain-air.mp4"), true);
+  for (const malicious of ["https://other.example/a.mp4", "/api/private.mp4",
+    "/videos/holistic-house/../secret.mp4", "/videos/holistic-house/clip.mp4?token=abc",
+    "//other.example/videos/holistic-house/a.mp4"]) {
+    assert.equal(allowPublicMp4.test(malicious), false, "no unapproved fallback: " + malicious);
+  }
+});
+
+test("AI Video Create acknowledges only an actually accepted local render preflight", () => {
+  const studio=read("components/mandala-free-video-studio.tsx");
+  const chat=read("components/mandala-video-director-chat.tsx");
+  const startHandler=studio.indexOf("  const startFromHero=()=>{");
+  const endHandler=studio.indexOf("    void createVideo();\n    return true;\n  };",startHandler);
+  assert.ok(startHandler>=0&&endHandler>startHandler,"existing recorder preflight handler must exist");
+  const start=studio.slice(startHandler,endHandler+"    void createVideo();\n    return true;\n  };".length);
+  const quick=studio.slice(studio.indexOf("  const createQuickVideo = () => {"),
+    studio.indexOf("  const deepAudioPane = ("));
+  assert.ok(start.includes("if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current||photoPending)return false;"),
+    "never start a new render while a source photo is decoding or an encoder is active");
+  assert.doesNotMatch(start,/\breturn\s*;/);
+  assert.ok(start.includes("if(!canGenerate){"),"a blocked Create must explain why");
+   assert.ok(start.includes('setNotice("")'),"successful Create clears the previous error notice");
+   assert.ok(start.indexOf("if(!canGenerate){")<start.indexOf("void createVideo()"),
+     "the encoder still starts only after readiness checks");
+   assert.ok(start.includes("return true;"),"the acknowledged local video render remains unchanged");
+  assert.match(quick,/if\(narrationInvalid\)[\s\S]*?return false;/);
+  assert.match(quick,/return startFromHero\(\);/);
+  assert.doesNotMatch(quick,/startFromHero\(\);\s*return true;/);
+  assert.match(chat,/if\(accepted===false\)\{addLine\("assistant",t.blocked\);return;\}/);
+  assert.match(chat,/setCaptureObserved\(false\);setCaptureStarted\(true\)/);
+});
+
+test("only loads the first master MP4 after Play/Create, without deadlocking Create", async () => {
+  const studio = read("components/mandala-free-video-studio.tsx");
+  assert.match(studio,/data-mandala-master-mp4=\{activeFilm\.src\}/);
+  assert.match(studio,/muted playsInline loop preload="none"[\s\S]*?data-mandala-master-mp4/);
+  assert.doesNotMatch(studio,/if\(activeFilm && master && !decoded\)master\.load\(\)/);
+  assert.match(studio,/const masterPreparation=activeFilm[\s\S]*?ensureDecodedVideoOnUserIntent\(premiumVideoRef\.current,\{timeoutMs:20000\}\)/);
+  assert.match(studio,/if\(!\(await masterPreparation\)\)[\s\S]*?setExportUnavailable\(true\)/);
+  assert.match(studio,/const canGenerate = Boolean\(source\) &&/);
+  assert.doesNotMatch(studio,/const canGenerate = Boolean\(source\) && \(!activeFilm \|\| premiumReady\)/);
+  assert.match(studio,/onClick=\{createQuickVideo\}/);
+  assert.match(studio,/onClick=\{\(\)=>void createVideo\(\)\}/);
+  const { ensureDecodedVideoOnUserIntent }=await import("../lib/mandala/intent-video-loading.mjs");
+  class FakeVideo extends EventTarget {
+    readyState=0;videoWidth=0;videoHeight=0;error=null;networkState=1;muted=false;
+    loadCalls=0;playCalls=0;removed=0;
+    load(){this.loadCalls++;}
+    play(){this.playCalls++;return Promise.resolve();}
+    removeEventListener(...args){super.removeEventListener(...args);this.removed++;}
+    emitReady(){this.readyState=2;this.videoWidth=1080;this.videoHeight=1920;this.dispatchEvent(new Event("canplay"));}
+  }
+  const v=new FakeVideo();
+  assert.equal(v.loadCalls,0,"mount alone never starts a request");
+  const result=ensureDecodedVideoOnUserIntent(v,{timeoutMs:1500});
+  assert.equal(v.loadCalls,1,"trusted Create starts exactly one media load");
+  assert.equal(v.playCalls,1,"iPhone play starts in the same event, not a later effect");
+  v.emitReady();
+  assert.equal(await result,true,"only a real decoded frame unblocks export");
+  assert.equal(v.removed,3,"media listeners are cleaned up");
+  assert.equal(await ensureDecodedVideoOnUserIntent(v),true);
+  assert.equal(v.loadCalls,1,"reusing a decoded video does not reload");
+  const loading=new FakeVideo();loading.networkState=2;
+  const pending=ensureDecodedVideoOnUserIntent(loading,{timeoutMs:1500});
+  assert.equal(loading.loadCalls,0,"existing in-flight MP4 load is never reset");
+  loading.emitReady();assert.equal(await pending,true);
+  const bad=new FakeVideo();const failed=ensureDecodedVideoOnUserIntent(bad,{timeoutMs:1500});
+  bad.error={code:4};bad.dispatchEvent(new Event("error"));
+  assert.equal(await failed,false,"codec errors never produce a claimed video");
+  const stalled=new FakeVideo();
+  assert.equal(await ensureDecodedVideoOnUserIntent(stalled,{timeoutMs:10}),false,
+    "stalled Safari decoders have a finite timeout");
 });

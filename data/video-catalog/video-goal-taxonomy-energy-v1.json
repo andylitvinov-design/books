@@ -1,0 +1,606 @@
+{
+  "schemaVersion": "hh-video-goal-topic-scenarios-v1",
+  "id": "energy",
+  "label": {
+    "ru": "Энергия",
+    "en": "Energy",
+    "es": "Energía"
+  },
+  "subtitle": {
+    "ru": "Силы, движение, вдохновение и обновление",
+    "en": "Vitality, momentum, inspiration and renewal",
+    "es": "Vitalidad, impulso, inspiración y renovación"
+  },
+  "topics": [
+    {
+      "id": "energy-vitality",
+      "label": {
+        "ru": "Вернуть силы",
+        "en": "Restore vitality",
+        "es": "Recuperar vitalidad"
+      },
+      "desiredOutcome": {
+        "ru": "Мягко восстановить ощущение жизненных сил",
+        "en": "Gently reconnect with vitality",
+        "es": "Reconectar suavemente con la vitalidad"
+      },
+      "legacyVideoTheme": "energy",
+      "legacyProfileTopic": "energy_health/recovery",
+      "aliases": {
+        "ru": [
+          "силы",
+          "энергия",
+          "усталость",
+          "бодрость"
+        ],
+        "en": [
+          "energy",
+          "fatigue",
+          "vitality"
+        ],
+        "es": [
+          "energía",
+          "cansancio",
+          "vitalidad"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "energy-vitality-s1",
+          "label": {
+            "ru": "Солнечный поток",
+            "en": "Sunlit flow",
+            "es": "Flujo solar"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "sunrise",
+            "river",
+            "light",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-vitality-s2",
+          "label": {
+            "ru": "Живая река",
+            "en": "Living river",
+            "es": "Río vivo"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "spring",
+            "stream",
+            "tree",
+            "meadow"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-vitality-s3",
+          "label": {
+            "ru": "Огонёк внутри",
+            "en": "A light within",
+            "es": "Una luz interior"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "flame",
+            "hearth",
+            "hands",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-vitality-s4",
+          "label": {
+            "ru": "Пробуждение света",
+            "en": "Awakening light",
+            "es": "Despertar de luz"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "clouds",
+            "sun",
+            "sky",
+            "mountain"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "energy-morning",
+      "label": {
+        "ru": "Утренняя энергия",
+        "en": "Morning energy",
+        "es": "Energía matutina"
+      },
+      "desiredOutcome": {
+        "ru": "Начать утро в хорошем ритме",
+        "en": "Ease into a fresh morning",
+        "es": "Empezar la mañana con buen ritmo"
+      },
+      "legacyVideoTheme": "energy",
+      "legacyProfileTopic": "energy_health/recovery",
+      "aliases": {
+        "ru": [
+          "утро",
+          "проснуться",
+          "пробуждение"
+        ],
+        "en": [
+          "morning",
+          "wake up"
+        ],
+        "es": [
+          "mañana",
+          "despertar"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "energy-morning-s1",
+          "label": {
+            "ru": "Рассвет в горах",
+            "en": "Mountain sunrise",
+            "es": "Amanecer en las montañas"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "mountain",
+            "sunrise",
+            "clouds",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-morning-s2",
+          "label": {
+            "ru": "Первый луч",
+            "en": "First light",
+            "es": "Primera luz"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "window",
+            "light",
+            "meadow",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-morning-s3",
+          "label": {
+            "ru": "Солнечный сад",
+            "en": "Sunlit garden",
+            "es": "Jardín soleado"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "garden",
+            "flowers",
+            "breeze",
+            "harvest"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-morning-s4",
+          "label": {
+            "ru": "Утро возможностей",
+            "en": "A new morning",
+            "es": "Una mañana posible"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "path",
+            "bridge",
+            "sunrise",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "energy-inspiration",
+      "label": {
+        "ru": "Вдохновение",
+        "en": "Inspiration",
+        "es": "Inspiración"
+      },
+      "desiredOutcome": {
+        "ru": "Вернуть интерес и творческий импульс",
+        "en": "Reconnect with inspiration",
+        "es": "Reconectar con la inspiración"
+      },
+      "legacyVideoTheme": "energy",
+      "legacyProfileTopic": "personal_growth/goal",
+      "aliases": {
+        "ru": [
+          "вдохновение",
+          "творчество",
+          "мотивация",
+          "идея"
+        ],
+        "en": [
+          "inspiration",
+          "creativity",
+          "motivation"
+        ],
+        "es": [
+          "inspiración",
+          "creatividad",
+          "motivación"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "energy-inspiration-s1",
+          "label": {
+            "ru": "Искра идеи",
+            "en": "Spark of an idea",
+            "es": "Chispa de una idea"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "spark",
+            "light",
+            "notebook",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-inspiration-s2",
+          "label": {
+            "ru": "Крылья мечты",
+            "en": "Room to dream",
+            "es": "Espacio para soñar"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "sky",
+            "breeze",
+            "clouds",
+            "stars"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-inspiration-s3",
+          "label": {
+            "ru": "Поле открытий",
+            "en": "Field of discovery",
+            "es": "Campo de descubrimientos"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "golden-field",
+            "seed",
+            "path",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-inspiration-s4",
+          "label": {
+            "ru": "Рисунок света",
+            "en": "Painting with light",
+            "es": "Pintar con luz"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "window",
+            "light",
+            "flowers",
+            "garden"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "energy-inner-strength",
+      "label": {
+        "ru": "Внутренняя опора",
+        "en": "Inner strength",
+        "es": "Fuerza interior"
+      },
+      "desiredOutcome": {
+        "ru": "Почувствовать внутреннюю устойчивость",
+        "en": "Feel grounded within",
+        "es": "Sentir estabilidad interior"
+      },
+      "legacyVideoTheme": "energy",
+      "legacyProfileTopic": "personal_growth/support",
+      "aliases": {
+        "ru": [
+          "внутренняя опора",
+          "сила",
+          "ресурс",
+          "устойчивость"
+        ],
+        "en": [
+          "inner strength",
+          "grounding",
+          "resilience"
+        ],
+        "es": [
+          "fuerza interior",
+          "apoyo",
+          "resiliencia"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "energy-inner-strength-s1",
+          "label": {
+            "ru": "Корни силы",
+            "en": "Roots of strength",
+            "es": "Raíces de fuerza"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "tree",
+            "roots",
+            "stone",
+            "mountain"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-inner-strength-s2",
+          "label": {
+            "ru": "Центр силы",
+            "en": "A steady center",
+            "es": "Centro estable"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "circle",
+            "light",
+            "hands",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-inner-strength-s3",
+          "label": {
+            "ru": "Тихое пламя",
+            "en": "Quiet flame",
+            "es": "Llama tranquila"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "flame",
+            "hearth",
+            "window",
+            "home"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-inner-strength-s4",
+          "label": {
+            "ru": "Гора внутри",
+            "en": "A mountain within",
+            "es": "Una montaña interior"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "mountain",
+            "clouds",
+            "path",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "energy-fresh-start",
+      "label": {
+        "ru": "Новый этап",
+        "en": "A fresh chapter",
+        "es": "Una nueva etapa"
+      },
+      "desiredOutcome": {
+        "ru": "Мягко начать новый жизненный этап",
+        "en": "Begin a new chapter gently",
+        "es": "Iniciar suavemente una nueva etapa"
+      },
+      "legacyVideoTheme": "life",
+      "legacyProfileTopic": "personal_growth/meaning",
+      "aliases": {
+        "ru": [
+          "новый этап",
+          "перемены",
+          "новое начало"
+        ],
+        "en": [
+          "new chapter",
+          "fresh start",
+          "change"
+        ],
+        "es": [
+          "nueva etapa",
+          "nuevo comienzo",
+          "cambio"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "energy-fresh-start-s1",
+          "label": {
+            "ru": "Чистая страница",
+            "en": "Blank page",
+            "es": "Página en blanco"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "notebook",
+            "window",
+            "sunrise",
+            "sky"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-fresh-start-s2",
+          "label": {
+            "ru": "Открытая дверь",
+            "en": "An opening door",
+            "es": "Una puerta que se abre"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "door",
+            "bridge",
+            "path",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-fresh-start-s3",
+          "label": {
+            "ru": "Путь перемен",
+            "en": "A path through change",
+            "es": "Camino de cambio"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "forest",
+            "road",
+            "stream",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-fresh-start-s4",
+          "label": {
+            "ru": "Новый сад",
+            "en": "A garden begins",
+            "es": "Comienza un jardín"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "seed",
+            "garden",
+            "flowers",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    },
+    {
+      "id": "energy-purpose",
+      "label": {
+        "ru": "Смысл и направление",
+        "en": "Meaning and direction",
+        "es": "Sentido y dirección"
+      },
+      "desiredOutcome": {
+        "ru": "Найти свой следующий ориентир",
+        "en": "Find my next direction",
+        "es": "Encontrar mi siguiente dirección"
+      },
+      "legacyVideoTheme": "goals",
+      "legacyProfileTopic": "personal_growth/meaning",
+      "aliases": {
+        "ru": [
+          "смысл",
+          "предназначение",
+          "направление",
+          "поиск себя"
+        ],
+        "en": [
+          "meaning",
+          "direction",
+          "purpose"
+        ],
+        "es": [
+          "sentido",
+          "dirección",
+          "propósito"
+        ]
+      },
+      "scenarios": [
+        {
+          "id": "energy-purpose-s1",
+          "label": {
+            "ru": "Путеводная звезда",
+            "en": "Guiding star",
+            "es": "Estrella guía"
+          },
+          "arc": "journey",
+          "visualMotifs": [
+            "stars",
+            "compass",
+            "path",
+            "sunrise"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-purpose-s2",
+          "label": {
+            "ru": "Мой компас",
+            "en": "My compass",
+            "es": "Mi brújula"
+          },
+          "arc": "shelter",
+          "visualMotifs": [
+            "compass",
+            "stone",
+            "mountain",
+            "horizon"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-purpose-s3",
+          "label": {
+            "ru": "Дерево смысла",
+            "en": "Tree of meaning",
+            "es": "Árbol del sentido"
+          },
+          "arc": "awakening",
+          "visualMotifs": [
+            "seed",
+            "tree",
+            "roots",
+            "light"
+          ],
+          "sourceStatus": "unbound"
+        },
+        {
+          "id": "energy-purpose-s4",
+          "label": {
+            "ru": "Встреча с будущим",
+            "en": "Meeting tomorrow",
+            "es": "Encuentro con el futuro"
+          },
+          "arc": "connection",
+          "visualMotifs": [
+            "window",
+            "door",
+            "bridge",
+            "sun"
+          ],
+          "sourceStatus": "unbound"
+        }
+      ]
+    }
+  ]
+}

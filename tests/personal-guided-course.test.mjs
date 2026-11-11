@@ -136,7 +136,9 @@ test("consent before same-origin profile access; withdraw/goal changes invalidat
 });
 
 test("one canonical editor owns the free user-triggered real render/export; no automatic fake movie",()=>{
-  assert.match(studio,/import \{ MandalaGuidedCourse \} from "\.\/mandala-guided-course"/);
+  assert.ok(studio.includes('const MandalaGuidedCourse = dynamic(() => import("./mandala-guided-course").then(module => module.MandalaGuidedCourse));'),
+    "guided course should be a real demand-loaded component, not initial mobile JS");
+  assert.doesNotMatch(studio,/import \{ MandalaGuidedCourse \} from/, "do not restore the heavyweight eager import");
   assert.match(studio,/<MandalaGuidedCourse locale=\{locale\} theme=\{theme\}/);
   assert.match(studio,/onApplyFreeVideo=\{session=>\{/);
   assert.match(studio,/setDuration\(60\)/);
@@ -157,7 +159,8 @@ test("first session offers script and optional device voice; seven other episode
   assert.match(ui,/new Blob\(\[script\+"\\n"\],\{type:"text\/plain;charset=utf-8"\}\)/);
   assert.match(ui,/index===0\?<div className=\{css\.first\}>/);
   assert.match(ui,/index>0\?<LockKeyhole/);
-  assert.match(ui,/\/services\/imagery-therapy/);
+  // Eight-video enquiries now use explicit consent and the existing CRM form.
+  assert.match(ui,/<MeditationCourseEnquiry key=\{journeySignature\} locale=\{locale\} focus=\{activeTheme\} courseKind="video-series"\/>/);
   assert.doesNotMatch(ui,/stripe|paypal|charge|paymentIntent|storage\.upload|navigator\.sendBeacon|fetch\("https:/i);
 });
 

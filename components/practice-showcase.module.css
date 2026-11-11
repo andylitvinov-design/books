@@ -4,7 +4,7 @@
   --green: #008b70;
   --green-deep: #006f58;
   min-height: 100svh;
-  background: radial-gradient(circle at 8% 0%, #e2f3e9 0, transparent 36%), linear-gradient(165deg, #f6f0e6 0%, #eeeadd 65%, #f6f2e9 100%);
+  background: radial-gradient(circle at 8% 0%, #fff0d6 0, transparent 36%), linear-gradient(165deg, #fff9ef 0%, var(--hh-light-canvas) 65%, #f8eddd 100%);
   color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
@@ -22,7 +22,7 @@
 .header p { font-size: clamp(12px, 3.2vw, 15px); line-height: 1.35; color: #6c766f; margin: 0; }
 .notification { border: 1px solid #e3e1d7; border-radius: 50%; background: #fffdf7; color: #53635b; flex: none; width: 44px; height: 44px; display: grid; place-items: center; position: relative; box-shadow: 0 4px 14px #2e463015; }
 .notificationDot { position: absolute; top: 6px; right: 7px; width: 9px; height: 9px; background: #039a7b; border-radius: 50%; border: 2px solid white; }
-.identity { display: grid; grid-template-columns: 68px minmax(0,1fr) minmax(132px, .72fr); gap: 12px; align-items: center; background: #ffffffd9; border: 1px solid #fff; border-radius: 22px; padding: 12px; box-shadow: 0 9px 25px #253b2612; margin-bottom: 19px; }
+.identity { display: grid; grid-template-columns: 68px minmax(0,1fr) minmax(132px, .72fr); gap: 12px; align-items: center; background: #fffcf7e6; border: 1px solid #fff4e8; border-radius: 22px; padding: 12px; box-shadow: 0 9px 25px #253b2612; margin-bottom: 19px; }
 .avatar { width: 66px; height: 66px; border-radius: 50%; border: 3px solid #ddf5f0; outline: 2px solid #9bd7cd; display: grid; place-items: center; background: linear-gradient(140deg,#b7e6d7,#f8efdb); color: #177c67; font-size: 28px; font-weight: 850; }
 .avatar img { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 50%; }
 .identityCopy { display: grid; justify-items: start; gap: 4px; }
@@ -133,7 +133,7 @@
 
 /* Approved practitioner phone mock: compact, uninterrupted workspace.
    Scoped above legacy rules to survive global mobile typography and iOS viewport. */
-.screen { background:radial-gradient(circle at 12% 8%,#e6f1e9,transparent 35%),linear-gradient(165deg,#f7f1e6,#f1ecdf); font-size:13px; line-height:1.32; overflow-x:clip; }
+.screen { background:radial-gradient(circle at 12% 8%,#fff0d8,transparent 35%),linear-gradient(165deg,#fffaf1,var(--hh-light-canvas)); font-size:13px; line-height:1.32; overflow-x:clip; }
 .screen .shell { width:min(100%,760px); margin:0 auto; padding:16px clamp(11px,4.3vw,27px) 100px; }
 .screen .header { gap:10px; margin-bottom:11px; }
 .screen .header h1 { font-size:clamp(23px,5.65vw,32px); line-height:1.1; font-weight:850; margin-bottom:4px; }
@@ -257,3 +257,24 @@
  .resumeDismiss{justify-self:center}
 }
 @media(prefers-reduced-motion:reduce){.resumePanel *{transition:none!important}}
+
+
+/* Master Network approved two-mode mobile composition. Preserve real data and actions. */
+.screen .networkHeader{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 15px}
+.screen .networkHeader h1{margin:0 0 4px;color:#143d3a;font-size:clamp(25px,6vw,34px);font-weight:870;line-height:1.07;letter-spacing:-.05em}
+.screen .networkHeader p{margin:0;color:#68746f;font-size:clamp(12px,3.2vw,15px);line-height:1.35}
+.screen .networkHeader .notification{width:44px;height:44px}
+.screen .header{margin-bottom:12px}
+.screen .identity{background:#fffcf7;box-shadow:0 9px 24px #5e412512}
+.screen .quickTile{box-shadow:0 5px 15px #4b39201a}
+.screen .hero{background:linear-gradient(90deg,#0b322bf0 0%,#214839c7 48%,#244e2e0d 100%),url('/images/holistic-house/reiki-practitioner-sunrise.webp') 65% center/cover no-repeat}
+.screen .heroButton{background:linear-gradient(120deg,#008b73,#08b998)}
+.screen .offerCard{box-shadow:0 4px 12px #17362f29}
+.screen .tool{position:relative;background:#fffcf7;box-shadow:0 5px 13px #4b392015}
+.screen .requestBadge{position:absolute;top:3px;right:5px;display:grid;place-items:center;min-width:19px;height:19px;padding:0 4px;border-radius:99px;background:#f04435;color:#fff;font-size:10px;font-weight:800}
+@media(min-width:540px){.screen .toolGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:430px){
+ .screen .networkHeader{margin-bottom:12px}
+ .screen .networkHeader h1{font-size:clamp(25px,6.8vw,30px)}
+ .screen .networkHeader p{font-size:12px}
+}

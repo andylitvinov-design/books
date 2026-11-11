@@ -107,7 +107,7 @@ for (const lang of ['en','ru','es']) test('Day 1 '+lang+' explains the first gro
   const f=fixture(lang,1),h=f.h
   try {
     await advanceOporaTo(h,'recapPractice',labels[lang].next)
-    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaGentleCopy(lang).dayOnePurpose))
+    assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs60VariedDay(1,lang).purpose))
     assert.ok(textOf(screen(h,'recapPractice')).includes(oporaAs60Day(1,lang).practice))
     assert.ok(nodes(screen(h,'recapPractice')).some(node=>node.props?.['data-opora-practice-overview']===1))
     assert.equal(f.writes,0)

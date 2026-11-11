@@ -139,7 +139,7 @@ test('workspace keeps four primary sections and exposes Reports through Portrait
   assert.doesNotMatch(workspace, /\['reports', c\.reports, '\/reports'\]/)
   // These tools remain available via the account menu and direct authenticated routes,
   // rather than occupying slots in the new five-destination bottom navigation.
-  assert.match(workspace, /<Link href=\{root \+ '\/monitoring'\}/)
+  assert.match(workspace, /<InstantCabinetLink href=\{root \+ '\/monitoring'\}/)
   assert.match(workspace, /page === 'consultations'/)
   assert.match(workspace, /page === 'monitoring'/)
   assert.match(workspace, /data-insights-detailed-scales/)

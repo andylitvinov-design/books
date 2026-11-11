@@ -21,6 +21,7 @@ const COPY={
     consent:'I permit this practitioner to republish this audio on their public profile.',
     warning:'Off by default. Do not send health records, private client files or another person’s recording.',
     upload:'Uploading securely…',sendBusy:'Sending…',signIn:'Sign in to exchange messages',
+    verification:'Verify your Telegram messenger in Cabinet Settings before messaging a practitioner. WhatsApp verification is not yet connected.',verifyLink:'Verify / link Telegram',legacy:'Previous website conversations are read-only. Continue in your verified messenger thread.',providerTextOnly:'One verified Telegram CRM conversation. Send files in Telegram; sensitive information stays on the protected website.',
     back:'All conversations',blocked:'This conversation is blocked.',
     blockedAction:'Block sender',unblock:'Unblock sender',canPublish:'Permission granted to share publicly.',
     published:'Published on profile',publish:'Add audio to my public profile',unpublish:'Remove from profile',
@@ -39,6 +40,7 @@ const COPY={
     consent:'Разрешаю этому мастеру разместить моё аудио на своей публичной странице.',
     warning:'По умолчанию выключено. Не отправляйте медицинские документы, клиентские материалы и чужие записи.',
     upload:'Безопасная загрузка…',sendBusy:'Отправляем…',signIn:'Войдите, чтобы писать сообщения',
+    verification:'Сначала подтвердите Telegram в настройках кабинета. Подтверждение WhatsApp ещё не подключено.',verifyLink:'Подтвердить Telegram',legacy:'Старые переписки на сайте доступны только для чтения. Продолжите в подтверждённом диалоге.',providerTextOnly:'Это единая CRM-переписка Telegram. Файлы отправляйте в Telegram, чувствительные данные — только через защищённый сайт.',
     back:'Все диалоги',blocked:'Этот диалог заблокирован.',
     blockedAction:'Заблокировать',unblock:'Разблокировать',canPublish:'Автор разрешил публичное размещение.',
     published:'Опубликовано на странице',publish:'Прикрепить аудио к странице мастера',unpublish:'Снять с публикации',
@@ -57,6 +59,7 @@ const COPY={
     consent:'Permito que este profesional publique este audio en su perfil público.',
     warning:'Desactivado por defecto. No envíes historiales médicos ni grabaciones ajenas.',
     upload:'Subiendo de forma segura…',sendBusy:'Enviando…',signIn:'Inicia sesión para enviar mensajes',
+    verification:'Verifica Telegram en los ajustes antes de escribir al profesional. WhatsApp verificado aún no está conectado.',verifyLink:'Verificar Telegram',legacy:'Las conversaciones anteriores del sitio son de solo lectura. Continúa en el hilo verificado.',providerTextOnly:'Es la conversación CRM verificada de Telegram. Envía archivos en Telegram y datos sensibles solo en el sitio protegido.',
     back:'Todas las conversaciones',blocked:'Esta conversación está bloqueada.',
     blockedAction:'Bloquear',unblock:'Desbloquear',canPublish:'Se ha autorizado la publicación.',
     published:'Publicado en el perfil',publish:'Añadir audio a mi perfil público',unpublish:'Retirar del perfil',
@@ -125,6 +128,7 @@ function AudioPublication({message,onAction,busy,locale,t}){
 }
 export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmAvailable=false,compact=false,onOpenChange,simpleDetail=false,initialThreadId='',onThreadsLoaded,expectedAccountId=null}){
   const t=COPY[locale]||COPY.en
+  const verificationSettings='/'+(locale==='ru'?'ru':locale==='es'?'es':'en')+'/app/settings#hh-telegram-connect'
   const [accountId,setAccountId]=useState(''),[threads,setThreads]=useState([]),
     [current,setCurrent]=useState(null),[activeId,setActiveId]=useState(''),
     [draft,setDraft]=useState(''),[file,setFile]=useState(null),[allowPublicReuse,setAllowPublicReuse]=useState(false),
@@ -382,9 +386,11 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
     {!simpleDetail&&accountId&&!signedOut&&(!compact||showNotices)&&<div className={styles.noticesPane}>
       <ClientExpressReportNotices locale={locale} accountId={accountId}/>
     </div>}
-    {error&&<p role="alert" className={styles.error}>{t.error} <code>{error}</code></p>}
-    {destination&&!signedOut&&<div className={styles.intro}>
-      <ShieldCheck size={18} aria-hidden="true"/><p>{t.welcome}</p>
+    {error&&<p role="alert" className={styles.error}>{t.error} <code>{error}</code>
+      {['MESSENGER_VERIFICATION_REQUIRED','MESSENGER_REPLY_CONSENT_REQUIRED','MASTER_MESSENGER_NOT_CONNECTED'].includes(error)&&<a href={verificationSettings}>{t.verifyLink}</a>}</p>}
+    {destination&&!signedOut&&<div className={styles.intro} data-messenger-first-verification>
+      <ShieldCheck size={18} aria-hidden="true"/><p>{t.verification}</p>
+      <a href={verificationSettings}>{t.verifyLink}</a>
       <button type="button" disabled={busy||!accountId} onClick={start}>{t.newWith}: {destination}</button>
     </div>}
     {!accountId&&!signedOut&&!error&&<p className={styles.emptySummary} role="status">{t.loading}</p>}
@@ -409,7 +415,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
           <p>{t.choose}</p></div>:<>
           <div className={styles.chatHeader}>
             <button type="button" className={styles.back} onClick={()=>{readGeneration.current++;setCurrent(null);setActiveId('')}}><ArrowLeft size={16}/>{t.back}</button>
-            <strong>{current.peerName}</strong>
+            <strong>{current.peerName}{current.providerBacked?' · Telegram':''}</strong>
             {current.isRecipient&&<button type="button" disabled={busy}
               onClick={()=>action({action:current.blocked?'unblock':'block',threadId:current.threadId})}>
               {current.blocked?t.unblock:t.blockedAction}
@@ -440,13 +446,15 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
             </article>)}
           </div>
           {current.blocked?<p className={styles.notice}>{t.blocked}</p>:
+          current.requiresMessengerVerification||current.legacyReadOnly
+            ?<p className={styles.notice} data-messenger-verification-required>{current.legacyReadOnly?t.legacy:t.verification} <a href={verificationSettings}>{t.verifyLink}</a></p>:
           <form className={styles.compose} onSubmit={send}>
             <label htmlFor="hh-direct-message-text">{t.composer}</label>
             <textarea id="hh-direct-message-text" maxLength={1200} rows={2}
               value={draft} onChange={event=>{setDraft(event.target.value);operationRef.current=null}}
               placeholder={t.composer} disabled={busy}/>
             <div className={styles.actions}>
-              <label className={styles.filePick}><Paperclip size={17} aria-hidden="true"/>{t.attach}
+              {!current.providerBacked&&<><label className={styles.filePick}><Paperclip size={17} aria-hidden="true"/>{t.attach}
                 <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,audio/mpeg,audio/mp4,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav,video/mp4,video/webm,video/quicktime,.mov,.mp4"
                   disabled={busy} onChange={e=>{changeFile(e.target.files?.[0]||null);e.target.value=''}}/></label>
               <DirectVoiceRecorder key={current.threadId} locale={locale} disabled={busy||videoRecording}
@@ -454,7 +462,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
                 onRecorded={recorded=>{void changeFile(recorded,{recorded:true});setError('')}}/>
               <DirectVideoRecorder key={current.threadId} locale={locale} disabled={busy||voiceRecording}
                 onRecordingChange={setVideoRecording}
-                onRecorded={recorded=>{void changeFile(recorded,{recorded:true});setError('')}}/>
+                onRecorded={recorded=>{void changeFile(recorded,{recorded:true});setError('')}}/></>}
               <button className={styles.send} type="submit" disabled={busy||recording||inspectingVideo||(!draft.trim()&&!file)}>
                 <Send size={17} aria-hidden="true"/>{t.send}</button>
             </div>
@@ -468,7 +476,7 @@ export default function DirectMessageInbox({locale='en',embedded=false,ownerCrmA
               <input type="checkbox" checked={allowPublicReuse} disabled={busy}
                 onChange={e=>{setAllowPublicReuse(e.target.checked);uploadRef.current=null;operationRef.current=null}}/>
               {t.consent}</label>}
-            <p className={styles.hint}>{t.warning}</p>
+            <p className={styles.hint}>{current.providerBacked?t.providerTextOnly:t.warning}</p>
             {status&&<p role="status">{status}</p>}
           </form>}
         </>}

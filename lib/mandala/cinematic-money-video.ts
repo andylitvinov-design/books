@@ -428,7 +428,7 @@ function movingCoins(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number,front
   }
 }
 
-function lastLight(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number,title:string){
+function lastLight(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number,title:string,showBrand=true){
   // Photographic flare and three depth-separated particle planes create an
   // animated frame, not a static collage with a play icon.
   const flareY=h*(scene==="cosmic-flow"?.33:.72);
@@ -450,9 +450,11 @@ function lastLight(ctx:Ctx,scene:MoneySceneId,t:number,w:number,h:number,title:s
   ctx.fillStyle="#fff1d3";
   ctx.fillText(title,w*.5,h*.86,w*.84);
   ctx.shadowBlur=0;
-  ctx.font="600 "+Math.max(10,w*.021)+"px Arial,sans-serif";
-  ctx.fillStyle="rgba(255,225,173,.82)";
-  ctx.fillText("H O L I S T I C   H O U S E",w*.5,h*.095,w*.92);
+  if(showBrand){
+    ctx.font="600 "+Math.max(10,w*.021)+"px Arial,sans-serif";
+    ctx.fillStyle="rgba(255,225,173,.82)";
+    ctx.fillText("H O L I S T I C   H O U S E",w*.5,h*.095,w*.92);
+  }
 }
 
 export function paintCinematicMoneyFrame(
@@ -521,6 +523,8 @@ export function paintRealMoneyVideoFrame(
   ctx.fillRect(0, 0, w, h);
   portrait(ctx, image, w, h, seconds);
   movingCoins(ctx, scene, seconds, w, h, true);
-  lastLight(ctx, scene, seconds, w, h, title);
+  const bakedBrand=(video.currentSrc.includes("/money-films-v1/")||video.currentSrc.includes("/film-collection-v2/")) &&
+    h/w >= (video.videoHeight/video.videoWidth)*.9;
+  lastLight(ctx, scene, seconds, w, h, title, !bakedBrand);
   ctx.restore();
 }

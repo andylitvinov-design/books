@@ -68,8 +68,10 @@ test("existing Mandala editor remains the sole renderer; UI wires independent wi
   assert.match(ui,/setMoneyScene\(recommended\.sceneId/);
   assert.match(ui,/setOtherScene\(recommended\.sceneId/);
   assert.match(ui,/intentText=\{wish\}/);
-  // #2691's approved short-form wish remains; it and Director use one wish state.
-  assert.match(ui,/data-video-quick-wish/);
+  // The new goal-first Director has the ONE short-form wish input and shares
+  // its local state with the existing optional advanced Cinematic Director.
+  assert.match(ui,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/);
+  assert.doesNotMatch(ui,/<input data-video-quick-wish/);
   assert.match(ui,/onIntentTextChange=\{value=>\{setWish\(value\)/);
   assert.match(director,/maxLength=\{2000\}/);
   assert.match(ui,/id="personal-video-result"/);
@@ -84,8 +86,8 @@ test("native audio preview is user-clicked, media-controlled, and the selected a
   assert.match(ui,/data-video-audio-player/);
   assert.match(ui,/audioPreviewRef\.current/);
   assert.match(ui,/data-video-audio-upload/);
-  assert.match(ui,/startUploadedAudio\(attachedAudio\.file,soundVolume\)/);
-  assert.match(ui,/startPresetAudio\(attachedAudio\.id,soundVolume\)/);
+  assert.match(ui,/startUploadedAudio\(attachedAudio\.file,soundVolume,\{loop:attachedAudio\.narration!==true&&attachedAudio\.nonLoop!==true,startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
+  assert.match(ui,/startPresetAudio\(attachedAudio\.id,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
   assert.match(ui,/!audioNeedsAttachment &&/);
   assert.match(ui,/job\.musicSession\?\.fadeOut\(\)/);
   assert.match(audio,/if \(audible\) master\.connect\(context\.destination\)/);

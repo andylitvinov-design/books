@@ -85,13 +85,14 @@ test('API only exposes a GET behind verified actor and account header', () => {
   assert.doesNotMatch(server, /insert into|update app\.|delete from/i)
 })
 
-test('journey is FIRST in signed-in Profile, never duplicated in reports or guest state', () => {
+test('journey is confined to the verified My Path view, not Today, Reports or guest state', () => {
   const workspace = source('components/app/app-workspace.jsx')
   const profile = source('components/app/profile-domains.jsx')
   const journey = source('components/app/cabinet-journey.jsx')
   const profileSection = workspace.slice(workspace.indexOf("{page === 'portrait' && ("))
-  assert.match(profileSection, /<CabinetJourney\b[^>]*accountId=\{data\.account\.id\}[^>]*\/>\s*<CabinetToday/)
-  assert.match(profileSection, /<CabinetToday[\s\S]*<ProfileDomains/)
+  assert.match(profileSection, /searchParams\.get\('space'\) === 'path'[\s\S]*?<CabinetJourney\b[^>]*accountId=\{data\.account\.id\}/)
+  assert.match(profileSection, /!\['path','reports'\]\.includes\(searchParams\.get\('space'\)\)[\s\S]*?<CabinetToday/)
+  assert.match(profileSection, /searchParams\.get\('space'\) === 'reports'[\s\S]*?<ProfileDomains/)
   assert.doesNotMatch(profile, /CabinetJourney/)
   assert.match(workspace, /data\.account\.onboardingState !== 'active'/)
   assert.match(journey, /appFetch\('journey', undefined, undefined, \{ accountId, signal:/)
@@ -193,8 +194,14 @@ test('new mobile fold-down actions fit viewport intent, preserve reduced-motion 
 test('Cabinet journey delegates only redundant global TS; privacy and journey tests remain mandatory', () => {
   const workflow = source('.github/workflows/hh-cabinet-journey.yml')
   const core = source('.github/workflows/hh-pr-core-release.yml')
-  assert.match(core, /^  release-ready:/m)
-  assert.match(core, /tsc --noEmit/)
+  assert.match(core, /^  scope:/m)
+  assert.match(core, /name: core-lint-types-build/)
+  assert.match(core, /^  hh-specialist:/m)
+  assert.match(core, /^  hh-merge-check:/m)
+  assert.match(core, /name: Require real Core and specialist results from this workflow/)
+  assert.match(core, /run: npm run build/)
+  assert.equal(JSON.parse(source('package.json')).scripts.build, 'next build')
+  assert.doesNotMatch(source('next.config.ts'), /ignoreBuildErrors/)
   assert.ok(workflow.includes("if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'codex/public-book-library' }}"))
   assert.match(workflow, /- name: TypeScript[\s\S]*?run: npx --no-install tsc --noEmit/)
   for (const suite of ['tests/cabinet-learning-journey.test.mjs', 'tests/workflow-next-route-filters.test.mjs', 'tests/my-progress.test.mjs', 'tests/cabinet-today.test.mjs']) {

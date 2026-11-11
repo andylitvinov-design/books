@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   ArrowRight, BarChart3, BookOpen, Camera, ChevronDown, ChevronRight, Filter,
   Coins, Compass, Flower2, HandHeart, Heart, Home, Leaf, Play, RotateCcw,
@@ -13,7 +13,9 @@ import { TaoistTalismanCatalog } from "@/components/taoist-talisman-catalog";
 import { HolisticSupportInlineGuide, type SupportGuideTest } from "@/components/holistic-support-inline-guide";
 import { HolisticSupportTalismanViewer } from "@/components/holistic-support-talisman-viewer";
 import { HolisticSupportCourseProfiles, type CourseProfileSector } from "@/components/holistic-support-course-profiles";
+import { HolisticSupportLearningCatalog, type LearningCatalogItem } from "@/components/holistic-support-learning-catalog";
 import { HolisticSupportMasterGallery } from "@/components/holistic-support-master-gallery";
+import { HolisticUnifiedPath } from "@/components/holistic-unified-path";
 import { GOAL_RECOMMENDATION_FORMATS, HolisticSupportGoalFilter,
   goalSectorFocus, goalSectorCheckinKey, summarizeGoalSelection,
   type GoalSelection, type GoalSector, type GoalSectorSnapshot,
@@ -24,12 +26,14 @@ import { REIKI_FREE_COURSE_PATH } from "@/lib/academy/reiki-free-course";
 import { pendingBrowserTalismanGoogleReturn } from "@/lib/practitioners/taoist-talisman-cart";
 import { recommendSupportByLowestScores, recommendSupportContent } from "@/lib/holistic-support/recommendation-engine";
 import type { MeditationTopic } from "@/data/academy/holistic-support-meditations";
+import { prepareBrowserPhoto, SUPPORT_PHOTO_ACCEPT } from "@/lib/mandala/prepare-browser-photo";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./holistic-support-mobile.module.css";
 
 export type SupportMobileVideo = {
   id: string;
   title: string;
+  description?: string;
   lessonOrder?: number;
   topics: MeditationTopic[];
   program: "sun" | "reiki" | "energy" | "maya" | "egypt" | "greek-dionysus" | "greek-demeter";
@@ -54,14 +58,31 @@ export type SupportMobileCourse = {
 };
 
 type Focus = "energy" | "money" | "relationships" | "goals";
-// Meaning is a separate fifth check-in; the published video topic engine
-// continues to use the original four-focus ranking.
+// Confidence keeps the established "meaning" data key; the published video topic
+// engine continues to use the existing four-focus ranking.
 type CheckinArea = Exclude<Focus, "goals"> | "meaning";
 export type SupportMobileChoice = "meditation" | "consultation" | "talisman" | "pump" | "healing" | "masters" | "tests";
 type Choice = SupportMobileChoice;
 type Program = "all" | SupportMobileVideo["program"];
 type Author = "all" | SupportMobileVideo["author"];
 type Theme = "all" | MeditationTopic;
+type MeditationCategory = "goals-money" | "love-relationships" | "energy-confidence" | "stress-anxiety" | "all";
+
+const meditationCategoryOptions = [
+  { id: "goals-money", Icon: Coins },
+  { id: "love-relationships", Icon: Heart },
+  { id: "energy-confidence", Icon: Zap },
+  { id: "stress-anxiety", Icon: HandHeart },
+  { id: "all", Icon: Compass },
+] as const;
+// Bridge public categories to legacy, verified recording tags. Existing topic IDs stay stable.
+const meditationCategoryTopics: Partial<Record<MeditationCategory, readonly MeditationTopic[]>> = {
+  "goals-money": ["business"],
+  "love-relationships": ["love"],
+  "energy-confidence": ["energy", "health"],
+  "stress-anxiety": ["health"],
+};
+
 
 const focusOrder: Focus[] = ["energy", "money", "relationships", "goals"];
 const checkinOrder: CheckinArea[] = ["energy", "money", "relationships", "meaning"];
@@ -85,7 +106,8 @@ const copy = {
     assessment: "1. Check in with yourself", assessmentShort: "1. Check-in", toolsShort: "2. Support", scoreGuide: "Rate from 1 to 10",
     focusLabel: "Your focus", focusLabelShort: "Focus", upload: "Add your photo", replace: "Change your photo", videoMandala: "Video mandala",
     photoPrivacy: "Photo stays on this device until you leave.",
-    photoError: "Choose a JPG, PNG or WebP photo under 8 MB.",
+    photoError: "Choose a JPG, PNG, WebP or supported HEIC photo up to 25 MB.",
+    photoSave:"Save to my Cabinet", photoSaving:"Saving…", photoSaved:"Saved in My House", photoSignIn:"Sign in to save", photoFailed:"Photo was not saved. Please try again.",
     recommend: "Find recommendations", recommendCompact: "Find matches", detailed: "Detailed analysis (tests)", detailedCompact: "Tests", toolsTitle: "2. Choose what helps",
     goalFilter: "Goal filter", goalAdjust: "Change", goalClear: "Clear",
     goalResultsTitle: "Selected for your goal", goalResultsNote: "Explore relevant published options. This is not a diagnosis, guaranteed outcome or confirmed booking.",
@@ -104,7 +126,7 @@ const copy = {
         "energy": "Energy & wellbeing tests",
         "money": "Work & money reflection tests",
         "relationships": "Relationship tests",
-        "goals": "Meaning, focus & motivation tests"
+        "goals": "Confidence, focus & motivation tests"
       },
       "testHint": "Browse actual free questionnaires",
       "videoHint": "Published original recording",
@@ -141,15 +163,15 @@ const copy = {
     },
     goalNoFormats: "No recommendation formats selected. Change the filter to choose some.",
     goalExternalOnly: "Use the selected links above to explore these published formats.",
-    goalSector: { energy: "Energy", money: "Money", love: "Love", meaning: "Meaning" },
-    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", meaning: "Explore meaning and direction" },
+    goalSector: { energy: "Body & energy", money: "Money", love: "Love", meaning: "Confidence & harmony" },
+    goalHero: { energy: "Restore your energy", money: "Make room for abundance", love: "Reconnect with love", meaning: "Explore confidence and inner harmony" },
     goalMatch: "Published recordings sorted for your chosen theme. This is not a diagnosis.",
     goalRelated: "No recording is labelled specifically for that goal yet; here are related original practices.",
     recommendationTitle: "Your personalized selection", recommendationWhy: "Based on your chosen focus and self-rating, not a diagnosis.",
     recommendationVideo: "Video for your focus", recommendationTalisman: "Optional symbolic talisman",
     seeVideo: "View video", seeTalisman: "See in catalog", symbolicNote: "A symbol for reflection, not a promised result.",
     recommendationFallback: "No exact recording is published for this topic; this is a related option.",
-    foci: { energy: "Energy", money: "Money", relationships: "Relationships", goals: "Meaning" },
+    foci: { energy: "Body & energy", money: "Money", relationships: "Relationships", goals: "Confidence" },
     options: { meditation: "Meditation", consultation: "Consultation", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsCompact: { meditation: "Meditation", consultation: "Session", talisman: "Talisman", pump: "Courses", healing: "Reiki support", masters: "Masters", tests: "Tests" },
     optionsMicro: { meditation: "Video", consultation: "Session", talisman: "Talisman", healing: "Reiki" },
@@ -158,10 +180,23 @@ const copy = {
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Sun practices", reiki: "Reiki meditations", energy: "Energy archive", maya: "Maya mysteries", egypt: "Egyptian mysteries", "greek-dionysus": "Dionysus channel", "greek-demeter": "Demeter channel" },
     themes: { all: "All topics", business: "Work & money", love: "Relationships", energy: "Energy", health: "Wellbeing" },
+    meditationCategoriesTitle: "Meditations", meditationCategoryLead: "Choose a direction",
+    meditationCategoryAll: "All categories", meditationCategoryMore: "More categories",
+    meditationCategoryNames: { "goals-money": "Goals & development", "love-relationships": "Love & relationships",
+      "energy-confidence": "Energy & confidence", "stress-anxiety": "Stress & anxiety", all: "All recordings" },
+    meditationCategoryShortNames: { "goals-money": "Goals", "love-relationships": "Love",
+      "energy-confidence": "Energy", "stress-anxiety": "Stress", all: "All" },
+    meditationCategoryHero: { "goals-money": "Explore your purpose and goals", "love-relationships": "Reconnect with love",
+      "energy-confidence": "Build energy and confidence", "stress-anxiety": "Find support for stress and anxiety",
+      all: "Choose a meditation" },
+    meditationCategoryRelated: "Related original Sun practices; no recording is specifically tagged with Meaning.",
     heroTitle: { energy: "Restore your energy", money: "Make space for clarity", relationships: "Reconnect with yourself", goals: "Explore meaning and direction" },
     heroIntro: "Choose an original guided recording and take a quiet moment.",
     play: "Start meditation", originalEn: "Original English audio", originalRu: "Original Russian audio",
-    youtube: "Open on YouTube", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating", lowestHint: "Lowest ratings:", lowestNote: "Optional topics, not a diagnosis.",
+    youtube: "Open on YouTube", fullscreenMeditation: "Full screen", seeAll: "View all", gallery: "More original meditations", galleryHint: "Illustrative covers; original verified recordings.", average: "Self-rating", lowestHint: "Lowest ratings:", lowestNote: "Optional topics, not a diagnosis.",
+    feedTitle: "All matching meditations", feedHint: "Choose a recording to load it above, without autoplay.",
+    feedChoose: "Select", feedAudioRu: "Russian audio", feedAudioEn: "English audio",
+    feedFallback: "An original recording from the published collection.", feedCount: "videos",
     notAvailable: "No verified recordings match those filters. Try All.",
     testsTitle: "Explore your situation", testsIntro: "Choose an existing free self-check or a personality profile. These tests support reflection, not medical diagnosis.",
     testsShort: "Tests", tests: "Open free tests", testsProfiles: "Personality profiles", testsProfilesHint: "Explore existing profile questionnaires", testsGuide: "How tests work", testsGuideHint: "Understand privacy and results", testsPrivacy: "Your ratings and photo on this screen are not sent to the tests catalogue.", consult: "Request a consultation", consultNote: "Sending a request is not a confirmed booking or payment.",
@@ -176,7 +211,7 @@ const copy = {
     healingMasters: "Browse masters", healingServices: "Reiki support services",
     energyAction: "Request a practitioner", energyHide: "Close request", energyNote: "A personal request is not a confirmed session or payment.",
     progress: "Your progress", started: "Videos opened here", focusStatus: "Lowest self-rating",
-    private: "Private on this page", privateInfo: "Sliders, photo and viewing history are not sent to a server or saved to your account.",
+    private: "Private on this page", privateInfo: "Ratings and viewing history stay on your device. Your photo enters your private Cabinet only when you choose Save.",
     newUi: "Mobile support experience", standard: "Standard Support page", navHome: "Home", navPractices: "My practices", navMessages: "Messages", navProgress: "My progress", navSettings: "Settings",
     settings: "Languages & privacy", language: "Language", close: "Close settings",
     healthNote: "These are reflective practices, not medical diagnoses or treatment.",
@@ -185,7 +220,8 @@ const copy = {
     assessment: "1. Оцени себя сейчас", assessmentShort: "1. Оцени себя", toolsShort: "2. Поддержка", scoreGuide: "Поставь баллы от 1 до 10",
     focusLabel: "Выбранный фокус", focusLabelShort: "Фокус", upload: "Добавить фото", replace: "Изменить фото", videoMandala: "Видео-мандала",
     photoPrivacy: "Фото остаётся только на этом устройстве.",
-    photoError: "Выберите JPG, PNG или WebP до 8 МБ.",
+    photoError: "Выберите JPG, PNG, WebP или поддерживаемый HEIC до 25 МБ.",
+    photoSave:"Сохранить в кабинет", photoSaving:"Сохраняем…", photoSaved:"Сохранено в кабинете", photoSignIn:"Войти для сохранения", photoFailed:"Фото не сохранилось. Повторите попытку.",
     recommend: "Подобрать рекомендации", recommendCompact: "Подобрать", detailed: "Детальный анализ (тесты)", detailedCompact: "Тесты", toolsTitle: "2. Выбери, что поможет",
     goalFilter: "Фильтр целей", goalAdjust: "Изменить", goalClear: "Сбросить",
     goalResultsTitle: "Рекомендации по вашему запросу", goalResultsNote: "Выберите доступный материал или услугу. Это не диагноз и не обещание результата или записи.",
@@ -204,7 +240,7 @@ const copy = {
         "energy": "Тесты: энергия и самочувствие",
         "money": "Тесты: работа и деньги",
         "relationships": "Тесты: отношения",
-        "goals": "Тесты: смыслы, фокус и мотивация"
+        "goals": "Тесты: уверенность, цели и мотивация"
       },
       "testHint": "Реальные бесплатные опросники",
       "videoHint": "Опубликованная авторская запись",
@@ -241,15 +277,15 @@ const copy = {
     },
     goalNoFormats: "Форматы рекомендаций не выбраны. Откройте фильтр и отметьте подходящие.",
     goalExternalOnly: "Откройте выбранные материалы по ссылкам выше.",
-    goalSector: { energy: "Энергия", money: "Деньги", love: "Любовь", meaning: "Смыслы" },
-    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", meaning: "Найди смыслы и направление" },
+    goalSector: { energy: "Тело и энергия", money: "Деньги", love: "Любовь", meaning: "Уверенность и гармония" },
+    goalHero: { energy: "Восстанови свою энергию", money: "Открой новые возможности", love: "Верни близость и тепло", meaning: "Исследуй уверенность и гармонию" },
     goalMatch: "Подбор по теме среди опубликованных записей, не медицинский вывод.",
     goalRelated: "Точной записи по этой теме пока нет: показаны близкие оригинальные практики.",
     recommendationTitle: "Ваш персональный подбор", recommendationWhy: "По выбранной теме и вашей оценке, не медицинский вывод.",
     recommendationVideo: "Видео по вашему запросу", recommendationTalisman: "Символический талисман по желанию",
     seeVideo: "Смотреть видео", seeTalisman: "Посмотреть в каталоге", symbolicNote: "Символ для размышления, без обещания результата.",
     recommendationFallback: "Точного видео по теме пока нет: предложена близкая авторская запись.",
-    foci: { energy: "Энергия", money: "Деньги", relationships: "Отношения", goals: "Смыслы" },
+    foci: { energy: "Тело и энергия", money: "Деньги", relationships: "Отношения", goals: "Уверенность" },
     options: { meditation: "Медитация", consultation: "Консультация", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsCompact: { meditation: "Медитация", consultation: "Сессия", talisman: "Талисман", pump: "Курсы", healing: "Рейки поддержка", masters: "Мастера", tests: "Тесты" },
     optionsMicro: { meditation: "Видео", consultation: "Сессия", talisman: "Талисман", healing: "Рейки" },
@@ -258,10 +294,23 @@ const copy = {
     authorAndrey: "Андрей Литвинов", authorPs: "PsiMaster",
     programs: { sun: "Практики Солнца", reiki: "Медитации Рейки", energy: "Энергоархив", maya: "Мистерии Майя", egypt: "Мистерии Египта", "greek-dionysus": "Канал Диониса", "greek-demeter": "Канал Деметры" },
     themes: { all: "Все темы", business: "Деньги и дело", love: "Отношения", energy: "Энергия", health: "Самочувствие" },
+    meditationCategoriesTitle: "Медитации", meditationCategoryLead: "Выбери направление",
+    meditationCategoryAll: "Все категории", meditationCategoryMore: "Другие категории",
+    meditationCategoryNames: { "goals-money": "Деньги и развитие", "love-relationships": "Любовь и отношения",
+      "energy-confidence": "Энергия и уверенность", "stress-anxiety": "Стресс и тревога", all: "Все записи" },
+    meditationCategoryShortNames: { "goals-money": "Развитие", "love-relationships": "Любовь",
+      "energy-confidence": "Энергия", "stress-anxiety": "Стресс", all: "Все" },
+    meditationCategoryHero: { "goals-money": "Раскрой предназначение и достигай целей", "love-relationships": "Верни близость и тепло",
+      "energy-confidence": "Восстанови энергию и уверенность", "stress-anxiety": "Найди поддержку при стрессе и тревоге",
+      all: "Выбери медитацию" },
+    meditationCategoryRelated: "Близкие оригинальные практики Солнца: отдельной записи с темой «Смыслы» пока нет.",
     heroTitle: { energy: "Восстанови свою энергию", money: "Найди ясность в решениях", relationships: "Вернись к себе", goals: "Найди смыслы и направление" },
     heroIntro: "Выбери оригинальную запись и удели себе немного времени.",
     play: "Начать медитацию", originalEn: "Оригинальный звук: английский", originalRu: "Оригинальный звук: русский",
-    youtube: "Открыть на YouTube", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка", lowestHint: "По минимальным оценкам:", lowestNote: "Подбор тем, не диагноз.",
+    youtube: "Открыть на YouTube", fullscreenMeditation: "На весь экран", seeAll: "Все видео", gallery: "Другие медитации", galleryHint: "Обложки — иллюстрации. Записи — оригинальные.", average: "Самооценка", lowestHint: "По минимальным оценкам:", lowestNote: "Подбор тем, не диагноз.",
+    feedTitle: "Все подходящие медитации", feedHint: "Выбери запись: она откроется наверху без автозапуска.",
+    feedChoose: "Выбрать", feedAudioRu: "звук RU", feedAudioEn: "звук EN",
+    feedFallback: "Оригинальная запись из опубликованной коллекции.", feedCount: "видео",
     notAvailable: "По этим фильтрам нет подтверждённых записей. Выберите «Все».",
     testsTitle: "Исследуй свой запрос", testsIntro: "Выбери бесплатный тест или профиль личности. Результаты помогают в самоисследовании, но не заменяют диагностику.",
     testsShort: "Тесты", tests: "Открыть тесты", testsProfiles: "Профили личности", testsProfilesHint: "Существующие опросники и типологии", testsGuide: "О тестах", testsGuideHint: "Как проходят тесты и сохраняются результаты", testsPrivacy: "Оценки и фото с этого экрана не передаются в каталог тестов.", consult: "Запросить консультацию", consultNote: "Заявка — ещё не подтверждённая запись и не оплата.",
@@ -276,7 +325,7 @@ const copy = {
     healingMasters: "Каталог мастеров", healingServices: "Услуги Рейки поддержки",
     energyAction: "Подобрать мастера", energyHide: "Закрыть заявку", energyNote: "Запрос ещё не означает запись или оплату.",
     progress: "Твой прогресс", started: "Видео открыто здесь", focusStatus: "Минимальная оценка",
-    private: "Лично на этом экране", privateInfo: "Шкалы, фото и история просмотра не отправляются на сервер и не сохраняются в кабинете.",
+    private: "Лично на этом экране", privateInfo: "Оценки и история просмотра остаются на устройстве. Фото попадает в личный кабинет только после нажатия «Сохранить».",
     newUi: "Мобильная поддержка", standard: "Обычная страница поддержки", navHome: "Главная", navPractices: "Мои практики", navMessages: "Сообщения", navProgress: "Мой прогресс", navSettings: "Настройки",
     settings: "Язык и приватность", language: "Язык", close: "Закрыть настройки",
     healthNote: "Это практики для рефлексии, не медицинская диагностика или лечение.",
@@ -285,7 +334,8 @@ const copy = {
     assessment: "1. Evalúa cómo estás", assessmentShort: "1. Evalúate", toolsShort: "2. Apoyo", scoreGuide: "Puntúa del 1 al 10",
     focusLabel: "Tu enfoque", focusLabelShort: "Enfoque", upload: "Añadir foto", replace: "Cambiar foto", videoMandala: "Vídeo mandala",
     photoPrivacy: "Tu foto se queda solo en este dispositivo.",
-    photoError: "Selecciona JPG, PNG o WebP de hasta 8 MB.",
+    photoError: "Elige JPG, PNG, WebP o HEIC compatible de hasta 25 MB.",
+    photoSave:"Guardar en mi cuenta", photoSaving:"Guardando…", photoSaved:"Guardada en Mi Casa", photoSignIn:"Inicia sesión para guardar", photoFailed:"La foto no se guardó. Inténtalo de nuevo.",
     recommend: "Buscar recomendaciones", recommendCompact: "Recomendar", detailed: "Análisis detallado (tests)", detailedCompact: "Tests", toolsTitle: "2. Elige lo que te ayuda",
     goalFilter: "Filtro de metas", goalAdjust: "Cambiar", goalClear: "Borrar",
     goalResultsTitle: "Recomendaciones para tu objetivo", goalResultsNote: "Explora recursos publicados. No es diagnóstico, garantía de resultado ni reserva confirmada.",
@@ -304,7 +354,7 @@ const copy = {
         "energy": "Pruebas de energía y bienestar",
         "money": "Pruebas de trabajo y dinero",
         "relationships": "Pruebas de relaciones",
-        "goals": "Pruebas de sentido, atención y motivación"
+        "goals": "Pruebas de confianza, objetivos y motivación"
       },
       "testHint": "Cuestionarios gratuitos disponibles",
       "videoHint": "Grabación original publicada",
@@ -341,15 +391,15 @@ const copy = {
     },
     goalNoFormats: "No hay formatos seleccionados. Abre el filtro y elige algunos.",
     goalExternalOnly: "Abre los enlaces seleccionados para explorar estos recursos.",
-    goalSector: { energy: "Energía", money: "Dinero", love: "Amor", meaning: "Sentido" },
-    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", meaning: "Encuentra sentido y dirección" },
+    goalSector: { energy: "Cuerpo y energía", money: "Dinero", love: "Amor", meaning: "Confianza y armonía" },
+    goalHero: { energy: "Recupera tu energía", money: "Explora nuevas oportunidades", love: "Reconecta con el amor", meaning: "Explora tu confianza y armonía" },
     goalMatch: "Grabaciones publicadas ordenadas por tema; no es un diagnóstico.",
     goalRelated: "Aún no hay una grabación específica: se muestran prácticas originales afines.",
     recommendationTitle: "Tu selección personal", recommendationWhy: "Según tu enfoque y valoración, no es un diagnóstico.",
     recommendationVideo: "Vídeo para tu objetivo", recommendationTalisman: "Talismán simbólico opcional",
     seeVideo: "Ver vídeo", seeTalisman: "Ver en el catálogo", symbolicNote: "Un símbolo para reflexionar, sin prometer resultados.",
     recommendationFallback: "No hay un vídeo exacto para este tema; se muestra una grabación relacionada.",
-    foci: { energy: "Energía", money: "Dinero", relationships: "Relaciones", goals: "Sentido" },
+    foci: { energy: "Cuerpo y energía", money: "Dinero", relationships: "Relaciones", goals: "Confianza" },
     options: { meditation: "Meditación", consultation: "Consulta", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsCompact: { meditation: "Meditación", consultation: "Sesión", talisman: "Talismán", pump: "Cursos", healing: "Apoyo Reiki", masters: "Guías", tests: "Tests" },
     optionsMicro: { meditation: "Vídeo", consultation: "Sesión", talisman: "Talismán", healing: "Reiki" },
@@ -358,10 +408,23 @@ const copy = {
     authorAndrey: "Andrey Litvinov", authorPs: "PsiMaster",
     programs: { sun: "Prácticas del Sol", reiki: "Meditaciones Reiki", energy: "Archivo energético", maya: "Misterios mayas", egypt: "Misterios egipcios", "greek-dionysus": "Canal de Dioniso", "greek-demeter": "Canal de Deméter" },
     themes: { all: "Todos los temas", business: "Trabajo y dinero", love: "Relaciones", energy: "Energía", health: "Bienestar" },
+    meditationCategoriesTitle: "Meditaciones", meditationCategoryLead: "Elige una dirección",
+    meditationCategoryAll: "Todas las categorías", meditationCategoryMore: "Más categorías",
+    meditationCategoryNames: { "goals-money": "Metas y desarrollo", "love-relationships": "Amor y relaciones",
+      "energy-confidence": "Energía y confianza", "stress-anxiety": "Estrés y ansiedad", all: "Todas las grabaciones" },
+    meditationCategoryShortNames: { "goals-money": "Metas", "love-relationships": "Amor",
+      "energy-confidence": "Energía", "stress-anxiety": "Estrés", all: "Todas" },
+    meditationCategoryHero: { "goals-money": "Explora tu propósito y tus metas", "love-relationships": "Conecta con el amor",
+      "energy-confidence": "Recupera energía y confianza", "stress-anxiety": "Encuentra apoyo ante el estrés y la ansiedad",
+      all: "Elige una meditación" },
+    meditationCategoryRelated: "Prácticas originales del Sol relacionadas; aún no hay una grabación etiquetada específicamente como Sentido.",
     heroTitle: { energy: "Recupera tu energía", money: "Encuentra claridad", relationships: "Vuelve a ti", goals: "Explora sentido y dirección" },
     heroIntro: "Elige una grabación original y disfruta de un momento de calma.",
     play: "Empezar meditación", originalEn: "Audio original en inglés", originalRu: "Audio original en ruso",
-    youtube: "Abrir en YouTube", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación", lowestHint: "Según las puntuaciones más bajas:", lowestNote: "Temas orientativos, no diagnóstico.",
+    youtube: "Abrir en YouTube", fullscreenMeditation: "Pantalla completa", seeAll: "Ver todas", gallery: "Otras meditaciones", galleryHint: "Portadas ilustrativas; grabaciones originales verificadas.", average: "Autoevaluación", lowestHint: "Según las puntuaciones más bajas:", lowestNote: "Temas orientativos, no diagnóstico.",
+    feedTitle: "Todas las meditaciones relacionadas", feedHint: "Elige una grabación: se abrirá arriba sin reproducción automática.",
+    feedChoose: "Elegir", feedAudioRu: "audio en ruso", feedAudioEn: "audio en inglés",
+    feedFallback: "Grabación original de la colección publicada.", feedCount: "vídeos",
     notAvailable: "No hay vídeos verificados para esos filtros. Elige Todos.",
     testsTitle: "Explora tu situación", testsIntro: "Elige un test gratuito o un perfil de personalidad. Son herramientas de reflexión, no de diagnóstico.",
     testsShort: "Tests", tests: "Abrir tests gratuitos", testsProfiles: "Perfiles de personalidad", testsProfilesHint: "Cuestionarios y perfiles disponibles", testsGuide: "Sobre los tests", testsGuideHint: "Privacidad y resultados", testsPrivacy: "Tus puntuaciones y foto de esta pantalla no se envían al catálogo de tests.", consult: "Solicitar consulta", consultNote: "Una solicitud no es una reserva ni un pago.",
@@ -376,7 +439,7 @@ const copy = {
     healingMasters: "Ver profesionales", healingServices: "Servicios de apoyo Reiki",
     energyAction: "Buscar profesional", energyHide: "Cerrar solicitud", energyNote: "Solicitar no significa reservar ni pagar.",
     progress: "Tu progreso", started: "Vídeos abiertos aquí", focusStatus: "Puntuación más baja",
-    private: "Solo en esta pantalla", privateInfo: "Puntuaciones, foto e historial no se envían ni se guardan en tu cuenta.",
+    private: "Solo en esta pantalla", privateInfo: "Las puntuaciones y el historial permanecen en el dispositivo. La foto solo se guarda en tu cuenta cuando pulsas Guardar.",
     newUi: "Apoyo móvil", standard: "Página de apoyo clásica", navHome: "Inicio", navPractices: "Mis prácticas", navMessages: "Mensajes", navProgress: "Mi progreso", navSettings: "Ajustes",
     settings: "Idioma y privacidad", language: "Idioma", close: "Cerrar ajustes",
     healthNote: "Prácticas de reflexión, no diagnósticos ni tratamientos médicos.",
@@ -429,10 +492,11 @@ function shortVideoTitle(title: string, locale: PublicLocale): string {
   return title.replace(/\s*·\s*(?:original English audio|audio original en inglés).*$/i, "");
 }
 
-export function HolisticSupportMobile({ locale, videos, courses = [], initialChoice = "meditation", initialTheme = "all", guideTests = {} }: {
+export function HolisticSupportMobile({ locale, videos, courses = [], learningItems = [], initialChoice = "meditation", initialTheme = "all", guideTests = {} }: {
   locale: PublicLocale;
   videos: SupportMobileVideo[];
   courses?: SupportMobileCourse[];
+  learningItems?: LearningCatalogItem[];
   initialChoice?: SupportMobileChoice;
   initialTheme?: Theme;
   guideTests?: Record<string, SupportGuideTest[]>;
@@ -461,10 +525,22 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const [goalRecommendationFormats, setGoalRecommendationFormats] =
     useState<GoalRecommendationFormat[]>(() => [...GOAL_RECOMMENDATION_FORMATS]);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [storedPhotoUrl, setStoredPhotoUrl] = useState<string | null>(null);
+  const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoHydrated,setPhotoHydrated] = useState(false);
+  useEffect(()=>setPhotoHydrated(true),[]);
+  const [photoSaved, setPhotoSaved] = useState(false);
+  const [photoSignIn, setPhotoSignIn] = useState(false);
+  const photoEpoch = useRef(0);
+  const photoStorageEpoch = useRef(0);
   const [photoError, setPhotoError] = useState("");
   const [master, setMaster] = useState<Author>("all");
   const [program, setProgram] = useState<Program>("all");
   const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [meditationCategoryOverride, setMeditationCategoryOverride] = useState<MeditationCategory | null>(null);
+  const [allMeditationCategoriesOpen, setAllMeditationCategoriesOpen] = useState(false);
+  const meditationCategoryRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [opened, setOpened] = useState<string[]>([]);
@@ -480,17 +556,47 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   }, []);
 
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);
-  const onPhoto = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  // Public Support never reads a private portrait just because a guest lands
+  // on the page (including Google/checkout return flows). Saving is voluntary;
+  // authenticated My Videos performs its own private read when explicitly opened.
+  // Invalidate any pending on-device photo decode when this page unmounts.
+  useEffect(() => () => { photoEpoch.current += 1; }, []);
+  const onPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 8 * 1024 * 1024) {
-      setPhotoError(t.photoError);
-      event.target.value = "";
-      return;
+    const epoch = ++photoEpoch.current;
+    setPhotoBlob(null); setPhotoUrl(null); setPhotoBusy(true);
+    setPhotoError(""); setPhotoSaved(false); setPhotoSignIn(false);
+    try {
+      const blob = await prepareBrowserPhoto(file);
+      if (epoch !== photoEpoch.current) return;
+      setPhotoBlob(blob); setPhotoUrl(URL.createObjectURL(blob));
+    } catch {
+      if (epoch === photoEpoch.current) setPhotoError(t.photoError);
+    } finally {
+      if (epoch === photoEpoch.current) setPhotoBusy(false);
     }
-    setPhotoError("");
-    setPhotoUrl(URL.createObjectURL(file));
-    event.target.value = "";
+  };
+  const savePhoto = async () => {
+    if (photoBusy || !photoBlob) return;
+    setPhotoBusy(true); setPhotoError(""); setPhotoSignIn(false);
+    const form = new FormData(); form.set("photo", photoBlob, "portrait.jpg");
+    try {
+      const response = await fetch("/api/app/support-photo", {
+        method:"POST", credentials:"same-origin", cache:"no-store", body:form,
+      });
+      if (response.status === 401) { setPhotoSignIn(true); return; }
+      const data = await response.json().catch(() => null);
+      if (!response.ok || typeof data?.url !== "string" || data.saved !== true)
+        throw new Error("PHOTO_SAVE_FAILED");
+      photoStorageEpoch.current += 1;
+      setStoredPhotoUrl(data.url); setPhotoUrl(null); setPhotoBlob(null); setPhotoSaved(true);
+    } catch {
+      setPhotoError(t.photoFailed);
+    } finally {
+      setPhotoBusy(false);
+    }
   };
 
   // Quick matching follows the lowest self-ratings. An explicitly applied goal
@@ -499,6 +605,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
   const lowestFocus: Focus = focusOrder.reduce((lowest, domain) =>
     focusScores[domain] < focusScores[lowest] ? domain : lowest, focusOrder[0]);
   const focus: Focus = goalSelection ? goalSectorFocus[goalSelection.sector] : lowestFocus;
+  // Check-in and goal changes rank verified recordings, but must not silently
+  // hide other published films. Category narrowing is an EXPLICIT visitor choice.
+  const meditationCategory: MeditationCategory = meditationCategoryOverride ?? "all";
   const suggested = useMemo(() => recommendation
     ? recommendSupportByLowestScores({ scores: recommendation, videos, locale })
     : null, [recommendation, videos, locale]);
@@ -517,29 +626,31 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     ? [...videos.filter(video => video.courseKey), ...videos.filter(video => !video.courseKey),
       ...courses.flatMap(course => course.videos)]
     : videos, [choice, videos, courses]);
-  const relevantVideos = useMemo(() => {
+  // One source-backed catalogue powers the original four featured posters and
+  // full feed; preserve every episode when a named Academy course is selected.
+  const catalogVideos = useMemo(() => {
     const filtered = browseVideos.filter(video => (master === "all" || video.author === master) &&
       (program === "all" || video.program === program));
-    const eligible = theme !== "all" ? filtered.filter(video => video.topics.includes(theme)) : filtered;
+    const categoryFiltered = choice !== "meditation" || meditationCategory === "all" ? filtered
+      : filtered.filter(video => (meditationCategoryTopics[meditationCategory] || [])
+        .some(topic => video.topics.includes(topic)));
+    const eligible = theme !== "all" ? categoryFiltered.filter(video => video.topics.includes(theme)) : categoryFiltered;
     if (goalMatch && choice === "meditation") {
       const order = new Map(goalMatch.videos.map((video, index) => [video.id, index]));
       return eligible.slice().sort((a, b) =>
         (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
+        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER));
     }
     if (suggested && choice === "meditation") {
       const order = new Map(suggested.videos.map((video, index) => [video.id, index]));
       return eligible.slice().sort((a, b) =>
         (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)).slice(0, 4);
+        (order.get(b.id) ?? Number.MAX_SAFE_INTEGER));
     }
-    // Show all source-ordered episodes when a specific course is selected;
-    // keep the four-thumbnail reference layout for regular meditations.
-    if (choice === "pump" && program !== "all") return eligible;
-    return eligible.slice(0, 4);
-  }, [browseVideos, master, program, theme, choice, suggested, goalMatch]);
-  const selected = relevantVideos.find(video => video.id === selectedId) ??
-    videos.find(video => video.id === selectedId) ?? relevantVideos[0];
+    return eligible;
+  }, [browseVideos, master, program, theme, meditationCategory, choice, suggested, goalMatch]);
+  const relevantVideos = choice === "pump" && program !== "all" ? catalogVideos : catalogVideos.slice(0, 4);
+  const selected = catalogVideos.find(video => video.id === selectedId) ?? catalogVideos[0];
   const sourceAudio = selected?.sourceLanguage === "ru" ? t.originalRu : t.originalEn;
   const activeReiki = choice === "pump" && selected?.courseKey ? reikiText.lessons[selected.courseKey] : null;
   const activeMystery = choice === "pump" ? courses.find(course => course.id === program) : undefined;
@@ -628,6 +739,21 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
     setPlaying(true);
     setOpened(previous => previous.includes(selected.id) ? previous : [...previous, selected.id]);
   };
+  const chooseMeditationCategory = (value: MeditationCategory) => {
+    setMeditationCategoryOverride(value);
+    // A new primary direction must not inherit stale Programme/Master filters.
+    // Catalogue filters must preserve accepted personal goals, entered amounts and currency.
+    setTheme("all"); setProgram("all"); setMaster("all"); setSelectedId(null); setPlaying(false);
+  };
+  const scrollMeditationCategories = () => {
+    const rail = meditationCategoryRef.current;
+    if (!rail) return;
+    const atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 8;
+    rail.scrollTo({
+      left: atEnd ? 0 : Math.min(rail.scrollWidth, rail.scrollLeft + rail.clientWidth * 0.8),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  };
   const changeChoice = (value: Choice) => {
     setGoalFilterOpen(false); setChoice(value); setPlaying(false); setSelectedId(null);
     if (value === "pump") { setTheme("all"); setProgram("all"); setMaster("all"); }
@@ -685,6 +811,20 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             {locale.toUpperCase()} <ChevronDown size={16} aria-hidden="true" />
           </button>
         </header>
+        <nav className={styles.practiceTabs} data-support-practice-tabs
+          aria-label={locale==="ru"?"Практика: разделы":locale==="es"?"Secciones de práctica":"Practice sections"}>
+          <button type="button" aria-pressed={choice==="pump"||choice==="meditation"}
+            onClick={()=>{changeChoice("pump");document.getElementById("support-mobile-experience")?.scrollIntoView({block:"start",behavior:"smooth"});}}>
+            {locale==="ru"?"Курсы":locale==="es"?"Cursos":"Courses"}
+          </button>
+          <button type="button" aria-pressed={choice==="consultation"}
+            onClick={()=>{changeChoice("consultation");document.getElementById("support-mobile-experience")?.scrollIntoView({block:"start",behavior:"smooth"});}}>
+            {locale==="ru"?"Услуги":locale==="es"?"Servicios":"Services"}
+          </button>
+          <Link href={"/"+locale+"/temple-insights"} prefetch={false}>
+            {locale==="ru"?"Идеи":locale==="es"?"Ideas":"Ideas"}
+          </Link>
+        </nav>
         <div className={styles.topGrid}>
           <section className={styles.assessment} aria-labelledby="mobile-assessment-title">
             <h1 id="mobile-assessment-title" aria-label={t.assessment}><span className={styles.headingLong}>{t.assessment}</span><span className={styles.headingCompact}>{t.assessmentShort}</span></h1>
@@ -692,7 +832,7 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
             <div className={styles.scaleList}>
               {checkinOrder.map(id => {
                 const Icon = scoreIcons[id];
-                const label = id === "meaning" ? t.goalSector.meaning : t.foci[id];
+                const label = id === "meaning" ? t.foci.goals : t.foci[id];
                 return <label className={styles.scaleRow} key={id} data-support-scale={id}>
                   <span className={styles.scaleIcon} data-tone={id}><Icon size={23} aria-hidden="true" /></span>
                   <span className={styles.scaleDetail}>
@@ -715,16 +855,22 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
           </section>
 
           <section className={styles.profile} aria-label={t.upload}>
-            <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo>
-              {photoUrl ? <Image alt="" src={photoUrl} width={176} height={176} unoptimized className={styles.photoPreview} /> :
+            <label className={styles.photo} title={photoUrl ? t.replace : t.upload} data-support-photo
+              data-support-photo-hydrated={photoHydrated?"true":"false"}>
+              {photoUrl || storedPhotoUrl ? <Image alt="" src={(photoUrl || storedPhotoUrl)!} width={176} height={176} unoptimized className={styles.photoPreview} /> :
                 <span className={styles.photoPlaceholder}>
                   <Image alt="" src="/images/holistic-house/support-reference-avatar.webp" width={176} height={176} unoptimized className={styles.photoReference} />
                   <strong>{t.upload}</strong>
                 </span>}
               <span className={styles.camera}><Camera size={20} aria-hidden="true" /></span>
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto}
-                aria-label={photoUrl ? t.replace : t.upload} className={styles.fileInput} />
+              <input type="file" accept={SUPPORT_PHOTO_ACCEPT} onChange={event => { void onPhoto(event); }}
+                disabled={!photoHydrated||photoBusy} aria-label={photoUrl || storedPhotoUrl ? t.replace : t.upload} className={styles.fileInput} />
             </label>
+            {photoBlob && <button type="button" className={styles.photoSave} disabled={photoBusy}
+              data-support-photo-save onClick={() => { void savePhoto(); }}>{photoBusy ? t.photoSaving : t.photoSave}</button>}
+            {(photoSaved || storedPhotoUrl) && <Link href={"/" + locale + "/app/videos"} className={styles.photoSaved}
+              data-support-photo-saved>{t.photoSaved}</Link>}
+            {photoSignIn && <Link href={"/" + locale + "/app"} className={styles.photoSaved} data-support-photo-signin>{t.photoSignIn}</Link>}
             <button type="button" className={styles.testsShortcut} data-support-tool="tests"
               aria-pressed={choice === "tests"} aria-controls="support-tests-panel"
               onClick={() => changeChoice("tests")}>
@@ -775,6 +921,9 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
           </section>
         </div>
 
+        <HolisticUnifiedPath locale={locale} activeChoice={choice}
+          suggestedFocus={goalSelection ? focus : null} />
+
         <section className={styles.experience} id="support-mobile-experience" aria-live="off">
           {guideOpen && !goalFilterOpen ? <HolisticSupportInlineGuide
             key={guideVersion} locale={locale} scores={scores} editedCheckins={editedCheckins}
@@ -803,7 +952,20 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                 <button type="button" onClick={openGoalFilter}>{t.goalAdjust}</button>
                 <button type="button" onClick={resetGoalFilter} aria-label={t.goalClear}><X size={16} aria-hidden="true" /></button>
               </div> : null}
-              {choice === "pump" && courses.length > 0 ? (
+              {choice === "pump" ? <section className={styles.learningCatalogBlock}
+              data-support-learning-catalog aria-label={t.coursesAll}>
+            <HolisticSupportLearningCatalog locale={locale} items={learningItems} />
+            <details className={styles.learningGoalPicker} data-learning-goal-picker>
+              <summary>{locale === "ru" ? "Дополнительно: обучение по моему профилю" :
+                locale === "es" ? "Opcional: cursos según mi perfil" : "Optional: courses by my profile"}</summary>
+              <HolisticSupportCourseProfiles locale={locale} courses={courses}
+                savedSectors={goalSavedSectors} active={activeCourseProfile} onSelect={setActiveCourseProfile}
+                onTests={() => changeChoice("tests")}
+                onFillProfile={openCourseProfileFilter}
+                onRecommendations={showCourseProfileRecommendations} />
+            </details>
+          </section> : null}
+          {choice === "pump" && courses.length > 0 ? (
                 <div className={styles.mysteryPicker} data-support-mystery-courses>
                   <div className={styles.mysteryPickerHeading}>
                     <strong>{t.mysteryCourses}</strong><span>{t.mysterySource}</span>
@@ -820,7 +982,38 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </div>
                 </div>
               ) : null}
-              <div className={styles.hero} id="support-meditation-player" data-support-player data-playing={playing ? "true" : "false"}>
+              {choice === "meditation" ? <section className={styles.meditationCategorySection} data-support-meditation-category-switcher aria-label={t.meditationCategoriesTitle}>
+                <div className={styles.meditationCategoryHeader}>
+                  <div><h2>{t.meditationCategoriesTitle}</h2><p>{t.meditationCategoryLead}</p></div>
+                  <button type="button" onClick={() => setAllMeditationCategoriesOpen(open => !open)}
+                    aria-expanded={allMeditationCategoriesOpen} aria-controls="meditation-category-options">
+                    {t.meditationCategoryAll}<ArrowRight size={16} aria-hidden="true" />
+                  </button>
+                </div>
+                <div className={styles.meditationCategoryFrame} data-expanded={allMeditationCategoriesOpen ? "true" : "false"}>
+                  <div ref={meditationCategoryRef} id="meditation-category-options"
+                    className={styles.meditationCategoryRail} role="group" aria-label={t.meditationCategoriesTitle}
+                    data-support-meditation-categories>
+                    {meditationCategoryOptions.map(({ id, Icon }) => (
+                      <button type="button" key={id} className={styles.meditationCategoryCard}
+                        data-support-meditation-category={id} data-category={id}
+                        aria-pressed={meditationCategory === id}
+                        aria-label={String(t.meditationCategoryShortNames[id]) === String(t.meditationCategoryNames[id])
+                          ? t.meditationCategoryNames[id]
+                          : t.meditationCategoryShortNames[id] + " — " + t.meditationCategoryNames[id]}
+                        title={t.meditationCategoryNames[id]} onClick={() => chooseMeditationCategory(id)}>
+                        <Icon size={27} aria-hidden="true" />
+                        <span aria-hidden="true">{t.meditationCategoryShortNames[id]}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button type="button" className={styles.meditationCategoryNext} aria-label={t.meditationCategoryMore}
+                    data-support-meditation-categories-next onClick={scrollMeditationCategories}>
+                    <ChevronRight size={22} aria-hidden="true" />
+                  </button>
+                </div>
+              </section> : null}
+              <div className={styles.hero} id="support-meditation-player" data-support-player data-playing={playing ? "true" : "false"} data-selected-video={selected?.id ?? ""}>
                 {!playing ? <Image className={styles.heroBackdrop} src="/images/holistic-house/support-mock-hero.webp"
                   alt="" fill priority sizes="(max-width: 640px) 100vw, 1100px" /> : null}
                 {!playing ? <div className={styles.heroShade} aria-hidden="true" /> : null}
@@ -948,9 +1141,46 @@ export function HolisticSupportMobile({ locale, videos, courses = [], initialCho
                   </nav>
                 ) : null}
                 <p className={styles.videoHint}>{t.galleryHint}</p>
+                 {choice === "meditation" && catalogVideos.length > 0 ? <section className={styles.videoFeed}
+                  data-support-meditation-feed aria-labelledby="support-meditation-feed-title">
+                  <div className={styles.videoFeedHeading}>
+                    <h3 id="support-meditation-feed-title">{t.feedTitle}</h3>
+                    <span>{catalogVideos.length} {t.feedCount}</span>
+                  </div>
+                  <p className={styles.videoFeedHint}>{t.feedHint}</p>
+                  <ul className={styles.videoFeedList}>
+                    {catalogVideos.map(video => <li key={video.id}>
+                      <button type="button" className={styles.videoFeedItem}
+                        data-support-meditation-feed-item={video.id}
+                        aria-pressed={selected?.id === video.id}
+                        onClick={() => { pickVideo(video.id); scrollToSupport("support-meditation-player"); }}>
+                        <span className={styles.videoFeedPoster}>
+                          <Image src={"https://i.ytimg.com/vi/" + encodeURIComponent(video.id) + "/mqdefault.jpg"}
+                            alt="" width={320} height={180} unoptimized loading="lazy" />
+                          <span className={styles.videoFeedPlay} aria-hidden="true">
+                            <Play size={19} fill="currentColor" />
+                          </span>
+                        </span>
+                        <span className={styles.videoFeedCopy}>
+                          <strong>{video.title}</strong>
+                          <span className={styles.videoFeedDescription}>{video.description || t.feedFallback}</span>
+                          <span className={styles.videoFeedFooter}>
+                            <small>{t.programs[video.program]} · {video.sourceLanguage === "ru" ? t.feedAudioRu : t.feedAudioEn}</small>
+                            <span className={styles.videoFeedChoose}>{t.feedChoose}<ArrowRight size={15} aria-hidden="true" /></span>
+                          </span>
+                        </span>
+                      </button>
+                    </li>)}
+                  </ul>
+                </section> : null}
 
               </div>
               <div className={styles.videoSourceRow} data-support-video-source>
+                {choice === "meditation" && selected ? <Link
+                  href={"/" + locale + "/meditations?video=" + encodeURIComponent(selected.id)}
+                  prefetch={false} className={styles.youtubeLink} data-support-fullscreen-selected>
+                  {t.fullscreenMeditation}<ArrowRight size={18} aria-hidden="true" />
+                </Link> : null}
                 {selected ? <a className={styles.youtubeLink} href={"https://www.youtube.com/watch?v=" + encodeURIComponent(selected.id)}
                   target="_blank" rel="noopener noreferrer">{t.youtube} <ArrowRight size={18} aria-hidden="true" /></a> : null}
               </div>

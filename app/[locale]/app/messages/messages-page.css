@@ -19,10 +19,10 @@
 /* The pinned cabinet bar would overlap Send when the iPhone keyboard appears.
    Remove it only while an editable field in Messages is focused. */
 @media(max-width:760px){
-  .hh-app.hh-messages-page:has(input:focus,textarea:focus) .hh-mobile-app-nav{
+  .hh-app.hh-messages-page[data-hh-mobile-keyboard-open="true"] .hh-mobile-app-nav{
     display:none!important;
   }
-  .hh-app.hh-messages-page:has(input:focus,textarea:focus){
+  .hh-app.hh-messages-page[data-hh-mobile-keyboard-open="true"]{
     padding-bottom:0!important;
   }
 }
@@ -47,7 +47,7 @@
   font:650 10px/1.2 system-ui,sans-serif}
  .hh-app.hh-messages-page .hh-mobile-app-nav a:focus-visible{outline:3px solid #008d72;outline-offset:2px}
  /* This original keyboard gate stays authoritative. */
- .hh-app.hh-messages-page:has(input:focus,textarea:focus) .hh-mobile-app-nav{display:none!important}
+ .hh-app.hh-messages-page[data-hh-mobile-keyboard-open="true"] .hh-mobile-app-nav{display:none!important}
 }
 @media(max-width:350px){.hh-app.hh-messages-page{width:calc(100% - 10px)}}
 
@@ -79,7 +79,49 @@
 @media(max-width:760px){
  .hh-app.hh-messages-page:has([data-simple-messages][data-detail-open="true"]) .hh-messages-context-nav,
  .hh-app.hh-messages-page:has([data-messages-hub][data-thread-open="true"]) .hh-messages-context-nav,
- .hh-app.hh-messages-page:has(input:focus,textarea:focus) .hh-messages-context-nav{
+ .hh-app.hh-messages-page[data-hh-mobile-keyboard-open="true"] .hh-messages-context-nav{
   display:none;
+ }
+}
+
+/* A selected mobile conversation is a full-screen view. The cabinet dock and
+   page scrollbar must not sit above a reply or consume keyboard space. */
+@media(max-width:760px){
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="clients"] [data-simple-messages][data-detail-open="true"]){
+  overflow:hidden
+ }
+ .hh-app.hh-messages-page:has([data-orders-clients-hub][data-section="clients"] [data-simple-messages][data-detail-open="true"]) .hh-mobile-app-nav{
+  display:none!important
+ }
+}
+
+/* Last rule on the actual Messages route: reserve the measured Safari-visible
+   dock height + browser-toolbar displacement, including after Google login. */
+@media(max-width:760px){
+  .hh-app.hh-messages-page{
+    padding-bottom:max(
+      calc(100px + env(safe-area-inset-bottom)),
+      calc(var(--hh-app-mobile-nav-height,84px) + var(--hh-app-dock-usable-inset,0px) + 20px)
+    );
+  }
+}
+
+/* A single mobile chat owns the visual viewport. All existing navigation
+   remains available outside editing/active private-conversation focus. */
+@media(max-width:760px){
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="ai"]),
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="orders"] [data-hh-order-active-chat]){
+  overflow:hidden
+ }
+ body:has(.hh-messages-page[data-hh-mobile-keyboard-open="true"]) [data-hh-unified-dock],
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="orders"] [data-hh-order-active-chat]) [data-hh-unified-dock],
+ body:has(.hh-messages-page [data-orders-clients-hub][data-section="clients"] [data-simple-messages][data-detail-open="true"]) [data-hh-unified-dock]{
+  display:none!important
+ }
+ .hh-app.hh-messages-page:has([data-orders-clients-hub][data-section="orders"] [data-hh-order-active-chat]) .hh-mobile-app-nav{
+  display:none!important
+ }
+ .hh-app.hh-messages-page[data-hh-mobile-keyboard-open="true"] .hh-mobile-app-nav{
+  display:none!important
  }
 }

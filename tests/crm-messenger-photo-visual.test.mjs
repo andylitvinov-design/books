@@ -19,7 +19,15 @@ test('Telegram photo blob previews are allowed only on the two owner messenger r
     '/en/app/messages/someone-else','/admin']){
     assert.equal(guardedPaths.test(path),false,path)
   }
-  assert.match(middleware,/\(ownerMessengerImages \|\| publicMandalaLocalImages \? ' blob:' : ''\)/)
+  // Blob previews remain route-scoped: owner inbox, public Mandala, Support,
+  // and the authenticated private photo cabinet. Neither public marketing
+  // pages nor other account routes receive unrestricted blob image access.
+  assert.match(middleware,/\(ownerMessengerImages \|\| publicMandalaLocalImages \|\| supportMobilePublishedMedia \|\| privateSupportPhotoCabinet \? ' blob:' : ''\)/)
+  const privateCabinet=middleware.match(/const privateSupportPhotoCabinet = (\/\^.+\/)\.test\(pathname\)/)
+  assert.ok(privateCabinet,'private photo signed-image CSP requires exact cabinet route')
+  const onlyCabinet=runInNewContext(privateCabinet[1])
+  for(const path of ['/en/app/videos','/ru/app/videos','/es/app/videos/']) assert.equal(onlyCabinet.test(path),true,path)
+  for(const path of ['/','/en','/en/client/123','/en/app/messages','/en/app/portrait']) assert.equal(onlyCabinet.test(path),false,path)
   assert.match(middleware,/directMessageStorageOrigin/)
   assert.match(middleware,/directMessageStorageOrigin,\n    "font-src/)
   assert.doesNotMatch(middleware,/img-src[^\n]* https:\/\/\*\./)
@@ -63,7 +71,7 @@ test('Private photos remain linked to the new one-screen customer messenger',()=
     'ME-GOAL-OBSTACLE drawing, shared voluntarily for private review'])
     assert.ok(chat.includes(marker),marker)
   assert.match(chat,/!m\.photo\|\|!photoOnlyMessage\.test\(String\(m\.text\|\|''\)\.trim\(\)\)/)
-  assert.match(chat,/m\.photo&&selected\.channel==='telegram'&&<CrmTelegramPhoto/)
+  assert.match(chat,/m\.photo&&\['telegram','whatsapp'\]\.includes\(selected\.channel\)&&<CrmTelegramPhoto/)
   assert.match(chat,/purpose=\{m\.photoPurpose==='drawing'\?'drawing':'portrait'\}/)
   assert.match(chat,/placeholder=\{conversationOnly\|\|compact\?/)
   assert.match(inbox,/function PrivateAvatar\(/)

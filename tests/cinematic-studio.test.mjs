@@ -60,7 +60,8 @@ test("brief audio and caption choices reuse existing local controls without rend
   assert.match(directorUI,/onMusicPreference/);
   assert.match(directorUI,/onCaptionPreference/);
   assert.match(studio,/onMusicPreference=\{choice=>/);
-  assert.match(studio,/choice==="calm"\?"meditation":choice==="energetic"\?"energy":"none"/);
+  assert.match(studio,/const track=recommendCuratedAudio\(\{theme:audioTheme,kind:"melody",mood\}\)\[0\]/);
+  assert.doesNotMatch(studio,/choice==="calm"\?"meditation":choice==="energetic"\?"energy":"none"/);
   assert.match(studio,/onCaptionPreference=\{choice=>setCaptionMode\(choice==="none"\?"none":"theme"\)\}/);
   assert.doesNotMatch(directorUI,/fetch\(["']https?:\/\/|sendBeacon/);
 });
@@ -79,10 +80,18 @@ test("long-running cinematic preview loops actual scene times and synchronized a
   assert.equal(findCinematicShot(film.shots,cinematicPreviewSeconds(film,28))?.number,2);
   assert.match(studio,/const filmSecond=storyboard\?cinematicPreviewSeconds\(storyboard,time\):time/);
   assert.match(studio,/const frameSecond=cinematicPlan\?cinematicPreviewSeconds\(cinematicPlan,elapsed\):elapsed/);
-  assert.match(studio,/paintVideoAffirmations\(ctx,frameSecond,affirmationLines,affirmations\)/,
+  assert.match(studio,/paintSingleVideoTextOverlay\(ctx,frameSecond,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/,
     "looping visual stage and timed affirmations must share one clock");
-  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/,
+  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,frameTime/,
     "final encoded video still uses the original bounded timeline");
+  assert.match(studio,/const frameTime=Math\.min\(duration,\(now-start\)\/1000\)/,
+    "encoded frame clock must be bounded by the requested movie duration");
+  assert.match(studio,/const stockFrame=freeFilmVideoAt\(frameTime,true\)/,
+    "the selected stock shot advances on the very same export timeline");
+  assert.match(studio,/if\(usingFreeFilmCompilation&&!stockFrame&&!hasStoryboardPhotoAt\(frameTime\)\)[\s\S]*?stockGapSince>500[\s\S]*?stopJob\(job,true\)/,
+    "brief buffering keeps the real frame; a missing shot cancels rather than substituting procedural footage");
+  assert.match(studio,/paintSingleVideoTextOverlay\(ctx,frameTime,singleTextSource,affirmationLines,affirmations,duration,cinematicPlan,timelineTextClips\)/,
+    "encoded captions must use the same clock as the real video frame");
 });
 
 test("storyboard scene selectors show real localized scene names without touching safe export prompts",()=>{
@@ -164,7 +173,7 @@ test("therapy-mode storyboards require practitioner review and make no autonomou
   assert.match(directorUI,/data-director-therapy-review/);
   assert.match(directorUI,/customPlan\.requiresPractitionerReview===therapyMode/);
   assert.match(directorUI,/generated && generatedMode===therapyMode/);
-  assert.match(studio,/setCinematicPlan\(null\);setNotice\(""\);/);
+  assert.ok(studio.includes('setStudioMode(current=>current==="therapy"?"pump":"therapy");setActiveWorkspace("practices");setNotice("");'));
 });
 test("visual avoid rules do not leak private text or force an untrusted prompt",()=>{
   const p=buildCinematicStoryboard({theme:"health",locale:"en",wish:prefix,
@@ -248,10 +257,11 @@ test("free montage manifest always has a bounded, contiguous timeline and explic
 });
 test("four style choices visibly grade the SAME local Canvas frames in preview and recorded file",()=>{
   for(const style of ["warm","nature","dream","minimal"])
-    assert.ok(studio.includes('storyboard.styleId==="'+style+'"'),
+    assert.ok(studio.includes('styleId==="'+style+'"'),
       style+" must change actual video pixels, not only a paid-provider prompt");
+  assert.match(studio,/paintStudioVisualGrade\(ctx,montageStyleId\|\|storyboard\.styleId\)/);
   assert.match(studio,/paintCinematicFrame\(ctx,image,effect,0,aspect/);
-  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/);
+  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,frameTime/);
   assert.match(studio,/ctx\.createRadialGradient\(w\*\.53,h\*\.36/);
   assert.match(studio,/ctx\.fillRect\(0,0,w,h\)/);
 });
@@ -311,9 +321,9 @@ test("same iPhone editor records actual four-shot canvas montage without sending
   assert.match(studio,/onApplyStoryboard=\{plan=>\{/);
   assert.match(studio,/setDuration\(plan.durationSeconds as \(typeof durations\)\[number\]\)/);
   assert.match(studio,/setCinematicPlan\(plan\)/);
-  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,Math\.min\(duration/);
-  assert.match(studio,/const activeFilm = cinematicPlan \? null/);
-  assert.match(studio,/data-hero-promo=\{!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/,
+  assert.match(studio,/paintCinematicFrame\(ctx,image,effect,frameTime/);
+  assert.match(studio,/const activeFilm = creationMode==="generated" \|\| cinematicPlan \? null/);
+  assert.match(studio,/data-hero-promo=\{activeWorkspace!=="phrases"&&creationMode!=="generated"&&!cinematicPlan&&!photoUrl&&!previewPlaying&&!recording/,
     "applied cinematic storyboard must show its real first frame, not old static hero promo");
   assert.match(studio,/setCinematicPlan\(null\)/);
   assert.match(studio,/data-mandala-video-generate/);
@@ -332,7 +342,10 @@ test("same iPhone editor records actual four-shot canvas montage without sending
 test("approved #2691 quick and legacy wish controls share the Director's single React state",()=>{
   assert.equal((studio.match(/<MandalaCinematicDirector/g)||[]).length,1);
   assert.match(studio,/MandalaCinematicDirector locale=\{locale\} theme=\{theme\} intentText=\{wish\}/);
-  assert.match(studio,/data-video-quick-wish/);
+  assert.match(studio,/<MandalaAutoVideoDirector[\s\S]*?goal=\{wish\}/,
+    "single goal-first input shares wish React state with the optional Cinematic Director");
+  assert.doesNotMatch(studio,/<input data-video-quick-wish/,
+    "do not reintroduce a second competing goal input");
   assert.match(studio,/id="personal-video-wish"/);
   assert.match(studio,/onIntentTextChange=\{value=>\{setWish\(value\)/);
   assert.match(directorUI,/onIntentTextChange/);

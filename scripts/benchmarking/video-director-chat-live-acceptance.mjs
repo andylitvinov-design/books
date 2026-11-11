@@ -1,0 +1,442 @@
+#!/usr/bin/env node
+/**
+ * Real, anonymous production acceptance for the *chat*, not just the older
+ * first-video form: guided intent -> 4 licensed shots -> approved storyboard
+ * -> existing Canvas/MediaRecorder -> downloadable moving video + real audio.
+ * Chromium's mobile viewport is not a physical iPhone Safari device.
+ * Never submits credentials, photos, account details, AI requests or payments.
+ */
+import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+import {readFileSync,writeFileSync,mkdirSync,mkdtempSync,rmSync} from 'node:fs';
+import {resolve,join} from 'node:path';
+import {tmpdir} from 'node:os';
+
+const LIVE='https://holistichouse.vercel.app';
+const LOCAL='http://127.0.0.1:3100';
+const origin=process.env.HH_CHAT_LIVE_ORIGIN||LIVE;
+const driver=process.env.HH_LIVE_VIDEO_PLAYWRIGHT;
+if(!driver?.startsWith('/') || (origin!==LIVE &&
+  !(origin===LOCAL && process.env.HH_CHAT_ALLOW_LOCAL==='true')))
+  throw Error('VIDEO_CHAT_LIVE_CONFIG_UNSAFE');
+const {chromium}=await import(driver);
+const catalogue=JSON.parse(readFileSync('data/video-catalog/scene-taxonomy.json','utf8'));
+const approved=new Map(catalogue.scenes.filter(s=>
+  s.status==='approved'&&s.media==='licensed_mp4'&&s.rightsReference&&
+  /^\/videos\/holistic-house\/[a-z0-9_/-]+\.mp4$/.test(s.video))
+  .map(s=>[s.id,s.video]));
+const artifact='artifacts/benchmarking/video-director-chat-live-acceptance.json';
+const report={origin,method:'anonymous-local-render',engine:'desktop-Chromium-mobile-emulation',
+  physicalIPhoneVerified:false,externalAiRequested:false,paidServiceUsed:false,
+  localesChecked:[],shotCount:0,encodedVideo:false,downloadedVideo:false,
+  audioVerified:false,sourceIdentityVerified:false,status:'FAIL'};
+let browser,mediaDir;
+function mediaTool(cmd,args,maxBuffer=1024*1024){
+  const r=spawnSync(cmd,args,{timeout:30000,maxBuffer});
+  if(r.error||r.status!==0)throw Error('VIDEO_CHAT_'+cmd.toUpperCase()+
+    '_FAILED:'+String(r.error?.code||r.status)+':'+String(r.stderr||'').slice(0,130));
+  return r.stdout;
+}
+function sample(media,time){
+  return mediaTool('ffmpeg',['-hide_banner','-loglevel','error','-ss',String(time),
+    '-i',media,'-frames:v','1','-vf','scale=54:96,format=rgb24',
+    '-f','rawvideo','pipe:1'],200*1024);
+}
+function similarity(a,b){
+  assert.equal(a.length,54*96*3,'ENCODED_FRAME_INVALID');
+  assert.equal(b.length,a.length,'REFERENCE_FRAME_INVALID');
+  let ma=0,mb=0;
+  for(let i=0;i<a.length;i++){ma+=a[i];mb+=b[i];}
+  ma/=a.length;mb/=b.length;
+  let aa=0,bb=0,ab=0;
+  for(let i=0;i<a.length;i++){
+    const x=a[i]-ma,y=b[i]-mb;aa+=x*x;bb+=y*y;ab+=x*y;
+  }
+  return aa&&bb?ab/Math.sqrt(aa*bb):0;
+}
+function decodedAudioRms(path){
+  const pcm=mediaTool('ffmpeg',['-hide_banner','-loglevel','error','-i',path,
+    '-map','0:a:0','-t','2','-ar','8000','-ac','1','-f','s16le','pipe:1'],100*1024);
+  const samples=Math.floor(pcm.length/2);
+  assert.ok(samples>4000,'AUDIO_DECODE_EMPTY');
+  let power=0;
+  for(let i=0;i<samples;i++){const v=pcm.readInt16LE(i*2)/32768;power+=v*v;}
+  return Math.sqrt(power/samples);
+}
+const ideas={
+  ru:'Спокойное вертикальное видео про любовь на 20 секунд с медитативной музыкой без фраз',
+  en:'A video about love',
+  es:'Vídeo vertical suave de amor de 20 segundos con música, sin texto',
+};
+const sizes={ru:390,en:320,es:430};
+async function state(page,value,timeout=15000){
+  await page.waitForFunction(expected=>
+    document.querySelector('[data-video-director-chat]')?.getAttribute('data-chat-step')===expected,
+    value,{timeout});
+}
+async function send(chat,text){
+  const input=chat.locator('form textarea');
+  assert.equal(await input.count(),1,'SINGLE_CHAT_COMPOSER_REQUIRED');
+  await input.fill(text);
+  // A disabled React-controlled submit must never be mistaken for a success.
+  // Diagnose readiness explicitly; do not retry/rewrite the user's answer.
+  try {
+    await chat.locator('form button[type=submit]').click({timeout:15000});
+  } catch(error) {
+    const readiness=await chat.evaluate(root=>({
+      step:root.getAttribute('data-chat-step'),
+      hydrated:root.getAttribute('data-chat-hydrated'),
+      characters:root.querySelector('form textarea')?.value?.length||0,
+      disabled:root.querySelector('form button[type=submit]')?.disabled??true,
+      documentReady:document.readyState,
+    }));
+    throw Error('VIDEO_CHAT_SEND_NOT_READY:'+JSON.stringify(readiness)+':'+
+      String(error?.message||error).slice(0,100));
+  }
+}
+async function downloadBytes(download){
+  const chunks=[];
+  for await(const c of await download.createReadStream())chunks.push(Buffer.from(c));
+  return Buffer.concat(chunks);
+}
+try{
+  browser=await chromium.launch({headless:true,channel:'chrome'});
+  for(const locale of ['en','es','ru']){
+    const context=await browser.newContext({
+      viewport:{width:sizes[locale],height:844},isMobile:true,hasTouch:true,
+      locale:locale==='ru'?'ru-RU':locale==='es'?'es-ES':'en-US',
+      serviceWorkers:'block',reducedMotion:'reduce',
+      storageState:{cookies:[],origins:[]},acceptDownloads:true,
+    });
+    const networkViolations=[],pageErrors=[];
+    await context.route('**/*',route=>{
+      const req=route.request();
+      let firstParty=false;
+      try{firstParty=new URL(req.url()).origin===origin;}catch{}
+      if(!firstParty||!['GET','HEAD'].includes(req.method())){
+        networkViolations.push({method:req.method(),external:!firstParty});
+        return route.abort('blockedbyclient');
+      }
+      return route.continue();
+    });
+    const page=await context.newPage();
+    page.on('pageerror',e=>pageErrors.push(e.name));
+    const response=await page.goto(origin+'/'+locale+'/holistic-support/mandala',{
+      waitUntil:'domcontentloaded',timeout:65000});
+    assert.equal(response?.status(),200,'LIVE_CHAT_PAGE_NOT_200_'+locale);
+    // The approved new UI keeps the ONE #2913 chat folded until Free Help
+    // is tapped. Older LIVE releases expose it immediately. Exercise the
+    // actual visitor action whenever the approved owner layout exists.
+    const ownerDetails=page.locator('[data-video-director-chat-details]');
+    const ownerFlow=await ownerDetails.count()===1;
+    if(ownerFlow){
+      const goals=page.locator('[data-video-director-goal-controls] [data-auto-video-category]');
+      const topics=page.locator('[data-video-director-topic-controls] [data-auto-video-goal]');
+      await goals.first().waitFor({state:'visible',timeout:30000});
+      assert.equal(await goals.count(),4,'OWNER_FOUR_IMAGE_GOALS_REQUIRED');
+      assert.equal(await topics.count(),6,'OWNER_SIX_TEXT_TOPICS_REQUIRED');
+      const freeHelp=page.locator('[data-auto-video-clarify]');
+      await freeHelp.click({timeout:15000});
+      await page.waitForFunction(()=>
+        document.querySelector('[data-video-director-chat-details]')?.hasAttribute('open'),
+        undefined,{timeout:15000});
+    }
+    const chat=page.locator('[data-video-director-chat]');
+    await chat.waitFor({state:'visible',timeout:60000});
+    assert.equal(await chat.count(),1,'DUPLICATE_VIDEO_DIRECTOR_CHAT');
+    // A visible server-rendered chat is NOT proof that React has hydrated.
+    // After the product hydration marker ships, require it explicitly; for
+    // the currently deployed older page, require DOM load completion first.
+    await page.waitForFunction(()=>{
+      const root=document.querySelector('[data-video-director-chat]');
+      const hydration=root?.getAttribute('data-chat-hydrated');
+      return hydration==='true'||(hydration===null&&document.readyState==='complete');
+    },undefined,{timeout:30000});
+    if(await chat.getAttribute('data-chat-hydrated')===null){
+      // Backwards-compatible check while testing an older deployed release.
+      // Its SSR shell has no explicit hydration marker: only proceed after
+      // a controlled input response enables Submit, without sending a message.
+      const textarea=chat.locator('form textarea');
+      const button=chat.locator('form button[type=submit]');
+      let interactive=false;
+      for(let attempt=0;attempt<18;attempt++){
+        await textarea.fill('Video');
+        if(await button.isEnabled()){interactive=true;break;}
+        await page.waitForTimeout(400);
+      }
+      assert.ok(interactive,'LEGACY_CHAT_INTERACTION_NOT_HYDRATED');
+      await textarea.fill('');
+    }
+    const entryStep=await chat.getAttribute('data-chat-step');
+    assert.ok(['goal','category'].includes(entryStep),
+      'CHAT_ENTRY_MUST_BE_LEGACY_OR_CANONICAL_TREE');
+    assert.equal(await chat.locator('form textarea').count(),1,'CHAT_COMPOSER_DUPLICATED');
+    assert.equal(await chat.locator('input[type=checkbox]').isChecked(),false,
+      'EXTERNAL_AI_MUST_REQUIRE_OPT_IN');
+    assert.equal(await chat.locator('form textarea').evaluate(n=>Number(n.maxLength)),800,
+      'CREATIVE_BRIEF_LIMIT_REGRESSION');
+    const before=await chat.boundingBox();
+    assert.ok(before&&before.width<=sizes[locale]+2,'CHAT_OVERFLOWS_MOBILE_VIEWPORT');
+    const welcome=chat.locator('[data-video-chat-welcome]');
+    if(entryStep==='category'&&await welcome.count()===1){
+      assert.equal(await chat.locator('[data-video-chat-welcome-goal]').count(),5,
+        'CALM_WELCOME_CANONICAL_FIVE_GOALS');
+      for(const selector of ['[data-video-chat-welcome-create]',
+        '[data-video-chat-welcome-browse]','[data-video-chat-welcome-help]',
+        '[data-video-chat-welcome-how]']){
+        assert.equal(await chat.locator(selector).count(),1,
+          'CALM_WELCOME_ACTION_MISSING_'+selector);
+      }
+      const hero=await chat.locator('[data-video-chat-welcome] h2').boundingBox();
+      assert.ok(hero&&hero.width<=sizes[locale]+2,'CALM_WELCOME_HERO_OVERFLOW');
+      const logViewport=chat.locator('[role="log"]');
+      const scrollTop=await logViewport.evaluate(element=>element.scrollTop);
+      assert.ok(scrollTop<=2,'CALM_WELCOME_MUST_START_AT_TOP');
+      const logRect=await logViewport.boundingBox();
+      assert.ok(logRect&&hero&&hero.y>=logRect.y-2&&hero.y<logRect.y+logRect.height-24,
+        'CALM_WELCOME_GREETING_MUST_BE_IN_VIEWPORT');
+      await chat.locator('[data-video-chat-welcome-create]').click();
+      await chat.locator('[data-chat-inline-choices]').waitFor({state:'visible',timeout:10000});
+      assert.equal(await chat.locator('[data-video-chat-welcome]').count(),0,
+        'CALM_WELCOME_MUST_YIELD_TO_REAL_CHAT');
+      assert.equal(await chat.getAttribute('data-chat-dialogue'),'true',
+        'PHOTO_DIALOGUE_STATE_MISSING');
+      const dialogueHero=chat.locator('[data-video-chat-dialogue-hero]');
+      await dialogueHero.waitFor({state:'visible',timeout:10000});
+      const dialogueRect=await dialogueHero.boundingBox();
+      assert.ok(dialogueRect&&dialogueRect.height>=100&&dialogueRect.width<=sizes[locale]+2,
+        'PHOTO_HERO_MUST_SURVIVE_CREATE');
+      assert.equal(await dialogueHero.evaluate(node=>
+        getComputedStyle(node).backgroundImage.includes('reiki-approved-sunrise-v3.webp')),true,
+        'PHOTO_HERO_ASSET_CHANGED');
+      assert.equal(await chat.locator('[data-video-chat-composer]').count(),1,
+        'ACTIVE_REPLY_COMPOSER_DUPLICATED');
+      const activeComposer=chat.locator('[data-video-chat-composer]');
+      assert.ok(await activeComposer.isVisible(),'ACTIVE_REPLY_COMPOSER_MUST_BE_VISIBLE');
+      const composerRect=await activeComposer.boundingBox();
+      const navRect=await chat.locator('[data-video-chat-top-tabs]').boundingBox();
+      assert.ok(composerRect&&navRect&&navRect.y>=composerRect.y,
+        'AI_ORDERS_CLIENTS_AFTER_COMPOSER');
+    }
+    let selectedCaption=null;
+    if(entryStep==='category'){
+      // The same canonical category/topic/scenario/idea/phrase registry drives
+      // the actual messenger. This path is required as soon as it is LIVE.
+      const pick=async(step,id,expectedCount)=>{
+        await state(page,step);
+        assert.equal(await chat.locator('[data-video-chat-dialogue-hero]').count(),1,
+          'PHOTO_HERO_LOST_AT_STAGE_'+step);
+        const panel=chat.locator('[data-chat-inline-choices]');
+        assert.equal(await panel.count(),1,'ONE_ACTIVE_INLINE_ANSWER_PANEL_'+step);
+        assert.equal(await panel.getAttribute('data-chat-choice-stage'),step,
+          'CHAT_INLINE_STAGE_MISMATCH_'+step);
+        assert.equal(await panel.locator('xpath=ancestor::*[@data-chat-assistant-turn]').count(),1,
+          'CHOICES_NOT_INSIDE_ASSISTANT_MESSAGE_'+step);
+        const buttons=panel.locator('[data-video-chat-tree-choice]');
+        assert.equal(await buttons.count(),expectedCount,
+          'CANONICAL_TREE_OPTION_COUNT_'+step);
+        const button=chat.locator('[data-video-chat-tree-choice="'+id+'"]');
+        assert.equal(await button.count(),1,'CANONICAL_ID_NOT_AVAILABLE_'+id);
+        const text=(await button.innerText()).trim();
+        await button.click();
+        return text;
+      };
+      await state(page,'category');
+      await send(chat,'Video');
+      await state(page,'category');
+      await pick('category','love',5);
+      await pick('topic','love-trust',6);
+      await pick('scenario','love-trust-s1',4);
+      await pick('idea','love-trust-s1-i1',4);
+      const firstPhrase=chat.locator('[data-video-chat-tree-choice]').first();
+      await state(page,'phrase');
+      assert.equal(await chat.locator('[data-video-chat-tree-choice]').count(),3,
+        'PREPARED_PHRASE_CHOICES_NOT_AVAILABLE');
+      selectedCaption=(await firstPhrase.innerText()).trim();
+      await firstPhrase.click();
+      await state(page,'mood');
+      await send(chat,'calm');
+      await state(page,'aspect');
+      await send(chat,'vertical');
+      await state(page,'duration');
+      await send(chat,'20 seconds');
+      await state(page,'music');
+      await send(chat,'meditation');
+    }else{
+      // The old LIVE version remains testable; strict post-merge acceptance
+      // refuses any accidental fallback to the legacy unbranched dialogue.
+      if(process.env.HH_CHAT_EXPECT_CANONICAL==='true')
+        throw Error('CANONICAL_DIALOG_NOT_DEPLOYED');
+      await send(chat,'Video');
+      await state(page,'goal');
+      await send(chat,ideas[locale]);
+      await page.waitForFunction(()=>{
+        const stage=document.querySelector('[data-video-director-chat]')?.getAttribute('data-chat-step');
+        return stage==='review'||stage==='mood';
+      },undefined,{timeout:15000});
+      const next=await chat.getAttribute('data-chat-step');
+      if(ownerFlow)assert.equal(next,'review','OWNER_GOAL_FIRST_DID_NOT_PROPOSE_STORY');
+      if(locale==='en'&&next==='mood'){
+        await send(chat,'calm');
+        await state(page,'aspect');
+        await send(chat,'vertical');
+        await state(page,'duration');
+        await send(chat,'20 seconds');
+        await state(page,'music');
+        await send(chat,'meditation');
+        await state(page,'phrases');
+        await send(chat,'no');
+      }
+    }
+    await state(page,'review');
+    const card=chat.locator('[data-video-chat-storyboard]');
+    await card.waitFor({state:'visible',timeout:15000});
+    assert.equal(await card.locator('[data-executable-video-scenario]').getAttribute('data-executable-video-scenario'),
+      'hh-executable-video-scenario-v1','PLAN_NOT_EXECUTABLE');
+    assert.equal(await card.locator('[data-chat-shot-id]').count(),4,'FOUR_SHOT_PREVIEW_REQUIRED');
+    if(entryStep==='category'){
+      const warning=card.locator('[data-chat-concept-unbound]');
+      assert.equal(await warning.count(),1,'UNBOUND_CONCEPT_MUST_NOT_BE_FALSELY_EXPORTED');
+      assert.ok(selectedCaption,'SELECTED_PREPARED_PHRASE_MISSING');
+      const renderedCaptions=await card.locator('[data-chat-shot-id] small')
+        .allTextContents();
+      assert.ok(renderedCaptions.some(value=>value.includes(selectedCaption)),
+        'SELECTED_PHRASE_NOT_IN_REAL_STAGE_CAPTIONS');
+    }
+    if(locale==='ru'){
+      await card.locator('[data-video-chat-change-filter="duration"]').click();
+      await state(page,'duration');
+      await send(chat,'15');
+      await state(page,'review');
+      assert.match((await card.locator('[data-executable-video-scenario]').innerText()),/15\s*s/,
+        'INLINE_FILTER_CHANGE_DID_NOT_APPLY');
+      await card.locator('[data-video-chat-change-filter="duration"]').click();
+      await state(page,'duration');
+      await send(chat,'20');
+      await state(page,'review');
+    }
+    const shots=await card.locator('[data-chat-shot-id]').evaluateAll(nodes=>nodes.map(node=>({
+      id:node.getAttribute('data-chat-shot-id'),
+      label:node.querySelector('b')?.textContent||'',
+    })));
+    assert.equal(new Set(shots.map(x=>x.id)).size,4,'REPEATED_OR_MISSING_MP4_SCENE');
+    for(const shot of shots)assert.ok(approved.has(shot.id),'UNLICENSED_PREVIEW_'+shot.id);
+    report.localesChecked.push({locale,width:sizes[locale],chatVisible:true,filtersApplied:true,
+      canonicalTreeChecked:entryStep==='category',preparedCaptionInStoryboard:!!selectedCaption,
+      fourApprovedClips:true});
+    if(locale!=='ru'){
+      assert.deepEqual(pageErrors,[],'CLIENT_JAVASCRIPT_ERROR_'+locale);
+      assert.deepEqual(networkViolations,[],'UNEXPECTED_REQUEST_WITH_AI_OPT_OUT_'+locale);
+      await context.close();
+      continue;
+    }
+    const seconds=shots.map(x=>Number(x.label.match(/(\d+)\s*s\b/i)?.[1]||NaN));
+    assert.ok(seconds.every(n=>Number.isInteger(n)&&n>=2),'BAD_SHOT_TIMING');
+    assert.equal(seconds.reduce((sum,n)=>sum+n,0),20,'SHOTS_DO_NOT_MATCH_DURATION');
+    report.shotCount=shots.length;
+    report.approvedClipIds=shots.map(x=>x.id);
+    report.stageSeconds=seconds;
+    await card.locator('[data-video-chat-confirm]').click();
+    await state(page,'ready');
+    await page.waitForFunction(()=>{
+      const videos=[...document.querySelectorAll('[data-free-film-source]')];
+      return videos.length===4&&videos.every(v=>v.readyState>=2&&v.videoWidth>0);
+    },undefined,{timeout:90000});
+    const sources=await page.locator('[data-free-film-source]').evaluateAll(videos=>
+      videos.map(video=>({id:video.dataset.freeFilmSource,src:video.getAttribute('src')})));
+    assert.deepEqual(sources.map(x=>x.id),shots.map(x=>x.id),
+      'APPROVED_CHAT_STORYBOARD_NOT_APPLIED_TO_RENDERER');
+    for(const item of sources)
+      assert.equal(item.src,approved.get(item.id),'RENDERER_SOURCE_NOT_APPROVED_'+item.id);
+    assert.equal(await page.locator('[data-video-live-stage] canvas').count(),1,
+      'CHAT_MUST_REUSE_SINGLE_CANVAS');
+    const create=chat.locator('[data-video-chat-create]');
+    await create.waitFor({state:'visible',timeout:45000});
+    await page.waitForFunction(()=>{
+      const b=document.querySelector('[data-video-chat-create]');return Boolean(b&&!b.disabled);
+    },undefined,{timeout:65000});
+    await create.click({timeout:15000});
+    const result=page.locator('[data-video-result]');
+    const save=result.locator('[data-mandala-video-download]');
+    await save.waitFor({state:'visible',timeout:95000});
+    assert.equal(await result.getAttribute('data-video-result-mode'),'rendered',
+      'CATALOG_PREVIEW_MUST_NOT_BE_TREATED_AS_NEW_VIDEO');
+    assert.equal(await result.locator('[data-video-result-play]').count(),1,
+      'MISSING_REAL_PLAYBACK_CONTROL');
+    assert.equal(await result.locator('[data-video-share]').count(),1,
+      'MISSING_VIDEO_SHARE_CONTROL');
+    await chat.locator('[data-video-chat-result]').waitFor({state:'visible',timeout:20000});
+    await result.locator('[data-video-result-play]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-mandala-video-preview]')?.currentTime>0.15,
+      undefined,{timeout:20000});
+    const [download]=await Promise.all([
+      page.waitForEvent('download',{timeout:25000}),save.click(),
+    ]);
+    const bytes=await downloadBytes(download);
+    const filename=download.suggestedFilename();
+    assert.match(filename,/\.(mp4|webm)$/,'INVALID_DOWNLOAD_SUFFIX');
+    assert.ok(bytes.length>20000,'DOWNLOAD_HAS_NO_ENCODED_VIDEO');
+    if(filename.endsWith('.mp4'))assert.equal(bytes.subarray(4,8).toString(),'ftyp','NOT_A_REAL_MP4');
+    else assert.deepEqual(bytes.subarray(0,4),Buffer.from([0x1a,0x45,0xdf,0xa3]),'NOT_A_REAL_WEBM');
+    mediaDir=mkdtempSync(join(tmpdir(),'hh-chat-video-'));
+    const mediaFile=join(mediaDir,filename.endsWith('.mp4')?'chat.mp4':'chat.webm');
+    writeFileSync(mediaFile,bytes);
+    const probe=JSON.parse(mediaTool('ffprobe',['-v','error','-show_streams','-show_format','-of','json',mediaFile]).toString());
+    const video=probe.streams.find(x=>x.codec_type==='video');
+    const audio=probe.streams.find(x=>x.codec_type==='audio');
+    assert.ok(video,'RENDERED_VIDEO_STREAM_MISSING');
+    assert.ok(audio,'SELECTED_MEDITATION_AUDIO_MISSING');
+    assert.deepEqual([video.width,video.height],[720,1280],'INCORRECT_VERTICAL_VIDEO_SIZE');
+    const duration=Number(probe.format?.duration||video.duration||0);
+    assert.ok(duration>=18&&duration<=26,'VIDEO_DURATION_OUTSIDE_APPROVED_TWENTY_SECONDS');
+    const rms=decodedAudioRms(mediaFile);
+    assert.ok(rms>0.003,'ATTACHED_MEDITATION_AUDIO_SILENT');
+    report.downloadedVideo=true;
+    report.encodedVideo=true;
+    report.audioVerified=true;
+    report.durationSeconds=Number(duration.toFixed(2));
+    report.audioRms=Number(rms.toFixed(5));
+    report.container=filename.endsWith('.mp4')?'mp4':'webm';
+    report.encodedBytes=bytes.length;
+    const frames=[1,5,10,17].map(at=>sample(mediaFile,at));
+    const delta=Math.max(...frames.slice(1).map(frame=>{
+      let d=0;for(let i=0;i<frame.length;i++)d+=Math.abs(frame[i]-frames[0][i]);
+      return d/frame.length;
+    }));
+    assert.ok(delta>0.35,'VIDEO_STATIC_OR_FREEZING');
+    report.maxFrameDelta=Number(delta.toFixed(3));
+    let offset=0,correlations=[];
+    for(let i=0;i<shots.length;i++){
+      const output=sample(mediaFile,offset+seconds[i]/2);
+      const source=resolve('public','.'+sources[i].src);
+      assert.ok(source.startsWith(resolve('public')+'/'),'INVALID_SOURCE_PATH');
+      const probes=[0.5,1,2,2.5,3,4].map(at=>sample(source,at));
+      const score=Math.max(...probes.map(x=>similarity(output,x)));
+      assert.ok(score>0.52,'LICENSED_VIDEO_SOURCE_ABSENT_'+(i+1));
+      correlations.push(Number(score.toFixed(3)));
+      offset+=seconds[i];
+    }
+    report.sourceIdentityVerified=true;
+    report.sourceCorrelations=correlations;
+    const black=spawnSync('ffmpeg',['-hide_banner','-i',mediaFile,'-vf',
+      'blackdetect=d=0.18:pix_th=0.05','-an','-f','null','-'],
+      {timeout:30000,maxBuffer:1024*1024});
+    assert.equal(black.status,0,'BLACK_FRAME_SCAN_FAILED');
+    assert.doesNotMatch(String(black.stderr),/black_start:/,'BLACK_GAP_IN_STITCHED_VIDEO');
+    assert.deepEqual(pageErrors,[],'LIVE_BROWSER_PAGE_EXCEPTION');
+    assert.deepEqual(networkViolations,[],'EXTERNAL_AI_OR_PAYMENT_CALLED_WITHOUT_OPT_IN');
+    report.blackGaps=false;
+    report.status='PASS';
+    console.log('VIDEO_DIRECTOR_CHAT_LIVE_REAL_EXPORT_PASS',JSON.stringify(report));
+    await context.close();
+  }
+}catch(error){
+  report.failure=String(error?.message||error).slice(0,220);
+  console.error('VIDEO_DIRECTOR_CHAT_LIVE_REAL_EXPORT_FAIL',report.failure);
+  process.exitCode=1;
+}finally{
+  await browser?.close();
+  if(mediaDir)rmSync(mediaDir,{recursive:true,force:true});
+  mkdirSync('artifacts/benchmarking',{recursive:true});
+  writeFileSync(resolve(artifact),JSON.stringify(report,null,2)+'\n');
+}

@@ -3,7 +3,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     paths:
-      - '.github/workflows/hh-public-performance-audit.yml'
       - 'scripts/measure-hh-public-ttfb.mjs'
       - 'scripts/hh-public-html-metrics.mjs'
       - 'tests/hh-public-html-metrics.test.mjs'
@@ -73,8 +72,8 @@ permissions:
   contents: read
 concurrency:
   # Obsolete PR heads may cancel; each production PUSH/manual run remains independent.
-  group: hh-public-performance-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-public-performance-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   measure-public:

@@ -439,6 +439,30 @@ export function AcademyHub({ locale, view = "programs" }: { locale: PublicLocale
   return (
     <main className="library-shell academy-shell" lang={locale}>
       <PublicSiteHeader locale={locale} showAssessmentStrip={false} />
+      <section data-academy-learning-path-entry style={{
+        maxWidth:1100,margin:'14px auto',padding:'13px 18px',border:'1px solid #e9dfd1',
+        borderRadius:20,background:'#fff9f3',display:'flex',alignItems:'center',
+        flexWrap:'wrap',gap:12,justifyContent:'space-between',
+      }}>
+        <div style={{flex:'1 1 240px'}}>
+          <strong style={{fontSize:17,color:'#143d3a'}}>
+            {locale === 'ru' ? 'Мой маршрут — персональный план обучения'
+              : locale === 'es' ? 'Mi ruta — plan de aprendizaje personal'
+              : 'My Learning Path — a personal study plan'}
+          </strong>
+          <p style={{fontSize:14,margin:'5px 0 0',color:'#5d6a71'}}>
+            {locale === 'ru' ? 'Пять настоящих уроков Reiki · 4–6 недель · бесплатно'
+              : locale === 'es' ? 'Cinco lecciones reales de Reiki · 4–6 semanas · gratis'
+              : 'Five real Reiki lessons · 4–6 weeks · free'}
+          </p>
+        </div>
+        <Link href={'/' + locale + '/academy/my-path'}
+          style={{display:'inline-flex',alignItems:'center',justifyContent:'center',
+            minHeight:48,padding:'12px 18px',background:'#067a67',color:'white',
+            textDecoration:'none',fontWeight:700,borderRadius:14}}>
+          {locale === 'ru' ? 'Создать маршрут' : locale === 'es' ? 'Crear mi ruta' : 'Build my route'}
+        </Link>
+      </section>
       <AcademyDiscovery locale={locale} view={view} items={items} coachingItem={coachingItem} legacyCourses={legacyCourses} legacyVideos={legacyVideos} events={PUBLIC_EVENTS} label={text.allPrograms} />
       {view === "videos" ? (
         <section id="academy-video-courses">

@@ -43,14 +43,20 @@ test('yesterday/weekly page ranking and sources are accurate and exclude invalid
  assert.match(message,/26|14/)
  assert.doesNotMatch(message,/private-email|any\.example|999|400|sensitive|уникальных посетителей: 26/)
 })
-test('existing GA4/Meta hold and strict opt-in; owner auto-excluded and browser override',()=>{
+test('GA4/Meta remain off; anonymous public counts are automatic but honor durable opt-out',()=>{
  const tag=readFileSync(new URL('../lib/public-analytics.ts',import.meta.url),'utf8')
  const collector=readFileSync(new URL('../components/public-page-traffic.tsx',import.meta.url),'utf8')
  const endpoint=readFileSync(new URL('../app/api/analytics/public-page/route.js',import.meta.url),'utf8')
  const service=readFileSync(new URL('../app/api/marketplace/service-event/route.js',import.meta.url),'utf8')
  const migration=readFileSync(new URL('../supabase/migrations/20261025175000_hh_public_page_source_daily.sql',import.meta.url),'utf8')
  assert.match(tag,/PUBLIC_ANALYTICS_AVAILABLE = false/)
- assert.match(collector,/hh_public_stats_consent/)
+ assert.match(collector,/window\.location\.hostname === "holistichouse\.vercel\.app"/)
+ assert.match(collector,/!hasCookie\("hh_public_stats_consent", "denied"\)/)
+ assert.match(endpoint,/new URL\(request\.url\)\.hostname !== 'holistichouse\.vercel\.app'/)
+ assert.match(collector,/!hasCookie\("hh_public_stats_skip", "1"\)/)
+ assert.doesNotMatch(collector,/"hh_public_stats_consent", "v1"/)
+ assert.match(endpoint,/request\.cookies\.get\('hh_public_stats_consent'\)\?\.value === 'denied'/)
+ assert.doesNotMatch(endpoint,/request\.cookies\.get\('hh_public_stats_consent'\)\?\.value !== 'v1'/)
  assert.match(collector,/credentials: "same-origin"/)
  assert.match(endpoint,/requireSameOrigin\(request,config\)/)
  assert.match(endpoint,/publicStatsExclusion\(request,config\)/)
@@ -83,23 +89,84 @@ test('top pages are ranked by views, not by clicks, for two completed Toronto pe
  assert.match(message,/Источники входов за 7 дней: Google поиск/)
  assert.ok(message.length<2600,message.length)
 })
-test('do not call lack of consent zero visits and never include private pages',()=>{
+test('empty aggregates are not called zero visitors and never include private pages',()=>{
  const message=publicPageDigestLines([],period).join('\n')
  assert.match(message,/нет измеренных данных/)
- assert.match(message,/пока нет данных по добровольным посещениям/)
+ assert.match(message,/пока нет измеренных агрегированных посещений/)
  assert.doesNotMatch(message,/посещений: 0/)
  const tracker=readFileSync(new URL('../components/public-page-traffic.tsx',import.meta.url),'utf8')
  const choice=readFileSync(new URL('../components/analytics-consent.tsx',import.meta.url),'utf8')
  const privacy=readFileSync(new URL('../app/privacy/page.tsx',import.meta.url),'utf8')
  const layout=readFileSync(new URL('../app/layout.tsx',import.meta.url),'utf8')
- assert.equal(existsSync(new URL('../components/first-party-stats-notice.tsx',import.meta.url)),false)
+ // A fresh browser must never see a sitewide analytics popup.
+ assert.doesNotMatch(layout,/FirstPartyStatsNotice/)
+ assert.match(layout,/<PublicPageTraffic\s*\/>/)
+ assert.match(tracker,/function countAllowed\(\)/)
+ assert.match(tracker,/!countAllowed\(\)/)
+ assert.match(tracker,/holistic-house:public-stats-consent/)
  assert.match(choice,/setFirstPartyConsent\(allow\)/)
  assert.match(choice,/allow \? "v1" : "denied"/)
+ assert.match(choice,/firstPartyCookie\(publicStatsCookie\) !== "denied"/)
  assert.match(privacy,/<FirstPartyStatsPreferences \/>/)
  assert.match(choice,/export function FirstPartyStatsPreferences\(\)/)
- assert.match(tracker,/holistic-house:public-stats-consent/)
- assert.match(tracker,/data-first-party-consent/)
- assert.doesNotMatch(layout,/FirstPartyStatsNotice|first-party-stats-notice|data-first-party-consent/)
+ assert.match(privacy,/automatically count aggregate entrances/)
  assert.doesNotMatch(tracker,/analytics\.google|gtag|facebook\.com\/tr/)
- assert.doesNotMatch(choice,/<aside\\b/)
+ assert.doesNotMatch(choice,/<aside\b/)
 })
+
+
+test('P0 nonessential popup policy: approved global shell only, no automatic request overlays',()=>{
+ const layout=readFileSync(new URL('../app/layout.tsx',import.meta.url),'utf8')
+ const rules=readFileSync(new URL('../AGENTS.md',import.meta.url),'utf8')
+ const privacy=readFileSync(new URL('../app/privacy/page.tsx',import.meta.url),'utf8')
+ // Deliberate review gate: every new global JSX mount requires an owner-approved
+ // noninterruptive UX review, not a silent addition of another popup.
+ const mounted=[...layout.matchAll(/<([A-Z][A-Za-z0-9]*)\b/g)].map(match=>match[1])
+ assert.deepEqual(mounted,[
+  'PwaRegistration',
+  'NativeLinkHandler',
+  'NativeExternalLinks',
+  'CspNavigationBoundary',
+  'Ga4Analytics',
+  'SitewideAntistressBanner',
+  'HomePersonalSpaceProvider',
+  'SitewideLeadCapture',
+  'AnalyticsConsent',
+  'PublicPageTraffic',
+  'MobileBottomNavigation',
+  // Approved shared six-tab dock is a persistent navigation surface, not an auto-open popup.
+  'UnifiedMobileDock',
+  // Owner-requested iHelp is a small button; the dialogue exists only after an explicit click.
+  'SitewideIHelp'
+ ],'Unexpected global widget: review for nonessential auto-open prompts before changing this guard')
+ const dock=readFileSync(new URL('../components/unified-mobile-dock.tsx',import.meta.url),'utf8')
+ assert.match(dock,/if \(!visible\) return null;/,'Global MyTube nav stays route-scoped')
+ assert.match(dock,/<nav ref=\{navRef\} data-hh-unified-dock/,'Only the approved navigation region is mounted')
+ assert.match(dock,/UNIFIED_DOCK_IDS\.map\(id =>/,'Only the six approved destinations are used')
+ assert.doesNotMatch(dock,/<(?:dialog|AlertDialog|Modal|Toast|BottomSheet)\b/,'Navigation must not introduce a popup')
+ assert.equal(existsSync(new URL('../components/first-party-stats-notice.tsx',import.meta.url)),false,
+   'Delete obsolete notice rather than remounting or renaming its popup')
+ assert.doesNotMatch(layout,/FirstPartyStatsNotice|[<]dialog\b|[<](?:AlertDialog|Modal|Toast|BottomSheet)\b/,
+   'No auto-open dialog or floating consent box in the shared site layout')
+ assert.match(rules,/Sitewide UX policy — no unsolicited popup requests/)
+ assert.match(rules,/Never automatically open or mount/)
+ assert.match(privacy,/<FirstPartyStatsPreferences\s*\/>/,
+   'Privacy settings must remain accessible without an unsolicited prompt')
+})
+
+test('owner-invoked sitewide iHelp reuses the existing guest-safe agent and never auto-opens',()=>{
+ const layout=readFileSync(new URL('../app/layout.tsx',import.meta.url),'utf8')
+ const trigger=readFileSync(new URL('../components/sitewide-ihelp.tsx',import.meta.url),'utf8')
+ const chat=readFileSync(new URL('../components/holistic-agent-chat.tsx',import.meta.url),'utf8')
+ assert.match(layout,/<SitewideIHelp\s*\/>/)
+ assert.match(trigger,/data-hh-ihelp-trigger/)
+ assert.match(trigger,/setOpen\(true\)/)
+ assert.match(trigger,/function show\(\)/)
+ assert.match(trigger,/pageHelpFromRoute/)
+ assert.match(trigger,/<HolisticAgentChat locale=\{locale\} compact messengerView pageHelp=\{context\}/)
+ assert.match(trigger,/\[data-orders-clients-hub\]/)
+ assert.doesNotMatch(trigger,/useEffect\(\(\)=>\{\s*setOpen\(true\)/)
+ assert.match(chat,/data-hh-ihelp-actions/)
+ assert.match(chat,/data-hh-ihelp-ask/)
+ assert.match(chat,/data-page-help=\{pageHelp\?/)
+});

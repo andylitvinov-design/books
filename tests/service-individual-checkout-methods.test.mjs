@@ -78,7 +78,7 @@ test('public cart exposes card and Interac without pretending a completed paymen
   const payments = read('app/[locale]/payments/page.tsx')
   assert.match(page, /configuredSquarePaymentLinks/)
   assert.match(cart, /buildSquarePaymentForServices/)
-  assert.match(cart, /wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks \}: \{/)
+  assert.match(cart, /wiseEnabled, squareLinks, squareApiEnabled, squareApiEnvironment, squareApiPrices, verifiedPayPalEnabled, hostedPayPalLinks, stripeLinks \}: \{/)
   assert.match(page, /configuredPayPalHostedLinks\(\)/)
   assert.match(cart, /buildPayPalHostedCartUrl\(/)
   assert.match(cart, /buildInteracTransferInquiry/)
@@ -89,4 +89,36 @@ test('public cart exposes card and Interac without pretending a completed paymen
   assert.match(cart, /no subscription|sin suscripción|без подписки/)
   assert.match(payments, /data-other-payment-methods/)
   assert.doesNotMatch(cart, /orderStatus\s*=\s*["']paid|autoCapture|setPaid\(/)
+})
+
+// Link lives inside Stripe-hosted checkout and is not a separate merchant rail.
+test('optional Link is merchant-gated and preserves catalog totals on both payment surfaces', () => {
+  const payments = read('app/[locale]/payments/page.tsx')
+  const cartPage = read('app/[locale]/cart/page.tsx')
+  const cart = read('components/commerce/personal-cart.tsx')
+  assert.match(payments, /configuredIndividualCardLinks\(\)/)
+  assert.match(payments, /buildIndividualCardPaymentUrl\(\[product\.id\], stripeLinks\)/)
+  assert.match(payments, /data-stripe-personal-payment-link/)
+  assert.match(payments, /data-stripe-combined-payment-link/)
+  assert.match(payments, /referrerPolicy="no-referrer"/)
+  assert.match(cartPage, /stripeLinks=\{configuredIndividualCardLinks\(\)\}/)
+  assert.match(cart, /buildIndividualCardPaymentUrl\(chosen\.map/)
+  assert.match(cart, /stripeAvailable && <label/)
+  assert.match(cart, /data-cart-stripe-payment-link/)
+  assert.match(cart, /referrerPolicy="no-referrer"/)
+  assert.doesNotMatch(cart, /orderStatus\s*=\s*["']paid|setPaid\(/)
+  for (const value of ['Link and digital wallets may not appear', 'Link и цифровые кошельки могут быть недоступны', 'Link y las carteras digitales pueden no aparecer']) {
+    assert.ok(payments.includes(value), 'missing locale disclosure: ' + value)
+  }
+  const configured = {...approved, VERCEL_ENV: 'production',
+    HH_CARD_PAYMENT_LINK_50_EUR: 'https://buy.stripe.com/QwErTy123AbcD45'}
+  const links = configuredIndividualCardLinks(configured)
+  assert.equal(buildIndividualCardPaymentUrl([ids[0]], links), configured.HH_CARD_PAYMENT_LINK_50_EUR)
+  assert.equal(buildIndividualCardPaymentUrl([ids[1]], links), configured.HH_CARD_PAYMENT_LINK_100_EUR)
+  assert.equal(buildIndividualCardPaymentUrl(ids, links), configured.HH_CARD_PAYMENT_LINK_150_EUR)
+  for (const key of ['HH_CARD_PAYMENT_LINKS_ENABLED', 'HH_CARD_PAYMENT_LINKS_PAYEE_VERIFIED', 'HH_CARD_PAYMENT_LINKS_PRICES_VERIFIED']) {
+    const blocked = {...configured}
+    delete blocked[key]
+    assert.deepEqual(configuredIndividualCardLinks(blocked), {})
+  }
 })

@@ -146,8 +146,13 @@ test("mobile layout offers one meaning per screen, authentic images, and accessi
 test("express review WebKit reveal stays immediately below its button throughout the animation", () => {
   const expressCss = read("components/personal-express-enquiry.module.css");
   const express = read("components/personal-express-enquiry.tsx");
-  assert.match(express, /data-express-reveal aria-expanded=\{expanded\}/);
+  assert.match(express, /data-express-reveal[^\n>]*aria-expanded=\{expanded\}/);
   assert.match(express, /data-express-inline-disclosure hidden=\{!expanded\}/);
+  assert.match(express, /const closeDisclosure = useCallback\(\(\) => \{/);
+  assert.match(express, /window\.history\.replaceState\(window\.history\.state/);
+  assert.match(express, /if \(expanded\) closeDisclosure\(\); else setExpanded\(true\)/);
+  assert.match(express, /event\.key === "Escape"[\s\S]*?closeDisclosure\(\)/);
+  assert.match(read("scripts/verify-free-review-live-mobile.mjs"), /closing clears the stale review anchor/);
   assert.match(expressCss, /\.disclosure\[hidden\]\{display:none!important\}/);
   assert.match(expressCss, /@keyframes expressUnfold\{from\{opacity:0\}to\{opacity:1\}\}/);
   assert.doesNotMatch(expressCss, /@keyframes expressUnfold\{[^}]*transform:/,
@@ -180,7 +185,7 @@ test("mobile browser acceptance taps the entire focus card and validates the nat
   assert.match(script, /width === 320 \|\| width === 430/);
   assert.doesNotMatch(script, /locator\('input\[value="(?:energy|situation)"\]'\)\.check\(\)/,
     "Do not emulate tapping a moving 19px radio dot on WebKit");
-  assert.match(script, /"changing the focus cannot silently opt the user in"/);
-  assert.match(script, /"changing focus is not a lead or booking"/);
+  assert.match(script, /"focus change never creates hidden consent or unverified web submission"/);
+  assert.match(script, /"changing the selected focus never fabricates a CRM lead"/);
   assert.match(css, /\.choice\{[^}]*min-height:94px/);
 });

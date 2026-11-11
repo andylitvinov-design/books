@@ -7,11 +7,13 @@ import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {parseOwnerVideoUpdate,parseVideoCutSeconds,safeVideoParts,ownerVideoStartMessage,ownerVideoRenderingMessage,ownerVideoPreviewButtons,
   VIDEO_IMAGE_LIMIT,VIDEO_AUDIO_LIMIT,VIDEO_MAX_INPUT_BYTES,VIDEO_MAX_SECONDS,VIDEO_RU_CHANNEL_ID,
+  VIDEO_EN_CHANNEL_HANDLE,videoTargetValid,ownerVideoTargetKeyboard,
   ownerVideoLimitReason,ownerVideoConfirmationButtons}
  from '../lib/practitioners/owner-telegram-video-model.mjs'
 import {photoTimeline,videoRenderArguments,trimOwnerTelegramVideo,resolveOwnerVideoFfmpegPath} from '../lib/practitioners/owner-telegram-video-render.mjs'
 import {ownerVideoOauthConfig,ownerVideoOauthConfigured,ownerVideoOauthStateMatches} from '../lib/practitioners/owner-telegram-video-oauth-config.mjs'
-import {refreshYoutubeAccess,verifyYoutubeRuOwner,uploadUnlistedRu,verifyUploadedRu,waitForUploadedRu}
+import {refreshYoutubeAccess,verifyYoutubeRuOwner,verifyYoutubeEnOwner,verifyYoutubeTargetOwner,
+  uploadUnlistedRu,uploadUnlistedTarget,verifyUploadedRu,verifyUploadedTarget,waitForUploadedRu}
  from '../lib/practitioners/owner-telegram-video-youtube.mjs'
 import {ownerVideoIdValid,ownerVideoMediaPath,ownerVideoCutPath,ownerVideoCutId,ownerVideoByteRange}
  from '../lib/practitioners/owner-telegram-video-playback.mjs'
@@ -88,7 +90,7 @@ test('callback provenance, exact bot and locked publication UUID',()=>{
  assert.equal(parsed(callback('hh-video:start')).action,'start')
  assert.equal(parsed(callback('hh-video:done')).action,'done')
  assert.equal(parsed(callback('hh-video:status')).action,'status')
- assert.equal(parsed(callback('hh-video:publish:'+fixed)).jobId,fixed)
+ assert.equal(parsed(callback('hh-video:publish:ru:'+fixed)).jobId,fixed)
  const manifestButton=ownerVideoConfirmationButtons(fixed,966890850,14).inline_keyboard[0][0]
  assert.match(manifestButton.text,/проверенный набор/)
  assert.ok(manifestButton.callback_data.length<=64)
@@ -232,8 +234,8 @@ test('FFmpeg command arguments use no shell and encode a single bounded 16:9 str
  assert.ok(args.some(v=>v.includes('setsar=1,scale=1920:1080:force_original_aspect_ratio=decrease')))
  assert.ok(args.includes('-aspect:v')&&args.includes('16:9'))
  const service=readFileSync(new URL('../lib/practitioners/owner-telegram-video-service.js',import.meta.url),'utf8')
- assert.match(service,/form\.set\('width','1920'\)/)
- assert.match(service,/form\.set\('height','1080'\)/)
+ assert.match(service,/form\.set\('width',compact\?'640':hd\?'1280':'1920'\)/)
+ assert.match(service,/form\.set\('height',compact\?'360':hd\?'720':'1080'\)/)
  assert.ok(!args.includes('-c:v copy'))
  assert.throws(()=>videoRenderArguments([part('photo',0)],'/tmp/output.mp4'),/INVALID_COMPOSITION/)
 })
@@ -472,7 +474,7 @@ test('final-only MP4 cabinet: protected media, Safari byte ranges, forced RLS',(
 })
 
 test('Dot Audio and Video menu opens protected video in same verified owner chat',()=>{
- assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','video_edit','materials','track'])
+ assert.deepEqual(OWNER_AI_COMMANDS.map(x=>x.command),['all','audio','combine','done','video','video_story','video_edit','materials','track'])
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video').description,/Видео из фото и аудио/)
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='video_edit').description,/Название и описание/)
  assert.match(OWNER_AI_COMMANDS.find(x=>x.command==='audio').description,/Аудио и видео/)
@@ -508,8 +510,8 @@ test('Dot Audio and Video menu opens protected video in same verified owner chat
 test('private /video command remains registered if Owner AI is disabled',()=>{
  const menu=(mode,ownerAiEnabled,ownerVideoEnabled)=>
    ownerScopedTelegramCommands({mode,ownerAiEnabled,ownerVideoEnabled}).map(item=>item.command)
- assert.deepEqual(menu('shared_practice',false,true),['audio','combine','done','video','video_edit','materials','track'])
- assert.deepEqual(menu('shared_practice',true,true),['all','audio','combine','done','video','video_edit','materials','track'])
+ assert.deepEqual(menu('shared_practice',false,true),['audio','combine','done','video','video_story','video_edit','materials','track'])
+ assert.deepEqual(menu('shared_practice',true,true),['all','audio','combine','done','video','video_story','video_edit','materials','track'])
  assert.deepEqual(menu('shared_practice',true,false),['all','audio','combine','done','materials','track'])
  assert.deepEqual(menu('shared_practice',false,false),[])
  assert.deepEqual(menu('dedicated',true,true),[])
@@ -560,13 +562,13 @@ test('owner cut starts at exact numeric or clock second and old approval cannot 
  const cut=ownerVideoPreviewButtons(fixed,75)
  assert.equal(original.inline_keyboard[0][0].callback_data,'hh-video:cut:'+fixed)
  assert.equal(original.inline_keyboard[1][0].callback_data,'hh-video:publish:'+fixed)
- assert.equal(cut.inline_keyboard[1][0].callback_data,'hh-video:publish:'+fixed+':23')
+ assert.equal(cut.inline_keyboard[1][0].callback_data,'hh-video:publish:ru:'+fixed+':23')
  assert.ok(cut.inline_keyboard.flat().every(b=>!b.callback_data||b.callback_data.length<=64))
  assert.equal(parsed(callback(cut.inline_keyboard[0][0].callback_data))?.action,'cut_help')
  assert.deepEqual(
-   (({action,jobId,trimStartSeconds})=>({action,jobId,trimStartSeconds}))(
+   (({action,target,jobId,trimStartSeconds})=>({action,target,jobId,trimStartSeconds}))(
      parsed(callback(cut.inline_keyboard[1][0].callback_data))),
-   {action:'publish',jobId:fixed,trimStartSeconds:75})
+   {action:'publish',target:'ru',jobId:fixed,trimStartSeconds:75})
  assert.equal(parsed(callback(original.inline_keyboard[1][0].callback_data))?.trimStartSeconds,0)
  assert.equal(parsed(callback('hh-video:publish:'+fixed+':zzz')),null)
  assert.throws(()=>ownerVideoPreviewButtons(fixed,1800),/INVALID_VIDEO_JOB/)
@@ -576,15 +578,15 @@ test('owner cut starts at exact numeric or clock second and old approval cannot 
  assert.match(source,/state='trimming'/)
  assert.match(source,/background:\(\)=>cutVideo\(config,batch,owner,fetcher\)/)
  assert.match(source,/original\.storage_path!==ownerVideoMediaPath\(row\.job_id\)/)
- assert.match(source,/ownerVideoPreviewButtons\(batch\.jobId,batch\.state==='same'\?batch\.start:0\)/)
+ assert.match(source,/ownerVideoPreviewButtons\(batch\.jobId,batch\.state==='same'\?batch\.start:0,batch\.target\)/)
  assert.match(source,/trim_start_seconds=\$5/)
  assert.match(source,/VIDEO_TRIM_INTERRUPTED/)
  assert.match(source,/if\(event.updateId<=Number\(row.last_update_id\)\)return \{state:'stale'\}/)
  assert.match(source,/last_update_id=greatest\(last_update_id,\$3\)/)
  assert.match(source,/const restoring=row.state==='cancelled'/)
  assert.match(source,/state in \('preview','cancelled'\)/)
- assert.match(source,/form.set\('width','1920'\)/)
- assert.match(source,/form.set\('height','1080'\)/)
+ assert.match(source,/form\.set\('width',compact\?'640':hd\?'1280':'1920'\)/)
+ assert.match(source,/form\.set\('height',compact\?'360':hd\?'720':'1080'\)/)
  assert.doesNotMatch(source,/onBeginUpload:[\s\S]*trimOwnerTelegramVideo\(/)
  const sql=readFileSync(new URL('../supabase/migrations/20261028003500_hh_owner_video_trim_before_youtube.sql',import.meta.url),'utf8')
  assert.match(sql,/add column if not exists source_seconds/)
@@ -815,7 +817,7 @@ test('Dot status and existing cron reconcile only recorded IDs, never re-upload'
  assert.match(service,/row\?\.state!=='uncertain'\|\|!row\.youtube_video_id/)
  assert.match(service,/if\(row\?\.state==='uncertain'&&row\.youtube_video_id\)/)
  assert.match(service,/background:\(\)=>verifyUncertain\(/)
- assert.match(service,/where practitioner_id=\$1 and youtube_video_id=\$2 and state='uncertain'/)
+ assert.match(service,/where practitioner_id=\$1 and youtube_video_id=\$2 and youtube_target=\$3 and state='uncertain'/)
  assert.match(service,/callback_data:'hh-video:status'/)
  assert.doesNotMatch(service.slice(service.indexOf('async function verifyUncertain'),service.indexOf('export async function receiveOwnerTelegramVideoWebhook')),/uploadUnlistedRu|method:'PUT'|method:'POST'/)
  assert.match(cron,/runHousekeepingCron\(request/)
@@ -823,3 +825,137 @@ test('Dot status and existing cron reconcile only recorded IDs, never re-upload'
  assert.match(cron,/await reconcilePendingOwnerYoutubeVideo\(config\)/)
  assert.doesNotMatch(cron,/unconditional.*upload|uploadUnlistedRu/)
 })
+
+test('RU/EN target selection is explicit, job-bound and backward-compatible only for RU',()=>{
+ const jobId='123e4567-e89b-12d3-a456-426614174000'
+ assert.equal(VIDEO_EN_CHANNEL_HANDLE,'@aatapro')
+ assert.equal(videoTargetValid('ru'),true)
+ assert.equal(videoTargetValid('en'),true)
+ assert.equal(videoTargetValid('fr'),false)
+ const ru=parsed(callback('hh-video:target:ru:'+jobId))
+ const en=parsed(callback('hh-video:target:en:'+jobId))
+ assert.equal(ru.action,'choose')
+ assert.equal(ru.target,'ru')
+ assert.equal(ru.jobId,jobId)
+ assert.equal(en.action,'choose')
+ assert.equal(en.target,'en')
+ assert.equal(en.jobId,jobId)
+ const publish=parsed(callback('hh-video:publish:en:'+jobId+':0'))
+ assert.equal(publish.action,'publish')
+ assert.equal(publish.target,'en')
+ assert.equal(publish.jobId,jobId)
+ assert.equal(publish.trimStartSeconds,0)
+ const legacy=parsed(callback('hh-video:publish:'+jobId))
+ assert.equal(legacy.action,'publish')
+ assert.equal(legacy.target,'ru')
+ assert.equal(legacy.jobId,jobId)
+ assert.equal(parsed(callback('hh-video:target:fr:'+jobId)),null)
+ const keyboard=ownerVideoTargetKeyboard(jobId)
+ assert.match(JSON.stringify(keyboard),/hh-video:target:ru/)
+ assert.match(JSON.stringify(keyboard),/hh-video:target:en/)
+ const enStart=ownerVideoStartMessage('en',jobId)
+ assert.match(enStart.text,/English YouTube/)
+ const enPreview=ownerVideoPreviewButtons(jobId,0,'en')
+ assert.match(JSON.stringify(enPreview),/hh-video:publish:en:/)
+ assert.match(JSON.stringify(enPreview),/English YouTube/)
+})
+
+test('RU/EN YouTube owner and readback checks require the exact selected channel',async()=>{
+ const enId='UCaaaaaaaaaaaaaaaaaaaaaa'
+ const fetcher=async url=>{
+   const value=String(url)
+   if(value.includes('forHandle='))return Response.json({items:[{id:enId}]})
+   if(value.includes('channels?part=id&mine=true'))return Response.json({items:[{id:enId}]})
+   if(value.includes('videos?part=snippet,status'))return Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:enId,title:'English test'},
+     status:{privacyStatus:'unlisted',uploadStatus:'processed'}
+   }]})
+   throw Error('unexpected YouTube endpoint')
+ }
+ assert.equal(await verifyYoutubeTargetOwner('x'.repeat(32),'en',fetcher),enId)
+ assert.equal(await verifyYoutubeEnOwner('x'.repeat(32),enId,fetcher),enId)
+ assert.equal((await verifyUploadedTarget('Yt123456abc','x'.repeat(32),{
+   target:'en',channelId:enId,fetcher
+ })).channelId,enId)
+ await assert.rejects(()=>verifyYoutubeTargetOwner('x'.repeat(32),'ru',fetcher),/VIDEO_YOUTUBE_WRONG_CHANNEL/)
+ await assert.rejects(()=>verifyUploadedTarget('Yt123456abc','x'.repeat(32),{
+   target:'en',channelId:'UCbbbbbbbbbbbbbbbbbbbbbb',fetcher
+ }),/VIDEO_YOUTUBE_WRONG_CHANNEL/)
+})
+
+test('RU/EN target upload uses one resumable media request and preserves uncertainty',async()=>{
+ const enId='UCaaaaaaaaaaaaaaaaaaaaaa'
+ const calls=[]
+ let begin=0,receipt=0
+ const fetcher=async (url,options={})=>{
+   const value=String(url);calls.push({url:value,method:options.method||'GET'})
+   if(value.includes('channels?part=id&mine=true'))return Response.json({items:[{id:enId}]})
+   if(value.includes('forHandle='))return Response.json({items:[{id:enId}]})
+   if(value.includes('uploadType=resumable'))return new Response(null,{status:200,headers:{
+     location:'https://www.googleapis.com/upload/youtube/v3/videos?upload_id=receipt'
+   }})
+   if(value.includes('upload_id=receipt'))return Response.json({id:'Yt123456abc'})
+   if(value.includes('videos?part=snippet,status'))return Response.json({items:[{
+     id:'Yt123456abc',snippet:{channelId:enId,title:'English test'},
+     status:{privacyStatus:'unlisted',uploadStatus:'processed'}
+   }]})
+   throw Error('unexpected YouTube request')
+ }
+ const mp4=Buffer.alloc(1024);mp4.write('ftyp',4,'ascii')
+ const result=await uploadUnlistedTarget(mp4,'x'.repeat(32),{
+   target:'en',channelId:enId,fetcher,title:'English test',
+   onBeginUpload:async()=>{begin++},onUploaded:async()=>{receipt++}
+ })
+ assert.equal(result.id,'Yt123456abc')
+ assert.equal(begin,1)
+ assert.equal(receipt,1)
+ assert.equal(calls.filter(x=>x.method==='PUT').length,1)
+ assert.equal(calls.filter(x=>x.method==='POST'&&x.url.includes('uploadType=resumable')).length,1)
+})
+
+test('Dot story command and private deep link select story workflow without replacing slideshow',()=>{
+ const owner={id:privateBase.id,is_bot:false};
+ const msg=text=>({update_id:3000,message:{
+  date:TIME/1000,chat:privateBase,from:owner,message_id:77,text,
+ }});
+ assert.equal(parseOwnerVideoUpdate(msg('/video_story'),{
+  now:TIME,botUsername:'andydotbot'}).action,'story_start');
+ assert.equal(parseOwnerVideoUpdate(msg('/start video_story'),{
+  now:TIME,botUsername:'andydotbot'}).action,'story_start');
+ assert.equal(parseOwnerVideoUpdate(msg('/video_story@OtherBot'),{
+  now:TIME,botUsername:'andydotbot'}),null);
+ assert.equal(parseOwnerVideoUpdate(msg('/video'),{
+  now:TIME,botUsername:'andydotbot'}).action,'start');
+ assert.ok(ownerAudioHelpMessage().reply_markup.inline_keyboard.flat().some(x=>
+   x.url==='https://t.me/Andydotbot?start=video_story'));
+});
+
+test('owner-video pinned runner still performs real ffmpeg ffprobe and media acceptance',()=>{
+  const workflow=readFileSync(new URL('../.github/workflows/hh-owner-telegram-video.yml',import.meta.url),'utf8')
+  assert.match(workflow,/owner-video:\s*\n(?:\s*#[^\n]*\n)*\s*runs-on: ubuntu-24\.04\s*\n\s*timeout-minutes: 25/,
+    'Do not inherit the changing ubuntu-latest image or increase the job cap')
+  assert.match(workflow,/if ! command -v ffmpeg[^\n]*\|\| ! command -v ffprobe[^\n]*;/,
+    'Real ffmpeg AND ffprobe must be present before native media QA')
+  assert.match(workflow,/sudo apt-get update -qq/)
+  assert.match(workflow,/sudo apt-get install -y -qq ffmpeg/)
+  assert.match(workflow,/ffmpeg -version >\/dev\/null/)
+  assert.match(workflow,/ffprobe -version >\/dev\/null/)
+  assert.match(workflow,/node --test tests\/owner-telegram-youtube-visibility\.test\.mjs/)
+  assert.match(workflow,/node scripts\/verify-telegram-owner-video-media\.mjs/)
+  assert.match(workflow,/node scripts\/ensure-owner-video-renderer\.mjs --verify-trace/)
+  assert.doesNotMatch(workflow,/continue-on-error:\s*true/,
+    'Never permit media release checks to pass after a failed install')
+});
+
+test('GitHub FFmpeg fallback remains official, bounded, checksum-pinned and fail-closed',()=>{
+  const source=readFileSync(new URL('../.github/actions/ci-ffmpeg-static/action.yml',import.meta.url),'utf8');
+  assert.match(source,/if ! curl --fail --show-error --silent --location/);
+  assert.match(source,/api\.github\.com\/repos\/eugeneware\/ffmpeg-static\/releases\/assets\/316528626/);
+  assert.match(source,/github\.com\/eugeneware\/ffmpeg-static\/releases\/download\/b6\.1\.1\/ffmpeg-linux-x64\.gz/);
+  assert.match(source,/Both official FFmpeg sources unavailable; refusing to bypass SHA-256 verification/);
+  assert.match(source,/bfe8a8fc511530457b528c48d77b5737527b504a3797a9bc4866aeca69c2dffa/);
+  assert.match(source,/e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99/);
+  assert.equal((source.match(/sha256sum --check --status/g)||[]).length,4);
+  assert.match(source,/install -m 755 "\$FFMPEG_BIN" node_modules\/ffmpeg-static\/ffmpeg/);
+  assert.doesNotMatch(source,/continue-on-error:\s*true|skip-hash|untrusted-mirror/i);
+});

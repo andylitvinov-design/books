@@ -113,7 +113,10 @@ test('one private six-milestone route reuses tests, insights and keeps mobile bo
   assert.match(shell, /<MyCourse data=\{data\} locale=\{locale\}/)
   assert.match(shell, /root \+ '\/course'/)
   assert.match(shell, /hh-mobile-app-nav/)
-  assert.match(css, /repeat\(6,minmax\(0,1fr\)\)/)
+  // Four configured mobile destinations plus the protected public Home link.
+  assert.match(shell,/className="hh-mobile-app-nav-home"/)
+  assert.match(shell,/\{mobileNav\.map\(/)
+  assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/)
   const r3=read('components/app/course-r3-steps.jsx')
   assert.match(r3, /root\+'\/tests/)
   const completion=read('components/app/course-completion-review.jsx')

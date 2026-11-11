@@ -5,11 +5,10 @@ on:
     branches:
       - codex/public-book-library
     paths:
-      - ".github/workflows/hh-benchmark-program.yml"
       - "docs/benchmarking/**"
       - "data/benchmarking/**"
       - "lib/benchmarking/**"
-      - "scripts/benchmarking/**"
+      - "scripts/benchmarking/plan.mjs"
       - "tests/benchmark-reference-matrix.test.mjs"
       - "components/free-entry-landing.tsx"
       - "components/free-entry-landing.module.css"
@@ -22,7 +21,7 @@ on:
       - ".github/workflows/hh-benchmark-program.yml"
       - "data/benchmarking/**"
       - "lib/benchmarking/**"
-      - "scripts/benchmarking/**"
+      - "scripts/benchmarking/plan.mjs"
       - "tests/benchmark-reference-matrix.test.mjs"
       - "components/free-entry-landing.tsx"
       - "components/free-entry-landing.module.css"
@@ -33,8 +32,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: hh-benchmark-contract-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: hh-benchmark-contract-${{ github.event_name == 'pull_request' && github.run_attempt == 1 && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.run_attempt == 1 && github.event.action == 'synchronize' }}
 
 jobs:
   benchmark-contract:

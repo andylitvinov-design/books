@@ -50,7 +50,23 @@ test('integration retains fatal gate, original checks and navigation sequence ex
  assert.match(source,/page\.on\('pageerror', error => errors\.push\(error\.message\)\)/);
  assert.match(source,/assert\.deepEqual\(errors,\[\]\)/);
  assert.ok(!source.includes('errors.filter'));assert.ok(!source.includes('errors.length ='));
+ // Pin the exact reviewed browser-readiness change, then compare every remaining
+ // real navigation and fatal assertion with the previously frozen baseline.
+ const reviewedFix = [
+   '        // The Next.js client may keep analytics and prefetch requests active.',
+   '        // Waiting for networkidle can deadlock even after the document loaded.',
+   '        // Wait for document load, then verify real routes and page errors below.',
+   "        const settle = () => page.waitForLoadState('load', {timeout:30000});",
+ ].join('\n');
+ const previousPreamble = [
+   '        // Do not abort in-flight Next link prefetches with the next hard goto.',
+   '        // All page errors still fail; no CORS or JavaScript errors are filtered.',
+   "        const settle = () => page.waitForLoadState('networkidle',{timeout:30000});",
+ ].join('\n');
+ assert.ok(source.includes(reviewedFix), 'exact reviewed load-event navigation change');
+ source=source.replace(reviewedFix,previousPreamble);
  const start=source.indexOf('        // Do not abort');const end=source.indexOf('        results.push',start);
+ assert.ok(start>=0&&end>start,'frozen original browser acceptance block');
  const block=source.slice(start,end);
  const portraitAssertion="await expect(page).toHaveURL(origin+'/en/app/portrait');";
  assert.equal(block.split(portraitAssertion).length-1,2,'Both actual navigation and reload require the approved canonical portrait route');
@@ -58,25 +74,24 @@ test('integration retains fatal gate, original checks and navigation sequence ex
  // portrait redirects and the new exact canonical-course catalog assertion.
  const catalogAssertion="\n          if (['/es/courses', '/es/academy/free-ai-courses'].includes(path)) await assertSpanishCourseCatalog(page, response);";
  assert.equal(block.split(catalogAssertion).length-1,1,'Exactly one bounded course catalog assertion');
- // The approved Library header moved account access into the exact My House
- // menu item. Freeze that complete handoff, then preserve the old rest-of-flow hash.
- const accountEntry=`        const accountMenu = page.locator('.site-navigation details.site-main-menu');
-        await expect(accountMenu).toHaveCount(1);
-        await expect(accountMenu).toHaveJSProperty('open', false);
-        await click(page.locator('.site-main-menu-trigger'));
-        await expect(accountMenu).toHaveJSProperty('open', true);
-        const accountLink = page.locator('.site-main-menu-panel > a[href="/en/app"]');
-        await expect(accountMenu.getByRole('link', { name: 'Mi Casa', exact: true })).toHaveCount(1);
-        await expect(accountLink).toHaveCount(1);
-        await expect(accountLink).toHaveAccessibleName('Mi Casa');
-        await expect(accountLink).toBeVisible();
-        await expect(accountLink).toHaveAttribute('href','/en/app');
-        await click(accountLink);`;
- assert.equal(block.split(accountEntry).length-1,1,'Exactly one reviewed menu-to-account handoff');
- const priorAccountEntry=`        await expect(page.locator('.site-navigation [data-nav-item="cabinet"]')).toHaveAttribute('href','/en/app');
-        await click(page.locator('.site-navigation [data-nav-item="cabinet"]'));`;
- const normalized=block.replace(accountEntry,priorAccountEntry).replace(catalogAssertion,'').replaceAll(portraitAssertion,"await expect(page).toHaveURL(origin+'/en/app');");
- assert.equal(createHash('sha256').update(normalized).digest('hex'),'c7de0338d185c732f43a2c0503d4615edffc3d138318117d100b2995df64a4b4','Frozen action/assertion block apart from approved redirects and account menu handoff');
+ // The current production entry is a real dialog, with an explicit error branch,
+ // a consent-safe profile link and an actual guest screen. Freeze this complete
+ // browser-action block, not the retired My House dropdown.
+ for(const marker of [
+   "        const accountCabinet = page.locator('.site-navigation .site-cabinet-entry');",
+   "        await expect(accountCabinet).toHaveAttribute('aria-haspopup','dialog');",
+   "        await click(accountCabinet);",
+   "        const accountDialog = page.locator('#home-personal-space-dialog');",
+   "        await expect(accountDialog).toBeVisible();",
+   "        await expect(accountLink).toHaveAttribute('href', entry.href);",
+   "        await click(accountLink);",
+   "        const guestOverview = page.locator('main.hh-app [data-cabinet-guest-overview=\"true\"]');",
+   "        await expect(guestOverview).toBeVisible();",
+ ]) assert.equal(block.split(marker).length-1,marker.includes('await expect(guestOverview).toBeVisible()') ? 2 : 1,
+   'Required real dialog-to-profile browser action: '+marker);
+ assert.equal(createHash('sha256').update(block).digest('hex'),'7f193678b75cc05492cfc49132fde40e9aabcf0f0a8b85602fd7590f9d92c466',
+   'Frozen current production browser actions, consent, errors, navigation and locale coverage');
+
 });
 
 test('each exact browser group retains reserved capacity and reports drops; kinds and source paths are bounded',()=>{

@@ -1,0 +1,74 @@
+/* The screenshot-1 design replaces the old bars only on the unified mobile
+   journeys. Both guest and signed-in pages keep a SINGLE accessible dock. */
+body:has([data-hh-unified-dock]) [data-support-mobile-bottom-nav],
+body:has([data-hh-unified-dock]) [data-mandala-support-bottom-nav],
+body:has([data-hh-unified-dock]) .hh-mobile-app-nav,
+body:has([data-hh-unified-dock]) .hh-practice-inner-dock,
+body:has([data-hh-unified-dock]) [data-legacy-practice-bottom-nav],
+body:has([data-hh-unified-dock]) .mobile-bottom-navigation{display:none!important}
+body:has([data-hh-unified-dock]) [data-mytube-page],
+body:has([data-hh-unified-dock]) [data-mandala-meditation-page],
+body:has([data-hh-unified-dock]) [data-holistic-mobile-alternative],
+body:has([data-hh-unified-dock]) .hh-app.hh-messages-page,
+body:has([data-hh-unified-dock]) .hh-app,
+body:has([data-hh-unified-dock]) [data-practice-showcase]{
+ padding-bottom:calc(var(--hh-unified-nav-height,77px) + 22px)!important;
+}
+body:has([data-hh-unified-dock]) [data-hh-unified-dock][data-keyboard-open="true"]{display:none}
+body:has([data-hh-unified-dock]) [data-video-director-chat-details]{scroll-margin-bottom:calc(var(--hh-unified-nav-height,77px) + 20px)}
+
+/* The mandala editor has its own compact top context and a shared global dock.
+   The old end-of-page settings/header control must not appear as a second bar. */
+@media(max-width:759px){
+ body:has([data-hh-unified-dock]) [data-mandala-legacy-header]{display:none!important}
+}
+
+
+/* MyTube dark-mode exception; never recolor Video Studio, Practice or CRM docks. */
+body:has([data-mytube-page]) [data-hh-unified-dock]{
+  background:rgba(15,15,15,.98);border-color:#303030;
+  box-shadow:0 -7px 22px rgba(0,0,0,.65)
+}
+body:has([data-mytube-page]) [data-unified-dock-item]{color:#aaa}
+body:has([data-mytube-page]) [data-unified-dock-item][aria-current="page"]{
+  background:#272727;color:#fff
+}
+body:has([data-mytube-page]) [data-unified-dock-item][aria-current="page"] svg{color:#ff0033}
+body:has([data-mytube-page]) [data-unified-dock-item]:hover{color:#f1f1f1}
+body:has([data-mytube-page]) [data-unified-dock-item]:focus-visible{
+  outline:2px solid #fff;outline-offset:-2px
+}
+
+/* On iOS a real keyboard replaces the global dock. Do not keep its bottom
+   reservation beneath the Messenger composer while the dock is hidden. */
+@media(max-width:760px){
+ body:has([data-hh-unified-dock][data-keyboard-open="true"]) .hh-app.hh-messages-page{
+  padding-bottom:0!important
+ }
+}
+/* Keep AI chat mounted so switching Orders/Clients does not discard a draft.
+   Explicitly hide the inactive panel even under legacy CSS overrides. */
+.hh-app.hh-messages-page [data-hh-messenger-ai][hidden]{display:none!important}
+
+/* One seven-destination app bar on the mobile homepage in ALL browser and
+   installed-PWA modes. Keep the complete editorial catalog in the header menu.
+   The existing free express review form remains the original public page. */
+@media(max-width:759px){
+ body:has([data-hh-unified-dock][data-hh-home-route]){
+  padding-bottom:calc(var(--hh-unified-nav-height,77px) + 18px)
+ }
+ body:has([data-hh-unified-dock]) [data-free-entry-landing="situation"]{
+  padding-bottom:calc(var(--hh-unified-nav-height,77px) + 18px)!important
+ }
+}
+/* Marketing pages keep their existing desktop header navigation. */
+@media(min-width:760px){
+ [data-hh-unified-dock][data-hh-home-route]{display:none!important}
+ body:has([data-free-entry-landing="situation"]) [data-hh-unified-dock]{display:none!important}
+}
+
+/* Only detected keyboard hides dock; lingering input focus does not. */
+@media(max-width:760px){
+ body:has(.hh-messages-page [data-keyboard-open="true"]) [data-hh-unified-dock]{display:none!important}
+ body:has(.hh-messages-page [data-keyboard-open="true"]) .hh-app.hh-messages-page{padding-bottom:0!important}
+}
