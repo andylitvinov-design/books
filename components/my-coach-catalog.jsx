@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, Menu, Zap, Leaf, Flower2, Compass } from 'lucide-react'
+import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2 } from 'lucide-react'
 import {
   COACH_PERSONAS, COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
   localCoachText, normalizeCoachSettings,
@@ -133,6 +133,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [topic, setTopic] = useState('all')
   const [onlyFavorites, setOnlyFavorites] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
   const [sortBy, setSortBy] = useState('all')
   const [paceFilter, setPaceFilter] = useState('any')
   const [favorites, setFavorites] = useState([])
@@ -195,7 +196,14 @@ export default function MyCoachCatalog({ locale = 'en' }) {
             aria-pressed={onlyFavorites} aria-label={d.favorites} className={styles.brandAction}>
             <Heart size={22} fill={onlyFavorites ? 'currentColor' : 'none'} aria-hidden="true" />
           </button>
-          <Link href={'/' + lang + '/coaching'} aria-label={t.back} className={styles.brandAction}><Menu size={22} aria-hidden="true" /></Link>
+          <button type="button" className={styles.brandAction} onClick={() => setShowMenu(value => !value)}
+            aria-label={t.back} aria-expanded={showMenu} aria-controls="my-coach-more-menu">
+            <MoreHorizontal size={24} aria-hidden="true" />
+          </button>
+          {showMenu ? <div className={styles.brandMenu} id="my-coach-more-menu">
+            <Link href={'/' + lang + '/coaching'}>{t.back}</Link>
+            <Link href={'/' + lang + '/masters'}>{t.human}</Link>
+          </div> : null}
         </nav>
       </header>
 
