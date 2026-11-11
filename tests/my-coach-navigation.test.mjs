@@ -28,9 +28,11 @@ test('My Coach opens fictional AI personas while /masters remains the human dire
 })
 
 test('persona handoff keeps the existing, reviewed session runner and user consent flow', () => {
-  const lounge = read('app/[locale]/coaching/page.jsx')
+  const lounge = read('app/[locale]/coaching/sessions/page.jsx')
   const runner = read('components/public-coaching-discovery.jsx')
   const component = read('components/my-coach-catalog.jsx')
+  const humanDirectory = read('app/[locale]/coaching/page.jsx')
+  assert.match(humanDirectory, /coachSessionHref/)
   assert.match(lounge, /resolveCoachSelection/)
   assert.match(lounge, /personaSelection=\{personaSelection\}/)
   assert.match(runner, /data-my-coach-handoff/)

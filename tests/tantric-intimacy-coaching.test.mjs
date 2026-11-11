@@ -91,7 +91,7 @@ test('server verifies adult self-attestation before private encrypted start; oth
 test('public lounge protects intimate questions behind opt-in and supports skip, in-memory only',()=>{
  const publicUi=read('components/public-coaching-discovery.jsx')
  const css=read('components/public-coaching-discovery.module.css')
- const page=read('app/[locale]/coaching/page.jsx')
+ const page=read('app/[locale]/coaching/sessions/page.jsx')
  assert.match(publicUi,/data-coaching-age-confirm/)
  assert.match(publicUi,/requiresAdult&&!adultAcknowledged/)
  assert.match(publicUi,/onClick=\{\(\)=>setAdultAcknowledged\(true\)\}/)
