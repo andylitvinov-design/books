@@ -1,15 +1,15 @@
 import { notFound, redirect } from 'next/navigation'
 import { englishCabinetTarget } from '@/lib/app/spanish-cabinet-bridge.mjs'
 import { AppWorkspaceNavigator } from '@/components/app/app-workspace'
-import ProfileTestEntry from '@/components/app/profile-test-entry'
 import '../[[...path]]/workspace.css'
 import '../[[...path]]/assessment-dashboard.css'
 import '../[[...path]]/insights-compact.css'
 import '@/components/app/psi-monitoring.css'
 import '@/components/app/refinements.css'
 
-// The public Profile entry does not mount AppWorkspace or request a personal bootstrap.
-// Query-driven private bookmarks continue through the original protected workspace.
+// Restore the original My Space dashboard as the canonical Profile landing.
+// AppWorkspace keeps its existing signed-in Today view and signed-out guest overview;
+// free public tests remain available from the guest overview without saving results.
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
@@ -34,12 +34,8 @@ export default async function ProfilePage({ params, searchParams }) {
   }
   if (!['en', 'ru'].includes(locale)) notFound()
 
-  // Personal information is loaded ONLY for explicitly requested account views.
-  // Keep existing private deep links (including OAuth handoff, paths and reports),
-  // but ignore ordinary tracking parameters so they never trigger account reads.
-  const hasPrivateIntent = ['today', 'path', 'reports'].includes(query.space) ||
-    query.afterSignIn === 'messages' ||
-    ['cancelled', 'error', 'denied'].includes(query.auth)
-  if (hasPrivateIntent) return <AppWorkspaceNavigator locale={locale} path={['portrait']} />
-  return <ProfileTestEntry locale={locale} />
+  // The Today dashboard is the first Profile screen again. AppWorkspaceNavigator
+  // preserves direct ?space=path/reports bookmarks and handles signed-out visitors
+  // through its existing guest overview, whose free-test link stays public.
+  return <AppWorkspaceNavigator locale={locale} path={['portrait']} />
 }

@@ -722,11 +722,21 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(compactVoicePanel.locator('[data-video-affirmation-transcript-review]')).toHaveCount(1);
       await expect(page.locator("[data-hypno-pending]")).toHaveCount(0);
       await expect(page.locator("[data-video-voice-approval-required]")).toHaveCount(0);
-      await voiceModeButton.click();
+      // iPhone WebKit dispatches native taps; a synthetic click can lose the
+      // React gender-filter update during the Voice/My Voice handoff.
+      if(engine==="webkit")await voiceModeButton.tap();
+      else await voiceModeButton.click();
+      await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
       const chooserPending=page.locator("[data-video-affirmation-voice-select]");
-      await expect(chooserPending.locator('[data-video-affirmation-gender="male"]')).toBeEnabled();
-      await chooserPending.locator('[data-video-affirmation-gender="male"]').click();
-      await chooserPending.locator('[data-video-affirmation-voice-card="leon"]').click();
+      const maleGender=chooserPending.locator('[data-video-affirmation-gender="male"]');
+      await expect(maleGender).toBeEnabled();
+      if(engine==="webkit")await maleGender.tap();
+      else await maleGender.click();
+      await expect(maleGender).toHaveAttribute("aria-pressed","true");
+      const leonCard=chooserPending.locator('[data-video-affirmation-voice-card="leon"]');
+      await expect(leonCard).toBeVisible();
+      if(engine==="webkit")await leonCard.tap();
+      else await leonCard.click();
       await expect(chooserPending.locator('[data-video-affirmation-voice-card="leon"]')).toHaveAttribute("aria-pressed","true");
       const previewButton=chooserPending.locator('[data-video-affirmation-voice-preview="leon"]');
       await expect(previewButton).toBeEnabled();
