@@ -16,7 +16,8 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
     "data-video-audio-compact-attach","data-video-audio-affirmations",
     "data-video-audio-library","{deepAudioPane}"])assert.ok(pane.includes(marker),marker);
   assert.doesNotMatch(pane,/data-video-audio-mode=/);
-  assert.match(pane,/curatedMatches\.slice\(0,5\)/);
+  assert.match(pane,/filteredAudio\.slice\(0,5\)/);
+  assert.match(pane,/setAudioCategoryOverride\(item\.id\)/);
   assert.match(pane,/attachedPresetIds\.includes\(id\)/);
   assert.match(pane,/toggleQuickMusic\(id\)/);
   assert.match(pane,/playQuickTrack\(id\)/);

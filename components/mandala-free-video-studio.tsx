@@ -82,7 +82,7 @@ import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-mus
 import { mandalaAudioTracks } from "@/lib/mandala/audio-recommendations.mjs";
 import { SCENARIO_AUDIO_REGISTRY, scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
 import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
-import {curatedAudioTracks,recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
+import {curatedAudioTracks,recommendCuratedAudio,curatedAudioMatchesCategory,inferVideoAudioCategory} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes, proceduralMp4Route, selectWebCodecsForRecording, shouldAutoRecoverSafariPlayback } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
@@ -2047,7 +2047,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     window.requestAnimationFrame(()=>audioLibraryCloseRef.current?.focus());
     return()=>document.removeEventListener("keydown",onKey);
   },[audioLibraryOpen]);
-  const [audioCategory,setAudioCategory] = useState("all");
+  const [audioCategoryOverride,setAudioCategoryOverride] = useState<"all"|"wellbeing"|"focus"|"calm"|"energy"|"love"|null>(null);
   const [montageTransition,setMontageTransition] = useState<TimelineTransition>("soft");
   // Real browser interactions are safe only after client event handlers hydrate.
   const [studioHydrated,setStudioHydrated] = useState(false);
@@ -2907,7 +2907,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const previewAudioUrl = samplePreviewId ? presetAudioUrl(samplePreviewId) : uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
-  const audioTheme=audioThemeOverride||theme;
+  const audioCategory=audioCategoryOverride||inferVideoAudioCategory({theme,concept:approvedVideoConcept,wish});
+  const categoryTheme:VideoTheme=audioCategory==="wellbeing"?"health":audioCategory==="focus"?"goals":
+    audioCategory==="calm"?"life":audioCategory==="love"?"relationships":"energy";
+  const audioTheme=audioThemeOverride||(audioCategory==="all"?theme:categoryTheme);
   // The existing 48 scenario packs each provide four original, distinct tracks.
   // Preserve the canonical scenario/classical collection in this compact UI.
   const goalTreeTracks=goalTreeAudioScenarioId?getGoalTreeAudioChoices(goalTreeAudioScenarioId):[];
@@ -2918,7 +2921,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const curatedMatches=recommendCuratedAudio({
     theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
     voiceFriendly:audioVoiceFriendly,
-  });
+  }).filter(track=>curatedAudioMatchesCategory(track,audioCategory));
   // Offer every approved first-party score, not only this storyboard's four.
   // The active story still ranks first; other scores keep their actual IDs.
   const libraryScenarioTracks=useMemo(
@@ -2942,7 +2945,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     seenAvailableAudioIds.add(track.id);
     return true;
   });
-  const featuredMelodies=recommendCuratedAudio({theme:audioTheme,kind:"melody",voiceFriendly:audioVoiceFriendly}).slice(0,4);
+  const featuredMelodies=recommendCuratedAudio({theme:audioTheme,kind:"melody",voiceFriendly:audioVoiceFriendly}).filter(track=>curatedAudioMatchesCategory(track,audioCategory)).slice(0,4);
   const recommendedAudioId = curatedMatches[0]?.id as Exclude<AmbientMusic, "none"> | undefined;
   const selectedAudio = availableAudioTracks.find(item=>item.id===music);
   const reviewedRecording=curatedAudioTracks.find(item=>item.id===music);
@@ -3102,7 +3105,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
   },[soundVolume]);
   // A new visual video topic resets the optional local audio-only suggestion override.
-  useEffect(()=>setAudioThemeOverride(null),[theme]);
+  useEffect(()=>{
+    // A revised video goal/concept changes the recommended chip, not manually attached sound.
+    setAudioCategoryOverride(null);setAudioThemeOverride(null);
+    setAudioMood("all");setAudioPace("all");setShowAllAudio(false);
+  },[theme,approvedVideoConcept?.signature]);
   // Built-in presets come from stable HTTPS WAV files, not a generated
   // blob: URL: Safari's in-app player reported a native "Error" for blobs.
   // The actual selected user audio remains a private, local File object.
@@ -5032,7 +5039,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setDuration(20);setAspect("landscape");setSpeed("slow");setBrightness("soft");
     setMusic("none");setAttachedAudio(null);setSoundVolume(75);setCaptionMode("none");
     setAudioAuto(false);setAudioKind("all");setAudioMood("all");setAudioPace("all");
-    setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);setAudioThemeOverride(null);
+    setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);setAudioThemeOverride(null);setAudioCategoryOverride(null);
     setCustomCaption("");setQuality("hd");
     setAffirmations(defaultAffirmations);
     setHypnoLight({enabled:false,cyclesPerMinute:6,opacity:.18});
@@ -8536,7 +8543,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
               ] as const).map((item,index)=><button key={item.id} type="button"
                 data-video-audio-category={item.id} aria-pressed={audioCategory===item.id}
                 disabled={recording||preparing} onClick={()=>{
-                  setAudioCategory(item.id);setAudioThemeOverride(item.theme);setAudioMood(item.mood);
+                  stopSoundPreview();setAudioCategoryOverride(item.id);setAudioThemeOverride(null);setAudioMood("all");
                   setAudioKind("melody");setAudioPace("all");setAudioSearch("");
                   setShowAllAudio(false);setAudioAuto(false);
                 }}>{(locale==="ru"?["Все","Самочувствие","Фокус","Спокойствие","Энергия","Любовь"]:
@@ -8546,7 +8553,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             <div className={videoStyles.audioCompactGrid} data-video-audio-compact-grid
               role="group" aria-label={locale==="ru"?"Выберите до трёх аудиодорожек":
                 locale==="es"?"Selecciona hasta tres pistas":"Select up to three tracks"}>
-              {curatedMatches.slice(0,5).map((track,index)=>{
+              {filteredAudio.slice(0,5).map((track,index)=>{
                 const id=track.id as PresetId;
                 const checked=!uploadedAudio&&attachedPresetIds.includes(id);
                 const listening=samplePreviewId===id&&soundPreview;
@@ -8585,6 +8592,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   </button>
                 </article>;
               })}
+              {filteredAudio.length===0?<p role="status">{locale==="ru"?
+                "По этому фильтру записей нет. Измените категорию или очистите поиск.":locale==="es"?
+                "No hay pistas para este filtro. Cambia la categoría o borra la búsqueda.":
+                "No recordings match this filter. Change category or clear search."}</p>:null}
               <label className={videoStyles.audioCompactUpload} data-video-audio-compact-upload-tile
                 data-selected={Boolean(uploadedAudio)}>
                 <Paperclip size={24} aria-hidden="true"/>
@@ -8658,7 +8669,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   <div className={videoStyles.audioLibraryFilters}>
                     <label>{locale==="ru"?"Тема":locale==="es"?"Tema":"Theme"}
                       <select data-video-audio-library-theme value={audioThemeOverride||"all"}
-                        onChange={event=>{setAudioThemeOverride(event.currentTarget.value==="all"?null:event.currentTarget.value as VideoTheme);setAudioAuto(false);setShowAllAudio(false);}}>
+                        onChange={event=>{setAudioCategoryOverride("all");setAudioThemeOverride(event.currentTarget.value==="all"?null:event.currentTarget.value as VideoTheme);setAudioAuto(false);setShowAllAudio(false);}}>
                         <option value="all">{locale==="ru"?"Все":locale==="es"?"Todas":"All"}</option>
                         {(["relationships","money","energy","goals","health","life"] as VideoTheme[]).map(id=>
                           <option key={id} value={id}>{ui.themes[id]}</option>)}
@@ -8666,13 +8677,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                     </label>
                     <label>{audioUi.mood}
                       <select data-video-audio-library-mood value={audioMood}
-                        onChange={event=>{setAudioMood(event.currentTarget.value);setShowAllAudio(false);}}>
+                        onChange={event=>{setAudioCategoryOverride("all");setAudioMood(event.currentTarget.value);setShowAllAudio(false);}}>
                         {Object.entries(audioUi.moods).map(([id,name])=><option key={id} value={id}>{name}</option>)}
                       </select>
                     </label>
                     <label>{audioUi.pace}
                       <select data-video-audio-library-pace value={audioPace}
-                        onChange={event=>{setAudioPace(event.currentTarget.value);setShowAllAudio(false);}}>
+                        onChange={event=>{setAudioCategoryOverride("all");setAudioPace(event.currentTarget.value);setShowAllAudio(false);}}>
                         {Object.entries(audioUi.paces).map(([id,name])=><option key={id} value={id}>{name}</option>)}
                       </select>
                     </label>
