@@ -49,3 +49,8 @@ test('existing server route places native model behind actor, rate, safety and p
   assert.match(source,/body\.judgmentContext==null && body\.judgmentChoice==null/);
   assert.match(source,/modelUsed:false[\s\S]{0,200}source:nativeReply\.source/);
 });
+
+test('explicit refusals override inferred catalog topic and short social replies',()=>{
+  for(const [locale,message] of [['ru','Не предлагай мне курсы'],['es','No quiero cursos'],['en',"I don't want a session"],['ru','Спасибо, но вопрос остался']])
+    assert.equal(nativeSecretaryTurn({message,locale}),null,message);
+});
