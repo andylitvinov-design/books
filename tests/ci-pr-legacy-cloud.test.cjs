@@ -35,9 +35,14 @@ test('Draft/explicit hold/foreign source prevent both manual prep and source',()
 });
 test('stable old candidate survives arbitrary delayed cron ticks and rotates hourly',()=>{
  const old=Array.from({length:12},(_,i)=>pr(i+204));
- const at=planCandidates(old,NOW).filter(x=>x.lane==='legacy');
- const late=planCandidates(old,NOW+600000).filter(x=>x.lane==='legacy');
- const next=planCandidates(old,NOW+1200000).filter(x=>x.lane==='legacy');
+ // The additional rotating probes are read-only and cannot start legacy
+ // workers: only the single hourly candidate has no probe-only flag.
+ const atAll=planCandidates(old,NOW);
+ const at=atAll.filter(x=>x.lane==='legacy'&&!x.manual_conflict_probe);
+ const late=planCandidates(old,NOW+600000).filter(x=>x.lane==='legacy'&&!x.manual_conflict_probe);
+ const next=planCandidates(old,NOW+1200000).filter(x=>x.lane==='legacy'&&!x.manual_conflict_probe);
+ assert.equal(atAll.filter(x=>x.manual_conflict_probe).length,2,
+  'two bounded read-only probes never become extra hourly preflight workers');
  assert.equal(at.length,1);
  assert.equal(late.length,1,'late :50 tick preserves the single signed candidate');
  assert.deepEqual(late.map(x=>x.pr_number),at.map(x=>x.pr_number),
