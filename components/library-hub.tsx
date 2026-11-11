@@ -397,8 +397,8 @@ export function buildPublicVideoDiscoveryItems(
         (locale==="ru"?"выпуск":locale==="es"?"episodio":"episode")+" "+
         lesson.order+" / "+series.lessons.length,
       youtubeId:lesson.id,href:"https://www.youtube.com/watch?v="+lesson.id,
-      seriesId:series.id,seriesTitle:series.title,
-      seriesOrder:lesson.order,seriesHref:series.href,
+      seriesId: series.id,seriesTitle:series.title,
+      seriesOrder: lesson.order,seriesHref:series.href,
       audioLanguage:"ru" as const,curation:"verified" as const,
       sourceLabel:"PsiMaster · архив",sourceGroup:series.logicalId,
       topicTags:discoveryTags[series.logicalId]||["practices"],
