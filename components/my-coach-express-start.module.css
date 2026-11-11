@@ -37,3 +37,8 @@
 @media(max-width:540px){.actionWrap{max-width:100%}.dialog{width:calc(100% - 24px);border-radius:24px}
   .dialogInner{padding:24px 18px 23px}.talkButton{min-height:56px}}
 @media(prefers-reduced-motion:reduce){.talkButton{transition:none}}
+
+/* Reuse the approved Mira-first hero slot without a second CTA or bypass arrow. */
+.embeddedWrap{flex:1;min-width:0;max-width:none;margin:0;align-self:center}
+.embeddedWrap .talkButton{min-height:52px;padding:5px 7px;gap:5px;font:800 clamp(11px,1.9vw,15px)/1.12 system-ui;box-shadow:0 0 0 3px #12ffa35c,0 3px 20px #00ffd366}
+@media(max-width:355px){.embeddedWrap .portrait{width:27px;height:27px}.embeddedWrap .talkButton{font-size:10px;gap:3px;padding:4px}}

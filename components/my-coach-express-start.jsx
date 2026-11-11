@@ -38,7 +38,7 @@ const COPY = {
   },
 }
 
-export default function MyCoachExpressStart({ locale = 'en' }) {
+export default function MyCoachExpressStart({ locale = 'en', embedded = false, ...buttonProps }) {
   const lang = Object.hasOwn(COPY, locale) ? locale : 'en'
   const t = COPY[lang]
   const [isOpen, setIsOpen] = useState(false)
@@ -116,8 +116,8 @@ export default function MyCoachExpressStart({ locale = 'en' }) {
   }
 
   return <>
-    <div className={styles.actionWrap} data-my-coach-mira-quick-start>
-      <button type="button" className={styles.talkButton} onClick={startMira}
+    <div className={embedded ? `${styles.actionWrap} ${styles.embeddedWrap}` : styles.actionWrap} data-my-coach-mira-quick-start>
+      <button type="button" className={styles.talkButton} {...buttonProps} onClick={startMira}
         disabled={!!busy} data-my-coach-mira-talk>
         <span className={styles.portrait} aria-hidden="true" />
         <Mic size={19} aria-hidden="true" />

@@ -176,7 +176,8 @@ test("MyTube projects ONLY published public Academy/Library sources; never fabri
  const library=read("components/library-hub.tsx");
  const video=read("components/video-discovery.tsx");
  const feed=read("components/library-feed.tsx");
- assert.match(page,/loadPublicLibraryFeed/);
+ assert.match(page,/loadPublicMyTubeVideos\(\)/);
+ assert.match(read("lib/public-library-feed.ts"),/Promise\.allSettled/);
  assert.match(page,/loadApprovedVideoDiscoveries/);
  assert.match(library,/buildPublicVideoDiscoveryItems/);
  assert.match(video,/data-mytube-search/);

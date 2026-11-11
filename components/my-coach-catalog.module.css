@@ -270,3 +270,23 @@
   .heroLead{max-width:205px}
 }
 @media(prefers-reduced-motion:reduce){.root *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Inline coach details: the disclosure belongs to its own card, not a second section below the directory. */
+.card .profile,.cardSelected .profile{grid-column:1/-1;min-width:0;margin:3px 0 0;padding:clamp(14px,2.2vw,23px);border-radius:16px;
+  border:1px solid #dce9df;background:#fbfdf9;box-shadow:inset 0 1px 0 #ffffffb5}
+.card .profileHead,.cardSelected .profileHead{gap:13px}
+.card .profileAbout,.cardSelected .profileAbout{margin:14px 0;font-size:15px}
+.card .profileFacts,.cardSelected .profileFacts{gap:8px}
+.card .profileFacts>div,.cardSelected .profileFacts>div{padding:12px}
+.card .opening,.card .preview,.cardSelected .opening,.cardSelected .preview{margin-top:14px;padding:14px 16px}
+.card .settings,.cardSelected .settings{margin-top:14px;padding:15px}
+.card .settingsGrid,.cardSelected .settingsGrid{gap:15px;margin-top:15px}
+.card .primary,.cardSelected .primary{min-height:48px;margin-top:16px}
+@media(max-width:540px){
+  .card .profile,.cardSelected .profile{padding:12px}
+  .card .profileHead,.cardSelected .profileHead{gap:10px}
+  .card .profileHead .avatarLarge,.cardSelected .profileHead .avatarLarge{width:58px;height:58px}
+  .card .profileHead h2,.cardSelected .profileHead h2{font-size:23px}
+  .card .profileFacts,.cardSelected .profileFacts{grid-template-columns:1fr}
+  .card .settingsGrid,.cardSelected .settingsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
