@@ -507,7 +507,31 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await montageAudio.click();
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
-      await expect(page.locator('[data-video-audio-mode="library"]')).toBeVisible();
+      const compactGrid=page.locator('[data-video-audio-compact-grid]');
+      await expect(compactGrid).toBeVisible();
+      // Initial filter follows the approved video concept; choose All to
+      // inspect the entire approved collection, then prove Focus narrows it.
+      const allMusic=page.locator('[data-video-audio-category="all"]');
+      const focusMusic=page.locator('[data-video-audio-category="focus"]');
+      await allMusic.click();
+      await expect(allMusic).toHaveAttribute("aria-pressed","true");
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(5);
+      await focusMusic.click();
+      await expect(focusMusic).toHaveAttribute("aria-pressed","true");
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(1);
+      await allMusic.click();
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(5);
+      await expect(page.locator('[data-video-audio-compact-upload]')).toHaveCount(1);
+      await expect(page.locator('[data-video-audio-mode]')).toHaveCount(0);
+      await page.locator('[data-video-audio-compact-silent]').click();
+      const choices=compactGrid.locator('[data-video-audio-compact-select]');
+      await choices.nth(0).click();
+      await choices.nth(1).click();
+      await expect(choices.nth(0)).toHaveAttribute("aria-pressed","true");
+      await expect(choices.nth(1)).toHaveAttribute("aria-pressed","true");
+      await expect(page.locator('[data-video-audio-compact-selected]')).toContainText("2/3");
+      await expect(page.locator('[data-video-stage-actions="montage"] [data-video-quick-generate]')).toBeVisible();
+      await page.locator('[data-video-audio-compact-silent]').click();
       await page.locator('[data-video-quick-control="phrases"]').click();
       const phrases=page.locator('[data-workspace-section="phrases"][data-video-quick-phrases]');
       await phrases.waitFor({state:"visible"});
