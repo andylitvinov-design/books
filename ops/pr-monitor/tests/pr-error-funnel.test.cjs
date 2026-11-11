@@ -466,3 +466,44 @@ test('owner-only CI pagination preserves stable ordering, bounded reads and no p
  assert.match(bridge,/before_id/);
  assert.match(bridge,/INCOMPLETE_CI_EVENT_CURSOR/);
 });
+
+test('27 source PRs fit one exact 24h proof sweep and strict cap stays at 32',()=>{
+ const source=Array.from({length:27},(_,i)=>pageEvent(i,1));
+ const picks=m.proofPrs(source,32);
+ assert.equal(picks.length,27,'every current source PR has a slot');
+ assert.equal(new Set(picks).size,27);
+ const many=Array.from({length:54},(_,i)=>pageEvent(i,1));
+ assert.equal(m.proofPrs(many,32).length,32);
+ assert.equal(m.proofPrs(many,999).length,32,'API read budget cannot be overridden');
+});
+test('GitHub proof reads stay at six concurrent requests and preserve failures',async()=>{
+ const source=Array.from({length:32},(_,i)=>i);
+ let live=0,max=0;
+ const results=await m.boundedSettled(source,async function(index){
+   live++;max=Math.max(max,live);
+   await new Promise(resolve=>setImmediate(resolve));
+   live--;
+   if(index===13)throw Error('GITHUB_HTTP_403');
+   return index*2;
+ },6);
+ assert.equal(max,6);
+ assert.equal(results.length,source.length);
+ assert.equal(results[13].status,'rejected');
+ assert.match(String(results[13].reason),/GITHUB_HTTP_403/);
+ assert.equal(results[31].status,'fulfilled');
+ assert.equal(results[31].value,62);
+ assert.equal(live,0);
+});
+test('mobile entry and funnel assets are uniquely versioned v6, not stale v5',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const home=path.resolve(__dirname,'..');
+ const boot=fs.readFileSync(path.join(home,'pr-two-screen-boot.js'),'utf8');
+ const html=fs.readFileSync(path.join(home,'pr-monitor.html'),'utf8');
+ const source=fs.readFileSync(path.join(home,'pr-error-funnel.js'),'utf8');
+ assert.match(html,/pr-two-screen-boot\.js\?v=20261111-paginated-v6/);
+ assert.match(boot,/pr-error-funnel\.js\?v=20261111-paginated-v6/);
+ assert.match(boot,/pr-error-funnel\.css\?v=20261111-paginated-v6/);
+ assert.doesNotMatch(boot,/pr-error-funnel\.js\?v=20261111-reasons-v5/);
+ assert.match(source,/var PUBLIC_PROOF_PR_LIMIT=32/);
+ assert.match(source,/boundedSettled\(prs,commentsFor,6\)/);
+});
