@@ -379,3 +379,90 @@ test('source-owned Core test repair has verified funnel proof; generic test fail
   body:signed.body.replace('"strategy_code":"GUARDED_SOURCE_REPAIR"','"strategy_code":"TEST_FAILURE_TRIAGE"')};
  assert.equal(m.signedClaimRoute(forged,scoped),null);
 });
+
+
+function pageEvent(index,minutes=1){
+ const stamp=new Date(NOW-index*minutes*60_000).toISOString();
+ const suffix=index.toString(16).padStart(12,'0');
+ return {...event(),ci_event_id:'00000000-0000-4000-8000-'+suffix,
+   pr_number:4000+index,created_at:stamp};
+}
+function fakePages(source){
+ let calls=0;
+ const query=async function(cursor){
+   const begin=calls++*100;
+   const events=source.slice(begin,begin+100);
+   if(cursor&&begin>0)assert.equal(cursor.before,
+     source[begin-1].created_at,'last exact page boundary must be forwarded');
+   const more=begin+100<source.length,last=events.at(-1);
+   return {schema:'HH_COMMANDER_CI_EVENT_INBOX_V1',events,
+     has_more:more,next_cursor:more?{before:last.created_at,beforeId:last.ci_event_id}:null};
+ };
+ return {query,called:()=>calls};
+}
+test('24h error funnel reads all three authenticated keyset pages, not last 100 records',async()=>{
+ const source=Array.from({length:230},(_,i)=>pageEvent(i,1));
+ const batch=fakePages(source);
+ const result=await m.readFailureWindow(batch.query,24,NOW);
+ assert.equal(batch.called(),3);
+ assert.equal(result.events.length,230);
+ assert.equal(result.complete,true);
+ assert.equal(result.pages,3);
+ assert.equal(result.events[125].ci_event_id,source[125].ci_event_id);
+ assert.equal(m.summarize(result.events,{},24,NOW,result.complete).counts.failed,230);
+});
+test('short selected window stops paging once authenticated events predate its cutoff',async()=>{
+ const source=Array.from({length:230},(_,i)=>pageEvent(i,2));
+ const batch=fakePages(source);
+ const result=await m.readFailureWindow(batch.query,1,NOW);
+ assert.equal(batch.called(),1);
+ assert.equal(result.complete,true,'all events inside the 1h window were inspected');
+ assert.equal(m.summarize(result.events,{},1,NOW,true).counts.failed,31);
+});
+test('six-page safety cap reports incomplete lower bound, never invented zero coverage',async()=>{
+ const source=Array.from({length:700},(_,i)=>pageEvent(i,1));
+ const batch=fakePages(source);
+ const result=await m.readFailureWindow(batch.query,24,NOW);
+ assert.equal(batch.called(),6);
+ assert.equal(result.events.length,600);
+ assert.equal(result.complete,false);
+ assert.equal(m.summarize(result.events,{},24,NOW,result.complete).complete,false);
+});
+test('invalid or repeated pagination cursor fails closed instead of repeating a PR',async()=>{
+ const single=pageEvent(0);
+ const bad=await m.readFailureWindow(async()=>({
+   schema:'HH_COMMANDER_CI_EVENT_INBOX_V1',events:[single],
+   has_more:true,next_cursor:{before:'invalid',beforeId:single.ci_event_id}
+ }),24,NOW);
+ assert.equal(bad.complete,false,'invalid page cursor is incomplete, not an empty backlog');
+ await assert.rejects(()=>m.readFailureWindow(async()=>({
+   schema:'HH_COMMANDER_CI_EVENT_INBOX_V1',events:[single,single],
+   has_more:false,next_cursor:null
+ }),24,NOW),/DUPLICATE_OR_INVALID_CURSOR/);
+});
+test('signed exact-run dispatch targets are proof-checked before 24 random source PRs',()=>{
+ const unrouted=Array.from({length:30},(_,i)=>pageEvent(i,1));
+ for(const e of unrouted)e.route_receipt=null;
+ const routed=pageEvent(40,2);
+ routed.route_receipt={...event().route_receipt,
+   prNumber:routed.pr_number,headSha:routed.head_sha,
+   runId:routed.workflow_run_id,inboxId:routed.ci_event_id};
+ const chosen=m.proofPrs([...unrouted,routed],24);
+ assert.equal(chosen.length,24);
+ assert.equal(chosen[0],routed.pr_number);
+ assert.ok(!chosen.includes(unrouted.at(-1).pr_number));
+});
+test('owner-only CI pagination preserves stable ordering, bounded reads and no public secrets',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const edge=fs.readFileSync(path.resolve(__dirname,
+   '../../../supabase/functions/agent-commander-private-store-v1/index.ts'),'utf8');
+ const bridge=fs.readFileSync(require.resolve('../api/commander-chats.js'),'utf8');
+ assert.match(edge,/order by created_at desc,ci_event_id desc limit \$2/);
+ assert.match(edge,/where inbox_owner_id=\$3::uuid/);
+ assert.match(edge,/created_at,ci_event_id\)<\(\$4::timestamptz,\$5::uuid\)/);
+ assert.match(edge,/cursor_created_at/);
+ assert.match(edge,/has_more:hasMore/);
+ assert.match(edge,/limit\+1/);
+ assert.match(bridge,/before_id/);
+ assert.match(bridge,/INCOMPLETE_CI_EVENT_CURSOR/);
+});

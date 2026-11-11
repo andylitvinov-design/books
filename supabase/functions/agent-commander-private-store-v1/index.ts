@@ -937,14 +937,33 @@ async function handler(req){
       const limit=Math.max(1,Math.min(100,Number(body.limit)||30));
       const pr=body.pr===undefined?null:number(body.pr);
       if(body.pr!==undefined&&!pr)return reply(400,{error:"INVALID_PR_NUMBER"},origin);
-      const rows=await q(db,
+      const cursorAt=body.before===undefined?null:body.before;
+      const cursorId=body.beforeId===undefined?null:body.beforeId;
+      if((cursorAt===null)!==(cursorId===null)||
+         (cursorAt!==null&&(
+           typeof cursorAt!=="string"||cursorAt.length>40||
+           !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(cursorAt)||
+           !Number.isFinite(Date.parse(cursorAt))||
+           typeof cursorId!=="string"||
+           !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(cursorId))))
+        return reply(400,{error:"INVALID_CI_EVENT_CURSOR"},origin);
+      // Stable keyset ordering prevents losing same-millisecond events at a
+      // page boundary. The owner OIDC gate stays unchanged; 101 rows max/read.
+      const page=await q(db,
         `select ci_event_id,repository,workflow_run_id,run_attempt,pr_number,head_sha,
-          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,assignment_receipt,route_receipt,route_recorded_at,triage_receipt,triage_recorded_at,historical_pr_readback,created_at
+          conclusion,category,classification,failed_jobs,failed_steps,run_url,association_status,assignment_receipt,route_receipt,route_recorded_at,triage_receipt,triage_recorded_at,historical_pr_readback,created_at,
+          to_char(created_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as cursor_created_at
          from business_brain.commander_ci_event_inbox
          where inbox_owner_id=$3::uuid and ($1::int is null or pr_number=$1)
-         order by created_at desc limit $2`,[pr,limit,ownerId]);
+           and ($4::timestamptz is null or (created_at,ci_event_id)<($4::timestamptz,$5::uuid))
+         order by created_at desc,ci_event_id desc limit $2`,
+         [pr,limit+1,ownerId,cursorAt,cursorId]);
+      const hasMore=page.length>limit,rows=page.slice(0,limit),last=rows[rows.length-1];
       return reply(200,{schema:"HH_COMMANDER_CI_EVENT_INBOX_V1",events:rows,
-        count:rows.length,sourceVerifiedBy:"GITHUB_OIDC_AND_EXACT_PR_HEAD"},origin);
+        count:rows.length,has_more:hasMore,
+        next_cursor:hasMore&&last?{before:last.cursor_created_at,
+          beforeId:last.ci_event_id}:null,
+        sourceVerifiedBy:"GITHUB_OIDC_AND_EXACT_PR_HEAD"},origin);
     }
     if(action==="commander_list_model_preferences"){
       const rows=await q(db,"select preference_key,model_id,model_name,catalog_verified_at,updated_at from business_brain.commander_model_preferences where owner_id=$1::uuid order by updated_at desc limit 400",[ownerId]);
