@@ -149,11 +149,13 @@ test('Messages uses the current seven-destination My Coach and Services global d
     assert.equal(isUnifiedMobileDockPath('/'+locale+'/app/messages'),true)
     assert.equal(unifiedMobileDockHref(locale,'ai'),'/'+locale+'/app/messages?section=ai')
     assert.equal(unifiedMobileDockHref(locale,'practice'),'/'+locale+'/holistic-support/mobile')
-    assert.equal(unifiedMobileDockHref(locale,'master'),'/'+locale+'/practice')
+    assert.equal(unifiedMobileDockHref(locale,'coach'),'/'+locale+'/my-coach')
+    assert.equal(unifiedMobileDockHref(locale,'master'),null,'removed master alias must not be exposed')
     assert.ok(unifiedMobileDockHref(locale,'video'))
     assert.ok(unifiedMobileDockHref(locale,'mytube'))
     assert.ok(unifiedMobileDockHref(locale,'profile'))
-    assert.equal(unifiedMobileDockHref(locale,'analysis'),'/'+locale+'/services/free-situation-review')
+    assert.equal(unifiedMobileDockHref(locale,'services'),'/'+locale+'/services')
+    assert.equal(unifiedMobileDockHref(locale,'analysis'),null,'removed analysis alias must not bypass Services')
   }
 })
 
