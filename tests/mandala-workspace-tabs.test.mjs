@@ -253,7 +253,7 @@ test("owner 03 Nov: compact tabs, real scenario updates and moved settings",()=>
  assert.match(nav,/quickNavFull/,"full labels remain on wider screens");
  const mobileCss=css.slice(css.lastIndexOf("/* Owner 03 Nov:"));
  assert.match(mobileCss,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/,"one row overrides legacy 3x2");
- const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal'));
+ const editor=studio.slice(studio.indexOf('data-video-editor-scenario'),studio.indexOf('data-video-quick-personal',studio.indexOf('data-video-editor-scenario')));
  const scenario=editor.indexOf('data-video-editor-scenario');
  assert.ok(scenario>=0&&scenario<editor.indexOf('data-video-montage-audio'),"script is available before Audio");
  assert.match(editor,/data-video-montage-script-update/);
@@ -287,7 +287,7 @@ test("all six workspaces use the same in-flow navigation and one real export",()
  assert.ok(studio.indexOf("data-video-quick-controls")<studio.indexOf("data-video-live-stage"));
  assert.doesNotMatch(studio,/createPortal|effectsNavTarget|montageNavTarget|data-video-hypno-nav-slot|data-video-montage-nav-slot/,
    "no mode can teleport the navigation to a different vertical position");
- const editor=studio.slice(studio.indexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal"));
+ const editor=studio.slice(studio.lastIndexOf("data-video-basic-editor"),studio.indexOf("data-video-quick-personal",studio.lastIndexOf("data-video-basic-editor")));
  assert.match(editor,/data-video-montage-tools/);
  assert.match(editor,/data-video-montage-tab=\{item.id\}/);
  assert.match(editor,/data-video-montage-preferences/);

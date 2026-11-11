@@ -57,7 +57,7 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   const source=read("components/mandala-free-video-studio.tsx");
   const css=read("components/mandala-video-mobile.module.css");
   const stage=source.slice(source.indexOf('data-video-live-stage'),source.indexOf('data-video-quick-tier'));
-  const tier=source.slice(source.indexOf('data-video-quick-tier'),source.indexOf('data-video-quick-personal'));
+  const tier=source.slice(source.indexOf('data-video-quick-tier'),source.indexOf('data-video-quick-personal',source.indexOf('data-video-quick-tier')));
   assert.match(stage,/data-video-mandala-hero/);
   assert.match(stage,/data-mandala-cinematic-canvas/);
   assert.match(stage,/data-video-quick-live-preview/);

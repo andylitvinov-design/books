@@ -8,7 +8,8 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
   const end=source.indexOf('data-video-audio-bed-panel',start);
   const pane=source.slice(start,end+300);
   assert.ok(start>0&&end>start,"dedicated compact pane");
-  assert.match(pane,/Background music/);
+  assert.match(pane,/Choose audio tracks/);
+  assert.match(pane,/up to 3/);
   for(const marker of ["data-video-audio-category","data-video-audio-compact-grid",
     "data-video-audio-compact-track","data-video-audio-compact-select","data-video-audio-compact-play",
     "data-video-audio-compact-upload","data-video-audio-compact-selected","data-video-audio-compact-volume",

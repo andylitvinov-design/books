@@ -200,10 +200,32 @@ async function verifyWorkspaceHydration(browser,locale){
     await expect(recipientCatalog).toHaveAttribute("data-video-recipient-aspect","portrait");
     await expect(page.locator('[data-video-recipient-format-note]')).toContainText("9:16");
     await expect(page.locator('[data-video-goal-topic-chips]')).toHaveCount(0);
-    // Third approved recipient format: one on-page audio workflow and NO
-    // transcription upload until the user explicitly requests it.
+    // Four full-width horizontal format rows; Reels is the existing vertical video
+    // pipeline, not a new renderer. Measure actual geometry on mobile WebKit.
     const recipientFormats=page.locator('[data-auto-video-recipient-kind]');
-    await expect(recipientFormats).toHaveCount(3);
+    await expect(recipientFormats).toHaveCount(4);
+    for(const width of [320,354,390,430]){
+      await page.setViewportSize({width,height:840});
+      const boxes=await recipientFormats.evaluateAll(elements=>elements.map(element=>{
+        const rect=element.getBoundingClientRect();
+        const image=element.querySelector("img")?.getBoundingClientRect();
+        const body=element.querySelector("span")?.getBoundingClientRect();
+        return {left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,
+          width:rect.width,imageRight:image?.right||0,bodyLeft:body?.left||0};
+      }));
+      assert.equal(boxes.length,4,"four format choices "+width);
+      assert.ok(boxes.every((item,index)=>index===0||item.top>=boxes[index-1].bottom-2),
+        "one vertical list of horizontal cards "+width+" "+JSON.stringify(boxes));
+      assert.ok(boxes.every(item=>item.width>190&&item.imageRight<item.bodyLeft+3&&item.right<=width+1),
+        "photo at left, copy at right, no overflow "+width+" "+JSON.stringify(boxes));
+    }
+    await page.setViewportSize({width:390,height:840});
+    const reelsFormat=page.locator('[data-auto-video-recipient-kind="reels"]');
+    await reelsFormat.click();
+    await expect(reelsFormat).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator('[data-video-recipient-topic-summary]')).toContainText("Reels");
+    await expect(page.locator('[data-auto-video-recipient-occasion]')).toHaveCount(0);
+    // Audio is still its original local, opt-in flow.
     const audioFormat=page.locator('[data-auto-video-recipient-kind="audio_visual"]');
     await audioFormat.click();
     await expect(audioFormat).toHaveAttribute("aria-pressed","true");
@@ -653,7 +675,11 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await advancedText.click();
       await expect(advancedVoice).toBeVisible({timeout:15000});
       await expect(advancedVoice).toHaveAttribute("open","");
-      await voiceModeButton.click();
+      // On a mobile WebKit handoff, verify the actual user touch interaction.
+      // Keep the same strict selected-state assertion: do not bypass the control.
+      await expect(voiceModeButton).toBeVisible();
+      if(engine==="webkit")await voiceModeButton.tap();
+      else await voiceModeButton.click();
       await expect(voiceModeButton).toHaveAttribute("aria-pressed","true");
       await expect(personalTab).toHaveAttribute("aria-pressed","true");
             // Voice mode intentionally hides the separate personal-intention editor;

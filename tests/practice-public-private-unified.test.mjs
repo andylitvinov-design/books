@@ -73,7 +73,8 @@ test('public showcase OAuth returns to reviewed dashboard without automatic priv
 
 test('cancelled Google sign-in returns to approved guest public screen',()=>{
  assert.match(server,/failedPracticeDestination = continueTo === 'practice-preview'/)
- assert.match(server,/\$\{origin\}\/\$\{locale\}\/practice` : destination/)
+ assert.match(server,/\$\{origin\}\/\$\{locale\}\/practice`/)
+ assert.match(server,/continueTo === 'my-coach-mira' \? `\$\{origin\}\/\$\{locale\}\/my-coach` : destination/)
  assert.equal((server.match(/new URL\(failedPracticeDestination\)/g)||[]).length,2)
  assert.match(showcase,/t\.authCancelled/)
 })

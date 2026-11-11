@@ -5445,6 +5445,24 @@
 @media(max-width:350px){.storyAutoCard{grid-template-columns:minmax(90px,32%) minmax(0,1fr)}
  .storyAutoBody{padding:9px 7px;gap:5px}.storyAutoBody>strong{font-size:14px}}
 
+/* Video Studio Stories storyboard — compact phone-first scene cards. */
+.storyboardSceneList{display:grid;gap:10px;min-width:0}
+.storyboardScene{display:grid;gap:8px;min-width:0;padding:12px;border:1px solid #d5e1d8;border-radius:15px;background:#fffdf7;color:#29473d}
+.storyboardSceneHeading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.storyboardSceneHeading strong{font-size:13px;font-weight:850}
+.storyboardSceneHeading small,.storyboardSourceStatus{color:#61776a;font-size:11px}
+.storyboardScenePurpose{margin:0;color:#50675a;font-size:12px;line-height:1.45}
+.storyboardScene label{display:grid;gap:5px;font-size:11px;font-weight:750}
+.storyboardScene select,.storyboardPhotoControls input{width:100%;min-width:0;min-height:42px;padding:8px;border:1px solid #c9d9cf;border-radius:9px;background:#fff;color:#25493c}
+.storyboardSceneActions,.storyboardPhotoControls{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.storyboardSceneActions button,.storyboardPhotoControls button{min-height:40px;padding:7px 10px;border:1px solid #c9d9cf;border-radius:9px;background:#f4f7f2;color:#315545;font-size:12px;font-weight:750}
+.storyboardPhotoControls{display:grid;gap:5px;padding:8px;border:1px dashed #bdd2c4;border-radius:10px;background:#f7faf5}
+.storyboardPhotoControls span,.storyboardPhotoControls small{font-size:11px;color:#536d5e}
+.storyboardEmpty{display:grid;justify-items:start;gap:8px;padding:16px;border:1px dashed #c8d9cd;border-radius:14px;background:#f7faf5;color:#466354}
+.storyboardFooterActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.storyboardFooterActions button{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:8px 11px;border:1px solid #c8d9ce;border-radius:10px;background:#f7faf5;color:#315645;font-weight:750}
+.montagePreferences [data-video-stories-paid-gate]{padding:9px 11px;border:1px solid #e3d3ac;border-radius:10px;background:#fff9e9;color:#705b31;font-size:12px;line-height:1.45}
+@media(min-width:760px){.storyboardSceneList{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* Approved 11 Nov Audio: one compact multitrack screen with the original film player. */
 .studio[data-montage-panel="audio"] .montageAudioCompact{gap:7px;padding:11px;border-radius:21px;background:#fffcf7}
