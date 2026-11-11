@@ -3377,9 +3377,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const scrubFrame=freeFilmVideoAt(previewSeekSeconds,false);
       const scrubPhoto=freeFilmPhotoAt(previewSeekSeconds);
       // Never replace the last valid preview with an undecodeable substitute.
-      const styleFirstBeat=Boolean(
-        (selectedStyleFilm&&styleFilmReady&&previewSeekSeconds<
-         (cinematicPlan?.shots[0]?.durationSeconds??5))||scrubPhoto);
+      const styleFirstBeat=Boolean(selectedStyleFilm&&styleFilmReady&&previewSeekSeconds<
+         (cinematicPlan?.shots[0]?.durationSeconds??5)||scrubPhoto);
        if(!usingFreeFilmCompilation||scrubFrame||styleFirstBeat){
         paintCinematicFrame(ctx,image,effect,previewSeekSeconds,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,scrubFrame,currentFreeVideoPlan,
           creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,freeFilmPhotoAt(previewSeekSeconds));
@@ -3404,9 +3403,8 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const frameSecond=cinematicPlan?cinematicPreviewSeconds(cinematicPlan,elapsed):elapsed;
           const stockFrame=freeFilmVideoAt(frameSecond,previewPlaying);
           const stockPhoto=freeFilmPhotoAt(frameSecond);
-          const styleBeatReady=Boolean(
-            (selectedStyleFilm&&styleFilmReady&&frameSecond<
-             (cinematicPlan?.shots[0]?.durationSeconds??5))||stockPhoto);
+          const styleBeatReady=Boolean(selectedStyleFilm&&styleFilmReady&&frameSecond<
+             (cinematicPlan?.shots[0]?.durationSeconds??5)||stockPhoto);
            if(!usingFreeFilmCompilation||stockFrame||styleBeatReady){
             paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,freeFilmPhotoAt(frameSecond));

@@ -51,6 +51,10 @@ test("30-second work/story uses six real business photos instead of irrelevant n
    assert.equal(plan.videoCandidates,0);
    assert.equal(plan.photoCandidates,25);
    assert.equal(new Set(plan.shots.map(x=>x.sourceMasterKey)).size,6);
+   assert.equal(STORY_PHOTO_BY_ID.get(plan.shots[0].sceneId)?.stage,0,
+     "opening work must not be illustrated by salary-contract paperwork");
+   assert.equal(STORY_PHOTO_BY_ID.get(plan.shots[5].sceneId)?.stage,3,
+     "salary negotiation belongs only in the concluding action");
    assert.ok(plan.shots.every(shot=>shot.sourceKind==="photo"&&
      STORY_PHOTO_BY_ID.has(shot.sceneId)&&!shot.loopRequired));
    assert.equal(isReviewedStoryWithPhotosSequence({scenes,aspect:"portrait",
