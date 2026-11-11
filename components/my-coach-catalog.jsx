@@ -323,7 +323,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
       <section ref={profileRef} className={styles.profile} aria-label={t.profile}
         data-my-coach-selected={selected.id}>
         <div className={styles.profileHead}>
-          <div className={styles.avatarLarge} data-palette={selected.palette} aria-hidden="true">{selected.symbol}</div>
+          <div className={styles.avatarLarge} data-persona={selected.id} data-palette={selected.palette} aria-hidden="true">{selected.symbol}</div>
           <div>
             <span className={styles.profileEyebrow}>{t.profile}</span>
             <h2>{selectedName}</h2>
