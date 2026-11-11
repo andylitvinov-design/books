@@ -482,6 +482,35 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(montageStyleTab).toBeVisible();
       await montageStyleTab.click();
       await expect(montageStyleTab).toHaveAttribute("aria-pressed","true",{timeout:15000});
+      // Owner-approved Montage PRO is a real fourth tab with three clear
+      // offers and TWO navigation actions, not a checkout or a second renderer.
+      const montageProTab=page.locator('[data-video-montage-tab="promo"]');
+      await montageProTab.click();
+      const montageProOffer=page.locator('[data-video-montage-pro-offer]');
+      await expect(montageProOffer).toBeVisible();
+      await expect(montageProOffer.locator('[data-video-pro-feature]')).toHaveCount(3);
+      await expect(montageProOffer.locator('[data-video-montage-pro-free]')).toBeVisible();
+      await expect(montageProOffer.locator('[data-video-montage-pro-explore]')).toBeVisible();
+      // Verify iPhone widths without replacing the live editor with a mock.
+      for(const width of [320,390,430]){
+        await page.setViewportSize({width,height:844});
+        const geometry=await page.evaluate(()=>({
+          viewport:document.documentElement.clientWidth,
+          document:document.documentElement.scrollWidth
+        }));
+        assert.ok(geometry.document<=geometry.viewport+2,
+          'MONTAGE_PRO_NO_HORIZONTAL_OVERFLOW_'+width+' '+JSON.stringify(geometry));
+      }
+      await page.setViewportSize({width:390,height:844});
+      await montageProOffer.locator('[data-video-montage-pro-free]').click();
+      await expect(page.locator('[data-video-montage-tab="concept"]')).toHaveAttribute('aria-pressed','true');
+      await montageProTab.click();
+      await montageProOffer.locator('[data-video-montage-pro-explore]').click();
+      await expect(page.locator('[data-video-quick-control="pro"]')).toHaveAttribute('aria-pressed','true');
+      await editorTab.click();
+      await montageStyleTab.click();
+      await expect(montageStyleTab).toHaveAttribute('aria-pressed','true');
+      phase(engine,"montage-pro-offer-routes-passed");
       // Reproduce the owner's iPhone case before recording real voice.
       const selectedStyle=page.locator('[data-video-montage-style="3"]');
       const selectedMaster=page.locator("[data-mandala-master-mp4]");

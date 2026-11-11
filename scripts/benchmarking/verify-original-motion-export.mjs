@@ -131,8 +131,8 @@ try {
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();
   // Match the real post-#3676 Montage. Format/duration are available through Story → Video settings.
-  await settingsTab.waitFor({state:'visible'});
   await page.locator('[data-video-montage-tab="concept"]').click();
+  await settingsTab.waitFor({state:'visible'});
   await settingsTab.click();
   assert.equal(await page.locator('[data-video-basic-editor]').getAttribute('data-montage-panel'),'settings');
   const duration=page.locator('[data-video-montage-preference="duration"]');
