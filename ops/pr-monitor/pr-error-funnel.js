@@ -451,7 +451,7 @@
         ['TYPESCRIPT','SOURCE_CODE'].includes(e.category);});
       var prs=[...new Set(candidates.map(function(e){return e.pr_number;}))];
       // Bound public unauthenticated GitHub reads and surface truncation.
-      if(prs.length>18){prs=prs.slice(0,18);complete=false;}
+      if(prs.length>24){prs=prs.slice(0,24);complete=false;}
       var evidence={},failed=0,commitFailures=0;
       var batches=await Promise.allSettled(prs.map(commentsFor));
       var byPR=new Map();
