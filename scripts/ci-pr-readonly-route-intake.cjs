@@ -8,6 +8,7 @@
  */
 const {route}=require('./ci-pr-commander-strategy-router.cjs');
 const {sendCommanderCiRoute}=require('./ci-pr-commander-route-receipt.cjs');
+const {repairableCoreTestFailure}=require('./ci-pr-error-task.cjs');
 
 const REVIEW_ONLY=new Set([
   'SECURITY','ACCESS_CONFIG','MERGE_CONFLICT','UNKNOWN',
@@ -20,7 +21,9 @@ async function persistReadOnlyRoute({
   receipt,context,github,core,oidcToken,
   routeFn=route,sendFn=sendCommanderCiRoute
 }={}){
-  if(!REVIEW_ONLY.has(receipt?.category)){
+  // A single authenticated Core source-test failure may use the protected
+  // repair dispatcher; a review-only receipt must not preempt that lane.
+  if(!REVIEW_ONLY.has(receipt?.category)||repairableCoreTestFailure(receipt?.classification)){
     return {outcome:'DEFERRED_TO_GUARDED_SINGLE_WRITER',attempted:false,recorded:false};
   }
   // route() independently validates the OIDC-associated inbox receipt, exact
