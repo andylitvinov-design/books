@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2 } from 'lucide-react'
+import { ArrowRight, BookOpen, Heart, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sparkles, Users, MoreHorizontal, Zap, Leaf, Flower2, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import {
   COACH_PERSONAS, COACH_TOPICS, coachSessionHref, coachStagePrompt, getCoachPersona,
   localCoachText, normalizeCoachSettings,
@@ -82,6 +82,8 @@ const topicText = {
 
 const designCopy = {
   en: {
+    heroSubtitle: 'Your AI coach for clarity, balance and growth', heroBadge: 'Meet your AI coach', heroHello: 'Hi! I'm', heroTalk: 'Start a session with',
+    heroNote: 'Your private session opens next. Sign-in may be required; live voice is available only when enabled.', heroTopic: 'Or start with a topic:', chooseOther: 'Choose another coach', explore: 'Explore coaches',
     lead: 'Choose your coach for a personal guided session',
     filters: 'Filters', allTopics: 'All topics', recommended: 'Suggested', favorites: 'Favorites',
     antistress: 'Calm', goals: 'Goals', growth: 'Growth', habits: 'Habits',
@@ -91,6 +93,8 @@ const designCopy = {
     showProfile: 'About coach', clear: 'Clear filters',
   },
   ru: {
+    heroSubtitle: 'Ваш AI-коуч для ясности, баланса и развития', heroBadge: 'Знакомьтесь: ваш AI-коуч', heroHello: 'Привет! Я', heroTalk: 'Начать сессию с',
+    heroNote: 'Далее откроется личная сессия. Может потребоваться вход; живой голос доступен только при подключении.', heroTopic: 'Или начните с темы:', chooseOther: 'Выберите другого коуча', explore: 'Каталог коучей',
     lead: 'Выбери своего коуча для личной сессии',
     filters: 'Фильтры', allTopics: 'Все темы', recommended: 'Подходящие', favorites: 'Избранные',
     antistress: 'Антистресс', goals: 'Цели и карьера', growth: 'Саморазвитие', habits: 'Привычки',
@@ -100,6 +104,8 @@ const designCopy = {
     showProfile: 'О коуче', clear: 'Сбросить фильтры',
   },
   es: {
+    heroSubtitle: 'Tu coach de IA para claridad, equilibrio y crecimiento', heroBadge: 'Conoce a tu coach', heroHello: '¡Hola! Soy', heroTalk: 'Empezar con',
+    heroNote: 'La sesión privada se abrirá a continuación. Puede requerir inicio de sesión; voz en vivo solo si está disponible.', heroTopic: 'O empieza con un tema:', chooseOther: 'Elige otro coach', explore: 'Explora los coaches',
     lead: 'Elige a tu coach para una sesión personal guiada',
     filters: 'Filtros', allTopics: 'Todos los temas', recommended: 'Sugeridos', favorites: 'Favoritos',
     antistress: 'Antiestrés', goals: 'Metas y carrera', growth: 'Crecimiento', habits: 'Hábitos',
@@ -134,6 +140,7 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const [onlyFavorites, setOnlyFavorites] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
+  const [expandedId, setExpandedId] = useState(null)
   const [sortBy, setSortBy] = useState('all')
   const [paceFilter, setPaceFilter] = useState('any')
   const [favorites, setFavorites] = useState([])
@@ -173,14 +180,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const safeSettings = normalizeCoachSettings(selected.id, settings)
   const updateSettings = (field, value) => setSettings(previous =>
     normalizeCoachSettings(selected.id, { ...previous, [field]: value }))
-  const startHref = coachSessionHref(lang, selected.id, safeSettings)
+  const startHref = coachSessionHref(lang, selected.id, safeSettings)?.replace('/coaching/sessions?', '/app/coaching?').replace('/es/app/coaching?', '/en/app/coaching?lang=es&')
   const selectedName = localCoachText(selected.name, lang)
   const followupPreview = coachStagePrompt(selected.id, 'goal', lang, safeSettings)
-  const choose = (id) => {
+  const choose = id => {
     setSelectedId(id)
     setSettings(normalizeCoachSettings(id))
-    // Scroll only after a deliberate click, not on hydration or filter changes.
-    window.requestAnimationFrame(() => profileRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
   const toggleFavorite = id => setFavorites(current =>
     current.includes(id) ? current.filter(value => value !== id) : [...current, id].slice(-8))
@@ -207,31 +212,65 @@ export default function MyCoachCatalog({ locale = 'en' }) {
         </nav>
       </header>
 
-      <section className={styles.hero} aria-labelledby="my-coach-heading">
+
+      <div className={styles.welcome}>
+        <h1 id="my-coach-heading">My Coach</h1>
+        <p>{d.heroSubtitle}</p>
+      </div>
+      <section className={styles.hero} id="my-coach-video" aria-labelledby="my-coach-hero-name">
+        <div className={styles.heroPortrait} data-persona={selected.id} aria-hidden="true"><span>{selected.symbol}</span></div>
+        <div className={styles.heroShade} aria-hidden="true" />
         <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}>HOLISTIC HOUSE · MY COACH</span>
-          <h1 id="my-coach-heading">My Coach</h1>
-          <p className={styles.heroLead}>{d.lead}</p>
+          <span className={styles.heroBadge}><Sparkles size={15} aria-hidden="true" />{d.heroBadge}</span>
+          <h2 id="my-coach-hero-name">{d.heroHello} {selectedName}</h2>
+          <p>{localCoachText(selected.role, lang)}</p>
         </div>
-        <div className={styles.heroWave} aria-hidden="true" />
-        <div className={styles.quickTopics} role="group" aria-label={t.topics}>
-          {[
-            { id: 'resilience', label: d.energy },
-            { id: 'relationships', label: d.love },
-            { id: 'clarity', label: d.balance },
-            { id: 'meaning', label: d.meaning },
-          ].map(item => {
-            const Icon = categoryIcon[item.id]
-            return <button type="button" key={item.id} aria-pressed={topic === item.id}
-              className={topic === item.id ? styles.quickTopicActive : styles.quickTopic}
-              onClick={() => setTopic(old => old === item.id ? 'all' : item.id)}>
-              <Icon size={21} strokeWidth={1.8} aria-hidden="true" /><span>{item.label}</span>
-            </button>
-          })}
+        <div className={styles.heroBottom}>
+          <p className={styles.heroOpening}>“{localCoachText(selected.opening, lang)}”</p>
+          <Link href={startHref} className={styles.heroCta} prefetch={false} data-my-coach-hero-start={selected.id}>
+            <MessageCircle size={22} aria-hidden="true"/><span>{d.heroTalk} {selectedName}</span><ArrowRight size={21} aria-hidden="true"/>
+          </Link>
+          <p className={styles.heroNote}>{d.heroNote}</p>
+          <p className={styles.heroTopic}>{d.heroTopic}</p>
+          <div className={styles.quickTopics} role="group" aria-label={t.topics}>
+            {[
+              { id: 'resilience', label: d.energy },
+              { id: 'relationships', label: d.love },
+              { id: 'clarity', label: d.balance },
+              { id: 'meaning', label: d.meaning },
+            ].map(item => {
+              const Icon = categoryIcon[item.id]
+              return <button type="button" key={item.id} aria-pressed={topic === item.id}
+                className={topic === item.id ? styles.quickTopicActive : styles.quickTopic}
+                onClick={() => {
+                  setTopic(old => old === item.id ? 'all' : item.id)
+                  document.getElementById('my-coach-explore')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }}>
+                <Icon size={21} strokeWidth={1.8} aria-hidden="true"/><span>{item.label}</span>
+              </button>
+            })}
+          </div>
         </div>
       </section>
-
-      <section className={styles.discover} aria-label={t.topics}>
+      <section className={styles.coachRail} aria-label={d.chooseOther}>
+        <div className={styles.coachRailHeading}><h2>{d.chooseOther}</h2>
+          <button type="button" onClick={() =>
+            document.getElementById('my-coach-explore')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+            {t.all}<ArrowRight size={17} aria-hidden="true"/>
+          </button>
+        </div>
+        <div className={styles.coachRailList}>
+          {COACH_PERSONAS.map(persona => <button type="button" key={persona.id}
+            className={selected.id === persona.id ? styles.railCoachActive : styles.railCoach}
+            aria-pressed={selected.id === persona.id}
+            onClick={() => { choose(persona.id); document.getElementById('my-coach-video')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
+            <span className={styles.railPortrait} data-persona={persona.id} aria-hidden="true"><span>{persona.symbol}</span></span>
+            <strong>{localCoachText(persona.name, lang)}</strong><small>{localCoachText(persona.role, lang)}</small>
+          </button>)}
+        </div>
+      </section>
+      <section className={styles.discover} id="my-coach-explore" aria-label={t.topics}>
+        <h2 className={styles.exploreHeading}>{d.explore}</h2>
         <div className={styles.controlTop}>
           <label className={styles.search}>
             <Search size={20} aria-hidden="true" />
@@ -307,10 +346,13 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                 </div>
                 <p className={styles.cardMeta}><Sparkles size={13} aria-hidden="true" /> {d.aiPersona} <span aria-hidden="true">·</span> {d.language}</p>
                 <div className={styles.cardFooter}>
-                  <button type="button" className={styles.viewProfile} onClick={() => choose(persona.id)}
-                    aria-pressed={isSelected}>{d.showProfile}</button>
+                  <button type="button" className={styles.viewProfile}
+                    onClick={() => { choose(persona.id); setExpandedId(old => old === persona.id ? null : persona.id) }}
+                    aria-expanded={expandedId === persona.id} aria-controls={'my-coach-about-' + persona.id}>
+                    {d.showProfile}{expandedId === persona.id ? <ChevronUp size={14} aria-hidden="true"/> : <ChevronDown size={14} aria-hidden="true"/>}
+                  </button>
                   <Link className={styles.cardButton}
-                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))}
+                    href={coachSessionHref(lang, persona.id, normalizeCoachSettings(persona.id))?.replace('/coaching/sessions?', '/app/coaching?').replace('/es/app/coaching?', '/en/app/coaching?lang=es&')}
                     prefetch={false}>{d.startNow}<ArrowRight size={16} aria-hidden="true" /></Link>
                 </div>
               </div>
@@ -320,6 +362,12 @@ export default function MyCoachCatalog({ locale = 'en' }) {
                 aria-pressed={isFavorite}>
                 <Heart size={21} fill={isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
               </button>
+              <div id={'my-coach-about-' + persona.id} className={styles.cardDetails} hidden={expandedId !== persona.id}>
+                <strong>{t.about}</strong>
+                <p>{localCoachText(persona.description, lang)}</p>
+                <p>{localCoachText(persona.approach, lang)}</p>
+                <p><b>{t.suited}:</b> {localCoachText(persona.suitable, lang)}</p>
+              </div>
             </article>
           })}
         </div> : <div className={styles.empty}>

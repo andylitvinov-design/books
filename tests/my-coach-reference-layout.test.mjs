@@ -11,7 +11,7 @@ test('My Coach reference layout uses compact scenic design and actual persona/se
 
   assert.ok(!page.includes('PublicSiteHeader'), 'old promotion/header must not push the catalog below the fold')
   for (const locale of ['en', 'ru', 'es']) assert.match(page, new RegExp("/" + locale + "/my-coach"))
-  for (const part of ['brandHeader', 'hero', 'quickTopics', 'controlTop', 'typePills', 'visualTopics', 'cardGrid', 'cardPortrait']) {
+  for (const part of ['brandHeader', 'welcome', 'hero', 'coachRail', 'quickTopics', 'controlTop', 'typePills', 'visualTopics', 'cardGrid', 'cardPortrait']) {
     assert.ok(component.includes('styles.' + part), part + ' present')
     assert.ok(css.includes('.' + part + '{'), part + ' styled')
   }
@@ -29,6 +29,9 @@ test('My Coach reference layout uses compact scenic design and actual persona/se
   assert.match(component, /coachSessionHref\(lang, selected\.id, safeSettings\)/)
   assert.match(component, /data-my-coach-start=\{selected\.id\}/)
   assert.match(component, /href=\{'\/' \+ lang \+ '\/masters'\}/)
+  assert.match(component, /data-my-coach-hero-start/)
+  assert.match(component, /aria-expanded=\{expandedId === persona\.id\}/)
+  assert.ok(component.indexOf('styles.hero') < component.indexOf('styles.discover'))
   assert.doesNotMatch(component, /4\.9|512 sessions|verified practitioner/)
 })
 
