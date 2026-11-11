@@ -509,6 +509,17 @@ for(const [engine,browserType] of [["webkit",webkit],["chromium",chromium]]
       await expect(page.locator('[data-video-montage-audio]')).toBeVisible();
       const compactGrid=page.locator('[data-video-audio-compact-grid]');
       await expect(compactGrid).toBeVisible();
+      // Initial filter follows the approved video concept; choose All to
+      // inspect the entire approved collection, then prove Focus narrows it.
+      const allMusic=page.locator('[data-video-audio-category="all"]');
+      const focusMusic=page.locator('[data-video-audio-category="focus"]');
+      await allMusic.click();
+      await expect(allMusic).toHaveAttribute("aria-pressed","true");
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(5);
+      await focusMusic.click();
+      await expect(focusMusic).toHaveAttribute("aria-pressed","true");
+      await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(1);
+      await allMusic.click();
       await expect(compactGrid.locator('[data-video-audio-compact-track]')).toHaveCount(5);
       await expect(page.locator('[data-video-audio-compact-upload]')).toHaveCount(1);
       await expect(page.locator('[data-video-audio-mode]')).toHaveCount(0);
