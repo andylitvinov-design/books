@@ -367,10 +367,71 @@
       }),
       complete:complete===true};
   }
+  // Query the existing owner-only OIDC inbox by stable time+UUID keyset.
+  // Stop at the requested window, at exhaustion, or at six bounded pages;
+  // never interpret an unexamined older page as zero incidents.
+  async function readFailureWindow(fetchPage,hours,now){
+    if(typeof fetchPage!=='function'||![1,24,168,336,720].includes(hours)||
+       !Number.isFinite(now))throw Error('CI_FUNNEL_WINDOW_INVALID');
+    var cutoff=now-hours*3600000,events=[],seen=new Set(),cursor=null;
+    var complete=false,pages=0,oldest=Infinity;
+    for(var pageNo=0;pageNo<6;pageNo++){
+      var page=await fetchPage(cursor);
+      if(!page||page.schema!=='HH_COMMANDER_CI_EVENT_INBOX_V1'||
+         !Array.isArray(page.events)||page.events.length>100)
+        throw Error('CI_INBOX_INVALID');
+      pages++;
+      for(var e of page.events){
+        if(typeof e?.ci_event_id!=='string'||seen.has(e.ci_event_id))
+          throw Error('CI_INBOX_DUPLICATE_OR_INVALID_CURSOR');
+        seen.add(e.ci_event_id);
+        events.push(e);
+        var at=goodTime(e.created_at);
+        if(at!==null&&at<oldest)oldest=at;
+      }
+      // The last observed event belongs to a past reporting window.
+      if(oldest<cutoff){complete=true;break;}
+      if(page.has_more===false||
+         (page.has_more===undefined&&page.events.length<100)||
+         page.events.length===0){complete=true;break;}
+      var next=page.next_cursor;
+      if(!next||typeof next.before!=='string'||
+         !Number.isFinite(Date.parse(next.before))||
+         typeof next.beforeId!=='string'||
+         !/^[a-f0-9-]{36}$/i.test(next.beforeId)||
+         (cursor&&(next.before>cursor.before||
+           next.before===cursor.before&&next.beforeId>=cursor.beforeId)))
+        break; // old unpaginated backend or invalid cursor: incomplete.
+      cursor=next;
+    }
+    return {events:events,complete:complete,pages:pages,oldest:oldest};
+  }
+  // Prioritize authenticated, exact-run dispatch receipts for the 24 public
+  // comment read budget. This is scheduling only, never proof of a claim.
+  function proofPrs(candidates,limit){
+    if(!Array.isArray(candidates)||!Number.isSafeInteger(limit)||limit<1)return [];
+    var ranked=new Map();
+    for(var e of candidates){
+      if(!Number.isSafeInteger(e?.pr_number)||e.pr_number<1)continue;
+      var route=routeFor(e);
+      var pending=e?.route_receipt;
+      var score=route?3:pending&&
+        pending.executorId==='github-actions:hh-pr-repair-worker.yml'&&
+        TASK.test(pending.workerTaskKey||'')?2:1;
+      var at=goodTime(e.created_at)||0;
+      var prev=ranked.get(e.pr_number);
+      if(!prev||score>prev.score||score===prev.score&&at>prev.at)
+        ranked.set(e.pr_number,{pr:e.pr_number,score:score,at:at});
+    }
+    return [...ranked.values()].sort(function(a,b){
+      return b.score-a.score||b.at-a.at||b.pr-a.pr;
+    }).slice(0,limit).map(function(row){return row.pr;});
+  }
   var model={STAGES:STAGES,validEvent:validEvent,classified:classified,
     taskLinked:taskLinked,routeFor:routeFor,trustedComment:trustedComment,
     diagnosticAssignment:diagnosticAssignment,sourceRepairCandidate:sourceRepairCandidate,signedClaimRoute:signedClaimRoute,
-    taskEvidence:taskEvidence,summarize:summarize};
+    taskEvidence:taskEvidence,summarize:summarize,
+    readFailureWindow:readFailureWindow,proofPrs:proofPrs};
   if(typeof module!=='undefined'&&module.exports)module.exports=model;
   if(typeof document==='undefined'||typeof window==='undefined')return;
   if(root.__hhPrErrorFunnelMounted)return;
@@ -536,30 +597,30 @@
     message.textContent='Сверяю задачи с подписанными квитанциями Worker и GitHub…';
     renderSkeleton();
     try{
-      var response=await fetch('/api/commander-chats?action=ci_events&limit=100',{
-        credentials:'same-origin',headers:{Accept:'application/json'},cache:'no-store'});
-      if(response.status===401||response.status===403){
-        message.replaceChildren('Для просмотра обработки ошибок войдите как владелец. ');
-        var login=el('a','','Войти в Commander');login.href='/commander-auth.html';message.append(login);
-        return;
-      }
-      if(!response.ok)throw Error('CI_INBOX_HTTP_'+response.status);
-      var result=await response.json();
-      if(result.schema!=='HH_COMMANDER_CI_EVENT_INBOX_V1'||!Array.isArray(result.events))
-        throw Error('CI_INBOX_INVALID');
       var now=Date.now(),hours=Number(select.value),cutoff=now-hours*3600000;
-      var all=result.events,eligible=all.filter(function(e){
+      var windowResult=await readFailureWindow(async function(cursor){
+        var query='/api/commander-chats?action=ci_events&limit=100';
+        if(cursor)query+='&before='+encodeURIComponent(cursor.before)+
+          '&before_id='+encodeURIComponent(cursor.beforeId);
+        var response=await fetch(query,{credentials:'same-origin',
+          headers:{Accept:'application/json'},cache:'no-store'});
+        if(response.status===401||response.status===403)throw Error('OWNER_SESSION_REQUIRED');
+        if(!response.ok)throw Error('CI_INBOX_HTTP_'+response.status);
+        return response.json();
+      },hours,now);
+      var all=windowResult.events,eligible=all.filter(function(e){
         return validEvent(e)&&goodTime(e.created_at)>=cutoff&&goodTime(e.created_at)<=now+60000;});
-      var oldest=all.reduce(function(low,e){var t=goodTime(e.created_at);return t!==null&&t<low?t:low;},Infinity);
-      var complete=all.length<100||oldest<cutoff;
+      var complete=windowResult.complete;
       // Review and non-source diagnoses do not have a code Worker. For
       // historical incidents, a genuine Worker CLAIMED comment may be the
       // only durable dispatch proof if Supabase saved an earlier backstop.
       var candidates=eligible.filter(function(e){return taskLinked(e)&&
         sourceRepairCandidate(e);});
-      var prs=[...new Set(candidates.map(function(e){return e.pr_number;}))];
-      // Bound public unauthenticated GitHub reads and surface truncation.
-      if(prs.length>24){prs=prs.slice(0,24);complete=false;}
+      var totalSourcePrs=new Set(candidates.map(function(e){return e.pr_number;})).size;
+      var prs=proofPrs(candidates,24);
+      // If 24 public proof lookups cannot cover all source PRs, the totals
+      // are lower bounds even when the private inbox period was complete.
+      if(totalSourcePrs>prs.length)complete=false;
       var evidence={},failed=0,commitFailures=0;
       var batches=await Promise.allSettled(prs.map(commentsFor));
       var byPR=new Map();
@@ -589,10 +650,17 @@
       if(!data)throw Error('CI_FUNNEL_CALCULATION');
       var note=(failed?'Не удалось сверить '+failed+' PR с GitHub. ':'')+
         (commitFailures?'Не подтверждено '+commitFailures+' кандидатов на коммит. ':'')+
+        (totalSourcePrs>prs.length?'Ограничение публичных подтверждений: проверено '+
+          prs.length+' из '+totalSourcePrs+' кодовых PR. ':'')+
+        (!windowResult.complete?'История CI ограничена '+windowResult.pages+
+          ' страницами; более старые записи не считаются нулём. ':'')+
         'Принятый dispatch ≠ запущенный Worker; ответ Worker ≠ коммит.';
       display(data,note);
     }catch(err){
-      message.textContent='Достоверная статистика недоступна ('+
+      if(String(err.message||err)==='OWNER_SESSION_REQUIRED'){
+        message.replaceChildren('Для просмотра обработки ошибок войдите как владелец. ');
+        var login=el('a','','Войти в Commander');login.href='/commander-auth.html';message.append(login);
+      }else message.textContent='Достоверная статистика недоступна ('+
         String(err.message||err).slice(0,90)+'). Пропуск данных не равен нулю.';
     }finally{loading=false;refreshButton.disabled=false;select.disabled=false;}
   }

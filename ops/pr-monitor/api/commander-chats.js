@@ -45,6 +45,12 @@ module.exports=async function(req,res){
     const prValue=url.searchParams.get('pr'),limitValue=url.searchParams.get('limit');
     if(prValue!==null)body.pr=Number(prValue);
     if(limitValue!==null)body.limit=Number(limitValue);
+    // Forward only a paired, owner-authenticated cursor to the existing store.
+    // No public database access or separate scheduled pagination service.
+    const before=url.searchParams.get('before'),beforeId=url.searchParams.get('before_id');
+    if((before===null)!==(beforeId===null))
+      return sendJson(res,400,{error:'INCOMPLETE_CI_EVENT_CURSOR'});
+    if(before!==null){body.before=before;body.beforeId=beforeId;}
    }
    else return sendJson(res,400,{error:'UNKNOWN_ACTION'});
   }else{
