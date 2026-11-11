@@ -7,7 +7,7 @@ const wavesModel=require('../pr-wave-effectiveness-model.cjs');
 const ROOT='https://api.github.com/repos/andylitvinov-design/books';
 const MAX_PAGES=4,MAX_REPAIR_PR_READS=5,MAX_MERGE_PAGES=2;
 const TTL=300000,DEEP_TTL=600000,MERGE_TTL=600000;
-const CREATED_TTL=600000,MAX_COHORT_PAGES=4;
+const CREATED_TTL=600000,MAX_COHORT_PAGES=9;
 let cohortCache=null,cohortAt=0,cohortPromise=null;
 let archiveCache=null,archiveAt=0,archivePromise=null;
 let deepCache=new Map();
@@ -93,7 +93,7 @@ async function recentCreated(now) {
   return {...cohortCache,cache_hit:true};
  if(cohortPromise)return cohortPromise;
  cohortPromise=(async()=>{
-  const cutoff=now-48*3600000,prs=[],seen=new Set();
+  const cutoff=t(model.window(now,7).from),prs=[],seen=new Set();
   let pages=0,complete=false,remaining=null,previous=Infinity;
   for(let page=1;page<=MAX_COHORT_PAGES;page++){
    const r=await gh('/pulls?state=all&base=codex%2Fpublic-book-library'+
@@ -120,7 +120,7 @@ async function recentCreated(now) {
    if(remaining!==null&&remaining<12)break;
   }
   const value={prs,pages,complete,remaining,
-   scope:'LAST_48H_CREATED_PRODUCTION_PRS',retrieved_at:new Date().toISOString()};
+   scope:'CURRENT_AND_WEEK_AGO_CREATED_PRODUCTION_PRS',retrieved_at:new Date().toISOString()};
   cohortCache=value;cohortAt=Date.now();
   return {...value,cache_hit:false};
  })().catch(err=>{
@@ -206,7 +206,7 @@ async function main(req,res) {
     reason:mergeError,cache_hit:merges.cache_hit===true}};
   report.notes=['A first SAVED Core run is not proven to be the first-ever CI wave.',
    'Stage values from missing GitHub events are null, not zero.',
-   'Two weeks ago is aligned to Toronto local clock, including DST.',
+   'Seven days ago is aligned to Toronto local clock, including DST.',
    'Historical October archive has no verifiable Core stage events.',
    'Post-Core merged_at is joined only by exact GitHub PR number and final HEAD, from a bounded recent snapshot.',
    'Historical and unobserved stages remain unknown, not zero; no complete all-PR bottleneck ranking is claimed.'];

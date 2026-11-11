@@ -31,15 +31,14 @@
    local(w.period.from)+' — '+local(w.period.to)+' Toronto':'Нет интервала';}
  function mount(){
   if(box)return true;
-  const destination=document.getElementById('hh2-stages');
-  const anchor=destination?.querySelector('#hh2-stages .hh2-compare')||
-    destination?.querySelector('.hh2-compare');
-  if(!anchor)return false;
+  const destination=document.querySelector('main.wrap')||document.querySelector('main');
+  const anchor=destination?.querySelector('header.header')||destination?.querySelector('header');
+  if(!destination||!anchor)return false;
   box=el('section','hh-kpi-panel');box.id=ROOT;
   box.setAttribute('aria-label','Три KPI PR от ошибки до Repair, First Pass и Green до Merge');
   const head=el('div','hh-kpi-head');
   const t=el('div');t.append(el('h2','','Три KPI · скорость PR'),
-   el('small','','Последние 24 часа ↔ тот же час две недели назад'));
+   el('small','','Последние 24 часа ↔ тот же час 7 дней назад'));
   reload=el('button','','Обновить');reload.type='button';
   reload.addEventListener('click',()=>void load(false,true));head.append(t,reload);
   box.append(head);
@@ -49,7 +48,7 @@
   const table=el('div','hh-kpi-table');
   const labels=el('div','hh-kpi-columns');
   labels.append(el('strong','','Показатель'),el('strong','','24 часа'),
-   el('strong','','2 недели назад'));table.append(labels);
+   el('strong','','7 дней назад'));table.append(labels);
   body=el('div','hh-kpi-data');table.append(body);
   box.append(table);
   const options=el('div','hh-kpi-options');
@@ -58,7 +57,7 @@
   options.append(deepButton);box.append(options);
   meta=el('p','hh-kpi-note','Читаю проверенный архив GitHub…');
   meta.setAttribute('role','status');box.append(meta);
-  destination.insertBefore(box,anchor);
+  anchor.insertAdjacentElement('afterend',box);
   return true;
  }
  function itemValue(key,entry){
@@ -101,8 +100,8 @@ function renderWaves(){
   if(!wavePanel)return;
   wavePanel.replaceChildren();
   const h=el('div','hh-kpi-wave-head');
-  h.append(el('h3','','Эффективность CI · 24–48 ч'),
-    el('small','','Сравнение двух соседних 24-часовых когорт PR по дате создания'));
+  h.append(el('h3','','Эффективность CI · сейчас / 7 дней назад'),
+    el('small','','Одинаковые 24-часовые когорты PR с интервалом 7 дней'));
   wavePanel.append(h);
   const data=report?.release_efficiency;
   if(data?.schema!=='HH_PR_WAVE_EFFECTIVENESS_V1'){
@@ -112,14 +111,15 @@ function renderWaves(){
       '. Отсутствующие данные не равны нулю. Остальные KPI продолжают работать.'));
     return;
   }
-  const now=data.periods?.last_24h,prev=data.periods?.previous_24h;
-  if(!now||!prev)return;
+  const now=data.periods?.last_24h;
+  const prev=data.coverage?.cohort_complete?data.periods?.week_ago:null;
+  if(!now)return;
   const grid=el('div','hh-kpi-wave-grid');
   function card(title,value,sub,previous){
     const c=el('article','hh-kpi-wave-card');
     c.append(el('span','hh-kpi-wave-label',title),el('strong','hh-kpi-wave-value',value),
       el('small','hh-kpi-wave-sub',sub),
-      el('small','hh-kpi-wave-prev','Пред. 24 ч: '+previous));
+      el('small','hh-kpi-wave-prev','7 дней назад: '+previous));
     grid.append(c);
   }
   const ratio=p=>p.ci_archived_prs?
@@ -127,21 +127,21 @@ function renderWaves(){
   card('1 CI-волна / PR · цель',ratio(now),
     'Первых сохранённых: '+now.ci_archived_prs+'/'+now.created_prs+
       ' PR · ≈'+(now.observed_one_wave_percent??'—')+'%*',
-    ratio(prev)+' из '+prev.ci_archived_prs+' с CI');
+    prev?ratio(prev)+' из '+prev.ci_archived_prs+' с CI':'— · недельная когорта не прочитана полностью');
   card('Лишние CI-волны · ↓',
     now.ci_archived_prs?'≥'+now.extra_observed_waves:'—',
     'Новый HEAD: '+now.new_head_extra_waves+' · тот же SHA: '+
       now.same_head_extra_waves+' · rerun: '+now.retry_attempts_observed,
-    prev.ci_archived_prs?'≥'+prev.extra_observed_waves:'—');
+    prev?.ci_archived_prs?'≥'+prev.extra_observed_waves:'—');
   card('PR → Merge · P50 / P90 · ↓',
     now.merge_latency.n?min(now.merge_latency.median_min):'—',
     'P90: '+min(now.merge_latency.p90_min)+' · n='+
       now.merge_latency.n+'/'+now.created_prs+' созданных',
-    prev.merge_latency.n?'P50 '+min(prev.merge_latency.median_min)+
+    prev?.merge_latency?.n?'P50 '+min(prev.merge_latency.median_min)+
       ' · P90 '+min(prev.merge_latency.p90_min)+
       ' · n='+prev.merge_latency.n:'—');
   wavePanel.append(grid);
-  const completeness=data.coverage?.cohort_complete?'полная выборка PR за 48 ч':
+  const completeness=data.coverage?.cohort_complete?'прочитаны обе сопоставимые когорты PR':
     'список PR частичный';
   const note=el('p','hh-kpi-wave-note',
     '* Количество «1 волна» относится только к PR с хотя бы одним сохранённым Core CI. '+
@@ -176,7 +176,7 @@ function renderWaves(){
   if(!report||!body)return;
   renderWaves();
   body.replaceChildren();
-  const today=report.windows?.last_24h,history=report.windows?.two_weeks_ago;
+  const today=report.windows?.last_24h,history=report.windows?.week_ago;
   for(const conf of rows) {
    const d=el('details','hh-kpi-item');
    const s=el('summary','hh-kpi-row');
@@ -190,7 +190,7 @@ function renderWaves(){
    s.append(a,now,before);d.append(s);
    const description=el('div','hh-kpi-detail');
    description.append(el('p','',conf.what));
-   description.append(el('p','','Сейчас: '+range(today)+'; две недели назад: '+range(history)+'.'));
+   description.append(el('p','','Сейчас: '+range(today)+'; 7 дней назад: '+range(history)+'.'));
    if(conf.key==='ci_first_pass')description.append(el('p','hh-kpi-warning',
      '* Процент рассчитан только по первым сохранённым Core-запускам. Это НЕ подтверждённый CI First Pass всей когорты без полной истории GitHub.'));
    if(conf.key==='error_to_repair')description.append(el('p','hh-kpi-warning',
@@ -242,6 +242,15 @@ function renderWaves(){
    ' · '+(merge.returned_merged_prs??0)+' подтверждённых PR в '+(merge.pages??0)+
    ' страницах GitHub; охват старой истории не гарантирован.'+
    (merge.reason?' Ошибка: '+merge.reason+'.':''));
+  const weekly=report.weekly_coverage;
+  if(weekly){
+   const messages={NO_ARCHIVED_CORE_COVERAGE:'Core CI архив начинается позже недельного периода',
+    PARTIAL_ARCHIVE_START:'Core CI архив начинается внутри недельного периода',
+    NO_SAVED_EVENTS_IN_WEEK:'за недельный период нет сохранённых Core CI событий',
+    SAVED_EVENTS_PRESENT:'есть сохранённые Core CI события, архив может быть неполным'};
+   meta.append(' Неделю назад: '+(messages[weekly.status]||'охват неизвестен')+
+     ' (сохранено '+weekly.observed_core_runs+' запусков). Пропуски ≠ нули.');
+  }
   meta.append(' Максимальную задержку ВСЕХ PR нельзя считать доказанной, пока есть пропуски меток.');
  }
  async function load(repair=false,force=false) {
