@@ -314,6 +314,12 @@ test('forged, edited or mismatched historical receipts cannot restore dispatch',
  assert.equal(m.signedClaimRoute(unrelated,e),null);
 });
 
+test('blocker heading remains accurate when owner selects one hour instead of 24 hours',()=>{
+ const fs=require('node:fs');
+ const source=fs.readFileSync(require.resolve('../pr-error-funnel.js'),'utf8');
+ assert.match(source,/Почему назначений и коммитов меньше/);
+ assert.doesNotMatch(source,/Почему 41 → 15 → 3/);
+});
 test('incomplete evidence never invents a diagnostic-to-worker or reply-to-commit difference',()=>{
  const e=event(),proof=m.taskEvidence(records({state:'MANUAL',
   detail:'FREE_AI_PATCH_APPLY_CHECK_FAILED'}),e);

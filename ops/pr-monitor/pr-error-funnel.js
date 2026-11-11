@@ -484,7 +484,7 @@
       d.append(list);drill.append(d);
     }
     blockerPanel.replaceChildren();
-    blockerPanel.append(el('summary','','Почему 41 → 15 → 3 · проверенные причины и PR'));
+    blockerPanel.append(el('summary','','Почему назначений и коммитов меньше · причины по PR'));
     var reasons=el('div','hh-error-reasons');
     for(var b of data.blockers||[]){
       if(b.pr_count===0)continue;
