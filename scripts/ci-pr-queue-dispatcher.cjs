@@ -323,7 +323,7 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   inspected:0,dispatchAccepted:0,wouldDispatch:0,
   staleConflictCleared:0,wouldClearStaleConflict:0,
   manualConflictHandoffs:0,wouldManualConflictHandoffs:0,
-  verifiedManualConflictReroutes:0,dependentPrsLinked:0,
+  verifiedManualConflictReroutes:0,verifiedSourceConflictReroutes:0,dependentPrsLinked:0,
   conflictQueueReleased:0,unconfirmedHandoffs:0,
   manualSourceEscalations:0,wouldManualSourceEscalations:0,
   specialistReclassified:0,wouldSpecialistReclassify:0,
@@ -616,32 +616,35 @@ async function run({github,core,context,now=Date.now(),dryRun=false,capacityFn=s
   let fresh;
   try{fresh=(await limited('live-pr',()=>github.rest.pulls.get({owner,repo,pull_number:task.pr_number}))).data;}
   catch(err){blocked('LIVE_PR_UNAVAILABLE');log('PR #'+task.pr_number+' unavailable '+err.message);continue;}
-  // Fresh exact-HEAD DIRTY evidence may upgrade a legacy manual task to
-  // semantic conflict handoff only. It NEVER grants a source-write worker.
-  const verifiedManualDirtyConflict=task.lane==='legacy'&&
+  // A list snapshot may omit mergeability: a dual-labelled DIRTY PR then
+  // looks like a source repair. Only a fresh exact-HEAD and owner-scoped
+  // read can upgrade source OR legacy into an owner-only conflict handoff.
+  // This route never grants a source-write worker or merge permission.
+  const wasLegacy=task.lane==='legacy',wasSource=task.lane==='repair';
+  const verifiedDirtyConflict=(wasLegacy||wasSource)&&
    fresh?.head?.sha===task.head_sha&&fresh.head?.ref===task.head_ref&&
-   fresh.base?.ref===PROD&&validLegacyPrep(fresh)&&fresh.mergeable===false&&
-   fresh.mergeable_state==='dirty'&&
+   fresh.base?.ref===PROD&&
+   (wasLegacy?validLegacyPrep(fresh):validPR(fresh))&&
+   fresh.mergeable===false&&fresh.mergeable_state==='dirty'&&
    (fresh.labels||[]).some(label=>label.name==='hh:conflict-repair-needed')&&
    laneOf(fresh)==='conflict';
-  if(verifiedManualDirtyConflict){
+  if(verifiedDirtyConflict){
    const converted=taskFor(fresh,priorityFor(fresh,now));
    if(converted?.lane!=='conflict'||converted.head_sha!==task.head_sha){
-    blocked('MANUAL_DIRTY_CONFLICT_TASK_UNVERIFIED');continue;
+    blocked('DIRTY_CONFLICT_TASK_UNVERIFIED');continue;
    }
    task=converted;currentTask=task;worker=WORKFLOWS.conflict;
-   summary.verifiedManualConflictReroutes++;
-   log('VERIFIED_MANUAL_DIRTY_CONFLICT_REROUTE #'+task.pr_number+
-    ' '+task.head_sha.slice(0,12));
+   if(wasLegacy)summary.verifiedManualConflictReroutes++;
+   else summary.verifiedSourceConflictReroutes++;
+   log((wasLegacy?'VERIFIED_MANUAL':'VERIFIED_SOURCE')+
+    '_DIRTY_CONFLICT_REROUTE #'+task.pr_number+' '+task.head_sha.slice(0,12));
   }
-  if(task.manual_conflict_probe&&!verifiedManualDirtyConflict){
-   // A probe is not a second hourly legacy worker. Only verified DIRTY
-   // evidence may advance it to a non-writing conflict owner handoff.
+  if(task.manual_conflict_probe&&!verifiedDirtyConflict){
+   // A manual probe never authorizes source repair, only DIRTY owner handoff.
    blocked('MANUAL_CONFLICT_PROBE_NOT_DIRTY');continue;
   }
   if(!fresh||fresh.head?.sha!==task.head_sha||fresh.base?.ref!==PROD||
-     !(task.lane==='legacy'||verifiedManualDirtyConflict?
-       validLegacyPrep(fresh):validPR(fresh))||
+     !(wasLegacy?validLegacyPrep(fresh):validPR(fresh))||
       laneOf(fresh)!==task.lane){blocked('STALE_SHA_OR_STATE');continue;}
   if(conflictEvent&&task.lane!=='conflict'){
    blocked('CONFLICT_EVENT_LANE_MISMATCH');continue;
