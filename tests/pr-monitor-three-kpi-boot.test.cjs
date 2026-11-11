@@ -24,6 +24,24 @@ test('wave-effectiveness UI reuses the existing KPI panel and endpoint',()=>{
  assert.match(css,/hh-kpi-wave-grid/);
  assert.doesNotMatch(ui,/workflow_dispatch|setInterval\s*\(/);
 });
+test('Green to Merge outliers use a verified same-cohort sample only',()=>{
+ const vm=require('node:vm');
+ const source=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/pr-three-kpi-ui.js'),'utf8');
+ const marker=" if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});";
+ assert.ok(source.includes(marker));
+ const instrumented=source.replace(marker," window.__hhTestLatencyOutlier=latencyOutlier;\n"+marker);
+ const sandbox={window:{},document:{readyState:'loading',addEventListener(){}}};
+ vm.runInNewContext(instrumented,sandbox);
+ const pick=sandbox.window.__hhTestLatencyOutlier;
+ const entry={n:4,median_min:1,rows:[
+  {pr:11,minutes:1},{pr:12,minutes:.5},{pr:13,minutes:2},{pr:14,minutes:100}]};
+ const found=pick(entry);
+ assert.equal(found.pr,14);
+ assert.equal(found.minutes,100);
+ assert.ok(Math.abs(found.meanWithoutOutlier-1.1666666666666667)<1e-6);
+ assert.equal(pick({...entry,n:5}),null,'incomplete sample is unknown');
+ assert.equal(pick({...entry,rows:entry.rows.map(r=>({...r,minutes:2}))}),null,'no spurious outlier');
+});
 test('no CI dispatch, cron, paid integration or polling added to boot',()=>{
  assert.doesNotMatch(boot,/workflow_dispatch|setInterval\s*\(|createWorkflowDispatch|https:\/\/api\.github\.com/);
  assert.match(boot,/legacy\.html/);
@@ -33,8 +51,10 @@ test('restored second slide is after central PR metrics without replacing legacy
  const ui=fs.readFileSync(path.join(__dirname,'../ops/pr-monitor/pr-two-screen.js'),'utf8');
  assert.match(boot,/data-pr-stage-only src="\/pr-two-screen\.js\?/);
  assert.match(ui,/document\.currentScript\?\.hasAttribute\?\.\("data-pr-stage-only"\)/);
- assert.match(ui,/main\?\.querySelector\('#diagnostics-mount'\)/);
- assert.match(ui,/after\.insertAdjacentElement\('afterend',root\)/);
+ assert.match(ui,/main\?\.querySelector\('#hh-pr-error-funnel'\)/);
+ assert.match(ui,/funnel\.insertAdjacentElement\('afterend',root\)/);
+ assert.match(ui,/main\.insertBefore\(root,main\.querySelector\('header\.header'\)\|\|main\.firstChild\)/);
+ assert.doesNotMatch(ui,/after\.insertAdjacentElement\('afterend',root\)/);
  assert.match(ui,/root\.append\(two\)/);
  assert.match(ui,/if\(!STAGE_ONLY\)\{[\s\S]*?var graph = document\.getElementById\('hh-pr-trends'\)/);
  assert.match(ui,/if\(!STAGE_ONLY\)void readHistorical\(\)/);

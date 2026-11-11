@@ -517,10 +517,13 @@
       root.classList.add('hh2-stage-only');
       root.append(two);
       const main=document.querySelector('main.wrap')||document.querySelector('main');
-      const after=main?.querySelector('#diagnostics-mount')||main?.querySelector('.throughput');
-      if(after)after.insertAdjacentElement('afterend',root);
-      else if(main)main.append(root);
-      else document.body.append(root);
+      // Preserve the owner error funnel as the first block. Stage timings
+      // belong at the very top of monitoring, before the legacy queue/chart.
+      // If the funnel loads later, it prepends itself ahead of these timings.
+      const funnel=main?.querySelector('#hh-pr-error-funnel');
+      if(funnel)funnel.insertAdjacentElement('afterend',root);
+      else if(main)main.insertBefore(root,main.querySelector('header.header')||main.firstChild);
+      else document.body.prepend(root);
       // The original queue/KPI screen stays in place. Only the stage slide is added.
     }else{
       root.append(one,two);

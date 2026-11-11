@@ -83,6 +83,20 @@
   if(key==='ci_first_pass')return entry.examples||[];
   return entry.rows||[];
  }
+ // Explain a long-tail Green → Merge mean using only same-cohort exact-HEAD
+ // observations. Never label the interval as an automatic-merge failure.
+ function latencyOutlier(entry){
+  if(!entry||!Number.isSafeInteger(entry.n)||entry.n<3||
+     !Number.isFinite(entry.median_min)||entry.median_min<0||
+     !Array.isArray(entry.rows)||entry.rows.length!==entry.n)return null;
+  const ordered=entry.rows.filter(r=>Number.isSafeInteger(r?.pr)&&r.pr>0&&
+    Number.isFinite(r?.minutes)&&r.minutes>=0).sort((a,b)=>b.minutes-a.minutes);
+  if(ordered.length!==entry.n)return null;
+  const worst=ordered[0];
+  if(worst.minutes<30||worst.minutes<5*entry.median_min)return null;
+  const meanWithoutOutlier=ordered.slice(1).reduce((sum,r)=>sum+r.minutes,0)/(entry.n-1);
+  return {pr:worst.pr,minutes:worst.minutes,meanWithoutOutlier};
+ }
 function renderWaves(){
   if(!wavePanel)return;
   wavePanel.replaceChildren();
@@ -181,6 +195,19 @@ function renderWaves(){
      '* Процент рассчитан только по первым сохранённым Core-запускам. Это НЕ подтверждённый CI First Pass всей когорты без полной истории GitHub.'));
    if(conf.key==='error_to_repair')description.append(el('p','hh-kpi-warning',
      'Repair измеряется только по подлинному событию repair_started на том же PR и HEAD после доказанной ошибки, а не по принятию dispatch или метке Repair.'));
+   if(conf.key==='green_to_merge'){
+    const outlier=latencyOutlier(today?.green_to_merge);
+    if(outlier){
+     const warning=el('p','hh-kpi-warning','Среднее увеличено одним длительным PR ');
+     const prLink=el('a','','#'+outlier.pr);
+     prLink.href='https://github.com/andylitvinov-design/books/pull/'+outlier.pr;
+     prLink.target='_blank';prLink.rel='noopener noreferrer';
+     warning.append(prLink,': '+min(outlier.minutes)+' после подтверждённого Gate PASS. '+
+       'Без этого PR среднее ≈'+min(outlier.meanWithoutOutlier)+
+       '. Сам интервал не доказывает причину ожидания.');
+     description.append(warning);
+    }
+   }
    const items=evidenceItems(conf.key,today?.[conf.key]);
    if(items.length){
     const list=el('div','hh-kpi-examples');
