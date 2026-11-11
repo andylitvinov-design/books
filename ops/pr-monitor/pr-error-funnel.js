@@ -86,7 +86,7 @@
   // or an arbitrary model answer is NOT accepted as evidence.
   function signedClaimRoute(comments,e){
     if(!taskLinked(e)||!Array.isArray(comments)||
-      !['TYPESCRIPT','SOURCE_CODE'].includes(e.category))return null;
+      !['TYPESCRIPT','SOURCE_CODE','TEST_FAILURE'].includes(e.category))return null;
     var errors=new Set();
     for(var c of comments){
       if(!trustedComment(c))continue;
@@ -448,7 +448,7 @@
       // historical incidents, a genuine Worker CLAIMED comment may be the
       // only durable dispatch proof if Supabase saved an earlier backstop.
       var candidates=eligible.filter(function(e){return taskLinked(e)&&
-        ['TYPESCRIPT','SOURCE_CODE'].includes(e.category);});
+        ['TYPESCRIPT','SOURCE_CODE','TEST_FAILURE'].includes(e.category);});
       var prs=[...new Set(candidates.map(function(e){return e.pr_number;}))];
       // Bound public unauthenticated GitHub reads and surface truncation.
       if(prs.length>24){prs=prs.slice(0,24);complete=false;}
