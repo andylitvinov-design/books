@@ -19,6 +19,12 @@ This is a **mobile-first, public/read-only navigation and briefing surface**, no
 
 The top menu links to protected owner Command Center for actual writing. **No Google login is needed for public monitoring**, but creating a private task, authorizing a coding agent, dispatching GitHub Actions and editing owner notes still require existing owner authorization and server-only trusted credentials. Do not proxy private owner endpoints from the public site. The + action opens the **same-origin** `/task-editor.html` in the current tab. It transports a 10-minute ephemeral handoff envelope without URL params; nothing is auto-saved or executed.
 
+## Конкуренты / Market Intelligence (11.11.2026)
+
+Публичный read-only каталог /competitors.html: 20 видео, 22 активных коуч/HR и 2 архивных. Источник в ops/pr-monitor/competitors-data.json, тест test-competitors.cjs. Правки внутри браузера сохраняются локально, общая версия обновляется только через защищённый PR. Не создаются новые API, обработка персональных данных или Supabase-таблицы.
+
+Для безопасного релиза без замены неполного source-архива допускается отдельный Vercel Project Routes overlay, как уже используется для /learning.html: статические assets из immutable GitHub merged SHA с правильным MIME, CSP только для каталога, две существующие ссылочные JS-подсистемы. Это не полный redeploy. Старый READY deployment, API и маршруты сохраняются. Проверить live readback всех новых путей и регрессию PR Monitor. Откат маршрутов — возврат к прежней routing version. При полном redeploy по-прежнему нужен полный verified source manifest.
+
 ## Release safety
 The independent Vercel monitor is currently manually deployed, and the GitHub archive is incomplete relative to the already deployed source tree. NEVER use a partial deploy. Obtain complete prior deployment file manifest and include every existing unchanged asset by its verified SHA. Overlay only these source assets after protected control-plane PR merge; verify all API endpoints, old monitor routes, assets, mobile interactions at 320 / 390 / 430 and canonical URL. Keep the previous deployment ID for rollback. A control-branch merge does not itself deploy this manual Vercel project.
 

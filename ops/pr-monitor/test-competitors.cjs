@@ -1,0 +1,7 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');const fs=require('node:fs'),path=require('node:path');
+const base=__dirname, d=JSON.parse(fs.readFileSync(path.join(base,'competitors-data.json'),'utf8'));
+test('expected counts and no duplicated IDs',()=>{assert.equal(d.items.length,44);assert.equal(d.items.filter(x=>x.tab==='video').length,20);assert.equal(d.items.filter(x=>x.tab==='coaching'&&x.status!=='archived').length,22);assert.equal(d.items.filter(x=>x.status==='archived').length,2);assert.equal(new Set(d.items.map(x=>x.id)).size,d.items.length)});
+test('every published competitor has a verified-ish source pointer, action and HTTPS URL',()=>{for(const x of d.items){assert.match(x.url,/^https:\/\//);assert.match(x.source,/^https:\/\//);assert.ok(x.name&&x.focus&&x.strength&&x.action);assert.ok(Number.isInteger(x.rank));assert.ok(x.checked)}});
+test('canonical top 10 Video Therapy order remains unchanged',()=>{assert.deepEqual(d.items.filter(x=>x.tab==='video'&&x.segment==='practice').sort((a,b)=>a.rank-b.rank).map(x=>x.name),['SelfStudio','Enai','ReliefMix','Maitora / Mitra','Vibo','ManifestVision','Innertune','TRIPP / Kōkua','Wild Divine','Mind Movies'])});
+test('HTML references same-origin external scripts and CSP-safe content',()=>{const h=fs.readFileSync(path.join(base,'competitors.html'),'utf8');assert.match(h,/competitors-data\.js/);assert.match(h,/competitors\.js/);assert.doesNotMatch(h,/<script>(.|\n)*?<\/script>/i);assert.match(h,/aria-label="Рынки"/);});

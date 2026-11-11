@@ -20,7 +20,7 @@
   const refresh=make('button','hh-cc-iconbtn','⟳');refresh.type='button';refresh.title='Обновить страницу';refresh.setAttribute('aria-label','Обновить страницу');refresh.addEventListener('click',()=>location.reload());head.append(refresh);
   const more=make('button','hh-cc-iconbtn','⋮');more.type='button';more.title='Разделы мониторинга';more.setAttribute('aria-label','Разделы мониторинга');more.setAttribute('aria-expanded','false');head.append(more);
   const menu=make('div','hh-cc-menu');menu.hidden=true;
-  [['Монитор PR, CI и Merge',paths.monitor],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Автоматизации · Cron Jobs',paths.automations],['Библиотека навыков','/skills.html'],['Рабочие чаты','/chats.html'],['Защищённый редактор задач','/task-editor.html']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
+  [['Монитор PR, CI и Merge',paths.monitor],['Конкуренты · Market Intelligence','/competitors.html'],['Проекты и подзадачи',paths.tasks],['Агенты и автоматизации',paths.agents],['Автоматизации · Cron Jobs',paths.automations],['Библиотека навыков','/skills.html'],['Рабочие чаты','/chats.html'],['Защищённый редактор задач','/task-editor.html']].forEach(([label,href])=>{const link=make('a',null,label);link.href=href;menu.append(link)});
   const brainLink=make('a',null,'🧠 Память проектов · AI Projects Brain');brainLink.href='/memory.html';menu.append(brainLink);
   head.append(menu);more.addEventListener('click',()=>{menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden))});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){menu.hidden=true;more.setAttribute('aria-expanded','false')}});
