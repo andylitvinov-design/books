@@ -97,6 +97,27 @@
 .cardPortrait[data-persona=noah]{background:linear-gradient(140deg,#d6e7d1,#d8f4e8)}
 .cardPortrait[data-persona=iris]{background:linear-gradient(140deg,#f5e4c6,#fef9df)}
 .cardPortrait[data-persona=ray]{background:linear-gradient(140deg,#eccfb9,#ffe6d6)}
+
+/* Four illustrative fictional-avatar portraits, derived from the user-provided
+   approved reference; one 3.7 KB first-party AVIF sprite, no tracking or hotlinks. */
+.cardPortrait[data-persona=mira],.cardPortrait[data-persona=max],
+.cardPortrait[data-persona=sofia],.cardPortrait[data-persona=alex],
+.avatarLarge[data-persona=mira],.avatarLarge[data-persona=max],
+.avatarLarge[data-persona=sofia],.avatarLarge[data-persona=alex]{
+  background-image:url('/images/holistic-house/my-coach-portraits.avif');
+  background-repeat:no-repeat;background-size:400% 100%;
+}
+.cardPortrait[data-persona=mira],.avatarLarge[data-persona=mira]{background-position:0% center}
+.cardPortrait[data-persona=max],.avatarLarge[data-persona=max]{background-position:33.333% center}
+.cardPortrait[data-persona=sofia],.avatarLarge[data-persona=sofia]{background-position:66.667% center}
+.cardPortrait[data-persona=alex],.avatarLarge[data-persona=alex]{background-position:100% center}
+.cardPortrait[data-persona=mira] .avatarSymbol,
+.cardPortrait[data-persona=max] .avatarSymbol,
+.cardPortrait[data-persona=sofia] .avatarSymbol,
+.cardPortrait[data-persona=alex] .avatarSymbol{display:none}
+.avatarLarge[data-persona=mira],.avatarLarge[data-persona=max],
+.avatarLarge[data-persona=sofia],.avatarLarge[data-persona=alex]{font-size:0}
+
 .cardBody{min-width:0;padding:6px 37px 4px 0;display:flex;flex-direction:column}
 .cardBody h2{font:750 clamp(20px,2vw,25px)/1.12 system-ui;letter-spacing:-.035em;
   color:#21382f;margin:0 0 3px;overflow-wrap:anywhere}
