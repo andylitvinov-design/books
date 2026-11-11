@@ -11,7 +11,7 @@ const uuid='123e4567-e89b-42d3-a456-426614174000'
 const input={sessionId:uuid,locale:'ru',text:'Привет, давай поговорим',voiceConsent:true,cloudVoiceConsent:true}
 const licensed={HH_COACHING_LIVE_VOICE_ENABLED:'true',HH_COACHING_LIVE_VOICE_APPROVED:'true',
   HH_COACHING_FISH_TTS_ENABLED:'true',HH_COACHING_FISH_TTS_APPROVED:'true',
-  HH_COACHING_FISH_API_KEY:'server-only-test-key',
+  HH_COACHING_FISH_API_KEY:'server-only-test-key',HH_COACHING_FISH_FREE_CLIENT_DATA_APPROVED:'true',
   HH_COACHING_FISH_VOICE_EN_ID:'933563129e564b19a115bedd57b7406a',
   HH_COACHING_FISH_VOICE_RU_ID:'bf322df2096a46f18c579d0baa36f41d'}
 
@@ -20,6 +20,8 @@ test('vendor cannot be enabled without separate explicit approval, key and both 
   for(const key of Object.keys(licensed))
     assert.equal(fishTtsConfig({...licensed,[key]:undefined},'en'),null,key)
   assert.equal(fishTtsConfig(licensed,'es'),null)
+  assert.equal(fishTtsConfig({...licensed,HH_COACHING_FISH_FREE_CLIENT_DATA_APPROVED:undefined},'ru'),null)
+  assert.equal(fishTtsConfig({...licensed,HH_COACHING_FISH_FREE_CLIENT_DATA_APPROVED:undefined,HH_COACHING_FISH_MODEL:'s2.1-pro'},'ru').model,'s2.1-pro')
   assert.deepEqual(fishTtsConfig(licensed,'ru'),{
     key:licensed.HH_COACHING_FISH_API_KEY,referenceId:licensed.HH_COACHING_FISH_VOICE_RU_ID,model:'s2.1-pro-free',
   })
