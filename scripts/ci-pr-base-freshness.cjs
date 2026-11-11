@@ -59,7 +59,7 @@ async function assessBaseFreshness({github,owner,repo,pr,verifiedRunBase,classif
   const sensitive=route==='FULL';
   let detachedRevalidated=false;
   if(sensitive){
-   if(typeof verifiedRunBase==='function')verifiedRunBase=await verifiedRunBase();
+   if(typeof verifiedRunBase==='function')verifiedRunBase=await verifiedRunBase(rows);
    if(!SHA.test(verifiedRunBase||'')){
     // A stale PR metadata snapshot is not a substitute for the Core run's
     // tested-merge base. Do not trust the live PR base without run evidence.
