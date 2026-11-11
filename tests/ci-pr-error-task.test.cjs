@@ -234,3 +234,30 @@ test('model-free TypeScript reproduction failure stays owned, never misclassifie
   a.equal(x.assignment_status,'OWNER_REVIEW_REQUIRED');
  }
 });
+
+
+test('real Core mobile source-contract failure selects guarded worker but other test failures do not',()=>{
+ const step='Mobile Dock Core geometry and iPhone keyboard contracts';
+ const x=task(step);
+ a.equal(x.category,'TEST_FAILURE');
+ a.equal(x.failed_step,undefined);
+ a.equal(x.strategy_code,'GUARDED_SOURCE_REPAIR');
+ a.equal(x.executor_id,'github-actions:hh-pr-repair-worker.yml');
+ a.equal(x.assignment_status,'SELECTED_NOT_DISPATCHED');
+ a.equal(x.source_write_authorized,false);
+ a.equal(x.execution_authorized,false);
+ for(const other of [
+  task(step,{root:'SPECIALIST_FAILED'}),
+  task(step,{root:'CI_PREFLIGHT_OR_ROUTING'}),
+  task('Run unit tests'),
+  task('WebKit browser tests')
+ ]){
+  a.equal(other.executor_id,'github-owner:andylitvinov-design');
+  a.equal(other.assignment_status,'OWNER_REVIEW_REQUIRED');
+  a.notEqual(other.strategy_code,'GUARDED_SOURCE_REPAIR');
+ }
+ const bogus=classify(step);
+ const spoofed=makeCoreTask({pr,run,root:'SOURCE_OR_PREFLIGHT',now,
+  classification:{...bogus,failed_step:'A fake test failure'}});
+ a.equal(spoofed.assignment_status,'OWNER_REVIEW_REQUIRED');
+});
