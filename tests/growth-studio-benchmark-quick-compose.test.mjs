@@ -74,9 +74,15 @@ test('all existing publishing, content discovery and manual-versus-verified stat
   for(const signal of [
     'buildManualCalendarIcs','saveCsv(records)','findManualTimeConflicts',
     "publicationStatusLabel(post.status,locale)","post.status==='planned_manual'",
-    "post.status==='manual_done'","post.status==='published'&&post.delivery?.url",
+    "post.status==='manual_done'",
     "post.channel==='telegram'","telegramVerified", "confirmed:true",
   ])assert.ok(studio.includes(signal),'missing '+signal)
+  // Telegram keeps its authenticated URL; Instagram displays a provider ID
+  // and only links to a URL when Meta actually supplies one (Stories may not).
+  assert.ok(studio.includes("post.status==='published'&&post.delivery?.provider==='telegram'&&post.delivery?.url"))
+  assert.ok(studio.includes("post.status==='published'&&post.delivery?.provider==='meta_graph_api'"))
+  assert.ok(studio.includes("post.delivery.providerPostId"))
+  assert.ok(studio.includes('post.delivery.url&&<>'))
   assert.doesNotMatch(studio,/onClick=\{\(\)=>publishGrowthTelegramNowAction\(/)
 })
 

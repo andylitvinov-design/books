@@ -117,7 +117,6 @@ test("editorial RU/EN/ES response reflects corrections and refuses ambiguous cho
     ["Не хочу видео","coherent_reject_video"],
     ["Не хочу медитацию","coherent_reject_meditation"],
     ["Видео или медитация","coherent_ambiguous"],
-    ["Нет, не про любовь, а про работу","coherent_topic"],
     ["Not video but meditation","meditation_start","en"],
     ["No quiero video sino meditacion","meditation_start","es"],
   ]){
@@ -125,6 +124,24 @@ test("editorial RU/EN/ES response reflects corrections and refuses ambiguous cho
     assert.equal(r?.id,id,message);
     assert.ok(r.reply.length>=20&&r.reply.length<500);
     assert.equal(r.source,"reviewed-rules");
+  }
+});
+
+test("topic corrections route through explicit conversation intelligence and retain corrected topic",()=>{
+  for(const [message,locale,topic,pattern] of [
+    ["Нет, не про любовь, а про работу","ru","work_money",/работа и деньги/iu],
+    ["Not about love but about work","en","work_money",/work and money/iu],
+    ["No sobre amor sino sobre trabajo","es","work_money",/trabajo y el dinero/iu],
+  ]){
+    const r=ruleConversationReply({message,locale});
+    const coherence=interpretDialogueCoherence({message});
+    assert.equal(coherence.act,"correct_topic",message);
+    assert.equal(r.id,"conversation_correction",message);
+    assert.equal(r.source,"conversation-intelligence",message);
+    assert.equal(r.understanding.act,"correction",message);
+    assert.equal(r.understanding.topic,topic,message);
+    assert.ok(pattern.test(r.reply),message+": reply must reflect the corrected topic");
+    assert.ok(r.reply.length>=20&&r.reply.length<500,message);
   }
 });
 
@@ -180,7 +197,7 @@ test("Messenger UI uses one-shot undo snapshot with the existing secure handoff"
     "setVideoDraft(previous.draft);",
     "setVideoStep(previous.step);",
     "stageVideoHandoff()",
-    "requiresProtectedReply(text,locale)"
+    "requiresProtectedReply(text,turnLocale)"
   ])assert.ok(ui.includes(literal),literal);
   const reducer=read("lib/mandala/video-chat-messenger-flow.mjs");
   assert.ok(reducer.includes("extractVideoChatCorrection(value)"));

@@ -1,0 +1,51 @@
+/* Owner-approved Master Network mobile mock: a white paired card, emerald active half. */
+.switch {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:4px;
+  width:100%;
+  max-width:780px;
+  box-sizing:border-box;
+  margin:0 auto 17px;
+  padding:5px;
+  border:1px solid #f0e7dc;
+  border-radius:23px;
+  background:#fffcf7;
+  box-shadow:0 9px 23px #5e41251b;
+}
+.switch a {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-width:0;
+  min-height:77px;
+  padding:11px 6px;
+  border-radius:19px;
+  color:#143d3a;
+  background:transparent;
+  text-align:center;
+  text-decoration:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.switch a[aria-current="page"] {
+  color:#fff;
+  background:linear-gradient(135deg,#06b69a 0%,#007f67 80%,#006c55 100%);
+  box-shadow:0 4px 11px #087c6330;
+}
+.switch a:focus-visible{outline:3px solid #176e6e;outline-offset:2px}
+.switch a[aria-current="page"]:focus-visible{outline-color:#f7c16d}
+.switch svg{width:23px;height:23px;flex:none;color:#087d69}
+.switch a[aria-current="page"] svg{color:#fff}
+.switch a>span{display:grid;gap:3px;min-width:0}
+.switch strong{font-size:clamp(12px,3.4vw,17px);font-weight:850;line-height:1.15;letter-spacing:-.025em;overflow-wrap:anywhere}
+.switch small{font-size:clamp(10px,2.65vw,13px);font-weight:550;line-height:1.2;color:#6b746e;overflow-wrap:anywhere}
+.switch a[aria-current="page"] small{color:#f1fff8}
+@media(max-width:360px){
+ .switch{padding:4px;gap:2px;border-radius:18px}
+ .switch a{min-height:76px;padding:8px 4px;border-radius:15px}
+ .switch svg{width:20px;height:20px}
+ .switch strong{font-size:12px}
+ .switch small{font-size:10px}
+}

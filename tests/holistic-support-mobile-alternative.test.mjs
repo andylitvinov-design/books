@@ -115,7 +115,21 @@ test("support mobile dock opens the EXISTING Messages conversations in EN/RU/ES"
   // Legacy ?tab=chats still opens protected client conversations, while
   // new direct Messenger visits intentionally open the owner-approved AI tab.
   assert.ok(orders.includes("requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':"));
-  assert.ok(orders.includes("requested==='orders'||q.has('order')?'orders':'ai'"));
+  // The account-scoped Messenger gained a fourth News folder, while Orders,
+  // protected Clients and legacy ?tab=chats must retain their precedence.
+  // Both initial hydration and URL-change handling should preserve the route.
+  for (const expression of [
+    "requested==='orders'||searchParams.has('order')?'orders':requested==='news'?'news':'ai'",
+    "requested==='orders'||q.has('order')?'orders':requested==='news'?'news':'ai'",
+    "requested==='clients'||q.has('requestId')||q.has('to')||q.has('tab')?'clients':",
+    "onClick={()=>chooseSection('orders')}",
+    "onClick={()=>chooseSection('clients')}",
+    "onClick={()=>chooseSection('news')}",
+    'aria-controls="hh-orders-panel"',
+    'aria-controls="hh-clients-panel"',
+    'aria-controls="hh-news-panel"',
+    "hidden={section!=='news'}",
+  ]) assert.ok(orders.includes(expression), "protected Messenger routing regressed: "+expression);
   assert.match(inbox, /VALID_TABS=new Set\(\['chats','requests'\]\)/);
   assert.match(page, /<MessagesOrdersClients locale=\{locale\}>\s*<MessagesHub locale=\{locale\} embedded\/>\s*<\/MessagesOrdersClients>/);
   assert.match(inbox, /<MessagesSimpleInbox/);

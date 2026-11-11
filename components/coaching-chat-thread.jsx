@@ -2,6 +2,7 @@
 
 import {useRef} from 'react'
 import Image from 'next/image'
+import {localCoachText} from '@/lib/coaching/persona-registry.mjs'
 import styles from './coaching-chat-thread.module.css'
 
 // The coach's explanation is authored in the existing shared turn helper.
@@ -14,8 +15,12 @@ const copy={
   es:{you:'Tú',guide:'Andrey · Holistic House',disclosure:'Sesión autoguiada · no es un chat en vivo',
     history:'Conversación de coaching',portrait:'Retrato de Andrey',pending:'Listo para enviar',fullNote:'Leer toda la explicación',closeNote:'Cerrar'},
 }
-export default function CoachingChatThread({locale='en',turn,children,draftPreview='',compact=false}){
+export default function CoachingChatThread({locale='en',turn,children,draftPreview='',compact=false,coachPersona=null,speechPhase='idle',speechBeat=0}){
   const t=copy[locale]||copy.en
+  const avatarPhase=coachPersona&&['speaking','paused','listening'].includes(speechPhase)?speechPhase:'idle'
+  const avatarBeat=Number.isFinite(Number(speechBeat))?Math.abs(Math.trunc(Number(speechBeat)))%4:0
+  const personaName=coachPersona?localCoachText(coachPersona.name,locale):''
+  const guideLabel=personaName?personaName+' · Holistic House':t.guide
   const detailRef=useRef(null)
   const fullReply=[turn&&(turn.coachReply||turn.response),turn?.bridge].filter(Boolean).join(' ')
   // The semantic helper suppresses unsafe excerpts, and redacts URLs/contact
@@ -25,20 +30,22 @@ export default function CoachingChatThread({locale='en',turn,children,draftPrevi
   // Draft previews contain only the user's currently selected, authored choice.
   // They are never represented as sent or saved messages.
   const preview=typeof draftPreview==='string'?Array.from(draftPreview.trim()).slice(0,170).join(''):''
-  return <section className={styles.thread+(compact?' '+styles.compactThread:'')} data-coaching-chat-thread aria-label={t.history}>
+  return <section className={styles.thread+(compact?' '+styles.compactThread:'')} data-coaching-chat-thread data-persona-speech={coachPersona?avatarPhase:undefined} aria-label={t.history}>
     {previous&&<div className={styles.userRow} data-coaching-chat-user-turn>
       <div className={styles.userBubble}>
         <span className={styles.userLabel}>{t.you}</span>
         <p>{shortened}{previous.length>shortened.length?'…':''}</p>
       </div>
     </div>}
-    <div className={styles.coachRow} data-coaching-chat-coach-turn>
-      <Image className={styles.avatar}
-        src="/images/holistic-house/portrait-static/andy-96-b9d7800d1448.webp"
-        width={42} height={42} alt={t.portrait} unoptimized/>
+    <div className={styles.coachRow} data-coaching-chat-coach-turn data-coach-persona={coachPersona?coachPersona.id:undefined}>
+      {coachPersona?<span className={styles.personaAvatar} data-persona={coachPersona.id}
+        data-speech-state={avatarPhase} style={{'--persona-speech-duration':(0.28+avatarBeat*.04)+'s'}}
+        aria-hidden="true">{coachPersona.symbol}</span>
+        :<Image className={styles.avatar} src="/images/holistic-house/portrait-static/andy-96-b9d7800d1448.webp"
+          width={42} height={42} alt={t.portrait} unoptimized/>}
       <div className={styles.coachBubble}>
         <div className={styles.byline}>
-          <strong>{t.guide}</strong>
+          <strong>{guideLabel}</strong>
           <span>{t.disclosure}</span>
         </div>
         {turn&&<div className={styles.replyRow}>
@@ -57,7 +64,7 @@ export default function CoachingChatThread({locale='en',turn,children,draftPrevi
     </div>}
     {compact&&fullReply&&<dialog ref={detailRef} className={styles.replyDialog}
       aria-label={t.fullNote} onClick={event=>{if(event.target===detailRef.current)detailRef.current?.close()}}>
-      <strong>{t.guide}</strong><p>{fullReply}</p>
+      <strong>{guideLabel}</strong><p>{fullReply}</p>
       <button type="button" onClick={()=>detailRef.current?.close()}>{t.closeNote}</button>
     </dialog>}
   </section>

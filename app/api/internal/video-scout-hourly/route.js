@@ -5,6 +5,7 @@ import {runHourlyVideoScout} from '@/lib/automations/scout-runner';
 import {runFourHourlyClassification} from '@/lib/automations/classifier-runner';
 import {runWeeklyCouncilPlanner} from '@/lib/automations/weekly-council-runner';
 import {runDailyVideoDigest} from '@/lib/automations/daily-video-digest-runner';
+import {runGrowthDryRunWorker} from '@/lib/growth-studio/dry-run-worker.mjs';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -42,10 +43,19 @@ export async function GET(request){
       try{dailyDigest=await runDailyVideoDigest();}
       catch{dailyDigest={status:'unconfirmed'};}
     }
-    const status=[result.status,enrichment.status,council.status,dailyDigest.status]
+    // Reuse this already scheduled CRON_SECRET route. The Growth Studio branch
+    // remains simulation-only and OFF unless the owner explicitly enables its
+    // existing dry-run flag; it never invokes a publishing adapter.
+    let growthStudioDryRun={status:'disabled',simulated:0,externalPublishing:false};
+    if(process.env.HH_GROWTH_QUEUE_DRY_RUN_ENABLED==='true'){
+      try{growthStudioDryRun=await runGrowthDryRunWorker({environment:process.env,limit:5});}
+      catch{growthStudioDryRun={status:'unconfirmed',simulated:0,externalPublishing:false};}
+    }
+    const status=[result.status,enrichment.status,council.status,dailyDigest.status,growthStudioDryRun.status]
       .includes('unconfirmed')?503:200;
     return NextResponse.json({...result,classification:{status:enrichment.status},
-      weeklyCouncil:{status:council.status},dailyDigest:{status:dailyDigest.status}},
+      weeklyCouncil:{status:council.status},dailyDigest:{status:dailyDigest.status},
+      growthStudioDryRun},
       {status,headers:HEADERS});
   }catch{
     console.error('HH_VIDEO_SCOUT_CRON_UNAVAILABLE');

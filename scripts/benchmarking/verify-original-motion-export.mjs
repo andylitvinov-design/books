@@ -1,20 +1,22 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, rm, stat } from 'node:fs/promises';
+import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {installGuestVideoBlobCapture,readRealGuestVideo} from './real-guest-video-file.mjs';
 
-// Local, anonymous acceptance: exercise the actual UI and inspect its downloaded movie.
+// Local, anonymous acceptance: exercise actual UI and inspect the real test-owned movie Blob.
 const origin = 'http://127.0.0.1:3100';
 const engine = process.env.HH_ORIGINAL_MOTION_ENGINE || 'chromium';
 assert.ok(['chromium', 'webkit'].includes(engine));
 const { [engine]: browserType } = await import(pathToFileURL(process.env.HH_LIVE_VIDEO_PLAYWRIGHT).href);
 const ids = [1, 2, 3, 4].map(i => `motion-goals-money-goal-achievement-v${i}`);
 const dir = await mkdtemp(path.join(os.tmpdir(), 'hh-original-motion-'));
-const movie = path.join(dir, 'export.mp4');
+let movie = path.join(dir, 'export.mp4');
 const browser = await browserType.launch({ headless: engine !== 'webkit' });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, acceptDownloads: true, serviceWorkers: 'block' });
+await installGuestVideoBlobCapture(context);
 await context.route('**/*', route => {
   const request = route.request();
   return new URL(request.url()).origin === origin && ['GET', 'HEAD'].includes(request.method()) ? route.continue() : route.abort();
@@ -33,8 +35,27 @@ try {
   await page.locator('[data-video-continue-scenarios]').click();
   assert.equal(await page.locator('[data-video-quick-control="phrases"]').getAttribute('aria-pressed'),
     'true','GOALS_MUST_OPEN_IDEAS');
-  await page.locator('[data-video-quick-control="editor"]').click();
-  await page.locator('[data-video-montage-tab="settings"]').click();
+  const editor=page.locator('[data-video-quick-control="editor"]');
+  await editor.click();
+  // Use the same actual Montage entry flow proven by the physical voice test.
+  // The compact Settings control appears only after activating the visible
+  // Style stage; a hidden Settings click must never be force-clicked.
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-quick-control="editor"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  await page.locator('[data-video-montage-tab="effects"]').waitFor({state:'visible',timeout:20000});
+  // Style is the first visible Montage tab; source selection is an actual tap.
+  await page.locator('[data-video-montage-tab="effects"]').click();
+  const selectedStyle=page.locator('[data-video-montage-style="3"]');
+  await selectedStyle.waitFor({state:'visible',timeout:20000});
+  if(engine==='webkit')await selectedStyle.tap();
+  else await selectedStyle.click();
+  await page.waitForFunction(()=>
+    document.querySelector('[data-video-montage-style="3"]')
+      ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  const settings=page.locator('[data-video-montage-tab="settings"]');
+  await settings.waitFor({state:'visible',timeout:20000});
+  await settings.click();
   const sourceFormat=page.locator('[data-video-montage-preference="format"]');
   await sourceFormat.waitFor({state:'visible',timeout:20000});
   await sourceFormat.selectOption('portrait');
@@ -45,7 +66,35 @@ try {
   await sourceDuration.selectOption('20');
   assert.equal(await sourceDuration.inputValue(),'20',
     'four real source-backed 5-second scenes require 20s before selecting a preset');
-  await page.locator('[data-video-montage-tab="text"]').click();
+  // Style's native Next opens Text. The existing verified source timeline is
+  // reachable through Settings → advanced Concept, not a fifth visible tab.
+  const styleTab=page.locator('[data-video-montage-tab="effects"]');
+  await styleTab.waitFor({state:'visible',timeout:20000});
+  await styleTab.click();
+  const styleNext=page.locator('[data-video-montage-effects] [data-video-montage-next="text"]');
+  await styleNext.waitFor({state:'visible',timeout:20000});
+  await styleNext.click();
+  await page.waitForFunction(()=>document.querySelector('[data-video-montage-tab="text"]')
+    ?.getAttribute('aria-pressed')==='true',undefined,{timeout:15000});
+  assert.equal(await page.locator('[data-video-montage-tab="text"]').getAttribute('aria-pressed'),
+    'true','VISIBLE_STYLE_NEXT_MUST_OPEN_TEXT');
+  await page.locator('[data-video-quick-control="phrases"]').click();
+  await page.locator('[data-video-ideas-tab="concept"]').click();
+  const conceptPanel=page.locator('[data-video-ideas-concept-panel]');
+  await conceptPanel.waitFor({state:'visible',timeout:15000});
+  await conceptPanel.locator('[data-video-concept-approve]').click();
+  await page.locator('[data-video-quick-control="editor"]').click();
+  const settingsTab=page.locator('[data-video-montage-tab="settings"]');
+  await settingsTab.click();
+  await page.locator('[data-video-quick-control="phrases"]').click();
+  await page.locator('[data-video-ideas-tab="concept"]').click();
+  assert.equal(await page.locator('[data-video-concept-auto]').getAttribute('data-concept-approved'),
+    'true','APPROVED_CONCEPT_MUST_PERSIST');
+  await page.locator('[data-video-quick-control="editor"]').click();
+  await settingsTab.click();
+  const textTools=page.locator('[data-video-concept-text-tools]');
+  await textTools.locator(':scope > summary').click();
+  assert.equal(await textTools.getAttribute('open'),'','TIMELINE_DISCLOSURE_MUST_OPEN');
   const addVideo=page.locator('[data-video-timeline-add-video]');
   await addVideo.waitFor({state:'visible',timeout:20000});
   await addVideo.click();
@@ -79,7 +128,6 @@ try {
   assert.deepEqual(await page.locator('[data-free-film-source]').evaluateAll(nodes => nodes.map(node => node.dataset.freeFilmSource)), ids);
   await page.locator('[data-video-quick-control="editor"]').click();
   // Match the real post-#3676 Montage. Format/duration live in Settings.
-  const settingsTab=page.locator('[data-video-montage-tab="settings"]');
   await settingsTab.waitFor({state:'visible'});
   await settingsTab.click();
   assert.equal(await settingsTab.getAttribute('aria-pressed'),'true');
@@ -87,45 +135,65 @@ try {
   await duration.waitFor({state:'visible'});
   await duration.selectOption('20');
   assert.equal(await duration.inputValue(),'20');
-  const audioTab=page.locator('[data-video-montage-tab="audio"]');
+  await settingsTab.click();
+  const audioTab=page.locator('[data-video-montage-open-audio]');
   await audioTab.click();
-  assert.equal(await audioTab.getAttribute('aria-pressed'),'true');
   await page.locator('[data-video-montage-audio]').waitFor({state:'visible'});
-  const generate = page.locator('[data-video-quick-generate]');
-  await generate.click({ timeout: 30000 });
-  // The compact Audio attach control is the real, visible user action.
-  // Some pre-approved music is already attached; in that case export
-  // continues without an unnecessary second click or duplicate track.
-  const attach=page.locator('[data-video-audio-compact-attach]');
-  await attach.waitFor({state:'visible',timeout:15000});
-  if(await attach.isEnabled()){
-    await attach.click();
-    await generate.click();
+  // The optional "Attach" button exists ONLY after a user uploads their own
+  // audio and accepts the rights declaration. Never wait for that upload-only
+  // control when testing a pre-approved licensed soundtrack.
+  const selectedTracks=page.locator('[data-video-audio-compact-select][aria-pressed="true"]');
+  if(await selectedTracks.count()===0){
+    const availableTrack=page.locator('[data-video-audio-compact-select]:not([disabled])').first();
+    await availableTrack.waitFor({state:'visible',timeout:15000});
+    if(engine==='webkit')await availableTrack.tap();
+    else await availableTrack.click();
+    await page.waitForFunction(()=>Array.from(
+      document.querySelectorAll('[data-video-audio-compact-select]')
+    ).some(node=>node.getAttribute('aria-pressed')==='true'),undefined,{timeout:15000});
   }
-  const save = page.locator('[data-mandala-video-download]');
-  try { await save.waitFor({ state: 'visible', timeout: 150000 }); }
-  catch (error) {
-    const state=await page.evaluate(()=>({
-      generateDisabled:document.querySelector('[data-video-quick-generate]')?.disabled??null,
-      progress:document.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')??null,
-      originalFallback:Boolean(document.querySelector('[data-video-original-fallback]')),
-      hasResult:Boolean(document.querySelector('[data-mandala-video-download]')),
+  assert.ok(await selectedTracks.count()>=1,
+    'a genuinely selected licensed soundtrack must reach the editor before export');
+  assert.ok(await selectedTracks.count()<=3,
+    'the compact music picker keeps its three-track rights and mix limit');
+  await page.locator('[data-video-audio-compact-selected]').waitFor({state:'visible'});
+  const generate = page.locator('[data-video-quick-generate]');
+  await generate.click({timeout:30000});
+  // The actual verified film moves to Ready; guests cannot use direct Save.
+  // Reuse the first-party encoded Blob and prove the login gate instead.
+  let captured;
+  try{
+    captured=await readRealGuestVideo(page,{timeout: 150000});
+  }catch(error){
+    // Preserve fail-closed, bounded browser diagnostics after the migration
+    // from obsolete guest Files download to the real Ready-native Blob.
+    // Never log personal text, media, URLs, auth tokens, or uploaded files.
+    const state=await page.evaluate(()=>{
+      const result=document.querySelector('[data-video-result]');
+      const ready=document.querySelector('[data-video-ready]');
+      const original=document.querySelector('[data-mandala-video-preview]');
+      const clips=[...document.querySelectorAll('[data-free-film-source]')];
+      return {
+        resultMode:result?.getAttribute('data-video-result-mode')??null,
+        hasReady:Boolean(ready),readyView:ready?.getAttribute('data-ready-view')??null,
+        renderedVideo:original instanceof HTMLVideoElement?{
+          readyState:original.readyState,width:original.videoWidth,
+          height:original.videoHeight,errorCode:original.error?.code??null,
+          blobUrl:Boolean(original.currentSrc?.startsWith('blob:')),
+        }:null,
+        sourceCount:clips.length,
+        sourcesDecoded:clips.filter(v=>v.readyState>=2&&v.videoWidth>0&&!v.error).length,
+        legacyDownloadVisible:Boolean(document.querySelector('[data-mandala-video-download]')?.getClientRects().length),
+      };
+    }).catch(()=>({diagnosticUnavailable:true}));
+    console.error('HH_ORIGINAL_MOTION_EXPORT_DIAGNOSTICS '+JSON.stringify({
+      engine,state,safeWarnings:safeWarnings.slice(-5),
+      reason:String(error?.message||error).slice(0,140),
     }));
-    console.error('HH_ORIGINAL_MOTION_EXPORT_DIAGNOSTICS '+JSON.stringify({engine,state,safeWarnings}));
     throw error;
   }
-  // The production Save action opens a chooser; only Files starts a download.
-  // Retain the real exported MP4/audio FFprobe gate after this delivery handoff.
-  await save.click();
-  const delivery = page.locator('[data-video-messenger-delivery]');
-  await delivery.waitFor({state: 'visible', timeout: 10000});
-  await delivery.locator('[data-video-telegram-share]').waitFor({state: 'visible'});
-  await delivery.locator('[data-video-whatsapp-share]').waitFor({state: 'visible'});
-  const [download] = await Promise.all([
-    page.waitForEvent('download', {timeout: 30000}),
-    delivery.locator('[data-video-save-direct-choice]').click(),
-  ]);
-  await download.saveAs(movie);
+  movie=path.join(dir,'export.'+captured.extension);
+  await writeFile(movie,captured.bytes);
   assert.ok((await stat(movie)).size > 100000);
   assert.deepEqual(errors, []);
   const probe = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', movie], { encoding: 'utf8' }));

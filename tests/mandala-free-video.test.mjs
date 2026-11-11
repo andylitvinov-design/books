@@ -191,14 +191,20 @@ test("Safari failed render offers only a source-backed unedited MP4 without pret
 test("AI Video Create acknowledges only an actually accepted local render preflight", () => {
   const studio=read("components/mandala-free-video-studio.tsx");
   const chat=read("components/mandala-video-director-chat.tsx");
-  const start=studio.slice(studio.indexOf("  const startFromHero=()=>{"),
-    studio.indexOf("  // This is a local, non-persistent preview."));
+  const startHandler=studio.indexOf("  const startFromHero=()=>{");
+  const endHandler=studio.indexOf("    void createVideo();\n    return true;\n  };",startHandler);
+  assert.ok(startHandler>=0&&endHandler>startHandler,"existing recorder preflight handler must exist");
+  const start=studio.slice(startHandler,endHandler+"    void createVideo();\n    return true;\n  };".length);
   const quick=studio.slice(studio.indexOf("  const createQuickVideo = () => {"),
     studio.indexOf("  const deepAudioPane = ("));
   assert.ok(start.includes("if(recording||preparing||preparingRef.current||jobRef.current||webCodecJobRef.current||photoPending)return false;"),
     "never start a new render while a source photo is decoding or an encoder is active");
   assert.doesNotMatch(start,/\breturn\s*;/);
-  assert.match(start,/if\(!canGenerate\)return false;\s*void createVideo\(\);\s*return true;/);
+  assert.ok(start.includes("if(!canGenerate){"),"a blocked Create must explain why");
+   assert.ok(start.includes('setNotice("")'),"successful Create clears the previous error notice");
+   assert.ok(start.indexOf("if(!canGenerate){")<start.indexOf("void createVideo()"),
+     "the encoder still starts only after readiness checks");
+   assert.ok(start.includes("return true;"),"the acknowledged local video render remains unchanged");
   assert.match(quick,/if\(narrationInvalid\)[\s\S]*?return false;/);
   assert.match(quick,/return startFromHero\(\);/);
   assert.doesNotMatch(quick,/startFromHero\(\);\s*return true;/);

@@ -20,10 +20,10 @@ test('Web/iHelp/Client share one canonical assistant and Web Voice UI',()=>{
  assert.match(avatar,/if\(externalSpeech\)return/);
  assert.match(voice,/createDeviceSpeech\(\(\)=>window\)/);
  assert.doesNotMatch(voice,/new SpeechSynthesisUtterance|window\.speechSynthesis/);
- assert.match(help,/<HolisticAgentChat locale=\{locale\} compact pageHelp=\{context\}/);
+ assert.match(help,/<HolisticAgentChat locale=\{locale\} compact messengerView pageHelp=\{context\}/);
  assert.match(help,/hh:voice-companion-stop/);
  assert.match(client,/MessengerAiWorkspace/);
- assert.match(workspace,/<HolisticAgentChat locale=\{locale\} compact authenticated=\{authenticated\}/);
+ assert.match(workspace,/<HolisticAgentChat locale=\{locale\} compact messengerView\s+authenticated=\{authenticated\}/);
 });
 test('browser voice is consented, cancelable, and private turns never sent to TTS servers',()=>{
  const chat=source('components/holistic-agent-chat.tsx');
@@ -75,10 +75,10 @@ test('hands-free fail-closed preserves unsent speech on busy or no model consent
 test('every deliberate conversation exit terminates hands-free audio before continuing',()=>{
  const chat=source('components/holistic-agent-chat.tsx');
  const controls=source('components/voice-companion-controls.tsx');
- assert.match(chat,/onClick=\{\(\)=>\{voice\.stopDialogue\(\);controller\.current\?\.abort\(\);selectVoiceMessage\(null\);followTail\.current=true/);
+ assert.match(chat,/function resetConversation\(\)\{voice\.stopDialogue\(\);[\s\S]*?controller\.current\?\.abort\(\);selectVoiceMessage\(null\);followTail\.current=true/);
  assert.doesNotMatch(chat,/onClick=\{\(\)=>\{voice\.stop\(\);controller\.current\?\.abort\(\);selectVoiceMessage\(null\)/);
  assert.match(chat,/<select value=\{mode\} onChange=\{event=>\{voice\.stopDialogue\(\);setMode\(/);
- assert.match(chat,/\{busy&&<button type="button" onClick=\{\(\)=>\{voice\.stopDialogue\(\);controller\.current\?\.abort\(\);\}\}>\{t\.cancel\}/);
+ assert.match(chat,/\{busy&&<button type="button" onClick=\{\(\)=>\{voice\.stopDialogue\(\);controller\.current\?\.abort\(\);\}\}/);
  assert.match(controls,/const stopDialogue=useCallback\(\(\)=>\{\s*dialogueActive\.current=false;dialogueOnTurn\.current=null;/);
  assert.match(controls,/if\(mounted\.current\)setConversing\(false\);\s*stop\(\);/);
 });
@@ -113,4 +113,13 @@ test('disabled Voice Companion never initializes browser audio, microphone detec
  assert.match(voice,/const speak=useCallback\(\(text:string\)=>\{\s*if\(!enabled\)return;/);
  assert.match(voice,/const dictate=useCallback\(\(onTranscript:.*\)=>\{\s*if\(!enabled\)return;/);
  assert.match(voice,/const startDialogue=useCallback\(\(onTurn:.*\)=>\{\s*if\(!enabled\)return;/);
+});
+
+test('composer microphone owns AI voice turn, not the video recorder',()=>{
+ const chat=source('components/holistic-agent-chat.tsx');
+ assert.match(chat,/data-hh-conversation-mic/);
+ assert.match(chat,/voice\.startDialogue\(text=>/);
+ assert.match(chat,/setDraft\(text\);void sendTurn\(text\)/);
+ assert.doesNotMatch(chat,/className=\{styles\.recorderToggle\}[\s\S]{0,90}onClick=\{\(\)=>setRecorderOpen/);
+ assert.match(chat,/!messengerView\|\|recorderOpen/);
 });

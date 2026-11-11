@@ -257,3 +257,24 @@
  .resumeDismiss{justify-self:center}
 }
 @media(prefers-reduced-motion:reduce){.resumePanel *{transition:none!important}}
+
+
+/* Master Network approved two-mode mobile composition. Preserve real data and actions. */
+.screen .networkHeader{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 15px}
+.screen .networkHeader h1{margin:0 0 4px;color:#143d3a;font-size:clamp(25px,6vw,34px);font-weight:870;line-height:1.07;letter-spacing:-.05em}
+.screen .networkHeader p{margin:0;color:#68746f;font-size:clamp(12px,3.2vw,15px);line-height:1.35}
+.screen .networkHeader .notification{width:44px;height:44px}
+.screen .header{margin-bottom:12px}
+.screen .identity{background:#fffcf7;box-shadow:0 9px 24px #5e412512}
+.screen .quickTile{box-shadow:0 5px 15px #4b39201a}
+.screen .hero{background:linear-gradient(90deg,#0b322bf0 0%,#214839c7 48%,#244e2e0d 100%),url('/images/holistic-house/reiki-practitioner-sunrise.webp') 65% center/cover no-repeat}
+.screen .heroButton{background:linear-gradient(120deg,#008b73,#08b998)}
+.screen .offerCard{box-shadow:0 4px 12px #17362f29}
+.screen .tool{position:relative;background:#fffcf7;box-shadow:0 5px 13px #4b392015}
+.screen .requestBadge{position:absolute;top:3px;right:5px;display:grid;place-items:center;min-width:19px;height:19px;padding:0 4px;border-radius:99px;background:#f04435;color:#fff;font-size:10px;font-weight:800}
+@media(min-width:540px){.screen .toolGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:430px){
+ .screen .networkHeader{margin-bottom:12px}
+ .screen .networkHeader h1{font-size:clamp(25px,6.8vw,30px)}
+ .screen .networkHeader p{font-size:12px}
+}

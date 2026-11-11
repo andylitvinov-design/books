@@ -11,7 +11,7 @@ test('avatar mounts in actual HolisticAgentChat without second data path',()=>{
   assert.match(chat,/<EmotionalAvatar\s+messages=\{messages\}\s+busy=\{busy\}\s+status=\{status\}\s+locale=\{locale\}\s+compact=\{compact\}\s+companionVoice=\{voiceEnabled\?voice:undefined\}/);
   assert.match(chat,/data-page-help=\{pageHelp\?/);
   assert.match(chat,/if\(compact&&!authenticated&&mode==="rules"\)/);
-  assert.match(chat,/if\(compact&&videoStep\)/);
+  assert.match(chat,/if\(compact&&quickPrompt\.format==="test"\)/);
   assert.match(chat,/selectPageHelpAction/);
   assert.match(chat,/setMessages\(prev=>\[\.\.\.prev/);
   assert.doesNotMatch(avatar,/\bfetch\s*\(|getUserMedia|MediaRecorder|localStorage|sessionStorage|sendBeacon|createClient/);

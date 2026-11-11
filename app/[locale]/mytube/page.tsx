@@ -4,7 +4,7 @@ import {ArrowLeft, BookOpen, Play} from "lucide-react";
 import {notFound} from "next/navigation";
 import {VideoDiscovery} from "@/components/video-discovery";
 import {buildPublicVideoDiscoveryItems} from "@/components/library-hub";
-import {loadPublicLibraryFeed} from "@/lib/public-library-feed";
+import {loadPublicMyTubeVideos} from "@/lib/public-library-feed";
 import {loadApprovedVideoDiscoveries} from "@/lib/video-discovery/approved-meditations";
 import {isPublicLocale} from "@/data/academy/catalog";
 import {metadataBaseFor} from "@/data/site-metadata";
@@ -31,8 +31,8 @@ export default async function MyTubePage({params}:Props){
   const {locale:raw}=await params;
   if(!isPublicLocale(raw))notFound();
   const locale=raw;
-  const [{videos},approvedMeditations]=await Promise.all([
-    loadPublicLibraryFeed(locale),loadApprovedVideoDiscoveries(),
+  const [videos,approvedMeditations]=await Promise.all([
+    loadPublicMyTubeVideos(),loadApprovedVideoDiscoveries(),
   ]);
   const publicVideos=buildPublicVideoDiscoveryItems(locale,videos,approvedMeditations);
   const copy=t[locale];
@@ -52,8 +52,7 @@ export default async function MyTubePage({params}:Props){
       </Link>
     </header>
     <div className={styles.content}>
-      <p className={styles.subline}>{copy.subtitle}</p>
-      <VideoDiscovery locale={locale} videos={publicVideos} variant="mytube"/>
+      <VideoDiscovery locale={locale} videos={publicVideos} variant="mytube" subtitle={copy.subtitle}/>
       <p className={styles.footerNote}>{copy.note}</p>
     </div>
   </main>;

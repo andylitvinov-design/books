@@ -29,15 +29,24 @@ function normalizer(){
  return context;
 }
 async function routeRun({source=candidate,payload=callback(),diagnostic='off',companion='off',provider='telegram',authorized=true}={}){
- const context=normalizer(),calls={ingest:0,ack:0,send:0,ensure:0,intake:0,companion:0,companionSend:0};
+ const context=normalizer(),calls={ingest:0,ack:0,send:0,ensure:0,intake:0,aiV3:0,companion:0,companionSend:0,waProof:0,waIntake:0,waSend:0};
  class Response{constructor(body,{status=200}={}){this.body=body;this.status=status}static json(body,opts){return new Response(body,opts)}}
  Object.assign(context,{Buffer,NextResponse:Response,MESSENGER_CHANNELS:['telegram','whatsapp'],PRIVATE_HEADERS:{},getAppConfig:()=>({}),verifyMessengerWebhook:()=>authorized,verifyMessengerChallenge:()=>null,
    safeError:()=>({status:503}),telegramDiagnosticReady:()=>false,channelTransportReady:()=>true,
+   processWhatsAppAccountLink:async()=>{calls.waProof++;return {handled:false}},
+   processWhatsAppDiagnostic:async()=>{calls.waIntake++;return {handled:false}},
+   sendWhatsAppDiagnosticPrompt:async()=>{calls.waSend++},
    // Production CRM webhook routes owner-only video commands before diagnostic callbacks.
    receiveOwnerTelegramVideoWebhook:async()=>({handled:false}),
    // WhatsApp locale marker helper belongs to the production normalizer, not this VM.
    whatsappExpressReviewLocale:()=>null,
    processTelegramCompanion:async()=>{calls.companion++;return companion==='handled'?{handled:true,to:'123456789',locale:'ru',text:'test companion welcome',markup:null}:{handled:false}},
+   // Preserve the real V3 call position in the signed route, but make the
+   // closed VM choose its existing tested legacy path without network/AI.
+   // A rejected signature must never reach this mock or any other handler.
+   processTelegramAiV3:async()=>{calls.aiV3++;return {handled:false}},
+   finishTelegramAiV3:forbidden,
+   shouldBootstrapTelegramNativeMenu:()=>false,
    sendTelegramCompanionMessage:async()=>{calls.companionSend++},
    ingestMessengerUpdate:async()=>{calls.ingest++},acknowledgeTelegramInlineCallback:async()=>{calls.ack++},sendTelegramDiagnosticPrompt:async()=>{calls.send++},ensureTelegramInlineWebhookUpdates:async()=>{calls.ensure++}});
  if(diagnostic==='off'){
@@ -61,8 +70,28 @@ test('unknown callback remains ack-only',async()=>{const r=await routeRun({paylo
 test('normalized ordinary text has no callback marker and retains ingest',async()=>{const p={update_id:13,message:{message_id:78,date:1,chat:{id:123456789,type:'private'},from:{first_name:'Fictional',is_bot:false},text:'fictional hello'}};assert.equal(normalizer().normalizeMessengerUpdates('telegram',p)[0].callbackId,undefined);const r=await routeRun({payload:p});assert.equal(r.calls.ingest,1);assert.equal(r.calls.ensure,1)});
 test('diagnostic exceptions remain 503, not success or generic ingestion',async()=>{const r=await routeRun({diagnostic:'throw'});assert.equal(r.response.status,503);assert.equal(r.calls.intake,1);assert.equal(r.calls.ingest+r.calls.ack+r.calls.send+r.calls.ensure,0)});
 test('handled callback preserves ack and prompt',async()=>{const r=await routeRun({diagnostic:'handled'});assert.equal(r.response.status,200);assert.equal(r.calls.intake,1);assert.equal(r.calls.ack,1);assert.equal(r.calls.send,1);assert.equal(r.calls.ingest+r.calls.ensure,0)});
+test('signed Telegram V3 has its own safe non-consuming fallback before legacy CRM',async()=>{
+ const payload={update_id:13,message:{message_id:78,date:1,
+   chat:{id:123456789,type:'private'},
+   from:{first_name:'Fictional',is_bot:false},text:'fictional hello'}};
+ const result=await routeRun({payload});
+ assert.equal(result.response.status,200);
+ assert.equal(result.calls.aiV3,1,'signed V3 is evaluated once before the existing CRM path');
+ assert.equal(result.calls.ingest,1,'a non-V3 ordinary message keeps original ingestion');
+});
 test('rejected signature bypasses all route side effects',async()=>{const r=await routeRun({authorized:false});assert.equal(r.response.status,401);assert.equal(Object.values(r.calls).reduce((a,b)=>a+b),0)});
-test('WhatsApp text remains outside Telegram callback guard',async()=>{const r=await routeRun({provider:'whatsapp',payload:{entry:[{changes:[{value:{metadata:{phone_number_id:'1234567'},messages:[{type:'text',text:{body:'fictional hello'},from:'123456789',id:'fixture_wa',timestamp:'1'}]}}]}]}});assert.equal(r.response.status,200);assert.equal(r.calls.ingest,1);assert.equal(r.calls.intake+r.calls.ensure+r.calls.ack+r.calls.send,0)});
+test('WhatsApp text never bypasses consented intake or Telegram callback guard',async()=>{
+ const r=await routeRun({provider:'whatsapp',payload:{entry:[{changes:[{value:{
+ metadata:{phone_number_id:'1234567'},messages:[{type:'text',
+ text:{body:'fictional hello'},from:'123456789',id:'fixture_wa',timestamp:String(Math.floor(Date.now()/1000))}]
+ }}]}]}})
+ assert.equal(r.response.status,200)
+ assert.equal(r.calls.ingest,0)
+ assert.equal(r.calls.waProof,1)
+ assert.equal(r.calls.waIntake,1)
+ assert.equal(r.calls.waSend,0)
+ assert.equal(r.calls.intake+r.calls.ensure+r.calls.ack+r.calls.send,0)
+});
 
 test('signed companion home callback is handled by its own route without CRM lead or diagnostic',async()=>{
  const payload=callback('hhhome:ru:home');

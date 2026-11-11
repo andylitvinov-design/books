@@ -4,6 +4,8 @@ import "./mandala-phrases-mobile.test.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
+import {planIdeaSelection} from "../lib/mandala/video-idea-selection.mjs";
+import {affirmationNarrationText,isApprovedAffirmationNarration} from "../lib/mandala/affirmation-voice.mjs";
 
 const read = path => readFileSync(new URL("../" + path,import.meta.url),"utf8");
 const library = read("lib/mandala/video-affirmations.ts");
@@ -43,6 +45,18 @@ test("selected presets and custom lines are local-only, normalized and bounded",
   assert.ok(lines.every(line=>!/[<>]/.test(line)));
 });
 
+test("deselecting an Ideas phrase removes it from narration and invalidates the old WAV text", () => {
+  const suggested=suggestedVideoAffirmations.en.energy;
+  const original=planIdeaSelection(suggested,[0,1,2,3,4],suggested,"energy:profile");
+  const originalLines=linesForVideoAffirmations("en","energy",original.settingsPatch);
+  const oldSpokenText=affirmationNarrationText(originalLines);
+  const changed=planIdeaSelection(original.editor.options,[1,2,3,4],suggested,"energy:profile");
+  const currentLines=linesForVideoAffirmations("en","energy",changed.settingsPatch);
+  assert.deepEqual(currentLines,suggested.slice(1));
+  assert.equal(isApprovedAffirmationNarration(currentLines,oldSpokenText,true),false,
+    "an old WAV must never remain approved after one of its selected phrases is removed");
+});
+ 
 test("custom affirmations are visibly limited to five concise lines", () => {
   const input=["A".repeat(90),"B".repeat(45),"I am calm","I choose care","I can rest","ignored"].join("\n");
   const short=compactCustomAffirmationInput(input);
@@ -88,10 +102,10 @@ test("existing video preview and export use identical overlays; frame mode reque
   // Invalidate both the old single-shot film and the NEW cinematic export
   // when visual grade or shot selection changes, without dropping affirmation state.
   // A changed approved music bed invalidates an exported voice/music film too.
-  assert.match(studio,/caption,affirmations,hypnoLight,\s*attachedAudio\?\.kind==="file"\?musicBed:null,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
+  assert.match(studio,/caption,singleTextSource,wish,affirmations,hypnoLight,\s*attachedAudio\?\.kind==="file"\?musicBed:null,\s*cinematicPlan\?\.version,cinematicPlan\?\.styleId/);
   assert.match(studio,/cinematicPlan\?\.shots\.map\(shot=>\[shot\.sceneId,shot\.startSeconds,shot\.durationSeconds,shot\.overlayText\|\|""\s*,\s*shot\.transitionIn\|\|"soft",shot\.colorLook\|\|"original",shot\.motion\?\?null,\s*shot\.sourcePhasePercent\?\?0,shot\.sourceSpeed\?\?1\]\),appliedStory,\s*creationMode,activeMontageStyleId,currentFreeVideoPlan\?\.seed/,
     "changing a shot boundary must invalidate old recorded output as well as the source ID");
-  assert.equal((studio.match(/paintVideoAffirmations\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw affirmations");
+  assert.equal((studio.match(/paintSingleVideoTextOverlay\(ctx,/g)||[]).length,5, "both native and WebCodecs MP4 must draw affirmations");
   assert.match(studio,/affirmations\.enabled && affirmations\.visibility\.includes\("frame"\)/);
   assert.match(studio,/\? 25 : quality === "fullhd" \? 12 : 15/);
   assert.match(studio,/setAffirmations\(defaultAffirmations\)/);
