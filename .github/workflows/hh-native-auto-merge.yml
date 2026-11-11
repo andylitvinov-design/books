@@ -287,6 +287,8 @@ jobs:
         id: freshness
         if: steps.ready.outputs.eligible == 'true'
         uses: actions/github-script@v7
+        env:
+          HH_BASE_PROOF_TOKEN: ${{ github.token }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -317,9 +319,11 @@ jobs:
               core.info("CI_AUTO_MERGE: unified or Specialist evidence missing");return;
             }
             const policy=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-base-freshness.cjs');
+            const baseLog=require(process.env.GITHUB_WORKSPACE+'/scripts/ci-pr-core-tested-base-logs.cjs');
             const {execFileSync}=require('node:child_process');
             const checkout=require('node:path').join(process.env.GITHUB_WORKSPACE,'.hh-merge-policy-production');
             let freshness={ok:false,reason:'PRODUCTION_BASE_RETRIES_EXHAUSTED'};
+            let observedRunBase=null,observedProtectedBase=null;
             // Protected production may advance after the Core event. Refresh
             // only the trusted production checkout, never any candidate PR code.
             for(let attempt=1;attempt<=4;attempt++){
@@ -327,6 +331,7 @@ jobs:
                 owner,repo,branch:'codex/public-book-library'
               })).data;
               const base=production?.commit?.sha;
+              observedProtectedBase=base;
               if(production?.protected!==true||!/^[0-9a-f]{40}$/.test(base||'')){
                 core.warning('CI_AUTO_MERGE: cannot verify protected production SHA');return;
               }
@@ -344,13 +349,35 @@ jobs:
               freshness=classifier.classifierBase!==base
                 ? {ok:false,reason:'CLASSIFIER_BASE_STALE'}
                 : await policy.assessBaseFreshness({github,owner,repo,pr,...classifier,
-                    verifiedRunBase:()=>policy.coreRunBase(run,pr,fullRepo,run.check_suite_id)});
+                    verifiedRunBase:async rows=>{
+                      // GitHub omits run→PR associations on real successful
+                      // Core (observed #4303). Recover a trustworthy base only
+                      // from the completed ancestry step of the exact Core job.
+                      observedRunBase=policy.coreRunBase(run,pr,fullRepo,run.check_suite_id);
+                      if(!observedRunBase){
+                        observedRunBase=await baseLog.recoverTestedBase({
+                          github,owner,repo,pr,run,jobs:page.jobs,rows,
+                          token:process.env.HH_BASE_PROOF_TOKEN
+                        });
+                      }
+                      return observedRunBase;
+                    }});
               if(freshness.ok)break;
               if(!['CLASSIFIER_BASE_STALE','BASE_MOVED_DURING_CHECK'].includes(freshness.reason))
                 break; // Do not retry non-transient or sensitive CI failure.
               core.info('CI_AUTO_MERGE: production moved during check; retry '+attempt+'/4');
             }
             if(!freshness.ok){
+              // Only a PROVEN stale base can request a legitimate new Core.
+              // Unverified timestamps, old HEADs and unchanged bases cannot.
+              if(['SENSITIVE_BASE_STALE','SENSITIVE_CI_BASE_STALE'].includes(freshness.reason)&&
+                 /^[a-f0-9]{40}$/.test(observedRunBase||'')&&
+                 /^[a-f0-9]{40}$/.test(observedProtectedBase||'')&&
+                 observedRunBase!==observedProtectedBase){
+                core.setOutput('needs_revalidation','true');
+                core.setOutput('old_base',observedRunBase);
+                core.setOutput('new_base',observedProtectedBase);
+              }
               core.info('CI_AUTO_MERGE: '+freshness.reason+' for PR #'+number);return;
             }
             core.setOutput("eligible","true");
@@ -361,6 +388,29 @@ jobs:
             core.setOutput("requires_current_base",String(
               freshness.reason==="SENSITIVE_BASE_VERIFIED" ||
               freshness.reason==="ISOLATED_CI_PUBLIC_MEDIA_REVALIDATED"));
+      - name: Request one necessary Core revalidation on newer protected base
+        if: >-
+          github.event_name == 'workflow_run' &&
+          steps.ready.outputs.eligible == 'true' &&
+          steps.freshness.outputs.needs_revalidation == 'true'
+        uses: actions/github-script@v7
+        env:
+          HH_AUTOMERGE_TOKEN: ${{ secrets.HH_AUTOMERGE_TOKEN }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {run}=require(process.env.GITHUB_WORKSPACE+
+              '/scripts/ci-pr-sensitive-base-ci-wake.cjs');
+            const outcome=await run({github,context,
+              token:process.env.HH_AUTOMERGE_TOKEN,
+              number:Number('${{ steps.ready.outputs.pr }}'),
+              head:'${{ steps.ready.outputs.head }}',
+              oldBase:'${{ steps.freshness.outputs.old_base }}',
+              newBase:'${{ steps.freshness.outputs.new_base }}',
+              coreRunId:Number('${{ steps.ready.outputs.core_run }}')});
+            core.info('CI_BASE_REVALIDATION '+JSON.stringify(outcome));
+            if(outcome.status!=='WAKE_REQUESTED')
+              core.warning('CI_BASE_REVALIDATION_HOLD '+outcome.reason);
       - name: Verify effective review, resolved threads and free owner lease
         id: safety
         if: steps.ready.outputs.eligible == 'true' && steps.freshness.outputs.eligible == 'true'
