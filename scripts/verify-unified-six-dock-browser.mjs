@@ -685,9 +685,11 @@ try{
    await resetViaMore();
    await chat.locator('[data-hh-ai-project="'+id+'"]').waitFor({state:"visible",timeout:15000});
    await chat.locator('[data-hh-ai-project="'+id+'"]').click();
-   await chat.locator('[data-hh-project-step="'+id+'"]').waitFor({state:"visible",timeout:15000});
-   assert.ok(await chat.locator('[data-hh-project-choice]').count()<=4,
-     id+" must expose no more than four short choices");
+   await chat.locator(id==="sessions"?'[data-hh-session-goal-options]':
+     '[data-hh-project-step="'+id+'"]').waitFor({state:"visible",timeout:15000});
+   const options=id==="sessions"?chat.locator('[data-hh-session-goal-choice]'):
+     chat.locator('[data-hh-project-choice]');
+   assert.ok(await options.count()<=4,id+" must expose no more than four short choices");
  };
  await openProject("practice");
  await chat.locator('[data-hh-project-choice="stress"]').click();
@@ -715,12 +717,27 @@ try{
  assert.equal(await mytubeLink.getAttribute("href"),"/ru/mytube?goal=stress",
    "MyTube uses the existing topic-filtered catalogue in Russian");
 
+ // Owner's real iPhone sequence: Sessions → Stress & inner state → focused editor.
  await openProject("sessions");
- await chat.locator('[data-hh-project-choice="free-review"]').click();
- const sessionLink=chat.locator('[data-hh-ihelp-link]');
- await sessionLink.waitFor({state:"visible",timeout:15000});
- assert.equal(await sessionLink.getAttribute("href"),"/ru/services/free-situation-review",
-   "Sessions links to the existing free situation-review route in Russian");
+ await chat.locator('[data-hh-session-goal-choice="wellbeing"]').click();
+ const sessionReply=chat.locator('[data-hh-ai-assistant-message]').last();
+ await expect(sessionReply).toContainText("Что именно вы хотите понять или изменить");
+ await chat.locator("textarea").focus();
+ // Simulate a smaller visual viewport while keeping the actual reply in the log.
+ await page.setViewportSize({width:390,height:360});
+ await page.waitForFunction(()=>{
+   const thread=document.querySelector('[data-hh-agent-preview] [role="log"]');
+   const replies=thread?.querySelectorAll('[data-hh-ai-assistant-message]');
+   const reply=replies?.[replies.length-1];
+   if(!thread||!reply)return false;
+   const a=thread.getBoundingClientRect(),b=reply.getBoundingClientRect();
+   const end=Math.max(0,thread.scrollHeight-thread.clientHeight);
+   return Math.abs(thread.scrollTop-end)<=3&&b.bottom<=a.bottom+2;
+ },null,{timeout:15000});
+ assert.equal(await sessionReply.evaluate(node=>getComputedStyle(node).flexShrink),"0",
+   "iPhone keyboard must not compress or clip the assistant bubble");
+ await page.setViewportSize({width:390,height:844});
+ results.push({journey:"Sessions → stress goal → keyboard-sized viewport → complete AI reply",passed:true});
 
  await page.locator("[data-chat-top-tabs]").waitFor({state:"visible",timeout:30000});
  await page.locator('[data-chat-top-tabs] button[aria-controls="hh-orders-panel"]').click();

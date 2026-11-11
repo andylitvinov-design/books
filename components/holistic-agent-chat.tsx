@@ -413,22 +413,11 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         return;
       }
       if(followTail.current){
-        // Keep the latest user question and assistant answer above short recommendation cards.
-        // Only scroll the transcript, not the Safari visual viewport or pinned composer.
-        if(messengerView&&messages.length>0&&choices.length>0){
-          const turns=thread.querySelectorAll<HTMLElement>('[data-hh-chat-turn="user"]');
-          const latest=turns[turns.length-1];
-          if(latest){
-            const offset=latest.getBoundingClientRect().top-thread.getBoundingClientRect().top;
-            const maxScroll=Math.max(0,thread.scrollHeight-thread.clientHeight);
-            const target=Math.min(maxScroll,Math.max(0,thread.scrollTop+offset-6));
-            programmaticScrollTop.current=target;
-            thread.scrollTop=target;
-          }else thread.scrollTop=thread.scrollHeight;
-        }else{
-          programmaticScrollTop.current=null;
-          thread.scrollTop=thread.scrollHeight;
-        }
+        // Keep the latest complete AI reply visible, not just the preceding user turn.
+        // Scroll only the transcript: never move the pinned composer or Safari viewport.
+        const target=Math.max(0,thread.scrollHeight-thread.clientHeight);
+        programmaticScrollTop.current=target;
+        thread.scrollTop=target;
         setNewBelow(false);
       }else if(messages.length)setNewBelow(true);
     };
@@ -438,6 +427,38 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     return ()=>window.cancelAnimationFrame(frame);
   },[messages.length,status,choices.length,judgmentView,videoStep,videoDraft,contentStep,contentVoice,
     videoPendingCategory,showVideoSignIn,needsPrivateSignIn,entryOpen,guideLink,testRevision,testChatOpen,testChatTurn,projectFlow,sessionStep,sessionOffers.length,messengerView]);
+  useEffect(()=>{
+    if(!compact||!messengerView||messages.length===0)return;
+    const thread=threadRef.current;
+    if(!thread)return;
+    let frame=0;
+    const revealVisibleReply=()=>{
+      window.cancelAnimationFrame(frame);
+      frame=window.requestAnimationFrame(()=>{
+        // Reading older messages must never be interrupted by automatic scrolling.
+        if(!followTail.current)return;
+        const target=Math.max(0,thread.scrollHeight-thread.clientHeight);
+        programmaticScrollTop.current=target;
+        thread.scrollTop=target;
+        setNewBelow(false);
+      });
+    };
+    // The keyboard changes iPhone's visual viewport after the textarea is focused;
+    // observing the transcript also catches the subsequent flex layout resize.
+    const observer=new ResizeObserver(revealVisibleReply);
+    observer.observe(thread);
+    const viewport=window.visualViewport;
+    viewport?.addEventListener("resize",revealVisibleReply);
+    viewport?.addEventListener("scroll",revealVisibleReply);
+    window.addEventListener("resize",revealVisibleReply);
+    return ()=>{
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+      viewport?.removeEventListener("resize",revealVisibleReply);
+      viewport?.removeEventListener("scroll",revealVisibleReply);
+      window.removeEventListener("resize",revealVisibleReply);
+    };
+  },[compact,messengerView,messages.length]);
   useEffect(()=>{
     if(!compact)return;
     const input=composerRef.current;

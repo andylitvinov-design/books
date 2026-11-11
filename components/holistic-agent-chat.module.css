@@ -391,6 +391,11 @@
   background:transparent;overflow-y:auto;overflow-x:hidden;
   overscroll-behavior:contain;-webkit-overflow-scrolling:touch
 }
+/* Keep each message at its full natural height even with the iOS keyboard open.
+   The transcript scrolls; chat bubbles and options must not shrink or clip. */
+.root[data-compact][data-chat-skin="messenger"]>.thread>*{
+  flex-shrink:0
+}
 .root[data-compact][data-chat-skin="messenger"] .messageWithAvatar{
   display:flex;align-items:flex-start;align-self:flex-start;gap:8px;
   min-width:0;max-width:100%
