@@ -522,3 +522,24 @@ test('affirming a clear pause/end invitation respects a client boundary without 
   assert.equal(understandCoachingTurn(ambiguous).confirmedStop,false)
   assert.equal(coachingBrainBoundary(ambiguous),null)
 })
+
+
+test('offline coaching notices explicitly named constraints instead of asking again',()=>{
+  for (const [locale,message,needle] of [
+    ['en','I have no time','schedule'],
+    ['ru','У меня нет денег','затрат'],
+    ['es','No tengo tiempo','agenda'],
+  ]){
+    const input=normalizeCoachingBrainInput(req({locale,message}))
+    const signal=classifyCoachingResistance(input)
+    assert.equal(signal.type,'resource_gap')
+    const result=offlineCoachingBrainReply(input,selectCoachingBrainMethod(input),'explore',signal)
+    assert.match(result.question,new RegExp(needle,'iu'))
+    assert.equal((result.question.match(/[?？]/gu)||[]).length,1)
+    assert.equal(result.planSuggestion,'')
+  }
+  const fallback=offlineCoachingBrainReply(
+    normalizeCoachingBrainInput(req({message:'I am afraid of being criticized'})),
+    'motivational_interviewing','explore')
+  assert.equal((fallback.question.match(/[?？]/gu)||[]).length,1)
+})
