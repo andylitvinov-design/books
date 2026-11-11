@@ -461,7 +461,7 @@ test('model guidance uses previous question without inventing meaning for short 
   }))
   const prompt=coachingBrainMessages(x,'grow','explore')
   assert.match(prompt[1].content,/CURRENT-TURN RESPONSE UNDERSTANDING: negation/)
-  assert.match(prompt[1].content,/Do not invent what option/)
+  assert.match(prompt[1].content,/Avoid inventing meaning for yes, no, maybe/)
   assert.match(prompt[1].content,/Клиент: «Нет»/)
   assert.match(prompt[0].content,/answer or clarify their request BEFORE/)
   const fallback=offlineCoachingBrainReply(x,'grow','explore')
