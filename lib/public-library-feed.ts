@@ -26,3 +26,21 @@ export async function loadPublicLibraryFeed(locale: PublicLocale): Promise<{
   }
   return { videos, articles };
 }
+
+
+/** MyTube is multilingual regardless of the interface language. Public
+ * publication gates remain enforced by listPublicLibraryVideos for each locale.
+ * Fail each locale independently so one unavailable source cannot hide the rest.
+ * Private client media never enters this read-only discovery feed.
+ */
+export async function loadPublicMyTubeVideos(): Promise<LibraryPublicVideo[]> {
+  try {
+    const config = getAppConfig();
+    const results = await Promise.allSettled(
+      (["ru", "en", "es"] as const).map(language => listPublicLibraryVideos(config, language)),
+    );
+    return results.flatMap(result => result.status === "fulfilled" ? result.value : []);
+  } catch {
+    return [];
+  }
+}
