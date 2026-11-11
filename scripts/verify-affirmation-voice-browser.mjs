@@ -223,18 +223,12 @@ async function verifyWorkspaceHydration(browser,locale){
       name:"sample.wav",mimeType:"audio/wav",buffer:wav(2)
     });
     await expect(audioFlow).toContainText("sample.wav");
-    const rights=page.locator('[data-video-recipient-audio-rights]');
-    const sttConsent=page.locator('[data-video-recipient-audio-stt-consent]');
-    await expect(rights).not.toBeChecked();
-    await expect(sttConsent).not.toBeChecked();
-    await expect(transcribe).toBeDisabled();
-    await rights.check();
-    await sttConsent.check();
+    await expect(page.locator('[data-video-recipient-audio-rights-notice]')).toBeVisible();
+    await expect(page.locator('[data-video-recipient-audio-stt-notice]')).toBeVisible();
+    await expect(audioFlow.locator('input[type="checkbox"]')).toHaveCount(0);
     await expect(transcribe).toBeEnabled();
     await expect(nextAudio).toBeDisabled();
-    await sttConsent.uncheck();
-    await expect(transcribe).toBeDisabled();
-    assert.equal(outboundStt.length,0,"no STT call without explicit action");
+    assert.equal(outboundStt.length,0,"no STT request before clicking Transcribe");
     // Moving to a different recipient must discard this local private audio.
     const greeting=page.locator('[data-auto-video-recipient-kind="greeting"]');
     await greeting.click();

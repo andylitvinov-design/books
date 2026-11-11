@@ -336,7 +336,12 @@ test("MyTube cards display the original scenario, not the four generic archetype
 test("owner correction: canonical subcategory and optional topic and request precede the story",()=>{
  const goals=director.slice(director.indexOf("const goalPanel="),director.indexOf("return <section className={css.root}"));
  const goalBlock=goals.slice(0,goals.indexOf("const quickTopicPanel="));
- assert.match(goalBlock,/subcategoriesOpen\?<div className=\{css\.subcategories\}/);
+ assert.match(goalBlock,/subcategoriesOpen&&!requestNeedsChoice\?<div className=\{css\.subcategories\}/,
+   "show subcategories only after an explicit or reliable category selection");
+ assert.match(goalBlock,/aria-pressed=\{selectedCategoryId===item\.id&&!requestNeedsChoice\}/,
+   "an unmatched wish must not show the previously selected category as checked");
+ assert.match(director,/if\(!classification\|\|broad\)\{[\s\S]*?setProposal\(null\);setTimelineEdits\(null\);return/,
+   "unresolved or broad wishes must not inherit a ready film timeline");
  assert.match(goalBlock,/taxonomySubcategories\.map\(item=>/);
  assert.match(goalBlock,/data-auto-video-subcategory=\{item\.id\}/);
  assert.match(goalBlock,/selectedSubcategoryId===item\.id/);

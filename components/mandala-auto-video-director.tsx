@@ -221,6 +221,7 @@ export function MandalaAutoVideoDirector({
  const [selectedCategoryId,setSelectedCategoryId]=useState<CanonicalCategoryId>(
    ()=>initialCategoryForTheme[theme]);
  const [,setCategoryManuallySelected]=useState(false);
+ const [requestNeedsChoice,setRequestNeedsChoice]=useState(false);
  const [goalTarget,setGoalTarget]=useState<HTMLElement|null>(null);
  const [audienceTarget,setAudienceTarget]=useState<HTMLElement|null>(null);
  const [topicTarget,setTopicTarget]=useState<HTMLElement|null>(null);
@@ -525,12 +526,14 @@ export function MandalaAutoVideoDirector({
  const alternatives=proposal?[proposal.presetId,...proposal.alternativePresetIds]
    .filter((id):id is string=>Boolean(id)): [];
  const choose=()=>{
+   setRequestNeedsChoice(false);
    setSelectedGoalId(null);setSelectedGoalIds([]);
    setProposalContext({goal,theme});
    setProposal(recommendAutoVideo({goal,locale,fallbackTheme:theme,presets,scenes}));
    setOverrideId(null);setSeconds(null);setTimelineEdits(null);
  };
  const chooseReadyGoal=(goalId:string)=>{
+   setRequestNeedsChoice(false);
    setPromptDesignedFor(null);setPromptClassification(null);
    const item=AUTO_VIDEO_GOALS.find(entry=>entry.id===goalId);
    if(!item||disabled)return;
@@ -554,6 +557,7 @@ export function MandalaAutoVideoDirector({
  // All three modes use the existing licensed four-shot planner and Canvas export.
  // No second renderer, remote API, contact database or paid generation.
  const resetAudienceStory=()=>{
+   setRequestNeedsChoice(false);
    setRecipientContinueError("");setRecipientCaptionOverrides({});
    setSelectedGoalId(null);setSelectedGoalIds([]);
    setSelectedSubcategoryId("");setSelectedTopicId("");setSelectedMeaningAxisId("");
@@ -607,6 +611,7 @@ export function MandalaAutoVideoDirector({
    resetAudienceStory();onInvalidate?.();onAudioSelectionChange?.(true);
  };
  const chooseCategory=(nextTheme:VideoTheme,categoryId:CanonicalCategoryId)=>{
+   setRequestNeedsChoice(false);
    setPromptDesignedFor(null);setPromptClassification(null);
    if(disabled)return;
    setCategoryManuallySelected(true);
@@ -622,6 +627,7 @@ export function MandalaAutoVideoDirector({
      preferredTheme:nextTheme,presets,scenes}));
  };
  const chooseTaxonomySubcategory=(subcategoryId:string)=>{
+   setRequestNeedsChoice(false);
    setPromptDesignedFor(null);setPromptClassification(null);
    const item=taxonomySubcategories.find(row=>row.id===subcategoryId);
    if(!item)return;
@@ -637,6 +643,7 @@ export function MandalaAutoVideoDirector({
    setProposal(recommendAutoVideo({goal:nextGoal,locale,fallbackTheme:nextTheme,preferredTheme:nextTheme,presets,scenes}));
  };
  const chooseTaxonomyTopic=(topicId:string)=>{
+   setRequestNeedsChoice(false);
    setPromptDesignedFor(null);setPromptClassification(null);
    const found=getMyTubeTopic(topicId);
    if(!found||found.category.id!==selectedCategoryId)return;
@@ -753,6 +760,7 @@ export function MandalaAutoVideoDirector({
 
  // Device-only profile recommender. Never persists answers or contacts an external AI.
  const applyProfile=()=>{
+   setRequestNeedsChoice(false);
    setPromptDesignedFor(null);setPromptClassification(null);
    if(disabled)return;
    const category=videoGoalCategories.find(item=>item.id===profileCategory);
@@ -792,9 +800,16 @@ export function MandalaAutoVideoDirector({
    const classification=inferred; // Explicit Match can change a prior manual category.
   onInvalidate?.();
   setPromptClassification(classification);setPromptDesignedFor(goal);
+  setRequestNeedsChoice(!classification);
   setSelectedGoalId(null);setSelectedGoalIds([]);
-  setSelectedSubcategoryId(classification?.subcategoryId||"");
-  setSelectedTopicId(classification?.topicId||"");
+  // A broad context is provisional: neither the subcategory nor the specific
+  // topic has been confirmed by the visitor.
+  const matchLevel=(classification as (typeof classification & {matchLevel?:"category"|"context"}))?.matchLevel;
+  const broad=matchLevel==="context"||matchLevel==="category";
+  if(broad)setSelectedSubcategoryId("");
+  else setSelectedSubcategoryId(classification?.subcategoryId||"");
+  if(broad)setSelectedTopicId("");
+  else setSelectedTopicId(classification?.topicId||"");
   setSelectedMeaningAxisId("");setSelectedScenarioId("");setSelectedPlotId("");
   setSymbolicPlotFallback(false);setSelectedMotifId("");setSelectedStyleId("");
   setMeaningHandoff(null);setIncludeMeaningCaption(false);
@@ -804,6 +819,11 @@ export function MandalaAutoVideoDirector({
    setCategoryManuallySelected(false);
    setSelectedCategoryId(classification.categoryId as CanonicalCategoryId);setSubcategoriesOpen(true);
    onCategoryChange?.(nextTheme);
+  }
+  if(!classification||broad){
+   // Never reuse an unrelated previous-category film or silently choose
+   // an exact topic for an unconfirmed broad contextual request.
+   setProposal(null);setTimelineEdits(null);return;
   }
   const recommended=recommendAutoVideo({goal,locale,fallbackTheme:nextTheme,
    preferredTheme:classification?nextTheme:null,presets,scenes});
@@ -902,10 +922,10 @@ export function MandalaAutoVideoDirector({
      {locale==="ru"?"Посмотреть план из 4 сцен":locale==="es"?"Ver plan de 4 escenas":"See the 4-shot plan"}
      <ArrowRight size={14} aria-hidden="true"/>
     </button>}
-   </>:<p>{locale==="ru"?
-    "Пока недостаточно данных для определения темы. Уточните запрос или выберите тему ниже.":
-    locale==="es"?"No se puede determinar el tema. Aclara la petición o selecciona el tema.":
-    "Unable to match a reliable topic. Refine your request or select a topic below."}</p>}
+   </>:<p data-video-request-unresolved>{locale==="ru"?
+    "Тема неоднозначна. Уточните запрос или выберите категорию выше — прежний выбор не считается подходящим.":
+    locale==="es"?"La petición es ambigua. Aclárala o elige una categoría arriba; no conservamos la selección anterior.":
+    "This request is ambiguous. Refine it or choose a category above; the previous category is not assumed."}</p>}
   </div>:null}
  </div>;
  
@@ -989,18 +1009,18 @@ export function MandalaAutoVideoDirector({
        {videoGoalCategories.map(item=><button type="button" key={item.id}
          data-auto-video-category={item.id} data-auto-video-category-theme={item.theme}
          aria-label={taxonomyCategories.find(category=>category.id===item.id)?.label||item.id}
-         aria-pressed={selectedCategoryId===item.id} disabled={disabled}
+         aria-pressed={selectedCategoryId===item.id&&!requestNeedsChoice} disabled={disabled}
          onClick={()=>chooseCategory(item.theme,item.id)}>
          {/* Cropped approved artwork is illustrative; underlying canonical category IDs are preserved. */}
        {/* eslint-disable-next-line @next/next/no-img-element */}
        <img data-video-goal-art src={"/images/video-goal-art/"+item.art+".webp"} alt="" loading="lazy"/>
        <span className={css.categoryIcon}><item.Icon size={21} aria-hidden="true"/></span>
        <strong>{goalCardLabels[locale][item.id]}</strong>
-         {selectedCategoryId===item.id?<span className={css.categorySelected} aria-hidden="true">
+         {selectedCategoryId===item.id&&!requestNeedsChoice?<span className={css.categorySelected} aria-hidden="true">
            <Check size={15} strokeWidth={3}/></span>:null}
        </button>)}
      </div>
-     {subcategoriesOpen?<div className={css.subcategories} data-auto-video-subcategories>
+     {subcategoriesOpen&&!requestNeedsChoice?<div className={css.subcategories} data-auto-video-subcategories>
        <p className={css.popularHeading} data-video-goal-category-title>{locale==="ru"?"2. Выберите подкатегорию":locale==="es"?"2. Elige una subcategoría":"2. Choose a subcategory"}</p>
        <div className={css.topicChoices} role="group" data-mytube-subcategories
          aria-label={locale==="ru"?"Подкатегории цели":locale==="es"?"Subcategorías":"Goal subcategories"}>
@@ -1066,7 +1086,7 @@ export function MandalaAutoVideoDirector({
    </div>}
    {videoAudience==="others"&&recipientContinueError?<p role="status" data-video-recipient-continue-error>{recipientContinueError}</p>:null}
  </div>;
- const visibleQuickTopicIds=[...new Set([
+ const visibleQuickTopicIds=requestNeedsChoice?[]:[...new Set([
    ...(selectedSubcategoryId?taxonomyTopics.map(item=>item.id):[]),
    ...goalTopicIds[selectedCategoryId]
   ])].slice(0,6);
