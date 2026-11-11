@@ -118,7 +118,7 @@ export function MandalaAutomaticStoryboard({
     <span><Film size={15} aria-hidden="true"/>{shots.length} {locale==="ru"?"сцен":locale==="es"?"escenas":"scenes"}</span>
     <span><Clock3 size={15} aria-hidden="true"/>{durationSeconds}s</span>
     <span>{applied?aspect:"9:16"}</span>
-    {proposal.ok&&"photoCandidates" in proposal&&proposal.photoCandidates>0?
+    {proposal.ok&&"photoCandidates" in proposal&&typeof proposal.photoCandidates==="number"&&proposal.photoCandidates>0?
       <span data-story-photo-options>{locale==="ru"?"Фото":locale==="es"?"Fotos":"Photos"}: {proposal.photoCandidates}</span>:null}
    </div>
   </div>

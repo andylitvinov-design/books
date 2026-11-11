@@ -1055,8 +1055,7 @@ function compileFreeFilmPreset(
       throw Error("invalid_emotional_video_scene_script");
   }
   const captions=edit?.captionTexts??Array.from({length:clipIds.length},()=>"");
-  const verified=clipIds.map(id=>STORY_PHOTO_BY_ID.has(id)
-    ?null:verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(id)));
+  const verified=clipIds.map(id=>verifiedCategorySource(FREE_FILM_CATALOG_BY_ID.get(id)));
   const timings=adaptive
     ?allocateVariableFilmTimeline(durationSeconds,[...clipIds],edit?.durationSecondsByStage??null)
     :allocateSourceBoundedFilmTimeline(durationSeconds,[...clipIds],
@@ -3378,9 +3377,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
       const scrubFrame=freeFilmVideoAt(previewSeekSeconds,false);
       const scrubPhoto=freeFilmPhotoAt(previewSeekSeconds);
       // Never replace the last valid preview with an undecodeable substitute.
-      const styleFirstBeat=Boolean(selectedStyleFilm&&styleFilmReady&&previewSeekSeconds<
-         (cinematicPlan?.shots[0]?.durationSeconds??5));
-       if(!usingFreeFilmCompilation||scrubFrame||scrubPhoto||styleFirstBeat){
+      const styleFirstBeat=Boolean(
+        (selectedStyleFilm&&styleFilmReady&&previewSeekSeconds<
+         (cinematicPlan?.shots[0]?.durationSeconds??5))||scrubPhoto);
+       if(!usingFreeFilmCompilation||scrubFrame||styleFirstBeat){
         paintCinematicFrame(ctx,image,effect,previewSeekSeconds,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,scrubFrame,currentFreeVideoPlan,
           creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,freeFilmPhotoAt(previewSeekSeconds));
         paintHypnoLightOverlay(ctx,previewSeekSeconds,hypnoLight);
@@ -3404,9 +3404,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           const frameSecond=cinematicPlan?cinematicPreviewSeconds(cinematicPlan,elapsed):elapsed;
           const stockFrame=freeFilmVideoAt(frameSecond,previewPlaying);
           const stockPhoto=freeFilmPhotoAt(frameSecond);
-          const styleBeatReady=Boolean(selectedStyleFilm&&styleFilmReady&&frameSecond<
-             (cinematicPlan?.shots[0]?.durationSeconds??5));
-           if(!usingFreeFilmCompilation||stockFrame||stockPhoto||styleBeatReady){
+          const styleBeatReady=Boolean(
+            (selectedStyleFilm&&styleFilmReady&&frameSecond<
+             (cinematicPlan?.shots[0]?.durationSeconds??5))||stockPhoto);
+           if(!usingFreeFilmCompilation||stockFrame||styleBeatReady){
             paintCinematicFrame(ctx,image,effect,frameSecond,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
         creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,freeFilmPhotoAt(frameSecond));
             paintStoryMotifs(ctx,frameSecond,appliedStory);
@@ -3583,6 +3584,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         ?Promise.all([
           // The original verified local film decoder policy stays mandatory.
           (()=>{
+            // Preserve the proven original path for an all-video montage.
+            // A mixed photo/video storyboard uses the filtered path below.
+            if(freeFilmShots.every(shot=>Boolean(shot.film)))
+              return prepareFourFilmSources(freeFilmShots,freeFilmPlayerRefs.current,{
+                timeoutMs:20000,adaptive:freeFilmShots.length!==4,
+                onProgress:(ready:number,total:number)=>setNotice(locale==="ru"
+                  ?`Подготавливаем видеосцены: ${ready} из ${total}…`
+                  :locale==="es"?`Preparando escenas: ${ready} de ${total}…`
+                  :`Preparing video scenes: ${ready} of ${total}…`)
+              }).then(()=>true,()=>false);
             const videoShots=freeFilmShots.filter(shot=>Boolean(shot.film));
             if(!videoShots.length)return Promise.resolve(true);
             return videoShots.length>=4
@@ -3789,10 +3800,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             onProgress:p=>{if(!controller.signal.aborted&&aliveRef.current&&sourceRef.current===snapshotKey)
               setProgress(Math.min(99,p));},
             renderFrame:time=>{
-              const frame=freeFilmVideoAt(time,true);
-              if(usingFreeFilmCompilation&&!frame&&!freeFilmPhotoAt(time))return false;
+              const videoFrame=freeFilmVideoAt(time,true);
+              const frame=videoFrame||freeFilmPhotoAt(time);
+              if(usingFreeFilmCompilation&&!frame)return false;
               paintCinematicFrame(ctx,image,effect,time,aspect,moneyScene,visibleCaption,
-                theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,frame,currentFreeVideoPlan,
+                theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,videoFrame,currentFreeVideoPlan,
                 creationMode==="generated"&&!backgroundOnly&&photoConsent&&Boolean(photoUrl)?image:null,activeMontageStyleId,styleFilmRef.current,freeFilmPhotoAt(time));
               paintStoryMotifs(ctx,time,appliedStory);
               paintHypnoLightOverlay(ctx,time,hypnoLight);
@@ -4001,14 +4013,16 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
           if (now-start >= (duration-.8)*1000) job.musicSession?.fadeOut();
           const frameTime=Math.min(duration,(now-start)/1000);
           const stockFrame=freeFilmVideoAt(frameTime,true);
-          if(usingFreeFilmCompilation&&!stockFrame&&!freeFilmPhotoAt(frameTime)){
-            // Preserve the last real frame during brief decoder buffering, but
-            // never offer a film with a missing or indefinitely frozen shot.
-            if(!stockGapSince)stockGapSince=now;
-            if(now-stockGapSince>500){
-              stopJob(job,true);setNotice(ui.videoUnavailable);setExportUnavailable(true);return;
+          if(usingFreeFilmCompilation&&!stockFrame){
+            // A fully decoded, allowlisted photograph is also a real canvas
+            // source. Any missing MP4/photo still triggers the 500ms watchdog.
+            if(!freeFilmPhotoAt(frameTime)){
+              if(!stockGapSince)stockGapSince=now;
+              if(now-stockGapSince>500){
+                stopJob(job,true);setNotice(ui.videoUnavailable);setExportUnavailable(true);return;
+              }
+              job.animation=requestAnimationFrame(animate);return;
             }
-            job.animation=requestAnimationFrame(animate);return;
           }
           stockGapSince=0;
           paintCinematicFrame(ctx,image,effect,frameTime,aspect,moneyScene,visibleCaption,theme,otherScene,speed,brightness,premiumVideoRef.current,cinematicPlan,stockFrame,currentFreeVideoPlan,
