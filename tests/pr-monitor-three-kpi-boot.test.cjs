@@ -8,7 +8,7 @@ const assets=['pr-timestamp-coverage.css?v=20261104-5',
  'pr-cohort-wall-clock.js?v=20261104-kpi-p95-3476',
  'pr-two-screen.js?v=20261107-stage-return-v1',
  'pr-three-kpi-ui.css?v=20261106-wave-kpi1',
- 'pr-three-kpi-ui.js?v=20261106-wave-kpi1'];
+ 'pr-three-kpi-ui.js?v=20261111-weekly-top-v1'];
 test('latest production assets and KPI are loaded exactly once',()=>{
  for(const item of assets){
   assert.equal(boot.split(item).length-1,1,item);
