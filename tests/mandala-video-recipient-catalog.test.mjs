@@ -13,8 +13,8 @@ const director=readFileSync(new URL("../components/mandala-auto-video-director.t
 const studio=readFileSync(new URL("../components/mandala-free-video-studio.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../components/mandala-auto-video-director.module.css",import.meta.url),"utf8");
 
-test("self catalogue remains canonical while others have three distinct categories",()=>{
-  assert.deepEqual(RECIPIENT_VIDEO_KIND_IDS,["gift","greeting","presentation"]);
+test("self catalogue remains canonical while others have Reels plus three existing categories",()=>{
+  assert.deepEqual(RECIPIENT_VIDEO_KIND_IDS,["reels","gift","greeting","presentation"]);
   assert.match(director,/const videoGoalCategories=\[/);
   assert.match(director,/videoAudience==="self"\?<[^\n]*>/);
   assert.match(director,/data-auto-video-category=\{item.id\}/);
@@ -30,9 +30,10 @@ test("self catalogue remains canonical while others have three distinct categori
 test("every category has four unique occasions, localized for RU EN ES",()=>{
   for(const locale of ["ru","en","es"]){
     const kinds=listRecipientVideoKinds(locale);
-    assert.equal(kinds.length,3);
+    assert.equal(kinds.length,4);
     for(const kind of kinds){
       const occasions=listRecipientVideoOccasions(kind.id,locale);
+      if(kind.id==="reels"){assert.deepEqual(occasions,[],"Reels uses the existing direct video path");continue;}
       assert.equal(occasions.length,4);
       assert.equal(new Set(occasions.map(x=>x.id)).size,4);
       assert.ok(kind.label&&kind.description);
@@ -47,11 +48,13 @@ test("other-person selection produces a brief and four renderable captions, not 
       assert.ok(["relationships","energy","money"].includes(meta.theme));
       assert.ok(["love-relationships","energy-confidence","goals-money"].includes(meta.sourceCategoryId));
       const first=listRecipientVideoOccasions(kindId,locale)[0];
-      const brief=buildRecipientVideoBrief({kindId,occasionId:first.id,wish:"A short note",locale});
-      assert.ok(brief.includes(first.label)&&brief.includes("A short note"));
-      const captions=buildRecipientVideoCaptions({kindId,occasionId:first.id,wish:"For you",locale});
+      const brief=buildRecipientVideoBrief({kindId,occasionId:first?.id,wish:"A short note",locale});
+      assert.ok(brief.includes("A short note"));
+      if(first)assert.ok(brief.includes(first.label));
+      else assert.ok(brief.includes("Reels"));
+      const captions=buildRecipientVideoCaptions({kindId,occasionId:first?.id,wish:"For you",locale});
       assert.equal(captions.length,4);
-      assert.equal(captions[0],first.label);
+      assert.equal(captions[0],first?.label||{ru:"Ваше видео Reels",en:"Your Video Reel",es:"Tu Video Reel"}[locale]);
       assert.equal(captions[1],"For you");
       assert.ok(captions.every(Boolean));
     }
@@ -62,6 +65,8 @@ test("local intent inference is bounded and does not turn ordinary self goals in
     {kindId:"greeting",occasionId:"birthday",confidence:"keyword"});
   assert.deepEqual(classifyRecipientVideoWish("Подарок другу"),
     {kindId:"gift",occasionId:"friendship",confidence:"keyword"});
+  assert.deepEqual(classifyRecipientVideoWish("Создай видео reels для семьи"),
+    {kindId:"reels",occasionId:"",confidence:"keyword"});
   assert.deepEqual(classifyRecipientVideoWish("Presentation of my project"),
     {kindId:"presentation",occasionId:"project",confidence:"keyword"});
   assert.equal(classifyRecipientVideoWish("хочу больше уверенности"),null);
