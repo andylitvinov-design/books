@@ -161,8 +161,15 @@ test('signed Telegram transport, single transactional CRM save, update-id dedup 
   const route=source('app/api/app/crm/messenger/webhook/[provider]/route.js')
   const db=source('supabase/migrations/20261026143713_hh_crm_telegram_diagnostic_intake_20261026.sql')
   const publicApi=source('app/api/public/telegram-diagnostic/route.js')
-  assert.ok(route.indexOf('verifyMessengerWebhook(provider,raw,request.headers)')<
-    route.indexOf('processTelegramDiagnostic(event,config)'))
+  const signed=route.indexOf('verifyMessengerWebhook(provider,raw,request.headers)')
+  const v3=route.indexOf('processTelegramAiV3(diagnosticEvent,config)')
+  const legacy=route.indexOf('processTelegramDiagnostic(diagnosticEvent,config)')
+  // A signed webhook is mandatory before either the new V3 or fallback
+  // diagnostic receives normalized input; preserve the old security test.
+  assert.ok(signed>=0,'webhook signature gate must remain present')
+  assert.ok(v3>signed,'AI V3 must run only after webhook signature verification')
+  assert.ok(legacy>signed,'legacy diagnostic must run only after webhook signature verification')
+  assert.doesNotMatch(route,/processTelegramDiagnostic\(event,config\)/)
   assert.match(hook,/telegramPilotReady\(env\)/)
   assert.match(hook,/last_update_id/)
   assert.match(hook,/pg_advisory_xact_lock/)
