@@ -92,7 +92,8 @@ test("Concept uses canonical selected filters and numeric energy, while WebKit p
   const concept=read("components/mandala-video-concept.tsx");
   const engine=read("lib/mandala/auto-video-concept.mjs");
   const semantic=read("lib/mandala/video-concept-semantic.mjs");
-  assert.match(auto,/onConceptTopicChange\?\./);
+  assert.match(auto,/if\(!onConceptTopicChange\)return;/);
+  assert.match(auto,/onConceptTopicChange\(current&&current\.category\.id===selectedCategoryId/);
   assert.match(auto,/const label=found\.topic\.label\[locale\]/);
   assert.doesNotMatch(auto,/requestDraft\.trim\(\)\|\|found\.topic\.label\[locale\]/);
   assert.match(studio,/onConceptTopicChange=\{setSelectedConceptTopic\}/);

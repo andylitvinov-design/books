@@ -4,9 +4,15 @@ import {readFileSync} from "node:fs";
 const r=f=>readFileSync(new URL(f,import.meta.url),"utf8");
 const d=r("../components/mandala-auto-video-director.tsx");
 const s=r("../components/mandala-free-video-studio.tsx");
-test("For others shows three distinct formats; greeting and gift stay separate real occasions",()=>{
- for(const id of ["greeting","presentation","audio_visual"])assert.match(d,new RegExp('id:"'+id+'"'));
+test("For others shows four formats; Reels uses the same planner, gift and greeting keep occasions",()=>{
+ for(const id of ["reels","greeting","presentation","audio_visual"])assert.match(d,new RegExp('id:"'+id+'"'));
  assert.match(d,/data-auto-video-recipient-kind=\{item.id\}/);
+ assert.match(d,/recipientKindId==="reels"/);
+ const css=r("../components/mandala-auto-video-director.module.css");
+ const horizontal=css.slice(css.lastIndexOf("/* Warm, image-led recipient choices"));
+ assert.match(horizontal,/\.recipientKinds\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(horizontal,/\.recipientKinds button\{position:relative;display:grid;grid-template-columns:clamp/);
+ assert.doesNotMatch(horizontal,/grid-template-columns:repeat\(3,/);
  assert.match(d,/data-video-recipient-celebration=\{kind\}/);
  assert.match(d,/recipientAudioMode\?recipientAudioPanel/);
 });
