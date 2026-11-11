@@ -209,3 +209,21 @@ test('known real Specialist proof gate becomes an owner-visible CI routing strat
  assert.equal(d.classification.retry.max_attempts,1);
  assert.equal(d.classification.execution_authorized,false);
 });
+
+
+test('signed Core source-test incident preserves causal job/step across Commander handoff',()=>{
+ const {repairableCoreTestFailure}=require('../scripts/ci-pr-error-task.cjs');
+ const step='Mobile Dock Core geometry and iPhone keyboard contracts';
+ const d=buildDiagnostics([{name:'core-lint-types-build',conclusion:'failure',
+  steps:[{name:step,conclusion:'failure'}]}],makePR());
+ assert.equal(d.category,'TEST_FAILURE');
+ assert.equal(d.classification.reason_code,'FAILED_TEST_STEP_REQUIRES_TRIAGE');
+ assert.equal(d.classification.evidence_code,'FAILED_TEST_STEP_REQUIRES_TRIAGE');
+ assert.equal(d.classification.failed_job,'core-lint-types-build');
+ assert.equal(d.classification.failed_step,step);
+ assert.equal(d.failedSteps[0],'core-lint-types-build / '+step);
+ assert.equal(repairableCoreTestFailure(d.classification),true);
+ const blocked=buildDiagnostics([{name:'hh-specialist',conclusion:'failure',
+  steps:[{name:'WebKit test',conclusion:'failure'}]}],makePR());
+ assert.equal(repairableCoreTestFailure(blocked.classification),false);
+});
