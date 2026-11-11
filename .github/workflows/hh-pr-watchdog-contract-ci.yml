@@ -111,6 +111,7 @@ on:
       - 'ops/pr-monitor/pr-two-screen.js'
       - 'ops/pr-monitor/watchdog-control-tower.js'
       - 'tests/pr-monitor-reconciliation-v2.test.cjs'
+      - 'tests/pr-monitor-ci-wave-comparison.test.cjs'
       - 'tests/ci-pr-timeline-audit.test.cjs'
       - 'tests/pr-attribution-api.test.cjs'
       - 'ops/pr-monitor/pr-checkpoint-evidence.cjs'
@@ -355,6 +356,7 @@ jobs:
           node --check ops/pr-monitor/pr-journey-health.js
           node --check ops/pr-monitor/pr-two-screen.js
           node --check ops/pr-monitor/api/ci-journey-summary.js
+          node --check tests/pr-monitor-ci-wave-comparison.test.cjs
           node --check ops/pr-monitor/ci-journey-dashboard.js
           node --check tests/pr-cohort-wall-clock.test.cjs
           node --check tests/pr-monitor-reconciliation-v2.test.cjs
@@ -394,7 +396,7 @@ jobs:
       - name: PR error funnel proof and diagnostic assignment contracts
         run: node --test ops/pr-monitor/tests/pr-error-funnel.test.cjs
       - name: PR attribution timeline evidence contracts
-        run: node --test ops/pr-monitor/tests/pr-repair-cycle-model.test.cjs tests/ci-pr-timeline-audit.test.cjs tests/pr-attribution-api.test.cjs tests/pr-checkpoint-evidence.test.cjs tests/pr-cohort-wall-clock.test.cjs tests/pr-monitor-reconciliation-v2.test.cjs tests/ci-pr-core-journey-summary.test.cjs tests/pr-monitor-two-screen.test.cjs tests/pr-monitor-velocity-three-lines.test.cjs tests/pr-monitor-wave-effectiveness.test.cjs tests/pr-monitor-three-kpi-boot.test.cjs tests/pr-monitor-three-kpis.test.cjs tests/pr-monitor-three-kpis-api.test.cjs
+        run: node --test ops/pr-monitor/tests/pr-repair-cycle-model.test.cjs tests/ci-pr-timeline-audit.test.cjs tests/pr-attribution-api.test.cjs tests/pr-checkpoint-evidence.test.cjs tests/pr-cohort-wall-clock.test.cjs tests/pr-monitor-reconciliation-v2.test.cjs tests/ci-pr-core-journey-summary.test.cjs tests/pr-monitor-two-screen.test.cjs tests/pr-monitor-velocity-three-lines.test.cjs tests/pr-monitor-wave-effectiveness.test.cjs tests/pr-monitor-three-kpi-boot.test.cjs tests/pr-monitor-three-kpis.test.cjs tests/pr-monitor-three-kpis-api.test.cjs tests/pr-monitor-ci-wave-comparison.test.cjs
       - name: Checkout protected production classifier for integration test
         uses: actions/checkout@v4
         with:

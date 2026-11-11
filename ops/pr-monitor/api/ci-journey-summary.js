@@ -134,7 +134,20 @@ function summarizePR(pr,runs){
      waveRows.push({kind:relation,started_at:new Date(prev).toISOString(),
        ended_at:new Date(a).toISOString(),duration_ms:duration,
        prior_conclusion:typeof lastFinished?.conclusion==='string'?lastFinished.conclusion:'unknown',
+       next_run_queued_at:new Date(a).toISOString(),
        after_failure:['failure','timed_out','startup_failure'].includes(lastFinished?.conclusion),
+       prior_job_conclusions:Object.fromEntries((lastFinished?.jobs||[])
+         .filter(j=>typeof j?.name==='string'&&typeof j?.conclusion==='string')
+         .map(j=>[j.name,j.conclusion])),
+       after_core_failure:(lastFinished?.jobs||[]).some(j=>
+         j?.name==='core-lint-types-build'&&
+         ['failure','timed_out','startup_failure'].includes(j.conclusion)),
+       after_specialist_failure:(lastFinished?.jobs||[]).some(j=>
+         j?.name==='hh-specialist'&&
+         ['failure','timed_out','startup_failure'].includes(j.conclusion)),
+       after_merge_gate_failure:(lastFinished?.jobs||[]).some(j=>
+         j?.name==='hh-merge-check'&&
+         ['failure','timed_out','startup_failure'].includes(j.conclusion)),
        prior_head:SHA.test(lastFinished?.source_head||'')?lastFinished.source_head.toLowerCase():null,
        next_head:SHA.test(r.source_head||'')?r.source_head.toLowerCase():null,
        prior_url:safeRun(lastFinished?.workflow_url)||msurl(lastFinished.run_id),
@@ -250,18 +263,38 @@ function report(store,h,now=Date.now(),offsetHours=0){
  const cohortPRs=new Set(rows.map(row=>row.pr));
  const periodRuns=store.runs.filter(run=>cohortPRs.has(run.pr)&&
    t(run.queued_at)>=cutoff&&t(run.queued_at)<periodEnd);
- const periodWaveRows=rows.flatMap(row=>(row.wave_rows||[])
-   .filter(w=>t(w.ended_at)>=cutoff&&t(w.ended_at)<periodEnd)
-   .map(w=>({...w,pr:row.pr})));
+ // Attribute only the part of each observed gap that overlaps this exact
+ // reporting window. A gap which began before the window must not inflate its
+ // 24-hour total/P95 with several days of pre-window time.
+ const periodWaveRows=rows.flatMap(row=>(row.wave_rows||[]).flatMap(w=>{
+   const gapStart=t(w.started_at),gapEnd=t(w.ended_at);
+   if(gapStart===null||gapEnd===null||gapEnd<=cutoff||gapStart>=periodEnd)return [];
+   const clippedStart=Math.max(gapStart,cutoff),clippedEnd=Math.min(gapEnd,periodEnd);
+   if(clippedEnd<=clippedStart)return [];
+   return [{...w,pr:row.pr,full_duration_ms:w.duration_ms,
+     duration_ms:clippedEnd-clippedStart,
+     started_at:new Date(clippedStart).toISOString(),
+     ended_at:new Date(clippedEnd).toISOString(),
+     clipped_at_window_start:gapStart<cutoff,
+     clipped_at_window_end:gapEnd>periodEnd}];
+ }));
  const gapSamples=periodWaveRows.map(w=>w.duration_ms)
-   .filter(n=>Number.isFinite(n)&&n>=0);
- const ciRuns=periodRuns.length,repeatWaves=periodWaveRows.length;
+   .filter(n=>Number.isFinite(n)&&n>0);
+ const periodTransitionRows=periodWaveRows.filter(w=>{
+   const queued=t(w.next_run_queued_at);return queued!==null&&queued>=cutoff&&queued<periodEnd;
+ });
+ const ciRuns=periodRuns.length,repeatWaves=periodTransitionRows.length;
  const periodCounts={
-   new_head:periodWaveRows.filter(w=>w.kind==='new_head').length,
-   same_head:periodWaveRows.filter(w=>w.kind==='same_head').length,
-   unverified_head:periodWaveRows.filter(w=>w.kind==='unverified_head').length
+   new_head:periodTransitionRows.filter(w=>w.kind==='new_head').length,
+   same_head:periodTransitionRows.filter(w=>w.kind==='same_head').length,
+   unverified_head:periodTransitionRows.filter(w=>w.kind==='unverified_head').length
  };
- const afterFailed=periodWaveRows.filter(w=>w.after_failure===true).length;
+ const afterFailed=periodTransitionRows.filter(w=>w.after_failure===true).length;
+ const afterCoreFailed=periodTransitionRows.filter(w=>w.after_core_failure===true).length;
+ const afterSpecialistFailed=periodTransitionRows.filter(w=>w.after_specialist_failure===true).length;
+ const afterMergeGateFailed=periodTransitionRows.filter(w=>w.after_merge_gate_failure===true).length;
+ const clippedAtWindowStart=periodWaveRows.filter(w=>w.clipped_at_window_start).length;
+ const clippedAtWindowEnd=periodWaveRows.filter(w=>w.clipped_at_window_end).length;
  const afterSuccess=periodWaveRows.filter(w=>w.kind==='new_head'&&w.prior_conclusion==='success').length;
  const gapTotalMs=gapSamples.reduce((a,b)=>a+b,0);
  const waveSummary={
@@ -270,7 +303,16 @@ function report(store,h,now=Date.now(),offsetHours=0){
    mean_repeat_waves_per_pr:rows.length?rnd(repeatWaves/rows.length):null,
    intervals:gapSamples.length,prs_with_intervals:new Set(periodWaveRows.map(w=>w.pr)).size,
    new_head:periodCounts.new_head,same_head:periodCounts.same_head,
-   unverified_head:periodCounts.unverified_head,after_failed:afterFailed,after_success:afterSuccess,
+   unverified_head:periodCounts.unverified_head,
+   // Backward-compatible field: this is a failed aggregate workflow, not
+   // specifically a failed Core build. New UI uses the precise job fields.
+   after_failed:afterFailed,after_workflow_failure:afterFailed,
+   after_core_failure:afterCoreFailed,
+   after_specialist_failure:afterSpecialistFailed,
+   after_merge_gate_failure:afterMergeGateFailed,
+   clipped_at_window_start:clippedAtWindowStart,
+   clipped_at_window_end:clippedAtWindowEnd,
+   after_success:afterSuccess,
    gap_total_minutes:rnd(gapTotalMs/60000),
    gap_mean_minutes_per_pr:rows.length?rnd(gapTotalMs/rows.length/60000):null,
    gap_mean_minutes_per_interval:gapSamples.length?rnd(gapTotalMs/gapSamples.length/60000):null,
