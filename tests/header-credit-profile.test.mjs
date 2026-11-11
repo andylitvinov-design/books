@@ -35,6 +35,8 @@ test("both mobile headers and desktop video nav use the shared compact credit pr
   assert.match(widget, /locale === "es" \? "en"/);
   assert.match(css, /\.readout\{display:grid/);
   assert.match(css, /\.track\{display:block/);
+  const studioCss = read("components/mandala-video-mobile.module.css");
+  assert.match(studioCss, /\.quickBrandIHelp\{margin-left:auto!important\}/);
   assert.match(studio, /<HeaderCreditProfile locale=\{locale\}/);
   assert.match(coach, /<HeaderCreditProfile locale=\{lang\}/);
   assert.match(nav, /<HeaderCreditProfile locale=\{activeLocale\}/);
