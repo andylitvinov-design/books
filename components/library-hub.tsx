@@ -9,7 +9,7 @@ import type { PublicLocale } from "@/lib/public-locales";
 import { growthGuideFor } from "@/data/growth-guides";
 import { greekVideoSeries } from "@/data/academy/greek-video-series";
 import { englishGuidedMeditations } from "@/data/academy/english-guided-meditations";
-import { academyDisplayTitle, mediaForRecord, videoRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
+import { academyDisplayTitle, mediaForRecord, preferredAcademyRecords, youtubeIdFromUrl } from "@/data/academy/catalog";
 import { VideoDiscovery } from "@/components/video-discovery";
 import { buildPublishedVideoIndex } from "@/lib/video-discovery/catalog.mjs";
 import { classifyMyTubeFormat } from "@/lib/video-discovery/mytube-duration.mjs";
@@ -18,7 +18,7 @@ import { listMyTubeCategories } from "@/lib/mandala/mytube-content-taxonomy.mjs"
 
 export type LibraryView = "latest" | "books" | "videos" | "dao";
 
-export type LibraryPublicVideo = { id: string; title: string; description: string; youtubeId: string; url: string; publishedAt: string };
+export type LibraryPublicVideo = { id: string; title: string; description: string; youtubeId: string; url: string; publishedAt: string; locale?: PublicLocale };
 export type LibraryPublicArticle = {
   id: string; slug: string; practitionerName: string; publishedAt: string | null;
   published: { title: string; excerpt: string; coverPath?: string };
@@ -201,11 +201,14 @@ const videoItemsByLocale: Record<PublicLocale, Array<Omit<CatalogShowcaseItem, "
     { id: "library-video-hypnotherapy", title: "How I Work with Hypnotherapy", subtitle: "Method", description: "A short visual explanation of the hypnotherapy approach and how it fits into individual work.", href: "/en/services#methods", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp" },
     { id: "library-video-constellations", title: "How I Work with Systemic Constellations", subtitle: "Method", description: "A short explanation of systemic constellation work and the kinds of patterns it can help explore.", href: "/en/services#methods", image: "/images/holistic-house/video-posters/constellations-en-v1.webp" },
     { id: "library-video-homeopathy", title: "My Approach to Homeopathy", subtitle: "Approach", description: "An introduction to the place of homeopathy inside the broader Holistic House approach.", href: "/en/homeopathy", image: "/images/holistic-house/video-posters/homeopathy-en-v2.webp" },
+    { id: "library-video-psychotherapy", title: "Psychotherapy — introduction in English", subtitle: "Method", description: "An introduction to imagery psychotherapy and the individual working approach.", href: "/en/services#methods", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp" },
+    { id: "library-video-business-constellations", title: "Business Constellations", subtitle: "Method", description: "A published introduction to systemic business constellations.", href: "/en/services#methods", image: "/images/holistic-house/andy-about.png" },
   ],
   ru: [
     { id: "library-video-home", title: "Глубокая личная работа в Holistic House", subtitle: "Введение", description: "Короткое знакомство с атмосферой и фокусом глубокой индивидуальной работы в Holistic House.", href: "/?lang=ru", image: "/images/holistic-house/video-posters/home-ru-v1.webp" },
     { id: "library-video-services", title: "Как я выбираю подходящий метод", subtitle: "Услуги", description: "Короткое объяснение того, как формат подбирается под человека и запрос, а не под заранее выбранную технику.", href: "/ru/services", image: "/images/holistic-house/video-posters/services-ru-v1.webp" },
     { id: "library-video-homeopathy", title: "Мой подход к гомеопатии", subtitle: "Подход", description: "Введение в то, какое место гомеопатия занимает в более широкой системе Holistic House.", href: "/ru/homeopathy", image: "/images/holistic-house/video-posters/homeopathy-ru-v1.webp" },
+    { id: "library-video-psychotherapy", title: "Образная психотерапия — видео о подходе", subtitle: "Метод", description: "Знакомство с образной психотерапией и индивидуальной работой.", href: "/ru/services#methods", image: "/images/holistic-house/video-posters/hypnotherapy-en-v1.webp" },
   ],
   es: [
     { id: "library-video-about", title: "Alquimia psíquica con Andy", subtitle: "Introducción", description: "Una introducción visual al enfoque de Alquimia Psíquica y al trabajo personal en Holistic House.", href: "/es/about", image: "/images/holistic-house/video-posters/psychic-alchemy-es-v1.webp" },
@@ -214,9 +217,14 @@ const videoItemsByLocale: Record<PublicLocale, Array<Omit<CatalogShowcaseItem, "
 
 
 // Source-backed discovery indexes reuse the verified Academy manifests, never private videos.
-// Original Russian teaching records are shown only on the Russian page.
+// Original-language teaching records are shared across EN/RU/ES discovery; never dubbed.
 const discoveryTags: Record<string,string[]>={
   "tantra-reiki":["relationships","energy","practices"],
+  "reiki/master-shamanic-healing":["energy","meaning","practices"],
+  "reiki/yggdrasil/faq":["energy","meaning","practices"],
+  "mysteries/archetypes-of-gods":["relationships","meaning","practices"],
+  "mysteries/guidance-of-gods":["meaning","practices"],
+  "symbolic/artifacts-talismans":["meaning","practices"],
   "reiki-yggdrasil":["energy","meaning","practices"],
   "kundalini-reiki":["energy","practices"],
   "videos/greek-mysteries-dionysus":["relationships","meaning","practices"],
@@ -228,7 +236,7 @@ const discoveryTags: Record<string,string[]>={
   "videos/energy-pump-ups":["energy","practices"],
   "videos/sun-meditations":["meaning","energy","practices"],
 };
-function approvedAcademyDiscoveryVideos(locale:PublicLocale):LibraryFeedItem[]{
+function approvedAcademyDiscoveryVideos():LibraryFeedItem[]{
   const english:LibraryFeedItem[]=englishGuidedMeditations.flatMap(video=>{
     // Do not promote Sun Flight until the original recorded playback is verified.
     if(video.key==="flight-to-sun" || !video.youtubeId || !/^[A-Za-z0-9_-]{11}$/.test(video.youtubeId))return [];
@@ -241,22 +249,30 @@ function approvedAcademyDiscoveryVideos(locale:PublicLocale):LibraryFeedItem[]{
       topicTags:discoveryTags[video.key]||["practices"],
     }];
   });
-  if(locale!=="ru")return english;
-  const archive:LibraryFeedItem[]=videoRecords("ru")
-    .filter(record=>record.sourceLocale==="ru"&&record.status!=="needs_review")
+  // Source language is independent of the language of the MyTube controls.
+  // Include only already verified public embeds from educational programmes.
+  // Historical festivals, testimonials, and unreviewed links stay excluded.
+  const archive:LibraryFeedItem[]=(["ru","en"] as const)
+    .flatMap(sourceLocale=>preferredAcademyRecords(sourceLocale,record=>
+      record.sourceLocale===sourceLocale&&
+      ["videos","reiki","mysteries","symbolic"].includes(record.direction)))
+    .filter(record=>record.status!=="needs_review")
     .flatMap(record=>mediaForRecord(record)
       .filter(media=>media.status==="verified_legacy_public_embed")
       .sort((a,b)=>(a.order??Number.MAX_SAFE_INTEGER)-(b.order??Number.MAX_SAFE_INTEGER))
       .flatMap(media=>{
         const youtubeId=youtubeIdFromUrl(media.mediaUrl);
-        if(!youtubeId || !/^[A-Za-z0-9_-]{11}$/.test(youtubeId))return [];
+        if(!youtubeId||!/^[A-Za-z0-9_-]{11}$/.test(youtubeId))return [];
+        const sourceLocale=record.sourceLocale;
         return [{
-          id:"academy-ru-"+record.logicalId+"-"+youtubeId,kind:"video" as const,
-          title:media.lessonTitle||academyDisplayTitle(record,"ru"),
-          description:academyDisplayTitle(record,"ru"),youtubeId,
+          id:"academy-"+sourceLocale+"-"+record.logicalId+"-"+youtubeId,kind:"video" as const,
+          title:(sourceLocale==="en"?media.lessonTitleEn:media.lessonTitle)||
+            media.lessonTitle||academyDisplayTitle(record,sourceLocale),
+          description:academyDisplayTitle(record,sourceLocale),youtubeId,
           href:"https://www.youtube.com/watch?v="+youtubeId,
-          sourceLabel:"Академия · архив",sourceGroup:record.logicalId,
-          audioLanguage:"ru" as const,curation:"verified" as const,
+          sourceLabel:record.sourceProvider==="psimaster"?"PsiMaster · архив":"PsiTrends · archive",
+          sourceGroup:record.logicalId,audioLanguage:sourceLocale,
+          curation:"verified" as const,
           topicTags:discoveryTags[record.logicalId]||["practices"],
         }];
       }));
@@ -272,11 +288,14 @@ const videoYouTubeIds: Record<PublicLocale, Record<string, string>> = {
     "library-video-home": "Y4K4piEwwA8",
     "library-video-services": "s30Y42IwPcg",
     "library-video-homeopathy": "ILyRWyHtJoE",
+    "library-video-psychotherapy": "vqRmI79cecQ",
+    "library-video-business-constellations": "sfVFOQNr2qk",
   },
   ru: {
     "library-video-home": "AE8Pelpo424",
     "library-video-services": "Cz6SxXJNZbw",
     "library-video-homeopathy": "Q9NvYECKWuc",
+    "library-video-psychotherapy": "eLsjFaKCBhI",
   },
   es: {},
 };
@@ -295,6 +314,7 @@ export function buildLibraryFeedItems(
     title: video.title, description: video.description,
     youtubeId: video.youtubeId, href: video.url,
     publishedAt: video.publishedAt,
+    audioLanguage: video.locale, sourceLabel: "Holistic House",
     curation: "published", sourceApproved: true, sourceGroup: "owner-library",
   }));
   const articleFeed: LibraryFeedItem[] = articles.map(article => ({
@@ -352,31 +372,47 @@ export function buildPublicVideoDiscoveryItems(
   publishedVideos: LibraryPublicVideo[] = [],
   approvedMeditations: LibraryFeedItem[] = [],
 ): LibraryFeedItem[] {
-  const { feedItems } = buildLibraryFeedItems(locale, publishedVideos, []);
-  // Preserve original numbered RU Greek series and all verified Academy sources.
-  const seriesItems: LibraryFeedItem[] = greekVideoSeries(locale)
-    .flatMap(series => series.lessons.map(lesson => ({
-      id: "source-series-" + series.id + "-" + lesson.id,
-      kind: "video" as const,
-      title: lesson.title,
-      description: series.title + " · выпуск " + lesson.order + " из " + series.lessons.length,
-      youtubeId: lesson.id,
-      href: "https://www.youtube.com/watch?v=" + lesson.id,
-      seriesId: series.id,
-      seriesTitle: series.title,
-      seriesOrder: lesson.order,
-      seriesHref: series.href,
-      audioLanguage: "ru" as const, curation: "verified" as const,
-      sourceLabel: "Академия · архив", sourceGroup: series.logicalId,
-      topicTags: discoveryTags[series.logicalId] || ["practices"],
+  const {feedItems}=buildLibraryFeedItems(locale,publishedVideos,[]);
+  // Existing owner-approved site introductions are displayed in their ORIGINAL
+  // audio language on every interface locale; never pretend they were dubbed.
+  const siteIntroductions:LibraryFeedItem[]=(["ru","en"] as const).flatMap(audioLanguage=>
+    videoItemsByLocale[audioLanguage].flatMap(video=>{
+      const youtubeId=videoYouTubeIds[audioLanguage][video.id];
+      if(!youtubeId||!/^[A-Za-z0-9_-]{11}$/.test(youtubeId))return [];
+      return [{
+        id:"site-"+audioLanguage+"-"+video.id,kind:"video" as const,
+        title:video.title,description:video.description,image:video.image,youtubeId,
+        href:"https://www.youtube.com/watch?v="+youtubeId,
+        audioLanguage,curation:"published" as const,sourceApproved:true,
+        sourceLabel:"Holistic House · "+audioLanguage.toUpperCase(),
+        sourceGroup:"site-introduction",
+      }];
+    }));
+  // Russian numbered teaching series are playable on EN/ES MyTube too.
+  const seriesItems:LibraryFeedItem[]=greekVideoSeries("ru")
+    .flatMap(series=>series.lessons.map(lesson=>({
+      id:"source-series-"+series.id+"-"+lesson.id,kind:"video" as const,
+      title:lesson.title,
+      description:series.title+" · "+
+        (locale==="ru"?"выпуск":locale==="es"?"episodio":"episode")+" "+
+        lesson.order+" / "+series.lessons.length,
+      youtubeId:lesson.id,href:"https://www.youtube.com/watch?v="+lesson.id,
+      seriesId:series.id,seriesTitle:series.title,
+      seriesOrder:lesson.order,seriesHref:series.href,
+      audioLanguage:"ru" as const,curation:"verified" as const,
+      sourceLabel:"PsiMaster · архив",sourceGroup:series.logicalId,
+      topicTags:discoveryTags[series.logicalId]||["practices"],
     })));
-  // Every currently eligible public video gets deterministic topic/category rankings
-  // on read, including DB-backed additions. No writes, publishing or new copies.
-  return buildPublishedVideoIndex([...seriesItems,
-    ...approvedAcademyDiscoveryVideos(locale),
+  // One canonical public index, de-duplicated by YouTube ID. Unknown, private,
+  // draft and unapproved clips never gain publication rights from this merge.
+  return buildPublishedVideoIndex([
+    ...siteIntroductions,
+    ...seriesItems,
+    ...approvedAcademyDiscoveryVideos(),
     ...approvedMeditations,
-    ...feedItems.filter(item => item.kind === "video"),
-  ]).map(video => ({...video, mytubeFormat:classifyMyTubeFormat(video), ...rankPublicMyTubeVideo(video, {locale})}));
+    ...feedItems.filter(item=>item.kind==="video"&&item.sourceGroup!=="site-introduction"),
+  ]).map(video=>({...video,mytubeFormat:classifyMyTubeFormat(video),
+    ...rankPublicMyTubeVideo(video,{locale})}));
 }
 
 export function LibraryHub({ locale, view = "latest", publishedVideos = [], articles = [], approvedMeditations = [] }: {
