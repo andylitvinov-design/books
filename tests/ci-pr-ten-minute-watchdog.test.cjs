@@ -822,6 +822,7 @@ test('native AutoMerge paginates trusted Core history and preserves exact-head e
     }};
     const payload=eventRunId===null?{pull_request:pr}:{workflow_run:{
       id:eventRunId,name:'HH PR core release gate',event:'pull_request',conclusion:'success',
+      path:'.github/workflows/hh-pr-core-release.yml@refs/pull/42/merge',
       repository:{full_name:full},head_repository:{full_name:full},
       head_branch:pr.head.ref,pull_requests:[{number:42,base:{ref:pr.base.ref}}]
     }};
