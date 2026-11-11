@@ -839,7 +839,27 @@ async function handler(req){
     if(writeActions.has(action)&&!writable)return reply(403,{error:"OWNER_WRITE_DENIED"},origin);
 
 
-    const openRouterReady=Boolean(Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY"));
+    const openRouterKey=Deno.env.get("HH_PM_OPENROUTER_API_KEY")||Deno.env.get("OPENROUTER_API_KEY")||"";
+    const openRouterReady=Boolean(openRouterKey);
+    if(action==="commander_free_model_quota"){
+      // Owner-only, read-only. Return only a verified numeric shared quota, never the key or balance.
+      if(!openRouterKey)return reply(200,{schema:"HH_OPENROUTER_FREE_QUOTA_V1",quota:null,observedAt:new Date().toISOString()},origin);
+      try{
+        const res=await fetch("https://openrouter.ai/api/v1/key",{
+          method:"GET",redirect:"error",cache:"no-store",signal:AbortSignal.timeout(6000),
+          headers:{Authorization:"Bearer "+openRouterKey,Accept:"application/json"}
+        });
+        if(!res.ok)return reply(200,{schema:"HH_OPENROUTER_FREE_QUOTA_V1",quota:null,observedAt:new Date().toISOString()},origin);
+        const raw=await res.text();if(raw.length>16384)throw Error("FREE_QUOTA_TOO_LARGE");
+        const counter=JSON.parse(raw)?.data?.free_model_daily_requests;
+        const limit=counter?.limit,used=counter?.used,remaining=counter?.remaining;
+        const quota=[limit,used,remaining].every(Number.isSafeInteger)&&limit>=0&&used>=0&&remaining>=0&&remaining<=limit?
+          {used,limit,remaining,shared:true,period:"UTC_DAY"}:null;
+        return reply(200,{schema:"HH_OPENROUTER_FREE_QUOTA_V1",quota,observedAt:new Date().toISOString()},origin);
+      }catch{
+        return reply(200,{schema:"HH_OPENROUTER_FREE_QUOTA_V1",quota:null,observedAt:new Date().toISOString()},origin);
+      }
+    }
     if(action==="commander_list_execution_runs"){
       const chatNumber=number(body.issueNumber);if(!chatNumber)return reply(400,{error:"INVALID_CHAT_NUMBER"},origin);
       const chats=await q(db,"select chat_id from business_brain.commander_chats where owner_id=$1::uuid and chat_number=$2 limit 1",[ownerId,chatNumber]);
@@ -875,6 +895,14 @@ async function handler(req){
         requiredBeforeSourceChange:"Resolve live GitHub PR and exact HEAD before any source change."
       };
       const modelId=typeof body.modelId==="string"&&body.modelId.length?clean(body.modelId,120):"owned-default";
+      // No arbitrary model IDs: a named local model must be a live, strictly zero-priced text chat model.
+      if((executor==="local"||executor==="openrouter")&&modelId!=="owned-default"&&modelId!=="openrouter/free"){
+        if(!MODEL_ID.test(modelId))return reply(400,{error:"VERIFIED_FREE_MODEL_REQUIRED"},origin);
+        try{await verifyFreeModel(modelId)}
+        catch(error){return reply(422,{error:"OPENROUTER_FREE_MODEL_UNAVAILABLE",reasonCode:String(error?.message||"FREE_MODEL_NOT_VERIFIED").slice(0,100)},origin);}
+      }
+      if(executor==="local"&&modelId==="openrouter/free")
+        return reply(400,{error:"VERIFIED_FREE_MODEL_REQUIRED"},origin);
       const writeConfirmed=body.confirmGitHubWrite===true;
       const canDispatch=(executor==="local"||executor==="openrouter")&&!writeConfirmed&&openRouterReady;
       let reasonCode="EXECUTOR_TRANSPORT_NOT_CONFIGURED";
@@ -931,7 +959,7 @@ async function handler(req){
         run:{...result.run,status:"QUEUED",reason_code:"OPENROUTER_WORKER_QUEUED",receipt:initialReceipt},
         duplicate:false,dispatchAttempted:false,agentStarted:false,executionVerified:false,
         liveVerified:false,status:"QUEUED",reasonCode:"OPENROUTER_WORKER_QUEUED",
-        model:"openrouter/free",sourceWrite:null,storage:"SUPABASE_PRIVATE"},origin);
+        model:modelId==="owned-default"?"openrouter/free":modelId,sourceWrite:null,storage:"SUPABASE_PRIVATE"},origin);
     }
     if(action==="commander_list_ci_events"){
       const limit=Math.max(1,Math.min(100,Number(body.limit)||30));

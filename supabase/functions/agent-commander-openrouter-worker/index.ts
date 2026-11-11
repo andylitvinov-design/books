@@ -102,12 +102,17 @@ async function executeOne(db) {
     if (!run) return { processed: false, status: "NO_WORK" };
     token = run.worker_lease_token;
     const payload = run.request_payload || {};
+    const chosen = typeof payload.modelId === "string" ? payload.modelId : "owned-default";
+    const requestedModel = chosen === "owned-default" || chosen === MODEL ? MODEL : chosen;
+    if (requestedModel !== MODEL &&
+        !/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(requestedModel))
+      throw Object.assign(new Error("OPENROUTER_FREE_MODEL_INVALID"), { permanent: true });
     const request = clean(payload.message, 5000);
     if (request.length < 2) throw Object.assign(new Error("OPENROUTER_TASK_MESSAGE_MISSING"), { permanent: true });
     const context = payload.contextCapsule && typeof payload.contextCapsule === "object" ? payload.contextCapsule : {};
     await query(db,
       "update business_brain.commander_execution_runs set actual_model_id=$1::text,worker_checkpoint=jsonb_build_object('phase','inference_started','model',$1::text,'attempt',worker_attempt_count),updated_at=now() where run_id=$2::uuid and status='RUNNING' and worker_lease_token=$3::uuid",
-      [MODEL, run.run_id, token]);
+      [requestedModel, run.run_id, token]);
     const messages = [
       { role: "system", content: [
         "You are the cloud-first Agents Director assistant running via OpenRouter Free.",
@@ -128,7 +133,7 @@ async function executeOne(db) {
         "HTTP-Referer": "https://holistic-house-pr-monitor.vercel.app", "X-Title": "Agents Director"
       },
       body: JSON.stringify({
-        model: MODEL, messages, stream: false, max_tokens: 2200, usage: { include: true },
+        model: requestedModel, messages, stream: false, max_tokens: 2200, usage: { include: true },
         provider: { allow_fallbacks: false, max_price: { prompt: 0, completion: 0 }, data_collection: "deny" }
       })
     });
@@ -151,8 +156,10 @@ async function executeOne(db) {
         Object.values(usage.cost_details || {}).some(v => v !== null && v !== undefined && (!Number.isFinite(Number(v)) || Number(v) !== 0))) {
       throw Object.assign(new Error("OPENROUTER_ZERO_COST_NOT_VERIFIED"), { permanent: true });
     }
-    const actualModel = clean(completion.model || MODEL, 180);
-    if (actualModel !== MODEL && !actualModel.endsWith(":free")) {
+    const actualModel = clean(completion.model || requestedModel, 180);
+    if (requestedModel === MODEL ?
+        (actualModel !== MODEL && !actualModel.endsWith(":free")) :
+        actualModel !== requestedModel) {
       throw Object.assign(new Error("OPENROUTER_FREE_ROUTER_RETURNED_UNVERIFIED_MODEL"), { permanent: true });
     }
     const answer = clean(assistant.content, 8000);
@@ -161,7 +168,7 @@ async function executeOne(db) {
     const now = new Date().toISOString();
     const receipt = {
       schema: "HH_OPENROUTER_WORKER_RECEIPT_V1", status: "COMPLETED", runId: run.run_id,
-      provider: "openrouter", requestedModel: MODEL, actualModel,
+      provider: "openrouter", requestedModel, actualModel,
       agentStarted: true, executionVerified: true, zeroCostVerified: true,
       costUsd: 0, attempt: run.worker_attempt_count, answerSha256: answerHash,
       completedAt: now, sourceWrite: null, proofLevel: "MODEL_RESPONSE_ZERO_COST_VERIFIED_READ_ONLY"

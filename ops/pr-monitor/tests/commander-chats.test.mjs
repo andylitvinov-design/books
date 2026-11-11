@@ -83,7 +83,7 @@ test('server chat refresh is retryable and never silently switches to a local ar
  assert.match(js,/else if\(authorized\)\{await authenticated\(\)/);
  assert.match(js,/A transient API failure must not silently replace server chats/);
  assert.match(js,/Серверное хранилище временно недоступно/);
- assert.ok(html.includes('commander-chats.js?v=20261110-openrouter-status-v3'));
+ assert.ok(html.includes('commander-chats.js?v=20261111-free-model-selector-v1'));
  assert.match(js,/Проверка защищённого серверного хранилища временно не завершилась/);
  assert.match(js,/if\(statusError\)/);
 });
@@ -126,7 +126,7 @@ test('Council routes through owner-authenticated free worker and exposes a persi
  assert.match(js,/request\(SERVER\+'\?action=run','POST'/);
  assert.match(js,/lastQuestion\(\)/);
  assert.match(css,/\.cc-run-status/);
- assert.match(html,/20261110-openrouter-status-v3/);
+ assert.match(html,/20261111-free-model-selector-v1/);
 });
 
 test('Commander Hermes adapter exposes only owner-authenticated free models and consented writes',()=>{
@@ -185,14 +185,14 @@ test('Commander one-box UX shows the question first and keeps task metadata in a
  assert.ok(js.includes("await send({preventDefault(){}})"));
  assert.ok(js.includes("el('new-context').close()"));
  assert.ok(js.includes("el('history-all').addEventListener('toggle',renderList)"));
- assert.ok(js.includes("await assignSelectedExecutor(c,mode)"));
+ assert.ok(js.includes("await assignSelectedExecutor(c,chosenFreeModel?'local':mode)"));
  const preferred="el('new-mode').value=ownedDirectorAvailable?'director':(aiReady?'openrouter':'local')";
  assert.equal(js.split(preferred).length-1,2,'authenticated Director default remains set on both initial load and chat creation');
  assert.ok(js.includes("ownedDirectorAvailable=remote&&status.dispatchAvailable===true&&status.dispatchMode==='FIRST_PARTY_AGENT_DIRECTOR'"));
  assert.ok(css.includes('HH_COMMANDER_ONE_BOX_CHAT_V1'));
  assert.ok(css.includes('.cc-context-dialog::backdrop'));
  assert.ok(css.includes('body.hh-cc-shell:has(#cc-board textarea:focus) #hh-cc-dock'));
- assert.ok(html.includes('commander-chats.css?v=20261110-openrouter-status-v3'));
+ assert.ok(html.includes('commander-chats.css?v=20261111-free-model-selector-v1'));
 });
 
 test('compact mobile chat never silently swallows validation or duplicates a timed-out creation',()=>{
@@ -533,8 +533,8 @@ test('legacy external Hermes code executor is disabled in UI and rejected before
 
 test('CI Inbox displays the shared diagnostic recommendation and retry policy without granting execution authority',()=>{
  const html=src('chats.html'),js=src('commander-chats.js'),css=src('commander-chats.css');
- assert.match(html,/commander-chats\.js\?v=20261110-openrouter-status-v3/);
- assert.match(html,/commander-chats\.css\?v=20261110-openrouter-status-v3/);
+ assert.match(html,/commander-chats\.js\?v=20261111-free-model-selector-v1/);
+ assert.match(html,/commander-chats\.css\?v=20261111-free-model-selector-v1/);
  assert.match(js,/event\.classification&&typeof event\.classification==='object'/);
  for(const field of ['recommended_action','recommended_status','reason_code','responsible_role','retry','requires_human','ruleset_version','confidence'])
   assert.ok(js.includes('classification.'+field)||js.includes('classification?.'+field),field);
@@ -545,7 +545,7 @@ test('CI Inbox displays the shared diagnostic recommendation and retry policy wi
 test('owner chat accurately labels first-party OpenRouter Free and translates every fail-closed provider reason',()=>{
  const html=src('chats.html'),js=src('commander-chats.js');
  assert.equal((html.match(/Agents Director · OpenRouter Free \(анализ\)/g)||[]).length,2);
- assert.match(html,/commander-chats\.js\?v=20261110-openrouter-status-v3/);
+ assert.match(html,/commander-chats\.js\?v=20261111-free-model-selector-v1/);
  assert.match(js,/director:'Agents Director · OpenRouter Free'/);
  for(const code of ['OWNED_MODEL_RUNTIME_NOT_CONFIGURED','OWNED_MODEL_FREE_RATE_LIMIT',
    'OWNED_MODEL_NO_VERIFIED_FREE_MODELS','OWNED_MODEL_COST_UNVERIFIED',
@@ -579,4 +579,35 @@ test('first question defaults to the authenticated cloud Director and its real f
  assert.match(js,/startExecutionPolling\(\)/);
  assert.match(html,/id="cc-run-status"/);
  assert.match(css,/\.cc-run-status/);
+});
+
+test('one-tap free models use a single owner-verified OpenRouter quota and keep $0-only inference',()=>{
+ const ui=src('commander-chats.js'),api=src('api/commander-chats.js');
+ const store=src('../../supabase/functions/agent-commander-private-store-v1/index.ts');
+ const worker=src('../../supabase/functions/agent-commander-openrouter-worker/index.ts');
+ const html=src('chats.html');
+ assert.ok(html.includes('id="cc-new-mode"')&&html.includes('id="cc-mode"'));
+ assert.match(ui,/const FREE_MODEL_MODE='free:'/);
+ assert.match(ui,/free:|FREE_MODEL_MODE\+model\.id/);
+ assert.match(ui,/option\.value=FREE_MODEL_MODE\+model\.id/);
+ assert.match(ui,/option\.title=model\.id\+' · \$0/);
+ assert.match(ui,/selectedFreeModel\(mode\)/);
+ assert.match(ui,/executor:mode==='director'\|\|chosenFreeModel\?'local':mode/);
+ assert.match(ui,/chosenFreeModel\?\{modelId:chosenFreeModel,confirmGitHubWrite:false\}/);
+ assert.match(ui,/action=free_quota/);
+ assert.match(ui,/freeQuota\.remaining\+' из '\+freeQuota\.limit\+' общих'/);
+ assert.match(api,/name==='free_quota'/);
+ assert.match(api,/const quotaPromise=callStore\(req,'commander_free_model_quota'/);
+ assert.match(api,/body\.executor==='local'&&body\.modelId!=='owned-default'/);
+ assert.match(store,/if\(action==="commander_free_model_quota"\)/);
+ assert.match(store,/free_model_daily_requests/);
+ assert.match(store,/Authorization:"Bearer "\+openRouterKey/);
+ assert.match(store,/await verifyFreeModel\(modelId\)/);
+ assert.match(store,/const canDispatch=\(executor==="local"\|\|executor==="openrouter"\)&&!writeConfirmed&&openRouterReady/);
+ assert.match(worker,/model: requestedModel, messages/);
+ assert.match(worker,/provider: \{ allow_fallbacks: false, max_price: \{ prompt: 0, completion: 0 \}/);
+ assert.match(worker,/usage\.cost !== 0/);
+ assert.match(worker,/requestedModel === MODEL/);
+ assert.doesNotMatch(worker,/model: "openrouter\/auto"/);
+ assert.doesNotMatch(api,/process\.env\.OPENROUTER_API_KEY|process\.env\.HH_PM_OPENROUTER_API_KEY/);
 });

@@ -16,6 +16,51 @@
  let remote=false,authorized=false,chats=[],thread=null,messages=[],key=null,salt=null,deviceMode=false,models=[],aiReady=false,busy=false,ownedDirectorAvailable=false;
  let reportRefreshTimer=null,reportSyncBusy=false,pendingCreateId=null,ciInboxTimer=null,ciInboxBusy=false;
  let executorModels=null,executorModelsPromise=null,executionRefreshTimer=null,executionPollCount=0,executionPollBusy=false;
+ let freeQuota=null;
+ const FREE_MODEL_MODE='free:';
+ const selectedFreeModel=mode=>typeof mode==='string'&&mode.startsWith(FREE_MODEL_MODE)?mode.slice(FREE_MODEL_MODE.length):'';
+ const isVerifiedFreeChoice=mode=>Boolean(selectedFreeModel(mode)&&(executorModels||[]).some(m=>m.id===selectedFreeModel(mode)));
+ function quotaLabel(){
+   if(freeQuota&&Number.isSafeInteger(freeQuota.remaining)&&Number.isSafeInteger(freeQuota.limit))
+    return freeQuota.remaining+' из '+freeQuota.limit+' общих';
+   return 'лимит неизвестен';
+ }
+ async function refreshFreeQuota(){
+   if(!remote||!authorized)return;
+   try{
+     const result=await request(SERVER+'?action=free_quota');
+     const quota=result.quota;
+     freeQuota=quota&&Number.isSafeInteger(quota.remaining)&&Number.isSafeInteger(quota.limit)
+      &&quota.remaining>=0&&quota.remaining<=quota.limit?quota:null;
+     refreshFreeChoices();
+   }catch{freeQuota=null;refreshFreeChoices();}
+ }
+ function refreshFreeChoices(){
+   for(const name of ['new-mode','mode']){
+     const selector=el(name),previous=selector.value;
+     const old=selector.querySelector('optgroup[data-director-free]');
+     if(old)old.remove();
+     const director=selector.querySelector('option[value="director"]');
+     if(director)director.textContent='Agents Director · авто — '+quotaLabel();
+     if(!executorModels?.length)continue;
+     const group=make('optgroup');group.label='OpenRouter · бесплатные модели';group.setAttribute('data-director-free','');
+     const preferred=/nemotron|gemma|qwen|deepseek|llama|mistral|phi|cohere/i;
+     const ordered=executorModels.slice().sort((a,b)=>
+      Number(preferred.test(b.name+' '+b.id))-Number(preferred.test(a.name+' '+a.id))||
+      a.name.localeCompare(b.name,'ru'));
+     for(const model of ordered.slice(0,15)){
+       const option=make('option',null,model.name.replace(/\s*\(free\)\s*/ig,'').slice(0,39)+' — '+quotaLabel());
+       option.value=FREE_MODEL_MODE+model.id;
+       option.title=model.id+' · $0 · общий лимит OpenRouter';
+       group.append(option);
+     }
+     const executors=selector.querySelector('optgroup[label^="Исполнители"]');
+     if(executors&&typeof selector.insertBefore==='function')selector.insertBefore(group,executors);
+     else selector.append(group);
+     if(isVerifiedFreeChoice(previous))selector.value=previous;
+   }
+ }
+
  let runSnapshot=null;
  // One-tap Council via same-origin, owner-verified server.
  let councilPending=null,councilChatIds=new Set();
@@ -76,7 +121,7 @@
  async function loadExecutorModels(){
   if(!remote)return;
   try{await ensureExecutorModels();configureModels('new');configureModels('thread');}
-  catch(error){info('Каталог бесплатных моделей Hermes недоступен: '+String(error.message||error));}
+  catch(error){info('Каталог бесплатных моделей OpenRouter недоступен: '+String(error.message||error));}
  }
 
  function lastQuestion(){
@@ -123,7 +168,11 @@
   try{
    const result=await request(SERVER+'?action=runs&issue='+thread.issueNumber);
    const run=Array.isArray(result.runs)?result.runs[0]:null;
+   const previous=runSnapshot?.chatId===thread.id?runSnapshot.run:null;
    runSnapshot={chatId:thread.id,run};showRunState(run);
+   if(run&&['COMPLETED','FAILED','BLOCKED'].includes(run.status)&&
+      (previous?.run_id!==run.run_id||previous?.status!==run.status))
+     void refreshFreeQuota();
    if(!run)return null;
    const labels={QUEUED:'В очереди OpenRouter.',STARTING:'Исполнитель запускается…',RUNNING:'Исполнитель работает…',WAITING_FOR_APPROVAL:'Ожидается подтверждение владельца.',COMPLETED:'Исполнение завершено. Ответ добавлен в чат.',FAILED:'Исполнение завершилось ошибкой.',CANCELLED:'Исполнение отменено.',BLOCKED:'Исполнитель не запущен или выполнение заблокировано.'};
    el('executor-state').textContent=(labels[run.status]||run.status||'Статус неизвестен')+(run.reason_code?' Причина: '+run.reason_code+'.':'')+(run.hermes_job_id?' · Job '+run.hermes_job_id:'');
@@ -327,9 +376,9 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
  function formValues(prefix){
   const value=k=>el(prefix+k).value;
   const r={title:value('title').trim(),project:value('project'),description:value('description').trim(),
-   tasks:tasks(value('tasks')),prs:prs(value('prs')),executors:prefix==='new-'?(['council-free','director'].includes(value('mode'))?['local']:[value('mode')]):picks('executors'),
+   tasks:tasks(value('tasks')),prs:prs(value('prs')),executors:prefix==='new-'?(['council-free','director'].includes(value('mode'))||isVerifiedFreeChoice(value('mode'))?['local']:[value('mode')]):picks('executors'),
    status:prefix==='new-'?'planned':value('status')};
-  if(prefix==='new-'&&value('mode')!=='council-free'&&!EXEC[value('mode')])throw Error('Неизвестный исполнитель');
+  if(prefix==='new-'&&value('mode')!=='council-free'&&!EXEC[value('mode')]&&!isVerifiedFreeChoice(value('mode')))throw Error('Неизвестный исполнитель');
   if(r.title.length<4||r.title.length>110||r.description.length>1000)throw Error('Название: 4–110 символов; цель до 1000');
   if(prefix==='new-'){
    const rawCriteria=value('acceptance').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
@@ -375,7 +424,7 @@ const from64=s=>Uint8Array.from(win.atob(s),v=>v.charCodeAt(0));
    b.addEventListener('click',()=>openChat(c));box.append(b);
   }
   if(!filtered.length)box.append(make('p','cc-empty',chats.length?'Чаты не найдены.':'Начните диалог — он появится здесь.'));
- } 
+ }
  function renderMessages(){
   const box=el('messages');box.replaceChildren();
   if(!messages.length)box.append(make('p','cc-empty','Напишите вопрос, чтобы начать диалог.'));
@@ -410,7 +459,7 @@ function renderThread(){
   const available=(thread.executors||[]).filter(x=>x!=='openrouter'||aiReady);
   if(el('mode').value==='hermes')el('mode').value='local'; // legacy external executor is retired
   if(councilChatIds.has(thread.id))el('mode').value='council-free';
-  else if(el('mode').value==='council-free'||!(el('mode').value==='director'&&available.includes('local'))&&!available.includes(el('mode').value))
+  else if(el('mode').value==='council-free'||!(isVerifiedFreeChoice(el('mode').value)&&available.includes('local'))&&!(el('mode').value==='director'&&available.includes('local'))&&!available.includes(el('mode').value))
    el('mode').value=available.includes('openrouter')?'openrouter':available[0]||'local';
   configureModels('thread');
   el('chat-feedback').textContent='';show('chat-feedback',false);
@@ -488,6 +537,8 @@ function renderThread(){
    if(question.length<2||question.length>1200)throw Error('Вопрос должен содержать 2–1200 символов.');
    if(mode==='openrouter'&&!aiReady)throw Error('Бесплатная модель OpenRouter сейчас недоступна. Выберите локального советника.');
    if(mode==='director'&&(!remote||!ownedDirectorAvailable))throw Error('Agents Director пока не подключён к защищённому серверу.');
+   if(selectedFreeModel(mode)&&(!remote||!ownedDirectorAvailable||!isVerifiedFreeChoice(mode)))
+    throw Error('Эта бесплатная модель сейчас не подтверждена сервером OpenRouter.');
    if(mode==='hermes'){
     const free=await ensureExecutorModels();
     if(!free.length)throw Error('Каталог не подтвердил бесплатные текстовые модели Hermes.');
@@ -616,6 +667,10 @@ async function update(e){
    const free=result.models.filter(m=>typeof m?.id==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*:free$/.test(m.id)&&
     typeof m.name==='string'&&m.name.length>0&&m.name.length<=120);
    executorModels=free;
+   const quota=result.quota;
+   freeQuota=quota&&Number.isSafeInteger(quota.remaining)&&Number.isSafeInteger(quota.limit)
+    &&quota.remaining>=0&&quota.remaining<=quota.limit?quota:null;
+   refreshFreeChoices();
    configureModels('new');configureModels('thread');
    return free;
   }).finally(()=>{executorModelsPromise=null;});
@@ -645,10 +700,13 @@ async function update(e){
   if(mode==='openrouter'&&(!aiReady||!models.some(x=>x.id===model)))return info('Нет подтверждённой бесплатной модели OpenRouter.');
   if(mode==='hermes'&&!(executorModels||[]).some(x=>x.id===model))return info('Выберите проверенную бесплатную модель для Hermes.');
   if(mode==='director'&&(!remote||!ownedDirectorAvailable))return info('Собственный Agents Director ещё не доступен в защищённом сервисе.');
+  const chosenFreeModel=selectedFreeModel(mode);
+  if(chosenFreeModel&&(!remote||!ownedDirectorAvailable||!isVerifiedFreeChoice(mode)))
+   return info('Выбранная бесплатная модель не подтверждена. Обновите каталог моделей.');
   let c=thread;
-  if(mode!=='council-free'&&!thread.executors.includes(mode==='director'?'local':mode)){
+  if(mode!=='council-free'&&!thread.executors.includes(mode==='director'||chosenFreeModel?'local':mode)){
    busy=true;el('send').disabled=true;
-   try{c=await assignSelectedExecutor(c,mode);}
+   try{c=await assignSelectedExecutor(c,chosenFreeModel?'local':mode);}
    catch(err){info('Не удалось выбрать исполнителя: '+String(err.message||err));return;}
    finally{busy=false;el('send').disabled=false;}
   }
@@ -680,7 +738,7 @@ async function update(e){
    const context=messages.slice(-8).filter(x=>['owner','assistant_unverified'].includes(x.kind))
    .map(x=>({role:x.kind==='owner'?'user':'assistant',content:x.text.slice(0,800)}));
   const dispatchModes=new Set(['director','hermes','codex','chatgpt-work','repair-worker','manual']);
-  if(dispatchModes.has(mode)){
+  if(dispatchModes.has(mode)||chosenFreeModel){
    if(!remote)return info('Запуск доступен только для чата в защищённом серверном хранилище. Локальная копия не может запускать исполнителей.');
    busy=true;el('send').disabled=true;
    try{
@@ -689,8 +747,8 @@ async function update(e){
     const writeApproved=mode==='hermes'&&el('github-write').checked===true;
     if(mode==='hermes')el('github-write').checked=false; // one-shot consent, even if transport fails
     const result=await request(SERVER+'?action=run','POST',{
-     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode==='director'?'local':mode,message:text,
-     ...(mode==='hermes'?{modelId:model,confirmGitHubWrite:writeApproved}:mode==='director'?{modelId:'owned-default',confirmGitHubWrite:false}:{})
+     issueNumber:c.issueNumber,runId,idempotencyKey,executor:mode==='director'||chosenFreeModel?'local':mode,message:text,
+     ...(mode==='hermes'?{modelId:model,confirmGitHubWrite:writeApproved}:chosenFreeModel?{modelId:chosenFreeModel,confirmGitHubWrite:false}:mode==='director'?{modelId:'owned-default',confirmGitHubWrite:false}:{})
     });
     try{
      const latest=await request(SERVER+'?action=read&issue='+c.issueNumber);
@@ -965,7 +1023,7 @@ async function update(e){
   el('new-question').value='';
   el('create').scrollIntoView({block:'nearest',behavior:'smooth'});
  }
- 
+
  // Resume a saved question only on an explicit click; never duplicate its owner event.
  el('retry-run').addEventListener('click',async()=>{
   if(!thread||!remote||!authorized||busy)return;
@@ -1035,7 +1093,7 @@ async function update(e){
   configureModels('new');
   if(el('new-mode').value==='hermes')void ensureExecutorModels().catch(err=>info('Каталог Hermes недоступен: '+String(err.message||err)));
  });
- 
+
  // Speech recognition is user-initiated and stays on device/browser voice services.
  // Never send raw audio. Only the edited transcript joins the chat on Send.
  let activeVoice=null,voiceSerial=0;
