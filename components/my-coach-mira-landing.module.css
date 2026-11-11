@@ -80,3 +80,8 @@
 }
 @media(max-width:355px){.heroHeading h1{font-size:39px!important}.stageGreeting h2{font-size:28px}.stageBubble{width:57%;bottom:39%}.stageBubble p{font-size:11px}.stageActions{bottom:26%}.talkButton{font-size:10px}.quickTopics button{min-height:61px!important;font-size:9px!important}.benefitTiles strong{font-size:10px}.localePill,.helpPill{padding:0 6px}}
 @media(prefers-reduced-motion:reduce){.coachRail,.directoryHeading{scroll-behavior:auto}}
+
+/* The global page-aware iHelp launcher still owns its dialog/keyboard logic.
+   When My Coach is mounted, its header button invokes that same launcher. */
+:global(body):has(.landing) :global([data-hh-ihelp-trigger]) { display:none!important }
+.helpPill{cursor:pointer}
