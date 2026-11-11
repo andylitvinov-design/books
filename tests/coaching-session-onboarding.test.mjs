@@ -91,7 +91,7 @@ test('private start happens only after both slides, then stores consented topic 
   assert.match(backend,/clientTopic\?\{clientTopic\}/)
   assert.match(backend,/seal\(course,sealContext\(actor\),config\)/)
   assert.match(backend,/readRow\(db,actor,true\)/)
-  assert.match(backend,/onlyKeys\(input,\['action','revision','schemeKey','clientQuestion','clientTopic','adultConfirmed','clientContext'\]\)/)
+  assert.match(backend,/onlyKeys\(input,\['action','revision','schemeKey','clientQuestion','clientTopic','adultConfirmed','clientContext','turnId'\]\)/)
   assert.doesNotMatch(privateClient,/localStorage|sessionStorage|\bfetch\(|sendBeacon\(/)
 })
 

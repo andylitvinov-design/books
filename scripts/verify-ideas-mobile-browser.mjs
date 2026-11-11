@@ -89,7 +89,7 @@ async function verify(browserType, browser, locale, width) {
     assert.equal(await cards.filter({ visible: true }).count(), 4,
       label + ": four routes return after using Back");
     const coachingPath = switchboard.locator('[data-tests-coaching-path="coaching"]');
-    assert.equal(await coachingPath.getAttribute("href"), "/" + locale + "/coaching",
+    assert.equal(await coachingPath.getAttribute("href"), "/" + locale + "/coaching/sessions",
       label + ": coaching card is a direct link to the topic-first chooser");
     assert.notEqual(await coachingPath.getAttribute("data-tests-coaching-direct"), null,
       label + ": coaching entry must not open a second interstitial slide");

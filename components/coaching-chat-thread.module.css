@@ -85,3 +85,38 @@
 .compactThread .userBubble{display:flex;align-items:center;gap:3px;overflow:hidden;max-width:100%;min-width:0}
 .compactThread .userLabel{flex:none;white-space:nowrap}
 .compactThread .userBubble p{flex:1;display:block;min-width:0;max-width:none}
+
+/* Public fictional AI coach portrait; human-coaching sessions retain Andrey's real photo. */
+.personaAvatar{display:flex;flex:none;align-items:center;justify-content:center;width:40px;height:40px;
+ border:2px solid #fff;border-radius:50%;background:#e7f3e9;box-shadow:0 2px 9px #35453e2d;font-size:20px}
+.personaAvatar[data-persona=mira],.personaAvatar[data-persona=max],
+.personaAvatar[data-persona=sofia],.personaAvatar[data-persona=alex]{
+ background:url('/images/holistic-house/my-coach-portraits.avif') no-repeat;background-size:400% 100%;font-size:0}
+.personaAvatar[data-persona=mira]{background-position:0% center}
+.personaAvatar[data-persona=max]{background-position:33.333% center}
+.personaAvatar[data-persona=sofia]{background-position:66.667% center}
+.personaAvatar[data-persona=alex]{background-position:100% center}
+@media(max-width:430px){.personaAvatar{width:34px;height:34px}}
+@media(max-width:350px){.personaAvatar{width:30px;height:30px}}
+.compactThread .personaAvatar{width:34px;height:34px;font-size:16px}
+.compactThread .coachRow[data-coach-persona] .coachBubble{max-width:calc(100% - 41px)}
+
+/* Selected My Coach portrait: user-driven voice events, never a fake speaking loop.
+   Actual mouth/phoneme sync is not available from browser speech synthesis. */
+.personaAvatar{position:relative;isolation:isolate;transform-origin:50% 85%}
+.personaAvatar::after{content:'';pointer-events:none;position:absolute;inset:-4px;
+ border:2px solid transparent;border-radius:50%;opacity:0;transform:scale(.95)}
+.personaAvatar[data-speech-state='speaking']{
+ animation:hh-persona-speaking var(--persona-speech-duration,.32s) ease-in-out infinite alternate;
+ box-shadow:0 0 0 3px rgba(6,122,103,.17),0 3px 12px rgba(6,89,78,.2)}
+.personaAvatar[data-speech-state='speaking']::after{
+ border-color:rgba(6,122,103,.6);animation:hh-persona-voice-ring 1.1s ease-out infinite}
+.personaAvatar[data-speech-state='listening']{
+ box-shadow:0 0 0 3px rgba(22,120,143,.22),0 3px 12px rgba(25,88,103,.14)}
+.personaAvatar[data-speech-state='paused']{animation:none}
+@keyframes hh-persona-speaking{from{transform:translateY(0) rotate(-1deg)}to{transform:translateY(-2px) rotate(1deg)}}
+@keyframes hh-persona-voice-ring{0%{opacity:.9;transform:scale(.93)}100%{opacity:0;transform:scale(1.25)}}
+@media(prefers-reduced-motion:reduce){
+ .personaAvatar[data-speech-state='speaking']{animation:none!important}
+ .personaAvatar[data-speech-state='speaking']::after{animation:none!important;opacity:1;transform:none}
+}

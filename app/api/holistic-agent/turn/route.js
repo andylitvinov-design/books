@@ -15,6 +15,7 @@ import { buildPortraitRecommendations } from "@/lib/profile/portrait-recommendat
 import { AXIS_REFS, publishedAxisOffers } from "@/lib/holistic-support/axis-offer-matcher.mjs";
 import { interpretSupportUtterance, explainUserQuestion } from "@/lib/holistic-support/guide-dialogue.mjs";
 import { ruleConversationReply } from "@/lib/holistic-support/rule-conversation.mjs";
+import { nativeSecretaryTurn } from "@/lib/holistic-support/native-secretary.mjs";
 import { resolveConversationFocus } from "@/lib/holistic-support/conversation-context.mjs";
 import { detectConversationLocale } from "@/lib/holistic-support/conversation-locale.mjs";
 import { planJudgmentTurn } from "@/lib/holistic-support/judgment-mind.mjs";
@@ -35,6 +36,9 @@ const GUIDE_FORMATS = new Set(["video","audio","test","course","service"]);
 const SAFE_CONTENT_ID = /^[a-z][a-z0-9_-]*:[A-Za-z0-9_:-]{1,85}$/;
 // These factual, side-effect-free intents can answer promptly without running
 // the media catalogue; all origin, auth, rate and safety checks still apply.
+// Native first-party secretary is only an informational/social subset of the same chat.
+const NATIVE_FAST_IDS = new Set(["hello","thanks","bye","identity","capabilities","price","human_help","technical","privacy"]);
+const NATIVE_INTENTS = new Set(["hello","thanks","bye","identity","capabilities","courses","services","pricing","human","booking","technical","privacy","status","smalltalk"]);
 const FAST_RULE_IDS = new Set([
   "hello","thanks","bye","restart","identity","capabilities","language",
   "price","privacy","login","technical","orders","video_status",
@@ -141,6 +145,27 @@ export async function POST(request) {
     const fastRule=body.mode==="rules"&&safety.status==="clear"&&!recentUnsafe
       ? ruleConversationReply({message:body.message,locale:body.locale,history:body.history})
       : null;
+
+    // A first-party trained statistical model for simple secretary conversations.
+    // The existing signed judgment, safety, user-consented memory, checkout and
+    // media workflows remain authoritative. Never treat this as generative LLM.
+    const nativeReply=body.mode==="rules" && safety.status==="clear" && !recentUnsafe &&
+      body.judgmentContext==null && body.judgmentChoice==null &&
+      body.usePrivateProfile!==true && body.usePrivateHistory!==true &&
+      body.useAgentMemory!==true && body.preferredFormat==null &&
+      (!body.chosenAxes || body.chosenAxes.length===0) &&
+      process.env.HH_NATIVE_SECRETARY_ENABLED!=="false"
+      ? nativeSecretaryTurn({message:body.message,locale:body.locale,history:body.history}) : null;
+    if(nativeReply && NATIVE_INTENTS.has(nativeReply.intent) &&
+       (!fastRule || NATIVE_FAST_IDS.has(fastRule.id))){
+      return auth.apply(NextResponse.json({
+        status:"clarify",reply:nativeReply.reply,modelUsed:false,
+        source:nativeReply.source,memorySaved:false,userAuthorized:true,
+        suggestions:[],usedSavedTestEvidence:false,usedSavedVideoHistory:false,
+        browserModelAllowed:false,
+        decision:{status:"clarify",message:nativeReply.reply,question:null,suggestions:[]},
+      },{headers:PRIVATE_HEADERS}));
+    }
     if(fastRule&&FAST_RULE_IDS.has(fastRule.id)){
       return auth.apply(NextResponse.json({
         status:"clarify",reply:fastRule.reply,modelUsed:false,
@@ -320,7 +345,7 @@ export async function POST(request) {
       usedSavedTestEvidence:useMeasurements && measurements.length>0,
       usedSavedVideoHistory:useHistory && completedIds.length>0,
       // Browser presentation may use a local model AFTER separate on-device opt-in.
-      browserModelAllowed:body.mode==="device" && safety.status==="clear",
+      browserModelAllowed:experimentalEnabled && body.mode!=="owned" && safety.status==="clear" && !recentUnsafe,
     },{headers:PRIVATE_HEADERS}));
   } catch (error) {
     const e=safeError(error);

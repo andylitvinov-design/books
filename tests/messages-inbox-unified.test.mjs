@@ -70,15 +70,16 @@ test('request details respond via existing secure APIs without creating duplicat
   assert.match(req,/onViewed=\{onReload\}/)
   assert.doesNotMatch(req,/\/api\/app\/crm\/leads/)
 })
-test('iPhone five-item Cabinet navigation matches Orders and Clients design',()=>{
+test('iPhone five-item Cabinet navigation retains My Progress and My Coaching Plan',()=>{
   const workspace=read('components/app/app-workspace.jsx')
   const css=read('app/[locale]/app/[[...path]]/workspace.css')
   const start=workspace.indexOf('const nav = [')
   const end=workspace.indexOf('  ]',start)
   const nav=workspace.slice(start,end)
-  // Desktop Account navigation gained the approved My Progress destination.
+  // Desktop Account navigation exposes My Progress and My Coaching Plan.
   // The iPhone dock still has four links plus its separate Home anchor.
-  assert.equal((nav.match(/id: '/g)||[]).length,7)
+  assert.equal((nav.match(/id: '/g)||[]).length,8)
+  assert.match(nav,/id: 'my-coaching-plan'/)
   assert.match(nav,/id: 'progress'/)
   assert.match(nav,/id: 'messages'/)
   assert.match(workspace,/className="hh-mobile-app-nav-home"/)
@@ -87,7 +88,8 @@ test('iPhone five-item Cabinet navigation matches Orders and Clients design',()=
   const mobile = workspace.slice(workspace.indexOf('const mobileNav = ['),workspace.indexOf('  ]',workspace.indexOf('const mobileNav = [')))
   assert.equal((mobile.match(/id: '/g)||[]).length,4)
   assert.match(mobile,/id: 'progress'/)
-  assert.match(mobile,/id: 'settings'/)
+  assert.match(mobile,/id: 'my-coaching-plan'/)
+  assert.doesNotMatch(mobile,/id: 'settings'/)
   assert.match(mobile,/id: 'messages', label: locale === 'ru' \? 'Сообщения'/)
 })
 
@@ -123,7 +125,7 @@ test('Telegram CRM leads are visible under Requests from the existing owner inbo
   assert.doesNotMatch(requests,/fetch\('\/api\/app\/crm\/messenger'/)
   assert.doesNotMatch(requests,/body_ciphertext|telegramPhotoFileId/)
 })
-test('Messages uses the seven-destination global dock with Free Analysis; legacy five-dock stays unmounted',()=>{
+test('Messages uses the current seven-destination My Coach and Services global dock; legacy five-dock stays unmounted',()=>{
   const page=read('app/[locale]/app/messages/page.tsx')
   const layout=read('app/layout.tsx')
   const dock=read('components/unified-mobile-dock.tsx')
@@ -142,16 +144,18 @@ test('Messages uses the seven-destination global dock with Free Analysis; legacy
   assert.match(oldNav,/className="hh-mobile-app-nav"/)
   assert.match(workspace,/const mobileNav = \[/)
   assert.match(css,/data-keyboard-open="true"/)
-  assert.deepEqual(UNIFIED_DOCK_IDS,['mytube','video','master','ai','analysis','practice','profile'])
+  assert.deepEqual(UNIFIED_DOCK_IDS,['mytube','video','coach','ai','services','practice','profile'])
   for(const locale of ['en','ru','es']){
     assert.equal(isUnifiedMobileDockPath('/'+locale+'/app/messages'),true)
     assert.equal(unifiedMobileDockHref(locale,'ai'),'/'+locale+'/app/messages?section=ai')
     assert.equal(unifiedMobileDockHref(locale,'practice'),'/'+locale+'/holistic-support/mobile')
-    assert.equal(unifiedMobileDockHref(locale,'master'),'/'+locale+'/practice')
+    assert.equal(unifiedMobileDockHref(locale,'coach'),'/'+locale+'/my-coach')
+    assert.equal(unifiedMobileDockHref(locale,'master'),null,'removed master alias must not be exposed')
     assert.ok(unifiedMobileDockHref(locale,'video'))
     assert.ok(unifiedMobileDockHref(locale,'mytube'))
     assert.ok(unifiedMobileDockHref(locale,'profile'))
-    assert.equal(unifiedMobileDockHref(locale,'analysis'),'/'+locale+'/services/free-situation-review')
+    assert.equal(unifiedMobileDockHref(locale,'services'),'/'+locale+'/services')
+    assert.equal(unifiedMobileDockHref(locale,'analysis'),null,'removed analysis alias must not bypass Services')
   }
 })
 

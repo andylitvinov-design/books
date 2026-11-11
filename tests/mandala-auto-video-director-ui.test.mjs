@@ -108,9 +108,9 @@ test("owner's iPhone mock uses ONE live player, one shared goal and four picture
  assert.match(studio,/data-video-quick-music-play=\{id\}/);
  assert.match(studio,/startPresetMixAudio\(attachedAudio\.ids,soundVolume,\{startSeconds:effectiveAudioStartSeconds,deferStart:true\}\)/);
  assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
- assert.match(studio,/const featuredMelodies=\(scenarioTracks\.length\?scenarioTracks:recommendMandalaAudio/);
+ assert.match(studio,/const featuredMelodies=recommendCuratedAudio\(/);
  assert.match(studio,/selectScenarioMusic\(preset\.id\)/,"confirmed film assigns a real first-party soundtrack only when auto-music is enabled");
- assert.match(studio,/theme:audioTheme,kind:"melody",wish/);
+ assert.match(studio,/theme:audioTheme,kind:"melody"/);
  assert.match(studio,/featuredMelodies\.slice\(0,4\)/);
  assert.match(studio,/data-video-theme-advanced/,"existing six topical video scenes remain editable");
  assert.match(css,/\.studio \.quickBuilder>\.previewStage\{order:1/);
@@ -336,7 +336,12 @@ test("MyTube cards display the original scenario, not the four generic archetype
 test("owner correction: canonical subcategory and optional topic and request precede the story",()=>{
  const goals=director.slice(director.indexOf("const goalPanel="),director.indexOf("return <section className={css.root}"));
  const goalBlock=goals.slice(0,goals.indexOf("const quickTopicPanel="));
- assert.match(goalBlock,/subcategoriesOpen\?<div className=\{css\.subcategories\}/);
+ assert.match(goalBlock,/subcategoriesOpen&&!requestNeedsChoice\?<div className=\{css\.subcategories\}/,
+   "show subcategories only after an explicit or reliable category selection");
+ assert.match(goalBlock,/aria-pressed=\{selectedCategoryId===item\.id&&!requestNeedsChoice\}/,
+   "an unmatched wish must not show the previously selected category as checked");
+ assert.match(director,/if\(!classification\|\|broad\)\{[\s\S]*?setProposal\(null\);setTimelineEdits\(null\);return/,
+   "unresolved or broad wishes must not inherit a ready film timeline");
  assert.match(goalBlock,/taxonomySubcategories\.map\(item=>/);
  assert.match(goalBlock,/data-auto-video-subcategory=\{item\.id\}/);
  assert.match(goalBlock,/selectedSubcategoryId===item\.id/);

@@ -24,7 +24,7 @@ en:{
  {id:"relationships",label:"Love & relationships",description:"Insights for connection and healthy boundaries",kind:"link",href:"/mytube?goal=relationships"},
  {id:"energy",label:"Energy & motivation",description:"Find inspiration and restore momentum",kind:"link",href:"/mytube?goal=energy"},
  {id:"meaning",label:"Meaning & growth",description:"Explore purpose, values and personal growth",kind:"link",href:"/mytube?goal=meaning"}]},
- sessions:{title:"Sessions",subline:"Personal practitioner support",question:"What kind of personal support would be useful?",options:[
+ sessions:{title:"Sessions",subline:"Personal practitioner support",question:"What would you like to work on in a session, and what would you like to change?",options:[
  {id:"free-review",label:"Free situation review",description:"Describe your situation and receive a personal review",kind:"link",href:"/services/free-situation-review"},
  {id:"imagery",label:"Guided imagery therapy",description:"Work with inner images in a guided session",kind:"link",href:"/services/imagery-therapy"},
  {id:"constellations",label:"Systemic constellations",description:"Explore relationship and family-system dynamics",kind:"link",href:"/services/systemic-constellations"},
@@ -51,7 +51,7 @@ ru:{
  {id:"relationships",label:"Любовь и отношения",description:"Общение, близость и здоровые границы",kind:"link",href:"/mytube?goal=relationships"},
  {id:"energy",label:"Энергия и мотивация",description:"Вдохновение и восстановление активности",kind:"link",href:"/mytube?goal=energy"},
  {id:"meaning",label:"Смыслы и развитие",description:"Ценности, предназначение и личный рост",kind:"link",href:"/mytube?goal=meaning"}]},
- sessions:{title:"Сессии",subline:"Личная помощь мастера",question:"Какая личная поддержка вам нужна?",options:[
+ sessions:{title:"Сессии",subline:"Личная помощь мастера",question:"С какой ситуацией вы хотите поработать и какого результата ждёте от сессии?",options:[
  {id:"free-review",label:"Бесплатный разбор",description:"Опишите ситуацию и получите персональный разбор",kind:"link",href:"/services/free-situation-review"},
  {id:"imagery",label:"Образная терапия",description:"Работа с внутренними образами в направленной сессии",kind:"link",href:"/services/imagery-therapy"},
  {id:"constellations",label:"Системные расстановки",description:"Исследование семейных и системных динамик",kind:"link",href:"/services/systemic-constellations"},
@@ -78,7 +78,7 @@ es:{
  {id:"relationships",label:"Amor y relaciones",description:"Conexión y límites saludables",kind:"link",href:"/mytube?goal=relationships"},
  {id:"energy",label:"Energía y motivación",description:"Inspiración y recuperación del impulso",kind:"link",href:"/mytube?goal=energy"},
  {id:"meaning",label:"Sentido y crecimiento",description:"Propósito, valores y desarrollo personal",kind:"link",href:"/mytube?goal=meaning"}]},
- sessions:{title:"Sesiones",subline:"Apoyo personal",question:"¿Qué tipo de apoyo personal buscas?",options:[
+ sessions:{title:"Sesiones",subline:"Apoyo personal",question:"¿Qué situación te gustaría trabajar y qué cambio esperas de una sesión?",options:[
  {id:"free-review",label:"Revisión gratuita",description:"Describe tu situación y recibe una revisión personal",kind:"link",href:"/services/free-situation-review"},
  {id:"imagery",label:"Terapia con imágenes",description:"Trabaja con imágenes internas en una sesión guiada",kind:"link",href:"/services/imagery-therapy"},
  {id:"constellations",label:"Constelaciones",description:"Explora dinámicas familiares y sistémicas",kind:"link",href:"/services/systemic-constellations"},

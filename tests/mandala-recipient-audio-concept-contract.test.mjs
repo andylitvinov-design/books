@@ -31,8 +31,11 @@ test("transcript stays in memory, candidate shots remain preview-only until manu
  assert.match(studio,/onClick=\{\(\)=>applyTranscriptVideo\(\)\}/);
  assert.match(studio,/disabled=\{!audioPlanApplied\|\|!voiceVisualPlan\?\.canExport\|\|!audioRights\}/);
  assert.match(studio,/setAttachedAudio\(\{kind:"file",file:entry\.file,id:entry\.url,nonLoop:true\}\)/);
- assert.match(studio,/data-video-recipient-audio-stt-consent/);
- assert.match(studio,/data-video-recipient-audio-rights/);
+ assert.match(studio,/data-video-recipient-audio-stt-notice/);
+ assert.match(studio,/data-video-recipient-audio-rights-notice/);
+ assert.match(studio,/data-video-recipient-audio-transcript/);
+ assert.doesNotMatch(studio.slice(studio.indexOf("const recipientAudioPanel="),
+   studio.indexOf("const activateQuickWorkspace=")),/type="checkbox"/);
  assert.match(concept,/sourceVerified:false/);
  assert.match(concept,/previewOnly:true,requiresReview:true/);
  assert.match(concept,/origin:"quoted_source_not_generated"/);
@@ -42,7 +45,8 @@ test("iPhone Files generic MIME is normalized only with explicit consent and str
  assert.match(stt,/AUDIO_STT_CONSENT_REQUIRED/);
  assert.match(stt,/file\.size>4\*1024\*1024/);
  assert.match(stt,/if\(!mime\)throw Error\("AUDIO_STT_INVALID_FILE"\)/);
- assert.match(stt,/file\.type===""\|\|file\.type==="application\/octet-stream"/);
+ assert.match(stt,/const declaredType=file\.type\.toLowerCase\(\)\.split\(";"\)\[0\]\.trim\(\)/);
+ assert.match(stt,/audio\/mp4;codecs=mp4a\.40\.2/);
  assert.match(stt,/new File\(\[file\],file\.name,\{type:mime,lastModified:file\.lastModified\}\)/);
  assert.match(stt,/form\.append\("file",normalized,normalized\.name\)/);
 });
