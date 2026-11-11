@@ -86,10 +86,14 @@ test("shared widescreen preview and mutually exclusive format accordion keep pai
   assert.match(source,/freeVideoSelected = practiceType==="video" && practiceLevels\.video==="basic"/);
   const direct=source.slice(source.indexOf("data-video-quick-generate"),
     source.indexOf("</button>",source.indexOf("data-video-quick-generate")));
-  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":"hypno"}'),
-    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":"hypno"}')));
+  const addEffects=source.slice(source.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":montagePanel==="audio"?"text":"hypno"}'),
+    source.indexOf("</button>",source.indexOf('data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":montagePanel==="audio"?"text":"hypno"}')));
   assert.ok(direct.includes('onClick={createQuickVideo}'),"Create must use the original real renderer");
   assert.ok(addEffects.includes('onClick={continueMontageOrGenerate}'),"Add must only advance");
+  assert.match(source,/if\(montagePanel==="audio"\)\{[\s\S]*?setMontagePanel\("text"\)/,
+    "Audio Add returns to the existing affirmations editor");
+  assert.doesNotMatch(addEffects,/createQuickVideo|videoCreditRequest|startFromHero/,
+    "Add cannot generate or charge");
   for(const guard of ['if(!freeVideoSelected){','if(phrasePending){','if(narrationInvalid){','if(!canGenerate){'])
     assert.ok(source.includes(guard),"protected export gate: "+guard);
   assert.match(source,/prepareFourFilmSources\(freeFilmShots,freeFilmPlayerRefs\.current/,

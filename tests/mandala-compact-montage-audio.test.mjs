@@ -9,10 +9,16 @@ test("Montage audio is an owner-approved compact panel, not a second generator",
   const pane=source.slice(start,end+300);
   assert.ok(start>0&&end>start,"dedicated compact pane");
   assert.match(pane,/Background music/);
-  for(const marker of ['data-video-audio-mode="library"','data-video-audio-mode="upload"',
-    "data-video-audio-category","data-video-audio-compact-selected",
-    "data-video-audio-compact-volume","data-video-audio-compact-attach",
+  for(const marker of ["data-video-audio-category","data-video-audio-compact-grid",
+    "data-video-audio-compact-track","data-video-audio-compact-select","data-video-audio-compact-play",
+    "data-video-audio-compact-upload","data-video-audio-compact-selected","data-video-audio-compact-volume",
+    "data-video-audio-compact-attach","data-video-audio-affirmations",
     "data-video-audio-library","{deepAudioPane}"])assert.ok(pane.includes(marker),marker);
+  assert.doesNotMatch(pane,/data-video-audio-mode=/);
+  assert.match(pane,/curatedMatches\.slice\(0,5\)/);
+  assert.match(pane,/attachedPresetIds\.includes\(id\)/);
+  assert.match(pane,/toggleQuickMusic\(id\)/);
+  assert.match(pane,/playQuickTrack\(id\)/);
   assert.ok(!pane.includes("data-video-basic-duration"));
   assert.ok(!pane.includes("data-video-basic-format"));
   assert.ok(!pane.includes("data-video-basic-tab"));
@@ -43,4 +49,17 @@ test("The compact Audio pane preserves one opt-in consented RU/EN voice editor",
   assert.match(panel,/onAudioInvalidated=\{\(\)=>setAttachedAudio/);
   assert.doesNotMatch(panel,/data-video-basic-tab/);
   assert.match(source,/if\(hash==="voice-studio"\)\{[\s\S]*?setMontagePanel\("audio"\);setBasicPanelTab\("voice"\);/);
+});
+
+
+test("compact Montage Audio runs the existing macOS WebKit and Chromium paths",()=>{
+  const workflow=readFileSync(new URL("../.github/workflows/holistic-support-mandala.yml",import.meta.url),"utf8");
+  const eligible="startsWith(github.head_ref, 'codex/montage-audio-')";
+  assert.equal(workflow.split(eligible).length-1,8,
+    "seven existing Linux browser steps and the mandatory macOS runner");
+  const macos=workflow.slice(workflow.indexOf("  voice-webkit-macos:"),
+    workflow.indexOf("    needs: [webkit_preflight]",workflow.indexOf("  voice-webkit-macos:")));
+  assert.match(macos,/codex\/montage-audio-/);
+  assert.match(workflow,/runs-on: macos-15/);
+  assert.match(workflow,/node scripts\/verify-affirmation-voice-browser\.mjs/);
 });
