@@ -8,6 +8,7 @@ import {
   localCoachText, normalizeCoachSettings,
 } from '@/lib/coaching/persona-registry.mjs'
 import styles from './my-coach-catalog.module.css'
+import heroStyles from './my-coach-mira-landing.module.css'
 
 const words = {
   en: {
@@ -109,6 +110,39 @@ const designCopy = {
     showProfile: 'Ver perfil', clear: 'Borrar filtros',
   },
 }
+const miraCopy = {
+  en: {
+    tagline: 'Your AI consultant for clarity, balance and growth',
+    hello: "Hi! I'm", subtitle: "Let's explore what's on your mind today.",
+    badge: 'AI Coach · Guided', bubble: 'You can talk, ask questions, or find practical guidance right now.',
+    preview: 'Read introduction', talk: 'Talk now with', choose: 'Choose another coach', all: 'All coaches',
+    topic: 'Or start with a topic:', review: 'Free situation review',
+    hint: 'Get a hint & new perspective', plan: 'Create your plan',
+    intro: 'A gentle introduction to your coach', nav: 'Language and help',
+    back: 'Back to Mira', browse: 'Choose your coach for a personal AI session',
+  },
+  ru: {
+    tagline: 'Ваш AI-консультант для ясности, баланса и развития',
+    hello: 'Привет! Я', subtitle: 'Давайте разберём то, что сейчас важно для вас.',
+    badge: 'AI-коуч · Практика', bubble: 'Вы можете задать вопрос, обсудить ситуацию или найти следующий практический шаг.',
+    preview: 'Прочитать приветствие', talk: 'Поговорить с', choose: 'Выберите другого коуча', all: 'Все коучи',
+    topic: 'Или начните с темы:', review: 'Бесплатный разбор ситуации',
+    hint: 'Подсказка и новый взгляд', plan: 'Создать свой план',
+    intro: 'Приветствие выбранного коуча', nav: 'Язык и помощь',
+    back: 'Вернуться к Мире', browse: 'Выберите коуча для персональной AI-сессии',
+  },
+  es: {
+    tagline: 'Tu consultor de IA para claridad, equilibrio y crecimiento',
+    hello: '¡Hola! Soy', subtitle: 'Exploremos lo que te importa hoy.',
+    badge: 'Coach IA · Guiado', bubble: 'Puedes hacer preguntas, reflexionar y encontrar un próximo paso práctico.',
+    preview: 'Leer presentación', talk: 'Hablar con', choose: 'Elige otro coach', all: 'Todos los coaches',
+    topic: 'O empieza con un tema:', review: 'Revisión gratuita de tu situación',
+    hint: 'Una pista y otra perspectiva', plan: 'Crea tu plan',
+    intro: 'Presentación del coach', nav: 'Idioma y ayuda',
+    back: 'Volver a Mira', browse: 'Elige tu coach para una sesión personal de IA',
+  },
+}
+const topicGlyphs = { all: '▦', resilience: 'ϟ', relationships: '♡', career: '◇', meaning: '✿', habits: '✧' }
 const visualTopics = [
   { id: 'all', image: 'lotus' },
   { id: 'resilience', image: 'calm' },
@@ -129,11 +163,13 @@ export default function MyCoachCatalog({ locale = 'en' }) {
   const t = words[lang]
   const categories = topicText[lang]
   const d = designCopy[lang]
+  const hw = miraCopy[lang]
   const [search, setSearch] = useState('')
   const [topic, setTopic] = useState('all')
   const [onlyFavorites, setOnlyFavorites] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
+  const [introExpanded, setIntroExpanded] = useState(false)
   const [sortBy, setSortBy] = useState('all')
   const [paceFilter, setPaceFilter] = useState('any')
   const [favorites, setFavorites] = useState([])
@@ -187,52 +223,115 @@ export default function MyCoachCatalog({ locale = 'en' }) {
     current.includes(id) ? current.filter(value => value !== id) : [...current, id].slice(-8))
   return <main className={styles.root} data-my-coach-catalog lang={lang}>
     <div className={styles.frame}>
-      <header className={styles.brandHeader}>
+      <header className={[styles.brandHeader, heroStyles.stickyHeader].join(' ')}>
         <Link href={'/' + lang} className={styles.brand} aria-label="Holistic House">
           <span className={styles.brandMark} aria-hidden="true" />
           <span>Holistic House<sup>®</sup></span>
         </Link>
-        <nav className={styles.brandActions} aria-label={d.filters}>
-          <button type="button" onClick={() => { setOnlyFavorites(v => !v); setSortBy('all') }}
-            aria-pressed={onlyFavorites} aria-label={d.favorites} className={styles.brandAction}>
-            <Heart size={22} fill={onlyFavorites ? 'currentColor' : 'none'} aria-hidden="true" />
-          </button>
-          <button type="button" className={styles.brandAction} onClick={() => setShowMenu(value => !value)}
-            aria-label={t.back} aria-expanded={showMenu} aria-controls="my-coach-more-menu">
-            <MoreHorizontal size={24} aria-hidden="true" />
-          </button>
-          {showMenu ? <div className={styles.brandMenu} id="my-coach-more-menu">
-            <Link href={'/' + lang + '/coaching'}>{t.back}</Link>
-            <Link href={'/' + lang + '/masters'}>{t.human}</Link>
-          </div> : null}
+        <nav className={[styles.brandActions, heroStyles.brandControls].join(' ')} aria-label={hw.nav}>
+          <label className={heroStyles.localePill}>
+            <span aria-hidden="true">◎</span>
+            <span className={heroStyles.srOnly}>{hw.nav}</span>
+            <select value={lang} onChange={event => { window.location.assign('/' + event.target.value + '/my-coach') }}>
+              <option value="en">EN</option><option value="ru">RU</option><option value="es">ES</option>
+            </select>
+          </label>
+          <Link className={heroStyles.helpPill} href={'/' + lang + '/contact'}><span aria-hidden="true">ⓘ</span> iHelp</Link>
         </nav>
       </header>
 
-      <section className={styles.hero} aria-labelledby="my-coach-heading">
-        <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}>HOLISTIC HOUSE · MY COACH</span>
+      <section className={[styles.hero, heroStyles.landing].join(' ')} id="my-coach-top" aria-labelledby="my-coach-heading">
+        <div className={[styles.heroCopy, heroStyles.heroHeading].join(' ')}>
           <h1 id="my-coach-heading">My Coach</h1>
-          <p className={styles.heroLead}>{d.lead}</p>
+          <p className={heroStyles.tagline}>{hw.tagline}</p>
         </div>
-        <div className={styles.heroWave} aria-hidden="true" />
-        <div className={styles.quickTopics} role="group" aria-label={t.topics}>
-          {[
-            { id: 'resilience', label: d.energy },
-            { id: 'relationships', label: d.love },
-            { id: 'clarity', label: d.balance },
-            { id: 'meaning', label: d.meaning },
-          ].map(item => {
-            const Icon = categoryIcon[item.id]
-            return <button type="button" key={item.id} aria-pressed={topic === item.id}
-              className={topic === item.id ? styles.quickTopicActive : styles.quickTopic}
-              onClick={() => setTopic(old => old === item.id ? 'all' : item.id)}>
-              <Icon size={21} strokeWidth={1.8} aria-hidden="true" /><span>{item.label}</span>
+        <div className={heroStyles.heroStage} data-my-coach-hero={selected.id}>
+          <div className={heroStyles.heroPortrait} data-persona={selected.id} aria-hidden="true" />
+          <div className={heroStyles.stageTop}>
+            <span className={heroStyles.liveLabel}><span className={heroStyles.liveDot} />{hw.badge}</span>
+            <button type="button" className={heroStyles.previewControl} onClick={() => setIntroExpanded(v => !v)}
+              aria-expanded={introExpanded} aria-label={hw.preview}>▶</button>
+          </div>
+          <div className={heroStyles.stageGreeting}>
+            <h2>{hw.hello} {selectedName}</h2>
+            <p>{hw.subtitle}</p>
+          </div>
+          <div className={heroStyles.waveform} aria-hidden="true">
+            {Array.from({length:23}, (_, index) => <i key={index} />)}
+          </div>
+          <div className={heroStyles.stageBubble} aria-live="polite">
+            <span aria-hidden="true">◉</span>
+            <p>{introExpanded ? localCoachText(selected.opening, lang) : hw.bubble}</p>
+          </div>
+          <div className={heroStyles.stageActions}>
+            <button type="button" className={heroStyles.circleAction} onClick={() => setIntroExpanded(v => !v)}
+              aria-label={hw.preview} aria-expanded={introExpanded}>▶</button>
+            <Link className={heroStyles.talkButton} href={startHref} prefetch={false}
+              data-my-coach-hero-start={selected.id}>♩ {hw.talk} {selectedName} <ArrowRight size={17} aria-hidden="true" /></Link>
+            <Link className={heroStyles.circleAction} href={startHref} prefetch={false}
+              aria-label={t.start}><ArrowRight size={21} aria-hidden="true" /></Link>
+          </div>
+          <div className={heroStyles.stageTopics}>
+            <span>{hw.topic}</span>
+            <div className={[styles.quickTopics, heroStyles.quickTopics].join(' ')} role="group" aria-label={t.topics}>
+              {[
+                { id: 'resilience', label: d.energy }, { id: 'relationships', label: d.love },
+                { id: 'career', label: d.goals }, { id: 'meaning', label: d.meaning },
+              ].map(item => {
+                const Icon = categoryIcon[item.id] || Sparkles
+                return <button type="button" key={item.id} aria-pressed={topic === item.id}
+                  className={topic === item.id ? styles.quickTopicActive : styles.quickTopic}
+                  onClick={() => { setTopic(item.id); document.getElementById('all-coaches')?.scrollIntoView({behavior:'smooth',block:'start'}) }}>
+                  <Icon size={20} strokeWidth={1.7} aria-hidden="true" /><span>{item.label}</span>
+                </button>
+              })}
+            </div>
+          </div>
+        </div>
+        <div className={heroStyles.coachRailHeading}>
+          <h2>{hw.choose}</h2>
+          <a href="#all-coaches">{hw.all} <ArrowRight size={18} aria-hidden="true" /></a>
+        </div>
+        <div className={heroStyles.coachRail} role="group" aria-label={hw.choose}>
+          {['mira','alex','sofia','max'].map(id => {
+            const persona = getCoachPersona(id)
+            if (!persona) return null
+            return <button type="button" key={id} className={heroStyles.railCard}
+              aria-pressed={selected.id === id}
+              onClick={() => { setSelectedId(id); setSettings(normalizeCoachSettings(id)); setIntroExpanded(false) }}>
+              <span className={heroStyles.railPortrait} data-persona={id} aria-hidden="true">
+                <span className={heroStyles.railPlay} aria-hidden="true">▶</span>
+              </span>
+              <strong>{localCoachText(persona.name, lang)}</strong>
+              <small>{localCoachText(persona.role, lang)}</small>
             </button>
           })}
         </div>
+        <div className={heroStyles.benefitTiles}>
+          <Link href={'/' + lang + '/holistic-support/mobile'}><BookOpen size={27} aria-hidden="true" /><strong>{hw.review}</strong></Link>
+          <a href="#all-coaches"><Sparkles size={27} aria-hidden="true" /><strong>{hw.hint}</strong></a>
+          <Link href={startHref} prefetch={false}><Leaf size={27} aria-hidden="true" /><strong>{hw.plan}</strong></Link>
+        </div>
+      </section>
+      <section className={heroStyles.directoryHeading} id="all-coaches" aria-label={hw.browse}>
+        <a href="#my-coach-top" className={heroStyles.directoryBack} aria-label={hw.back}>‹</a>
+        <div><h2>My Coach</h2><p>{hw.browse}</p></div>
       </section>
 
       <section className={styles.discover} aria-label={t.topics}>
+        <div className={[styles.visualTopics, heroStyles.directoryTopics].join(' ')} role="group" aria-label={d.allTopics}>
+          {visualTopics.map(item => {
+            const label = item.id === 'all' ? d.allTopics : item.id === 'resilience' ? d.antistress
+              : item.id === 'career' ? d.goals : item.id === 'meaning' ? d.growth
+              : item.id === 'habits' ? d.habits : categories[item.id]
+            return <button type="button" key={item.id} aria-pressed={topic === item.id}
+              className={topic === item.id ? styles.visualTopicActive : styles.visualTopic}
+              onClick={() => setTopic(item.id)}>
+              <span className={[styles.topicPicture, heroStyles.topicGlyph].join(' ')} aria-hidden="true">{topicGlyphs[item.id]}</span>
+              <span>{label}</span>
+            </button>
+          })}
+        </div>
         <div className={styles.controlTop}>
           <label className={styles.search}>
             <Search size={20} aria-hidden="true" />
@@ -276,19 +375,6 @@ export default function MyCoachCatalog({ locale = 'en' }) {
           <button type="button" className={styles.clearFilters}
             onClick={() => { setTopic('all'); setSearch(''); setPaceFilter('any'); setOnlyFavorites(false); setSortBy('all') }}>
             <RotateCcw size={15} aria-hidden="true" />{d.clear}</button>
-        </div>
-        <div className={styles.visualTopics} role="group" aria-label={d.allTopics}>
-          {visualTopics.map(item => {
-            const label = item.id === 'all' ? d.allTopics : item.id === 'resilience' ? d.antistress
-              : item.id === 'career' ? d.goals : item.id === 'meaning' ? d.growth
-              : item.id === 'habits' ? d.habits : categories[item.id]
-            return <button type="button" key={item.id} aria-pressed={topic === item.id}
-              className={topic === item.id ? styles.visualTopicActive : styles.visualTopic}
-              onClick={() => setTopic(item.id)}>
-              <span className={styles.topicPicture} data-art={item.image} aria-hidden="true" />
-              <span>{label}</span>
-            </button>
-          })}
         </div>
         {visibleList.length ? <div className={styles.cardGrid}>
           {visibleList.map(persona => {
