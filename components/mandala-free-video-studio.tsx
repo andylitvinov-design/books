@@ -82,7 +82,7 @@ import type { AmbientMusic, AmbientSession } from "@/lib/mandala/local-video-mus
 import { mandalaAudioTracks } from "@/lib/mandala/audio-recommendations.mjs";
 import { SCENARIO_AUDIO_REGISTRY, scenarioAudioTracks, classicalAudioTracks } from "@/lib/mandala/scenario-audio-catalog.mjs";
 import { getGoalTreeAudioChoices } from "@/lib/mandala/goal-tree-audio-playlists.mjs";
-import {curatedAudioTracks,recommendCuratedAudio} from "@/lib/mandala/curated-audio-recommendations.mjs";
+import {curatedAudioTracks,recommendCuratedAudio,curatedAudioMatchesCategory,inferVideoAudioCategory} from "@/lib/mandala/curated-audio-recommendations.mjs";
 import type { MoneySceneId } from "@/lib/mandala/money-flow-effects";
 import { orderRecordingMimes, proceduralMp4Route, selectWebCodecsForRecording, shouldAutoRecoverSafariPlayback } from "@/lib/mandala/recording-codecs.mjs";
 import { prepareFourFilmSources } from "@/lib/mandala/free-film-source-loader.mjs";
@@ -2047,7 +2047,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     window.requestAnimationFrame(()=>audioLibraryCloseRef.current?.focus());
     return()=>document.removeEventListener("keydown",onKey);
   },[audioLibraryOpen]);
-  const [audioCategory,setAudioCategory] = useState("all");
+  const [audioCategoryOverride,setAudioCategoryOverride] = useState<"all"|"wellbeing"|"focus"|"calm"|"energy"|"love"|null>(null);
   const [montageTransition,setMontageTransition] = useState<TimelineTransition>("soft");
   // Real browser interactions are safe only after client event handlers hydrate.
   const [studioHydrated,setStudioHydrated] = useState(false);
@@ -2907,7 +2907,10 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const previewAudioUrl = samplePreviewId ? presetAudioUrl(samplePreviewId) : uploadedAudio?.url || (music==="none" ? null : presetAudioUrl(music));
   // Context comes from the existing theme/filter on this very screen.
   // A typed wish influences ranking locally; no profile, tests or health data is read.
-  const audioTheme=audioThemeOverride||theme;
+  const audioCategory=audioCategoryOverride||inferVideoAudioCategory({theme,concept:approvedVideoConcept,wish});
+  const categoryTheme:VideoTheme=audioCategory==="wellbeing"?"health":audioCategory==="focus"?"goals":
+    audioCategory==="calm"?"life":audioCategory==="love"?"relationships":"energy";
+  const audioTheme=audioThemeOverride||(audioCategory==="all"?theme:categoryTheme);
   // The existing 48 scenario packs each provide four original, distinct tracks.
   // Preserve the canonical scenario/classical collection in this compact UI.
   const goalTreeTracks=goalTreeAudioScenarioId?getGoalTreeAudioChoices(goalTreeAudioScenarioId):[];
@@ -2918,7 +2921,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const curatedMatches=recommendCuratedAudio({
     theme:audioTheme,kind:audioKind,mood:audioMood,pace:audioPace,
     voiceFriendly:audioVoiceFriendly,
-  });
+  }).filter(track=>curatedAudioMatchesCategory(track,audioCategory));
   // Offer every approved first-party score, not only this storyboard's four.
   // The active story still ranks first; other scores keep their actual IDs.
   const libraryScenarioTracks=useMemo(
@@ -2942,7 +2945,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     seenAvailableAudioIds.add(track.id);
     return true;
   });
-  const featuredMelodies=recommendCuratedAudio({theme:audioTheme,kind:"melody",voiceFriendly:audioVoiceFriendly}).slice(0,4);
+  const featuredMelodies=recommendCuratedAudio({theme:audioTheme,kind:"melody",voiceFriendly:audioVoiceFriendly}).filter(track=>curatedAudioMatchesCategory(track,audioCategory)).slice(0,4);
   const recommendedAudioId = curatedMatches[0]?.id as Exclude<AmbientMusic, "none"> | undefined;
   const selectedAudio = availableAudioTracks.find(item=>item.id===music);
   const reviewedRecording=curatedAudioTracks.find(item=>item.id===music);
@@ -3102,7 +3105,11 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     });
   },[soundVolume]);
   // A new visual video topic resets the optional local audio-only suggestion override.
-  useEffect(()=>setAudioThemeOverride(null),[theme]);
+  useEffect(()=>{
+    // A revised video goal/concept changes the recommended chip, not manually attached sound.
+    setAudioCategoryOverride(null);setAudioThemeOverride(null);
+    setAudioMood("all");setAudioPace("all");setShowAllAudio(false);
+  },[theme,approvedVideoConcept?.signature]);
   // Built-in presets come from stable HTTPS WAV files, not a generated
   // blob: URL: Safari's in-app player reported a native "Error" for blobs.
   // The actual selected user audio remains a private, local File object.
@@ -5032,7 +5039,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     setDuration(20);setAspect("landscape");setSpeed("slow");setBrightness("soft");
     setMusic("none");setAttachedAudio(null);setSoundVolume(75);setCaptionMode("none");
     setAudioAuto(false);setAudioKind("all");setAudioMood("all");setAudioPace("all");
-    setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);setAudioThemeOverride(null);
+    setAudioVoiceFriendly(false);setAudioSearch("");setAudioSort("best");setShowAllAudio(false);setAudioDurationInvalid(false);setAudioThemeOverride(null);setAudioCategoryOverride(null);
     setCustomCaption("");setQuality("hd");
     setAffirmations(defaultAffirmations);
     setHypnoLight({enabled:false,cyclesPerMinute:6,opacity:.18});
@@ -5381,6 +5388,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
     }
     if(montagePanel==="text"){
       setMontagePanel("audio");setBasicPanelTab("music");setNotice("");setPreviewPlaying(false);
+      window.requestAnimationFrame(()=>
+        document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
+      return;
+    }
+    // In Audio, Add Affirmations returns to the original Montage Text editor.
+    if(montagePanel==="audio"){
+      setMontagePanel("text");setNotice("");setPreviewPlaying(false);
       window.requestAnimationFrame(()=>
         document.querySelector("[data-video-montage-tools]")?.scrollIntoView({block:"start",behavior:"smooth"}));
       return;
@@ -8510,88 +8524,115 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             </button>
           </div> : null}
           {montagePanel==="audio" ? <div className={videoStyles.montageAudioCompact} data-video-montage-audio>
-            <h3>{locale==="ru"?"Фоновая композиция":locale==="es"?"Música de fondo":"Background music"}</h3>
-            <div className={videoStyles.montageAudioMode} role="group"
-              aria-label={locale==="ru"?"Источник аудио":locale==="es"?"Fuente de audio":"Audio source"}>
-              <button type="button" data-video-audio-mode="library"
-                aria-pressed={!uploadedAudio} disabled={recording||preparing}
-                onClick={()=>{openAudioLibrary();setShowAllAudio(false);}}>
-                <Music2 size={19} aria-hidden="true"/>
-                {locale==="ru"?"Библиотека музыки":locale==="es"?"Biblioteca musical":"Music library"}
+            <div className={videoStyles.audioCompactHeading}>
+              <h3>{locale==="ru"?"Выберите аудиодорожки":locale==="es"?"Elige pistas de audio":"Choose audio tracks"}
+                <small>{locale==="ru"?" · до 3":locale==="es"?" · hasta 3":" · up to 3"}</small>
+              </h3>
+              <button type="button" className={videoStyles.audioCompactBrowse} ref={audioLibraryTriggerRef}
+                data-video-audio-compact-browse aria-haspopup="dialog" aria-expanded={audioLibraryOpen}
+                onClick={openAudioLibrary} disabled={recording||preparing}><Search size={15} aria-hidden="true"/>
+                {locale==="ru"?"Все записи":locale==="es"?"Explorar":"Browse"}
               </button>
-              <label className={videoStyles.montageAudioNativeUpload}
-                data-video-audio-mode="upload" data-selected={Boolean(uploadedAudio)}>
-                <Paperclip size={19} aria-hidden="true"/>
-                {locale==="ru"?"Моё аудио (загрузить)":locale==="es"?"Mi audio (subir)":"My audio (upload)"}
+            </div>
+            <div className={videoStyles.montageAudioFilters} role="group"
+              aria-label={locale==="ru"?"Категории музыки":locale==="es"?"Categorías musicales":"Music categories"}>
+              {([
+                {id:"all",theme:null,mood:"all"},{id:"wellbeing",theme:"health",mood:"all"},
+                {id:"focus",theme:"goals",mood:"focus"},{id:"calm",theme:"life",mood:"calm"},
+                {id:"energy",theme:"energy",mood:"uplift"},{id:"love",theme:"relationships",mood:"all"}
+              ] as const).map((item,index)=><button key={item.id} type="button"
+                data-video-audio-category={item.id} aria-pressed={audioCategory===item.id}
+                disabled={recording||preparing} onClick={()=>{
+                  stopSoundPreview();setAudioCategoryOverride(item.id);setAudioThemeOverride(null);setAudioMood("all");
+                  setAudioKind("melody");setAudioPace("all");setAudioSearch("");
+                  setShowAllAudio(false);setAudioAuto(false);
+                }}>{(locale==="ru"?["Все","Самочувствие","Фокус","Спокойствие","Энергия","Любовь"]:
+                  locale==="es"?["Todo","Bienestar","Enfoque","Calma","Energía","Amor"]:
+                    ["All","Wellbeing","Focus","Calm","Energy","Love"])[index]}</button>)}
+            </div>
+            <div className={videoStyles.audioCompactGrid} data-video-audio-compact-grid
+              role="group" aria-label={locale==="ru"?"Выберите до трёх аудиодорожек":
+                locale==="es"?"Selecciona hasta tres pistas":"Select up to three tracks"}>
+              {filteredAudio.slice(0,5).map((track,index)=>{
+                const id=track.id as PresetId;
+                const checked=!uploadedAudio&&attachedPresetIds.includes(id);
+                const listening=samplePreviewId===id&&soundPreview;
+                const poster=quickStyleFilmFor(theme,index)?.poster ||
+                  quickCanvasPoster(quickStyleSceneIds[theme][index] as LocalSceneId);
+                return <article key={id} className={videoStyles.audioCompactTile}
+                  data-video-audio-compact-track={id} data-selected={checked} data-audio-quality="licensed-recording">
+                  {/* Verified local film stills are decorative, not invented music album art. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={poster} alt="" loading="lazy"/>
+                  <button type="button" className={videoStyles.audioCompactSelect}
+                    data-video-audio-compact-select={id} aria-pressed={checked}
+                    aria-label={(checked?
+                      locale==="ru"?"Убрать ":locale==="es"?"Quitar ":"Remove ":
+                      locale==="ru"?"Добавить ":locale==="es"?"Añadir ":"Add ")+track.name[locale]}
+                    disabled={recording||preparing||micRecording||Boolean(attachedAudio?.kind==="file"&&attachedAudio.narration)}
+                    onClick={()=>{
+                      if(!checked&&attachedPresetIds.length>=3){
+                        setMusicWarning(locale==="ru"?"Выберите не более 3 дорожек. Снимите одну.":
+                          locale==="es"?"Máximo 3 pistas. Quita una primero.":"Maximum 3 tracks. Remove one first.");return;
+                      }
+                      toggleQuickMusic(id);
+                    }}>
+                    <span className={videoStyles.audioCompactCheck} aria-hidden="true">
+                      {checked?<Check size={16} strokeWidth={3}/>:null}
+                    </span>
+                    <strong>{track.name[locale]}</strong>
+                    <small>{Math.floor(track.durationSeconds/60)}:{Math.round(track.durationSeconds%60).toString().padStart(2,"0")}</small>
+                  </button>
+                  <button type="button" className={videoStyles.audioCompactPlay}
+                    data-video-audio-compact-play={id}
+                    aria-label={(listening?ui.soundStop:ui.soundPreview)+" — "+track.name[locale]}
+                    aria-pressed={listening} disabled={recording||preparing||micRecording}
+                    onClick={()=>playQuickTrack(id)}>
+                    {listening?<Pause size={17} fill="currentColor"/>:<Play size={17} fill="currentColor"/>}
+                  </button>
+                </article>;
+              })}
+              {filteredAudio.length===0?<p role="status">{locale==="ru"?
+                "По этому фильтру записей нет. Измените категорию или очистите поиск.":locale==="es"?
+                "No hay pistas para este filtro. Cambia la categoría o borra la búsqueda.":
+                "No recordings match this filter. Change category or clear search."}</p>:null}
+              <label className={videoStyles.audioCompactUpload} data-video-audio-compact-upload-tile
+                data-selected={Boolean(uploadedAudio)}>
+                <Paperclip size={24} aria-hidden="true"/>
+                <strong>{locale==="ru"?"Моё аудио":locale==="es"?"Mi audio":"My audio"}</strong>
+                <small>{locale==="ru"?"Загрузить":locale==="es"?"Subir":"Upload"}</small>
                 <input type="file" data-video-audio-compact-upload
                   accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/webm,.mp3,.m4a,.wav,.aac,.mp4,.webm"
                   disabled={recording||preparing}
-                  onChange={event=>{
-                    chooseAudioFile(event.currentTarget.files?.[0]);
-                    setAudioLibraryOpen(true);
-                    event.currentTarget.value="";
-                  }}/>
+                  onChange={event=>{chooseAudioFile(event.currentTarget.files?.[0]);event.currentTarget.value="";}}/>
               </label>
             </div>
-            <div className={videoStyles.montageAudioFilters} role="group"
-              aria-label={locale==="ru"?"Подбор музыки":locale==="es"?"Categorías musicales":"Music categories"}>
-              {([
-                {id:"all",theme:null,mood:"all"},
-                {id:"wellbeing",theme:"health",mood:"all"},
-                {id:"focus",theme:"goals",mood:"focus"},
-                {id:"calm",theme:"life",mood:"calm"},
-                {id:"energy",theme:"energy",mood:"uplift"},
-                {id:"love",theme:"relationships",mood:"all"}
-              ] as const).map((item,index)=>
-                <button key={item.id} type="button" data-video-audio-category={item.id}
-                  aria-pressed={audioCategory===item.id}
-                  disabled={recording||preparing}
-                  onClick={()=>{
-                    setAudioCategory(item.id);
-                    setAudioThemeOverride(item.theme);
-                    setAudioMood(item.mood);
-                    setAudioKind("all");setAudioPace("all");setAudioSearch("");
-                    setShowAllAudio(false);setAudioAuto(false);
-                  }}>{(locale==="ru"
-                    ?["Все","Самочувствие","Фокус","Спокойствие","Энергия","Любовь"]
-                    :locale==="es"
-                    ?["Todo","Bienestar","Enfoque","Calma","Energía","Amor"]
-                    :["All","Wellbeing","Focus","Calm","Energy","Love"])[index]}</button>)}
-            </div>
-            <div className={videoStyles.montageAudioSelected} data-video-audio-compact-selected>
-              <span className={videoStyles.montageAudioCover} aria-hidden="true">
-                {/* Existing licensed in-project poster; never depicts uploaded private audio. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/videos/holistic-house/film-collection-v2/meadow-morning.jpg" alt="" loading="lazy"/>
+            <div className={videoStyles.audioCompactSelection} data-video-audio-compact-selected
+              role="status" aria-live="polite"><Check size={16} aria-hidden="true"/>
+              <span>{uploadedAudio?uploadedAudio.file.name:attachedPresetIds.length?appliedAudioName:
+                locale==="ru"?"Выберите музыку":locale==="es"?"Elige música":"Choose music"}
+                <small>{locale==="ru"?" · выбрано ":locale==="es"?" · seleccionadas ":" · selected "}
+                  {attachedPresetIds.length}/3</small>
               </span>
-              <button type="button" className={videoStyles.montageAudioPlay}
-                data-video-audio-compact-play
-                disabled={!previewAudioUrl||recording||preparing||audioPlaybackError}
-                aria-label={soundPreview?ui.soundStop:ui.soundPreview}
-                aria-pressed={soundPreview} onClick={toggleSoundPreview}>
-                {soundPreview?<Pause size={20} fill="currentColor" aria-hidden="true"/>:
-                  <Play size={20} fill="currentColor" aria-hidden="true"/>}
-              </button>
-              <div className={videoStyles.montageAudioSelectedText}>
-                <strong>{uploadedAudio?.file.name||selectedAudio?.name[locale]||ui.noMusic}</strong>
-                <small>{uploadedAudio?(locale==="ru"?"Локальный файл":locale==="es"?"Archivo local":"Local file"):
-                  (locale==="ru"?"Музыка для вашего видео":locale==="es"?"Música para tu vídeo":"Music for your video")}</small>
-                <span>{audioNeedsAttachment
-                  ?audioUi.needsAttach
-                  :attachedAudio?audioUi.attached:audioUi.noAttached}</span>
-              </div>
-              <button type="button" className={videoStyles.montageAudioFavorite}
-                data-video-audio-compact-favorite
-                aria-label={audioFavorites.includes(music)?audioUi.unfavorite:audioUi.favorite}
-                aria-pressed={audioFavorites.includes(music)}
-                disabled={!music||music==="none"||Boolean(uploadedAudio)}
-                onClick={()=>setAudioFavorites(list=>list.includes(music)?
-                  list.filter(item=>item!==music):[...list,music])}>
-                <Heart size={21} fill={audioFavorites.includes(music)?"currentColor":"none"}/>
-              </button>
             </div>
+            {uploadedAudio?<div className={videoStyles.audioCompactRights}>
+              <label><input type="checkbox" data-video-audio-compact-rights
+                checked={audioRights} onChange={event=>setAudioRights(event.currentTarget.checked)}/>{ui.audioRights}</label>
+              <button type="button" data-video-audio-compact-attach
+                disabled={recording||preparing||micRecording||audioDurationInvalid||!audioRights}
+                onClick={attachSelectedAudio}>{audioNeedsAttachment?audioUi.attach:audioUi.attached}</button>
+            </div>:null}
+            <button type="button" className={videoStyles.audioCompactAffirmations}
+              data-video-audio-affirmations disabled={recording||preparing}
+              onClick={()=>setMontagePanel("text")}>
+              <AudioLines size={22} aria-hidden="true"/>
+              <span><strong>{locale==="ru"?"Аффирмации":locale==="es"?"Afirmaciones":"Affirmations"}</strong>
+                <small>{locale==="ru"?"Добавьте фразы и голос":
+                  locale==="es"?"Añade frases y voz":"Add spoken affirmations to your video"}</small>
+              </span><ChevronRight size={21} aria-hidden="true"/>
+            </button>
             <div className={videoStyles.montageAudioVolume}>
-              <label htmlFor="montage-audio-volume"><AudioLines size={19} aria-hidden="true"/>
+              <label htmlFor="montage-audio-volume"><AudioLines size={18} aria-hidden="true"/>
                 {locale==="ru"?"Громкость":locale==="es"?"Volumen":"Volume"} · {soundVolume}%
               </label>
               <input id="montage-audio-volume" type="range" data-video-audio-compact-volume
@@ -8600,25 +8641,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 onChange={event=>setSoundVolume(Number(event.currentTarget.value))}/>
               <button type="button" data-video-audio-compact-silent
                 disabled={recording||preparing}
-                onClick={()=>{setAudioAuto(false);chooseMusic("none");setAttachedAudio(null);}}>
-                {ui.noMusic}
-              </button>
-            </div>
-            <div className={videoStyles.montageAudioActions}>
-              <button type="button" data-video-audio-compact-browse ref={audioLibraryTriggerRef}
-                aria-haspopup="dialog" aria-expanded={audioLibraryOpen}
-                onClick={openAudioLibrary}>
-                <Search size={18} aria-hidden="true"/>{audioUi.browse}
-                <ChevronDown size={17} aria-hidden="true"/>
-              </button>
-              <button type="button" data-video-audio-compact-attach
-                disabled={!audioNeedsAttachment||audioDurationInvalid||micRecording||
-                  (Boolean(uploadedAudio)&&!audioRights)}
-                onClick={attachSelectedAudio}>
-                {audioNeedsAttachment?<Paperclip size={18} aria-hidden="true"/>:
-                  <Check size={18} aria-hidden="true"/>}
-                {audioNeedsAttachment?audioUi.attach:audioUi.attached}
-              </button>
+                onClick={()=>{setAudioAuto(false);chooseMusic("none");setAttachedAudio(null);}}>{ui.noMusic}</button>
             </div>
             {audioLibraryOpen ? <div className={videoStyles.montageAudioOverlay}
               data-video-audio-library-overlay onMouseDown={event=>{
@@ -8646,7 +8669,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   <div className={videoStyles.audioLibraryFilters}>
                     <label>{locale==="ru"?"Тема":locale==="es"?"Tema":"Theme"}
                       <select data-video-audio-library-theme value={audioThemeOverride||"all"}
-                        onChange={event=>{setAudioThemeOverride(event.currentTarget.value==="all"?null:event.currentTarget.value as VideoTheme);setAudioAuto(false);setShowAllAudio(false);}}>
+                        onChange={event=>{setAudioCategoryOverride("all");setAudioThemeOverride(event.currentTarget.value==="all"?null:event.currentTarget.value as VideoTheme);setAudioAuto(false);setShowAllAudio(false);}}>
                         <option value="all">{locale==="ru"?"Все":locale==="es"?"Todas":"All"}</option>
                         {(["relationships","money","energy","goals","health","life"] as VideoTheme[]).map(id=>
                           <option key={id} value={id}>{ui.themes[id]}</option>)}
@@ -8654,13 +8677,13 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                     </label>
                     <label>{audioUi.mood}
                       <select data-video-audio-library-mood value={audioMood}
-                        onChange={event=>{setAudioMood(event.currentTarget.value);setShowAllAudio(false);}}>
+                        onChange={event=>{setAudioCategoryOverride("all");setAudioMood(event.currentTarget.value);setShowAllAudio(false);}}>
                         {Object.entries(audioUi.moods).map(([id,name])=><option key={id} value={id}>{name}</option>)}
                       </select>
                     </label>
                     <label>{audioUi.pace}
                       <select data-video-audio-library-pace value={audioPace}
-                        onChange={event=>{setAudioPace(event.currentTarget.value);setShowAllAudio(false);}}>
+                        onChange={event=>{setAudioCategoryOverride("all");setAudioPace(event.currentTarget.value);setShowAllAudio(false);}}>
                         {Object.entries(audioUi.paces).map(([id,name])=><option key={id} value={id}>{name}</option>)}
                       </select>
                     </label>
@@ -8947,22 +8970,25 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                 :selectedDraftPrice===0?practiceCopy.noCredits:practiceCopy.draft}</small>
           </div>
           <div className={videoStyles.stageActionPair} data-video-stage-actions="montage">
-            <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
-              disabled={!studioHydrated||recording||preparing||narrationInvalid} onClick={createQuickVideo}>
-              {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={20} fill="currentColor" aria-hidden="true"/>}
-              {recording||preparing?quick.creating:
-                locale==="ru"?"Создать видео":locale==="es"?"Generar vídeo":"Generate Video"}
-            </button>
             <button type="button" className={videoStyles.stageAddButton}
-              data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":"hypno"}
-              disabled={!studioHydrated||recording||preparing} onClick={continueMontageOrGenerate}>
+              data-video-montage-next={montagePanel==="effects"?"text":montagePanel==="text"?"audio":montagePanel==="audio"?"text":"hypno"}
+              disabled={!studioHydrated||recording||preparing}
+              onClick={continueMontageOrGenerate}>
               <Sparkles size={19} aria-hidden="true"/>
               {montagePanel==="effects"?
                 (locale==="ru"?"Добавить текст":locale==="es"?"Añadir texto":"Add Text"):
                 montagePanel==="text"?
                 (locale==="ru"?"Выбрать музыку":locale==="es"?"Elegir música":"Choose music"):
+                montagePanel==="audio"?
+                (locale==="ru"?"Добавить аффирмации":locale==="es"?"Añadir afirmaciones":"Add Affirmations"):
                 (locale==="ru"?"Гипноэффекты":locale==="es"?"Efectos hipno":"Hypno effects")}
               <ArrowRight size={18} aria-hidden="true"/>
+            </button>
+            <button type="button" className={videoStyles.quickGenerate} data-video-quick-generate
+              disabled={!studioHydrated||recording||preparing||narrationInvalid} onClick={createQuickVideo}>
+              {recording||preparing?<span aria-hidden="true">◌</span>:<Play size={20} fill="currentColor" aria-hidden="true"/>}
+              {recording||preparing?quick.creating:
+                locale==="ru"?"Создать видео":locale==="es"?"Crear vídeo":"Create Video"}
             </button>
           </div>
           {narrationInvalid&&<p role="status" className={videoStyles.quickStatus} data-video-narration-reapproval>
