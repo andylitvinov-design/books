@@ -1954,6 +1954,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
   const [montagePanel,setMontagePanel] = useState<"settings"|"effects"|"text"|"concept"|"audio">("effects");
   const [hypnoEntryGroup,setHypnoEntryGroup] = useState<"visual"|"effects">("visual");
   const [approvedVideoConcept,setApprovedVideoConcept] = useState<ApprovedVideoConcept|null>(null);
+  const [selectedConceptTopic,setSelectedConceptTopic] = useState<{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null>(null);
   const [audioLibraryOpen,setAudioLibraryOpen] = useState(false);
   const audioLibraryCloseRef=useRef<HTMLButtonElement>(null);
   const audioLibraryTriggerRef=useRef<HTMLButtonElement>(null);
@@ -7012,7 +7013,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
         </div>
         <div className={videoStyles.ideasConceptPane} id="video-ideas-concept-panel"
           data-video-ideas-concept-panel hidden={ideasSubtab!=="concept"}>
-          <MandalaVideoConcept locale={locale} goal={wish} theme={theme}
+          <MandalaVideoConcept locale={locale} goal={wish} theme={theme} selectedTopic={selectedConceptTopic}
             profile={ideasProfileConfirmed?ideasProfile:null} durationSeconds={duration}
             speechTranscript={voiceTranscript} approvedConcept={approvedVideoConcept}
             ownerFields={{
@@ -7207,6 +7208,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
             if(previewPlaying)startMovieSound({kind:"preset",id:chosenId},soundVolume);
           }}
           onGoalChange={next=>{setWish(next.slice(0,800));setSuggestion("");setCinematicPlan(null);}}
+          onConceptTopicChange={setSelectedConceptTopic}
           onCategoryChange={next=>{setQuickStyleIndex(0);selectCategory(next);}}
           onAspectChange={next=>{
             if(next===aspect)return;

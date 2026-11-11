@@ -25,7 +25,7 @@ export type ApprovedVideoConcept={
   currentLabel:string;desiredLabel:string;mediaBindingStatus:string;
   hasPersonalInput:boolean;inferredTopic:boolean;
   semanticConfidence?:string;semanticPurpose?:string|null;semanticAudience?:string|null;
-  conceptText?:string;
+  conceptText?:string;energyStart?:number|null;energyTarget?:number|null;
   avoidImagery?:string[];speechBeatsSource?:string;personalizationFocus?:string|null;
   parameters?:Record<string,{value:string|string[]|null;status:string;source:string}>;
 };
@@ -33,6 +33,7 @@ type Props={
   locale:PublicLocale;goal:string;theme:string;styleIndex:number;
   speechTranscript?:TimedSpeechTranscript|null;
   profile?:VideoGoalProfile|null;durationSeconds?:number;
+  selectedTopic?:{categoryId:string;subcategoryId:string;topicId:string;brief?:string}|null;
   ownerFields?:Partial<Record<"references"|"delivery"|"wordsAndVoice"|"soundtrack"|"timelineBinding"|"creationMode",string|null>>;
   phrases:string[];approvedConcept:ApprovedVideoConcept|null; signedIn:boolean;loginUnavailable:boolean;disabled:boolean;
   onRefreshLogin:()=>void;onApprove:(concept:ApprovedVideoConcept)=>void;
@@ -91,14 +92,15 @@ const COPY={
   guest:"Propuesta gratuita · sin registro",noGoal:"Precisar objetivo",editStyle:"Abrir estilos"
  }
 } as const;
-export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speechTranscript=null,ownerFields,profile=null,durationSeconds=30,approvedConcept,signedIn,
+export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speechTranscript=null,ownerFields,profile=null,selectedTopic=null,durationSeconds=30,approvedConcept,signedIn,
   loginUnavailable,disabled,onRefreshLogin,onApprove,onOpenGoal,onOpenStyle}:Props){
   const t=COPY[locale]||COPY.en;
   const phraseSignature=phrases.join("\u001f");
   const suggested=useMemo(()=>suggestVideoConcept({
     locale,goal,theme,styleIndex,phrases:phraseSignature?phraseSignature.split("\u001f"):[],speechTranscript,
-    personalization:profile?summarizeVideoGoalProfile(profile,locale):null
-  }) as ApprovedVideoConcept,[locale,goal,theme,styleIndex,phraseSignature,speechTranscript,profile]);
+    personalization:profile?summarizeVideoGoalProfile(profile,locale):null,
+    selectedTopicId:selectedTopic?.topicId||null,creativeBrief:selectedTopic?.brief||null
+  }) as ApprovedVideoConcept,[locale,goal,theme,styleIndex,phraseSignature,speechTranscript,profile,selectedTopic?.topicId,selectedTopic?.brief]);
   const [custom,setCustom]=useState<ApprovedVideoConcept|null>(null);
   const [textEditing,setTextEditing]=useState(false);
   const [textDraft,setTextDraft]=useState("");
@@ -129,7 +131,11 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     locale,topic:displayedTopic,mainMessage:concept.mainMessage,
     scenario:concept.semanticConfidence==="low"?"":scenario?.label||"",
     motif:concept.semanticConfidence==="low"?"":motif?.label||"",
-    emotionalProgram:concept.emotionalProgram
+    emotionalProgram:concept.emotionalProgram,
+    currentState:concept.parameters?.currentState?.value,
+    desiredState:concept.parameters?.desiredState?.value,
+    pace:concept.parameters?.pace?.value,
+    energyStart:concept.energyStart,energyTarget:concept.energyTarget,durationSeconds
   });
   const narrativeText=concept.conceptText?.trim()||generatedText;
 
@@ -217,6 +223,9 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     steady:word("Ровный","Steady","Constante"),
     gentle:word("Мягкий","Gentle","Suave"),
     balanced:word("Умеренная","Balanced","Equilibrada"),
+    dynamic:word("Динамичный","Dynamic","Dinámico"),
+    uplifting:word("Воодушевляющая","Uplifting","Inspiradora"),
+    rising:word("Нарастающий","Rising","Creciente"),
     warm:word("Тёплый","Warm","Cálido"),
     clear:word("Ясный","Clear","Claro"),
     meditation:word("Медитация","Meditation","Meditación"),
