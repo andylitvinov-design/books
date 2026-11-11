@@ -341,7 +341,7 @@ test('guest coaching uses the whole mobile viewport with independent scrolling a
   const sessionStart=jsx.indexOf('data-public-coaching-session')
   assert.ok(sessionStart>0,'public session still contains its root data attribute')
   const session=jsx.slice(sessionStart)
-  assert.match(jsx,/data-public-coaching-active=\{session\?'true':undefined\}/)
+  assert.match(jsx,/data-public-coaching-active=\{session\|\|liveChat\?'true':undefined\}/)
   assert.match(jsx,/window\.visualViewport/)
   assert.match(jsx,/document\.body\.style\.overflow='hidden'/)
   assert.match(jsx,/document\.body\.style\.overflow=previousOverflow/)
