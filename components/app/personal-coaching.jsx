@@ -11,6 +11,7 @@ import { coachingReportDate, downloadCoachingSessionPdf } from '@/lib/personal-c
 import PersonalCoachingPicker from './personal-coaching-picker'
 import CoachingContextReview from '@/components/coaching-context-review'
 import { buildClientCoachingContext, developmentGoalsContextItems } from '@/lib/personal-coaching/client-context.mjs'
+import { reconcileCoachingDraft, reconcileCoachingPlan, coachingPlansEqual, reconcileFollowupDraft } from '@/lib/personal-coaching/reconnect.mjs'
 import CoachingQuestionVoice from './coaching-question-voice'
 import {useCoachingVisualViewport} from './use-coaching-visual-viewport'
 import CoachingAvatar from './coaching-avatar'
@@ -20,6 +21,7 @@ import CoachingChatThread from '@/components/coaching-chat-thread'
 import { appendSpokenAnswer } from '@/lib/personal-coaching/speech-text'
 import { authoredFollowupFor, coachingControlForAnswer, draftCoachingActionPlan } from '@/lib/personal-coaching/offline-intelligence'
 import { coachingQuickChoicesAllowed, coachingConversationTurn } from '@/lib/personal-coaching/gentle-dialogue'
+import { isCoachingSafetyConcern } from '@/lib/personal-coaching/model-matcher'
 import CoachingActionPlan from '@/components/coaching-action-plan'
 import CoachingBrainPanel from '@/components/coaching-brain-panel'
 import { coachingSessionTitle } from '@/lib/coaching/session-presentation'
@@ -29,9 +31,27 @@ import { coachingRequestTopicLabel } from '@/lib/coaching/session-onboarding'
 import { coachingArt } from '@/lib/coaching/public-session-art'
 import { cardArtworkUrl } from '@/lib/public-card-artwork'
 import { coachingAdaptivePrompt, buildCoachingRecap, coachingRecapClipboardText } from '@/lib/personal-coaching/guided-session'
+import { growPhaseForStep, growClarityOutcome } from '@/lib/personal-coaching/grow-20.mjs'
 import styles from './personal-coaching.module.css'
 
 
+const growCopy={
+  en:{phases:{G:'Goal',R:'Reality',O:'Options',W:'Way forward',Review:'Review'},
+    target:'Target 20 min · flexible',clarity:'Clarity of my next step',before:'At the start',
+    after:'At the end',missing:'Not measured',change:'Change in my rating',
+    noCompare:'A comparison needs both ratings.',reflection:'Your own 0–10 reflection, not a clinical score or proof of lasting change.',
+    confirmed:'Client-confirmed actions',fallback:'Fallback'},
+  ru:{phases:{G:'Цель',R:'Реальность',O:'Варианты',W:'Действие',Review:'Итог'},
+    target:'Ориентир 20 минут · без таймера',clarity:'Ясность следующего шага',before:'В начале',
+    after:'В конце',missing:'Не измерено',change:'Изменение моей оценки',
+    noCompare:'Для сравнения нужны обе оценки.',reflection:'Ваша субъективная оценка 0–10, не клинический показатель и не доказательство устойчивых изменений.',
+    confirmed:'Подтверждено действий',fallback:'Запасной вариант'},
+  es:{phases:{G:'Objetivo',R:'Realidad',O:'Opciones',W:'Siguiente paso',Review:'Revisión'},
+    target:'Objetivo 20 min · sin límite rígido',clarity:'Claridad de mi próximo paso',before:'Al inicio',
+    after:'Al final',missing:'Sin medir',change:'Cambio de mi valoración',
+    noCompare:'Para comparar hacen falta ambas valoraciones.',reflection:'Autoevaluación de 0–10, no puntuación clínica ni prueba de cambios duraderos.',
+    confirmed:'Acciones confirmadas',fallback:'Alternativa'},
+}
 const copy={
   en:{
     eyebrow:'HOLISTIC HOUSE · SELF-GUIDED COACHING',title:'Personal Coaching Session',
@@ -40,7 +60,7 @@ const copy={
     time:'Choose a coaching approach · 10–30 minutes',private:'Your answers stay private in your account.',
     start:'Start my session',resume:'Continue my session',new:'Start another session',
     loading:'Opening your private session…',loadError:'Your session could not be loaded. Try again.',
-    saveError:'Your answer was not saved. Please try again.',
+    saveError:'Could not confirm the save. Retry or reload to check your saved session.',
     conflict:'Your session changed in another tab. Reload to get the newest saved answers.',
     retry:'Reload session',close:'Exit session',unsaved:'You have an unsaved answer. Leave without saving it?',
     question:'QUESTION',of:'OF',back:'Back',next:'Save & continue',finish:'Save & finish',skip:'Skip this question',
@@ -65,7 +85,7 @@ const copy={
     time:'Выберите подход · примерно 10–30 минут',private:'Ваши ответы сохраняются только в личном кабинете.',
     start:'Начать сессию',resume:'Продолжить сессию',new:'Начать новую сессию',
     loading:'Открываем вашу личную сессию…',loadError:'Не удалось загрузить сессию. Попробуйте ещё раз.',
-    saveError:'Ответ не сохранился. Попробуйте ещё раз.',
+    saveError:'Не удалось подтвердить сохранение. Повторите попытку или обновите сессию.',
     conflict:'Сессия изменилась в другой вкладке. Обновите сохранённые ответы.',
     retry:'Обновить сессию',close:'Закрыть сессию',unsaved:'Этот ответ не сохранён. Выйти без сохранения?',
     question:'ВОПРОС',of:'ИЗ',back:'Назад',next:'Сохранить и далее',finish:'Сохранить и завершить',skip:'Пропустить вопрос',
@@ -90,7 +110,7 @@ const copy={
     time:'Elige un enfoque · 10–30 minutos',private:'Tus respuestas permanecen privadas.',
     start:'Empezar sesión',resume:'Continuar sesión',new:'Empezar otra sesión',
     loading:'Abriendo tu sesión…',loadError:'No se pudo cargar. Inténtalo de nuevo.',
-    saveError:'No se guardó tu respuesta. Inténtalo de nuevo.',conflict:'Otra pestaña ha modificado la sesión. Actualiza tus datos.',
+    saveError:'No se pudo confirmar el guardado. Inténtalo de nuevo o actualiza la sesión.',conflict:'Otra pestaña ha modificado la sesión. Actualiza tus datos.',
     retry:'Actualizar sesión',close:'Salir',unsaved:'Tu respuesta no está guardada. ¿Salir?',
     question:'PREGUNTA',of:'DE',back:'Atrás',next:'Guardar y seguir',finish:'Guardar y terminar',skip:'Saltar pregunta',
     hint:'Tu respuesta, con tus propias palabras (también puedes dictarla)',placeholder:'Sin prisa. Unas frases son suficientes…',required:'Escribe algunas palabras.',
@@ -204,17 +224,26 @@ export default function PersonalCoaching({locale='en',accountId}){
   const [coachSpeech,setCoachSpeech]=useState({phase:'idle',beat:0})
   const [pendingFollowup,setPendingFollowup]=useState(null),[reflectionDraft,setReflectionDraft]=useState('')
   const [sessionControl,setSessionControl]=useState(null)
+  const [conflictingAnswer,setConflictingAnswer]=useState(undefined)
+  const [conflictingPlan,setConflictingPlan]=useState(undefined)
   const [useStandardPrompt,setUseStandardPrompt]=useState(false),[clipboardState,setClipboardState]=useState('')
   const titleRef=useRef(null),busyRef=useRef(false),viewportRef=useRef(null)
   useCoachingVisualViewport(viewportRef)
+  const pendingTurn=useRef(null)
   const course=state?.course,session=course?.current,langCopy=extraCopy[lang]
+  useEffect(()=>{setConflictingPlan(undefined)},[session?.id])
   const scheme=session?.schemeKey?catalog?.schemes?.find(item=>item.schemeKey===session.schemeKey):null
   const avatarId=visualCoachId||coachingVisualAvatarId(scheme?.modelKey||session?.schemeKey)
   const avatarPhase=dictating?'listening':coachSpeech.phase
   const updateAvatarSpeech=event=>setCoachSpeech(normalizeAvatarSpeechEvent(event))
   const activeQuestions=questionsFor(course,catalog)
   const question=activeQuestions[index]||activeQuestions[0]
-  const quickChoices=coachingQuickChoicesAllowed(question,index)
+  const isOverload=session?.schemeKey==='grow_overload_20_v1'
+  const growPhase=isOverload?growPhaseForStep(question?.stepKey):null
+  const clarityOutcome=isOverload&&session?.status==='completed'?growClarityOutcome(session.answers):null
+  const requiresWrittenPlan=Boolean(scheme?.requiredCustomPlan && (isOverload?question?.stepKey==='will':index===activeQuestions.length-1))
+  const planHint=isOverload?(lang==='ru'?'Опишите свой конкретный первый шаг.':lang==='es'?'Describe tu primer paso concreto.':'Describe your own concrete first step.'):langCopy.woop
+  const quickChoices=coachingQuickChoicesAllowed(question,index,{allowReview:isOverload})
   const previousQuestion=activeQuestions[index-1]
   const conversationTurn=coachingConversationTurn({
     question,previousQuestion,previousAnswer:session?.answers?.[previousQuestion?.id],
@@ -228,8 +257,9 @@ export default function PersonalCoaching({locale='en',accountId}){
   const persisted=session?.answers?.[question?.id]
   const dirty=Boolean(session?.status==='active' && question && draft!==(typeof persisted==='string'?persisted:''))
   const finished=session?.status==='completed'
+  const safetyHold=session?.status==='safety_hold'
   const adaptive=coachingAdaptivePrompt({question,questions:activeQuestions,index,
-    answers:session?.answers||{},locale:lang,requiredCustomPlan:Boolean(scheme?.requiredCustomPlan)})
+    answers:session?.answers||{},locale:lang,requiredCustomPlan:Boolean(scheme?.requiredCustomPlan&&!isOverload)})
   const standardPrompt=translated(question?.prompt||question?.question,lang)
   const visiblePrompt=adaptive&&!useStandardPrompt?adaptive.prompt:standardPrompt
   const recapRows=finished?buildCoachingRecap(session,activeQuestions,lang):[]
@@ -238,6 +268,12 @@ export default function PersonalCoaching({locale='en',accountId}){
   const entryModel=entry?.choice?.model||catalog?.models?.find(item=>item.modelKey===entry?.choice?.modelKey)
   const lastApprovedPlan=[session,...(course?.history||[])]
     .find(item=>item?.actionPlan?.approvedAt&&typeof item.actionPlan.actionText==='string')?.actionPlan||null
+  function turnFor(action,revision,fields={}){
+    if((action==='start'?fields.schemeKey:session?.schemeKey)!=='grow_overload_20_v1'||!['start','answer','reflection','skip_followup','complete','finish_without_plan','pause','resume','plan'].includes(action))return null
+    const key=JSON.stringify([action,revision,fields])
+    if(pendingTurn.current?.key!==key)pendingTurn.current={key,id:crypto.randomUUID()}
+    return pendingTurn.current.id
+  }
   function visit(indexToOpen,values,items=activeQuestions){
     const next=Math.max(0,Math.min(items.length-1,indexToOpen))
     setIndex(next)
@@ -245,22 +281,48 @@ export default function PersonalCoaching({locale='en',accountId}){
     setDraft(typeof saved==='string'?saved:'')
     setDictating(false)
     setPendingFollowup(null);setReflectionDraft('');setSessionControl(null)
+    setConflictingAnswer(undefined)
     setUseStandardPrompt(false)
     setClipboardState('')
     setNotice('')
     setError('')
   }
+  function openServerFollowup(current,items){
+    if(current?.dialogueProtocol!==1||current.status!=='active'||!current.pendingFollowup)return false
+    const next=items.findIndex(item=>item.id===current.pendingFollowup.questionId)
+    const item=next<0?null:authoredFollowupFor(items[next],current.answers?.[items[next].id],current.reflections)
+    if(!item||item.key!==current.pendingFollowup.key){setError(t.loadError);return true}
+    visit(next,current.answers,items)
+    setPendingFollowup(item)
+    return true
+  }
   async function reload(){
-    if(!accountId)return
+    if(!accountId||busyRef.current)return
     setLoading(true);setError('')
     try{
       const [value,loadedCatalog]=await Promise.all([
         appFetch('personal-coaching',undefined,'GET',{accountId}),
         appFetch('personal-coaching-catalog',undefined,'GET',{accountId}),
       ])
-      setState(value);setCatalog(loadedCatalog)
       const list=questionsFor(value.course,loadedCatalog)
-      visit(firstUnanswered(list,value.course?.current?.answers),value.course?.current?.answers,list)
+      const restored=reconcileCoachingDraft({prior:session,current:value.course?.current,questions:list,questionId:question?.id,draft,dirty,unresolvedAnswer:conflictingAnswer,fallbackIndex:firstUnanswered(list,value.course?.current?.answers)})
+      const reflectionRecovery=reconcileFollowupDraft(session,value.course?.current,pendingFollowup,reflectionDraft)
+      if(reflectionRecovery==='confirm_discard'&&!window.confirm(t.unsaved))return
+      if(dirty&&!restored.retained&&value.course?.current?.status!=='safety_hold'&&!window.confirm(t.unsaved))return
+      if(dirty&&restored.retained&&value.course?.current?.pendingFollowup&&
+        value.course.current.pendingFollowup.questionId!==question?.id&&!window.confirm(t.unsaved))return
+      setState(value);setCatalog(loadedCatalog)
+      visit(restored.index,value.course?.current?.answers,list)
+      openServerFollowup(value.course?.current,list)
+      if(reflectionRecovery==='retain'){
+        setReflectionDraft(reflectionDraft)
+        setNotice(lang==='ru'?'Сессия обновлена; черновик уточнения сохранён на экране.':lang==='es'?'Sesión actualizada; tu borrador sigue en pantalla.':'Session refreshed; your follow-up draft remains on screen.')
+      }
+      if(restored.retained){
+        setDraft(restored.draft)
+        setConflictingAnswer(restored.changedAnswer)
+        setNotice(lang==='ru'?'Загружена актуальная сессия. Ваш черновик сохранён на экране; проверьте его перед отправкой.':lang==='es'?'Sesión actualizada. Tu borrador sigue en pantalla; revísalo antes de enviarlo.':'Session refreshed. Your draft remains on screen; review it before sending.')
+      }
     }catch{setError(t.loadError)}
     finally{setLoading(false)}
   }
@@ -279,6 +341,7 @@ export default function PersonalCoaching({locale='en',accountId}){
       const answer=value.course?.current?.answers?.[list[next]?.id]
       setDraft(typeof answer==='string'?answer:'')
       setError('')
+      openServerFollowup(value.course?.current,list)
     }).catch(()=>{if(live)setError(t.loadError)})
       .finally(()=>{if(live)setLoading(false)})
     return()=>{live=false}
@@ -302,7 +365,10 @@ export default function PersonalCoaching({locale='en',accountId}){
     if(busyRef.current||!accountId)return null
     busyRef.current=true;setBusy(true);setError('');setNotice('')
     try{
-      const value=await appFetch('personal-coaching',{action,revision:state?.revision||0,...fields},'POST',{accountId})
+      const revision=state?.revision||0
+      const turnId=turnFor(action,revision,fields)
+      const value=await appFetch('personal-coaching',{action,revision,...fields,...(turnId?{turnId}:{})},'POST',{accountId})
+      if(turnId)pendingTurn.current=null
       setState(value)
       setNotice(t.saved)
       return value
@@ -311,9 +377,24 @@ export default function PersonalCoaching({locale='en',accountId}){
       return null
     }finally{busyRef.current=false;setBusy(false)}
   }
+  async function refreshPlan(){
+    if(busyRef.current||!accountId)return
+    busyRef.current=true;setBusy(true);setError('')
+    try{
+      const value=await appFetch('personal-coaching',undefined,'GET',{accountId})
+      const result=reconcileCoachingPlan(session,value.course?.current,conflictingPlan)
+      if(result.kind==='safety_hold'){setState(value);return}
+      if(result.kind!=='ready'){
+        setError(lang==='ru'?'Сессия изменилась. Скопируйте черновик перед выходом.':lang==='es'?'La sesión cambió. Copia tu borrador antes de salir.':'The session changed. Copy your draft before leaving.')
+        return
+      }
+      setState(value);setConflictingPlan(result.conflict)
+      setNotice(lang==='ru'?'Сессия обновлена; черновик плана сохранён на экране.':lang==='es'?'Sesión actualizada; tu borrador permanece en pantalla.':'Session refreshed; your plan draft remains on screen.')
+    }catch{setError(t.loadError)}finally{busyRef.current=false;setBusy(false)}
+  }
   async function prepare(choice,clientQuestion,adultConfirmed){
-    // Read only the saved, owner-authored Life Plan targets. Failure to read
-    // this optional source must not block a new coaching session.
+    // Read only saved, owner-authored Life Plan targets. Failure to read this
+    // optional source must not block a new coaching session.
     let lifePlanChanges=[]
     if(accountId){
       try{
@@ -321,6 +402,8 @@ export default function PersonalCoaching({locale='en',accountId}){
         lifePlanChanges=developmentGoalsContextItems(savedPlan,lang)
       }catch{}
     }
+    // The picker only prepares a choice. No private record is created until
+    // the visitor has seen the session briefing and selected a request topic.
     const previousSessions=[...(course?.history||[]),...(course?.current?.status==='completed'?[course.current]:[])]
     const clientContext=previousSessions.length||lifePlanChanges.length
       ?buildClientCoachingContext(previousSessions,{lifePlanChanges}):null
@@ -353,6 +436,7 @@ export default function PersonalCoaching({locale='en',accountId}){
   }
   function offerFollowup(current,answer){
     if(offerSessionControl(answer))return true
+    if(current?.dialogueProtocol===1)return openServerFollowup(current,activeQuestions)
     if(index>=activeQuestions.length-1)return false
     const item=authoredFollowupFor(question,answer,current?.reflections)
     if(!item)return false
@@ -374,21 +458,29 @@ export default function PersonalCoaching({locale='en',accountId}){
         questionId:pendingFollowup.questionId,followupKey:pendingFollowup.key,note:reflectionDraft.trim(),
       })
       if(!saved)return
-      visit(index+1,saved.course?.current?.answers)
+      if(saved.course?.current?.status==='safety_hold')return
+      if(saved.course?.current?.dialogueProtocol===1){
+        if(!openServerFollowup(saved.course.current,activeQuestions))visit(firstUnanswered(activeQuestions,saved.course.current.answers),saved.course.current.answers)
+      }else visit(index+1,saved.course?.current?.answers)
     }else{
-      visit(index+1,session?.answers)
+      if(session?.dialogueProtocol===1){
+        const saved=await command('skip_followup',{questionId:pendingFollowup.questionId,followupKey:pendingFollowup.key})
+        if(!saved)return
+        if(!openServerFollowup(saved.course?.current,activeQuestions))visit(firstUnanswered(activeQuestions,saved.course?.current?.answers),saved.course?.current?.answers)
+      }else visit(index+1,session?.answers)
     }
   }
   async function next(skip=false){
     if(busyRef.current||!session)return
     if(dictating){setError(t.stopMic);return}
     const answer=skip?null:draft.trim()
+    if(conflictingAnswer!==undefined&&answer!==conflictingAnswer&&!window.confirm(lang==='ru'?'Заменить ответ, сохранённый в другой вкладке, вашим черновиком?':lang==='es'?'¿Reemplazar la respuesta guardada en otra pestaña con tu borrador?':'Replace the answer saved in another tab with your draft?'))return
     if((question.required&&!answer)||(question.required&&!question.type&&answer.length<3)){
       setError(t.required);return
     }
-    if(scheme?.requiredCustomPlan && index===activeQuestions.length-1 &&
+    if(requiresWrittenPlan && !isCoachingSafetyConcern(answer) &&
       (answer?.startsWith('choice:')||!answer||answer.length<10)){
-      setError(langCopy.woop);return
+      setError(planHint);return
     }
     if(!skip&&typeof persisted==='string'&&persisted===answer && Object.prototype.hasOwnProperty.call(session.answers,question.id)){
       if(offerSessionControl(answer))return
@@ -396,9 +488,12 @@ export default function PersonalCoaching({locale='en',accountId}){
       else if(!offerFollowup(session,answer))visit(index+1,session.answers)
       return
     }
-    const saved=await command('answer',{questionId:question.id,answer})
+    const saved=await command('answer',{questionId:question.id,answer,
+      ...(isOverload&&Object.prototype.hasOwnProperty.call(session.answers,question.id)?{edit:true}:{})})
     if(!saved)return
+    if(saved.course?.current?.status==='safety_hold'||saved.course?.current?.status==='completed')return
     if(!skip&&offerSessionControl(answer))return
+    if(saved.course?.current?.dialogueProtocol===1&&openServerFollowup(saved.course.current,activeQuestions))return
     if(index===activeQuestions.length-1){
       // Completion is reported only after the final answer and status both persisted.
       const completed=await commandAfterSave(saved,'complete')
@@ -410,7 +505,9 @@ export default function PersonalCoaching({locale='en',accountId}){
     if(busyRef.current)return null
     busyRef.current=true;setBusy(true);setError('')
     try{
-      const value=await appFetch('personal-coaching',{action,revision:saved.revision},'POST',{accountId})
+      const turnId=turnFor(action,saved.revision)
+      const value=await appFetch('personal-coaching',{action,revision:saved.revision,...(turnId?{turnId}:{})},'POST',{accountId})
+      if(turnId)pendingTurn.current=null
       setState(value);setNotice(t.saved)
       return value
     }catch(e){setError(e?.code==='PERSONAL_COACH_REVISION_CONFLICT'?t.conflict:t.saveError);return null}
@@ -446,8 +543,10 @@ export default function PersonalCoaching({locale='en',accountId}){
     const plan=target.actionPlan
     const planText=plan?.approvedAt?[
       plan.goal,plan.obstacle,plan.actionText,plan.when,
+      ...(Array.isArray(plan.nextActions)?plan.nextActions.slice(0,2).map((row,i)=>row?.text?(i+2)+'. '+row.text+(row.when?' — '+row.when:''):''):[]),
+      plan.fallback?growCopy[lang].fallback+': '+plan.fallback:'',
       Number.isInteger(plan.confidence)?String(plan.confidence)+'/10':'',
-    ].filter(Boolean).join('\n'):(target.brainDecision?.confirmedAt?target.brainDecision.actionText:'') // Only client-confirmed actions.
+    ].filter(Boolean).join('\n'):'' // Only the client's approved plan, no auto-inferred goals.
     try{
       downloadCoachingSessionPdf({
         locale:lang,
@@ -489,6 +588,22 @@ export default function PersonalCoaching({locale='en',accountId}){
           <p>{t.loadError}</p>
           <button type="button" className={styles.primary} onClick={reload}>{t.retry}</button>
         </div>
+        : safetyHold ? <div className={styles.summary} data-coaching-safety-hold role="alert">
+          <h1>{lang==='ru'?'Сейчас важна ваша безопасность':lang==='es'?'Tu seguridad es lo primero':'Your safety comes first'}</h1>
+          <p>{lang==='ru'?'Эта сессия приостановлена. Если вам угрожает непосредственная опасность, обратитесь в местную экстренную службу. Свяжитесь с человеком, которому доверяете, или с квалифицированной кризисной службой в вашем регионе.':lang==='es'?'Esta sesión está en pausa. Si estás en peligro inmediato, llama a los servicios de emergencia locales. Contacta con una persona de confianza o un servicio de crisis de tu zona.':'This session is paused. If you are in immediate danger, contact your local emergency services. Reach out to someone you trust or a qualified crisis service in your area.'}</p>
+          <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.close}</Link>
+          <button type="button" className={styles.delete} disabled={busy} onClick={erase}><Trash2 size={15}/>{t.delete}</button>
+          {error&&<p className={styles.error} role="alert">{error}</p>}
+        </div>
+        : session?.status==='paused' ? <div className={styles.summary} data-coaching-paused>
+          <h1>{lang==='ru'?'Сессия на паузе':lang==='es'?'Sesión en pausa':'Session paused'}</h1>
+          <p>{lang==='ru'?'Сохранённые ответы останутся доступны, когда вы вернётесь.':lang==='es'?'Tus respuestas guardadas estarán disponibles cuando vuelvas.':'Your saved answers will be here when you return.'}</p>
+          <button type="button" className={styles.primary} disabled={busy} onClick={async()=>{const saved=await command('resume');if(saved)openServerFollowup(saved.course?.current,activeQuestions)}}>
+            {lang==='ru'?'Продолжить сессию':lang==='es'?'Continuar sesión':'Resume session'}
+          </button>
+          <Link href={root+'/course?view=courses'} className={styles.secondary}>{t.close}</Link>
+          {error&&<p className={styles.error} role="alert">{error} <button type="button" disabled={busy} onClick={reload}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
+        </div>
         : entry ? <div className={styles.session} data-private-coaching-onboarding>
           <div className={styles.questionArea}>
             {entry.step==='intro'?<CoachingSessionIntroduction locale={lang} headingRef={titleRef}
@@ -527,6 +642,18 @@ export default function PersonalCoaching({locale='en',accountId}){
           {scheme&&<p className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</p>}
           {session.clientTopic&&<p className={styles.contextQuestion}><strong>{entryCopy.topicTitle}:</strong> {coachingRequestTopicLabel(session.clientTopic,lang)}</p>}
           {session.clientQuestion&&<p className={styles.contextQuestion}><strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
+          {clarityOutcome&&<section className={styles.smartRecap} data-coaching-grow-outcome>
+            <h2>{growCopy[lang].clarity}</h2>
+            <div className={styles.smartRecapGrid}>
+              <div className={styles.smartRecapCard}><span>{growCopy[lang].before}</span>
+                <strong>{clarityOutcome.before===null?growCopy[lang].missing:clarityOutcome.before+'/10'}</strong></div>
+              <div className={styles.smartRecapCard}><span>{growCopy[lang].after}</span>
+                <strong>{clarityOutcome.after===null?growCopy[lang].missing:clarityOutcome.after+'/10'}</strong></div>
+            </div>
+            <p>{clarityOutcome.delta===null?growCopy[lang].noCompare:
+              growCopy[lang].change+': '+(clarityOutcome.delta>0?'+':'')+clarityOutcome.delta}</p>
+            <p>{growCopy[lang].reflection}</p>
+          </section>}
           <div className={styles.answers}>
             {activeQuestions.map(item=><div className={styles.answer} key={item.id}>
               <strong>{translated(item.prompt||item.question,lang)}</strong>
@@ -535,10 +662,34 @@ export default function PersonalCoaching({locale='en',accountId}){
                 <p><em>{followupCopy[lang].answer}:</em> {session.reflections[item.id].text}</p>}
             </div>)}
           </div>
-          <CoachingActionPlan key={session.id} locale={lang} privateSave
+          <CoachingActionPlan key={session.id} locale={lang} privateSave lowConfidenceGuidance={isOverload} growPilot={isOverload}
             initial={session.actionPlan||{...draftCoachingActionPlan(activeQuestions,session.answers,session.clientQuestion||'',lang),
               ...(session.brainDecision?.confirmedAt?{actionText:session.brainDecision.actionText}:{})}}
-            disabled={busy} onSave={async fields=>Boolean(await command('plan',fields))}/>
+            disabled={busy} onSave={async fields=>{
+              if(conflictingPlan!==undefined&&!coachingPlansEqual(fields,conflictingPlan)&&!window.confirm(lang==='ru'?'Заменить план, сохранённый в другой вкладке, вашим черновиком?':lang==='es'?'¿Reemplazar el plan guardado en otra pestaña con tu borrador?':'Replace the plan saved in another tab with your draft?'))return false
+              const saved=await command('plan',fields)
+              if(saved)setConflictingPlan(undefined)
+              return Boolean(saved)
+            }}/>
+          {isOverload&&session.actionPlan?.approvedAt&&<p className={styles.subtle} data-coaching-grow-actions>
+            {growCopy[lang].confirmed}: {1+(Array.isArray(session.actionPlan.nextActions)?session.actionPlan.nextActions.length:0)}/3
+          </p>}
+          {notice&&<p role="status">{notice}</p>}
+          {error&&<p role="alert">{error} <button type="button" disabled={busy} onClick={refreshPlan}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
+          {conflictingPlan!==undefined&&<div className={styles.answer} data-coaching-conflicting-plan>
+            <strong>{lang==='ru'?'План из другой вкладки:':lang==='es'?'Plan de otra pestaña:':'Plan from another tab:'}</strong>
+            {conflictingPlan?<>{[
+              ['goal',lang==='ru'?'Цель':lang==='es'?'Objetivo':'Goal'],
+              ['obstacle',lang==='ru'?'Препятствие':lang==='es'?'Obstáculo':'Obstacle'],
+              ['actionText',lang==='ru'?'Действие':lang==='es'?'Acción':'Action'],
+              ['when',lang==='ru'?'Когда':lang==='es'?'Cuándo':'When'],
+              ['confidence',lang==='ru'?'Уверенность':lang==='es'?'Confianza':'Confidence'],
+            ].map(([key,label])=><p key={key}><strong>{label}: </strong>{conflictingPlan[key]??'—'}</p>)}
+              {conflictingPlan.feasibilityReview&&<p>{conflictingPlan.feasibilityReview==='keep'
+                ?(lang==='ru'?'План оставлен без изменения':lang==='es'?'Plan mantenido':'Plan kept')
+                :(lang==='ru'?'Рассмотрен меньший шаг':lang==='es'?'Paso más pequeño considerado':'Smaller step considered')}</p>}
+            </>:<p>{lang==='ru'?'Нет сохранённого плана':lang==='es'?'No hay plan guardado':'No saved plan'}</p>}
+          </div>}
           {recapRows.length>0&&<section className={styles.smartRecap} data-coaching-evidence-recap aria-label={iCopy.recap}>
             <h2>{iCopy.recap}</h2>
             <p>{iCopy.recapNote}</p>
@@ -617,7 +768,8 @@ export default function PersonalCoaching({locale='en',accountId}){
             <p className={styles.messageTip}>{followupCopy[lang].why}</p>
           </div>
           <footer className={styles.footer} data-coaching-messenger-footer>
-            {error&&<p className={styles.footerMessage} role="alert">{error}</p>}
+            {notice&&<p className={styles.footerMessage} role="status">{notice}</p>}
+            {error&&<p className={styles.footerMessage} role="alert">{error} <button type="button" disabled={busy||dictating} onClick={reload}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-coaching-followup">{followupCopy[lang].answer}</label>
               <textarea id="hh-coaching-followup" className={styles.textarea}
@@ -647,6 +799,14 @@ export default function PersonalCoaching({locale='en',accountId}){
             </div>
             <button className={styles.skip} type="button" disabled={busy||dictating}
               onClick={()=>saveFollowup(true)}>{followupCopy[lang].skip}</button>
+            {session?.dialogueProtocol===1&&<button className={styles.skip} type="button" disabled={busy||dictating}
+              onClick={()=>{if(!reflectionDraft.trim()||window.confirm(t.unsaved))command('pause')}}>
+              {lang==='ru'?'Поставить на паузу':lang==='es'?'Pausar sesión':'Pause session'}
+            </button>}
+            {session?.dialogueProtocol===1&&<button className={styles.skip} type="button" disabled={busy||dictating}
+              onClick={()=>{if(!reflectionDraft.trim()||window.confirm(t.unsaved))command('finish_without_plan')}}>
+              {lang==='ru'?'Завершить без плана':lang==='es'?'Terminar sin un plan':'Finish without a plan'}
+            </button>}
           </footer>
         </div>
         : !question ? <div className={styles.center} role="alert">
@@ -667,6 +827,9 @@ export default function PersonalCoaching({locale='en',accountId}){
             <span className={styles.stage}>{translated(question.stageTitle,lang)||(question.stage||'').toUpperCase()}</span>
             <CoachingAvatar locale={lang} avatarId={avatarId} onAvatarChange={setVisualCoachId}
               phase={avatarPhase} beat={coachSpeech.beat}/>
+            {growPhase&&<span className={styles.schemeLabel} data-coaching-grow-phase>
+              {growPhase.phase} · {growCopy[lang].phases[growPhase.phase]} · {growPhase.window} min / {growCopy[lang].target}
+            </span>}
             {session.clientQuestion&&<p className={styles.contextQuestion}>
               <strong>{langCopy.yourQuestion}:</strong> {session.clientQuestion}</p>}
             {scheme&&<span className={styles.schemeLabel}>{langCopy.chosen}: {coachingSessionTitle(scheme.schemeKey,lang,translated(scheme.name,lang))}</span>}
@@ -685,7 +848,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                 </button>
               </div>
             </details>}
-            {quickChoices&&question.type&&!(scheme?.requiredCustomPlan&&index===activeQuestions.length-1)&&<>
+            {quickChoices&&question.type&&!requiresWrittenPlan&&<>
               <span className={styles.answerLabel}>{langCopy.choice}</span>
               <div className={question.type==='scale_0_10'?styles.optionScale:styles.optionList}>
                 {(question.type==='scale_0_10'
@@ -696,8 +859,7 @@ export default function PersonalCoaching({locale='en',accountId}){
                   {translated(option.label,lang)}</button>)}
               </div>
             </>}
-            {scheme?.requiredCustomPlan&&index===activeQuestions.length-1&&
-              <p className={styles.requiredPlan}>{langCopy.woop}</p>}
+            {requiresWrittenPlan&&<p className={styles.requiredPlan}>{planHint}</p>}
             {quickChoices&&!question.type&&<div className={styles.suggestions} role="group" aria-label={langCopy.choice}>
               {(question.examples?.[lang]||[]).map(option=><button type="button" key={option} disabled={busy||dictating}
                 className={draft.trim()===option?styles.chosen:undefined} aria-pressed={draft.trim()===option}
@@ -706,7 +868,7 @@ export default function PersonalCoaching({locale='en',accountId}){
             {!quickChoices&&draft.startsWith('choice:')&&<p className={styles.legacyChoice}>
               <strong>{t.earlierChoice}:</strong> {prettyAnswer(draft,question,lang,t.noAnswer)}. {t.replaceChoice}
             </p>}
-            {!quickChoices&&question.type==='scale_0_10'&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
+            {!quickChoices&&question.type==='scale_0_10'&&!isOverload&&<p className={styles.scaleHelp}>{t.scaleHelp}</p>}
             {dictating&&<div className={styles.micNotice} role="status">{t.stopMic}</div>}
 
 
@@ -715,16 +877,29 @@ export default function PersonalCoaching({locale='en',accountId}){
                       </div>
           <footer className={styles.footer} data-coaching-messenger-footer>
             {notice&&<p className={styles.footerMessage} role="status"><Check size={15}/>{notice}</p>}
-            {error&&<p className={styles.footerMessage} role="alert">{error}</p>}
+            {conflictingAnswer!==undefined&&<div className={styles.footerMessage} data-coaching-conflicting-answer>
+              <strong>{lang==='ru'?'Ответ из другой вкладки:':lang==='es'?'Respuesta de otra pestaña:':'Answer from another tab:'}</strong>{' '}
+              {conflictingAnswer===null?(lang==='ru'?'Пропущено':lang==='es'?'Omitida':'Skipped'):prettyAnswer(conflictingAnswer,question,lang,t.noAnswer)}
+            </div>}
+            {error&&<p className={styles.footerMessage} role="alert">{error} <button type="button" disabled={busy||dictating} onClick={reload}>{lang==='ru'?'Обновить сессию':lang==='es'?'Actualizar sesión':'Refresh session'}</button></p>}
             <div className={styles.chatComposer} data-coaching-composer>
               <label className={styles.answerLabel} htmlFor="hh-personal-coach-answer">
-                {quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
-              <textarea id="hh-personal-coach-answer" className={styles.textarea}
-                aria-describedby="hh-personal-coach-answer-report-note"
-                data-coaching-open-reflection={!quickChoices?'true':undefined}
-                value={draft.startsWith('choice:')?'':draft}
-                maxLength={800} rows={2} placeholder={t.placeholder} disabled={busy}
-                onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>
+                {isOverload&&question.type==='scale_0_10'?growCopy[lang].clarity:
+                  quickChoices&&question.type?langCopy.orWrite:t.hint}</label>
+              {isOverload&&question.type==='scale_0_10'
+                ? <select id="hh-personal-coach-answer" className={styles.textarea}
+                    aria-describedby="hh-personal-coach-answer-report-note" disabled={busy}
+                    value={/^(?:10|[0-9])$/.test(draft)?draft:''}
+                    onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}>
+                    <option value="">{growCopy[lang].missing}</option>
+                    {Array.from({length:11},(_,n)=><option key={n} value={n}>{n}/10</option>)}
+                  </select>
+                : <textarea id="hh-personal-coach-answer" className={styles.textarea}
+                    aria-describedby="hh-personal-coach-answer-report-note"
+                    data-coaching-open-reflection={!quickChoices?'true':undefined}
+                    value={draft.startsWith('choice:')?'':draft}
+                    maxLength={800} rows={2} placeholder={t.placeholder} disabled={busy}
+                    onChange={event=>{setDraft(event.target.value);setError('');setNotice('')}}/>}
               <div className={styles.composerTools}>
                 <CoachingQuestionVoice key={question.id+'-'+lang+'-'+(useStandardPrompt?'standard':'tailored')} compact
                   text={[conversationTurn?.speech,visiblePrompt].filter(Boolean).join(' ')} locale={lang}
@@ -747,6 +922,14 @@ export default function PersonalCoaching({locale='en',accountId}){
               </button>
             </div>
             {!question.required&&<button type="button" className={styles.skip} disabled={busy} onClick={()=>next(true)}>{t.skip}</button>}
+            {isOverload&&<button type="button" className={styles.skip} disabled={busy||dictating}
+              onClick={()=>{if((!dirty&&!(pendingFollowup&&reflectionDraft.trim()))||window.confirm(t.unsaved))command('pause')}}>
+              {lang==='ru'?'Поставить на паузу':lang==='es'?'Pausar sesión':'Pause session'}
+            </button>}
+            {session?.schemeKey==='grow_overload_20_v1'&&<button type="button" className={styles.skip} disabled={busy||dictating}
+              onClick={()=>{if(!dirty||window.confirm(t.unsaved))command('finish_without_plan')}}>
+              {lang==='ru'?'Завершить без плана':lang==='es'?'Terminar sin un plan':'Finish without a plan'}
+            </button>}
           </footer>
         </div>}
       </section>
@@ -754,4 +937,3 @@ export default function PersonalCoaching({locale='en',accountId}){
     </div>
   </main>
 }
-
