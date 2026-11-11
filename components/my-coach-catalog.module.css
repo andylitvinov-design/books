@@ -5,7 +5,7 @@
   padding:0 16px 112px;overflow-x:clip;font-family:inherit
 }
 .frame{max-width:1180px;margin:0 auto;min-width:0}
-.brandHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:76px}
+.brandHeader{position:relative;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:76px}
 .brand{display:inline-flex;align-items:center;gap:8px;min-width:0;color:#123f34;text-decoration:none;
   font:500 clamp(20px,2.5vw,29px)/1.1 Georgia,'Times New Roman',serif;letter-spacing:-.055em}
 .brand sup{font:500 10px/1 system-ui;position:relative;top:-.5em;letter-spacing:0}
@@ -14,6 +14,10 @@
 .brandAction{width:45px;height:45px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
   border:1px solid #e5e3dc;border-radius:50%;color:#114e3e;background:#fff9f2;
   box-shadow:0 3px 9px #344f4010;text-decoration:none;cursor:pointer}
+.brandMenu{position:absolute;right:0;top:61px;z-index:12;min-width:185px;display:flex;flex-direction:column;
+  background:#fffdf7;border:1px solid #dbe7de;border-radius:17px;padding:9px;box-shadow:0 14px 30px #184d392a}
+.brandMenu a{display:block;padding:12px 14px;text-decoration:none;color:#1d5946;font:700 14px/1.2 system-ui;border-radius:10px}
+.brandMenu a:hover{background:#ecf6ed}
 .brandAction[aria-pressed=true]{color:#b04b67;border-color:#e9c3c8}
 .hero{isolation:isolate;position:relative;overflow:hidden;border-radius:28px;min-height:245px;
   padding:27px 32px 17px;box-sizing:border-box;
