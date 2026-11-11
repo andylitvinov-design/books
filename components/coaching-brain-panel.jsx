@@ -19,7 +19,7 @@ const copy={
     saving:'Сохраняем…',saved:'Подтверждённый шаг сохранён в личной сессии',
     probeCheck:'Проверить AI без личного текста',probeChecking:'Проверка…',probeVerified:'AI ответил: ZDR-маршрут, $0',
     error:'Не удалось получить ответ. Ваш текст остаётся здесь.',saveError:'Не удалось сохранить шаг. Проверьте сессию и повторите.',
-    missing:'Напишите хотя бы три символа.',revoke:'Согласие действует только в этой вкладке. Снимите отметку, чтобы прекратить отправку.',confidential:'Не вводите пароли, ключи доступа и номера документов.',
+    missing:'Напишите сообщение.',decisionMissing:'Для следующего шага нужно минимум три символа.',revoke:'Согласие действует только в этой вкладке. Снимите отметку, чтобы прекратить отправку.',confidential:'Не вводите пароли, ключи доступа и номера документов.',
   },
   en:{
     open:'AI dialogue',title:'Coaching Brain',subtitle:'AI coaching conversation · not a human or therapy',
@@ -34,7 +34,7 @@ const copy={
     saving:'Saving…',saved:'Your confirmed step was saved in your private session',
     probeCheck:'Test AI without personal text',probeChecking:'Checking…',probeVerified:'AI responded: ZDR routing, $0',
     error:'Could not get a reply. Your text is still here.',saveError:'Could not save this step. Check your session and retry.',
-    missing:'Please write at least three characters.',revoke:'Consent applies only to this page. Uncheck to stop sending.',confidential:'Do not enter passwords, API keys or document numbers.',
+    missing:'Please write a message.',decisionMissing:'Please write at least three characters for your step.',revoke:'Consent applies only to this page. Uncheck to stop sending.',confidential:'Do not enter passwords, API keys or document numbers.',
   },
   es:{
     open:'Diálogo IA',title:'Coaching Brain',subtitle:'Conversación con IA · no es una persona ni terapia',
@@ -49,7 +49,7 @@ const copy={
     saving:'Guardando…',saved:'Tu paso confirmado se guardó en tu sesión privada',
     probeCheck:'Probar IA sin datos personales',probeChecking:'Comprobando…',probeVerified:'La IA respondió: ruta ZDR, $0',
     error:'No se pudo responder. Tu texto permanece aquí.',saveError:'No se pudo guardar este paso. Comprueba la sesión.',
-    missing:'Escribe al menos tres caracteres.',revoke:'El consentimiento se aplica solo a esta página. Desmárcalo para dejar de enviar.',confidential:'No escribas contraseñas, claves API ni números de documentos.',
+    missing:'Escribe un mensaje.',decisionMissing:'Escribe al menos tres caracteres para tu paso.',revoke:'El consentimiento se aplica solo a esta página. Desmárcalo para dejar de enviar.',confidential:'No escribas contraseñas, claves API ni números de documentos.',
   },
 }
 const offlineReasons={
@@ -102,7 +102,7 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
     event.preventDefault()
     if(busy||probing||!consent||!accountId||!sessionId)return
     const message=draft.trim()
-    if(message.length<3){setError(t.missing);return}
+    if(message.length<1){setError(t.missing);return}
     const controller=new AbortController()
     pending.current?.abort()
     pending.current=controller
@@ -135,7 +135,7 @@ export default function CoachingBrainPanel({locale='en',accountId,sessionId,onCo
   async function confirmDecision(){
     const text=decision.trim()
     if(saving||busy)return
-    if(text.length<3){setError(t.missing);return}
+    if(text.length<3){setError(t.decisionMissing);return}
     setSaving(true);setError('')
     try{
       const result=await onConfirmDecision(text)
