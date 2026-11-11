@@ -36,6 +36,10 @@ on:
       - 'ops/pr-monitor/learning.html'
       - 'ops/pr-monitor/skills.html'
       - 'ops/pr-monitor/pr-two-screen-boot.js'
+      - 'ops/pr-monitor/pr-recommendations.js'
+      - 'ops/pr-monitor/pr-recommendations.css'
+      - 'ops/pr-monitor/README_PR_RECOMMENDATIONS_20261109.md'
+      - 'ops/pr-monitor/tests/pr-recommendations.test.cjs'
       - 'scripts/ci-pr-ten-minute-watchdog.cjs'
       - 'scripts/ci-pr-event-handoff.cjs'
       - 'scripts/ci-pr-quality-event.cjs'
@@ -349,6 +353,8 @@ jobs:
           node --check ops/pr-monitor/pr-three-kpi-ui.js
           node --check ops/pr-monitor/pr-wave-effectiveness-model.cjs
           node --check ops/pr-monitor/pr-two-screen-boot.js
+          node --check ops/pr-monitor/pr-recommendations.js
+          node --check ops/pr-monitor/tests/pr-recommendations.test.cjs
           node --check tests/pr-monitor-wave-effectiveness.test.cjs
           node --check tests/pr-monitor-three-kpi-boot.test.cjs
           node --check ops/pr-monitor/pr-attribution-ui.js
@@ -396,7 +402,7 @@ jobs:
       - name: PR error funnel proof and diagnostic assignment contracts
         run: node --test ops/pr-monitor/tests/pr-error-funnel.test.cjs
       - name: PR attribution timeline evidence contracts
-        run: node --test ops/pr-monitor/tests/pr-repair-cycle-model.test.cjs tests/ci-pr-timeline-audit.test.cjs tests/pr-attribution-api.test.cjs tests/pr-checkpoint-evidence.test.cjs tests/pr-cohort-wall-clock.test.cjs tests/pr-monitor-reconciliation-v2.test.cjs tests/ci-pr-core-journey-summary.test.cjs tests/pr-monitor-two-screen.test.cjs tests/pr-monitor-velocity-three-lines.test.cjs tests/pr-monitor-wave-effectiveness.test.cjs tests/pr-monitor-three-kpi-boot.test.cjs tests/pr-monitor-three-kpis.test.cjs tests/pr-monitor-three-kpis-api.test.cjs tests/pr-monitor-ci-wave-comparison.test.cjs
+        run: node --test ops/pr-monitor/tests/pr-repair-cycle-model.test.cjs tests/ci-pr-timeline-audit.test.cjs tests/pr-attribution-api.test.cjs tests/pr-checkpoint-evidence.test.cjs tests/pr-cohort-wall-clock.test.cjs tests/pr-monitor-reconciliation-v2.test.cjs tests/ci-pr-core-journey-summary.test.cjs tests/pr-monitor-two-screen.test.cjs tests/pr-monitor-velocity-three-lines.test.cjs tests/pr-monitor-wave-effectiveness.test.cjs tests/pr-monitor-three-kpi-boot.test.cjs tests/pr-monitor-three-kpis.test.cjs tests/pr-monitor-three-kpis-api.test.cjs tests/pr-monitor-ci-wave-comparison.test.cjs ops/pr-monitor/tests/pr-recommendations.test.cjs
       - name: Checkout protected production classifier for integration test
         uses: actions/checkout@v4
         with:

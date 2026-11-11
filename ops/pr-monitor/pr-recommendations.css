@@ -1,0 +1,28 @@
+.hh-pr-recommendations{margin:12px 0 18px;padding:12px;border:1px solid #344b63;border-radius:14px;background:linear-gradient(160deg,#132a40,#0d1c2c);color:#eaf3fb;display:grid;gap:10px}
+.hh-pr-recommendations *{box-sizing:border-box}
+.hh-pr-rec-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.hh-pr-rec-head h2{font-size:16px;line-height:1.2;margin:0;color:#fff}
+.hh-pr-rec-intro{margin:4px 0 0;color:#a9bfd2;font-size:11px;line-height:1.35}
+.hh-pr-rec-refresh{flex:0 0 auto;border:1px solid #4f7796;background:#173d58;color:#e7f4ff;border-radius:8px;padding:8px 10px;font-size:11px;cursor:pointer}
+.hh-pr-rec-refresh:disabled{opacity:.55}
+.hh-pr-rec-meta{margin:0;color:#9db6ca;font-size:10px;line-height:1.45}
+.hh-pr-rec-list{display:grid;gap:8px}
+.hh-pr-rec-card{min-width:0;padding:10px;border:1px solid #2d4962;border-radius:10px;background:#0c2134}
+.hh-pr-rec-top{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.hh-pr-rec-priority,.hh-pr-rec-confidence{font-size:9px;font-weight:800;letter-spacing:.04em}
+.hh-pr-rec-priority{color:#f0c47f}
+.hh-pr-rec-confidence{color:#9db8cd}
+.hh-pr-rec-card h3{margin:0 0 4px;font-size:13px;line-height:1.25;color:#eff7ff}
+.hh-pr-rec-signal{margin:0 0 5px;font-size:10px;color:#9ec9e4;font-variant-numeric:tabular-nums}
+.hh-pr-rec-owner,.hh-pr-rec-blocker{margin:3px 0;font-size:9px;line-height:1.35;color:#96b4ca}
+.hh-pr-rec-blocker{color:#d8bd91}
+.hh-pr-rec-task{font-size:11px;line-height:1.45;color:#d2dfeb;margin:0}
+.hh-pr-rec-details{margin-top:7px;border-top:1px solid #29435b;padding-top:6px}
+.hh-pr-rec-details summary{font-size:10px;font-weight:700;color:#a9d5f3;cursor:pointer}
+.hh-pr-rec-details p{font-size:10px;line-height:1.4;color:#c2d2e0;margin:6px 0 0}
+.hh-pr-rec-details .hh-pr-rec-done{color:#b2dbc9}
+.hh-pr-rec-evidence{display:inline-block;margin-top:7px;font-size:10px;color:#90ceef;text-decoration:none}
+.hh-pr-rec-footer{font-size:9px;line-height:1.35;color:#8199ad;margin:0}
+#hh-pr-recommendations[data-freshness="stale"]{border-color:#7a5b3b}
+#hh-pr-recommendations[data-freshness="stale"] .hh-pr-rec-meta{color:#efc68b}
+@media(min-width:700px){.hh-pr-rec-list{grid-template-columns:repeat(2,minmax(0,1fr))}.hh-pr-rec-card:first-child{grid-column:1/-1}.hh-pr-recommendations{padding:16px}}

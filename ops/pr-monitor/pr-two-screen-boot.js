@@ -46,6 +46,9 @@
       '<script src="/project-management-nav.js?v=20261107-cc-v1" defer><\/script>';
     // A discoverable link on the existing PR Monitor, without changing the five-item dock.
     additions += '<link rel="stylesheet" href="/commander-learning.css?v=20261107-learning-v1">';
+    // HH_PR_RECOMMENDATIONS_V1: existing public Control Tower stats, on-demand refresh only.
+    additions += '<link rel="stylesheet" href="/pr-recommendations.css?v=20261111-v2">'+
+      '<script src="/pr-recommendations.js?v=20261111-v2" defer><\/script>';
     // Reuse the current GitHub PR and open-queue counters; presentation only.
     additions += '<link rel="stylesheet" href="/pr-compact-top.css?v=20261111-top-v1">'+
       '<script src="/pr-compact-top.js?v=20261111-top-v1" defer><\/script>';
