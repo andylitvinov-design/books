@@ -115,3 +115,50 @@ test("Explicit Income Growth and confirmed energy selections outrank stale free 
   assert.equal(calm.topicId,"income-growth");
   assert.equal(calm.parameters.pace.value,"gentle","explicit slow practice remains slow");
 });
+
+test("Confirmed screenshot filters form a specific idea before a filmed concept in RU/EN/ES",()=>{
+ const locales={
+  en:{now:"Tired · Tense · Overwhelmed",desired:"Safe · Energetic · Connected",
+   focus:"Connection · Freedom · Dignity",from:/tiredness.*tension.*overwhelm/i,
+   toward:/safety.*energy.*connection/i,values:/freedom.*dignity/i},
+  ru:{now:"Усталость · Напряжение · Перегрузка",desired:"Безопасность · Энергия · Близость",
+   focus:"Связь · Свобода · Достоинство",from:/усталости.*напряжения.*перегрузки/i,
+   toward:/безопасности.*энергии.*контакту/i,values:/свободу.*достоинство/i},
+  es:{now:"Cansancio · Tensión · Sobrecarga",desired:"Seguridad · Energía · Conexión",
+   focus:"Conexión · Libertad · Dignidad",from:/cansancio.*tensión.*sobrecarga/i,
+   toward:/seguridad.*energía.*conexión/i,values:/libertad.*dignidad/i}
+ };
+ for(const locale of ["ru","en","es"]){
+  const v=locales[locale];
+  const p={currentState:v.now,desiredState:v.desired,focus:v.focus,
+   currentIds:["fatigue","tension","overwhelmed"],desiredIds:["safe","energetic","connected"],
+   focusIds:["connection","freedom","dignity"],energyStart:4,energyTarget:6};
+  const concept=suggestVideoConcept({locale,goal:"Everyday tension",theme:"energy",personalization:p});
+  assert.match(concept.mainMessage,v.from);
+  assert.match(concept.mainMessage,v.toward);
+  assert.match(concept.mainMessage,v.values);
+  assert.equal(concept.parameters.pace.value,"dynamic");
+  assert.equal(concept.sceneOutline.length,4);
+  assert.equal(concept.emotionalProgram.length,4);
+  const prose=buildVideoConceptNarrative({locale,topic:"Everyday tension",
+   mainMessage:concept.mainMessage,emotionalProgram:concept.emotionalProgram,
+   currentState:concept.parameters.currentState.value,
+   desiredState:concept.parameters.desiredState.value,
+   focus:concept.personalizationFocus,pace:concept.parameters.pace.value,
+   energyStart:concept.energyStart,energyTarget:concept.energyTarget,durationSeconds:30});
+  assert.ok(prose.startsWith(concept.mainMessage+"."));
+  for(const exact of [v.now,v.desired,v.focus,"4/10","6/10"])assert.ok(prose.includes(exact),exact);
+  assert.ok(prose.length<700,"a concise editorial paragraph, not raw filters");
+  const changed=suggestVideoConcept({locale,goal:"Everyday tension",theme:"energy",
+   personalization:{...p,desiredIds:["calm","connected"],desiredState:"Calm · Connected"}});
+  assert.notEqual(changed.mainMessage,concept.mainMessage);
+ }
+ const panel=readFileSync(new URL("../components/mandala-video-concept.tsx",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../components/mandala-video-concept.module.css",import.meta.url),"utf8");
+ assert.ok(panel.indexOf('data-video-concept-main-idea="true"') <
+   panel.indexOf('data-video-concept-text>'));
+ assert.ok(panel.indexOf('data-video-concept-text>') <
+   panel.indexOf('data-video-concept-all-parameters>'));
+ assert.equal((panel.match(/data-video-concept-main-idea=/g)||[]).length,1);
+ assert.match(css,/\.mainIdeaCard\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+});

@@ -8,8 +8,8 @@
 .talkButton:disabled{opacity:.72;cursor:wait}
 .talkButton svg{flex-shrink:0}
 .talkButton svg:last-child{margin-left:auto}
-.portrait,.dialogPortrait{display:block;flex-shrink:0;background-image:url('/images/holistic-house/my-coach-portraits.avif');
-  background-repeat:no-repeat;background-size:400% 100%;background-position:0% center;border-radius:50%;
+.portrait,.dialogPortrait{display:block;flex-shrink:0;background-image:url('/images/holistic-house/my-coach-mira-rail.webp');
+  background-repeat:no-repeat;background-size:cover;background-position:center center;background-color:#e8eee8;border-radius:50%;
   box-shadow:0 0 0 2px #ffffffb3}
 .portrait{width:38px;height:38px}
 .dialogPortrait{width:78px;height:78px;box-shadow:0 0 0 4px #dceee6,0 6px 16px #225d4630}

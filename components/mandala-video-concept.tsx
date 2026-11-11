@@ -42,7 +42,7 @@ type Props={
 const COPY={
  ru:{
   ready:"Автоконцепция готова",title:"Ваша концепция видео",
-  lead:"Прочитайте историю, при желании измените текст и проверьте параметры.",
+  lead:"Сначала ключевая идея, затем связный концепт и параметры.",
   example:"Это пример без личной цели. Уточните её во вкладке «Цель», чтобы получить подходящий вариант.",
   goal:"Цель",category:"Категория",subcategory:"Подкатегория",topic:"Тема",
   style:"Стиль",scenario:"Сценарий",emotion:"Эмоциональная программа",meaning:"Смысл",motif:"Мотив",
@@ -59,7 +59,7 @@ const COPY={
  },
  en:{
   ready:"Your concept is ready",title:"Your video concept",
-  lead:"Read the story, edit the text if needed, then review the parameters.",
+  lead:"Review your main idea, the short film concept and its details.",
   example:"This is an example without a personal goal. Add your goal to get a more relevant suggestion.",
   goal:"Goal",category:"Category",subcategory:"Subcategory",topic:"Topic",
   style:"Style",scenario:"Scenario",emotion:"Emotional journey",meaning:"Meaning",motif:"Motif",
@@ -76,7 +76,7 @@ const COPY={
  },
  es:{
   ready:"Concepto preparado",title:"Tu concepto de vídeo",
-  lead:"Lee la historia, edita el texto si quieres y revisa los parámetros.",
+  lead:"Primero la idea clave, después el concepto y sus detalles.",
   example:"Este es un ejemplo sin objetivo personal. Añade tu objetivo para una mejor propuesta.",
   goal:"Objetivo",category:"Categoría",subcategory:"Subcategoría",topic:"Tema",
   style:"Estilo",scenario:"Guion",emotion:"Programa emocional",meaning:"Sentido",motif:"Motivo",
@@ -134,6 +134,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
     emotionalProgram:concept.emotionalProgram,
     currentState:concept.parameters?.currentState?.value,
     desiredState:concept.parameters?.desiredState?.value,
+    focus:concept.personalizationFocus,
     pace:concept.parameters?.pace?.value,
     energyStart:concept.energyStart,energyTarget:concept.energyTarget,durationSeconds
   });
@@ -188,7 +189,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
   // The headline, style, meaning, symbol, scenario and emotional arc are no longer
   // hidden in a second grid, so they belong in this same vertical list.
   const visibleCreativeKeys=new Set([
-    "intent","topicId","meaningAxisId","mainMessage","motifId","scenarioId",
+    "intent","topicId","meaningAxisId","motifId","scenarioId",
     "styleId","emotionalProgram"
   ]);
   const allParameterRows=VIDEO_CONCEPT_FIELD_LABELS.filter(row=>{
@@ -262,6 +263,10 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
       {t.example} <button type="button" disabled={disabled} onClick={onOpenGoal}>{t.noGoal}</button>
     </p>:null}
     {approvedSignature&&!approved?<p className={css.example} role="status">{t.changed}</p>:null}
+    <section className={css.mainIdeaCard} aria-label={t.story}>
+      <h4>{t.story}</h4>
+      <strong data-video-concept-main-idea="true">{concept.mainMessage}</strong>
+    </section>
     <section className={css.narrativeCard} data-video-concept-text>
       <div className={css.narrativeHeading}>
         <h4>{t.textTitle}</h4>
@@ -335,8 +340,7 @@ export function MandalaVideoConcept({locale,goal,theme,styleIndex,phrases,speech
           item?.source==="personalization"?word("Из персонализации","From personalization","De personalización"):
           item?.source==="speech"?word("Из аудио","From audio","Del audio"):
           locale==="ru"?stateLabels[0]:locale==="es"?stateLabels[2]:stateLabels[1];
-        return <li key={row.id} data-concept-parameter={row.id}
-          data-video-concept-main-idea={row.id==="mainMessage"?"true":undefined}>
+        return <li key={row.id} data-concept-parameter={row.id}>
           <div className={css.parameterLabel}>
             <strong>{locale==="ru"?row.ru:locale==="es"?row.es:row.en}</strong>
             <small>{state}</small>
