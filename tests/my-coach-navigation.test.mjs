@@ -55,7 +55,12 @@ test('About coach expands inline and Start Session opens the selected persona, n
   assert.match(catalog, /const \[expandedId, setExpandedId\] = useState\(null\)/)
   assert.match(catalog, /aria-expanded=\{isExpanded\} aria-controls=\{'my-coach-profile-' \+ persona.id\}/)
   assert.match(catalog, /\{isExpanded && \(/)
-  assert.doesNotMatch(catalog, /scrollIntoView/)
+  // About must not auto-scroll or redirect. Topic shortcuts may intentionally scroll to the directory.
+  const aboutHandler = catalog.match(/const choose = \(id\) => \{[\s\S]*?\n  \}/)?.[0]
+  assert.ok(aboutHandler, 'inline About handler remains present')
+  assert.doesNotMatch(aboutHandler, /scrollIntoView|router\.push|window\.location/)
+  const ribbon = read('components/sitewide-antistress-banner.tsx')
+  assert.match(ribbon, /my-coach/)
   assert.match(catalogCss, /\.cardSelected \.profile\{/)
   assert.match(runner, /\{!session\?selectedPersona\?<section/)
   assert.match(runner, /data-my-coach-handoff=\{selectedPersona.id\}/)
