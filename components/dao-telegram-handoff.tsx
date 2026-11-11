@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { ArrowUpRight, MessageCircle } from "lucide-react";
 import type { PublicLocale } from "@/lib/public-locales";
 import styles from "./dao-telegram-handoff.module.css";
@@ -36,32 +33,12 @@ function safeDaoUrl(raw: unknown, locale: PublicLocale): string | null {
 }
 
 /** Fail-closed: render NO bot link until the existing server-side readiness gate approves it. */
-export function DaoTelegramHandoff({ locale }: { locale: PublicLocale }) {
-  const [url, setUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setUrl(null);
-    fetch("/api/public/telegram-diagnostic", {
-      signal: controller.signal,
-      cache: "no-store",
-      credentials: "same-origin",
-    })
-      .then(async response => {
-        if (!response.ok) throw new Error("Telegram intake not ready");
-        return response.json();
-      })
-      .then(body => {
-        if (!controller.signal.aborted && body?.available === true) {
-          setUrl(safeDaoUrl(body?.daoUrls?.[locale], locale));
-        }
-      })
-      .catch(() => {
-        // Existing first-party request form below remains the working fallback.
-      });
-    return () => controller.abort();
-  }, [locale]);
-
+/** Public URL is evaluated by the server on every request; no navigation-time fetch.
+ * The verified transport/diagnostic gate stays server-only and this component
+ * accepts only a locale-matched public t.me bot link, never credentials.
+ */
+export function DaoTelegramHandoff({ locale, approvedUrl }: { locale: PublicLocale; approvedUrl: string | null }) {
+  const url = safeDaoUrl(approvedUrl, locale);
   if (!url) return null;
   const t = copy[locale];
   return (

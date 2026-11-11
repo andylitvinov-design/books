@@ -6,6 +6,8 @@ import { PublicSiteHeader } from "@/components/public-site-header";
 import { CompactLeadCapture } from "@/components/compact-lead-capture";
 import { PersonalExpressEnquiry } from "@/components/personal-express-enquiry";
 import { TelegramDiagnosticEntry } from "@/components/telegram-diagnostic-entry";
+import { channelTransportReady } from "@/lib/crm/messenger-policy";
+import { telegramDaoPublicUrl, telegramDiagnosticPublicUrl } from "@/lib/crm/telegram-diagnostic.mjs";
 import { DaoTelegramHandoff } from "@/components/dao-telegram-handoff";
 import { FreeSituationReviewForm } from "@/components/free-situation-review-form";
 import { SiteVideoPlayer } from "@/components/site-video-player";
@@ -469,6 +471,12 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
   const images = art[kind];
   const captureId = kind === "dao" ? "request-free-wu-xing" : kind === "situation" ? "request-free-review" : "start-free";
   const testsHref = "/" + locale + "/client/tests";
+  // Existing server-only production readiness: no browser request is aborted
+  // during fast history navigation on WebKit, yet absent transport fails closed.
+  const daoTelegramUrl = kind === "dao" &&
+    channelTransportReady("telegram", process.env) &&
+    (["en", "ru", "es"] as const).every(language => !!telegramDiagnosticPublicUrl(language, process.env))
+      ? telegramDaoPublicUrl(locale, process.env) : null;
   const final = finalCopy[locale][kind];
   // Existing approved, already-published introductions only. Dedicated express-review
   // scripts remain drafts; no HeyGen render, upload or publication is implied.
@@ -543,7 +551,7 @@ export function FreeEntryLanding({ locale, kind }: { locale: PublicLocale; kind:
         ) : null}
 
         {kind === "dao" ? <div id="dao-free-start" data-dao-instagram-entry>
-          <DaoTelegramHandoff locale={locale} />
+          <DaoTelegramHandoff locale={locale} approvedUrl={daoTelegramUrl} />
           <p><a href="#request-free-wu-xing">{locale === "ru" ? "Или отправьте запрос через защищённую форму ниже" :
             locale === "es" ? "O envía tu solicitud con el formulario seguro a continuación" :
               "Or send your request through the secure form below"}</a></p>

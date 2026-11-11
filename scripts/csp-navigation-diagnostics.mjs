@@ -17,13 +17,17 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
       && [...url.searchParams.keys()].length === 1 && !!url.searchParams.get('_rsc'))
     || (url.pathname === '/en/client/tests' && [...url.searchParams.keys()].length === 2
       && url.searchParams.get('focus') === 'tantra' && !!url.searchParams.get('_rsc'));
-  if (!bootstrap && !prefetch && !clientPrefetch && !tantraPrefetch) return null;
+  // Exact first-party public diagnostic readiness can be aborted by WebKit
+  // only while the old Tantra document is being replaced on rapid Back.
+  // Do not whitelist other APIs, query parameters or ordinary CSP failures.
+  const telegramDiagnosticFetch = url.pathname === '/api/public/telegram-diagnostic' && !url.search;
+  if (!bootstrap && !prefetch && !clientPrefetch && !tantraPrefetch && !telegramDiagnosticFetch) return null;
   for (const navigation of lifecycle) {
     if (navigation.type !== 'navigate' || navigation.sameDocument !== false || Math.floor(navigation.time) > error.time) continue;
     const source = lifecycle.find(event => event.type === 'init' && event.documentProbe === navigation.documentProbe);
     if (!source || new URL(source.url).origin !== url.origin) continue;
     const sourcePath = new URL(source.url).pathname;
-    const tantraBack = tantraPrefetch && error.phase === 'back-from-tantra'
+    const tantraBack = (tantraPrefetch || telegramDiagnosticFetch) && error.phase === 'back-from-tantra'
       && source.url === new URL('/en/academy/reiki/tantra-reiki', origin).href
       && navigation.documentClass === 'tantra-media' && navigation.navigationType === 'replace'
       && navigation.destination === new URL('/en/about', origin).href
@@ -41,7 +45,7 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
       && lifecycle.some(event => event.type === 'navigate' && event.documentProbe === navigation.documentProbe
         && event.time <= navigation.time && event.sameDocument === true && event.navigationType === 'traverse'
         && event.url === new URL('/en/about', origin).href && event.destination === navigation.destination);
-    if (tantraPrefetch && !prefetch && !clientPrefetch && !tantraBack) continue;
+    if ((tantraPrefetch || telegramDiagnosticFetch) && !prefetch && !clientPrefetch && !tantraBack) continue;
     // The same shared-header home prefetch was observed during private Back/
     // Forward teardown. Accept only that traced client -> About traversal.
     const clientHomePrefetch = prefetch && url.pathname === '/'
@@ -71,6 +75,11 @@ export function classifyCspNavigationCancellation(error, { engine, readiness, or
     // Reject errors at/after the new document's first millisecond. They are not
     // attributable to the old document, even when the wording is identical.
     if (!nextDocument || error.time >= Math.floor(nextDocument.time) || nextDocument.url !== navigation.destination) continue;
+    // Unlike harmless policy-based routing, a genuine CSP violation is never
+    // a navigation-cancellation proof, even for the exact readiness endpoint.
+    if (telegramDiagnosticFetch && lifecycle.some(event => event.type === 'policy-violation'
+      && event.documentProbe === navigation.documentProbe
+      && event.time >= navigation.time && event.time <= nextDocument.time)) continue;
     const pageHide = lifecycle.find(event => event.type === 'pagehide' && event.documentProbe === navigation.documentProbe && event.time >= navigation.time && event.time < nextDocument.time);
     if (!pageHide || error.time > Math.floor(pageHide.time)) {
       // No broad console-error ignore: prove the request, exact timeline,

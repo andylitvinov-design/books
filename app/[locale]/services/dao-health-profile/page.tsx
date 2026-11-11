@@ -5,6 +5,7 @@ import { isPublicLocale } from "@/data/academy/catalog";
 import { metadataBaseFor } from "@/data/site-metadata";
 
 type Props = { params: Promise<{ locale: string }> };
+export const dynamic = "force-dynamic";
 const copy = {
   en: { title: "Free Wu Xing Resource Profile | Holistic House", description: "Explore your personal resources, balance and energy through a free author-led symbolic Five Elements reflection. Not medical diagnosis." },
   ru: { title: "Бесплатный профиль ресурсов У-Син | Holistic House", description: "Исследуйте личные ресурсы, баланс и внутреннюю опору с помощью бесплатного авторского символического профиля Дао / У-Син. Не медицинская диагностика." },

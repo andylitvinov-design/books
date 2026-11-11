@@ -367,19 +367,57 @@ export function TantraVideoTestimonials(props: Props) {
                 if (!player.isConnected || !disclosure?.open ||
                     player.currentSrc !== replacement.source ||
                     !Number.isFinite(player.duration) || replacement.time >= player.duration) return;
-                // Fresh source, same retained position, muted, and only after
-                // a proven stalled explicit Play. True frame/clock progress is
-                // still required by WebKit browser acceptance.
+                // Artifact 13887168375: after a stalled explicit user Play,
+                // WebKit's NEW decoder emitted loadedmetadata and then stayed
+                // seeking=true forever when asked to seek BEFORE a real frame.
+                // Prime only the same public, already-user-requested MUTED
+                // source. Require an actually presented frame >0.5s before
+                // the one retained-position seek. Never do this on disclosure
+                // open, and never weaken the independent decoded-frame E2E.
                 player.muted = true;
-                player.addEventListener("seeked", () => {
-                  if (!player.isConnected || !disclosure.open ||
-                      player.currentSrc !== replacement.source ||
-                      player.seeking || player.ended || !player.paused ||
-                      Math.abs(player.currentTime - replacement.time) > 0.35) return;
-                  void player.play().catch(() => {/* Native controls remain available. */});
-                }, {once:true});
-                try {player.currentTime = replacement.time;}
-                catch {/* Native controls remain available if a seek is rejected. */}
+                const view = player.ownerDocument.defaultView;
+                const started = view?.performance?.now() ?? 0;
+                const active = () => player.isConnected && disclosure.open &&
+                  player.currentSrc === replacement.source && player.muted &&
+                  !player.ended && !player.error &&
+                  (!view?.performance?.now || view.performance.now() - started < 12000);
+                let startedPriming = false;
+                let restored = false;
+                const warmFrame: VideoFrameRequestCallback = (_now, metadata) => {
+                  if (!active() || restored) return;
+                  if (Number.isFinite(metadata.mediaTime) && metadata.mediaTime >= 0.5 &&
+                      player.videoWidth > 0 && player.videoHeight > 0 &&
+                      player.readyState >= 2 && !player.seeking) {
+                    restored = true;
+                    player.addEventListener("seeked", () => {
+                      if (!active() || player.seeking ||
+                          Math.abs(player.currentTime - replacement.time) > 0.35) return;
+                      // A prior explicit user Play authorized this muted
+                      // reconstruction. A playing decoder needs no new play.
+                      if (player.paused) void player.play().catch(() => {
+                        // Failure stays visible to native controls and E2E.
+                      });
+                    }, {once:true});
+                    try { player.currentTime = replacement.time; }
+                    catch { /* Do not retry blind seeks or fake progression. */ }
+                    return;
+                  }
+                  try { player.requestVideoFrameCallback(warmFrame); }
+                  catch { /* Real browser acceptance reports absent frames. */ }
+                };
+                const prime = () => {
+                  if (startedPriming || !active() || player.readyState < 2 ||
+                      typeof player.requestVideoFrameCallback !== "function") return;
+                  startedPriming = true;
+                  try {
+                    player.requestVideoFrameCallback(warmFrame);
+                    void player.play().catch(() => {
+                      // No second automatic attempt after a rejected Play.
+                    });
+                  } catch { /* Leave native user controls intact. */ }
+                };
+                player.addEventListener("loadeddata", prime, {once:true});
+                if (player.readyState >= 2) prime();
               }}
               onPlay={onNativePlay} onPlaying={onNativePlay} onSeeking={discardRecovery}
               onKeyDown={onNativeKeyDown}>

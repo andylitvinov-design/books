@@ -115,6 +115,41 @@ test('Tantra prefetch teardown requires the observed Back-to-About replacement',
     assert.equal(classifyCspNavigationCancellation(err('/?_rsc=probe'),{...info,lifecycle:trace.filter((_,i)=>i!==index)}),null);
 });
 
+test('exact Telegram public-readiness fetch aborted only during proven WebKit Tantra Back teardown', () => {
+  const tantra = origin + '/en/academy/reiki/tantra-reiki';
+  const about = origin + '/en/about';
+  const trace = [
+    {type:'init',time:1,documentProbe:'tantra',url:tantra},
+    {type:'navigate',time:95,documentProbe:'tantra',url:tantra,documentClass:'tantra-media',sameDocument:true,navigationType:'traverse',destination:about},
+    {type:'navigate',time:100,documentProbe:'tantra',url:about,documentClass:'tantra-media',sameDocument:false,navigationType:'replace',destination:about},
+    {type:'pagehide',time:140,documentProbe:'tantra'},
+    {type:'init',time:150,documentProbe:'about',url:about},
+  ];
+  const info={...detail,lifecycle:trace};
+  const error={...diagnostic(origin+'/api/public/telegram-diagnostic',125),phase:'back-from-tantra'};
+  assert.equal(classifyCspNavigationCancellation(error,info)?.kind,
+    'webkit-hard-navigation-fetch-cancellation');
+  // Exact provider-free path only; no general API, history or CSP exemption.
+  for(const path of ['/api/public/telegram-diagnostic?debug=1',
+    '/api/public/telegram-diagnostic/other', '/api/public/telegram-diagnostic?_rsc=x',
+    '/api/app/crm/private','/api/public/telegram-diagnostic/'])
+    assert.equal(classifyCspNavigationCancellation({...error,stack:diagnostic(origin+path).stack},info),null,path);
+  assert.equal(classifyCspNavigationCancellation({...error,stack:diagnostic('https://elsewhere.test/api/public/telegram-diagnostic').stack},info),null);
+  for(const change of [{engine:'chromium'},{readiness:'loaded-history'},
+    {lifecycle:trace.filter(item=>item.type!=='pagehide')},
+    {lifecycle:trace.filter((_,i)=>i!==1)},
+    {lifecycle:trace.map((item,i)=>i===2?{...item,navigationType:'push'}:item)},
+    {lifecycle:trace.map((item,i)=>i===2?{...item,documentClass:'public-video'}:item)},
+    {lifecycle:trace.map((item,i)=>i===4?{...item,url:origin+'/en/contact'}:item)},
+    {lifecycle:[...trace,{type:'policy-violation',time:120,documentProbe:'tantra'}]},
+    {lifecycle:[...trace,{type:'unhandled-rejection',time:125,documentProbe:'tantra'}]}])
+    assert.equal(classifyCspNavigationCancellation(error,{...info,...change}),null,
+      'Missing signed navigation provenance or real policy violation stays fatal');
+  for(const change of [{phase:'initial'},{time:99},{time:141},{time:150},
+    {stack:'Refused to connect because it violates Content Security Policy'}])
+    assert.equal(classifyCspNavigationCancellation({...error,...change},info),null);
+});
+
 for (const [phase, destination, otherPhase] of [
   ['forward-to-public', '/en/about', 'back-to-private'],
   ['back-to-private', '/en/client', 'forward-to-public'],

@@ -121,14 +121,19 @@ test("web handoff fails closed and keeps existing non-Telegram first-party CRM i
   assert.match(route,/channelTransportReady\('telegram',env\)/);
   assert.match(route,/daoUrls\?\.en&&daoUrls\?\.ru&&daoUrls\?\.es/);
   assert.match(route,/available:false/);
-  assert.match(ui,/body\?\.available === true/);
-  assert.match(ui,/safeDaoUrl\(body\?\.daoUrls\?\.\[locale\], locale\)/);
+  assert.match(page,/channelTransportReady\("telegram", process\.env\)/);
+  assert.match(page,/telegramDiagnosticPublicUrl\(language, process\.env\)/);
+  assert.match(page,/telegramDaoPublicUrl\(locale, process\.env\)/);
+  assert.match(ui,/safeDaoUrl\(approvedUrl, locale\)/);
+  assert.doesNotMatch(ui,/fetch\(|AbortController|useEffect|useState/);
+  for (const routePath of ["app/[locale]/services/dao-health-profile/page.tsx", "app/es/services/dao-health-profile/page.tsx"])
+    assert.match(repo(routePath), /export const dynamic = "force-dynamic"/);
   assert.match(ui,/referrerPolicy="no-referrer"/);
   assert.match(ui,/if \(!url\) return null/);
-  assert.match(page,/<DaoTelegramHandoff locale=\{locale\} \/>/);
+  assert.match(page,/<DaoTelegramHandoff locale=\{locale\} approvedUrl=\{daoTelegramUrl\} \/>/);
   assert.match(page,/<CompactLeadCapture/);
   assert.match(page,/dao-free-start/);
-  assert.equal((page.match(/<DaoTelegramHandoff locale=\{locale\}/g)||[]).length,1,
+  assert.equal((page.match(/<DaoTelegramHandoff locale=\{locale\} approvedUrl=\{daoTelegramUrl\}/g)||[]).length,1,
     "one and only one Dao Instagram Telegram component");
   assert.equal((page.match(/<CompactLeadCapture/g)||[]).length,1,
     "reuse one existing secure Dao form instead of duplicating lead intake");

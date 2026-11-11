@@ -3,6 +3,8 @@ import { spanishMetadata } from "@/lib/spanish-metadata";
 
 // A legacy locale-specific /es route takes precedence over [locale] in Next.js.
 // Reuse the same EN/RU/ES one-contact experience instead of a duplicate old form.
+export const dynamic = "force-dynamic";
+
 export const metadata = spanishMetadata(
   "/es/services/dao-health-profile",
   "Perfil gratuito de recursos Wu Xing | Holistic House",
