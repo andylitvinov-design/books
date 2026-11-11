@@ -30,13 +30,24 @@ function selectTests(root,changed,candidates){
   // A literal read through this exact repository-root helper is observable
   // source coverage too. Reject generic/dynamic fs reads and templates.
   const staticRootRead=/^\s*const read\s*=\s*path\s*=>\s*readFileSync\(\s*new URL\(\s*['"]\.\.\/['"]\s*\+\s*path\s*,\s*import\.meta\.url\s*\)\s*,\s*['"]utf8['"]\s*\)\s*;?\s*$/m.test(source);
+  // Direct static URL reads are just as observable as the existing literal
+  // repository-root helper. Accept the exact node:fs import and the full
+  // literal file path only. No alias, interpolation, dynamic URL, symlink or
+  // source outside the preauthorized changed-file inventory.
+  const staticFsRead=lines.some(line=>
+    /^\s*import\s*\{\s*readFileSync\s*\}\s*from\s*['"]node:fs['"]\s*;?\s*$/.test(line));
   if(!hasNodeTest||!hasTestCall)continue;
   let hit=false;
   for(const line of lines){
    const staticRead=staticRootRead?line.match(/^\s*(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*read\(\s*['"]([^'"]+)['"]\s*\)\s*;?\s*$/):null;
+   // Capture the complete literal URL relative to THIS test, not a variable
+   // or partial source line. SRC guarantees a non-traversal in-tree file.
+   const directRead=staticFsRead?line.match(/^\s*(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*readFileSync\(\s*new URL\(\s*(['"])(\.\.\/[^'"\\\r\n`]+)\1\s*,\s*import\.meta\.url\s*\)\s*,\s*(['"])utf8\3\s*\)\s*;?\s*$/):null;
+   if(directRead&&!SRC.test(directRead[2].slice(3)))continue;
    const match=staticRead||line.match(/^\s*(?:import(?:\s+[^;]*?\s+from)?\s*|}\s*from\s*|(?:const|let|var)\s+[^=]+?=\s*require\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/);
-   if(!match||(!staticRead&&!match[1].startsWith('.')))continue;
-   const resolved=path.resolve(staticRead?realRoot:path.dirname(full),match[1]);
+   if(!directRead&&(!match||(!staticRead&&!match[1].startsWith('.'))))continue;
+   const resolved=path.resolve(staticRead?realRoot:path.dirname(full),
+     directRead?directRead[2]:match[1]);
    if(target.has(resolved)){coverage.add(resolved);hit=true;}
   }
   if(hit)selected.push(file);
