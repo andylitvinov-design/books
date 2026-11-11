@@ -183,7 +183,7 @@ test('CI route outcomes cannot violate the existing Commander chat execution_sta
 test('legacy zero-dispatch route receipts are upgraded without granting an executor ACK',()=>{
  const edge=fs.readFileSync('supabase/functions/agent-commander-private-store-v1/index.ts','utf8');
  const first=edge.indexOf('function normalizeLegacyZeroDispatchCiRoute(p: any): any {');
- const last=edge.indexOf('async function receiveCommanderCiRoute(req,origin){',first);
+ const last=edge.indexOf('function isMonotonicCiDispatchUpgrade(',first);
  a.ok(first>0&&last>first);
  const vm=require('node:vm');
  const fn=vm.runInNewContext(edge.slice(first,last).replace('p: any): any','p)')+
