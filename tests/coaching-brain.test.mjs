@@ -499,3 +499,26 @@ test('the 20-minute protocol does not manufacture readiness from negated or spli
   assert.equal(real.nextBestAction.question.includes(' and '),false)
   assert.equal(coachingBrainBoundary({locale:'en',message:"I can't stop worrying about work",turns:[]}),null)
 })
+
+
+test('affirming a clear pause/end invitation respects a client boundary without invoking AI',()=>{
+  for(const [locale,question,message] of [
+    ['en','Would you like to end this conversation?','yes'],
+    ['ru','Хотите закончить разговор?','да'],
+    ['es','¿Quieres terminar nuestra conversación aquí?','sí'],
+  ]){
+    const input=normalizeCoachingBrainInput(req({
+      locale,message,turns:[{role:'assistant',content:question}]
+    }))
+    assert.equal(understandCoachingTurn(input).confirmedStop,true)
+    const result=coachingBrainBoundary(input)
+    assert.equal(result.mode,'boundary')
+    assert.equal(result.stage,'pause')
+    assert.equal(result.planSuggestion,'')
+  }
+  const ambiguous=normalizeCoachingBrainInput(req({
+    message:'yes',turns:[{role:'assistant',content:'Would you like to pause or continue?'}]
+  }))
+  assert.equal(understandCoachingTurn(ambiguous).confirmedStop,false)
+  assert.equal(coachingBrainBoundary(ambiguous),null)
+})
