@@ -20,7 +20,16 @@
       return {key:r.key,label:r.label,now:compactValue(r.now),week:compactValue(r.week)};
     });
   }
-  if(typeof module==='object'&&module.exports)module.exports={compactValue,visibleRows};
+  // The original KPI section is hidden until "All details" is selected.
+  // Its IntersectionObserver therefore cannot fetch the archived measurements.
+  // Reuse that section's existing one-shot refresh, without a second API client.
+  function wakeNativeKpi(panel) {
+    const refresh=panel?.querySelector('.hh-kpi-head button');
+    if(!refresh||refresh.disabled||panel.querySelector('.hh-kpi-data .hh-kpi-item'))return false;
+    refresh.click();
+    return true;
+  }
+  if(typeof module==='object'&&module.exports)module.exports={compactValue,visibleRows,wakeNativeKpi};
   if(!env||!env.document||env.__hhPrDenseNumericMounted)return;
   env.__hhPrDenseNumericMounted=true;
   const doc=env.document, specs=[
@@ -30,7 +39,7 @@
     {key:'one',label:'1 CI-волна / PR',type:'wave',index:0},
     {key:'extra',label:'Повторные CI-волны',type:'wave',index:1}
   ];
-  let box,rowsNode,note,detailButton,main,signature='',queued=false;
+  let box,rowsNode,note,detailButton,main,signature='',queued=false,woken=false;
   function el(tag,className,value) {
     const n=doc.createElement(tag);if(className)n.className=className;
     if(value!==undefined)n.textContent=String(value);return n;
@@ -91,6 +100,8 @@
   }
   function paint() {
     if(!mount())return;
+    // One original widget refresh makes hidden read-only KPI numbers available.
+    if(!woken)woken=wakeNativeKpi(doc.getElementById('hh-pr-three-kpis'));
     const entries=read(),rows=visibleRows(entries);
     const missed=specs.length-rows.length;
     const next=JSON.stringify(rows)+'|'+missed;
