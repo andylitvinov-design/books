@@ -40,7 +40,7 @@ type PublicVideoGoal = "all" | "stress" | "energy" | "relationships" | "work" | 
 type GuidedTrack = "video" | "meditation" | "hint" | null;
 type PreviewFocus = "" | "stress" | "relationships" | "self_worth" | "meaning";
 type Outline = {status:"draft_ready";title:string;lessons:Array<{number:number;title:string;steps:string[];videoReady:false}>;published:false;mediaReady:false};
-type Message = { role: "user" | "assistant"; text: string };
+type Message = { role: "user" | "assistant"; text: string; variant?:"alternative" };
 type MessengerVideoDraft = {
   goal:string;categoryId:string|null;topicId:string|null;scenarioId:string|null;
   mytubeCategoryId:string|null;mytubeSubcategoryId:string|null;mytubeTopicId:string|null;
@@ -333,6 +333,10 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
   const [showVideoSignIn,setShowVideoSignIn]=useState(false);
   const [needsPrivateSignIn,setNeedsPrivateSignIn]=useState(false);
   const [messages,setMessages]=useState<Message[]>([]);
+  const lastAnswerRef=useRef<{message:string;history:Array<{role:"user"|"assistant";text:string}>;decision:AgentDecision;locale:PublicLocale}|null>(null);
+  const alternativeAbortRef=useRef<AbortController|null>(null);
+  const [alternativeBusy,setAlternativeBusy]=useState(false);
+  const [alternativeError,setAlternativeError]=useState("");
   const [pageHelpLink,setPageHelpLink]=useState<{href:string;label:string}|null>(null);
   const [choices,setChoices]=useState<AgentReply["suggestions"]>([]);
   // Ephemeral only: signed on the authenticated server, local for guests.
@@ -725,6 +729,8 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
     const turnStarter=messengerStarter[turnLocale],turnCopy=copy[turnLocale];
     if(!text||busy||(mode==="owned"&&!agree&&!(compact&&(testChatOpen||testOfferFromText(text))))||
       (judgmentChoice!==null&&judgmentClickLock.current))return;
+    alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;
+    lastAnswerRef.current=null;setAlternativeError("");
     if(judgmentChoice!==null){
       if(authenticated&&!judgmentView?.token)return;
       judgmentClickLock.current=true;
@@ -891,6 +897,9 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         data.judgment:null);
       setEvidenceUsed(data.usedSavedTestEvidence===true);
       setHistoryUsed(data.usedSavedVideoHistory===true);
+      if(data.browserModelAllowed&&data.decision&&!requiresProtectedReply(text,turnLocale)){
+        lastAnswerRef.current={message:text,history:prior,decision:data.decision,locale:turnLocale};
+      }
       setMessages(prev=>[...prev,{role:"assistant" as const,text:reply}].slice(-30));
       if(authenticated)void privateTranscript.savePair(text,reply);
       setSource(used==="browser"?turnCopy.used:used==="owned"?turnCopy.backend:turnCopy.simple);
@@ -916,11 +925,69 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
       setBusy(false);controller.current=null;judgmentClickLock.current=false;
     }
   }
+  async function requestAlternativeAnswer(style:"different"|"simple"|"deep"="different") {
+    const context=lastAnswerRef.current;
+    if(!context||alternativeBusy||busy)return;
+    if(requiresProtectedReply(context.message,context.locale)){
+      setAlternativeError(context.locale==="ru"?"Для этого сообщения альтернативная обработка отключена из соображений безопасности.":
+        context.locale==="es"?"La respuesta alternativa está desactivada por seguridad.":"Alternative processing is disabled for this message for safety.");
+      return;
+    }
+    const native=(window as Window & {LanguageModel?:NativeLanguageModel}).LanguageModel;
+    if(!native){
+      setAlternativeError(context.locale==="ru"?"Бесплатная локальная модель не поддерживается этим браузером. Исходный ответ сохранён.":
+        context.locale==="es"?"Este navegador no admite un modelo local gratuito. La respuesta original sigue disponible.":
+        "This browser does not support a free on-device model. Your original answer is unchanged.");
+      return;
+    }
+    const abort=new AbortController();
+    alternativeAbortRef.current=abort;setAlternativeBusy(true);setAlternativeError("");
+    try{
+      const languages=[context.locale];
+      const caps={expectedInputs:[{type:"text",languages}],expectedOutputs:[{type:"text",languages}]};
+      if(await native.availability(caps)==="unavailable")throw Error("DEVICE_MODEL_UNAVAILABLE");
+      const instruction=style==="simple"
+        ?"Give a simpler, shorter alternative in plain everyday language. Preserve uncertainty and safety boundaries."
+        :style==="deep"
+        ?"Give a more detailed alternative with clearer reasoning and practical nuance. Do not invent facts or claim professional certainty."
+        :"Offer a genuinely different helpful approach to the original question. Do not repeat the previous answer.";
+      const envelope=prepareNaturalDialogue({
+        locale:context.locale,
+        message:instruction+"\nOriginal user question: "+context.message,
+        history:context.history,
+        decision:context.decision,
+        channel:"browser",
+        consent:{browserInference:true},
+      });
+      if(!envelope.modelAllowed||!envelope.modelRequest)throw Error("DEVICE_MODEL_NOT_ALLOWED");
+      const session=await native.create(caps);
+      let generated;
+      try{
+        generated=await finishNaturalDialogue(envelope,async request=>{
+          const prompt=request.messages.map(item=>item.role+": "+item.content).join("\n\n");
+          return session.prompt(prompt,{signal:abort.signal});
+        });
+      }finally{session.destroy?.();}
+      if(abort.signal.aborted)return;
+      if(!generated.modelUsed||!generated.text?.trim())throw Error("DEVICE_MODEL_NO_REPLY");
+      setMessages(prev=>[...prev,{role:"assistant" as const,text:generated.text,variant:"alternative" as const}].slice(-30));
+      setSource(context.locale==="ru"?"Бесплатная модель на устройстве":context.locale==="es"?"Modelo gratuito en el dispositivo":"Free on-device model");
+    }catch(error){
+      if(!abort.signal.aborted){
+        const code=error instanceof Error?error.message:"";
+        setAlternativeError(code==="DEVICE_MODEL_UNAVAILABLE"
+          ?(context.locale==="ru"?"Локальная модель сейчас недоступна на этом устройстве.":"The on-device model is currently unavailable.")
+          :(context.locale==="ru"?"Не удалось получить альтернативный ответ. Исходный ответ сохранён.":context.locale==="es"?"No se pudo generar otra respuesta. La respuesta original sigue disponible.":"Could not generate an alternative. Your original answer is unchanged."));
+      }
+    }finally{
+      if(alternativeAbortRef.current===abort){alternativeAbortRef.current=null;setAlternativeBusy(false);}
+    }
+  }
   function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void sendTurn(draft);
   }
-  function resetConversation(){controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setProjectFlow(null);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
+  function resetConversation(){alternativeAbortRef.current?.abort();alternativeAbortRef.current=null;lastAnswerRef.current=null;setAlternativeBusy(false);controller.current?.abort();selectVoiceMessage(null);followTail.current=true;setNewBelow(false);setMessages([]);setPageHelpLink(null);setChoices([]);setJudgmentView(null);judgmentClickLock.current=false;setStatus("");setSource("");setEvidenceUsed(false);setHistoryUsed(false);setDismissedIds([]);setCompletedIds([]);setEntryOpen(true);setProjectFlow(null);setTestFocus(null);setContentStep(null);setContentVoice(false);setContentBrief("");setFormat("");setGuideLink(null);setTestChatOpen(false);setTestChatTurn(null);setTestSuggestedKey("");setTestRevision(0);setGuidedTrack(null);setVideoGoal("all");setShowVideoSignIn(false);setNeedsPrivateSignIn(false);setVideoStep(null);videoUndo.current=null;setVideoPendingCategory(null);setVideoDraft(initialMessengerVideoDraft() as MessengerVideoDraft);setRecorderOpen(false);}
 
   useEffect(()=>{
     const startNewConversation=()=>resetConversation();
@@ -1050,9 +1117,22 @@ export function HolisticAgentChat({locale:routeLocale,compact=false,quickPrompt,
         <div key={index} className={styles.messageWithAvatar} data-hh-ai-assistant-message>
           <img src="/images/holistic-house/reiki-approved-sunrise-v3.webp"
             width={37} height={37} loading="lazy" alt="" className={styles.messagePortrait}/>
-          <p className={styles.assistant}>{m.text}</p>
+          <p className={styles.assistant}>{m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.text}</p>
         </div>:
-        <p key={index} data-hh-chat-turn={m.role} className={m.role==="user"?styles.user:styles.assistant}>{m.text}</p>)}
+        <p key={index} data-hh-chat-turn={m.role} className={m.role==="user"?styles.user:styles.assistant}>
+          {m.variant==="alternative"&&<strong className={styles.alternativeLabel}>{locale==="ru"?"Альтернативный ответ · AI на устройстве":locale==="es"?"Respuesta alternativa · IA en el dispositivo":"Alternative answer · On-device AI"}{"\n"}</strong>}{m.text}</p>)}
+      {lastAnswerRef.current&&messages[messages.length-1]?.role==="assistant"&&<div className={styles.answerActions} data-hh-alternative-actions>
+        <strong>{locale==="ru"?"Ответ не подошёл?":locale==="es"?"¿No te convence la respuesta?":"Not quite the answer you wanted?"}</strong>
+        <button type="button" disabled={alternativeBusy||busy} onClick={()=>void requestAlternativeAnswer("different")}>
+          {locale==="ru"?"Другой вариант":locale==="es"?"Otra respuesta":"Another answer"}</button>
+        <button type="button" disabled={alternativeBusy||busy} onClick={()=>void requestAlternativeAnswer("simple")}>
+          {locale==="ru"?"Объяснить проще":locale==="es"?"Explicar más simple":"Explain simply"}</button>
+        <button type="button" disabled={alternativeBusy||busy} onClick={()=>void requestAlternativeAnswer("deep")}>
+          {locale==="ru"?"Подробнее":locale==="es"?"Más detalle":"More detail"}</button>
+        <small>{locale==="ru"?"Только локальная бесплатная модель браузера, если она доступна. Диалог не отправляется новому провайдеру.":locale==="es"?"Solo el modelo local gratuito del navegador, si está disponible. No se envía el diálogo a otro proveedor.":"Uses only the browser's free on-device model when available. Your conversation is not sent to another provider."}</small>
+      </div>}
+      {alternativeBusy&&<p role="status" className={styles.muted}>{locale==="ru"?"Готовлю альтернативный ответ на устройстве…":locale==="es"?"Preparando otra respuesta en el dispositivo…":"Preparing an alternative on your device…"}</p>}
+      {alternativeError&&<p role="status" className={styles.muted}>{alternativeError}</p>}
       {compact&&messengerView&&projectFlow&&<div className={styles.projectOptions}
         role="group" data-hh-project-step={projectFlow}
         aria-label={messengerProject(locale,projectFlow).question}>
