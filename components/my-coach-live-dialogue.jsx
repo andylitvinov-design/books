@@ -4,6 +4,7 @@ import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowLeft,ArrowRight,Check,LockKeyhole,Send,ShieldCheck,Sparkles} from 'lucide-react'
 import {getCoachPersona,localCoachText,coachStagePrompt} from '@/lib/coaching/persona-registry.mjs'
+import {coachingBrainSafety,coachingBrainBoundary} from '@/lib/personal-coaching/coaching-brain.mjs'
 import styles from './my-coach-live-dialogue.module.css'
 import MyCoachSpeechLoop from './my-coach-speech-loop'
 
@@ -110,19 +111,25 @@ export default function MyCoachLiveDialogue({locale='en',personaId='mira',settin
     if(readiness.status!=='verified'){
       // Local-only authored fallback. NEVER send private text to an unverified model.
       // Same editorial persona prompts, same browser-only conversation history.
+      const input={locale:lang,message,turns:turns.map(({role,content})=>({role,content}))}
+      const interruption=coachingBrainSafety(input)||coachingBrainBoundary(input)
       const stages=['goal','reality','resources','options','action']
       const userCount=turns.filter(item=>item.role==='user').length
       const stage=stages[Math.min(userCount,stages.length-1)]
-      const answer=String(coachStagePrompt(personaId,stage,lang,settings)||t.goal).slice(0,900)
+      const offlinePrompt=String(coachStagePrompt(personaId,stage,lang,settings)||t.goal)
+      const answer=(interruption?[interruption.reflection,interruption.question].filter(Boolean).join(' '):offlinePrompt).slice(0,900)
+      const mode=interruption?.mode||'offline'
       setTurns(previous=>{
         const updated=[...previous,{role:'user',content:message},{
-          role:'assistant',content:answer,reflection:'',question:answer,
-          mode:'offline',reason:'model_unavailable',stage,
+          role:'assistant',content:answer,reflection:interruption?.reflection||'',
+          question:interruption?.question||offlinePrompt,
+          mode,reason:'model_unavailable',stage:interruption?.stage||stage,
         }]
         return updated.length>24?[updated[0],...updated.slice(-23)]:updated
       })
+      if(mode==='safety'||(mode==='boundary'&&interruption?.boundary==='stop'))setPaused(true)
       setDraft('')
-      return {reply:answer,mode:'offline'}
+      return {reply:answer,mode}
     }
     const controller=new AbortController()
     pending.current?.abort()

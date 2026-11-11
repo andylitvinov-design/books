@@ -164,6 +164,8 @@ test('My Coach persona dialogue speaks and listens on exactly the consented sess
   assert.match(ui,/onTurn=\{sendMessage\}/)
   assert.match(ui,/enabled=\{consent&&readiness.status!=='checking'&&!authRequired\}/)
   assert.match(ui,/Local-only authored fallback/)
+  assert.match(ui,/coachingBrainSafety\(input\)\|\|coachingBrainBoundary\(input\)/)
+  assert.match(ui,/if\(mode==='safety'\|\|\(mode==='boundary'/)
   assert.match(ui,/coachStagePrompt\(personaId,stage,lang,settings\)/)
   const sendFunction=ui.slice(ui.indexOf('async function sendMessage(raw){'))
   assert.ok(sendFunction.indexOf("if(readiness.status!=='verified'){") < sendFunction.indexOf("fetch('/api/app/my-coach/turn'"), 'offline turn never reaches external provider')
