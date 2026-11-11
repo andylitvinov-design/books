@@ -165,3 +165,7 @@ test('only registered account IDs are accepted by the official Meta account mapp
   assert.equal(META_ACCOUNT_TARGETS.wizards_secrets.handle,'wizards.secrets')
   assert.equal(META_ACCOUNT_TARGETS.andy_therapist.handle,'andy.therapist')
 })
+
+// The same official Meta connection supports an independently gated Facebook Page.
+// Reuse existing protected Meta specialist test suite (no new CI workflow).
+import './growth-studio-facebook-publisher.test.mjs'
