@@ -153,3 +153,33 @@ test('voice JSX and server route parse as ES2022 without introducing a duplicate
   const api=source('app/api/app/coaching/voice/turn/route.js')
   assert.doesNotMatch(api,/LIVEKIT_API_SECRET|createRoom\(|savePersonalCoaching|INSERT INTO/)
 })
+
+test('My Coach persona dialogue speaks and listens on exactly the consented sessions route',async()=>{
+  const ui=source('components/my-coach-live-dialogue.jsx')
+  const loop=source('components/my-coach-speech-loop.jsx')
+  const conf=source('next.config.ts')
+  const css=source('components/my-coach-speech-loop.module.css')
+  assert.match(ui,/MyCoachSpeechLoop/)
+  assert.match(ui,/return sendMessage\(draft.trim\(\)\)/)
+  assert.match(ui,/onTurn=\{sendMessage\}/)
+  assert.match(ui,/enabled=\{consent&&readiness.status==='verified'&&!authRequired\}/)
+  assert.match(ui,/Browser speech recognition may send microphone audio/)
+  assert.match(ui,/Браузер может отправлять звук поставщику распознавания речи/)
+  for(const phrase of ['window.SpeechRecognition||window.webkitSpeechRecognition',
+    'recognition.interimResults=true','recognition.lang=langs[lang]',
+    'void deliver(finished)','turnRef.current?.(text)','window.SpeechSynthesisUtterance',
+    'activeRef.current=false','document.visibilityState===\'hidden\'',
+    'recognition.abort()','onCancelTurn','aria-pressed={active}'])
+    assert.ok(loop.includes(phrase),phrase)
+  assert.match(conf,/const publicMyCoachVoiceSources = \["\/en\/coaching\/sessions", "\/ru\/coaching\/sessions", "\/es\/coaching\/sessions"\]/)
+  assert.match(conf,/\.\.\.publicMyCoachVoiceSources\.map/)
+  assert.match(conf,/microphone=\(self\)/)
+  assert.doesNotMatch(loop,/\/api\/app\/coaching\/voice\/synthesize|api\.fish\.audio|Fish Audio|fetch\(/)
+  assert.match(css,/\.button\[aria-pressed="true"\]/)
+  const ts=(await import('typescript')).default
+  for(const file of ['components/my-coach-live-dialogue.jsx','components/my-coach-speech-loop.jsx','next.config.ts']){
+    const parsed=ts.createSourceFile(file,source(file),ts.ScriptTarget.ES2022,true,
+      file.endsWith('.tsx')||file.endsWith('.jsx')?ts.ScriptKind.JSX:ts.ScriptKind.TS)
+    assert.equal(parsed.parseDiagnostics.length,0,file+': '+parsed.parseDiagnostics.map(item=>item.messageText).join('; '))
+  }
+})
