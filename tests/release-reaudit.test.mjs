@@ -293,42 +293,44 @@ test('release audit preserves all four browser lanes while isolating CI process 
 });
 
 
-test('release re-audit follows the guest test-first Profile and explicit private transitions across CSP boundaries', () => {
+test('release re-audit follows current My Space Today guest Profile and explicit CSP transitions', () => {
   const source = read('scripts/verify-release-reaudit.mjs');
   const navigation = read('lib/site-navigation-model.js');
   const route = read('app/[locale]/app/portrait/page.jsx');
-  const guest = read('components/app/profile-test-entry.jsx');
+  const workspace = read('components/app/app-workspace.jsx');
+  const guest = read('components/app/cabinet-guest-overview.jsx');
   const hub = read('components/app/profile-hub-tabs.jsx');
   const builder = read('components/personality-profiles-builder.tsx');
-  assert.ok(navigation.includes("profile: 'app/portrait'"), 'Profile dock keeps the canonical Profile route');
-  assert.ok(route.includes('if (hasPrivateIntent) return <AppWorkspaceNavigator'));
-  assert.ok(route.includes('return <ProfileTestEntry locale={locale} />'));
-  assert.ok(guest.includes('data-profile-tests-first'));
-  assert.ok(guest.includes('data-guest-test-choice={id}'));
-  assert.ok(guest.includes('data-profile-results-link'));
-  assert.ok(guest.includes('portrait?space=reports'), 'Private reports require an explicit transition');
-  assert.ok(!['appFetch', 'fetch(', 'bootstrap', 'useEffect', 'sessionStorage', 'localStorage', 'signIn', 'auth/start'].some(token => guest.includes(token)), 'Guest Profile must not start private account bootstrap');
-  assert.ok(hub.includes('publicEntry = false') && hub.includes('publicEntry ?'));
-  assert.ok(builder.includes('data-profile-direct-tests'), 'Builder preserves the public tests destination');
+  assert.ok(navigation.includes("profile: 'app/portrait'"), 'Profile dock keeps canonical route');
+  assert.ok(route.includes("return <AppWorkspaceNavigator locale={locale} path={['portrait']} />"), 'My Space Today is the real entry');
+  assert.ok(!route.includes('ProfileTestEntry') && !route.includes('hasPrivateIntent'), 'No obsolete test-first route');
+  assert.ok(workspace.includes("state !== 'ready' && page === 'portrait'"), 'Signed-out visitors need a guest view');
+  assert.ok(workspace.includes('<CabinetGuestOverview'), 'Approved My Space guest view remains');
+  assert.ok(workspace.includes('<ProfileHubTabs locale={locale} active="today" />'), 'Today is the first tab');
+  assert.ok(guest.includes('data-cabinet-guest-overview'));
+  assert.ok(guest.includes("'/client/tests'"), 'Free tests remain reachable without sign-in');
+  assert.ok(!guest.includes('appFetch('), 'Guest overview does not fetch private client data');
+  assert.ok(hub.includes('publicEntry = false') && hub.includes('data-profile-hub-tabs'));
+  assert.ok(builder.includes('data-profile-direct-tests'), 'Public builder still exposes tests');
   const start = source.indexOf('// The unified Profile dock now opens the PRIVATE Cabinet first.');
   const finish = source.indexOf('const discoveryBottom = cspPage.locator(');
-  assert.ok(start > 0 && finish > start + 1000, 'The real CSP journey is present');
+  assert.ok(start > 0 && finish > start + 1000, 'Real CSP browser journey is preserved');
   const flow = source.slice(start, finish);
-  for (const assertion of [
+  for (const required of [
     "toHaveURL(origin + '/en/app/portrait')",
     "toHaveAttribute('data-csp-class', 'private')",
-    "locator('[data-profile-tests-first]')",
-    "locator('[data-guest-test-choice]')).toHaveCount(3)",
-    "locator('[data-profile-results-link]')).toHaveAttribute('href', '/en/app/portrait?space=reports')",
-    "locator('[data-profile-domains], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0)",
+    "locator('[data-cabinet-guest-overview]')",
+    "locator('a[href=\"/en/client/tests\"]')",
+    "locator('[data-profile-hub-tabs] [data-profile-tab=\"today\"]')",
+    "locator('[data-profile-tests-first], [data-my-tests-dashboard], [data-profile-results-archive]')).toHaveCount(0)",
     "locator('.mobile-bottom-navigation')).toHaveCount(0)",
     "cspPage.goto(origin + '/en/personality-profiles', { waitUntil: 'domcontentloaded' })",
     "toHaveURL(origin + '/en/personality-profiles')",
     "toHaveAttribute('data-csp-class', 'public-video')",
     "locator('[data-profile-direct-tests]').click()",
     "toHaveURL(origin + '/en/client/tests')",
-  ]) assert.ok(flow.includes(assertion), 'Missing guest Profile/CSP regression: ' + assertion);
-  assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"));
+  ]) assert.ok(flow.includes(required), 'Missing My Space/CSP regression: ' + required);
+  assert.ok(source.includes("toHaveAttribute('href', '/en/app/portrait')"), 'Private test navigation returns to Profile');
   assert.ok(!source.includes('Public profile discovery must retain same-policy soft navigation'));
 });
 
