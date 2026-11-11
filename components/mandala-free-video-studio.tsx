@@ -5349,7 +5349,7 @@ export function MandalaFreeVideoStudio({ locale, frameUrl, photoUrl, onPickPhoto
                   <strong>{track.name[locale]}{index===0&&audioSort==="best"?<Sparkles size={14} aria-label={audioUi.suggested}/>:null}</strong>
                   <small>{curatedAudioTracks.some(item=>item.id===track.id)?(locale==="ru"?"Реальная запись · ":locale==="es"?"Grabación real · ":"Real recording · "):null}{track.detail[locale]}</small>
                   <span className={videoStyles.audioRowMeta}>
-                    <em>{track.kind==="nature"?audioUi.types.nature:track.kind==="tones"?audioUi.types.tones:track.kind==="melody"?audioUi.types.melody:audioUi.types.pulse}</em>
+                    <em>{audioUi.types.melody}</em>
                     <span className={videoStyles.audioWave} aria-hidden="true">
                       {Array.from({length:15},(_,i)=><i key={i}/>)}
                     </span>

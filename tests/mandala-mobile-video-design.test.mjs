@@ -171,7 +171,7 @@ test("video UI choices affect the actual free MP4/WebM recording and the user se
   assert.match(studio,/visibleAudio\.map\(\(track,index\)=>/);
   assert.match(studio,/data-video-music=\{track\.id\}/);
   assert.match(studio,/chooseMusic\(track\.id as AmbientMusic\)/);
-  assert.match(studio,/recommendMandalaAudio\(\{/);
+  assert.match(studio,/recommendCuratedAudio\(\{/);
   assert.match(studio,/data-video-music="none"/);
   assert.match(audio,/context\.createMediaStreamDestination\(\)/);
   assert.match(studio,/stream\.addTrack\(musicSession\.track\)/);
