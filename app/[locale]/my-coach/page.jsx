@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import { PublicSiteHeader } from '@/components/public-site-header'
 import MyCoachCatalog from '@/components/my-coach-catalog'
 import { metadataBaseFor } from '@/data/site-metadata'
 import styles from './page.module.css'
@@ -29,7 +28,6 @@ export default async function MyCoachPage({ params }) {
   const { locale } = await params
   if (!locales.includes(locale)) notFound()
   return <div className={styles.page} lang={locale} data-my-coach-page>
-    <div className={styles.header}><PublicSiteHeader locale={locale} showAssessmentStrip={false} /></div>
     <MyCoachCatalog locale={locale} />
   </div>
 }
