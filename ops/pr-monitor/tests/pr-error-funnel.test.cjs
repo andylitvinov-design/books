@@ -313,3 +313,26 @@ test('forged, edited or mismatched historical receipts cannot restore dispatch',
  const unrelated=arr.slice();unrelated[1]={...arr[1],body:arr[1].body.replace(ERROR,'d'.repeat(32))};
  assert.equal(m.signedClaimRoute(unrelated,e),null);
 });
+
+test('incomplete evidence never invents a diagnostic-to-worker or reply-to-commit difference',()=>{
+ const e=event(),proof=m.taskEvidence(records({state:'MANUAL',
+  detail:'FREE_AI_PATCH_APPLY_CHECK_FAILED'}),e);
+ const summary=m.summarize([e],{[INBOX]:proof},24,NOW,false);
+ assert.equal(summary.complete,false);
+ assert.equal(summary.breakdown.assigned_diagnostic_not_source,null);
+ assert.equal(summary.breakdown.worker_replies_without_commit,null);
+ assert.equal(summary.blockers.find(x=>x.key==='why_patch').pr_count,1,
+  'a real signed failure remains visible even with other incomplete evidence');
+});
+test('all reason links are public GitHub PR ids and no private/source data rendered',()=>{
+ const f=require('node:fs');
+ const src=f.readFileSync(require.resolve('../pr-error-funnel.js'),'utf8');
+ const style=f.readFileSync(require.resolve('../pr-error-funnel.css'),'utf8');
+ assert.match(src,/hh-error-insight/);
+ assert.match(style,/\.hh-error-insight/);
+ assert.match(src,/Неполные данные/);
+ assert.match(src,/FAILURE_REASONS/);
+ assert.match(src,/if\(b\.pr_count===0\)continue/);
+ assert.doesNotMatch(src,/localStorage|sessionStorage|document\.cookie|innerHTML\s*=/);
+ assert.match(src,/link\.href='https:\/\/github\.com\/'\+REPO\+'\/pull\/'\+number/);
+});
